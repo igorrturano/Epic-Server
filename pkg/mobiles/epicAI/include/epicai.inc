@@ -496,30 +496,74 @@ function SetupNPCEquip(who, npc_elem)
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
+    var boss := GetObjProperty(who, "EpicBossStruct");
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
         if (weapon)
             var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
             // First Unequip hands
             if (who.weapon)
                 DestroyItem(who.weapon);
+            endif
+            if (who.shield)
+                DestroyItem(who.shield);
             endif
             EquipItem(who, item);
         endif
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
-        if (weapon)
-            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
-            // First Unequip hands
-            if (who.weapon)
-                DestroyItem(who.weapon);
+
+    if (boss.equipments && boss.equipments.size() > 0)
+        foreach equipment in (boss.equipments)
+            var objtype := CInt(equipment.objtype);
+            if (objtype)
+                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, 1);
+                if (item)
+                    // Try to equip the new item first
+                    if (!EquipItem(who, item))
+                        // If equipping failed, find what layer this item wants to use
+                        // We can determine this by checking what layer it would occupy
+                        // by temporarily equipping it on a test mobile or checking item properties
+                        
+                        // First, let's try to find conflicting equipment by checking all equipped items
+                        var equipped_items := ListEquippedItems(who);
+                        var equipment_removed := 0;
+                        
+                        foreach equipped_item in equipped_items
+                            // Try removing each equipped item and see if our item can equip
+                            var temp_item := equipped_item;
+                            MoveItemToContainer(temp_item, who.backpack);
+                            
+                            // Try to equip our new item
+                            if (EquipItem(who, item))
+                                // Success! The temp_item was conflicting, so destroy it
+                                DestroyItem(temp_item);
+                                equipment_removed := 1;
+                                break;
+                            else
+                                // Not the conflicting item, put it back
+                                EquipItem(who, temp_item);
+                            endif
+                            sleepms(2);
+                        endforeach
+                        
+                        // If we still couldn't equip after removing items, put it in backpack or destroy
+                        if (!equipment_removed)
+                            if (!MoveItemToContainer(item, who.backpack))
+                                DestroyItem(item);
+                            endif
+                        endif
+                    endif
+                endif
             endif
-            EquipItem(who, item);
-        endif
+            sleepms(2);
+        endforeach
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
+  if (boss.mount)
+      // If the boss has a specific mount, use it
+      montaria := boss.mount;
+  endif
   if (!montaria)
   else
 	var graphic := MP_GetMountGraphic(montaria);

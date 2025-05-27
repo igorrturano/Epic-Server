@@ -184,6 +184,7 @@ function InitializeFormData()
     // Equipment
     form_data.weapon_type := "";
     form_data.specific_weapon := "";
+    form_data.equipments := array{}; // Ensure equipments is always an array
     form_data.classe := "";
     form_data.magic_school := "";
     form_data.drop_chance := "25";
@@ -1659,6 +1660,12 @@ function ShowPage5(who, title, gump_width, gump_height)
     endif
 
     // Add Equipments
+    GFAddButton(gump, 750, 430, 2103, 2104, 1, 94);
+    GFTextLine(gump, 780, 430, 1153, "Escolher equipamentos");
+
+    // Add Mount
+    GFAddButton(gump, 750, 460, 2103, 2104, 1, 95);
+    GFTextLine(gump, 780, 460, 1153, "Escolher montaria");
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -1716,7 +1723,10 @@ function ShowPage5(who, title, gump_width, gump_height)
         HandleAddRace(who, form_data);
         return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 94) // Add Armors & Equipments
-        // HandleAddEquipments(who, form_data);
+        HandleAddEquipments(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 95) // Create Boss button
+        HandleAddMount(who, form_data);
         return ShowPage5(who, title, gump_width, gump_height);
     endif
 
@@ -2655,6 +2665,14 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     if (form_data.specific_weapon)
         boss.specific_weapon := form_data.specific_weapon;
     endif
+
+    if (form_data.equipments)
+        boss.equipments := form_data.equipments;
+    endif
+
+    if (form_data.mount)
+        boss.mount := form_data.mount;
+    endif
     
     // Save behavior settings
     if (form_data.teleport_health)
@@ -3233,4 +3251,374 @@ function GetRaceGraphic(race, gender)
     else
         return base_graphic; // Human
     endif
+endfunction
+
+// Function to handle equipment selection
+function HandleAddEquipments(who, byref form_data)
+    // Initialize equipments array if it doesn't exist
+    if (!form_data.equipments)
+        form_data.+equipments := array{};
+    endif
+    
+    var continue_adding := 1;
+    
+    while (continue_adding)
+        // Show current equipment selection gump
+        var gump := GFCreateGump();
+        GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+        GFResizePic(gump, 15, 15, 9350, 570, 670);
+        
+        GFTextMid(gump, 0, 25, 600, 1153, "Equipment Selection");
+        
+        // Display current equipment
+        var y_pos := 60;
+        GFTextLine(gump, 30, y_pos, 1153, "Current Equipment:");
+        y_pos += 25;
+        
+        if (form_data.equipments && form_data.equipments.size() > 0)
+            for i := 1 to form_data.equipments.size()
+                var equipment := form_data.equipments[i];
+                // Add delete button for each equipment
+                GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + i);
+                GFTextLine(gump, 60, y_pos, 66, equipment.name + " (ID: " + equipment.objtype + ")");
+                y_pos += 20;
+                
+                // Prevent overflow
+                if (y_pos > 500)
+                    break;
+                endif
+            endfor
+        else
+            GFTextLine(gump, 60, y_pos, 2100, "No equipment selected yet");
+        endif
+        
+        // Add action buttons
+        y_pos := 520;
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 60, y_pos, 1153, "Add Single Equipment");
+        
+        y_pos += 30;
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, 60, y_pos, 1153, "Add from Container");
+        
+        y_pos += 30;
+        GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3);
+        GFTextLine(gump, 60, y_pos, 1153, "Clear All Equipment");
+        
+        // Done and Cancel buttons
+        y_pos += 50;
+        GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+        GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+        
+        var input := GFSendGump(who, gump);
+        
+        case (input[0])
+            1: // Add Single Equipment
+                AddSingleEquipment(who, form_data);
+                
+            2: // Add from Container
+                AddEquipmentFromContainer(who, form_data);
+                
+            3: // Clear All Equipment
+                form_data.equipments := array{};
+                SendSysMessage(who, "All equipment cleared.", color := 33);
+                
+            998: // Done
+                continue_adding := 0;
+                SendSysMessage(who, "Equipment selection completed. Total items: " + form_data.equipments.size());
+                
+            999: // Cancel
+                continue_adding := 0;
+                SendSysMessage(who, "Equipment selection cancelled.");
+                
+            default:
+                // Handle delete buttons (100+)
+                if (input[0] >= 101 && input[0] <= 100 + form_data.equipments.size())
+                    var index := input[0] - 100;
+                    var removed_item := form_data.equipments[index];
+                    form_data.equipments.erase(index);
+                    SendSysMessage(who, "Removed equipment: " + removed_item.name, color := 33);
+                endif
+        endcase
+    endwhile
+    
+    return 1;
+endfunction
+
+// Function to add a single equipment item
+function AddSingleEquipment(who, byref form_data)
+    var continue_adding := 1;
+    
+    SendSysMessage(who, "Target equipment to add. Press ESC to stop adding equipment.", color := 66);
+    
+    while (continue_adding)
+        var targ := Target(who);
+        
+        if (!targ)
+            SendSysMessage(who, "Stopping equipment selection.", color := 33);
+            break;
+        endif
+        
+        if (!targ.IsA(POLCLASS_ITEM))
+            SendSysMessage(who, "You must target an item.", color := 33);
+            continue;
+        endif
+        
+        // Check if this equipment is already in the list
+        var already_exists := 0;
+        if (form_data.equipments)
+            foreach equipment in (form_data.equipments)
+                if (equipment.objtype == targ.objtype)
+                    already_exists := 1;
+                    break;
+                endif
+            endforeach
+        endif
+        
+        if (already_exists)
+            SendSysMessage(who, "Equipment " + targ.desc + " is already in the list.", color := 33);
+        else
+            // Add the equipment to the list
+            var equipment_entry := struct{
+                "objtype" := targ.objtype,
+                "name" := targ.desc
+            };
+            
+            form_data.equipments.append(equipment_entry);
+            SendSysMessage(who, "Added equipment: " + targ.desc + " (ID: " + targ.objtype + ")", color := 66);
+        endif
+        
+        SendSysMessage(who, "Target another equipment or press ESC to stop.", color := 66);
+    endwhile
+endfunction
+
+// Function to add equipment from a container
+function AddEquipmentFromContainer(who, byref form_data)
+    SendSysMessage(who, "Target a container to add all items as equipment.", color := 66);
+    
+    var targ := Target(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Equipment container selection cancelled.", color := 33);
+        return 0;
+    endif
+    
+    if (!targ.IsA(POLCLASS_CONTAINER))
+        SendSysMessage(who, "You must target a container.", color := 33);
+        return 0;
+    endif
+    
+    var items_added := 0;
+    var items_skipped := 0;
+    
+    // Iterate through all items in the container
+    foreach item in (EnumerateItemsInContainer(targ))
+        // Check if this equipment is already in the list
+        var already_exists := 0;
+        if (form_data.equipments)
+            foreach equipment in (form_data.equipments)
+                if (equipment.objtype == item.objtype)
+                    already_exists := 1;
+                    break;
+                endif
+            endforeach
+        endif
+        
+        if (!already_exists)
+            // Add the equipment to the list
+            var equipment_entry := struct{
+                "objtype" := item.objtype,
+                "name" := item.desc
+            };
+            
+            form_data.equipments.append(equipment_entry);
+            SendSysMessage(who, "Added: " + item.desc + " (ID: " + item.objtype + ")", color := 66);
+            items_added += 1;
+        else
+            SendSysMessage(who, "Skipped (already exists): " + item.desc, color := 2100);
+            items_skipped += 1;
+        endif
+    endforeach
+    
+    SendSysMessage(who, "Container processing complete. Added: " + items_added + " items, Skipped: " + items_skipped + " duplicates.", color := 33);
+    
+    return 1;
+endfunction
+
+function HandleAddMount(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+    GFResizePic(gump, 15, 15, 9350, 570, 670);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Mount Selection");
+    
+    // Display current mount selection
+    var y_pos := 60;
+    if (form_data.mount)
+        GFTextLine(gump, 30, y_pos, 1153, "Current Mount:");
+        y_pos += 20;
+        GFTextLine(gump, 50, y_pos, 66, "Mount Name: " + form_data.mount_name);
+        
+        // Add remove button
+        y_pos += 25;
+        GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3); // Changed ID to 3
+        GFTextLine(gump, 60, y_pos, 33, "Remove Current Mount");
+        y_pos += 35;
+    else
+        GFTextLine(gump, 30, y_pos, 2100, "No mount selected");
+        y_pos += 35;
+    endif
+    
+    // Add selection methods
+    GFTextLine(gump, 30, y_pos, 1153, "Select Mount:");
+    y_pos += 25;
+    
+    // Method 1: Target an existing mount
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 60, y_pos, 1153, "Target Existing Mount");
+    
+    y_pos += 30;
+    
+    // Method 2: Select from predefined list
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 60, y_pos, 1153, "Choose from Mount List");
+    
+    // Done and Cancel buttons
+    y_pos := 620;
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+    
+    var input := GFSendGump(who, gump);
+    
+    case (input[0])
+        1: // Target existing mount
+            return TargetExistingMount(who, form_data);
+            
+        2: // Choose from list
+            return SelectMountFromList(who, form_data);
+            
+        3: // Remove current mount - Changed from 999
+            form_data.mount := 0; // Changed from form_data.+mount
+            SendSysMessage(who, "Mount removed.", color := 33);
+            return HandleAddMount(who, form_data); // Reopen gump
+            
+        998: // Done
+            SendSysMessage(who, "Mount selection completed.");
+            return 1;
+            
+        999: // Cancel
+            SendSysMessage(who, "Mount selection cancelled.");
+            return 0;
+    endcase
+    
+    return 0;
+endfunction
+
+function TargetExistingMount(who, byref form_data)
+    SendSysMessage(who, "Target a mount to copy its appearance.", color := 66);
+    
+    var targ := Target(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Mount selection cancelled.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+    
+    // Check if target is a mobile with a mount
+    if (targ.IsA(POLCLASS_MOBILE))
+        var mount_graphic := targ.graphic;
+        form_data.+mount := mount_graphic;
+        SendSysMessage(who, "Mount selected with graphic: " + mount_graphic, color := 66);
+        return HandleAddMount(who, form_data); // Return to mount selection gump
+    endif
+    
+    SendSysMessage(who, "Invalid target. Please target a mount", color := 33);
+    return HandleAddMount(who, form_data);
+endfunction
+
+function SelectMountFromList(who, byref form_data, page := 1)
+    var cfg := ReadConfigFile(":*:npcdesc");
+    if (!cfg)
+        SendSysMessage(who, "Error: Could not load npcdesc.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+
+    var available_mounts := array{};
+    var elem_names := GetConfigStringKeys(cfg);
+    
+    // Collect all mounts
+    foreach template in elem_names
+        var elem := cfg[template];
+        if (elem.Category == "Mount")
+            var mount_struct := struct{
+                "name" := elem.Name,
+                "graphic" := elem.Objtype,
+                "template" := template
+            };
+            available_mounts.append(mount_struct);
+        endif
+    endforeach
+
+    if (available_mounts.size() == 0)
+        SendSysMessage(who, "No mounts found in configuration.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+
+    // Sort mounts by name
+    available_mounts.sortby("name");
+
+    // Pagination
+    var items_per_page := 15;
+    var total_pages := CInt(Ceil(CDbl(available_mounts.size()) / items_per_page));
+    var start_index := (page - 1) * items_per_page;
+    var end_index := Min(start_index + items_per_page, available_mounts.size());
+
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+    GFResizePic(gump, 15, 15, 9350, 470, 570);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Mount (Page " + page + "/" + total_pages + ")");
+
+    var y_pos := 60;
+    for i := start_index to end_index - 1
+        var mount := available_mounts[i + 1];
+        GFAddButton(gump, 30, y_pos, 2103, 2104, GF_CLOSE_BTN, i + 1);
+        GFTextLine(gump, 60, y_pos, 1153, mount.name + " (" + Hex(mount.graphic) + ")");
+        y_pos += 25;
+    endfor
+
+    // Navigation buttons
+    if (page > 1)
+        GFAddButton(gump, 30, 550, 2117, 2118, GF_CLOSE_BTN, 998); // Prev page
+        GFTextLine(gump, 60, 550, 33, "Previous Page");
+    endif
+    
+    if (page < total_pages)
+        GFAddButton(gump, 200, 550, 2117, 2118, GF_CLOSE_BTN, 997); // Next page
+        GFTextLine(gump, 230, 550, 33, "Next Page");
+    endif
+
+    // Cancel button
+    GFAddButton(gump, 370, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+    var input := GFSendGump(who, gump);
+
+    case (input[0])
+        998: // Previous page
+            return SelectMountFromList(who, form_data, page - 1);
+        997: // Next page
+            return SelectMountFromList(who, form_data, page + 1);
+        999: // Cancel
+            SendSysMessage(who, "Mount selection cancelled.", color := 33);
+            return HandleAddMount(who, form_data);
+        default:
+            if (input[0] >= 1 && input[0] <= available_mounts.size())
+                var selected_mount := available_mounts[input[0]];
+                form_data.mount := selected_mount.graphic; // Fixed: use .mount instead of .+mount
+                form_data.mount_name := selected_mount.name; // Store mount name
+                SendSysMessage(who, "Selected mount: " + selected_mount.name + " (" + Hex(selected_mount.graphic) + ")", color := 66);
+            endif
+    endcase
+
+    return HandleAddMount(who, form_data);
 endfunction
