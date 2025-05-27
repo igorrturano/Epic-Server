@@ -185,3 +185,80 @@ function CreateItemAtLocationFromTemplate(x, y, z, realm, selling)
 	purchase.movable := 1;
 	return purchase;
 endfunction
+
+function CreateItemInContainerFromTemplate(container, template)
+    if (!container || !container.IsA(POLCLASS_CONTAINER))
+        Print("DEBUG: Invalid container for item creation");
+        return 0;
+    endif
+    
+    if (!template || !template.objtype)
+        Print("DEBUG: Invalid template for item creation");
+        return 0;
+    endif
+    
+    var item := CreateItemInContainer(container, template.objtype, template.amount ? template.amount : 1);
+    if (!item)
+        Print("DEBUG: Failed to create base item in container");
+        return 0;
+    endif
+    
+    // Apply all template properties to the item
+    ApplyTemplatePropertiesToItem(item, template);
+    
+    return item;
+endfunction
+
+function ApplyTemplatePropertiesToItem(item, template)
+    // Apply standard member properties
+    foreach prop_name in (template.Keys())
+        var prop_value := template[prop_name];
+        
+        case (prop_name)
+            "objtype": continue; // Skip, already set
+            "amount": continue;  // Skip, already set
+            "color": item.color := CInt(prop_value);
+            "name": SetName(item, CStr(prop_value));
+            "desc": item.desc := CStr(prop_value);
+            "graphic": item.graphic := CInt(prop_value);
+            "CProps": 
+                // Apply all custom properties
+                if (TypeOf(prop_value) == "Dictionary")
+                    foreach custom_prop in (prop_value.Keys())
+                        SetObjProperty(item, custom_prop, prop_value[custom_prop]);
+                        sleepms(2);
+                    endforeach
+                endif
+            default:
+                // Try to set as member property first
+                var result := item.set_member(prop_name, prop_value);
+                if (result == error)
+                    // If not a member, set as obj property
+                    SetObjProperty(item, prop_name, prop_value);
+                endif
+        endcase
+        sleepms(2);
+    endforeach
+    
+    // Handle book contents if needed
+    if (item.isBook())
+        var bookinfo := GetObjProperty(item, "bookinfo");
+        if (bookinfo)
+            item.setAuthor(bookinfo.Author);
+            item.setTitle(bookinfo.Title);
+            if (bookinfo.contents)
+                var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
+                var book_elem := DFFindElement(book_data_file, Hex(item.serial), DF_CREATE);
+                book_elem.SetProp("Contents", bookinfo.contents);
+            endif
+            
+            if (bookinfo.readonly == 1)
+                item.ReadOnly(1);
+            else
+                item.ReadOnly(0);
+            endif
+        endif
+    endif
+    
+    return 1;
+endfunction

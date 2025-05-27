@@ -1,0 +1,102 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    params := 0; // No longer needed
+
+    if (!targ)
+        SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Visual and sound effects
+    PlaySoundEffect(targ, SFX_SPELL_DISPEL);
+    PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+
+    // Get all active timers on the target
+    var timer_list := TS_GetTimerList(targ);
+    var dispelled := 0;
+
+    // Remove all buff and debuff timers
+    foreach timer in (timer_list.keys())
+        timer := lower(timer);
+        // Attribute buffs
+        if (timer == "agility" || timer == "strength" || timer == "intelligence" || 
+            timer == "velocidade" || timer == "bless")
+            TS_LowerDuration(targ, timer, -1);
+            dispelled := 1;
+        
+        // Resistance buffs
+        elseif (timer == "physicalresist" || timer == "phmod" || timer == "fimod" || 
+                timer == "comod" || timer == "enmod" || timer == "pomod")
+            TS_LowerDuration(targ, timer, -1);
+            dispelled := 1;
+        
+        // Special effects
+        elseif (timer == "disfarce" || timer == "gloria" || timer == "desviarprojetil" ||
+                timer == "weaken" || timer == "clumsy" || timer == "feeblemind")
+            TS_LowerDuration(targ, timer, -1);
+            dispelled := 1;
+        
+        // Combat effects
+        elseif (timer == "paralyze" || timer == "bleed" || timer == "poison" ||
+                timer == "blind" || timer == "sleep" || timer == "silence")
+            TS_LowerDuration(targ, timer, -1);
+            dispelled := 1;
+        endif
+    endforeach
+    
+    // Attempt to banish summons
+    if (targ.npctemplate)
+        var summoned := GetObjProperty(targ, "summoned");
+        if (summoned)
+            var theology := AP_GetSkill(who, "Theology");
+            var elem := NPC_GetNPCConfig(targ.npctemplate);
+            var tier := CInt(GetConfigString(elem, "Tier"));
+            var is_boss := GetObjProperty(targ, "true_boss");
+            if (!tier)
+                tier := 3; // Default tier if not set
+            endif
+            
+            // Check if tier is manageable based on theology
+            if (tier <= Cint(theology/20))
+                // Chance based on paladin's theology skill
+                if (RandomInt(100) < theology)
+                    SendSysMessageEx(who, "Você baniu a criatura invocada!", SSM_INFO);
+                    PlaySoundEffect(targ, SFX_SPELL_DISPEL);
+                    PlayObjectCenteredEffect(targ, GFX_EXPLODE_3, 10, 10);
+                    ApplyRawDamage(targ, 1500);
+                    return 1;
+                else
+                    SendSysMessageEx(who, "A criatura resistiu ao banimento.", SSM_FAIL);
+                endif
+            else
+                SendSysMessageEx(who, "A criatura é poderosa demais para ser banida por você.", SSM_FAIL);
+            endif
+        endif
+    endif
+    
+    if (dispelled)
+        SendSysMessageEx(targ, "Seus encantamentos foram dissipados.", SSM_INFO);
+        SendSysMessageEx(who, "Você dissipou os encantamentos do alvo.", SSM_INFO);
+    else
+        SendSysMessageEx(who, "O alvo não possuía encantamentos para dissipar.", SSM_FAIL);
+    endif
+    
+    return 1;
+endprogram

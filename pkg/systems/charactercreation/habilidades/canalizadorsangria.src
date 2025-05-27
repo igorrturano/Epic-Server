@@ -89,6 +89,7 @@ function SetDestination(tile, x, y, z, realm)
 	coords.+y := CInt(y);
 	coords.+z := CInt(z);
 	coords.+realm := CStr(realm);
+    coords.+race := "all";
 	
 	return SetObjProperty(tile, "Destination", coords);
 endfunction

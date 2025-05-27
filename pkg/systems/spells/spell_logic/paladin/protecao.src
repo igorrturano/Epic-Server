@@ -1,0 +1,46 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+// TODO: OLHAR DEPOIS DE IMPLEMENTAR ENTALHAR DO CLERIGO
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    params := 0;
+    
+    if (!targ)
+        return 0;
+    endif
+    
+    if (!targ.IsA(POLCLASS_EQUIPMENT))
+        SendSysMessageEx(who, "Você só pode usar isto em equipamentos.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Check if item is engraved
+    if (!GetObjProperty(targ, "Engraved"))
+        SendSysMessageEx(who, "Este item não está entalhado.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Apply blessing effect
+    var current_bonus := CInt(GetObjProperty(targ, "BlessedBonus"));
+    if (current_bonus >= 5)
+        SendSysMessageEx(who, "Este item já está com a bênção máxima.", SSM_FAIL);
+        return 0;
+    endif
+    
+    SetObjProperty(targ, "BlessedBonus", current_bonus + 1);
+    
+    // Visual and sound effects
+    PlaySoundEffect(who, 0x1EA);
+    PlayObjectCenteredEffect(targ, 0x37C4, 7, 0x10);
+    
+    SendSysMessageEx(who, "Você abençoou o item com sucesso!", SSM_INFO);
+    
+    return 1;
+endprogram

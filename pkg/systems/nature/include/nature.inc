@@ -4,7 +4,7 @@ use util;
 use cfgfile;
 
 include ":combat:damage";
-include ":commands:debugsystem";
+include ":debug:main";
 
 // Calendar constants
 var MONTHS := array{
@@ -44,7 +44,7 @@ var daysInYear := CalcDaysInYear();
 const SUMMER := 1;
 const AUTUMN := 2;
 const WINTER := 3;
-const SPRING := 4;
+const SPRING := 5;
 
 function getSeason()
     return CInt(GetGlobalProperty("season"));
@@ -428,4 +428,182 @@ function wetPowder(who)
             SubtractAmount(item, RandomInt(5) + 1);
         endif
     endforeach
+endfunction
+
+// Calculate the game time using direct mapping
+function getGameTime()
+    var current_timestamp := ReadGameClock();
+    var period_start_timestamp := CInt(GetGlobalProperty("halfdaytime"));
+    var is_day := GetGlobalProperty("dia") == "dia";
+
+    // Get the actual period durations from Global Properties
+    var day_seconds_prop := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
+    var night_seconds_prop := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
+
+    var day_seconds_calc; // Will hold the value used for calculation
+    var night_seconds_calc; // Will hold the value used for calculation
+
+    // Determine if fallbacks are needed for the current period
+    if (is_day)
+        if (!day_seconds_prop)
+            print("Warning: getGameTime using fallback for DAY seconds.");
+            var config := ReadConfigFile(":nature:config/daynight");
+            day_seconds_calc := CInt(config.settings.daylength) * 60;
+        else
+            day_seconds_calc := day_seconds_prop;
+        endif
+        // night_seconds_calc is not strictly needed for day period calculation logic below,
+        // but ensure it's initialized if used elsewhere within this scope.
+        night_seconds_calc := night_seconds_prop; // Or a fallback if it's also needed for some reason
+    else // is_night
+        if (!night_seconds_prop)
+            print("Warning: getGameTime using fallback for NIGHT seconds.");
+            var config := ReadConfigFile(":nature:config/daynight");
+            if (config.settings.exists("nightlength"))
+                night_seconds_calc := CInt(config.settings.nightlength) * 60;
+            else
+                // Fallback to daylength for night if nightlength is not specified in config
+                night_seconds_calc := CInt(config.settings.daylength) * 60;
+            endif
+        else
+            night_seconds_calc := night_seconds_prop;
+        endif
+        // day_seconds_calc is not strictly needed for night period calculation logic below.
+        day_seconds_calc := day_seconds_prop; // Or a fallback
+    endif
+    
+    // Time elapsed since period started
+    var elapsed_seconds := current_timestamp - period_start_timestamp;
+    if (elapsed_seconds < 0) 
+        elapsed_seconds := 0; 
+    endif
+    
+    // Each hour spans exactly 1/12 of the total period
+    var seconds_per_hour;
+    var start_hour;
+    
+    if (is_day)
+        // Day period: 6:00 to 18:00
+        // Ensure day_seconds_calc has a valid value (even if it's a fallback from above)
+        if (!day_seconds_calc) // Should ideally not happen if fallback worked
+            print("Critical Error: day_seconds_calc is zero during day in getGameTime!");
+            day_seconds_calc := 3600 * 12; // A long default to avoid division by zero
+        endif
+        seconds_per_hour := day_seconds_calc / 12.0;
+        start_hour := 6;
+    else // is_night
+        // Night period: 18:00 to 6:00
+        // Ensure night_seconds_calc has a valid value
+        if (!night_seconds_calc) // Should ideally not happen if fallback worked
+            print("Critical Error: night_seconds_calc is zero during night in getGameTime!");
+            night_seconds_calc := 3600*12; // A long default
+        endif
+        seconds_per_hour := night_seconds_calc / 12.0;
+        start_hour := 18;
+    endif
+    
+    // Calculate how many hours have passed since the period started
+    var hours_elapsed := 0.0; // Default to float
+    if (seconds_per_hour > 0) // Avoid division by zero
+        hours_elapsed := CDbl(elapsed_seconds) / seconds_per_hour;
+    else
+        print("Critical Error: seconds_per_hour is zero in getGameTime!");
+    endif
+    
+    // Calculate the current hour and minute
+    var total_hours := start_hour + CInt(hours_elapsed);
+    var hour_fraction := hours_elapsed - CInt(hours_elapsed);
+    var minute := CInt(hour_fraction * 60.0);
+    
+    // Handle wrapping past midnight for night period
+    if (total_hours >= 24)
+        total_hours := total_hours - 24;
+    endif
+    
+    return struct{
+        "hour" := total_hours,
+        "minute" := minute
+    };
+endfunction
+
+function getCurrentHour()
+    var current_time := getGameTime();
+    return current_time.hour;
+endfunction
+
+function getCurrentMinute()
+    var current_time := getGameTime();
+    var current_minute := current_time.minute;
+    return current_minute;
+endfunction
+
+// Format minute to always show two digits (e.g., "05" instead of "5")
+function formatMinute(minute)
+    if (minute < 10)
+        return "0" + minute;
+    else
+        return "" + minute;
+    endif
+endfunction
+
+function isDaylight()
+    // Only check if the game system says it's day, don't rely on calculated hour
+    return (GetGlobalProperty("dia") == "dia");
+endfunction
+
+// Get descriptive text for sun position based on hour
+function getSunPosition(tempestade := 0)
+    var hour := getCurrentHour();
+    var is_day := GetGlobalProperty("dia");
+    
+    if (is_day != "dia")
+        return "O sol não está visível.";
+    endif
+    
+    if (hour >= 6 && hour < 9)
+        return "Parece ter nascido há pouco";
+    elseif (hour >= 9 && hour < 12)
+        return "Caminhando ao topo do céu";
+    elseif (hour >= 12 && hour < 16)
+        return "A Pino";
+    elseif (hour >= 16 && hour < 18)
+        return "Caminhando ao horizonte";
+    elseif (hour == 18)
+        return "Quase se pondo";
+    elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2))
+        return "A tempestade atrapalha a visão do sol";
+    else
+        return "O sol não está visível.";
+    endif
+endfunction
+
+// Get the appropriate sundial graphic based on time of day
+function getSundialGraphic()
+    var is_day := GetGlobalProperty("dia");
+    var hour := getCurrentHour();
+    if (is_day == "dia")
+        // Day graphics - map 6:00-17:59 to graphics 0x9BBF-0x9BC4, 0x9BBA-0x9BBE
+        var offset := (hour - 6 + 5) % 12;
+        var sundial_graphic := 0x9BBA + offset;
+        
+        // Safety check
+        if (offset >= 12)
+            sundial_graphic := 0x9BC5;
+        endif
+        
+        return sundial_graphic;
+    else
+        // Nighttime - use night graphic (always 0x9BC6 during night)
+        return 0x9BC6;
+    endif
+endfunction
+
+function GetSeasonName(season_id)
+    case (season_id)
+        SUMMER: return "Verão";
+        AUTUMN: return "Outono";
+        WINTER: return "Inverno";
+        SPRING: return "Primavera";
+        default: return "Desconhecida";
+    endcase
 endfunction

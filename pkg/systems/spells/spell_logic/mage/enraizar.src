@@ -20,7 +20,7 @@ program SpellScript(params)
 	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
     //PlayStationaryEffect( x, y, z, effect, speed, loop := 0, explode := 0, realm := _DEFAULT_REALM );
 
-	PlayStationaryEffect(info.x, info.y, info.z-5, 0X6D01 , 7, 40, 0, info.realm);
+	PlayStationaryEffect(info.x, info.y, info.z, 0x38C8 , 7, 100, 0, info.realm);
 	TS_StartTimer(info, "paralysis", duration);
 
 	return 1;

@@ -596,6 +596,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     var race := chardata.raca;
     var color := "#FFD700";
     var classe := chardata.classe;
+    var classe := chardata.classe;
     var bg := chardata.background;
     var trait := chardata.trait;
     var skills := chardata.Skills;
@@ -983,6 +984,8 @@ function genericItems(who)
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
+    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
+    SetObjProperty(oleo, "descmod", "Óleo de polir armaduras" + "<br>");
 endfunction
 
 function weaponsByClassAndCulture(who)

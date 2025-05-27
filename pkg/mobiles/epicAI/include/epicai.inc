@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -34,6 +35,11 @@ function InitializeEpicNPC(mobile)
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
         Loot_Generate(mobile.backpack, loot);
+    endif
+
+    var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
+    if (boss_struct)
+        HandleInitializationLoot(mobile, boss_struct);
     endif
 
     var throwItem := CInt(npc_elem.throwItem);
@@ -83,23 +89,33 @@ endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
+    var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+    var race := GetObjProperty(mobile, "myrace");
+
     if (has_colors)
         setupNPCColor(mobile, has_colors);
     endif
 
-    setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
-    var race := GetObjProperty(mobile, "myrace");
-    if (!race)
+
+    SetupNPCEquip(mobile, npc_elem);
+    setupNPCGender(mobile, Cint(isBoss.gender));
+
+    if (isBoss)
+        race := isBoss.race;
+        makeRace(mobile, race);
+    else
         makeRace(mobile);
     endif
-    SetupNPCEquip(mobile, npc_elem);
+
     SetupBaseLanguages(mobile);
 
     if (mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
+
+    SetupNPCAppearence(mobile);
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -362,7 +378,7 @@ endfunction
 
 function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
-    var spellschool := GetConfigString(npc_elem, "SpellSchool");
+    var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
     
     // If no school defined in config, check habs
@@ -480,8 +496,74 @@ function SetupNPCEquip(who, npc_elem)
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
     endif
+    var boss := GetObjProperty(who, "EpicBossStruct");
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            if (who.shield)
+                DestroyItem(who.shield);
+            endif
+            EquipItem(who, item);
+        endif
+    endif
+
+    if (boss.equipments && boss.equipments.size() > 0)
+        foreach equipment in (boss.equipments)
+            var objtype := CInt(equipment.objtype);
+            if (objtype)
+                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, 1);
+                if (item)
+                    // Try to equip the new item first
+                    if (!EquipItem(who, item))
+                        // If equipping failed, find what layer this item wants to use
+                        // We can determine this by checking what layer it would occupy
+                        // by temporarily equipping it on a test mobile or checking item properties
+                        
+                        // First, let's try to find conflicting equipment by checking all equipped items
+                        var equipped_items := ListEquippedItems(who);
+                        var equipment_removed := 0;
+                        
+                        foreach equipped_item in equipped_items
+                            // Try removing each equipped item and see if our item can equip
+                            var temp_item := equipped_item;
+                            MoveItemToContainer(temp_item, who.backpack);
+                            
+                            // Try to equip our new item
+                            if (EquipItem(who, item))
+                                // Success! The temp_item was conflicting, so destroy it
+                                DestroyItem(temp_item);
+                                equipment_removed := 1;
+                                break;
+                            else
+                                // Not the conflicting item, put it back
+                                EquipItem(who, temp_item);
+                            endif
+                            sleepms(2);
+                        endforeach
+                        
+                        // If we still couldn't equip after removing items, put it in backpack or destroy
+                        if (!equipment_removed)
+                            if (!MoveItemToContainer(item, who.backpack))
+                                DestroyItem(item);
+                            endif
+                        endif
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
     
   var montaria := Getobjproperty(who, "Montaria");
+  if (boss.mount)
+      // If the boss has a specific mount, use it
+      montaria := boss.mount;
+  endif
   if (!montaria)
   else
 	var graphic := MP_GetMountGraphic(montaria);
@@ -569,10 +651,10 @@ function setupNPCColor(who, colors)
     who.truecolor := color;
 endfunction
 
-function setupNPCGender(mobile)
+function setupNPCGender(mobile, bossFemale := 0)
   var female := GetObjProperty(mobile, "female");
 
-  if (female)
+  if (female || bossFemale)
     case (mobile.graphic)
         400: mobile.graphic := 401;
         1830: mobile.graphic := 1831;
@@ -921,19 +1003,26 @@ function findAnotherPath()
 endfunction
 
 function CheckForIdealTarget()
-   // If we already have an opponent, stick with them most of the time
+   // Get the target priority
+   var target_priority := GetObjProperty(me, "target_priority");
+   var switch_chance := 70; // Default 10% chance to switch
+   case (target_priority)
+      "Aggressive": switch_chance := 50;  // 15% chance to switch
+      "Defensive":  switch_chance := 85;   // 5% chance to switch
+      "Focus":      switch_chance := 95;   // 2% chance to switch
+   endcase
+   
+   // If we already have an opponent, check if we should stick with them
    if (me.opponent && CanFight(me, me.opponent))
-      // Only 5% chance to even consider switching targets
-      if (RandomInt(100) < 95)
+      if (RandomInt(100) < switch_chance)
          return me.opponent;
       endif
    endif
 
-   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    if (potential_opponents.size() < 1)
       return 0;
    endif
-
    var best_opponent := struct{
       "mobile" := 0,
       "priority" := -1
@@ -980,6 +1069,23 @@ function CheckForIdealTarget()
          priority += 1;
       endif
 
+      // Check for preferred target types
+      var preferred_target := GetObjProperty(me, "preferred_target");
+      if (preferred_target)
+          case (preferred_target)
+          "Ranged": if (opponent_is_ranged) priority += 4; endif
+          "Melee": if (!opponent_is_ranged) priority += 4; endif
+          "Guerreiro": if (opponent_class == GUERREIRO) priority += 4; endif
+          "Ladino": if (opponent_class == LADINO) priority += 4; endif
+          "Mago": if (opponent_class == SABIO) priority += 4; endif
+          "Pouca vida": 
+              var hp_percent := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS)) * 100;
+              if (hp_percent <= 50) 
+                  priority += 3;
+              endif
+          endcase
+      endif
+
       // Check if this is a better opponent
       if (priority > best_opponent.priority)
          best_opponent.mobile := opponent;
@@ -1006,7 +1112,7 @@ function AlertAllies(invasor, me)
         return 0;
     endif
     
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
@@ -1048,6 +1154,15 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Grey NPCs (neutral alignment) should only fight back when attacked
+    if (attacker.alignment == 0)
+        // Only allow combat if the defender is already attacking this NPC
+        if (attacker.opponent == defender || defender.opponent == attacker)
+            return 1;
+        endif
+        return 0;
+    endif
+
     // If defender is a player, normal combat rules apply
     if (!defender.npctemplate)
         return 1;
@@ -1082,7 +1197,10 @@ endfunction
 
 function PursueTarget(opponent)
     var dist := Distance(me, opponent);
-    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+    
+    if (!shouldKeepPursuing(opponent, dist)) 
+        return 0; 
+    endif
 
     if (dist >= 2 && dist <= 6)
         if (me.canSpitAcid())
@@ -1161,7 +1279,6 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
-
         else
             progress.no_progress_count := 0;
         endif
@@ -1172,6 +1289,7 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
+    
     // If we're not making progress after several checks, force a reposition
     if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
@@ -1216,7 +1334,9 @@ function PursueTarget(opponent)
                 if (Distance(me, opponent) <= min_distance)
                     break;
                 endif
-                if (!shouldKeepPursuing(opponent, dist)) break; endif
+                if (!shouldKeepPursuing(opponent, dist)) 
+                    break; 
+                endif
                 if (me.hidden || me.concealed)
                     WalkTowardLocation(coord.x, coord.y);
                 else
@@ -1530,7 +1650,7 @@ function AskForHealing(me)
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
@@ -1910,4 +2030,198 @@ function TryToRunAway(opponent, chasing := 0)
     endif
 
     SetObjProperty(me, "#runaway_progress", progress);
+endfunction
+
+/*
+ * CheckHealthTeleport(mobile)
+ * Checks if mobile should teleport based on current health percentage
+ * Returns: 1 if teleported, 0 if not
+ */
+function CheckHealthTeleport(mobile)
+    var teleport_locations := GetObjProperty(mobile, "teleport_locations");
+    
+    if (!teleport_locations || teleport_locations.size() < 1)
+        return 0;
+    endif
+    
+    var max_hp := AP_GetVitalMaximumValue(mobile, HITS);
+    var current_hp_percent := CInt((CDbl(AP_GetVital(mobile, HITS)) / CDbl(max_hp)) * 100);
+    
+    // Find best matching location (highest hp_percent threshold that's <= current_hp_percent)
+    var best_location := 0;
+    var best_index := -1;
+    var i := 1;  // Start from 1 since POL arrays are 1-indexed
+    
+    foreach location in teleport_locations
+        if (current_hp_percent <= location.hp_percent)
+            if (!best_location || location.hp_percent > best_location.hp_percent)
+                best_location := location;
+                best_index := i;
+            endif
+        endif
+        i := i + 1;
+    endforeach
+    
+    if (best_index >= 0)
+        // Teleport the mobile to the best location
+        if (MoveObjectToLocation(mobile, best_location.x, best_location.y, best_location.z, best_location.realm, MOVEOBJECT_FORCELOCATION))
+            PlaySoundEffect(mobile, 0x1FE);
+            PlayObjectCenteredEffect(mobile, 0x3728, 7, 0x10);
+            
+            // Remove this location from the array so it won't be used again
+            teleport_locations.erase(best_index);
+            SetObjProperty(mobile, "teleport_locations", teleport_locations);
+            return 1;
+        else
+            return 0;
+        endif
+    endif
+    
+    return 0;
+endfunction
+
+function ShouldFlee(me)
+    // should flee when life is below X%
+    var flee_health := CInt(GetObjProperty(me, "flee_health"));
+    if (flee_health)
+        var max_hp := AP_GetVitalMaximumValue(me, HITS);
+        var current_hp_percent := CInt((CDbl(AP_GetVital(me, HITS)) / CDbl(max_hp)) * 100);
+        if (current_hp_percent <= flee_health)
+            return 1;
+        endif
+    endif
+    return 0;
+endfunction
+
+function HandleInitializationLoot(mobile, boss_struct)   
+    if (!boss_struct)
+        return 0;
+    endif
+    
+    if (!boss_struct.loot || boss_struct.loot.size() < 1)
+        return 0;
+    endif
+    
+    foreach loot_item in (boss_struct.loot)       
+        if (!loot_item.on_death) // Only process initialization items
+            var roll := RandomInt(100);
+            
+            if (roll < loot_item.drop_chance)
+                // Create item directly with the template
+                var item := CreateIteminBackpackFromTemplate(mobile, loot_item.template);
+                if (item)
+                    item.movable := 1;
+                endif
+            endif
+        endif
+
+        sleepms(2);
+    endforeach
+
+    return 1;
+endfunction
+
+function startPatrolling(byref me, patrol_points, current_patrol_point)
+    var patrol_direction := GetObjProperty(me, "#patrol_direction");
+    if (patrol_direction == error)
+        patrol_direction := 1; // 1 = forward, -1 = backward
+        SetObjProperty(me, "#patrol_direction", patrol_direction);
+    endif
+    
+    var dest := patrol_points[current_patrol_point];
+    
+    // Check if we've reached the destination (within 1 tile)
+    if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
+        // Determine next patrol point based on direction
+        if (patrol_direction == 1)
+            current_patrol_point += 1;
+            // If reached the end, reverse direction
+            if (current_patrol_point > patrol_points.size())
+                current_patrol_point := patrol_points.size() - 1;
+                patrol_direction := -1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        else // patrol_direction == -1
+            current_patrol_point -= 1;
+            // If reached the beginning, reverse direction
+            if (current_patrol_point < 1)
+                current_patrol_point := 2;
+                patrol_direction := 1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        endif
+        SetObjProperty(me, "#current_patrol_point", current_patrol_point);
+    endif
+
+    // Walk toward destination
+    WalkTowardLocation(dest.x, dest.y);
+endfunction
+
+function SetupNPCAppearence(mobile)
+    // Get boss data to check for appearance settings
+    var boss := GetObjProperty(mobile, "EpicBossStruct");
+    if (mobile.gender == 1)
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+    endif
+    
+    if (!boss)
+        return 0;
+    endif
+    
+    if (!boss.appearance)
+        return 0;
+    endif
+    
+    var appearance := boss.appearance;
+    // Setup hair if specified
+    if (appearance.hair_style && appearance.hair_style != 0)
+        // Check if hair color is specified
+        // Remove existing hair first
+        var existing_hair := GetEquipmentByLayer(mobile, LAYER_HAIR);
+        if (existing_hair)
+            DestroyItem(existing_hair);
+        endif
+        
+        // Create and equip new hair using proper objtype
+        var hair_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.hair_style), 1, mobile.realm);
+        if (hair_item)
+            if (appearance.hair_color)
+                hair_item.color := CInt(appearance.hair_color);
+            endif
+            if (!EquipItem(mobile, hair_item))
+                DestroyItem(hair_item);
+            endif
+        endif
+    endif
+    
+    // Setup beard if specified
+    if (appearance.beard_style && appearance.beard_style != 0)
+        // Remove existing beard first
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+        
+        // Create and equip new beard using proper objtype
+        var beard_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.beard_style), 1, mobile.realm);
+        if (beard_item)
+            if (appearance.beard_color)
+                beard_item.color := CInt(appearance.beard_color);
+            endif
+            if (!EquipItem(mobile, beard_item))
+                DestroyItem(beard_item);
+            endif
+        endif
+    endif
+    
+    // Setup skin color if specified
+    if (appearance.skin_color)
+        mobile.color := CInt(appearance.skin_color);
+        mobile.truecolor := CInt(appearance.skin_color);
+    endif
+    
+    return 1;
 endfunction
