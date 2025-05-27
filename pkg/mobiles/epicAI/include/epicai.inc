@@ -518,6 +518,9 @@ function SetupNPCEquip(who, npc_elem)
             if (objtype)
                 var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, 1);
                 if (item)
+                    if (equipment.color && equipment.color != 0)
+                        item.color := CInt(equipment.color);
+                    endif
                     // Try to equip the new item first
                     if (!EquipItem(who, item))
                         // If equipping failed, find what layer this item wants to use

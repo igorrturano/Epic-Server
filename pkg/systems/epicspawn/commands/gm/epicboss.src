@@ -1666,6 +1666,10 @@ function ShowPage5(who, title, gump_width, gump_height)
     // Add Mount
     GFAddButton(gump, 750, 460, 2103, 2104, 1, 95);
     GFTextLine(gump, 780, 460, 1153, "Escolher montaria");
+
+    // Add Colors
+    GFAddButton(gump, 750, 490, 2103, 2104, 1, 96);
+    GFTextLine(gump, 780, 490, 1153, "Escolher cores");
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -1727,6 +1731,9 @@ function ShowPage5(who, title, gump_width, gump_height)
         return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 95) // Create Boss button
         HandleAddMount(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 96) // Add Colors
+        HandleAddColors(who, form_data);
         return ShowPage5(who, title, gump_width, gump_height);
     endif
 
@@ -2688,6 +2695,12 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         boss.natural_traits := form_data.natural_traits;
     endif
 
+    // Save color ranges for boss equipment
+    if (form_data.color_ranges && form_data.color_ranges.size() > 0)
+        boss.color_ranges := form_data.color_ranges;
+        SendSysMessage(who, "DEBUG: Color ranges saved to boss structure: " + form_data.color_ranges.size() + " ranges");
+    endif
+
     // Check if we're updating an existing spawner or creating a new one
     var spawner;
     if (existing_spawner)
@@ -3367,6 +3380,7 @@ function AddSingleEquipment(who, byref form_data)
             // Add the equipment to the list
             var equipment_entry := struct{
                 "objtype" := targ.objtype,
+                "color" := targ.color,
                 "name" := targ.desc
             };
             
@@ -3414,6 +3428,7 @@ function AddEquipmentFromContainer(who, byref form_data)
             // Add the equipment to the list
             var equipment_entry := struct{
                 "objtype" := item.objtype,
+                "color" := item.color,
                 "name" := item.desc
             };
             
