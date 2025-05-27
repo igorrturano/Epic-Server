@@ -5,7 +5,7 @@ use datafile;
 include ":gumps:epicGumps";
 
 program Install()
-	print("INSTALLING: Methods for Items... OK!");
+	print("INSTALLING: Methods for Item... OK!");
 	return 1;
 endprogram
 

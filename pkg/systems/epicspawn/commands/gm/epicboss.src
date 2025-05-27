@@ -10,6 +10,7 @@ include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
 include ":epicspawn:epicDeathEvents";
 include ":combat:damage";
+include "include/creationUtils";
 
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
@@ -183,7 +184,8 @@ function InitializeFormData()
     // Equipment
     form_data.weapon_type := "";
     form_data.specific_weapon := "";
-    form_data.class := "";
+    form_data.equipments := array{}; // Ensure equipments is always an array
+    form_data.classe := "";
     form_data.magic_school := "";
     form_data.drop_chance := "25";
     
@@ -199,7 +201,12 @@ function InitializeFormData()
     form_data.teleport_loc := struct{};
 
     // Add class-related fields
-    form_data.class := "";
+    form_data.classe := "";
+    
+    // Race and gender related fields
+    form_data.race := "Human";
+    form_data.gender := 0; // Default to male
+    form_data.graphic := 400; // Default to human male
 endfunction
 
 // Extract data from the current page
@@ -1624,6 +1631,8 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     GFAddButton(gump, 50, 450, 2151, 2153, 1, 87);
     GFTextLine(gump, 80, 450, 1153, "Ladino");
+
+    GFTextLine(gump, 200, 360, 1153, "" + (form_data.classe ? form_data.classe : "None"));
     
     // Magic School (for mage)
     GFTextLine(gump, 50, 500, 1153, "Magic School:");
@@ -1635,8 +1644,28 @@ function ShowPage5(who, title, gump_width, gump_height)
 
     // Appearence Section
     GFTextLine(gump, 550, 370, 1153, "Appearence:");
-    GFAddButton(gump, 750, 370, 2103, 2104, 1, 92);
-    GFTextLine(gump, 780, 370, 1153, "Edit Appearence");
+
+    // Add Race
+    GFAddButton(gump, 750, 370, 2103, 2104, 1, 93);
+    GFTextLine(gump, 780, 370, 1153, "Escolher raça & gênero");
+
+    // Add Appearence
+    GFAddButton(gump, 750, 400, 2103, 2104, 1, 92);
+    GFTextLine(gump, 780, 400, 1153, "Escolher aparência");
+
+    // Display current race and gender if set
+    if (form_data.race && form_data.gender != error)
+        var gender_text := (form_data.gender == 1) ? "Female" : "Male";
+        GFTextMid(gump, 500, 400, 200, 1153, form_data.race + " " + gender_text);
+    endif
+
+    // Add Equipments
+    GFAddButton(gump, 750, 430, 2103, 2104, 1, 94);
+    GFTextLine(gump, 780, 430, 1153, "Escolher equipamentos");
+
+    // Add Mount
+    GFAddButton(gump, 750, 460, 2103, 2104, 1, 95);
+    GFTextLine(gump, 780, 460, 1153, "Escolher montaria");
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -1663,11 +1692,14 @@ function ShowPage5(who, title, gump_width, gump_height)
     elseif (input[0] == 83)
         return RangedWeapons(who, title, gump_width, gump_height);
     elseif (input[0] == 85) // Guerreiro selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+        return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 86) // Sabio selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+        return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 87) // Ladino selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+        return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 88) // Magic School button
         var selected_school := ShowMagicSchoolSelection(who, title, gump_width, gump_height);
         if (selected_school != "")
@@ -1686,6 +1718,15 @@ function ShowPage5(who, title, gump_width, gump_height)
         return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 92) // Edit Appearence button
         HandleEditAppearance(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 93) // Add Race
+        HandleAddRace(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 94) // Add Armors & Equipments
+        HandleAddEquipments(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 95) // Create Boss button
+        HandleAddMount(who, form_data);
         return ShowPage5(who, title, gump_width, gump_height);
     endif
 
@@ -1707,7 +1748,7 @@ function HandleEditAppearance(who, byref form_data)
         // Current appearance summary
         GFTextLine(gump, 30, 60, 1153, "Current Appearance Settings:");
         var y_pos := 85;
-        
+
         // Display current settings
         if (form_data.appearance)
             if (form_data.appearance.hair_style)
@@ -1763,10 +1804,7 @@ function HandleEditAppearance(who, byref form_data)
         
         // Done and cancel buttons
         GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
-        GFTextLine(gump, 60, y_pos, 1153, "Done");
-        
         GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 998);
-        GFTextLine(gump, 230, y_pos, 1153, "Cancel");
         
         var input := GFSendGump(who, gump);
         
@@ -1796,7 +1834,7 @@ function HandleEditAppearance(who, byref form_data)
 endfunction
 
 // Hair style selection
-function EditHairStyle(who, byref form_data)
+function EditHairStyle(who, byref form_data, page := 1)
     if (!form_data.appearance)
         form_data.+appearance := struct{};
     endif
@@ -1815,17 +1853,32 @@ function EditHairStyle(who, byref form_data)
     
     GFTextMid(gump, 0, 25, 600, 1153, "Select Hair Style");
     
-    var y_pos := 60;
-    var x_pos := 30;
-    var col := 0;
+    // Calculate pagination for grid layout
+    var grid_width := 4; // Number of items per row
+    var grid_height := 3; // Number of rows per page
+    var items_per_page := grid_width * grid_height; // Items per page
+    var total_items := hair_styles.size(); // Only count actual hair styles
+    var total_pages := Ceil(total_items / items_per_page);
+    var start_index := (page - 1) * items_per_page;
+    var end_index := Min(start_index + items_per_page, total_items);
     
-    // Add "No Hair" option
-    GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 0);
-    GFTextLine(gump, x_pos + 30, y_pos, 1153, "No Hair (Bald)");
-    y_pos += 30;
+    var current_item := 0;
     
-    // Process each hair style
+    // Process each hair style in a grid layout
+    var style_index := 0;
+    var cell_width := 120; // Width of each grid cell
+    var cell_height := 100; // Height of each grid cell
+    var start_x := 30;
+    var start_y := 60;
+    
     foreach style_line in hair_styles
+        style_index += 1;
+        
+        // Check if this style should be displayed on current page
+        if (style_index < start_index || style_index >= end_index)
+            continue;
+        endif
+        
         var style_parts := SplitWords(style_line);
         if (style_parts.size() >= 2)
             var style_name := style_parts[1];
@@ -1836,22 +1889,53 @@ function EditHairStyle(who, byref form_data)
                 style_name["_"] := " ";
             endwhile
             
-            GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, style_id);
-            GFTextLine(gump, x_pos + 30, y_pos, 1153, style_name);
+            // Calculate position in grid
+            var grid_pos := current_item;
+            var col := grid_pos % grid_width;
+            var row := grid_pos / grid_width;
+            var item_x := start_x + (col * cell_width);
+            var item_y := start_y + (row * cell_height);
             
-            y_pos += 30;
-            if (y_pos > 600)
-                y_pos := 60;
-                x_pos += 280;
-            endif
+            // Draw the hair graphic and button below it
+            GFGumpPic(gump, item_x, item_y, GetHairGumpGraphic(style_id));
+            GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+            
+            current_item += 1;
         endif
     endforeach
+
+    // Add pagination controls
+    var pagination_y := 600;
+    
+    // Create a background for pagination controls
+    GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+    
+    // Previous page button
+    if (page > 1)
+        GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+        GFTextLine(gump, 170, pagination_y, 1153, "Previous");
+    endif
+    
+    // Page indicator
+    GFTextMid(gump, 250, pagination_y, 100, 1153, "Page " + page + " of " + total_pages);
+    
+    // Next page button
+    if (page < total_pages)
+        GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+        GFTextLine(gump, 390, pagination_y, 1153, "Next");
+    endif
     
     // Done button
     GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 60, 650, 1153, "Cancel");
     
     var input := GFSendGump(who, gump);
+    
+    // Handle pagination buttons
+    if (input[0] == 900) // Previous page
+        return EditHairStyle(who, form_data, page - 1);
+    elseif (input[0] == 901) // Next page
+        return EditHairStyle(who, form_data, page + 1);
+    endif
     
     if (input[0] != 999 && input[0] != 0)
         form_data.appearance.hair_style := input[0];
@@ -1862,7 +1946,7 @@ function EditHairStyle(who, byref form_data)
             foreach style_line in hair_styles
                 var style_parts := SplitWords(style_line);
                 if (style_parts.size() >= 2 && CInt(style_parts[2]) == input[0])
-                    var style_name := style_parts[2];
+                    var style_name := style_parts[1];
                     form_data.appearance.hair_style_name := style_name;
                     break;
                 endif
@@ -1884,68 +1968,68 @@ function EditHairColor(who, byref form_data)
         return;
     endif
     
-    var index_elem := color_cfg["Imperial"]; // Default to Imperial colors
-    var categories := GetConfigStringArray(index_elem, "Category");
+    // Select the correct color configuration based on race
+    var color_elem;
+    case (form_data.race)
+        ANAO:
+            color_elem := color_cfg["Cabelo Anao"];
+        ELFO:
+            color_elem := color_cfg["Cabelo Elfo"];
+        DROW:
+            color_elem := color_cfg["Cabelo Drow"];
+        ORC: 
+            color_elem := color_cfg["Cabelo Orc"];
+        POLSKI:
+            color_elem := color_cfg["Index"];
+        HUMANO:
+            color_elem := color_cfg["Imperial"];
+        default:
+            color_elem := color_cfg["Imperial"];
+    endcase
+    
+    // Get colors directly from the race-specific element
+    var colors := GetConfigStringArray(color_elem, "Color");
     
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
     
-    GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color");
+    GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color - " + form_data.race);
     
     var y_pos := 60;
     var x_pos := 30;
+    var colors_per_row := 8;
+    var color_count := 0;
     
     GFSetRadioGroup(gump, 1);
     
-    foreach category in categories
-        var color_elem := color_cfg[category];
-        var colors := GetConfigStringArray(color_elem, "Color");
+    foreach color in colors
+        var color_val := CInt(color);
         
-        GFTextLine(gump, x_pos, y_pos, 1153, category + ":");
-        y_pos += 25;
+        GFRadioButton(gump, x_pos, y_pos, 210, 211, 
+                     (form_data.appearance.hair_color == color_val), color_val);
+        GFTextLine(gump, x_pos + 25, y_pos, color_val, "Color");
         
-        var color_x := x_pos + 20;
-        var colors_per_row := 8;
-        var color_count := 0;
-        
-        foreach color in colors
-            var color_val := CInt(color);
-            
-            GFRadioButton(gump, color_x, y_pos, 210, 211, 
-                         (form_data.appearance.hair_color == color_val), color_val);
-            GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
-            
-            color_count += 1;
-            if (color_count % colors_per_row == 0)
-                y_pos += 25;
-                color_x := x_pos + 20;
-            else
-                color_x += 80;
-            endif
-        endforeach
-        
-        if (color_count % colors_per_row != 0)
+        color_count += 1;
+        if (color_count % colors_per_row == 0)
             y_pos += 25;
+            x_pos := 30;
+        else
+            x_pos += 80;
         endif
-        y_pos += 15;
         
         if (y_pos > 500)
-            y_pos := 60;
-            x_pos += 350;
+            break; // Prevent overflow
         endif
     endforeach
     
     // Buttons
     GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
-    GFTextLine(gump, 60, 550, 1153, "Apply");
-    
     GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 230, 550, 1153, "Cancel");
     
     var input := GFSendGump(who, gump);
     
     if (input[0] == 998)
-        // Find selected color
+        // Find selected color from radio buttons
         foreach key in (input.keys)
             if (key > 1000 && key != 998 && key != 999)
                 form_data.appearance.hair_color := key;
@@ -1957,9 +2041,14 @@ function EditHairColor(who, byref form_data)
 endfunction
 
 // Beard style selection
-function EditBeardStyle(who, byref form_data)
+function EditBeardStyle(who, byref form_data, page := 1)
     if (!form_data.appearance)
         form_data.+appearance := struct{};
+    endif
+
+    if (form_data.gender == 1 || form_data.race == DROW || form_data.race == ELFO)
+        SendSysMessageEx(who, "Raça ou gênero não permite barba.", SSM_FAIL);
+        return 0;
     endif
     
     var config := ReadConfigFile(":fls_core:config/hairtypes");
@@ -1969,8 +2058,13 @@ function EditBeardStyle(who, byref form_data)
     endif
     
     var beard_config := config["beard"];
-    if (!beard_config)
-        beard_config := config["facialhair"];
+    
+    if (form_data.race == ANAO)
+        beard_config := config["dwarwen_beard"];
+        if (!beard_config)
+            SendSysMessage(who, "Error: Could not find dwarwen_beard configuration section.");
+            beard_config := config["beard"]; // Fallback to regular beard
+        endif
     endif
     
     var beard_styles := GetConfigStringArray(beard_config, "Style");
@@ -1980,16 +2074,32 @@ function EditBeardStyle(who, byref form_data)
     
     GFTextMid(gump, 0, 25, 600, 1153, "Select Beard Style");
     
-    var y_pos := 60;
-    var x_pos := 30;
+    // Calculate pagination for grid layout
+    var grid_width := 4; // Number of items per row
+    var grid_height := 3; // Number of rows per page
+    var items_per_page := grid_width * grid_height; // Items per page
+    var total_items := beard_styles.size();
+    var total_pages := Ceil(total_items / items_per_page);
+    var start_index := (page - 1) * items_per_page;
+    var end_index := Min(start_index + items_per_page, total_items);
     
-    // Add "No Beard" option
-    GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 0);
-    GFTextLine(gump, x_pos + 30, y_pos, 1153, "No Beard");
-    y_pos += 30;
+    var current_item := 0;
     
-    // Process each beard style
+    // Process each beard style in a grid layout
+    var style_index := 0;
+    var cell_width := 120; // Width of each grid cell
+    var cell_height := 100; // Height of each grid cell
+    var start_x := 30;
+    var start_y := 60;
+    
     foreach style_line in beard_styles
+        style_index += 1;
+        
+        // Check if this style should be displayed on current page
+        if (style_index < start_index || style_index >= end_index)
+            continue;
+        endif
+        
         var style_parts := SplitWords(style_line);
         if (style_parts.size() >= 2)
             var style_name := style_parts[1];
@@ -2000,22 +2110,53 @@ function EditBeardStyle(who, byref form_data)
                 style_name["_"] := " ";
             endwhile
             
-            GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, style_id);
-            GFTextLine(gump, x_pos + 30, y_pos, 1153, style_name);
+            // Calculate position in grid
+            var grid_pos := current_item;
+            var col := grid_pos % grid_width;
+            var row := grid_pos / grid_width;
+            var item_x := start_x + (col * cell_width);
+            var item_y := start_y + (row * cell_height);
             
-            y_pos += 30;
-            if (y_pos > 600)
-                y_pos := 60;
-                x_pos += 280;
-            endif
+            // Draw the beard graphic and button below it
+            GFGumpPic(gump, item_x + 30, item_y, GetBeardGumpGraphic(style_id));
+            GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+            
+            current_item += 1;
         endif
     endforeach
     
+    // Add pagination controls
+    var pagination_y := 600;
+    
+    // Create a background for pagination controls
+    GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+    
+    // Previous page button
+    if (page > 1)
+        GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+        GFTextLine(gump, 170, pagination_y, 1153, "Previous");
+    endif
+    
+    // Page indicator
+    GFTextMid(gump, 250, pagination_y, 100, 1153, "Page " + page + " of " + total_pages);
+    
+    // Next page button
+    if (page < total_pages)
+        GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+        GFTextLine(gump, 390, pagination_y, 1153, "Next");
+    endif
+    
     // Done button
     GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 60, 650, 1153, "Cancel");
-    
+   
     var input := GFSendGump(who, gump);
+    
+    // Handle pagination buttons
+    if (input[0] == 900) // Previous page
+        return EditBeardStyle(who, form_data, page - 1);
+    elseif (input[0] == 901) // Next page
+        return EditBeardStyle(who, form_data, page + 1);
+    endif
     
     if (input[0] != 999 && input[0] != 0)
         form_data.appearance.beard_style := input[0];
@@ -2041,6 +2182,11 @@ endfunction
 
 // Beard color selection (reuses hair color logic)
 function EditBeardColor(who, byref form_data)
+    if (form_data.gender == 1 || form_data.race == DROW || form_data.race == ELFO)
+        SendSysMessageEx(who, "Raça ou gênero não permite barba.", SSM_FAIL);
+        return 0;
+    endif
+
     if (!form_data.appearance)
         form_data.+appearance := struct{};
     endif
@@ -2051,8 +2197,26 @@ function EditBeardColor(who, byref form_data)
         return;
     endif
     
-    var index_elem := color_cfg["Imperial"]; // Default to Imperial colors
-    var categories := GetConfigStringArray(index_elem, "Category");
+    var hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+
+    case (form_data.race)
+        ANAO:
+            hair_elem := color_cfg["Cabelo Anao"];
+        ELFO:
+            hair_elem := color_cfg["Cabelo Elfo"];
+        DROW:
+            hair_elem := color_cfg["Cabelo Drow"];
+        ORC: 
+            hair_elem := color_cfg["Cabelo Orc"];
+        POLSKI:
+            hair_elem := color_cfg["Index"]; // Polski uses the Index colors
+        HUMANO:
+            hair_elem := color_cfg["Imperial"];
+        default:
+            hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+    endcase
+
+    var colors := GetConfigStringArray(hair_elem, "Color");
     
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
@@ -2064,50 +2228,29 @@ function EditBeardColor(who, byref form_data)
     
     GFSetRadioGroup(gump, 1);
     
-    foreach category in categories
-        var color_elem := color_cfg[category];
-        var colors := GetConfigStringArray(color_elem, "Color");
+    var color_x := x_pos + 20;
+    var colors_per_row := 8;
+    var color_count := 0;
+    
+    foreach color in colors
+        var color_val := CInt(color);
         
-        GFTextLine(gump, x_pos, y_pos, 1153, category + ":");
-        y_pos += 25;
+        GFRadioButton(gump, color_x, y_pos, 210, 211, 
+                     (form_data.appearance.beard_color == color_val), color_val);
+        GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
         
-        var color_x := x_pos + 20;
-        var colors_per_row := 8;
-        var color_count := 0;
-        
-        foreach color in colors
-            var color_val := CInt(color);
-            
-            GFRadioButton(gump, color_x, y_pos, 210, 211, 
-                         (form_data.appearance.beard_color == color_val), color_val);
-            GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
-            
-            color_count += 1;
-            if (color_count % colors_per_row == 0)
-                y_pos += 25;
-                color_x := x_pos + 20;
-            else
-                color_x += 80;
-            endif
-        endforeach
-        
-        if (color_count % colors_per_row != 0)
+        color_count += 1;
+        if (color_count % colors_per_row == 0)
             y_pos += 25;
-        endif
-        y_pos += 15;
-        
-        if (y_pos > 500)
-            y_pos := 60;
-            x_pos += 350;
+            color_x := x_pos + 20;
+        else
+            color_x += 80;
         endif
     endforeach
     
     // Buttons
     GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
-    GFTextLine(gump, 60, 550, 1153, "Apply");
-    
     GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 230, 550, 1153, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -2136,6 +2279,20 @@ function EditSkinColor(who, byref form_data)
     endif
     
     var skin_config := skin_cfg["list"];
+    case (form_data.race)
+        ELFO:
+            skin_config := skin_cfg["elfo"];
+        DROW:
+            skin_config := skin_cfg["drow"];
+        ORC:
+            skin_config := skin_cfg["orc"];
+        ANAO:
+        POLSKI:
+        HUMANO:
+        default:
+            skin_config := skin_cfg["list"]; // Default to standard list
+    endcase
+
     var skin_colors := GetConfigStringArray(skin_config, "color");
     
     var gump := GFCreateGump();
@@ -2171,11 +2328,8 @@ function EditSkinColor(who, byref form_data)
     endforeach
     
     // Buttons
-    GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
-    GFTextLine(gump, 60, 550, 1153, "Apply");
-    
+    GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998); 
     GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 230, 550, 1153, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -2215,6 +2369,22 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         boss.tier := "0";
         // Default to 0 if no tier is specified
         SendSysMessage(who, "No tier specified, using NPC's default tier.");
+    endif
+    
+    // Set race and gender if provided
+    if (form_data.race)
+        boss.race := form_data.race;
+        SendSysMessage(who, "Boss race set to " + form_data.race);
+    endif
+    
+    if (form_data.gender != error)
+        boss.gender := form_data.gender;
+        SendSysMessage(who, "Boss gender set to " + (form_data.gender == 1 ? "Female" : "Male"));
+    endif
+    
+    if (form_data.graphic)
+        boss.graphic := form_data.graphic;
+        SendSysMessage(who, "Boss graphic set to " + form_data.graphic);
     endif
 
     // Appearance data
@@ -2435,8 +2605,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     boss.flee_health := CInt(form_data.flee_health);
     SendSysMessage(who, "Creating boss...");
 
-    if (form_data.class && form_data.class != "")
-        boss.class := form_data.class;
+    if (form_data.classe && form_data.classee != "")
+        boss.classe := form_data.classe;
     endif
 
     if (form_data.loot && form_data.loot.size() > 0)
@@ -2455,8 +2625,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     endif
 
     // Set class and abilities
-    if (form_data.class)
-        boss.class := form_data.class;
+    if (form_data.classe)
+        boss.classe := form_data.classe;
     endif   
     
     // In CreateBossFromGump function, add:
@@ -2480,6 +2650,14 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Save specific weapon
     if (form_data.specific_weapon)
         boss.specific_weapon := form_data.specific_weapon;
+    endif
+
+    if (form_data.equipments)
+        boss.equipments := form_data.equipments;
+    endif
+
+    if (form_data.mount)
+        boss.mount := form_data.mount;
     endif
     
     // Save behavior settings
@@ -2521,10 +2699,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         var child_serial := Cint(GetObjProperty(spawner, "ChildSerial"));
         if (child_serial)
             var existing_boss := SystemFindObjectBySerial(child_serial);
-            print(existing_boss.name);
             if (existing_boss)
                 // Kill the existing boss before spawning a new one
-                print("Killing existing boss before creating a new one...");
                 SetObjProperty(existing_boss, "allowdeath", 1);
                 existing_boss.Disable("invul");
                 SetObjProperty(existing_boss, "GuardKill", 1);	
@@ -2959,4 +3135,476 @@ function AddSpecialNature(who, nature_type, byref form_data)
     });
     
     return 1;
+endfunction
+
+// Function to handle race and gender selection
+function HandleAddRace(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+    GFResizePic(gump, 15, 15, 9350, 470, 570);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Race & Gender");
+    
+    // Race Section
+    GFTextMid(gump, 0, 60, 500, 1153, "Race");
+    
+    var races := array{
+        HUMANO,
+        ELFO,
+        DROW,
+        ORC,
+        ANAO,
+        POLSKI
+    };
+    
+    var y_pos := 90;
+    GFSetRadioGroup(gump, 1);
+    
+    for i := 1 to races.size()
+        GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.race == races[i]), 100 + i);
+        GFTextLine(gump, 130, y_pos, 1153, races[i]);
+        y_pos += 30;
+    endfor
+    
+    // Gender Section
+    GFTextMid(gump, 0, 280, 500, 1153, "Gender");
+    
+    y_pos := 310;
+    GFSetRadioGroup(gump, 2);
+    
+    // Male option
+    GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.gender == 0 || !form_data.gender), 200);
+    GFTextLine(gump, 130, y_pos, 1153, "Male");
+    
+    // Female option
+    y_pos += 30;
+    GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.gender == 1), 201);
+    GFTextLine(gump, 130, y_pos, 1153, "Female");
+    
+    // Buttons
+    GFAddButton(gump, 150, 530, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm
+    GFAddButton(gump, 300, 530, 2119, 2120, GF_CLOSE_BTN, 0); // Cancel
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        SendSysMessage(who, "Race selection cancelled.");
+        return 0;
+    endif
+    
+    // Process race selection
+    var selected_race := "";
+    for i := 1 to races.size()
+        if (input[100 + i])
+            selected_race := races[i];
+            break;
+        endif
+    endfor
+    
+    // Process gender selection
+    var selected_gender := error;
+    if (input[200])
+        selected_gender := 0; // Male
+    elseif (input[201])
+        selected_gender := 1; // Female
+    endif
+    
+    // Update form_data if both race and gender were selected
+    if (selected_race && selected_gender != error)
+        form_data.race := selected_race;
+        form_data.gender := selected_gender;
+        
+        // Set the appropriate graphic based on race and gender
+        form_data.graphic := GetRaceGraphic(selected_race, selected_gender);
+        SendSysMessage(who, "Race set to " + selected_race + " (" + (selected_gender ? "Female" : "Male") + ")");
+        return 1;
+    else
+        SendSysMessage(who, "Please select both a race and gender.");
+        return HandleAddRace(who, form_data); // Reopen the gump
+    endif
+endfunction
+
+// Helper function to get the appropriate graphic based on race and gender
+function GetRaceGraphic(race, gender)
+    var base_graphic := (gender == 1) ? 401 : 400; // Human female or male
+    
+    if (race == ELFO || race == DROW)
+        return (gender == 1) ? 1831 : 1830;
+    elseif (race == ORC)
+        return (gender == 1) ? 1833 : 1832;
+    elseif (race == ANAO || race == POLSKI)
+        return (gender == 1) ? 1829 : 1828;
+    else
+        return base_graphic; // Human
+    endif
+endfunction
+
+// Function to handle equipment selection
+function HandleAddEquipments(who, byref form_data)
+    // Initialize equipments array if it doesn't exist
+    if (!form_data.equipments)
+        form_data.+equipments := array{};
+    endif
+    
+    var continue_adding := 1;
+    
+    while (continue_adding)
+        // Show current equipment selection gump
+        var gump := GFCreateGump();
+        GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+        GFResizePic(gump, 15, 15, 9350, 570, 670);
+        
+        GFTextMid(gump, 0, 25, 600, 1153, "Equipment Selection");
+        
+        // Display current equipment
+        var y_pos := 60;
+        GFTextLine(gump, 30, y_pos, 1153, "Current Equipment:");
+        y_pos += 25;
+        
+        if (form_data.equipments && form_data.equipments.size() > 0)
+            for i := 1 to form_data.equipments.size()
+                var equipment := form_data.equipments[i];
+                // Add delete button for each equipment
+                GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + i);
+                GFTextLine(gump, 60, y_pos, 66, equipment.name + " (ID: " + equipment.objtype + ")");
+                y_pos += 20;
+                
+                // Prevent overflow
+                if (y_pos > 500)
+                    break;
+                endif
+            endfor
+        else
+            GFTextLine(gump, 60, y_pos, 2100, "No equipment selected yet");
+        endif
+        
+        // Add action buttons
+        y_pos := 520;
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 60, y_pos, 1153, "Add Single Equipment");
+        
+        y_pos += 30;
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, 60, y_pos, 1153, "Add from Container");
+        
+        y_pos += 30;
+        GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3);
+        GFTextLine(gump, 60, y_pos, 1153, "Clear All Equipment");
+        
+        // Done and Cancel buttons
+        y_pos += 50;
+        GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+        GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+        
+        var input := GFSendGump(who, gump);
+        
+        case (input[0])
+            1: // Add Single Equipment
+                AddSingleEquipment(who, form_data);
+                
+            2: // Add from Container
+                AddEquipmentFromContainer(who, form_data);
+                
+            3: // Clear All Equipment
+                form_data.equipments := array{};
+                SendSysMessage(who, "All equipment cleared.", color := 33);
+                
+            998: // Done
+                continue_adding := 0;
+                SendSysMessage(who, "Equipment selection completed. Total items: " + form_data.equipments.size());
+                
+            999: // Cancel
+                continue_adding := 0;
+                SendSysMessage(who, "Equipment selection cancelled.");
+                
+            default:
+                // Handle delete buttons (100+)
+                if (input[0] >= 101 && input[0] <= 100 + form_data.equipments.size())
+                    var index := input[0] - 100;
+                    var removed_item := form_data.equipments[index];
+                    form_data.equipments.erase(index);
+                    SendSysMessage(who, "Removed equipment: " + removed_item.name, color := 33);
+                endif
+        endcase
+    endwhile
+    
+    return 1;
+endfunction
+
+// Function to add a single equipment item
+function AddSingleEquipment(who, byref form_data)
+    var continue_adding := 1;
+    
+    SendSysMessage(who, "Target equipment to add. Press ESC to stop adding equipment.", color := 66);
+    
+    while (continue_adding)
+        var targ := Target(who);
+        
+        if (!targ)
+            SendSysMessage(who, "Stopping equipment selection.", color := 33);
+            break;
+        endif
+        
+        if (!targ.IsA(POLCLASS_ITEM))
+            SendSysMessage(who, "You must target an item.", color := 33);
+            continue;
+        endif
+        
+        // Check if this equipment is already in the list
+        var already_exists := 0;
+        if (form_data.equipments)
+            foreach equipment in (form_data.equipments)
+                if (equipment.objtype == targ.objtype)
+                    already_exists := 1;
+                    break;
+                endif
+            endforeach
+        endif
+        
+        if (already_exists)
+            SendSysMessage(who, "Equipment " + targ.desc + " is already in the list.", color := 33);
+        else
+            // Add the equipment to the list
+            var equipment_entry := struct{
+                "objtype" := targ.objtype,
+                "name" := targ.desc
+            };
+            
+            form_data.equipments.append(equipment_entry);
+            SendSysMessage(who, "Added equipment: " + targ.desc + " (ID: " + targ.objtype + ")", color := 66);
+        endif
+        
+        SendSysMessage(who, "Target another equipment or press ESC to stop.", color := 66);
+    endwhile
+endfunction
+
+// Function to add equipment from a container
+function AddEquipmentFromContainer(who, byref form_data)
+    SendSysMessage(who, "Target a container to add all items as equipment.", color := 66);
+    
+    var targ := Target(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Equipment container selection cancelled.", color := 33);
+        return 0;
+    endif
+    
+    if (!targ.IsA(POLCLASS_CONTAINER))
+        SendSysMessage(who, "You must target a container.", color := 33);
+        return 0;
+    endif
+    
+    var items_added := 0;
+    var items_skipped := 0;
+    
+    // Iterate through all items in the container
+    foreach item in (EnumerateItemsInContainer(targ))
+        // Check if this equipment is already in the list
+        var already_exists := 0;
+        if (form_data.equipments)
+            foreach equipment in (form_data.equipments)
+                if (equipment.objtype == item.objtype)
+                    already_exists := 1;
+                    break;
+                endif
+            endforeach
+        endif
+        
+        if (!already_exists)
+            // Add the equipment to the list
+            var equipment_entry := struct{
+                "objtype" := item.objtype,
+                "name" := item.desc
+            };
+            
+            form_data.equipments.append(equipment_entry);
+            SendSysMessage(who, "Added: " + item.desc + " (ID: " + item.objtype + ")", color := 66);
+            items_added += 1;
+        else
+            SendSysMessage(who, "Skipped (already exists): " + item.desc, color := 2100);
+            items_skipped += 1;
+        endif
+    endforeach
+    
+    SendSysMessage(who, "Container processing complete. Added: " + items_added + " items, Skipped: " + items_skipped + " duplicates.", color := 33);
+    
+    return 1;
+endfunction
+
+function HandleAddMount(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+    GFResizePic(gump, 15, 15, 9350, 570, 670);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Mount Selection");
+    
+    // Display current mount selection
+    var y_pos := 60;
+    if (form_data.mount)
+        GFTextLine(gump, 30, y_pos, 1153, "Current Mount:");
+        y_pos += 20;
+        GFTextLine(gump, 50, y_pos, 66, "Mount Name: " + form_data.mount_name);
+        
+        // Add remove button
+        y_pos += 25;
+        GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3); // Changed ID to 3
+        GFTextLine(gump, 60, y_pos, 33, "Remove Current Mount");
+        y_pos += 35;
+    else
+        GFTextLine(gump, 30, y_pos, 2100, "No mount selected");
+        y_pos += 35;
+    endif
+    
+    // Add selection methods
+    GFTextLine(gump, 30, y_pos, 1153, "Select Mount:");
+    y_pos += 25;
+    
+    // Method 1: Target an existing mount
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 60, y_pos, 1153, "Target Existing Mount");
+    
+    y_pos += 30;
+    
+    // Method 2: Select from predefined list
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 60, y_pos, 1153, "Choose from Mount List");
+    
+    // Done and Cancel buttons
+    y_pos := 620;
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+    
+    var input := GFSendGump(who, gump);
+    
+    case (input[0])
+        1: // Target existing mount
+            return TargetExistingMount(who, form_data);
+            
+        2: // Choose from list
+            return SelectMountFromList(who, form_data);
+            
+        3: // Remove current mount - Changed from 999
+            form_data.mount := 0; // Changed from form_data.+mount
+            SendSysMessage(who, "Mount removed.", color := 33);
+            return HandleAddMount(who, form_data); // Reopen gump
+            
+        998: // Done
+            SendSysMessage(who, "Mount selection completed.");
+            return 1;
+            
+        999: // Cancel
+            SendSysMessage(who, "Mount selection cancelled.");
+            return 0;
+    endcase
+    
+    return 0;
+endfunction
+
+function TargetExistingMount(who, byref form_data)
+    SendSysMessage(who, "Target a mount to copy its appearance.", color := 66);
+    
+    var targ := Target(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Mount selection cancelled.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+    
+    // Check if target is a mobile with a mount
+    if (targ.IsA(POLCLASS_MOBILE))
+        var mount_graphic := targ.graphic;
+        form_data.+mount := mount_graphic;
+        SendSysMessage(who, "Mount selected with graphic: " + mount_graphic, color := 66);
+        return HandleAddMount(who, form_data); // Return to mount selection gump
+    endif
+    
+    SendSysMessage(who, "Invalid target. Please target a mount", color := 33);
+    return HandleAddMount(who, form_data);
+endfunction
+
+function SelectMountFromList(who, byref form_data, page := 1)
+    var cfg := ReadConfigFile(":*:npcdesc");
+    if (!cfg)
+        SendSysMessage(who, "Error: Could not load npcdesc.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+
+    var available_mounts := array{};
+    var elem_names := GetConfigStringKeys(cfg);
+    
+    // Collect all mounts
+    foreach template in elem_names
+        var elem := cfg[template];
+        if (elem.Category == "Mount")
+            var mount_struct := struct{
+                "name" := elem.Name,
+                "graphic" := elem.Objtype,
+                "template" := template
+            };
+            available_mounts.append(mount_struct);
+        endif
+    endforeach
+
+    if (available_mounts.size() == 0)
+        SendSysMessage(who, "No mounts found in configuration.", color := 33);
+        return HandleAddMount(who, form_data);
+    endif
+
+    // Sort mounts by name
+    available_mounts.sortby("name");
+
+    // Pagination
+    var items_per_page := 15;
+    var total_pages := CInt(Ceil(CDbl(available_mounts.size()) / items_per_page));
+    var start_index := (page - 1) * items_per_page;
+    var end_index := Min(start_index + items_per_page, available_mounts.size());
+
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+    GFResizePic(gump, 15, 15, 9350, 470, 570);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Mount (Page " + page + "/" + total_pages + ")");
+
+    var y_pos := 60;
+    for i := start_index to end_index - 1
+        var mount := available_mounts[i + 1];
+        GFAddButton(gump, 30, y_pos, 2103, 2104, GF_CLOSE_BTN, i + 1);
+        GFTextLine(gump, 60, y_pos, 1153, mount.name + " (" + Hex(mount.graphic) + ")");
+        y_pos += 25;
+    endfor
+
+    // Navigation buttons
+    if (page > 1)
+        GFAddButton(gump, 30, 550, 2117, 2118, GF_CLOSE_BTN, 998); // Prev page
+        GFTextLine(gump, 60, 550, 33, "Previous Page");
+    endif
+    
+    if (page < total_pages)
+        GFAddButton(gump, 200, 550, 2117, 2118, GF_CLOSE_BTN, 997); // Next page
+        GFTextLine(gump, 230, 550, 33, "Next Page");
+    endif
+
+    // Cancel button
+    GFAddButton(gump, 370, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+    var input := GFSendGump(who, gump);
+
+    case (input[0])
+        998: // Previous page
+            return SelectMountFromList(who, form_data, page - 1);
+        997: // Next page
+            return SelectMountFromList(who, form_data, page + 1);
+        999: // Cancel
+            SendSysMessage(who, "Mount selection cancelled.", color := 33);
+            return HandleAddMount(who, form_data);
+        default:
+            if (input[0] >= 1 && input[0] <= available_mounts.size())
+                var selected_mount := available_mounts[input[0]];
+                form_data.mount := selected_mount.graphic; // Fixed: use .mount instead of .+mount
+                form_data.mount_name := selected_mount.name; // Store mount name
+                SendSysMessage(who, "Selected mount: " + selected_mount.name + " (" + Hex(selected_mount.graphic) + ")", color := 66);
+            endif
+    endcase
+
+    return HandleAddMount(who, form_data);
 endfunction

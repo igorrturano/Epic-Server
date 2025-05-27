@@ -89,18 +89,26 @@ endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
+    var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+    var race := GetObjProperty(mobile, "myrace");
+
     if (has_colors)
         setupNPCColor(mobile, has_colors);
     endif
 
-    setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
-    var race := GetObjProperty(mobile, "myrace");
-    if (!race)
+
+    SetupNPCEquip(mobile, npc_elem);
+    setupNPCGender(mobile, Cint(isBoss.gender));
+
+    if (isBoss)
+        race := isBoss.race;
+        makeRace(mobile, race);
+    else
         makeRace(mobile);
     endif
-    SetupNPCEquip(mobile, npc_elem);
+
     SetupBaseLanguages(mobile);
 
     if (mobile.isSage())
@@ -488,30 +496,74 @@ function SetupNPCEquip(who, npc_elem)
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
+    var boss := GetObjProperty(who, "EpicBossStruct");
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
         if (weapon)
             var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
             // First Unequip hands
             if (who.weapon)
                 DestroyItem(who.weapon);
+            endif
+            if (who.shield)
+                DestroyItem(who.shield);
             endif
             EquipItem(who, item);
         endif
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
-        if (weapon)
-            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
-            // First Unequip hands
-            if (who.weapon)
-                DestroyItem(who.weapon);
+
+    if (boss.equipments && boss.equipments.size() > 0)
+        foreach equipment in (boss.equipments)
+            var objtype := CInt(equipment.objtype);
+            if (objtype)
+                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, 1);
+                if (item)
+                    // Try to equip the new item first
+                    if (!EquipItem(who, item))
+                        // If equipping failed, find what layer this item wants to use
+                        // We can determine this by checking what layer it would occupy
+                        // by temporarily equipping it on a test mobile or checking item properties
+                        
+                        // First, let's try to find conflicting equipment by checking all equipped items
+                        var equipped_items := ListEquippedItems(who);
+                        var equipment_removed := 0;
+                        
+                        foreach equipped_item in equipped_items
+                            // Try removing each equipped item and see if our item can equip
+                            var temp_item := equipped_item;
+                            MoveItemToContainer(temp_item, who.backpack);
+                            
+                            // Try to equip our new item
+                            if (EquipItem(who, item))
+                                // Success! The temp_item was conflicting, so destroy it
+                                DestroyItem(temp_item);
+                                equipment_removed := 1;
+                                break;
+                            else
+                                // Not the conflicting item, put it back
+                                EquipItem(who, temp_item);
+                            endif
+                            sleepms(2);
+                        endforeach
+                        
+                        // If we still couldn't equip after removing items, put it in backpack or destroy
+                        if (!equipment_removed)
+                            if (!MoveItemToContainer(item, who.backpack))
+                                DestroyItem(item);
+                            endif
+                        endif
+                    endif
+                endif
             endif
-            EquipItem(who, item);
-        endif
+            sleepms(2);
+        endforeach
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
+  if (boss.mount)
+      // If the boss has a specific mount, use it
+      montaria := boss.mount;
+  endif
   if (!montaria)
   else
 	var graphic := MP_GetMountGraphic(montaria);
@@ -599,10 +651,10 @@ function setupNPCColor(who, colors)
     who.truecolor := color;
 endfunction
 
-function setupNPCGender(mobile)
+function setupNPCGender(mobile, bossFemale := 0)
   var female := GetObjProperty(mobile, "female");
 
-  if (female)
+  if (female || bossFemale)
     case (mobile.graphic)
         400: mobile.graphic := 401;
         1830: mobile.graphic := 1831;
@@ -2108,27 +2160,24 @@ endfunction
 function SetupNPCAppearence(mobile)
     // Get boss data to check for appearance settings
     var boss := GetObjProperty(mobile, "EpicBossStruct");
-    print("Boss: " + boss);
-    print("Boss type: " + TypeOf(boss));
+    if (mobile.gender == 1)
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+    endif
     
     if (!boss)
-        print("ERROR: No EpicBossStruct found on mobile");
         return 0;
     endif
     
     if (!boss.appearance)
-        print("ERROR: No appearance data in EpicBossStruct");
-        print("Boss keys: " + boss.keys());
         return 0;
     endif
     
     var appearance := boss.appearance;
-    print("Appearance: " + appearance);
-    print("Appearance type: " + TypeOf(appearance));
-    print("Appearance keys: " + appearance.keys());
     // Setup hair if specified
     if (appearance.hair_style && appearance.hair_style != 0)
-        print("Setting up hair");
         // Check if hair color is specified
         // Remove existing hair first
         var existing_hair := GetEquipmentByLayer(mobile, LAYER_HAIR);
@@ -2138,7 +2187,6 @@ function SetupNPCAppearence(mobile)
         
         // Create and equip new hair using proper objtype
         var hair_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.hair_style), 1, mobile.realm);
-        print("Hair item: %d", hair_item);
         if (hair_item)
             if (appearance.hair_color)
                 hair_item.color := CInt(appearance.hair_color);
