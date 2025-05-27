@@ -52,18 +52,15 @@ class Mastery()
 
 	function Serialize(this)
 		return struct{
-			name := this.name,
 			type := this.type,
+			name := this.name,
 			xp := this.xp,
 			level := this.level
 		};
 	endfunction
 
 	function Deserialize(this, data)
-		if (!data)
-			return error{ errortext := "Achievement data is null or undefined." };
-		endif
-
+		if (!data) return error{ errortext := "Invalid data for MasteryCombat deserialization." }; endif
 		this.name := data.name;
 		this.type := data.type;
 		this.xp := CInt(data.xp);

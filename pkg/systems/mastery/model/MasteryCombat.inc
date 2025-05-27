@@ -8,7 +8,7 @@ class MasteryCombat(Mastery)
 	var damage;
 
 	function MasteryCombat(this, name)
-		this.Mastery(name);
+		Super(name);
 		this.type := MASTERY_COMBAT;
 
 		this.hits := 0;
@@ -62,11 +62,8 @@ class MasteryCombat(Mastery)
 	endfunction
 
 	function Deserialize(this, data)
-	var result := Mastery::Deserialize(this, data);
-		if (result == error)
-			return result;
-		endif
-
+		if (!data) return error{ errortext := "Invalid data for MasteryCombat deserialization." }; endif
+		Mastery::Deserialize(this, data);
 		this.hits := CInt(data.hits);
 		this.kills := CInt(data.kills);
 		this.damage := CInt(data.damage);
