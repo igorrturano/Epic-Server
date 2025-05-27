@@ -1968,71 +1968,57 @@ function EditHairColor(who, byref form_data)
         return;
     endif
     
-    var index_elem := color_cfg["Imperial"]; // Default to Imperial colors
-    var categories := GetConfigStringArray(index_elem, "Category");
-
+    // Select the correct color configuration based on race
+    var color_elem;
     case (form_data.race)
         ANAO:
-            index_elem := color_cfg["Cabelo Anao"];
+            color_elem := color_cfg["Cabelo Anao"];
         ELFO:
-            index_elem := color_cfg["Cabelo Elfo"];
+            color_elem := color_cfg["Cabelo Elfo"];
         DROW:
-            index_elem := color_cfg["Cabelo Drow"];
+            color_elem := color_cfg["Cabelo Drow"];
         ORC: 
-            index_elem := color_cfg["Cabelo Orc"];
+            color_elem := color_cfg["Cabelo Orc"];
         POLSKI:
-            index_elem := color_cfg["Index"]; // Polski uses the Index colors
+            color_elem := color_cfg["Index"];
         HUMANO:
-            index_elem := color_cfg["Imperial"];
+            color_elem := color_cfg["Imperial"];
         default:
-            index_elem := color_cfg["Imperial"]; // Default to Imperial colors
+            color_elem := color_cfg["Imperial"];
     endcase
+    
+    // Get colors directly from the race-specific element
+    var colors := GetConfigStringArray(color_elem, "Color");
     
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
     
-    GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color");
+    GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color - " + form_data.race);
     
     var y_pos := 60;
     var x_pos := 30;
+    var colors_per_row := 8;
+    var color_count := 0;
     
     GFSetRadioGroup(gump, 1);
     
-    foreach category in categories
-        var color_elem := color_cfg[category];
-        var colors := GetConfigStringArray(color_elem, "Color");
+    foreach color in colors
+        var color_val := CInt(color);
         
-        GFTextLine(gump, x_pos, y_pos, 1153, category + ":");
-        y_pos += 25;
+        GFRadioButton(gump, x_pos, y_pos, 210, 211, 
+                     (form_data.appearance.hair_color == color_val), color_val);
+        GFTextLine(gump, x_pos + 25, y_pos, color_val, "Color");
         
-        var color_x := x_pos + 20;
-        var colors_per_row := 8;
-        var color_count := 0;
-        
-        foreach color in colors
-            var color_val := CInt(color);
-            
-            GFRadioButton(gump, color_x, y_pos, 210, 211, 
-                         (form_data.appearance.hair_color == color_val), color_val);
-            GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
-            
-            color_count += 1;
-            if (color_count % colors_per_row == 0)
-                y_pos += 25;
-                color_x := x_pos + 20;
-            else
-                color_x += 80;
-            endif
-        endforeach
-        
-        if (color_count % colors_per_row != 0)
+        color_count += 1;
+        if (color_count % colors_per_row == 0)
             y_pos += 25;
+            x_pos := 30;
+        else
+            x_pos += 80;
         endif
-        y_pos += 15;
         
         if (y_pos > 500)
-            y_pos := 60;
-            x_pos += 350;
+            break; // Prevent overflow
         endif
     endforeach
     
@@ -2043,7 +2029,7 @@ function EditHairColor(who, byref form_data)
     var input := GFSendGump(who, gump);
     
     if (input[0] == 998)
-        // Find selected color
+        // Find selected color from radio buttons
         foreach key in (input.keys)
             if (key > 1000 && key != 998 && key != 999)
                 form_data.appearance.hair_color := key;
