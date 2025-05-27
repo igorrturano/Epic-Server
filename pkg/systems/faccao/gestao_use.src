@@ -369,19 +369,106 @@ function FaccoesGump(byref gump)
     // TODO: Adicionar conteúdo relacionado às facções
 endfunction
 
-function DoacoesGump(byref gump, item)
+function DoacoesGump(byref gump, item_mesa_gestao)
     GFResizePic(gump, 38, 60, 40260, 400, 502);
+
+    var faction_name_da_mesa := GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP);
+    var titulo_gump := "";
+    var recursos_a_exibir := CreateEmptyResourceStruct();
+
+    if (faction_name_da_mesa && faction_name_da_mesa != KINGDOM_FACTION && faction_name_da_mesa != "Reino")
+        titulo_gump := "Recursos de " + faction_name_da_mesa;
+        LogDebug("gestao_use", "DoacoesGump: Carregando recursos para facção específica: " + faction_name_da_mesa);
+        
+        var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+        if (df_main)
+            var nome_elem_faccao := NormalizarNomeElementoFaccao(faction_name_da_mesa);
+            if (nome_elem_faccao != error && nome_elem_faccao != 0)
+                var elem_faccao := SafeFindElement(df_main, nome_elem_faccao);
+                if (elem_faccao)
+                    var temp_recursos := GetElementProp(elem_faccao, "recursos");
+                    if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                        recursos_a_exibir := temp_recursos;
+                        foreach key_padrao in (CreateEmptyResourceStruct().keys())
+                            if (!recursos_a_exibir.exists(key_padrao))
+                                recursos_a_exibir[key_padrao] := 0;
+                            endif
+                        endforeach; // Adicionado ponto e vírgula
+                    else
+                        LogWarning("gestao_use", "Struct de recursos não encontrado ou inválido (Tipo: " + TypeOf(temp_recursos) + ") para facção '" + faction_name_da_mesa + "' no datafile. Usando struct vazio.");
+                    endif; // Adicionado ponto e vírgula
+                else 
+                     LogWarning("gestao_use", "Elemento '" + nome_elem_faccao + "' para facção '" + faction_name_da_mesa + "' não encontrado no datafile.");
+                endif; // Adicionado ponto e vírgula
+            else
+                LogError("gestao_use", "Falha ao normalizar nome de elemento para facção '" + faction_name_da_mesa + "'.");
+            endif; // Adicionado ponto e vírgula
+        else
+             LogWarning("gestao_use", "Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "' para facção '" + faction_name_da_mesa + "'.");
+        endif; // Adicionado ponto e vírgula
+    else
+        titulo_gump := "Recursos do Reino";
+        LogDebug("gestao_use", "DoacoesGump: Carregando recursos do REINO.");
+        var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+        if (df_main)
+            var elem_reino := SafeFindElement(df_main, KINGDOM_RESOURCE_ELEM);
+            if (elem_reino)
+                var temp_recursos := GetElementProp(elem_reino, "recursos"); 
+                if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                    recursos_a_exibir := temp_recursos;
+                    foreach key_padrao in (CreateEmptyResourceStruct().keys())
+                        if (!recursos_a_exibir.exists(key_padrao))
+                            recursos_a_exibir[key_padrao] := 0;
+                        endif
+                    endforeach; // Adicionado ponto e vírgula
+                    LogDebug("gestao_use", "Recursos do Reino carregados do struct 'recursos'. Comida: " + recursos_a_exibir.comida);
+                else
+                    LogWarning("gestao_use", "Struct de recursos do Reino (propriedade 'recursos') não encontrado ou inválido (Tipo: " + TypeOf(temp_recursos) + ") no elemento '" + KINGDOM_RESOURCE_ELEM + "'. Tentando fallback para props individuais.");
+                    var fallback_recursos := CreateEmptyResourceStruct();
+                    fallback_recursos.comida  := CInt(GetElementProp(elem_reino, "comida", 0));
+                    fallback_recursos.moedas  := CInt(GetElementProp(elem_reino, "moedas", 0));
+                    fallback_recursos.couro   := CInt(GetElementProp(elem_reino, "couro", 0));
+                    fallback_recursos.metal   := CInt(GetElementProp(elem_reino, "metal", 0));
+                    fallback_recursos.madeira := CInt(GetElementProp(elem_reino, "madeira", 0));
+                    fallback_recursos.pano    := CInt(GetElementProp(elem_reino, "pano", 0));
+                    fallback_recursos.pedras  := CInt(GetElementProp(elem_reino, "pedras", 0));
+                    fallback_recursos.joias   := CInt(GetElementProp(elem_reino, "joias", 0));
+                    
+                    var struct_principal_vazio := 1;
+                    foreach val_principal in (recursos_a_exibir.values())
+                        if (CInt(val_principal) != 0) struct_principal_vazio := 0; break; endif
+                    endforeach; // Adicionado ponto e vírgula
+                    var fallback_tem_dados := 0;
+                    foreach val_fallback in (fallback_recursos.values())
+                        if (CInt(val_fallback) != 0) fallback_tem_dados := 1; break; endif
+                    endforeach; // Adicionado ponto e vírgula
+
+                    if (struct_principal_vazio && fallback_tem_dados)
+                        LogInfo("gestao_use", "Fallback para propriedades individuais do Reino utilizado pois struct 'recursos' estava vazio/inválido e props individuais continham dados.");
+                        recursos_a_exibir := fallback_recursos;
+                    elseif (!struct_principal_vazio)
+                        LogDebug("gestao_use", "Struct 'recursos' do Reino continha dados, não usando fallback de props individuais.");
+                    else
+                        LogDebug("gestao_use", "Nem struct 'recursos' nem props individuais do Reino continham dados significativos.");
+                    endif; // Adicionado ponto e vírgula
+                endif; // Adicionado ponto e vírgula
+            else
+                LogWarning("gestao_use", "Elemento '" + KINGDOM_RESOURCE_ELEM + "' não encontrado para o Reino.");
+            endif; // Adicionado ponto e vírgula
+        else
+            LogWarning("gestao_use", "Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "' para o Reino.");
+        endif; // Adicionado ponto e vírgula
+    endif; // Adicionado ponto e vírgula
     
-    // Obter o nome da facção para personalizar o título
-    var faction_name := GetObjProperty(item, OBJ_FACTION_PROP);
-    var titulo := faction_name ? "Recursos de " + faction_name : "Recursos do Reino";
-    
-    GFTextMid(gump, 490, 60, 263, 2100, titulo);
-    
-    // Passar o item para a função
-    var recursos := ObterRecursosBau(item);
-    CriarLayoutDoacoes(gump, recursos);
+    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354); 
+    GFTextMid(gump, 466, 60, 263, 53, titulo_gump); 
+
+    AdicionarQuadradosRecursos(gump);
+    AdicionarIconesItens(gump);
+    AdicionarTextosTiposDoacao(gump);
+    AdicionarValoresRecursos(gump, recursos_a_exibir);
 endfunction
+
 
 function ConstrucoesGump(byref gump)
     GFResizePic(gump, 38, 60, 40263, 400, 502);
@@ -462,64 +549,41 @@ foreach tipo in (tipos)
 endforeach
 endfunction
 
-function AdicionarValoresRecursos(byref gump, recursos)
-    if (!gump || !recursos)
-        return 0;
-    endif
+function AdicionarValoresRecursos(byref gump, byref recursos_struct)
+    if (!gump) return 0;
+    endif; // Adicionado ponto e vírgula
+
+    if (!recursos_struct || TypeOf(recursos_struct) != "Struct")
+        LogWarning("gestao_use", "AdicionarValoresRecursos: struct de recursos inválido ou nulo (Tipo: " + TypeOf(recursos_struct) + "). Usando valores zerados.");
+        recursos_struct := CreateEmptyResourceStruct();
+    endif; // Adicionado ponto e vírgula
+
+    var chaves_padrao := array{"comida", "moedas", "couro", "metal", "madeira", "pano", "pedras", "joias"};
+    foreach chave_esperada in chaves_padrao
+        if (!recursos_struct.exists(chave_esperada))
+            LogWarning("gestao_use", "AdicionarValoresRecursos: Chave '" + chave_esperada + "' faltando no struct de recursos. Adicionando com valor 0.");
+            recursos_struct[chave_esperada] := 0;
+        endif;
+    endforeach; // Adicionado ponto e vírgula
 
     var posicoes := array{
-        struct{ "x" := 503, "y" := 184, "valor" := recursos.comida },
-        struct{ "x" := 667, "y" := 184, "valor" := recursos.moedas },
-        struct{ "x" := 503, "y" := 304, "valor" := recursos.couro },
-        struct{ "x" := 667, "y" := 304, "valor" := recursos.metal },
-        struct{ "x" := 503, "y" := 424, "valor" := recursos.madeira },
-        struct{ "x" := 667, "y" := 424, "valor" := recursos.pano },
-        struct{ "x" := 503, "y" := 541, "valor" := recursos.pedras },
-        struct{ "x" := 667, "y" := 541, "valor" := recursos.joias }
+        struct{ "x" := 503, "y" := 184, "chave" := "comida" },
+        struct{ "x" := 667, "y" := 184, "chave" := "moedas" },
+        struct{ "x" := 503, "y" := 304, "chave" := "couro" },
+        struct{ "x" := 667, "y" := 304, "chave" := "metal" },
+        struct{ "x" := 503, "y" := 424, "chave" := "madeira" },
+        struct{ "x" := 667, "y" := 424, "chave" := "pano" },
+        struct{ "x" := 503, "y" := 541, "chave" := "pedras" },
+        struct{ "x" := 667, "y" := 541, "chave" := "joias" }
     };
 
-foreach pos in (posicoes)
-    GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
-endforeach
+    foreach pos in (posicoes)
+        var valor_numerico := CInt(recursos_struct[pos.chave]);
+        var valor_texto := CStr(valor_numerico); 
+        GFTextLine(gump, pos.x, pos.y, 53, valor_texto);
+    endforeach; // Adicionado ponto e vírgula
 
     return 1;
-endfunction
-
-function ObterRecursosBau(item)
-    if (DEBUG_GESTAO)
-        LogDebug("recursos", "ObterRecursosBau() iniciada para item: " + item.serial);
-    endif
-
-    // Obter propriedades fundamentais do item
-    var faction_name := GetObjProperty(item, OBJ_FACTION_PROP);
-    
-    if (!faction_name || faction_name == error)
-        if (DEBUG_GESTAO)
-            LogWarning("recursos", "Mesa de gestão sem facção definida - Serial: " + item.serial);
-        endif
-        return CreateEmptyResourceStruct();
-    endif
-    
-    // Se for mesa do Reino, obter recursos gerais
-    if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
-        return ObterRecursosFaccao();
-    endif
-    
-    // Buscar baú para esta facção
-    var chest := FindFactionChest(faction_name);
-    
-    if (chest)
-        if (DEBUG_GESTAO)
-            LogDebug("recursos", "Baú encontrado para facção: " + faction_name);
-        endif
-        return ContarItensDoadosNoBau(chest);
-    endif
-    
-    // Se não encontrou baú, retornar struct vazio
-    if (DEBUG_GESTAO)
-        LogWarning("recursos", "Nenhum baú encontrado para a facção: " + faction_name);
-    endif
-    return CreateEmptyResourceStruct();
 endfunction
 
 

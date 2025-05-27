@@ -322,6 +322,7 @@ function ExecutarVerificacaoRapida()
     return (stats.baus_corrigidos > 0);
 endfunction
 
+
 function MigrarRecursosAntigosPrimeiraVez()
     LogInfo("recursos", "Realizando migração inicial de recursos antigos...");
     
@@ -1398,41 +1399,6 @@ function VerificarLidasFaccao()
 endfunction
 
 
-/*
- * NormalizarNomeElementoFaccao(nome_faccao_bruto)
- *
- * Purpose: Normaliza o nome de uma facção para uso em elementos do datafile
- * Parameters:
- *   nome_faccao_bruto - Nome da facção a normalizar
- * Return:
- *   String normalizada no formato "faction_nome" ou um error
- */
-function NormalizarNomeElementoFaccao(nome_faccao_bruto)
-    if (!nome_faccao_bruto)
-        LogError("recursos", "Nome de facção nulo ou vazio");
-        return error{"errortext" := "Nome de facção inválido"};
-    endif
-    
-    // Converter para minúsculas e remover espaços
-    var nome_base := Lower(CStr(nome_faccao_bruto));
-    nome_base := StrReplace(nome_base, " ", "_");
-    
-    // Remover caracteres não-alfanuméricos (exceto underscore)
-    // (pulando a etapa de remover acentos)
-    
-    // Remover prefixos redundantes se já existirem
-    if (nome_base["faction_"] == 0)
-        nome_base := StrReplace(nome_base, "faction_", "");
-    endif
-    
-    // Se o nome base ficou vazio após remover prefixos, retorna erro
-    if (nome_base == "")
-        LogError("recursos", "Nome de facção ficou vazio após normalização: " + nome_faccao_bruto);
-        return error{"errortext" := "Nome de facção inválido"};
-    endif
-    
-    return "faction_" + nome_base;
-endfunction
 
 
 // Função auxiliar para substituir caracteres acentuados por equivalentes sem acento

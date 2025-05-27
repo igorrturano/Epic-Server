@@ -677,47 +677,63 @@ endfunction
     LogDebug("recursos", "Iniciando adição de recursos ao baú " + donation_chest.serial);
     
     var success_count := 0;
-    
+
     foreach resource in (resources)
         LogDebug("GenerateResources_DEBUG", "-- Processando Recurso: " + resource + " --");
-        LogDebug("recursos", "Processando recurso: " + resource);
+       
+        // var objtype := MapearRecurso(resource); // REMOVIDO - Duplicado
+        // if (!objtype)
+        //     LogError("recursos", "Tipo de objeto não encontrado para recurso: " + resource);
+        //     continue;
+        // endif
+        // LogDebug("GenerateResources_DEBUG", "Objtype mapeado: 0x" + Hex(objtype)); // REMOVIDO - Duplicado
         
-        var objtype := MapearRecurso(resource);
-        if (!objtype)
-            LogError("recursos", "Tipo de objeto não encontrado para recurso: " + resource);
-            log_entries.append("Falha ao mapear recurso: " + resource);
-            continue;
-        endif
+        var objtype := MapearRecurso(resource); // Esta é a chamada correta e única para MapearRecurso
+        if (!objtype) // Se MapearRecurso retornar 0 ou error
+            LogError("recursos", "Tipo de objeto não encontrado para recurso: '" + resource + "' em GenerateResourcesForTerritory. Pulando este recurso.");
+            log_entries.append("Falha ao mapear recurso: " + resource); // Adiciona ao log da geração
+            continue; // Pula para o próximo recurso no loop foreach
+        endif; // Adicionado ponto e vírgula
         
-        LogDebug("GenerateResources_DEBUG", "Objtype mapeado: 0x" + Hex(objtype));
+        LogDebug("GenerateResources_DEBUG", "Objtype mapeado para '" + resource + "': 0x" + Hex(objtype));
         
-        var category := ClassificarRecurso(resource);
-        if (!category)
-            LogWarning("recursos", "Categoria não determinada para recurso: " + resource + ", usando padrão");
-            category := "metal";
-        endif
-        
-        LogDebug("GenerateResources_DEBUG", "Categoria determinada: " + category);
+        var categoria_final := ClassificarRecurso(objtype); // Passa o objtype (Integer) para obter a categoria final
+
+        if (categoria_final == "desconhecido" || !categoria_final) // Verifica se é "desconhecido" ou nulo/erro
+            LogWarning("recursos", "Categoria NÃO DETERMINADA para recurso: '" + resource + "' (Objtype: 0x" + Hex(objtype) + ") usando ClassificarRecurso(objtype). Recurso não será marcado como doação específica.");
+            // Decide o que fazer:
+            // Opção 1: Não adicionar CProp de doação (o item ainda será criado, mas sem a flag IsKingdomDonation<Categoria>)
+            // Opção 2: Adicionar uma CProp genérica como "IsKingdomDonationDesconhecido" (requer ajuste em ContarRecursosReais)
+            // Opção 3: Pular a criação deste recurso (adicione 'continue;' aqui)
+            // Por enquanto, vamos permitir a criação, mas sem a CProp de doação específica se for desconhecido
+        else
+             LogDebug("GenerateResources_DEBUG", "Categoria final determinada para CProp: " + categoria_final);
+        endif;
         
         var properties := dictionary{};
-
-        properties["IsKingdomDonation" + category] := 1;
+        // Só adiciona a propriedade de doação se a categoria for conhecida
+        if (categoria_final != "desconhecido" && categoria_final)
+            properties["IsKingdomDonation" + categoria_final] := 1; // Usa a categoria_final
+        endif;
         properties["GeneratedForTerritory"] := territory_name;
         properties["GeneratedTime"] := polcore().systime;
         properties["GeneratedByFaction"] := faction_name;
         properties["CreatedByResourceController"] := 1;
-        properties["faction"] := faction_name;
-        properties["territory_id"] := territory_id;
+        properties["faction"] := faction_name; // Para consistência com outros sistemas
+        properties["territory_id"] := territory_id; // Para rastreamento
 
-        LogDebug("PROP_CHECK", "--> Propriedades ANTES de SafeCreateItemInContainer_Refactored:");
+        // O restante do seu código para SafeCreateItemInContainer_Refactored e fallback está bom.
+        // Apenas certifique-se que os logs reflitam corretamente.
+
+        LogDebug("PROP_CHECK", "--> Propriedades para SafeCreateItemInContainer_Refactored:");
         if (TypeOf(properties) == "Dictionary") 
             foreach prop_key in (properties.keys())
-                LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' ("+ TypeOf(prop_key) +") = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
-                sleepms(1);
-            endforeach
+                LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
+                Sleepms(1); // sleepms é opcional aqui, pode ser removido se causar lentidão excessiva no log
+            endforeach;
         else 
             LogDebug("PROP_CHECK", "    'properties' NÃO é Dictionary! Tipo: " + TypeOf(properties)); 
-        endif
+        endif;
         LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
         
         var result := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
@@ -726,45 +742,49 @@ endfunction
             LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result + ", Serial: " + result.serial + ", Amount: " + result.amount + ", Objtype: 0x" + Hex(result.objtype));
             success_count += 1;
             log_entries.append("Recurso criado: " + resource + " x" + resource_amount + " (Serial: " + result.serial + ")");
-            LogDebug("recursos", "Recurso adicionado com sucesso: " + resource + " x" + resource_amount);
+            //LogDebug("recursos", "Recurso adicionado com sucesso: " + resource + " x" + resource_amount); // Pode ser um pouco verboso
             
             var has_created_prop := GetObjProperty(result, "CreatedByResourceController");
             var has_time_prop := GetObjProperty(result, "GeneratedTime");
             
             if (!has_created_prop || !has_time_prop)
-                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! Corrigindo manualmente...");
+                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! (Serial: "+result.serial+"). Corrigindo manualmente...");
                 if (!has_created_prop)
                     SetObjProperty(result, "CreatedByResourceController", 1);
-                endif
+                endif;
                 if (!has_time_prop)
                     SetObjProperty(result, "GeneratedTime", polcore().systime);
-                endif
-            endif
+                endif;
+            endif;
         else
-            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + result + " (Tipo: " + TypeOf(result) + ")");
+            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + CStr(result) + " (Tipo: " + TypeOf(result) + ")");
+            log_entries.append("Falha (SafeCreate) ao criar recurso: " + resource);
             
-            LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer_Refactored, tentando método direto");
+            // LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer_Refactored, tentando método direto"); // Já logado acima
             
             var new_item := CreateItemInContainer(donation_chest, objtype, resource_amount);
-            if (new_item)
-                foreach prop_name in (properties.keys())
-                    SetObjProperty(new_item, CStr(prop_name), properties[prop_name]);
-                    sleepms(1);
-                endforeach
+            if (new_item && new_item != error) // Adicionado verificação != error
+                // Aplicar propriedades ao item criado pelo método alternativo
+                if (TypeOf(properties) == "Dictionary") // Reaplicar properties
+                    foreach prop_name_alt in (properties.keys())
+                        SetObjProperty(new_item, CStr(prop_name_alt), properties[prop_name_alt]);
+                        Sleepms(1); // sleepms é opcional
+                    endforeach;
+                endif;
                 
                 LogInfo("GenerateResources_DEBUG", "SUCESSO (método alternativo)! Item Ref: " + new_item + ", Serial: " + new_item.serial);
                 
                 success_count += 1;
-                log_entries.append("Recurso criado (método alternativo): " + resource + " x" + resource_amount);
-                LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
+                log_entries.append("Recurso criado (alt): " + resource + " x" + resource_amount + " (Serial: " + new_item.serial + ")");
+                // LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
             else
-                log_entries.append("Falha ao criar recurso: " + resource);
-                LogError("recursos", "Falha ao criar recurso: " + resource);
-            endif
-        endif
+                log_entries.append("Falha (CreateInContainer) ao criar recurso: " + resource);
+                LogError("recursos", "Falha (CreateInContainer) ao criar recurso: " + resource + ". Erro: " + CStr(new_item));
+            endif;
+        endif;
         
-        sleepms(10);
-    endforeach
+        Sleepms(10); // Pequena pausa entre a criação de cada tipo de recurso
+    endforeach; // Fim do loop foreach resource
         
         // Novo log de depuração - verificar conteúdo final do baú
         LogDebug("GenerateResources_DEBUG", "=== Conteúdo final do Baú " + donation_chest.serial + " ===");

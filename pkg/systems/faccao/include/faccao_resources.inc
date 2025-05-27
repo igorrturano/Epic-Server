@@ -33,6 +33,47 @@ function CreateEmptyResourceStruct()
     return recursos;
 endfunction
     
+    // Add this function to force refresh the gump
+function RefreshResourceGump(who, container)
+    // Force close any existing gump
+    SendSysMessageEX(who, "Atualizando interface...", SSM_INFO);
+    
+    // Small delay to ensure clean state
+    Sleepms(100);
+    
+    // Create and send fresh gump
+    var gump := BuildResourceGump(who, container);
+    return GFSendGump(who, gump);
+endfunction
+
+/*
+ * ProcessResourceChange(who, container)
+ *
+ * Purpose: Processa mudanças nos recursos e atualiza a interface
+ * Parameters: 
+ *   who - O jogador que está vendo a interface
+ *   container - O baú de recursos sendo atualizado 
+ * Return: 1 para sucesso, 0 para falha
+ */
+function ProcessResourceChange(who, container)
+    if (!who || !container)
+        return 0;
+    endif
+    
+    // Atualizar contagem de recursos
+    var recursos := ContarRecursosReais(container);
+    
+    // Sincronizar com datafile
+    SincronizarComDataFile(container, recursos);
+    
+    // Limpar duplicatas
+    CleanDuplicateItems(container);
+    
+    // Forçar atualização da interface
+    RefreshResourceGump(who, container);
+    
+    return 1;
+endfunction
 
 /*
  * ContarRecursosReais(container)
@@ -42,55 +83,61 @@ endfunction
  * Return: Struct com as contagens de recursos
  */
 function ContarRecursosReais(container)
-    var recursos := CreateEmptyResourceStruct();
+    var recursos := CreateEmptyResourceStruct(); // Garante que todas as categorias estão presentes e zeradas.
     
     if (!container)
+        LogDebug("recursos", "ContarRecursosReais: Container nulo, retornando struct vazio");
         return recursos;
     endif
     
-    LogDebug("recursos", "Iniciando contagem física de recursos em " + container.desc);
-
+    // LogDebug("recursos", "ContarRecursosReais: Iniciando contagem física em: " + container.desc + " (Serial: " + container.serial + ")");
     
-    foreach item in EnumerateItemsInContainer(container)
-        // Verificar se o item é uma doação válida
-        if (IsKingdomDonation(item))
-            var type := GetDonationType(item);
-            ProcessResourceItem(item, type, recursos);
+    foreach item_no_bau in EnumerateItemsInContainer(container)
+        if (!item_no_bau) continue; endif 
+
+        var amount := CInt(item_no_bau.amount);
+        if (amount <= 0) continue; endif
+
+        // IMPORTANTE: Usar item_no_bau aqui para ClassificarRecurso
+        var categoria_recurso := ClassificarRecurso(item_no_bau); 
+        // ClassificarRecurso deve retornar uma string como "Comida", "Metal", etc. (case-sensitive conforme as chaves do struct)
+
+        // LogDebug("recursos", "ContarRecursosReais: Item " + item_no_bau.desc + " (Objtype: 0x" + Hex(item_no_bau.objtype) + ", Amount: " + amount + ") -> Categoria: " + categoria_recurso);
+
+        // As chaves em CreateEmptyResourceStruct são minúsculas (comida, metal, etc.)
+        // As constantes RESOURCE_TYPE_* (Comida, Metal) são com maiúscula inicial.
+        // Precisamos garantir consistência aqui.
+        // Se ClassificarRecurso retorna "Comida", a chave no struct é "comida".
+        var chave_struct := "";
+        if (categoria_recurso == RESOURCE_TYPE_COMIDA) chave_struct := "comida";
+        elseif (categoria_recurso == RESOURCE_TYPE_MOEDAS) chave_struct := "moedas";
+        elseif (categoria_recurso == RESOURCE_TYPE_COURO) chave_struct := "couro";
+        elseif (categoria_recurso == RESOURCE_TYPE_METAL) chave_struct := "metal";
+        elseif (categoria_recurso == RESOURCE_TYPE_MADEIRA) chave_struct := "madeira";
+        elseif (categoria_recurso == RESOURCE_TYPE_PANO) chave_struct := "pano";
+        elseif (categoria_recurso == RESOURCE_TYPE_PEDRA) chave_struct := "pedras";
+        elseif (categoria_recurso == RESOURCE_TYPE_JOIAS) chave_struct := "joias";
+        else chave_struct := Lower(categoria_recurso); // Fallback para minúsculo, caso ClassificarRecurso retorne algo inesperado
         endif
-        sleepms(1);
+
+        if (recursos.exists(chave_struct)) 
+            recursos[chave_struct] := CInt(recursos[chave_struct]) + amount;
+        else
+            // Este log é importante para identificar recursos não mapeados para as chaves do struct
+            LogWarning("recursos", "ContarRecursosReais: Categoria normalizada '" + chave_struct + "' (de original '" + categoria_recurso + "') para o item " + item_no_bau.desc + " (ObjType: 0x" + Hex(item_no_bau.objtype) + ") não existe no struct de recursos retornado por CreateEmptyResourceStruct. Verifique o case e as definições.");
+        endif
+        
+        sleepms(1); 
+    endforeach
+    
+    LogInfo("recursos", "=== Contagem Finalizada em ContarRecursosReais (Baú: " + container.serial + ") ==="); // Mudado para LogInfo para se destacar mais
+    foreach key_recurso in (recursos.keys())
+      LogInfo("recursos", "  " + key_recurso + ": " + recursos[key_recurso]);
+      sleepms(1);
     endforeach
     
     return recursos;
 endfunction
-
-/*
- * IsKingdomDonation(item)
- *
- * Purpose: Verifica se um item é uma doação válida para o reino/facção
- * Parameters: item - O item a verificar
- * Return: 1 se for doação, 0 caso contrário
- */
-function IsKingdomDonation(item)
-    // Verificar a propriedade específica
-    if (GetObjProperty(item, DONATION_PREFIX))
-        return 1;
-    endif
-    
-    // Verificar propriedades específicas para cada tipo
-    if (GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_COMIDA) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_MOEDAS) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_COURO) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_METAL) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_MADEIRA) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_PANO) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_PEDRA) ||
-        GetObjProperty(item, DONATION_PREFIX + RESOURCE_TYPE_JOIAS))
-        return 1;
-    endif
-    
-    return 0;
-endfunction
-
 /*
  * GetDonationType(item)
  *

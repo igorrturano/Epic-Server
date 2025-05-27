@@ -13,6 +13,7 @@ include ":faccao:include/datafile_helpers";  // Nova inclusão
 include ":faccao:include/territory_management";
 
 
+
 // Funções compartilhadas entre o sistema de baú e o sistema de gestão
 
 /* 
@@ -548,30 +549,82 @@ function ForcarSincronizacaoBau(container)
     return sync_result;
 endfunction
 
+
+/*
+ * NormalizarNomeElementoFaccao(nome_faccao_bruto)
+ *
+ * Purpose: Normaliza o nome de uma facção para uso em elementos do datafile
+ * Parameters:
+ *   nome_faccao_bruto - Nome da facção a normalizar
+ * Return:
+ *   String normalizada no formato "faction_nome" ou um error
+ */
+function NormalizarNomeElementoFaccao(nome_faccao_bruto)
+    if (!nome_faccao_bruto)
+        LogError("recursos", "NormalizarNomeElementoFaccao: Nome de facção nulo ou vazio");
+        return error{"errortext" := "Nome de facção inválido"};
+    endif;
+    
+    var nome_base := Lower(CStr(nome_faccao_bruto));
+    nome_base := StrReplace(nome_base, " ", "_"); 
+    
+    if (nome_base.find("faction_") == 1) // Corrigido para .find() == 1 (início da string)
+        nome_base := nome_base[9, nome_base.len()-8]; // Ajuste para pegar o restante da string
+    endif;
+    
+    if (nome_base == "")
+        LogError("recursos", "NormalizarNomeElementoFaccao: Nome de facção ficou vazio após normalização: " + nome_faccao_bruto);
+        return error{"errortext" := "Nome de facção resultou em string vazia"};
+    endif;
+    
+    return "faction_" + nome_base;
+endfunction
+
 // Função para atualizar o datafile de recursos
-function AtualizarDatafileRecursos(faction_name, recursos)
-    if (!faction_name || !recursos)
+// Em pkg/systems/faccao/include/shared_functions.inc
+
+function AtualizarDatafileRecursos(faction_name, recursos_para_salvar)
+    if (!faction_name || !recursos_para_salvar)
+        LogError("recursos", "AtualizarDatafileRecursos: Parâmetros inválidos. Faction: " + faction_name + ", Recursos: " + TypeOf(recursos_para_salvar));
         return 0;
     endif
-    
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+
+    // Garante que recursos_para_salvar é um struct válido com todas as chaves esperadas
+    if (TypeOf(recursos_para_salvar) != "Struct")
+        LogWarning("recursos", "AtualizarDatafileRecursos: 'recursos_para_salvar' não é um struct para facção '" + faction_name + "'. Tipo: " + TypeOf(recursos_para_salvar) + ". Usando struct vazio como fallback.");
+        recursos_para_salvar := CreateEmptyResourceStruct(); // Supondo que CreateEmptyResourceStruct() está definida e retorna um struct
+    endif
+    // Não precisa de 'else {}' aqui se a condição acima já trata o caso.
+
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1); // 1 = criar se não existir
     if (!df)
-        LogError("recursos", "Não foi possível abrir/criar o datafile de recursos");
+        // LogError já é feito por SafeOpenDataFile
         return 0;
     endif
-    
-    // Abordagem diferente dependendo se é Reino ou facção específica
+
+    var elemento_alvo_nome := "";
     if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
-        // Reino: usar o elemento principal
-        var elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
-        SetElementProp(elem, "recursos", recursos);
+        LogDebug("recursos", "AtualizarDatafileRecursos: Atualizando para o REINO.");
+        elemento_alvo_nome := KINGDOM_RESOURCE_ELEM; // Deve ser "resources"
     else
-        // Facção específica: criar elemento dedicado
-        var elem := SafeFindElement(df, "faction_" + faction_name, 1);
-        SetElementProp(elem, "recursos", recursos);
+        LogDebug("recursos", "AtualizarDatafileRecursos: Atualizando para a facção: " + faction_name);
+        elemento_alvo_nome := NormalizarNomeElementoFaccao(faction_name); // ex: "faction_pizzo"
+        if (elemento_alvo_nome == error)
+            LogError("recursos", "AtualizarDatafileRecursos: Nome de facção inválido para datafile: " + faction_name);
+            return 0;
+        endif
+    endif // Fechamento do if/else para determinar elemento_alvo_nome
+
+    var elem := SafeFindElement(df, elemento_alvo_nome, 1);
+    if (!elem)
+        return 0; // SafeFindElement já loga o erro.
     endif
-    
-    return 1;
+
+    // Para o Reino E para facções individuais, salvamos o struct completo na propriedade "recursos" deste elemento.
+    // A decisão de como o GUMP do Reino lê isso (Opção A vs B) é separada desta função de salvamento.
+    // Esta função consistentemente salva o struct na propriedade "recursos".
+    LogDebug("recursos", "  Definindo propriedade 'recursos' para o elemento '" + elemento_alvo_nome + "'");
+    return SetElementProp(elem, "recursos", recursos_para_salvar);
 endfunction
 
 // Função para verificar e resolver inconsistências em um baú
@@ -1511,19 +1564,19 @@ endfunction
  *
  * Purpose: Função unificada para categorizar recursos (string, objtype ou item)
  * Parameters: resource - Pode ser um ItemRef, String ou Integer (objtype)
- * Return: String com a categoria do recurso (comida, metal, etc.)
+ * Return: String com a categoria do recurso (ex: "Comida", "Metal", etc., conforme faccao_constants.inc)
+ *         ou "desconhecido" se não puder ser classificado.
  */
 function ClassificarRecurso(resource)
     if (!resource)
         return "desconhecido";
     endif
     
-    // Se for um item/objeto
     if (TypeOf(resource) == "ItemRef")
-        // Verificar propriedades explícitas primeiro
+        // Verificar CProps explícitas primeiro (IsKingdomDonation<Categoria>)
         if (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_COMIDA))
             return RESOURCE_TYPE_COMIDA;
-               elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_MOEDAS))
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_MOEDAS))
             return RESOURCE_TYPE_MOEDAS;
         elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_COURO))
             return RESOURCE_TYPE_COURO;
@@ -1535,127 +1588,132 @@ function ClassificarRecurso(resource)
             return RESOURCE_TYPE_PANO;
         elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_PEDRA))
             return RESOURCE_TYPE_PEDRA;
-             elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_JOIAS))
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_JOIAS))
             return RESOURCE_TYPE_JOIAS;
         endif
         
         return ClassificarPorObjtype(resource.objtype);
     endif
     
-    // Se for uma string
     if (TypeOf(resource) == "String")
         return ClassificarPorNome(resource);
     endif
     
-    // Se for um número (objtype)
     if (TypeOf(resource) == "Integer")
         return ClassificarPorObjtype(resource);
     endif
     
+    LogWarning("ClassificarRecurso", "Tipo de recurso não suportado para classificação: " + TypeOf(resource));
     return "desconhecido";
 endfunction
 
-// Funções auxiliares privadas para a categorização
-function ClassificarPorNome(resource_name_input) // Renomeado para evitar conflito com resource_name abaixo
-    // Normalizar o nome
-    var original_resource_name := resource_name_input; // Guardar o original para log
-    var resource_name := Lower(Trim(CStr(resource_name_input))); // Garantir que é string e Trim
+function ClassificarPorNome(resource_name_input)
+    var original_resource_name := resource_name_input; 
+    var resource_name := Lower(Trim(CStr(resource_name_input))); 
 
-    LogDebug("ClassifyByName_DEBUG", "Iniciando ClassificarPorNome. Input: '" + original_resource_name + "', Normalizado: '" + resource_name + "'");
-
-    // MAPEAMENTO EXPANDIDO BASEADO NOS LOGS
+    // MAPEAMENTO EXPANDIDO - Chaves são as constantes RESOURCE_TYPE_*
     var categorias := dictionary{
-        "metal" := array{
-            "ironore", "frigutiumingot", "prataingot", // Adicionado "ironore" explicitamente aqui também para garantir
-            "minerio de ferro", "barra de frigutium", "barra de prata" // Nomes em português se aplicável
+        RESOURCE_TYPE_METAL := array{
+            "ironore", "frigutiumingot", "prataingot", "metal", "minerio", "barra", "lingote",
+            "minerio de ferro", "barra de frigutium", "barra de prata",
+            "minério de ferro", "lingote de prata", "lingote de frigutium"
         },
-        "couro" := array{
-            "couroespesso", "couroescamoso", "couropolar", "courodraconiano", "escamasazuis",
-            "pele branca" // "pelebranca" também aqui
+        RESOURCE_TYPE_COURO := array{
+            "couro", "pele", "escama", 
+            "couroespesso", "couroescamoso", "couropolar", "courodraconiano", "escamasazuis", "osso demoniaco", "ossodemoniaco"
+            // "pele branca" se for couro, adicione aqui.
         },
-        "madeira" := array{
-            "carvao", "madeirapinheiro", "madeirateixo", "toras" // "carvão" sem acento, "toras"
+        RESOURCE_TYPE_MADEIRA := array{
+            "madeira", "tora", "lenha", 
+            "carvao", "madeirapinheiro", "madeirateixo", "toras",
+            "carvão"
         },
-        "comida" := array{
+        RESOURCE_TYPE_COMIDA := array{
+            "comida", "alimento", 
             "cogumelo"
         },
-        "pano" := array{
-            "pelebranca" // Mantido, mas "pele branca" em couro parece mais provável pelos logs
+        RESOURCE_TYPE_PANO := array{
+            "pano", "tecido", "linho", "algodao", 
+            "pelebranca" // Se "pele branca" for um tipo de tecido/pano
         },
-        "pedras" := array{ // Renomeado de "pedra" para "pedras" para consistência, ou ajuste a constante
-            "glass", "ossogigante", "ossodemoniaco", "osso", "ossos" // "glass" e "osso"
+        RESOURCE_TYPE_PEDRA := array{
+            "pedra", "rocha", "mineral", "vidro", "osso", 
+            "glass", "ossogigante", "ossos", "ossocinza" // "ossodemoniaco" foi para couro, se for pedra, mova.
         },
-        "joias" := array{"joia", "jewel", "gem", "vidro", "crystal"}, // "vidro" também aqui se for joia
-        "moedas" := array{"moeda", "coin", "dinheiro", "money", "currency"}
+        RESOURCE_TYPE_JOIAS := array{
+            "joia", "gema", 
+            "jewel", "gem", "crystal", "rubi", "diamante", "esmeralda", "safira"
+        },
+        RESOURCE_TYPE_MOEDAS := array{
+            "moeda", "dinheiro", "ouro", 
+            "coin", "money", "currency", "peca de ouro", "gold piece"
+        }
     };
 
-    // Verificar cada categoria
-    foreach categoria in (categorias.keys())
-        foreach palavra_chave in (categorias[categoria]) // Renomeado para "palavra_chave" para clareza
-            LogDebug("ClassifyByName_DEBUG", "Comparando: '" + resource_name + "' com '" + palavra_chave + "' para categoria '" + categoria + "'");
+    foreach categoria_constante in (categorias.keys())
+        foreach palavra_chave in (categorias[categoria_constante]) 
             if (resource_name.find(palavra_chave) != error)
-                LogInfo("ClassifyByName_DEBUG", "Recurso '" + original_resource_name + "' (normalizado: '"+resource_name+"') classificado como: " + categoria + " (Match com: '" + palavra_chave + "')");
-                return categoria;
+                return categoria_constante;
             endif
         endforeach
     endforeach
 
-    LogWarning("recursos", "Recurso '" + original_resource_name + "' (normalizado: '"+resource_name+"') não classificado por nome.");
+    LogWarning("ClassificarPorNome", "Recurso '" + original_resource_name + "' (normalizado: '"+resource_name+"') não classificado por nome.");
     return "desconhecido";
 endfunction
 
 function ClassificarPorObjtype(objtype)
-    // Mapeamento direto de objtypes comuns
     var objtype_map := dictionary{
         // Metais
-        0x6300 := "metal",     // Iron ore
-        0x6993 := "metal",     // Silver ingot
-        0x6460 := "metal",     // frigutium
+        0x6300 := RESOURCE_TYPE_METAL,     // Iron ore
+        0x6993 := RESOURCE_TYPE_METAL,     // Silver ingot
+        0x6460 := RESOURCE_TYPE_METAL,     // Frigutium ingot
         
         // Couro
-        0xef12 := "couro",     // Couro espesso
-        0xef17 := "couro",     // Couro polar
-        0xef11 := "couro",     // Couro escamoso
-        0xed20 := "couro",     // Couro draconiano
-        0xef36 := "couro",     // Escamas azuis
+        0xEF12 := RESOURCE_TYPE_COURO,     // Couro espesso
+        0xEF17 := RESOURCE_TYPE_COURO,     // Couro polar
+        0xEF11 := RESOURCE_TYPE_COURO,     // Couro escamoso
+        0xED20 := RESOURCE_TYPE_COURO,     // Couro draconiano
+        0xEF36 := RESOURCE_TYPE_COURO,     // Escamas azuis
+        0xEF29 := RESOURCE_TYPE_COURO,     // Osso Demoníaco (assumindo que é um tipo de couro/recurso de monstro para couro)
+                                          // Se for Pedra, mude para RESOURCE_TYPE_PEDRA
         
         // Madeira
-        0xee36 := "madeira",   // Madeira de pinheiro
-        0xee3e := "madeira",   // Madeira de teixo
-        0x1BDE := "madeira",   // Carvão
+        0xEE36 := RESOURCE_TYPE_MADEIRA,   // Madeira de pinheiro
+        0xEE3E := RESOURCE_TYPE_MADEIRA,   // Madeira de teixo
+        0x1BDE := RESOURCE_TYPE_MADEIRA,   // Carvão
 
         // Comida
-        0xd16 := "comida",    // cogumelo
+        0xD16  := RESOURCE_TYPE_COMIDA,    // Cogumelo
         
-        // Tecidos
-        0xee52 := "couro",      // Pele branca
+        // Pano
+        0xEE52 := RESOURCE_TYPE_PANO,      // Pele branca
         
-        // Pedras/Ossos
-        0xef32 := "osso",    // Osso
-        0xEF3A := "osso",    // Osso ossogigante
-        0xEF29 := "osso",    // Osso ossodemoniaco
-        // Joias/Vidro
-        0x1BE3 := "joias",     // Vidro
-        0xF13 := "joias",     // Joia rubi
+        // Pedras
+        0xEF32 := RESOURCE_TYPE_PEDRA,     // Osso Cinza
+        0xEF3A := RESOURCE_TYPE_PEDRA,     // Osso Gigante
+        0x1BE3 := RESOURCE_TYPE_PEDRA,     // Glass / Vidro
+        
+        // Joias
+        0xF13  := RESOURCE_TYPE_JOIAS,     // Joia Rubi
         
         // Moedas
-        0xBA63 := "moedas"     // Moedas de ouro
+        0xBA63 := RESOURCE_TYPE_MOEDAS     // Moedas de Ouro (Cobre, se for o caso)
     };
     
-    // Verificar mapeamento direto
     if (objtype_map.exists(objtype))
         return objtype_map[objtype];
     endif
     
-    // Categorização por faixas de objtype
-    if (objtype >= 0x1BEE && objtype <= 0x1BF5)
-        return "metal"; // Faixa de ingots
-    elseif (objtype >= 0x1078 && objtype <= 0x1079)
-        return "couro"; // Faixa de couros
-    elseif (objtype >= 0x097B && objtype <= 0x09EB)
-        return "comida"; // Faixa de comidas
+    // Faixas (ajuste se necessário)
+    if (objtype >= 0x1BEE && objtype <= 0x1BF5) return RESOURCE_TYPE_METAL;
+    elseif (objtype >= 0x1BD7 && objtype <= 0x1BDA) return RESOURCE_TYPE_MADEIRA;
+    elseif (objtype >= 0x1DB5 && objtype <= 0x1DB8) return RESOURCE_TYPE_COURO; // Verifique se esta faixa ainda é relevante
+    elseif (objtype >= 0x097B && objtype <= 0x0A0C) return RESOURCE_TYPE_COMIDA;
+    elseif (objtype >= 0x175D && objtype <= 0x1768) return RESOURCE_TYPE_PANO;
     endif
     
+    LogWarning("ClassificarPorObjtype", "Objtype 0x" + Hex(objtype) + " não classificado.");
     return "desconhecido";
 endfunction
 
