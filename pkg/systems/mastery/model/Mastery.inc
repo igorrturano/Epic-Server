@@ -2,44 +2,50 @@ const MASTERY := "MASTERY";
 
 class Mastery()
 	var type;
+	var key;
 	var name;
 	var level;
 	var xp;
 
-	function Mastery(this, name)
+	function Mastery(this, key)
 		this.type := MASTERY;
+		this.key := key;
 
-		this.name := CStr(name);
+		this.name := "";
 		this.level := 0;
 		this.xp := 0;
 	endfunction
 
-	function getType(this)
+	function GetType(this)
 		return this.type;
 	endfunction
 
-	function getName(this)
+	function GetKey(this)
+		return this.key;
+	endfunction
+
+	function GetName(this)
 		return this.name;
 	endfunction
 
-	function getLevel(this)
+	function GetLevel(this)
 		return this.level;
 	endfunction
 
-	function getXP(this)
+	function GetXP(this)
 		return this.xp;
 	endfunction
 
-	function setName(this, value)
-		this.name := value;
+	function _SetName(this, value)
+		this.name := CStr(value);
 	endfunction
-	
-	function setLevel(this, value)
-		this.level := value;
+
+	function SetLevel(this, value)
+		this.level := CInt(value);
 	endfunction
-	
-	function setXP(this, value)
-		this.xp := value;
+
+	function SetXP(this, value)
+		this.xp := CInt(value);
 	endfunction
 
 	function AddXP(this, value)
@@ -53,6 +59,7 @@ class Mastery()
 	function Serialize(this)
 		return struct{
 			type := this.type,
+			key := this.key,
 			name := this.name,
 			xp := this.xp,
 			level := this.level
@@ -61,7 +68,8 @@ class Mastery()
 
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for MasteryCombat deserialization." }; endif
-		this.name := data.name;
+		this.name := CStr(data.name);
+		this.key := data.key;
 		this.type := data.type;
 		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
@@ -69,6 +77,6 @@ class Mastery()
 	
 
 	function toString(this)
-		return $"Maestria {this.name} ({this.type}) (Level={this.level}, XP={this.xp})";
+		return $"Maestria {this.key} (Name={this.name}, Type={this.type}, Level={this.level}, XP={this.xp})";
 	endfunction
 endclass

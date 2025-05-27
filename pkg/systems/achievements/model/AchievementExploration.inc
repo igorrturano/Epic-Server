@@ -11,8 +11,8 @@ class AchievementExploration(Achievement)
 	var discoveries;
 	var distance;
 
-	function AchievementExploration(this, name)
-		Super(name);
+	function AchievementExploration(this, key)
+		Super(key);
 		this.type := ACHIEVEMENT_EXPLORATION;
 		this.locations := array{};
 		this.discoveries := 0;

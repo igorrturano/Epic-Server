@@ -6,8 +6,8 @@ class AchievementCrafting(Achievement)
     var craftedNormal;
     var craftedExceptional;
 
-    function AchievementCrafting(this, name)
-        Super(name);
+    function AchievementCrafting(this, key)
+        Super(key);
         this.type := ACHIEVEMENT_CRAFTING;
         this.craftedNormal := 0;
         this.craftedExceptional := 0;

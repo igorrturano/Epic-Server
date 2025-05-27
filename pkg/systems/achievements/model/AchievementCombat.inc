@@ -15,8 +15,8 @@ class AchievementCombat(Achievement)
 	var criticalDamageMax;
 	var manaSpent;
 
-	function AchievementCombat(this, name)
-		Super(name);
+	function AchievementCombat(this, key)
+		Super(key);
 		this.type := ACHIEVEMENT_COMBAT;
 
 		this.hits := 0;

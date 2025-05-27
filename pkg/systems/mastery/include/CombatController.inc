@@ -21,11 +21,12 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
 	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
+	mastery._SetName(attacker.weapon.desc);
 	mastery.AddXP(combatInfo.xp);
 	mastery.AddKills(combatInfo.kills);
 	mastery.AddHits(combatInfo.hits);
 	mastery.AddDamage(combatInfo.damage);
-	DebugMsg(attacker, DEBUG_MASTERY, $"Ganho de maestria para a arma: {attacker.weapon.desc} ({key})");
+	DebugMsg(attacker, DEBUG_MASTERY, $"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetKey()})");
 	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(combatInfo.xp)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}");
 
