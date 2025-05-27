@@ -2,14 +2,14 @@ include ":mastery:model/MasteryCombat";
 
 function LoadMastery(who, key)
 	var mastery, data;
-	var prop := who.GetProp("Masteries") ?: dictionary{};
+	var prop := getMasteryProp(who);
 	data := prop[key];
 
-	if (!data) return error{ errortext := $"No mastery found for key: {key}" }; endif
-	
+	if (!data) return error{ errortext := $"Mastery not found for key: {key}" }; endif
+
 	case (data.type)
 		MASTERY_COMBAT:
-			mastery := MasteryCombat(data.name);
+			mastery := MasteryCombat(key);
 			break;
 		
 		default:
@@ -21,10 +21,14 @@ function LoadMastery(who, key)
 	return mastery;
 endfunction
 
+function getMasteryProp(who)
+	return who.GetProp("Masteries") ?: dictionary{};
+endfunction
+
 function SaveMastery(who, mastery)
-	var prop := who.GetProp("Masteries") ?: dictionary{};
+	var prop := getMasteryProp(who);
 	var data := mastery.Serialize();
-	var key := mastery.GetName();
+	var key := mastery.GetKey();
 
 	prop[key] := data;
 

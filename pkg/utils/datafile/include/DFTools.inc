@@ -85,6 +85,18 @@ class DFTools()
 		return true;
 	endfunction
 
+	/**
+	 * GetAllElements(this)
+	 *
+	 * Recupera todos os elementos presentes no arquivo de dados associado ao objeto.
+	 *
+	 * Parâmetros
+	 * this: Referência ao objeto que contém o atributo 'filename' com o caminho do arquivo de dados.
+	 *
+	 * Valor de retorno
+	 * Retorna uma lista com todas as chaves (elementos) encontradas no arquivo de dados.
+	 * Em caso de erro ao abrir o arquivo ou se nenhum elemento for encontrado, retorna um objeto de erro com a propriedade 'errortext'.
+	 */
 	function GetAllElements(this)
 		var elems;
 		var file := OpenDataFile(this.filename);
@@ -95,15 +107,30 @@ class DFTools()
 		return elems;
 	endfunction
 
-	function GetElementProps(this, elem_name)
+	/**
+	 * GetElementPropNames(this, elem_key)
+	 *
+	 * Obtém os nomes das propriedades de um elemento específico em um arquivo de dados
+	 *
+	 * Parameters
+	 * this: Objeto contendo o nome do arquivo de dados (this.filename)
+	 * elem_key: Chave/identificador do elemento a ser pesquisado
+	 *
+	 * Return value
+	 * Array com os nomes das propriedades do elemento ou erro caso:
+	 * - O arquivo não possa ser aberto
+	 * - O elemento não seja encontrado
+	 * - O elemento não possua propriedades
+	 */
+	function GetElementPropNames(this, elem_key)
 		var file := OpenDataFile(this.filename);
 		if (!file) return error{ errortext := $"Could not open data file {this.filename}" }; endif
 
-		var elem := file.FindElement(elem_name);
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this.filename}" }; endif
+		var elem := file.FindElement(elem_key);
+		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
 
 		var props := elem.PropNames();
-		if (!props) return error{ errortext := $"No properties found in element {elem_name} of {this.filename}" }; endif
+		if (!props) return error{ errortext := $"No properties found in element {elem_key} of {this.filename}" }; endif
 
 		return props;
 	endfunction
