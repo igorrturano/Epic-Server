@@ -6,12 +6,12 @@ class Mastery()
 	var level;
 	var xp;
 
-	function Mastery(this, name, level, xp)
+	function Mastery(this, name)
 		this.type := MASTERY;
 
 		this.name := CStr(name);
-		this.level := CInt(level);
-		this.xp := CInt(xp);
+		this.level := 0;
+		this.xp := 0;
 	endfunction
 
 	function getType(this)
