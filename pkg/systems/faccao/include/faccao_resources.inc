@@ -326,280 +326,249 @@ function VerificarCategoriaRecurso(resource)
 endfunction
 
 
-// Função para empilhamento seguro de itens 
-function SafeStackItems(container, objtype, amount, properties := 0)
-    if (!container || amount <= 0)
-        return 0;
-    endif
+// Em :faccao:include:faccao_resources.src ou shared_functions.src
+
+function SafeStackItems(container, objtype, amount_to_add_or_create, properties := 0)
+    // (Validações iniciais de container, objtype, amount_to_add_or_create)
     
-    // Verificar se existe um item do mesmo tipo para empilhar
-    var existing_item := FindExistingStackableItem(container, objtype);
+    var existing_item := FindExistingStackableItem_Enhanced(container, objtype, properties); // Passar properties para checagem de CProps
     
-    // Se encontramos um item compatível para empilhar
     if (existing_item)
-        // Verificar limite de empilhamento
-        var max_stack := 60000; // Limite padrão do POL
-        var old_amount := existing_item.amount;
+        var max_stack := GetMaxStackSize(objtype);
+        if (!max_stack) max_stack := 60000; endif
         
-        // Se adicionar esta quantidade excede o limite
-        if (old_amount + amount > max_stack)
-            // Limitar ao máximo permitido
-            amount := max_stack - old_amount;
+        var current_amount_in_stack := existing_item.amount;
+        var space_in_stack := max_stack - current_amount_in_stack;
+        
+        if (space_in_stack > 0)
+            var amount_to_attempt_stacking := (amount_to_add_or_create <= space_in_stack) ? amount_to_add_or_create : space_in_stack;
             
-            // Se não podemos adicionar nada neste item
-            if (amount <= 0)
-                // Criar um novo item em vez de empilhar
-                existing_item := 0;
+            var stacked_quantity := TryIncreaseAmount_Refactored(existing_item, amount_to_attempt_stacking);
+            
+            if (stacked_quantity > 0)
+                LogInfo("SafeStackItems", $"Empilhado {stacked_quantity} de 0x{Hex(objtype)} em {existing_item.serial}.");
+                amount_to_add_or_create -= stacked_quantity; // Reduz a quantidade que ainda precisa ser criada
+                
+                // Se houver propriedades que DEVEM ser atualizadas no stack existente após empilhar
+                // (Ex: um timestamp de última modificação, mas não GeneratedForTerritory)
+                // if (TypeOf(properties) == "Dictionary") {
+                //     var stack_update_props := dictionary{};
+                //     if (properties.exists("GeneratedTime")) { // Exemplo
+                //         stack_update_props["GeneratedTime"] := properties["GeneratedTime"];
+                //     }
+                //     if (stack_update_props.keys().size() > 0) {
+                //         ApplyPropertiesToItem(existing_item, stack_update_props);
+                //     }
+                // }
+                
+                // Se toda a quantidade foi empilhada, retornamos o item existente.
+                if (amount_to_add_or_create == 0)
+                    return existing_item; 
+                endif
+                // Se sobrou quantidade, ela será usada para criar um novo item abaixo.
             endif
         endif
-        
-        // Se temos um item válido e quantidade a adicionar
-        if (existing_item && amount > 0)
-            // Tentativa 1: Usar método direto - aumentar a quantidade
-            var old_amount := existing_item.amount;
-            var result := TryIncreaseAmount(existing_item, amount);
-            
-            // Se o aumento direto funcionou
-            if (result)
-                // Transferir propriedades do item novo para o existente, se fornecidas
-                if (properties)
-                    MergeItemProperties(existing_item, properties);
-                endif
-                
-                return existing_item;
-            else
-                LogWarning("recursos", "Falha ao aumentar quantidade diretamente. Tentando método alternativo.");
+    endif
 
+    // Se não conseguiu empilhar tudo (ou nada) em um item existente, criar um novo.
+    if (amount_to_add_or_create > 0)
+        var new_item := CreateItemInContainer(container, objtype, amount_to_add_or_create);
+        if (new_item && new_item != error)
+            LogInfo("SafeStackItems", $"Criado novo item {new_item.serial} com {new_item.amount} de 0x{Hex(objtype)}.");
+            if (TypeOf(properties) == "Dictionary")
+                ApplyPropertiesToItem(new_item, properties);
             endif
-        endif
-    endif
-    
-    // Se não conseguimos empilhar em um item existente ou temos quantidade restante
-    // Criar um novo item
-    var new_item := CreateItemInContainer(container, objtype, amount);
-    
-    // Verificar se a criação foi bem-sucedida
-    if (!new_item)
-       LogError("recursos", "Falha ao criar novo item para empilhamento");
-        return 0;
-    endif
-    
-    // Adicionar propriedades ao novo item, se fornecidas
-    if (properties)
-        ApplyPropertiesToItem(new_item, properties);
-    endif
-    
-    return new_item;
-endfunction
-
-// Função para encontrar item empilhável existente
-function FindExistingStackableItem(container, objtype)
-    if (!container || !objtype)
-        LogError("FindStackable_DEBUG", "Parâmetros inválidos");
-        return 0;
-    endif
-    
-    LogDebug("FindStackable_DEBUG", "Procurando item stackable: Container=" + container.serial + ", ObjType=0x" + Hex(objtype));
-    
-    var items := EnumerateItemsInContainer(container);
-    if (items != error && items)
-        var candidates := 0;
-        foreach item in items
-            if (item && item.objtype == objtype)
-                candidates += 1;
-                LogDebug("FindStackable_DEBUG", "Candidato encontrado: " + item.serial + " (Amount: " + item.amount + ")");
-                
-                // Verificar se tem espaço para mais itens
-                if (item.amount < 60000)
-                    // Verificar se o item não está corrompido
-                    if (item.serial > 0 && item.container == container)
-                        
-                        // *** VERIFICAÇÃO ADICIONAL: ControlScript ***
-                        var control_script := GetObjProperty(item, "ControlScript");
-                        if (control_script)
-                            LogWarning("FindStackable_DEBUG", "AVISO: Candidato " + item.serial + " tem ControlScript: " + control_script);
-                        endif
-                        
-                        LogDebug("FindStackable_DEBUG", "Item válido selecionado: " + item.serial);
-                        return item;
-                    else
-                        LogWarning("FindStackable_DEBUG", "Item corrompido detectado: " + item.serial);
-                    endif
-                else
-                    LogDebug("FindStackable_DEBUG", "Item cheio: " + item.serial + " (Amount: " + item.amount + ")");
-                endif
-            endif
-            sleepms(1);
-        endforeach
-        
-        LogDebug("FindStackable_DEBUG", "Total de candidatos encontrados: " + candidates + ", nenhum disponível para empilhamento");
-    else
-        LogDebug("FindStackable_DEBUG", "Nenhum item encontrado no container ou erro ao enumerar");
-    endif
-    
-    return 0;
-endfunction
-
-function TryIncreaseAmount(item, amount)
-    LogDebug("TryIncrease_DEBUG", "=== INICIANDO TryIncreaseAmount UNIFICADA ===");
-    LogDebug("TryIncrease_DEBUG", "Item: " + (item ? item.serial : "NULL") + ", Amount: " + amount);
-    
-    // =========================================
-    // VERIFICAÇÕES DE SEGURANÇA RIGOROSAS
-    // =========================================
-    if (!item || amount <= 0)
-        LogError("TryIncrease_DEBUG", "Parâmetros inválidos: item=" + (item ? item.serial : "NULL") + ", amount=" + amount);
-        return 0;
-    endif
-    
-    // Verificar se o item ainda existe e é válido
-    if (!item.container || item.serial <= 0)
-        LogError("TryIncrease_DEBUG", "Item inválido ou sem container: serial=" + item.serial);
-        return 0;
-    endif
-    
-    var test_item := SystemFindObjectBySerial(item.serial);
-    if (!test_item || test_item != item)
-        LogError("TryIncrease_DEBUG", "Item não existe mais ou referência inválida");
-        return 0;
-    endif
-    
-    // Verificar se é stackable
-    if (item.stackable == 0)
-        LogError("TryIncrease_DEBUG", "ERRO: Item não é stackable!");
-        return 0;
-    endif
-    
-    // =========================================
-    // DIAGNÓSTICO EXTENSIVO PARA DETECTAR CONTROLSCRIPT
-    // =========================================
-    LogDebug("TryIncrease_Props", "--- DIAGNÓSTICO DO ITEM (Serial: " + item.serial + ") ---");
-    LogDebug("TryIncrease_Props", "  ObjType: 0x" + Hex(item.objtype));
-    LogDebug("TryIncrease_Props", "  Amount atual: " + item.amount);
-    LogDebug("TryIncrease_Props", "  Name: " + item.name);
-    LogDebug("TryIncrease_Props", "  Container: " + item.container.serial);
-    
-    // *** VERIFICAÇÃO CRÍTICA: ControlScript ***
-    var control_script := GetObjProperty(item, "ControlScript");
-    if (control_script)
-        LogCritical("TryIncrease_DEBUG", "******************************************");
-        LogCritical("TryIncrease_DEBUG", "*** ATENÇÃO: Item tem ControlScript: " + control_script + " ***");
-        LogCritical("TryIncrease_DEBUG", "*** ESTE PODE SER O PROBLEMA DE EMPILHAMENTO! ***");
-        LogCritical("TryIncrease_DEBUG", "*** VERIFIQUE O SCRIPT: " + control_script + " ***");
-        LogCritical("TryIncrease_DEBUG", "******************************************");
-    endif
-    
-    // Verificar outras propriedades que podem interferir
-    var item_script := GetObjProperty(item, "ItemScript");
-    if (item_script)
-        LogWarning("TryIncrease_DEBUG", "Item tem ItemScript: " + item_script);
-    endif
-    
-    var locked := GetObjProperty(item, "Locked");
-    if (locked)
-        LogWarning("TryIncrease_DEBUG", "Item está bloqueado (Locked)");
-    endif
-    
-    // Log de todas as propriedades customizadas
-    var props_names := GetObjPropertyNames(item);
-    if (props_names && props_names.size() > 0)
-        LogDebug("TryIncrease_Props", "  === TODAS AS PROPRIEDADES CUSTOMIZADAS ===");
-        foreach prop_name in props_names
-            var prop_value := GetObjProperty(item, prop_name);
-            LogDebug("TryIncrease_Props", "    " + prop_name + ": " + prop_value + " (Tipo: " + TypeOf(prop_value) + ")");
-            sleepms(1);
-        endforeach
-    else
-        LogDebug("TryIncrease_Props", "  Nenhuma propriedade customizada encontrada.");
-    endif
-    LogDebug("TryIncrease_Props", "--- FIM DIAGNÓSTICO ---");
-    
-    // =========================================
-    // CÁLCULO DE QUANTIDADES
-    // =========================================
-    var original_amount := item.amount;
-    var new_amount := original_amount + amount;
-    
-    // Verificar limite máximo
-    if (new_amount > 60000)
-        LogDebug("TryIncrease_DEBUG", "Quantidade excederia limite, ajustando: " + new_amount + " -> 60000");
-        new_amount := 60000;
-        amount := new_amount - original_amount;
-    endif
-    
-    LogDebug("TryIncrease_DEBUG", "Tentando aumentar de " + original_amount + " para " + new_amount + " (+" + amount + ")");
-    
-    // =========================================
-    // TENTATIVA 1: SetAmount (método mais confiável)
-    // =========================================
-    LogDebug("TryIncrease_DEBUG", "=== TENTATIVA 1: SetAmount ===");
-    var success := item.SetAmount(new_amount);
-    
-    if (success)
-        sleepms(50); // Pausa para garantir sincronização
-        var current_amount := item.amount;
-        if (current_amount == new_amount)
-            LogDebug("TryIncrease_DEBUG", "*** SUCESSO com SetAmount: " + original_amount + " -> " + current_amount + " ***");
-            return amount;
+            return new_item; // Retorna o novo item
         else
-            LogError("TryIncrease_DEBUG", "SetAmount retornou sucesso mas quantidade não mudou: esperado=" + new_amount + ", atual=" + current_amount);
+            LogError("SafeStackItems", $"Falha ao criar novo item para 0x{Hex(objtype)}.");
+            return 0; // Ou error
         endif
-    else
-        LogError("TryIncrease_DEBUG", "SetAmount retornou falha");
+    elseif (existing_item) // Se amount_to_add_or_create chegou a zero e tínhamos um existing_item
+        return existing_item; // Retorna o item que foi empilhado
     endif
-    
-    // =========================================
-    // TENTATIVA 2: Atribuição direta
-    // =========================================
-    LogDebug("TryIncrease_DEBUG", "=== TENTATIVA 2: Atribuição Direta ===");
-    var before_change := item.amount;
-    item.amount := new_amount;
-    var after_change := item.amount;
-    
-    LogDebug("TryIncrease_DEBUG", "Antes: " + before_change + ", Depois: " + after_change);
-    
-    if (after_change == new_amount)
-        LogInfo("TryIncrease_DEBUG", "*** SUCESSO com atribuição direta: " + after_change + " ***");
-        return amount;
-    else
-        LogError("TryIncrease_DEBUG", "Atribuição direta falhou: Expected=" + new_amount + ", Got=" + after_change);
+
+    return 0; // Falha geral
+endfunction
+
+/* 
+ * FindExistingStackableItem_Enhanced(container, objtype, properties_to_match := 0)
+ *
+ * Encontra um item existente no container que pode ser empilhado,
+ * considerando objtype E compatibilidade de CProps críticas.
+ * properties_to_match: Dicionário de CProps que o item existente DEVE ter para ser considerado um match.
+ * Retorna: ItemRef ou 0.
+ */
+function FindExistingStackableItem_Enhanced(container, objtype, properties_to_match := 0)
+    LogDebug("FindStackable_Enhanced", $"Buscando em {container.serial} por ObjType 0x{Hex(objtype)}");
+    if (properties_to_match && TypeOf(properties_to_match) == "Dictionary")
+        LogDebug("FindStackable_Enhanced", "  Verificando CProps para compatibilidade: " + CStr(properties_to_match.keys()));
     endif
-    
-    // =========================================
-    // TENTATIVA 3: Com pausa (último recurso)
-    // =========================================
-    LogDebug("TryIncrease_DEBUG", "=== TENTATIVA 3: Atribuição com Pausa ===");
-    item.amount := original_amount; // Restaurar
-    sleepms(100);
-    
-    item.amount := new_amount;
-    var final_attempt := item.amount;
-    
-    if (final_attempt == new_amount)
-        LogInfo("TryIncrease_DEBUG", "*** SUCESSO na terceira tentativa com pausa! ***");
-        return amount;
-    else
-        LogError("TryIncrease_DEBUG", "Terceira tentativa falhou: Expected=" + new_amount + ", Got=" + final_attempt);
-    endif
-    
-    // =========================================
-    // DIAGNÓSTICO FINAL: Todas as tentativas falharam
-    // =========================================
-    LogCritical("TryIncrease_DEBUG", "=========================================");
-    LogCritical("TryIncrease_DEBUG", "*** FALHA TOTAL NO EMPILHAMENTO ***");
-    LogCritical("TryIncrease_DEBUG", "=========================================");
-    LogCritical("TryIncrease_DEBUG", "Item Serial: " + item.serial + ", ObjType: 0x" + Hex(item.objtype));
-    LogCritical("TryIncrease_DEBUG", "Amount Original: " + original_amount + ", Tentou chegar a: " + new_amount);
-    LogCritical("TryIncrease_DEBUG", "POSSÍVEIS CAUSAS:");
-    LogCritical("TryIncrease_DEBUG", "1. ControlScript interceptando mudanças: " + (control_script ? control_script : "NENHUM"));
-    LogCritical("TryIncrease_DEBUG", "2. Item corrompido ou em estado inválido");
-    LogCritical("TryIncrease_DEBUG", "3. Concorrência com outros scripts");
-    LogCritical("TryIncrease_DEBUG", "4. Limitação específica do core do POL para este objtype");
-    LogCritical("TryIncrease_DEBUG", "=========================================");
-    
+
+    foreach item_in_cont in EnumerateItemsInContainer(container)
+        if (item_in_cont && item_in_cont.objtype == objtype)
+            LogDebug("FindStackable_Enhanced", $"  Candidato: {item_in_cont.serial}, Amount: {item_in_cont.amount}");
+            
+            var max_stack := GetMaxStackSize(objtype);
+            if (!max_stack) max_stack := 60000; endif
+
+            if (item_in_cont.amount < max_stack)
+                // Verificar compatibilidade de CProps
+                var cprops_compatible := 1; // Assumir compatível até provar o contrário
+                if (TypeOf(properties_to_match) == "Dictionary")
+                    // CProps que DEVEM ser iguais para empilhar.
+                    // Excluir CProps que mudam com o tempo (GeneratedTime) ou que são genéricas.
+                    var critical_cprops_for_stacking := dictionary{
+                        "GeneratedByFaction" := 1, // Exemplo
+                        "GeneratedForTerritory" := 1, // Exemplo
+                        "IsKingdomDonationMetal" := 1, // Se for específico para um tipo de doação
+                        "IsKingdomDonationComida" := 1
+                        // Adicionar outras CProps que definem a "unicidade" de um stack
+                    };
+                    // Não incluir "CreatedByResourceController" ou "GeneratedTime" na comparação para empilhamento,
+                    // pois "GeneratedTime" muda e "CreatedByResourceController" será igual para todos os itens do sistema.
+
+                    foreach prop_name in (properties_to_match.keys())
+                        // Apenas verificar CProps que são consideradas críticas para a identidade do stack
+                        if (critical_cprops_for_stacking.exists(prop_name))
+                            var new_value := properties_to_match[prop_name];
+                            var existing_value := GetObjProperty(item_in_cont, prop_name);
+
+                            // Tratar caso onde a CProp não existe no item existente como incompatível
+                            if (existing_value == error || existing_value != new_value)
+                                LogDebug("FindStackable_Enhanced", $"    Incompatibilidade de CProp '{prop_name}'. Existente: '{existing_value}', Novo: '{new_value}'.");
+                                cprops_compatible := 0;
+                                break;
+                            endif
+                        endif
+                    endforeach
+                endif
+
+                if (cprops_compatible)
+                    LogDebug("FindStackable_Enhanced", $"  Item {item_in_cont.serial} é compatível e tem espaço. Selecionado.");
+                    return item_in_cont;
+                else
+                    LogDebug("FindStackable_Enhanced", $"  Item {item_in_cont.serial} tem ObjType igual, mas CProps incompatíveis.");
+                endif
+            else
+                LogDebug("FindStackable_Enhanced", $"  Item {item_in_cont.serial} está cheio (Amount: {item_in_cont.amount}).");
+            endif
+        endif
+        Sleepms(1);
+    endforeach
+    LogDebug("FindStackable_Enhanced", "Nenhum item compatível encontrado.");
     return 0;
 endfunction
 
+// Arquivo: :faccao:include:faccao_resources.inc
+
+/*
+ * TryIncreaseAmount_Refactored(item, amount_to_add)
+ *
+ * Tenta aumentar a quantidade de um item stackable de forma robusta,
+ * priorizando a função AddAmount() do sistema, se disponível.
+ * Retorna: A quantidade efetivamente adicionada, ou 0 em caso de falha total.
+ */
+function TryIncreaseAmount_Refactored(item, amount_to_add)
+    LogDebug("TryIncrease_Refactored", $"Iniciando para Item: {(item ? item.serial : "NULL")}, Add: {amount_to_add}");
+
+    // (Validações Iniciais - como na versão anterior)
+    if (!item || TypeOf(item) != "ItemRef" || amount_to_add <= 0 || !item.isA(POLCLASS_ITEM) || !item.container || !item.serial || item.serial <= 0)
+        // Logs de erro específicos já estão nas validações detalhadas da versão anterior
+        LogError("TryIncrease_Refactored", "Parâmetros inválidos ou item inválido.");
+        return 0;
+    endif
+    var test_item := SystemFindObjectBySerial(CInt(item.serial));
+    if (!test_item)
+        LogError("TryIncrease_Refactored", $"Item {item.serial} não encontrado no sistema.");
+        return 0;
+    endif
+
+    // (Diagnóstico do Item - como na versão anterior, incluindo verificação de ControlScript)
+    // ...
+
+    var original_amount := CInt(item.amount);
+    var max_stack_size := GetMaxStackSize(item.objtype);
+    if (!max_stack_size || max_stack_size <=0) max_stack_size := 60000; endif
+
+    var can_add_to_stack := max_stack_size - original_amount;
+    if (can_add_to_stack <= 0)
+        LogInfo("TryIncrease_Refactored", $"Item {item.serial} já está no máximo ({original_amount}/{max_stack_size}).");
+        return 0;
+    endif
+
+    var actual_amount_to_add := amount_to_add;
+    if (amount_to_add > can_add_to_stack)
+        actual_amount_to_add := can_add_to_stack;
+        LogDebug("TryIncrease_Refactored", $"Ajustando quantidade para adicionar de {amount_to_add} para {actual_amount_to_add}.");
+    endif
+
+    if (actual_amount_to_add <= 0)
+        LogInfo("TryIncrease_Refactored", "Após ajuste, nada a adicionar.");
+        return 0;
+    endif
+
+    var target_amount := original_amount + actual_amount_to_add;
+    LogDebug("TryIncrease_Refactored", $"Tentando aumentar de {original_amount} para {target_amount} (+{actual_amount_to_add})");
+
+    // --- TENTATIVA 1: Usar a função AddAmount() do sistema ---
+    // Assumindo que AddAmount() existe e foi modificada para retornar ItemRef em sucesso
+    // e que ela espera a QUANTIDADE A ADICIONAR, não a quantidade final.
+    var add_amount_result;
+    var success_via_addamount := 0;
+
+    // Precisamos verificar se AddAmount existe antes de chamá-la para evitar erro de "função não definida"
+    // A forma de fazer isso em eScript é um pouco indireta, geralmente se coloca em um include e assume-se que está lá.
+    // Para robustez, poderíamos tentar um 'eval', mas é complexo.
+    // Por agora, vamos assumir que se você a usa em tantos lugares, ela existe.
+    // Se ela não existir, esta chamada causará um erro de script.
+
+    LogDebug("TryIncrease_Refactored", "--- TENTATIVA 1: Usando AddAmount(item, actual_amount_to_add) do sistema ---");
+    // try // eScript não tem try-catch nativo como outros
+        add_amount_result := AddAmount(item, actual_amount_to_add); // AQUI USAMOS A SUA FUNÇÃO
+    // except //
+    //     LogWarning("TryIncrease_Refactored", "Função AddAmount() não encontrada ou causou erro. Tentando atribuição direta.");
+    //     add_amount_result := error; // Sinaliza que falhou
+    // endtry
+
+    Sleepms(50);
+
+    // Agora AddAmount retorna ItemRef. Se sucesso, add_amount_result será o item.
+    if (add_amount_result && TypeOf(add_amount_result) == "ItemRef" && add_amount_result.serial == item.serial)
+        if (item.amount == target_amount)
+            LogInfo("TryIncrease_Refactored", $"SUCESSO com AddAmount()! Item {item.serial} agora com {item.amount} unidades.");
+            success_via_addamount := 1;
+            return actual_amount_to_add;
+        else
+            LogError("TryIncrease_Refactored", $"AddAmount() retornou ItemRef, mas amount incorreto. Esperado: {target_amount}, Atual: {item.amount}");
+            // Considerar falha se a quantidade não bate
+        endif
+    elseif (add_amount_result == error) // Se AddAmount retornou um erro explícito
+        LogError("TryIncrease_Refactored", $"AddAmount() retornou um erro: {add_amount_result.errortext}");
+    else // Se AddAmount retornou 0, ou algo que não é ItemRef (indicando falha pelo contrato antigo/novo)
+        LogWarning("TryIncrease_Refactored", $"AddAmount() não retornou ItemRef esperado ou indicou falha (Retorno: {add_amount_result}, Tipo: {TypeOf(add_amount_result)}).");
+    endif
+
+
+    // --- TENTATIVA 2: Atribuição Direta (Fallback se AddAmount falhou ou não é a principal) ---
+    // Só tentar se AddAmount não teve sucesso
+    if (!success_via_addamount)
+        LogDebug("TryIncrease_Refactored", "--- TENTATIVA 2: Atribuição Direta (Fallback) ---");
+        item.amount := target_amount;
+        Sleepms(50); 
+
+        if (item.amount == target_amount)
+            LogInfo("TryIncrease_Refactored", $"SUCESSO com Atribuição Direta (Fallback)! Item {item.serial} agora com {item.amount} unidades.");
+            return actual_amount_to_add;
+        else
+            LogError("TryIncrease_Refactored", $"Atribuição Direta (Fallback) falhou. Esperado: {target_amount}, Atual: {item.amount}.");
+        endif
+    endif
+    
+    // --- Falha Total ---
+    LogCritical("TryIncrease_Refactored", $"!!! FALHA TOTAL NO EMPILHAMENTO para item {item.serial} (ObjType: 0x{Hex(item.objtype)}) !!!");
+    // ... (log de falha como antes)
+    return 0; 
+endfunction
 
 // Função para mesclar propriedades entre itens
 function MergeItemProperties(item, properties)

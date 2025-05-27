@@ -709,7 +709,7 @@ endfunction
         properties["faction"] := faction_name;
         properties["territory_id"] := territory_id;
 
-        LogDebug("PROP_CHECK", "--> Propriedades ANTES de SafeCreateItemInContainer:");
+        LogDebug("PROP_CHECK", "--> Propriedades ANTES de SafeCreateItemInContainer_Refactored:");
         if (TypeOf(properties) == "Dictionary") 
             foreach prop_key in (properties.keys())
                 LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' ("+ TypeOf(prop_key) +") = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
@@ -720,7 +720,7 @@ endfunction
         endif
         LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
         
-        var result := SafeCreateItemInContainer(donation_chest, objtype, resource_amount, properties);
+        var result := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
         
         if (result && result != error)
             LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result + ", Serial: " + result.serial + ", Amount: " + result.amount + ", Objtype: 0x" + Hex(result.objtype));
@@ -743,7 +743,7 @@ endfunction
         else
             LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + result + " (Tipo: " + TypeOf(result) + ")");
             
-            LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer, tentando método direto");
+            LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer_Refactored, tentando método direto");
             
             var new_item := CreateItemInContainer(donation_chest, objtype, resource_amount);
             if (new_item)
@@ -1237,12 +1237,12 @@ endfunction
                                 LogDebug("recursos", "Propriedade NextResourceTime removida para: " + territorio);
                             endif
                             
-                            // Procurar o objeto existente que corresponde a este território
+                            /*// Procurar o objeto existente que corresponde a este território
                             var item := FindExistingStackableItem(territorio);
                             if (item && item != error)
                                 LogDebug("recursos", "Item existente encontrado para: " + territorio);
                                 // Processar o item...
-                            endif
+                            endif*/
                             
                             // Quaisquer outras ações necessárias
                         endif

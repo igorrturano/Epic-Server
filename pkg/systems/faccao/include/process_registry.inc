@@ -101,14 +101,14 @@ function RegisterProcess(process_name, unique_id := "")
     
     // CORREÇÃO APLICADA AQUI:
     var current_process_obj := GetProcess(current_pid);
-    if (current_process_obj && current_process_obj.script) // Verifica se o processo e a propriedade script existem
-        if (!SetElementProp(elem, "script_path", current_process_obj.script) )
-            LogError("processo", "Falha ao definir script_path para " + process_id_key); 
+    if (current_process_obj && current_process_obj.name) // Verifica se o processo e a propriedade name existem
+        if (!SetElementProp(elem, "script_name", current_process_obj.name) ) // MUDANÇA: script_path -> script_name e current_process_obj.script -> current_process_obj.name
+            LogError("processo", "Falha ao definir script_name para " + process_id_key); 
         endif
     elseif (!current_process_obj)
          LogError("processo", "Falha ao obter objeto do processo para PID " + current_pid + " para " + process_id_key);
-    else // current_process_obj existe, mas .script não (improvável, mas para segurança)
-         LogWarning("processo", "Objeto do processo para PID " + current_pid + " não possui propriedade 'script' para " + process_id_key);
+    else // current_process_obj existe, mas .name não (muito improvável)
+         LogWarning("processo", "Objeto do processo para PID " + current_pid + " não possui propriedade 'name' para " + process_id_key);
     endif
     
     if (!SetElementProp(elem, "registered_time", current_time))

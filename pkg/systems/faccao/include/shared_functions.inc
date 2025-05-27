@@ -811,131 +811,93 @@ function HasContainerSpace(container, amount := 1)
     return (item_count + amount <= max_items);
 endfunction
 
-// Modificação da função SafeCreateItemInContainer com logs de depuração
-function SafeCreateItemInContainer(container, objtype, amount, properties := 0)
-    LogDebug("SafeCreate_DEBUG", "=== ENHANCED SafeCreateItemInContainer ===");
-    LogDebug("SafeCreate_DEBUG", "Container: " + (container ? container.serial : "NULL"));
-    LogDebug("SafeCreate_DEBUG", "ObjType: 0x" + Hex(objtype));
-    LogDebug("SafeCreate_DEBUG", "Amount: " + amount);
-
-    if (!container || !IsValidContainer(container))
-        LogError("SafeCreate_DEBUG", "Container inválido");
+/*
+ * SafeCreateItemInContainer_Refactored(container, objtype, amount_to_create, properties := 0, creator_char := 0)
+ * 
+ * Cria ou empilha um item em um container de forma segura, aplicando propriedades.
+ * properties: Dicionário com CProps a serem aplicadas.
+ * creator_char: Opcional, personagem que está realizando a ação (0 para SYSTEM).
+ * Retorna: ItemRef do item criado/modificado ou objeto de erro.
+ */
+function SafeCreateItemInContainer_Refactored(container, objtype, amount_to_create, properties := 0, creator_char := 0)
+    LogDebug("SafeCreate_Refactored", $"Iniciando para Container: {(container ? container.serial : "NULL")}, ObjType: 0x{Hex(objtype)}, Amount: {amount_to_create}");
+    // === Validações Iniciais ===
+    if (!container)
+        LogError("SafeCreate_Refactored", "Container inválido (NULL).");
         return error{"errortext" := "Container inválido"};
     endif
-
-    if (!objtype || amount <= 0)
-        LogError("SafeCreate_DEBUG", "ObjType ou amount inválido");
-        return error{"errortext" := "Parâmetros inválidos"};
+    if (TypeOf(container) != "ItemRef" || !container.isA(POLCLASS_CONTAINER)) // POL eScript usa TypeOf(obj) == "ItemRef"
+        LogError("SafeCreate_Refactored", $"Parâmetro container não é um container válido. Serial: {(container ? container.serial : "N/A")}");
+        return error{"errortext" := "Container inválido"};
     endif
-
-    if (properties && TypeOf(properties) == "Dictionary")
-        LogDebug("SafeCreate_DEBUG", "Propriedades a serem aplicadas (antes da criação/empilhamento):");
-        foreach prop_name in (properties.keys())
-            LogDebug("SafeCreate_DEBUG", "  " + prop_name + " = " + properties[prop_name] + " (Tipo: " + TypeOf(properties[prop_name]) + ")");
-            sleepms(1);
-        endforeach
+    if (!objtype || CInt(objtype) <= 0)
+        LogError("SafeCreate_Refactored", $"ObjType inválido: {objtype}");
+        return error{"errortext" := "ObjType inválido"};
     endif
+    if (amount_to_create <= 0)
+        LogInfo("SafeCreate_Refactored", $"Quantidade para criar é zero ou negativa ({amount_to_create}), nada a fazer.");
+        return 0; // Nada a fazer se a quantidade é zero ou negativa
+    endif
+    // Fim Validações
 
-    var item_to_return := 0;
+      var item_resultante := 0;
+    var amount_remaining_to_create := amount_to_create;
 
-    LogDebug("SafeCreate_DEBUG", "=== STEP 1: Procurando item existente ===");
-    var existing_item := FindExistingStackableItem(container, objtype);
-    
+    LogDebug("SafeCreate_Refactored", "Passo 1: Procurando item existente para empilhar...");
+    var existing_item := FindExistingStackableItem_Enhanced(container, objtype, properties); 
+
     if (existing_item)
-        LogDebug("SafeCreate_DEBUG", "Item existente encontrado: " + existing_item.serial);
-        LogDebug("SafeCreate_DEBUG", "Amount atual do item existente: " + existing_item.amount);
+        LogDebug("SafeCreate_Refactored", $"Item existente {existing_item.serial} (Amount: {existing_item.amount}) encontrado para possível empilhamento.");
         
-        var existing_props := GetObjPropertyNames(existing_item);
-        if (existing_props) 
-            LogDebug("SafeCreate_DEBUG", "Propriedades do item existente ("+existing_props.size()+"):");
-            foreach prop in existing_props
-                LogDebug("SafeCreate_DEBUG", "  " + prop + ": " + GetObjProperty(existing_item, prop));
-                sleepms(1);
-            endforeach
-        else
-            LogDebug("SafeCreate_DEBUG", "  Nenhuma propriedade customizada no item existente.");
-        endif
+        var amount_actually_stacked := TryIncreaseAmount_Refactored(existing_item, amount_remaining_to_create); // Chama a nova TryIncrease
         
-        var max_stack := GetMaxStackSize(objtype);
-        if (!max_stack) max_stack := 60000; endif
-        
-        var can_add := max_stack - existing_item.amount;
-        if (can_add > 0)
-            var amount_to_add := (amount <= can_add) ? amount : can_add;
+        if (amount_actually_stacked > 0)
+            LogInfo("SafeCreate_Refactored", $"SUCESSO no empilhamento: {amount_actually_stacked} unidades adicionadas ao item {existing_item.serial}. Novo total: {existing_item.amount}");
+            amount_remaining_to_create -= amount_actually_stacked;
+            item_resultante := existing_item;
             
-            LogDebug("SafeCreate_DEBUG", "Tentando empilhar " + amount_to_add + " unidades");
-            var added := TryIncreaseAmount(existing_item, amount_to_add);
-            
-            if (added > 0)
-                LogInfo("SafeCreate_DEBUG", "*** EMPILHAMENTO SUCESSO: " + added + " unidades em " + existing_item.serial + " ***");
-                amount -= added;
-                item_to_return := existing_item;
-                
-                if (properties && TypeOf(properties) == "Dictionary")
-                    LogDebug("SafeCreate_DEBUG", "Aplicando propriedades ao item empilhado " + existing_item.serial);
-                    ApplyPropertiesToItem(existing_item, properties); // As CProps de 'properties' serão aplicadas aqui
-                endif
-            else
-                LogError("SafeCreate_DEBUG", "*** EMPILHAMENTO FALHOU COMPLETAMENTE para item " + existing_item.serial + " ***");
+            if (TypeOf(properties) == "Dictionary" && properties.Size() > 0)
+                LogDebug("SafeCreate_Refactored", "Aplicando/Mesclando propriedades (pós-empilhamento) ao item: " + item_resultante.serial);
+                ApplyPropertiesToItem(item_resultante, properties); 
             endif
         else
-            LogDebug("SafeCreate_DEBUG", "Stack existente " + existing_item.serial + " está cheio");
+            LogWarning("SafeCreate_Refactored", $"Falha ao tentar empilhar no item {existing_item.serial}.");
         endif
-    endif
-
-    if (amount > 0)
-        LogDebug("SafeCreate_DEBUG", "=== STEP 2: Criando novo item ===");
-        LogDebug("SafeCreate_DEBUG", "Quantidade restante para criar: " + amount);
-        
-        var new_item := CreateItemInContainer(container, objtype, amount);
-        
-        // =====================================================================
-        // INÍCIO DA MODIFICAÇÃO: Definir CreatedByResourceController imediatamente
-        // =====================================================================
-        if (new_item && new_item != error)
-            if (properties && TypeOf(properties) == "Dictionary" && properties.exists("CreatedByResourceController"))
-                var set_prop_val := properties["CreatedByResourceController"];
-                SetObjProperty(new_item, "CreatedByResourceController", set_prop_val);
-                LogDebug("SafeCreate_DEBUG", "Propriedade 'CreatedByResourceController' (" + set_prop_val + ") definida IMEDIATAMENTE no novo item " + new_item.serial);
-            endif
-        endif
-        // =====================================================================
-        // FIM DA MODIFICAÇÃO
-        // =====================================================================
-        
-        if (new_item && new_item != error)
-            LogInfo("SafeCreate_DEBUG", "*** CRIAÇÃO SUCESSO: " + new_item.serial + " (Amount: " + new_item.amount + ") ***");
-            
-            if (properties && TypeOf(properties) == "Dictionary")
-                LogDebug("SafeCreate_DEBUG", "Aplicando OUTRAS propriedades ao novo item " + new_item.serial);
-                // Criar um novo dicionário de propriedades sem CreatedByResourceController para evitar duplicação de log ou lógica
-                var other_properties := dictionary{};
-                foreach key in (properties.keys())
-                    if (key != "CreatedByResourceController")
-                        other_properties[key] := properties[key];
-                    endif
-                endforeach
-                if (other_properties.keys().size() > 0)
-                    ApplyPropertiesToItem(new_item, other_properties);
-                endif
-            endif
-            
-            item_to_return := new_item;
-        else
-            LogError("SafeCreate_DEBUG", "*** CRIAÇÃO FALHOU *** Erro: " + (new_item.errortext ? new_item.errortext : "Desconhecido"));
-            if (!item_to_return)
-                return error{"errortext" := "Falha ao criar item"};
-            endif
-        endif
-    endif
-
-    if (item_to_return)
-        LogInfo("SafeCreate_DEBUG", "=== RESULTADO FINAL ===");
-        LogInfo("SafeCreate_DEBUG", "Item retornado: " + item_to_return.serial + " (Amount: " + item_to_return.amount + ")");
-        return item_to_return;
     else
-        LogError("SafeCreate_DEBUG", "=== FALHA TOTAL (Nenhum item retornado) ===");
-        return error{"errortext" := "Nenhum item foi criado ou empilhado"};
+        LogDebug("SafeCreate_Refactored", "Nenhum item existente compatível encontrado para empilhamento.");
+    endif
+
+    if (amount_remaining_to_create > 0)
+        LogDebug("SafeCreate_Refactored", $"Passo 2: Criando novo item com {amount_remaining_to_create} unidades.");
+        var new_item := CreateItemInContainer(container, objtype, amount_remaining_to_create, creator_char);
+        
+        if (new_item && new_item != error)
+            LogInfo("SafeCreate_Refactored", $"SUCESSO na criação: Novo item {new_item.serial} (Amount: {new_item.amount}).");
+            if (TypeOf(properties) == "Dictionary" && properties.Size() > 0)
+                LogDebug("SafeCreate_Refactored", "Aplicando propriedades ao novo item: " + new_item.serial);
+                ApplyPropertiesToItem(new_item, properties);
+            else
+                LogDebug("SafeCreate_Refactored", "Nenhuma propriedade adicional para aplicar ao novo item: " + new_item.serial);
+            endif
+            item_resultante := new_item; 
+        else
+            LogError("SafeCreate_Refactored", $"FALHA ao criar novo item. Erro: {(new_item && new_item.errortext ? CStr(new_item.errortext) : "Desconhecido/NULL")}");
+            if (!item_resultante) 
+                return error{"errortext" := "Falha total ao criar ou empilhar o item."};
+            endif
+        endif
+    endif
+
+    if (item_resultante)
+        LogInfo("SafeCreate_Refactored", $"Operação concluída. Item retornado: {item_resultante.serial}, Amount: {item_resultante.amount}");
+        return item_resultante;
+    else
+        LogWarning("SafeCreate_Refactored", "Nenhum item resultante. Amount original para criar era: " + amount_to_create);
+        if (amount_to_create > 0)
+            return error{"errortext" := "Falha inesperada, nenhum item criado ou empilhado."};
+        else
+            return 0; 
+        endif
     endif
 endfunction
 
@@ -1907,35 +1869,20 @@ function UpdateGuildChestRecord(faction_name, chest)
     return 1;
 endfunction
 
-// Função para obter o tamanho máximo de stack para um objtype
 function GetMaxStackSize(objtype)
-    // Verificar objetos que não podem ser empilhados
-    if (objtype == 0xFF11 || objtype == 0xBA63) // Baús
-        return 1;
+    // Exemplo simples, idealmente isso viria de uma config ou itemdesc.cfg
+    // (itemdesc.cfg tem a tag StackLimit, mas não é acessível diretamente via eScript padrão)
+    var item_cfg := ReadConfigFile(":*:itemdesc"); // Caminho pode variar
+    if (item_cfg)
+        var elem := item_cfg[Hex(objtype)]; // Objtypes em itemdesc são geralmente hexadecimais
+        if (elem)
+            var stack_limit := CInt(elem.StackLimit);
+            if (stack_limit > 0)
+                return stack_limit;
+            endif
+        endif
     endif
-    
-    // Objetos com limites específicos conhecidos
-    case (objtype)
-        0x0EED: // Moedas de ouro
-            return 60000;
-        0x1BEF: // Iron ingot
-        0x6993: // Silver ingot
-        0x6995: // Steel ingot
-            return 60000;
-        0x1078: // Couro
-        0xef12: // Couro espesso
-            return 60000;
-        0x1766: // Pano
-            return 60000;
-        0x1BD7: // Toras
-        0xee36: // Madeira de pinheiro
-            return 60000;
-        0x097B: // Peixe
-        0x09B7: // Carne
-            return 60000;
-        default:
-            return 60000; // Padrão para a maioria dos itens stackable
-    endcase
+    return 60000; // Padrão genérico do POL
 endfunction
 
 // FUNÇÃO AUXILIAR: Encontrar territory_id por nome

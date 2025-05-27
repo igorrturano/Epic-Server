@@ -234,19 +234,20 @@ function ReinoGump(byref gump, item)
         var y := 140; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
         
-        foreach territorio in (territorios_visiveis)
-            // Verificar se é capital
-           var is_capital := TM_IsTerritoryCapital(territorio.id);
-            
-            // Número do território
-            GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
-            
-            // Se for capital, adicionar coroa ou marcador especial
-            if (is_capital)
-                GFTextLine(gump, 485, y+5, 230, territorio.name + " [CAPITAL]"); // Texto em cor diferente
-            else
-                GFTextLine(gump, 485, y+5, 53, territorio.name);
-            endif
+foreach territorio in (territorios_visiveis)
+    // Usar diretamente a informação do TM_GetTerritoryInfo
+    var territory_info := TM_GetTerritoryInfo(territorio.id);
+    var is_capital := territory_info.is_capital;
+    
+    // Número do território
+    GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
+    
+    // Se for capital, adicionar coroa ou marcador especial
+    if (is_capital)
+        GFTextLine(gump, 485, y+5, 230, territorio.name + " [CAPITAL]");
+    else
+        GFTextLine(gump, 485, y+5, 53, territorio.name);
+    endif
             
             // Botões de informação e aliados
             GFAddButton(gump, 693, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
@@ -684,36 +685,53 @@ endfunction
 function ToggleStatusCapital(who, territorio, item)
     var is_capital := TM_IsTerritoryCapital(territorio.id);
     
+    // Notificar início da operação
+    SendSysMessage(who, "Processando alteração do status de capital...");
+    Sleep(1);
+    
     if (is_capital)
         // Remover status
         var territory_elem := TM_FindTerritory(territorio.id);
         if (territory_elem)
+            PrintTextAbove(item, "*Removendo status de capital*");
+            Sleep(1);
+            
             territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            Sleep(1); // Dar tempo para o sistema processar
+            
             SendSysMessage(who, "Status de Capital removido do território.");
+            PrintTextAbove(item, "*Status de capital removido*");
         endif
     else
         // Verificar se a mesa está associada a uma facção específica
         var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
         if (!mesa_faction)
-            // CORREÇÃO: Obter a facção do território em vez de usar uma variável indefinida
             var territorio_faction := "";
             if (territorio.elem)
                 territorio_faction := GetObjProperty(territorio.elem, TERRITORY_FACTION_PROP);
                 if (!territorio_faction)
-                    territorio_faction := GetObjProperty(territorio.elem, "Faction"); // Compatibilidade
+                    territorio_faction := GetObjProperty(territorio.elem, "Faction");
                 endif
             endif
             
             mesa_faction := territorio_faction ? territorio_faction : "Desconhecida";
         endif
         
+        PrintTextAbove(item, "*Definindo como capital*");
+        Sleep(1);
+        
         // Usar a função TM_SetTerritoryAsCapital
         if (TM_SetTerritoryAsCapital(territorio.id, mesa_faction))
             SendSysMessage(who, "Território definido como Capital de " + mesa_faction + "!");
+            PrintTextAbove(item, "*Agora é a capital de " + mesa_faction + "*");
+            Sleep(1);
         else
             SendSysMessage(who, "Falha ao definir território como Capital.");
+            PrintTextAbove(item, "*Falha ao definir como capital*");
         endif
     endif
+    
+    Sleep(1); // Pausa final para garantir que todas as mudanças foram processadas
 endfunction
 
 function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
@@ -721,13 +739,29 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
     LogDebug("territorio", "Datafile seriais: " + (seriais_df ? "Aberto com sucesso" : "FALHA ao abrir"));
     
-    // Garantir compatibilidade com ambos os formatos
+    // NOVA VERIFICAÇÃO: Checar e remover status de capital antes da transferência
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
+    
+    // Verificar se é uma capital
+    if (TM_IsTerritoryCapital(territorio_id))
+        LogDebug("territorio", "Território sendo transferido é uma capital. Removendo status...");
+        var territory_elem := TM_FindTerritory(territorio_id);
+        if (territory_elem)
+            // Remover a propriedade de capital
+            territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            LogInfo("territorio", "Status de capital removido do território " + territorio_id + " antes da transferência");
+            SendSysMessage(who, "Status de Capital removido do território que está sendo transferido.");
+            
+            // Adicionar Sleep para garantir que a remoção do status seja processada
+            Sleep(1);
+        endif
+    endif
+
+    // Garantir compatibilidade com ambos os formatos (usando o territorio_id já definido)
     var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
     
     LogDebug("territorio", "Território identificado - ID: " + territorio_id + ", Nome: " + territorio_nome);
     LogDebug("territorio", "Facção atual: " + old_faction);
-    
     // Montar lista de facções
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, 9200, 400, 300);

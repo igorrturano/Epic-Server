@@ -70,24 +70,28 @@ endfunction
  *   Struct com as informações ou 0 se não encontrado
  */
 function TM_GetTerritoryInfo(territory_id_or_name)
-    var territory_elem := TM_FindTerritory(territory_id_or_name);
-    if (!territory_elem)
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 0;
+    endif
+    
+    var elem := TM_FindTerritory(territory_id_or_name);
+    if (!elem)
         return 0;
     endif
     
     var info := struct{
-        "id" := GetElementProp(territory_elem, TERRITORY_ID_PROP, territory_id_or_name),
-        "name" := GetElementProp(territory_elem, TERRITORY_NAME_PROP, territory_id_or_name),
-        "rect" := GetElementProp(territory_elem, TERRITORY_RECT_PROP),
-        "realm" := GetElementProp(territory_elem, TERRITORY_REALM_PROP, "britannia"),
-        "faction" := GetElementProp(territory_elem, TERRITORY_FACTION_PROP),
-        "is_capital" := GetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP, 0),
-        "resources" := GetElementProp(territory_elem, "Resources")
+        "name" := GetElementProp(elem, "Name", territory_id_or_name),
+        "id" := GetElementProp(elem, TERRITORY_ID_PROP, territory_id_or_name),
+        "faction" := GetElementProp(elem, TERRITORY_FACTION_PROP, ""),
+        "rect" := GetElementProp(elem, "Rect", ""),
+        "realm" := GetElementProp(elem, "Realm", "britannia"),
+        "is_capital" := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP, 0) // Adicionar status de capital aqui
     };
     
-    // Compatibilidade: verificar propriedade alternativa para faction
+    // Compatibilidade retroativa
     if (!info.faction)
-        info.faction := GetElementProp(territory_elem, "Faction");
+        info.faction := GetElementProp(elem, "Faction", "");
     endif
     
     return info;
@@ -352,41 +356,42 @@ endfunction
  *   1 para sucesso, 0 para falha
  */
 function TM_SetTerritoryAsCapital(territory_id, faction_name)
+    // Primeiro, verificar se já existe uma capital para esta facção
     var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return 0;
     endif
     
-    // Primeiro, remover flag de capital de todos os territórios desta facção
-    var keys := rect_df.keys();
-    if (keys && keys != error)
-        foreach elem_name in keys
-            var elem := SafeFindElement(rect_df, elem_name);
-            if (elem)
-                var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                if (!faction)
-                    faction := GetElementProp(elem, "Faction"); // Compatibilidade
-                endif
-                
-                var is_capital := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP);
-                if (faction == faction_name && is_capital)
-                    elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
-                endif
-            endif
-            sleepms(2);
-        endforeach
-    endif
+    // Procurar por territórios existentes marcados como capital
+    foreach elem_name in (rect_df.keys())
+        var elem := rect_df.FindElement(elem_name);
+        if (!elem)
+            continue;
+        endif
+        
+        // Verificar se é da mesma facção
+        var elem_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+        if (!elem_faction)
+            elem_faction := GetElementProp(elem, "Faction");
+        endif
+        
+        // Se encontrar uma capital existente da mesma facção
+        if (elem_faction == faction_name && GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP))
+            // Remover status de capital do território antigo
+            elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            LogDebug("territorio", "Removido status de capital do território: " + elem_name);
+        endif
+        sleepms(2);
+    endforeach
     
-    // Encontrar o território alvo e defini-lo como capital
+    // Agora definir o novo território como capital
     var territory_elem := TM_FindTerritory(territory_id);
-    if (territory_elem)
-        SetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP, 1);
-        LogInfo("territorio", "Território " + territory_id + " definido como capital de " + faction_name);
-        return 1;
+    if (!territory_elem)
+        return 0;
     endif
     
-    LogError("territorio", "TM_SetTerritoryAsCapital: Território não encontrado: " + territory_id);
-    return 0;
+    SetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP, 1);
+    return 1;
 endfunction
 
 /*
@@ -399,17 +404,14 @@ endfunction
  *   1 se for capital, 0 caso contrário
  */
 function TM_IsTerritoryCapital(territory_id)
-    var territory_elem := TM_FindTerritory(territory_id);
-    if (territory_elem)
-        var prop := GetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP);
-        if (prop)
-            return 1;
-        endif
+    // Usar TM_GetTerritoryInfo para manter consistência
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (!territory_info)
+        return 0;
     endif
     
-    return 0;
+    return territory_info.is_capital;
 endfunction
-
 
 /*
  * Compatibilidade com architect - versão TM
@@ -974,151 +976,124 @@ function DisplayRectangleDetailsComplete(who, elem)
     var width := 350;
     var height := 300;
     
-    // ---- OBTER DADOS BÁSICOS COM VALIDAÇÃO RIGOROSA ----
-    if (!elem)
-        SendSysMessage(who, "Erro: Elemento inválido.");
-        return;
+    // Verificar permissões do jogador
+    var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+    if (!territory_faction)
+        territory_faction := GetElementProp(elem, "Faction");
     endif
     
-    // Obter nome com segurança
-    var name := "";
-    name := GetElementProp(elem, "Name", "");
-    if (name == error || !name || name == "")
-        name := "Sem Nome";
-    endif
-    
-    // Obter informações básicas com segurança máxima
-    var rect_str := "";
-    var realm := "britannia";
-    var faction := DEFAULT_FACTION;
-    var territory_id := "";
-    
-    rect_str := GetElementProp(elem, "Rect", "");
-    if (rect_str == error) 
-        rect_str := "";
-    endif
-    
-    realm := GetElementProp(elem, "Realm", "britannia");
-    if (realm == error) 
-        realm := "britannia";
-    endif
-    
-    faction := GetElementProp(elem, "Faction", DEFAULT_FACTION);
-    if (faction == error) 
-        faction := DEFAULT_FACTION;
-    endif
-    
-    if (!faction)
-        faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-        if (faction == error) 
-            faction := DEFAULT_FACTION;
+    // Verificar se o jogador pertence à facção ou é GM
+    var has_permission := 0;
+    if (who.cmdlevel >= 1)
+        has_permission := 1;
+    else
+        var player_guild := FindGuild(who.guildid);
+        // Verificar se o jogador tem cargo na facção
+        var is_leader := 0;
+        if (player_guild && player_guild.guildname == territory_faction)
+            var player_rank := player_guild.GetGuildRank(who);
+            if (player_rank >= 8) // Rank 8 ou maior = líder
+                is_leader := 1;
+                has_permission := 1;
+            endif
         endif
     endif
-    
-    territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-    if (territory_id == error) 
-        territory_id := "";
-    endif
-    
-    // ---- CRIAR O GUMP SUPER SIMPLES ----
+
+
+    // Criar o gump base
     var gump := GFCreateGump(50, 50, width, height);
     GFClosable(gump, 1);
     GFResizePic(gump, 0, 0, 9200, width, height);
     
-    // ---- ADICIONAR INFORMAÇÕES BÁSICAS ----
     var y := 20;
     
     // Título
-    GFTextLine(gump, width/2-80, y, 1153, "Território: " + name);
+    GFTextLine(gump, width/2-80, y, 1153, "Informações do Território");
     y += 30;
     
-    // Coordenadas (apenas se existirem)
-    if (rect_str && rect_str != "")
-        var coords := SplitWords(rect_str);
-        if (coords && TypeOf(coords) == "Array" && coords.size() >= 4)
-            GFTextLine(gump, 20, y, 2100, "Coordenadas:");
-            GFTextLine(gump, 120, y, 63, "(" + coords[1] + "," + coords[2] + ") a (" + coords[3] + "," + coords[4] + ")");
-        else
-            GFTextLine(gump, 20, y, 2100, "Coordenadas:");
-            GFTextLine(gump, 120, y, 63, CStr(rect_str));
-        endif
+    // Nome
+    var name := GetElementProp(elem, "Name", "Sem Nome");
+    GFTextLine(gump, 20, y, 2100, "Nome:");
+    GFTextLine(gump, 120, y, 63, name);
+    y += 25;
+    
+    // ID
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+    if (territory_id)
+        GFTextLine(gump, 20, y, 2100, "ID:");
+        GFTextLine(gump, 120, y, 63, territory_id);
+        y += 25;
+    endif
+    
+    // Facção
+    GFTextLine(gump, 20, y, 2100, "Facção:");
+    GFTextLine(gump, 120, y, 63, territory_faction);
+    y += 25;
+    
+    // Coordenadas
+    var rect := GetElementProp(elem, "Rect", "");
+    if (rect)
+        GFTextLine(gump, 20, y, 2100, "Coordenadas:");
+        GFTextLine(gump, 120, y, 63, rect);
         y += 25;
     endif
     
     // Realm
+    var realm := GetElementProp(elem, "Realm", "britannia");
     GFTextLine(gump, 20, y, 2100, "Realm:");
     GFTextLine(gump, 120, y, 63, realm);
-    y += 25;
-    
-    // Facção
-    GFTextLine(gump, 20, y, 2100, "Controlado por:");
-    var control_color := (faction == DEFAULT_FACTION) ? 38 : 63; // Vermelho ou verde
-    GFTextLine(gump, 120, y, control_color, faction);
     y += 40;
-    
-    // ---- BOTÕES DE AÇÃO ----
-    y := height - 40; // Posiciona na parte inferior
-    
-    // Botão Ir para Território
-    GFAddButton(gump, 20, y, 2361, 2361, GF_CLOSE_BTN, 300);
-    GFTextLine(gump, 45, y, 63, "Ir Para");
-    
-    // Botões apenas para GMs
-    if (who.cmdlevel >= 1)
-        // Botão Configurar Recursos
-        GFAddButton(gump, width/2-50, y, 2361, 2361, GF_CLOSE_BTN, 500);
-        GFTextLine(gump, width/2-25, y, 63, "Recursos");
+
+    // Seção de Ações Administrativas (visível para GMs e líderes da facção)
+    if (has_permission && (who.cmdlevel >= 1 || is_leader))
+        GFTextLine(gump, 20, y, 38, "Ações Administrativas:");
+        y += 25;
         
-        // Botão Deletar
-        GFAddButton(gump, width-80, y, 2361, 2361, GF_CLOSE_BTN, 100);
-        GFTextLine(gump, width-55, y, 38, "Deletar");
+        // Botão para remover controle
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 100);
+        GFTextLine(gump, 50, y, 63, "Remover controle da facção");
+        y += 25;
+        
+        // Botão para transferir
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 200);
+        GFTextLine(gump, 50, y, 63, "Transferir para outra facção");
+        y += 25;
+        
+        // Botão para definir como capital
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 300);
+        GFTextLine(gump, 50, y, 63, "Definir como Capital");
+        y += 25;
     endif
+
+    // Botão OKAY no final
+    y := height - 40;
+    GFAddButton(gump, width/2-30, y, 2128, 2129, GF_CLOSE_BTN, 0);
     
-    // ---- PROCESSAR RESPOSTA ----
     var input := GFSendGump(who, gump);
     var button := input[0];
     
-    if (button == 100 && who.cmdlevel >= 1) // Deletar
-        if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
-            // Tentar deletar pelo nome diretamente - mais seguro
-            var df := SafeOpenDataFile(":architect:areas");
-            if (df && df.DeleteElement(name))
-                SendSysMessage(who, "Território deletado pelo nome!");
-                return;
-            endif
-            
-            // Se não conseguiu, tentar pelo ID
-            if (territory_id && TM_DeleteTerritory(territory_id))
-                SendSysMessage(who, "Território deletado com sucesso!");
-            else
-                SendSysMessage(who, "Falha ao deletar território.");
-            endif
-        endif
-    elseif (button == 300) // Ir para território
-        // Calcular centro manualmente
-        if (rect_str)
-            var coords := SplitWords(rect_str);
-            if (coords && TypeOf(coords) == "Array" && coords.size() >= 4)
-                var x1 := CInt(coords[1]);
-                var y1 := CInt(coords[2]);
-                var x2 := CInt(coords[3]);
-                var y2 := CInt(coords[4]);
-                
-                var center_x := CInt((x1 + x2) / 2);
-                var center_y := CInt((y1 + y2) / 2);
-                var center_z := GetWorldHeight(center_x, center_y, realm);
-                
-                MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
-                SendSysMessage(who, "Teleportado para o centro do território!");
-            else
-                SendSysMessage(who, "Coordenadas inválidas!");
-            endif
-        else
-            SendSysMessage(who, "Coordenadas não encontradas para este território!");
-        endif
-    elseif (button == 500 && who.cmdlevel >= 1) // Configurar Recursos
-        SetupResourcesForTerritory(who, elem);
+    if (!has_permission && button != 0)
+        SendSysMessage(who, "Você não tem permissão para executar esta ação.");
+        return;
     endif
+
+    case (button)
+        100: // Remover controle
+            if (YesNo(who, "Tem certeza que deseja remover o controle da facção?"))
+                TM_SetTerritoryFaction(territory_id, DEFAULT_FACTION);
+                SendSysMessage(who, "Controle removido com sucesso.");
+            endif
+        200: // Transferir
+            var new_faction := RequestGump(who, "Digite o nome da nova facção:");
+            if (new_faction)
+                TM_TransferTerritoryFaction(territory_id, new_faction, who);
+            endif
+        300: // Definir como Capital
+            if (YesNo(who, "Definir este território como capital?"))
+                TM_SetTerritoryAsCapital(territory_id, territory_faction);
+                SendSysMessage(who, "Território definido como capital.");
+            endif
+    endcase
 endfunction
 
 function TM_DeleteTerritory(territory_id)
@@ -1368,6 +1343,7 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
     
     var territory_name := territory_info.name;
     var old_faction := territory_info.faction;
+    var is_capital := territory_info.is_capital; // Capturar status de capital
     
     // Verificar se a facção mudou
     if (old_faction == new_faction)
@@ -1377,7 +1353,51 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
         LogWarning("territorio", "TM_TransferTerritoryFaction: Território já pertence à facção: " + new_faction);
         return 0;
     endif
-    
+
+    // Se for capital, remover status antes da transferência
+    // Se for capital, remover status antes da transferência
+    if (is_capital)
+        LogInfo("CapitalDebug", $"Território {territory_id} é capital, removendo status antes da transferência");
+        
+        // Remover a propriedade de capital do elemento atual
+        var elem := TM_FindTerritory(territory_id);
+        if (elem)
+            // Garantir que o status de capital seja removido
+            elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            
+            // Garantir que a propriedade antiga também seja removida (compatibilidade)
+            elem.EraseProp("IsCapital");
+            
+            LogInfo("CapitalDebug", $"Status de capital removido do território {territory_id}");
+            if (who)
+                SendSysMessage(who, "O território perdeu o status de capital devido à transferência.");
+            endif
+        endif
+    endif
+
+    // Verificar todos os territórios da nova facção para garantir que não haja outro capital
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (rect_df)
+        foreach elem_name in (rect_df.keys())
+            var elem := SafeFindElement(rect_df, elem_name);
+            if (elem)
+                var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+                if (!faction)
+                    faction := GetElementProp(elem, "Faction");
+                endif
+                
+                if (faction == new_faction)
+                    // Se encontrar outro território como capital da nova facção, remover
+                    if (GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP))
+                        elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+                        elem.EraseProp("IsCapital");
+                        LogInfo("CapitalDebug", $"Removido status de capital de {elem_name} da facção {new_faction}");
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
     // Iniciar uma transação para garantir atomicidade
     var transaction_data := struct{
         "territorio_id" := territory_id,
@@ -1738,6 +1758,38 @@ function BackupTerritoryFactionRelation(territory_id, faction_name)
     return 1;
 endfunction
 
+function TM_HasCapital(faction_name)
+    if (!faction_name)
+        return 0;
+    endif
+    
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 0;
+    endif
+    
+    foreach elem_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem)
+            continue;
+        endif
+        
+        // Verificar a facção atual
+        var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+        if (!territory_faction)
+            territory_faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
+        endif
+        
+        // Se for da facção procurada e for capital
+        if (territory_faction == faction_name && GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP))
+            return 1;
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    return 0;
+endfunction
 
 /*
  * TM_NotifyTerritoryChange(territory_id, change_type, change_data := 0)
