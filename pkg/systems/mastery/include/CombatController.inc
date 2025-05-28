@@ -3,6 +3,8 @@
 include ":mastery:model/MasteryCombat";
 include ":debug:main";
 
+const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
+
 /**
  * MasteryCombat_Advance(attacker, combatInfo)
  *
@@ -18,13 +20,13 @@ include ":debug:main";
  * Nenhum (void)
  */
 function MasteryCombat_Advance(attacker, combatInfo)
-	if (HasReachedMasteriesLimit(attacker))
+	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
+	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
+
+	if (HasReachedMasteriesLimit(attacker, mastery))
 		DebugMsg(attacker, DEBUG_MASTERY, "Limite de maestrias atingido. Para avançar, remova uma maestria existente.");
 		return;
 	endif
-	
-	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
-	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
 	mastery._SetName(attacker.weapon.desc);
 	mastery.AddXP(combatInfo.xp);
@@ -38,9 +40,12 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	attacker.SetMastery(mastery);
 endfunction
 
-function HasReachedMasteriesLimit(attacker)
-	var masteriesNames := attacker.GetMasteryProp();
-	if (masteriesNames.size() >= 3)
+function HasReachedMasteriesLimit(attacker, mastery)
+	var propMastery := attacker.GetMasteryProp();
+	if (propMastery.size() >= MAX_MASTERIES)
+		if (mastery.GetKey() in propMastery.keys())
+			return false;
+		endif
 		return true;
 	endif
 	return false;

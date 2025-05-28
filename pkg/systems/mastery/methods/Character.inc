@@ -6,8 +6,8 @@ exported function GetMastery(who, key)
 	return LoadMastery(who, key);
 endfunction
 
-function GetMasteryProp(who)
-	return who.GetProp("Masteries") ?: dictionary{};
+exported function GetMasteryProp(who)
+	return who.GetProp("Masteries");
 endfunction
 
 exported function SetMastery(who, object)
