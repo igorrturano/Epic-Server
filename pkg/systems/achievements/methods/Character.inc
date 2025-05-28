@@ -8,6 +8,10 @@ exported function GetAchievementProgress(who, type, name)
 	return LoadAchievement(who, type, name);
 endfunction
 
+exported function GetAllAchievementsProgress(who)
+	return LoadAllAchievements(who);
+endfunction
+
 exported function SetAchievementProgress(who, object)
 	return SaveAchievement(who, object);
 endfunction
