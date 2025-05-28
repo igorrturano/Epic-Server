@@ -5,6 +5,12 @@ include ":debug:main";
 
 const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
 
+// TODO: Criar 3 níveis que progridem reduzindo o cooldown de ativação da habilidade
+	// Cooldown de 150s.
+	// Reduz -30s por nível.
+// TODO: Definir critérios de progressão de maestria para cada nível.
+
+
 /**
  * MasteryCombat_Advance(attacker, combatInfo)
  *
@@ -28,18 +34,31 @@ function MasteryCombat_Advance(attacker, combatInfo)
 		return;
 	endif
 
+	var earnedXP := CalcXPEarned(combatInfo);
 	mastery._SetName(attacker.weapon.desc);
-	mastery.AddXP(combatInfo.xp);
+	mastery.AddXP(earnedXP);
 	mastery.AddKills(combatInfo.kills);
 	mastery.AddHits(combatInfo.hits);
 	mastery.AddDamage(combatInfo.damage);
 	DebugMsg(attacker, DEBUG_MASTERY, $"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetKey()})");
-	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(combatInfo.xp)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}");
+	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(earnedXP)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}");
 
 	attacker.SetMastery(mastery);
 endfunction
 
+/**
+ * HasReachedMasteriesLimit(attacker, mastery)
+ * 
+ * Esta função determina se um jogador pode adicionar uma nova maestria baseado
+ * no limite máximo configurado (MAX_MASTERIES). Se o jogador já possui o número
+ * máximo de maestrias, só poderá adicionar se já possuir a maestria específica.
+ * 
+ * @param attacker O objeto jogador/atacante que está tentando adicionar a maestria
+ * @param mastery O objeto maestria que está sendo verificado
+ * @return true se o limite foi atingido e a maestria não pode ser adicionada,
+ *         false se a maestria pode ser adicionada ou se ainda há espaço disponível
+ */
 function HasReachedMasteriesLimit(attacker, mastery)
 	var propMastery := attacker.GetMasteryProp();
 	if (propMastery.size() >= MAX_MASTERIES)
@@ -49,6 +68,23 @@ function HasReachedMasteriesLimit(attacker, mastery)
 		return true;
 	endif
 	return false;
+endfunction
+
+/**
+ * CalcXPEarned(combatInfo)
+ *
+ * Calcula a quantidade de XP (experiência) ganha com base nas informações de combate.
+ * 
+ * @param combatInfo Objeto contendo informações do combate, incluindo o dano causado
+ * @return Integer A quantidade de XP ganha, equivalente ao dano causado
+ * 
+ * @note Esta função atualmente retorna o valor do dano como XP 1:1
+ *       ganho, mas pode ser ajustada no futuro para incluir outros fatores como
+ *       acertos, mortes, etc.
+ */
+function CalcXPEarned(combatInfo)
+	// TODO: Implementar lógica de cálculo de XP mais complexa, se necessário.
+	return combatInfo.damage;
 endfunction
 
 function MasteryCheckLevel(xp)
