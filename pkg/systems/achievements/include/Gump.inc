@@ -1,5 +1,7 @@
 include ":gumps:epicGumps";
 
+const MAX_XP := 5000; // XP máximo para a barra de progresso
+
 function ShowAchievementsGump(who)
 	var gump := GFECreateGump("Progresso de Conquistas", 680, 400);
 	var achievements := who.GetAllAchievementsProgress();
@@ -46,7 +48,11 @@ function PositionXPBar(byRef gump, achievements)
 endfunction
 
 function CalcFilledXPBar(xp)
-	xp := CDbl(xp); // POL BUGAAAAAAAAAAAAAAAADO
+	xp := CInt(xp); // POL BUGAAAAAAAAAAAAAAAADO
+
+	if (xp > MAX_XP)
+		xp := MAX_XP; // Limita o XP máximo para 5000
+	endif
 	var width := (xp / 1000) * 80;
 
 	// A partir de 1000 começa a completar a barra com 2000
