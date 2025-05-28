@@ -43,6 +43,7 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:main";
 include ":fls_magery:spellSounds";
+include ":mastery:Abilities";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -63,7 +64,6 @@ program Install()
 	print("");
 endprogram
 
-// TODO: A depender da necessidade das habs, talvez a melhor solução seja fazer essa função chamar outra função para fazer todo esse procedimento
 exported function Attack(attacker, defender)
 	var attackInfo := struct{};
 	wpn_a := attacker.weapon;
@@ -72,6 +72,10 @@ exported function Attack(attacker, defender)
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
 
 	if (!CanAttack(attacker, defender))
+		return 1;
+	endif
+	ExecuteMasteryAbility(attacker, defender);
+	if (!DistanceChecks(attacker, defender))
 		return 1;
 	endif
 
@@ -159,8 +163,8 @@ function CanAttack(attacker, defender)
 		return 0;
 	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
 		attacker.concealed := 0;
-	elseif (!DistanceChecks(attacker, defender))
-		return 0;
+	// elseif (!DistanceChecks(attacker, defender))
+	// 	return 0;
 	elseif (!FacingChecks(attacker, defender))
 		return 0;
 	elseif (!AmmoCheckCombatHook(attacker, defender))
