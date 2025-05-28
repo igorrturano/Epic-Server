@@ -1879,68 +1879,84 @@ function ClassificarPorNome(resource_name_input)
     return "desconhecido";
 endfunction
 
-/*
- * ClassificarPorObjtype(objtype)
- *
- * Purpose: Classifica um recurso baseado em seu objtype.
- */
-// DENTRO DE pkg/systems/faccao/include/shared_functions.inc
-
-function ClassificarPorObjtype(objtype) // 'objtype' aqui é um INTEIRO
-    var objtype_map := dictionary{
-        // Moedas
-        0xBA63 := RESOURCE_TYPE_MOEDAS,
-
-        // Metais
-        0x6300 := RESOURCE_TYPE_METAL,
-        0x19B9 := RESOURCE_TYPE_METAL,
-        0x6993 := RESOURCE_TYPE_METAL,
-        0x6460 := RESOURCE_TYPE_METAL,     // Frigutium ingot - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-
-        // Couro
-        0xEF12 := RESOURCE_TYPE_COURO,
-        0xEF17 := RESOURCE_TYPE_COURO,
-        0xEF11 := RESOURCE_TYPE_COURO,
-        0xED20 := RESOURCE_TYPE_COURO,     // Couro draconiano - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-        0xEF36 := RESOURCE_TYPE_COURO,
-        0xEF29 := RESOURCE_TYPE_COURO,     // Osso Demoníaco - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-
-        // Madeira
-        0xEE36 := RESOURCE_TYPE_MADEIRA,   // Madeira de pinheiro - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-        0xEE3E := RESOURCE_TYPE_MADEIRA,
-        0x1BDE := RESOURCE_TYPE_MADEIRA,   // Carvão - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-        0x1BD7 := RESOURCE_TYPE_MADEIRA,
-
-        // Comida
-        0xD16  := RESOURCE_TYPE_COMIDA,
-        0x097B := RESOURCE_TYPE_COMIDA,
-
-        // Pano
-        0xEE52 := RESOURCE_TYPE_PANO,
-        0x1767 := RESOURCE_TYPE_PANO,
-
-        // Pedras
-        0xEF32 := RESOURCE_TYPE_PEDRA,     // Osso Cinza - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-        0xEF3A := RESOURCE_TYPE_PEDRA,
-        0x1BE3 := RESOURCE_TYPE_PEDRA,     // Glass / Vidro - SE ESTE É UM OBJTYPE QUE APARECE NO AVISO, ELE PRECISA ESTAR AQUI
-        0x177A := RESOURCE_TYPE_PEDRA,
-
-        // Joias
-        0xF13  := RESOURCE_TYPE_JOIAS
-        // ADICIONE AQUI QUALQUER OUTRO OBJTYPE QUE ESTEJA CAUSANDO O AVISO
-        // Exemplo: se 0xABCD está causando aviso, adicione:
-        // 0xABCD := RESOURCE_TYPE_METAL, // ou a categoria correta
-    };
-
-    if (objtype_map.exists(objtype)) // objtype (inteiro) é usado como chave para procurar no dicionário
-        return objtype_map[objtype];
-    endif;
-
-    // Se chegou aqui, o objtype não foi encontrado no mapa
-    LogWarning("ClassificarPorObjtype", "Objtype 0x" + Hex(objtype) + " não possui mapeamento direto para uma CATEGORIA DE RECURSO em ClassificarPorObjtype (shared_functions.inc). Adicione-o se for um recurso válido.");
+function ClassificarPorObjtype(objtype_param)
+    var objtype_to_check := CInt(objtype_param);
+    if (!objtype_to_check || objtype_to_check <= 0)
+        // Adicionei um log aqui para quando o objtype_param original não era 0,
+        // mas se tornou 0 após CInt, o que indicaria um problema de entrada.
+        if (objtype_param != 0 && objtype_to_check == 0) 
+            LogWarning("ClassificarPorObjtype", "Objtype original '" + objtype_param + "' resultou em 0 após CInt().");
+        endif
+        return "desconhecido";
+    endif
+    
+    // Criar mapa com chaves garantidamente inteiras
+    var objtype_map := dictionary{};
+    
+    // Metais
+    objtype_map[CInt(0x6300)] := RESOURCE_TYPE_METAL;     // Iron ore
+    objtype_map[CInt(0x19B9)] := RESOURCE_TYPE_METAL;
+    objtype_map[CInt(0x6993)] := RESOURCE_TYPE_METAL;     // Prata ingot
+    objtype_map[CInt(0x6460)] := RESOURCE_TYPE_METAL;     // Frigutium ingot
+    
+    // Couro
+    objtype_map[CInt(0xEF12)] := RESOURCE_TYPE_COURO;     // Couro espesso
+    objtype_map[CInt(0xEF17)] := RESOURCE_TYPE_COURO;     // Couro polar
+    objtype_map[CInt(0xEF11)] := RESOURCE_TYPE_COURO;     // Couro escamoso
+    objtype_map[CInt(0xED20)] := RESOURCE_TYPE_COURO;     // Couro draconiano
+    objtype_map[CInt(0xEF36)] := RESOURCE_TYPE_COURO;     // Escamas azuis
+    objtype_map[CInt(0xEF29)] := RESOURCE_TYPE_COURO;     // Osso demoníaco
+    
+    // Madeira
+    objtype_map[CInt(0xEE36)] := RESOURCE_TYPE_MADEIRA;   // Madeira de pinheiro
+    objtype_map[CInt(0xEE3E)] := RESOURCE_TYPE_MADEIRA;   // Madeira de teixo
+    objtype_map[CInt(0x1BDE)] := RESOURCE_TYPE_MADEIRA;   // Carvão
+    objtype_map[CInt(0x1BD7)] := RESOURCE_TYPE_MADEIRA;
+    
+    // Comida
+    objtype_map[CInt(0xD16)]  := RESOURCE_TYPE_COMIDA;    // Cogumelo
+    objtype_map[CInt(0x097B)] := RESOURCE_TYPE_COMIDA;
+    
+    // Moedas
+    objtype_map[CInt(0xBA63)] := RESOURCE_TYPE_MOEDAS;
+    
+    // Pano
+    objtype_map[CInt(0xEE52)] := RESOURCE_TYPE_PANO;      // Pele branca
+    objtype_map[CInt(0x1767)] := RESOURCE_TYPE_PANO;
+    
+    // Pedras
+    objtype_map[CInt(0xEF32)] := RESOURCE_TYPE_PEDRA;     // Osso cinza
+    objtype_map[CInt(0xEF3A)] := RESOURCE_TYPE_PEDRA;     // Osso gigante
+    objtype_map[CInt(0x1BE3)] := RESOURCE_TYPE_PEDRA;     // Glass/Vidro
+    objtype_map[CInt(0x177A)] := RESOURCE_TYPE_PEDRA;
+    
+    // Joias
+    objtype_map[CInt(0xF13)]  := RESOURCE_TYPE_JOIAS;
+    
+    // Agora tentar acesso direto que deve funcionar
+    if (objtype_map.exists(objtype_to_check))
+        // LogDebug("ClassificarPorObjtype", "Objtype 0x" + Hex(objtype_to_check) + " MAPEADO para -> " + objtype_map[objtype_to_check] + " via .exists()");
+        return objtype_map[objtype_to_check];
+    endif
+    
+    // Se ainda falhar (o que não deveria acontecer se as chaves são inteiras),
+    // tentar a iteração como um fallback de depuração extremo,
+    // mas a intenção é que o .exists() acima resolva.
+    // Este loop de fallback pode ser removido se o .exists() funcionar consistentemente.
+    /*
+    LogWarning("ClassificarPorObjtype", "Fallback para iteração de chaves para objtype 0x" + Hex(objtype_to_check) + ". Isso não deveria ser necessário.");
+    foreach key_from_map in (objtype_map.keys()) // key_from_map será o inteiro aqui
+        if (key_from_map == objtype_to_check)
+            // LogDebug("ClassificarPorObjtype", "Objtype 0x" + Hex(objtype_to_check) + " MAPEADO para -> " + objtype_map[key_from_map] + " via iteração de chaves (fallback).");
+            return objtype_map[key_from_map];
+        endif
+    endforeach
+    */
+    
+    LogWarning("ClassificarPorObjtype", "Objtype 0x" + Hex(objtype_to_check) + 
+               " (" + objtype_to_check + ") não mapeado. Verifique se está presente em objtype_map e se RESOURCE_TYPE_ constants estão corretas.");
     return "desconhecido";
 endfunction
- 
 
 function FindFactionChest(faction_name, territory_identifier := "", create_if_missing := 0)
     if (!faction_name)

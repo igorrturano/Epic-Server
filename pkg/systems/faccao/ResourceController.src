@@ -705,11 +705,11 @@ endfunction
         
         var categoria_final := ClassificarRecurso(objtype); // 'objtype' deve ser um inteiro aqui
 
-        if (categoria_final == "desconhecido" || !categoria_final) 
-            LogWarning("recursos", "Categoria NÃO DETERMINADA para recurso: '" + resource + "' (Objtype: 0x" + Hex(objtype) + ") usando ClassificarRecurso(objtype). Recurso não será marcado como doação específica.");
-        else
-             LogDebug("GenerateResources_DEBUG", "Categoria final determinada para CProp: " + categoria_final);
-        endif;
+if (categoria_final == "desconhecido" || !categoria_final)
+    LogWarning("recursos", "Categoria NÃO DETERMINADA para recurso: '" + resource + "' (Objtype: 0x" + Hex(objtype) + ") usando ClassificarRecurso(objtype). Recurso não será marcado como doação específica.");
+else
+    LogDebug("GenerateResources_DEBUG", "Categoria final determinada para CProp: " + categoria_final); // <-- ESTA LINHA
+endif;
         
         var properties := dictionary{};
         if (categoria_final != "desconhecido" && categoria_final)
@@ -736,50 +736,73 @@ else
 endif;
 LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
         
-        var result := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
+        var result_item := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
         
-        if (result && result != error)
-            LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result + ", Serial: " + result.serial + ", Amount: " + result.amount + ", Objtype: 0x" + Hex(result.objtype));
+        if (result_item && result_item != error)
+            LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result_item + ", Serial: " + result_item.serial + ", Amount: " + result_item.amount + ", Objtype: 0x" + Hex(result_item.objtype));
+            // ----- START: Added CProp Verification Log -----
+            LogInfo("PROP_VERIFY", "Item " + result_item.serial + " (Objtype: 0x" + Hex(result_item.objtype) + ") CProps APÓS criação/stack:");
+            var all_cprops_on_item := GetObjPropertyNames(result_item); // Get all CProps
+            if (all_cprops_on_item && TypeOf(all_cprops_on_item) == "Array") // Check if it's a valid array
+                foreach prop_name_verify in (all_cprops_on_item)
+                    LogInfo("PROP_VERIFY", "  -> " + prop_name_verify + " = " + GetObjProperty(result_item, prop_name_verify));
+                    Sleepms(1); // Optional, for readability if many props
+                endforeach
+            else
+                LogWarning("PROP_VERIFY", "Não foi possível obter CProps para o item " + result_item.serial + " ou não há CProps.");
+            endif
+            // ----- END: Added CProp Verification Log -----
+
             success_count += 1;
-            log_entries.append("Recurso criado: " + resource + " x" + resource_amount + " (Serial: " + result.serial + ")");
-            //LogDebug("recursos", "Recurso adicionado com sucesso: " + resource + " x" + resource_amount); // Pode ser um pouco verboso
+            log_entries.append("Recurso criado: " + resource + " x" + resource_amount + " (Serial: " + result_item.serial + ")"); // Changed result to result_item
             
-            var has_created_prop := GetObjProperty(result, "CreatedByResourceController");
-            var has_time_prop := GetObjProperty(result, "GeneratedTime");
+            var has_created_prop := GetObjProperty(result_item, "CreatedByResourceController"); // Changed result to result_item
+            var has_time_prop := GetObjProperty(result_item, "GeneratedTime"); // Changed result to result_item
             
             if (!has_created_prop || !has_time_prop)
-                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! (Serial: "+result.serial+"). Corrigindo manualmente...");
+                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! (Serial: "+result_item.serial+"). Corrigindo manualmente..."); // Changed result to result_item
                 if (!has_created_prop)
-                    SetObjProperty(result, "CreatedByResourceController", 1);
+                    SetObjProperty(result_item, "CreatedByResourceController", 1); // Changed result to result_item
                 endif;
                 if (!has_time_prop)
-                    SetObjProperty(result, "GeneratedTime", polcore().systime);
+                    SetObjProperty(result_item, "GeneratedTime", polcore().systime); // Changed result to result_item
                 endif;
             endif;
         else
-            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + CStr(result) + " (Tipo: " + TypeOf(result) + ")");
+            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + CStr(result_item) + " (Tipo: " + TypeOf(result_item) + ")"); // Changed result to result_item
             log_entries.append("Falha (SafeCreate) ao criar recurso: " + resource);
             
-            // LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer_Refactored, tentando método direto"); // Já logado acima
-            
-            var new_item := CreateItemInContainer(donation_chest, objtype, resource_amount);
-            if (new_item && new_item != error) // Adicionado verificação != error
-                // Aplicar propriedades ao item criado pelo método alternativo
-                if (TypeOf(properties) == "Dictionary") // Reaplicar properties
-                    foreach prop_name_alt in (properties.keys())
-                        SetObjProperty(new_item, CStr(prop_name_alt), properties[prop_name_alt]);
-                        Sleepms(1); // sleepms é opcional
-                    endforeach;
-                endif;
+            // ... (your fallback logic using CreateItemInContainer)
+            // If you have fallback logic, make sure to apply the PROP_VERIFY log there as well
+            // if the fallback is successful.
+            // Example for fallback:
+            var new_item_fallback := CreateItemInContainer(donation_chest, objtype, resource_amount);
+            if (new_item_fallback && new_item_fallback != error)
+                // Apply properties to new_item_fallback
+                if (TypeOf(properties) == "Dictionary")
+                    ApplyPropertiesToItem(new_item_fallback, properties);
+                endif
+
+                LogInfo("GenerateResources_DEBUG", "SUCESSO (método alternativo)! Item Ref: " + new_item_fallback + ", Serial: " + new_item_fallback.serial);
                 
-                LogInfo("GenerateResources_DEBUG", "SUCESSO (método alternativo)! Item Ref: " + new_item + ", Serial: " + new_item.serial);
-                
+                // ----- START: Added CProp Verification Log for FALLBACK -----
+                LogInfo("PROP_VERIFY_FALLBACK", "Item " + new_item_fallback.serial + " (Objtype: 0x" + Hex(new_item_fallback.objtype) + ") CProps APÓS criação/stack (FALLBACK):");
+                var all_cprops_fallback := GetObjPropertyNames(new_item_fallback);
+                if (all_cprops_fallback && TypeOf(all_cprops_fallback) == "Array")
+                    foreach prop_name_verify_fb in (all_cprops_fallback)
+                        LogInfo("PROP_VERIFY_FALLBACK", "  -> " + prop_name_verify_fb + " = " + GetObjProperty(new_item_fallback, prop_name_verify_fb));
+                        Sleepms(1);
+                    endforeach
+                else
+                    LogWarning("PROP_VERIFY_FALLBACK", "Não foi possível obter CProps para o item " + new_item_fallback.serial + " (FALLBACK) ou não há CProps.");
+                endif
+                // ----- END: Added CProp Verification Log for FALLBACK -----
+
                 success_count += 1;
-                log_entries.append("Recurso criado (alt): " + resource + " x" + resource_amount + " (Serial: " + new_item.serial + ")");
-                // LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
+                log_entries.append("Recurso criado (alt): " + resource + " x" + resource_amount + " (Serial: " + new_item_fallback.serial + ")");
             else
                 log_entries.append("Falha (CreateInContainer) ao criar recurso: " + resource);
-                LogError("recursos", "Falha (CreateInContainer) ao criar recurso: " + resource + ". Erro: " + CStr(new_item));
+                LogError("recursos", "Falha (CreateInContainer) ao criar recurso: " + resource + ". Erro: " + CStr(new_item_fallback));
             endif;
         endif;
         

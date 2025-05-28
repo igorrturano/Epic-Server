@@ -6,8 +6,9 @@ use uo;
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
+include ":faccao:include/process_registry"; // <<< CERTIFIQUE-SE QUE ESTA LINHA ESTÁ NO TOPO DO SEU start.src
 
-// Opcional: include ":faccao:include/permissions.inc"; // Se realmente necessário aqui
+// Opcional: include ":faccao:include/permissions.inc"; 
 
 // Inicia o controle de soldo
 var script := start_script(":faccao:soldocontrol");
@@ -27,16 +28,14 @@ else
     LogDebug("sistema", "Starting resource updates processor... ok.");
 endif
 
-// ============================================================================
-// MODIFICAÇÃO PARA TESTE: Desativar verify_faction_resources temporariamente
-// ============================================================================
-// var verify_script := start_script(":faccao:verify_faction_resources");
-// if (verify_script.errortext)
-//     LogError("recursos", "Erro ao iniciar verificador de consistência: " + verify_script.errortext);
-// else
-//     LogDebug("sistema", "Starting resources consistency verifier... ok.");
-// endif
-LogWarning("start_DEBUG", "ATENÇÃO: verify_faction_resources.src está DESATIVADO TEMPORARIAMENTE para teste de atualização de moedas.");
+
+var verify_script := start_script(":faccao:verify_faction_resources"); 
+if (verify_script.errortext)
+    LogError("recursos", "Erro ao iniciar verificador de consistência: " + verify_script.errortext);
+else
+    LogDebug("sistema", "Starting resources consistency verifier... ok.");
+endif
+// LogWarning("start_DEBUG", "ATENÇÃO: verify_faction_resources.src está DESATIVADO TEMPORARIAMENTE para teste de atualização de moedas."); // COMENTE OU REMOVA
 // ============================================================================
 
 // Iniciar o sistema de registro de guildas
@@ -54,7 +53,7 @@ function GetMinimumTerritoryInterval()
     endif
     
     var min_interval := 3600; 
-    var log_msg := ""; // Variável para log
+    var log_msg := ""; 
 
     foreach rect_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, rect_name);
@@ -88,8 +87,9 @@ function GetMinimumTerritoryInterval()
     return CInt(min_interval / 2);
 endfunction
 
+// ===== ESTA É A ÚNICA VERSÃO DA FUNÇÃO QUE DEVE PERMANECER =====
 function start_resource_controller()
-    var log_msg := ""; // Variável para log
+    var log_msg := ""; 
     var last_time := CInt(GetGlobalProperty("last_execution"));
     if (last_time == error)
         last_time := 0;
@@ -100,8 +100,10 @@ function start_resource_controller()
     
     var dynamic_interval := GetMinimumTerritoryInterval();
     var effective_interval := (dynamic_interval < CYCLE_WAIT) ? dynamic_interval : CYCLE_WAIT;
-    var should_execute := (last_time == 0 || time_since_last >= effective_interval);
-    
+    var should_execute_based_on_time := (last_time == 0 || time_since_last >= effective_interval);
+
+    var controller_is_already_running := IsProcessRunning("ResourceController");
+
     LogDebug("start_DEBUG", "Verificando ResourceController:");
     LogDebug("start_DEBUG", "  - CurrentTime: " + current_time);
     LogDebug("start_DEBUG", "  - LastTime: " + last_time);
@@ -109,65 +111,46 @@ function start_resource_controller()
     LogDebug("start_DEBUG", "  - StaticInterval: " + CYCLE_WAIT + " segundos");
     LogDebug("start_DEBUG", "  - DynamicInterval: " + dynamic_interval + " segundos");
     LogDebug("start_DEBUG", "  - EffectiveInterval: " + effective_interval + " segundos");
-    LogDebug("start_DEBUG", "  - ShouldExecute: " + should_execute);
-    
-    if (should_execute)
-        log_msg := "- DECISÃO: INICIAR ResourceController agora (PID: " + GetPid() + ")";
+    LogDebug("start_DEBUG", "  - ShouldExecuteBasedOnTime: " + should_execute_based_on_time);
+    LogDebug("start_DEBUG", "  - ControllerIsAlreadyRunning (ProcessRegistry): " + controller_is_already_running);
+
+    if (controller_is_already_running == 1)
+        LogInfo("start_DEBUG", "- DECISÃO: NÃO INICIAR ResourceController. Já está rodando (detectado pelo process_registry).");
+        if (should_execute_based_on_time)
+            SetGlobalProperty("last_execution", current_time);
+            LogInfo("start_DEBUG", "  - 'last_execution' atualizado para o ciclo atual pois o tempo de execução passou, mas o processo já estava ativo.");
+        endif
+        return; 
+    elseif (controller_is_already_running == error)
+        LogError("start_DEBUG", "- ERRO: Falha ao verificar IsProcessRunning para ResourceController. Tentando iniciar de qualquer forma se o tempo permitir.");
+    endif
+
+    if (should_execute_based_on_time)
+        log_msg := "- DECISÃO: INICIAR ResourceController agora (PID do start.src: " + GetPid() + ")";
         LogInfo("start_DEBUG", log_msg);
-        log_msg := "  Motivo: " + (last_time == 0 ? "Primeira execução" : "Intervalo de " + effective_interval + "s atingido");
+        log_msg := "  Motivo: " + (last_time == 0 ? "Primeira execução" : "Intervalo de " + effective_interval + "s atingido") + " e processo não detectado como ativo.";
         LogInfo("start_DEBUG", log_msg);
         
         var resource_script := start_script(":faccao:ResourceController");
         if (resource_script.errortext)
             LogError("recursos", "Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
         else
-            log_msg := "- ResourceController iniciado com sucesso. Novo PID: " + resource_script.pid;
+            log_msg := "- ResourceController.src INVOCADO com sucesso. PID do novo processo (se iniciado): " + (resource_script.pid ? resource_script.pid : "N/A - pode ter saído se duplicado");
             LogInfo("start_DEBUG", log_msg);
             LogDebug("sistema", "Starting territory resource controller... ok.");
             SetGlobalProperty("last_execution", current_time);
         endif
     else
         var wait_time := effective_interval - time_since_last;
-        log_msg := "- DECISÃO: AGUARDAR. Próxima execução do ResourceController em " + wait_time + " segundos (" + CInt(wait_time/60) + " minutos).";
+        log_msg := "- DECISÃO: AGUARDAR. Próxima tentativa de execução do ResourceController em " + wait_time + " segundos (" + CInt(wait_time/60) + " minutos).";
         LogInfo("start_DEBUG", log_msg);
-        log_msg := "Próxima execução do ResourceController em " + wait_time + " segundos.";
-        LogDebug("recursos", log_msg);
+        // LogDebug("recursos", log_msg); // Esta linha é um pouco redundante com a anterior
     endif
 endfunction
+// ===== FIM DA ÚNICA VERSÃO CORRETA DA FUNÇÃO =====
 
-/*
-function ResourceControllerManager()
-    LogInfo("start_DEBUG", "Iniciando ResourceController Manager...");
-    var log_msg := "";
-    while(1)
-        var controller_pid := GetGlobalProperty("ResourceControllerPID");
-        var controller_running := 0;
-        
-        if (controller_pid)
-            var process := GetProcess(CInt(controller_pid)); 
-            if (process)
-                controller_running := 1;
-            endif
-        endif
-        
-        if (!controller_running)
-            LogWarning("start_DEBUG", "ResourceController não está rodando, tentando reiniciar...");
-            start_resource_controller();
-        endif
-        
-        var check_interval := GetMinimumTerritoryInterval();
-        if (check_interval > 300) 
-            check_interval := 300;
-        endif
-        
-        log_msg := "ResourceController Manager aguardando " + check_interval + " segundos...";
-        LogDebug("start_DEBUG", log_msg);
-        Sleep(check_interval);
-    endwhile
-endfunction
-*/
 
-start_resource_controller();
+start_resource_controller(); // Chamada para a função
 
 // var manager_script := start_script(ResourceControllerManager);
 // if (manager_script.errortext)
