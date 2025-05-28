@@ -18,6 +18,11 @@ include ":debug:main";
  * Nenhum (void)
  */
 function MasteryCombat_Advance(attacker, combatInfo)
+	if (HasReachedMasteriesLimit(attacker))
+		DebugMsg(attacker, DEBUG_MASTERY, "Limite de maestrias atingido. Para avançar, remova uma maestria existente.");
+		return;
+	endif
+	
 	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
 	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
@@ -31,6 +36,14 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}");
 
 	attacker.SetMastery(mastery);
+endfunction
+
+function HasReachedMasteriesLimit(attacker)
+	var masteriesNames := attacker.GetMasteryProp();
+	if (masteriesNames.size() >= 3)
+		return true;
+	endif
+	return false;
 endfunction
 
 function MasteryCheckLevel(xp)
