@@ -79,8 +79,8 @@ function HumanoidBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.source))
-                        HandleHumanoidCombatEvent(ev.source, is_ranged);
+                    if (CanFight(me, ev.opponent))
+                        HandleHumanoidCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     if (me.isShaman()   )
