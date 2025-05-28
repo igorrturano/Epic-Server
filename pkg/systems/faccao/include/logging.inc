@@ -124,25 +124,23 @@ endfunction
  *   String formatada com data e hora
  */
 function FormatTimeString(timestamp)
-    // Verificação inicial para prevenir erros
     if (!timestamp || timestamp == error)
-        return CStr(ReadGameClock());
+        return CStr(ReadGameClock()); // Fallback
     endif
-    
-    // Método simples que não usa systime_precise
+
     var seconds_per_day := 86400;
     var seconds_per_hour := 3600;
     var seconds_per_minute := 60;
+
+    var total_days_since_epoch := CInt(timestamp / seconds_per_day);
+    var seconds_into_this_day := timestamp % seconds_per_day;
     
-    var days := CInt(timestamp / seconds_per_day) % 365;
-    var hours := CInt((timestamp % seconds_per_day) / seconds_per_hour);
-    var minutes := CInt((timestamp % seconds_per_hour) / seconds_per_minute);
-    var seconds := CInt(timestamp % seconds_per_minute);
+    var hours   := CInt(seconds_into_this_day / seconds_per_hour);
+    var minutes := CInt((seconds_into_this_day % seconds_per_hour) / seconds_per_minute);
+    var seconds := CInt(seconds_into_this_day % seconds_per_minute);
     
-    // Formatar simples (ano fixo - mais para exibição do que precisão)
-    var formatted := CStr(2023) + "-" + 
-                   PadStr(CStr(1), 2, "0") + "-" + 
-                   PadStr(CStr(days+1), 2, "0") + " " + 
+    // Formato: Dia POL [Número] HH:MM:SS
+    var formatted := "D" + total_days_since_epoch + " " + 
                    PadStr(CStr(hours), 2, "0") + ":" + 
                    PadStr(CStr(minutes), 2, "0") + ":" + 
                    PadStr(CStr(seconds), 2, "0");
@@ -150,14 +148,11 @@ function FormatTimeString(timestamp)
     return formatted;
 endfunction
 
-
-
-function PadStr(str, length_needed, padchar := " ")
+function PadStr(str, length_needed, padchar := "0") // Certifique-se que esta função auxiliar está disponível
     str := CStr(str);
-    while (length_needed > len(str))
+    while (len(str) < length_needed)
         str := padchar + str;
     endwhile
-    
     return str;
 endfunction
 

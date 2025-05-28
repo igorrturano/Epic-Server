@@ -157,7 +157,6 @@ endfunction
 // =======================================
 // Funções de Modificação Básicas
 // =======================================
-
 /*
  * TM_SetTerritoryFaction(territory_id_or_name, faction_name)
  *
@@ -175,6 +174,12 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
         return 0;
     endif
     
+    // Obter a facção antiga antes de mudar
+    var old_faction := GetElementProp(territory_elem, TERRITORY_FACTION_PROP);
+    if (!old_faction)
+        old_faction := GetElementProp(territory_elem, "Faction");
+    endif
+    
     // Definir a propriedade principal
     var result := SetElementProp(territory_elem, TERRITORY_FACTION_PROP, faction_name);
     
@@ -182,6 +187,66 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
     SetElementProp(territory_elem, "Faction", faction_name);
     
     LogInfo("territorio", "Facção do território " + territory_id_or_name + " definida para " + faction_name);
+    
+    // --- SINCRONIZAÇÃO AUTOMÁTICA DA CPROP TERRITORIES ---
+    // Atualizar CProp da guilda ANTIGA (remover o território)
+    if (old_faction && old_faction != DEFAULT_FACTION && old_faction != "Selvagem")
+        LogDebug("TM_SetTerritoryFaction", "Removendo território da lista da facção antiga: " + old_faction);
+        var old_guild_id := FindGuildByName(old_faction);
+        if (old_guild_id)
+            var old_guild_obj := FindGuild(old_guild_id);
+            if (old_guild_obj)
+                var old_territories := old_guild_obj.GetProp("territories");
+                if (old_territories && TypeOf(old_territories) == "Array")
+                    var new_old_territories := array{};
+                    foreach terr in old_territories
+                        // Adicionar apenas se não for este território
+                        if (CStr(terr) != CStr(territory_id_or_name))
+                            new_old_territories.append(terr);
+                        endif
+                        sleepms(2);
+                    endforeach
+                    
+                    old_guild_obj.SetProp("territories", new_old_territories);
+                    LogDebug("TM_SetTerritoryFaction", "Território removido da facção " + old_faction + ". Territórios restantes: " + new_old_territories.size());
+                endif
+            endif
+        endif
+    endif
+
+    // Atualizar CProp da guilda NOVA (adicionar o território)
+    if (faction_name && faction_name != DEFAULT_FACTION && faction_name != "Selvagem")
+        LogDebug("TM_SetTerritoryFaction", "Adicionando território à lista da nova facção: " + faction_name);
+        var new_guild_id := FindGuildByName(faction_name);
+        if (new_guild_id)
+            var new_guild_obj := FindGuild(new_guild_id);
+            if (new_guild_obj)
+                var new_territories := new_guild_obj.GetProp("territories");
+                if (!new_territories || TypeOf(new_territories) != "Array")
+                    new_territories := array{};
+                endif
+                
+                // Verificar se já não existe na lista
+                var exists := 0;
+                foreach terr in new_territories
+                    if (CStr(terr) == CStr(territory_id_or_name))
+                        exists := 1;
+                        break;
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                if (!exists)
+                    new_territories.append(territory_id_or_name);
+                    new_guild_obj.SetProp("territories", new_territories);
+                    LogDebug("TM_SetTerritoryFaction", "Território adicionado à facção " + faction_name + ". Total de territórios: " + new_territories.size());
+                else
+                    LogDebug("TM_SetTerritoryFaction", "Território já existe na lista da facção " + faction_name);
+                endif
+            endif
+        endif
+    endif
+    // --- FIM DA SINCRONIZAÇÃO ---
     
     return result;
 endfunction
@@ -1908,4 +1973,70 @@ function TrimString(str)
     endwhile
     
     return str;
+endfunction
+
+
+/*
+ * SyncGuildTerritories(faction_name)
+ *
+ * Purpose: Sincroniza a lista de territórios da guilda com o datafile
+ * Parameters: faction_name - Nome da facção
+ * Return: Número de territórios sincronizados
+ */
+function SyncGuildTerritories(faction_name)
+    if (!faction_name)
+        return 0;
+    endif
+    
+    LogInfo("sync_territories", "Iniciando sincronização de territórios para: " + faction_name);
+    
+    // Obter a guilda
+    var guild_id := FindGuildByName(faction_name);
+    if (!guild_id)
+        LogError("sync_territories", "Guilda não encontrada: " + faction_name);
+        return 0;
+    endif
+    
+    var guild := FindGuild(guild_id);
+    if (!guild)
+        LogError("sync_territories", "Objeto da guilda não encontrado");
+        return 0;
+    endif
+    
+    // Buscar territórios no datafile
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("sync_territories", "Não foi possível abrir datafile de áreas");
+        return 0;
+    endif
+    
+    var territory_list := array{};
+    
+    foreach elem_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem) continue; endif
+        
+        var terr_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+        if (!terr_faction)
+            terr_faction := GetElementProp(elem, "Faction");
+        endif
+        
+        if (terr_faction == faction_name)
+            var terr_id := GetElementProp(elem, TERRITORY_ID_PROP);
+            if (!terr_id)
+                terr_id := elem_name;
+            endif
+            
+            territory_list.append(terr_id);
+            LogDebug("sync_territories", "Território encontrado: " + terr_id);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Atualizar a lista na guilda
+    guild.SetProp("territories", territory_list);
+    
+    LogInfo("sync_territories", "Sincronizados " + territory_list.size() + " territórios para " + faction_name);
+    
+    return territory_list.size();
 endfunction

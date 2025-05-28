@@ -1,4 +1,4 @@
-    use uo;
+use uo;
     use os;
     use datafile;
     use util;
@@ -152,7 +152,7 @@ program ResourceController()
         endwhile
     endprogram
 
-    // NOVA FUNÇÃO para processar eventos do datafile
+// NOVA FUNÇÃO para processar eventos do datafile
 function ProcessPendingEvents()
     var df := SafeOpenDataFile(":faccao:messages");
     if(!df) 
@@ -174,53 +174,88 @@ function ProcessPendingEvents()
         return; 
     endif // Nenhum evento
 
-        LogInfo("ResourceController_Event", "Processando " + events.size() + " eventos pendentes...");
-        var processed_events := 0;
+    LogInfo("ResourceController_Event", "Processando " + events.size() + " eventos pendentes...");
+    var processed_events := 0;
 
-        // Criar uma nova lista para eventos não processados (se houver erro)
-        var remaining_events := array{};
+    // Criar uma nova lista para eventos não processados (se houver erro)
+    var remaining_events := array{};
 
-        foreach ev in events
-            if (TypeOf(ev) == "Struct" && ev.territory_id && ev.type)
-                LogInfo("ResourceController", "Processando evento " + ev.type + " para território: " + ev.territory_id);
-                case (ev.type)
-                    "created":
-                    "transfer":
-                    "claimed":
-                    "resources_updated":
-                    "rollback": // Adicionar rollback se necessário
-                        UpdateTerritorySchedule(ev.territory_id);
-                        processed_events += 1;
+    foreach ev in events
+        if (TypeOf(ev) == "Struct" && ev.territory_id && ev.type)
+            LogInfo("ResourceController", "Processando evento " + ev.type + " para território: " + ev.territory_id);
+            case (ev.type)
+                "created":
+                "transfer":
+                "claimed":
+                "resources_updated":
+                "rollback": // Adicionar rollback se necessário
+                    UpdateTerritorySchedule(ev.territory_id);
+                    processed_events += 1;
 
-                    "deleted":
-                    "revoked":
-                        if (next_territory_checks.exists(ev.territory_id))
-                            next_territory_checks.erase(ev.territory_id);
-                            LogInfo("ResourceController", "Território " + ev.territory_id + " removido do agendamento (evento " + ev.type + ").");
+                "deleted":
+                "revoked":
+                    if (next_territory_checks.exists(ev.territory_id))
+                        next_territory_checks.erase(ev.territory_id);
+                        LogInfo("ResourceController", "Território " + ev.territory_id + " removido do agendamento (evento " + ev.type + ").");
+                    endif
+                    processed_events += 1;
+
+                "reload_territories":
+                    LogInfo("ResourceController", "Evento de reload recebido. Recarregando territórios...");
+                    LoadAllTerritories();
+                    processed_events += 1;
+
+                // --- NOVOS CASES PARA CARAVANA ---
+                "caravan_activated":
+                    if (ev.data && ev.data.faction && ev.territory_id) // territory_id aqui é o capital_id
+                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_ACTIVATED para Facção: " + ev.data.faction + ", Capital: " + ev.territory_id);
+                        // Armazenar essa informação para uso em GenerateResourcesForTerritory
+                        var caravan_info_global := GetGlobalProperty("active_caravans");
+                        if (!caravan_info_global || caravan_info_global == error)
+                            caravan_info_global := dictionary{};
                         endif
-                        processed_events += 1;
+                        caravan_info_global[ev.data.faction] := struct{
+                            "capital_id" := ev.territory_id, 
+                            "active_until" := ev.data.active_until_next_payment
+                        };
+                        SetGlobalProperty("active_caravans", caravan_info_global);
+                        LogInfo("ResourceController_Caravana", "Caravana ATIVADA e registrada para " + ev.data.faction + " -> " + ev.territory_id);
+                    else
+                        LogWarning("ResourceController_Caravana", "Evento caravan_activated recebido com dados insuficientes: " + ev);
+                    endif
+                    processed_events += 1;
 
-                    "reload_territories":
-                        LogInfo("ResourceController", "Evento de reload recebido. Recarregando territórios...");
-                        LoadAllTerritories();
-                        processed_events += 1;
+                "caravan_deactivated":
+                    if (ev.data && ev.data.faction)
+                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_DEACTIVATED para Facção: " + ev.data.faction + ", Capital: " + ev.territory_id);
+                        var caravan_info_global := GetGlobalProperty("active_caravans");
+                        if (caravan_info_global && caravan_info_global.exists(ev.data.faction))
+                            caravan_info_global.erase(ev.data.faction);
+                            SetGlobalProperty("active_caravans", caravan_info_global);
+                            LogInfo("ResourceController_Caravana", "Caravana DESATIVADA e removida do registro para " + ev.data.faction);
+                        endif
+                    else
+                        LogWarning("ResourceController_Caravana", "Evento caravan_deactivated recebido com dados insuficientes: " + ev);
+                    endif
+                    processed_events += 1;
+                // --- FIM DOS NOVOS CASES ---
 
-                    default:
-                        LogWarning("ResourceController", "Tipo de evento desconhecido no datafile: " + ev.type);
-                        remaining_events.append(ev); // Manter evento não reconhecido? Opcional.
-                endcase
-            else
-                LogWarning("ResourceController_Event", "Evento inválido encontrado no datafile: " + ev);
-                // Não re-adicionar evento inválido
-            endif
-            sleepms(5); // Pequena pausa
-        endforeach
+                default:
+                    LogWarning("ResourceController", "Tipo de evento desconhecido no datafile: " + ev.type);
+                    remaining_events.append(ev); // Manter evento não reconhecido? Opcional.
+            endcase
+        else
+            LogWarning("ResourceController_Event", "Evento inválido encontrado no datafile: " + ev);
+            // Não re-adicionar evento inválido
+        endif
+        sleepms(5); // Pequena pausa
+    endforeach
 
-        // Salvar a lista de eventos (apenas os não processados/inválidos, se houver)
-        // Se todos foram processados, a lista estará vazia.
-        SetElementProp(elem, "pending", remaining_events);
-        LogInfo("ResourceController_Event", "Processamento de eventos concluído. Processados: " + processed_events + ".");
-    endfunction
+    // Salvar a lista de eventos (apenas os não processados/inválidos, se houver)
+    // Se todos foram processados, a lista estará vazia.
+    SetElementProp(elem, "pending", remaining_events);
+    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Processados: " + processed_events + ".");
+endfunction
 
 function UpdateTerritorySchedule(territory_id_to_update)
     LogInfo("ResourceController_Schedule", "Tentando atualizar agenda para ID: " + territory_id_to_update);
@@ -271,45 +306,7 @@ endfunction
 
 
 
-function InitializeSchedule()
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
-    var current_time := polcore().systime;
-    
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        if (!elem)
-            continue;
-        endif
-        
-        var faction := GetElementProp(elem, "Faction");
-        
-        // Verificar apenas territórios controlados
-        if (faction && faction != "Selvagem" && faction != DEFAULT_FACTION)
-            var next_time := CInt(GetElementProp(elem, "NextResourceTime"));
-            if (!next_time)
-                // MUDADO: Usar intervalo padrão de 1 minuto
-                var interval := CInt(GetElementProp(elem, "ResourceInterval"));
-                if (!interval || interval < 1) // MUDADO: mínimo 1 minuto
-                    interval := 1; // MUDADO: padrão 1 minuto ao invés de 60
-                    SetElementProp(elem, "ResourceInterval", interval);
-                endif
-                
-                next_time := current_time + (interval * 60);
-                SetElementProp(elem, "NextResourceTime", next_time);
-            endif
-            
-            next_territory_checks[rect_name] := next_time;
-        endif
-        
-        sleepms(5);
-    endforeach
-    
-    return 1;
-endfunction
+
 
     // Função GetTerritoriesDueForCheck modificada - Adicionar log mais detalhado
     function GetTerritoriesDueForCheck(current_time)

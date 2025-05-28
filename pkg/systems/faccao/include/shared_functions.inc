@@ -3470,3 +3470,169 @@ function CleanDuplicateItems(container)
     LogInfo("CleanDuplicates", "Limpeza concluída: " + cleaned_count + " duplicatas removidas");
     return cleaned_count;
 endfunction
+
+
+/*
+ * ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref_dummy)
+ *
+ * Calcula o total de recursos para TODOS os baús de uma facção específica
+ * e sincroniza esse total com o datafile e CProps da guilda.
+ * Também atualiza o cache individual de cada baú processado da facção.
+ *
+ * MODIFICADO PARA SER CHAMADO DE FORMA SÍNCRONA E ATUALIZAR TODOS OS BAÚS DA FACÇÃO.
+ * A variável 'updates_pending_dict_ref_dummy' não é ativamente usada nesta versão,
+ * mas mantida para compatibilidade caso o script process_recursos_updates.src ainda a passe.
+ */
+exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref_dummy)
+    // (updates_pending_dict_ref_dummy não será usado ativamente aqui, pois vamos processar todos os baús da facção)
+
+    if (!faction_name || faction_name == error)
+        LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nome da facção inválido.");
+        return 0;
+    endif
+
+    LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Iniciando processamento agregado para facção '" + faction_name + "'.");
+    var total_recursos_da_faccao := CreateEmptyResourceStruct();
+    var baus_da_faccao_processados_neste_ciclo := 0;
+    var current_processing_timestamp := polcore().systime; // Usar um timestamp consistente para este ciclo
+
+    // Passo 1: Identificar todos os baús conhecidos desta facção
+    var todos_os_baus_da_faccao := array{};
+
+    // Sub-Passo 1.1: Verificar baús registrados no datafile :faccao:seriais
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    if (seriais_df)
+        // Formato Novo (elemento por territory_id)
+        var all_territory_ids := seriais_df.keys();
+        foreach terr_id_key in all_territory_ids
+            if (terr_id_key == "territorios") continue; endif // Pular o elemento legado
+            var terr_elem := SafeFindElement(seriais_df, terr_id_key);
+            if (terr_elem)
+                var elem_faction_name := GetElementProp(terr_elem, "faction");
+                if (elem_faction_name == faction_name)
+                    var bau_serial := GetElementProp(terr_elem, "bau");
+                    if (bau_serial)
+                        var bau_obj := SystemFindObjectBySerial(CInt(bau_serial));
+                        if (bau_obj && !(bau_obj in todos_os_baus_da_faccao))
+                            todos_os_baus_da_faccao.append(bau_obj);
+                            LogDebug("recursos_proc", "Baú " + bau_serial + " adicionado à lista (via datafile novo formato).");
+                        endif
+                    endif
+                endif
+            endif
+            SleepMS(1);
+        endforeach
+
+        // Formato Legado (dicionário "territorios")
+        var territorios_seriais_legado := GetElementProp(seriais_df, "territorios", dictionary{});
+        if (TypeOf(territorios_seriais_legado) == "Dictionary")
+            foreach terr_id_legado in (territorios_seriais_legado.keys())
+                var info_legado := territorios_seriais_legado[terr_id_legado];
+                if (info_legado && info_legado.faction == faction_name && info_legado.bau)
+                    var bau_obj_legado := SystemFindObjectBySerial(CInt(info_legado.bau));
+                    if (bau_obj_legado && !(bau_obj_legado in todos_os_baus_da_faccao))
+                        todos_os_baus_da_faccao.append(bau_obj_legado);
+                        LogDebug("recursos_proc", "Baú " + info_legado.bau + " adicionado à lista (via datafile formato legado).");
+                    endif
+                endif
+                SleepMS(1);
+            endforeach
+        endif
+    endif // Closes if (seriais_df)
+
+    // Sub-Passo 1.2: Iterar sobre itens no mundo para encontrar baús da facção não registrados
+    // Isso pode ser pesado, então limitamos a quantidade de itens verificados.
+    var items_scanned_world := 0;
+    var max_items_to_scan_world := 10000; // Ajustável
+    LogDebug("recursos_proc", "Procurando baús adicionais da facção '" + faction_name + "' no mundo...");
+    foreach item_no_mundo in EnumerateItemsInContainer(0) // 0 para root (mundo)
+        items_scanned_world +=1;
+        if (items_scanned_world > max_items_to_scan_world)
+            LogWarning("recursos_proc", "ProcessarRecursosDeUmaFaccao: Limite de scan no mundo ("+max_items_to_scan_world+") atingido para facção " + faction_name);
+            break;
+        endif
+
+        if (item_no_mundo.objtype == 0xFF11) // ObjType do baú de doações
+            var chest_faction_prop := GetObjProperty(item_no_mundo, OBJ_FACTION_PROP);
+            if (!chest_faction_prop) chest_faction_prop := GetObjProperty(item_no_mundo, "FactionName"); endif // Fallback
+
+            if (chest_faction_prop == faction_name)
+                if (!(item_no_mundo in todos_os_baus_da_faccao))
+                    todos_os_baus_da_faccao.append(item_no_mundo);
+                    LogDebug("recursos_proc", "Baú " + item_no_mundo.serial + " adicionado à lista (encontrado no mundo).");
+                endif
+            endif
+        endif
+        if (items_scanned_world % 1000 == 0) SleepMS(1); endif // Pequena pausa a cada 1000 itens
+    endforeach
+    LogInfo("recursos_proc", "Total de baús identificados para facção '" + faction_name + "': " + todos_os_baus_da_faccao.size());
+
+
+    // Passo 2: Processar cada baú identificado
+    if (todos_os_baus_da_faccao.size() == 0)
+        LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nenhum baú encontrado para a facção '" + faction_name + "'. Sincronizando com zero no datafile.");
+        // Se não há baús, o total de recursos é zero. Sincronizar isso.
+        AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao); // total_recursos_da_faccao ainda está zerado
+        AtualizarPropriedadesGuildaRecursos(faction_name, total_recursos_da_faccao);
+        return 1; // Sucesso, pois não havia nada para processar além de zerar.
+    endif
+
+    foreach bau_individual in todos_os_baus_da_faccao
+        if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER)) // Checagem extra
+            // Evitar reprocessamento se outro script estiver mexendo (improvável aqui, mas seguro)
+            if (GetObjProperty(bau_individual, "being_processed_by_aggregator") && (current_processing_timestamp - CInt(GetObjProperty(bau_individual, "being_processed_by_aggregator")) < 60) )
+                LogWarning("recursos_proc", "Baú #" + bau_individual.serial + " pulado, já 'being_processed_by_aggregator' recentemente.");
+                // Tentar usar o cache existente se estiver válido para a soma agregada
+                var cache_bau_individual_skip := GetObjProperty(bau_individual, CACHE_PROP_NAME);
+                var cache_sujo_skip := GetObjProperty(bau_individual, CACHE_DIRTY_FLAG);
+                if (cache_bau_individual_skip && TypeOf(cache_bau_individual_skip) == "Struct" && !cache_sujo_skip)
+                     foreach key_recurso_cache_skip in (cache_bau_individual_skip.keys())
+                        if (total_recursos_da_faccao.exists(key_recurso_cache_skip))
+                            total_recursos_da_faccao[key_recurso_cache_skip] := total_recursos_da_faccao[key_recurso_cache_skip] + CInt(cache_bau_individual_skip[key_recurso_cache_skip]);
+                        endif
+                    endforeach
+                endif
+                continue;
+            endif
+
+            SetObjProperty(bau_individual, "being_processed_by_aggregator", current_processing_timestamp);
+
+            var recursos_deste_bau := ContarRecursosReais(bau_individual); // Esta função já lida com logs internos da contagem
+            baus_da_faccao_processados_neste_ciclo += 1;
+
+            // Atualizar o cache individual deste baú
+            SetObjProperty(bau_individual, CACHE_PROP_NAME, recursos_deste_bau);
+            SetObjProperty(bau_individual, CACHE_UPDATE_PROP, current_processing_timestamp);
+            EraseObjProperty(bau_individual, CACHE_DIRTY_FLAG); // Limpar a flag de sujo
+            LogDebug("recursos_proc", "Cache individual do baú #" + bau_individual.serial + " atualizado.");
+
+            // Somar ao total da facção
+            foreach key_recurso in (recursos_deste_bau.keys())
+                if (total_recursos_da_faccao.exists(key_recurso)) // Garante que a chave existe no struct de destino
+                    total_recursos_da_faccao[key_recurso] := total_recursos_da_faccao[key_recurso] + CInt(recursos_deste_bau[key_recurso]);
+                endif
+            endforeach
+
+            EraseObjProperty(bau_individual, "being_processed_by_aggregator");
+        else
+            LogWarning("recursos_proc", "Item inválido ou não é container na lista de baús da facção " + faction_name + ". Serial (se disponível): " + (bau_individual ? bau_individual.serial : "N/A"));
+        endif // Closes 'if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER))'
+        SleepMS(50); // Pausa entre processamento de baús
+    endforeach
+
+    LogInfo("recursos_proc", "Processamento agregado para facção '" + faction_name + "' concluído.");
+    LogInfo("recursos_proc", "  Baús processados neste ciclo: " + baus_da_faccao_processados_neste_ciclo);
+    LogCritical("recursos_proc", "  Total de MOEDAS AGREGADO para '" + faction_name + "': " + total_recursos_da_faccao.moedas);
+    // (Você pode adicionar logs para outros recursos se necessário)
+
+    // Passo 3: Sincronizar o total agregado com o Datafile e CProps da Guilda
+    var sucesso_sincronizacao_agregada := SincronizarComDataFile(faction_name, total_recursos_da_faccao);
+
+    if (sucesso_sincronizacao_agregada)
+        LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Sincronização do total para facção '" + faction_name + "' realizada com sucesso.");
+    else
+        LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: FALHA na sincronização do total para facção '" + faction_name + "'.");
+    endif
+
+    return sucesso_sincronizacao_agregada;
+endfunction

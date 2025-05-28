@@ -149,6 +149,14 @@ function start_resource_controller()
 endfunction
 // ===== FIM DA ÚNICA VERSÃO CORRETA DA FUNÇÃO =====
 
+// Iniciar o controlador de pagamento de caravanas
+var caravan_payment_script := start_script(":faccao:caravan_payment_control");
+if (caravan_payment_script.errortext)
+    LogError("sistema", "Erro no script de controle de pagamento de caravanas: " + caravan_payment_script.errortext);
+else
+    LogDebug("sistema", "Starting caravan payment control script... ok.");
+endif;
+
 
 start_resource_controller(); // Chamada para a função
 
