@@ -22,6 +22,16 @@ program orderSpells(who, item)
    var cultura := chardata.culture;
    var classe := chardata.classe;
 
+   // Check if player wants to convert religion
+   if (religiao != altar)
+      var convert := YesNo(who, "Deseja se converter a esta religião?", "Converter", "Continuar");
+      if (convert)
+         if (handleReligionConversion(who, item))
+            return;
+         endif
+      endif
+   endif
+
    if (altar == LORE && cultura == ALURIEL && !TemHabilidade(who, "Gwaenedh") && classe == SABIO)
       if (ArcaneArcherDevotion(who))
          playAltarAnimations(who, item);
@@ -186,4 +196,84 @@ function ArcaneArcherDevotion(who)
       return 1;
    endif
    return 0;
+endfunction
+
+function handleReligionConversion(who, altar)
+   var chardata := GetObjProperty(who, "chardata");
+   if (!chardata)
+      SendSysMessageEx(who, "Erro ao acessar dados do personagem.", SSM_FAIL);
+      return 0;
+   endif
+
+   var current_religion := chardata.religion;
+   var target_religion := altarByObjtype(who, altar);
+   
+   if (!target_religion || target_religion == "")
+      SendSysMessageEx(who, "Este altar não representa uma religião válida.", SSM_FAIL);
+      return 0;
+   endif
+
+   if (current_religion == target_religion)
+      SendSysMessageEx(who, "Você já segue esta religião.", SSM_INFO);
+      return 0;
+   endif
+
+   // Check conversion cooldown (1 month = 30 days)
+   if (GetCooldown(who, "religion_conversion"))
+      var remaining := GetCooldown(who, "religion_conversion");
+      var days := Cint(remaining / (60 * 60 * 24));
+      SendSysMessageEx(who, "Você deve aguardar {} dias antes de poder se converter novamente.".format(days), SSM_FAIL);
+      return 0;
+   endif
+
+   var religion_names := struct{
+      "Veneratio" := "Veneratio",
+      "Eluith'orth" := "Eluith'orth", 
+      "Kai" := "Kai",
+      "Halleuad" := "Halleuad",
+      "Lórё" := "Lórё",
+      "Bokk Bharaz" := "Bokk Bharaz",
+      "Ushkr'ar" := "Ushkr'ar",
+      "Céticos" := "Céticos"
+   };
+
+   var target_name := religion_names[target_religion];
+   if (!target_name)
+      target_name := target_religion;
+   endif
+
+   var current_name := religion_names[current_religion];
+   if (!current_name)
+      current_name := current_religion;
+   endif
+
+   var conversion_text := "";
+   if (current_religion && current_religion != "")
+      conversion_text := "Deseja abandonar {} e se converter a {}?".format(current_name, target_name);
+   else
+      conversion_text := "Deseja se converter a {}?".format(target_name);
+   endif
+
+   var confirm := YesNo(who, conversion_text, "Sim", "Não");
+   if (!confirm)
+      return 0;
+   endif
+
+   // Perform conversion
+   chardata.religion := target_religion;
+   SetObjProperty(who, "chardata", chardata);
+   
+   // Set cooldown for 1 month (30 days)
+   SetCooldown(who, "religion_conversion", 60 * 60 * 24 * 30);
+   
+   // Play conversion animations
+   playAltarAnimations(who, altar);
+   
+   if (current_religion && current_religion != "")
+      SendSysMessageEx(who, "Você abandonou {} e se converteu a {}.".format(current_name, target_name), SSM_INFO);
+   else
+      SendSysMessageEx(who, "Você se converteu a {}.".format(target_name), SSM_INFO);
+   endif
+
+   return 1;
 endfunction
