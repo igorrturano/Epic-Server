@@ -7,8 +7,8 @@ class MasteryCombat(Mastery)
 	var kills;
 	var damage;
 
-	function MasteryCombat(this, name)
-		this.Mastery(name);
+	function MasteryCombat(this, key)
+		Super(key);
 		this.type := MASTERY_COMBAT;
 
 		this.hits := 0;
@@ -28,6 +28,10 @@ class MasteryCombat(Mastery)
 		return this.damage;
 	endfunction
 
+	function getCriticals(this)
+		return this.criticals;
+	endfunction
+
 	function setHits(this, value)
 		this.hits := CInt(value);
 	endfunction
@@ -38,6 +42,10 @@ class MasteryCombat(Mastery)
 
 	function setDamage(this, value)
 		this.damage := CInt(value);
+	endfunction
+
+	function setCriticals(this, value)
+		this.criticals := CInt(value);
 	endfunction
 
 	function AddHits(this, value)
@@ -62,17 +70,15 @@ class MasteryCombat(Mastery)
 	endfunction
 
 	function Deserialize(this, data)
-	var result := Mastery::Deserialize(this, data);
-		if (result == error)
-			return result;
-		endif
-
+		if (!data) return error{ errortext := "Invalid data for MasteryCombat deserialization." }; endif
+		Mastery::Deserialize(this, data);
 		this.hits := CInt(data.hits);
 		this.kills := CInt(data.kills);
 		this.damage := CInt(data.damage);
+		this.criticals := CInt(data.criticals);
 	endfunction
 
 	function toString(this)
-		return $"Combat para {this.name} ({this.type}) (Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
+		return $"Maestria de Combate {this.key} (Name={this.name}, Type={this.type}, Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
 	endfunction
 endclass
