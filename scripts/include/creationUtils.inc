@@ -596,7 +596,6 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     var race := chardata.raca;
     var color := "#FFD700";
     var classe := chardata.classe;
-    var classe := chardata.classe;
     var bg := chardata.background;
     var trait := chardata.trait;
     var skills := chardata.Skills;

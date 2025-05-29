@@ -495,12 +495,12 @@ function getPenaltiesByProtection(armor)
 		//TIER 2
 		ARMOR_MIDLOW: penalties := {0,0,0,2,0}; break;
 		ARMOR_MIDMID: penalties := {1,0,0,4,0}; break;
-		ARMOR_MIDHIGH: penalties := {2,0,0,5,0}; break;
+		ARMOR_MIDHIGH: penalties := {5,0,0,5,0}; break;
 
 		//TIER 3
 		ARMOR_HIGHLOW: penalties := {3,0,0,8,0}; break;
 		ARMOR_HIGHMID: penalties := {4,0,0,12,0}; break;
-		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0}; break;
+		ARMOR_HIGHHIGH: penalties := {7,0,0,24,0}; break;
 
 		// ESCUDOS
 		SHIELD_BUCKLER: penalties := {0,0,0,0,0}; break;

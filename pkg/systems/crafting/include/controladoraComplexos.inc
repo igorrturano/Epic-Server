@@ -119,8 +119,6 @@ function EnviaItensComplexosGump(quem,profissao)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_CATEGORIAS);
 				sessao.categoriaAnterior := sessao.categoriaSelecionada;
 				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retornoMapeado.indice];
-				Print("sessao.categoriaSelecionada : " + sessao.categoriaSelecionada );
-				Print("sessao.categoriaAnterior : " + sessao.categoriaAnterior );
 				sessao.paginaAtual := 0;
 				MarcaCategoriaVisualizada(sessao,parametros);// marca a categoria anterior como visualizada.
 				NovoObjetoReceitaSelecionada(sessao);
@@ -239,13 +237,13 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 
 			RT_RCT_PROX_PAGINA:
-				if(sessao.paginaAtual + 1 < (parametros.visaoReceitas[sessao.categoriaSelecionada] / parametros.receitasPorPagina))
+				if(cint(sessao.paginaAtual) + 1 < (parametros.visaoReceitas[sessao.categoriaSelecionada] / parametros.receitasPorPagina))
 					sessao.paginaAtual += 1;
 				endif
 				break;
 
 			RT_RCT_ANT_PAGINA:
-				if(sessao.paginaAtual - 1 <= 0)
+				if(cint(sessao.paginaAtual) - 1 >= 0)
 					sessao.paginaAtual -= 1;
 				endif
 				break;
@@ -568,7 +566,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
-			esquemaSelecionado.classe := classe;
+			esquemaSelecionado.classe := classe ? classe: 1;
 	endif
 
 	DefineTagQualidade(
@@ -1087,7 +1085,14 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 endfunction
 
 function PegaComponentesNecessarios(objtype, receitasConfig, classe)
-	var encaixesItem := GetConfigStringArray(receitasConfig[hex(objtype)],"ComponenteEncaixe");
+
+	var receitaCfgElemento:= receitasConfig[objtype];
+
+	if(TypeOfInt(receitaCfgElemento) == OT_ERROR)
+		Print("Erro [ " + receitaCfgElemento +  " ] ao buscar configuração de fabricação. A configuracão do objtype " + CStr(Hex(objtype)) + " não foi encontrada.");
+	endif
+
+	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
 
@@ -1096,7 +1101,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe)
 		Sleepms(2);
 		var componente := struct;
 		var splitEncaixe := SplitWords(encaixe);
-		componente.+classe := splitEncaixe[DESC_ENCAIXE_CLASSE];
+		componente.+classe := Cint(splitEncaixe[DESC_ENCAIXE_CLASSE]);
 		if(Cint(componente.classe) != cint(classe)) continue; endif
 
 		componente.+caracteristica :=  splitEncaixe[DESC_ENCAIXE_CARACTERISTICA];

@@ -11,6 +11,7 @@ include ":attributes:attributes";
 include "/include/epicPropNames";
 include "/include/epicConstants";
 include ":keys:key";
+include ":crafting:/include/caracteristicasFabricacao";
 
 const CHANCE_FABRICACAO_MAX := 80.0;
 var itemsConfig := ReadConfigFile(":*:itemdesc");
@@ -189,50 +190,57 @@ endfunction
 function CriaItemFabricado(quem, produto, quantidade := 1)
 
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
-	var descriptor;
+	if(propFabricadoMontado)
+		var descriptor;
 
-	if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
-		var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
+		if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
+			var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
+			
+			descriptor := CriaComponenteDescriptor(
+											propFabricadoMontado.receita.objtype,
+											propFabricadoMontado.esquema.material,
+											qualidades.keys()[1],
+											propFabricadoMontado.receita.complexoComponente.encaixe,
+											ReadConfigFile(RECURSOS_CONFIG_PATH)
+											);
+		else
+			descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
+			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+		endif
+
+		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
+		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
 		
-		descriptor := CriaComponenteDescriptor(
-										propFabricadoMontado.receita.objtype,
-										propFabricadoMontado.esquema.material,
-										qualidades.keys()[1],
-										propFabricadoMontado.receita.complexoComponente.encaixe,
-										ReadConfigFile(RECURSOS_CONFIG_PATH)
-										);
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
+		endif
+
+		descriptor.color := propFabricadoMontado.esquema.cor;
+
+		var quantidadeFinal := 1;
+		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
+			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
+		endif
+			
+		var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
+		if(!item)
+			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+		endif
+
+		if(!item)
+			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
+			return;
+		endif
+
+		AplicaFechadura(quem, item);
+
+		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
 	else
-		descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
-		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
-		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
+		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
 	endif
-
-	descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
-	descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
 	
-	if(!propFabricadoMontado.receita.isEmpilhavel)
-		descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
-	endif
-
-	descriptor.color := propFabricadoMontado.esquema.cor;
-
-	var quantidadeFinal := 1;
-	if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
-		quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
-	endif
-		
-	var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
-	if(!item)
-		item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
-	endif
-
-	if(!item)
-		SendSysMessageEX(quem, "Erro ao criar objeto.",SSM_FAIL);
-	endif
-
-	AplicaFechadura(quem, item);
-
-	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
 
 endfunction
 
@@ -249,7 +257,7 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 endfunction
 
 function AplicaFechadura(quem, item)
-	var levelFechadura := PegaValorCaracteristica(item, "tranca");
+	var levelFechadura := PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_TRANCA);
 	
 	if(levelFechadura && KP_IsLockable(item))
 		    var lockid := AllocLockId();
@@ -263,28 +271,6 @@ function AplicaFechadura(quem, item)
 				SendSysMessageEx( quem, "Não foi possível criar a chave do item com fechadura.", SSM_FAIL );
 			endif
 	endif
-endfunction
-
-function PegaValorCaracteristica(item, caracteristica)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	return propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
-endfunction
-
-function PegaValorSubEfeito(item, caracteristica, subEfeitoAlvo)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	foreach subEfeito in (propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo])
-		Sleepms(2);
-		if(subEfeito.efeito == subEfeitoAlvo)
-			return subEfeito.valor;
-		endif
-	endforeach
-
-	return  error{"errortext":="Subefeito não encontrado"}; 
-endfunction
-
-function PegaSubEfeitos(item, caracteristica)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)

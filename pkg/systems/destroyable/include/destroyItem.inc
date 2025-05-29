@@ -11,6 +11,7 @@ include "/include/epicPropNames";
 include ":traps:traps";
 //include "include/packets";
 include ":architect:architect";
+include ":crafting:/include/caracteristicasFabricacao";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -195,8 +196,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 			Sleepms(2);
 		endforeach
 	endif
-	
-	//TODO Adicionar comentários e documentação do que já foi feito.
 endfunction
 
 
@@ -402,14 +401,14 @@ endfunction
 function PegaResistenciaItem(itemAlvo)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
-	var recursoMod := configRecursos[materialId].hpmod;
+	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
 	if(propRes)
 		resFinal := resFinal * propRes;
 	endif
 	if(materialId)
-		resFinal := resFinal + recursoMod/2;
+		resFinal := resFinal + resistenciaFabricacao;
 	endif
 	return resFinal;
 endfunction
@@ -469,15 +468,18 @@ endfunction
  *
  */
 function PegaDurabilidadeTotal(item)
-	var itemdesc := ReadConfigFile(":*:itemdesc");
-    var elem := FindConfigElem(itemdesc, item.objtype);
-	var pesoEscolhido := 0;
-	var materialId := GetObjProperty(item,PROPNAME_MATERIAL);
-	var recursoMod := configRecursos[materialId].hpmod;
 
 	if(item.ISA(POLCLASS_EQUIPMENT))
 		return item.maxhp;
 	else
+		var itemdesc := ReadConfigFile(":*:itemdesc");
+		var elem := FindConfigElem(itemdesc, item.objtype);
+		var pesoEscolhido := 0;
+		var materialId := GetObjProperty(item,PROPNAME_MATERIAL);
+		var recursoMod := configRecursos[materialId].hpmod;
+		var fabricacaoDurabilidade := PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_DURABILIDADE);
+		fabricacaoDurabilidade := (fabricacaoDurabilidade / 10) + 1;
+
 		var propMaxDurab := GetObjProperty(item,PROPNAME_DURABILIDADE_MAX); 
 		if(GetObjProperty(item,PROPNAME_DURABILIDADE_MAX))
 			if(recursoMod)
@@ -493,8 +495,9 @@ function PegaDurabilidadeTotal(item)
 			endif
 		endif
 
+		
 		var infoTile := IU_GetTileInfo(item.Graphic);
-		pesoEscolhido := CInt(infoTile.Weight) * configDestruiveis[ELEM_CFG_DEST].hpMaxMultiplicador + recursoMod;
+		pesoEscolhido := CInt(infoTile.Weight * configDestruiveis[ELEM_CFG_DEST].hpMaxMultiplicador * fabricacaoDurabilidade);
 		return Ceil(pesoEscolhido) > 0? pesoEscolhido: 1;
 	endif
 endfunction

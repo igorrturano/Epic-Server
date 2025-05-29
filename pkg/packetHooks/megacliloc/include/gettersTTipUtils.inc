@@ -228,9 +228,18 @@ function GetConsultaEspecialistaTexto(profissao)
 endfunction
 
 function getComponenteToAprimoramento(caracteristicaComponente, valor)
-	case (caracteristicaComponente)
-		"precisao": return valor > 0 ? "Arma Balanceada" : "Arma Desbalanceada"; break;
-		"dano": return valor > 0 ? "Arma Afiada" : "Arma Cega"; break;
-		"tranca": return valor > 0 ? "Tranca" : "Tranca Improvisada"; break;
-	endcase
+	var config := ReadConfigFile( ":crafting:config/caracteristicas" );
+	var elementoConfig := config["descricaoToolTip"];
+	var descPositivaNegativa := GetConfigString(elementoConfig,caracteristicaComponente);
+
+	if(descPositivaNegativa)
+		var separadas :=  SplitWords(descPositivaNegativa,":");
+		if(separadas.size() != 2)
+			return "{Erro Sem Diferença Pos Neg!}";
+		else
+			return separadas[2 - CInt(valor > 0)];
+		endif 		
+	else
+		return "{Erro Não Enconrada!}";
+	endif
 endfunction
