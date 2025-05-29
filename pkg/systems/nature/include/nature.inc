@@ -206,7 +206,7 @@ function WhatSeason()
                 if (daynumber > daysInYear*0.75)
                     return SPRING;
                 endif
-                return WINTER;
+                return SPRING; // WINTER;
             endif
             return AUTUMN;
         endif
