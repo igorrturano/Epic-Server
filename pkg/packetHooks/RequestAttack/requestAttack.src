@@ -18,6 +18,7 @@ use uo;
 use polsys;
 
 include "include/say";
+include ":mastery:Abilities";
 
 CONST BYTE_DEFENDER := 1;
 
@@ -52,6 +53,8 @@ exported function HandleAttackRequest( who, byref packet )
 		SendSysMessage(who, "Voce nao enxerga esse inimigo para ameaca-lo.");
 		return 1;
 	endif
+
+	ExecuteMasteryAbility(who, defender);
 
 	return 0;
 endfunction
