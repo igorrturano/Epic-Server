@@ -130,6 +130,8 @@ function InitializeFormData()
     form_data.special_ai := "";
     form_data.url := "";
     form_data.detailed_description := "";
+    form_data.amount := "1"; // Add amount field
+
     // Add default respawn time values
     form_data.min_respawn := "60";  // Default 60 minutes
     form_data.max_respawn := "120"; // Default 120 minutes
@@ -228,6 +230,11 @@ function ExtractPageData(input, page)
             var color := GFExtractData(input, 3);
             if (color != error && color != "")
                 form_data.color := color;
+            endif
+
+            var amount := GFExtractData(input, 44);
+            if (amount != error && amount != "")
+                form_data.amount := amount;
             endif
 
             // Add tier extraction (new)
@@ -521,6 +528,10 @@ function ShowPage1(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 380, 1153, "Special AI:");
     GFTextEntry(gump, 200, 380, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
     
+    // Amount - Add this field
+    GFTextLine(gump, 50, 410, 1153, "Amount to Spawn:");
+    GFTextEntry(gump, 200, 410, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
+
     // Add a divider line for Respawn Time Configuration
     GFResizePic(gump, 650, 450, 3000, 2, 100);
     
@@ -2367,6 +2378,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Basic info
     boss.npctemplate := form_data.npctemplate;
     boss.name := form_data.name;
+    boss.amount := CInt(form_data.amount); // Add amount to boss structure
     boss.color := CInt(form_data.color);
     boss.description := form_data.description;
     boss.trueboss := form_data.trueboss;
@@ -2739,12 +2751,20 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         SendSysMessage(who, "Spawner created with serial: " + spawner.serial);
     endif
 
-    // Create a test boss to show the player
-    var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
-    if (npc == error)
-        SendSysMessage(who, "Error creating boss: " + npc.errortext);
-        return 0;
-    endif
+    var amount := boss.amount ? boss.amount : 1;
+
+    var npcs := array{};
+    var npc;
+
+    for i := 1 to amount
+        npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
+        if (npc == error)
+            SendSysMessage(who, "Error creating boss " + i + ": " + npc.errortext);
+            return 0;
+        endif
+        npcs.append(npc);
+        sleepms(100); // Small delay between spawns
+    endfor
 
     if (spawner && spawner.IsA(POLCLASS_ITEM))
         // Set the boss structure in the spawner
@@ -2755,25 +2775,35 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         SetObjProperty(spawner, "MinDelay", CInt(form_data.min_respawn));
         SetObjProperty(spawner, "MaxDelay", CInt(form_data.max_respawn));
         SetObjProperty(spawner, "Range", 5);      // 5 tiles
-        
-        // Link the test boss to the spawner
-        SetObjProperty(npc, "epicspawner", spawner.serial);
-        SetObjProperty(spawner, "ChildSerial", npc.serial);
-        SetObjProperty(spawner, "SpawnQueue", "Active");
         SetObjProperty(spawner, "SpawnerState", ACTIVE);
+        SetObjProperty(spawner, "SpawnQueue", "Active");
+        
+        // Link ALL spawned bosses to the spawner
+        var child_serials := array{};
+        foreach boss_npc in npcs
+            SetObjProperty(boss_npc, "epicspawner", spawner.serial);
+            child_serials.append(boss_npc.serial);
+        endforeach
+        
+        // Store all child serials in the spawner
+        if (npcs.size() == 1)
+            SetObjProperty(spawner, "ChildSerial", npcs[1].serial); // Single boss compatibility
+        else
+            SetObjProperty(spawner, "ChildSerials", child_serials); // Multiple bosses
+        endif
         
         spawner.invisible := 1;
         
         if (existing_spawner)
-            SendSysMessage(who, "Boss spawner updated successfully!");
+            SendSysMessage(who, "Boss spawner updated successfully! Spawned " + npcs.size() + " bosses.");
         else
-            SendSysMessage(who, "Boss created successfully with spawner!");
+            SendSysMessage(who, "Boss created successfully with spawner! Spawned " + npcs.size() + " bosses.");
         endif
         
-        SendSysMessage(who, "The boss will respawn between " + Cstr(form_data.min_respawn) + " and " + Cstr(form_data.max_respawn) + " minutes after death.");
+        SendSysMessage(who, "The boss(es) will respawn between " + Cstr(form_data.min_respawn) + " and " + Cstr(form_data.max_respawn) + " minutes after death.");
         SendSysMessage(who, "Double-click the spawner (invisible at your feet) to configure.");
     else
-        SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
+        SendSysMessage(who, "Boss(es) created successfully, but failed to create spawner!");
     endif
     
     return 1;
