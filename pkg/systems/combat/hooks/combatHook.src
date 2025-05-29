@@ -43,7 +43,6 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:main";
 include ":fls_magery:spellSounds";
-include ":mastery:Abilities";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -70,11 +69,11 @@ exported function Attack(attacker, defender)
 	wpn_d := defender.weapon;
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
+	print ("AttackHook: "+attacker.name+" ataca "+defender.name);
 
 	if (!CanAttack(attacker, defender))
 		return 1;
 	endif
-	ExecuteMasteryAbility(attacker, defender);
 	if (!DistanceChecks(attacker, defender))
 		return 1;
 	endif
