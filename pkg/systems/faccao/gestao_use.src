@@ -19,7 +19,7 @@ include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";
  include ":faccao:include/datafile_helpers";
- include ":faccao:include/logging";
+
 
 
 
@@ -426,10 +426,12 @@ endfunction
 
 function CancelarContratoCaravana(who, capital_territory_id, faction_name)
     var guild_id := FindGuildByName(faction_name);
-    if (!guild_id) 
-        SendSysMessage(who, "Erro: Guilda não encontrada."); 
-        return 0; 
+    if (!guild_id)
+        SendSysMessage(who, "Erro: Guilda da facção '" + faction_name + "' não encontrada.");
+        LogError("caravana_cancela", "Guilda '" + faction_name + "' não encontrada ao tentar cancelar caravana para capital " + capital_territory_id);
+        return 0;
     endif; 
+
     var guild_obj := FindGuild(guild_id);
 
     if (guild_obj)
@@ -437,32 +439,34 @@ function CancelarContratoCaravana(who, capital_territory_id, faction_name)
         var caravan_until := CInt(guild_obj.GetProp("caravan_next_payment_due")); 
 
         if (active_caravan_capital_id == CStr(capital_territory_id) && caravan_until > polcore().systime)
-            if (YesNo(who, "Tem certeza que deseja cancelar o contrato da caravana para esta capital? Não haverá reembolso da semana atual."))
+            if (YesNo(who, "Tem certeza que deseja cancelar o contrato da caravana para esta capital? Não haverá reembolso da semana/período atual."))
                 guild_obj.EraseProp("active_caravan_to_capital");
                 guild_obj.EraseProp("caravan_contract_start_time");
                 guild_obj.EraseProp("caravan_next_payment_due");
                 guild_obj.EraseProp("caravan_weekly_cost");
 
                 SendSysMessage(who, "Contrato da caravana cancelado com sucesso.");
-                LogInfo("caravana", "Facção " + faction_name + " cancelou contrato da caravana para capital " + capital_territory_id);
+                LogInfo("caravana_cancela", "Facção " + faction_name + " cancelou contrato da caravana para capital " + capital_territory_id);
                 
                 var event_data_cancel := struct;
                 event_data_cancel.+faction := faction_name;
-                // event_data_cancel.+reason := "Cancelada pelo usuário"; // Opcional
+                // A LINHA PROBLEMÁTICA FOI REMOVIDA DAQUI
 
                 TM_NotifyTerritoryChange(capital_territory_id, "caravan_deactivated", event_data_cancel);
-                return 1;
+                return 1; 
             else
                 SendSysMessage(who, "Cancelamento abortado.");
-                return 0;
-            endif;
+                return 0; 
+            endif; 
         else
             SendSysMessage(who, "Nenhuma caravana ativa encontrada para esta capital ou o contrato já expirou.");
-            return 0;
-        endif;
+            LogInfo("caravana_cancela", "Tentativa de cancelar caravana para " + capital_territory_id + " (facção " + faction_name + ") falhou: Nenhuma caravana ativa/válida. ID na prop: " + active_caravan_capital_id + ", Expira em: " + caravan_until);
+            return 0; 
+        endif; 
     else
         SendSysMessage(who, "Erro ao acessar dados da guilda.");
-        return 0;
+        LogError("caravana_cancela", "Falha ao obter objeto da guilda para ID " + guild_id + " (facção " + faction_name + ") ao tentar cancelar caravana.");
+        return 0; 
     endif; 
 endfunction
 
@@ -1704,44 +1708,34 @@ endfunction
 
 
 function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
-    var territory_info_capital := TM_GetTerritoryInfo(capital_territory_id);
+    var territory_info_capital := TM_GetTerritoryInfo(capital_territory_id); // Usado para o nome na mensagem final
+
+    // Validação: É uma capital válida da facção?
     if (!TM_IsTerritoryCapital(capital_territory_id) || !territory_info_capital || territory_info_capital.faction != faction_name)
         SendSysMessage(who, "Erro: Este território não é a capital da sua facção ou a facção está incorreta.");
+        LogError("caravana", "ContratarCaravana: Tentativa para território " + capital_territory_id + " que não é capital de " + faction_name);
         return 0;
     endif;
 
-    var guild_id_for_cprop_check := FindGuildByName(faction_name);
-    var guild_obj_for_cprop_check := 0;
-    if (guild_id_for_cprop_check)
-        guild_obj_for_cprop_check := FindGuild(guild_id_for_cprop_check);
-    endif;
-
-    if (!guild_obj_for_cprop_check)
-        SendSysMessage(who, "Erro: Objeto da guilda não encontrado para verificar territórios existentes.");
-        LogError("caravana", "ContratarCaravana: Falha ao obter objeto da guilda para '" + faction_name + "' para o check inicial de territórios.");
-        return 0;
-    endif;
-
+    // Validação: A facção controla outros territórios além desta capital?
     var rect_df := SafeOpenDataFile(":architect:areas");
     var other_territories_count := 0;
-
     if (rect_df)
-        // ... (lógica de contagem de other_territories_count permanece a mesma) ...
-        LogDebug("CaravanaTerritories", "Verificando territórios diretamente no datafile para facção '" + faction_name + "', capital '" + capital_territory_id + "'");
+        LogDebug("CaravanaTerritories", "Verificando territórios para facção '" + faction_name + "', capital '" + capital_territory_id + "'");
         foreach elem_name_loop in (rect_df.keys())
             var elem_loop := SafeFindElement(rect_df, elem_name_loop);
             if (!elem_loop) continue; endif;
             var terr_faction_loop := GetElementProp(elem_loop, TERRITORY_FACTION_PROP, GetElementProp(elem_loop, "Faction"));
             if (terr_faction_loop == faction_name)
                 var terr_id_loop := GetElementProp(elem_loop, TERRITORY_ID_PROP, elem_name_loop);
-                if (CStr(terr_id_loop) != CStr(capital_territory_id))
+                if (CStr(terr_id_loop) != CStr(capital_territory_id)) // Compara como strings
                     other_territories_count += 1;
                     LogDebug("CaravanaTerritories", "  -> Outro território da facção encontrado: " + terr_id_loop + " (Nome no datafile: " + elem_name_loop + ")");
                 endif
             endif
             SleepMS(1);
         endforeach
-        LogDebug("CaravanaTerritories", "Contagem final de 'outros territórios' (lendo datafile :architect:areas): " + other_territories_count);
+        LogDebug("CaravanaTerritories", "Contagem final de 'outros territórios': " + other_territories_count);
     else
         SendSysMessage(who, "Erro crítico: Não foi possível acessar o registro de territórios.");
         LogError("caravana", "ContratarCaravana: Falha ao abrir datafile :architect:areas.");
@@ -1750,38 +1744,33 @@ function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
 
     if (other_territories_count == 0)
         SendSysMessage(who, "Sua facção precisa controlar pelo menos um outro território além desta capital para contratar uma caravana.");
-        LogDebug("CaravanaTerritories", "Falha no Check 1: Nenhum outro território além da capital encontrado no datafile.");
+        LogDebug("CaravanaTerritories", "Falha no Check: Nenhum outro território além da capital encontrado.");
         return 0;
     endif
-    LogDebug("CaravanaTerritories", "Check 1 (outros territórios) passou. Outros territórios encontrados no datafile: " + other_territories_count);
+    LogDebug("CaravanaTerritories", "Check de outros territórios passou. Outros territórios: " + other_territories_count);
 
     // Lógica de custo
-    var custo_caravana := 50;
-    var elem_faccao_nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
+    var custo_caravana := CInt(GetGlobalProperty("caravan_weekly_cost_setting")); // Pega de uma GProp, ou defina um valor fixo
+    if (!custo_caravana || custo_caravana <=0 ) custo_caravana := 50; endif; // Fallback
 
-    // ---- INÍCIO DA NOVA LÓGICA PARA FORÇAR ATUALIZAÇÃO DE RECURSOS ----
     LogInfo("caravana", "Forçando atualização de recursos para facção '" + faction_name + "' antes de verificar custo da caravana.");
-    var updates_pending_dummy := dictionary{}; // Dicionário dummy, pois ProcessarRecursosDeUmaFaccao pode esperar uma referência
-    var process_result := ProcessarRecursosDeUmaFaccao(faction_name, updates_pending_dummy); // CHAMA A FUNÇÃO QUE ESTAVA EM process_recursos_updates.src
+    var updates_pending_dummy := dictionary{};
+    var process_result := ProcessarRecursosDeUmaFaccao(faction_name, updates_pending_dummy);
     if (process_result)
-        LogInfo("caravana", "Atualização forçada de recursos para '" + faction_name + "' concluída com sucesso antes da verificação de custo.");
-        SleepMS(500); // Dar um tempo para a escrita no datafile assentar completamente. Ajuste se necessário.
+        LogInfo("caravana", "Atualização forçada de recursos para '" + faction_name + "' concluída com sucesso.");
+        SleepMS(500);
     else
         LogWarning("caravana", "Falha na atualização forçada de recursos para '" + faction_name + "'. Prosseguindo com a leitura atual do datafile.");
-        // Não necessariamente um erro fatal aqui, mas um aviso.
     endif
-    // ---- FIM DA NOVA LÓGICA ----
 
-    LogDebug("caravana", "Tentando (re)abrir datafile de recursos após possível atualização forçada: " + KINGDOM_RESOURCE_DATAFILE);
-    // UnloadDataFile pode ou não ser necessário aqui se ProcessarRecursosDeUmaFaccao já salvou e fechou o datafile.
-    // Para segurança, podemos manter.
-    UnloadDataFile(KINGDOM_RESOURCE_DATAFILE);
-    SleepMS(100);
-    var df_recursos := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+    // UnloadDataFile(KINGDOM_RESOURCE_DATAFILE); // Comentado - SafeOpenDataFile já lida com isso implicitamente ao reabrir
+    // SleepMS(100);
+    var df_recursos := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE); // Reabre para garantir dados frescos
+    var elem_faccao_nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
 
     if (!df_recursos || elem_faccao_nome_normalizado == error)
         SendSysMessage(who, "Erro ao acessar dados de recursos da facção (datafile).");
-        LogError("caravana", "Falha ao abrir datafile de recursos '" + KINGDOM_RESOURCE_DATAFILE + "' ou normalizar nome para '" + faction_name + "'. Erro Normalizar: " + (elem_faccao_nome_normalizado == error ? elem_faccao_nome_normalizado.errortext : "OK") );
+        LogError("caravana", "Falha ao abrir datafile de recursos '" + KINGDOM_RESOURCE_DATAFILE + "' ou normalizar nome para '" + faction_name + "'.");
         return 0;
     endif;
 
@@ -1793,7 +1782,7 @@ function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
     endif;
 
     var recursos_faccao := GetElementProp(elem_faccao, "recursos", CreateEmptyResourceStruct());
-    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' Lidas do Datafile ANTES do débito (após atualização forçada): " + recursos_faccao.moedas);
+    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' Lidas do Datafile ANTES do débito: " + recursos_faccao.moedas);
 
     if (recursos_faccao.moedas < custo_caravana)
         SendSysMessage(who, "Sua facção não possui moedas suficientes (" + recursos_faccao.moedas + "/" + custo_caravana + ") para o custo inicial da caravana.");
@@ -1805,41 +1794,30 @@ function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
     LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' APÓS débito (ANTES de salvar): " + recursos_faccao.moedas);
 
     var save_success := AtualizarDatafileRecursos(faction_name, recursos_faccao);
-
     if (!save_success)
          SendSysMessage(who, "Erro ao deduzir custo da caravana no datafile.");
-         LogError("caravana", "Falha ao salvar recursos de '" + faction_name + "' após deduzir custo (via AtualizarDatafileRecursos).");
+         LogError("caravana", "Falha ao salvar recursos de '" + faction_name + "' após deduzir custo.");
+         // Não reverter aqui, pois o estado do datafile é desconhecido. Melhor logar.
          return 0;
     endif;
-    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' SALVAS no datafile (via AtualizarDatafileRecursos). Novo valor efetivo: " + GetElementProp(SafeFindElement(df_recursos, elem_faccao_nome_normalizado), "recursos").moedas);
+    // Para confirmar, podemos ler novamente (opcional para produção)
+    // var df_recursos_after_save := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+    // var elem_faccao_after_save := SafeFindElement(df_recursos_after_save, elem_faccao_nome_normalizado);
+    // var moedas_after_save_df := GetElementProp(elem_faccao_after_save, "recursos").moedas;
+    // LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' LIDAS do datafile APÓS AtualizarDatafileRecursos: " + moedas_after_save_df);
 
-    AtualizarPropriedadesGuildaRecursos(faction_name, recursos_faccao);
+    AtualizarPropriedadesGuildaRecursos(faction_name, recursos_faccao); // Atualiza CProp da guilda
 
-    if (guild_obj_for_cprop_check) // Usar a variável que já foi validada
-        var current_time_system := polcore().systime;
-        guild_obj_for_cprop_check.SetProp("active_caravan_to_capital", CStr(capital_territory_id));
-        guild_obj_for_cprop_check.SetProp("caravan_contract_start_time", current_time_system);
-        var caravan_expiry_time := current_time_system + (7 * 24 * 3600);
-        guild_obj_for_cprop_check.SetProp("caravan_next_payment_due", caravan_expiry_time);
-        guild_obj_for_cprop_check.SetProp("caravan_weekly_cost", custo_caravana);
+    // Obter o objeto da guilda
+    var guild_id_contrato := FindGuildByName(faction_name);
+    var guild_obj_contrato := guild_id_contrato ? FindGuild(guild_id_contrato) : 0;
 
-        SendSysMessage(who, "Caravana contratada com sucesso para " + territory_info_capital.name + "! Custo inicial de " + custo_caravana + " moedas deduzido. Renovação semanal automática.");
-        LogInfo("caravana", "Facção " + faction_name + " contratou caravana para a capital " + capital_territory_id + ". Custo inicial: " + custo_caravana + ". Próximo pagamento: " + caravan_expiry_time);
-
-        var event_data := struct;
-        event_data.+faction := faction_name;
-        event_data.+active_until_next_payment := caravan_expiry_time;
-
-        TM_NotifyTerritoryChange(CStr(capital_territory_id), "caravan_activated", event_data);
-        return 1;
-    else
-        // Este bloco é para o caso MUITO improvável de guild_obj_for_cprop_check ter se tornado inválido
-        // entre a verificação inicial e este ponto, o que não deveria acontecer em um fluxo síncrono.
-        SendSysMessage(who, "Erro crítico (inesperado) ao tentar definir propriedades da caravana na guilda.");
-        LogError("caravana", "Objeto da guilda (guild_obj_for_cprop_check) tornou-se inválido inesperadamente antes de SetProp para caravana. GuildID original: " + guild_id_for_cprop_check);
-        // REVERTER CUSTO NO DATAFILE - Importante
+    if (!guild_obj_contrato)
+        SendSysMessage(who, "Erro crítico: Não foi possível encontrar o objeto da guilda para configurar a caravana.");
+        LogError("caravana", "ContratarCaravana: Objeto da guilda não encontrado para " + faction_name + " APÓS débito do custo.");
+        // REVERTER CUSTO NO DATAFILE
         recursos_faccao.moedas += custo_caravana;
-        LogCritical("caravana_custo", "REVERTENDO CUSTO para '" + faction_name + "' devido a falha em guild_obj. Moedas ANTES de reverter SetElementProp: " + recursos_faccao.moedas);
+        LogCritical("caravana_custo", "REVERTENDO CUSTO para '" + faction_name + "' devido a falha em guild_obj. Moedas a serem salvas (revertidas): " + recursos_faccao.moedas);
         if (AtualizarDatafileRecursos(faction_name, recursos_faccao))
             LogInfo("caravana", "Custo da caravana revertido para " + faction_name + " no datafile devido à falha crítica na guilda.");
         else
@@ -1847,8 +1825,89 @@ function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
         endif;
         return 0;
     endif;
-endfunction
 
+    // Definir CProps da caravana na guilda
+    var current_time_system := polcore().systime;
+    guild_obj_contrato.SetProp("active_caravan_to_capital", CStr(capital_territory_id));
+    guild_obj_contrato.SetProp("caravan_contract_start_time", current_time_system);
+    var caravan_expiry_time := current_time_system + (7 * 24 * 3600); // 7 dias
+    guild_obj_contrato.SetProp("caravan_next_payment_due", caravan_expiry_time);
+    guild_obj_contrato.SetProp("caravan_weekly_cost", custo_caravana);
+
+    var capital_display_name := territory_info_capital ? territory_info_capital.name : capital_territory_id;
+    SendSysMessage(who, "Caravana contratada com sucesso para " + capital_display_name + "! Custo inicial de " + custo_caravana + " moedas deduzido. Renovação semanal automática.");
+    LogInfo("caravana", "Facção " + faction_name + " contratou caravana para a capital " + capital_territory_id + ". Custo inicial: " + custo_caravana + ". Próximo pagamento: " + caravan_expiry_time);
+
+    // DELETAR BAÚS DOS TERRITÓRIOS NÃO-CAPITAIS DA FACÇÃO
+    SendSysMessage(who, "Centralizando coleta de recursos... Baús de outros territórios serão removidos.");
+    LogInfo("caravana_bau_delete", "Iniciando remoção de baús não-capitais para facção " + faction_name + " (Capital: " + capital_territory_id + ")");
+
+    var territorios_da_faccao := guild_obj_contrato.GetProp("territories");
+    if (!territorios_da_faccao || TypeOf(territorios_da_faccao) != "Array")
+        territorios_da_faccao := TM_GetAllTerritories(faction_name); // Fallback se CProp não existir/for inválida
+        if (territorios_da_faccao.size() > 0)
+            LogWarning("caravana_bau_delete", "CProp 'territories' da guilda " + faction_name + " estava vazia/inválida. Usando TM_GetAllTerritories.");
+        else
+            LogWarning("caravana_bau_delete", "Nenhum território encontrado para facção "+faction_name+" nem na CProp nem via TM_GetAllTerritories.");
+        endif
+    endif
+
+    var baus_deletados_count := 0;
+    foreach territory_id_loop in territorios_da_faccao
+        var current_territory_id_str := CStr(territory_id_loop);
+
+        if (current_territory_id_str != CStr(capital_territory_id))
+            LogInfo("caravana_bau_delete", "Processando território não-capital: " + current_territory_id_str + " para possível deleção de baú.");
+            var objetos_do_territorio := TM_FindTerritoryObjects(current_territory_id_str, faction_name); // Busca por baú, mesa, mural
+
+           if (objetos_do_territorio && objetos_do_territorio.bau)
+    var bau_a_deletar := objetos_do_territorio.bau;
+    LogInfo("caravana_bau_delete", "Baú encontrado no território " + current_territory_id_str + ": Serial " + bau_a_deletar.serial + ". Deletando...");
+    if (DestroyItem(bau_a_deletar))
+        baus_deletados_count += 1;
+        LogInfo("caravana_bau_delete", "Baú " + bau_a_deletar.serial + " deletado com sucesso.");
+        
+        // Limpar o registro do baú no datafile de seriais
+        var seriais_df_clear := SafeOpenDataFile(":faccao:seriais");
+        if (seriais_df_clear)
+            // Tentar primeiro o formato novo (elemento por território)
+            var territory_elem_clear := SafeFindElement(seriais_df_clear, current_territory_id_str);
+            if (territory_elem_clear)
+                territory_elem_clear.EraseProp("bau");
+                LogDebug("caravana_bau_delete", "Serial do baú removido do elemento do território: " + current_territory_id_str);
+            endif
+            
+            // Também limpar no formato legado se existir
+            var territorios_seriais_clear := GetElementProp(seriais_df_clear, "territorios", dictionary{});
+            if (territorios_seriais_clear && territorios_seriais_clear[current_territory_id_str])
+                territorios_seriais_clear[current_territory_id_str].erase("bau");
+                SetElementProp(seriais_df_clear, "territorios", territorios_seriais_clear);
+                LogDebug("caravana_bau_delete", "Serial do baú removido do registro legado: " + current_territory_id_str);
+            endif
+        endif
+    else
+        LogError("caravana_bau_delete", "Falha ao deletar baú " + bau_a_deletar.serial + " do território " + current_territory_id_str);
+    endif
+else
+    LogInfo("caravana_bau_delete", "Nenhum baú encontrado (ou já deletado) no território não-capital: " + current_territory_id_str);
+endif
+        endif
+        SleepMS(50);
+    endforeach;
+    LogInfo("caravana_bau_delete", "Remoção de baús não-capitais concluída para " + faction_name + ". Total deletados: " + baus_deletados_count);
+    if (baus_deletados_count > 0)
+        SendSysMessage(who, baus_deletados_count + " baú(s) de territórios não-capitais foram removidos.");
+    endif
+    // REMOVED THE DUPLICATE ENDFOREACH AND LOGGING LINES HERE
+
+    // Notificar o ResourceController sobre a ativação da caravana
+    var event_data_caravana := struct;
+    event_data_caravana.+faction := faction_name;
+    event_data_caravana.+active_until_next_payment := caravan_expiry_time;
+    TM_NotifyTerritoryChange(CStr(capital_territory_id), "caravan_activated", event_data_caravana);
+
+    return 1;
+endfunction
 
 
 function DestruirObjetosTerritorio(territorio_id, faction)

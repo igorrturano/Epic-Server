@@ -1,80 +1,84 @@
 use uo;
 use os;
-use guilds;
+use guilds; // Mantido por causa dos includes abaixo
 include "include/say";
-include ":faccao:include/shared_functions";
+include ":faccao:include/shared_functions"; // Para MarcarRecursosModificados, GetFactionOfChest, GetPlayerFaction
+include ":faccao:faccao_constants";       // Para constantes de tipo de doação
+include ":faccao:include/logging";       // Para LogDebug, LogInfo, LogError
 
 program OnRemove(who, container, item, item_amount, movetype)
-    if (who == error || container == error || item == error)
-        LogError("recursos", "OnRemove chamado com parâmetros inválidos");
-        return 0;
-    endif
-    
-    // Verificar se o item removido é um recurso do reino
-    var donation_types;
-    donation_types := array{
-        "IsKingdomDonationComida",
-        "IsKingdomDonationMoedas",
-        "IsKingdomDonationCouro",
-        "IsKingdomDonationMetal",
-        "IsKingdomDonationMadeira",
-        "IsKingdomDonationPano",
-        "IsKingdomDonationPedra",
-        "IsKingdomDonationJoias"
-    };
-    
-    if (donation_types == error)
-        LogError("recursos", "Erro ao criar array de donation_types");
-        return 0;
-    endif
+    // Parâmetros do sistema, podem não ser usados ativamente
+    item_amount := item_amount;
+    movetype := movetype;
 
-var is_donation := 0;
-foreach donation_type in donation_types
-var prop_value := GetObjProperty(item, donation_type);
-if (prop_value != error && prop_value)
-    is_donation := 1;
-    break;
-endif
+    if (container == error)
+        LogError("onRemove_ERROR", "OnRemove chamado com container inválido.");
+        return 0; // Container é essencial
+    endif;
+    // 'item' pode ser 'error' se o stack foi completamente removido.
 
-endforeach
+    // CASO 1: Remoção pelo sistema (ex: pagamento de caravana)
+    if (!who || !who.isA(POLCLASS_MOBILE) || !who.serial)
+        var item_desc_sys := "um item desconhecido (possivelmente destruído)";
+        if (item && item != error && item.desc) // Verifica se 'item' ainda é um objeto válido
+            item_desc_sys := item.desc;
+        endif;
+        LogInfo("onRemove_SYS", "Sistema removeu '" + item_desc_sys + "' do container " + container.serial);
+        // A lógica que chama a remoção pelo sistema (ex: caravan_payment_control)
+        // DEVE chamar MarcarRecursosModificados no container apropriado.
+        // Não fazemos isso aqui para evitar chamadas duplas.
+        return 1;
+    endif; // Fim CASO 1
 
-if (is_donation)
-    // Registrar a remoção de recursos
-    if (!(who.concealed || who.hidden))
-        var item_desc := item.desc;
-var container_desc := container.desc;
-if (item_desc == error)
-    item_desc := "item";
-endif
-if (container_desc == error)
-    container_desc := "container";
-endif
-PrintText(who, "*Removeu " + item_desc + " do " + container_desc + "*", 6);
-    endif
-    
-    // Marcar recursos como modificados para atualização posterior
-    var result := MarcarRecursosModificados(container);
-if (result == error)
-    LogError("recursos", "Erro ao marcar recursos como modificados para container: " + container.serial);
-endif
-    
-    var chardata := GetObjProperty(who, "chardata");
-    var titulo := "";
-    
-if (chardata != error && chardata)
-    if (chardata.exists("current_nobility_title") && chardata["current_nobility_title"])
-        titulo := chardata["current_nobility_title"];
-    elseif (chardata.exists("current_professional_position") && chardata["current_professional_position"])
-        titulo := chardata["current_professional_position"];
-    endif
-endif
-    
-if (titulo != error && titulo != "")
-    SendSysMessageEx(who, "Você, como " + titulo + ", removeu recursos do tesouro.", SSM_INFO);
-else
-    SendSysMessageEx(who, "Você removeu recursos do tesouro.", SSM_INFO);
-endif
-endif
+    // CASO 2: Remoção por jogador
+    // O hook CanRemove já tratou das permissões.
+    // Aqui, focamos no feedback e na atualização do cache.
+    LogDebug("onRemove_PLAYER", who.name + " está removendo " + (item && item != error ? item.desc : "um item (possivelmente stack esgotado)") + " do container " + container.serial);
+
+    var is_tracked_donation_removal := 0;
+    // var original_item_objtype_if_known := 0; // Esta variável não estava sendo usada
+
+    if (item && item != error) // Se o item ainda existe (remoção parcial do stack)
+        // original_item_objtype_if_known := item.objtype; // Não usado
+        var donation_types := array{
+            "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro",
+            "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano",
+            "IsKingdomDonationPedra", "IsKingdomDonationJoias"
+        };
+        foreach type_prop in donation_types
+            if (GetObjProperty(item, type_prop))
+                is_tracked_donation_removal := 1;
+                break;
+            endif;
+        endforeach;
+    else
+        // Se o item foi completamente removido (item == error)
+        if (container.objtype == 0xFF11) // Objtype do baú de doações
+            is_tracked_donation_removal := 1;
+            LogInfo("onRemove_PLAYER", "Item totalmente removido do baú de doações. Assumindo remoção de recurso rastreado.");
+        endif;
+    endif; // Fim da checagem se item ainda existe
+
+
+    if (is_tracked_donation_removal)
+        if (!(who.concealed || who.hidden))
+            var item_desc_player := (item && item != error && item.desc ? item.desc : "recursos");
+            PrintText(who, "*Removeu " + item_desc_player + " do " + container.desc + "*", 6);
+        endif;
+
+        var result_mark := MarcarRecursosModificados(container);
+        if (result_mark == error)
+            LogError("onRemove_ERROR", "Erro ao marcar recursos como modificados para container " + container.serial + " após remoção por " + who.name);
+        endif;
+
+        var chardata := GetObjProperty(who, "chardata");
+        var titulo := "";
+        if (chardata && chardata != error)
+            titulo := chardata.current_nobility_title ?: chardata.current_professional_position ?: "";
+        endif;
+        var message := (titulo ? "Você, como " + titulo + ", " : "Você ") + "removeu recursos do tesouro.";
+        SendSysMessageEx(who, message, SSM_INFO);
+    endif; // Fim do if (is_tracked_donation_removal)
     
     return 1;
 endprogram

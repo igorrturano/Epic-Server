@@ -13,55 +13,46 @@ use uo;
     include ":faccao:include/datafile_helpers";
     include ":faccao:include/process_registry";
 include ":faccao:include/faccao_constants";
-   
+   include ":faccao:include/territory_management"; // Para TM_FindTerritory, TM_GetTerritoryInfo etc.
+include "include/client"; // Para SendSysMessageEx
+include ":attributes:attributes"; // Se usado por algum include indireto
 
     // Lista para rastrear o próximo território a ser verificado
     var next_territory_checks := dictionary{};
 
 
 function RegisterProcessFast()
-    // Registrar no sistema de processos IMEDIATAMENTE após inicialização
-    // Usar apenas o nome do processo, já que é um singleton.
-    var registration_result := RegisterProcess("ResourceController"); 
-    
-    if (registration_result == 1) // Sucesso no registro
+    var registration_result := RegisterProcess("ResourceController");
+    if (registration_result == 1)
         LogInfo("ResourceController", "Processo registrado com sucesso no sistema de registro");
-        UpdateProcessHeartbeat("ResourceController"); // Atualiza o heartbeat para o elemento "ResourceController"
+        UpdateProcessHeartbeat("ResourceController");
         LogInfo("ResourceController", "Heartbeat inicial enviado");
-        return 1; // Indica que este processo é o mestre
-    elseif (registration_result == 0) // Já existe um processo ativo registrado com este nome
+        return 1;
+    elseif (registration_result == 0)
         LogError("ResourceController", "FALHA no registro: Outra instância do ResourceController já está ativa e registrada.");
-        return 0; // Indica que este processo é uma duplicata e deve sair
-    else // registration_result == error
+        return 0;
+    else
         LogError("ResourceController", "FALHA CRÍTICA no registro do processo (erro de datafile): " + registration_result.errortext);
-        return error; // Indica erro grave
+        return error;
     endif
 endfunction
 
 program ResourceController()
     LogInfo("ResourceController", "=== INICIANDO RESOURCECONTROLLER ===");
     LogInfo("ResourceController", "PID do processo atual: " + GetPid());
-    
-    ForcedSystemCleanup();
-    
-    // Tentar registrar o processo. Se falhar (0 ou error), sair.
+
+    ForcedSystemCleanup(); // Limpa PIDs antigos e locks
+
     var reg_status := RegisterProcessFast();
     if (reg_status == 0)
         LogWarning("ResourceController", "Abortando inicialização pois outra instância está ativa (detectado pelo process_registry).");
-        return 0; 
+        return 0;
     elseif (reg_status == error)
         LogCritical("ResourceController", "Abortando inicialização devido a erro crítico no registro do processo.");
         return 0;
     endif
-    
-    // Se chegou aqui, o registro foi bem-sucedido (reg_status == 1)
-    // O restante da sua lógica de definir GlobalProperty("ResourceControllerPID") pode permanecer
-    // como um mecanismo secundário de verificação ou para outros scripts,
-    // mas o process_registry.inc é agora o principal controlador de unicidade.
 
     var controller_pid := GetPid();
-    // LogInfo("ResourceController_DEBUG", "=== ResourceController INICIADO - PID: " + controller_pid + " ==="); // Já logado por RegisterProcessFast ou no início
-    
     var pid_result := SetGlobalProperty("ResourceControllerPID", controller_pid);
     if (pid_result == error)
         LogError("ResourceController_DEBUG", "FALHA ao salvar PID (" + controller_pid + ") como GlobalProperty: " + pid_result.errortext);
@@ -69,192 +60,189 @@ program ResourceController()
         LogInfo("ResourceController_DEBUG", "PID " + controller_pid + " salvo com sucesso como GlobalProperty (mecanismo secundário)");
     endif
 
-        // Também registrar no array de processos ativos (opcional)
-        var active_processes := GetGlobalProperty("ActiveProcesses");
-        if (!active_processes || active_processes == error)
-            active_processes := array{};
+    var active_processes := GetGlobalProperty("ActiveProcesses");
+    if (!active_processes || active_processes == error)
+        active_processes := array{};
+    endif
+    if (!(controller_pid in active_processes))
+        active_processes.append(controller_pid);
+        SetGlobalProperty("ActiveProcesses", active_processes);
+    endif
+
+    LogInfo("recursos", "Iniciando Controlador de Recursos de Territórios...");
+    LoadAllTerritories();
+    LogInfo("ResourceController", "Territórios carregados: " + next_territory_checks.size());
+
+    // Exibir lista de territórios encontrados (opcional, pode ser removido se poluir muito o log)
+    // foreach territory_name_log_init in (next_territory_checks.keys())
+    //     LogInfo("ResourceController_Init", "  - Território agendado inicialmente: " + territory_name_log_init);
+    //     SleepMS(2);
+    // endforeach
+
+    var check_interval := 30; // Segundos base para o ciclo
+    var last_event_check_time := 0;
+    var event_check_interval := 15; // Verificar eventos a cada 15 segundos
+    var last_reload_check_time := polcore().systime;
+    var reload_interval := 300; // Recarregar territórios a cada 5 minutos
+
+    while(1)
+        var current_time_loop_start := polcore().systime;
+        UpdateProcessHeartbeat("ResourceController"); // Envia heartbeat para o registro de processos
+        LogInfo("ResourceController_Loop", "Ciclo iniciado. PID: " + GetPid() + ". Próximo Heartbeat em " + check_interval + "s (aprox).");
+
+        // 1. VERIFICAR SE DEVEMOS RECARREGAR A LISTA DE TERRITÓRIOS
+        if (current_time_loop_start - last_reload_check_time > reload_interval)
+            LogInfo("ResourceController_Loop", "Recarregando lista de territórios...");
+            LoadAllTerritories(); // Recarrega e reagenda territórios
+            last_reload_check_time := current_time_loop_start;
+            LogInfo("ResourceController_Loop", "Lista de territórios atualizada. Total agendado: " + next_territory_checks.size());
         endif
-        
-        if (!(controller_pid in active_processes))
-            active_processes.append(controller_pid);
-            SetGlobalProperty("ActiveProcesses", active_processes);
-            LogInfo("ResourceController_DEBUG", "PID " + controller_pid + " adicionado à lista de processos ativos");
+
+        // 2. VERIFICAR E PROCESSAR EVENTOS PENDENTES
+        if (current_time_loop_start - last_event_check_time >= event_check_interval)
+            ProcessPendingEvents(); // Processa eventos como 'created', 'deleted', 'caravan_activated'
+            last_event_check_time := current_time_loop_start;
         endif
-        
-        LogInfo("recursos", "Iniciando Controlador de Recursos de Territórios...");
-        
-        // CARREGAR TODOS OS TERRITÓRIOS DINAMICAMENTE
-        LogInfo("ResourceController", "Carregando lista completa de territórios...");
-        LoadAllTerritories();
-        LogInfo("ResourceController", "Territórios carregados: " + next_territory_checks.size());
-        
-        // Exibir lista de territórios encontrados
-        foreach territory_name in (next_territory_checks.keys())
-            LogInfo("ResourceController", "  - Território encontrado: " + territory_name);
-            sleepms(2);
-        endforeach
-        
-        // Configurações do loop principal
-        var check_interval := 30;
-        var last_event_check := 0;
-        var event_check_interval := 15; // Verificar eventos a cada 15 segundos
-        var last_reload_check := polcore().systime;
-        var reload_interval := 300; // Recarregar territórios a cada 5 minutos
 
-        // Loop principal do ResourceController - MELHORADO
-        while(1)
-            var current_time := polcore().systime;
-            
-            // Atualizar o heartbeat dentro do loop
-            UpdateProcessHeartbeat("ResourceController");
-            LogInfo("ResourceController", "Ciclo iniciado. PID: " + GetPid());
+        // 3. Obter territórios que estão na hora de gerar recursos
+        var territories_to_process_now := GetTerritoriesDueForCheck(current_time_loop_start);
+        LogDebug("ResourceController_Loop", territories_to_process_now.size() + " territórios devidos para processamento de recursos neste ciclo.");
 
-            // 1. VERIFICAR SE DEVEMOS RECARREGAR A LISTA DE TERRITÓRIOS
-            if (current_time - last_reload_check > reload_interval)
-                LogInfo("ResourceController", "Recarregando lista de territórios...");
-                LoadAllTerritories();
-                last_reload_check := current_time;
-                LogInfo("ResourceController", "Lista atualizada. Total de territórios: " + next_territory_checks.size());
-            endif
-            
-            // 2. VERIFICAR E PROCESSAR EVENTOS PENDENTES
-            if (current_time - last_event_check >= event_check_interval)
-                ProcessPendingEvents();
-                last_event_check := current_time;
-            endif
-
-            // 3. Processar territórios que já estão na hora
-            var territories_to_check := GetTerritoriesDueForCheck(current_time);
-            
-            // 4. PROCESSAR CADA TERRITÓRIO ENCONTRADO
-       foreach territory_id_key in territories_to_check // territory_id_key agora é o ID do território
-            LogDebug("ResourceController", "Processando território com ID: " + territory_id_key);
-            ProcessTerritory(territory_id_key, current_time); // Passa o ID
-            sleepms(100); 
+        // 4. PROCESSAR CADA TERRITÓRIO DEVIDO
+        foreach territory_id_to_process in territories_to_process_now
+            LogDebug("ResourceController_Loop", "Processando geração de recursos para território ID: " + territory_id_to_process);
+            ProcessTerritory(territory_id_to_process, current_time_loop_start); // Gera recursos e reagenda
+            SleepMS(100); // Pequena pausa entre processamento de territórios para não sobrecarregar
         endforeach
 
-            // 5. Calcular tempo de espera
-            var wait_time := check_interval;
-            // Se não há territórios para verificar, pode esperar mais tempo
-            if (territories_to_check.size() == 0)
-                wait_time := check_interval;
-            else
-                // Se processou territórios, esperar menos para verificar novamente
-                wait_time := CInt(check_interval / 2);
-            endif
-            
-            if (wait_time < 1) 
-                wait_time := 1;
-            endif
+        // 5. Calcular tempo de espera para o próximo ciclo do loop principal
+        // Isso tenta ser um pouco mais dinâmico para verificar mais cedo se houve processamento.
+        var time_for_next_due_territory_check := GetTimeForNextDue(current_time_loop_start, check_interval);
+        var wait_time_for_sleep := CInt(time_for_next_due_territory_check);
+        
+        // Garantir um tempo mínimo e máximo de espera
+        if (wait_time_for_sleep < 1) wait_time_for_sleep := 1; endif;
+        if (wait_time_for_sleep > check_interval) wait_time_for_sleep := check_interval; endif;
 
-            LogDebug("ResourceController_DEBUG", "Indo para Sleep(" + wait_time + ")");
-            Sleep(wait_time);
-        endwhile
-    endprogram
+        LogDebug("ResourceController_Loop", "Próxima verificação de território em " + wait_time_for_sleep + " segundos. Indo para Sleep.");
+        Sleep(wait_time_for_sleep);
+    endwhile
+endprogram
 
-// NOVA FUNÇÃO para processar eventos do datafile
+// Adicionada função para calcular o tempo de espera de forma mais inteligente
+function GetTimeForNextDue(current_time, default_wait)
+    var next_due_time := current_time + default_wait * 10; // Um valor alto inicial
+    var found_due := 0;
+
+    if (next_territory_checks.size() == 0)
+        return default_wait; // Se não há territórios, espera o padrão
+    endif
+
+    foreach territory_id_key in (next_territory_checks.keys())
+        var check_time_val := CInt(next_territory_checks[territory_id_key]);
+        if (check_time_val > current_time) // Apenas considerar agendamentos futuros
+            if (check_time_val < next_due_time)
+                next_due_time := check_time_val;
+                found_due := 1;
+            endif
+        endif
+    endforeach
+
+    if (found_due)
+        var time_to_wait := next_due_time - current_time;
+        return (time_to_wait > 0 ? time_to_wait : 1); // Espera pelo menos 1 segundo
+    else
+        return default_wait; // Se todos já passaram ou não há futuros, espera o padrão
+    endif
+endfunction
+
 function ProcessPendingEvents()
     var df := SafeOpenDataFile(":faccao:messages");
-    if(!df) 
-        return; 
-    endif
+    if(!df) return; endif;
 
     var elem := SafeFindElement(df, "controller_events");
-    if(!elem) 
-        return; 
-    endif
+    if(!elem) return; endif;
 
-    // CORRIGIDO: Remover valor padrão de GetElementProp
     var events := GetElementProp(elem, "pending");
-    if (!events)
-        events := array{};
-    endif
-    
-    if (TypeOf(events) != "Array" || events.size() == 0) 
-        return; 
-    endif // Nenhum evento
+    if (!events || TypeOf(events) != "Array" || events.size() == 0) return; endif;
 
     LogInfo("ResourceController_Event", "Processando " + events.size() + " eventos pendentes...");
-    var processed_events := 0;
+    var processed_events_count := 0;
+    var remaining_events_list := array{}; // Eventos que, por algum erro inesperado, não foram processados
 
-    // Criar uma nova lista para eventos não processados (se houver erro)
-    var remaining_events := array{};
-
-    foreach ev in events
-        if (TypeOf(ev) == "Struct" && ev.territory_id && ev.type)
-            LogInfo("ResourceController", "Processando evento " + ev.type + " para território: " + ev.territory_id);
-            case (ev.type)
+    foreach ev_data in events
+        var event_handled_successfully := 0;
+        if (TypeOf(ev_data) == "Struct" && ev_data.territory_id && ev_data.type)
+            LogInfo("ResourceController_EventDetail", "Processando evento: Tipo='" + ev_data.type + "', TerritórioID='" + ev_data.territory_id + "'");
+            case (ev_data.type)
                 "created":
                 "transfer":
                 "claimed":
                 "resources_updated":
-                "rollback": // Adicionar rollback se necessário
-                    UpdateTerritorySchedule(ev.territory_id);
-                    processed_events += 1;
-
+                "rollback":
+                    UpdateTerritorySchedule(ev_data.territory_id);
+                    event_handled_successfully := 1;
                 "deleted":
                 "revoked":
-                    if (next_territory_checks.exists(ev.territory_id))
-                        next_territory_checks.erase(ev.territory_id);
-                        LogInfo("ResourceController", "Território " + ev.territory_id + " removido do agendamento (evento " + ev.type + ").");
+                    if (next_territory_checks.exists(ev_data.territory_id))
+                        next_territory_checks.erase(ev_data.territory_id);
+                        LogInfo("ResourceController_EventDetail", "Território " + ev_data.territory_id + " removido do agendamento (evento " + ev_data.type + ").");
                     endif
-                    processed_events += 1;
-
+                    event_handled_successfully := 1;
                 "reload_territories":
-                    LogInfo("ResourceController", "Evento de reload recebido. Recarregando territórios...");
+                    LogInfo("ResourceController_EventDetail", "Evento de reload recebido. Recarregando territórios...");
                     LoadAllTerritories();
-                    processed_events += 1;
-
-                // --- NOVOS CASES PARA CARAVANA ---
+                    event_handled_successfully := 1;
                 "caravan_activated":
-                    if (ev.data && ev.data.faction && ev.territory_id) // territory_id aqui é o capital_id
-                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_ACTIVATED para Facção: " + ev.data.faction + ", Capital: " + ev.territory_id);
-                        // Armazenar essa informação para uso em GenerateResourcesForTerritory
+                    if (ev_data.data && ev_data.data.faction && ev_data.territory_id)
+                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_ACTIVATED para Facção: " + ev_data.data.faction + ", Capital: " + ev_data.territory_id);
                         var caravan_info_global := GetGlobalProperty("active_caravans");
                         if (!caravan_info_global || caravan_info_global == error)
                             caravan_info_global := dictionary{};
                         endif
-                        caravan_info_global[ev.data.faction] := struct{
-                            "capital_id" := ev.territory_id, 
-                            "active_until" := ev.data.active_until_next_payment
+                        caravan_info_global[ev_data.data.faction] := struct{
+                            "capital_id" := CStr(ev_data.territory_id),
+                            "active_until" := CInt(ev_data.data.active_until_next_payment)
                         };
                         SetGlobalProperty("active_caravans", caravan_info_global);
-                        LogInfo("ResourceController_Caravana", "Caravana ATIVADA e registrada para " + ev.data.faction + " -> " + ev.territory_id);
                     else
-                        LogWarning("ResourceController_Caravana", "Evento caravan_activated recebido com dados insuficientes: " + ev);
+                        LogWarning("ResourceController_Caravana", "Evento caravan_activated recebido com dados insuficientes: " + ev_data);
                     endif
-                    processed_events += 1;
-
+                    event_handled_successfully := 1;
                 "caravan_deactivated":
-                    if (ev.data && ev.data.faction)
-                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_DEACTIVATED para Facção: " + ev.data.faction + ", Capital: " + ev.territory_id);
+                    if (ev_data.data && ev_data.data.faction)
+                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_DEACTIVATED para Facção: " + ev_data.data.faction + ", Capital: " + ev_data.territory_id);
                         var caravan_info_global := GetGlobalProperty("active_caravans");
-                        if (caravan_info_global && caravan_info_global.exists(ev.data.faction))
-                            caravan_info_global.erase(ev.data.faction);
+                        if (caravan_info_global && caravan_info_global.exists(ev_data.data.faction))
+                            caravan_info_global.erase(ev_data.data.faction);
                             SetGlobalProperty("active_caravans", caravan_info_global);
-                            LogInfo("ResourceController_Caravana", "Caravana DESATIVADA e removida do registro para " + ev.data.faction);
                         endif
                     else
-                        LogWarning("ResourceController_Caravana", "Evento caravan_deactivated recebido com dados insuficientes: " + ev);
+                        LogWarning("ResourceController_Caravana", "Evento caravan_deactivated recebido com dados insuficientes: " + ev_data);
                     endif
-                    processed_events += 1;
-                // --- FIM DOS NOVOS CASES ---
-
+                    event_handled_successfully := 1;
                 default:
-                    LogWarning("ResourceController", "Tipo de evento desconhecido no datafile: " + ev.type);
-                    remaining_events.append(ev); // Manter evento não reconhecido? Opcional.
+                    LogWarning("ResourceController_EventDetail", "Tipo de evento DESCONHECIDO no datafile: '" + ev_data.type + "' para território '" + ev_data.territory_id + "'. Evento será DESCARTADO.");
+                    event_handled_successfully := 1; // Consideramos "tratado" ao descartar
             endcase
+
+            if (event_handled_successfully)
+                processed_events_count += 1;
+            else
+                // Se algum case não setou event_handled_successfully, algo está errado na lógica do case.
+                LogWarning("ResourceController_EventDetail", "Evento NÃO FOI COMPLETAMENTE TRATADO (lógica interna falhou): Tipo='" + ev_data.type + "'. Mantendo na lista por segurança.");
+                remaining_events_list.append(ev_data);
+            endif
         else
-            LogWarning("ResourceController_Event", "Evento inválido encontrado no datafile: " + ev);
-            // Não re-adicionar evento inválido
+            LogWarning("ResourceController_Event", "Evento inválido (não é struct ou faltam props) encontrado no datafile: " + ev_data + ". Descartando.");
+            processed_events_count += 1; // Contabiliza como processado (descartado)
         endif
-        sleepms(5); // Pequena pausa
+        SleepMS(5);
     endforeach
 
-    // Salvar a lista de eventos (apenas os não processados/inválidos, se houver)
-    // Se todos foram processados, a lista estará vazia.
-    SetElementProp(elem, "pending", remaining_events);
-    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Processados: " + processed_events + ".");
+    // Salva a lista de eventos 'pending' atualizada (idealmente vazia)
+    SetElementProp(elem, "pending", remaining_events_list);
+    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Total de eventos na lista original: " + events.size() + ". Eventos efetivamente processados/descartados: " + processed_events_count + ". Eventos restantes (se houver erro): " + remaining_events_list.size());
 endfunction
 
 function UpdateTerritorySchedule(territory_id_to_update)
@@ -555,474 +543,224 @@ endfunction
         endif
     endfunction
 
-   function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
-    // DECLARAR VARIÁVEIS NO INÍCIO DA FUNÇÃO
+// FUNÇÃO GenerateResourcesForTerritory (REIMPRESSA E ATUALIZADA)
+function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount)
     var donation_chest := 0;
-    var log_entries := array{};  // PRIMEIRA E ÚNICA DECLARAÇÃO DE log_entries
-    var current_time := polcore().systime; 
-    
+    var log_entries := array{};
+    var current_time := polcore().systime;
+    var faction_name := faction_name_param; // Usar uma variável local para faction_name
+
     if (!elem || !faction_name || resource_amount <= 0)
-        LogError("recursos", "Parâmetros inválidos para geração de recursos");
-        return 0;
-    endif
-    
-    var territory_name;
-    if (TypeOf(elem) == "String")
-        territory_name := elem;
-        var rect_df := SafeOpenDataFile(":architect:areas");
-        if (!rect_df)
-            LogError("recursos", "Não foi possível abrir o datafile de áreas");
-            return 0;
-        endif
-        
-        elem := SafeFindElement(rect_df, territory_name);
-        if (!elem)
-            LogError("recursos", "Território não encontrado: " + territory_name);
-            return 0;
-        endif
-    else
-        territory_name := GetElementProp(elem, "Name");
-        if (!territory_name)
-            territory_name := "Desconhecido";
-        endif
-    endif
-    
-    LogDebug("recursos", "Iniciando geração de recursos para território: " + territory_name);
-    LogDebug("recursos", "Facção: " + faction_name + ", Quantidade: " + resource_amount);
-    
-    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-    if (!faction)
-        faction := GetElementProp(elem, "Faction");
-    endif
-    
-    if (!faction)
-        LogError("recursos", "Informação de facção inválida para o território");
+        LogError("recursos_gen", "Parâmetros inválidos para GenerateResourcesForTerritory. Elem: " + (elem ? "OK" : "NULL") + ", Faction: " + (faction_name ? faction_name : "NULL") + ", Amount: " + resource_amount);
         return 0;
     endif
 
-    if (faction == DEFAULT_FACTION || faction == "Selvagem")
-        LogDebug("recursos", "Território selvagem, pulando geração de recursos");
+    var territory_name_from_elem := GetElementProp(elem, "Name", "Desconhecido_" + elem.name); // elem.name é o nome da chave no datafile
+    var territory_id_from_elem := GetElementProp(elem, TERRITORY_ID_PROP, elem.name); // Usa chave como fallback
+
+    LogDebug("recursos_gen", "Iniciando geração para Território: '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ")");
+    LogDebug("recursos_gen", "Facção Param: '" + faction_name + "', Quantidade: " + resource_amount);
+
+    var faction_on_elem := GetElementProp(elem, TERRITORY_FACTION_PROP, GetElementProp(elem, "Faction")); // Checa novo e antigo
+    if (!faction_on_elem)
+        LogError("recursos_gen", "Informação de facção inválida para o território '" + territory_name_from_elem + "'.");
         return 0;
     endif
-    
-    if (faction_name != faction)
-        LogWarning("recursos", "Facção passada (" + faction_name + ") não corresponde à facção do território (" + faction + ")");
-        faction_name := faction;
-    endif
-    
-    LogDebug("recursos", "Facção confirmada: " + faction_name);
-    
-    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
-    if (!territory_id)
-        territory_id := GetElementProp(elem, "Name");
-        if (!territory_id)
-            territory_id := territory_name;
-        endif
-        LogDebug("recursos", "Usando nome do território como ID: " + territory_id);
-    endif
-    
-    var resources_string := GetElementProp(elem, "Resources");
-    if (!resources_string)
-        LogError("recursos", "Nenhum recurso configurado para o território");
+    if (faction_on_elem == DEFAULT_FACTION || faction_on_elem == "Selvagem")
+        LogDebug("recursos_gen", "Território '" + territory_name_from_elem + "' é selvagem. Pulando geração.");
         return 0;
     endif
-        
-    LogDebug("recursos", "String de recursos: " + resources_string);
-    
-    var resources := ProcessResourceString(resources_string);
-    
-    if (!resources || resources.size() < 1)
-        LogError("recursos", "Nenhum recurso válido encontrado após processamento");
+    if (faction_name != faction_on_elem)
+        LogWarning("recursos_gen", "Facção passada ('" + faction_name + "') não corresponde à facção do território ('" + faction_on_elem + "') para '" + territory_name_from_elem + "'. Usando facção do elemento: '" + faction_on_elem + "'.");
+        faction_name := faction_on_elem; // CORRIGE faction_name para o que está no elemento do território
+    endif
+    LogDebug("recursos_gen", "Facção confirmada para geração: '" + faction_name + "'");
+
+    var resources_string_from_elem := GetElementProp(elem, "Resources");
+    if (!resources_string_from_elem)
+        LogError("recursos_gen", "Nenhum recurso configurado para o território '" + territory_name_from_elem + "'.");
         return 0;
     endif
-    
-    LogDebug("recursos", "" + resources.size() + " recursos válidos identificados");
-    
-    // ENCONTRAR O BAÚ DE DOAÇÕES
-    donation_chest := FindFactionChest(faction_name, territory_id);
-    
-    if (donation_chest)
-    UpdateResourceCache(donation_chest);
-        LogDebug("GenerateResources_DEBUG", "Baú alvo encontrado: " + donation_chest.serial);
-    else
-        LogCritical("GenerateResources_DEBUG", "FALHA CRÍTICA ao encontrar baú para " + faction_name + "/" + territory_id);
-    endif
-    
-    if (!donation_chest)
-        LogError("recursos", "Baú de doações não encontrado ou inacessível para facção: " + faction_name);
-        
-        if (territory_id)
-            LogDebug("recursos", "Tentando busca secundária apenas pela facção");
-            donation_chest := FindFactionChest(faction_name);
-        endif
-        
-        if (!donation_chest)
-            LogWarning("recursos", "Criando baú de emergência para " + faction_name);
-            donation_chest := CreateEmergencyDonationChest(faction_name);
-            
-            if (!donation_chest)
-                LogCritical("recursos", "Impossível criar ou localizar baú de doações");
-                return 0;
-            endif
-        endif
-    endif
-    
-    if (!IsValidContainer(donation_chest))
-        LogError("recursos", "Baú de doações encontrado não é válido ou está inacessível");
+    LogDebug("recursos_gen", "String de recursos: '" + resources_string_from_elem + "'");
+
+    var resources_array_parsed := ProcessResourceString(resources_string_from_elem);
+    if (!resources_array_parsed || resources_array_parsed.size() < 1)
+        LogError("recursos_gen", "Nenhum recurso válido encontrado após processamento para '" + territory_name_from_elem + "'.");
         return 0;
     endif
-    
-    if (!HasContainerSpace(donation_chest, resources.size()))
-        LogWarning("recursos", "Baú de doações pode estar cheio, alguns recursos podem não ser adicionados");
-    endif
-    
-    LogDebug("GenerateResources_DEBUG", "Iniciando loop de criação de recursos no baú " + donation_chest.serial);
-    LogDebug("recursos", "Iniciando adição de recursos ao baú " + donation_chest.serial);
-    
-     var success_count := 0;
-    // A linha "var log_entries := array{};" que estava aqui foi REMOVIDA.
+    LogDebug("recursos_gen", resources_array_parsed.size() + " tipos de recursos válidos identificados para '" + territory_name_from_elem + "'.");
 
- foreach resource in (resources)
-        LogDebug("GenerateResources_DEBUG", "-- Processando Recurso: " + resource + " --");
-       
-        var objtype := MapearRecurso(resource);
-        if (!objtype) 
-            LogError("recursos", "Tipo de objeto não encontrado para recurso: '" + resource + "' em GenerateResourcesForTerritory. Pulando este recurso.");
-            log_entries.append("Falha ao mapear recurso: " + resource); 
-            continue; 
-        endif;
-        
-        // LOG DE VERIFICAÇÃO CRÍTICO AQUI:
-        LogCritical("ResourceController_ObjtypeCheck", "Para recurso '" + resource + "':");
-        LogCritical("ResourceController_ObjtypeCheck", "  - Valor de 'objtype' ANTES de ClassificarRecurso: " + objtype);
-        LogCritical("ResourceController_ObjtypeCheck", "  - Tipo de 'objtype' ANTES de ClassificarRecurso: " + TypeOf(objtype));
-        LogCritical("ResourceController_ObjtypeCheck", "  - Representação Hex de 'objtype': 0x" + Hex(CInt(objtype))); // Garantir que é inteiro para Hex()
+    var target_chest_for_delivery := 0;
+    var caravan_redirected_flag := 0;
+    var active_caravans_global_prop := GetGlobalProperty("active_caravans");
 
-        LogDebug("GenerateResources_DEBUG", "Objtype mapeado para '" + resource + "': 0x" + Hex(CInt(objtype))); // Use CInt para segurança
-        
-        var categoria_final := ClassificarRecurso(objtype); // 'objtype' deve ser um inteiro aqui
-
-if (categoria_final == "desconhecido" || !categoria_final)
-    LogWarning("recursos", "Categoria NÃO DETERMINADA para recurso: '" + resource + "' (Objtype: 0x" + Hex(objtype) + ") usando ClassificarRecurso(objtype). Recurso não será marcado como doação específica.");
-else
-    LogDebug("GenerateResources_DEBUG", "Categoria final determinada para CProp: " + categoria_final); // <-- ESTA LINHA
-endif;
-        
-        var properties := dictionary{};
-        if (categoria_final != "desconhecido" && categoria_final)
-            properties["IsKingdomDonation" + categoria_final] := 1; 
-        endif;
-        properties["GeneratedForTerritory"] := territory_name;
-        properties["GeneratedTime"] := polcore().systime; // Usar current_time se preferir o timestamp do início da função
-        properties["GeneratedByFaction"] := faction_name;
-        properties["CreatedByResourceController"] := 1;
-        properties["faction"] := faction_name; 
-        properties["territory_id"] := territory_id; 
-
-        // O restante do seu código para SafeCreateItemInContainer_Refactored e fallback está bom.
-        // Apenas certifique-se que os logs reflitam corretamente.
-
-LogDebug("PROP_CHECK", "--> Propriedades para SafeCreateItemInContainer_Refactored:");
-if (TypeOf(properties) == "Dictionary") 
-    foreach prop_key in (properties.keys())
-        LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
-        // Sleepms(1); // Removido para performance, descomente para debug extremo
-    endforeach;
-else 
-    LogDebug("PROP_CHECK", "    'properties' NÃO é Dictionary! Tipo: " + TypeOf(properties)); 
-endif;
-LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
-        
-        var result_item := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
-        
-        if (result_item && result_item != error)
-            LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result_item + ", Serial: " + result_item.serial + ", Amount: " + result_item.amount + ", Objtype: 0x" + Hex(result_item.objtype));
-            // ----- START: Added CProp Verification Log -----
-            LogInfo("PROP_VERIFY", "Item " + result_item.serial + " (Objtype: 0x" + Hex(result_item.objtype) + ") CProps APÓS criação/stack:");
-            var all_cprops_on_item := GetObjPropertyNames(result_item); // Get all CProps
-            if (all_cprops_on_item && TypeOf(all_cprops_on_item) == "Array") // Check if it's a valid array
-                foreach prop_name_verify in (all_cprops_on_item)
-                    LogInfo("PROP_VERIFY", "  -> " + prop_name_verify + " = " + GetObjProperty(result_item, prop_name_verify));
-                    Sleepms(1); // Optional, for readability if many props
-                endforeach
-            else
-                LogWarning("PROP_VERIFY", "Não foi possível obter CProps para o item " + result_item.serial + " ou não há CProps.");
-            endif
-            // ----- END: Added CProp Verification Log -----
-
-            success_count += 1;
-            log_entries.append("Recurso criado: " + resource + " x" + resource_amount + " (Serial: " + result_item.serial + ")"); // Changed result to result_item
-            
-            var has_created_prop := GetObjProperty(result_item, "CreatedByResourceController"); // Changed result to result_item
-            var has_time_prop := GetObjProperty(result_item, "GeneratedTime"); // Changed result to result_item
-            
-            if (!has_created_prop || !has_time_prop)
-                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! (Serial: "+result_item.serial+"). Corrigindo manualmente..."); // Changed result to result_item
-                if (!has_created_prop)
-                    SetObjProperty(result_item, "CreatedByResourceController", 1); // Changed result to result_item
-                endif;
-                if (!has_time_prop)
-                    SetObjProperty(result_item, "GeneratedTime", polcore().systime); // Changed result to result_item
-                endif;
-            endif;
-        else
-            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + CStr(result_item) + " (Tipo: " + TypeOf(result_item) + ")"); // Changed result to result_item
-            log_entries.append("Falha (SafeCreate) ao criar recurso: " + resource);
-            
-            // ... (your fallback logic using CreateItemInContainer)
-            // If you have fallback logic, make sure to apply the PROP_VERIFY log there as well
-            // if the fallback is successful.
-            // Example for fallback:
-            var new_item_fallback := CreateItemInContainer(donation_chest, objtype, resource_amount);
-            if (new_item_fallback && new_item_fallback != error)
-                // Apply properties to new_item_fallback
-                if (TypeOf(properties) == "Dictionary")
-                    ApplyPropertiesToItem(new_item_fallback, properties);
-                endif
-
-                LogInfo("GenerateResources_DEBUG", "SUCESSO (método alternativo)! Item Ref: " + new_item_fallback + ", Serial: " + new_item_fallback.serial);
-                
-                // ----- START: Added CProp Verification Log for FALLBACK -----
-                LogInfo("PROP_VERIFY_FALLBACK", "Item " + new_item_fallback.serial + " (Objtype: 0x" + Hex(new_item_fallback.objtype) + ") CProps APÓS criação/stack (FALLBACK):");
-                var all_cprops_fallback := GetObjPropertyNames(new_item_fallback);
-                if (all_cprops_fallback && TypeOf(all_cprops_fallback) == "Array")
-                    foreach prop_name_verify_fb in (all_cprops_fallback)
-                        LogInfo("PROP_VERIFY_FALLBACK", "  -> " + prop_name_verify_fb + " = " + GetObjProperty(new_item_fallback, prop_name_verify_fb));
-                        Sleepms(1);
-                    endforeach
+    if (active_caravans_global_prop && active_caravans_global_prop.exists(faction_name))
+        var caravan_details_for_faction := active_caravans_global_prop[faction_name];
+        if (caravan_details_for_faction.capital_id && caravan_details_for_faction.active_until && CInt(caravan_details_for_faction.active_until) > current_time)
+            if (CStr(territory_id_from_elem) != CStr(caravan_details_for_faction.capital_id)) // Não redirecionar se já é a capital
+                LogInfo("recursos_caravana", "CARAVANA ATIVA para facção '" + faction_name + "'. Redirecionando recursos de '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ") para capital ID: '" + caravan_details_for_faction.capital_id + "'.");
+                target_chest_for_delivery := FindFactionChest(faction_name, caravan_details_for_faction.capital_id); // Busca baú da CAPITAL
+                if (target_chest_for_delivery)
+                    LogInfo("recursos_caravana", "Baú da CAPITAL (ID: " + caravan_details_for_faction.capital_id + ") encontrado: " + target_chest_for_delivery.serial + ". Recursos serão entregues lá.");
+                    caravan_redirected_flag := 1;
                 else
-                    LogWarning("PROP_VERIFY_FALLBACK", "Não foi possível obter CProps para o item " + new_item_fallback.serial + " (FALLBACK) ou não há CProps.");
+                    LogError("recursos_caravana", "FALHA ao encontrar baú da CAPITAL (ID: " + caravan_details_for_faction.capital_id + ") para facção '" + faction_name + "'. Recursos para '" + territory_name_from_elem + "' serão gerados localmente (fallback).");
                 endif
-                // ----- END: Added CProp Verification Log for FALLBACK -----
-
-                success_count += 1;
-                log_entries.append("Recurso criado (alt): " + resource + " x" + resource_amount + " (Serial: " + new_item_fallback.serial + ")");
             else
-                log_entries.append("Falha (CreateInContainer) ao criar recurso: " + resource);
-                LogError("recursos", "Falha (CreateInContainer) ao criar recurso: " + resource + ". Erro: " + CStr(new_item_fallback));
-            endif;
+                 LogInfo("recursos_caravana", "Território '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ") é a CAPITAL com caravana ativa. Recursos gerados localmente na capital.");
+            endif
+        else
+            LogInfo("recursos_caravana", "Caravana registrada para facção '" + faction_name + "', mas contrato expirou (expira em: " + caravan_details_for_faction.active_until + ", agora: " + current_time + "). Recursos para '" + territory_name_from_elem + "' gerados localmente.");
+        endif
+    endif
+
+    if (!caravan_redirected_flag || !target_chest_for_delivery)
+        donation_chest := FindFactionChest(faction_name, territory_id_from_elem); // Baú LOCAL
+        if (donation_chest)
+             LogInfo("recursos_gen", "Usando baú LOCAL '" + donation_chest.serial + "' para território '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ").");
+        endif
+    else
+        donation_chest := target_chest_for_delivery; // Baú da CAPITAL
+        LogInfo("recursos_gen", "Usando baú da CAPITAL '" + donation_chest.serial + "' (Capital ID: " + active_caravans_global_prop[faction_name].capital_id + ") para recursos do território '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ").");
+    endif
+
+    if (!donation_chest)
+        LogError("recursos_gen", "Baú de doações (local ou capital) não encontrado ou inacessível para facção: '" + faction_name + "', território: '" + territory_name_from_elem + "'. Geração abortada.");
+        // Opcional: Tentar criar baú de emergência aqui, mas pode ser complexo se for para a capital.
+        return 0;
+    endif
+    if (!IsValidContainer(donation_chest))
+        LogError("recursos_gen", "Baú de doações (Serial: " + donation_chest.serial + ") encontrado, mas não é válido ou está inacessível. Geração abortada.");
+        return 0;
+    endif
+    if (!HasContainerSpace(donation_chest, resources_array_parsed.size()))
+        LogWarning("recursos_gen", "Baú de doações (Serial: " + donation_chest.serial + ") pode estar cheio. Alguns recursos podem não ser adicionados para '" + territory_name_from_elem + "'.");
+    endif
+
+    LogDebug("recursos_gen", "Iniciando loop de criação de " + resources_array_parsed.size() + " tipos de recurso(s) no baú " + donation_chest.serial);
+    var items_created_successfully_count := 0;
+
+    foreach resource_name_loop in resources_array_parsed
+        var objtype_to_create := MapearRecurso(resource_name_loop);
+        if (!objtype_to_create)
+            LogError("recursos_gen", "Tipo de objeto não encontrado para recurso: '" + resource_name_loop + "' em território '" + territory_name_from_elem + "'. Pulando este recurso.");
+            log_entries.append("Falha ao mapear recurso: " + resource_name_loop);
+            continue;
         endif;
-        
-        Sleepms(10); // Pequena pausa entre a criação de cada tipo de recurso
-    endforeach; // Fim do loop foreach resource
-        
-        // Novo log de depuração - verificar conteúdo final do baú
-        LogDebug("GenerateResources_DEBUG", "=== Conteúdo final do Baú " + donation_chest.serial + " ===");
-        var final_items := EnumerateItemsInContainer(donation_chest);
-        if (final_items == error || !final_items)
-            LogWarning("GenerateResources_DEBUG", "Não foi possível enumerar itens no baú ao final.");
+        LogDebug("recursos_gen", "  Mapeado Recurso: '" + resource_name_loop + "' -> ObjType: 0x" + Hex(CInt(objtype_to_create)));
+
+        var category_for_cprop := ClassificarRecurso(objtype_to_create);
+        LogDebug("recursos_gen", "  Categoria para CProp: '" + category_for_cprop + "'");
+
+        var item_properties := dictionary{};
+        if (category_for_cprop != "desconhecido" && category_for_cprop)
+            item_properties["IsKingdomDonation" + category_for_cprop] := 1;
+        endif;
+        item_properties["GeneratedForTerritory"] := territory_name_from_elem;
+        item_properties["GeneratedTime"] := current_time; // Timestamp do início desta geração
+        item_properties["GeneratedByFaction"] := faction_name;
+        item_properties["CreatedByResourceController"] := 1; // MUITO IMPORTANTE para onInsert.src
+        item_properties["faction"] := faction_name; // Redundante mas pode ser útil
+        item_properties["territory_id"] := territory_id_from_elem; // ID do território de ORIGEM
+
+        LogDebug("recursos_gen", "  Propriedades para criação: " + item_properties.keys());
+        var created_item_ref := SafeCreateItemInContainer_Refactored(donation_chest, objtype_to_create, resource_amount, item_properties);
+
+        if (created_item_ref && created_item_ref != error)
+            items_created_successfully_count += 1;
+            log_entries.append("Recurso criado: " + resource_name_loop + " x" + resource_amount + " (Serial: " + created_item_ref.serial + ")");
+            LogInfo("recursos_gen", "  SUCESSO: Criado/Empilhado " + resource_name_loop + " (Serial: " + created_item_ref.serial + ", Amount: " + created_item_ref.amount + ")");
         else
-            if (final_items.size() == 0) 
-                LogDebug("GenerateResources_DEBUG", "Baú está vazio.");
-            else 
-                foreach final_item in final_items
-                    if (final_item)
-                        LogDebug("GenerateResources_DEBUG", "- Item: " + final_item.desc + " (Serial: " + final_item.serial + ", Objtype: 0x" + Hex(final_item.objtype) + ", Amount: " + final_item.amount + ")");
-                        
-                        // Verificar se o item tem a propriedade de recurso do sistema
-                        var is_system := GetObjProperty(final_item, "CreatedByResourceController");
-                        if (is_system)
-                            LogDebug("GenerateResources_DEBUG", "  [É um recurso do sistema] Criado em: " + GetObjProperty(final_item, "GeneratedTime"));
-                        endif
-                        
-                        // Verificar propriedades KingdomDonation
-                        var donation_types := array{
-                            "IsKingdomDonationComida",
-                            "IsKingdomDonationMoedas",
-                            "IsKingdomDonationCouro", 
-                            "IsKingdomDonationMetal",
-                            "IsKingdomDonationMadeira",
-                            "IsKingdomDonationPano",
-                            "IsKingdomDonationPedra",
-                            "IsKingdomDonationJoias"
-                        };
-                        
-                        foreach donation_type in donation_types
-                            if (GetObjProperty(final_item, donation_type))
-                                LogDebug("GenerateResources_DEBUG", "  [Tipo de doação]: " + donation_type);
-                                break;
-                            endif
-                            sleepms(1);
-                        endforeach
-                    endif
-                    sleepms(1);
-                endforeach
-                
-                // Verificação adicional de contagem de recursos recém-criados
-                var new_resources_count := 0;
-                var current_time := polcore().systime;
-                var time_threshold := 300; // 5 minutos
-                
-                foreach final_item in final_items
-                    if (final_item)
-                        var gen_time := GetObjProperty(final_item, "GeneratedTime");
-                        if (gen_time && (current_time - gen_time) < time_threshold)
-                            new_resources_count += 1;
-                        endif
-                    endif
-                    sleepms(1);
-                endforeach
-                
-                LogInfo("GenerateResources_DEBUG", "Total de itens no baú: " + final_items.size() + ", Recursos recém-criados: " + new_resources_count);
+            log_entries.append("Falha (SafeCreate) ao criar recurso: " + resource_name_loop);
+            LogError("recursos_gen", "  FALHA (SafeCreate) ao criar/empilhar " + resource_name_loop + " em '" + territory_name_from_elem + "'. Resultado: " + created_item_ref);
+            // Tentar fallback pode ser perigoso aqui se SafeCreate já tentou e falhou.
+        endif;
+        SleepMS(10);
+    endforeach; // Fim do loop foreach resource_name_loop
+
+    LogDebug("recursos_gen", "Final da geração. Itens criados com sucesso: " + items_created_successfully_count + "/" + resources_array_parsed.size());
+
+    if (items_created_successfully_count > 0 && donation_chest)
+        SetElementProp(elem, "LastGeneration", current_time);
+        // O reagendamento (NextResourceTime e next_territory_checks) é feito em ProcessTerritory
+
+        // IMPORTANTE: Chamar UpdateResourceCache para o baú ONDE OS ITENS FORAM ENTREGUES
+        UpdateResourceCache(donation_chest);
+        LogInfo("recursos_gen", "Cache de recursos agendado para atualização para o baú: " + donation_chest.serial);
+
+        var history_array := GetElementProp(elem, "ResourceHistory", array{});
+        history_array.append(struct{
+            "time" := current_time,
+            "resources" := resources_array_parsed,
+            "amount" := resource_amount,
+            "success" := items_created_successfully_count,
+            "details" := log_entries,
+            "chest_serial" := (donation_chest ? donation_chest.serial : 0),
+            "chest_name" := (donation_chest ? donation_chest.name : "N/A"),
+            "delivered_to_capital" := caravan_redirected_flag
+        });
+        while (history_array.size() > 10) history_array.erase(1); endwhile;
+        SetElementProp(elem, "ResourceHistory", history_array);
+
+        NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name_from_elem, resources_array_parsed, resource_amount, items_created_successfully_count, caravan_redirected_flag, (donation_chest ? donation_chest.name : ""));
+    endif
+
+    LogInfo("recursos_gen", "=== GERAÇÃO FINALIZADA para '" + territory_name_from_elem + "' ===");
+    return items_created_successfully_count;
+endfunction
+
+   // Ajuste em NotifyFactionLeadersOfResourceGeneration para incluir info da caravana
+function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name_origin, resources_array, amount_per_type, success_count, was_redirected_to_capital := 0, delivery_chest_name := "")
+    var guild := FindGuildByName(faction_name);
+    if (!guild || guild == error) return 0; endif;
+
+    var leader_serials := array{};
+    var guild_leader_serial := guild.GetProp("leader");
+    if (guild_leader_serial) leader_serials.append(guild_leader_serial); endif;
+
+    foreach player_char in EnumerateOnlineCharacters()
+        if (player_char.guildid == guild.guildid)
+            var player_rank_str := GetObjProperty(player_char, "guild_rank");
+            if (player_rank_str in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
+                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif;
+            endif
+            var chardata_player := GetObjProperty(player_char, "chardata");
+            if (chardata_player && (chardata_player.current_nobility_title in {"Rei", "Rainha"} || chardata_player.current_professional_position in {"Imperador", "Mão do Rei"}))
+                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif;
             endif
         endif
-        LogDebug("GenerateResources_DEBUG", "=============================================");
+    endforeach;
 
-        // Verificação adicional - Force uma contagem dos recursos e compare com o cache
-        LogDebug("GenerateResources_DEBUG", "Realizando verificação de consistência de recursos...");
-        var recursos_reais := ContarRecursosReais(donation_chest); // Esta contagem é APENAS DESTE BAÚ
-        var recursos_cache := GetObjProperty(donation_chest, CACHE_PROP_NAME);
+    if (leader_serials.size() == 0) return 0; endif;
 
-        if (recursos_cache)
-            var inconsistencias := VerificarInconsistencias(donation_chest, recursos_reais, "local");
-            if (inconsistencias && inconsistencias.size() > 0) // Verificar se inconsistencias é um array e tem tamanho
-                LogWarning("GenerateResources_DEBUG", "Detectadas " + inconsistencias.size() + " inconsistências entre recursos reais e cache");
-            else
-                LogInfo("GenerateResources_DEBUG", "Recursos consistentes entre contagem real e cache");
-            endif
-        else
-            LogInfo("GenerateResources_DEBUG", "Primeiro cadastro de recursos no cache - não há comparação disponível");
+    var resource_names_str := "";
+    for i_res := 1 to resources_array.size()
+        if (i_res > 1) resource_names_str += ", "; endif;
+        if (i_res == resources_array.size() && i_res > 1) resource_names_str += "e "; endif;
+        resource_names_str += resources_array[i_res];
+    endfor;
+
+    var message_str := "Milord, um carregamento de recursos (" + resource_names_str + ", " + amount_per_type + " unidades de cada) ";
+    message_str += "produzido em '" + territory_name_origin + "'";
+
+    if (was_redirected_to_capital)
+        message_str += ", devido à caravana ativa, foi entregue no baú '" + (delivery_chest_name ? delivery_chest_name : "da capital") + "'.";
+    else
+        message_str += " chegou aos portões e foi armazenado no baú local '" + (delivery_chest_name ? delivery_chest_name : "do território") + "'.";
+    endif
+
+    if (success_count < resources_array.size())
+        message_str += " (" + success_count + "/" + resources_array.size() + " tipos armazenados).";
+    endif
+
+    foreach serial_val in leader_serials
+        var leader_char := SystemFindObjectBySerial(serial_val);
+        if (leader_char && leader_char.connected)
+            SendSysMessageEx(leader_char, message_str, SSM_INFO);
         endif
-
-        // Forçar sincronização dos dados do datafile
-      //  var sync_result := SincronizarComDataFile(donation_chest, recursos_reais);
-      //  if (sync_result)
-     //       LogInfo("GenerateResources_DEBUG", "Sincronização com datafile realizada com sucesso");
-     //   else
-      //      LogWarning("GenerateResources_DEBUG", "Falha na sincronização com datafile");
-//endif
-//
-        // Adicionar um sleep curto antes de retornar para garantir que todas as operações sejam concluídas
-        Sleep(1);
-        
-// Registrar resultados
-        if (success_count > 0)
-            SetElementProp(elem, "LastGeneration", current_time); // current_time foi definido no início da função
-
-            var validated_interval := GetValidatedResourceInterval(elem);
-            var next_generation := current_time + (validated_interval * 60);
-            SetElementProp(elem, "NextResourceTime", next_generation);
-
-            LogInfo("GenerateResources", "Próxima geração agendada para: " + FormatTimeA(next_generation));
-            LogInfo("GenerateResources", "Intervalo usado: " + validated_interval + " minutos");
-
-            // A CHAMADA CORRETA A SER MANTIDA:
-            // UpdateResourceCache agenda a atualização do baú, que será pega
-            // pelo process_recursos_updates.src. Este último fará a contagem
-            // AGREGADA e chamará SincronizarComDataFile com o TOTAL CORRETO.
-            UpdateResourceCache(donation_chest);
-        
-            var history := GetElementProp(elem, "ResourceHistory");
-            if (!history)
-                history := array{};
-            endif
-        
-            history.append(struct{
-                "time" := current_time,
-                "resources" := resources,
-                "amount" := resource_amount,
-                "success" := success_count,
-                "details" := log_entries,
-                "chest_serial" := donation_chest ? donation_chest.serial : 0,
-                "chest_name" := donation_chest ? donation_chest.name : "N/A"
-            });
-        
-            while (history.size() > 10)
-                history.erase(1);
-            endwhile
-        
-            SetElementProp(elem, "ResourceHistory", history);
-
-            NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, resource_amount, success_count);
-        endif
-
-        LogInfo("GenerateResources", "=== GERAÇÃO FINALIZADA ===");
-        LogInfo("GenerateResources", "Resultado: " + success_count + "/" + resources.size() + " recursos criados");
-        LogInfo("GenerateResources", "Total de itens adicionados: " + (success_count * resource_amount));
-
-        var final_interval := GetValidatedResourceInterval(elem);
-        LogInfo("GenerateResources", "Próxima geração em: " + final_interval + " minutos");
-    
-        return success_count;
-    endfunction
-
-    // Função para notificar líderes sobre geração de recursos
-    function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, amount, success_count)
-        var guild := FindGuildByName(faction_name);
-        if (!guild || guild == error)
-            return 0;
-        endif
-        
-        var leader_serials := array{};
-        
-        // Adicionar o líder da facção
-        var leader_serial := guild.GetProp("leader");
-        if (leader_serial)
-            leader_serials.append(leader_serial);
-        endif
-        
-        // Buscar oficiais online
-        foreach player in EnumerateOnlineCharacters()
-            // Verificar se é da mesma facção
-            if (player.guildid == guild.guildid)
-                // Verificar se tem cargo de oficial
-                var player_rank := GetObjProperty(player, "guild_rank");
-                if (player_rank in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
-                    if (!(player.serial in leader_serials))
-                        leader_serials.append(player.serial);
-                    endif
-                endif
-                
-                // Verificar se tem título de nobreza
-                var chardata := GetObjProperty(player, "chardata");
-                if (chardata && (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-                    chardata.current_professional_position in {"Imperador", "Mão do Rei"}))
-                    if (!(player.serial in leader_serials))
-                        leader_serials.append(player.serial);
-                    endif
-                endif
-            endif
-        endforeach
-        
-        // Se não encontramos nenhum líder online, retornar
-        if (leader_serials.size() == 0)
-            return 0;
-        endif
-        
-        // Criar uma mensagem adequada
-        var resource_names := "";
-        for i := 1 to resources.size()
-            if (i > 1)
-                resource_names += ", ";
-            endif
-            
-            if (i == resources.size() && i > 1)
-                resource_names += "e ";
-            endif
-            
-            resource_names += resources[i];
-        endfor
-        
-        var message := "Milord, um carregamento de recursos (";
-        message += resource_names + ", " + amount + " unidades de cada) ";
-        message += "produzido em '" + territory_name + "' chegou aos portões";
-        
-        if (success_count < resources.size())
-            message += ". " + success_count + " dos " + resources.size() + " tipos de recursos foram armazenados.";
-        else
-            message += " e foi armazenado nos devidos baús.";
-        endif
-        
-        // Enviar a mensagem para cada líder
-        foreach serial in (leader_serials)
-            var leader := SystemFindObjectBySerial(serial);
-            if (leader && leader != error && leader.connected)
-                SendSysMessageEx(leader, message, SSM_INFO);
-            endif
-        endforeach
-        
-        return leader_serials.size();
-    endfunction
+    endforeach;
+    return leader_serials.size();
+endfunction
 
     // Função para atualizar o cache de recursos do baú
     function UpdateResourceCache(chest)

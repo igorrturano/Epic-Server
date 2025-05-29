@@ -4,19 +4,20 @@ use guilds;
 use datafile;
 
 include ":faccao:include/faccao_constants";
-include ":faccao:include/shared_functions"; 
+include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
-include ":faccao:include/territory_management"; 
+include ":faccao:include/territory_management";
 
-const CARAVAN_CYCLE_WAIT := 60 * 60 * 3; // Verificar a cada 3 horas, por exemplo
+// const CARAVAN_CYCLE_WAIT := 60 * 60 * 3; // Verificar a cada 3 horas ANTES
+const CARAVAN_CYCLE_WAIT := 10 * 60; // Verificar a cada 10 minutos AGORA
 
 program CaravanPaymentControl()
     LogInfo("caravana_payment", "Iniciando Controlador de Pagamento de Caravanas...");
     while(1)
         CheckCaravanPayments();
         Sleep(CARAVAN_CYCLE_WAIT);
-    endwhile; // Adicionado ;
+    endwhile;
 endprogram
 
 function CheckCaravanPayments()
@@ -26,17 +27,17 @@ function CheckCaravanPayments()
 
     foreach guild_id_loop in guilds_list
         var guild_obj_loop := FindGuild(guild_id_loop);
-        if (!guild_obj_loop) continue; endif; // Simplificado
+        if (!guild_obj_loop) continue; endif;
 
         var active_caravan_capital_id := CStr(guild_obj_loop.GetProp("active_caravan_to_capital"));
         var next_payment_due := CInt(guild_obj_loop.GetProp("caravan_next_payment_due"));
         var weekly_cost := CInt(guild_obj_loop.GetProp("caravan_weekly_cost"));
-        var faction_name_loop := guild_obj_loop.GetProp("name"); 
+        var faction_name_loop := guild_obj_loop.GetProp("name");
 
         if (!faction_name_loop)
-            faction_name_loop := guild_obj_loop.guildname; 
+            faction_name_loop := guild_obj_loop.guildname;
         endif;
-        
+
         if (!active_caravan_capital_id || !next_payment_due || !weekly_cost || !faction_name_loop)
             continue;
         endif;
@@ -44,64 +45,78 @@ function CheckCaravanPayments()
         if (current_time >= next_payment_due)
             LogInfo("caravana_payment", "Pagamento da caravana devido para facção " + faction_name_loop + " (Capital: " + active_caravan_capital_id + ")");
 
-            var df_recursos_loop := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE); // Não precisa de ,1 aqui, só abrir
-            var elem_faccao_nome_normalizado_loop := NormalizarNomeElementoFaccao(faction_name_loop);
+            var capital_donation_chest := FindFactionChest(faction_name_loop, active_caravan_capital_id);
+            if (!capital_donation_chest)
+                LogWarning("caravana_payment", "Baú da capital " + active_caravan_capital_id + " para facção " + faction_name_loop + " não encontrado. Caravana será desativada.");
+                DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Baú da capital não encontrado");
+                continue;
+            endif;
+
+            // Tentar sacar o custo do baú da capital
+            var coins_paid := 0;
+            var coins_to_pay := weekly_cost;
+            var items_in_capital_chest := EnumerateItemsInContainer(capital_donation_chest);
             
-            // Erro linha 52 estava aqui
-            if (!df_recursos_loop || elem_faccao_nome_normalizado_loop == error) 
-                LogWarning("caravana_payment", "Não foi possível acessar dados de recursos para " + faction_name_loop + ". Caravana será desativada.");
-                DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Erro ao acessar datafile de recursos");
-                continue; // Pula para a próxima guilda na iteração
-            endif; // Adicionado ;
+            if (items_in_capital_chest == error) items_in_capital_chest := array{}; endif;
 
-            var elem_faccao_loop := SafeFindElement(df_recursos_loop, elem_faccao_nome_normalizado_loop); // Não precisa de ,1 aqui
-            // Erro linha 59 estava aqui
-            if (!elem_faccao_loop) 
-                LogWarning("caravana_payment", "Elemento de recursos não encontrado para " + faction_name_loop + ". Caravana será desativada.");
-                DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Elemento de recursos não encontrado");
-                continue; // Pula para a próxima guilda na iteração
-            endif; // Adicionado ;
+            foreach item_in_chest in items_in_capital_chest
+                if (item_in_chest.objtype == 0xBA63) // Moedas de Cobre
+                    if (item_in_chest.amount >= coins_to_pay)
+                            if (HelpSubtractAmount(item_in_chest, coins_to_pay))
+                            coins_paid := coins_to_pay;
+                            LogInfo("caravana_payment", coins_to_pay + " moedas deduzidas do item " + item_in_chest.serial + " no baú da capital " + active_caravan_capital_id);
+                            MarcarRecursosModificados(capital_donation_chest); // IMPORTANTE: Atualizar cache de recursos do baú
+                        else
+                            LogError("caravana_payment", "Falha ao usar SubtractAmount no item " + item_in_chest.serial + " para pagar caravana de " + faction_name_loop);
+                        endif;
+                        break; 
+                    else // Não tem o suficiente neste stack, pega o que tem e continua procurando
+                        var amount_taken := item_in_chest.amount;
+                        if (HelpSubtractAmount(item_in_chest, amount_taken)) // Remove tudo do stack
+                            coins_paid += amount_taken;
+                            coins_to_pay -= amount_taken;
+                             LogInfo("caravana_payment", amount_taken + " moedas deduzidas (parcial) do item " + item_in_chest.serial + " no baú da capital " + active_caravan_capital_id + ". Resta pagar: " + coins_to_pay);
+                             MarcarRecursosModificados(capital_donation_chest);
+                        else
+                             LogError("caravana_payment", "Falha ao usar SubtractAmount (parcial) no item " + item_in_chest.serial + " para pagar caravana de " + faction_name_loop);
+                             // Não interrompe, pode haver outro stack.
+                        endif
+                    endif
+                endif
+                if (coins_paid >= weekly_cost) break; endif; // Já pagou tudo
+                SleepMS(1);
+            endforeach;
 
-            var recursos_faccao_loop := GetElementProp(elem_faccao_loop, "recursos", CreateEmptyResourceStruct());
-
-            if (recursos_faccao_loop.moedas >= weekly_cost)
-                recursos_faccao_loop.moedas -= weekly_cost;
-                if (SetElementProp(elem_faccao_loop, "recursos", recursos_faccao_loop))
-                    AtualizarPropriedadesGuildaRecursos(faction_name_loop, recursos_faccao_loop);
-                    
-                    guild_obj_loop.SetProp("caravan_next_payment_due", current_time + (7 * 24 * 3600));
-                    LogInfo("caravana_payment", "Pagamento da caravana realizado para " + faction_name_loop + ". Próximo pagamento em 7 dias.");
-                else
-                    LogError("caravana_payment", "Falha ao salvar recursos após deduzir pagamento para " + faction_name_loop + ". Caravana desativada.");
-                    DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Falha ao salvar recursos após pagamento");
-                endif;
+            if (coins_paid >= weekly_cost)
+                // guild_obj_loop.SetProp("caravan_next_payment_due", current_time + (7 * 24 * 3600)); // ANTES
+                guild_obj_loop.SetProp("caravan_next_payment_due", current_time + (10 * 60)); // AGORA: 10 minutos
+                LogInfo("caravana_payment", "Pagamento da caravana realizado para " + faction_name_loop + ". Próximo pagamento em 10 minutos.");
             else
-                LogWarning("caravana_payment", "Facção " + faction_name_loop + " não possui fundos (" + recursos_faccao_loop.moedas + ") para pagar caravana (" + weekly_cost + "). Caravana desativada.");
-                DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Fundos insuficientes");
+                LogWarning("caravana_payment", "Facção " + faction_name_loop + " não possui fundos no baú da capital (" + active_caravan_capital_id + ") para pagar caravana (" + weekly_cost + ", pago: " + coins_paid + "). Caravana desativada.");
+                DeactivateCaravan(guild_obj_loop, active_caravan_capital_id, "Fundos insuficientes no baú da capital");
             endif;
         endif;
-        SleepMS(100); 
-    endforeach; // Este era o endwhile incorreto
+        SleepMS(100);
+    endforeach;
     LogInfo("caravana_payment", "Verificação de pagamentos de caravanas concluída.");
 endfunction
 
 function DeactivateCaravan(guild_obj_deactivate, capital_id_deactivate, reason := "Desconhecido")
     if (!guild_obj_deactivate) return; endif;
 
-    var faction_name_deactivate := guild_obj_deactivate.GetProp("name"); // Simplificado, GetProp com um só param retorna o valor ou error
+    var faction_name_deactivate := guild_obj_deactivate.GetProp("name");
     if (!faction_name_deactivate || faction_name_deactivate == error)
         faction_name_deactivate := guild_obj_deactivate.guildname;
     endif;
-    if (!faction_name_deactivate) faction_name_deactivate := "Desconhecida"; endif; // Fallback final
+    if (!faction_name_deactivate) faction_name_deactivate := "Desconhecida"; endif;
 
     guild_obj_deactivate.EraseProp("active_caravan_to_capital");
     guild_obj_deactivate.EraseProp("caravan_contract_start_time");
     guild_obj_deactivate.EraseProp("caravan_next_payment_due");
     guild_obj_deactivate.EraseProp("caravan_weekly_cost");
-    
+
     LogInfo("caravana_payment", "Caravana desativada para facção " + faction_name_deactivate + " (Capital: " + capital_id_deactivate + "). Motivo: " + reason);
-    
-    // Correção na criação do struct para TM_NotifyTerritoryChange
+
     var event_data_deactivate := struct;
     event_data_deactivate.+faction := faction_name_deactivate;
     event_data_deactivate.+reason  := reason;

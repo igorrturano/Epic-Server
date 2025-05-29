@@ -2,25 +2,41 @@ use uo;
 use guilds;
 use datafile;
 
-include "include/say";
-include ":faccao:include/shared_functions";
-include ":faccao:faccao_constants";
-include ":datafile:datafile";
-include ":faccao:include/permissions";
+include "include/say"; // Se usado para PrintText/SendSysMessage, mas parece não ser o caso aqui diretamente
+include ":faccao:include/shared_functions"; // Para GetFactionOfChest, GetPlayerFaction, LogPermissionCheck, CanRemoveItems
+include ":faccao:faccao_constants";       // Para KINGDOM_FACTION
+include ":faccao:include/permissions";    // CanRemoveItems pode estar aqui ou em shared_functions
+include ":faccao:include/logging";       // Para LogInfo, LogWarning
 
 program CanRemove(mobile, container, item, move_type)
     // Parâmetros que precisamos preservar mesmo que não usemos
     move_type := move_type;
-    item := item;
+    // item é usado abaixo
 
-    // Usar função padronizada CanRemoveItems que chama UnifiedCheckRemovePermission internamente
-    var can_remove := CanRemoveItems(mobile, container);
+    // CASO 1: Sistema tentando remover (ex: pagamento de caravana)
+    // 'mobile' será 0 ou um objeto não-personagem.
+    // Para simplificar, se mobile não é um player válido, é o sistema.
+    if (!mobile || !mobile.isA(POLCLASS_MOBILE) || !mobile.serial)
+        LogInfo("canRemoveDonation_SYS", "Remoção pelo sistema detectada. Item: " + item.objtype + ", Container: " + container.serial);
+        // Permitir remoção de moedas pelo sistema
+        if (item.objtype == 0xBA63) // Moedas de Cobre
+            LogInfo("canRemoveDonation_SYS", "Sistema autorizado a remover moedas (0xBA63).");
+            return 1;
+        else
+            LogWarning("canRemoveDonation_SYS", "Sistema tentou remover item não autorizado: " + item.objtype + ". Negado.");
+            // Não envie SendSysMessage aqui, pois não há 'mobile' para receber.
+            return 0;
+        endif
+    endif // Fim do if (!mobile ...)
+
+    // CASO 2: Jogador tentando remover
+    var can_remove := CanRemoveItems(mobile, container); // Usa a lógica de permissão centralizada
     
-    // Logging padronizado
-    LogPermissionCheck(mobile, container, "REMOÇÃO", can_remove);
+    // LogPermissionCheck já é chamado dentro de CanRemoveItems ou nas funções que ele chama.
+    // Se você quiser um log específico para este hook, pode adicionar:
+    // LogInfo("canRemoveDonation_PLAYER", "Jogador " + mobile.name + " tentando remover. Permissão: " + can_remove);
     
     if (!can_remove)
-        // Mensagem personalizada dependendo da facção
         var chest_faction := GetFactionOfChest(container);
         var player_faction := GetPlayerFaction(mobile);
         
@@ -33,7 +49,7 @@ program CanRemove(mobile, container, item, move_type)
         endif
         
         return 0;
-    endif
+    endif // Fim do if (!can_remove)
 
     return 1;
 endprogram
