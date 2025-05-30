@@ -34,12 +34,16 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_INPT_FILTRO_ENCAIXE := 8,
 	COMPONENTES_BTN_FILTRAR := 9,
 	COMPONENTES_BTN_LIMPA_FILTRO := 10,
+	COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA := 11,
+	COMPONENTES_BTN_LIMPAR_MEMORIA := 12,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_BTN_AJUDA := 4,
 	COMPLEXOS_INPT_QTD := 5,
 	COMPLEXOS_BTN_RCT_PROX_PAGINA := 6,
-	COMPLEXOS_BTN_RCT_ANT_PAGINA := 7
+	COMPLEXOS_BTN_RCT_ANT_PAGINA := 7,
+	COMPLEXOS_BTN_MEMORIZAR_COMPONENTES := 8,
+	COMPLEXOS_BTN_LIMPAR_MEMORIA := 9
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -54,6 +58,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESCOLHA_DD_OPCOES_CPX,
 	RT_RCT_PROX_PAGINA,
 	RT_RCT_ANT_PAGINA,
+	RT_MEMORIZAR_COMPONENTES,
+	RT_LIMPAR_MEMORIA,
 	RT_AJUDA_CPX
 endenum
 
@@ -67,6 +73,8 @@ enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do G
 	RT_BTN_AVALIAR,
 	RT_BTN_FILTRAR,
 	RT_BTN_LIMPA_FILTRO,
+	RT_LIMPAR_MEMORIA_COMPNT,
+	RT_FILTRO_MEMORIA_LIG_DES,
 	RT_CANCELADO
 endenum
 
@@ -136,6 +144,8 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	GFHTMLArea(gump,painelReceitasX + larguraPainelReceita / 2 - 102,35,205,20,"<basefont size=55 color=#ffffff><center>Receitas</center>");
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelRodape, alturaPainelRodape);// Painel Rodapé
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 8, alturaCelula * 11 + 17,4020,4021, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
+	GFAddButton(gump,CINT(G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 7.8),alturaCelula * 11 + 17,4020,4021, GF_CLOSE_BTN, COMPLEXOS_BTN_LIMPAR_MEMORIA);// Botão limpar memória.
 	GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 10,alturaCelula * 11 + 17,86,"Quantidade:");
 	GFTextEntry( gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 11,alturaCelula * 11 + 17, 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPLEXOS_INPT_QTD,3);
 	return gump;
@@ -240,7 +250,9 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 30,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,4005,4006,GF_CLOSE_BTN, COMPONENTES_BTN_FILTRAR);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 60,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,86,"Encaixe:");
 	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 130, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80 , 120, 17, 1153, sessao.filtros.encaixe , COMPONENTES_INPT_FILTRO_ENCAIXE);
-	
+	GFAddButton(gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11, cint(G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 1.5),4020,4021, GF_CLOSE_BTN, COMPONENTES_BTN_LIMPAR_MEMORIA);// Botão memoriza componentes
+	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 9,cint(G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 1.5),4020,4021, GF_CLOSE_BTN, COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA);// Botão limpar memória.
+
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
 		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,1147,1148,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
@@ -250,6 +262,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 50,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
 		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
+
 		GFTooltipText(gump,"Avaliar Material.");
 
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))

@@ -85,6 +85,8 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	var ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
 	var posicaoInicial := CriaObjetoPosicao(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
+	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
+	var espera := craftConfig["Blacksmithy"].CraftDelay;
 
 	while (processoGerente.state && IsAnimacaoFerreiroPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial))
 		var estagioAtual := contadorEstagio %  estagios.size();
@@ -187,7 +189,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 			++contadorEstagio;
 		endif
 		ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
-		Sleep(2);
+		Sleep(Cint(espera));
 	endwhile
 
 	return true;
@@ -195,14 +197,42 @@ endfunction
 
 function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabricado)
 	var ferramentaNecessaria := BuscaFerramenta(quem,propFabricado.receita.profissao);
+	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
 	var posicaoInicial := CriaObjetoPosicao(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
+	var skill := craftConfig[propFabricado.receita.profissao].Attribute;
+	var espera := craftConfig[propFabricado.receita.profissao].CraftDelay;
 
 	while (processoGerente.state && isAnimacaoPadraoPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial,propFabricado.receita.profissao))
+		
+		var alturaAlvo := estacao.height;
+		if(estacao.mobile)
+			return true;
+		else
+			if(estacao.item)
+				
+				alturaAlvo := estacao.item.height;
+
+			endif
+		endif
+
+		produto.movable := 0;
+		quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_CALOR].x,estacao[FONTE_CALOR].y);
+		MoveObjectToLocation( 
+						produto,
+						estacao.x,
+						estacao.y,
+						alturaAlvo, 
+						estacao.realm, 
+						MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
+		
 		PrintTextAbove(quem,"*Trabalhando*");
-		PerformAction( quem, ANIM_CAST_DIR ); 
-		PlaySoundEffect(quem, SFX_2C);
-		Sleep(2);
+		PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+		PlaySoundEffect(quem, SFX_56);
+		CheckToolWear(quem,ferramentaNecessaria,skill);
+		Sleep(Cint(espera));
+
+		
 	endwhile
 
 	return true;

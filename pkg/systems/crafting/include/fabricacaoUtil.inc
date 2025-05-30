@@ -355,7 +355,11 @@ endfunction
 
 function MontaCraftProp(fabricacaoConfig)
 
-	var baseDict  := dictionary;
+	var propRetorno := struct {
+		pericias  := dictionary,
+		encaixesMemorizados := array
+	};
+
 	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")
 		var temp := dictionary;
 		var visualizadas := struct;
@@ -365,12 +369,22 @@ function MontaCraftProp(fabricacaoConfig)
 		temp.+skill  := fabricacaoConfig[pericia].Attribute;
 		temp.+visualizadas := visualizadas;
 		temp.+last   := 0;
-		baseDict[temp.skill] := temp;
+		propRetorno.pericias[temp.skill] := temp;
 		Sleepms(2);
 	endforeach
 	
-	return baseDict;
+	return propRetorno;
 
+endfunction
+
+function LimparMemoriaEncaixes(quem)
+
+	var propCraft := GetObjProperty(quem, "Craft");
+	if(propCraft)
+		propCraft.encaixesMemorizados := array;
+		SetObjProperty(quem, "Craft", propCraft);
+	endif
+	
 endfunction
 
 function PegaTipoMaterialAleatorio(tipoMaterial)

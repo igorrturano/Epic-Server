@@ -77,7 +77,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		sessao.filtros.encaixe := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
 		sessao.filtros.nome := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_NOME);
 
-		Print("retorno[0] " + retorno[0]);
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
 				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
@@ -123,6 +122,18 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 			RT_BTN_LIMPA_FILTRO:
 				sessao.filtros := struct{ nome := "", encaixe := ""};
+				AtualizaPesquisaComponentes(configComponentes,sessao);
+				break;
+
+			RT_LIMPAR_MEMORIA_COMPNT:
+				LimparMemoriaEncaixes(quem);
+				SendSysMessageEX(quem,"Os encaixes memorizados foram esquecidos.", SSM_INFO);
+				break;
+
+			RT_FILTRO_MEMORIA_LIG_DES:
+				sessao.isFiltroMemoria := !sessao.isFiltroMemoria;
+				var estadoFiltro := sessao.isFiltroMemoria ? "Ligado." : "Desligado.";
+				SendSysMessageEX(quem,"Filtro por memória " +  estadoFiltro, SSM_INFO);
 				AtualizaPesquisaComponentes(configComponentes,sessao);
 				break;
 
@@ -230,7 +241,7 @@ function ExtraiStringEntradaOuVazio(entrada, id)
 endfunction
 
 function AtualizaPesquisaComponentes(configComponentes,byref sessao)
-	sessao.componentes := MontaVisaoComponentes(configComponentes, sessao.filtros.encaixe, sessao.filtros.nome);
+	sessao.componentes := MontaVisaoComponentes(configComponentes, sessao.isFiltroMemoria, sessao.encaixesMemorizados, sessao.filtros.encaixe, sessao.filtros.nome);
 	sessao.devePopularDropDown := true;
 	sessao.componenteSelecionado := 0;
 endfunction
@@ -253,7 +264,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 	foreach qualidade in (qualidades.keys())
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
-		
+		item.hp := item.maxhp;
 		Sleepms(2);
 	endforeach
 
@@ -442,10 +453,12 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	sessao.+materiaisEncontrados := 0;
 	sessao.+devePopularDropDown := true;
 	sessao.+quantidade := "1";
+	sessao.+isFiltroMemoria := false;
 	sessao.+picoPericia := CalculaValorPico(quem,pericia);
 	sessao.+picoMaximoPericia := sessao.picoPericia;
 	sessao.+filtros := struct{ nome := "", encaixe := ""};
-	sessao.+componentes := MontaVisaoComponentes(configProfissao);
+	sessao.+encaixesMemorizados := GetObjProperty(quem, "Craft").encaixesMemorizados;
+	sessao.+componentes := MontaVisaoComponentes(configProfissao, false, array);
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
@@ -478,6 +491,10 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 		return RT_BTN_AVALIAR;
 	elseif(valorRetorno == COMPONENTES_BTN_FILTRAR)
 		return RT_BTN_FILTRAR;
+	elseif(valorRetorno == COMPONENTES_BTN_LIMPAR_MEMORIA)
+		return RT_LIMPAR_MEMORIA_COMPNT;
+	elseif(valorRetorno == COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA)
+		return RT_FILTRO_MEMORIA_LIG_DES;
 	elseif(valorRetorno == COMPONENTES_BTN_LIMPA_FILTRO)
 		return RT_BTN_LIMPA_FILTRO;
 	elseif(valorRetorno == 1)
@@ -487,13 +504,18 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 	endif
 endfunction
 
-function MontaVisaoComponentes(configProfissao, filtroEncaixe := "", filtroNome := "")
+function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemorizados , filtroEncaixe := "", filtroNome := "")
 	var componentes := array;
 	var chavesComponentes := GetConfigStringKeys(configProfissao);
+	Print("encaixesMemorizados: " + encaixesMemorizados);
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
 		if(!configProfissao[chave].encaixe)
+			continue;
+		endif
+
+		if(isFiltroMemoria && !(configProfissao[chave].encaixe in encaixesMemorizados))
 			continue;
 		endif
 
@@ -516,8 +538,10 @@ function MontaVisaoComponentes(configProfissao, filtroEncaixe := "", filtroNome 
 			Sleepms(2);
 		endforeach
 
+		var quantidadeLotePrefixo := cint(configProfissao[chave].lote) > 1? configProfissao[chave].lote + "x " : "";
+
 		var componente := struct;
-		componente.+nome := configProfissao[chave].name;
+		componente.+nome :=  quantidadeLotePrefixo + configProfissao[chave].name;
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := configProfissao[chave].encaixe;

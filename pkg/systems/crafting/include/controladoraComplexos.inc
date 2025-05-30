@@ -18,7 +18,7 @@ const NR_MAXIMO_RECEITAS_POR_PAGINA := 8;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function InicializaSessaoComplexos(profissaoCraftProp)
+function InicializaSessaoComplexos(byref profissaoCraftProp)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
@@ -78,7 +78,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos(parametros.propCraft[parametros.pericia]);
+	var sessao := InicializaSessaoComplexos(parametros.propCraft.pericias[parametros.pericia]);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	while(retorno)
@@ -248,6 +248,29 @@ function EnviaItensComplexosGump(quem,profissao)
 				endif
 				break;
 
+			RT_LIMPAR_MEMORIA:
+				LimparMemoriaEncaixes(quem);
+				SendSysMessageEX(quem,"Os encaixes memorizados foram esquecidos.", SSM_INFO);
+				break;
+
+			RT_MEMORIZAR_COMPONENTES:
+				var propCraft := GetObjProperty(quem, "Craft");
+
+				if(propCraft && sessao.receitaSelecionada.receita)
+					foreach componente in (sessao.receitaSelecionada.receita.componentesNecessarios)
+					Sleepms(2);
+						if(!(componente in propCraft.encaixesMemorizados)) //Se já não foram memorizados, memorize.
+							propCraft.encaixesMemorizados.append(componente.encaixe);
+						endif
+					endforeach
+				
+					SendSysMessageEX(quem,"Os encaixes para esta receita foram memorizados.", SSM_INFO);
+					SetObjProperty(quem, "Craft", propCraft);
+				else
+					SendSysMessageEX(quem,"É preciso uma receita selecionada para memorizar componentes.", SSM_FAIL);
+				endif
+				break;
+
 			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
@@ -259,7 +282,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				MarcaCategoriaVisualizada(sessao,parametros);
 
 				var propCraft := GetObjProperty(quem, "Craft");
-				propCraft[parametros.pericia]["visualizadas"] := sessao.visualizadas;
+				propCraft.pericias[parametros.pericia]["visualizadas"] := sessao.visualizadas;
 				SetObjProperty(quem, "Craft", propCraft);
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				retorno := 0;
@@ -642,27 +665,27 @@ endfunction
 
 function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos, quantidadeComponentesNecessaria)
 	var componenteEscolhido := struct;
-		var itemNaBag := componenteEncontrado.itemRef;
+	var itemNaBag := componenteEncontrado.itemRef;
 
-		//Não se pode trabalhar com REFs aqui porque não é possivel guarda-las no DataFile.
-		componenteEscolhido.+componenteNecessario := componenteNecessario;
-		componenteEscolhido.+item := struct{nome := itemNaBag.name, objtype := itemNaBag.objtype};
-		componenteEscolhido.+material := struct{nome := componenteEncontrado.nomeMaterial, chave := hex(componenteEncontrado.chaveMaterial)};
-		componenteEscolhido.+tier := componenteEncontrado.componenteTier;
-		componenteEscolhido.+propriedades := MontaPropriedadesComponente(
-														componenteEscolhido.material.chave,
-														componenteEscolhido.componenteNecessario.caracteristica,
-														componenteEscolhido.tier,
-														quantidadeComponentesNecessaria,
-														configRecursos
-														);
-		componenteEscolhido.+poderAvaliado := AvaliaPoderComponente(
-														componenteEscolhido.tier,
-														componenteEscolhido.material.chave,
-														componenteEscolhido.componenteNecessario.caracteristica,
-														configRecursos,
-														componenteEscolhido.propriedades
-														);
+	//Não se pode trabalhar com REFs aqui porque não é possivel guarda-las no DataFile.
+	componenteEscolhido.+componenteNecessario := componenteNecessario;
+	componenteEscolhido.+item := struct{nome := itemNaBag.name, objtype := itemNaBag.objtype};
+	componenteEscolhido.+material := struct{nome := componenteEncontrado.nomeMaterial, chave := hex(componenteEncontrado.chaveMaterial)};
+	componenteEscolhido.+tier := componenteEncontrado.componenteTier;
+	componenteEscolhido.+propriedades := MontaPropriedadesComponente(
+													componenteEscolhido.material.chave,
+													componenteEscolhido.componenteNecessario.caracteristica,
+													componenteEscolhido.tier,
+													quantidadeComponentesNecessaria,
+													configRecursos
+													);
+	componenteEscolhido.+poderAvaliado := AvaliaPoderComponente(
+													componenteEscolhido.tier,
+													componenteEscolhido.material.chave,
+													componenteEscolhido.componenteNecessario.caracteristica,
+													configRecursos,
+													componenteEscolhido.propriedades
+													);
 
 	return componenteEscolhido;
 endfunction
@@ -900,7 +923,7 @@ function PreparaItensComplexosGump(quem, profissao)
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
 	var propCraft := GetObjProperty(quem, "Craft");
-	if( TypeOf(propCraft) != "Dictionary" )
+	if( TypeOfInt(propCraft) == OT_ERROR)
 		propCraft := MontaCraftProp(profissaoConfig);
 		SetObjProperty(quem, "Craft", propCraft);
 	endif
@@ -985,8 +1008,8 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 
 				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
 				if(!receitaItem.isVisualizada) //Tenho que apagar a categoria das visualizadas, porque apareceu uma receita nova.
-					var index := categoria in propCraft[nomePericia]["visualizadas"].categorias;
-					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
+					var index := categoria in propCraft.pericias[nomePericia]["visualizadas"].categorias;
+					propCraft.pericias[nomePericia]["visualizadas"].categorias.erase(index);
 				endif
 				receitas.append(receitaItem);
 			endif
@@ -1021,9 +1044,9 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+lote := definicaoFabricacao.lote ? definicaoFabricacao.lote : 1;
 	receita.+uso := definicaoItem.Attribute;
 	receita.+receitaClassificada := receitaClassificada;
-	receita.+desc := definicaoItem.desc;
+	receita.+desc := definicaoItem.desc ? definicaoItem.desc: definicaoItem.name;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
-	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft[nomePericia]["visualizadas"].receitas);
+	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft.pericias[nomePericia]["visualizadas"].receitas);
 
 	if(definicaoFabricacao.color)
 		receita.+corObrigatoria := definicaoFabricacao.color;
@@ -1172,6 +1195,10 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_RCT_PROX_PAGINA;
 	elseif(valorRetorno == COMPLEXOS_BTN_RCT_ANT_PAGINA)
 		return RT_RCT_ANT_PAGINA;
+	elseif(valorRetorno == COMPLEXOS_BTN_MEMORIZAR_COMPONENTES)
+		return RT_MEMORIZAR_COMPONENTES;
+	elseif(valorRetorno == COMPLEXOS_BTN_LIMPAR_MEMORIA)
+		return RT_LIMPAR_MEMORIA;
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
 	elseif(valorRetorno == 1)
