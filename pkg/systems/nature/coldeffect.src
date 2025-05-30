@@ -20,7 +20,7 @@ program neve(params)
     if (GetObjProperty(who, "teste_de_frio") == error)
         while (1)
             SetObjProperty(who, "teste_de_frio", 1);
-            sleep(5);
+            sleep(300);
 
             if (GetObjProperty(who, "neve") == error)
                 var p := cint(GetObjProperty(who, "penalidadeclima"));

@@ -656,7 +656,6 @@ function getTemperature(who)
     // Clamp temperature to realistic range (-50 to 80 Celsius)
     if (basetemp < -50) basetemp := -50; endif
     if (basetemp > 80) basetemp := 80; endif
-    print("BASETEMPO: " + basetemp + " - Region: " + regiontempmod + " - Dia: " + diaounoite + " - Item: " + itemtempmod + " - Clima: " + climamodtemp);
     return basetemp;
 endfunction
 

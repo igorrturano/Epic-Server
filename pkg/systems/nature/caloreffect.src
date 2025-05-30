@@ -24,7 +24,7 @@ program calor(params)
     if (GetObjProperty(who, "teste_de_calor") == error)
         while (1)
             SetObjProperty(who, "teste_de_calor", 1);
-            sleep(5);
+            sleep(300);
 
             if ( GetObjProperty(who, "calor") == error)
                 var p := cint(GetObjProperty(who, "penalidadeclima"));
