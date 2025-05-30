@@ -588,12 +588,12 @@ function SetupNPCEquip(who, npc_elem)
       // If the boss has a specific mount, use it
       montaria := boss.mount;
   endif
-  if (!montaria)
-  else
+  if (montaria)
 	var graphic := MP_GetMountGraphic(montaria);
 	var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
 	item.graphic := graphic;
 	Equipitem (who, item);
+    who.run_speed := 250;
   endif
 endfunction
 
