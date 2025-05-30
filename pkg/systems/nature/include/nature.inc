@@ -44,7 +44,7 @@ var daysInYear := CalcDaysInYear();
 // Season Id based on UO packet
 const SUMMER := 1;
 const AUTUMN := 2;
-const WINTER := 5;
+const WINTER := 4; // 3
 const SPRING := 5;
 
 function getSeason()
@@ -207,7 +207,7 @@ function WhatSeason()
                 if (daynumber > daysInYear*0.75)
                     return SPRING;
                 endif
-                return SPRING; // WINTER;
+                return WINTER;
             endif
             return AUTUMN;
         endif
