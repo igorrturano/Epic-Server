@@ -54,7 +54,7 @@ exported function HandleAttackRequest( who, byref packet )
 		return 1;
 	endif
 
-	ExecuteMasteryAbility(who, defender);
+	ExecuteMasteryAbility(who, defender, true);
 
 	return 0;
 endfunction
