@@ -206,7 +206,7 @@ function InitializeFormData()
     form_data.classe := "";
     
     // Race and gender related fields
-    form_data.race := "Human";
+    form_data.race := HUMANO;
     form_data.gender := 0; // Default to male
     form_data.graphic := 400; // Default to human male
 endfunction
@@ -1998,11 +1998,9 @@ function EditHairColor(who, byref form_data)
         ORC: 
             color_elem := color_cfg["Cabelo Orc"];
         POLSKI:
-            color_elem := color_cfg["Index"];
         HUMANO:
-            color_elem := color_cfg["Imperial"];
         default:
-            color_elem := color_cfg["Imperial"];
+            color_elem := color_cfg["Cabelo Imperial"];
     endcase
     
     // Get colors directly from the race-specific element
@@ -2215,7 +2213,7 @@ function EditBeardColor(who, byref form_data)
         return;
     endif
     
-    var hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+    var hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
 
     case (form_data.race)
         ANAO:
@@ -2227,11 +2225,9 @@ function EditBeardColor(who, byref form_data)
         ORC: 
             hair_elem := color_cfg["Cabelo Orc"];
         POLSKI:
-            hair_elem := color_cfg["Index"]; // Polski uses the Index colors
         HUMANO:
-            hair_elem := color_cfg["Imperial"];
         default:
-            hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+            hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
     endcase
 
     var colors := GetConfigStringArray(hair_elem, "Color");
