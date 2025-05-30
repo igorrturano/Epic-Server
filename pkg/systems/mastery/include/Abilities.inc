@@ -10,20 +10,24 @@ var compatibleWeapons := struct{
 };
 
 function ExecuteMasteryAbility(byRef attacker, byRef defender, isEngaging := false)
-	var weapon, weaponCfg;
 	if (GetCooldown(attacker, "MasteryAbility") > 0)
 		DebugMsg(attacker, DEBUG_MASTERY, "Habilidade de maestria está em cooldown por mais " + GetCooldown(attacker, "MasteryAbility") + " segundos.");
 		return false;
 	endif
 
-	weapon := attacker.weapon;
-	weaponCfg := getItemCfgElem(attacker.weapon);
+	var combatInfo := struct{
+		attacker := attacker,
+		defender := defender
+	};
 
 	if (isEngaging) // TODO: Analizar pra ver se não é melhor definir como isSpecialAction (pra todos os casos de ações especiais)
-		ExecuteBeforeEngage(attacker, defender);
+		ExecuteBeforeEngage(combatInfo);
 	else
-		ExecuteAfterEngage(attacker, defender);
+		ExecuteAfterEngage(combatInfo);
 	endif
+
+	SetCooldown(attacker, "MasteryAbility", CalculateCooldown(combatInfo));
+	return true;
 endfunction
 
 /**
@@ -36,70 +40,57 @@ endfunction
  * @param attacker Referência ao personagem atacante que possui a arma
  * @param defender Referência ao personagem defensor que receberá o ataque
  */
-function ExecuteBeforeEngage(byRef attacker, byRef defender)
-	var weapon := attacker.weapon;
-	var weaponCfg := getItemCfgElem(attacker.weapon);
+function ExecuteBeforeEngage(combatInfo)
+	var weapon := combatInfo.attacker.weapon;
+	var weaponCfg := getItemCfgElem(weapon);
 
 	if (weapon.objtype in compatibleWeapons.montante)
-		ExecuteMasteryAbility_DownwardCut(attacker, defender);
+		Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
 	endif
 
 endfunction
 
-function ExecuteAfterEngage(byRef attacker, byRef defender)
-	var weapon := attacker.weapon;
-	var weaponCfg := getItemCfgElem(attacker.weapon);
+function ExecuteAfterEngage(combatInfo)
+	var weapon := combatInfo.attacker.weapon;
+	var weaponCfg := getItemCfgElem(weapon);
+	Print($"Executing after engage for {combatInfo.attacker.name} with weapon {weapon.name} (type: {weaponCfg.Type})");
 
 	if (weapon.isRanged())
 
 	else
 		if (Upper(weaponCfg.Type) == Upper(UNARMED))
 		elseif (weapon.objtype in compatibleWeapons.montante)
-			ExecuteMasteryAbility_DownwardCut(attacker, defender);
+			Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
-				// ExecuteMasteryAbility_(attacker, defender);
 			else
-				// ExecuteMasteryAbility_(attacker, defender);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
-				// ExecuteMasteryAbility_(attacker, defender);
 			else
-				// ExecuteMasteryAbility_(attacker, defender);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			ExecuteMasteryAbility_Whirldwind(attacker, defender);
+			Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
-				// ExecuteMasteryAbility_(attacker, defender);
 			else
-				// ExecuteMasteryAbility_(attacker, defender);
 			endif
 		endif
 	endif
 endfunction
 
 function CalculateCooldown(byRef attacker)
-	var cooldown := CInt(150);
+	var cooldown := CInt(1);
 	return cooldown;
 endfunction
 
-function ExecuteMasteryAbility_DownwardCut(byRef attacker, byRef defender)
-	print("Executing Downward Cut mastery ability for " + attacker.name + " against " + defender.name);
-	Run_Script(":combat:specialAttackScripts/DownwardCut", struct{
-		attacker := attacker,
-		defender := defender
-	});
-	SetCooldown(attacker, "MasteryAbility", CalculateCooldown(attacker));
-endfunction
+// function ExecuteMasteryAbility_DownwardCut(combatInfo)
+// 	print("Executing Downward Cut mastery ability for " + combatInfo.attacker.name + " against " + combatInfo.defender.name);
+// 	Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+// endfunction
 
-function ExecuteMasteryAbility_Whirldwind(byRef attacker, byRef defender)
-	print("Executing Whirlwind mastery ability for " + attacker.name + " against " + defender.name);
-	Run_Script(":combat:specialAttackScripts/Whirlwind", struct{
-		attacker := attacker,
-		defender := defender
-	});
-	SetCooldown(attacker, "MasteryAbility", CalculateCooldown(attacker));
-endfunction
+// function ExecuteMasteryAbility_Whirlwind(combatInfo)
+// 	print("Executing Whirlwind mastery ability for " + combatInfo.attacker.name + " against " + combatInfo.defender.name);
+// 	Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
+// endfunction
