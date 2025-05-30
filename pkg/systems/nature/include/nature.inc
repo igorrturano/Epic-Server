@@ -28,6 +28,7 @@ var WEEKDAYS := array{
     "Artisium",  // Criação, habilidade e arte
     "Aetheria", // Magia, conhecimento e sabedoria
     "Mercatus",  // Comércio, riqueza e prosperidade
+    "Vespera",  // Noite, descanso e introspecção
     "Lunaris" // Vigília, feminilidade e espiritualidade
 };
 
@@ -606,4 +607,191 @@ function GetSeasonName(season_id)
         SPRING: return "Primavera";
         default: return "Desconhecida";
     endcase
+endfunction
+
+function getTemperature(who)
+    var basetemp := 0;
+    var colore := 0;
+	var itemtempmod;
+	var diamodtemp;
+	var climamodtemp;
+	var regiontempmod;
+    var diaounoite := GetGlobalProperty("dia");
+	var tempestade := GetGlobalProperty("tempestade");
+
+	//Modificador de Clima Dependendo da Regiao
+	regiontempmod := CINT(GetTempRegion(diaounoite, who, who.x, who.y));
+	if (cint(regiontempmod) == 999) return 0; endif
+
+	//Modificador de Clima Com Itens de Aquecimento
+	itemtempmod := CINT(VerificaItensAquecimento(who, who.x, who.y, who.z, who.realm));
+	
+	//Modificador de Clima A Noite
+	if(diaounoite == "noite")
+		diamodtemp := -5;
+	endif
+
+	//Modificar de Clima pela Condicao do Tempo
+	if ((tempestade == 0) || (tempestade == 1)) climamodtemp := -5 ;
+	elseif (tempestade == 2) climamodtemp := -9 ;
+	else climamodtemp := 0 ;
+	endif
+
+    //Temperatura Base da Estacao + Mods
+    case(getSeason())
+		SUMMER:
+			basetemp := (RandomInt(15) + 25 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+			colore := 48;
+		AUTUMN:
+			basetemp := (RandomInt(10) + 15 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+			colore := 550;
+		WINTER:
+			basetemp := (RandomInt(15) - 5 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+			colore := 96;
+		SPRING:
+			basetemp := (RandomInt(10) + 18 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+			colore := 28;
+    endcase
+
+    // Clamp temperature to realistic range (-50 to 80 Celsius)
+    if (basetemp < -50) basetemp := -50; endif
+    if (basetemp > 80) basetemp := 80; endif
+    return basetemp;
+endfunction
+
+
+function GetTempRegion(diaounoite, who, x, y)
+
+	var cfg := ReadConfigFile("::regions/regions");
+	var elems := GetconfigStringKeys(cfg);
+	foreach elem in elems
+	
+		var region := FindConfigElem(cfg, elem);
+		var rect := GetConfigString(region, "Range");
+		if ( InRect(who, x, y, rect) )
+			if (who.cmdlevel > 2) SendSysMessage(who, "Regiao que Estou: " + elem); endif
+			var tempmod := cint(GetConfigString(region, "TempMod"));
+			//DESERTO FRIO DENOITE
+			if ((diaounoite == "noite") && ((elem == "adesertointerior") || (elem == "adesertointerior2") || (elem == "desertolitoral"))) 
+				tempmod := (tempmod - 20);
+			endif
+			if (InDungeon(who))
+				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
+				return 999;
+			endif
+			return tempmod;
+		endif 
+		
+	endforeach
+
+	return 0;
+
+endfunction
+
+function VerificaItensAquecimento(who, x, y, z, realm)
+	var items := ListItemsNearLocation(x, y, z, 5, realm);
+	var mod := 0;
+	foreach item in items
+		if ((item.objtype == 0x0DE3) || (item.objtype == 0x398C) || (item.objtype == 0x3996) || (item.objtype == 0x0FAC) || (item.objtype == 0x19AB))
+			mod := mod + (5 - Distance(who, item));
+		endif
+	endforeach
+
+	if (GetObjProperty(who, "molhado"))
+		mod := mod += 10; //resfriado
+	endif
+	
+	return mod;
+endfunction
+
+function GetTemperatureSensation(temp)
+    if (temp >= 60)
+        return "Insuportavelmente Quente - Risco de Morte";
+    elseif (temp >= 45)
+        return "Perigosamente Quente";
+    elseif (temp >= 35)
+        return "Extremamente Quente";
+    elseif (temp >= 30)
+        return "Muito Quente";
+    elseif (temp >= 25)
+        return "Quente";
+    elseif (temp >= 20)
+        return "Brando";
+    elseif (temp >= 15)
+        return "Agradavel";
+    elseif (temp >= 10)
+        return "Fresco";
+    elseif (temp >= 5)
+        return "Frio";
+    elseif (temp >= 0)
+        return "Muito Frio";
+    elseif (temp >= -10)
+        return "Extremamente Frio";
+    elseif (temp >= -20)
+        return "Congelante";
+    elseif (temp >= -30)
+        return "Perigosamente Frio";
+    else
+        return "Mortal - Congelamento Instantaneo";
+    endif
+endfunction
+
+function GetTemperatureColor(temp)
+    if (temp >= 60)
+        return 37; // Bright red - dangerous heat
+    elseif (temp >= 45)
+        return 38; // Red - very hot
+    elseif (temp >= 35)
+        return 48; // Orange-red - hot
+    elseif (temp >= 25)
+        return 53; // Orange - warm
+    elseif (temp >= 15)
+        return 60; // Yellow - pleasant
+    elseif (temp >= 5)
+        return 67; // Light blue - cool
+    elseif (temp >= -10)
+        return 96; // Blue - cold
+    elseif (temp >= -30)
+        return 92; // Dark blue - very cold
+    else
+        return 32; // Purple - deadly cold
+    endif
+endfunction
+
+function InRect(who, x_pos, y_pos, rect)
+	rect := SplitWords(rect);
+	var x1 := CInt(rect[1]);
+	var y1 := CInt(rect[2]);
+	var x2 := CInt(rect[3]);
+	var y2 := CInt(rect[4]);
+
+	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
+endfunction
+
+function resistPenaltyByClimate(temp)
+    // Comfortable range: 15-25°C (no penalty)
+    if (temp >= 15 && temp <= 25)
+        return 0;
+    endif
+    
+    // Calculate distance from comfort zone
+    var distanceFromComfort;
+    if (temp < 15)
+        distanceFromComfort := 15 - temp;  // Cold side
+    else
+        distanceFromComfort := temp - 25;  // Hot side
+    endif
+    
+    // Map distance to penalty (1-5 scale)
+    if (distanceFromComfort <= 5)
+        return 1;  // Mild discomfort (10-14°C or 26-30°C)
+    elseif (distanceFromComfort <= 15)
+        return 2;  // Noticeable discomfort (0-9°C or 31-40°C)
+    elseif (distanceFromComfort <= 25)
+        return 3;  // Significant discomfort (-10 to -1°C or 41-50°C)
+    elseif (distanceFromComfort <= 40)
+        return 4;  // Severe discomfort (-25 to -11°C or 51-65°C)
+    else
+        return 5;  // Extreme/deadly conditions (-50 to -26°C or 66-80°C)
+    endif
 endfunction

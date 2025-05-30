@@ -89,8 +89,8 @@ function GetResist(who, resist)
 			valor := valor + 5;
 		elseif (temHabilidade(who, "Sigilo de Protecao"))
 			valor := valor + 5;
-        elseif (TemHabilidade(who, "Campeao das Montanhas"))
-            valor := valor + 2;
+        elseif (TemHabilidade(who, "Conexao Divina"))
+            valor := valor + 8;
 		elseif (TemHabilidade(who, "Consagracao Divina"))
 			valor := valor + paladin_bonus;
 		endif
