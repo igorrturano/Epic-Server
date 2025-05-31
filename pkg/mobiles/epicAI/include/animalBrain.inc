@@ -43,8 +43,8 @@ function AnimalBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.source))
-                        HandleAnimalCombatEvent(ev.source);
+                    if (CanFight(me, ev.opponent))
+                        HandleAnimalCombatEvent(ev.opponent);
                     endif
                 EVID_BUDDYATTACKED:
                     // Talvez nao precise usar

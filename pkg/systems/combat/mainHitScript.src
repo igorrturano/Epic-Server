@@ -77,8 +77,8 @@ program MainHitScript(params)
 	EpicApplyDamageBase(attacker, defender, weapon, armor, basedamage, dmgType);
 	// Aplica cada dano elemental da arma, caso haja
 	EpicApplyDamageElemental(attacker, defender, weapon, armor, elementalDamages);
-
-	MasteryCombat_Advance(attacker, struct{ hits := 1 });
+	
+	MasteryCombat_Advance(attacker, struct{ hits := 1, damage := basedamage });
 	AchievementCombat_Advance(attacker, defender, struct{ hits := 1, damage := basedamage });
 
 	return 1;

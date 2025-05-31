@@ -79,6 +79,10 @@ function CalculateHitChance(attacker, defender)
 		hit_chance -= 20;
 	endif
 
+	if (GetCooldown(defender, "exposed") > 0)
+		hit_chance += 10; // Defender is exposed, easier to hit
+	endif
+
 	if (TemHabilidade(attacker, "Postura Ofensiva"))
 		hit_chance += 10;
 	endif

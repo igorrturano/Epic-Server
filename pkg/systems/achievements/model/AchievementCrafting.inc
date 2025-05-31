@@ -6,8 +6,8 @@ class AchievementCrafting(Achievement)
     var craftedNormal;
     var craftedExceptional;
 
-    function AchievementCrafting(this, name)
-        Super(name);
+    function AchievementCrafting(this, key)
+        Super(key);
         this.type := ACHIEVEMENT_CRAFTING;
         this.craftedNormal := 0;
         this.craftedExceptional := 0;
@@ -39,6 +39,7 @@ class AchievementCrafting(Achievement)
     endfunction
 
     function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
         this.craftedNormal := data.craftedNormal;
         this.craftedExceptional := data.craftedExceptional;
