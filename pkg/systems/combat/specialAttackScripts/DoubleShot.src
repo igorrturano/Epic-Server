@@ -1,0 +1,8 @@
+program DoubleShot(params)
+	var attacker := params.attacker;
+	var defender := params.defender;
+
+	attacker.attack_once(defender);
+
+	return true;
+endprogram
