@@ -74,7 +74,6 @@ exported function Attack(attacker, defender)
 	if (!CanAttack(attacker, defender))
 		return 1;
 	endif
-	ExecuteMasteryAbility(attacker, defender);
 	
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 	Start_Script(":combat:weaponHitScripts/AttackAnimation", {attacker});
@@ -95,6 +94,7 @@ exported function Attack(attacker, defender)
 		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
 		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
+		ExecuteMasteryAbility(attacker, defender, attackInfo);
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
 	else
 		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
@@ -310,34 +310,6 @@ function arcane_shooting(attacker, defender)
 endfunction
 
 function ArqueiroNPC(attacker, defender)
-/*	var aljava := attacker.backpack;
-
-	var aljava_itens := EnumerateItemsInContainer( aljava );
-	var ammo;
-
-	foreach coisa in aljava_itens
-		if(coisa.objtype == wpn_a_elem.ProjectileType)
-			ammo := coisa;
-			break;
-		endif
-	endforeach
-
-	if(!ammo)
-		ammo := CreateItemInBackpack( attacker, wpn_a_elem.ProjectileType, 100 );
-	endif
-
-	var ammo_color := ammo.color;
-	var ammo_damage := GetObjProperty(ammo, "DamageTypes");
-	if(ammo_damage)
-		SetObjProperty(wpn_a, "DamageTypes", ammo_damage);
-	endif
-	var ammo_poison :=  GetObjProperty(ammo, "poisonInfo");
-	if(ammo_poison)
-		SetObjProperty(wpn_a, "poisonInfo", ammo_poison);
-	endif
-
-	SubtractAmount(ammo, 1); */
-	
 	var anim := wpn_a_elem.ProjectileAnim;
 	if ( !anim )
 		anim := 0xF79;
@@ -345,7 +317,6 @@ function ArqueiroNPC(attacker, defender)
 	PlayMovingEffectXYZHued(attacker, defender, anim, 10, 10, 0, 0); //ammo_color);
 
 	return 1;
-
 endfunction
 
 function ThrowerNPC(attacker, defender)

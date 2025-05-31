@@ -9,24 +9,29 @@ var compatibleWeapons := struct{
 	montante := array{0x26CF, 0xF9EA, 0xF9F7}
 };
 
-function ExecuteMasteryAbility(byRef attacker, byRef defender, isEngaging := false)
-	if (GetCooldown(attacker, "MasteryAbility") > 0)
-		DebugMsg(attacker, DEBUG_MASTERY, "Habilidade de maestria está em cooldown por mais " + GetCooldown(attacker, "MasteryAbility") + " segundos.");
+function ExecuteMasteryAbility(byRef attacker, byRef defender, attackInfo)
+	var cooldown := GetCooldown(attacker, "MasteryAbilityCooldown");
+	if (cooldown > 0)
+		DebugMsg(attacker, DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
 		return false;
 	endif
 
-	var combatInfo := struct{
-		attacker := attacker,
-		defender := defender
-	};
-
-	if (isEngaging) // TODO: Analizar pra ver se não é melhor definir como isSpecialAction (pra todos os casos de ações especiais)
+	if (!attackInfo) // Se não tem attackInfo, é um ataque anormal (especial, de engaging, etc.) [pré-combate]
+		var combatInfo := struct{
+			attacker := attacker,
+			defender := defender
+		};
+		
 		ExecuteBeforeEngage(combatInfo);
-	else
+	else // Aqui o combate já começou, então é um ataque normal
+		var combatInfo := attackInfo;
+		combatInfo.+attacker := attacker;
+		combatInfo.+defender := defender;
+
 		ExecuteAfterEngage(combatInfo);
 	endif
 
-	SetCooldown(attacker, "MasteryAbility", CalculateCooldown(combatInfo));
+	SetCooldown(attacker, "MasteryAbilityCooldown", CalculateCooldown(attackInfo));
 	return true;
 endfunction
 
@@ -42,7 +47,6 @@ endfunction
  */
 function ExecuteBeforeEngage(combatInfo)
 	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := getItemCfgElem(weapon);
 
 	if (weapon.objtype in compatibleWeapons.montante)
 		Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
@@ -76,7 +80,7 @@ function ExecuteAfterEngage(combatInfo)
 				// Knee breaker
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			// Pushback
+			Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
 				// Derruba o oponente
@@ -89,8 +93,8 @@ function ExecuteAfterEngage(combatInfo)
 	endif
 endfunction
 
-function CalculateCooldown(byRef attacker)
-	var cooldown := CInt(1);
+function CalculateCooldown(byRef combatInfo)
+	var cooldown := CInt(5);
 	return cooldown;
 endfunction
 
