@@ -318,7 +318,7 @@ function MontaMelhorEsquema(quem, sessao)
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
 		AcrescentaComponenteEscolhido(
 				sessao.receitaSelecionada.esquemaSelecionado,
 				componenteNecessario,
@@ -574,7 +574,7 @@ function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, config
 	
 	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
 		var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
-		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
+		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
 		AcrescentaComponenteEscolhido(
 				sessao.receitaSelecionada.esquemaSelecionado,
 				componenteNecessario,
@@ -663,7 +663,7 @@ function AtualizaModificadorTotal(byref modificador,byref modificadorTotal,byref
 	endif
 endfunction
 
-function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos, quantidadeComponentesNecessaria)
+function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, quantidadeOpicionais := 0)
 	var componenteEscolhido := struct;
 	var itemNaBag := componenteEncontrado.itemRef;
 
@@ -677,6 +677,7 @@ function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, co
 													componenteEscolhido.componenteNecessario.caracteristica,
 													componenteEscolhido.tier,
 													quantidadeComponentesNecessaria,
+													quantidadeOpicionais,
 													configRecursos
 													);
 	componenteEscolhido.+poderAvaliado := AvaliaPoderComponente(
@@ -852,7 +853,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 	return retorno;
 endfunction
 
-function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto ,quantidadeComponentesNecessaria ,configRecursos := 0)
+function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto ,quantidadeComponentesNecessaria ,quantidadeOpicionais := 0, configRecursos := 0)
 
 	if(!configRecursos)
 		configRecursos := ReadConfigFile(":crafting:config/resourceList");
@@ -868,13 +869,14 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	var subEfeitosMaterial;
 	var valorEfeitoMaterial := 0;
 	
+	Print("quantidadeOpicionais: " + quantidadeOpicionais);
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
 	else
 		propriedades.modificadorHp := 0;
 	endif
 	if(modificadorPeso)
-		propriedades.+modificadorPeso := Round(modificadorPeso / quantidadeComponentesNecessaria);
+		propriedades.+modificadorPeso := Round(modificadorPeso / (quantidadeComponentesNecessaria - quantidadeOpicionais));
 	else
 		propriedades.modificadorHp := 0;
 	endif
@@ -1028,12 +1030,13 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	var definicaoFabricacao := receitasConfig[objtype];
 	var isComponente := GetConfigString(definicaoFabricacao, "encaixe");
 	var duracao := GetConfigString(receitasConfig[objtype],"DuracaoFabricacao");
+	var quantidadeOpicionais := 0;
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe);
+	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
@@ -1043,6 +1046,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+profissao := nomeProfissao;
 	receita.+lote := definicaoFabricacao.lote ? definicaoFabricacao.lote : 1;
 	receita.+uso := definicaoItem.Attribute;
+	receita.+quantidadeOpicionais := quantidadeOpicionais;
 	receita.+receitaClassificada := receitaClassificada;
 	receita.+desc := definicaoItem.desc ? definicaoItem.desc: definicaoItem.name;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
@@ -1107,7 +1111,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	return desc;
 endfunction
 
-function PegaComponentesNecessarios(objtype, receitasConfig, classe)
+function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quantidadeOpicionais :=0)
 
 	var receitaCfgElemento:= receitasConfig[objtype];
 
@@ -1133,7 +1137,9 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe)
 
 		case (splitEncaixe[DESC_ENCAIXE_CONDICIONAL])
 			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; break;
-			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; break;
+			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; 
+						quantidadeOpicionais += 1; 
+						break;
 		endcase
 
 		componente.+encaixeDesc := GetConfigString(configEncaixes[componente.encaixe],"Desc");
@@ -1237,7 +1243,7 @@ function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
 				chaveMaterial := materialComponente.principalMaterial,
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
 
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size());
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
 		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
 	endforeach
 
