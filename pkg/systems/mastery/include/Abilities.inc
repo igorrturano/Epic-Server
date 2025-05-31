@@ -94,7 +94,7 @@ function ExecuteAfterEngage(combatInfo)
 endfunction
 
 function CalculateCooldown(byRef combatInfo)
-	var cooldown := CInt(5);
+	var cooldown := CInt(2);
 	return cooldown;
 endfunction
 
