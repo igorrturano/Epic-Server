@@ -200,22 +200,55 @@ function MontaEsquemaGump(byref gump,byref sessao)
 	var alturaPainelInfo := DefineAlturaPainel(4.8);
 	
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO, G_MARGEM_SUPERIOR + G_ESPACAMENTO, 83, larguraPainelInfo, alturaPainelInfo);
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10, G_MARGEM_SUPERIOR + G_ESPACAMENTO + 15, 3500, larguraPainelInfo - 20, cint(alturaCelula *  1.4));
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,CInt(alturaCelula * 4.9), 5054, larguraEncaixeHeader, alturaEncaixeHeader);
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + (larguraCelula * 4.4) - 5,CInt(alturaCelula * 4.9) + 4, 3000, larguraCelula * 3, alturaEncaixeHeader - 7);
-	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO,CInt(alturaCelula * 4.9) + 7,larguraEncaixeHeader,alturaEncaixeHeader,"<basefont size=55 color=#024d95><center>Encaixes de Componente</center>");
-	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 0.5),1153,"Receita: {}".format("PlaceHolder"));
-	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 2),1153,"PesoTotal: {}".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
-	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 3),1153,"HpTotal: {}".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal));
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 13,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 15 + cint(alturaCelula * 1.5), 30546, larguraCelula * 3, cint(alturaCelula * 2.2) + 6);
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 8 + cint(larguraCelula * 3.2),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 15 + cint(alturaCelula * 1.5), 3000, cint(larguraCelula * 8.1) + 5, cint(alturaCelula * 2.2) + 6);
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 18 + cint(larguraCelula * 3.2),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 40 + cint(alturaCelula * 1.5), 3000, cint(larguraCelula * 6.8), cint(alturaCelula * 1.6) + 6);
 
-	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula),1153,"Nome do Esquema:");
+	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO,CInt(alturaCelula * 4.9) + 7,larguraEncaixeHeader,alturaEncaixeHeader,"<basefont color=#024d95><center>Encaixes de Componente</center>");
+	GFHTMLArea(gump,margemEsquerdaLocal + 15, margemSuperiorLocal + 5 + Cint(alturaCelula * 0.5),larguraEncaixeHeader,alturaEncaixeHeader,"<basefont color=#423E3D>Receita:</basefont><basefont color=#907201> {}".format(sessao.receitaSelecionada.receita.desc));
+	GFHTMLArea(gump,margemEsquerdaLocal + 15, margemSuperiorLocal + Cint(alturaCelula),larguraEncaixeHeader,alturaEncaixeHeader,"<basefont color=#423E3D>Nome do Esquema:");
+	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 8 + cint(larguraCelula * 3.2),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 20 + cint(alturaCelula * 1.5), cint(larguraCelula * 6.8),alturaEncaixeHeader,"<basefont color=#423E3D><center>Descrição Excepcional (Não dispponível [WIP])</center>");
+	//GFTextLine(gump,margemEsquerdaLocal + 15, margemSuperiorLocal + 5 + Cint(alturaCelula * 0.5),1153,"Receita: {}".format(sessao.receitaSelecionada.receita.desc));
+
+	var margemEsquerdaValoresModificadores := margemEsquerdaLocal + 80;
+	var margemSuperiorModificadores := margemSuperiorLocal + Cint(alturaCelula * 2.5);
+
+	GFTextLine(gump,margemEsquerdaLocal + 40,margemSuperiorModificadores -25,89,"Modificadores Gerais".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
+
+	var pesoTotalGeral := sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal;
+	if(pesoTotalGeral  != 0)
+		GFTextLine(gump,margemEsquerdaLocal + 10,margemSuperiorModificadores,1153,"PesoTotal:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
+		var corSinalPeso := CriaCorSinal(pesoTotalGeral,true);
+		GFTextLine(
+			gump,
+			margemEsquerdaValoresModificadores,
+			margemSuperiorModificadores,
+			corSinalPeso.cor,
+			"{}%".format(pesoTotalGeral));
+	endif
+
+	var hpTotalGeral := sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal;
+	if(hpTotalGeral != 0)
+		GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorModificadores + 20,1153,"HpTotal:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal));
+		var corSinalHp := CriaCorSinal(hpTotalGeral);
+		GFTextLine(gump,
+		margemEsquerdaValoresModificadores,
+		margemSuperiorModificadores + 20,
+		corSinalHp.cor,
+		"{}{}".format(corSinalHp.sinal,hpTotalGeral));
+	endif
+	 
 	if(sessao.acao == ADICIONAR)
 		GFTextEntry(gump,margemEsquerdaLocal  + (larguraCelula * 2), margemSuperiorLocal + Cint(alturaCelula), 120, 17, 1153, sessao.receitaSelecionada.esquemaSelecionado.nome, 2,40);
 	elseif(sessao.acao == EDITAR)
 		GFTextLine(gump,margemEsquerdaLocal  + (larguraCelula * 2), margemSuperiorLocal + Cint(alturaCelula),1153,sessao.receitaSelecionada.esquemaSelecionado.nome);
 	endif
 	
-	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + Cint(larguraCelula * 10.5),Cint(alturaCelula * 4),2460,2461,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_BTN_SALVAR);
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + Cint(larguraCelula * 10.4),Cint(alturaCelula * 4),2460,2461,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_BTN_SALVAR);
 	GFTooltipText(gump,"Salvar Receita.");
 	//Print("Componentes: " + sessao);
 	var pagina :=  1;
@@ -255,10 +288,10 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 
 	GFResizePic(gump, margemBaseEsquerda - 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO , 9270 , larguraPainelEntrada, alturaPainelEntrada);
 	GFResizePic(gump, margemBaseEsquerda - 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5, 9250, CInt(larguraCelula * 4.7), Cint(alturaCelula * 2.3) + 2);//input 30546
-	GFResizePic(gump, margemBaseEsquerda + CInt(larguraCelula * 4.8),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5, 9250, CInt(larguraCelula * 3.8), Cint(alturaCelula * 2.3) + 2);//input 30546
-	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 8.7) - 3,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10, 2070);//input 30546
-	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 4 + CINT(alturaCelula/1.6), 2445);//input 30546
-	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 24 + CINT(alturaCelula/1.6), 2445);//input 30546
+	GFResizePic(gump, margemBaseEsquerda + CInt(larguraCelula * 4.8),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5, 9250, CInt(larguraCelula * 3.8), Cint(alturaCelula * 2.3) + 2);
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 8.7) - 3,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10, 2070);
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 4 + CINT(alturaCelula/1.6), 2445);
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 24 + CINT(alturaCelula/1.6), 2445);
 
 	GFTextEntry( gump,  margemBaseEsquerda + CInt(larguraCelula * 9) + 17 , G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5 + CINT(alturaCelula/1.6), 100, 17, 1153, sessao.filtros.nome, COMPONENTES_INPT_FILTRO_NOME); // input de filtro nome
 	GFTooltipText(gump,"Filtro por nome.");
@@ -423,13 +456,19 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		alturaPainel := AumentaPainelSe(isHpModificado,alturaPainel,alturaLinha);
 		alturaPainel := AumentaPainelSe(isPesoModificado,alturaPainel,alturaLinha);
 	endif
+	alturaPainel := AumentaPainelSe(componenteEscolhido,alturaPainel,alturaLinha);
 
 	GFResizePic(gump, x - 10,y, 3600, larguraLocal, alturaPainel - 10);
 	GFPicTiled(gump, x,y + 10, larguraLocal - 20, alturaPainel - 30,40012);
 	GFPicTiled(gump, x, y + 50, larguraLocal - 20, 2, 30002); // 2700 
-	GFPicTiled(gump, x, y + 90, larguraLocal - 20, 2, 30002); // 2700 
+	if(componenteEscolhido)
+		GFPicTiled(gump, x, y + 110, larguraLocal - 20, 2, 30002); // 2700 
+	else
+		GFPicTiled(gump, x, y + 90, larguraLocal - 20, 2, 30002); // 2700 
+	endif
 
-	GFTextLine(gump,x + larguraCelula * 2 ,y + 20,1153,encaixeComponente.encaixeDesc);
+
+	GFTextLine(gump,x + CentralizaEixoX(larguraCelula,encaixeComponente.encaixeDesc,3.7),y + 20,1153,encaixeComponente.encaixeDesc);
 	if(componenteNecessario.isPrincipal)
 		GFGumpPic( gump, x + cint(larguraCelula/ 6), y + 22, 1655);
 		GFTooltipText(gump,"Componente principal.");
@@ -450,15 +489,18 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)
-		GFTextLine(gump,x + 22 ,y + 60,1153,"{} [{}] [{}]".format(
+		GFTextLine(gump,x + 22 ,y + 60,1153,"{}".format(
 		componenteEscolhido.item.nome,
 		componenteEscolhido.material.nome,
 		componenteEscolhido.tier.desc));
+
+		var materialQualidadeFormatado := "[{}] [{}]".format( componenteEscolhido.material.nome, componenteEscolhido.tier.desc);
+		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,materialQualidadeFormatado,3.7) ,y + 85,89,materialQualidadeFormatado);
 	else
 		GFTextLine(gump,x + 22 ,y + 60,1153,"Escolha um componente.");
 	endif
 
-	var posYcaracteristicas := y + 100;
+	var posYcaracteristicas := y + (componenteEscolhido ? 120 : 100);
 	var posYSetasDeslocamento := 2;
 	if(componenteEscolhido.propriedades.valorPrincipal)
 		GFTextLine(gump,x + 5,posYcaracteristicas,1153,encaixeComponente.caracteristica); // caracteristica;
