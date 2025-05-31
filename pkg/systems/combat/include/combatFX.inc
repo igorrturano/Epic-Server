@@ -160,7 +160,8 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 endfunction
 
 function PlayHitSounds(attacker, defender)
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	// var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	var wpn_a_elem2 := attacker.weapon.getCfgElem();
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
 	var attack_sound;
