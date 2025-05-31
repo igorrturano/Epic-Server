@@ -3,6 +3,7 @@ use os;
 include ":debug:main";
 include ":equipsys:utils";
 include ":tn:cooldown";
+include ":attributes:vitals";
 
 // Verificador de armas para situações especiais
 var compatibleWeapons := struct{
@@ -57,16 +58,15 @@ endfunction
 function ExecuteAfterEngage(combatInfo)
 	var weapon := combatInfo.attacker.weapon;
 	var weaponCfg := getItemCfgElem(weapon);
-	Print($"Executing after engage for {combatInfo.attacker.name} with weapon {weapon.name} (type: {weaponCfg.Type})");
 
 	if (weapon.isRanged())
 
 	else
 		if (Upper(weaponCfg.Type) == Upper(UNARMED))
 		elseif (weapon.objtype in compatibleWeapons.montante)
-			Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+			ExecuteMasteryAbility_DownwardCut(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
-			// Cutthroat
+			ExecuteMasteryAbility_Cutthroat(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
 				// Bloqueia o próximo ataque com a espada
@@ -88,7 +88,7 @@ function ExecuteAfterEngage(combatInfo)
 				// Bone breaker
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
-			Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
+			ExecuteMasteryAbility_Whirlwind(combatInfo);
 		endif
 	endif
 endfunction
@@ -98,12 +98,38 @@ function CalculateCooldown(byRef combatInfo)
 	return cooldown;
 endfunction
 
-// function ExecuteMasteryAbility_DownwardCut(combatInfo)
-// 	print("Executing Downward Cut mastery ability for " + combatInfo.attacker.name + " against " + combatInfo.defender.name);
-// 	Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
-// endfunction
+function ExecuteMasteryAbility_DownwardCut(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+endfunction
 
-// function ExecuteMasteryAbility_Whirlwind(combatInfo)
-// 	print("Executing Whirlwind mastery ability for " + combatInfo.attacker.name + " against " + combatInfo.defender.name);
-// 	Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
-// endfunction
+function ExecuteMasteryAbility_Whirlwind(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_Cutthroat(byRef combatInfo)
+	print("ExecuteMasteryAbility_Cutthroat called");
+	if (AP_GetVital(combatInfo.defender, "Hits") < (AP_GetVitalMaximumValue(combatInfo.defender, "Hits") * 0.9/* 0.05 */))
+		print("Executing Cutthroat ability");
+		return Run_Script(":combat:specialAttackScripts/Cutthroat", combatInfo);
+	endif
+endfunction
+
+function ExecuteMasteryAbility_FirstBlood(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/FirstBlood", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_Cleave(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Cleave", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_KneeBreaker(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/KneeBreaker", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_BoneBreaker(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/BoneBreaker", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_SpearPush(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
+endfunction

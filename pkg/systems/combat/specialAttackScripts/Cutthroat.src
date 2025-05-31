@@ -1,39 +1,36 @@
-use uo;
-use os;
-use util;
-
-include "include/client";
 include ":attributes:attributes";
-include ":combat:combat";
-include ":damage:damage";
+include ":combat:combatFX";
 
 program SpecialAttack_Cutthroat(params)
-	var attacker := params[1];
-	var defender := params[2];
-	var weapon   := params[3];
+	var attacker := params.attacker;
+	var defender := params.defender;
 	
-	if (!defender || defender.dead())
-		return 0;
-	endif
-	
-	// Check if defender has less than 5% health
-	var maxhp := AP_GetVitalMaximumValue(defender, HITS);
-	var currhp := AP_GetVital(defender, HITS);
-	
-	var hpPercent := CDbl(currhp) / CDbl(maxhp) * 100;
-	
-	if (hpPercent <= 5.0)
-		// Instakill effect
-		PlayAttackAnimation(attacker);
-		PlayHitSounds(attacker, defender);
-		
-		PrintText(attacker, "*Corta a garganta*");
-		PrintTextAbovePrivate(defender, "Voce foi executado!", defender);
-		PrintTextAbovePrivate(defender, "Voce executou seu alvo!", attacker);
-		
-		ApplyRawDamage(defender, 100000); // Dano absurdo pra garantir que matou
-		return 1;
-	endif
-	
-	return 0;
+	PrintTextAbove(attacker, $"*corta a garganta de {defender.name}*");
+	PrintTextAbove(defender, "*garganta cortada*");
+	PrintTextAbovePrivate(defender, "Voce foi executado!", defender);
+	PrintTextAbovePrivate(defender, "Voce executou seu alvo!", attacker);
+
+	var location := struct{ x := defender.x, y := defender.y, z := defender.z, realm := defender.realm };
+	ApplyRawDamage(defender, 1000); // Dano absurdo pra garantir que matou
+	RecalcVitals(defender);
+	FormarPocaSangue(location);
+
+	return true;
 endprogram
+
+function FormarPocaSangue(location)
+	print ($"FormarPocaSangue: {location.x}, {location.y}, {location.z}");
+	// var blood_pool := CreateItemAtLocation(location.x, location.y, location.z, 0x122A, 1, location.realm);
+	// blood_pool.movable := 0;
+	// blood_pool.name := "sangue";
+	
+	for x := -1 to 1
+		for y := -1 to 1
+			// if (x == 0 && y == 0) continue;	endif // Pular o centro onde já tem sangue
+			var blood := CreateItemAtLocation(location.x + x, location.y + y, location.z, 0x122A, 1, location.realm);
+			blood.movable := 0;
+			blood.name := "sangue";
+			SleepMS(5);
+		endfor
+	endfor
+endfunction
