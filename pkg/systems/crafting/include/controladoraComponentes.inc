@@ -198,8 +198,11 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					var vidaInicial := AP_GetVital(quem, "Hits");
 
 					for i := 1 to lotes
-
+						
 						var interrompido := CheckCanWork(quem, vidaInicial, posicaoInicial);
+						PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+						PlaySoundEffect(quem, SFX_56);
+						
 						if(!interrompido)
 							break;
 						endif

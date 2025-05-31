@@ -1201,6 +1201,8 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_LIMPAR_MEMORIA;
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
+	elseif(valorRetorno == COMPLEXOS_BTN_CANCELAR)
+		return RT_CANCELADO_COMPLX;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO_COMPLX;
 	endif

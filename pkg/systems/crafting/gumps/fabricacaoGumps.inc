@@ -43,7 +43,8 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_BTN_RCT_PROX_PAGINA := 6,
 	COMPLEXOS_BTN_RCT_ANT_PAGINA := 7,
 	COMPLEXOS_BTN_MEMORIZAR_COMPONENTES := 8,
-	COMPLEXOS_BTN_LIMPAR_MEMORIA := 9
+	COMPLEXOS_BTN_LIMPAR_MEMORIA := 9,
+	COMPLEXOS_BTN_CANCELAR := 10,
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -133,21 +134,31 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	var painelReceitasX := G_MARGEM_ESQUERDA + espacamentoAplicado + larguraPainelCategoria;
 	var painelReceitasY := G_MARGEM_SUPERIOR + G_ESPACAMENTO ;
 	GFResizePic(gump, painelReceitasX, painelReceitasY , 1460, larguraPainelReceita, alturaPainelReceita); //Painel Receitas.
-	GFResizePic(gump, painelReceitasX,  painelReceitasY + alturaPainelReceita + espacamentoAplicado, 1755, larguraPainelEsquema, alturaPainelEsquema); //Painel Esquemas.
 	
-	GFHTMLArea(gump,painelReceitasX + larguraPainelEsquema / 2 - 35,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 15,70,20,"<basefont size=55 color=#ffffff><center>Esquemas</center>");
+	if(sessao.receitaSelecionada.receita != "")
+		GFResizePic(gump, painelReceitasX,  painelReceitasY + alturaPainelReceita + espacamentoAplicado, 1755, larguraPainelEsquema, alturaPainelEsquema); //Painel Esquemas.
+		GFHTMLArea(gump,painelReceitasX + larguraPainelEsquema / 2 - 35,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 15,70,20,"<basefont size=55 color=#ffffff><center>Esquemas</center>");
+	endif
 	
 	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao, parametros.receitasPorPagina);
 	PreencheEsquemas (gump,painelReceitasX + 15,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,sessao);
-	
+
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
 	GFHTMLArea(gump,painelReceitasX + larguraPainelReceita / 2 - 102,35,205,20,"<basefont size=55 color=#ffffff><center>Receitas</center>");
 
-	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelRodape, alturaPainelRodape);// Painel Rodapé
-	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 8, alturaCelula * 11 + 17,4020,4021, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
-	GFAddButton(gump,CINT(G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 7.8),alturaCelula * 11 + 17,4020,4021, GF_CLOSE_BTN, COMPLEXOS_BTN_LIMPAR_MEMORIA);// Botão limpar memória.
-	GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 10,alturaCelula * 11 + 17,86,"Quantidade:");
-	GFTextEntry( gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 11,alturaCelula * 11 + 17, 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPLEXOS_INPT_QTD,3);
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelCategoria, alturaPainelRodape);// Rodapé Categorias
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + (larguraPainelCategoria / 2) - 31,alturaCelula * 11 + 14,241,242, GF_CLOSE_BTN, COMPLEXOS_BTN_CANCELAR);
+
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.8),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 0.9), alturaPainelRodape);	
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.9) - 2, alturaCelula * 11 + 17,1533,1534, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
+	GFTooltipText(gump,"Memorizar encaixes de componente.");
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 23 + cint(larguraCelula * 8.9),alturaCelula * 11 + 17,1541,1542, GF_CLOSE_BTN, COMPLEXOS_BTN_LIMPAR_MEMORIA);// Botão limpar memória.
+	GFTooltipText(gump,"Esquecer encaixes memorizados.");
+
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 9.8) ,alturaCelula * 11 + 10, 5054, cint(larguraCelula * 1.9), alturaPainelRodape);// Rodapé Quantidade
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO  + 11 + cint(larguraCelula * 10.8) ,alturaCelula * 11 + 13, 9350, cint(larguraCelula * 0.6), alturaPainelRodape - 6);// Rodapé Quantidade Input
+	GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO - 4  + larguraCelula * 10,alturaCelula * 11 + 17,86,"Quantidade:");
+	GFTextEntry( gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 3 + larguraCelula * 11,alturaCelula * 11 + 17, 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPLEXOS_INPT_QTD,3);
 	return gump;
 endfunction
 
@@ -556,30 +567,43 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 			Sleepms(2);
 		endfor
 	else
-		GFHTMLArea(gump,x + largura / 2 - 102,y + altura / 2,205,20,"<basefont size=55 color=#ffffff><center>Vazio</center>"); //TODO alterar para algo mais bonitinho.
+		GFGumpPic(gump, x - 75 + largura / 4 ,y - 24 + altura / 4, 1596);
+		GFGumpPic(gump, x - 75 + largura / 4 ,y + 118 + altura / 4, 1599);
+		GFGumpPic(gump, x + largura / 2 - 43,y + altura / 2 -51, 337);
+		//GFHTMLArea(gump,x + largura / 2 - 102,y + altura / 2,205,20,"<basefont size=55 color=#ffffff><center>Vazio</center>"); //TODO alterar para algo mais bonitinho.
 	endif
 endfunction
 
 function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessao)
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25;
-	var alturaIniciocategorias := margemSuperiorLocal + 80;
-	GFGumpPic(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50,margemSuperiorLocal,1417);
-	GFAddButton(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50 + 8,margemSuperiorLocal + 10,gumpicIdProfissoes[parametros.profissao],gumpicIdProfissoes[parametros.profissao] + 1,GF_CLOSE_BTN, COMPLEXOS_BTN_AJUDA);
+	var alturaIniciocategorias := margemSuperiorLocal + 93;
+
+	GFResizePic(gump, margemEsquerdaLocal, margemSuperiorLocal -14, 9250, larguraPainelCategoria - 18, 130);
+	GFGumpPic(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50,margemSuperiorLocal + 5,1417); // Fundo Imagem Profissão
+	GFAddButton(
+			gump,
+			margemEsquerdaLocal + larguraPainelCategoria / 2 - 50 + 8,
+			margemSuperiorLocal + 15,gumpicIdProfissoes[parametros.profissao],
+			gumpicIdProfissoes[parametros.profissao] + 1,GF_CLOSE_BTN,
+			COMPLEXOS_BTN_AJUDA); // botao ajuda profissão
+
 	GFTooltipText(gump,"Clique aqui para mais informações sobre como o sistema funciona.");
 	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraPainelCategoria / 2 - 35,margemSuperiorLocal + 85,70,20,"<basefont size=55 color=#ffffff><center>Categorias</center>");
 	
 	foreach categoria in (parametros.visaoReceitas.keys())
-		var posX := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45;
-		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  alturaIniciocategorias + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
+		var posX := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 50;
+		VAR alturaBaseLocal := 35;
+		GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,alturaIniciocategorias + (alturaBaseLocal * _categoria_iter) - 5, 3500, larguraPainelCategoria - 19, 30);
+		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 15,  alturaIniciocategorias - 2 + (alturaBaseLocal * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
 		if(!(categoria in (sessao.visualizadas.categorias) || parametros.visaoReceitas[categoria].size() <= 0))
-			GFGumpPic(gump, posX, alturaIniciocategorias + (30 * _categoria_iter), 1655);
+			GFGumpPic(gump, posX, alturaIniciocategorias + (alturaBaseLocal * _categoria_iter) + 3, 1655);
 			posX += 20; 
 		endif
 		
-		var cortexto := sessao.categoriaSelecionada == categoria ? 47 : 86;
+		var cortexto := sessao.categoriaSelecionada == categoria ? 149 : 87;
 
-		GFTextLine(gump,posX,alturaIniciocategorias + (30 * _categoria_iter),cortexto,categoria);
+		GFTextLine(gump,posX,alturaIniciocategorias + (alturaBaseLocal * _categoria_iter),cortexto,categoria);
 		Sleepms(2);
 	endforeach
 endfunction
@@ -634,15 +658,15 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 
 	case (receita.uso)
 		"One_Handed":
-			GFGumpPic(gump,x + 5 ,y + 5,137,28319);
+			GFGumpPic(gump,x + 10 ,y + 10,28319,46);
 			break;
 		"Two_Handed":
 		"Dual_Wield":
-			GFGumpPic(gump,x + 5 ,y + 5,137,28319);
-			GFGumpPic(gump,x + 28 ,y + 5,136,28318);
+			GFGumpPic(gump,x + 10 ,y + 10,28319,46);
+			GFGumpPic(gump,x + 33 ,y + 10,28318,46);
 			break;
 		"Ranged":
-			GFGumpPic(gump,x + 5 ,y + 5,138,28320);
+			GFGumpPic(gump,x + 10 ,y + 10,28320,46);
 			break;
 		default:
 	endcase
