@@ -240,34 +240,55 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	var larguraPainelComponentes := DefineLarguraPainel(12);
 	var alturaPainelComponentes := DefineAlturaPainel(9);
 	var componenteSelecionado := sessao.componenteSelecionado;
+	var margemBaseEsquerda := G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2;
 
-	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
-	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
-	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
-	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 60,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 60,86,"Nome:");
-	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 130, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 60 , 120, 17, 1153, sessao.filtros.nome, COMPONENTES_INPT_FILTRO_NOME);
-	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,4020,4022,GF_CLOSE_BTN, COMPONENTES_BTN_LIMPA_FILTRO);
-	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 30,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,4005,4006,GF_CLOSE_BTN, COMPONENTES_BTN_FILTRAR);
-	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 60,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,86,"Encaixe:");
-	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 130, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80 , 120, 17, 1153, sessao.filtros.encaixe , COMPONENTES_INPT_FILTRO_ENCAIXE);
-	GFAddButton(gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11, cint(G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 1.5),4020,4021, GF_CLOSE_BTN, COMPONENTES_BTN_LIMPAR_MEMORIA);// Botão memoriza componentes
-	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 9,cint(G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 1.5),4020,4021, GF_CLOSE_BTN, COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA);// Botão limpar memória.
+	GFResizePic(gump, margemBaseEsquerda - 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO , 9270 , larguraPainelEntrada, alturaPainelEntrada);
+	GFResizePic(gump, margemBaseEsquerda - 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5, 9250, CInt(larguraCelula * 4.7), Cint(alturaCelula * 2.3) + 2);//input 30546
+	GFResizePic(gump, margemBaseEsquerda + CInt(larguraCelula * 4.8),G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5, 9250, CInt(larguraCelula * 3.8), Cint(alturaCelula * 2.3) + 2);//input 30546
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 8.7) - 3,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10, 2070);//input 30546
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 4 + CINT(alturaCelula/1.6), 2445);//input 30546
+	GFGumpPic(gump, margemBaseEsquerda + CInt(larguraCelula * 9) + 12 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 24 + CINT(alturaCelula/1.6), 2445);//input 30546
+
+	GFTextEntry( gump,  margemBaseEsquerda + CInt(larguraCelula * 9) + 17 , G_MARGEM_SUPERIOR + G_ESPACAMENTO + 5 + CINT(alturaCelula/1.6), 100, 17, 1153, sessao.filtros.nome, COMPONENTES_INPT_FILTRO_NOME); // input de filtro nome
+	GFTooltipText(gump,"Filtro por nome.");
+	GFTextEntry( gump,  margemBaseEsquerda + CInt(larguraCelula * 9) + 17 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25 + CINT(alturaCelula/1.6), 100, 17, 1153, sessao.filtros.encaixe , COMPONENTES_INPT_FILTRO_ENCAIXE); // input de filtro nome
+	GFTooltipText(gump,"Filtro por encaixe.");
+
+	var margemEsquerdaBotoesFiltro := margemBaseEsquerda + CInt(larguraCelula * 9.1);
+	var margemTopoBotoesFiltro := G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 73;
+
+	GFAddButton(gump,margemEsquerdaBotoesFiltro ,margemTopoBotoesFiltro,1535,1536,GF_CLOSE_BTN, COMPONENTES_BTN_LIMPA_FILTRO);
+	GFTooltipText(gump,"Limpa as caixas de filtro da tabela.");
+	GFAddButton(gump,margemEsquerdaBotoesFiltro + 25,margemTopoBotoesFiltro,1537,1538,GF_CLOSE_BTN, COMPONENTES_BTN_FILTRAR);
+	GFTooltipText(gump,"Filtrar Tabela de Componentes.");
+	GFAddButton(gump, margemEsquerdaBotoesFiltro + 50, margemTopoBotoesFiltro,1541,1542, GF_CLOSE_BTN, COMPONENTES_BTN_LIMPAR_MEMORIA);// Botão memoriza componentes
+	GFTooltipText(gump,"Esquecer encaixes memorizados.");
+
+	if(sessao.isFiltroMemoria)
+		GFAddButton(gump, margemEsquerdaBotoesFiltro + 75,margemTopoBotoesFiltro,1534,1533, GF_CLOSE_BTN, COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA);// Botão limpar memória. marcado
+		GFTooltipText(gump,"Filtrar por encaixes memorizados. {Ligado}");
+	else
+		GFAddButton(gump,margemEsquerdaBotoesFiltro + 75,margemTopoBotoesFiltro,1533,1534, GF_CLOSE_BTN, COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA);// Botão limpar memória. desmarcado
+		GFTooltipText(gump,"Filtrar por encaixes memorizados. {Desligado}");
+	endif
+	
+	GFTextLine(gump, margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 27,1254,"Quantidade:");
+	GFTextEntry( gump, margemBaseEsquerda + 85, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 27 , 25, 17, 1254, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
+	GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2  + 7,1254,"Selecionado: " + (componenteSelecionado.nome ? componenteSelecionado.nome : "Nenhum"));
 
 	if(componenteSelecionado)
-		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
-		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,1147,1148,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
-		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 40,86,"Esforço:  " + AvaliaEsforço(sessao));
-		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 40,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
+		GFAddButton(gump,margemBaseEsquerda +  10 + larguraCelula * 3.5,G_MARGEM_SUPERIOR + 10 + G_ESPACAMENTO + CInt(alturaCelula * 1.5) ,2311,2312,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
+		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 47,1254,"Esforço:  " + AvaliaEsforço(sessao));
+		GFAddButton(gump,margemBaseEsquerda + 64,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 47,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
 		GFTooltipText(gump,"Aumentar o esforço produz componentes de melhor qualidade.");
-		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 50,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
+		GFAddButton(gump,margemBaseEsquerda + 64 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 57,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
-		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
-
+		GFAddButton(gump, margemEsquerdaBotoesFiltro + 100,margemTopoBotoesFiltro,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
 		GFTooltipText(gump,"Avaliar Material.");
 
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))
 			DefinirMateriais(gump,
-							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
+							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + CINT(larguraCelula * 5.2) - 1,
 							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter,
 							material,
 							sessao,
@@ -308,7 +329,7 @@ function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
 
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
-	GFTextLine(gump,x + 20,y,86, material + ": " + nome);
+	GFTextLine(gump,x + 20,y,86, Trim(material) + ": " + nome);
 endfunction
 
 function MontaTratamentoGump(x, y, byref sessao)
@@ -613,15 +634,15 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 
 	case (receita.uso)
 		"One_Handed":
-			GFGumpPic(gump,x + 5 ,y + 5,137,0x6e9f);
+			GFGumpPic(gump,x + 5 ,y + 5,137,28319);
 			break;
 		"Two_Handed":
 		"Dual_Wield":
-			GFGumpPic(gump,x + 5 ,y + 5,137,0x6e9f);
-			GFGumpPic(gump,x + 28 ,y + 5,136,0x6e9e);
+			GFGumpPic(gump,x + 5 ,y + 5,137,28319);
+			GFGumpPic(gump,x + 28 ,y + 5,136,28318);
 			break;
 		"Ranged":
-			GFGumpPic(gump,x + 5 ,y + 5,138,0x6ea0);
+			GFGumpPic(gump,x + 5 ,y + 5,138,28320);
 			break;
 		default:
 	endcase

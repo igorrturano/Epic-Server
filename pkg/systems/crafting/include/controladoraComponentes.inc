@@ -127,6 +127,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 			RT_LIMPAR_MEMORIA_COMPNT:
 				LimparMemoriaEncaixes(quem);
+				sessao.encaixesMemorizados := array;
 				SendSysMessageEX(quem,"Os encaixes memorizados foram esquecidos.", SSM_INFO);
 				break;
 
@@ -462,9 +463,9 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4.5};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3.5};
 		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
-		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
+		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 3};
 		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
 
 	parametrosGump.+configColunas := colCfg;
@@ -507,7 +508,8 @@ endfunction
 function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemorizados , filtroEncaixe := "", filtroNome := "")
 	var componentes := array;
 	var chavesComponentes := GetConfigStringKeys(configProfissao);
-	Print("encaixesMemorizados: " + encaixesMemorizados);
+	var encaixesConfig := ReadConfigFile(":crafting:/config/encaixes");
+
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
@@ -516,10 +518,16 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		endif
 
 		if(isFiltroMemoria && !(configProfissao[chave].encaixe in encaixesMemorizados))
-			continue;
+			var isMemorizadoEncontrado := false;
+			foreach encaixeMemorizado in encaixesMemorizados
+				Sleepms(2);
+				isMemorizadoEncontrado := encaixesConfig[configProfissao[chave].encaixe].Desc == encaixesConfig[encaixeMemorizado].Desc;
+				if(isMemorizadoEncontrado) break; endif
+			endforeach
+			if(!isMemorizadoEncontrado) continue; endif
 		endif
 
-		if(filtroEncaixe != "" && !Find(UPPER(configProfissao[chave].encaixe),UPPER(filtroEncaixe),1))
+		if(filtroEncaixe != "" && !Find(UPPER(encaixesConfig[configProfissao[chave].encaixe].Desc),UPPER(filtroEncaixe),1))
 			continue;
 		endif
 
@@ -544,7 +552,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		componente.+nome :=  quantidadeLotePrefixo + configProfissao[chave].name;
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
-		componente.+encaixe := configProfissao[chave].encaixe;
+		componente.+encaixe := encaixesConfig[configProfissao[chave].encaixe].Desc;
 		componente.+selecione := struct{isColunaBotao := true, objtype := chave};
 
 		componentes.append(componente);
