@@ -227,7 +227,7 @@ function addResistsPhysical(stats, armor)
 
 	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 	
-	stats := addResistPhysicalBy("MATERIAL", stats, armor);
+	//stats := addResistPhysicalBy("MATERIAL", stats, armor); //Isso passa a ser responsabilidade do novo sistema de crafting - Deiro
 	stats := addResistPhysicalBy("SLOT", stats, armor);
 	stats := addResistPhysicalBy("PROTECTION", stats, armor);
 
@@ -239,7 +239,7 @@ function addResistPhysicalBy(type, stats, armor)
 	
 	case(Upper(type))
 		"MATERIAL":
-			resists := getResistPhysicalByMaterial(armor);
+			resists := getResistPhysicalByMaterial(armor);//Isso passa a ser responsabilidade do novo sistema de crafting - Deiro
 			break;
 
 		"SLOT":
@@ -260,8 +260,12 @@ endfunction
 
 function getResistPhysicalByProtection(armor)
 	var resists := array{};
-	
-	resists := getResistPhysicalByProtectionType(armor.getType());
+
+	if(armor.isa(POLCLASS_ARMOR))
+		resists := getResistPhysicalByProtectionType(armor.getType());
+	else
+		resists :=  getResistPhysicalByProtectionType(armor.TipoProtecao);
+	endif
 
 	return dictionary{
 		"SlashResist" -> resists[1],
@@ -295,8 +299,12 @@ endfunction
 
 function getResistPhysicalBySlot(armor)
 	var resists := array{};
-	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		resists := getResistPhysicalBySlotString(armor.getSlot());
+	if(armor.isa(POLCLASS_ARMOR))
+		if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+			resists := getResistPhysicalBySlotString(armor.getSlot());
+		endif
+	else
+		resists :=  getResistPhysicalBySlotString(armor.Coverage);
 	endif
 
 	return dictionary{

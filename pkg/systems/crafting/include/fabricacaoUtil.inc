@@ -234,7 +234,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 		endif
 
 		AplicaFechadura(quem, item);
-
+		item.setAttrBase();
 		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
@@ -384,7 +384,7 @@ function LimparMemoriaEncaixes(quem)
 		propCraft.encaixesMemorizados := array;
 		SetObjProperty(quem, "Craft", propCraft);
 	endif
-	
+
 endfunction
 
 function PegaTipoMaterialAleatorio(tipoMaterial)

@@ -285,27 +285,35 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	endif
 
 	var xDesc := cfg.desc;
-	if (cint(cfg.elem.strrequired) > 0)
-		xDesc := xDesc + "Min Str: " + cfg.elem.strrequired + "<br>";
+	var atributosArmadura := PegaPropObjItemOrTemplate(objeto, "atributos");
+	if (atributosArmadura.STRRequired > 0)
+		xDesc := xDesc + "Min Str: " + atributosArmadura.STRRequired + "<br>";
 	endif
-	if (cfg.elem.DexPenalty || PegaPropObjItemOrTemplate(objeto, "penaltybonus"))
-		xDesc := xDesc + "Redutor Dex : " + getDexPenalty(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.DexPen)
+		xDesc := xDesc + "Redutor Dex : " + atributosArmadura.DexPen + "<br>";
 	endif
-	if (cfg.elem.parrybonus || PegaPropObjItemOrTemplate(objeto, "parrybonus"))
-		xDesc := xDesc + "Block Bonus: " + getParryBonus(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.BonusDelay)
+		xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
 	endif
-	if (cfg.elem.parrydelay || PegaPropObjItemOrTemplate(objeto, "parrydelay_mod"))
-		xDesc := xDesc + "Delay Bonus: " + getParryDelay(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.ParryDelay)
+		xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
 	endif
 
-	xDesc := PegaDescResistArmadura(objeto,cfg,xDesc);
+	xDesc := PegaDescResistArmadura(objeto,cfg,atributosArmadura,xDesc);
 
 	return xDesc;
 endfunction
 
-function PegaDescResistArmadura(objeto,cfg, xDesc := "")
+function PegaDescResistArmadura(objeto,cfg,atributosArmadura, xDesc := "")
 	
-	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
+	var atrib := struct;
+	if(atributosArmadura)
+		atrib := atributosArmadura;
+	else
+		atrib := getArmorStats(cfg.elem); //Foi a marreta que eu encontrei 
+	endif
+
+	Print("Objtype: " +  GetObjtypeByName(cfg.elem.name) + " atrib " + atrib);
 
 	var bluntRes,slashRes,pircRes :=0;
 	// if(!atrib)
@@ -318,10 +326,10 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + " Cort:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Cort:"  + ClassificaResistCor(cfg.elem.TipoProtecao) +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
 			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
