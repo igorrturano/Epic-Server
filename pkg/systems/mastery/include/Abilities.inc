@@ -62,20 +62,29 @@ function ExecuteAfterEngage(combatInfo)
 		elseif (weapon.objtype in compatibleWeapons.montante)
 			Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
+			// Cutthroat
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
+				// Bloqueia o próximo ataque com a espada
 			else
+				// First blood
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
+				// Cleave
 			else
+				// Knee breaker
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
+			// Pushback
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
+				// Derruba o oponente
 			else
+				// Bone breaker
 			endif
+		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
+			Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
 		endif
 	endif
 endfunction

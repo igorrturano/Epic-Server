@@ -56,6 +56,7 @@ enum WEAPONTYPE
 	MACE := "Mace",
 	STAFF := "Staff",
 	THROWING := "Throwing",
+	POLEARM := "Polearm",
 
 	BOW := "Bow",
 	CROSSBOW := "Crossbow"

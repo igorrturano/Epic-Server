@@ -1,8 +1,3 @@
-/*
- * Whirlwind.src - Special attack script for spears
- * Rotates the weapon around, dealing damage to all opponents within 2 tiles
- */
-use uo;
 use os;
 
 include ":combat:combatFX";
@@ -22,7 +17,7 @@ program WhirlwindAttack(params)
 	for i := 0 to 7
 		attacker.facing := i;
 		PlayAttackAnimation(attacker);
-		sleepms(100);
+		SleepMS(100);
 	endfor
 	// MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 	attacker.facing := original_facing;
