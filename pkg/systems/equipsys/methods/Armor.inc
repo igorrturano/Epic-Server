@@ -1,5 +1,3 @@
-include ":equipsys:utils";
-
 print("INSTALLING: Methods for Armor -> Equipment System... OK!");
 
 /**
@@ -15,7 +13,7 @@ print("INSTALLING: Methods for Armor -> Equipment System... OK!");
  * ou um erro se Coverage não estiver definido
  */
 exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
-	var elem := getItemCfgElem(item);
+	var elem := item.getCfgElem();
 
 	if (isShield(item))
 		return "Shield";
@@ -56,6 +54,6 @@ endfunction
  * ou um erro se o Tipo de Proteção não estiver definido
  */
 exported function getType(item)
-	var elem := getItemCfgElem(item);
+	var elem := item.getCfgElem();
 	return elem.TipoProtecao ? elem.TipoProtecao : error{"errortext" := "The item have no Protection Type!"};
 endfunction
