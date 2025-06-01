@@ -1,4 +1,4 @@
-program DoubleShot(params)
+program SpecialAttack_DoubleShot(params)
 	var attacker := params.attacker;
 	var defender := params.defender;
 
