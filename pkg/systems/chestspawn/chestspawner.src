@@ -104,7 +104,7 @@ function makeChests(item, frq, amt, rng)
 endfunction
 
 function ClearChests(spawn)
-
+ 
 	var chests := GetObjProperty(item, "chests");
 	foreach chestserial in chests
 			var item := SystemFindObjectBySerial(chestserial);
