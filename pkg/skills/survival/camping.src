@@ -2,7 +2,7 @@
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":itemutils:canAccess";
 include ":timeutils:time";
 include ":death:death";

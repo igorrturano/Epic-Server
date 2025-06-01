@@ -84,14 +84,8 @@ program neve(params)
 
             foreach item in (ListEquippedITems(who))
 
-                // Se o item for de couro polar ajuda mais contra o frio
-                if ( (GetObjProperty(item, "material") == 0xee58) || (GetObjProperty(item, "material") == 0xef26) )
-                    dif := dif - 2;
-
-                // Se o item for de outro couro ajuda um pouco contra o frio
-                elseif (item in leatherArmors)
-                    dif := dif - 1;
-                endif
+                dif += PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR);
+                dif -= PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO);
             endforeach
 
             // Fontes de calor ajudam contra o frio
