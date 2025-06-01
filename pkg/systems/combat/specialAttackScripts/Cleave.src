@@ -8,16 +8,11 @@ include ":combat:combat";
 include ":damage:damage";
 
 program SpecialAttack_Cleave(params)
-	var attacker := params[1];
-	var defender := params[2];
-	var weapon := params[3];
-	var damage := params[4];
-	
-	// Base damage multiplier for cleave
-	var damageMultiplier := 0.7;
+	var attacker := params.attacker;
+	var defender := params.defender;
 	
 	// Find all potential targets in range (within 1 tile)
-	var potentialTargets := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm);
+	var potentialTargets := ListMobilesInLineOfSight(attacker, 1);
 	var hitTargets := array{};
 	
 	// Calculate attacker's facing direction
@@ -40,20 +35,41 @@ program SpecialAttack_Cleave(params)
 			continue;
 		endif
 		
-		// Skip non-attackable targets
-		// if (!CanAttack(attacker, mobile))
-		// 	continue;
-		// endif
+		// Calculate if the mobile is in front of the attacker
+		var dx := mobile.x - attacker.x;
+		var dy := mobile.y - attacker.y;
+
+		var inFront := 0;
+		case (facing)
+			0: // North
+				inFront := (dy < 0);
+			1: // Northeast
+				inFront := (dx > 0 && dy < 0);
+			2: // East
+				inFront := (dx > 0);
+			3: // Southeast
+				inFront := (dx > 0 && dy > 0);
+			4: // South
+				inFront := (dy > 0);
+			5: // Southwest
+				inFront := (dx < 0 && dy > 0);
+			6: // West
+				inFront := (dx < 0);
+			7: // Northwest
+				inFront := (dx < 0 && dy < 0);
+		endcase
+
+		if (!inFront)
+			continue;
+		endif
+
+		hitTargets.append(mobile);
 		
 		// Limit to max 3 targets total (including primary target)
 		if (hitTargets.size() >= 3)
 			break;
 		endif
 	endforeach
-	
-	// Play effect on attacker
-	PlayObjectCenteredEffect(attacker, 0x3728, 10, 10);
-	PlaySoundEffect(attacker, 0x520);
 	
 	// Apply damage to all hit targets
 	foreach mobile in hitTargets
@@ -71,7 +87,6 @@ program SpecialAttack_Cleave(params)
 		
 		// Send hit message
 		SendSysMessage(attacker, "Your cleave strikes "+mobile.name+"!");
-		SendSysMessage(mobile, attacker.name+" cleaves you with a powerful strike!");
 	endforeach
 	
 	return 1;
