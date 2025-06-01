@@ -93,6 +93,8 @@ function ExecuteAfterEngage(byRef combatInfo)
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
 			ExecuteMasteryAbility_Whirlwind(combatInfo); // Done
+		elseif (Upper(weaponCfg.Type) == Upper(THROWING))
+			ExecuteMasteryAbility_Pillum(combatInfo);
 		endif
 	endif
 endfunction
@@ -150,4 +152,8 @@ endfunction
 
 function ExecuteMasteryAbility_Lame(byRef combatInfo)
 	return Run_Script(":combat:specialAttackScripts/Lame", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_Pillum(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Pillum", combatInfo);
 endfunction

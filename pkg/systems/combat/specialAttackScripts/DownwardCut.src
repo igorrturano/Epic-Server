@@ -1,12 +1,7 @@
-use uo;
 use os;
-use math;
 
 include ":combat:combatFX";
 
-
-// TODO: Fazer um único .src para essa habilidades de armas
-	// TODO: Criar um enum (ou ver se já existe em algum lugar) para categorizar quais armas são de quais efeito/habilidades
 program DownwardCut(params)
 	var attacker := params.attacker;
 	var defender := params.defender;

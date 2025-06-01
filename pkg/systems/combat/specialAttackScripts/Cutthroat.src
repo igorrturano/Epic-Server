@@ -1,5 +1,4 @@
 include ":attributes:attributes";
-include ":combat:combatFX";
 
 program SpecialAttack_Cutthroat(params)
 	var attacker := params.attacker;
