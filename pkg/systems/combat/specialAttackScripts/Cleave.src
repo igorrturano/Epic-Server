@@ -1,11 +1,4 @@
 use uo;
-use os;
-use util;
-
-include "include/client";
-include ":attributes:attributes";
-include ":combat:combat";
-include ":damage:damage";
 
 program SpecialAttack_Cleave(params)
 	var attacker := params.attacker;
