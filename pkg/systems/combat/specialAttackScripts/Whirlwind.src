@@ -5,14 +5,10 @@ include ":combat:combatFX";
 program WhirlwindAttack(params)
 	var attacker := params.attacker;
 	var defender := params.defender;
-	print ("Whirlwind attack by " + attacker.name + " on " + defender.name);
 	
 	PlaySoundEffect(attacker, 0x520);
 	PlayObjectCenteredEffectEx(attacker, 0x54CE, 0, 25, COLOR_WHITE);
 	
-	var targets_hit := 0;
-	var opponents := ListMobilesNearLocationEx(attacker.x, attacker.y, attacker.z, 2, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN);
-
 	var original_facing := attacker.facing;
 	for i := 0 to 7
 		attacker.facing := i;
@@ -22,8 +18,11 @@ program WhirlwindAttack(params)
 	// MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 	attacker.facing := original_facing;
 	
+	var opponents := ListMobilesNearLocationEx(attacker.x, attacker.y, attacker.z, 2, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN);
 	foreach mobile in opponents
 		PlayObjectCenteredEffect(mobile, 0x3728, 7, 20);
-		targets_hit++;
+		attacker.attack_once(mobile);
 	endforeach
+
+	return true;
 endprogram
