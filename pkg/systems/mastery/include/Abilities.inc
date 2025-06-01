@@ -155,5 +155,6 @@ function ExecuteMasteryAbility_Lame(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_Pillum(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/Pillum", combatInfo);
+	combatInfo.+effectTime := 5; // 5s para o escudo voltar ao normal
+	return Start_Script(":combat:specialAttackScripts/Pillum", combatInfo);
 endfunction
