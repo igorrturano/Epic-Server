@@ -111,9 +111,7 @@ function ExecuteMasteryAbility_Whirlwind(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_Cutthroat(byRef combatInfo)
-	print("ExecuteMasteryAbility_Cutthroat called");
-	if (AP_GetVital(combatInfo.defender, "Hits") < (AP_GetVitalMaximumValue(combatInfo.defender, "Hits") * 0.9/* 0.05 */))
-		print("Executing Cutthroat ability");
+	if (AP_GetVital(combatInfo.defender, "Hits") < (AP_GetVitalMaximumValue(combatInfo.defender, "Hits") * 0.05))
 		return Run_Script(":combat:specialAttackScripts/Cutthroat", combatInfo);
 	endif
 endfunction

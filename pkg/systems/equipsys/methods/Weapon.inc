@@ -104,7 +104,7 @@ endfunction
  */
 exported function getType(weapon)
 	var elem := weapon.getCfgElem();
-	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
+	return elem.TipoAtaque ?: error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
 /**
@@ -202,5 +202,5 @@ endfunction
  */
 exported function isTwoHanded(weapon)
 	weapon := weapon.getCfgElem();
-	return weapon.Two_Handed == 1;
+	return Upper(weapon.Attribute) == Upper(TWOHANDED);
 endfunction

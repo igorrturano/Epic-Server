@@ -63,31 +63,32 @@ program SpecialAttack_Cleave(params)
 			continue;
 		endif
 
-		hitTargets.append(mobile);
+		attacker.attack_once(mobile);
+		// hitTargets.append(mobile);
 		
 		// Limit to max 3 targets total (including primary target)
-		if (hitTargets.size() >= 3)
-			break;
-		endif
+		// if (hitTargets.size() >= 3)
+		// 	break;
+		// endif
 	endforeach
 	
 	// Apply damage to all hit targets
-	foreach mobile in hitTargets
-		var targetDamage := damage * damageMultiplier;
+	// foreach mobile in hitTargets
+	// 	var targetDamage := damage * damageMultiplier;
 		
-		// Reduce damage for secondary targets
-		if (defender && mobile.serial != defender.serial)
-			targetDamage := targetDamage * 0.75;
-		endif
+	// 	// Reduce damage for secondary targets
+	// 	if (defender && mobile.serial != defender.serial)
+	// 		targetDamage := targetDamage * 0.75;
+	// 	endif
 		
-		ApplyRawDamage(mobile, CInt(targetDamage));
+	// 	ApplyRawDamage(mobile, CInt(targetDamage));
 		
-		// Show special effect on the target
-		PlayObjectCenteredEffect(mobile, 0x37B9, 10, 10);
+	// 	// Show special effect on the target
+	// 	PlayObjectCenteredEffect(mobile, 0x37B9, 10, 10);
 		
-		// Send hit message
-		SendSysMessage(attacker, "Your cleave strikes "+mobile.name+"!");
-	endforeach
+	// 	// Send hit message
+	// 	SendSysMessage(attacker, "Your cleave strikes "+mobile.name+"!");
+	// endforeach
 	
 	return 1;
 endprogram
