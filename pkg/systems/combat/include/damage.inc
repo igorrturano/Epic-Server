@@ -19,6 +19,7 @@ include ":combat:habilidades";
 include ":combat:weardown";
 include ":equipsys:utils";
 include "include/epicNPCUtils";
+include ":crafting:/include/caracteristicasFabricacao";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -613,16 +614,21 @@ endfunction
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist := 0;
 	var armorResists := armor.getAttrBase();
+	var armorResistsFabricacao := PegaValorFabricacao(armor, CARACTERISTICA_FABRICACAO_DEFESA); 
 
     if(!armor || armor == error)
         return 0;
     endif
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
+		DMG_PHYSICAL:
+			var valorFabricado :=  PegaValorFabricacao(armor, CARACTERISTICA_FABRICACAO_DEFESA); 
+			resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod") + CInt(valorFabricado? valorFabricado : 0)); 
+			break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
-				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_CORTANTE].valor;
+				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod) + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -630,7 +636,8 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_PIERCING:
 			if (armorResists.PiercingResist)
-				resist := CInt(armorResists.PiercingResist) + CInt(armorResists.PiercingResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_PERFURANTE].valor;
+				resist := CInt(armorResists.PiercingResist) + CInt(armorResists.PiercingResistMod) + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -638,7 +645,8 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_BLUNT:  
 			if (armorResists.BluntResist)
-				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_CONTUSAO].valor;
+				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod)  + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -728,6 +736,7 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 
 	if (damage < 1)
 		damage := 1;
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano Minimo Garantido ! (1)");
 	endif
 
 	// DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
@@ -804,13 +813,18 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
+	/*var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
-	endif
+	endif*/
 
+	var danoFabricadoTotal := 0;
+	danoFabricadoTotal += PegaValorFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_DANO);
+	var SubCaracteristicas := PegaSubValoresFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_DANO);
+		//TODO Adicionar os danos de contusao, cortante e perfurante quando der.
+	
+	DebugMsg(attacker, DEBUG_DAMAGE, "Modificador Fabricacao: " + CInt(danoFabricadoTotal));
 	DebugMsg(attacker, DEBUG_DAMAGE, "Dano: " + CInt(damage));
-	DebugMsg(attacker, DEBUG_DAMAGE, "Arma Afiada: " + CInt(sharpened_weapon));
 
 	return damage;
 endfunction

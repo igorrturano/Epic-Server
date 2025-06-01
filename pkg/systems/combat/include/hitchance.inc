@@ -6,6 +6,7 @@
 
 // include "combat";
 include "habilidades";
+include ":crafting:/include/caracteristicasFabricacao";
 
 function CalculateHitChance(attacker, defender)
 	var skill_a;
@@ -66,7 +67,7 @@ function CalculateHitChance(attacker, defender)
 
 	var hit_chance := 50.0 + ((skill_a - skill_d) / 1.5);
 
-	hit_chance += CDbl( GetObjProperty(attacker, "hitbonus") ) + attacker.hitchance_mod - defender.evasionchance_mod;
+	hit_chance += attacker.hitchance_mod - defender.evasionchance_mod;
 	hit_chance += CInt( GetObjProperty(attacker, "#attackbonus" ));
 
 
@@ -128,11 +129,12 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 5;
 	endif
 
-	var balanced_weapon := CInt(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"]);
-	if (balanced_weapon)
-		hit_chance += balanced_weapon;
+	var bonusFabricacao := Cint(PegaValorFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_PRECISAO));
+	bonusFabricacao := bonusFabricacao * 3;
+	hit_chance += bonusFabricacao;
 
-		DebugMsg(attacker, DEBUG_HIT, "Arma Balanceada: " + CInt(balanced_weapon));
+	if(bonusFabricacao != 0)
+		DebugMsg(attacker, DEBUG_HIT, "Bonus Fabricacao: " + bonusFabricacao);
 	endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
