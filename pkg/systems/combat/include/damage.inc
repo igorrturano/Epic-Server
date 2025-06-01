@@ -743,7 +743,7 @@ endfunction
 
 function CalcDamageStats(attacker, damage)
 	var stat;
-	var elem := getItemCfgElem(attacker.weapon);
+	var elem := attacker.weapon.getCfgElem();
 
 	SkillCheck(attacker, TACTICS, -1);
 	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);

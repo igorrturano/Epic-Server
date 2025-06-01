@@ -103,7 +103,7 @@ endfunction
  *
  */
 exported function getType(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
@@ -120,7 +120,7 @@ endfunction
  *
  */
 exported function isDualWield(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return Upper(elem.Attribute) == Upper(DUALWIELD);
 endfunction
 
@@ -137,7 +137,7 @@ endfunction
  *
  */
 exported function isRanged(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return Upper(elem.Attribute) == Upper(RANGED);
 endfunction
 
@@ -154,7 +154,7 @@ endfunction
  *
  */
 exported function isBow(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return elem.ProjectileType == 0xf3f;
 endfunction
 
@@ -171,7 +171,7 @@ endfunction
  *
  */
 exported function isCrossBow(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return elem.ProjectileType == 0x1bfb;
 endfunction
 
@@ -188,7 +188,7 @@ endfunction
  *
  */
 exported function isThrowable(weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	return elem.Throwable != error;
 endfunction
 
@@ -201,6 +201,6 @@ endfunction
  * @return 1 se a arma for de duas mãos, 0 caso contrário
  */
 exported function isTwoHanded(weapon)
-	weapon := getItemCfgElem(weapon);
+	weapon := weapon.getCfgElem();
 	return weapon.Two_Handed == 1;
 endfunction

@@ -101,7 +101,3 @@ enum PROTECTIONTYPE
 	SHIELD_LARGE := "ESCUDO GRANDE",
 	SHIELD_TOWER := "ESCUDO TORRE"
 endenum
-
-function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
-endfunction
