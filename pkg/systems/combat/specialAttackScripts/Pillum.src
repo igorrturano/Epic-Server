@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+include ":debug:main";
+
+program SpecialAttack_Pillum(params)
+	var attacker := params.attacker;
+	var defender := params.defender;
+	var effectTime := params.effectTime;
+	
+	PrintTextAbove(defender, "*Lança penetra o escudo*");
+	SendSysMessage(attacker, "Você ativa a lança no escudo do oponente.");
+	SendSysMessage(defender, "Uma lança inutiliza seu escudo temporariamente.");
+
+	MoveItemToContainer(defender.shield, defender.backpack);
+	defender.shield.movable := 0;
+	Sleep(effectTime);
+	defender.shield.movable := 1;
+
+	return 1;
+endprogram
