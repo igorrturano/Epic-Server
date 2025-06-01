@@ -29,6 +29,8 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	var isArmadura := tipoObjeto == ITEM_ARMADURA || tipoObjeto == TEMPLATE_ARMADURA;
 
 	xDesc := PegaDescMagica(objeto,xDesc);
+	xDesc := PegaDescComponente(objeto,xDesc);
+	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	xDesc := PegaDescDosesVeneno(objeto,xDesc);
 	
 	if (isFireWeapon(objeto))
@@ -40,6 +42,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	xDesc := PegaDescComum(objeto,xDesc);
 	
 	if (isArma || isArmadura)
+		
 		var cfgObj := MontaObjCfgArmaArmadura(objeto,xDesc);
 		if(isArma)
 			XDesc := PegaDescArmas(objeto,who,cfgObj);//o config já leva a desc
