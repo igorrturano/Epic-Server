@@ -5,6 +5,7 @@ include ":attributes:attributes";
 include ":charactercreation:chargumps";
 include ":charactercreation:habilidades";
 include "include/client";
+include ":crafting:/include/caracteristicasFabricacao";
 
 function SetEquipmentMods(who, item)
 
@@ -47,6 +48,7 @@ function SetEquipmentMods(who, item)
 	endif
     var chardata := GetObjProperty(who, "chardata");
 	var penalty  := GetObjProperty(item, "atributos").DexPen;
+	penalty -= Cint(PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_MOBILIDADE) / 2);
     var isScutum := {0x1B76, 0x1B77, 0xFA62};
     if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
         penalty /= 2;

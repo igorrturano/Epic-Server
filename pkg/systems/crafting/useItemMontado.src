@@ -1,0 +1,20 @@
+use os;
+use uo;
+
+include "include/say";
+include "/include/epicPropNames";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/posicaoGump";
+include ":crafting:/gumps/fabricacaoGumps";
+
+program useItemMontado(quem, item)
+	
+	var alvo := TargetCoordinates(quem);
+	if(alvo)
+		SendSysMessageEx(quem, "Processo de Tratamento iniciado!", SSM_INFO);
+		Start_Script( ":crafting:gerenteTratamentoProduto", array{quem, item, alvo} );
+	else
+		SendSysMessageEx(quem, "Alvo cancelado.", SSM_FAIL);
+	endif
+	return;
+endprogram
