@@ -10,7 +10,7 @@ var compatibleWeapons := struct{
 	montante := array{0x26CF, 0xF9EA, 0xF9F7}
 };
 
-function ExecuteMasteryAbility(byRef attacker, byRef defender, attackInfo)
+function ExecuteMasteryAbility(attacker, defender, attackInfo)
 	var cooldown := GetCooldown(attacker, "MasteryAbilityCooldown");
 	if (cooldown > 0)
 		DebugMsg(attacker, DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
@@ -46,7 +46,7 @@ endfunction
  * @param attacker Referência ao personagem atacante que possui a arma
  * @param defender Referência ao personagem defensor que receberá o ataque
  */
-function ExecuteBeforeEngage(combatInfo)
+function ExecuteBeforeEngage(byRef combatInfo)
 	var weapon := combatInfo.attacker.weapon;
 
 	if (weapon.objtype in compatibleWeapons.montante)
@@ -55,46 +55,50 @@ function ExecuteBeforeEngage(combatInfo)
 
 endfunction
 
-function ExecuteAfterEngage(combatInfo)
+function ExecuteAfterEngage(byRef combatInfo)
 	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := getItemCfgElem(weapon);
+	var weaponCfg := weapon.getCfgElem();
 
 	if (weapon.isRanged())
-
+		if (weapon.isBow())
+			ExecuteMasteryAbility_DoubleShot(combatInfo);
+		elseif (weapon.isCrossbow())
+			ExecuteMasteryAbility_Lame(combatInfo);
+		endif
 	else
 		if (Upper(weaponCfg.Type) == Upper(UNARMED))
 		elseif (weapon.objtype in compatibleWeapons.montante)
-			ExecuteMasteryAbility_DownwardCut(combatInfo);
+			ExecuteMasteryAbility_DownwardCut(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
-			ExecuteMasteryAbility_Cutthroat(combatInfo);
+			ExecuteMasteryAbility_Cutthroat(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
-				// Bloqueia o próximo ataque com a espada
+				ExecuteMasteryAbility_SwordBlock(combatInfo);
 			else
-				// First blood
+				ExecuteMasteryAbility_FirstBlood(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
-				// Cleave
+				ExecuteMasteryAbility_Cleave(combatInfo);
 			else
-				// Knee breaker
+				ExecuteMasteryAbility_KneeBreaker(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
+			ExecuteMasteryAbility_SpearPush(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
-				// Derruba o oponente
+				ExecuteMasteryAbility_MaceStun(combatInfo);
 			else
-				// Bone breaker
+				ExecuteMasteryAbility_BoneBreaker(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
-			ExecuteMasteryAbility_Whirlwind(combatInfo);
+			ExecuteMasteryAbility_Whirlwind(combatInfo); // Done
 		endif
 	endif
 endfunction
 
 function CalculateCooldown(byRef combatInfo)
-	var cooldown := CInt(2);
+	var cooldown := CInt(1);
 	return cooldown;
 endfunction
 
@@ -132,4 +136,20 @@ endfunction
 
 function ExecuteMasteryAbility_SpearPush(byRef combatInfo)
 	return Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_MaceStun(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/MaceStun", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_SwordBlock(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/SwordBlock", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/DoubleShot", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_Lame(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Lame", combatInfo);
 endfunction
