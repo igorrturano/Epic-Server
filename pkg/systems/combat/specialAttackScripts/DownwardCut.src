@@ -2,7 +2,7 @@ use os;
 
 include ":combat:combatFX";
 
-program DownwardCut(params)
+program SpecialAttack_DownwardCut(params)
 	var attacker := params.attacker;
 	var defender := params.defender;
 	var moveTo_x := attacker.x;
