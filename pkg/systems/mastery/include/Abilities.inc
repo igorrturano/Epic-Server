@@ -18,10 +18,9 @@ function ExecuteMasteryAbility(attacker, defender, attackInfo)
 	endif
 
 	if (!attackInfo) // Se não tem attackInfo, é um ataque anormal (especial, de engaging, etc.) [pré-combate]
-		var combatInfo := struct{
-			attacker := attacker,
-			defender := defender
-		};
+		var combatInfo := struct{};
+		combatInfo.+attacker := attacker;
+		combatInfo.+defender := defender;
 		
 		ExecuteBeforeEngage(combatInfo);
 	else // Aqui o combate já começou, então é um ataque normal
@@ -79,7 +78,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Cleave(combatInfo);
+				ExecuteMasteryAbility_Cleave(combatInfo); // Done
 			else
 				ExecuteMasteryAbility_KneeBreaker(combatInfo);
 			endif
@@ -94,7 +93,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
 			ExecuteMasteryAbility_Whirlwind(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(THROWING))
-			ExecuteMasteryAbility_Pillum(combatInfo);
+			ExecuteMasteryAbility_Pillum(combatInfo); // Done
 		endif
 	endif
 endfunction
