@@ -80,13 +80,13 @@ function ExecuteAfterEngage(byRef combatInfo)
 			if (weapon.isTwoHanded())
 				ExecuteMasteryAbility_Cleave(combatInfo); // Done
 			else
-				ExecuteMasteryAbility_KneeBreaker(combatInfo);
+				ExecuteMasteryAbility_KneeBreaker(combatInfo); // Done
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
 			ExecuteMasteryAbility_SpearPush(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_MaceStun(combatInfo);
+				ExecuteMasteryAbility_Knockdown(combatInfo);
 			else
 				ExecuteMasteryAbility_BoneBreaker(combatInfo);
 			endif
@@ -126,6 +126,7 @@ function ExecuteMasteryAbility_Cleave(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_KneeBreaker(byRef combatInfo)
+	combatInfo.+effectTime := 5; // 5s para o efeito de lentidão
 	return Run_Script(":combat:specialAttackScripts/KneeBreaker", combatInfo);
 endfunction
 
@@ -137,8 +138,8 @@ function ExecuteMasteryAbility_SpearPush(byRef combatInfo)
 	return Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
 endfunction
 
-function ExecuteMasteryAbility_MaceStun(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/MaceStun", combatInfo);
+function ExecuteMasteryAbility_Knockdown(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Knockdown", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_SwordBlock(byRef combatInfo)
