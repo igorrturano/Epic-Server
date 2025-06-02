@@ -129,6 +129,7 @@ function AttemptBossSpawn(spawner, bossData)
     endif
     
     print("DEBUG: Attempting spawn at X:" + spawner.x + " Y:" + spawner.y + " Z:" + spawner.z + "realm: " + spawner.realm);
+    print("DEBUG BOSS SERIAL: " + spawner.serial + " - " + bossData.name);
     var boss := CreateEpicBoss(bossData, spawner.x, spawner.y, spawner.z, spawner.realm);
     
     if (boss && boss != error)
