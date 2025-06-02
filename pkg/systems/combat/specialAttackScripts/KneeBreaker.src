@@ -1,0 +1,16 @@
+use uo;
+
+include ":timedScripts:timedScripts";
+
+program SpecialAttack_KneeBreaker(params)
+	var attacker := params.attacker;
+	var defender := params.defender;
+	var effectTime := params.effectTime;
+
+	PrintTextAbove(defender, "*Joelho quebrado*");
+	SendSysMessage(attacker, "Você ataca o joelho do oponente.");
+	SendSysMessage(defender, "Seu joelho foi quebrado temporariamente.");
+	TS_StartTimer(defender, "lentidao", effectTime);
+
+	return 1;
+endprogram
