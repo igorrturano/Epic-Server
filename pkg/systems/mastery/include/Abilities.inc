@@ -62,7 +62,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 		if (weapon.isBow())
 			ExecuteMasteryAbility_DoubleShot(combatInfo); // Done
 		elseif (weapon.isCrossbow())
-			ExecuteMasteryAbility_Lame(combatInfo);
+			ExecuteMasteryAbility_Lame(combatInfo); // Done
 		endif
 	else
 		if (Upper(weaponCfg.Type) == Upper(UNARMED))
@@ -74,7 +74,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 			if (weapon.isTwoHanded())
 				ExecuteMasteryAbility_SwordBlock(combatInfo);
 			else
-				ExecuteMasteryAbility_FirstBlood(combatInfo);
+				ExecuteMasteryAbility_CounterAttack(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
@@ -117,8 +117,8 @@ function ExecuteMasteryAbility_Cutthroat(byRef combatInfo)
 	endif
 endfunction
 
-function ExecuteMasteryAbility_FirstBlood(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/FirstBlood", combatInfo);
+function ExecuteMasteryAbility_CounterAttack(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/CounterAttack", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Cleave(byRef combatInfo)
@@ -151,6 +151,7 @@ function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_Lame(byRef combatInfo)
+	combatInfo.+effectTime := 5; // 5s para o efeito de lentidão
 	return Run_Script(":combat:specialAttackScripts/Lame", combatInfo);
 endfunction
 
