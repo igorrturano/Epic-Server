@@ -60,7 +60,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 
 	if (weapon.isRanged())
 		if (weapon.isBow())
-			ExecuteMasteryAbility_DoubleShot(combatInfo);
+			ExecuteMasteryAbility_DoubleShot(combatInfo); // Done
 		elseif (weapon.isCrossbow())
 			ExecuteMasteryAbility_Lame(combatInfo);
 		endif
@@ -86,7 +86,7 @@ function ExecuteAfterEngage(byRef combatInfo)
 			ExecuteMasteryAbility_SpearPush(combatInfo); // Done
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Knockdown(combatInfo);
+				ExecuteMasteryAbility_Knockdown(combatInfo); // Done
 			else
 				ExecuteMasteryAbility_BoneBreaker(combatInfo);
 			endif
@@ -147,7 +147,7 @@ function ExecuteMasteryAbility_SwordBlock(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/DoubleShot", combatInfo);
+	return Start_Script(":combat:specialAttackScripts/DoubleShot", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Lame(byRef combatInfo)
