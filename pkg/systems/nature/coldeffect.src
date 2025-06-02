@@ -218,12 +218,12 @@ function ApplyColdMod(who, mod)
         endif
         SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
         SetObjProperty(who, "climate_penalty", fortitudePenalty);
-    elseif (mod == 2)
-        var stammod := cint(GetObjProperty(who, "stammod"));
-        var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
-        SetObjProperty(who, "stammod", stammod - stamPenalty);
-        SetObjProperty(who, "penalidadetaiga", -stamPenalty);
-        RecalcVitals(who);
+    // elseif (mod == 2)
+        // var stammod := cint(GetObjProperty(who, "stammod"));
+        // var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
+        // SetObjProperty(who, "stammod", stammod - stamPenalty);
+        // SetObjProperty(who, "penalidadetaiga", -stamPenalty);
+        // RecalcVitals(who);
     endif
     
     Set_Critical(0);
