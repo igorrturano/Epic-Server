@@ -216,16 +216,16 @@ function ApplyHeatMod(who, mod)
         endif
         SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
         SetObjProperty(who, "climate_penalty", fortitudePenalty);
-    elseif (mod == 2)
-        var stammod := cint(GetObjProperty(who, "stammod"));
-        var manamod := cint(GetObjProperty(who, "manamod"));
-        var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
-        var manaPenalty := cint(AP_GetVitalMaximumValue(who, MANA)/2);
-        SetObjProperty(who, "stammod", stammod - stamPenalty);
-        SetObjProperty(who, "manamod", manamod - manaPenalty);
-        SetObjProperty(who, "stam_penalty", -stamPenalty);
-        SetObjProperty(who, "mana_penalty", -manaPenalty);
-        RecalcVitals(who);
+    // elseif (mod == 2)
+    //     var stammod := cint(GetObjProperty(who, "stammod"));
+    //     var manamod := cint(GetObjProperty(who, "manamod"));
+    //     var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
+    //     var manaPenalty := cint(AP_GetVitalMaximumValue(who, MANA)/2);
+    //     SetObjProperty(who, "stammod", stammod - stamPenalty);
+    //     SetObjProperty(who, "manamod", manamod - manaPenalty);
+    //     SetObjProperty(who, "stam_penalty", -stamPenalty);
+    //     SetObjProperty(who, "mana_penalty", -manaPenalty);
+    //     RecalcVitals(who);
     endif
     
     Set_Critical(0);
