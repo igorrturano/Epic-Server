@@ -1,0 +1,14 @@
+// //$Id: bowcraft.src 905 2005-11-05 08:20:50Z muaddiblsd $
+
+use cfgfile;
+use util;
+
+include ":crafting:fabricaComplexos";
+
+
+program use_FletchTool(who, tool)
+
+	FabricaItensComplexos(who,"BowcraftFletching");
+
+endprogram
+

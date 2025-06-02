@@ -7,6 +7,7 @@ include ":combat:damage";
 include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";
+include ":crafting:/include/caracteristicasFabricacao";
 
 var ironArmors := {0x1c04, 0x1408, 0x1409, 0x140A, 0x140B, 0x140C, 0x140D, 0x140E, 0x140F, 0x1412, 0x1419, 0x13ec, 0x13ed, 0x13ee, 0x13ef,
                     0x13f0, 0x13f1, 0x13f2, 0x1415, 0x1416, 0x1410, 0x1417, 0x1411, 0x141A, 0x1414, 0x1418, 0x1413, 0x13BB, 0x13C0, 0x13BE, 0x13C3,
@@ -83,6 +84,7 @@ program calor(params)
                 dif := dif - 2;
             endif
 
+            
             var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
             dif := dif - survivalBonus;
 
@@ -91,14 +93,10 @@ program calor(params)
                 if (item.objtype == 0xA35e)
                     dif := dif - 1;
                 endif
+
+                dif -= PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR);
+                dif += PegaValorFabricacao(item,CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO);
                 // Itens de couro draconiano facilitam a resistência contra calor
-                if ( (GetObjProperty(item, "material") == 0xed29) )
-                    dif := dif - 2;
-                elseif (item in chitinArmor)
-                    dif := dif - 1;
-                elseif (item in ironArmors)
-                    dif := dif + 2;
-                endif
             endforeach
 
             foreach item in ( ListItemsNearLocation( who.x, who.y, who.z, 8, who.realm ) )

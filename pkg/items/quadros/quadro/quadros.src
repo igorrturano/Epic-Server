@@ -7,7 +7,7 @@ use cfgfile;
 use attributes;
 
 include ":keys:key";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":gumps:yesNo";
 include "include/say";
 include ":itemutils:canAccess";

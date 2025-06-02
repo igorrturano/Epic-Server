@@ -1,3 +1,4 @@
+include "include/objtype";
 
 function GetWoodType(tree)
     case (tree.objtype)

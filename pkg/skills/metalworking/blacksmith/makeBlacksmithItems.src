@@ -1,0 +1,13 @@
+use cfgfile;
+use util;
+
+include ":itemutils:canAccess";
+include ":crafting:fabricaComplexos";
+
+
+program use_SmithTool(who, tool)
+
+	var rinfo := FabricaItensComplexos(who, "Blacksmithy");
+
+endprogram
+
