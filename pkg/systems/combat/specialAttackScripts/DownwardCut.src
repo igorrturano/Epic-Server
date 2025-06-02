@@ -1,5 +1,6 @@
 use os;
 
+include ":debug:main";
 include ":combat:combatFX";
 
 program SpecialAttack_DownwardCut(params)
