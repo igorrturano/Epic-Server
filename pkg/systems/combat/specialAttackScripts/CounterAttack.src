@@ -1,0 +1,15 @@
+use uo;
+
+include ":debug:main";
+
+program SpecialAttack_CounterAttack(params)
+	var attacker := params.attacker;
+	var defender := params.defender;
+
+	PrintTextAbove(defender, "*Contra-Ataque*");
+	SendSysMessage(attacker, "Você realiza um contra-ataque.");
+
+	attacker.attack_once(defender);
+
+	return 1;
+endprogram

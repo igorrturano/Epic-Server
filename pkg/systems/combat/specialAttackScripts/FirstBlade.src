@@ -1,4 +1,0 @@
-program SpecialAttack_FirstBlade(params)
-
-	return 1;
-endprogram
