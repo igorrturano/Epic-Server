@@ -1,7 +1,5 @@
 //Author: Deiro || Rafael Santos
 
-use Math;
-
 include "/include/epicConstants";
 include "/include/epicPropNames";
 include "/include/math";
