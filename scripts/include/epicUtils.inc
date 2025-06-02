@@ -1,6 +1,5 @@
 use uo;
 use util;
-use Math;
 
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
