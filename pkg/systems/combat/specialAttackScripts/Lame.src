@@ -1,0 +1,18 @@
+use uo;
+
+include ":debug:main";
+include ":timedScripts:timedScripts";
+
+program SpecialAttack_Lame(params)
+	var attacker := params.attacker;
+	var defender := params.defender;
+	var effectTime := params.effectTime;
+
+	PrintTextAbove(defender, "*Aleijado*");
+	SendSysMessage(attacker, "Você ataca a perna do oponente.");
+	SendSysMessage(defender, "Sua perna foi atingida.");
+
+	TS_StartTimer(defender, "lentidao", effectTime);
+
+	return true;
+endprogram
