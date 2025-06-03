@@ -39,7 +39,10 @@ program habilidade(who)
         
         VENERATIO:
             var targ := getTarg(who);
-            PlayObjectCenteredEffectEx(targ, 0x3789, 7, 32, 2485, 1);
+            // PlayObjectCenteredEffectEx(targ, /* 0x3789 */ EPIC_FX_MORALE_DOWN, 7, 32, 2485, 1);
+            var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, EPIC_FX_MORALE_DOWN, 1, targ.realm);
+            Sleepms(800);
+            DestroyItem(fx);
             PlaySoundEffect(targ, 0x58E);
             
             // Debuff baseado em repreensao pelo odio
@@ -79,7 +82,7 @@ program habilidade(who)
             AP_ModifyStatMod(targ, DEXTERITY, dex_points * -1);
             AP_ModifyStatMod(targ, STRENGTH, str_points * -1);
             AP_ModifyStatMod(targ, INTELLIGENCE, int_points * -1);
-            PlayStationaryEffectEx(targ.x, targ.y, targ.z/* +10 */, targ.realm, EPIC_FX_MORALE_DOWN, 5, theology_bonus * 3, 2, 2740);
+            // PlayStationaryEffectEx(targ.x, targ.y, targ.z/* +10 */, targ.realm, , 5, theology_bonus * 3, 2, 2740);
         
         KAI:
             var targ := getTarg(who);
