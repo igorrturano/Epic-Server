@@ -2,9 +2,9 @@ use uo;
 
 include ":debug:main";
 
-program SpecialAttack_CounterAttack(params)
-	var attacker := params.attacker;
-	var defender := params.defender;
+program SpecialAttack_CounterAttack(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
 
 	PrintTextAbove(defender, "*Contra-Ataque*");
 	SendSysMessage(attacker, "Você realiza um contra-ataque.");
