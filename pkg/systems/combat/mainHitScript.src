@@ -609,8 +609,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 		endif
 	endif
 
-
-	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
+	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0 || GetCooldown(defender, "balance_restored"))
 		SendSysMessageEx(defender, "Você não leva o critico");
 		return;
 	endif
