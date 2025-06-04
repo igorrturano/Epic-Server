@@ -47,9 +47,17 @@ endfunction
  */
 function ExecuteBeforeEngage(byRef combatInfo)
 	var weapon := combatInfo.attacker.weapon;
+	var weaponCfg := weapon.getCfgElem();
 
 	if (weapon.objtype in compatibleWeapons.montante)
 		Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+	endif
+	if (!weapon.isRanged())
+		if (Upper(weaponCfg.Type) == Upper(SWORD))
+			if (weapon.isDualWield())
+				ExecuteMasteryAbility_Charge(combatInfo);
+			endif
+		endif
 	endif
 
 endfunction
@@ -73,8 +81,6 @@ function ExecuteAfterEngage(byRef combatInfo)
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
 				ExecuteMasteryAbility_SwordBlock(combatInfo);
-			elseif (weapon.isDualWield())
-				ExecuteMasteryAbility_Charge(combatInfo);
 			else
 				ExecuteMasteryAbility_CounterAttack(combatInfo);
 			endif
