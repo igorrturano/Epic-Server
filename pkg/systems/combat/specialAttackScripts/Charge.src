@@ -1,0 +1,24 @@
+program SpecialAttack_Charge(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var effectTime := combatInfo.effectTime;
+
+	PrintTextAbove(defender, "*Atordoado*");
+	SendSysMessage(attacker, "Você atordoa o oponente com um golpe poderoso.");
+	SendSysMessage(defender, "Você foi atordoado temporariamente.");
+
+	// Apply the stunned effect to the defender
+	defender.stunned := 1;
+	defender.stunnedEndTime := GetCurrentTime() + effectTime;
+
+	// Schedule the end of the stun effect
+	Sleep(effectTime);
+
+	// Remove the stunned effect after the duration
+	defender.stunned := 0;
+	defender.stunnedEndTime := 0;
+
+	SendSysMessage(defender, "Você se recupera do atordoamento.");
+
+	return 1;
+endprogram

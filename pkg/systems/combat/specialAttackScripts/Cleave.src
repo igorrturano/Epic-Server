@@ -1,8 +1,8 @@
 use uo;
 
-program SpecialAttack_Cleave(params)
-	var attacker := params.attacker;
-	var defender := params.defender;
+program SpecialAttack_Cleave(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
 	var potentialTargets := ListMobilesInLineOfSight(attacker, 1);
 	var facing := attacker.facing;
 	

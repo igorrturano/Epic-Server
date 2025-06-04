@@ -73,12 +73,16 @@ function ExecuteAfterEngage(byRef combatInfo)
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
 				ExecuteMasteryAbility_SwordBlock(combatInfo);
+			elseif (weapon.isDualWield())
+				ExecuteMasteryAbility_Charge(combatInfo);
 			else
 				ExecuteMasteryAbility_CounterAttack(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
 				ExecuteMasteryAbility_Cleave(combatInfo); // Done
+			elseif (weapon.isDualWield())
+				
 			else
 				ExecuteMasteryAbility_KneeBreaker(combatInfo); // Done
 			endif
@@ -101,6 +105,11 @@ endfunction
 function CalculateCooldown(byRef combatInfo)
 	var cooldown := CInt(1);
 	return cooldown;
+endfunction
+
+function CalculateEffectTime(attacker)
+	var effectTime := CInt(5);
+	return effectTime;
 endfunction
 
 function ExecuteMasteryAbility_DownwardCut(byRef combatInfo)
@@ -126,7 +135,7 @@ function ExecuteMasteryAbility_Cleave(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_KneeBreaker(byRef combatInfo)
-	combatInfo.+effectTime := 5; // 5s para o efeito de lentidão
+	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
 	return Run_Script(":combat:specialAttackScripts/KneeBreaker", combatInfo);
 endfunction
 
@@ -151,11 +160,15 @@ function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
 endfunction
 
 function ExecuteMasteryAbility_Lame(byRef combatInfo)
-	combatInfo.+effectTime := 5; // 5s para o efeito de lentidão
+	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
 	return Run_Script(":combat:specialAttackScripts/Lame", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Pillum(byRef combatInfo)
-	combatInfo.+effectTime := 5; // 5s para o escudo voltar ao normal
+	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
 	return Start_Script(":combat:specialAttackScripts/Pillum", combatInfo);
+endfunction
+
+function ExecuteMasteryAbility_Charge(byRef combatInfo)
+	return Run_Script(":combat:specialAttackScripts/Charge", combatInfo);
 endfunction

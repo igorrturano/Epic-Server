@@ -3,10 +3,10 @@ use uo;
 include ":debug:main";
 include ":timedScripts:timedScripts";
 
-program SpecialAttack_Knockdown(params)
-	var attacker := params.attacker;
-	var defender := params.defender;
-	var effectTime := params.effectTime;
+program SpecialAttack_Knockdown(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var effectTime := combatInfo.effectTime;
 
 	PrintTextAbove(defender, "*Derrubado*");
 	SendSysMessage(attacker, "Você derruba o oponente.");
