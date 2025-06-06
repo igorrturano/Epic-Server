@@ -6,15 +6,16 @@ include ":combat:settings";
 include ":spells:include/swordmage";
 
 function WearDownArmor(defender, armor, rawdamage, weapon)
-
 	var bonus;
 	//Amplia o dano na armadura se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
 		bonus := RandomDiceRoll("1d4");
 	endif
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, armor.objtype);
 
-	if (!GetObjProperty(armor, "encerada"))
-		bonus := RandomDiceRoll("1d4");
+	if (!GetObjProperty(armor, "encerada") && elem.TipoProtecao)
+		bonus := 1;
 	endif
 
 	if (armor)

@@ -22,7 +22,7 @@ program SpellScript(params)
 
 	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
 	SendSysMessageEx(who, "O tempo se distorce proximo de voce.", SSM_INFO);
-	var time := AP_GetSkill(who, MAGICLORE)/5;
+	var time := AP_GetSkill(who, ARCANA)/5;
 	TS_StartTimer(who, "dmgreturn", time);
 
 	return 1;

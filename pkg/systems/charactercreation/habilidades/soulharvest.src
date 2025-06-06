@@ -15,7 +15,7 @@ program SpellScript(params)
     var cfg := ReadConfigFile(":*:npcdesc");
     var soul_less := array{"undead", "animal", "giantanimal"};
 
-	var magiclore := Cint(AP_GetSkill(who, MAGICLORE));
+	var magiclore := Cint(AP_GetSkill(who, THEOLOGY));
 	var mobiles := ListMobilesNearLocation( who.x, who.y, who.z, Cint(magiclore/10), who.realm );
 	foreach mobile in mobiles
     var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);

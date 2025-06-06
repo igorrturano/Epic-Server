@@ -1,0 +1,69 @@
+/* 
+ * npclifetime.src
+ *
+ * Purpose: Kills summoned NPCs after their lifetime expires
+ * Usage: Start this script with the NPC and the lifetime in seconds:
+ *        start_script(":epicspawn:scripts/npclifetime", {npc_ref, lifetime_seconds});
+ */
+
+use uo;
+use os;
+use util;
+include ":attributes:attributes";
+
+program npclifetime(params)
+    if (params.size() < 2)
+        print("ERROR: NpcLifetime - Not enough parameters. Expected: npc, lifetime");
+        return 0;
+    endif
+    
+    var npc := params[1];
+    var lifetime := CInt(params[2]);
+    
+    if (!npc || !lifetime)
+        print("ERROR: NpcLifetime - Invalid parameters");
+        return 0;
+    endif
+    
+    if (!npc.IsA(POLCLASS_NPC))
+        print("ERROR: NpcLifetime - Parameter is not an NPC");
+        return 0;
+    endif
+    
+    print("DEBUG: NpcLifetime - Started for " + npc.name + " with lifetime " + lifetime + " seconds");
+    
+    // Check if NPC already has an existing lifetime script running
+    var existing_script := GetObjProperty(npc, "lifetime_script");
+    if (existing_script)
+        // Try to stop any existing lifetime script to avoid duplicates
+        var script_pid := GetProcess(CInt(existing_script));
+        if (script_pid)
+            script_pid.kill();
+            print("DEBUG: NpcLifetime - Killed existing lifetime script");
+        endif
+    endif
+    
+    // Store this script's PID for future reference
+    SetObjProperty(npc, "lifetime_script", GetPid());
+    
+    // Set expiration time
+    var expire_time := ReadGameClock() + lifetime;
+    SetObjProperty(npc, "lifetime_end", expire_time);
+    
+    // Wait for the lifetime to expire
+    while (npc && !npc.dead)
+        if (ReadGameClock() >= expire_time)
+            print("DEBUG: NpcLifetime - Lifetime expired for " + npc.name);
+                SetObjProperty(npc, "allowdeath", 1);
+                SetObjProperty(npc, "GuardKill", 1);	
+                ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
+            break;
+        endif
+        
+        // Check every 5 seconds to reduce CPU usage
+        sleep(5);
+    endwhile
+    
+    print("DEBUG: NpcLifetime - Script ended for " + (npc ? npc.name : "unknown NPC"));
+    return 1;
+endprogram

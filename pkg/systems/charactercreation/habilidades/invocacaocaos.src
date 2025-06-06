@@ -13,7 +13,7 @@ program summonSkeletaSteed(params)
 	var targ := params[2];
 
 	var template := ":epicai:sheep";
-    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+    var lvl := Cint(AP_GetSkill(who, ARCANA));
     var dice_roll := RandomDiceRoll("1d10");
     PrintTextAbovePrivate(who, "rolou um "+dice_roll, who);
     
@@ -47,14 +47,14 @@ program summonSkeletaSteed(params)
     //PlaySoundEffect(who, 0x686);
 	var mount := summon(template, targ, who);
 
-	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duracao := 120 + 180 * AP_GetSkill(who, ARCANA)/ 100;
 
 	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
     if (dice_roll == 9)
         PlayObjectCenteredEffect(mount, 0x6D1D, 10, 20);
         sleep(1);
         PrintTextAbove(mount, "Teu chamado ressoou pelos planos, invocador ousado. Estou aqui para servir.");
-        duracao := Cint(AP_GetSkill(who, MAGICLORE));
+        duracao := Cint(AP_GetSkill(who, ARCANA));
     elseif (dice_roll == 1)
         PrintTextAbove(mount, "Beeh");
     endif

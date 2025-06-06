@@ -8,12 +8,11 @@ include ":gathering:settings";
 include ":gathering:lumberJack";
 include "include/client";
 include ":fls_lumberjacking:fls_lumberjack";
-include ":fls_core:fls_objtypes";
 include ":crafting:toolWear";
 include "include/facings";
 include "include/say";
+include "include/objtype";
 include ":charactercreation:habilidades";
-include ":fls_core:fls_objtypes";
 include ":destroyable:include/destroyItem";
 
 program skill_LumberJack(who,tool)

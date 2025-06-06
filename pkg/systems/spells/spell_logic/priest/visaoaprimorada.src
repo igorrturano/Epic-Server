@@ -28,7 +28,7 @@ program SpellScript(params)
 
 	SendSysMessageEx(targ, "Voce passa a enxergar melhor", SSM_INFO);
 
-	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
+	var magiclore_skill := AP_GetSkill(who, THEOLOGY);
     var duration := CInt(magiclore_skill * 5);
 
 	targ.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def

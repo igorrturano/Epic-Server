@@ -1,0 +1,61 @@
+use cfgfile;
+use uo;
+include ":attributes:attributes";
+include "include/say";
+include ":loot:magicLoot";
+
+program skill_armslore(who)
+
+	SendSysMessageEx(who, "Escolha um objeto para avaliar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if ((GetObjProperty(item, "magic") == 2) )
+		SendSysMessageEx(who, "Voce já identificou encantamentos nesse item.", SSM_FAIL);
+		return;
+	endif
+
+	if (!item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if ( !item.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Este não é um alvo valido.", SSM_FAIL);
+		return;
+	endif
+
+	var whos := GetObjProperty(item, "magicwho");
+	if (whos == error)
+		whos := array;
+	endif
+	if ( !(who.serial in whos))
+		PrintText(who, "*analisando um item*");
+		if (SkillCheck(who, ARCANA, -1) > 0)
+			whos.append(who.serial);	
+			SetObjProperty(item, "magicwho", whos);
+			if (GetObjProperty(item, "magic"))
+				if (GetObjProperty(item, "equip"))
+				ActivateMagicItem(item);
+				endif
+				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
+				var cfg := ReadConfigFile(":spells:config/allspells");
+				var elem := FindConfigElem(cfg, whos[1]);
+				var name := GetConfigString(elem, "Name");
+				if (name)
+					SetObjProperty(item, "swordmage", name);
+				endif
+				var backup := GetAmount(item);
+				SubtractAmount(item, backup-1);
+				SetName(item, item.desc);
+				AddAmount(item, backup-1);
+			else
+				SendSysMessageEx(who, "Este item não possui propriedades mágicas a serem ativadas.", SSM_INFO);
+			endif
+		else
+			SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
+		endif
+	else
+		SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
+	endif			
+
+endprogram 

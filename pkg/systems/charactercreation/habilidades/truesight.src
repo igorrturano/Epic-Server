@@ -7,7 +7,7 @@ include "include/say";
 include "include/dungeons";
 
 program truesight(who)
-    var range := cint(AP_GetSkill(who, MAGICLORE)/5);
+    var range := cint(AP_GetSkill(who, THEOLOGY)/5);
 
     if (!InDarkness(who))
         SendSysMessage(who, "Sua visao verdadeira funciona apenas na escuridao");
@@ -20,7 +20,7 @@ program truesight(who)
             char.hidden := 0;
             char.concealed := 0;
 
-            var duration := cint(AP_GetSkill(who, MAGICLORE)/10);
+            var duration := cint(AP_GetSkill(who, THEOLOGY)/10);
             PrintTextAbove(char, "*revelado*");
             PlayObjectCenteredEffect(char, 0x6D4B, 10, 20);
             TS_StartTimer(char, "paralyzePoison", duration);

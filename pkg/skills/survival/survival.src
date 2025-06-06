@@ -16,7 +16,7 @@ include ":itemutils:canAccess";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 
-include ":itemutils:objtype";
+include "include/objtype";
 
 include "include/sysEvent";
 include ":gumps:gumps";

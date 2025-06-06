@@ -9,30 +9,137 @@ include ":training:training";
 include "include/client";
 include ":combat:damage";
 
+// Função para verificar se um objtype de projétil é uma flecha
+function IsArrowProjectile(projectile_objtype)
+    case (projectile_objtype)
+        0x0F3F: // Flecha padrão
+            return 1;
+        default:
+            return 0;
+    endcase
+endfunction
+
+// Função para verificar se um objtype de projétil é um virote
+function IsBoltProjectile(projectile_objtype)
+    case (projectile_objtype)
+        0x1BFB: // Virote padrão
+            return 1;
+        default:
+            return 0;
+    endcase
+endfunction
+
+// Função para calcular pontos do acerto
+function AwardPoints(hit_text)
+    var hit_result := struct{
+        points := 0
+    };
+
+    case (hit_text)
+        "*Na mosca*":
+            hit_result.points := 5;
+        "*Acertou o anel interno vermelho*":
+            hit_result.points := 3;
+        "*Acertou o anel interno branco*":
+            hit_result.points := 2;
+        "*Acertou o anel externo vermelho*":
+            hit_result.points := 1;
+        default:  // Errou completamente
+            hit_result.points := 0;
+    endcase
+
+    return hit_result;
+endfunction
+
+
+// Função GetGraphicForHit usando valores hexadecimais diretamente
+function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
+    var is_sul_facing   := (butte_original_objtype == 0x100A);
+    var is_leste_facing := (butte_original_objtype == 0x100B);
+    var is_bolt         := IsBoltProjectile(munition_objtype);
+    var is_arrow        := IsArrowProjectile(munition_objtype);
+
+    if (!is_bolt && !is_arrow)
+        return error;
+    endif
+
+    if (is_sul_facing)
+        if (is_arrow)
+            case (hit_text)
+                "*Na mosca*":                       return 0xFA9F; // ARROW_SUL_BULLSEYE
+                "*Acertou o anel interno vermelho*": return 0xFAA0; // ARROW_SUL_INNER
+                "*Acertou o anel interno branco*":   return 0xFAA1; // ARROW_SUL_MIDDLE
+                "*Acertou o anel externo vermelho*": return 0xFAA2; // ARROW_SUL_OUTER
+                "*Errou o alvo*":                   return 0xFAA3; // ARROW_SUL_MISS
+                default:                            return error;
+            endcase
+        elseif (is_bolt)
+            case (hit_text)
+                "*Na mosca*":                       return 0xFAAC; // BOLT_SUL_BULLSEYE
+                "*Acertou o anel interno vermelho*": return 0xFAAD; // BOLT_SUL_INNER
+                "*Acertou o anel interno branco*":   return 0xFAAE; // BOLT_SUL_MIDDLE
+                "*Acertou o anel externo vermelho*": return 0xFAAF; // BOLT_SUL_OUTER
+                "*Errou o alvo*":                   return 0xFAB0; // BOLT_SUL_MISS
+                default:                            return error;
+            endcase
+        endif
+    elseif (is_leste_facing)
+        if (is_arrow)
+            case (hit_text)
+                "*Na mosca*":                       return 0xFAA5; // ARROW_LESTE_BULLSEYE
+                "*Acertou o anel interno vermelho*": return 0xFAA6; // ARROW_LESTE_INNER
+                "*Acertou o anel interno branco*":   return 0xFAA7; // ARROW_LESTE_MIDDLE
+                "*Acertou o anel externo vermelho*": return 0xFAA8; // ARROW_LESTE_OUTER
+                "*Errou o alvo*":                   return 0xFAA9; // ARROW_LESTE_MISS
+                default:                            return error;
+            endcase
+        elseif (is_bolt)
+            case (hit_text)
+                "*Na mosca*":                       return 0xFAB1; // BOLT_LESTE_BULLSEYE
+                "*Acertou o anel interno vermelho*": return 0xFAB2; // BOLT_LESTE_INNER
+                "*Acertou o anel interno branco*":   return 0xFAB3; // BOLT_LESTE_MIDDLE
+                "*Acertou o anel externo vermelho*": return 0xFAB4; // BOLT_LESTE_OUTER
+                "*Errou o alvo*":                   return 0xFAB5; // BOLT_LESTE_MISS
+                default:                            return error;
+            endcase
+        endif
+    endif
+    return error;
+endfunction
+
 program ArcheryButte(who, butte)
+	var original_objtype := butte.objtype;
+
 	if ( butte.container )
 		return 0;
-	elseif ( !ReserveItem(butte) )
+	endif
+    if ( !ReserveItem(butte) )
 		SendSysMessage(who, "O alvo esta sendo usado.");
 		return 0;
 	endif
 
 	var weapon := who.weapon;
+    if (!weapon)
+        SendSysMessage(who, "Voce precisa de uma arma."); // Mensagem mais genérica
+        return 0;
+    endif
 	var weapon_attrib := CS_GetWeaponInfo(weapon, "Attribute");
 	var weapon_anim := CInt(CS_GetWeaponInfo(weapon, "Anim"));
 	var miss_sound := CInt(CS_GetWeaponInfo(weapon, "MissSound"));
 	var hit_sound := CInt(CS_GetWeaponInfo(weapon, "Hitsound"));
 	var projectile_anim := CInt(CS_GetWeaponInfo(weapon, "ProjectileAnim"));
 	var projectile_type := CInt(CS_GetWeaponInfo(weapon, "ProjectileType"));
-	
+
 	if ( Distance(who, butte) == 1 )
-		RecoverAmmo(who, butte);
+		RecoverAmmo(who, butte, original_objtype);
 		return 0;
-	elseif ( !CS_GetWeaponInfo(weapon, "Projectile") )
+	endif
+    if ( !CS_GetWeaponInfo(weapon, "Projectile") )
 		SendSysMessage(who, "Voce precisa de uma arma de ataque a distancia.");
 		return 0;
-	elseif ( !TP_CheckRange(who, weapon, butte) )
-		return 0;
+	endif
+    if ( !TP_CheckRange(who, weapon, butte) )
+		return 0; // TP_CheckRange provavelmente já envia mensagem
 	endif
 
 	if ( !ConsumeSubstance(who.backpack, projectile_type, 1) )
@@ -40,88 +147,193 @@ program ArcheryButte(who, butte)
 		return 0;
 	endif
 
-	PerformAction(who, weapon_anim);
+	  start_Script(":combat:weaponHitScripts/AttackAnimation", {who});
 
 	Sleep(1);
 
 	var closest := butte;
+    // ... (lógica de obstrução, sem logs adicionais por enquanto para não poluir muito) ...
 	foreach point in ( GetCoordsInLine(who.x, who.y, butte.x, butte.y) )
 		var z_pos := who.z;
 		if ( z_pos < GetWorldHeight(point.x, point.y) )
 			z_pos := GetWorldHeight(point.x, point.y);
 		endif
-
 		foreach mobile in ( ListMobilesNearLocationEX(point.x, point.y, z_pos, 0, LISTEX_FLAG_NORMAL+LISTEX_FLAG_HIDDEN) )
 			if ( mobile != who )
 				closest := mobile;
 				break;
-				SleepMS(2);
 			endif
+            SleepMS(2);
 		endforeach
+        if (closest != butte) // Se já encontrou obstrução, para de checar a linha.
+            break;
+        endif
 		SleepMS(2);
 	endforeach
 
 	PlayMovingEffect(who, closest, projectile_anim, 10, 0, 0);
 
-	if ( SkillCheck(who, weapon_attrib, -1, 0, 0 ) > 0 )
+var effective_skill := AP_GetTrueSkill(who, weapon_attrib);
+
+    var initial_skill_check_result := SkillCheck(who, weapon_attrib, -1, 0, 0);
+
+	if ( initial_skill_check_result > 0 )
 		PlaySoundEffect(who, hit_sound);
-		
+
 		if ( closest.IsA(POLCLASS_MOBILE) )
 			PerformAction(closest, ANIM_HIT);
 			var projectile_damage := CS_GetWeaponInfo(weapon, "Damage");
 			ApplyDamageEX(closest, RandomDiceRoll(projectile_damage), DMG_PHYSICAL);
-		else
-			PrintTextAbove(butte, DetermineHit(who, weapon_attrib));
-			if ( RandomInt(2) )
-				Set_Critical(1);
-				var ammo := CInt(GetObjProperty(butte, "Ammo-"+projectile_type));
-				ammo := ammo + 1;
-				SetObjProperty(butte, "Ammo-"+projectile_type, ammo);
-				Set_Critical(0);
-			endif
+            if (butte.graphic != original_objtype) // Reseta o alvo de arqueria se um mob foi atingido
+                butte.graphic := original_objtype;
+            endif
+		else // Acertou o 'butte' (alvo de arqueria)
+			var hit_text := DetermineHit(who, weapon_attrib); // DetermineHit já tem seus próprios logs
+
+			PrintTextAbove(butte, hit_text);
+
+var hit_points := AwardPoints(hit_text);
+var color := 52;
+if (hit_text == "*Na mosca*")
+    color := 72;
+elseif (hit_text == "*Acertou o anel externo vermelho*")
+    color := 36;
+endif
+
+PrintTextAbove(butte, "+" + hit_points.points, _DEFAULT_TEXT_FONT, color, JOURNAL_PRINT_NAME);
+            
+var new_graphic := GetGraphicForHit(hit_text, original_objtype, projectile_type);
+
+if (new_graphic != error && new_graphic != 0)
+    butte.graphic := new_graphic;
+else
+    if (butte.graphic != original_objtype)
+        butte.graphic := original_objtype;
+    endif
+endif
+
+if (hit_text != "*Errou o alvo*" && (new_graphic != error && new_graphic != 0) && RandomInt(2) )
+    Set_Critical(1); // Usar Set_Critical/Unset_Critical se for POL099+ para proteger Get/SetObjProperty
+    var ammo := CInt(GetObjProperty(butte, "Ammo-"+projectile_type));
+    ammo := ammo + 1;
+    SetObjProperty(butte, "Ammo-"+projectile_type, ammo);
+    Set_Critical(0);
+else
+endif
 		endif
-	else
-		PlaySoundEffect(who, miss_sound);
+else
+    PlaySoundEffect(who, miss_sound);
+
+// Frases realistas de erro
+var realistic_fail_phrases := array{
+    "*A flecha bateu de lado no alvo e se quebrou ao meio!*",
+    "*Você errou! A flecha ricocheteou no suporte de madeira do alvo.*",
+    "*Péssimo tiro! A flecha atingiu a borda do alvo e caiu no chão.*",
+    "*A flecha desviou completamente, cravando-se no chão ao lado do alvo.*",
+    "*A ponta da flecha se dobrou ao atingir a borda do alvo.*",
+    "*Você falhou! A flecha passou raspando a lateral do alvo e se perdeu.*",
+    "*Erro crítico! A flecha se partiu ao bater no suporte de sustentação.*",
+    "*A pontaria falhou! A flecha atingiu o chão a metros do alvo.*",
+    "*Tiro completamente fora! A flecha atravessou o alvo e caiu no outro lado.*",
+    "*Sem sucesso! A flecha se cravou no chão, longe de qualquer área de pontuação.*",
+    "*Errou feio, a flecha voou longe!*"
+  };
+    var fail_text := realistic_fail_phrases[RandomInt(realistic_fail_phrases.size()) + 1];
+    PrintTextAbove(butte, fail_text);
+
+    var fail_points := AwardPoints(fail_text);
+    var fail_color := 36;
+    if (fail_text == "*Na mosca*")
+        fail_color := 72;
+    elseif (fail_text == "*Acertou o anel interno vermelho*" || 
+            fail_text == "*Acertou o anel interno branco*" || 
+            fail_text == "*Acertou o anel externo vermelho*")
+        fail_color := 52;
+    endif
+
+    if (fail_points.points == 0)
+        PrintTextAbove(butte, "+0", _DEFAULT_TEXT_FONT, 33, JOURNAL_PRINT_NAME);
+    else
+        PrintTextAbove(butte, "+" + fail_points.points, _DEFAULT_TEXT_FONT, fail_color, JOURNAL_PRINT_NAME);
+
+    if (butte.graphic != original_objtype)
+        butte.graphic := original_objtype;
+    endif
+	endif  // <-- Adicionei este endif para fechar o bloco condicional
 	endif
 
 	Sleep(3);
 endprogram
 
 function DetermineHit(who, weapon_attrib)
-	if ( SkillCheck(who, weapon_attrib, RandomDiceRoll("40d3"), 0, ADV_DISABLE) > 0 )
-		return "*Na mosca*";
-	elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("30d3"), 0, ADV_DISABLE) > 0 )
-		return "*Acertou o anel interno vermelho*";
-	elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("20d3"), 0, ADV_DISABLE) > 0 )
-		return "*Acertou o anel interno branco*";
-	elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("10d3"), 0, ADV_DISABLE) > 0 )
-		return "*Acertou o anel externo vermelho*";
-	else
-		return "*Errou o alvo*";
-	endif
+    var effective_skill := AP_GetTrueSkill(who, weapon_attrib);
+    var result_text := "";
+    var difficulty_roll_str := ""; 
+
+   // Frases realistas de erro
+    var realistic_fail_phrases := array{
+        "*A flecha bateu de lado no alvo e se quebrou ao meio!*",
+        "*Você errou! A flecha ricocheteou no suporte de madeira do alvo.*",
+        "*Péssimo tiro! A flecha atingiu a borda do alvo e caiu no chão.*",
+        "*A flecha desviou completamente, cravando-se no chão ao lado do alvo.*",
+        "*A ponta da flecha se dobrou ao atingir a borda do alvo.*",
+        "*Você falhou! A flecha passou raspando a lateral do alvo e se perdeu.*",
+        "*Erro crítico! A flecha se partiu ao bater no suporte de sustentação.*",
+        "*A pontaria falhou! A flecha atingiu o chão a metros do alvo.*",
+        "*Tiro completamente fora! A flecha atravessou o alvo e caiu no outro lado.*",
+        "*Sem sucesso! A flecha se cravou no chão, longe de qualquer área de pontuação.*",
+        "*Errou feio, a flecha voou longe!*"
+    };
+    // Usando SkillCheck diretamente com diferentes dificuldades
+    if ( SkillCheck(who, weapon_attrib, RandomDiceRoll("40d3"), 0, ADV_SKILL) > 0 )
+        result_text := "*Na mosca*";
+        difficulty_roll_str := "40d3";
+    elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("30d3"), 0, ADV_SKILL) > 0 )
+        result_text := "*Acertou o anel interno vermelho*";
+        difficulty_roll_str := "30d3";
+    elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("20d3"), 0, ADV_SKILL) > 0 )
+        result_text := "*Acertou o anel interno branco*";
+        difficulty_roll_str := "20d3";
+    elseif ( SkillCheck(who, weapon_attrib, RandomDiceRoll("10d3"), 0, ADV_SKILL) > 0 )
+        result_text := "*Acertou o anel externo vermelho*";
+        difficulty_roll_str := "10d3";
+    else
+        result_text := realistic_fail_phrases[RandomInt(realistic_fail_phrases.size()) + 1];
+        difficulty_roll_str := "N/A (todos falharam)";
+    endif
+
+    return result_text;
 endfunction
 
-function RecoverAmmo(who, butte)
+function RecoverAmmo(who, butte, original_objtype_param)
 	var prop_list := GetObjPropertyNames(butte);
+    var recovered_something := 0;
 
 	if ( prop_list.Size() > 0 )
 		foreach c_prop in ( prop_list )
 			if ( c_prop["Ammo-"] )
-				var ammo := c_prop;
-				ammo["Ammo-"] := "";
-
-				CreateItemInBackPack(who, CInt(ammo), CInt(GetObjProperty(butte, c_prop)));
+				var ammo_id_str := c_prop;
+				ammo_id_str["Ammo-"] := "";
+                var amount_recovered := CInt(GetObjProperty(butte, c_prop));
+				CreateItemInBackPack(who, CInt(ammo_id_str), amount_recovered);
 				SendSysMessage(who, "Voce recuperou municao.");
-
+                recovered_something := 1;
 				EraseObjProperty(butte, c_prop);
 			endif
 			SleepMS(2);
 		endforeach
+	endif
 
+    if (butte.graphic != original_objtype_param)
+        butte.graphic := original_objtype_param;
+        PrintTextAbove(butte, "*Limpo*");
+    endif
+
+	if (recovered_something)
 		return 1;
-	else
+    else
 		SendSysMessage(who, "Nao tem municao aqui.");
-
 		return 0;
 	endif
 endfunction
+

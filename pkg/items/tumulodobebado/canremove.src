@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+program canRemove(mobile, container, item, move_type)
+    // O espírito não permite que as oferendas sejam retiradas
+    if (mobile.cmdlevel > 0)
+        return 1;
+    endif
+    
+    SendSysMessage(mobile, "O espírito não permite que você retire as oferendas!");
+    return 0;
+endprogram

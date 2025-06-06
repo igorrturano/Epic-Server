@@ -39,14 +39,14 @@ program SpellScript(params)
 		endif
 
 
-		//TS_StartTimer(targ, "luzdivina", AP_GetSkill(who, MAGICLORE), level, who, 1); //5 min
+		//TS_StartTimer(targ, "luzdivina", AP_GetSkill(who, THEOLOGY), level, who, 1); //5 min
 
 		//var globodeluz:=CreateNpcFromTemplate( ":brainai:globodeluz", who.x, who.y, who.z);
 		var globodeluz :=   summon(template, who, who);
 		SetObjProperty(globodeluz,"hitsmod",1000);
 
 		var duracao:= 10;
-		//var duracao := GetSpellDuration(AP_GetSkill(who, MAGICLORE))/3;
+		//var duracao := GetSpellDuration(AP_GetSkill(who, THEOLOGY))/3;
 
 		foreach hostile in hostiles
 			if (GetObjProperty(hostile,"raca")==error)
@@ -58,7 +58,7 @@ program SpellScript(params)
 		PlaySoundEffect(who, SFX_SPELL_STRENGTH);
 		PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
 		SendSysMessageEx(targ, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
-		var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+		var level := (CInt(AP_GetSkill(who, THEOLOGY))/5)+5;
 		TS_StartTimer(globodeluz, "summon", duracao,level);
 
 

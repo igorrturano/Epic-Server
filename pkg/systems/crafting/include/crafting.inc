@@ -10,20 +10,13 @@ include ":gumps:include/gumps_ex";
 include ":combat:damage";
 include ":PacketConfig:settings";
 include "include/say";
+include "include/objtype";
 include ":tn:recipes";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":equipsys:resources";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
-
-const UOBJ_BOLT_START   := 0x0f95;
-const UOBJ_BOLT_END     := 0x0f9c;
-const UOBJ_SMALL_FORGE	:= 0xFB1;
-const UOBJ_ANVIL1	:= 0xFAF;
-const UOBJ_ANVIL2	:= 0xFB0;
-const UOBJ_FORGE_START	:= 0x197A;
-const UOBJ_FORGE_END	:= 0x19A9;
 
 const OUT_OF_MATERIALS := 1;
 
@@ -312,7 +305,7 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 					var recipes := ReadConfigFile(":alchemy:itemdesc");
 					var science := (recipes[objtype].science);
 					var tier := (recipes[objtype].tier);
-					var crafterskill := Cint((AP_GetSkill(who, ALCHEMY))/10);
+					var crafterskill := Cint((AP_GetSkill(who, SCIENCE))/10);
 					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
 					var bonus := (((crafterInt-50)/10)+(crafterskill));
 

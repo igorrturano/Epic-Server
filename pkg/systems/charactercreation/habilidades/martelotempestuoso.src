@@ -12,7 +12,6 @@ include ":combat:damage";
 program vacuodemana(params)
 	var attacker	:= params[1];
     var basedamage := CalculateRawDamage(attacker, attacker.weapon);
-	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
     var defender := Target(attacker);
     if (attacker.npctemplate)
@@ -28,7 +27,7 @@ program vacuodemana(params)
         return 1;
     endif
 
-    var dano_mlore := CInt(AP_GetSkill(attacker, MAGICLORE));
+    var dano_mlore := CInt(AP_GetSkill(attacker, THEOLOGY));
     var cfg := ReadConfigFile(":combat:itemdesc");
     var elem := FindConfigElem(cfg, attacker.weapon.objtype);
     
@@ -38,11 +37,11 @@ program vacuodemana(params)
     endif
     //PlayAttackAnimation(attacker); // animacao de overhead 2h 
     PerformAction(attacker, 12);
-    PlaymovingEffect(attacker, defender, 0x379f, 0, 40);
+    PlaymovingEffect(attacker, defender, EPIC_FX_HAMMER_THROW, 0, 40);
     sleep(2);
-    PlaymovingEffect(defender, attacker, 0x379f, 0, 40);
+    PlaymovingEffect(defender, attacker, EPIC_FX_HAMMER_THROW, 0, 40);
 
-    var duration := cint(AP_GetSkill(attacker, MAGICLORE)/10);
+    var duration := cint(AP_GetSkill(attacker, THEOLOGY)/10);
     TS_StartTimer(defender, "paralysis", duration);
 
 	var dmgList := dictionary;

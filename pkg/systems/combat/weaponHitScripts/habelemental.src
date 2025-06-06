@@ -38,13 +38,13 @@ program HitScript(params)
 	endif
 	if (GetCooldown(weapon, "ataqueespiritual")  )
 		EraseObjProperty(weapon, "#ataqueespiritual");
-		var manadmg := cint(AP_GetSkill(attacker, MAGICLORE)/3);
+		var manadmg := cint(AP_GetSkill(attacker, ARCANA)/3);
 		manadmg := ApplyChargesCalculation(weapon, manadmg, 3);
 		AP_ConsumeVital(defender, MANA, manadmg);
 	endif
 	if (GetCooldown(weapon, "ataquefadiga")  )
 		EraseObjProperty(weapon, "#ataquefadiga");
-		var stamdmg := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+		var stamdmg := cint(AP_GetSkill(attacker, ARCANA)/2);
 		stamdmg := ApplyChargesCalculation(weapon, stamdmg, 3);
 		AP_ConsumeVital(defender, STAMINA, stamdmg);
 	endif
@@ -54,7 +54,7 @@ program HitScript(params)
 
 		if (GetObjProperty(weapon, "prisaogelida") == 1)
 			EraseObjProperty(weapon, "prisaogelida");
-			var time := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+			var time := cint(AP_GetSkill(attacker, ARCANA)/2);
 			time := ApplyChargesCalculation(weapon, time, 4);
 			TS_StartTimer(defender, "prisaogelida", time);
 		else

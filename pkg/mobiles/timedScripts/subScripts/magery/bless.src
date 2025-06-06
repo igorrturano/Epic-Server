@@ -3,13 +3,11 @@ use uo;
 use os;
 
 include ":attributes:attributes";
+include "include/epicMageryUtils";
 
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	params := 0; // Not needed anymore.
-
-	params := 0; // Not needed anymore.
 	
 	if ( GetObjProperty(mobile, "#AgilityMod") )
 		// Condition is met if the mobile logs out and back in.
@@ -23,9 +21,7 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
-	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
-	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
+	var cast_points := epicWisdomPathBonus(attacker);
 	var final := Cint(cast_points + 5);
 	var points := final;
 

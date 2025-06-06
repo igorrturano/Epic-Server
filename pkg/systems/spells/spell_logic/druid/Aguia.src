@@ -24,11 +24,11 @@ program SpellScript(params)
   endif
 
   PlaySoundEffect(targ, SFX_SPELL_BLESS);
-  var amt := Cint( AP_GetSkill(who, MAGICLORE)*0.7);
+  var amt := Cint( AP_GetSkill(who, THEOLOGY)*0.7);
   if (amt < 20)
     amt := 20;
   endif
-  TS_StartTimer(targ, "gloria", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt); //dura de 40 a 200 seg e aumenta de 20 a 100%.
+  TS_StartTimer(targ, "gloria", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), amt); //dura de 40 a 200 seg e aumenta de 20 a 100%.
   SendSysMessageEx(targ, "Voce tem a precisão de uma águia.", SSM_INFO);
 
   return 1;

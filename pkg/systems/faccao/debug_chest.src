@@ -1,5 +1,6 @@
 use uo;
 use os;
+use guilds;
 
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
@@ -45,8 +46,7 @@ program debug_chest(who)
     // Verificar a facção do baú
     var chest_faction := GetFactionOfChest(chest);
     SendSysMessage(who, "Facção do baú: " + chest_faction);
-    
-    // Verificar seus acessos
+      // Verificar seus acessos
     var can_access := CanAccessChest(who, chest);
     if (can_access)
         SendSysMessage(who, "Você TEM permissão para acessar este baú.");

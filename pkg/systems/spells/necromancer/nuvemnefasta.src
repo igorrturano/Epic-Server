@@ -14,7 +14,7 @@ program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 
-    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var mlore := cint(AP_GetSkill(who, ARCANA)/20);
     var dist := Distance(who, targ);
     var dist_allowed := distanceAllowedForSpells(who, mlore, VELKYN);
 
@@ -54,7 +54,7 @@ program SpellScript(params)
 	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 2, targ.z , 14624, 1 , targ.realm));
 	endif
 	Corromper(who, 21, 0);
-	var duration := cint(AP_GetSkill(who, MAGICLORE)/20);
+	var duration := cint(AP_GetSkill(who, ARCANA)/20);
 
 	if (TemHabilidade(who, "Valdruk"))
 		duration := Cint(duration * 1.2);
@@ -65,7 +65,7 @@ program SpellScript(params)
 		item.name := "Nuvem Nefasta";
 		item.color := 563;
 		item.setDuration( duration );
-		var lvl :=  cint(AP_GetSkill(who, MAGICLORE)/20);
+		var lvl :=  cint(AP_GetSkill(who, ARCANA)/20);
 		if (lvl < 1 )
 			lvl := 1;
 		endif

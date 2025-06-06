@@ -57,11 +57,11 @@ program SpellScript(params)
 	targ.graphic := graphic;
 	sleepms(200);
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
-	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 10;
+	var amt := Cint(AP_GetSkill(who, ARCANA)*0.5);
+	var time := Cint(AP_GetSkill(who, ARCANA)/10) + 10;
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, ARCANA)/2.5))) // Muito mais Difícil de resistir
 		time := time/2;
 	endif
 

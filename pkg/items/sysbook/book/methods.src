@@ -53,6 +53,8 @@ use cfgfile;
 
 include ":datafile:datafile";
 
+var readonly_cache := dictionary{};
+
 program Install()
 	return 1;
 endprogram
@@ -66,9 +68,30 @@ endfunction
 //++++++++++++++++++++++++++++
 
 exported function IsWritable(book)
-	if ( GetInfo(book, "ReadOnly") )
+    var book_key := CStr(book.serial);
+    
+    // CACHE: Verifica primeiro no cache local (solução definitiva)
+    if (readonly_cache.exists(book_key))
+        var cached_value := readonly_cache[book_key];
+        if (cached_value == 1)
+            return 0;
+        else
+            return 1;
+        endif
+    endif
+    
+    
+    // Se não está no cache, usa o método original
+	var ro_flag := GetInfo(book, "ReadOnly");
+	if ( ro_flag == 1 )
+        // Adiciona ao cache para próximas consultas
+        readonly_cache[book_key] := 1;
 		return 0;
 	else
+        // Adiciona ao cache para próximas consultas
+        if (ro_flag == 0)
+            readonly_cache[book_key] := 0;
+        endif
 		return 1;
 	endif
 endfunction
@@ -181,7 +204,15 @@ exported function ReadOnly(book, mode)
 		mode := 1;
 	endif
 
-	return SetInfo(book, "ReadOnly", CInt(mode));
+    var book_key := CStr(book.serial);
+    
+    // Salva no datafile (mantém a funcionalidade original)
+	var result := SetInfo(book, "ReadOnly", CInt(mode));
+    
+    // CACHE: Sempre salva no cache local para garantir acesso imediato
+    readonly_cache[book_key] := mode;
+    
+    return result;
 endfunction
 
 exported function ExtractInfo(book)
@@ -227,43 +258,59 @@ endfunction
 // itemdesc.cfg entry for the book.
 
 function GetInfo(book, prop_name)
-	var prop_value;
+    var prop_value;
+    var key := Hex(book.serial);
 
-	// First we check for a datafile entry.
-	// We do create the datafile if it doesnt exist.
-	// However, the elem is not created if it doesnt exist
-	// because were only reading in this function and not writing.
-	//var book_index := GetObjProperty(book, "bookindex");
-	//if (!book_index)
-	//	book_index := book.serial;
-	//	setobjproperty(book, "bookindex", book_index);
-	//endif
+    var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
+    var book_elem := DFFindElement(book_data_file, key, DF_NO_CREATE);
 
-	var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
-	var book_elem := DFFindElement(book_data_file, Hex(book.serial), DF_NO_CREATE);
-	prop_value := book_elem.GetProp(prop_name);
-	if ( prop_value )
-		return prop_value;
-	endif
+    if (book_elem && !book_elem.errortext)
+        prop_value := book_elem.GetProp(prop_name);
+        if ( prop_value != error )
+            return prop_value;
+        endif
+    else
+        
+        // SOLUÇÃO: Se não encontrou o elemento, força reload do datafile
+        if (prop_name == "ReadOnly")
+            
+            var datafile_name := ":sysbook:books";
+            UnloadDataFile(datafile_name);
+            sleepms(10);
+            
+            // Tenta novamente após reload
+            book_data_file := DFOpenDataFile(datafile_name, DF_NO_CREATE);
+            if (book_data_file && !book_data_file.errortext)
+                book_elem := DFFindElement(book_data_file, key, DF_NO_CREATE);
+                if (book_elem && !book_elem.errortext)
+                    prop_value := book_elem.GetProp(prop_name);
+                    if ( prop_value != error )
+                        return prop_value;
+                    endif
+                endif
+            endif
+            
+        endif
+    endif
 
-	//If we got here, then there was no datafile entry for
-	//the property passed. So at this point we check the book
-	//for a cprop.
-	prop_value := GetObjProperty(book, prop_name);
-	if ( prop_value )
-		return prop_value;
-	endif
+    // CProp fallback
+    prop_value := GetObjProperty(book, prop_name);
+    if ( prop_value != error )
+        return prop_value;
+    endif
 
-	//If we got this far.. then lets fall back on the itemdesc.cfg
-	//Note its read in as :*: which reads in every itemdesc.cfg
-	var cfg := ReadConfigFile(":*:itemdesc");
-	cfg := cfg[book.objtype];
-	prop_value := GetConfigString(cfg, prop_name);
-	if ( prop_value )
-		return prop_value;
-	endif
+    // ItemDesc fallback
+    var cfg_file := ReadConfigFile(":*:itemdesc");
+    var item_cfg := cfg_file[book.objtype];
+    if (item_cfg)
+        prop_value := GetConfigString(item_cfg, prop_name);
+        if ( prop_value != error )
+            return prop_value;
+        endif
+    else
+    endif
 
-	return 0;
+    return 0;
 endfunction
 
 // *SetInfo(book, prop_name, prop_value)
@@ -277,5 +324,31 @@ endfunction
 function SetInfo(book, prop_name, prop_value)
 	var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
 	var book_elem := DFFindElement(book_data_file, Hex(book.serial), DF_CREATE);
-	return book_elem.SetProp(CStr(prop_name), prop_value);
+    
+    if (!book_elem || book_elem.errortext)
+        return 0;
+    endif
+    
+	var setResult := book_elem.SetProp(CStr(prop_name), prop_value);
+    
+    // SOLUÇÃO: Forçar sincronização do datafile
+    if (setResult && prop_name == "ReadOnly")
+        
+        // Método 1: Unload/Reload do datafile
+        var datafile_name := ":sysbook:books";
+        UnloadDataFile(datafile_name);
+        sleepms(10); // Pequena pausa para garantir que foi descarregado
+        
+        // Teste: tentar ler imediatamente para forçar reload
+        var test_df := DFOpenDataFile(datafile_name, DF_NO_CREATE);
+        if (test_df && !test_df.errortext)
+            var test_elem := DFFindElement(test_df, Hex(book.serial), DF_NO_CREATE);
+            if (test_elem && !test_elem.errortext)
+                var test_value := test_elem.GetProp(CStr(prop_name));
+            endif
+        endif
+        
+    endif
+    
+	return setResult;
 endfunction

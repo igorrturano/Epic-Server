@@ -15,12 +15,12 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	var targets := array;
-	var duration := +cint(AP_GetSkill(who, MAGICLORE));
+	var duration := +cint(AP_GetSkill(who, ARCANA));
 	if (duration < 20)
 		duration := 20;
 	endif
 
-	var range := Cint(AP_GetSKill(who, MAGICLORE)/20) + 2;
+	var range := Cint(AP_GetSKill(who, ARCANA)/20) + 2;
 	foreach mob in (ListMobilesNearLocation( targ.x, targ.y, targ.z, range, who.realm ))
 		if (mob.serial != who.serial)
 			if (!(mob in who.party.members)) 

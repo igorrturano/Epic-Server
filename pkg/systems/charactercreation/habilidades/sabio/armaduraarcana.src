@@ -9,7 +9,7 @@ include "include/say";
 include ":tn:cooldown";
 include "include/epicConstants";
 program doubleattack(who)
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+    var duration := Cint(AP_GetSkill(who, ARCANA) / 10);
 	SendSysMessageEx(who, "Sua armadura está em comunhão com os elementos.", SSM_INFO);
 
     var effect := grantBonus(who, duration);

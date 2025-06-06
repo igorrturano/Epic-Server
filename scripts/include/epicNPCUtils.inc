@@ -2,13 +2,12 @@ use util;
 
 include ":attributes:attributes";
 include ":equipsys:equipstats";
-include ":equipsys:props";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
 	var classe := npc_elem.Classe;
-	var tier := set_tier == "0" ? CInt(npc_elem.Tier) : CInt(set_tier);
+	var tier := set_tier == "0" ? CInt(mob.getTier()) : CInt(set_tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
@@ -30,9 +29,9 @@ function customizeNpc(mob, set_tier := "0")
 
 	if (classe == SABIO)
 		AP_SetTrueSkill(mob, MAGERY, mob_skill);
-		AP_SetTrueSkill(mob, MAGICLORE, mob_skill);
+		AP_SetTrueSkill(mob, ARCANA, mob_skill);
 		skill_combat := MAGERY;
-		skill_support := MAGICLORE;
+		skill_support := ARCANA;
 	elseif(classe == LADINO || mob.isSpider())
 		AP_SetTrueSkill(mob, SNEAK, mob_skill);
 		AP_SetTrueSkill(mob, AWARENESS, mob_skill);
@@ -104,7 +103,7 @@ function HasPlayerNear(who)
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)
-	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY );
+	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY, realm );
 	foreach mob in mobs
 		if ( !mob.cmdlevel && !mob.concealed ) //se for player e priv de player
 			return 1;
@@ -131,6 +130,13 @@ enum TIERS
 	T3 := "T3",
 	T4 := "T4",
 	T5 := "T5",
+endenum
+
+enum ELEMDAMAGES
+	DAMAGE_NONE := "DAMAGE_NONE",
+	DAMAGE_LOW := "DAMAGE_LOW",
+	DAMAGE_MID := "DAMAGE_MID",
+	DAMAGE_HIGH := "DAMAGE_HIGH"
 endenum
 
 /**
@@ -282,6 +288,46 @@ function getNPCResists(npc)
 	return stats;
 endfunction
 
+function getNPCElemDamages(npc)
+	var elem := NPC_GetNPCConfig(npc);
+	var elemElementalDamages := GetConfigString(elem, "EpicElemDamage");
+
+	if (elemElementalDamages == error)
+		return error{"errortext" := "NPC doesnt have the new elemental damages defined!"};
+	endif
+
+	elemElementalDamages := SplitWords(elemElementalDamages);
+	var damages := struct;
+
+	foreach damage in elemElementalDamages
+		case (damage.Upper())
+			DAMAGE_LOW: damage := getElementalDamageByTier(DAMAGE_LOW); break;
+			DAMAGE_MID: damage := getElementalDamageByTier(DAMAGE_MID); break;
+			DAMAGE_HIGH: damage := getElementalDamageByTier(DAMAGE_HIGH); break;
+		endcase
+	endforeach
+
+	damages.+FireDamage := elemElementalDamages[1];
+	damages.+ColdDamage := elemElementalDamages[2];
+	damages.+PoisonDamage := elemElementalDamages[3];
+	damages.+EnergyDamage := elemElementalDamages[4];
+
+	return damages;
+endfunction
+
+function getElementalDamageByTier(tier)
+	case (tier.Upper())
+		DAMAGE_LOW:
+			return 1;
+		DAMAGE_MID:
+			return 3;
+		DAMAGE_HIGH:
+			return 5;
+
+		default: return error{ "errortext" := "Value not found for this Elemental Tier!"};
+	endcase
+endfunction
+
 function getPropNPCAttackType(npc)
 	var prop := npc.GetProp("atributos");
 	if (!prop) prop := struct; endif
@@ -384,8 +430,7 @@ endfunction
 
 function getNpcResist()
    // Get NPC configuration for spell difficulty
-   var npc_elem := NPC_GetNPCConfig(me);
-   var tier := CInt(npc_elem.Tier);
+   var tier := me.getTier();
    if (!tier)
       tier := 1;
    endif

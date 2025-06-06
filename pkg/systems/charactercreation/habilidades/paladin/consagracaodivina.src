@@ -1,0 +1,141 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":attributes:attributes";
+
+const GUMPID_PALADINSPELL := 0x00001D;
+
+program consagracaodivina(who)
+    if (GetObjProperty(who, "#Casting"))
+        SendSysMessageEx(who, "Você não pode abrir o menu de magias agora.", SSM_FAIL);
+        return 0;
+    endif
+    
+    var theology_skill := CInt(AP_GetSkill(who, "Theology"));
+    var max_circle := theology_skill / 20;
+    
+    if (max_circle < 1)
+        max_circle := 1; // Always allow at least circle 1
+    endif
+    
+    PaladinSpellsGump(who, max_circle);
+endprogram
+
+function PaladinSpellsGump(who, max_circle)
+    var gump := GFCreateGump();
+    var cfg := ReadConfigFile(":spells:config/paladinspells");
+    var spell_list := array{};
+
+    // Check if they have Campeao Divino
+    var has_campeao := TemHabilidade(who, "Campeao Divino");
+    
+    // Collect spells up to max_circle
+    foreach spell_id in (GetConfigIntKeys(cfg))
+        var spell_elem := FindConfigElem(cfg, spell_id);
+        var circle := CInt(spell_elem.Circle);
+
+        // Only show Voar if they have Campeao Divino
+        if (spell_elem.Name == "Voar")
+            if (has_campeao)
+                spell_list.append(spell_id);
+            endif
+            continue;
+        endif
+        
+        if (circle <= max_circle)
+            spell_list.append(spell_id);
+        endif
+        sleepms(2);
+    endforeach
+
+    var size := spell_list.size();
+    if (size >= 1)
+        size := size * 26;
+        // Add extra space for circle headers
+        var circles := dictionary{};
+        foreach spell_id in spell_list
+            var spell_elem := FindConfigElem(cfg, spell_id);
+            var circle := CInt(spell_elem.Circle);
+            circles[circle] := 1;
+        endforeach
+        // Add 26 pixels of height for each circle header
+        size += circles.keys().size() * 26;
+    else
+        size := 0;
+    endif
+    
+    GFSetId(gump, GUMPID_PALADINSPELL);
+    GFClosable(gump, 1);
+    GFResizePic(gump, 10, 26, 9390, 276, 100+size);
+    GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666 >Magias Divinas", 0, 0); // shadow
+    GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666 >Magias Divinas", 0, 0);
+    GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#FFFFFF >Magias Divinas", 0, 0);
+    GFGumpPic(gump, 41, 84, 1469);
+    
+    var y := 90;
+    var current_circle := -1;
+    
+    foreach spell_id in spell_list
+        var spell := FindConfigElem(cfg, spell_id);
+        var circle := CInt(spell.Circle);
+        
+        // Display circle header when changing circles, but only if it's a new circle
+        if (circle != current_circle && ((circle > 0) || (current_circle == -1 && circle == 0)))
+            current_circle := circle;
+            var circle_name := "Cantrips";
+            if (circle > 0)
+                circle_name := "Círculo " + circle;
+            endif
+            
+            GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFD700><B>" + circle_name + "</B>", 1, 0);
+            y += 26;
+        endif
+        
+        var spellname := spell.name;
+        var desc := spell.desc;
+        
+        GFAddButton(gump, 30, y+2, 2117, 2118, GF_CLOSE_BTN, spell_id);
+        GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFFFFF>" + spellname, 1, 0);
+        GFToolTipText(gump, "<BASEFONT color=#FFD700>" + spellname + "<br><BASEFONT color=#FFFFFF>" + desc);
+        
+        y += 26;
+        sleepms(2);
+    endforeach
+    
+    var input := GFSendGump(who, gump);
+    if (input[0] > 0)
+        // Get the spell info directly from config
+        var elem := FindConfigElem(cfg, input[0]);
+        if (!elem)
+            SendSysMessageEx(who, "Erro ao encontrar informações da magia.", SSM_FAIL);
+            return 0;
+        endif
+        
+        // Build a complete spellinfo struct with ALL necessary fields
+        var spellinfo := struct{
+            "id" := elem.SpellId,
+            "name" := elem.Name,
+            "desc" := elem.Desc,
+            "alvo" := elem.Target,
+            "powerwords" := elem.PowerWords,
+            "script" := elem.SpellScript,
+            "type" := elem.Type,
+            "circle" := CInt(elem.Circle),
+            "difficulty" := CInt(elem.Difficulty),
+            "mana" := CInt(elem.Mana),
+            "delay" := CInt(elem.Delay),
+            "cycles" := CInt(elem.Cycles),
+            "range" := elem.Range
+        };
+        
+        var script := Start_Script(":spells:cast_spell", {who, spellinfo});
+        if (script.errortext)
+            SendSysMessage(who, "Erro ao iniciar a magia -> " + script.errortext);
+            return 0;
+        endif
+    endif
+    
+    return 1;
+endfunction

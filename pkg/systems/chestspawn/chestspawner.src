@@ -14,7 +14,7 @@ program spawntesthet(item)
 	sleep(20+RandomInt(20)+RandomInt(80));
 
 	//RESETA OS BAUS CRIADOS
-	foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng)*2,  item.realm)
+	foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng),  item.realm)
 		if(GetObjProperty(thing,"level"))
 			if (thing.serial != item.serial) // se nao for o spawnpoint (pq ele tbm tem a prop level)
 				DestroyItem(thing);
@@ -53,9 +53,9 @@ function makeChests(item, frq, amt, rng)
 	var current, newamt;
 	var lvl := GetObjProperty(item, "level");
 	var lootname;
-	var class := cstr(GetObjProperty(item, "class"));
+	var classe := cstr(GetObjProperty(item, "class"));
 	var race  := cstr(GetObjProperty(item, "race"));
-	lootname := race+class+"Chest"+lvl;
+	lootname := race+classe+"Chest"+lvl;
 	var chests;
 	while(item)
 		CleanArray(item);
@@ -104,7 +104,7 @@ function makeChests(item, frq, amt, rng)
 endfunction
 
 function ClearChests(spawn)
-
+ 
 	var chests := GetObjProperty(item, "chests");
 	foreach chestserial in chests
 			var item := SystemFindObjectBySerial(chestserial);

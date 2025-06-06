@@ -192,17 +192,17 @@ endprogram
 function Adjustment(who, type)
   if(type == "Mage")
     SetAttributeBaseValue( who, MAGERY, 1000 );
-    SetAttributeBaseValue( who, MAGICLORE, 1000 );
-    //SetAttributeBaseValue( who, MAGICLORE, 900 );
+    SetAttributeBaseValue( who, ARCANA, 1000 );
+    //SetAttributeBaseValue( who, ARCANA, 900 );
     SetAttributeBaseValue( who, TACTICS, 700 );
     SetAttributeBaseValue( who, WRESTLING, 700 );
   elseif(type == "Thief")
     SetAttributeBaseValue( who, WRESTLING, 1000 );
-    SetAttributeBaseValue( who, MAGICLORE, 600 );
+    SetAttributeBaseValue( who, ARCANA, 600 );
     SetAttributeBaseValue( who, TACTICS, 800 );
     //SetAttributeBaseValue( who, ANATOMY, 600 );
   elseif(type == "Paladin")
-    SetAttributeBaseValue( who, MAGICLORE, 800 );
+    SetAttributeBaseValue( who, ARCANA, 800 );
     SetAttributeBaseValue( who, TACTICS, 1000 );
     SetAttributeBaseValue( who, WRESTLING, 1000 );
     //SetAttributeBaseValue( who, WRESTLING, 1000 );
@@ -211,7 +211,7 @@ function Adjustment(who, type)
     //SetAttributeBaseValue( who, ANATOMY, 1000 );
     SetAttributeBaseValue( who, STRENGTH, 800 );
   elseif((type == "Fighter1") || (type == "Fighter2") || (type == "Fighter3") || (type == "Fighter4"))
-    SetAttributeBaseValue( who, MAGICLORE, 600 );
+    SetAttributeBaseValue( who, ARCANA, 600 );
     SetAttributeBaseValue( who, TACTICS, 900 );
     SetAttributeBaseValue( who, WRESTLING, 900 );
     //SetAttributeBaseValue( who, WRESTLING, 900 );

@@ -33,7 +33,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var healed := cint(AP_GetSkill(who, MAGICLORE)/2);
+	var healed := cint(AP_GetSkill(who, THEOLOGY)/2);
 	if (healed < 20)
 		healed := 20;
 	endif

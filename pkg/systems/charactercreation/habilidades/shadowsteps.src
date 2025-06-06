@@ -8,11 +8,12 @@ include ":timedScripts:timedScripts";
 include ":tn:cooldown";
 include "include/packets";
 include "include/epicCombatUtils";
+include "include/epicMageryUtils";
 
 program sanctuary(params)
 	var who := params[1];
 
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 5);
+    var duration := Cint(HandleSpellSkill(who) / 5);
     if (TemHabilidade(who, "Caminhar nas sombras"))
         PlaySoundEffect(who, 0x688);
         if(InDarkness(who))
@@ -22,7 +23,7 @@ program sanctuary(params)
 
     if (TemHabilidade(who, "Avanco Sombrio"))
         if(InDarkness(who))
-            var duration_shadowdancer := cint(AP_GetSkill(who, MAGICLORE)/2.5);
+            var duration_shadowdancer := cint(HandleSpellSkill(who)/2.5);
             Setcooldown(who, "shadowdancer_blur", duration_shadowdancer);
             TS_StartTimer(who, "spectralform", duration_shadowdancer);
         endif

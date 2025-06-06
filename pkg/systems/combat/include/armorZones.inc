@@ -118,3 +118,8 @@ function CS_GetArmorZone(equip)
 	
 	return zones;
 endfunction
+
+function GetArmorToHit(defender)
+	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
+	return armor[RandomIntMinMax(1, Len(armor))];
+endfunction
