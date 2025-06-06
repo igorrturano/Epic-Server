@@ -285,7 +285,7 @@ function LogPermissionCheck(who, container, action, result)
                        $" para baú {container.serial} (Facção: {chest_faction})";
     
     // Log centralizado
-    Log(log_level, "permissao", log_message);
+    FactionLog(log_level, "permissao", log_message);
     
     // Registro simplificado em datafile
     LogPermissionToDatafile(who, container, action, result, 

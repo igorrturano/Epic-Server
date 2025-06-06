@@ -26,7 +26,8 @@ function EnableLogging(enable := 1)
     return LOGGING_ENABLED;
 endfunction
 
-function Log(level, category, message)
+// RENOMEADA DE 'Log' PARA 'FactionLog' PARA EVITAR CONFLITO
+function FactionLog(level, category, message)
     // Se logging está desativado globalmente, retornar imediatamente
     if (!LOGGING_ENABLED)
         return 0;
@@ -66,23 +67,23 @@ endfunction
 
 // Funções de conveniência para cada nível
 function LogCritical(category, message)
-    return Log(LOG_CRITICAL, category, message);
+    return FactionLog(LOG_CRITICAL, category, message);
 endfunction
 
 function LogError(category, message)
-    return Log(LOG_ERROR, category, message);
+    return FactionLog(LOG_ERROR, category, message);
 endfunction
 
 function LogWarning(category, message)
-    return Log(LOG_WARNING, category, message);
+    return FactionLog(LOG_WARNING, category, message);
 endfunction
 
 function LogInfo(category, message)
-    return Log(LOG_INFO, category, message);
+    return FactionLog(LOG_INFO, category, message);
 endfunction
 
 function LogDebug(category, message)
-    return Log(LOG_DEBUG, category, message);
+    return FactionLog(LOG_DEBUG, category, message);
 endfunction
 
 // Função para escrever em arquivo

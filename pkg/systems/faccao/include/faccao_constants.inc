@@ -134,3 +134,13 @@ const ITEM_UNIQUE_ID_PROP := "unique_id";
 const ITEM_TYPE_BAU := "BAU";
 const ITEM_TYPE_MESA := "MESA";
 const ITEM_TYPE_MURAL := "MURAL";
+
+// =======================================
+// Constantes para sistema de caravanas
+// =======================================
+
+// Tempo (em segundos) entre verificações de pagamento de caravanas
+const CARAVAN_CYCLE_WAIT := 60; // 1 minuto
+
+// Duração (em segundos) de um contrato de caravana para testes
+const CARAVAN_TEST_DURATION_SECONDS := 300; // 5 minutos para testes rápidos

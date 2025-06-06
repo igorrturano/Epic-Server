@@ -2,7 +2,8 @@ use uo;
 use os;
 use cfgfile;
 use util;
-use guilds; 
+use guilds;
+use guilds;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
@@ -18,7 +19,6 @@ include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";
  include ":faccao:include/datafile_helpers";
-include ":containers:storageAreas";
 
 
 
@@ -33,6 +33,13 @@ const BOTAO_DOACOES := 4;
 const BOTAO_CONSTRUCOES := 5;
 const BOTAO_GUERRA := 6;
 
+const BKGND_BLUESLAB_GUMPMAPA := 9200;  // Ou use BKGND_BLUESLAB se for o mesmo
+const BKGND_STONESLAB_GUMPMAPA := 3500; // Ou use BKGND_STONESLAB se for o mesmo
+const BTN_CONTRATAR_GFX_NORMAL := 0x93A; // Exemplo de Gump ID para botão verde/azul
+const BTN_CONTRATAR_GFX_OVER := 0x93A;   // Gump ID para mouse over (pode ser o mesmo ou diferente)
+const BTN_CANCELAR_GFX_NORMAL := 0x938;  // Exemplo de Gump ID para botão vermelho
+const BTN_CANCELAR_GFX_OVER := 0x938;    // Gump ID para mouse over
+
 const MENU_INTRO := 0;
 const MENU_REINO := 1;
 const MENU_LEIS := 2;
@@ -42,13 +49,17 @@ const MENU_CONSTRUCOES := 5;
 const MENU_GUERRA := 6;
 var button_states := array{0, 0, 0, 0, 0, 0};
 
+
+// Controle de depuração global - 0 = desligado, 1 = ligado
+var DEBUG_GESTAO := 0;
+
 program gestao_use(who, item)
     if (!who || !item)
         SendSysMessage(who, "Erro: who ou item é nulo");
         return 0;
     endif
 
-    if (!CanAccessGestao(who))
+      if (!CanAccessGestao(who, item))
         SendSysMessage(who, "Você não tem permissão para acessar a interface de gestão");
         return 0;
     endif
@@ -60,29 +71,28 @@ program gestao_use(who, item)
 endprogram
 
 function CanAccessGestao(who, item)
-    // Check if player is faction leader or has GM access
-    if (who.cmdlevel >= 3)
-        return 1; // GM access
-    endif
-    
-    return IsGuildLeader(who);
+    // Usar sistema de permissões centralizado
+    return CheckPermission(who, item, "access");
 endfunction
 
 function ShowKingdomManagementGump(who, item)
     var cur_menu := MENU_DOACOES;
-    var input;
+    var continuar := 1;
 
-    repeat
+    while(continuar)
         var gump := CreateKingdomManagementGump(who, cur_menu, item);
-        input := GFSendGump(who, gump);
+        var input := GFSendGump(who, gump);
         
         if (input[0] >= 700 && input[0] < 900)
+            // Ações de território sempre finalizam o loop
             ProcessarAcaoTerritorio(who, input[0], item);
-            continue; // Continuar no loop do gump
+            return; // Saída imediata e definitiva
         elseif (input[0] != 0)
             cur_menu := AtualizarEstadoMenu(input[0]);
+        else
+            continuar := 0; // Sair do loop se o usuário fechar o gump
         endif
-    until (input[0] == 0);
+    endwhile
 endfunction
 
 function CreateKingdomManagementGump(who, cur_menu, item)
@@ -90,7 +100,7 @@ function CreateKingdomManagementGump(who, cur_menu, item)
     
     case (cur_menu)
         MENU_REINO:
-            ReinoGump(gump);
+            ReinoGump(gump, item);  // Passar o item (mesa de gestão) para ReinoGump
         MENU_LEIS:
             LeisGump(gump);
         MENU_FACCOES:
@@ -132,9 +142,9 @@ function AdicionarMoldura(byref gump)
         struct{ x := 444, y := 60, width := 8, height := 502, gump := 39928 }
     };
 
-    foreach moldura in molduras
-        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-    endforeach
+foreach moldura in (molduras)
+    GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+endforeach
 endfunction
 
 function AdicionarBotoesNavegacao(byref gump)
@@ -181,14 +191,48 @@ function AtualizarEstadoMenu(input)
     endcase
 endfunction
 
-function ReinoGump(byref gump)
-    // Manter a parte visual existente
+function ReinoGump(byref gump, item)
+    LogDebug("territorio", "Iniciando ReinoGump");
+
     GFResizePic(gump, 38, 60, 40267, 400, 502);
-    GFTextMid(gump, 490, 60, 263, 2100, "Gestão do Reino");
     
-    // Adicionar a visualização de territórios
-    var rect_df := OpenDataFile(":architect:areas");
+    // Obter a facção da mesa de gestão
+    var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+    
+    // Título personalizado com o nome da facção
+    var titulo := mesa_faction ? "Gestão de " + mesa_faction : "Gestão do Reino";
+    GFTextMid(gump, 490, 60, 263, 2100, titulo);
+    
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
+        // Criar lista de territórios visíveis baseados na mesa_faction
+        var territorios_visiveis := array{};
+        
+        foreach elem_name in (rect_df.keys())
+            // Usar TM_GetTerritoryInfo para obter informações de território
+            var territory_info := TM_GetTerritoryInfo(elem_name);
+            
+            // Verificar se o território existe
+            if (!territory_info)
+                continue;
+            endif
+            
+            // Obter o ID e facção do território
+           var territory_id := territory_info.id ? territory_info.id : "";
+            var faction := territory_info.faction;
+            
+            // Filtrar por facção
+            if (faction && faction != DEFAULT_FACTION && 
+                (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
+                territorios_visiveis.append(struct{
+                    "name" := elem_name,
+                    "id" := territory_id,
+                    "faction" := faction
+                });
+            endif
+            sleepms(2);
+        endforeach
+        
         // Criar um único background para a área de territórios
         GFResizePic(gump, 460, 100, 9350, 320, 300);
         
@@ -200,33 +244,41 @@ function ReinoGump(byref gump)
         var y := 140; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
         
-        foreach elem_name in (rect_df.keys())
-            var elem := rect_df.FindElement(elem_name);
-            var faction := elem.GetProp("Faction");
+foreach territorio in (territorios_visiveis)
+    // Usar diretamente a informação do TM_GetTerritoryInfo
+    var territory_info := TM_GetTerritoryInfo(territorio.id);
+    var is_capital := territory_info.is_capital;
+    
+    // Número do território
+    GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
+    
+    // Se for capital, adicionar coroa ou marcador especial
+    if (is_capital)
+        GFTextLine(gump, 485, y+5, 230, territorio.name + " [CAPITAL]");
+    else
+        GFTextLine(gump, 485, y+5, 53, territorio.name);
+    endif
             
-            // Se tiver uma facção controlando, mostrar na lista
-            if (faction && faction != "Selvagem")
-                // Número e nome do território (sem background adicional)
-                GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
-                GFTextLine(gump, 485, y+5, 53, elem_name);
-                
-                // Botões de informação e aliados
-                GFAddButton(gump, 693, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
-                GFAddButton(gump, 740, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
-                
-                y += 35; // Espaçamento entre territórios
-                territorios_mostrados += 1;
-                
-                // Limite para não sobrecarregar a interface
-                if (territorios_mostrados >= 10)
-                    break;
-                endif
+            // Botões de informação e aliados
+            GFAddButton(gump, 693, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
+            GFAddButton(gump, 740, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
+            
+            y += 35; // Espaçamento entre territórios
+            territorios_mostrados += 1;
+            
+            // Limite para não sobrecarregar a interface
+            if (territorios_mostrados >= 10)
+                break;
             endif
+            
             sleepms(2);
         endforeach
         
         if (territorios_mostrados == 0)
-            GFTextMid(gump, 460, 200, 150, 38, "Não há territórios controlados por facções.");
+            var msg := mesa_faction ? 
+                       "Não há territórios controlados por " + mesa_faction + "." :
+                       "Não há territórios controlados por facções.";
+            GFTextMid(gump, 540, 200, 150, 38, msg);
         endif
     else
         GFTextMid(gump, 620, 200, 150, 38, "Sistema de territórios indisponível.");
@@ -239,143 +291,194 @@ function ProcessarAcaoTerritorio(who, input, item)
     if (input >= 700 && input < 800)
         // Botão de visualizar mapa do território
         var territorio_idx := input - 700;
-        MostrarMapaTerritorio(who, territorio_idx);
+        MostrarMapaTerritorio(who, territorio_idx, item);
+        return 0; // Retornar 0 para continuar no gump
     elseif (input >= 800 && input < 900)
         // Botão de informações do território
         var territorio_idx := input - 800;
-        MostrarInformacoesTerritorio(who, territorio_idx, item);
+        var resultado := MostrarInformacoesTerritorio(who, territorio_idx, item);
+        return resultado; // Retornar o resultado da operação
     endif
+    
+    return 0; // Padrão: continuar no gump
 endfunction
 
-function MostrarMapaTerritorio(who, index)
-    var rect_df := OpenDataFile(":architect:areas");
-    if (!rect_df) 
-        return SendSysMessage(who, "Sistema de territórios indisponível.");
+function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao)
+    LogDebug("gestao_use_mapa_v3", "MostrarMapaTerritorio v3: Index Clicado=" + index_territorio_clicado_no_gump_anterior);
+
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        SendSysMessage(who, "Sistema de territórios indisponível.");
+        return 0;
     endif
-    
-    var territorios := array{};
-    foreach elem_name in (rect_df.keys())
-        var elem := rect_df.FindElement(elem_name);
-        if (elem.GetProp("Faction") && elem.GetProp("Faction") != "Selvagem")
-            territorios.append(elem_name);
+
+    var mesa_faction_name := GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP);
+    if (!mesa_faction_name)
+        SendSysMessage(who, "Erro: Não foi possível determinar a facção da mesa de gestão.");
+        return 0;
+    endif
+    LogDebug("gestao_use_mapa_v3", "Facção da Mesa: " + mesa_faction_name);
+
+    var guild_obj_mapa := FindGuild(FindGuildByName(mesa_faction_name));
+    if (!guild_obj_mapa)
+        SendSysMessage(who, "Erro crítico: Objeto da guilda não encontrado para " + mesa_faction_name);
+        return 0;
+    endif
+
+    // 1. Obter todos os territórios DA FACÇÃO da mesa e identificar a capital
+    var territorios_nao_capital_da_faccao := array{};
+    var capital_da_faccao_info := 0;
+
+    var todos_os_territorios_keys := rect_df.keys(); // Pega todas as chaves uma vez
+    foreach elem_key in todos_os_territorios_keys
+        var terr_info_loop := TM_GetTerritoryInfo(elem_key); // TM_GetTerritoryInfo já usa SafeFindElement
+        if (terr_info_loop && terr_info_loop.faction == mesa_faction_name)
+            if (terr_info_loop.id && TM_IsTerritoryCapital(terr_info_loop.id))
+                capital_da_faccao_info := terr_info_loop;
+            else
+                territorios_nao_capital_da_faccao.append(terr_info_loop);
+            endif
         endif
-        sleepms(2);
+        SleepMS(1); // Pequena pausa para evitar sobrecarga se houver muitos territórios
     endforeach
-    
-    // Verificar se o índice é válido
-    if (index < 0 || index >= territorios.size())
-        return SendSysMessage(who, "Território não encontrado. Índice: " + index + ", Total: " + territorios.size());
-    endif
-    
-    var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
-    var elem := rect_df.FindElement(territorio);
-    
-    // Mostrar as coordenadas no mapa e oferecer teleporte
-    var rect := elem.GetProp("Rect");
-    var coords := SplitWords(rect);
-    
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, 9200, 400, 300);
-    GFResizePic(gump, 15, 15, 9350, 370, 270);
-    
-    GFTextMid(gump, 20, 25, 370, 2100, "Mapa do Território: " + territorio);
-    var y := 60;
-    if (coords.size() >= 4)
-        var x1 := CInt(coords[1]);
-        var y1 := CInt(coords[2]);
-        var x2 := CInt(coords[3]);
-        var y2 := CInt(coords[4]);
-        GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
-        GFTextLine(gump, 110, y, 53, rect);
-        GFTextLine(gump, 30, y+20, 2100, "Facção: ");
-        GFTextLine(gump, 110, y+20, 53, elem.GetProp("Faction"));
-        
-        // Adicionar botão de teleporte para GMs
-        if (who.cmdlevel >= 3) 
-            GFAddButton(gump, 30, y+50, 2117, 2118, GF_CLOSE_BTN, 1);
-            GFTextLine(gump, 60, y+50, 53, "Teleportar para o território");
-        endif
-    endif
-    
-    GFAddButton(gump, 150, 250, 2128, 2129, GF_CLOSE_BTN, 0);
-    
-    var input := GFSendGump(who, gump);
-    
-    if (input[0] == 1 && who.cmdlevel >= 3)
-        // Teleportar GM para o território
-        var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
-        var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
-        var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
-        
-        GFTextLine(gump_mapa, 30, y_gump, 2100, "Realm: ");
-        GFTextLine(gump_mapa, 130, y_gump, 53, territory_info_selecionado.realm);
-        y_gump += 35; 
+
+    // Montar a lista final ordenada: capital primeiro
+    var todos_territorios_da_faccao_ordenados := array{};
+    if (capital_da_faccao_info)
+        todos_territorios_da_faccao_ordenados.append(capital_da_faccao_info);
+        LogDebug("gestao_use_mapa_v3", "Capital da facção '" + mesa_faction_name + "': " + capital_da_faccao_info.name + " (ID: " + capital_da_faccao_info.id + ")");
     else
-        GFTextLine(gump_mapa, 30, y_gump, 38, "Coordenadas do território não disponíveis.");
-        y_gump += 35;
-    endif; 
+        SendSysMessage(who, "Aviso: Sua facção não possui uma capital designada. As caravanas não podem ser gerenciadas efetivamente.");
+    endif
 
-    // =======================================================================
-    // ===== INÍCIO DO BLOCO DE CÓDIGO QUE VOCÊ FORNECEU (BOTÕES CARAVANA) =====
-    // =======================================================================
-    var pode_contratar_caravana := 0; // Condição geral para mostrar *qualquer* opção de caravana
-    if (mesa_faction && mesa_faction != KINGDOM_FACTION) 
-        if (TM_IsTerritoryCapital(territory_info_selecionado.id) && territory_info_selecionado.faction == mesa_faction)
-            pode_contratar_caravana := 1;
-        endif; 
-    endif; 
+    foreach terr_nao_capital_loop in territorios_nao_capital_da_faccao
+        todos_territorios_da_faccao_ordenados.append(terr_nao_capital_loop);
+    endforeach
 
-    // --- BOTÕES DE CARAVANA ---
-    var caravana_ativa_para_esta_capital := 0;
-    var guild_obj_mapa := 0; 
-    if (pode_contratar_caravana) // Só verifica status da caravana se as condições básicas para contratar são atendidas
-        var guild_id_mapa := FindGuildByName(mesa_faction);
-        if (guild_id_mapa)
-            guild_obj_mapa := FindGuild(guild_id_mapa);
-            if (guild_obj_mapa)
-                var active_caravan_capital_id := CStr(guild_obj_mapa.GetProp("active_caravan_to_capital"));
-                var caravan_until := CInt(guild_obj_mapa.GetProp("caravan_next_payment_due")); // Usar next_payment_due
-                if (active_caravan_capital_id == CStr(territory_info_selecionado.id) && caravan_until > polcore().systime)
-                    caravana_ativa_para_esta_capital := 1;
-                endif; // Fim if (active_caravan_capital_id == ... && caravan_until > ...)
-            endif; // Fim if (guild_obj_mapa)
-        endif; // Fim if (guild_id_mapa)
-    endif; // Fim if (pode_contratar_caravana) - Verificação do status da caravana
+    // Criação do Gump
+    var gump_mapa := GFCreateGump();
+    var gump_width := 550;
+    var num_territorios_listados := todos_territorios_da_faccao_ordenados.size();
+    var gump_height := 150 + (num_territorios_listados * 30); // Altura base + espaço por território
+    if (gump_height < 400) gump_height := 400; endif;
+    if (gump_height > 650) gump_height := 650; endif; // Limite máximo de altura
 
-    if (pode_contratar_caravana) 
-        if (caravana_ativa_para_esta_capital)
-            // Opção de Cancelar Contrato
-            GFAddButton(gump_mapa, 30, y_gump, 2117, 2118, GF_CLOSE_BTN, 2); // ID 2 para Cancelar
-            GFTextLine(gump_mapa, 60, y_gump, 38, "Cancelar Contrato da Caravana"); 
-            GFToolTipText(gump_mapa, "Cancela o contrato atual da caravana. Não haverá reembolso.");
-            y_gump += 30;
+    GFResizePic(gump_mapa, 0, 0, BKGND_BLUESLAB_GUMPMAPA, gump_width, gump_height);
+    GFResizePic(gump_mapa, 15, 15, BKGND_STONESLAB_GUMPMAPA, gump_width - 30, gump_height - 30);
+    GFTextMid(gump_mapa, 20, 25, gump_width - 40, 2100, "Gerenciar Caravanas para Facção: " + mesa_faction_name);
+
+    var y_gump := 65;
+
+    if (!capital_da_faccao_info)
+        GFTextLine(gump_mapa, 30, y_gump, 38, "Nenhuma capital designada. Contratos de caravana não disponíveis.");
+        y_gump += 20;
+    else
+        GFTextLine(gump_mapa, 30, y_gump, 1153, "Capital da Facção (Destino das Caravanas): " + capital_da_faccao_info.name);
+        y_gump += 25;
+    endif
+
+    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB_GUMPMAPA - 100, gump_width - 40, 2); // Linha divisória
+    y_gump += 15;
+
+    GFTextLine(gump_mapa, 30, y_gump, 1153, "Territórios de Origem da Facção (" + mesa_faction_name + "):");
+    y_gump += 25;
+
+    // IDs dos botões
+    var btn_id_contratar_base := 10;     // Ex: 11, 12, 13...
+    var btn_id_cancelar_base  := 1000;   // Ex: 1001, 1002, 1003...
+    var territorio_gump_list_index := 0; // Índice na lista do GUMP (1-based)
+
+    // Carregar contratos de caravana existentes para esta facção
+    var contratos_ativos_da_faccao := guild_obj_mapa.GetProp("caravan_contracts");
+    if (!contratos_ativos_da_faccao || TypeOf(contratos_ativos_da_faccao) != "Array")
+        contratos_ativos_da_faccao := array{};
+    endif
+    var contratos_dict_lookup := dictionary; // Para busca rápida por origin_territory_id
+    foreach contrato_existente_loop in contratos_ativos_da_faccao
+        if (contrato_existente_loop && contrato_existente_loop.origin_territory_id)
+            contratos_dict_lookup[CStr(contrato_existente_loop.origin_territory_id)] := contrato_existente_loop;
+        endif
+    endforeach
+
+    if (num_territorios_listados == 0)
+        GFTextLine(gump_mapa, 30, y_gump, 38, "Nenhum território encontrado para esta facção.");
+        y_gump += 20;
+    else
+        foreach terr_info_iter in todos_territorios_da_faccao_ordenados
+            territorio_gump_list_index += 1; // Este é o índice 1-based para os IDs dos botões
+            var nome_exib_iter := terr_info_iter.name;
+            var id_exib_origem_iter := CStr(terr_info_iter.id);
+            var cor_texto_nome_iter := 1153; // Cor padrão (azul claro)
+
+            // Posicionamento dos elementos na linha
+            var x_nome_iter := 30;
+            var x_status_iter := x_nome_iter + 220; // Espaço para o nome do território
+            var x_botao_iter  := x_status_iter + 140; // Espaço para o status
+
+            GFTextLine(gump_mapa, x_nome_iter, y_gump, cor_texto_nome_iter, territorio_gump_list_index + ". " + nome_exib_iter);
+
+            // Lógica para capital e territórios não-capital
+           if (capital_da_faccao_info && id_exib_origem_iter == CStr(capital_da_faccao_info.id))
+                GFTextLine(gump_mapa, x_status_iter, y_gump, 230, "[CAPITAL - Destino]"); // Cor amarela para capital
+            elseif (capital_da_faccao_info) // Só mostrar opções se houver capital e não for a própria capital
+                var contrato_deste_territorio := contratos_dict_lookup[id_exib_origem_iter];
+
+                if (contrato_deste_territorio && CInt(contrato_deste_territorio.next_payment_due) > polcore().systime)
+                    // Caravana ATIVA deste território
+                    GFTextLine(gump_mapa, x_status_iter, y_gump, 63, "Caravana ATIVA"); // Verde
+                    GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CANCELAR_GFX_NORMAL, BTN_CANCELAR_GFX_OVER, GF_CLOSE_BTN, btn_id_cancelar_base + territorio_gump_list_index);
+                    GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 63, "Cancelar");
+                else
+                    // Nenhuma caravana ativa DESTE território (ou contrato expirado)
+                    GFTextLine(gump_mapa, x_status_iter, y_gump, 38, "Caravana INATIVA"); // Vermelho
+                    GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CONTRATAR_GFX_NORMAL, BTN_CONTRATAR_GFX_OVER, GF_CLOSE_BTN, btn_id_contratar_base + territorio_gump_list_index);
+                    GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 53, "Contratar");
+                endif
+            endif
+            y_gump += 30; // Próxima linha
+        endforeach
+    endif
+
+    GFAddButton(gump_mapa, CInt(gump_width / 2) - 20, gump_height - 45, 2128, 2129, GF_CLOSE_BTN, 0); // Botão "OKAY"
+
+    var input_mapa := GFSendGump(who, gump_mapa);
+    var btn_clicado_gump := input_mapa[0];
+
+    // Processar clique no botão Contratar
+    if (btn_clicado_gump >= btn_id_contratar_base && btn_clicado_gump < btn_id_cancelar_base)
+        var idx_na_lista_ordenada := btn_clicado_gump - btn_id_contratar_base;
+        // Validar índice (arrays em eScript são 1-based)
+        if (idx_na_lista_ordenada > 0 && idx_na_lista_ordenada <= todos_territorios_da_faccao_ordenados.size())
+            var terr_para_contratar_info_clicado := todos_territorios_da_faccao_ordenados[idx_na_lista_ordenada];
+            if (capital_da_faccao_info && CStr(terr_para_contratar_info_clicado.id) != CStr(capital_da_faccao_info.id))
+                LogInfo("gestao_use_mapa_acao_v3", who.name + " tentando contratar caravana DO território: " + terr_para_contratar_info_clicado.name + " (ID: " + terr_para_contratar_info_clicado.id + ") PARA a capital " + capital_da_faccao_info.name);
+                ContratarCaravanaTerritorioIndividual(who, terr_para_contratar_info_clicado.id, capital_da_faccao_info.id, mesa_faction_name);
+            else
+                SendSysMessage(who, "Não é possível contratar uma caravana da própria capital.");
+            endif
         else
-            // Opção de Contratar
-            GFAddButton(gump_mapa, 30, y_gump, 2117, 2118, GF_CLOSE_BTN, 1); // ID 1 para Contratar
-            GFTextLine(gump_mapa, 60, y_gump, 63, "Contratar Caravana (50 Cobre a cada 3.5h)");
-            GFToolTipText(gump_mapa, "Contratando a caravana, os recursos de todos os territórios da sua facção virão diretamente para o baú desta capital. Custo: 50 moedas de cobre, renovável semanalmente do tesouro da facção.");
-            y_gump += 30;
-        endif; // Fim if (caravana_ativa_para_esta_capital)
-    endif; // Fim if (pode_contratar_caravana) - Adição dos botões
-    // --- FIM DOS BOTÕES DE CARAVANA ---
-    // =====================================================================
-    // ===== FIM DO BLOCO DE CÓDIGO QUE VOCÊ FORNECEU =====
-    // =====================================================================
-    
-    GFAddButton(gump_mapa, gump_width/2 - 20, gump_height - 45, 2128, 2129, GF_CLOSE_BTN, 0); 
-    
-    var input_mapa := GFSendGump(who, gump_mapa); 
-    
-    if (input_mapa[0] == 1 && pode_contratar_caravana && !caravana_ativa_para_esta_capital) 
-        SendSysMessage(who, "Iniciando processo de contratação de caravana para " + territorio_selecionado_nome + "...");
-        ContratarCaravanaParaCapital(who, territory_info_selecionado.id, mesa_faction);
-    elseif (input_mapa[0] == 2 && pode_contratar_caravana && caravana_ativa_para_esta_capital)
-        SendSysMessage(who, "Iniciando processo de cancelamento de contrato da caravana...");
-        CancelarContratoCaravana(who, territory_info_selecionado.id, mesa_faction); // Você precisará criar esta função
-    endif; 
+            LogWarning("gestao_use_mapa_v3", "Índice de botão de contratar inválido: " + idx_na_lista_ordenada);
+        endif
+        // Reabrir este mesmo Gump para refletir mudanças ou se o usuário quiser fazer outra ação
+        MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
 
-    return 1; 
-endfunction 
+    // Processar clique no botão Cancelar
+    elseif (btn_clicado_gump >= btn_id_cancelar_base)
+        var idx_na_lista_ordenada_cancel := btn_clicado_gump - btn_id_cancelar_base;
+        // Validar índice
+        if (idx_na_lista_ordenada_cancel > 0 && idx_na_lista_ordenada_cancel <= todos_territorios_da_faccao_ordenados.size())
+            var terr_para_cancelar_info_clicado := todos_territorios_da_faccao_ordenados[idx_na_lista_ordenada_cancel];
+            LogInfo("gestao_use_mapa_acao_v3", who.name + " tentando cancelar caravana DO território: " + terr_para_cancelar_info_clicado.name + " (ID: " + terr_para_cancelar_info_clicado.id + ")");
+            CancelarCaravanaTerritorioIndividual(who, terr_para_cancelar_info_clicado.id, mesa_faction_name);
+        else
+            LogWarning("gestao_use_mapa_v3", "Índice de botão de cancelar inválido: " + idx_na_lista_ordenada_cancel);
+        endif
+        // Reabrir este mesmo Gump
+        MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
+    endif
+    // Se o botão clicado foi 0 (OKAY) ou o gump foi fechado, a execução simplesmente termina aqui,
+    // e o controle volta para a função ShowKingdomManagementGump, que decidirá o que fazer (provavelmente reabrir o MENU_REINO).
+endfunction
 
 
 
@@ -437,19 +540,107 @@ function FaccoesGump(byref gump)
     // TODO: Adicionar conteúdo relacionado às facções
 endfunction
 
-function DoacoesGump(byref gump, item)
+function DoacoesGump(byref gump, item_mesa_gestao)
     GFResizePic(gump, 38, 60, 40260, 400, 502);
-    
-    // Obter o nome da facção para personalizar o título
-    var faction_name := GetObjProperty(item, "faction");
-    var titulo := faction_name ? "Recursos de " + faction_name : "Recursos do Reino";
-    
-    GFTextMid(gump, 490, 60, 263, 2100, titulo);
-    
-    // Passar o item para a função
-    var recursos := ObterRecursosBau(item);
-    CriarLayoutDoacoes(gump, recursos);
+
+    var faction_name_da_mesa := GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP);
+    var titulo_gump := "";
+    var recursos_a_exibir := CreateEmptyResourceStruct();
+    var log_message := ""; // Variável para construir a mensagem de log
+
+    if (faction_name_da_mesa && faction_name_da_mesa != KINGDOM_FACTION && faction_name_da_mesa != "Reino")
+        titulo_gump := "Recursos de " + faction_name_da_mesa;
+        var nome_elemento_debug := NormalizarNomeElementoFaccao(faction_name_da_mesa);
+        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Nome do Elemento Normalizado: '" + nome_elemento_debug + "'";
+        LogCritical("gestao_use_GUMP_DEBUG", log_message);
+
+        var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+        if (df_main)
+            if (nome_elemento_debug != error && nome_elemento_debug != "")
+                var elem_faccao := SafeFindElement(df_main, nome_elemento_debug);
+                if (elem_faccao)
+                    log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Elemento '" + nome_elemento_debug + "' ENCONTRADO no datafile.";
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                    var temp_recursos := GetElementProp(elem_faccao, "recursos");
+                    if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): temp_recursos É um struct. Moedas em temp_recursos: " + temp_recursos.moedas;
+                        LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                        recursos_a_exibir := temp_recursos;
+
+                        foreach key_padrao in (CreateEmptyResourceStruct().keys())
+                            if (!recursos_a_exibir.exists(key_padrao))
+                                recursos_a_exibir[key_padrao] := 0;
+                                log_message := "DoacoesGump: Chave '" + key_padrao + "' não existia em temp_recursos para '" + faction_name_da_mesa + "', adicionada com 0.";
+                                LogWarning("gestao_use", log_message);
+                            endif
+                        endforeach
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Moedas em recursos_a_exibir (APÓS PREENCHIMENTO): " + recursos_a_exibir.moedas;
+                        LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                    else
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Propriedade 'recursos' não é um struct ou não encontrada no elemento '" + nome_elemento_debug + "'. Tipo: " + TypeOf(temp_recursos) + ". Usando struct vazio.";
+                        LogWarning("gestao_use", log_message);
+                    endif
+                else
+                     log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Elemento '" + nome_elemento_debug + "' NÃO encontrado no datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+                     LogWarning("gestao_use", log_message);
+                endif
+            else
+                log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Falha ao normalizar nome de elemento ou nome resultou inválido: '" + nome_elemento_debug + "'.";
+                LogError("gestao_use", log_message);
+            endif
+        else
+             log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+             LogWarning("gestao_use", log_message);
+        endif
+    else // Lógica para o REINO
+        titulo_gump := "Recursos do Reino";
+        LogCritical("gestao_use_GUMP_DEBUG", "DoacoesGump (REINO): Carregando recursos do REINO.");
+        var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+        if (df_main)
+            var elem_reino := SafeFindElement(df_main, KINGDOM_RESOURCE_ELEM);
+            if (elem_reino)
+                log_message := "DoacoesGump (REINO): Elemento '" + KINGDOM_RESOURCE_ELEM + "' ENCONTRADO.";
+                LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                var temp_recursos := GetElementProp(elem_reino, "recursos");
+                if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                    log_message := "DoacoesGump (REINO): temp_recursos É um struct. Moedas em temp_recursos: " + temp_recursos.moedas;
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                    recursos_a_exibir := temp_recursos;
+                    foreach key_padrao in (CreateEmptyResourceStruct().keys())
+                        if (!recursos_a_exibir.exists(key_padrao))
+                            recursos_a_exibir[key_padrao] := 0;
+                            log_message := "DoacoesGump (REINO): Chave '" + key_padrao + "' não existia em temp_recursos, adicionada com 0.";
+                            LogWarning("gestao_use", log_message);
+                        endif
+                    endforeach
+                    log_message := "DoacoesGump (REINO): Moedas em recursos_a_exibir (APÓS PREENCHIMENTO): " + recursos_a_exibir.moedas;
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                else
+                    log_message := "DoacoesGump (REINO): Propriedade 'recursos' não é um struct ou não encontrada no elemento '" + KINGDOM_RESOURCE_ELEM + "'. Tipo: " + TypeOf(temp_recursos) + ". Usando struct vazio.";
+                    LogWarning("gestao_use", log_message);
+                endif
+            else
+                log_message := "DoacoesGump (REINO): Elemento '" + KINGDOM_RESOURCE_ELEM + "' NÃO encontrado.";
+                LogWarning("gestao_use", log_message);
+            endif
+        else
+            log_message := "DoacoesGump (REINO): Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+            LogWarning("gestao_use", log_message);
+        endif
+    endif
+
+    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354);
+    GFTextMid(gump, 466, 60, 263, 53, titulo_gump);
+
+    AdicionarQuadradosRecursos(gump);
+    AdicionarIconesItens(gump);
+    AdicionarTextosTiposDoacao(gump);
+
+    log_message := "DoacoesGump: VALOR DE MOEDAS EM recursos_a_exibir (ANTES DE AdicionarValoresRecursos): " + recursos_a_exibir.moedas + " (Facção: " + faction_name_da_mesa + ")";
+    LogCritical("gestao_use_GUMP_DEBUG", log_message);
+    AdicionarValoresRecursos(gump, recursos_a_exibir);
 endfunction
+
 
 function ConstrucoesGump(byref gump)
     GFResizePic(gump, 38, 60, 40263, 400, 502);
@@ -490,10 +681,10 @@ function AdicionarQuadradosRecursos(byref gump)
         struct{ "x" := 630, "y" := 456 }
     };
 
-    foreach quadrado in quadrados
-        GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
-        GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
-    endforeach
+foreach quadrado in (quadrados)
+    GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
+    GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
+endforeach
 endfunction
 
 function AdicionarIconesItens(byref gump)
@@ -508,170 +699,185 @@ function AdicionarIconesItens(byref gump)
         struct{ "x" := 652, "y" := 493, "grafico" := 41779 }
     };
 
-    foreach item in itens
-        GFTilePic(gump, item.x, item.y, item.grafico);
-    endforeach
+foreach item in (itens)
+    GFTilePic(gump, item.x, item.y, item.grafico);
+endforeach
 endfunction
 
 function AdicionarTextosTiposDoacao(byref gump)
     var tipos := array{
-        struct{ "x" := 498, "y" := 99, "texto" := "Comida" },
-        struct{ "x" := 660, "y" := 101, "texto" := "Moedas" },
-        struct{ "x" := 498, "y" := 219, "texto" := "Couro" },
-        struct{ "x" := 660, "y" := 220, "texto" := "Metais" },
-        struct{ "x" := 492, "y" := 338, "texto" := "Madeira" },
-        struct{ "x" := 660, "y" := 340, "texto" := "Tecidos" },
-        struct{ "x" := 498, "y" := 456, "texto" := "Pedras" },
-        struct{ "x" := 660, "y" := 459, "texto" := "Joias" }
+        struct{ "x" := 498, "y" := 99, "texto" := RESOURCE_TYPE_COMIDA },
+        struct{ "x" := 660, "y" := 101, "texto" := RESOURCE_TYPE_MOEDAS },
+        struct{ "x" := 498, "y" := 219, "texto" := RESOURCE_TYPE_COURO },
+        struct{ "x" := 660, "y" := 220, "texto" := RESOURCE_TYPE_METAL },
+        struct{ "x" := 492, "y" := 338, "texto" := RESOURCE_TYPE_MADEIRA },
+        struct{ "x" := 660, "y" := 340, "texto" := RESOURCE_TYPE_PANO },
+        struct{ "x" := 498, "y" := 456, "texto" := RESOURCE_TYPE_PEDRA },
+        struct{ "x" := 660, "y" := 459, "texto" := RESOURCE_TYPE_JOIAS }
     };
 
-    foreach tipo in tipos
-        GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
-    endforeach
+foreach tipo in (tipos)
+    GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
+endforeach
 endfunction
 
-function AdicionarValoresRecursos(byref gump, recursos)
-    if (!gump || !recursos)
+function AdicionarValoresRecursos(byref gump, byref recursos_struct)
+    if (!gump)
         return 0;
+    endif;
+
+    var log_message := ""; // Variável para construir a mensagem de log
+
+    if (!recursos_struct || TypeOf(recursos_struct) != "Struct")
+        log_message := "AdicionarValoresRecursos: struct de recursos inválido ou nulo (Tipo: " + TypeOf(recursos_struct) + "). Usando valores zerados.";
+        LogWarning("gestao_use", log_message);
+        recursos_struct := CreateEmptyResourceStruct();
     endif
+    log_message := "AdicionarValoresRecursos: MOEDAS recebidas no struct: " + recursos_struct.moedas;
+    LogCritical("gestao_use_GUMP_DEBUG", log_message);
 
-    var posicoes := array{
-        struct{ "x" := 503, "y" := 184, "valor" := recursos.comida },
-        struct{ "x" := 667, "y" := 184, "valor" := recursos.moedas },
-        struct{ "x" := 503, "y" := 304, "valor" := recursos.couro },
-        struct{ "x" := 667, "y" := 304, "valor" := recursos.metal },
-        struct{ "x" := 503, "y" := 424, "valor" := recursos.madeira },
-        struct{ "x" := 667, "y" := 424, "valor" := recursos.pano },
-        struct{ "x" := 503, "y" := 541, "valor" := recursos.pedras },
-        struct{ "x" := 667, "y" := 541, "valor" := recursos.joias }
-    };
 
-    foreach pos in posicoes
-        GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
+    var chaves_padrao := array{"comida", "moedas", "couro", "metal", "madeira", "pano", "pedras", "joias"};
+    foreach chave_esperada in chaves_padrao
+        if (!recursos_struct.exists(chave_esperada))
+            log_message := "AdicionarValoresRecursos: Chave '" + chave_esperada + "' faltando no struct de recursos. Adicionando com valor 0.";
+            LogWarning("gestao_use", log_message);
+            recursos_struct[chave_esperada] := 0;
+        endif
     endforeach
 
+    var posicoes := array{
+        struct{ "x" := 503, "y" := 184, "chave" := "comida" },
+        struct{ "x" := 667, "y" := 184, "chave" := "moedas" },
+        struct{ "x" := 503, "y" := 304, "chave" := "couro" },
+        struct{ "x" := 667, "y" := 304, "chave" := "metal" },
+        struct{ "x" := 503, "y" := 424, "chave" := "madeira" },
+        struct{ "x" := 667, "y" := 424, "chave" := "pano" },
+        struct{ "x" := 503, "y" := 541, "chave" := "pedras" },
+        struct{ "x" := 667, "y" := 541, "chave" := "joias" }
+    };
+
+    foreach pos in (posicoes)
+        var valor_numerico := CInt(recursos_struct[pos.chave]);
+        var valor_texto := CStr(valor_numerico);
+        if (pos.chave == "moedas")
+            log_message := "AdicionarValoresRecursos: MOEDAS a serem EXIBIDAS no GUMP: " + valor_texto;
+            LogCritical("gestao_use_GUMP_DEBUG", log_message);
+        endif
+        GFTextLine(gump, pos.x, pos.y, 53, valor_texto);
+    endforeach
     return 1;
 endfunction
 
-function ObterRecursosBau(item)
-    // Obter a facção associada ao item (mesa de gestão)
-    var faction_name := GetObjProperty(item, "faction");
-    
-    // Se é uma interface específica de facção, obter recursos apenas dessa facção
-    if (faction_name && faction_name != "Reino")
-        Print("DEBUG: Obtendo recursos para facção específica: " + faction_name);
-        
-        // Tentar encontrar o baú da facção pelo serial salvo na guilda
-        var guild := FindGuildByName(faction_name);
-        if (guild)
-            var guild_obj := FindGuild(guild);
-            if (guild_obj)
-                var chest_serial := guild_obj.GetProp("donation_chest");
-                if (chest_serial)
-                    var donation_chest := SystemFindObjectBySerial(chest_serial);
-                    if (donation_chest)
-                        Print("DEBUG: Baú encontrado pelo serial: " + donation_chest.serial);
-                        return ContarItensDoadosNoBau(donation_chest);
-                    endif
-                endif
-            endif
-        endif
-        
-        // Se não encontrar o baú diretamente, procurar pelos baús no mundo
-        Print("DEBUG: Procurando baú por nome/propriedade...");
-        foreach item_chest in EnumerateItemsInContainer(1)
-            if ((item_chest.objtype == 0xff11 || item_chest.objtype == 0xba63) && 
-                GetObjProperty(item_chest, "faction") == faction_name)
-                Print("DEBUG: Baú encontrado pelo nome/propriedade: " + item_chest.serial);
-                return ContarItensDoadosNoBau(item_chest);
-            endif
-        endforeach
-        
-        // Se não encontrou, retornar um struct vazio
-        Print("DEBUG: Nenhum baú encontrado para facção: " + faction_name);
-        return struct{
-            comida := 0,
-            moedas := 0,
-            couro := 0,
-            metal := 0,
-            madeira := 0,
-            pano := 0,
-            pedras := 0,
-            joias := 0
-        };
-    endif
-    
-    // Comportamento padrão - obter do datafile (para o "Reino" geral)
-    return ObterRecursosDoReino();
-endfunction
 
 
 function MostrarInformacoesTerritorio(who, index, item)
-    var rect_df := OpenDataFile(":architect:areas");
-    if (!rect_df) 
-        return SendSysMessage(who, "Sistema de territórios indisponível.");
+    if (DEBUG_GESTAO)
+        LogDebug("territorio", "Iniciando função MostrarInformacoesTerritorio, index: " + index);
     endif
     
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df) 
+        SendSysMessage(who, "Sistema de territórios indisponível.");
+        return 0;
+    endif
+    
+    // Obter a facção da mesa de gestão
+    var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+    
+    // Coletar territórios visíveis para esta facção
     var territorios := array{};
     foreach elem_name in (rect_df.keys())
-        var elem := rect_df.FindElement(elem_name);
-        // Verificar se as propriedades existem antes de acessá-las
-        var faction := elem.GetProp("Faction");
-        if (faction && faction != "Selvagem")
-            territorios.append(elem_name);
+        var elem := SafeFindElement(rect_df, elem_name);
+        
+        // Verificar propriedades de facção
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+        if (!faction)
+            faction := GetElementProp(elem, "Faction", ""); // Compatibilidade
+        endif
+        
+        // Obter ID do território
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+        if (!territory_id)
+            territory_id := elem_name; // Compatibilidade retroativa
+        endif
+        
+        // Filtrar por facção
+        if (faction && faction != DEFAULT_FACTION && 
+            (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
+            territorios.append(struct{
+                "name" := elem_name,
+                "id" := territory_id,
+                "elem" := elem
+            });
         endif
         sleepms(2);
     endforeach
     
-    // Verificar se o índice é válido
+    // Verificação de índice
     if (index < 0 || index >= territorios.size())
-        return SendSysMessage(who, "Território não encontrado. Índice: " + index + ", Total: " + territorios.size());
+        SendSysMessage(who, "Território não encontrado.");
+        return 0;
     endif
     
-    // Obter o nome do território e o elemento correspondente
-    var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
+    // Obter o território pelo índice (ajustado para indexação baseada em 1)
+    var territorio := territorios[index+1];
     if (!territorio)
-        return SendSysMessage(who, "Nome do território inválido.");
+        SendSysMessage(who, "Nome do território inválido.");
+        return 0;
     endif
     
-    var elem := rect_df.FindElement(territorio);
+    var elem := territorio.elem;
     if (!elem)
-        return SendSysMessage(who, "Elemento do território não encontrado: " + territorio);
+        SendSysMessage(who, "Elemento do território não encontrado.");
+        return 0;
     endif
     
-    // Obter as propriedades com verificação de null
-    var faction := elem.GetProp("Faction");
+    // Obter propriedades
+    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+    if (!faction)
+        faction := GetElementProp(elem, "Faction", "");
+    endif
     if (!faction) faction := "Desconhecida"; endif
     
-    var rect := elem.GetProp("Rect");
+    var rect := GetElementProp(elem, "Rect", "");
     if (!rect) rect := "Desconhecidas"; endif
     
-    var realm := elem.GetProp("Realm");
+    var realm := GetElementProp(elem, "Realm", "");
     if (!realm) realm := "Desconhecido"; endif
     
-    // Mostrar informações detalhadas e opções administrativas
+    // Mostrar interface de informações
+    MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm, item);
+    
+    return 1;
+endfunction
+
+function MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm, item)
+    // Criar gump
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, 9200, 400, 350);
     GFResizePic(gump, 15, 15, 9350, 370, 320);
     
-    // Mudança aqui: GFTextMid para GFTextLine para o título não ficar centralizado
     GFTextLine(gump, 30, 25, 2100, "Informações do Território:");
     
-    // Declaração da variável y antes de usá-la
     var y := 60;
-
+    
     GFTextLine(gump, 30, y, 2100, "Nome: ");
-    GFTextLine(gump, 85, y, 53, territorio);
+    GFTextLine(gump, 85, y, 53, territorio.name);
     y += 20;
-
+    
+    GFTextLine(gump, 30, y, 2100, "ID: ");
+    GFTextLine(gump, 85, y, 53, territorio.id);
+    y += 20;
+    
     GFTextLine(gump, 30, y, 2100, "Facção: ");
     GFTextLine(gump, 85, y, 53, faction);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
     GFTextLine(gump, 140, y, 53, rect);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "Realm: ");
     GFTextLine(gump, 85, y, 53, realm);
     y += 30;
@@ -688,142 +894,429 @@ function MostrarInformacoesTerritorio(who, index, item)
         
         GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 2);
         GFTextLine(gump, 50, y, 53, "Transferir para outra facção");
+        y += 25;
+        
+        // Nova opção para definir como capital
+        var is_capital := TM_IsTerritoryCapital(territorio.id);
+        var capital_text := is_capital ? "Remover status de Capital" : "Definir como Capital";
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 3);
+        GFTextLine(gump, 50, y, 53, capital_text);
     endif
     
     GFAddButton(gump, 150, 300, 2128, 2129, GF_CLOSE_BTN, 0);
     
     var input := GFSendGump(who, gump);
     
-    if (input[0] == 1)
+    // Processar escolha
+    ProcessarAcaoTerritorioGump(who, input[0], territorio, faction, item);
+endfunction
+function ProcessarAcaoTerritorioGump(who, choice, territorio, faction, item)
+    if (choice == 0)
+        return 0;
+    endif
+    
+    if (choice == 1)
         // Revogar controle
-        if (YesNo(who, "Tem certeza que deseja revogar o controle de " + faction + " sobre este território?"))
-            elem.SetProp("Faction", "Selvagem");
-            SendSysMessage(who, "Controle revogado com sucesso!");
+        RevogarTerritorioFaccao(who, territorio.elem, territorio, faction);
+    elseif (choice == 2)
+        // Transferir para outra facção
+        TransferirTerritorioFaccao(who, territorio.elem, territorio, faction);
+    elseif (choice == 3)
+        // Toggle status de capital - CORREÇÃO: passa faction como parâmetro
+        ToggleStatusCapital(who, territorio, item);
+    endif
+    
+    return 1;
+endfunction
+
+function ToggleStatusCapital(who, territorio, item)
+    var is_capital := TM_IsTerritoryCapital(territorio.id);
+    
+    // Notificar início da operação
+    SendSysMessage(who, "Processando alteração do status de capital...");
+    Sleep(1);
+    
+    if (is_capital)
+        // Remover status
+        var territory_elem := TM_FindTerritory(territorio.id);
+        if (territory_elem)
+            PrintTextAbove(item, "*Removendo status de capital*");
+            Sleep(1);
             
-            // Atualizar a lista de territórios da facção
-            var fac_guildid := FindGuildByName(faction);
-            if (fac_guildid)
-                var guild := FindGuild(fac_guildid);
-                if (guild)
-                    var territories := guild.GetProp("territories");
-                    if (territories)
-                        var territory_index := FindInArray(territories, territorio);
-                        if (territory_index > 0)
-                            territories.Erase(territory_index);
-                            guild.SetProp("territories", territories);
+            territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            Sleep(1); // Dar tempo para o sistema processar
+            
+            SendSysMessage(who, "Status de Capital removido do território.");
+            PrintTextAbove(item, "*Status de capital removido*");
+        endif
+    else
+        // Verificar se a mesa está associada a uma facção específica
+        var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+        if (!mesa_faction)
+            var territorio_faction := "";
+            if (territorio.elem)
+                territorio_faction := GetObjProperty(territorio.elem, TERRITORY_FACTION_PROP);
+                if (!territorio_faction)
+                    territorio_faction := GetObjProperty(territorio.elem, "Faction");
+                endif
+            endif
+            
+            mesa_faction := territorio_faction ? territorio_faction : "Desconhecida";
+        endif
+        
+        PrintTextAbove(item, "*Definindo como capital*");
+        Sleep(1);
+        
+        // Usar a função TM_SetTerritoryAsCapital
+        if (TM_SetTerritoryAsCapital(territorio.id, mesa_faction))
+            SendSysMessage(who, "Território definido como Capital de " + mesa_faction + "!");
+            PrintTextAbove(item, "*Agora é a capital de " + mesa_faction + "*");
+            Sleep(1);
+        else
+            SendSysMessage(who, "Falha ao definir território como Capital.");
+            PrintTextAbove(item, "*Falha ao definir como capital*");
+        endif
+    endif
+    
+    Sleep(1); // Pausa final para garantir que todas as mudanças foram processadas
+endfunction
+
+function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
+    LogDebug("territorio", "Iniciando transferência de território com proteção de transações");
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    LogDebug("territorio", "Datafile seriais: " + (seriais_df ? "Aberto com sucesso" : "FALHA ao abrir"));
+    
+    // NOVA VERIFICAÇÃO: Checar e remover status de capital antes da transferência
+    var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
+    
+    // Verificar se é uma capital
+    if (TM_IsTerritoryCapital(territorio_id))
+        LogDebug("territorio", "Território sendo transferido é uma capital. Removendo status...");
+        var territory_elem := TM_FindTerritory(territorio_id);
+        if (territory_elem)
+            // Remover a propriedade de capital
+            territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            LogInfo("territorio", "Status de capital removido do território " + territorio_id + " antes da transferência");
+            SendSysMessage(who, "Status de Capital removido do território que está sendo transferido.");
+            
+            // Adicionar Sleep para garantir que a remoção do status seja processada
+            Sleep(1);
+        endif
+    endif
+
+    // Garantir compatibilidade com ambos os formatos (usando o territorio_id já definido)
+    var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
+    
+    LogDebug("territorio", "Território identificado - ID: " + territorio_id + ", Nome: " + territorio_nome);
+    LogDebug("territorio", "Facção atual: " + old_faction);
+    // Montar lista de facções
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 300);
+    GFResizePic(gump, 15, 15, 9350, 370, 270);
+    
+    GFTextMid(gump, 15, 25, 380, 53, "Escolha a facção para transferir " + territorio_nome);
+    
+    var y := 60;
+    var guilds := ListGuilds();
+    LogDebug("territorio", "Total de guildas encontradas: " + guilds.size());
+    
+    var guild_names := array{};
+    var button_id := 1;
+    
+    foreach guild in (guilds)
+        var name := guild.GetProp(FACTION_PROP_NAME);
+        if (!name || name == error)
+            name := guild.GetProp("name");
+            if (!name || name == error)
+                name := guild.guildname;
+            endif
+        endif
+        
+        if (name && name != old_faction)
+            guild_names.append(name);
+            GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, button_id);
+            GFTextLine(gump, 60, y, 1153, name);
+            y += 25;
+            button_id += 1;
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Adicionar opção Cancelar
+    GFAddButton(gump, 30, y + 20, 2117, 2118, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 60, y + 20, 2100, "Cancelar");
+    
+    // Enviar gump e obter resposta
+    var input := GFSendGump(who, gump);
+    var choice := input[0];
+    
+    // Se clicou em Cancelar ou fechou o gump
+    if (choice == 0)
+        LogDebug("territorio", "Transferência cancelada pelo usuário");
+        return 0;
+    endif
+    
+    // Obter a facção selecionada pelo índice do botão
+    var new_faction := guild_names[choice];
+    LogDebug("territorio", "Facção selecionada: " + new_faction);
+    
+    if (YesNo(who, "Transferir controle de " + territorio_nome + " para " + new_faction + "?"))
+        LogDebug("territorio", "Transferência confirmada, iniciando processo");
+        
+        // Iniciar uma transação para operação atômica
+        var transaction_data := struct{
+            "territorio_id" := territorio_id,
+            "territorio_nome" := territorio_nome,
+            "faccao_original" := old_faction,
+            "faccao_nova" := new_faction
+        };
+        
+        // Capturar seriais dos objetos originais para possível reversão
+        var rect_df := SafeOpenDataFile(":architect:areas");
+        LogDebug("territorio", "Datafile areas: " + (rect_df ? "Aberto com sucesso" : "FALHA ao abrir"));
+        
+        if (seriais_df)
+            var territorios_seriais := seriais_df.GetProp("territorios");
+            LogDebug("territorio", "Seriais obtidos: " + (territorios_seriais ? "OK, tipo: " + TypeOf(territorios_seriais) : "NULL"));
+            
+            if (territorios_seriais && territorios_seriais[territorio_id])
+                transaction_data.seriais_originais := territorios_seriais[territorio_id];
+                LogDebug("territorio", "Seriais originais armazenados para possível reversão");
+            endif
+        endif
+        
+        // Iniciar a transação
+        var transaction_id := IniciarTransacao("transferir_territorio", transaction_data);
+        if (transaction_id == error)
+            LogError("territorio", "Falha ao iniciar transação: " + transaction_id);
+            SendSysMessage(who, "Erro ao iniciar transação. Transferência cancelada.");
+            return 0;
+        endif
+        LogDebug("territorio", "Transação iniciada com ID: " + transaction_id);
+        
+        SendSysMessage(who, "Processando: Iniciando transferência de território...");
+        
+        // ===== ETAPA 1: LIMPAR OS OBJETOS EXISTENTES =====
+        LogDebug("territorio", "ETAPA 1: Removendo objetos existentes");
+        SendSysMessage(who, "Processando: Removendo objetos existentes...");
+        
+        var territorio_realm := GetElementProp(elem, "Realm", "");
+        if (!territorio_realm)
+            territorio_realm := "britannia"; // Padrão se não encontrar
+        endif
+        LogDebug("territorio", "Realm do território: " + territorio_realm);
+        
+        var script := start_script(":faccao:limpa_territorio", array{territorio_id, old_faction, who, territorio_realm});
+        if (script == error)
+            LogError("territorio", "Falha ao iniciar script de limpeza: " + script);
+            SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
+            DesfazerTransacao(transaction_id);
+            return 0;
+        endif
+        LogDebug("territorio", "Script de limpeza iniciado: PID " + script);
+        
+        // Aguardar limpeza ser concluída
+        Sleep(3);
+        LogDebug("territorio", "Aguardando conclusão da limpeza...");
+        
+        // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
+        LogDebug("territorio", "ETAPA 2: Atualizando datafile de áreas");
+        LogDebug("territorio", "Chamando TM_SetTerritoryFaction(" + territorio_id + ", " + new_faction + ")");
+        var tm_result := TM_SetTerritoryFaction(territorio_id, new_faction);
+        LogDebug("territorio", "Resultado TM_SetTerritoryFaction: " + tm_result);
+        
+        // Também definimos as propriedades tradicionais para compatibilidade
+        LogDebug("territorio", "Atualizando propriedades diretas para compatibilidade");
+        var prop1 := SetElementProp(elem, "Faction", new_faction);
+        var prop2 := SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
+        LogDebug("territorio", "Resultados: Faction=" + prop1 + ", " + TERRITORY_FACTION_PROP + "=" + prop2);
+        
+        // ===== ETAPA 3: ATUALIZAR AS GUILDAS =====
+        LogDebug("territorio", "ETAPA 3: Atualizando guildas");
+        
+        // 3.1 Remover da facção antiga
+        LogDebug("territorio", "3.1: Removendo da facção antiga: " + old_faction);
+        var old_guild := FindGuildByName(old_faction);
+        LogDebug("territorio", "Resultado FindGuildByName para facção antiga: " + old_guild);
+        
+        if (old_guild)
+            var old_guild_obj := FindGuild(old_guild);
+            LogDebug("territorio", "Resultado FindGuild para facção antiga: " + (old_guild_obj ? "OK" : "FALHA"));
+            
+            if (old_guild_obj)
+                var old_territories := old_guild_obj.GetProp("territories");
+                LogDebug("territorio", "Territories da facção antiga: " + (old_territories ? "Encontrados" : "NULL") + 
+                         ", Tipo: " + TypeOf(old_territories));
+                
+                if (old_territories)
+                    // Criar nova lista sem o território removido
+                    var new_old_territories := array{};
+                    LogDebug("territorio", "Criando nova lista sem o território: " + territorio_id);
+                    
+                    foreach terr in old_territories
+                        LogDebug("territorio", "Verificando território da lista: " + terr);
+                        if (terr != territorio_id && terr != territorio_nome)
+                            new_old_territories.append(terr);
+                        else
+                            LogDebug("territorio", "Removendo território da lista: " + terr);
                         endif
-                    endif
+                        sleepms(2);
+                    endforeach
+                    
+                    LogDebug("territorio", "Lista atualizada criada, tamanho: " + new_old_territories.size());
+                    LogDebug("territorio", "Salvando territories na facção antiga");
+                    LogDebug("territorio", "Guild tipo: " + TypeOf(old_guild_obj) + 
+                             ", Territories tipo: " + TypeOf(new_old_territories) + 
+                             ", Size: " + new_old_territories.size());
+                    
+// Implementar retentativas para o SetProp da facção antiga
+var max_retries := 3;
+var retry_count := 0;
+var success := 0;
+
+while (!success && retry_count < max_retries)
+    retry_count += 1;
+    var set_result := old_guild_obj.SetProp("territories", new_old_territories);
+    
+    LogDebug("territorio", "Resultado SetProp para facção antiga, tentativa #" + retry_count + ": " + set_result);
+    
+    if (set_result != error)
+        success := 1;
+        LogDebug("territorio", "SetProp da facção antiga bem-sucedido na tentativa #" + retry_count);
+    else
+        LogWarning("territorio", "Falha no SetProp da facção antiga, tentativa #" + retry_count + ": " + set_result);
+        sleep(1); // Esperar um segundo antes de tentar novamente
+    endif
+endwhile
+
+if (!success)
+    LogError("territorio", "Todas as tentativas de SetProp da facção antiga falharam");
+    // Continuar mesmo com erro
+endif
                 endif
             endif
         endif
-    elseif (input[0] == 2)        // Transferir para outra facção
-        var guilds := ListGuilds();
-        var guild_opts := array{};
-          foreach guild in guilds
-            var name := guild.GetProp("name");
-            if (name)
-                guild_opts.append(name);
-            endif
-        endforeach
         
-        if (guild_opts.size() == 0)
-            SendSysMessage(who, "Nenhuma facção disponível para transferência.");
-            return 0;
-        endif
+        // 3.2 Adicionar à nova facção
+        LogDebug("territorio", "3.2: Adicionando à nova facção: " + new_faction);
+        var new_guild := FindGuildByName(new_faction);
+        LogDebug("territorio", "Resultado FindGuildByName para nova facção: " + new_guild);
         
-        var new_faction := RequestGump(who, "Escolha a nova facção:", guild_opts, "Cancelar");
-        if (!new_faction || new_faction == "Cancelar")
-            SendSysMessage(who, "Transferência cancelada.");
-            return 0;
-        endif
-        
-        if (YesNo(who, "Confirma a transferência de " + territorio + " para " + new_faction + "?"))
-            // Get territory information
-            var territorio_id := GetElementProp(elem, TERRITORY_ID_PROP, territorio);
-            var old_faction := GetElementProp(elem, TERRITORY_FACTION_PROP, faction);
-            var territorio_nome := territorio;
+        if (new_guild)
+            var new_guild_obj := FindGuild(new_guild);
+            LogDebug("territorio", "Resultado FindGuild para nova facção: " + (new_guild_obj ? "OK" : "FALHA"));
             
-            // Start transaction
-            var transaction_id := IniciarTransacao("transfer_territory_" + territorio_id);
-            if (!transaction_id)
-                SendSysMessage(who, "Erro ao iniciar transação. Tente novamente.");
+            if (new_guild_obj)
+                var new_territories := new_guild_obj.GetProp("territories");
+                LogDebug("territorio", "Territories da nova facção: " + (new_territories ? "Encontrados" : "NULL") + 
+                         ", Tipo: " + TypeOf(new_territories));
+                
+                if (!new_territories || new_territories == error)
+                    LogDebug("territorio", "Criando novo array para territories");
+                    new_territories := array{};
+                endif
+                
+                // Verificar se já existe
+                var exists := 0;
+                LogDebug("territorio", "Verificando se território já existe na lista");
+                
+                foreach terr in new_territories
+                    LogDebug("territorio", "Território existente: " + terr);
+                    if (terr == territorio_id || terr == territorio_nome)
+                        exists := 1;
+                        LogDebug("territorio", "Território já existe na lista");
+                        break;
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                if (!exists)
+                    LogDebug("territorio", "Adicionando território à lista: " + territorio_id);
+                    new_territories.append(territorio_id);
+                    LogDebug("territorio", "Novo tamanho da lista: " + new_territories.size());
+                endif
+                
+                LogDebug("territorio", "Salvando territories na nova facção");
+                LogDebug("territorio", "Guild tipo: " + TypeOf(new_guild_obj) + 
+                         ", Territories tipo: " + TypeOf(new_territories) + 
+                         ", Size: " + new_territories.size());
+                
+                var set_result := new_guild_obj.SetProp("territories", new_territories);
+                LogDebug("territorio", "Resultado SetProp para nova facção: " + set_result);
+                
+                if (set_result == error)
+                    LogError("territorio", "FALHA ao atualizar territories na nova facção: " + set_result);
+                    // Continuar mesmo com erro
+                endif
+            endif
+        endif
+        
+        // ===== ETAPA 4: CRIAR NOVOS OBJETOS PARA A NOVA FACÇÃO =====
+        LogDebug("territorio", "ETAPA 4: Criando novos objetos para a nova facção");
+        SendSysMessage(who, "Processando: Criando novos objetos para a facção...");
+        
+        // Obter coordenadas do território
+        var coords := SplitWords(GetElementProp(elem, "Rect", ""));
+        var realm := GetElementProp(elem, "Realm", "");
+        LogDebug("territorio", "Coordenadas: " + (coords ? coords : "NULL") + ", Realm: " + realm);
+        
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            // Calcular o centro do território
+            var center_x := CInt((x1 + x2) / 2);
+            var center_y := CInt((y1 + y2) / 2);
+            var center_z := GetMapInfo(center_x, center_y, realm).z;
+            LogDebug("territorio", "Centro calculado: " + center_x + "," + center_y + "," + center_z);
+            
+            // 4.1 Criar o baú
+            LogDebug("territorio", "4.1: Criando baú no centro do território");
+            var chest := CreateItemAtLocation(center_x, center_y, center_z, 0xFF11, 1, realm);
+            if (!chest)
+                LogError("territorio", "Falha ao criar baú");
+                DesfazerTransacao(transaction_id);
+                SendSysMessage(who, "Erro ao criar baú. Transferência revertida.");
                 return 0;
             endif
+            LogDebug("territorio", "Baú criado com sucesso, serial: " + chest.serial);
             
-            // Update territory faction
-            elem.SetProp("Faction", new_faction);
-            SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
+            chest.movable := 0;
+            SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
+            SetObjProperty(chest, "FactionName", new_faction);
+            SetObjProperty(chest, TERRITORY_ID_PROP, territorio_id);
             
-            // Update guild territories list
-            var old_guild_id := FindGuildByName(old_faction);
-            if (old_guild_id)
-                var old_guild := FindGuild(old_guild_id);
-                if (old_guild)
-                    var territories := old_guild.GetProp("territories");
-                    if (territories)
-                        var territory_index := FindInArray(territories, territorio_id);
-                        if (territory_index > 0)
-                            territories.Erase(territory_index);
-                            old_guild.SetProp("territories", territories);
-                        endif
-                    endif
-                endif
+            var chest_id := new_faction + "_" + territorio_id;
+            SetObjProperty(chest, CHEST_ID_PROP, chest_id);
+            LogDebug("territorio", "Propriedades do baú definidas, chest_id: " + chest_id);
+            
+            var nome_bau := "Baú de Doações de " + new_faction;
+            if (territorio_id)
+                nome_bau += " - " + territorio_id;
             endif
+            SetName(chest, nome_bau);
+            LogDebug("territorio", "Nome do baú definido: " + nome_bau);
             
-            var new_guild_id := FindGuildByName(new_faction);
-            if (new_guild_id)
-                var new_guild := FindGuild(new_guild_id);
-                if (new_guild)
-                    var territories := new_guild.GetProp("territories");
-                    if (!territories)
-                        territories := array{};
-                    endif
-                    territories.append(territorio_id);
-                    new_guild.SetProp("territories", territories);
-                endif
+            chest.usescript := ":faccao:baudoacao/use";
+            SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+            SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+            SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
+            SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+            LogDebug("territorio", "Scripts do baú configurados");
+            
+            // 4.2 Criar a mesa de gestão
+            LogDebug("territorio", "4.2: Criando mesa de gestão");
+            var table := CreateItemAtLocation(center_x+1, center_y, center_z, 0xFE5C, 1, realm);
+            if (!table)
+                LogError("territorio", "Falha ao criar mesa de gestão");
+                DesfazerTransacao(transaction_id);
+                DestroyItem(chest); // Limpar o baú criado
+                SendSysMessage(who, "Erro ao criar mesa de gestão. Transferência revertida.");
+                return 0;
             endif
-            
-            // Get coordinates for object creation
-            var rect := GetElementProp(elem, "Rect", "");
-            var coords := SplitWords(rect, " ");
-            if (coords.size() >= 4)
-                var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
-                var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
-                var center_z := 0;
-                var realm := GetElementProp(elem, "Realm", "britannia");
-                
-                // Create chest
-                LogDebug("territorio", "4.1: Criando baú de doações");
-                var chest := CreateItemAtLocation(center_x, center_y, center_z, 0xFF11, 1, realm);
-                if (!chest)
-                    LogError("territorio", "Falha ao criar baú");
-                    DesfazerTransacao(transaction_id);
-                    SendSysMessage(who, "Erro ao criar baú. Transferência revertida.");
-                    return 0;
-                endif
-                LogDebug("territorio", "Baú criado com sucesso, serial: " + chest.serial);
-                
-                chest.movable := 0;
-                SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
-                SetObjProperty(chest, "FactionName", new_faction);
-                SetObjProperty(chest, TERRITORY_ID_PROP, territorio_id);
-                
-                var chest_id := new_faction + "_" + territorio_id;
-                SetObjProperty(chest, CHEST_ID_PROP, chest_id);
-                LogDebug("territorio", "Propriedades do baú definidas, chest_id: " + chest_id);
-                
-                var nome_bau := "Baú de Doações de " + new_faction;
-                if (territorio_id)
-                    nome_bau += " - " + territorio_id;
-                endif
-                SetName(chest, nome_bau);
-                LogDebug("territorio", "Nome do baú definido: " + nome_bau);
-                
-                chest.usescript := ":faccao:baudoacao/use";
-                SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
-                SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
-                SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
-                SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+            LogDebug("territorio", "Mesa criada com sucesso, serial: " + table.serial);
             
             table.movable := 0;
             SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
@@ -1312,38 +1805,96 @@ function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
         LogDebug("CaravanaTerritories", "Falha no Check: Nenhum outro território além da capital encontrado.");
         return 0;
     endif
-    LogDebug("CaravanaTerritories", "Check de outros territórios passou. Outros territórios: " + other_territories_count);    // Lógica de custo KISS - débito direto do banco do jogador
+    LogDebug("CaravanaTerritories", "Check de outros territórios passou. Outros territórios: " + other_territories_count);
+
+    // Lógica de custo
     var custo_caravana := CInt(GetGlobalProperty("caravan_weekly_cost_setting")); // Pega de uma GProp, ou defina um valor fixo
     if (!custo_caravana || custo_caravana <=0 ) custo_caravana := 50; endif; // Fallback
 
-    // NOVO SISTEMA KISS: Debitar diretamente do banco do jogador
-    LogInfo("caravana", "Tentando debitar " + custo_caravana + " moedas de cobre do banco do jogador " + who.name + " para contratar caravana.");
-    
-    var debito_sucesso := debitoEmContaCaravan(who, custo_caravana);
-    if (!debito_sucesso)
-        SendSysMessage(who, "Não foi possível contratar a caravana. Verifique se você possui " + custo_caravana + " moedas de cobre em seu banco.");
-        LogWarning("caravana", "Débito falhou para jogador " + who.name + ". Necessário: " + custo_caravana + " cobre.");
-        return 0;
+    LogInfo("caravana", "Forçando atualização de recursos para facção '" + faction_name + "' antes de verificar custo da caravana.");
+    var updates_pending_dummy := dictionary{};
+    var process_result := ProcessarRecursosDeUmaFaccao(faction_name, updates_pending_dummy);
+    if (process_result)
+        LogInfo("caravana", "Atualização forçada de recursos para '" + faction_name + "' concluída com sucesso.");
+        SleepMS(500);
+    else
+        LogWarning("caravana", "Falha na atualização forçada de recursos para '" + faction_name + "'. Prosseguindo com a leitura atual do datafile.");
     endif
-    
-    LogInfo("caravana", "Débito de " + custo_caravana + " moedas de cobre realizado com sucesso do banco do jogador " + who.name);
+
+    // UnloadDataFile(KINGDOM_RESOURCE_DATAFILE); // Comentado - SafeOpenDataFile já lida com isso implicitamente ao reabrir
+    // SleepMS(100);
+    var df_recursos := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE); // Reabre para garantir dados frescos
+    var elem_faccao_nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
+
+    if (!df_recursos || elem_faccao_nome_normalizado == error)
+        SendSysMessage(who, "Erro ao acessar dados de recursos da facção (datafile).");
+        LogError("caravana", "Falha ao abrir datafile de recursos '" + KINGDOM_RESOURCE_DATAFILE + "' ou normalizar nome para '" + faction_name + "'.");
+        return 0;
+    endif;
+
+    var elem_faccao := SafeFindElement(df_recursos, elem_faccao_nome_normalizado);
+    if (!elem_faccao)
+        SendSysMessage(who, "Erro: Dados de recursos da facção não encontrados no datafile.");
+        LogError("caravana", "Elemento de facção '" + elem_faccao_nome_normalizado + "' não encontrado em '" + KINGDOM_RESOURCE_DATAFILE + "'");
+        return 0;
+    endif;
+
+    var recursos_faccao := GetElementProp(elem_faccao, "recursos", CreateEmptyResourceStruct());
+    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' Lidas do Datafile ANTES do débito: " + recursos_faccao.moedas);
+
+    if (recursos_faccao.moedas < custo_caravana)
+        SendSysMessage(who, "Sua facção não possui moedas suficientes (" + recursos_faccao.moedas + "/" + custo_caravana + ") para o custo inicial da caravana.");
+        LogWarning("caravana", "Fundos insuficientes para " + faction_name + ". Necessário: " + custo_caravana + ", Possui: " + recursos_faccao.moedas);
+        return 0;
+    endif;
+
+    recursos_faccao.moedas -= custo_caravana;
+    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' APÓS débito (ANTES de salvar): " + recursos_faccao.moedas);
+
+    var save_success := AtualizarDatafileRecursos(faction_name, recursos_faccao);
+    if (!save_success)
+         SendSysMessage(who, "Erro ao deduzir custo da caravana no datafile.");
+         LogError("caravana", "Falha ao salvar recursos de '" + faction_name + "' após deduzir custo.");
+         // Não reverter aqui, pois o estado do datafile é desconhecido. Melhor logar.
+         return 0;
+    endif;
+    // Para confirmar, podemos ler novamente (opcional para produção)
+    // var df_recursos_after_save := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+    // var elem_faccao_after_save := SafeFindElement(df_recursos_after_save, elem_faccao_nome_normalizado);
+    // var moedas_after_save_df := GetElementProp(elem_faccao_after_save, "recursos").moedas;
+    // LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' LIDAS do datafile APÓS AtualizarDatafileRecursos: " + moedas_after_save_df);
+
+    AtualizarPropriedadesGuildaRecursos(faction_name, recursos_faccao); // Atualiza CProp da guilda
 
     // Obter o objeto da guilda
     var guild_id_contrato := FindGuildByName(faction_name);
-    var guild_obj_contrato := guild_id_contrato ? FindGuild(guild_id_contrato) : 0;    if (!guild_obj_contrato)
+    var guild_obj_contrato := guild_id_contrato ? FindGuild(guild_id_contrato) : 0;
+
+    if (!guild_obj_contrato)
         SendSysMessage(who, "Erro crítico: Não foi possível encontrar o objeto da guilda para configurar a caravana.");
         LogError("caravana", "ContratarCaravana: Objeto da guilda não encontrado para " + faction_name + " APÓS débito do custo.");
-        // NOTA: O débito já foi feito no banco do jogador. Não há reversão automática.
-        // O jogador precisa contatar um GM se necessário.
-        SendSysMessage(who, "ATENÇÃO: O débito já foi realizado. Contate um administrador se necessário.");
+        // REVERTER CUSTO NO DATAFILE
+        recursos_faccao.moedas += custo_caravana;
+        LogCritical("caravana_custo", "REVERTENDO CUSTO para '" + faction_name + "' devido a falha em guild_obj. Moedas a serem salvas (revertidas): " + recursos_faccao.moedas);
+        if (AtualizarDatafileRecursos(faction_name, recursos_faccao))
+            LogInfo("caravana", "Custo da caravana revertido para " + faction_name + " no datafile devido à falha crítica na guilda.");
+        else
+            LogError("caravana", "FALHA CRÍTICA ao reverter custo para " + faction_name + " no datafile após falha crítica na guilda.");
+        endif;
         return 0;
-    endif;    // Definir CProps da caravana na guilda
+    endif;
+
+    // Definir CProps da caravana na guilda
     var current_time_system := polcore().systime;
-    guild_obj_contrato.SetProp("active_caravan_to_capital", CStr(capital_territory_id));    guild_obj_contrato.SetProp("caravan_contract_start_time", current_time_system);    var caravan_expiry_time := current_time_system + 60; // 60 segundos para debug
+    guild_obj_contrato.SetProp("active_caravan_to_capital", CStr(capital_territory_id));
+    guild_obj_contrato.SetProp("caravan_contract_start_time", current_time_system);
+    var caravan_expiry_time := current_time_system + (7 * 24 * 3600); // 7 dias
     guild_obj_contrato.SetProp("caravan_next_payment_due", caravan_expiry_time);
-    guild_obj_contrato.SetProp("caravan_weekly_cost", custo_caravana);    var capital_display_name := territory_info_capital ? territory_info_capital.name : capital_territory_id;
-    SendSysMessage(who, "Caravana contratada com sucesso para " + capital_display_name + "! Custo inicial de " + custo_caravana + " moedas deduzido. Próximo pagamento em 60s (DEBUG).");
-    LogInfo("caravana", "Facção " + faction_name + " contratou caravana para a capital " + capital_territory_id + ". Custo inicial: " + custo_caravana + ". Próximo pagamento em 60s: " + caravan_expiry_time);
+    guild_obj_contrato.SetProp("caravan_weekly_cost", custo_caravana);
+
+    var capital_display_name := territory_info_capital ? territory_info_capital.name : capital_territory_id;
+    SendSysMessage(who, "Caravana contratada com sucesso para " + capital_display_name + "! Custo inicial de " + custo_caravana + " moedas deduzido. Renovação semanal automática.");
+    LogInfo("caravana", "Facção " + faction_name + " contratou caravana para a capital " + capital_territory_id + ". Custo inicial: " + custo_caravana + ". Próximo pagamento: " + caravan_expiry_time);
 
     // DELETAR BAÚS DOS TERRITÓRIOS NÃO-CAPITAIS DA FACÇÃO
     SendSysMessage(who, "Centralizando coleta de recursos... Baús de outros territórios serão removidos.");
@@ -1544,55 +2095,111 @@ function ShowPermissionsManagementGump(who, faction_name)
             y += 25;
             sleepms(2);
         endforeach
-        
-        guild_opts.append("Cancelar");
-        
-        var choice := RadioGump(who, 300, 0, "Escolha a facção para transferir " + territorio, guild_opts, 0, 1);
-        
-        if (!choice || choice >= guild_opts.size())
-            return; // Cancelado
+    else
+        GFTextLine(gump, 30, y, 2100, "Nenhum membro com permissão especial configurada.");
+        y += 25;
+    endif
+    
+    // Botão para adicionar novo
+    y += 20;
+    GFAddButton(gump, 25, y, 2117, 2118, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 50, y, 2103, "Adicionar Permissão Especial para Membro");
+    
+    // Processar resposta
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        return 0;
+    endif
+    
+    if (input[0] == 1)
+        AddSpecialPermission(who, faction_name);
+        return 1;
+    endif
+    
+    if (input[0] >= 100)
+        var index := input[0] - 100;
+        var keys := special_permissions.keys();
+        if (index >= 0 && index < keys.size())
+            var serial := keys[index+1]; // POL usa arrays com base 1
+            special_permissions.erase(serial);
+            guild_obj.SetProp("chest_permissions", special_permissions);
+            SendSysMessage(who, "Permissão especial removida.");
+            ShowPermissionsManagementGump(who, faction_name);
+        endif
+    endif
+    
+    return 1;
+endfunction
+
+function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
+    // Garantir compatibilidade com ambos os formatos
+    var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
+    var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    
+    if (YesNo(who, "Tem certeza que deseja revogar o controle de " + faction + " sobre este território?"))
+        // Obter o realm do território para passar ao script de limpeza
+        var territorio_realm := GetElementProp(elem, "Realm", "");
+        if (!territorio_realm)
+            territorio_realm := "britannia"; // Padrão se não encontrar
         endif
         
-        // Ajustando para indexação baseada em 1 do POL
-        var new_faction := guild_opts[choice];
+        LogDebug("territorio", "Iniciando remoção para território: " + territorio_id);
+        LogDebug("territorio", "Facção: " + faction);
+        LogDebug("territorio", "Realm: " + territorio_realm);
+        LogDebug("territorio", "Nome: " + territorio_nome);
         
-        if (YesNo(who, "Transferir controle de " + territorio + " para " + new_faction + "?"))
-            // Remover do controle da facção atual
-            var old_faction := faction;
-            var old_guild := FindGuildByName(old_faction);
-            if (old_guild)
-                var old_guild_obj := FindGuild(old_guild);
-                if (old_guild_obj)
-                    var old_territories := old_guild_obj.GetProp("territories");
-                    if (old_territories)
-                        var territory_index := FindInArray(old_territories, territorio);
-                        if (territory_index > 0)
-                            old_territories.Erase(territory_index);
-                            old_guild_obj.SetProp("territories", old_territories);
-                        endif
-                    endif
-                endif
+        // Verificar se temos os seriais armazenados
+        var seriais_df := SafeOpenDataFile(":faccao:seriais");
+        var territorios_seriais := dictionary{};
+        
+        if (seriais_df)
+            territorios_seriais := seriais_df.GetProp("territorios");
+        endif
+        
+        var seriais_encontrados := 0;
+        
+        // Se temos os seriais armazenados, remover diretamente 
+        if (territorios_seriais && territorios_seriais[territorio_id])
+            var info := territorios_seriais[territorio_id];
+            
+            LogDebug("territorio", "Seriais encontrados no registro para " + territorio_id);
+            LogDebug("territorio", "Baú: " + info.bau);
+            LogDebug("territorio", "Mesa: " + info.mesa);
+            LogDebug("territorio", "Mural: " + info.mural);
+            
+            // Remover baú
+            var bau := SystemFindObjectBySerial(info.bau);
+            if (bau)
+                LogDebug("territorio", "Destruindo baú: " + bau.name);
+                DestroyItem(bau);
+                seriais_encontrados += 1;
             endif
             
-            // Adicionar ao controle da nova facção
-            elem.SetProp("Faction", new_faction);
-            var new_guild := FindGuildByName(new_faction);
-            if (new_guild)
-                var new_guild_obj := FindGuild(new_guild);
-                if (new_guild_obj)
-                    var new_territories := new_guild_obj.GetProp("territories");
-                    if (!new_territories)
-                        new_territories := array{};
-                    endif
-                    
-                    if (FindInArray(new_territories, territorio) <= 0)
-                        new_territories.append(territorio);
-                        new_guild_obj.SetProp("territories", new_territories);
-                    endif
-                endif
+            // Remover mesa
+            var mesa := SystemFindObjectBySerial(info.mesa);
+            if (mesa)
+                LogDebug("territorio", "Destruindo mesa: " + mesa.name);
+                DestroyItem(mesa);
+                seriais_encontrados += 1;
             endif
             
-            SendSysMessage(who, "Território transferido com sucesso!");
+            // Remover mural
+            var mural := SystemFindObjectBySerial(info.mural);
+            if (mural)
+                LogDebug("territorio", "Destruindo mural: " + mural.name);
+                DestroyItem(mural);
+                seriais_encontrados += 1;
+            endif
+            
+            // Remover do dicionário
+            territorios_seriais.Erase(territorio_id);
+            seriais_df.SetProp("territorios", territorios_seriais);
+            
+            LogDebug("territorio", seriais_encontrados + " objetos destruídos diretamente pelos seriais.");
+        else
+            LogDebug("territorio", "Nenhum serial encontrado no registro, usando busca por área.");
         endif
         
         // Se não conseguiu remover todos os objetos, usar o script completo
@@ -1661,60 +2268,197 @@ function ShowPermissionsManagementGump(who, faction_name)
 TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
     "name" := territorio_nome, 
     "faction" := faction 
-});        return 1; // Indica que deve sair do gump
+});
+
+        return 1; // Indica que deve sair do gump
     endif
     
     return 1;
 endfunction
 
-//=======================================================================
-// FUNÇÃO KISS PARA DÉBITO AUTOMÁTICO EM BANCO DO JOGADOR (SOMENTE COBRE)
-//=======================================================================
-function debitoEmContaCaravan(player, valor)
-    // Sistema KISS: Usar somente moedas de cobre (0xBA63)
-    // Baseado no sistema da estalagem, mas simplificado para caravanas
-    
-    var container := CP_GetStorageContainerForMobile(player);
-    if (!container)
-        SendSysMessage(player, "Você não possui um banco para débito automático.");
+function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital_id, faction_name)
+    LogInfo("ContratarCaravana", "INÍCIO: " + who.name + " tentando contratar caravana de " + origin_territory_id + " para capital " + capital_id + " (Facção: " + faction_name + ")");
+
+    var guild_obj := FindGuild(FindGuildByName(faction_name));
+    if (!guild_obj)
+        SendSysMessage(who, "Erro: Guilda da facção '" + faction_name + "' não encontrada.");
+        LogError("ContratarCaravana", "Guilda não encontrada para facção: " + faction_name);
         return 0;
-    endif
-    
-    // Contar moedas de cobre disponíveis
-    var cobre_disponivel := 0;
-    foreach item in EnumerateItemsInContainer(container)
-        if (item.objtype == 0xBA63) // Moedas de cobre
-            cobre_disponivel += item.amount;
+    endif;
+
+    var custo_caravana := CInt(GetGlobalProperty("caravan_weekly_cost_setting"));
+    if (!custo_caravana || custo_caravana <= 0) custo_caravana := 50; endif;
+    LogDebug("ContratarCaravana", "Custo da caravana definido em: " + custo_caravana);
+
+    var contratos_atuais := guild_obj.GetProp("caravan_contracts");
+    if (!contratos_atuais || TypeOf(contratos_atuais) != "Array")
+        contratos_atuais := array{};
+    endif;
+
+    foreach c_existente in contratos_atuais
+        if (c_existente && c_existente.origin_territory_id && c_existente.next_payment_due)
+            if (CStr(c_existente.origin_territory_id) == CStr(origin_territory_id) && CInt(c_existente.next_payment_due) > polcore().systime)
+                SendSysMessage(who, "Já existe uma caravana ativa partindo deste território.");
+                LogInfo("ContratarCaravana", "Tentativa de contratar caravana duplicada de " + origin_territory_id + " para facção " + faction_name + ". Contrato ativo já existe.");
+                return 0;
+            endif;
+        else
+            LogWarning("ContratarCaravana", "Contrato de caravana malformado encontrado no array para facção " + faction_name + ". Contrato: " + c_existente);
+        endif;
+    endforeach;
+    LogDebug("ContratarCaravana", "Verificação de contrato duplicado para " + origin_territory_id + " passou.");
+
+    LogInfo("ContratarCaravana", "Tentando debitar " + custo_caravana + " moedas FÍSICAS do baú da capital " + capital_id + " para facção " + faction_name);
+    var capital_donation_chest := FindFactionChest(faction_name, capital_id, 0); 
+
+    if (!capital_donation_chest)
+        SendSysMessage(who, "Erro crítico: Baú da capital (" + capital_id + ") não encontrado para debitar o custo da caravana.");
+        LogError("ContratarCaravana", "Baú da capital " + capital_id + " não encontrado para debitar custo para facção " + faction_name);
+        return 0;
+    endif;
+    LogDebug("ContratarCaravana", "Baú da capital encontrado: Serial " + capital_donation_chest.serial);
+
+    var moedas_removidas_fisicamente := 0;
+    var moedas_a_remover_do_bau := custo_caravana;
+
+    var items_no_bau_capital_array := EnumerateItemsInContainer(capital_donation_chest);
+    if (items_no_bau_capital_array == error) items_no_bau_capital_array := array{}; endif;
+
+    LogDebug("ContratarCaravana", "Total de itens no baú da capital: " + items_no_bau_capital_array.size());
+
+    foreach item_no_bau_capital in items_no_bau_capital_array
+        if (moedas_a_remover_do_bau <= 0) break; endif;
+
+        if (item_no_bau_capital.objtype == 0xBA63) 
+            LogDebug("ContratarCaravana", "Stack de moedas (0xBA63) encontrado: Serial " + item_no_bau_capital.serial + ", Amount: " + item_no_bau_capital.amount);
+            var amount_in_stack := CInt(item_no_bau_capital.amount);
+            var amount_to_take_from_this_stack := (amount_in_stack >= moedas_a_remover_do_bau) ? moedas_a_remover_do_bau : amount_in_stack;
+
+            if (amount_to_take_from_this_stack > 0)
+                LogDebug("ContratarCaravana", "Tentando subtrair " + amount_to_take_from_this_stack + " do stack " + item_no_bau_capital.serial);
+                if (HelpSubtractAmount(item_no_bau_capital, amount_to_take_from_this_stack)) 
+                    moedas_removidas_fisicamente += amount_to_take_from_this_stack;
+                    moedas_a_remover_do_bau -= amount_to_take_from_this_stack;
+                    LogInfo("ContratarCaravana", amount_to_take_from_this_stack + " moedas FÍSICAS removidas do stack (novo serial pode ter sido criado) no baú da capital " + capital_donation_chest.serial + ". Resta remover: " + moedas_a_remover_do_bau);
+                else
+                    SendSysMessage(who, "Erro ao tentar remover moedas do baú da capital. A operação foi cancelada.");
+                    LogError("ContratarCaravana", "Falha em HelpSubtractAmount (" + amount_to_take_from_this_stack + ") no stack original " + item_no_bau_capital.serial + " do baú da capital.");
+                    if (moedas_removidas_fisicamente > 0)
+                        var item_estorno := CreateItemInContainer(capital_donation_chest, 0xBA63, moedas_removidas_fisicamente);
+                        if (item_estorno) MarcarRecursosModificados(capital_donation_chest); endif;
+                        LogError("ContratarCaravana", "ESTORNO FÍSICO TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
+                    endif;
+                    return 0;
+                endif;
+            endif;
+        endif;
+        SleepMS(5); 
+    endforeach;
+
+    if (moedas_removidas_fisicamente < custo_caravana)
+        SendSysMessage(who, "Não há moedas suficientes (" + moedas_removidas_fisicamente + "/" + custo_caravana + ") no baú da capital para cobrir o custo da caravana.");
+        LogError("ContratarCaravana", "Moedas físicas insuficientes (" + moedas_removidas_fisicamente + "/" + custo_caravana + ") no baú da capital " + capital_donation_chest.serial);
+        if (moedas_removidas_fisicamente > 0)
+            var item_estorno_parcial := CreateItemInContainer(capital_donation_chest, 0xBA63, moedas_removidas_fisicamente);
+            if (item_estorno_parcial) MarcarRecursosModificados(capital_donation_chest); endif;
+            LogError("ContratarCaravana", "ESTORNO FÍSICO PARCIAL TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
+        endif;
+        return 0;
+    endif;
+    LogInfo("ContratarCaravana", "Total de " + moedas_removidas_fisicamente + " moedas FÍSICAS removidas com sucesso do baú da capital " + capital_donation_chest.serial + " para facção " + faction_name + ".");
+
+    var current_time_system := polcore().systime;
+    var novo_contrato := struct;
+    novo_contrato.+origin_territory_id := origin_territory_id;
+    novo_contrato.+capital_territory_id := capital_id;
+    novo_contrato.+contract_start_time := current_time_system;
+    novo_contrato.+next_payment_due    := current_time_system + CARAVAN_TEST_DURATION_SECONDS; // <--- USA A CONSTANTE
+    novo_contrato.+weekly_cost         := custo_caravana;
+
+    var cleaned_contratos_atuais := array{};
+    foreach contract_item_clean in contratos_atuais
+        if (contract_item_clean && TypeOf(contract_item_clean) == "Struct")
+            cleaned_contratos_atuais.append(contract_item_clean);
         endif
-        SleepMS(2);
     endforeach
-    
-    // Verificar se há fundos suficientes
-    if (cobre_disponivel < valor)
-        SendSysMessage(player, "Fundos insuficientes no banco. Necessário: " + valor + " cobre, Disponível: " + cobre_disponivel + " cobre.");
+    cleaned_contratos_atuais.append(novo_contrato);
+
+    LogDebug("ContratarCaravana", "Preparando para salvar " + cleaned_contratos_atuais.size() + " contratos na CProp da guilda " + faction_name);
+    var set_prop_guild_result := guild_obj.SetProp("caravan_contracts", cleaned_contratos_atuais);
+
+    if (set_prop_guild_result == error)
+        LogError("ContratarCaravana", "FALHA CRÍTICA ao salvar 'caravan_contracts' na CProp da guilda " + faction_name + ". Erro: " + set_prop_guild_result.errortext);
+        LogCritical("ContratarCaravana_REVERT_FISICO", "REVERTENDO CUSTO FÍSICO para " + faction_name + " devido a falha em SetProp CProp da guilda.");
+        var item_estorno_critico := CreateItemInContainer(capital_donation_chest, 0xBA63, custo_caravana);
+        if (item_estorno_critico) MarcarRecursosModificados(capital_donation_chest); endif;
+        LogError("ContratarCaravana_REVERT_FISICO", "ESTORNO FÍSICO TENTADO: " + custo_caravana + " moedas para o baú " + capital_donation_chest.serial + ". A próxima execução do process_recursos_updates deve sincronizar o datafile.");
+        SendSysMessage(who, "Ocorreu um erro crítico ao registrar o contrato. O custo foi estornado fisicamente. Tente novamente ou contate um GM.");
+        return 0;
+    endif;
+    LogInfo("ContratarCaravana", "CProp 'caravan_contracts' atualizada com sucesso para guilda " + faction_name);
+
+    var origin_info := TM_GetTerritoryInfo(origin_territory_id);
+    SendSysMessage(who, "Caravana do território " + (origin_info.name ? origin_info.name : origin_territory_id) + " contratada com sucesso!");
+    LogInfo("caravana_contrato", "Facção " + faction_name + " contratou caravana de " + origin_territory_id + " para " + capital_id + ". Custo: " + custo_caravana + ". Próximo pagamento em " + CARAVAN_TEST_DURATION_SECONDS + "s.");
+
+    var event_data_caravana := struct;
+    event_data_caravana.+faction := faction_name;
+    event_data_caravana.+origin_territory_id := origin_territory_id;
+    event_data_caravana.+capital_territory_id := capital_id;
+    event_data_caravana.+active_until_next_payment := novo_contrato.next_payment_due;
+    TM_NotifyTerritoryChange(origin_territory_id, "caravan_activated_from_territory", event_data_caravana);
+    LogInfo("ContratarCaravana", "Notificação 'caravan_activated_from_territory' enviada para " + origin_territory_id);
+
+    return 1;
+endfunction
+
+function CancelarCaravanaTerritorioIndividual(who, origin_territory_id, faction_name)
+    SendSysMessage(who, "Tentando cancelar caravana de " + origin_territory_id);
+    var guild_obj := FindGuild(FindGuildByName(faction_name));
+    if (!guild_obj)
+        SendSysMessage(who, "Erro: Guilda não encontrada.");
         return 0;
     endif
-    
-    // Realizar débito - consumir moedas de cobre
-    var valor_restante := valor;
-    Set_Critical(1); // Transação atômica
-    
-    foreach item in EnumerateItemsInContainer(container)
-        if (item.objtype == 0xBA63 && valor_restante > 0) // Moedas de cobre
-            var quantidade_a_consumir := Min(item.amount, valor_restante);
-            SubtractAmount(item, quantidade_a_consumir);
-            valor_restante -= quantidade_a_consumir;
+
+    var contratos_atuais := guild_obj.GetProp("caravan_contracts");
+    if (!contratos_atuais || TypeOf(contratos_atuais) != "Array")
+        SendSysMessage(who, "Nenhum contrato de caravana encontrado para este território.");
+        return 0;
+    endif
+
+    var novos_contratos_apos_remocao := array{};
+    var contrato_removido := 0;
+    var capital_id_do_contrato_removido := ""; // Para notificação
+
+    foreach c_existente in contratos_atuais
+        if (c_existente.origin_territory_id == origin_territory_id)
+            // Verificar se está realmente ativo (embora o gump já deva ter filtrado isso)
+            if (CInt(c_existente.next_payment_due) > polcore().systime)
+                contrato_removido := 1;
+                capital_id_do_contrato_removido := c_existente.capital_territory_id;
+                LogInfo("caravana_cancela", "Facção " + faction_name + " cancelou caravana de " + origin_territory_id);
+                // Não adiciona à nova lista, efetivamente removendo-o
+            else
+                novos_contratos_apos_remocao.append(c_existente); // Mantém contratos expirados ou de outros territórios
+            endif
+        else
+            novos_contratos_apos_remocao.append(c_existente);
         endif
-        SleepMS(2);
     endforeach
-    
-    Set_Critical(0); // Fim da transação
-    
-    if (valor_restante > 0)
-        SendSysMessage(player, "ERRO: Débito incompleto. Faltaram " + valor_restante + " moedas de cobre.");
-        return 0;
+
+    if (contrato_removido)
+        guild_obj.SetProp("caravan_contracts", novos_contratos_apos_remocao);
+        SendSysMessage(who, "Caravana do território cancelada com sucesso.");
+
+        // NOTIFICAR O RESOURCECONTROLLER
+        var event_data_caravana_cancel := struct;
+        event_data_caravana_cancel.+faction := faction_name;
+        event_data_caravana_cancel.+origin_territory_id := origin_territory_id;
+        event_data_caravana_cancel.+capital_territory_id := capital_id_do_contrato_removido;
+        TM_NotifyTerritoryChange(origin_territory_id, "caravan_deactivated_from_territory", event_data_caravana_cancel);
+    else
+        SendSysMessage(who, "Nenhuma caravana ativa encontrada partindo deste território para cancelar.");
     endif
-    
-    SendSysMessage(player, "Débito realizado: " + valor + " moedas de cobre debitadas do seu banco.");
+
     return 1;
 endfunction

@@ -1,225 +1,403 @@
 use uo;
 use os;
-use util;
 use guilds;
 use datafile;
 
-include "include/logging";
-include "include/territory_management";
-include "include/shared_functions";
-include "include/faccao_constants";
-include ":containers:storageAreas";
-use storage;
+include ":faccao:include/logging";
+include ":faccao:include/territory_management"; // Para TM_NotifyTerritoryChange
+include ":faccao:include/shared_functions";     // Para HelpSubtractAmount, FindFactionChest, MarcarRecursosModificados, etc.
+include ":faccao:include/faccao_constants";     // Para constantes
 
-const CARAVAN_CYCLE_WAIT := 600; // 10 minutos em segundos
-const CARAVAN_PAYMENT_INTERVAL_DAYS := 7; // 7 dias (valor de produção)
-const CARAVAN_PAYMENT_INTERVAL_SECONDS := 604800; // 7 dias = 604800 segundos
-const MOEDAS_COBRE := 0xba63;
 
 program CaravanPaymentControl()
-    print("Iniciando Controlador de Pagamento de Caravanas...");
-    
-    SetGlobalProperty("#CaravanPaymentControlPid", GetPid());
-    var cycle_count := 0;
-    
-    while(1)
-        cycle_count := cycle_count + 1;
-        print("Ciclo #" + cycle_count + " - verificando pagamentos de caravanas");
-        
-        Set_Critical(1);
-        CheckCaravanPayments();
-        Set_Critical(0);
-        
-        print("Ciclo #" + cycle_count + " completo. Aguardando " + CARAVAN_CYCLE_WAIT + " segundos...");
-        Sleep(CARAVAN_CYCLE_WAIT);
-    endwhile;
+LogInfo("CaravanPaymentCtrl", ">>>> Controlador de Pagamento de Caravanas INICIADO (Lógica Fixa Individual) <<<<");
+LogInfo("CaravanPaymentCtrl", "Ciclo de verificação a cada " + CARAVAN_CYCLE_WAIT + " segundos.");
+LogInfo("CaravanPaymentCtrl", "Duração do contrato (TEST_DURATION_SECONDS): " + CARAVAN_TEST_DURATION_SECONDS + " segundos.");
+var cycle_count := 0; // Contador de ciclo para logs
+while(1)
+cycle_count += 1;
+LogCritical("CaravanPaymentCtrl_LOOP", "======================================================================");
+LogCritical("CaravanPaymentCtrl_LOOP", "CICLO " + cycle_count + " DO PAGAMENTO - Início. Chamando CheckAllCaravanPayments_Fixed...");
+LogCritical("CaravanPaymentCtrl_LOOP", "  Tempo Atual do Sistema (início do ciclo): " + polcore().systime);
+CheckAllCaravanPayments_Fixed();
+LogCritical("CaravanPaymentCtrl_LOOP", "CICLO " + cycle_count + " DO PAGAMENTO - Fim. CheckAllCaravanPayments_Fixed() concluído.");
+LogCritical("CaravanPaymentCtrl_LOOP", "  Indo para Sleep(" + CARAVAN_CYCLE_WAIT + ")");
+LogCritical("CaravanPaymentCtrl_LOOP", "======================================================================");
+Sleep(CARAVAN_CYCLE_WAIT);
+endwhile;
 endprogram
 
-function CheckCaravanPayments()
-    var guild_list := ListGuilds();
-    var current_time := polcore().systime;
-    var processed_count := 0;
-    
-    print("=== DEBUG: Iniciando CheckCaravanPayments ===");
-    print("DEBUG: Tempo atual do sistema: " + current_time);
-    print("DEBUG: Total de guildas para verificar: " + guild_list.size());
+function CheckAllCaravanPayments_Fixed()
+LogCritical("CaravanPaymentCtrl_Fixed_DETAIL", "=== INICIANDO CheckAllCaravanPayments_Fixed (Tempo: " + polcore().systime + ") ===");
+LogInfo("CaravanPaymentCtrl_Fixed", "=== INICIANDO CICLO CORRIGIDO (Tempo: " + polcore().systime + ") ===");
+var guilds_list := ListGuilds();
+if (!guilds_list || guilds_list.size() == 0)
+    LogInfo("CaravanPaymentCtrl_Fixed", "Nenhuma guilda encontrada para verificar contratos.");
+    return;
+endif;
 
-    foreach guild in guild_list
-        sleepms(50);
-          var active_caravan := guild.GetProp("active_caravan_to_capital");
-        var contract_start_time := CInt(guild.GetProp("caravan_contract_start_time"));
-        var cost := CInt(guild.GetProp("caravan_weekly_cost"));
-        var faction_name := guild.GetProp("name");
+var current_time := polcore().systime; // Definir current_time aqui para ser consistente no log de estado inicial
 
-        if (!faction_name)
-            faction_name := guild.guildname;
+// LOG DE DEBUG - Estado inicial de todas as facções
+LogCritical("DEBUG_CARAVAN_STATE", "=== ESTADO INICIAL DAS CARAVANAS (Tempo do Ciclo: " + current_time + ") ===");
+foreach guild_id_log_state in guilds_list // Variável de loop diferente para evitar conflito
+    var guild_log_state := FindGuild(guild_id_log_state);
+    if (guild_log_state)
+        var contracts_log_state := guild_log_state.GetProp("caravan_contracts");
+        var faction_log_state := guild_log_state.GetProp("name") ?: guild_log_state.guildname;
+
+        LogCritical("DEBUG_CARAVAN_STATE", "Facção: " + faction_log_state + " (GuildID: " + guild_id_log_state + ")");
+        if (contracts_log_state && TypeOf(contracts_log_state) == "Array")
+            LogCritical("DEBUG_CARAVAN_STATE", "  Total contratos na CProp: " + contracts_log_state.size());
+            foreach c_log_state in contracts_log_state
+                var origin_id_log := CStr(c_log_state.origin_territory_id ?: "N/A_Origin");
+                var capital_id_log := CStr(c_log_state.capital_territory_id ?: "N/A_Capital");
+                var next_due_log := CInt(c_log_state.next_payment_due ?: 0);
+                var time_left_log := next_due_log > 0 ? (next_due_log - current_time) : "N/A";
+                LogCritical("DEBUG_CARAVAN_STATE", "    -> O: " + origin_id_log +
+                                                   ", C: " + capital_id_log +
+                                                   ", DueEpoch: " + next_due_log +
+                                                   ", VenceEm: " + time_left_log + "s");
+            endforeach;
+        else
+            LogCritical("DEBUG_CARAVAN_STATE", "  Sem contratos ou CProp inválida (Tipo: " + TypeOf(contracts_log_state) + ")");
         endif;
+    else
+        LogWarning("DEBUG_CARAVAN_STATE", "Não foi possível encontrar objeto da guilda para ID: " + guild_id_log_state + " no log de estado inicial.");
+    endif;
+    SleepMS(2); // Pequena pausa
+endforeach;
+LogCritical("DEBUG_CARAVAN_STATE", "=== FIM DO ESTADO INICIAL DAS CARAVANAS ===");
+// Fim do LOG DE DEBUG adicionado
 
-        // DEBUG: Log para todas as guildas com caravana ativa
-        if (active_caravan)
-            print("DEBUG: Guilda " + faction_name + " tem caravana ativa para capital: " + active_caravan);
-            print("DEBUG: Contrato iniciado em: " + contract_start_time + " (atual: " + current_time + ")");
-            print("DEBUG: Custo: " + cost);
-              if (contract_start_time)
-                var tempo_decorrido_dias := CalcularDias(contract_start_time);
-                var tempo_decorrido_segundos := CalcularSegundos(contract_start_time);
-                print("DEBUG: Tempo decorrido desde contrato: " + tempo_decorrido_dias + " dias (" + tempo_decorrido_segundos + " segundos)");
-                print("DEBUG: Intervalo de pagamento: " + CARAVAN_PAYMENT_INTERVAL_DAYS + " dias (" + CARAVAN_PAYMENT_INTERVAL_SECONDS + " segundos)");
+var factions_processed_this_cycle := dictionary;
+
+foreach guild_id_loop in guilds_list
+    var guild_obj_loop := FindGuild(guild_id_loop);
+    if (!guild_obj_loop)
+        LogWarning("CaravanPaymentCtrl_Fixed", "Não foi possível encontrar o objeto da guilda para ID: " + guild_id_loop);
+        continue;
+    endif;
+
+    var faction_name_loop := guild_obj_loop.GetProp("name") ?: guild_obj_loop.guildname;
+    if (!faction_name_loop)
+        LogWarning("CaravanPaymentCtrl_Fixed", "Não foi possível determinar o nome da facção para GuildID: " + guild_id_loop);
+        continue;
+    endif;
+
+    if (!factions_processed_this_cycle.exists(faction_name_loop))
+        LogDebug("CaravanPaymentCtrl_Fixed", "Processando facção: " + faction_name_loop + " (GuildID: " + guild_id_loop + ")");
+        factions_processed_this_cycle[faction_name_loop] := 1;
+    endif;
+
+    // ETAPA 1: Validar e limpar contratos
+    var contracts_from_prop := guild_obj_loop.GetProp("caravan_contracts");
+   // var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
+
+var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
+if (!valid_contracts_after_validation || valid_contracts_after_validation.size() == 0)
+LogDebug("CaravanPaymentCtrl_Fixed", "Nenhum contrato válido encontrado para " + faction_name_loop + " após validação.");
+continue;
+endif;
+LogInfo("CaravanPaymentCtrl_Fixed", "Facção " + faction_name_loop + ": " + valid_contracts_after_validation.size() + " contrato(s) válidos para verificar.");
+// ETAPA 2: Processar cada contrato válido
+    var updated_contracts_list := array{};
+    var payments_processed_count := 0;
+
+    foreach contract_to_process in valid_contracts_after_validation
+        LogDebug("CaravanPaymentCtrl_Fixed", "Analisando contrato para Origem ID: " + contract_to_process.origin_territory_id + ", Facção: " + faction_name_loop);
+
+        var payment_result_struct := ProcessCaravanPaymentSecure(guild_obj_loop, contract_to_process, faction_name_loop, current_time);
+
+        if (payment_result_struct == error)
+            LogWarning("CaravanPaymentCtrl_Fixed", "Pagamento falhou ou contrato desativado para Origem ID: " + contract_to_process.origin_territory_id + " (Facção: " + faction_name_loop + ")");
+            DeactivateIndividualCaravan(guild_obj_loop, contract_to_process.origin_territory_id, contract_to_process.capital_territory_id, faction_name_loop, "Falha no pagamento automático ou baú da capital inacessível");
+        else
+            updated_contracts_list.append(payment_result_struct);
+            if (TypeOf(payment_result_struct) == "Struct" && payment_result_struct.next_payment_due != contract_to_process.next_payment_due)
+                payments_processed_count += 1;
+                LogInfo("CaravanPaymentCtrl_Fixed", "Pagamento processado e contrato atualizado para Origem ID: " + contract_to_process.origin_territory_id);
+            else
+                LogDebug("CaravanPaymentCtrl_Fixed", "Contrato para Origem ID: " + contract_to_process.origin_territory_id + " mantido (pagamento não devido ou já processado neste ciclo).");
             endif;
         endif;
-
-        if (!active_caravan || !contract_start_time || !cost)
-            continue;
-        endif;
-          var tempo_decorrido_dias := CalcularDias(contract_start_time);
-        var tempo_decorrido_segundos := CalcularSegundos(contract_start_time);
-        
-        // Para debug rápido, usamos segundos; em produção, usar dias
-        var payment_due := (tempo_decorrido_segundos >= CARAVAN_PAYMENT_INTERVAL_SECONDS);
-        // var payment_due := (tempo_decorrido_dias >= CARAVAN_PAYMENT_INTERVAL_DAYS); // Para produção
-        
-        if (payment_due)
-            print("=== PAGAMENTO DEVIDO ===");
-            print("Pagamento devido para facção " + faction_name);
-            print("DEBUG: Tempo decorrido: " + tempo_decorrido_dias + " dias (" + tempo_decorrido_segundos + " segundos)");
-            print("DEBUG: Usando critério de segundos para debug: " + tempo_decorrido_segundos + " >= " + CARAVAN_PAYMENT_INTERVAL_SECONDS);
-
-            Set_Critical(1);
-            var result := ProcessPayment(guild, cost, faction_name, current_time);
-            Set_Critical(0);
-            
-            print("DEBUG: Resultado do pagamento: " + result);
-            processed_count := processed_count + 1;
-        endif;
-        
-        sleepms(20);
+        SleepMS(50);
     endforeach;
-    
-    print("DEBUG: Processadas " + processed_count + " facções.");
-    print("=== DEBUG: Fim CheckCaravanPayments ===");
-endfunction
 
-function ProcessPayment(guild, cost, faction_name, current_time)
-    print("=== DEBUG ProcessPayment para " + faction_name + " ===");
-    
-    var leader_serial := guild.GetProp("leader");
-    print("DEBUG: Leader serial: " + leader_serial);
-    
-    if (!leader_serial)
-        print("DEBUG: ERRO - Facção " + faction_name + " sem líder - caravana desativada");
-        DeactivateCaravan(guild);
-        return 0;
-    endif;
-
-    var leader := SystemFindObjectBySerial(leader_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
-    print("DEBUG: Leader object: " + (leader ? "ENCONTRADO" : "NÃO ENCONTRADO"));
-    
-    if (!leader)
-        print("DEBUG: ERRO - Líder da facção " + faction_name + " não encontrado - caravana desativada");
-        DeactivateCaravan(guild);
-        return 0;
-    endif;
-
-    // Verificar banco do líder
-    var bank := CP_GetStorageContainerForMobile(leader, CP_DEFAULT_AREA, CP_NOCREATE);
-    print("DEBUG: Bank container: " + (bank ? "ENCONTRADO" : "NÃO ENCONTRADO"));
-    
-    if (!bank)
-        print("DEBUG: ERRO - Banco do líder não encontrado - caravana desativada");
-        DeactivateCaravan(guild);
-        return 0;
-    endif;
-
-    print("DEBUG: Tentando debitar " + cost + " moedas do banco...");
-    Set_Critical(1);
-    var payment_success := DebitFromBank(bank, cost);
-    Set_Critical(0);
-    
-    print("DEBUG: Resultado do débito: " + (payment_success ? "SUCESSO" : "FALHA"));
-    
-    if (payment_success)
-        // MUDANÇA CRÍTICA: Atualizar o tempo de início do contrato em vez de próximo pagamento
-        guild.SetProp("caravan_contract_start_time", current_time);
-        print("DEBUG: SUCESSO - Contrato renovado. Novo tempo de início: " + current_time);
-        
-        // CRÍTICO: Notificar o ResourceController sobre a renovação da caravana
-        var capital_id := guild.GetProp("active_caravan_to_capital");
-        if (capital_id)
-            var event_data := struct;
-            event_data.+faction := faction_name;
-            event_data.+active_until_next_payment := current_time + CARAVAN_PAYMENT_INTERVAL_SECONDS;
-              TM_NotifyTerritoryChange(CStr(capital_id), "caravan_activated", event_data);
-            print("DEBUG: Evento caravan_activated enviado para ResourceController");
+    // ETAPA 3: Salvar contratos atualizados de volta na CProp da guilda
+    if (updated_contracts_list.size() != valid_contracts_after_validation.size() || payments_processed_count > 0)
+        LogInfo("CaravanPaymentCtrl_Fixed", "Salvando " + updated_contracts_list.size() + " contrato(s) de volta para CProp da facção " + faction_name_loop + ". (Pagamentos processados neste ciclo: " + payments_processed_count + ")");
+        var set_prop_final_result := guild_obj_loop.SetProp("caravan_contracts", updated_contracts_list);
+        if (set_prop_final_result == error)
+            LogError("CaravanPaymentCtrl_Fixed", "FALHA ao salvar CProp 'caravan_contracts' atualizada para facção " + faction_name_loop + ". Erro: " + set_prop_final_result.errortext);
         endif;
-        
-        print("Pagamento realizado para " + faction_name + " - próximo em " + CARAVAN_PAYMENT_INTERVAL_SECONDS + "s (DEBUG)");
-        return 1;
     else
-        print("FALHA: Pagamento não pode ser processado para " + faction_name + " - desativando caravana");
-        DeactivateCaravan(guild);
-        return 0;
-    endif
-endfunction
+        LogDebug("CaravanPaymentCtrl_Fixed", "Nenhuma mudança nos contratos da facção " + faction_name_loop + " que necessite salvar a CProp.");
+    endif;
 
-function DebitFromBank(bank, amount)
-    var items := EnumerateItemsInContainer(bank);
-    if (items == error) 
-        return 0; 
+    SleepMS(100);
+endforeach;
+
+LogInfo("CaravanPaymentCtrl_Fixed", "=== CICLO CORRIGIDO DE PAGAMENTOS FINALIZADO ===");
+
+endfunction
+function DeactivateIndividualCaravan(guild_obj_param, origin_id_param, capital_id_param, faction_name_param, reason_param := "Desconhecido")
+LogDebug("DeactivateCaravan", "Iniciando desativação para Origem: " + origin_id_param + ", Facção: " + faction_name_param + ", Motivo: " + reason_param);
+if (!guild_obj_param || !origin_id_param || !capital_id_param) // Adicionado capital_id_param na validação
+    LogError("DeactivateCaravan", "Parâmetros inválidos: guild_obj, origin_id ou capital_id nulo/inválido.");
+    return;
+endif;
+
+LogInfo("DeactivateCaravan", "Caravana individual DESATIVADA: Facção '" + faction_name_param + "', Origem '" + origin_id_param + "' -> Capital '" + capital_id_param + "'. Motivo: '" + reason_param + "'");
+
+var event_data_deactivate_ind := struct;
+event_data_deactivate_ind.+faction := faction_name_param;
+event_data_deactivate_ind.+origin_territory_id := origin_id_param;
+event_data_deactivate_ind.+capital_territory_id := capital_id_param; 
+event_data_deactivate_ind.+reason  := reason_param;
+
+LogDebug("DeactivateCaravan", "Enviando evento 'caravan_deactivated_from_territory' para ResourceController sobre origem: " + origin_id_param);
+// A notificação é sobre o território de origem, para que o ResourceController possa ajustar sua lógica de entrega
+TM_NotifyTerritoryChange(origin_id_param, "caravan_deactivated_from_territory", event_data_deactivate_ind);
+LogInfo("DeactivateCaravan", "Desativação notificada para Origem: " + origin_id_param);
+
+endfunction
+// Modificada para aceitar os contratos lidos como parâmetro
+function ValidateCaravanContracts(guild_obj, faction_name, byref contracts_array_from_prop_original) // Renomeado o parametro
+var current_time_validation := polcore().systime;
+// Criar uma cópia para trabalhar, para não modificar o array original passado por referência diretamente
+// a menos que seja intencional ao final com SetProp.
+var contracts_to_evaluate := array{};
+if (contracts_array_from_prop_original && TypeOf(contracts_array_from_prop_original) == "Array")
+    foreach contract_item_copy in contracts_array_from_prop_original
+        contracts_to_evaluate.append(contract_item_copy); // Copia superficial, mas ok para structs
+    endforeach;
+endif;
+
+LogCritical("ValidateContracts_ENTRY", "Facção " + faction_name + " (GuildID: " + guild_obj.guildid + ") - Validando " + contracts_to_evaluate.size() + " contratos LIDOS DA CPROP. CurrentTime: " + current_time_validation);
+
+if (!contracts_to_evaluate || TypeOf(contracts_to_evaluate) != "Array") // Checa a cópia
+    LogWarning("ValidateContracts_ERROR", "Facção " + faction_name + ": CProp caravan_contracts resultou em array inválido após cópia (Tipo: " + TypeOf(contracts_to_evaluate) + "). Retornando array vazio.");
+    return array{};
+endif;
+
+var final_valid_contracts_list := array{}; // Lista para os contratos que passam
+var has_list_changed_during_validation := 0; 
+
+var grace_period_for_very_old := 86400 * 2; // 48 horas de tolerância para remoção por expiração
+
+foreach contract_being_validated in contracts_to_evaluate 
+    var origin_id_val := "N/A";
+    var capital_id_val := "N/A";
+    var payment_due_val := 0;
+    var cost_val := 0;
+    var start_time_val := 0;
+    var is_struct_val := 0;
+    var decision_reason := "MANTIDO INICIALMENTE";
+
+    if (contract_being_validated && TypeOf(contract_being_validated) == "Struct")
+        is_struct_val := 1;
+        origin_id_val := CStr(contract_being_validated.origin_territory_id ?: "MISSING_ORIGIN");
+        capital_id_val := CStr(contract_being_validated.capital_territory_id ?: "MISSING_CAPITAL");
+        payment_due_val := CInt(contract_being_validated.next_payment_due ?: 0);
+        cost_val := CInt(contract_being_validated.weekly_cost ?: 0);
+        start_time_val := CInt(contract_being_validated.contract_start_time ?: 0);
+    endif;
+
+    LogCritical("ValidateContracts_ITEM_ANALYZED", "Facção " + faction_name + " - Analisando: O=" + origin_id_val + 
+                                     ", C=" + capital_id_val + 
+                                     ", Due=" + payment_due_val +
+                                     ", Cost=" + cost_val +
+                                     ", Start=" + start_time_val +
+                                     ", IsStruct=" + is_struct_val);
+
+    var keep_this_contract := 1; // Assumir que vamos manter
+
+    if (!is_struct_val)
+        decision_reason := "REMOVIDO: Item na CProp NÃO é um struct. Item: " + contract_being_validated;
+        keep_this_contract := 0;
+    elseif (!contract_being_validated.origin_territory_id || 
+            !contract_being_validated.capital_territory_id ||
+            !contract_being_validated.exists("next_payment_due") || 
+            !contract_being_validated.exists("weekly_cost") ||
+            !contract_being_validated.exists("contract_start_time"))
+        decision_reason := "REMOVIDO: Contrato malformado (campos obrigatórios ausentes). O=" + origin_id_val + ", C=" + capital_id_val;
+        keep_this_contract := 0;
+    elseif (payment_due_val <= 0 || cost_val <= 0 || start_time_val <= 0) 
+        decision_reason := "REMOVIDO: Contrato com valores inválidos (Due, Cost ou StartTime <= 0). O=" + origin_id_val + ", Due=" + payment_due_val + ", Cost=" + cost_val + ", Start=" + start_time_val;
+        keep_this_contract := 0;
+    elseif (payment_due_val < (current_time_validation - grace_period_for_very_old))
+        decision_reason := "REMOVIDO: Contrato MUITO EXPIRADO (>" + grace_period_for_very_old + "s): O=" + origin_id_val + ", Due=" + payment_due_val + ", CurrentTime=" + current_time_validation;
+        keep_this_contract := 0;
     endif;
     
-    var total_found := 0;
-    var coin_items := array{};
-    
-    // Contar moedas disponíveis
-    foreach item in items
-        if (item.objtype == MOEDAS_COBRE)
-            total_found += item.amount;
-            coin_items.append(item);
-        endif
-    endforeach;
-    
-    if (total_found < amount)
-        return 0; // Fundos insuficientes
-    endif
-    
-    // Fazer o débito
-    var amount_to_pay := amount;
-    foreach item in coin_items
-        if (amount_to_pay <= 0)
-            break;
-        endif
-        
-        if (item.amount >= amount_to_pay)
-            SubtractAmount(item, amount_to_pay);
-            amount_to_pay := 0;
+    if (keep_this_contract)
+        LogCritical("ValidateContracts_DECISION", "Facção " + faction_name + " - DECISÃO: MANTIDO contrato VÁLIDO: O=" + origin_id_val + ", C=" + capital_id_val + ", Due=" + payment_due_val);
+        final_valid_contracts_list.append(contract_being_validated);
+    else
+        LogCritical("ValidateContracts_DECISION", "Facção " + faction_name + " - DECISÃO: " + decision_reason);
+        has_list_changed_during_validation := 1; // A lista mudou porque um item foi removido
+    endif;
+endforeach;
+
+// Salvar na CProp SOMENTE se a lista de contratos válidos resultante for DIFERENTE da lista original lida.
+// Isso evita escritas desnecessárias na CProp se nenhuma limpeza ocorreu.
+// Uma comparação mais robusta de arrays seria ideal, mas para este caso,
+// a flag has_list_changed_during_validation (se algo foi removido) já é um bom indicador.
+// Se o tamanho for diferente, também é uma mudança.
+if (has_list_changed_during_validation || final_valid_contracts_list.size() != contracts_to_evaluate.size())
+    LogCritical("ValidateContracts_CPROP_WRITE", "Facção " + faction_name + " - SALVANDO lista validada na CProp. Tamanho ANTES da validação: " + contracts_to_evaluate.size() + ", Tamanho DEPOIS: " + final_valid_contracts_list.size());
+    var set_result_val := guild_obj.SetProp("caravan_contracts", final_valid_contracts_list);
+    if (set_result_val == error)
+        LogError("ValidateContracts_ERROR", "Facção " + faction_name + " - FALHA ao salvar contratos validados na CProp: " + set_result_val.errortext + ". Retornando lista original LIDA para evitar perda total.");
+        return contracts_array_from_prop_original; // Retornar original se falhar para não apagar tudo
+    endif;
+else
+    LogInfo("ValidateContracts_NOCHANGE", "Facção " + faction_name + " - Nenhuma mudança necessária na lista de contratos após validação. CProp NÃO foi reescrita.");
+endif;
+
+LogInfo("ValidateContracts_EXIT", "Facção " + faction_name + " - Validação concluída. Retornando " + final_valid_contracts_list.size() + " contratos válidos para o restante do ciclo de pagamento.");
+return final_valid_contracts_list;
+
+endfunction
+function ProcessCaravanPaymentSecure(guild_obj, contract_struct, faction_name, current_time)
+LogCritical("ProcessSecure_ENTRADA", "Facção: " + faction_name +
+", Origem: " + (contract_struct.origin_territory_id ?: "N/A") +
+", Capital: " + (contract_struct.capital_territory_id ?: "N/A") +
+", Due: " + (CInt(contract_struct.next_payment_due) ?: "N/A") +
+", Custo: " + (CInt(contract_struct.weekly_cost) ?: "N/A") +
+", CurrentTime: " + current_time);
+// Revalidar o struct recebido (segurança extra)
+if (!contract_struct || TypeOf(contract_struct) != "Struct" ||
+    !contract_struct.exists("origin_territory_id") || !contract_struct.origin_territory_id ||
+    !contract_struct.exists("capital_territory_id") || !contract_struct.capital_territory_id ||
+    !contract_struct.exists("next_payment_due") || CInt(contract_struct.next_payment_due) <= 0 ||
+    !contract_struct.exists("weekly_cost") || CInt(contract_struct.weekly_cost) <= 0 )
+    LogError("SecurePayment", "Contrato INVÁLIDO recebido para processamento (campos obrigatórios ausentes ou inválidos). Struct: " + contract_struct);
+    return error; // Indica falha para desativar contrato
+endif;
+
+var origin_id     := CStr(contract_struct.origin_territory_id);
+var capital_id    := CStr(contract_struct.capital_territory_id);
+var payment_due   := CInt(contract_struct.next_payment_due);
+var cost          := CInt(contract_struct.weekly_cost);
+
+LogDebug("SecurePayment_FLOW", "Detalhes do Contrato - Origem: " + origin_id + ", Capital: " + capital_id + ", Vencimento: " + payment_due + ", Custo: " + cost);
+
+// VALIDAÇÃO EXTRA: Verificar se realmente está na hora
+if (current_time < payment_due)
+    LogDebug("ProcessSecure_SKIP", "Origem " + origin_id + " NÃO DEVIDO. Due: " + payment_due + ", Current: " + current_time + ". Mantendo contrato.");
+    return contract_struct; // Retorna o contrato original sem modificação
+endif;
+
+LogCritical("ProcessSecure_DEVIDO", "Origem " + origin_id + " PAGAMENTO DEVIDO (Due: " + payment_due + " <= Current: " + current_time + "). Prosseguindo...");
+
+var capital_chest_object := 0;
+var chest_find_attempts := 0;
+var max_chest_find_attempts := 3; // Pode aumentar se necessário
+
+while (!capital_chest_object && chest_find_attempts < max_chest_find_attempts)
+    chest_find_attempts += 1;
+    LogCritical("ProcessSecure_DETAIL", "  Tentativa " + chest_find_attempts + " de encontrar baú da capital (Território ID: " + capital_id + ") para facção " + faction_name);
+    capital_chest_object := FindFactionChest(faction_name, capital_id, 0); // 0 = não criar se faltar
+
+    if (!capital_chest_object)
+        LogWarning("SecurePayment_FLOW", "  Tentativa " + chest_find_attempts + " de encontrar baú da capital (" + capital_id + ") falhou. Aguardando...");
+        SleepMS(250);
+    else
+        LogInfo("SecurePayment_FLOW", "  Baú da capital (" + capital_id + ") encontrado na tentativa " + chest_find_attempts + ". Serial: " + capital_chest_object.serial);
+    endif;
+endwhile;
+
+if (!capital_chest_object)
+    LogError("ProcessSecure_ERRO_BAU", "FALHA CRÍTICA: Baú da capital (Território ID: " + capital_id + ") não encontrado para facção " + faction_name + " após " + max_chest_find_attempts + " tentativas.");
+    return error; // <<<<<< CAUSA DESCONTRATAÇÃO
+endif;
+LogCritical("ProcessSecure_BAU_ENCONTRADO", "Baú da capital " + capital_id + " encontrado: " + capital_chest_object.serial);
+
+// Validações do objeto baú
+if (TypeOf(capital_chest_object) != "ItemRef" || !capital_chest_object.isA(POLCLASS_CONTAINER) || !capital_chest_object.serial || capital_chest_object.serial <= 0)
+    LogError("SecurePayment", "Referência do baú da capital (" + capital_chest_object + ") é inválida ou não é um container. Pagamento falhou para Origem " + origin_id);
+    return error; // <<<<<< CAUSA DESCONTRATAÇÃO
+endif;
+if (capital_chest_object.container != 0 && capital_chest_object.container != error)
+    LogError("SecurePayment", "Baú da capital (Serial: " + capital_chest_object.serial + ") está dentro de outro container (ID: " + capital_chest_object.container + "). Pagamento não pode ser processado para Origem " + origin_id);
+    return error; // <<<<<< CAUSA DESCONTRATAÇÃO
+endif;
+
+var coins_available_in_chest := 0;
+var coin_items_in_chest_list := array{};
+
+LogCritical("ProcessSecure_DETAIL", "  Contando moedas FÍSICAS no baú da capital (Serial: " + capital_chest_object.serial + ") para Origem " + origin_id);
+var items_in_capital_chest := EnumerateItemsInContainer(capital_chest_object);
+if (items_in_capital_chest == error)
+    LogWarning("ProcessSecure_DETAIL", "EnumerateItemsInContainer retornou ERRO para baú " + capital_chest_object.serial);
+    items_in_capital_chest := array{};
+endif;
+
+foreach item_loop in items_in_capital_chest
+    if (item_loop && item_loop.objtype == 0xBA63) // Moedas de Cobre
+        coins_available_in_chest += CInt(item_loop.amount);
+        coin_items_in_chest_list.append(item_loop);
+        LogDebug("SecurePayment_COINS", "    Stack de moedas (0xBA63) no baú " + capital_chest_object.serial + ": Serial " + item_loop.serial + ", Quantidade: " + item_loop.amount);
+    endif;
+    SleepMS(1);
+endforeach;
+
+LogCritical("ProcessSecure_MOEDAS_FISICAS", "Origem " + origin_id + ": Moedas FÍSICAS no baú " + capital_chest_object.serial + ": " + coins_available_in_chest + ". Custo necessário: " + cost);
+
+if (coins_available_in_chest < cost)
+    LogWarning("ProcessSecure_FALHA_FUNDOS", "Origem " + origin_id + ": FUNDOS FÍSICOS INSUFICIENTES. Baú " + capital_chest_object.serial + " tem " + coins_available_in_chest + ", precisa " + cost);
+    return error; // <<<<<< CAUSA DESCONTRATAÇÃO
+endif;
+LogCritical("ProcessSecure_DETAIL", "Origem " + origin_id + ": FUNDOS FÍSICOS SUFICIENTES. Tentando debitar " + cost + " moedas.");
+
+var coins_successfully_debited := 0;
+var coins_remaining_to_debit := cost;
+
+foreach coin_item_to_debit_from in coin_items_in_chest_list
+    if (coins_remaining_to_debit <= 0) break; endif; // Já debitou tudo
+
+    if (!coin_item_to_debit_from || !coin_item_to_debit_from.serial) // Checagem extra
+        LogWarning("SecurePayment_DEBIT", "    Item de moeda inválido encontrado na lista durante o débito. Pulando.");
+        continue;
+    endif;
+
+    var amount_in_this_stack := CInt(coin_item_to_debit_from.amount);
+    var amount_to_take_this_iteration := (coins_remaining_to_debit > amount_in_this_stack) ? amount_in_this_stack : coins_remaining_to_debit;
+
+    LogCritical("ProcessSecure_DETAIL", "    Origem " + origin_id + ": Chamando HelpSubtractAmount no item " + coin_item_to_debit_from.serial + " (Amount: " + amount_in_this_stack + ") para " + amount_to_take_this_iteration + " moedas.");
+
+    if (HelpSubtractAmount(coin_item_to_debit_from, amount_to_take_this_iteration))
+        coins_successfully_debited += amount_to_take_this_iteration;
+        coins_remaining_to_debit -= amount_to_take_this_iteration;
+        LogInfo("SecurePayment_DEBIT", "    Origem " + origin_id + ": Débito FÍSICO de " + amount_to_take_this_iteration + " moedas bem-sucedido. Total debitado: " + coins_successfully_debited + ". Resta debitar: " + coins_remaining_to_debit);
+    else
+        LogError("SecurePayment", "    Origem " + origin_id + ": FALHA em HelpSubtractAmount para " + amount_to_take_this_iteration + " moedas do stack (Serial: " + coin_item_to_debit_from.serial + ").");
+        // Não interromper o loop, tentar outros stacks se houver. O débito final será verificado.
+    endif;
+    SleepMS(10);
+endforeach;
+
+// Após tentar debitar de todos os stacks
+if (coins_successfully_debited >= cost)
+    var old_due_date_for_log := contract_struct.next_payment_due;
+    contract_struct.next_payment_due := current_time + CARAVAN_TEST_DURATION_SECONDS; // Usa a constante
+    LogCritical("ProcessSecure_SUCESSO_PAGAMENTO", "Origem " + origin_id + ": Pagamento FÍSICO (" + coins_successfully_debited + "/" + cost + ") SUCESSO. Old Due: " + old_due_date_for_log + ", New Due: " + contract_struct.next_payment_due);
+    return contract_struct;
+else
+    LogError("ProcessSecure_FALHA_DEBITO", "Origem " + origin_id + ": DÉBITO FÍSICO INCOMPLETO. Tentou: " + cost + ", Conseguiu debitar: " + coins_successfully_debited + ". Contrato será desativado.");
+    if (coins_successfully_debited > 0)
+        LogWarning("SecurePayment_REVERT", "Origem " + origin_id + ": ESTORNANDO " + coins_successfully_debited + " moedas debitadas parcialmente do baú da capital (Serial: " + capital_chest_object.serial + ")");
+        var item_estorno_parcial_pagamento := CreateItemInContainer(capital_chest_object, 0xBA63, coins_successfully_debited);
+        if (item_estorno_parcial_pagamento && item_estorno_parcial_pagamento != error)
+            LogInfo("SecurePayment_REVERT", "    Estorno FÍSICO de " + coins_successfully_debited + " moedas realizado para baú " + capital_chest_object.serial);
+            MarcarRecursosModificados(capital_chest_object);
         else
-            amount_to_pay -= item.amount;
-            DestroyItem(item);
-        endif
-    endforeach;
-    
-    return (amount_to_pay == 0);
-endfunction
+            LogError("SecurePayment_REVERT", "    FALHA CRÍTICA ao tentar estornar " + coins_successfully_debited + " moedas para baú " + capital_chest_object.serial);
+        endif;
+    endif;
+    return error; // <<<<<< CAUSA DESCONTRATAÇÃO
+endif;
 
-function DeactivateCaravan(guild)
-    guild.EraseProp("active_caravan_to_capital");
-    guild.EraseProp("caravan_contract_start_time");
-    guild.EraseProp("caravan_next_payment_due");
-    guild.EraseProp("caravan_weekly_cost");
 endfunction
-
-function CalcularSegundos(data)
-    var criadoEm := Cint(data);
-    var tempoAgora := polcore().systime;
-    var tempoDecorrido := tempoAgora - criadoEm;
-    return tempoDecorrido;
-endfunction
-
-function CalcularDias(data)
-    var criadoEm := Cint(data);
-    var tempoAgora := polcore().systime;
-    var tempoDecorrido := tempoAgora - criadoEm;
-    var dias := Cint(tempoDecorrido / 86400); // 24*60*60 = 86400 segundos por dia
-    return dias;
-endfunction
-
