@@ -1,0 +1,70 @@
+// Arquivo: pkg/commands/gm/setitemamount.src
+use uo;
+use util; // Para CInt, SendSysMessage, SendTextEntryGump, Hex
+use os;   // PARA SLEEPMS
+
+program set_item_amount(character)
+    SendSysMessage(character, "Target an item to change its amount.");
+    var targeted_item := Target(character); // NOME DA VARIÁVEL CORRIGIDO
+
+    if (!targeted_item)
+        SendSysMessage(character, "Cancelled.");
+        return;
+    endif
+
+    if (!targeted_item.isA(POLCLASS_ITEM))
+        SendSysMessage(character, "That is not an item.");
+        return;
+    endif
+
+    var nova_quantidade_str := SendTextEntryGump(character, "Enter new amount for " + targeted_item.desc + " (Serial: " + targeted_item.serial + "):", TE_CANCEL_DISABLE, TE_STYLE_NORMAL, 5);
+    if (!nova_quantidade_str)
+        SendSysMessage(character, "Cancelled.");
+        return;
+    endif
+
+    var nova_quantidade := CInt(nova_quantidade_str);
+    // Permitir 0 para destruir (se for o caso, ou > 60000 se o itemdesc permitir).
+    // Uma validação mais estrita poderia ser if (nova_quantidade < 0 || nova_quantidade > 60000)
+    if (nova_quantidade < 0) 
+        SendSysMessage(character, "Invalid amount (cannot be negative).");
+        return;
+    endif
+    if (nova_quantidade > 60000) // Limite prático comum
+        SendSysMessage(character, "Amount too high (max 60000).");
+        // Você pode optar por truncar para 60000 aqui se desejar, ou apenas rejeitar.
+        // nova_quantidade := 60000;
+        return;
+    endif
+
+
+    SendSysMessage(character, "Item: " + targeted_item.desc + " (0x" + Hex(targeted_item.objtype) + ")");
+    var amount_antes := targeted_item.amount;
+    SendSysMessage(character, "Amount ANTES: " + amount_antes);
+
+    // TENTATIVA DIRETA DE MODIFICAR .amount
+    targeted_item.amount := nova_quantidade;
+    Sleepms(100); // Dar um tempo para o core processar
+
+    var amount_depois := targeted_item.amount;
+    SendSysMessage(character, "Amount DEPOIS: " + amount_depois);
+
+    if (amount_depois == nova_quantidade)
+        SendSysMessage(character, "SUCCESS: Amount changed to " + amount_depois);
+    else
+        SendSysMessage(character, "FAILURE: Amount did NOT change as expected. Still: " + amount_depois);
+        SendSysMessage(character, "  (Was " + amount_antes + ", tried to set to " + nova_quantidade + ")");
+        
+        // Se falhou, tente criar um novo item com essa quantidade para ver se a criação funciona
+        if (targeted_item.container)
+            SendSysMessage(character, "  Attempting to create a new item with target amount in same container...");
+            var temp_item := CreateItemInContainer(targeted_item.container, targeted_item.objtype, nova_quantidade);
+            if (temp_item && temp_item != error)
+                SendSysMessage(character, "    New item created: " + temp_item.serial + " with amount " + temp_item.amount);
+                DestroyItem(temp_item); // Limpar
+            else
+                SendSysMessage(character, "    Failed to create new item as well. Error: " + (temp_item ? temp_item.errortext : "Unknown"));
+            endif
+        endif
+    endif
+endprogram
