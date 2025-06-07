@@ -1,0 +1,51 @@
+use uo;
+
+include ":attributes:attributes";
+include ":tn:characters";
+
+program textcmd_setarquiteto(who)
+	if ( who.cmdlevel < 3 )
+		SendSysMessage(who, "Acesso negado!");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Escolha o jogador para setar a habilidade Arquiteto.");
+	var targ := Target(who);
+
+	if ( !targ || !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Alvo inválido. Cancelado.");
+		return 0;
+	endif
+	
+	if ( targ.npctemplate )
+		SendSysMessage(who, "Não é possível dar habilidades para NPCs.");
+		return 0;
+	endif
+
+	// Verificar se já tem a habilidade
+	if ( TemHabilidade(targ, "Arquiteto") )
+		SendSysMessage(who, targ.name + " já possui a habilidade Arquiteto.");
+		return 0;
+	endif
+	
+	// Pegar habilidades existentes ou criar novo dictionary
+	var myhabs := GetObjProperty(targ, "myhabs");
+	if ( !myhabs )
+		myhabs := dictionary;
+	endif
+	
+	// Encontrar o próximo nível livre
+	var next_level := 1;
+	while ( myhabs.exists(next_level) )
+		next_level := next_level + 1;
+	endwhile
+	
+	// Adicionar a habilidade Arquiteto
+	myhabs.insert(next_level, "Arquiteto");
+	SetObjProperty(targ, "myhabs", myhabs);
+	
+	SendSysMessage(who, targ.name + " agora possui a habilidade Arquiteto.");
+	SendSysMessage(targ, "Você recebeu a habilidade Arquiteto!");
+			
+	return 1;
+endprogram

@@ -22,6 +22,8 @@ include ":architect:include/architect";
 include ":architect:include/systemclock";
 include ":charactercreation:habilidades";
 include ":destroyable:include/destroyItem";
+include ":faccao:include/permissions";
+include ":faccao:include/territory_management";
 
 const SIGENA:= 0;
 const BLOCK_OF_STONE := 0x5001;
@@ -43,11 +45,52 @@ var undo:= array{};
 
 program architect_gump(who)
   Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
-  
     if (who.cmdlevel < STAFFMODELEVEL)
         if(!TemHabilidade(who, "Arquiteto")) //Habilidade de construcao necessaria para executar o comando
             SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
             return 0;
+        endif
+          // Verificacao de permissao baseada em faccao e territorio
+        SysLog("ARCHITECT: Iniciando verificacao de permissoes para " + who.name + " (Serial: " + who.serial + ")");
+        SysLog("ARCHITECT: Posicao do jogador: " + who.x + ", " + who.y + ", " + who.z + " (Realm: " + who.realm + ")");
+        
+        var current_territory := GetResidenciasRegion(who);
+        SysLog("ARCHITECT: GetResidenciasRegion retornou: '" + current_territory + "' (Tipo: " + TypeOf(current_territory) + ")");
+        
+        if (current_territory && current_territory != "")
+            SysLog("ARCHITECT: Jogador esta em territorio: " + current_territory);
+            
+            var player_faction := GetPlayerFaction(who);
+            SysLog("ARCHITECT: Faccao do jogador: '" + player_faction + "' (Tipo: " + TypeOf(player_faction) + ")");
+            
+            if (!player_faction)
+                SysLog("ARCHITECT: Jogador nao tem faccao, negando acesso");
+                SendSysMessageEx(who, "Voce precisa pertencer a uma faccao para construir em territorios controlados.", SSM_FAIL);
+                return 0;
+            endif
+            
+            SysLog("ARCHITECT: Buscando informacoes do territorio: " + current_territory);
+            var territory_info := TM_GetTerritoryInfo(current_territory);
+            SysLog("ARCHITECT: TM_GetTerritoryInfo retornou: " + (territory_info ? "struct valida" : "null/error") + " (Tipo: " + TypeOf(territory_info) + ")");
+            
+            if (territory_info && territory_info.exists("faction"))
+                var territory_faction := territory_info["faction"];
+                SysLog("ARCHITECT: Faccao do territorio: '" + territory_faction + "'");
+                
+                if (territory_faction && territory_faction != player_faction)
+                    SysLog("ARCHITECT: Faccoes nao coincidem! Jogador: '" + player_faction + "', Territorio: '" + territory_faction + "'");
+                    SendSysMessageEx(who, "Voce nao tem permissao para construir neste territorio. Apenas membros da faccao '" + territory_faction + "' podem construir aqui.", SSM_FAIL);
+                    return 0;
+                endif
+                SysLog("ARCHITECT: Permissao concedida! Faccoes coincidem: " + player_faction);
+                SendSysMessageEx(who, "Permissao concedida! Voce pode construir neste territorio da faccao '" + territory_faction + "'.", SSM_INFO);
+            else
+                SysLog("ARCHITECT: Territorio sem faccao definida ou territory_info invalida");
+                SendSysMessageEx(who, "Este territorio nao esta sob controle de nenhuma faccao. Construcao permitida.", SSM_INFO);
+            endif
+        else
+            SysLog("ARCHITECT: Jogador fora de territorios controlados");
+            SendSysMessageEx(who, "Voce pode construir livremente fora de territorios controlados.", SSM_INFO);
         endif
     else
         staffmode := 1;
@@ -1461,26 +1504,49 @@ endfunction
  *         0 if they aren't
 */
 function check_coords(who, coords)
+  SysLog("check_coords: Iniciando verificacao para " + who.name + " em " + who.x + "," + who.y + "," + who.z);
 
   if (staffmode)
+    SysLog("check_coords: Staff mode ativado, permitindo construcao");
     return 1;
   endif
 
   //Retorna a localizacao de onde esta a pessoa
+  SysLog("check_coords: Chamando GetResidenciasRegion...");
   var where := GetResidenciasRegion(who);
-
+  SysLog("check_coords: GetResidenciasRegion retornou: '" + where + "' (Tipo: " + TypeOf(where) + ")");
+  
+  SysLog("check_coords: Abrindo datafile :architect:areas");
   var df := opendatafile(":architect:areas");
   if (df == error)
+      SysLog("check_coords: Datafile nao existe, criando novo");
       df :=  createdatafile(":architect:areas");
+  else
+      SysLog("check_coords: Datafile aberto com sucesso");
   endif
 
+  SysLog("check_coords: Procurando elemento '" + where + "' no datafile");
   var elem := df.FindElement(where);
-  //Se nao tiver a prop Name, ele da um erro para nao conseguir construir fora do contexto da area
-  if(!elem.GetProp("Name"))
+  SysLog("check_coords: FindElement retornou: " + (elem ? "elemento encontrado" : "elemento NAO encontrado") + " (Tipo: " + TypeOf(elem) + ")");
+  
+  //Se nao encontrar o elemento ou nao tiver a prop Name, ele da um erro para nao conseguir construir fora do contexto da area
+  if (!elem || elem == error)
+    SysLog("check_coords: ERRO - Elemento nao encontrado ou erro. Negando construcao.");
+    SendSysMessage (who, lang["outofbounds"]);
+    return 0;
+  endif
+  
+  SysLog("check_coords: Verificando propriedade Name do elemento");
+  var territory_name := elem.GetProp("Name");
+  SysLog("check_coords: Propriedade Name: '" + territory_name + "' (Tipo: " + TypeOf(territory_name) + ")");
+  
+  if (!territory_name || territory_name == error || territory_name == "")
+    SysLog("check_coords: ERRO - Propriedade Name invalida. Negando construcao.");
     SendSysMessage (who, lang["outofbounds"]);
     return 0;
   endif
 
+  SysLog("check_coords: Todas as verificacoes passaram! Permitindo construcao.");
   return 1;
 
 endfunction
