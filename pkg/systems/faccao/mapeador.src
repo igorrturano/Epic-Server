@@ -1,0 +1,279 @@
+use uo;
+use os;
+use cfgfile;
+use datafile;
+
+include "include/client";
+include "include/objtype";
+include ":gumps:gumps";
+include ":gumps:requestGump";
+include ":faccao:faccao";
+include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":architect:architect";
+
+// Constantes para o Mapeador
+const BORDER_ITEM_LATERAL := 0xF873; // Item para bordas laterais (esquerda/direita)
+const BORDER_ITEM_TRANSVERSAL := 0xF878; // Item para bordas transversais (superior/inferior)
+const BORDER_DURATION := 300; // 5 minutos em segundos
+const BORDER_HUE := 39; // Cor da borda (definida no itemdesc.cfg)
+
+// Configurar nível de logging para debug detalhado do mapeador
+function InitMapeadorLogging()
+    SetCategoryLogLevel("mapeador", LOG_DEBUG);
+    LogInfo("mapeador", "Sistema de logging do Mapeador inicializado com nível DEBUG");
+endfunction
+
+program mapeador_use(who, item)
+    // Verificar se é uma chamada para remoção automática
+    if (typeof(who) == "Array" && who.size() >= 3 && who[1] == "remove_borders")
+        return RemoveBordersTimer(who[2], who[3]);
+    endif
+    
+    // Inicializar sistema de logging
+    InitMapeadorLogging();
+    
+    LogInfo("mapeador", "Jogador " + who.name + " (" + who.serial + ") tentando usar Mapeador");
+    
+    // Verificar se é um arquiteto da guilda
+    if (!IsArchitectOfGuild(who))
+        SendSysMessage(who, "Apenas arquitetos de guilda podem usar o Mapeador.", 3, 38);
+        LogWarning("mapeador", "Acesso negado para " + who.name + " - não é arquiteto");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Ativando o Mapeador de Território...", 3, 66);
+    LogInfo("mapeador", "Arquiteto " + who.name + " ativando Mapeador");
+    
+    // Criar bordas visuais nos territórios da facção
+    if (CreateTerritoryBorders(who))
+        SendSysMessage(who, "Bordas territoriais ativadas! Elas serão visíveis por 5 minutos.", 3, 53);
+        LogInfo("mapeador", "Bordas territoriais ativadas com sucesso para " + who.name);
+    else
+        SendSysMessage(who, "Nenhum território encontrado para sua facção.", 3, 38);
+        LogWarning("mapeador", "Nenhum território encontrado para " + who.name);
+    endif
+    
+    return 1;
+endprogram
+
+function IsArchitectOfGuild(who)
+    // Usar a função VerifyArchitect do sistema de arquitetos
+    // que já faz todas as verificações necessárias
+    return VerifyArchitect(who);
+endfunction
+
+function CreateTerritoryBorders(who)
+    // Obter a facção do jogador
+    var player_faction := GetPlayerFaction(who);
+    LogDebug("mapeador", "Facção do jogador " + who.name + ": " + player_faction);
+    if (!player_faction)
+        LogError("mapeador", "Facção não encontrada para jogador " + who.name);
+        return 0;
+    endif
+    
+    // Abrir o datafile de territórios
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("mapeador", "Erro ao acessar datafile :architect:areas");
+        SendSysMessage(who, "Erro ao acessar dados de territórios.", 3, 38);
+        return 0;
+    endif
+    
+    var territories_found := 0;
+    var total_border_items := 0;
+    var territories_checked := 0;
+    
+    LogDebug("mapeador", "Total de territórios no datafile: " + rect_df.keys().size());
+    
+    // Percorrer todos os territórios
+    foreach territory_name in (rect_df.keys())
+        territories_checked++;
+        var elem := SafeFindElement(rect_df, territory_name);
+        if (!elem)
+            LogWarning("mapeador", "Elemento não encontrado: " + territory_name);
+            continue;
+        endif
+          // Verificar se o território pertence à facção do jogador
+        var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+        LogDebug("mapeador", "Território: " + territory_name + " Facção: " + territory_faction + " (Player: " + player_faction + ")");
+        
+        if (territory_faction != player_faction)
+            continue;
+        endif
+        
+        // Obter dados do retângulo
+        var rect_str := GetElementProp(elem, "Rect", "");
+        var realm := GetElementProp(elem, "Realm", who.realm);
+        
+        LogDebug("mapeador", "Território da facção encontrado: " + territory_name + " Rect: " + rect_str + " Realm: " + realm);
+        
+        if (!rect_str)
+            LogWarning("mapeador", "Rect string vazia para território: " + territory_name);
+            continue;
+        endif
+        
+        // Parse das coordenadas do retângulo
+        var coords := SplitWords(rect_str, " ");
+        LogDebug("mapeador", "Coordenadas parseadas: " + coords.size() + " elementos");
+        if (coords.size() < 4)
+            LogError("mapeador", "Coordenadas insuficientes para " + territory_name + ": " + coords.size() + " elementos");
+            continue;
+        endif
+        
+        var x1 := CInt(coords[1]);
+        var y1 := CInt(coords[2]);
+        var x2 := CInt(coords[3]);
+        var y2 := CInt(coords[4]);
+        
+        LogInfo("mapeador", "Criando bordas para " + territory_name + ": (" + x1 + "," + y1 + ") até (" + x2 + "," + y2 + ")");
+        
+        // Criar bordas para este território
+        var border_count := CreateBorderForRectangle(who, x1, y1, x2, y2, realm);
+        LogInfo("mapeador", "Bordas criadas para " + territory_name + ": " + border_count + " itens");
+        total_border_items += border_count;        territories_found++;
+    endforeach
+    
+    LogInfo("mapeador", "Resumo: Verificados " + territories_checked + " territórios, encontrados " + territories_found + " da facção " + player_faction);
+    
+    if (territories_found > 0)
+        SendSysMessage(who, "Territórios mapeados: " + territories_found + " (" + total_border_items + " marcadores)", 3, 1153);
+        LogInfo("mapeador", "Total de " + total_border_items + " marcadores de borda criados");
+    endif
+    
+    return territories_found;
+endfunction
+
+function CreateBorderForRectangle(who, x1, y1, x2, y2, realm)
+    var border_items := array{};
+    var items_created := 0;
+    var failed_items := 0;
+    var x, y, border_item;
+      LogDebug("mapeador", "Iniciando criação de bordas para retângulo (" + x1 + "," + y1 + ") até (" + x2 + "," + y2 + ") realm " + realm);
+    
+    // Preencher todos os tiles das bordas para cobertura completa
+    var tile_step := 1;
+      // Criar borda superior (y1) - TRANSVERSAL
+    LogDebug("mapeador", "Criando borda superior em Y=" + y1);
+    for (x := x1; x <= x2; x := x + tile_step)
+        border_item := CreateBorderItem(x, y1, realm, who, BORDER_ITEM_TRANSVERSAL);
+        if (border_item)
+            border_items.append(border_item);
+            items_created++;
+        else
+            failed_items++;
+        endif
+    endfor
+      // Criar borda inferior (y2) - TRANSVERSAL
+    LogDebug("mapeador", "Criando borda inferior em Y=" + y2);
+    for (x := x1; x <= x2; x := x + tile_step)
+        border_item := CreateBorderItem(x, y2, realm, who, BORDER_ITEM_TRANSVERSAL);
+        if (border_item)
+            border_items.append(border_item);
+            items_created++;
+        else
+            failed_items++;
+        endif
+    endfor
+    
+    // Criar borda esquerda (x1) - LATERAL
+    LogDebug("mapeador", "Criando borda esquerda em X=" + x1);
+    for (y := y1 + tile_step; y < y2; y := y + tile_step) // Avoid duplicating corners covered by top/bottom
+        border_item := CreateBorderItem(x1, y, realm, who, BORDER_ITEM_LATERAL);
+        if (border_item)
+            border_items.append(border_item);
+            items_created++;
+        else
+            failed_items++;
+        endif
+    endfor
+    
+    // Criar borda direita (x2) - LATERAL
+    LogDebug("mapeador", "Criando borda direita em X=" + x2);
+    for (y := y1 + tile_step; y < y2; y := y + tile_step) // Avoid duplicating corners covered by top/bottom
+        border_item := CreateBorderItem(x2, y, realm, who, BORDER_ITEM_LATERAL);
+        if (border_item)
+            border_items.append(border_item);
+            items_created++;
+        else
+            failed_items++;
+        endif
+    endfor
+    
+    LogInfo("mapeador", "Bordas criadas: " + items_created + " sucessos, " + failed_items + " falhas");
+      // Agendar remoção das bordas após 5 minutos
+    if (border_items.size() > 0)
+        start_script(":faccao:mapeador", {"remove_borders", border_items, BORDER_DURATION});
+        LogDebug("mapeador", "Remoção automática agendada para " + border_items.size() + " itens em " + BORDER_DURATION + " segundos");
+    endif
+    
+    return items_created;
+endfunction
+
+function CreateBorderItem(x, y, realm, who, item_type)
+    var item_name := "";
+    if (item_type == BORDER_ITEM_LATERAL)
+        item_name := "marcador lateral";
+    else
+        item_name := "marcador transversal";
+    endif
+    
+    LogDebug("mapeador", "Tentando criar " + item_name + " (0x" + Hex(item_type) + ") em (" + x + "," + y + ") realm " + realm);
+    
+    // Tentar diferentes alturas (z) se a primeira falhar
+    var z_values := {0, 1, 2, 3, 4, 5, -1, -2, -3};
+    var border_item;
+    var z_tried := 0;
+    
+    foreach z_val in z_values
+        z_tried++;
+        border_item := CreateItemAtLocation(x, y, z_val, item_type, 1, realm);
+        if (border_item)
+            LogDebug("mapeador", item_name + " criado em (" + x + "," + y + "," + z_val + ") Serial: " + border_item.serial);
+            break;
+        endif
+    endforeach
+      if (!border_item)
+        LogError("mapeador", "FALHA ao criar " + item_name + " em (" + x + "," + y + ") - tentou " + z_tried + " valores de Z");
+        return 0;
+    endif
+    
+    // Configurar propriedades da borda
+    border_item.movable := 0;
+    border_item.name := "Marcador Territorial";
+    border_item.SetProp("MapeadorBorder", 1);
+    border_item.SetProp("CreatedBy", who.serial);
+    border_item.SetProp("CreatedTime", polcore().systime);
+    
+    LogDebug("mapeador", item_name + " " + border_item.serial + " configurado em (" + border_item.x + "," + border_item.y + "," + border_item.z + ")");
+    
+    return border_item;
+endfunction
+
+// Função auxiliar para remoção automática de bordas
+function RemoveBordersTimer(border_items, duration)
+    // Aguardar o tempo especificado
+    sleep(duration);
+    
+    var removed_count := 0;
+    var failed_count := 0;
+    
+    // Remover todos os itens de borda
+    foreach item in border_items
+        if (item && item.serial && item.GetProp("MapeadorBorder"))
+            if (DestroyItem(item))
+                removed_count++;
+            else
+                failed_count++;
+            endif
+        endif
+    endforeach
+    
+    // Log do resultado da remoção
+    if (removed_count > 0)
+        LogInfo("mapeador", "Remoção automática: " + removed_count + " marcadores removidos, " + failed_count + " falhas");
+    endif
+    
+    return 1;
+endfunction

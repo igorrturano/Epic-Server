@@ -1,0 +1,23 @@
+use uo;
+use os;
+
+program remove_border(params)
+    var item_serial := params[1];
+    var delay := params[2];
+    
+    if (!item_serial || !delay)
+        return 0;
+    endif
+    
+    // Aguardar o tempo especificado
+    Sleep(delay);
+    
+    // Encontrar o item pelo serial
+    var item := SystemFindObjectBySerial(item_serial);
+    if (item && item.GetProp("MapeadorBorder"))
+        // Remover o item
+        DestroyItem(item);
+    endif
+    
+    return 1;
+endprogram
