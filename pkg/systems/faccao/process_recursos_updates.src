@@ -16,6 +16,7 @@ use datafile;
 use math; // Adicionado para usar a função Abs
 
 include ":faccao:include/shared_functions";
+include ":faccao:include/safe_guild_utils";
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
@@ -154,14 +155,10 @@ function VerificarFaccoesImportantes()
     // Verificar facções ativas
     var guilds := ListGuilds();
     foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
-        if (guild && guild.members.size() > 0)
-            var faction_name := guild.GetProp("name");
-            if (!faction_name)
-                faction_name := guild.guildname;
-            endif
+        var guild := FindGuild(guild_id);        if (guild && guild.members.size() > 0)
+            var faction_name := SafeGetGuildName(guild);
             
-            if (faction_name)
+            if (faction_name && faction_name != "Unknown Guild")
                 VerificarRecursosDaFaccao(faction_name, guild);
             endif
         endif

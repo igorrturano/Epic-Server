@@ -19,6 +19,7 @@ use util;
 
 include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions";
+include ":faccao:include/safe_guild_utils";
 include ":faccao:include/logging";
 include ":faccao:include/permissions";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
@@ -92,13 +93,9 @@ function VerificarConsistenciaOptimizada()
     var guilds := ListGuilds();
     foreach guild_id in guilds
         var guild := FindGuild(guild_id);
-        if (guild)
-            var faction_name := guild.GetProp(FACTION_PROP_NAME);
-            if (!faction_name)
-                faction_name := guild.guildname;
-            endif
+        if (guild)            var faction_name := SafeGetGuildName(guild);
             
-            if (faction_name)
+            if (faction_name && faction_name != "Unknown Guild")
                 VerificarConsistenciaFaccaoOptimizada(faction_name, df);
             endif
         endif
@@ -356,11 +353,10 @@ function CriarEstruturaNovaRecursos()
         var guild_obj := FindGuild(guild.guildid);
         if (guild_obj)
             var faction_name := guild_obj.GetProp(FACTION_PROP_NAME);
-            if (!faction_name)
-                faction_name := guild_obj.GetProp("name");
+            if (!faction_name)            faction_name := guild_obj.GetProp("name");
             endif
             if (!faction_name)
-                faction_name := guild.guildname;
+                faction_name := SafeGetGuildName(guild);
             endif
             
 if (faction_name)
@@ -817,10 +813,12 @@ function VerificarPropriedadesGuildas()
         
         // 1. Verificar se tem nome de facção padrão 
         var faction_name := guild.GetProp(FACTION_PROP_NAME);
-        if (!faction_name)
-            // Tentar usar guildname como nome de facção
-            guild.SetProp(FACTION_PROP_NAME, guild.guildname);
-            atualizacoes += 1;
+        if (!faction_name)            // Tentar usar SafeGetGuildName como nome de facção
+            var safe_name := SafeGetGuildName(guild);
+            if (safe_name && safe_name != "Unknown Guild")
+                guild.SetProp(FACTION_PROP_NAME, safe_name);
+                atualizacoes += 1;
+            endif
         endif
         
         // 2. Verificar recursos de facção
@@ -835,9 +833,8 @@ function VerificarPropriedadesGuildas()
             var recursos_validados := ValidarRecursos(recursos);
             
             // Se houver diferenças, atualizar
-            if (!SaoRecursosIguais(recursos, recursos_validados))
-                guild.SetProp("recursos", recursos_validados);
-                LogInfo("recursos", "Corrigidos recursos para guilda " + guild.guildname);
+            if (!SaoRecursosIguais(recursos, recursos_validados))                guild.SetProp("recursos", recursos_validados);
+                LogInfo("recursos", "Corrigidos recursos para guilda " + SafeGetGuildName(guild));
                 atualizacoes += 1;
             endif
         endif
@@ -1241,9 +1238,8 @@ function VerificarDatafileFaccoesAtivas()
     for (i := 1; i <= guilds.size(); i := i + 1)
         var guild := FindGuild(guilds[i]);
         if (guild && guild.members.size() > 0)
-            var faction_name := guild.GetProp(FACTION_PROP_NAME);
-            if (!faction_name)
-                faction_name := guild.guildname;
+            var faction_name := guild.GetProp(FACTION_PROP_NAME);            if (!faction_name)
+                faction_name := SafeGetGuildName(guild);
             endif
             
             if (faction_name)

@@ -46,11 +46,13 @@ var undo:= array{};
 program architect_gump(who)
   Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
     if (who.cmdlevel < STAFFMODELEVEL)
-        if(!TemHabilidade(who, "Arquiteto")) //Habilidade de construcao necessaria para executar o comando
-            SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
+        // Verificar privilegios de arquiteto na faccao
+        if (!VerifyArchitect(who))
+            SendSysMessageEx(who, "Voce nao tem privilegios de arquiteto em sua faccao.", SSM_FAIL);
             return 0;
         endif
-          // Verificacao de permissao baseada em faccao e territorio
+        
+        // Verificacao de permissao baseada em faccao e territorio
         SysLog("ARCHITECT: Iniciando verificacao de permissoes para " + who.name + " (Serial: " + who.serial + ")");
         SysLog("ARCHITECT: Posicao do jogador: " + who.x + ", " + who.y + ", " + who.z + " (Realm: " + who.realm + ")");
         

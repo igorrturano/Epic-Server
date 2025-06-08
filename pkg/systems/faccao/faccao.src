@@ -10,6 +10,7 @@ include "include/arrays";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
+include ":faccao:include/safe_guild_utils";
 include ":gumps:gumps";
 include ":tn:tngumps";
 //include ":yggdrasil:boss";
@@ -19,6 +20,7 @@ include ":gumps:htmlGump";
 include ":keys:key";
 // Incluir o arquivo de constantes para resolver os erros
 include ":faccao:faccao_constants";
+include ":architect:include/architect";
 include ":faccao:include/logging";
 include ":datafile:datafile";
 include ":faccao:include/datafile_helpers";
@@ -62,7 +64,8 @@ var priv_list := struct{
    "unlockdoors"     := "Controle de Portas",
    "buyuniforms"     := "Controle de Uniformes",
    "abovelaws"     := "Leis não se aplicam a este personagem",
-   "equipguard"   := "Controle de Equipamento de Guardas"
+   "equipguard"   := "Controle de Equipamento de Guardas",
+   "architect"      := "Permissão de Construção"
 };
 
 var law_list := struct{
@@ -648,10 +651,13 @@ function playerHandler(who, input)
       if (guild_obj.leader == input)
          options.append("Remover Lider");
       endif
+   endif   if (is_gm_or_leader || privilegies.above_members || aboveguild)
+      options.append("Remover da Faccao");
    endif
 
-   if (is_gm_or_leader || privilegies.above_members || aboveguild)
-      options.append("Remover da Faccao");
+   // Opção para definir arquiteto da facção
+   if (is_gm_or_leader || privilegies.giveprivs)
+      options.append("Definir como Arquiteto");
    endif
 
    options.append("Cancelar");
@@ -681,11 +687,51 @@ function playerHandler(who, input)
    elseif (output["Tornar Lider"])
       guild.SetProp("leader", input);
       SendSysMessageEx(who, "{} agora e o lider da faccao".format(player.name), SSM_INFO);
-      ResetAllNpcs();
-   elseif (output["Remover"])
+      ResetAllNpcs();   elseif (output["Remover"])
       if (YesNo(who, "Deseja mesmo remover este personagem da faccao?"))
          RemMember(guild, player);
          SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);
+      endif
+   elseif (output["Definir"])
+      // Gerenciar privilégios de arquiteto
+      var member_privs := guild.GetProp(cstr(input));
+      if (!member_privs)
+         // Se não existir, criar estrutura básica de privilégios
+         member_privs := struct{};
+         foreach key in (priv_list.keys())
+            member_privs[key] := 0;
+         endforeach
+      endif
+      
+      // Verificar se já tem privilégio de arquiteto
+      if (member_privs.architect)
+         if (YesNo(who, "{} já é arquiteto da facção. Deseja remover o privilégio?".format(player.name)))
+            member_privs.architect := 0;
+            guild.SetProp(cstr(input), member_privs);
+            SendSysMessageEx(who, "{} não é mais arquiteto da facção".format(player.name), SSM_INFO);
+            
+            // Log da ação
+            SysLog("ARCHITECT_FACTION: {} removeu privilégio de arquiteto de {} na facção {}".format(who.name, player.name, guild.getProp("name")));
+         endif
+      else
+         // Verificar limite de arquitetos antes de conceder
+         var faction_name := guild.getProp("name");
+         if (CheckArchitectLimit(faction_name))
+            member_privs.architect := 1;
+            guild.SetProp(cstr(input), member_privs);
+            SendSysMessageEx(who, "{} agora é arquiteto da facção".format(player.name), SSM_INFO);
+            
+            // Notificar o jogador se estiver online
+            if (player.connected)
+               SendSysMessageEx(player, "Você recebeu privilégios de arquiteto em sua facção.", SSM_INFO);
+            endif
+            
+            // Log da ação
+            SysLog("ARCHITECT_FACTION: {} concedeu privilégio de arquiteto para {} na facção {}".format(who.name, player.name, faction_name));
+         else
+            var config := LoadArchitectConfig();
+            SendSysMessageEx(who, "A facção já atingiu o limite máximo de arquitetos ({}).".format(config.max_architects), SSM_FAIL);
+         endif
       endif
    endif
 endfunction
@@ -1222,12 +1268,8 @@ territories := cleaned_territories;
         territories := array{};
         guild.SetProp("territories", territories);
     endif
-    
-    // Obter o nome da facção de forma segura
-    var guild_name := guild.GetProp("name");
-    if (!guild_name || guild_name == error)
-        guild_name := guild.guildname;
-    endif
+      // Obter o nome da facção de forma segura
+    var guild_name := SafeGetGuildName(guild);
     
     LogDebug("territorio", "Nome da facção: " + guild_name + ", Territórios: " + territories.size());
 

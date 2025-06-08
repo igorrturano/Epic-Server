@@ -154,8 +154,7 @@ endfunction
 
 
 function AddMember(faccao, mobile)
-   faccao.addMember(mobile);
-   var member_obj := struct{
+   faccao.addMember(mobile);   var member_obj := struct{
       "above_guards" := 0, // can control guards
       "above_merchants" := 0, // can control merchants
       "above_members" := 0, // can add members
@@ -163,7 +162,8 @@ function AddMember(faccao, mobile)
       "contractnpc" := 0, // can contract npc
       "fixitems" := 0, // can fix items
       "unlockdoors" := 0, // can unlock doors
-      "buyuniforms" := 0 // can buy uniform recipes
+      "buyuniforms" := 0, // can buy uniform recipes
+      "architect" := 0 // can use architect system
    };
    faccao.SetProp(cstr(mobile.serial), member_obj);
 endfunction

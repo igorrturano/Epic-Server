@@ -14,11 +14,13 @@ include "include/say";
 include "include/arrays";
 include ":tn:tngumps";
 include ":faccao:include/shared_functions";
+include ":faccao:include/safe_guild_utils";
 include ":faccao:faccao_constants";
 include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";
- include ":faccao:include/datafile_helpers";
+include ":faccao:include/datafile_helpers";
+include ":architect:architect";
 
 
 
@@ -77,9 +79,7 @@ endfunction
 
 function ShowKingdomManagementGump(who, item)
     var cur_menu := MENU_DOACOES;
-    var continuar := 1;
-
-    while(continuar)
+    var continuar := 1;    while(continuar)
         var gump := CreateKingdomManagementGump(who, cur_menu, item);
         var input := GFSendGump(who, gump);
         
@@ -87,6 +87,12 @@ function ShowKingdomManagementGump(who, item)
             // Ações de território sempre finalizam o loop
             ProcessarAcaoTerritorio(who, input[0], item);
             return; // Saída imediata e definitiva
+        elseif (input[0] == 100)
+            // Botão de compra do Mapeador
+            if (ProcessarCompraMapeador(who, item))
+                continuar := 0; // Sair após compra bem-sucedida
+            endif
+            // Se a compra falhar, continua no loop para mostrar novamente o gump
         elseif (input[0] != 0)
             cur_menu := AtualizarEstadoMenu(input[0]);
         else
@@ -645,7 +651,20 @@ endfunction
 function ConstrucoesGump(byref gump)
     GFResizePic(gump, 38, 60, 40263, 400, 502);
     GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Construções");
-    // TODO: Adicionar conteúdo relacionado às construções do reino
+    
+    // Seção de Itens de Construção
+    GFTextLine(gump, 500, 100, 2100, "Itens de Construção Disponíveis:");
+    
+    // Mapeador - Item disponível para arquitetos
+    GFResizePic(gump, 450, 130, 9350, 340, 80);
+    GFTilePic(gump, 450, 150, 0x14F5); // Sextant graphic
+    GFTextLine(gump, 500, 140, 53, "Mapeador de Território");
+    GFTextLine(gump, 500, 155, 1153, "Custo: 500 moedas de cobre");
+    GFTextLine(gump, 500, 170, 1153, "Apenas para arquitetos de guilda");
+    GFAddButton(gump, 740, 150, 4005, 4007, GF_CLOSE_BTN, 100); // Botão Comprar Mapeador
+    
+    
+    // TODO: Adicionar outros itens de construção aqui
 endfunction
 
 function GuerraGump(byref gump)
@@ -1022,15 +1041,8 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     
     var guild_names := array{};
     var button_id := 1;
-    
-    foreach guild in (guilds)
-        var name := guild.GetProp(FACTION_PROP_NAME);
-        if (!name || name == error)
-            name := guild.GetProp("name");
-            if (!name || name == error)
-                name := guild.guildname;
-            endif
-        endif
+      foreach guild in (guilds)
+        var name := SafeGetGuildName(guild);
         
         if (name && name != old_faction)
             guild_names.append(name);
@@ -1431,8 +1443,7 @@ function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
     var objetos_atualizados := 0;
     
     // MÉTODO 1: Verificar registros de seriais
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    var seriais_encontrados := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");    var seriais_encontrados := 0;
     var seriais_dict := dictionary{};
     
     if (seriais_df != error)
@@ -1545,436 +1556,6 @@ LogDebug("territorio", "Buscando objetos no mundo...");
     var objetos_por_mundo := 0;
     
     foreach item in EnumerateItemsInContainer(0) // 0 = root container
-        sleepms(1); // Para não sobrecarregar o servidor
-        
-        // Verificar se é um dos tipos relevantes e limitar busca a 1000 itens para não travar
-        if ((item.objtype in tipos_objetos) && (busca_x_objetos < 1000))
-            busca_x_objetos += 1;
-            
-            // Verificar se pertence ao território
-            var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-            var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-            var item_name := item.name;
-            
-            // Verificar por ID, facção ou nome
-            if ((item_territory_id && item_territory_id == territorio_id) || 
-                (item_faction && item_faction == old_faction) ||
-                (item_name && (item_name.find(territorio_id) != error || item_name.find(old_faction) != error)))
-                objetos_encontrados += 1;
-LogDebug("territorio", "Objeto encontrado - Tipo: " + item.objtype + ", Serial: " + item.serial);
-LogDebug("territorio", "Propriedades atuais - Nome: " + item_name + ", Facção: " + item_faction + ", ID: " + item_territory_id);
-
-// Verificar se já foi atualizado pelos seriais
-var ja_atualizado := 0;
-
-if (seriais_df != error && seriais_dict && seriais_dict[territorio_id])
-    var info := seriais_dict[territorio_id];
-    if ((info.bau && CInt(item.serial) == CInt(info.bau)) || 
-        (info.mesa && CInt(item.serial) == CInt(info.mesa)) || 
-        (info.mural && CInt(item.serial) == CInt(info.mural)))
-        ja_atualizado := 1;
-    endif
-endif
-
-if (!ja_atualizado)
-    // Atualizar facção do objeto
-    PrintTextAbove(item, "*Atualizando propriedades*");
-    Sleep(1);
-    SetObjProperty(item, OBJ_FACTION_PROP, new_faction);
-    SetObjProperty(item, "FactionName", new_faction);
-    
-    // Definir TERRITÓRIO_ID_PROP explicitamente (caso não tenha)
-    if (!item_territory_id)
-        SetObjProperty(item, TERRITORY_ID_PROP, territorio_id);
-    endif
-    
-    // ADICIONADO: Atualizar faction_chest_id para baús
-    if (item.objtype == 0xFF11) // Baú da facção
-        var chest_id := new_faction + "_" + territorio_id;
-        SetObjProperty(item, CHEST_ID_PROP, chest_id);
-        LogDebug("territorio", "Atualizado faction_chest_id para: " + chest_id);
-    endif
-    
-    if (item.objtype == 0xFF11) // Baú da facção
-        // Verificação adicional - limpar todas as propriedades relacionadas à facção antiga
-        foreach prop_name in (GetObjPropertyNames(item))
-            if (prop_name.find("faction") != error || prop_name.find("Faction") != error)
-                // Guardar o valor para logging
-                var old_value := GetObjProperty(item, prop_name);
-                LogDebug("territorio", "Propriedade " + prop_name + " com valor " + old_value);
-                
-                // Atualizar para nova facção
-                SetObjProperty(item, prop_name, new_faction);
-                LogDebug("territorio", "Atualizada para " + new_faction);
-            endif
-        endforeach
-        
-        // Forçar atualização de chest_id em formato padronizado
-        var chest_id := new_faction + "_" + territorio_id;
-        SetObjProperty(item, "faction_chest_id", chest_id);
-        LogDebug("territorio", "Atualizado faction_chest_id (verificação adicional) para: " + chest_id);
-        
-        // Limpar cache do baú (se existir)
-        EraseObjProperty(item, "cache_faction");
-        EraseObjProperty(item, "last_accessed");
-    endif
-
-    // Atualizar nome com base no tipo de objeto
-    var nome := "";
-    case (item.objtype)
-        0xFF11: nome := "Baú de Doações de " + new_faction; break;
-        0xFE5C: nome := "Mesa de Gestão de " + new_faction; break;
-        0x46AE: nome := "Mural de Recrutamento de " + new_faction; break;
-    endcase
-    
-    if (territorio_id)
-        nome += " - " + territorio_id;
-    endif
-    
-    if (nome != "")
-        LogDebug("territorio", "Renomeando para: " + nome);
-        SetName(item, nome);
-    endif
-    
-    // Registrar os seriais se não estiverem registrados
-    if (seriais_df != error)
-        if (!seriais_dict[territorio_id])
-            seriais_dict[territorio_id] := struct{};
-        endif
-        
-        case (item.objtype)
-            0xFF11: seriais_dict[territorio_id].bau := item.serial; break;
-            0xFE5C: seriais_dict[territorio_id].mesa := item.serial; break;
-            0x46AE: seriais_dict[territorio_id].mural := item.serial; break;
-        endcase
-        
-        seriais_dict[territorio_id].faction := new_faction;
-        seriais_df.SetProp("territorios", seriais_dict);
-        LogDebug("territorio", "Salvo serial do objeto no datafile");
-    endif
-    
-   objetos_atualizados += 1;
-objetos_por_mundo += 1;
-PrintTextAbove(item, "*Propriedade transferida para " + new_faction + "*");
-endif
-            endif
-        endif
-    endforeach
-    
-    LogDebug("territorio", "Verificados " + busca_x_objetos + " objetos no mundo");
-    LogDebug("territorio", "Encontrados " + objetos_por_mundo + " objetos adicionais no mundo");
-    
-    // MÉTODO 3: Última tentativa - busca por range de coordenadas
-    if (objetos_atualizados == 0)
-        LogDebug("territorio", "Tentando busca por coordenadas...");
-        
-        // Obter coordenadas do território
-        var rect_df := SafeOpenDataFile(":architect:areas");
-        if (rect_df)
-            var elem_names := rect_df.keys();
-            foreach elem_name in elem_names
-                var elem := SafeFindElement(rect_df, elem_name);
-                var elem_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-                
-                if (elem_id == territorio_id || elem_name == territorio_id)
-                    var rect_str := GetElementProp(elem, "Rect", "");
-                    var coords := SplitWords(rect_str);
-                    
-                    if (coords.size() >= 4)
-                        var x1 := CInt(coords[1]);
-                        var y1 := CInt(coords[2]);
-                        var x2 := CInt(coords[3]);
-                        var y2 := CInt(coords[4]);
-                        var realm := GetElementProp(elem, "Realm", "");
-                        
-                        LogDebug("territorio", "Território encontrado - Coords: " + x1 + "," + y1 + " a " + x2 + "," + y2 + " em " + realm);
-                        
-                        // Buscar objetos na área
-                        var objetos_por_coordenadas := 0;
-                        
-                        foreach item in ListItemsNearLocation(CInt((x1+x2)/2), CInt((y1+y2)/2), 0, 50, realm)
-                            if (item.objtype in tipos_objetos)
-                                // Verificar se já foi atualizado
-                                if (GetObjProperty(item, OBJ_FACTION_PROP) != new_faction)
-                                    PrintTextAbove(item, "*Atualizando por proximidade*");
-                                    SetObjProperty(item, OBJ_FACTION_PROP, new_faction);
-                                    SetObjProperty(item, "FactionName", new_faction);
-                                    SetObjProperty(item, TERRITORY_ID_PROP, territorio_id);
-                                    
-                                    // ADICIONADO: Atualizar faction_chest_id para baús
-                                    if (item.objtype == 0xFF11) // Baú da facção
-                                        var chest_id := new_faction + "_" + territorio_id;
-                                        SetObjProperty(item, CHEST_ID_PROP, chest_id);
-                                        LogDebug("territorio", "Atualizado faction_chest_id para: " + chest_id);
-                                    endif
-                                    
-                                    // Atualizar nome com base no tipo de objeto
-                                    var nome := "";
-                                    case (item.objtype)
-                                        0xFF11: nome := "Baú de Doações de " + new_faction; break;
-                                        0xFE5C: nome := "Mesa de Gestão de " + new_faction; break;
-                                        0x46AE: nome := "Mural de Recrutamento de " + new_faction; break;
-                                    endcase
-                                    
-                                    if (territorio_id)
-                                        nome += " - " + territorio_id;
-                                    endif
-                                    
-                                    if (nome != "")
-                                        SetName(item, nome);
-                                    endif
-                                    
-                                    objetos_atualizados += 1;
-                                    objetos_por_coordenadas += 1;
-                                    PrintTextAbove(item, "*Propriedade transferida para " + new_faction + "*");
-                                    
-                                    // Registrar serial
-                                    if (seriais_df != error)
-                                        if (!seriais_dict[territorio_id])
-                                            seriais_dict[territorio_id] := struct{};
-                                        endif
-                                        
-                                        case (item.objtype)
-                                            0xFF11: seriais_dict[territorio_id].bau := item.serial; break;
-                                            0xFE5C: seriais_dict[territorio_id].mesa := item.serial; break;
-                                            0x46AE: seriais_dict[territorio_id].mural := item.serial; break;
-                                        endcase
-                                        
-                                        seriais_dict[territorio_id].faction := new_faction;
-                                        seriais_df.SetProp("territorios", seriais_dict);
-                                    endif
-                                endif
-                            endif
-                            Sleep(1);
-                        endforeach
-                        
-                        LogDebug("territorio", "Encontrados " + objetos_por_coordenadas + " objetos por coordenadas");
-                    endif
-                    break;
-                endif
-                sleepms(2);
-            endforeach
-        endif
-    endif
-    
-    LogDebug("territorio", "Resumo da atualização - Objetos encontrados via seriais: " + seriais_encontrados);
-    LogDebug("territorio", "Objetos encontrados no total: " + objetos_encontrados);
-    LogDebug("territorio", "Objetos atualizados no total: " + objetos_atualizados);
-    
-    return objetos_atualizados;
-endfunction
-
-
-function ContratarCaravanaParaCapital(who, capital_territory_id, faction_name)
-    var territory_info_capital := TM_GetTerritoryInfo(capital_territory_id); // Usado para o nome na mensagem final
-
-    // Validação: É uma capital válida da facção?
-    if (!TM_IsTerritoryCapital(capital_territory_id) || !territory_info_capital || territory_info_capital.faction != faction_name)
-        SendSysMessage(who, "Erro: Este território não é a capital da sua facção ou a facção está incorreta.");
-        LogError("caravana", "ContratarCaravana: Tentativa para território " + capital_territory_id + " que não é capital de " + faction_name);
-        return 0;
-    endif;
-
-    // Validação: A facção controla outros territórios além desta capital?
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    var other_territories_count := 0;
-    if (rect_df)
-        LogDebug("CaravanaTerritories", "Verificando territórios para facção '" + faction_name + "', capital '" + capital_territory_id + "'");
-        foreach elem_name_loop in (rect_df.keys())
-            var elem_loop := SafeFindElement(rect_df, elem_name_loop);
-            if (!elem_loop) continue; endif;
-            var terr_faction_loop := GetElementProp(elem_loop, TERRITORY_FACTION_PROP, GetElementProp(elem_loop, "Faction"));
-            if (terr_faction_loop == faction_name)
-                var terr_id_loop := GetElementProp(elem_loop, TERRITORY_ID_PROP, elem_name_loop);
-                if (CStr(terr_id_loop) != CStr(capital_territory_id)) // Compara como strings
-                    other_territories_count += 1;
-                    LogDebug("CaravanaTerritories", "  -> Outro território da facção encontrado: " + terr_id_loop + " (Nome no datafile: " + elem_name_loop + ")");
-                endif
-            endif
-            SleepMS(1);
-        endforeach
-        LogDebug("CaravanaTerritories", "Contagem final de 'outros territórios': " + other_territories_count);
-    else
-        SendSysMessage(who, "Erro crítico: Não foi possível acessar o registro de territórios.");
-        LogError("caravana", "ContratarCaravana: Falha ao abrir datafile :architect:areas.");
-        return 0;
-    endif
-
-    if (other_territories_count == 0)
-        SendSysMessage(who, "Sua facção precisa controlar pelo menos um outro território além desta capital para contratar uma caravana.");
-        LogDebug("CaravanaTerritories", "Falha no Check: Nenhum outro território além da capital encontrado.");
-        return 0;
-    endif
-    LogDebug("CaravanaTerritories", "Check de outros territórios passou. Outros territórios: " + other_territories_count);
-
-    // Lógica de custo
-    var custo_caravana := CInt(GetGlobalProperty("caravan_weekly_cost_setting")); // Pega de uma GProp, ou defina um valor fixo
-    if (!custo_caravana || custo_caravana <=0 ) custo_caravana := 50; endif; // Fallback
-
-    LogInfo("caravana", "Forçando atualização de recursos para facção '" + faction_name + "' antes de verificar custo da caravana.");
-    var updates_pending_dummy := dictionary{};
-    var process_result := ProcessarRecursosDeUmaFaccao(faction_name, updates_pending_dummy);
-    if (process_result)
-        LogInfo("caravana", "Atualização forçada de recursos para '" + faction_name + "' concluída com sucesso.");
-        SleepMS(500);
-    else
-        LogWarning("caravana", "Falha na atualização forçada de recursos para '" + faction_name + "'. Prosseguindo com a leitura atual do datafile.");
-    endif
-
-    // UnloadDataFile(KINGDOM_RESOURCE_DATAFILE); // Comentado - SafeOpenDataFile já lida com isso implicitamente ao reabrir
-    // SleepMS(100);
-    var df_recursos := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE); // Reabre para garantir dados frescos
-    var elem_faccao_nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
-
-    if (!df_recursos || elem_faccao_nome_normalizado == error)
-        SendSysMessage(who, "Erro ao acessar dados de recursos da facção (datafile).");
-        LogError("caravana", "Falha ao abrir datafile de recursos '" + KINGDOM_RESOURCE_DATAFILE + "' ou normalizar nome para '" + faction_name + "'.");
-        return 0;
-    endif;
-
-    var elem_faccao := SafeFindElement(df_recursos, elem_faccao_nome_normalizado);
-    if (!elem_faccao)
-        SendSysMessage(who, "Erro: Dados de recursos da facção não encontrados no datafile.");
-        LogError("caravana", "Elemento de facção '" + elem_faccao_nome_normalizado + "' não encontrado em '" + KINGDOM_RESOURCE_DATAFILE + "'");
-        return 0;
-    endif;
-
-    var recursos_faccao := GetElementProp(elem_faccao, "recursos", CreateEmptyResourceStruct());
-    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' Lidas do Datafile ANTES do débito: " + recursos_faccao.moedas);
-
-    if (recursos_faccao.moedas < custo_caravana)
-        SendSysMessage(who, "Sua facção não possui moedas suficientes (" + recursos_faccao.moedas + "/" + custo_caravana + ") para o custo inicial da caravana.");
-        LogWarning("caravana", "Fundos insuficientes para " + faction_name + ". Necessário: " + custo_caravana + ", Possui: " + recursos_faccao.moedas);
-        return 0;
-    endif;
-
-    recursos_faccao.moedas -= custo_caravana;
-    LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' APÓS débito (ANTES de salvar): " + recursos_faccao.moedas);
-
-    var save_success := AtualizarDatafileRecursos(faction_name, recursos_faccao);
-    if (!save_success)
-         SendSysMessage(who, "Erro ao deduzir custo da caravana no datafile.");
-         LogError("caravana", "Falha ao salvar recursos de '" + faction_name + "' após deduzir custo.");
-         // Não reverter aqui, pois o estado do datafile é desconhecido. Melhor logar.
-         return 0;
-    endif;
-    // Para confirmar, podemos ler novamente (opcional para produção)
-    // var df_recursos_after_save := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
-    // var elem_faccao_after_save := SafeFindElement(df_recursos_after_save, elem_faccao_nome_normalizado);
-    // var moedas_after_save_df := GetElementProp(elem_faccao_after_save, "recursos").moedas;
-    // LogCritical("caravana_custo", "Moedas da facção '" + faction_name + "' LIDAS do datafile APÓS AtualizarDatafileRecursos: " + moedas_after_save_df);
-
-    AtualizarPropriedadesGuildaRecursos(faction_name, recursos_faccao); // Atualiza CProp da guilda
-
-    // Obter o objeto da guilda
-    var guild_id_contrato := FindGuildByName(faction_name);
-    var guild_obj_contrato := guild_id_contrato ? FindGuild(guild_id_contrato) : 0;
-
-    if (!guild_obj_contrato)
-        SendSysMessage(who, "Erro crítico: Não foi possível encontrar o objeto da guilda para configurar a caravana.");
-        LogError("caravana", "ContratarCaravana: Objeto da guilda não encontrado para " + faction_name + " APÓS débito do custo.");
-        // REVERTER CUSTO NO DATAFILE
-        recursos_faccao.moedas += custo_caravana;
-        LogCritical("caravana_custo", "REVERTENDO CUSTO para '" + faction_name + "' devido a falha em guild_obj. Moedas a serem salvas (revertidas): " + recursos_faccao.moedas);
-        if (AtualizarDatafileRecursos(faction_name, recursos_faccao))
-            LogInfo("caravana", "Custo da caravana revertido para " + faction_name + " no datafile devido à falha crítica na guilda.");
-        else
-            LogError("caravana", "FALHA CRÍTICA ao reverter custo para " + faction_name + " no datafile após falha crítica na guilda.");
-        endif;
-        return 0;
-    endif;
-
-    // Definir CProps da caravana na guilda
-    var current_time_system := polcore().systime;
-    guild_obj_contrato.SetProp("active_caravan_to_capital", CStr(capital_territory_id));
-    guild_obj_contrato.SetProp("caravan_contract_start_time", current_time_system);
-    var caravan_expiry_time := current_time_system + (7 * 24 * 3600); // 7 dias
-    guild_obj_contrato.SetProp("caravan_next_payment_due", caravan_expiry_time);
-    guild_obj_contrato.SetProp("caravan_weekly_cost", custo_caravana);
-
-    var capital_display_name := territory_info_capital ? territory_info_capital.name : capital_territory_id;
-    SendSysMessage(who, "Caravana contratada com sucesso para " + capital_display_name + "! Custo inicial de " + custo_caravana + " moedas deduzido. Renovação semanal automática.");
-    LogInfo("caravana", "Facção " + faction_name + " contratou caravana para a capital " + capital_territory_id + ". Custo inicial: " + custo_caravana + ". Próximo pagamento: " + caravan_expiry_time);
-
-    // DELETAR BAÚS DOS TERRITÓRIOS NÃO-CAPITAIS DA FACÇÃO
-    SendSysMessage(who, "Centralizando coleta de recursos... Baús de outros territórios serão removidos.");
-    LogInfo("caravana_bau_delete", "Iniciando remoção de baús não-capitais para facção " + faction_name + " (Capital: " + capital_territory_id + ")");
-
-    var territorios_da_faccao := guild_obj_contrato.GetProp("territories");
-    if (!territorios_da_faccao || TypeOf(territorios_da_faccao) != "Array")
-        territorios_da_faccao := TM_GetAllTerritories(faction_name); // Fallback se CProp não existir/for inválida
-        if (territorios_da_faccao.size() > 0)
-            LogWarning("caravana_bau_delete", "CProp 'territories' da guilda " + faction_name + " estava vazia/inválida. Usando TM_GetAllTerritories.");
-        else
-            LogWarning("caravana_bau_delete", "Nenhum território encontrado para facção "+faction_name+" nem na CProp nem via TM_GetAllTerritories.");
-        endif
-    endif
-
-    var baus_deletados_count := 0;
-    foreach territory_id_loop in territorios_da_faccao
-        var current_territory_id_str := CStr(territory_id_loop);
-
-        if (current_territory_id_str != CStr(capital_territory_id))
-            LogInfo("caravana_bau_delete", "Processando território não-capital: " + current_territory_id_str + " para possível deleção de baú.");
-            var objetos_do_territorio := TM_FindTerritoryObjects(current_territory_id_str, faction_name); // Busca por baú, mesa, mural
-
-           if (objetos_do_territorio && objetos_do_territorio.bau)
-    var bau_a_deletar := objetos_do_territorio.bau;
-    LogInfo("caravana_bau_delete", "Baú encontrado no território " + current_territory_id_str + ": Serial " + bau_a_deletar.serial + ". Deletando...");
-    if (DestroyItem(bau_a_deletar))
-        baus_deletados_count += 1;
-        LogInfo("caravana_bau_delete", "Baú " + bau_a_deletar.serial + " deletado com sucesso.");
-        
-        // Limpar o registro do baú no datafile de seriais
-        var seriais_df_clear := SafeOpenDataFile(":faccao:seriais");
-        if (seriais_df_clear)
-            // Tentar primeiro o formato novo (elemento por território)
-            var territory_elem_clear := SafeFindElement(seriais_df_clear, current_territory_id_str);
-            if (territory_elem_clear)
-                territory_elem_clear.EraseProp("bau");
-                LogDebug("caravana_bau_delete", "Serial do baú removido do elemento do território: " + current_territory_id_str);
-            endif
-            
-            // Também limpar no formato legado se existir
-            var territorios_seriais_clear := GetElementProp(seriais_df_clear, "territorios", dictionary{});
-            if (territorios_seriais_clear && territorios_seriais_clear[current_territory_id_str])
-                territorios_seriais_clear[current_territory_id_str].erase("bau");
-                SetElementProp(seriais_df_clear, "territorios", territorios_seriais_clear);
-                LogDebug("caravana_bau_delete", "Serial do baú removido do registro legado: " + current_territory_id_str);
-            endif
-        endif
-    else
-        LogError("caravana_bau_delete", "Falha ao deletar baú " + bau_a_deletar.serial + " do território " + current_territory_id_str);
-    endif
-else
-    LogInfo("caravana_bau_delete", "Nenhum baú encontrado (ou já deletado) no território não-capital: " + current_territory_id_str);
-endif
-        endif
-        SleepMS(50);
-    endforeach;
-    LogInfo("caravana_bau_delete", "Remoção de baús não-capitais concluída para " + faction_name + ". Total deletados: " + baus_deletados_count);
-    if (baus_deletados_count > 0)
-        SendSysMessage(who, baus_deletados_count + " baú(s) de territórios não-capitais foram removidos.");
-    endif
-    // REMOVED THE DUPLICATE ENDFOREACH AND LOGGING LINES HERE
-
-    // Notificar o ResourceController sobre a ativação da caravana
-    var event_data_caravana := struct;
-    event_data_caravana.+faction := faction_name;
-    event_data_caravana.+active_until_next_payment := caravan_expiry_time;
-    TM_NotifyTerritoryChange(CStr(capital_territory_id), "caravan_activated", event_data_caravana);
-
-    return 1;
-endfunction
-
-
-function DestruirObjetosTerritorio(territorio_id, faction)
-var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
-    var objetos_destruidos := 0;
-    LogDebug("territorio", "Tentando destruir objetos para: " + territorio_id + ", facção: " + faction);
-    
-    // Buscando TODOS os objetos no mundo
-    foreach item in EnumerateItemsInContainer(1)
         // Tipos de objetos do território
         if (item.objtype == 0xff11 || item.objtype == 0xFE5C || item.objtype == 0x46AE)
             // Verificar nome explicitamente
@@ -2344,8 +1925,8 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
                     SendSysMessage(who, "Erro ao tentar remover moedas do baú da capital. A operação foi cancelada.");
                     LogError("ContratarCaravana", "Falha em HelpSubtractAmount (" + amount_to_take_from_this_stack + ") no stack original " + item_no_bau_capital.serial + " do baú da capital.");
                     if (moedas_removidas_fisicamente > 0)
-                        var item_estorno := CreateItemInContainer(capital_donation_chest, 0xBA63, moedas_removidas_fisicamente);
-                        if (item_estorno) MarcarRecursosModificados(capital_donation_chest); endif;
+                        var item_estorno := CreateItemInBackpack(who, MOEDAS_COBRE, moedas_removidas_fisicamente);
+                        if (item_estorno) MarcarRecursosModificados(item_estorno); endif;
                         LogError("ContratarCaravana", "ESTORNO FÍSICO TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
                     endif;
                     return 0;
@@ -2359,8 +1940,8 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
         SendSysMessage(who, "Não há moedas suficientes (" + moedas_removidas_fisicamente + "/" + custo_caravana + ") no baú da capital para cobrir o custo da caravana.");
         LogError("ContratarCaravana", "Moedas físicas insuficientes (" + moedas_removidas_fisicamente + "/" + custo_caravana + ") no baú da capital " + capital_donation_chest.serial);
         if (moedas_removidas_fisicamente > 0)
-            var item_estorno_parcial := CreateItemInContainer(capital_donation_chest, 0xBA63, moedas_removidas_fisicamente);
-            if (item_estorno_parcial) MarcarRecursosModificados(capital_donation_chest); endif;
+            var item_estorno_parcial := CreateItemInBackpack(who, MOEDAS_COBRE, moedas_removidas_fisicamente);
+            if (item_estorno_parcial) MarcarRecursosModificados(item_estorno_parcial); endif;
             LogError("ContratarCaravana", "ESTORNO FÍSICO PARCIAL TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
         endif;
         return 0;
@@ -2389,8 +1970,8 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
     if (set_prop_guild_result == error)
         LogError("ContratarCaravana", "FALHA CRÍTICA ao salvar 'caravan_contracts' na CProp da guilda " + faction_name + ". Erro: " + set_prop_guild_result.errortext);
         LogCritical("ContratarCaravana_REVERT_FISICO", "REVERTENDO CUSTO FÍSICO para " + faction_name + " devido a falha em SetProp CProp da guilda.");
-        var item_estorno_critico := CreateItemInContainer(capital_donation_chest, 0xBA63, custo_caravana);
-        if (item_estorno_critico) MarcarRecursosModificados(capital_donation_chest); endif;
+        var item_estorno_critico := CreateItemInBackpack(who, MOEDAS_COBRE, custo_caravana);
+        if (item_estorno_critico) MarcarRecursosModificados(item_estorno_critico); endif;
         LogError("ContratarCaravana_REVERT_FISICO", "ESTORNO FÍSICO TENTADO: " + custo_caravana + " moedas para o baú " + capital_donation_chest.serial + ". A próxima execução do process_recursos_updates deve sincronizar o datafile.");
         SendSysMessage(who, "Ocorreu um erro crítico ao registrar o contrato. O custo foi estornado fisicamente. Tente novamente ou contate um GM.");
         return 0;
@@ -2454,11 +2035,88 @@ function CancelarCaravanaTerritorioIndividual(who, origin_territory_id, faction_
         var event_data_caravana_cancel := struct;
         event_data_caravana_cancel.+faction := faction_name;
         event_data_caravana_cancel.+origin_territory_id := origin_territory_id;
-        event_data_caravana_cancel.+capital_territory_id := capital_id_do_contrato_removido;
-        TM_NotifyTerritoryChange(origin_territory_id, "caravan_deactivated_from_territory", event_data_caravana_cancel);
+        event_data_caravana_cancel.+capital_territory_id := capital_id_do_contrato_removido;        TM_NotifyTerritoryChange(origin_territory_id, "caravan_deactivated_from_territory", event_data_caravana_cancel);
     else
         SendSysMessage(who, "Nenhuma caravana ativa encontrada partindo deste território para cancelar.");
     endif
 
     return 1;
+endfunction
+
+function ProcessarCompraMapeador(who, item)
+    // Verificar se o jogador tem privilégios de arquiteto
+    if (!IsArchitectOfGuild(who))
+        SendSysMessage(who, "Apenas arquitetos de guilda podem comprar o Mapeador.", 3, 38);
+        return 0;
+    endif
+    
+    // Constantes para o Mapeador
+    const MAPEADOR_OBJTYPE := 0x14F5; // Objtype do Mapeador
+    const MAPEADOR_CUSTO := 500; // Custo em moedas de cobre
+    const MOEDAS_COBRE := 0xBA63; // Tipo das moedas de cobre
+    
+    // Calcular moedas disponíveis
+    var moedas_disponiveis := 0;
+    var moedas_items := array{};
+    
+    foreach moeda in EnumerateItemsInContainer(who.backpack)
+        if (moeda.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += moeda.amount;
+            moedas_items.append(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar se tem moedas suficientes
+    if (moedas_disponiveis < MAPEADOR_CUSTO)
+        SendSysMessage(who, "Você precisa de " + MAPEADOR_CUSTO + " moedas de cobre para comprar um Mapeador. Você tem apenas " + moedas_disponiveis + ".");
+        return 0;
+    endif
+    
+    // Consumir as moedas
+    var moedas_restantes := MAPEADOR_CUSTO;
+    foreach moeda in moedas_items
+        if (moedas_restantes <= 0)
+            break;
+        endif
+        
+        if (moeda.amount >= moedas_restantes)
+            // Esta pilha tem moedas suficientes
+            SubtractAmount(moeda, moedas_restantes);
+            moedas_restantes := 0;
+        else
+            // Consumir toda esta pilha
+            moedas_restantes -= moeda.amount;
+            DestroyItem(moeda);
+        endif
+        sleepms(2);
+    endforeach
+      // Criar o Mapeador na mochila do jogador
+    var mapeador := CreateItemInBackpack(who, MAPEADOR_OBJTYPE, 1);
+    if (!mapeador)
+        // Tentar criar no chão se não couber na mochila
+        mapeador := CreateItemAtLocation(who.x, who.y, who.z, MAPEADOR_OBJTYPE, 1, who.realm);
+        if (mapeador)
+            // Configurar o script de uso do Mapeador
+            mapeador.usescript := ":faccao:mapeador";
+            SendSysMessage(who, "Mapeador comprado com sucesso! O item foi colocado no chão pois sua mochila está cheia.");
+        else
+            SendSysMessage(who, "Erro ao criar o Mapeador. Contacte a administração.");
+            // Devolver as moedas em caso de erro
+            CreateItemInBackpack(who, MOEDAS_COBRE, MAPEADOR_CUSTO);
+            return 0;
+        endif
+    else
+        // Configurar o script de uso do Mapeador
+        mapeador.usescript := ":faccao:mapeador";
+        SendSysMessage(who, "Mapeador comprado com sucesso por " + MAPEADOR_CUSTO + " moedas de cobre!");
+    endif
+    
+    return 1;
+endfunction
+
+function IsArchitectOfGuild(who)
+    // Usar a função VerifyArchitect do sistema de arquitetos
+    // que já faz todas as verificações necessárias
+    return VerifyArchitect(who);
 endfunction

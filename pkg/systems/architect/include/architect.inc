@@ -4,6 +4,8 @@ use uo;
 use datafile;
 use util;
 include "include/string";
+include ":charactercreation:habilidades";
+include ":faccao:include/shared_functions";
 
 /*
 HILITE_MARK       This is the color that marked parts will be hilited with.
@@ -150,4 +152,238 @@ function IsInTerritory(mobile, territory_name)
     
     var rect := SplitWords(territory.GetProp("Rect"));
     return IsInRect(mobile, rect, territory.GetProp("Realm"));
+endfunction
+
+//
+// Architect Privilege Configuration
+//
+
+function LoadArchitectConfig()
+    var cfg := ReadConfigFile(":architect:config/privileges");
+    if (!cfg)
+        SysLog("VerifyArchitect: AVISO - Arquivo de configuracao privileges.cfg nao encontrado, usando valores padrao");
+        return struct{
+            "max_architects" := 5,
+            "staff_bypass_level" := 1,
+            "enable_logging" := 1,
+            "enforce_limits" := 1,
+            "default_privilege" := 0,
+            "require_faction" := 1
+        };
+    endif
+    
+    return struct{
+        "max_architects" := GetConfigInt(cfg["Settings"], "MaxArchitectsPerFaction") ?: 5,
+        "staff_bypass_level" := GetConfigInt(cfg["Settings"], "StaffBypassLevel") ?: 1,
+        "enable_logging" := GetConfigInt(cfg["Settings"], "EnablePrivilegeLogging") ?: 1,
+        "enforce_limits" := GetConfigInt(cfg["Settings"], "EnforceLimits") ?: 1,
+        "default_privilege" := GetConfigInt(cfg["Settings"], "DefaultArchitectPrivilege") ?: 0,
+        "require_faction" := GetConfigInt(cfg["Settings"], "RequireFactionMembership") ?: 1
+    };
+endfunction
+
+//
+// Architect Privilege Verification Functions
+//
+
+function VerifyArchitect(who)
+    // Check if player has architect privilege in their faction
+    var config := LoadArchitectConfig();
+    
+    if (config.enable_logging)
+        SysLog("VerifyArchitect: Verificando privilegios de arquiteto para " + who.name + " (Serial: " + who.serial + ")");
+    endif
+    
+    // Staff members always have architect access
+    if (who.cmdlevel >= config.staff_bypass_level)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso concedido - usuario e staff (level " + who.cmdlevel + ")");
+        endif
+        return 1;
+    endif
+    
+    // Check if player has the Arquiteto skill
+    if (!TemHabilidade(who, "Arquiteto"))
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso negado - jogador nao tem habilidade de Arquiteto");
+        endif
+        return 0;
+    endif
+    
+    // Get player's faction
+    var player_faction := GetPlayerFaction(who);
+    if (!player_faction && config.require_faction)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso negado - jogador nao pertence a uma faccao");
+        endif
+        return 0;
+    endif
+    
+    // If faction is not required and player has no faction, allow access
+    if (!player_faction && !config.require_faction)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso concedido - faccao nao e obrigatoria e jogador tem skill");
+        endif
+        return 1;
+    endif
+      // Get player's guild (faction)
+    var guild := who.guild;
+    if (!guild)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso negado - guild nao encontrada");
+        endif
+        return 0;
+    endif
+      // Check if player is the guild leader - leaders always have architect privileges
+    
+    // First check faction-style leadership (custom system)
+    var guild_leader := guild.GetProp("leader");
+    if (guild_leader == who.serial)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso concedido - jogador e lider da faccao " + player_faction);
+        endif
+        return 1;
+    endif
+    
+    // Then check POL's built-in guild leadership
+    if (guild.leader == who.serial)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso concedido - jogador e lider da guild nativa " + player_faction);
+        endif
+        return 1;
+    endif
+    
+    // Get player's privileges in the faction
+    var member_privs := guild.GetProp(cstr(who.serial));
+    if (!member_privs)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso negado - privilegios do membro nao encontrados");
+        endif
+        return 0;
+    endif
+    
+    // Check if player has architect privilege
+    if (member_privs.architect)
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso concedido - jogador tem privilegio de arquiteto na faccao " + player_faction);
+        endif
+        return 1;
+    else
+        if (config.enable_logging)
+            SysLog("VerifyArchitect: Acesso negado - jogador nao tem privilegio de arquiteto na faccao " + player_faction);
+        endif
+        return 0;
+    endif
+endfunction
+
+function GetFactionArchitects(faction_name)
+    // Get list of all architects in a faction
+    var config := LoadArchitectConfig();
+    
+    if (config.enable_logging)
+        SysLog("GetFactionArchitects: Buscando arquitetos da faccao " + faction_name);
+    endif
+    
+    var guild_id := FindGuildByName(faction_name);
+    if (!guild_id)
+        if (config.enable_logging)
+            SysLog("GetFactionArchitects: Faccao nao encontrada: " + faction_name);
+        endif
+        return array{};
+    endif
+    
+    var guild := FindGuild(guild_id);
+    if (!guild)
+        if (config.enable_logging)
+            SysLog("GetFactionArchitects: Objeto da guild nao encontrado para ID: " + guild_id);
+        endif
+        return array{};
+    endif
+    
+    var architects := array{};
+    var member_list := guild.members;
+    
+    foreach member in member_list
+        var member_privs := guild.GetProp(cstr(member.serial));
+        if (member_privs && member_privs.architect)
+            architects.append(struct{
+                "serial" := member.serial,
+                "name" := member.name,
+                "account" := member.acctname
+            });
+            if (config.enable_logging)
+                SysLog("GetFactionArchitects: Arquiteto encontrado - " + member.name + " (" + member.serial + ")");
+            endif
+        endif
+    endforeach
+    
+    if (config.enable_logging)
+        SysLog("GetFactionArchitects: Total de arquitetos encontrados na faccao " + faction_name + ": " + len(architects));
+    endif
+    return architects;
+endfunction
+
+function CountFactionArchitects(faction_name)
+    // Count the number of architects in a faction
+    var architects := GetFactionArchitects(faction_name);
+    var count := len(architects);
+    var config := LoadArchitectConfig();
+    
+    if (config.enable_logging)
+        SysLog("CountFactionArchitects: Faccao " + faction_name + " tem " + count + " arquitetos");
+    endif
+    return count;
+endfunction
+
+function CheckArchitectLimit(faction_name, max_architects := 0)
+    // Check if faction has reached the architect limit
+    var config := LoadArchitectConfig();
+    
+    // Use config value if no limit specified
+    if (max_architects == 0)
+        max_architects := config.max_architects;
+    endif
+    
+    // If limits are disabled, always return true
+    if (!config.enforce_limits)
+        return 1;
+    endif
+    
+    var current_count := CountFactionArchitects(faction_name);
+    if (config.enable_logging)
+        SysLog("CheckArchitectLimit: Faccao " + faction_name + " tem " + current_count + "/" + max_architects + " arquitetos");
+    endif
+    return current_count < max_architects;
+endfunction
+
+function GetArchitectInfo(who)
+    // Get detailed architect information for a player
+    var config := LoadArchitectConfig();
+    
+    var info := struct{
+        "has_skill" := TemHabilidade(who, "Arquiteto"),
+        "faction" := GetPlayerFaction(who),
+        "has_privilege" := 0,
+        "is_staff" := (who.cmdlevel >= config.staff_bypass_level),
+        "is_leader" := 0,
+        "config" := config
+    };
+      if (info.faction)
+        var guild := who.guild;
+        if (guild)
+            // Check if player is guild leader (faction-style or POL built-in)
+            var guild_leader := guild.GetProp("leader");
+            if (guild_leader == who.serial || guild.leader == who.serial)
+                info.is_leader := 1;
+                info.has_privilege := 1; // Leaders always have architect privilege
+            else
+                var member_privs := guild.GetProp(cstr(who.serial));
+                if (member_privs)
+                    info.has_privilege := member_privs.architect;
+                endif
+            endif
+        endif
+    endif
+    
+    return info;
 endfunction

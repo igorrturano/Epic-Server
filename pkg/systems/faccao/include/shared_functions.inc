@@ -11,6 +11,7 @@ include ":timeutils:time"; // Se usado para formatação de tempo
 include ":faccao:include/logging";         // ESSENCIAL
 include ":faccao:include/datafile_helpers"; // ESSENCIAL
 include ":faccao:include/permissions";      // Para GetFactionOfChest
+include ":faccao:include/safe_guild_utils"; // Funções seguras para propriedades de guild
 include ":faccao:include/territory_management"; // Para TM_ funções
 /* 
  * ContarItensDoadosNoBau(bau)
@@ -157,13 +158,13 @@ function FindGuildByName(name)
             endif
             
             // Verificar outras propriedades de nome
-            prop := guild.GetProp("name");
-            if (prop != error && prop == name)
+            prop := guild.GetProp("name");            if (prop != error && prop == name)
                 return guild.guildid;
             endif
             
-            // Verificar o nome direto da guilda
-            if (guild.guildname == name)
+            // Verificar o nome direto da guilda usando SafeGetGuildName
+            var guild_name := SafeGetGuildName(guild);
+            if (guild_name == name)
                 return guild.guildid;
             endif
             
@@ -177,11 +178,10 @@ function FindGuildByName(name)
             return player.guild.guildid;
         endif
         
-        if (player.guildid && player.guild.GetProp("name") == name)
-            return player.guild.guildid;
+        if (player.guildid && player.guild.GetProp("name") == name)            return player.guild.guildid;
         endif
         
-        if (player.guildid && player.guild.guildname == name)
+        if (player.guildid && SafeGetGuildName(player.guild) == name)
             return player.guild.guildid;
         endif
         
@@ -193,11 +193,10 @@ function FindGuildByName(name)
     if (guilds && guilds != error)
         foreach guild in guilds
             var guild_name := guild.GetProp(FACTION_PROP_NAME);
-            if (!guild_name || guild_name == error)
-                guild_name := guild.GetProp("name");
+            if (!guild_name || guild_name == error)            guild_name := guild.GetProp("name");
             endif
             if (!guild_name || guild_name == error)
-                guild_name := guild.guildname;
+                guild_name := SafeGetGuildName(guild);
             endif
             
             if (guild_name && guild_name != error)

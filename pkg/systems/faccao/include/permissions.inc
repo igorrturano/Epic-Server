@@ -3,6 +3,7 @@ use guilds;
 use datafile;
 
 include ":faccao:faccao_constants";
+include ":faccao:include/safe_guild_utils";
 include ":datafile:datafile";
 
 // Controle de depuração global - 0 = desligado, 1 = ligado
@@ -557,11 +558,10 @@ function GetPlayerFaction(who)
     faction_name := player_guild.GetProp("name");
     if (faction_name && faction_name != error)
         return faction_name;
-    endif
-
-    // Método 3: Verificar guildname
-    if (player_guild.guildname)
-        return player_guild.guildname;
+    endif    // Método 3: Verificar guildname usando SafeGetGuildName
+    var safe_guild_name := SafeGetGuildName(player_guild);
+    if (safe_guild_name && safe_guild_name != "Unknown Guild")
+        return safe_guild_name;
     endif
 
     // Método 4: Verificar propriedade alternativa como último recurso

@@ -1318,9 +1318,8 @@ var df := OpenDataFile(":tn:dungeons");
                 
                 // Container para cada feedback
                 GFResizePic(gump, 20, y_pos, 9350, 440, 150);
-                
-                // Informações do feedback
-                var date_str := FormatTime(info.t);
+                  // Informações do feedback
+                var date_str := FormatTimestamp(info.t);
                 GFTextLine(gump, 40, y_pos + 10, 53, "Conta: " + info.a);
                 GFTextLine(gump, 40, y_pos + 30, 53, "Char: " + info.p);
                 GFTextLine(gump, 40, y_pos + 50, 53, "Data: " + date_str);
@@ -1362,7 +1361,7 @@ var df := OpenDataFile(":tn:dungeons");
 endfunction
 
 // Função auxiliar para formatar o timestamp
-function FormatTime(timestamp)
+function FormatTimestamp(timestamp)
     var time_struct := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
     return time_struct;
 endfunction
