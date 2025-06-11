@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program remove_borders(params)
+    // Verificar se os parâmetros foram passados corretamente
+    if (!params || params.size() < 2)
+        return;
+    endif
+    
+    var border_items := params[1];
+    var duration := params[2];
+    
+    // Aguardar o tempo especificado
+    sleep(duration);
+    
+    // Remover todos os itens de borda
+    foreach item in border_items
+        if (item && item.serial)
+            DestroyItem(item);
+        endif
+    endforeach
+endprogram
