@@ -50,6 +50,7 @@ const BUTTON_CHECK_GUILD := 0x350;
 const BUTTON_TERRITORY := 0x500; // ID de botão para manipulador de territórios
 const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios
 
+const BUTTON_CLOSE_FACTION := 0x600; // NOVA CONSTANTE PARA FECHAR FACÇÃO
 
 var guild;
 var privilegies;
@@ -85,6 +86,7 @@ var law_list := struct{
 };
 
 var guild_obj, aboveguild;
+
 
 program faccao(params)
   // Se for acessado por um item (mural/mesa)
@@ -152,14 +154,9 @@ program faccao(params)
    GFSetId(gump, 0x689);
 	GFResizePic(gump, 26, 19, 39925, 573, 417); //background
 
-
-
 	GFResizePic(gump, 228, 29, 9350, 171, 34);
 
    GFHtmlShadowed(gump,232, 36, 165, 20, "#FFC33C", "<center>{}".format(guild_obj.name), 8);
-
-
-
 
    // Botão para Territórios - Adicionar isso
    GFAddButton(gump, 67-10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
@@ -173,9 +170,14 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); //members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-   var leader_name := "";
+var leader_name := "";
    if (guild_leader)
-      leader_name := guild_leader.name;
+      var leader_dados := GetObjProperty(guild_leader, "dados_convite");
+      if (leader_dados && leader_dados.nome_personalizado)
+         leader_name := leader_dados.nome_personalizado + " - Líder";
+      else
+         leader_name := guild_leader.name + " - Líder";
+      endif
       if(who.cmdlevel || aboveguild)
          GFAddButton(gump, 49, 91, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+guild_obj.leader);
       endif
@@ -192,7 +194,16 @@ program faccao(params)
         if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
            GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+mob.serial);
         endif
-        GFTextLine(gump, 67, y-2, 0, "{}".format(mob.name));
+        var display_name := mob.name;
+        var member_dados := GetObjProperty(mob, "dados_convite");
+        if (member_dados && member_dados.nome_personalizado)
+            display_name := member_dados.nome_personalizado;
+            if (member_dados.cargo_rp)
+                display_name += " - " + member_dados.cargo_rp;
+            endif
+        endif
+
+        GFTextLine(gump, 67, y-2, 0, "{}".format(display_name));
         var permissions := guild.GetProp(cstr(mob.serial));
         var permission_text := "";
         if (permissions)
@@ -309,11 +320,6 @@ program faccao(params)
       endif
    endforeach
 
-   
-	// GFPage(gump, 2);
-	// GFResizePic(gump, 227, 67, 9350, 346, 326);
-	// GFAddButton(gump, 362, 357, 2071, 2073, GF_CLOSE_BTN, 0);
-
    GFResizePic(gump, 54, 398, 9350, 518, 29);
 
    GFAddButton(gump, 59, 402, 40022, 40022, GF_CLOSE_BTN, BUTTON_MONEY_TRANSFER);
@@ -321,19 +327,15 @@ program faccao(params)
 	GFTextLine(gump, 415, 401, 0, "Soldo Total: {} mc".format(total_soldo));
 	GFGumpPic(gump, 491, 330, 40034, 0);
 
-   // if (is_gm_or_leader || privilegies.above_members)
-   //    GFAddButton(gump, 205-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_BAN_PLAYER);
-   //    GFTextLine(gump, 205, 401, 0, "Banimentos");
-   // endif
-/*
-   if (is_gm_or_leader || privilegies.buyuniforms)
-      GFAddButton(gump, 330-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_BUY_UNIFORM);
-      GFTextLine(gump, 330, 401, 0, "Uniformes");
-   endif
-*/
    if (is_gm_or_leader || privilegies.unlockdoors)
       GFAddButton(gump, 240-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CHANGE_DOORS);
       GFTextLine(gump, 240, 401, 0, "Portas");
+   endif
+
+   // NOVO BOTÃO: Fechar Facção (apenas para líder)
+   if (is_gm_or_leader)
+      GFAddButton(gump, 350-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CLOSE_FACTION);
+      GFTextLine(gump, 350, 401, 0, "Fechar Facção");
    endif
 
    // IMPORTANTE: Esta linha estava faltando, causando o erro - precisamos enviar o gump antes de processar os inputs
@@ -349,6 +351,11 @@ program faccao(params)
       // Nova condição para tratar o botão de territórios
       ShowTerritoriesGump(who, guild);
       return; // Importante retornar aqui para evitar reabrir o gump principal
+   elseif (input[0] == BUTTON_CLOSE_FACTION)
+      // Nova condição para fechar facção
+      if (CloseFactionHandler(who, guild) == 99)
+         return;
+      endif
    elseif (input[0] >= BUTTON_CHANGE_PLAYER)
       playerHandler(who, input[0]);
    elseif (input[0] >= BUTTON_ADD_NPC && input[0] <= BUTTON_ADD_NPC+0x50)
@@ -365,6 +372,7 @@ program faccao(params)
    
    start_script(":faccao:faccao", array{who, guild.guildid, "guild"});
 endprogram
+
 
 function Faccoes(who)
    var gump := GFCreateGump();
@@ -412,57 +420,142 @@ function Faccoes(who)
    elseif (input == BTN_NEW_FACCAO)
       var custo := 10000;
       SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
-	   var targ := Target(who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
-         if (!targ)
-            SendSysMessage(who, "Cancelado.", SSM_FAIL);
+      var targ := Target(who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+      if (!targ)
+         SendSysMessage(who, "Cancelado.", SSM_FAIL);
+         return;
+      endif
+
+      if (targ.objtype == 47715)
+         if ( targ.amount < custo )
+            SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
             return;
          endif
 
-         if (targ.objtype == 47715)
-
-            if ( targ.amount < custo )
-               SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-               return;
-            endif
-
-               if (!SubtractAmount(targ, custo))
-                  SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-                  return;
-               else
-                  SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
-               endif
+         if (!SubtractAmount(targ, custo))
+            SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+            return;
          else
-            SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
-               return;
+            SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
          endif
+      else
+         SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
+         return;
+      endif
 
       var questions := array{};
       questions.append(struct{ "title" := "Nome da facçãoo?", "marked" := ""} );
-      //questions.append(struct{ "title" := "Dinheiro inicial?", "marked" := "0"} );
       var output := QuestionsGump(who, questions);
       if (!output) return SendSysMessageEx(who, "Cancelado"); endif
 
-      var arearray := array{};
-   /*
-      while (1)
-         var area := GetInput(who, who.backpack, "Escreva a area em x1 y1 x2 y2 (aperte esc para cancelar)");
-         if (!area)
-            break;
-         endif
-         area := SplitWords(area);
+      // NOVO GUMP: Nome personalizado do líder
+      var leader_gump := GFCreateGump();
+      
+      // Background
+      GFResizePic(leader_gump, 0, 0, 9200, 350, 180);
+      GFResizePic(leader_gump, 15, 15, 9350, 320, 150);
+      
+      // Título
+      GFTextMid(leader_gump, 15, 25, 320, 53, "Dados do Líder da Facção");
+      
+      // Campo: Nome como será conhecido
+      GFTextLine(leader_gump, 30, 60, 1153, "Nome como será conhecido:");
+      GFResizePic(leader_gump, 30, 80, 9350, 200, 25);
+      var nome_entry := GFTextEntry(leader_gump, 35, 85, 190, 20, 1153, "", 1);
+      
+      // Botão Confirmar
+      GFAddButton(leader_gump, 250, 80, 4005, 4006, GF_CLOSE_BTN, 1);
+      GFTextLine(leader_gump, 275, 82, 1153, "Confirmar");
+                
+      // Botão Cancelar
+      GFAddButton(leader_gump, 250, 120, 4017, 4018, GF_CLOSE_BTN, 0);
+      GFTextLine(leader_gump, 275, 122, 1153, "Cancelar");
+      
+      // Enviar gump e processar resposta
+      var leader_input := GFSendGump(who, leader_gump);
+      
+      if (leader_input[0] != 1)
+         return SendSysMessageEx(who, "Criação da facção cancelada.");
+      endif
+      
+      var nome_lider := GFExtractData(leader_input, nome_entry);
+      
+      if (!nome_lider || nome_lider == "")
+         return SendSysMessageEx(who, "Você deve informar como será conhecido.");
+      endif
 
-         if (area.size() < 4)
-            SendSysMessageEx(who, "Area invalida");
-         else
-            arearray.append(area);
-            SendSysMessageEx(who, "Area adicionada: {}".format(area));
-         endif
-      endwhile
-   */
-      CreateFaccao(output[1], arearray, cint(output[2]));
+      var arearray := array{};
+      
+      // Criar a facção
+      var nova_guild := CreateFaccao(output[1], arearray, cint(output[2]));
+      
+      if (nova_guild)
+         // Salvar dados personalizados do líder
+         var leader_data := struct{};
+         leader_data.+nome_personalizado := nome_lider;
+         leader_data.+cargo_rp := "Líder";  // Cargo fixo como líder
+         leader_data.+data_criacao := POLCore().systime;
+         leader_data.+fundador := 1;  // Marcar como fundador da facção
+         
+         SetObjProperty(who, "dados_convite", leader_data);
+         
+         SendSysMessageEx(who, "Facção criada com sucesso!");
+         SendSysMessageEx(who, "Você será conhecido como: " + nome_lider + " - Líder");
+      endif
+      
       Faccoes(who);
    endif
 endfunction
+
+
+function CloseFactionHandler(who, guild)
+   // Verificar se é realmente o líder
+   var guild_leader_serial := guild.GetProp("leader");
+   var is_leader := (guild_leader_serial == who.serial);
+   
+   if (!is_leader && !who.cmdlevel)
+      SendSysMessageEx(who, "Apenas o líder pode fechar a facção.", SSM_FAIL);
+      return 0;
+   endif
+   
+   var guild_name := guild.GetProp("name");
+   if (!guild_name) guild_name := guild.guildname; endif
+   
+   // Confirmação dupla para evitar fechamento acidental
+   if (!YesNo(who, "ATENÇÃO: Você tem certeza que deseja fechar permanentemente a facção '" + guild_name + "'?"))
+      SendSysMessageEx(who, "Operação cancelada.");
+      return 0;
+   endif
+   
+   if (!YesNo(who, "ÚLTIMA CONFIRMAÇÃO: Esta ação não pode ser desfeita! Fechar '" + guild_name + "'?"))
+      SendSysMessageEx(who, "Operação cancelada.");
+      return 0;
+   endif
+   
+   // Log da ação para auditoria
+   LogToFile("faccoes.log", "FACTION_CLOSED: " + who.name + " (serial: " + who.serial + ") fechou a facção '" + guild_name + "' (ID: " + guild.guildid + ") em " + CStr(ReadGameClock()));
+   
+   // Notificar todos os membros antes de fechar
+   var all_members := guild.members;
+   if (all_members && all_members.size() > 0)
+      foreach member in all_members
+         if (member && member.connected)
+            SendSysMessageEx(member, "A facção '" + guild_name + "' foi fechada pelo líder " + who.name + ".", SSM_FAIL);
+         endif
+         sleepms(2);
+      endforeach
+   endif
+     // Aguardar um pouco para as mensagens chegarem
+   sleep(2);
+   
+   // Fechar a facção usando a função existente
+   RemFaccaoComplete(guild.guildid);
+   SendSysMessageEx(who, "Facção '" + guild_name + "' fechada com sucesso.");
+   
+   // Retornar código especial para sair do gump
+   return 99;
+endfunction
+
 
 function guildHandler(who, input)
    if (input == BUTTON_ADD_PLAYER)
@@ -820,11 +913,9 @@ function gmHandler(who)
       endwhile
 
       if (soltar.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
-      guild.SetProp("prision_leave", soltar);
-
-      SendSysMessageEx(who, "Prisoes alteradas");
+      guild.SetProp("prision_leave", soltar);      SendSysMessageEx(who, "Prisoes alteradas");
    elseif (output["Remover Guilda"])
-      RemFaccao(guild.guildid);
+      RemFaccaoComplete(guild.guildid);
       SendSysMessageEx(who, "Guilda removida");
       return 99;
    endif
@@ -1364,7 +1455,8 @@ function CanAccessMural(who, item)
                 return 0; // Não é da mesma facção
             endif
         else
-            return 0; // Não tem guilda
+            // Ex-membros de facção (sem guilda) podem acessar para ver tela de seleção
+            return 1; // Permitir acesso para quem não tem guilda
         endif
     endif
     
@@ -1408,3 +1500,163 @@ function RemoveFactionLeader(guild)
    
    return 1;
 endfunction
+
+// Função completa para remover facção com limpeza adequada de territórios
+function RemFaccaoComplete(guild_obj)
+   if (typeof(guild_obj) == "String")
+      guild_obj := FindGuild(guild_obj);
+   endif
+
+   if (!guild_obj) 
+      return 0; 
+   endif
+
+   // === OBTER INFORMAÇÕES BÁSICAS ===
+   var guild_name := guild_obj.GetProp("name");
+   if (!guild_name) guild_name := guild_obj.guildname; endif
+   
+   LogToFile("faccoes.log", "FACTION_REMOVAL_START: Iniciando remoção da facção '" + guild_name + "' (ID: " + guild_obj.guildid + ") em " + CStr(ReadGameClock()));
+
+   // === NOTIFICAR MEMBROS ANTES DE REMOVER ===
+   var all_members := guild_obj.members;
+   if (all_members && all_members.size() > 0)
+      foreach member in all_members
+         if (member && member.connected)
+            SendSysMessageEx(member, "A facção '" + guild_name + "' foi permanentemente fechada.", SSM_FAIL);
+         endif
+         // Limpar dados personalizados do membro
+         EraseObjProperty(member, "dados_convite");
+         sleepms(2);
+      endforeach
+   endif   
+
+   // === LIBERAR TERRITÓRIOS COM LIMPEZA COMPLETA ===
+   var territories := guild_obj.GetProp("territories");
+   if (territories && territories.size() > 0)
+      LogToFile("faccoes.log", "FACTION_REMOVAL: Iniciando limpeza de " + territories.size() + " territórios da facção '" + guild_name + "'");
+      
+      foreach territory in territories
+         if (!territory) continue; endif
+         
+         var territory_id := CStr(territory);
+         LogToFile("faccoes.log", "FACTION_REMOVAL: Processando território '" + territory_id + "'");
+         
+         // 1. Limpar objetos do território usando o script específico
+         start_script(":faccao:limpa_territorio", array{territory_id, guild_name});
+         
+         // 2. Atualizar facção no datafile para DEFAULT_FACTION
+         var rect_df := SafeOpenDataFile(":architect:areas");
+         if (rect_df)
+            var elem := SafeFindElement(rect_df, territory_id);
+            if (elem)
+               SetElementProp(elem, "Faction", DEFAULT_FACTION);
+               SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+               elem.EraseProp("NextResourceTime");
+               LogToFile("faccoes.log", "FACTION_REMOVAL: Território '" + territory_id + "' transferido para " + DEFAULT_FACTION);
+            endif
+         endif
+         
+         // 3. Limpar registros de seriais
+         var seriais_df := SafeOpenDataFile(":faccao:seriais");
+         if (seriais_df)
+            // Novo formato: elemento direto por território
+            var territory_elem := SafeFindElement(seriais_df, territory_id);
+            if (territory_elem)
+               territory_elem.EraseProp("bau");
+               territory_elem.EraseProp("mesa");
+               territory_elem.EraseProp("mural");
+               territory_elem.EraseProp("faction");
+               LogToFile("faccoes.log", "FACTION_REMOVAL: Seriais do território '" + territory_id + "' limpos (formato novo)");
+            endif
+            
+            // Formato legado: elemento "territorios"
+            var territorios_seriais := GetElementProp(seriais_df, "territorios", struct{});
+            if (territorios_seriais && territorios_seriais.exists(territory_id))
+               territorios_seriais.erase(territory_id);
+               SetElementProp(seriais_df, "territorios", territorios_seriais);
+               LogToFile("faccoes.log", "FACTION_REMOVAL: Seriais do território '" + territory_id + "' limpos (formato legado)");
+            endif
+         endif
+         
+         sleepms(2);
+      endforeach
+   endif
+
+   // === REMOVER NPCS ATIVOS ===
+   var npcs_active := guild_obj.GetProp("npcs_active");
+   if (npcs_active && npcs_active.size() > 0)
+      foreach npc_data in npcs_active
+         if (npc_data && npc_data.serial)
+            var npc_mob := SystemFindObjectBySerial(npc_data.serial);
+            if (npc_mob)
+               npc_mob.kill();
+               LogToFile("faccoes.log", "FACTION_REMOVAL: NPC ativo removido: " + npc_data.serial);
+            endif
+         endif
+         sleepms(2);
+      endforeach
+   endif
+
+   // === REMOVER MEMBROS DA GUILDA ===
+   var members_copy := array{};
+   foreach member in (guild_obj.members)
+      members_copy.append(member);
+      sleepms(2);
+   endforeach
+   
+   foreach member in members_copy
+      if (member)
+         guild_obj.removemember(member);
+         guild_obj.EraseProp(cstr(member.serial));
+      endif
+      sleepms(2);
+   endforeach
+
+   // === REMOVER GUILDS INIMIGAS ===
+   var enemy_guilds_copy := array{};
+   foreach enemy in (guild_obj.enemyguilds)
+      enemy_guilds_copy.append(enemy);
+      sleepms(2);
+   endforeach
+   
+   foreach enemy in enemy_guilds_copy
+      if (enemy)
+         guild_obj.removeenemyguild(enemy);
+      endif
+      sleepms(2);
+   endforeach
+
+   // === LIMPAR TODAS AS PROPRIEDADES CUSTOMIZADAS ===
+   var props_to_clean := array{
+      "name", "leader", "npcs_active", "npcs", "report", "area", 
+      "money", "uniforms", "link_to", "subguilds", "laws", "territories"
+   };
+   
+   foreach prop in props_to_clean
+      guild_obj.EraseProp(prop);
+      sleepms(2);
+   endforeach
+
+   // === TENTAR DESTRUIR A GUILDA ===
+   var destruction_result := DestroyGuild(guild_obj);
+   
+   if (!destruction_result)
+      // Se não conseguiu destruir, tentar forçar limpeza
+      var remaining_members := guild_obj.members;
+      if (remaining_members && remaining_members.size() > 0)
+         foreach member in remaining_members
+            if (member)
+               guild_obj.removemember(member);
+            endif
+            sleepms(2);
+         endforeach
+         
+         destruction_result := DestroyGuild(guild_obj);
+      endif
+   endif
+   
+   LogToFile("faccoes.log", "FACTION_REMOVAL_END: Facção '" + guild_name + "' removida. Resultado: " + destruction_result);
+   
+   return destruction_result;
+endfunction
+
