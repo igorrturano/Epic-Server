@@ -212,43 +212,36 @@ function CreateBorderForRectangle(who, x1, y1, x2, y2, realm)
 endfunction
 
 function CreateBorderItem(x, y, realm, who, item_type)
-    var item_name := "";
-    if (item_type == BORDER_ITEM_LATERAL)
-        item_name := "marcador lateral";
-    else
-        item_name := "marcador transversal";
-    endif
+    // HÍBRIDO KISS: Player Z como referência + altura real do tile específico
+    var player_z := who.z;                          // Z onde o jogador está
+    var terrain_z := GetWorldHeight(x, y, realm);   // Z real do tile específico
     
-    LogDebug("mapeador", "Tentando criar " + item_name + " (0x" + Hex(item_type) + ") em (" + x + "," + y + ") realm " + realm);
+    // Lista inteligente: combinar ambas as referências
+    var z_values := array{
+        terrain_z,      // Altura real do tile específico (primeira tentativa)
+        player_z,       // Altura do jogador (segunda tentativa)
+        terrain_z + 1,  // Acima do tile
+        player_z + 1,   // Acima do jogador
+        terrain_z - 1,  // Abaixo do tile
+        0               // Fallback
+    };
     
-    // Tentar diferentes alturas (z) se a primeira falhar
-    var z_values := {0, 1, 2, 3, 4, 5, -1, -2, -3};
-    var border_item;
-    var z_tried := 0;
-    
+    // Tentar criar o item
     foreach z_val in z_values
-        z_tried++;
-        border_item := CreateItemAtLocation(x, y, z_val, item_type, 1, realm);
+        var border_item := CreateItemAtLocation(x, y, z_val, item_type, 1, realm);
         if (border_item)
-            LogDebug("mapeador", item_name + " criado em (" + x + "," + y + "," + z_val + ") Serial: " + border_item.serial);
-            break;
+            // Configurar como marcador
+            border_item.movable := 0;
+            border_item.name := "Marcador Territorial";
+            border_item.SetProp("MapeadorBorder", 1);
+            border_item.SetProp("CreatedBy", who.serial);
+            border_item.SetProp("CreatedTime", polcore().systime);
+            
+            return border_item;
         endif
     endforeach
-      if (!border_item)
-        LogError("mapeador", "FALHA ao criar " + item_name + " em (" + x + "," + y + ") - tentou " + z_tried + " valores de Z");
-        return 0;
-    endif
     
-    // Configurar propriedades da borda
-    border_item.movable := 0;
-    border_item.name := "Marcador Territorial";
-    border_item.SetProp("MapeadorBorder", 1);
-    border_item.SetProp("CreatedBy", who.serial);
-    border_item.SetProp("CreatedTime", polcore().systime);
-    
-    LogDebug("mapeador", item_name + " " + border_item.serial + " configurado em (" + border_item.x + "," + border_item.y + "," + border_item.z + ")");
-    
-    return border_item;
+    return 0;
 endfunction
 
 // Função auxiliar para remoção automática de bordas
