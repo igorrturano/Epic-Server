@@ -485,11 +485,16 @@ function Faccoes(who)
       endif
 
       var arearray := array{};
-      
-      // Criar a facção
+        // Criar a facção
       var nova_guild := CreateFaccao(output[1], arearray, cint(output[2]));
       
       if (nova_guild)
+         // Adicionar o criador como membro da facção
+         nova_guild.addMember(who);
+         
+         // Definir o criador como líder da facção
+         nova_guild.SetProp("leader", who.serial);
+         
          // Salvar dados personalizados do líder
          var leader_data := struct{};
          leader_data.+nome_personalizado := nome_lider;
