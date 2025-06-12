@@ -127,7 +127,7 @@ function getSpeedByTier(tier)
 endfunction
 
 /**
- * getWeaponDamage(tier)
+ * getDamageByTier(tier)
  *
  * Purpose
  * Verificar o valor do dado do dano da arma baseado no seu Grupo de Dano.
@@ -227,7 +227,7 @@ function addResistsPhysical(stats, armor)
 
 	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 	
-	stats := addResistPhysicalBy("MATERIAL", stats, armor);
+	//stats := addResistPhysicalBy("MATERIAL", stats, armor); //Isso passa a ser responsabilidade do novo sistema de crafting - Deiro
 	stats := addResistPhysicalBy("SLOT", stats, armor);
 	stats := addResistPhysicalBy("PROTECTION", stats, armor);
 
@@ -239,7 +239,7 @@ function addResistPhysicalBy(type, stats, armor)
 	
 	case(Upper(type))
 		"MATERIAL":
-			resists := getResistPhysicalByMaterial(armor);
+			resists := getResistPhysicalByMaterial(armor);//Isso passa a ser responsabilidade do novo sistema de crafting - Deiro
 			break;
 
 		"SLOT":
@@ -260,8 +260,12 @@ endfunction
 
 function getResistPhysicalByProtection(armor)
 	var resists := array{};
-	
-	resists := getResistPhysicalByProtectionType(armor.getType());
+
+	if(armor.isa(POLCLASS_ARMOR))
+		resists := getResistPhysicalByProtectionType(armor.getType());
+	else
+		resists :=  getResistPhysicalByProtectionType(armor.TipoProtecao);
+	endif
 
 	return dictionary{
 		"SlashResist" -> resists[1],
@@ -295,8 +299,12 @@ endfunction
 
 function getResistPhysicalBySlot(armor)
 	var resists := array{};
-	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		resists := getResistPhysicalBySlotString(armor.getSlot());
+	if(armor.isa(POLCLASS_ARMOR))
+		if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+			resists := getResistPhysicalBySlotString(armor.getSlot());
+		endif
+	else
+		resists :=  getResistPhysicalBySlotString(armor.Coverage);
 	endif
 
 	return dictionary{
@@ -495,12 +503,12 @@ function getPenaltiesByProtection(armor)
 		//TIER 2
 		ARMOR_MIDLOW: penalties := {0,0,0,2,0}; break;
 		ARMOR_MIDMID: penalties := {1,0,0,4,0}; break;
-		ARMOR_MIDHIGH: penalties := {2,0,0,5,0}; break;
+		ARMOR_MIDHIGH: penalties := {5,0,0,5,0}; break;
 
 		//TIER 3
 		ARMOR_HIGHLOW: penalties := {3,0,0,8,0}; break;
 		ARMOR_HIGHMID: penalties := {4,0,0,12,0}; break;
-		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0}; break;
+		ARMOR_HIGHHIGH: penalties := {7,0,0,24,0}; break;
 
 		// ESCUDOS
 		SHIELD_BUCKLER: penalties := {0,0,0,0,0}; break;
@@ -570,7 +578,7 @@ function addDurability(stats, item)
 
 	stats.MaxHP += getDurabilityByType(item);
 	if (item.isA(POLCLASS_ARMOR))
-		stats.MaxHP += getDurabilityBySlot(item);
+		stats.MaxHP += getDurabilityBySlot(item) * 2;
 	endif
 
 	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material

@@ -1,12 +1,11 @@
 include "include/client";
-
 function makeRace(mobile, race := 0)
     if (!race)
         var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
         race := races[RandomInt(races.size()) + 1];
         print("Making race: " + race);
     endif
-    
+  
    case (race)
       ANAO:   makeDwarven(mobile);
       ELFO:   makeElven(mobile);
@@ -59,7 +58,7 @@ function makeDwarven(mobile)
    EquipItem(mobile, hair);
 
    // Get beard styles for males
-   if (mobile.gender == 0)
+   if (isMale(mobile) == 1)
       var beard_types := types_cfg["dwarwen_beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -200,7 +199,7 @@ function makeOrc(mobile)
    EquipItem(mobile, hair);
 
    // Add beard for male orcs
-   if (mobile.gender == 0)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1)
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -298,7 +297,7 @@ function makeHuman(mobile)
    EquipItem(mobile, hair);
 
    // Add beard for male humans (50% chance)
-   if (mobile.gender == 0 && RandomInt(2) == 1)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1)
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -316,3 +315,15 @@ function makeHuman(mobile)
    return 1;
 endfunction
 
+function isMale(mobile)
+   var female := GetObjProperty(mobile, "female");   
+   var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+   var result := 0;
+   if (female || mobile.gender == 1 || Cint(isBoss.gender) == 1)
+      result := 0;
+   else 
+      result := 1;
+   endif
+   
+   return result;
+endfunction

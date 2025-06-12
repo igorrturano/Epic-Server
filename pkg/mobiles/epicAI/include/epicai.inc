@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -88,27 +89,33 @@ endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
+    var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+    var race := GetObjProperty(mobile, "myrace");
+
     if (has_colors)
         setupNPCColor(mobile, has_colors);
     endif
 
-    setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
-    var race := GetObjProperty(mobile, "myrace");
-    if (!race)
+
+    SetupNPCEquip(mobile, npc_elem);
+    setupNPCGender(mobile, Cint(isBoss.gender));
+
+    if (isBoss)
+        race := isBoss.race;
+        makeRace(mobile, race);
+    else
         makeRace(mobile);
     endif
-    SetupNPCEquip(mobile, npc_elem);
+
     SetupBaseLanguages(mobile);
 
     if (mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
 
-
-
-
+    SetupNPCAppearence(mobile);
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -489,36 +496,104 @@ function SetupNPCEquip(who, npc_elem)
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
+    var boss := GetObjProperty(who, "EpicBossStruct");
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
         if (weapon)
             var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
             // First Unequip hands
             if (who.weapon)
                 DestroyItem(who.weapon);
+            endif
+            if (who.shield)
+                DestroyItem(who.shield);
             endif
             EquipItem(who, item);
         endif
     endif
-    if (GetObjProperty(who, "specific_weapon"))
-        var weapon := GetObjProperty(who, "specific_weapon");
-        if (weapon)
-            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
-            // First Unequip hands
-            if (who.weapon)
-                DestroyItem(who.weapon);
+
+    if (boss.equipments && boss.equipments.size() > 0)
+        foreach equipment in (boss.equipments)
+            var objtype := CInt(equipment.objtype);
+            if (objtype)
+                // Use amount if specified, otherwise default to 1
+                var amount := equipment.amount ? CInt(equipment.amount) : 1;
+                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, amount);
+                if (item)
+                    // Apply color if specified
+                    if (equipment.color && equipment.color != 0)
+                        item.color := CInt(equipment.color);
+                    endif
+                    
+                    // Apply all other properties that were captured
+                    if (equipment.properties && equipment.properties.size() > 0)
+                        foreach prop_name in (equipment.properties.keys())
+                            var prop_value := equipment.properties[prop_name];
+                            // Skip objtype, color, and amount as they're handled separately
+                            if (prop_name != "objtype" && prop_name != "color" && prop_name != "amount")
+                                SetObjProperty(item, prop_name, prop_value);
+                            endif
+                            sleepms(2);
+                        endforeach
+                    endif
+                    
+                    // Try to equip the new item first
+                    if (!EquipItem(who, item))
+                        // Find what layer this item wants to use
+                        var equipped_items := ListEquippedItems(who);
+                        var equipment_removed := 0;
+                        
+                        foreach equipped_item in equipped_items
+                            // Try removing each equipped item and see if our item can equip
+                            var temp_item := equipped_item;
+                            MoveItemToContainer(temp_item, who.backpack);
+                            
+                            // Try to equip our new item
+                            if (EquipItem(who, item))
+                                // Success! The temp_item was conflicting, so destroy it
+                                DestroyItem(temp_item);
+                                equipment_removed := 1;
+                                break;
+                            else
+                                // Not the conflicting item, put it back
+                                EquipItem(who, temp_item);
+                            endif
+                            sleepms(2);
+                        endforeach
+                        
+                        // If we still couldn't equip after removing items, put it in backpack or destroy
+                        if (!equipment_removed)
+                            if (!MoveItemToContainer(item, who.backpack))
+                                DestroyItem(item);
+                            endif
+                        endif
+                    endif
+                endif
             endif
-            EquipItem(who, item);
-        endif
+            sleepms(2);
+        endforeach
+    endif
+
+    // Apply boss colors to clothing AFTER all equipment is set up
+    if (boss && boss.color_ranges && boss.color_ranges.size() > 0)
+        print("DEBUG: Applying boss colors. Color ranges: " + boss.color_ranges.size());
+        ApplyBossColors(who, boss.color_ranges);
+    else
+        print("DEBUG: No boss colors to apply. Boss: " + (boss ? "exists" : "null") + 
+            ", Color ranges: " + (boss.color_ranges ? boss.color_ranges.size() : "null"));
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
-  if (!montaria)
-  else
+  if (boss.mount)
+      // If the boss has a specific mount, use it
+      montaria := boss.mount;
+  endif
+  if (montaria)
 	var graphic := MP_GetMountGraphic(montaria);
 	var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
 	item.graphic := graphic;
 	Equipitem (who, item);
+    who.run_speed := 250;
   endif
 endfunction
 
@@ -600,10 +675,10 @@ function setupNPCColor(who, colors)
     who.truecolor := color;
 endfunction
 
-function setupNPCGender(mobile)
+function setupNPCGender(mobile, bossFemale := 0)
   var female := GetObjProperty(mobile, "female");
 
-  if (female)
+  if (female || bossFemale)
     case (mobile.graphic)
         400: mobile.graphic := 401;
         1830: mobile.graphic := 1831;
@@ -671,6 +746,8 @@ function EquipNPCItemString(who, str, lastcolor)
     var lastc := 0;
     var colors := ReadConfigFile(":ghaia:config/colors");
     var vestiments := ReadConfigFile(":ghaia:config/cloths");
+    var epicBoss := GetObjProperty(who, "EpicBossStruct");
+    var bossColor := epicBoss.color_ranges;
     objname := params[1];
     if(CInt(objname))
         objname := CInt(objname);
@@ -2068,4 +2145,240 @@ function HandleInitializationLoot(mobile, boss_struct)
     endforeach
 
     return 1;
+endfunction
+
+function startPatrolling(byref me, patrol_points, current_patrol_point)
+    var patrol_direction := GetObjProperty(me, "#patrol_direction");
+    if (patrol_direction == error)
+        patrol_direction := 1; // 1 = forward, -1 = backward
+        SetObjProperty(me, "#patrol_direction", patrol_direction);
+    endif
+    
+    var dest := patrol_points[current_patrol_point];
+    
+    // Check if we've reached the destination (within 1 tile)
+    if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
+        // Determine next patrol point based on direction
+        if (patrol_direction == 1)
+            current_patrol_point += 1;
+            // If reached the end, reverse direction
+            if (current_patrol_point > patrol_points.size())
+                current_patrol_point := patrol_points.size() - 1;
+                patrol_direction := -1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        else // patrol_direction == -1
+            current_patrol_point -= 1;
+            // If reached the beginning, reverse direction
+            if (current_patrol_point < 1)
+                current_patrol_point := 2;
+                patrol_direction := 1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        endif
+        SetObjProperty(me, "#current_patrol_point", current_patrol_point);
+    endif
+
+    // Walk toward destination
+    WalkTowardLocation(dest.x, dest.y);
+endfunction
+
+function SetupNPCAppearence(mobile)
+    // Get boss data to check for appearance settings
+    var boss := GetObjProperty(mobile, "EpicBossStruct");
+    if (mobile.gender == 1)
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+    endif
+    
+    if (!boss)
+        return 0;
+    endif
+    
+    if (!boss.appearance)
+        return 0;
+    endif
+    
+    var appearance := boss.appearance;
+    // Setup hair if specified
+    if (appearance.hair_style && appearance.hair_style != 0)
+        // Check if hair color is specified
+        // Remove existing hair first
+        var existing_hair := GetEquipmentByLayer(mobile, LAYER_HAIR);
+        if (existing_hair)
+            DestroyItem(existing_hair);
+        endif
+        
+        // Create and equip new hair using proper objtype
+        var hair_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.hair_style), 1, mobile.realm);
+        if (hair_item)
+            if (appearance.hair_color)
+                hair_item.color := CInt(appearance.hair_color);
+            endif
+            if (!EquipItem(mobile, hair_item))
+                DestroyItem(hair_item);
+            endif
+        endif
+    endif
+    
+    // Setup beard if specified
+    if (appearance.beard_style && appearance.beard_style != 0)
+        // Remove existing beard first
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+        
+        // Create and equip new beard using proper objtype
+        var beard_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.beard_style), 1, mobile.realm);
+        if (beard_item)
+            if (appearance.beard_color)
+                beard_item.color := CInt(appearance.beard_color);
+            endif
+            if (!EquipItem(mobile, beard_item))
+                DestroyItem(beard_item);
+            endif
+        endif
+    endif
+    
+    // Setup skin color if specified
+    if (appearance.skin_color)
+        mobile.color := CInt(appearance.skin_color);
+        mobile.truecolor := CInt(appearance.skin_color);
+    endif
+    
+    return 1;
+endfunction
+
+// New function to apply boss colors to clothing only
+function ApplyBossColors(mobile, color_ranges)    
+    if (!color_ranges || color_ranges.size() == 0)
+        return 0;
+    endif
+    
+    // Define clothing layers (not armor or weapons)
+    var clothing_layers := array{
+        LAYER_SHIRT,      // Shirt
+        LAYER_PANTS,      // Pants
+        LAYER_SHOES,      // Shoes
+        LAYER_ROBE,       // Robe
+        LAYER_CAPE,       // Cloak/Cape
+        LAYER_SKIRT,      // Skirt
+        LAYER_TUNIC       // Tunic/Sash
+    };
+    
+    // Define armor layers that we DON'T want to color
+    var armor_layers := array{
+        LAYER_HELM,       // Helmet
+        LAYER_GLOVES,     // Gloves
+        LAYER_CHEST,      // Chest armor
+        LAYER_ARMS,       // Arm armor
+        LAYER_LEGS        // Leg armor
+    };
+    
+    var items_colored := 0;
+    
+    // Apply color to clothing items that have color 0 (uncolored)
+    foreach layer in clothing_layers
+        var item := GetEquipmentByLayer(mobile, layer);
+        if (item)            
+            if (item.color == 0)
+                // Skip actual armor layers (not clothing that happens to be POLCLASS_ARMOR)
+                if (layer in armor_layers)
+                    continue;
+                endif
+                
+                // Get a random color from the selected ranges for each item
+                var selected_color := GetRandomColorFromRanges(color_ranges);
+                
+                item.color := selected_color;
+                item.truecolor := selected_color;
+                items_colored += 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+        
+    return 1;
+endfunction
+
+// Function to get a random color value from the selected color ranges
+function GetRandomColorFromRanges(color_ranges)
+    if (!color_ranges || color_ranges.size() == 0)
+        return 0; // Default color
+    endif
+    
+    // Pick a random color range
+    var selected_range := color_ranges[RandomInt(color_ranges.size()) + 1];
+    
+    // Return a color value based on the selected range (using the same logic as cor.src)
+    return GetColorValue(selected_range);
+endfunction
+
+// Copy the GetColorValue function from cor.src for consistency
+function GetColorValue(color)
+    case (color)
+        "Rosa":      return RandomIntMinMax(1201, 1254);
+        "Vermelho":  return RandomIntMinMax(1601, 1654);
+        "Azul":      return RandomIntMinMax(1301, 1354);
+        "Verde":     return RandomIntMinMax(1401, 1454);
+        "Amarelo":   return RandomIntMinMax(1701, 1754);
+        "Laranja":   return RandomIntMinMax(1501, 1554);
+        "Neutro":    return RandomIntMinMax(1801, 1908);
+        "Cinza":     return RandomInt({0, 946, 947});
+        AIGLANA:     return RandomColorFromRanges({
+                        RandomIntMinMax(1601, 1654),  // Vermelho
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        HAROLOTH:    return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomInt({0, 946, 947}),     // Cinza
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        LESTE:       return RandomColorFromRanges({
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        BJORSKA:     return RandomColorFromRanges({
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        ALURIEL:     return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        BADURAN:     return RandomColorFromRanges({
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908),  // Neutro
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        GULTHRAK:    return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomIntMinMax(1601, 1654),  // Vermelho
+                        RandomIntMinMax(1801, 1908),  // Neutro
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        POLKINEA:    return RandomColorFromRanges({
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        default:     return color; // In case color is already a numeric value
+    endcase
+endfunction
+
+function RandomColorFromRanges(colorRanges)
+    return colorRanges[RandomInt(colorRanges.size()) + 1];
 endfunction

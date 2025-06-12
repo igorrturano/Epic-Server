@@ -1,0 +1,23 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":nature:nature";
+program sundialcontrol(sundial)
+    Print("Sundial control script started for object " + sundial.serial);
+    
+    // Check every 30 seconds instead of 60 for more responsive updates
+    while (sundial)
+        sleep(30);
+        
+        if (!sundial)
+            return 0;
+        endif
+        
+        // Update the sundial graphic based on current time
+        var new_graphic := GetSundialGraphic();
+        if (sundial.graphic != new_graphic)
+            sundial.graphic := new_graphic;
+        endif
+    endwhile
+endprogram

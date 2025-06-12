@@ -6,6 +6,7 @@ use basic;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
+include ":sysbook:include/sealedBooks";
 
 var itemdesc_cache := dictionary{};
 
@@ -54,7 +55,8 @@ function Loot_Generate(container, loot_index)
 		Loot_CreateMagic(container, line);
 		sleepms(2);
 	endforeach
-
+    
+     Loot_TryAddSealedBook(container);
 	return 1;
 endfunction
 
@@ -101,12 +103,14 @@ function Loot_CreateItem(container, line)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var item := CreateItemInContainer(container, parsed.name);
+            
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
             if(item.errortext)
                 print("ERRO ao criar item ["+parsed.name+"]: " + item.errortext);
             else
                 print("Item criado com sucesso: " + item.desc);
             endif
+
             sleepms(2);
         endfor
     endif
@@ -259,12 +263,19 @@ endif
 endfunction
 
 function Loot_ChanceCheck(chance)
-	var rolado := RandomInt(100) + 1;
-
-	if ( rolado <= CInt(chance) )
-		return 1;
+	// Convert chance to a decimal for comparison
+	var decimal_chance := CDbl(chance);
+	
+	// For percentages >= 1, use regular 1-100 roll
+	if (decimal_chance >= 1)
+		var rolado := RandomInt(100) + 1;
+		return (rolado <= decimal_chance);
 	else
-		return 0;
+		// For chances < 1% (like 0.3%), use 1-1000 roll for more precision
+		var rolado := RandomInt(1000) + 1;
+		// Convert chance to per-thousand (0.3 becomes 3 in 1000)
+		var per_thousand := decimal_chance * 10;
+		return (rolado <= per_thousand);
 	endif
 endfunction
 
@@ -306,3 +317,22 @@ function Loot_ParseString(line)
     return result;
 endfunction
 
+function Loot_TryAddSealedBook(container)
+    // Decide a chance de aparecer um livro lacrado (exemplo: 10%)
+    var chance := 30;
+    if (RandomInt(100) + 1 > chance)
+        return 0;
+    endif
+
+    var serial := SealedBooks_GetRandomSerial();
+    if (!serial)
+        return 0;
+    endif
+
+    var book := SealedBooks_CloneToContainer(serial, container);
+    if (!book || book.errortext)
+        return 0;
+    endif
+
+    return 1;
+endfunction

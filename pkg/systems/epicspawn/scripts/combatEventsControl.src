@@ -1,15 +1,12 @@
 use uo;
-use os;
-use util;
-use math;
 
-include ":damage:damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include ":epicspawn:epicCombatEventsController";
+include "include/utils";
 
 program combatEventsControl(params)
     var npc := params[1];
-    
     if (!npc || npc.dead)
         return 0;
     endif
