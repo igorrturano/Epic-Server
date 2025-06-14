@@ -133,6 +133,7 @@ const ITEM_UNIQUE_ID_PROP := "unique_id";
 // Tipos de itens
 const ITEM_TYPE_BAU := "BAU";
 const ITEM_TYPE_MESA := "MESA";
+const ITEM_TYPE_MESA_INSCRICAO := "MESA_INSCRICAO";
 const ITEM_TYPE_MURAL := "MURAL";
 
 // =======================================

@@ -666,97 +666,13 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
 endfunction
 
 function DestruirObjetosTerritorio(territorio_id, faction)
-var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
-    var objetos_destruidos := 0;
-    LogDebug("territorio", $"Buscando objetos do território: {territorio_id} da facção: {faction}");
+    LogDebug("territorio", $"Deletando objetos do território: {territorio_id} da facção: {faction}");
     
-    // Usar TM_FindTerritoryObjects para localizar objetos
-    var objetos := TM_FindTerritoryObjects(territorio_id, faction);
+    // SOLUÇÃO KISS: Usar apenas a função centralizada TM_DeleteTerritoryObjects
+    // que já tem toda a lógica de destruição implementada e testada
+    var objetos_destruidos := TM_DeleteTerritoryObjects(territorio_id, faction);
     
-    // Destruir os objetos encontrados
-    if (objetos.bau)
-        PrintTextAbove(objetos.bau, "*Este objeto será removido*");
-        objetos.bau.movable := 1;
-        Sleep(1);
-        if (DestroyItem(objetos.bau))
-            objetos_destruidos += 1;
-            LogDebug("territorio", "Baú destruído com sucesso");
-        else
-            // Tentar método alternativo
-            MoveObjectToLocation(objetos.bau, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
-            objetos_destruidos += 1;
-        endif
-    endif
-    
-    if (objetos.mesa)
-        PrintTextAbove(objetos.mesa, "*Este objeto será removido*");
-        objetos.mesa.movable := 1;
-        Sleep(1);
-        if (DestroyItem(objetos.mesa))
-            objetos_destruidos += 1;
-            LogDebug("territorio", "Mesa destruída com sucesso");
-        else
-            // Tentar método alternativo
-            MoveObjectToLocation(objetos.mesa, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
-            objetos_destruidos += 1;
-        endif
-    endif
-    
-    if (objetos.mural)
-        PrintTextAbove(objetos.mural, "*Este objeto será removido*");
-        objetos.mural.movable := 1;
-        Sleep(1);
-        if (DestroyItem(objetos.mural))
-            objetos_destruidos += 1;
-            LogDebug("territorio", "Mural destruído com sucesso");
-        else
-            // Tentar método alternativo
-            MoveObjectToLocation(objetos.mural, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
-            objetos_destruidos += 1;
-        endif
-    endif
-    
-    // Buscar objetos adicionais no mundo (abordagem de fallback)
-    if (objetos_destruidos < 3)
-        foreach item in EnumerateItemsInContainer(1) // 1 = mundo
-            if (item.objtype in tipos_objetos)
-                var item_name := item.name;
-                var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-                var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-                
-                // Verificar se o item pertence ao território por nome ou propriedade
-                if ((item_territory_id && item_territory_id == territorio_id) || 
-                    (item_name && item_name.find(territorio_id) != error) ||
-                    (item_faction && item_faction == faction))
-                    
-                    LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
-
-                    PrintTextAbove(item, "*Este objeto está sendo destruído*");
-                    
-                    // Tornar o item móvel para permitir a destruição
-                    item.movable := 1;
-                    Sleep(1); // Pausa para o servidor processar a mudança
-                    
-                    // Tentar destruir o item
-                    var destroy_result := DestroyItem(item);
-                    if (destroy_result)
-                        objetos_destruidos += 1;
-                        LogDebug("territorio", "Objeto destruído com sucesso");
-                    else
-                        LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
-                        
-                        // Se falhar, tentar método alternativo: mover para o void
-                        MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
-                        objetos_destruidos += 1;
-                        LogWarning("territorio", "Objeto movido para o void como alternativa");
-                    endif
-                    
-                    Sleep(2); // Pausa entre destruições
-                endif
-            endif
-        endforeach
-    endif  // ADICIONADO: endif faltante
-    
+    LogDebug("territorio", $"Total de objetos destruídos: {objetos_destruidos}");
     return objetos_destruidos;
 endfunction
 
@@ -926,10 +842,11 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
 if (!faction)
     faction := GetElementProp(elem, "Faction", "");  // Compatibilidade legada
 endif
-        
-        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+          var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
         if (territory_id && faction)
-            DestruirObjetosTerritorio(territory_id, faction);
+            SendSysMessage(who, "Destruindo objetos do território...");
+            var objetos_destruidos := DestruirObjetosTerritorio(territory_id, faction);
+            SendSysMessage(who, $"Destruídos {objetos_destruidos} objetos do território.");
         endif
         
         // NOVA LINHA: Remover referências do território em todas as guildas

@@ -276,8 +276,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
                 SetObjProperty(donation_chest_obj, "CanInsertScript", ":faccao:baudoacao/canInsert");
                 SetObjProperty(donation_chest_obj, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
                 
-                var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon); 
-                if (interface_item_obj)
+                var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon);                if (interface_item_obj)
                     LogDebug("faccao_monument", "Mesa de gestão criada: " + interface_item_obj.serial);
                     var unique_id_mesa_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA, territory_id); 
                     SetObjProperty(interface_item_obj, UNIQUE_ID_PROP, unique_id_mesa_local);
@@ -287,20 +286,49 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
                     SetObjProperty(interface_item_obj, TERRITORY_ID_PROP, territory_id);
                     interface_item_obj.movable := 0;
                     interface_item_obj.usescript := ":faccao:gestao_use";
-                    
-                    var object_serials_struct := struct; 
-                    object_serials_struct.+bau := donation_chest_obj.serial;
-                    object_serials_struct.+mesa := interface_item_obj.serial;
-                    object_serials_struct.+mural := monument_obj.serial;
-                    object_serials_struct.+faction := player_faction_name_mon;
-                    object_serials_struct.+coords := rect; 
-                    object_serials_struct.+realm := realm_prop_mon; // Usar realm_prop_mon
-                    
-                    TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
-                    
-                    SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
-                    return monument_obj; 
-                else
+                      // Criar Mesa de Inscrição na posição especificada (X vermelho)
+                    var inscricao_item_obj := CreateItemAtLocation(center_x + 1, center_y + 1, center_z, 0xF8A8, 1, realm_prop_mon);
+                    if (inscricao_item_obj)
+                        LogDebug("faccao_monument", "Mesa de inscrição criada: " + inscricao_item_obj.serial);
+                        var unique_id_inscricao_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA_INSCRICAO, territory_id);
+                        SetObjProperty(inscricao_item_obj, UNIQUE_ID_PROP, unique_id_inscricao_local);
+                        
+                        inscricao_item_obj.name := "Mesa de Inscrição [" + player_faction_name_mon + "] - " + territory_id;
+                        SetObjProperty(inscricao_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+                        SetObjProperty(inscricao_item_obj, TERRITORY_ID_PROP, territory_id);
+                        inscricao_item_obj.movable := 0;
+                        inscricao_item_obj.usescript := ":faccao:mesainscricao";
+                        
+                        var object_serials_struct := struct; 
+                        object_serials_struct.+bau := donation_chest_obj.serial;
+                        object_serials_struct.+mesa := interface_item_obj.serial;
+                        object_serials_struct.+mesa_inscricao := inscricao_item_obj.serial;
+                        object_serials_struct.+mural := monument_obj.serial;
+                        object_serials_struct.+faction := player_faction_name_mon;
+                        object_serials_struct.+coords := rect; 
+                        object_serials_struct.+realm := realm_prop_mon; // Usar realm_prop_mon
+                        
+                        TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
+                        
+                        SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
+                        SendSysMessage(who, "Mesa de inscrição disponível para novos membros da facção.");
+                        return monument_obj;
+                    else
+                        LogWarning("faccao_monument", "Falha ao criar mesa de inscrição, mas território ainda é válido");
+                        var object_serials_struct := struct; 
+                        object_serials_struct.+bau := donation_chest_obj.serial;
+                        object_serials_struct.+mesa := interface_item_obj.serial;
+                        object_serials_struct.+mural := monument_obj.serial;
+                        object_serials_struct.+faction := player_faction_name_mon;
+                        object_serials_struct.+coords := rect; 
+                        object_serials_struct.+realm := realm_prop_mon;
+                        
+                        TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
+                        
+                        SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
+                        SendSysMessage(who, "Aviso: Mesa de inscrição não pôde ser criada.");
+                        return monument_obj;
+                    endif;                else
                     SendSysMessage(who, "Falha ao criar a mesa de gestão. Por favor, notifique um GM.");
                     DestroyItem(monument_obj); 
                     DestroyItem(donation_chest_obj); 

@@ -10,6 +10,7 @@ include ":faccao:include/datafile_helpers";
 // Tipos de objetos a procurar
 var TIPO_BAU := 0xFF11;
 var TIPO_MESA := 0xFE5C; 
+var TIPO_MESA_INSCRICAO := 0xF8A8;
 var TIPO_MURAL := 0x46AE;
 
 program limpa_territorio(params)
@@ -27,11 +28,11 @@ program limpa_territorio(params)
     LogInfo("territorio", "   - who: " + (who ? who.name + " (Serial: " + who.serial + ")" : "null"));
     LogInfo("territorio", "   - realm específico: '" + target_realm + "'");
     LogInfo("territorio", "   - Número total de parâmetros: " + params.size());
-    
-    // Contador de objetos encontrados de cada tipo
+      // Contador de objetos encontrados de cada tipo
     var counters := struct{
         "baus" := 0,
         "mesas" := 0,
+        "mesas_inscricao" := 0,
         "murais" := 0,
         "destruidos" := 0
     };
@@ -216,7 +217,7 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
             foreach item in EnumerateItemsInContainer(0)
                 total_items += 1;
                 
-                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MURAL))
+                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MESA_INSCRICAO || item.objtype == TIPO_MURAL))
                     var name_match := (item.name.find(territorio_id) != error || item.name.find(faction) != error);
                     
                     if (name_match)
@@ -224,13 +225,15 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
                         LogDebug("territorio", "Encontrado objeto pelo nome: " + item.name + " (Serial: " + item.serial + ")");
                         
                         if (DestruirObjeto(item))
-                            counters.destruidos += 1;
-                            if (item.objtype == TIPO_BAU)
+                            counters.destruidos += 1;                            if (item.objtype == TIPO_BAU)
                                 counters.baus += 1;
                                 LogInfo("territorio", "Baú destruído com sucesso");
                             elseif (item.objtype == TIPO_MESA)
                                 counters.mesas += 1;
                                 LogInfo("territorio", "Mesa destruída com sucesso");
+                            elseif (item.objtype == TIPO_MESA_INSCRICAO)
+                                counters.mesas_inscricao += 1;
+                                LogInfo("territorio", "Mesa de inscrição destruída com sucesso");
                             elseif (item.objtype == TIPO_MURAL)
                                 counters.murais += 1;
                                 LogInfo("territorio", "Mural destruído com sucesso");
@@ -282,10 +285,18 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
             if (mesas == error)
                 LogError("territorio", "Falha ao buscar mesas: " + mesas);
                 mesas := {};
-            endif
-            LogDebug("territorio", "Encontradas " + mesas.size() + " mesas na área");
+            endif            LogDebug("territorio", "Encontradas " + mesas.size() + " mesas na área");
             
-            // 3. Buscar murais
+            // 3. Buscar mesas de inscrição
+            LogDebug("territorio", "Buscando mesas de inscrição com ListItemsNearLocationOfType");
+            var mesas_inscricao := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MESA_INSCRICAO, realm_territorio);
+            if (mesas_inscricao == error)
+                LogError("territorio", "Falha ao buscar mesas de inscrição: " + mesas_inscricao);
+                mesas_inscricao := {};
+            endif
+            LogDebug("territorio", "Encontradas " + mesas_inscricao.size() + " mesas de inscrição na área");
+            
+            // 4. Buscar murais
             LogDebug("territorio", "Buscando murais com ListItemsNearLocationOfType");
             var murais := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MURAL, realm_territorio);
             if (murais == error)
@@ -326,6 +337,22 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
                     endif
                 else
                     LogDebug("territorio", "Mesa não pertence ao território alvo, ignorando");
+                endif            endforeach
+            
+            LogDebug("territorio", "Processando mesas de inscrição encontradas");
+            foreach mesa_inscricao in mesas_inscricao
+                LogDebug("territorio", "Verificando mesa de inscrição: " + mesa_inscricao.name + " (Serial: " + mesa_inscricao.serial + ")");
+                if (VerificarObjeto(mesa_inscricao, territorio_id, faction))
+                    LogDebug("territorio", "Mesa de inscrição confirmada como pertencente ao território");
+                    if (DestruirObjeto(mesa_inscricao))
+                        counters.mesas_inscricao += 1;
+                        counters.destruidos += 1;
+                        LogInfo("territorio", "Mesa de inscrição destruída com sucesso");
+                    else
+                        LogError("territorio", "Falha ao destruir mesa de inscrição");
+                    endif
+                else
+                    LogDebug("territorio", "Mesa de inscrição não pertence ao território alvo, ignorando");
                 endif
             endforeach
             
@@ -347,11 +374,11 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
             endforeach
         endif
     endif
-    
-    // Resumo da operação
+      // Resumo da operação
     LogInfo("territorio", "Resumo final da operação:");
     LogInfo("territorio", "   - Baús encontrados e destruídos: " + counters.baus);
     LogInfo("territorio", "   - Mesas encontradas e destruídas: " + counters.mesas);
+    LogInfo("territorio", "   - Mesas de inscrição encontradas e destruídas: " + counters.mesas_inscricao);
     LogInfo("territorio", "   - Murais encontrados e destruídos: " + counters.murais);
     LogInfo("territorio", "   - Total de objetos destruídos: " + counters.destruidos);
     LogInfo("territorio", "   - Realm verificado: " + realm_territorio);

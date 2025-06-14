@@ -1730,69 +1730,9 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
         LogDebug("territorio", "Facção: " + faction);
         LogDebug("territorio", "Realm: " + territorio_realm);
         LogDebug("territorio", "Nome: " + territorio_nome);
-        
-        // Verificar se temos os seriais armazenados
-        var seriais_df := SafeOpenDataFile(":faccao:seriais");
-        var territorios_seriais := dictionary{};
-        
-        if (seriais_df)
-            territorios_seriais := seriais_df.GetProp("territorios");
-        endif
-        
-        var seriais_encontrados := 0;
-        
-        // Se temos os seriais armazenados, remover diretamente 
-        if (territorios_seriais && territorios_seriais[territorio_id])
-            var info := territorios_seriais[territorio_id];
-            
-            LogDebug("territorio", "Seriais encontrados no registro para " + territorio_id);
-            LogDebug("territorio", "Baú: " + info.bau);
-            LogDebug("territorio", "Mesa: " + info.mesa);
-            LogDebug("territorio", "Mural: " + info.mural);
-            
-            // Remover baú
-            var bau := SystemFindObjectBySerial(info.bau);
-            if (bau)
-                LogDebug("territorio", "Destruindo baú: " + bau.name);
-                DestroyItem(bau);
-                seriais_encontrados += 1;
-            endif
-            
-            // Remover mesa
-            var mesa := SystemFindObjectBySerial(info.mesa);
-            if (mesa)
-                LogDebug("territorio", "Destruindo mesa: " + mesa.name);
-                DestroyItem(mesa);
-                seriais_encontrados += 1;
-            endif
-            
-            // Remover mural
-            var mural := SystemFindObjectBySerial(info.mural);
-            if (mural)
-                LogDebug("territorio", "Destruindo mural: " + mural.name);
-                DestroyItem(mural);
-                seriais_encontrados += 1;
-            endif
-            
-            // Remover do dicionário
-            territorios_seriais.Erase(territorio_id);
-            seriais_df.SetProp("territorios", territorios_seriais);
-            
-            LogDebug("territorio", seriais_encontrados + " objetos destruídos diretamente pelos seriais.");
-        else
-            LogDebug("territorio", "Nenhum serial encontrado no registro, usando busca por área.");
-        endif
-        
-        // Se não conseguiu remover todos os objetos, usar o script completo
-        if (seriais_encontrados < 3)
-            LogDebug("territorio", "Iniciando script de limpeza completa...");
-            // Usar o script dedicado para limpar os objetos
-            var script := start_script(":faccao:limpa_territorio", array{territorio_id, faction, who, territorio_realm});
-            if (script == error)
-                SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
-                LogError("territorio", "Erro ao iniciar script: " + script);
-            endif
-        endif
+          // === SOLUÇÃO KISS: Uma única linha para remover tudo ===
+        var objetos_removidos := TM_DeleteTerritoryObjects(territorio_id, faction);
+        SendSysMessage(who, "Objetos removidos: " + objetos_removidos);
         
         // Atualizar propriedades no datafile
         SetElementProp(elem, "Faction", DEFAULT_FACTION);

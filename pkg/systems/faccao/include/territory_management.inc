@@ -654,6 +654,7 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
     var result := struct{
         "bau" := 0,
         "mesa" := 0,
+        "mesa_inscricao" := 0,
         "mural" := 0
     };
     
@@ -678,11 +679,17 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
                         result.bau := SystemFindObjectBySerial(serial_bau);
                     endif
                 endif
-                
-                if (!item_type || item_type == ITEM_TYPE_MESA)
+                  if (!item_type || item_type == ITEM_TYPE_MESA)
                     var serial_mesa := GetElementProp(territory_elem, "mesa");
                     if (serial_mesa)
                         result.mesa := SystemFindObjectBySerial(serial_mesa);
+                    endif
+                endif
+                
+                if (!item_type || item_type == ITEM_TYPE_MESA_INSCRICAO)
+                    var serial_mesa_inscricao := GetElementProp(territory_elem, "mesa_inscricao");
+                    if (serial_mesa_inscricao)
+                        result.mesa_inscricao := SystemFindObjectBySerial(serial_mesa_inscricao);
                     endif
                 endif
                 
@@ -692,9 +699,8 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
                         result.mural := SystemFindObjectBySerial(serial_mural);
                     endif
                 endif
-                
-                // Se encontrou pelo menos um objeto, retornar
-                if (result.bau || result.mesa || result.mural)
+                  // Se encontrou pelo menos um objeto, retornar
+                if (result.bau || result.mesa || result.mesa_inscricao || result.mural)
                     return result;
                 endif
             else
@@ -755,16 +761,18 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
         if (GetObjProperty(item, TERRITORY_ID_PROP) == territory_id)
             var faction_obj := GetObjProperty(item, OBJ_FACTION_PROP);
             
-            if (!faction_name || faction_obj == faction_name)
-                if (!item_type || 
+            if (!faction_name || faction_obj == faction_name)                if (!item_type || 
                     (item_type == ITEM_TYPE_BAU && item.objtype == 0xFF11) ||
                     (item_type == ITEM_TYPE_MESA && item.objtype == 0xFE5C) ||
+                    (item_type == ITEM_TYPE_MESA_INSCRICAO && item.objtype == 0xF8A8) ||
                     (item_type == ITEM_TYPE_MURAL && item.objtype == 0x46AE))
                     
                     if (item.objtype == 0xFF11)
                         result.bau := item;
                     elseif (item.objtype == 0xFE5C)
                         result.mesa := item;
+                    elseif (item.objtype == 0xF8A8)
+                        result.mesa_inscricao := item;
                     elseif (item.objtype == 0x46AE)
                         result.mural := item;
                     endif
@@ -773,9 +781,8 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
         endif
         sleepms(1);
     endforeach
-    
-    // Se encontrou objetos no mundo, atualizar o registro
-    if (result.bau || result.mesa || result.mural)
+      // Se encontrou objetos no mundo, atualizar o registro
+    if (result.bau || result.mesa || result.mesa_inscricao || result.mural)
         // Cria um struct com os objetos encontrados
         var novos_seriais := struct{};
         if (result.bau) 
@@ -1253,8 +1260,7 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
             LogError("territorio", "Falha ao remover baú: " + objetos.bau.serial + ", Resultado: " + result);
         endif
     endif
-    
-    // Remover mesa
+      // Remover mesa
     if (objetos.mesa)
         var result := DestroyItem(objetos.mesa);
         if (result)
@@ -1262,6 +1268,17 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
             LogDebug("territorio", "Mesa removida: " + objetos.mesa.serial);
         else
             LogError("territorio", "Falha ao remover mesa: " + objetos.mesa.serial + ", Resultado: " + result);
+        endif
+    endif
+    
+    // Remover mesa de inscrição
+    if (objetos.mesa_inscricao)
+        var result := DestroyItem(objetos.mesa_inscricao);
+        if (result)
+            objetos_removidos += 1;
+            LogDebug("territorio", "Mesa de inscrição removida: " + objetos.mesa_inscricao.serial);
+        else
+            LogError("territorio", "Falha ao remover mesa de inscrição: " + objetos.mesa_inscricao.serial + ", Resultado: " + result);
         endif
     endif
     
@@ -1284,10 +1301,10 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         if (territory_elem)
             // Salvar informações de fação para logs
             var old_faction := GetElementProp(territory_elem, "faction");
-            
-            // Limpar propriedades
+              // Limpar propriedades
 territory_elem.EraseProp("bau");
 territory_elem.EraseProp("mesa");
+territory_elem.EraseProp("mesa_inscricao");
 territory_elem.EraseProp("mural");
 territory_elem.EraseProp("faction");
             
