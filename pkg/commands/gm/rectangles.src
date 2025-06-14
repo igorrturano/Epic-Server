@@ -1,6 +1,7 @@
 use uo;
 use os;
 use datafile;
+
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
@@ -11,13 +12,19 @@ include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
 include ":faccao:include/territory_management";
 
+
 program rectangle_creator(who, params)
     if (!who.cmdlevel)
         SendSysMessage(who, "Você não tem permissão para usar este comando.");
         return;
     endif
     
-
+    // Checar se o comando é para visualização direta
+    if (Lower(params) == "ver")
+        var rect_df := SafeOpenDataFile(":architect:areas");
+        ShowRectangles(who, rect_df);
+        return;
+    endif
     
     // Abrir datafile apenas uma vez
     var rect_df := SafeOpenDataFile(":architect:areas");
@@ -553,14 +560,12 @@ function ShowRectangles(who, rect_df)
         var rect_name := rect_df.keys()[index];
        var elem := SafeFindElement(rect_df, rect_name);
         
-        DisplayRectangleDetails(who, elem);
-    elseif (button == 999)
+        DisplayRectangleDetails(who, elem);    elseif (button == 999)
         // Implementação de paginação para mostrar mais territórios
         ShowRectanglesPage2(who, rect_df, 19); // Começa do 19º item
     elseif (button == 300)
-        // Modificado para executar o comando .rectangles
-        SendSysMessage(who, "Executando o comando de criar novo território...");
-        start_script(":commands:gm/rectangles", who);
+        // Mostrar gump de seleção do tipo de território
+        ShowTerritoryTypeSelection(who);
     endif
 endfunction
 
@@ -1092,4 +1097,122 @@ endfunction
 
 function IsTerritoryCapital(territory_id)
     return TM_IsTerritoryCapital(territory_id);
+endfunction
+
+
+// Função para mostrar gump de escolha do tipo de território
+// Função para mostrar gump de escolha do tipo de território
+function ShowTerritoryTypeSelection(who)
+    var gump := GFECreateGump("Escolha o tipo de território", 350, 200, array{BORDER_GOLDEN});
+    
+    var x := 30;
+    var y := 70;
+    
+    GFTextLine(gump, x, y, 53, "Selecione como criar o novo território:");
+    y += 35;
+    
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 100);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Território Customizado");
+    GFTooltipText(gump, "Selecione manualmente as coordenadas do território");
+    y += 50;
+    
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 200);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Território Padrão (50x50)");
+    GFTooltipText(gump, "Território 50x50 tiles automático (centrado no ponto selecionado)");
+    
+    var input := GFSendGump(who, gump);
+    var button := input[0];
+    
+    if (button == 100)
+        CreateCustomTerritory(who);
+    elseif (button == 200)
+        CreateStandardTerritory(who);
+    endif
+endfunction
+
+
+// Função para criar território customizado (processo atual)
+function CreateCustomTerritory(who)
+    SendSysMessage(who, "Executando o comando de criar território customizado...");
+    start_script(":commands:gm/rectangles", who);
+endfunction
+
+
+// Função para criar território padrão
+function CreateStandardTerritory(who)
+    SendSysMessage(who, "Selecione o centro do território padrão (50x50)");
+    var center_point := TargetCoordinates(who);
+    if (!center_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+    
+    // Definir tamanho padrão do território (50x50)
+    var size := 25; // Raio de 25 tiles (50x50 total)
+    var x1 := center_point.x - size;
+    var y1 := center_point.y - size;
+    var x2 := center_point.x + size;
+    var y2 := center_point.y + size;
+    
+    var rect_str := $"{x1} {y1} {x2} {y2}";
+    var realm := center_point.realm;
+    
+    // Mostrar o retângulo selecionado
+    SendSysMessage(who, $"Território padrão definido: {rect_str} no realm {realm}");
+    
+    // Abrir datafile apenas uma vez
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (rect_df == error)
+        rect_df := SafeOpenDataFile(":architect:areas", 1);
+        if (rect_df == error)
+            SendSysMessage(who, "Erro ao criar arquivo de dados!");
+            return;
+        endif
+    endif
+    
+    // Verificar sobreposição
+    if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
+        SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
+        SendSysMessage(who, "Operação cancelada.");
+        return;
+    endif
+    
+    // Pedir o nome do território (sistema normal)
+    var rect_name := RequestGump(who, "Digite um nome para este território:");
+    if (!rect_name || rect_name == "")
+        SendSysMessage(who, "Operação cancelada - nome não fornecido.");
+        return;
+    endif
+    
+    // Verificar se o nome já existe e confirmar sobrescrita
+    var elem := SafeFindElement(rect_df, rect_name);
+    if (elem)
+        var confirm := YesNo(who, $"Já existe um território com o nome '{rect_name}'. Sobrescrever?");
+        if (!confirm)
+            SendSysMessage(who, "Operação cancelada.");
+            return;
+        endif
+    else
+        elem := rect_df.CreateElement(rect_name);
+    endif
+    
+    // Gerar e salvar um ID único para o território
+    var territory_id := CreateTerritoryID();
+    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    
+    // Salvar as informações do território
+    SetElementProp(elem, "Name", rect_name);
+    SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+    
+    // Configurar recursos e intervalos para o território (sistema normal)
+    SetupResourcesForTerritory(who, elem);
+    
+    SendSysMessage(who, $"Território '{rect_name}' criado com sucesso!");
+    
+    // Opção para visualizar os territórios existentes
+    if (YesNo(who, "Deseja visualizar todos os territórios salvos?"))
+        ShowRectangles(who, rect_df);
+    endif
 endfunction
