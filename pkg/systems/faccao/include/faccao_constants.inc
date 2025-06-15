@@ -135,6 +135,7 @@ const ITEM_TYPE_BAU := "BAU";
 const ITEM_TYPE_MESA := "MESA";
 const ITEM_TYPE_MESA_INSCRICAO := "MESA_INSCRICAO";
 const ITEM_TYPE_MURAL := "MURAL";
+const ITEM_TYPE_FERRAMENTAS_CONSTRUCAO := "FERRAMENTAS_CONSTRUCAO";
 
 // =======================================
 // Constantes para sistema de caravanas

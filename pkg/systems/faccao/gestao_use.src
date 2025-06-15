@@ -27,6 +27,7 @@ include ":architect:architect";
 
 const BKGND_BLUESLAB := 9200;
 const BKGND_STONESLAB := 3500;
+const MOEDAS_COBRE := 0xBA63; // Tipo das moedas de cobre - usado em ambas as funções de compra
 
 const BOTAO_REINO := 1;
 const BOTAO_LEIS := 2;
@@ -86,10 +87,15 @@ function ShowKingdomManagementGump(who, item)
         if (input[0] >= 700 && input[0] < 900)
             // Ações de território sempre finalizam o loop
             ProcessarAcaoTerritorio(who, input[0], item);
-            return; // Saída imediata e definitiva
-        elseif (input[0] == 100)
+            return; // Saída imediata e definitiva        elseif (input[0] == 100)
             // Botão de compra do Mapeador
             if (ProcessarCompraMapeador(who, item))
+                continuar := 0; // Sair após compra bem-sucedida
+            endif
+            // Se a compra falhar, continua no loop para mostrar novamente o gump
+        elseif (input[0] == 101)
+            // Botão de compra das Ferramentas de Construção
+            if (ProcessarCompraFerramentas(who, item))
                 continuar := 0; // Sair após compra bem-sucedida
             endif
             // Se a compra falhar, continua no loop para mostrar novamente o gump
@@ -653,15 +659,21 @@ function ConstrucoesGump(byref gump)
     GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Construções");
     
     // Seção de Itens de Construção
-    GFTextLine(gump, 500, 100, 2100, "Itens de Construção Disponíveis:");
-    
-    // Mapeador - Item disponível para arquitetos
+    GFTextLine(gump, 500, 100, 2100, "Itens de Construção Disponíveis:");    // Ferramentas de Construção - Item para substituir comando architect
     GFResizePic(gump, 450, 130, 9350, 340, 80);
-    GFTilePic(gump, 450, 150, 0x14F5); // Sextant graphic
-    GFTextLine(gump, 500, 140, 53, "Mapeador de Território");
+    GFTilePic(gump, 432, 140, 0x72F4); // Graphic das Ferramentas de Construção
+    GFTextLine(gump, 500, 140, 53, "Ferramentas de Construção");
     GFTextLine(gump, 500, 155, 1153, "Custo: 500 moedas de cobre");
     GFTextLine(gump, 500, 170, 1153, "Apenas para arquitetos de guilda");
-    GFAddButton(gump, 740, 150, 4005, 4007, GF_CLOSE_BTN, 100); // Botão Comprar Mapeador
+    GFAddButton(gump, 740, 150, 4005, 4007, GF_CLOSE_BTN, 101); // Botão Comprar Ferramentas
+    
+    // Mapeador - Item disponível para arquitetos
+    GFResizePic(gump, 450, 220, 9350, 340, 80);
+    GFTilePic(gump, 450, 240, 0x14F5); // Sextant graphic
+    GFTextLine(gump, 500, 230, 53, "Mapeador de Território");
+    GFTextLine(gump, 500, 245, 1153, "Custo: 500 moedas de cobre");
+    GFTextLine(gump, 500, 260, 1153, "Apenas para arquitetos de guilda");
+    GFAddButton(gump, 740, 240, 4005, 4007, GF_CLOSE_BTN, 100); // Botão Comprar Mapeador
     
     
     // TODO: Adicionar outros itens de construção aqui
@@ -1419,7 +1431,7 @@ TM_NotifyTerritoryChange(territorio_id, "transfer", struct{
       });   
         LogDebug("territorio", "Transferência concluída com sucesso: " + territorio_nome + " para " + new_faction);
         SendSysMessage(who, "Território transferido com sucesso para " + new_faction + "!");
-        return 1; // Indica que deve sair do gump
+        return 1;
     endif
     
     LogDebug("territorio", "Transferência cancelada na confirmação");
@@ -1550,8 +1562,7 @@ endif
 
 // MÉTODO 2: Busca por propriedades nos objetos do mundo
 LogDebug("territorio", "Buscando objetos no mundo...");
-    
-    // Força a busca no mundo mesmo se encontrou pelos seriais
+      // Força a busca no mundo mesmo se encontrou pelos seriais
     var busca_x_objetos := 0;
     var objetos_por_mundo := 0;
     
@@ -1989,11 +2000,9 @@ function ProcessarCompraMapeador(who, item)
         SendSysMessage(who, "Apenas arquitetos de guilda podem comprar o Mapeador.", 3, 38);
         return 0;
     endif
-    
-    // Constantes para o Mapeador
+      // Constantes para o Mapeador
     const MAPEADOR_OBJTYPE := 0x14F5; // Objtype do Mapeador
     const MAPEADOR_CUSTO := 500; // Custo em moedas de cobre
-    const MOEDAS_COBRE := 0xBA63; // Tipo das moedas de cobre
     
     // Calcular moedas disponíveis
     var moedas_disponiveis := 0;
@@ -2055,8 +2064,94 @@ function ProcessarCompraMapeador(who, item)
     return 1;
 endfunction
 
+function ProcessarCompraFerramentas(who, item)
+    // Verificar se o jogador tem privilégios de arquiteto (igual ao mapeador)
+    if (!IsArchitectOfGuild(who))
+        SendSysMessage(who, "Apenas arquitetos de guilda podem comprar Ferramentas de Construção.", 3, 38);
+        return 0;
+    endif    // Constantes para as Ferramentas de Construção
+    const FERRAMENTAS_OBJTYPE := 0xFA50; // Objtype das Ferramentas de Construção
+    const FERRAMENTAS_CUSTO := 500; // Custo em moedas de cobre
+    
+    // Calcular moedas disponíveis
+    var moedas_disponiveis := 0;
+    var moedas_items := array{};
+    
+    foreach moeda in EnumerateItemsInContainer(who.backpack)
+        if (moeda.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += moeda.amount;
+            moedas_items.append(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar se tem moedas suficientes
+    if (moedas_disponiveis < FERRAMENTAS_CUSTO)
+        SendSysMessage(who, "Você precisa de " + FERRAMENTAS_CUSTO + " moedas de cobre para comprar Ferramentas de Construção. Você tem apenas " + moedas_disponiveis + ".");
+        return 0;
+    endif
+    
+    // Consumir as moedas
+    var moedas_restantes := FERRAMENTAS_CUSTO;
+    foreach moeda in moedas_items
+        if (moedas_restantes <= 0)
+            break;
+        endif
+        
+        if (moeda.amount >= moedas_restantes)
+            // Esta pilha tem moedas suficientes
+            SubtractAmount(moeda, moedas_restantes);
+            moedas_restantes := 0;
+        else
+            // Consumir toda esta pilha
+            moedas_restantes -= moeda.amount;
+            DestroyItem(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Criar as Ferramentas de Construção na mochila do jogador
+    var ferramentas := CreateItemInBackpack(who, FERRAMENTAS_OBJTYPE, 1);
+    if (!ferramentas)
+        // Tentar criar no chão se não couber na mochila
+        ferramentas := CreateItemAtLocation(who.x, who.y, who.z, FERRAMENTAS_OBJTYPE, 1, who.realm);
+        if (ferramentas)
+            // Configurar o nome do item
+            ferramentas.name := "Ferramentas de Construção";
+            SendSysMessage(who, "Ferramentas de Construção compradas com sucesso! O item foi colocado no chão pois sua mochila está cheia.");
+        else
+            SendSysMessage(who, "Erro ao criar as Ferramentas de Construção. Contacte a administração.");
+            // Devolver as moedas em caso de erro
+            CreateItemInBackpack(who, MOEDAS_COBRE, FERRAMENTAS_CUSTO);
+            return 0;
+        endif
+    else
+        // Configurar o nome do item
+        ferramentas.name := "Ferramentas de Construção";
+        SendSysMessage(who, "Ferramentas de Construção compradas com sucesso por " + FERRAMENTAS_CUSTO + " moedas de cobre!");
+    endif
+    
+    return 1;
+endfunction
+
 function IsArchitectOfGuild(who)
     // Usar a função VerifyArchitect do sistema de arquitetos
     // que já faz todas as verificações necessárias
-    return VerifyArchitect(who);
+    // Se não existir, fazer verificação básica
+    if (who.cmdlevel >= 1)
+        return 1;
+    endif
+    
+    // Verificação básica de guilda
+    var guild := who.guild;
+    if (!guild)
+        return 0;
+    endif
+    
+    // Se é líder da guilda, pode usar
+    if (guild.guildmaster == who)
+        return 1;
+    endif
+    
+    return 0;
 endfunction
