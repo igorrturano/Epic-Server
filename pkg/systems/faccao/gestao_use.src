@@ -210,12 +210,17 @@ function ReinoGump(byref gump, item)
     
     // Obter a facção da mesa de gestão
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    
-    // Título personalizado com o nome da facção
+      // Título personalizado com o nome da facção
     var titulo := mesa_faction ? "Gestão de " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
     
-    var rect_df := SafeOpenDataFile(":architect:areas");
+    // Obter e exibir informação sobre a cultura do reino
+    var cultura_reino := GetKingdomCulture(item, mesa_faction);
+    if (cultura_reino)
+        var texto_cultura := "O reino " + mesa_faction + " está associado à cultura " + cultura_reino;
+        GFTextMid(gump, 490, 85, 263, 53, texto_cultura);
+    endif
+      var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         // Criar lista de territórios visíveis baseados na mesa_faction
         var territorios_visiveis := array{};
@@ -245,15 +250,15 @@ function ReinoGump(byref gump, item)
             sleepms(2);
         endforeach
         
-        // Criar um único background para a área de territórios
-        GFResizePic(gump, 460, 100, 9350, 320, 300);
+        // Criar um único background para a área de territórios (movido para baixo)
+        GFResizePic(gump, 460, 120, 9350, 320, 280);
         
-        // Adicionar cabeçalhos
-        GFTextLine(gump, 485, 105, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 105, 53, "Info");
-        GFTextLine(gump, 730, 105, 53, "Aliados");
+        // Adicionar cabeçalhos (movidos para baixo)
+        GFTextLine(gump, 485, 125, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 125, 53, "Info");
+        GFTextLine(gump, 730, 125, 53, "Aliados");
         
-        var y := 140; // Começar após os cabeçalhos
+        var y := 160; // Começar após os cabeçalhos (movido para baixo)
         var territorios_mostrados := 0;
         
 foreach territorio in (territorios_visiveis)
@@ -1100,7 +1105,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         LogDebug("territorio", "Datafile areas: " + (rect_df ? "Aberto com sucesso" : "FALHA ao abrir"));
         
         if (seriais_df)
-            var territorios_seriais := seriais_df.GetProp("territorios");
+            var territorios_seriais := seriais_df.GetProp("territories");
             LogDebug("territorio", "Seriais obtidos: " + (territorios_seriais ? "OK, tipo: " + TypeOf(territorios_seriais) : "NULL"));
             
             if (territorios_seriais && territorios_seriais[territorio_id])
@@ -2149,8 +2154,49 @@ function IsArchitectOfGuild(who)
     endif
     
     // Se é líder da guilda, pode usar
-    if (guild.guildmaster == who)
+    if (guild.IsLeader(who))
         return 1;
+    endif
+    
+    return 0;
+endfunction
+
+/**
+ * Purpose: Obter a cultura associada ao reino/facção
+ * Parameters: item - mesa de gestão, faction_name - nome da facção
+ * Return: String da cultura ou 0 se não encontrada
+ */
+function GetKingdomCulture(item, faction_name)
+    if (!item || !faction_name)
+        return 0;
+    endif
+    
+    // Primeiro, tenta obter a cultura diretamente da mesa
+    var cultura_mesa := GetObjProperty(item, "cultura");
+    if (cultura_mesa)
+        return cultura_mesa;
+    endif
+    
+    // Se não encontrou na mesa, busca em territórios da facção
+    var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
+    if (territory_id)
+        // Busca objetos do território para encontrar a cultura
+        var seriais_df := SafeOpenDataFile(":faccao:seriais");
+        if (seriais_df)
+            var territory_elem := seriais_df.FindElement(territory_id);
+            if (territory_elem)
+                var mural_serial := GetElementProp(territory_elem, "mural");
+                if (mural_serial)
+                    var mural_obj := SystemFindObjectBySerial(mural_serial);
+                    if (mural_obj)
+                        var cultura_mural := GetObjProperty(mural_obj, "cultura");
+                        if (cultura_mural)
+                            return cultura_mural;
+                        endif
+                    endif
+                endif
+            endif
+        endif
     endif
     
     return 0;

@@ -12,6 +12,7 @@ var TIPO_BAU := 0xFF11;
 var TIPO_MESA := 0xFE5C; 
 var TIPO_MESA_INSCRICAO := 0xF8A8;
 var TIPO_MURAL := 0x46AE;
+var TIPO_ESTANDARTE := array{0xF93A, 0xF93B, 0xF93C, 0xF93D, 0xF93E, 0xF93F, 0xF940, 0xF942, 0xF943, 0xF920, 0xF921, 0xF922, 0xEB24, 0xC413, 0xC40E, 0xC3A5, 0xC3A1, 0xC395, 0xBD8A, 0xBD88, 0xBD86, 0xBD72, 0x4038, 0x9FAD, 0x9FAF, 0x9FB1, 0x9FB3, 0xB93C};
 
 program limpa_territorio(params)
     LogInfo("territorio", "======================= INÍCIO DA EXECUÇÃO =======================");
@@ -25,8 +26,7 @@ program limpa_territorio(params)
     LogInfo("territorio", "Parâmetros recebidos:");
     LogInfo("territorio", "   - territorio_id: '" + territorio_id + "'");
     LogInfo("territorio", "   - faction: '" + faction + "'");
-    LogInfo("territorio", "   - who: " + (who ? who.name + " (Serial: " + who.serial + ")" : "null"));
-    LogInfo("territorio", "   - realm específico: '" + target_realm + "'");
+    LogInfo("territorio", "   - who: " + (who ? who.name + " (Serial: " + who.serial + ")" : "null"));    LogInfo("territorio", "   - realm específico: '" + target_realm + "'");
     LogInfo("territorio", "   - Número total de parâmetros: " + params.size());
       // Contador de objetos encontrados de cada tipo
     var counters := struct{
@@ -34,6 +34,7 @@ program limpa_territorio(params)
         "mesas" := 0,
         "mesas_inscricao" := 0,
         "murais" := 0,
+        "estandartes" := 0,
         "destruidos" := 0
     };
     
@@ -212,12 +213,13 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
             LogInfo("territorio", "Iniciando busca por nome em todos os objetos do mundo");
             var total_items := 0;
             var matching_items := 0;
-            
-            // Primeiro, vamos buscar pelo nome
+              // Primeiro, vamos buscar pelo nome
             foreach item in EnumerateItemsInContainer(0)
                 total_items += 1;
                 
-                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MESA_INSCRICAO || item.objtype == TIPO_MURAL))
+                var is_estandarte := IsEstandarte(item.objtype);
+                
+                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MESA_INSCRICAO || item.objtype == TIPO_MURAL || is_estandarte))
                     var name_match := (item.name.find(territorio_id) != error || item.name.find(faction) != error);
                     
                     if (name_match)
@@ -237,6 +239,9 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
                             elseif (item.objtype == TIPO_MURAL)
                                 counters.murais += 1;
                                 LogInfo("territorio", "Mural destruído com sucesso");
+                            elseif (is_estandarte)
+                                counters.estandartes += 1;
+                                LogInfo("territorio", "Estandarte do reino destruído com sucesso");
                             endif
                         else
                             LogError("territorio", "Falha ao destruir objeto: " + item.name);
@@ -296,14 +301,28 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
             endif
             LogDebug("territorio", "Encontradas " + mesas_inscricao.size() + " mesas de inscrição na área");
             
-            // 4. Buscar murais
-            LogDebug("territorio", "Buscando murais com ListItemsNearLocationOfType");
+            // 4. Buscar murais            LogDebug("territorio", "Buscando murais com ListItemsNearLocationOfType");
             var murais := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MURAL, realm_territorio);
             if (murais == error)
                 LogError("territorio", "Falha ao buscar murais: " + murais);
                 murais := {};
             endif
             LogDebug("territorio", "Encontrados " + murais.size() + " murais na área");
+            
+            // Buscar estandartes (múltiplos graphics)
+            LogDebug("territorio", "Buscando estandartes do reino na área");
+            var estandartes := array{};
+            foreach estandarte_type in TIPO_ESTANDARTE
+                var items_tipo := ListItemsNearLocationOfType(center_x, center_y, 0, radius, estandarte_type, realm_territorio);
+                if (items_tipo != error)
+                    foreach item in items_tipo
+                        estandartes.append(item);
+                        sleepms(1);
+                    endforeach
+                endif
+                sleepms(1);
+            endforeach
+            LogDebug("territorio", "Encontrados " + estandartes.size() + " estandartes na área");
             
 // Processar todos os objetos encontrados
             LogDebug("territorio", "Processando baús encontrados");
@@ -355,8 +374,7 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
                     LogDebug("territorio", "Mesa de inscrição não pertence ao território alvo, ignorando");
                 endif
             endforeach
-            
-            LogDebug("territorio", "Processando murais encontrados");
+              LogDebug("territorio", "Processando murais encontrados");
             foreach mural in murais
                 LogDebug("territorio", "Verificando mural: " + mural.name + " (Serial: " + mural.serial + ")");
                 if (VerificarObjeto(mural, territorio_id, faction))
@@ -372,14 +390,31 @@ if (SetElementProp(seriais_df, "territorios", territorios_seriais))
                     LogDebug("territorio", "Mural não pertence ao território alvo, ignorando");
                 endif
             endforeach
+            
+            LogDebug("territorio", "Processando estandartes encontrados");
+            foreach estandarte in estandartes
+                LogDebug("territorio", "Verificando estandarte: " + estandarte.name + " (Serial: " + estandarte.serial + ")");
+                if (VerificarObjeto(estandarte, territorio_id, faction))
+                    LogDebug("territorio", "Estandarte confirmado como pertencente ao território");
+                    if (DestruirObjeto(estandarte))
+                        counters.estandartes += 1;
+                        counters.destruidos += 1;
+                        LogInfo("territorio", "Estandarte do reino destruído com sucesso");
+                    else
+                        LogError("territorio", "Falha ao destruir estandarte");
+                    endif
+                else
+                    LogDebug("territorio", "Estandarte não pertence ao território alvo, ignorando");
+                endif
+            endforeach
         endif
     endif
-      // Resumo da operação
-    LogInfo("territorio", "Resumo final da operação:");
+      // Resumo da operação    LogInfo("territorio", "Resumo final da operação:");
     LogInfo("territorio", "   - Baús encontrados e destruídos: " + counters.baus);
     LogInfo("territorio", "   - Mesas encontradas e destruídas: " + counters.mesas);
     LogInfo("territorio", "   - Mesas de inscrição encontradas e destruídas: " + counters.mesas_inscricao);
     LogInfo("territorio", "   - Murais encontrados e destruídos: " + counters.murais);
+    LogInfo("territorio", "   - Estandartes encontrados e destruídos: " + counters.estandartes);
     LogInfo("territorio", "   - Total de objetos destruídos: " + counters.destruidos);
     LogInfo("territorio", "   - Realm verificado: " + realm_territorio);
     
@@ -534,7 +569,17 @@ function DestruirObjeto(item)
     var old_name := item.name;
     item.name := "Objeto_Desativado_" + item.serial;
     LogDebug("territorio", "Nome alterado de '" + old_name + "' para '" + item.name + "'");
-    
-    LogInfo("territorio", "Objeto desativado (invisível/inutilizável)");
+      LogInfo("territorio", "Objeto desativado (invisível/inutilizável)");
     return 1;
+endfunction
+
+// Função para verificar se um objtype é um estandarte
+function IsEstandarte(objtype)
+    foreach estandarte_type in TIPO_ESTANDARTE
+        if (objtype == estandarte_type)
+            return 1;
+        endif
+        sleepms(1);
+    endforeach
+    return 0;
 endfunction

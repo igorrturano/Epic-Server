@@ -650,12 +650,12 @@ endfunction
  * Return:
  *   Struct com objetos encontrados ou struct vazio se não encontrado
  */
-function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := "")
-    var result := struct{
+function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := "")    var result := struct{
         "bau" := 0,
         "mesa" := 0,
         "mesa_inscricao" := 0,
-        "mural" := 0
+        "mural" := 0,
+        "bandeira" := 0
     };
     
     if (!territory_id)
@@ -692,15 +692,22 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
                         result.mesa_inscricao := SystemFindObjectBySerial(serial_mesa_inscricao);
                     endif
                 endif
-                
-                if (!item_type || item_type == ITEM_TYPE_MURAL)
+                  if (!item_type || item_type == ITEM_TYPE_MURAL)
                     var serial_mural := GetElementProp(territory_elem, "mural");
                     if (serial_mural)
                         result.mural := SystemFindObjectBySerial(serial_mural);
                     endif
                 endif
-                  // Se encontrou pelo menos um objeto, retornar
-                if (result.bau || result.mesa || result.mesa_inscricao || result.mural)
+                
+                if (!item_type || item_type == "BANDEIRA")
+                    var serial_bandeira := GetElementProp(territory_elem, "bandeira");
+                    if (serial_bandeira)
+                        result.bandeira := SystemFindObjectBySerial(serial_bandeira);
+                    endif
+                endif
+                  
+                // Se encontrou pelo menos um objeto, retornar
+                if (result.bau || result.mesa || result.mesa_inscricao || result.mural || result.bandeira)
                     return result;
                 endif
             else
@@ -726,15 +733,20 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
                             result.mesa := SystemFindObjectBySerial(info.mesa);
                         endif
                     endif
-                    
-                    if (!item_type || item_type == ITEM_TYPE_MURAL)
+                      if (!item_type || item_type == ITEM_TYPE_MURAL)
                         if (info.mural)
                             result.mural := SystemFindObjectBySerial(info.mural);
                         endif
                     endif
                     
+                    if (!item_type || item_type == "BANDEIRA")
+                        if (info.bandeira)
+                            result.bandeira := SystemFindObjectBySerial(info.bandeira);
+                        endif
+                    endif
+                    
                     // Se encontrou pelo menos um objeto, retornar
-                    if (result.bau || result.mesa || result.mural)
+                    if (result.bau || result.mesa || result.mesa_inscricao || result.mural || result.bandeira)
                         // Migrar para o novo formato enquanto estamos aqui
                         MigrarParaNovoFormato(territory_id, info, seriais_df);
                         return result;
@@ -1281,8 +1293,7 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
             LogError("territorio", "Falha ao remover mesa de inscrição: " + objetos.mesa_inscricao.serial + ", Resultado: " + result);
         endif
     endif
-    
-    // Remover mural
+      // Remover mural
     if (objetos.mural)
         var result := DestroyItem(objetos.mural);
         if (result)
@@ -1293,6 +1304,17 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         endif
     endif
     
+    // Remover estandarte/bandeira
+    if (objetos.bandeira)
+        var result := DestroyItem(objetos.bandeira);
+        if (result)
+            objetos_removidos += 1;
+            LogDebug("territorio", "Estandarte/bandeira removido: " + objetos.bandeira.serial);
+        else
+            LogError("territorio", "Falha ao remover estandarte/bandeira: " + objetos.bandeira.serial + ", Resultado: " + result);
+        endif
+    endif
+    
     // Remover registros de seriais no datafile
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
     if (seriais_df)
@@ -1300,12 +1322,12 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         var territory_elem := SafeFindElement(seriais_df, territory_id);
         if (territory_elem)
             // Salvar informações de fação para logs
-            var old_faction := GetElementProp(territory_elem, "faction");
-              // Limpar propriedades
+            var old_faction := GetElementProp(territory_elem, "faction");              // Limpar propriedades
 territory_elem.EraseProp("bau");
 territory_elem.EraseProp("mesa");
 territory_elem.EraseProp("mesa_inscricao");
 territory_elem.EraseProp("mural");
+territory_elem.EraseProp("bandeira");
 territory_elem.EraseProp("faction");
             
             LogInfo("territorio", "Registros de seriais limpos para território " + territory_id + 

@@ -1,11 +1,20 @@
 use uo;
 use os;
 use datafile;
+use math;
 
 include ":faccao:faccao"; 
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions"; 
 include ":faccao:include/territory_management"; 
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include "include/epicConstants";
+include "include/say";
+include "include/client";
+
+const MOEDAS_COBRE := 0xBA63; // Moedas de cobre - mesmo padrão do gestao_use
 
 program TotemDeAquisicao(who, totem)
     LogDebug("faccao", "TotemDeAquisicao: Iniciando função com who=" + who.serial + ", totem=" + totem.serial);
@@ -88,16 +97,42 @@ program TotemDeAquisicao(who, totem)
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction_in_datafile);
         return 0;
     endif;
-    
-    var player_faction_name := GetPlayerFaction(who); 
+      var player_faction_name := GetPlayerFaction(who); 
     if (!player_faction_name)
         player_faction_name := "Desconhecido"; 
         LogWarning("faccao", "TotemDeAquisicao: Não foi possível obter o nome da facção do jogador " + who.name + ". Usando 'Desconhecido'.");
     endif;
     LogDebug("faccao", "TotemDeAquisicao: Facção do jogador obtida: " + player_faction_name);
+      // Seleção de Cultura do Reino
+    var cultura_escolhida := SelectKingdomCulture(who);
+    if (!cultura_escolhida)
+        SendSysMessage(who, "Você cancelou a seleção de cultura. Aquisição de território cancelada.");
+        return 0;
+    endif;
+    
+    LogDebug("faccao", "TotemDeAquisicao: Cultura escolhida para o reino: " + cultura_escolhida);      // Confirmação de compra do estandarte
+    var estandarte_escolhido := 0;
+    var compra_banner := ConfirmBannerPurchase(who);
+    
+    if (compra_banner == 1) // Quer comprar e pagou
+        estandarte_escolhido := SelectKingdomBanner(who);
+        if (estandarte_escolhido == 0)
+            SendSysMessage(who, "Seleção de estandarte cancelada, mas as moedas já foram debitadas.");
+            SendSysMessage(who, "Aquisição de território cancelada.");
+            return 0;
+        endif
+    elseif (compra_banner == 0) // Não quer comprar
+        SendSysMessage(who, "Prosseguindo sem estandarte do reino.");
+        estandarte_escolhido := 0;
+    else // Cancelou (-1)
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
+    
+    LogDebug("faccao", "TotemDeAquisicao: Estandarte escolhido para o reino: " + estandarte_escolhido);
     
     LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
-    var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name); 
+    var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name);
     LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);
     
     LogDebug("faccao", "TotemDeAquisicao: Adicionando território à CProp 'territories' da guilda " + guild.guildid);
@@ -146,11 +181,9 @@ program TotemDeAquisicao(who, totem)
         endif;
     else
         LogInfo("faccao_totem", "Território ID '" + territory_id + "' (Nome: '" + rect_name + "') já existe na lista da guilda " + guild.guildid + ". Não foi adicionado novamente.");
-    endif;
-    
-    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território '" + rect_name + "' (ID: " + territory_id + ")");
+    endif;    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território '" + rect_name + "' (ID: " + territory_id + ")");
     // CORREÇÃO: Removido 'totem' da chamada, pois CreateTerritoryMonument foi ajustada para não recebê-lo.
-    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id); 
+    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, cultura_escolhida, estandarte_escolhido);
     LogDebug("faccao", "TotemDeAquisicao: Monumento criado: " + (monument ? "Sim, serial=" + monument.serial : "Não"));
     
     LogDebug("faccao", "TotemDeAquisicao: Configurando recursos para o território '" + rect_name + "'");
@@ -199,10 +232,177 @@ program TotemDeAquisicao(who, totem)
     return 1;
 endprogram
 
-// A função RestartResourceController foi removida daqui.
-// A notificação via TM_NotifyTerritoryChange é a abordagem preferida.
+/**
+ * Purpose: Exibe um gump para o líder selecionar a cultura do reino
+ * Parameters: who - jogador que está selecionando
+ * Return: String da cultura escolhida ou 0 se cancelou
+ */
+function SelectKingdomCulture(who)
+    var gump := GFECreateGump("Seleção de Cultura do Reino", 600, 500, array{});    // Título explicativo usando GFTextLine para garantir que as cores funcionem
+    GFTextLine(gump, 100, 85, 53, "Escolha a cultura que definirá a identidade do seu reino.");
+    GFTextLine(gump, 80, 105, 230, "Esta decisão influenciará a arquitetura e tradições do território.");
+    
+    // Lista de culturas
+    var culturas := array{
+        struct{ nome := "Aiglana", enum_val := AIGLANA, descricao := "Império organizado com tradições militares" },
+        struct{ nome := "Har'oloth", enum_val := HAROLOTH, descricao := "Cultura drow subterrânea e misteriosa" },
+        struct{ nome := "Povos do Leste", enum_val := LESTE, descricao := "Tradições orientais e disciplina marcial" },
+        struct{ nome := "Björska", enum_val := BJORSKA, descricao := "Guerreiros nórdicos valorosos e tradicionais" },
+        struct{ nome := "Alüriel", enum_val := ALURIEL, descricao := "Cultura élfica ligada à natureza e magia" },
+        struct{ nome := "Badûran", enum_val := BADURAN, descricao := "Anões mestres da forja e engenharia" },
+        struct{ nome := "Gulthrak", enum_val := GULTHRAK, descricao := "Orcs do deserto adaptados ao clima árido" },
+        struct{ nome := "Polkinea", enum_val := POLKINEA, descricao := "Polski pacíficos e agricultores habilidosos" }
+    };
+    
+    var y_pos := 130;
+    var button_id := 100;
+    
+    foreach cultura in culturas        // Botão da cultura com estilo semelhante ao menu de construção
+        GFAddButton(gump, 40, y_pos, 4005, 4007, GF_CLOSE_BTN, button_id);
+        
+        // Nome da cultura com cor 53 (usando GFTextLine)
+        GFTextLine(gump, 80, y_pos + 3, 53, cultura.nome);
+        
+        // Descrição com cor 230 (usando GFTextLine)
+        GFTextLine(gump, 290, y_pos + 3, 230, cultura.descricao);
+          y_pos += 35;
+        button_id += 1;
+    endforeach;
+    
+    // Botão cancelar (usando o botão padrão do servidor)
+    GFAddButton(gump, 250, 450, 2071, 2072, GF_CLOSE_BTN, 200);    
+    var input := GFSendGump(who, gump);
+    var button_pressed := input[0];
+    
+    if (button_pressed == 200) // Cancelar
+        return 0;
+    elseif (button_pressed >= 100 && button_pressed <= 107)
+        var cultura_index := button_pressed - 100 + 1;
+        var cultura_escolhida := culturas[cultura_index];
+        
+        // Confirmação
+        var confirm_msg := "Você escolheu a cultura " + cultura_escolhida.nome + " para seu reino.\n" +
+                          cultura_escolhida.descricao + "\n\n" +
+                          "Tem certeza desta escolha? Esta decisão é permanente.";
+        
+        if (YesNo(who, confirm_msg))
+            SendSysMessage(who, "Cultura " + cultura_escolhida.nome + " definida para o reino!");
+            return cultura_escolhida.enum_val;
+        else
+            SendSysMessage(who, "Seleção de cultura cancelada.");
+            return 0;
+        endif
+    endif
+    
+    return 0;
+endfunction
 
-function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO PARÂMETRO 'totem'
+/**
+ * Purpose: Exibe um gump para o líder selecionar o estandarte do reino
+ * Parameters: who - jogador que está selecionando
+ * Return: Hex do graphic escolhido ou 0 se cancelou
+ */
+function SelectKingdomBanner(who)
+    // Graphics de visualização no gump (mapeamento 0xFEB3-0xFECE)
+    var graphics_gump := array{
+        0xFEB3, 0xFEB4, 0xFEB5, 0xFEB6, 0xFEB7, 0xFEB8, 0xFEB9, 0xFEBA, 0xFEBB,
+        0xFEBC, 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0, 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4,
+        0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8, 0xFEC9, 0xFECA, 0xFECB, 0xFECC, 0xFECD, 0xFECE
+    };
+    
+    // Graphics dos itens reais criados no mundo (mapeamento 1:1)
+    var estandartes := array{
+        0xF93A, 0xF93B, 0xF93C, 0xF93D, 0xF93E, 0xF93F, 0xF940, 0xF942, 0xF943,
+        0xF920, 0xF921, 0xF922, 0xEB24, 0xC413, 0xC40E, 0xC3A5, 0xC3A1, 0xC395,
+        0xBD8A, 0xBD88, 0xBD86, 0xBD72, 0x4038, 0x9FAD, 0x9FAF, 0x9FB1, 0x9FB3, 0xB93C
+    };
+    
+    var banners_per_page := 9; // 3x3
+    var total_pages := (estandartes.size() + banners_per_page - 1) / banners_per_page;
+    var current_page := 1;
+    
+    while (current_page >= 1 && current_page <= total_pages)
+        var gump := GFECreateGump("Seleção de Estandarte do Reino", 700, 600, array{});
+        
+        // Título e instruções
+        GFTextLine(gump, 120, 85, 53, "Escolha o estandarte que representará seu reino.");
+        
+        // Calcular estandartes para a página atual
+        var start_index := (current_page - 1) * banners_per_page + 1;
+        var end_index := start_index + banners_per_page - 1;
+        if (end_index > estandartes.size())
+            end_index := estandartes.size();
+        endif
+        
+        // Layout 3x3: mostrar estandartes da página atual
+        var banner_index := 0;
+        var i;
+        for (i := start_index; i <= end_index; i := i + 1)
+            var row := banner_index / 3;
+            var col := banner_index % 3;
+            
+            // Posições para layout 3x3 com espaçamento (subido 30 pixels)
+            var x_pos := 150 + (col * 180);
+            var y_pos := 120 + (row * 150);
+              // Quadrado ao redor do estandarte
+            GFResizePic(gump, x_pos - 30, y_pos - 30, 9200, 120, 120);
+            // Mostrar o graphic de visualização no gump
+            GFGumpPic(gump, x_pos, y_pos, graphics_gump[i]);
+            
+            // Botão de seleção
+            var button_id := 100 + i;
+            GFAddButton(gump, x_pos - 20, y_pos + 60, 4005, 4007, GF_CLOSE_BTN, button_id);
+            
+            banner_index := banner_index + 1;
+        endfor
+        
+        // Informações de página
+        if (total_pages > 1)
+            GFTextLine(gump, 280, 520, 53, "Página " + current_page + " de " + total_pages);
+            
+            // Botão página anterior
+            if (current_page > 1)
+                GFAddButton(gump, 200, 550, 4014, 4016, GF_CLOSE_BTN, 201);
+                GFTextLine(gump, 230, 553, 230, "Anterior");
+            endif
+            
+            // Botão próxima página
+            if (current_page < total_pages)
+                GFAddButton(gump, 420, 550, 4005, 4007, GF_CLOSE_BTN, 202);
+                GFTextLine(gump, 450, 553, 230, "Próxima");
+            endif
+        endif
+        
+        // Botão cancelar
+        GFAddButton(gump, 50, 550, 4017, 4019, GF_CLOSE_BTN, 0);
+        GFTextLine(gump, 80, 553, 38, "Cancelar");
+        
+        var input := GFSendGump(who, gump);
+        
+        if (!input)
+            return 0; // Cancelou
+        endif
+        
+        var button := input[0];
+        
+        if (button == 0)
+            return 0; // Cancelou
+        elseif (button == 201) // Página anterior
+            current_page := current_page - 1;
+        elseif (button == 202) // Próxima página
+            current_page := current_page + 1;
+        elseif (button >= 101 && button <= 133) // Selecionou um estandarte
+            var selected_index := button - 100;
+            if (selected_index >= 1 && selected_index <= estandartes.size())
+                return estandartes[selected_index];
+            endif
+        endif
+    endwhile
+    
+    return 0;
+endfunction
+
+function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_escolhida, estandarte_escolhido) // Adicionado parâmetro estandarte_escolhido
     LogDebug("faccao_monument", "CreateTerritoryMonument: Iniciando para Território '" + rect_name + "' (ID: " + territory_id + ")");
 
     var rect := GetElementProp(elem, TERRITORY_RECT_PROP, ""); 
@@ -241,13 +441,13 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
             SendSysMessage(who, "Erro de sistema ao registrar objetos do território.");
             return 0;
         endif;
-        
-        var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon); 
+          var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon); 
         if (monument_obj)
             LogDebug("faccao_monument", "Mural criado: " + monument_obj.serial);
             SetObjProperty(monument_obj, TERRITORY_NAME_PROP, rect_name);
             SetObjProperty(monument_obj, TERRITORY_ID_PROP, territory_id);
             SetObjProperty(monument_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+            SetObjProperty(monument_obj, "cultura", cultura_escolhida); // Definir cultura no mural
             
             var unique_id_mural := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MURAL, territory_id);
             SetObjProperty(monument_obj, UNIQUE_ID_PROP, unique_id_mural);
@@ -257,8 +457,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
             SetObjProperty(monument_obj, "CreationDate", polcore().systime);
             monument_obj.movable := 0;
             monument_obj.usescript := ":faccao:faccao";
-            
-            var donation_chest_obj := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm_prop_mon); 
+              var donation_chest_obj := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm_prop_mon); 
             if (donation_chest_obj)
                 LogDebug("faccao_monument", "Baú de doações criado: " + donation_chest_obj.serial);
                 var unique_id_bau_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_BAU, territory_id); 
@@ -268,6 +467,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
                 SetObjProperty(donation_chest_obj, OBJ_FACTION_PROP, player_faction_name_mon);
                 SetObjProperty(donation_chest_obj, TERRITORY_ID_PROP, territory_id);
                 SetObjProperty(donation_chest_obj, CHEST_ID_PROP, player_faction_name_mon + "_" + territory_id);
+                SetObjProperty(donation_chest_obj, "cultura", cultura_escolhida); // Definir cultura no baú
                 donation_chest_obj.movable := 0;
                 
                 donation_chest_obj.usescript := ":faccao:baudoacao/use";
@@ -275,18 +475,42 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
                 SetObjProperty(donation_chest_obj, "OnRemoveScript", ":faccao:baudoacao/onRemove");
                 SetObjProperty(donation_chest_obj, "CanInsertScript", ":faccao:baudoacao/canInsert");
                 SetObjProperty(donation_chest_obj, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
-                
-                var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon);                if (interface_item_obj)
+                  var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon);                if (interface_item_obj)
                     LogDebug("faccao_monument", "Mesa de gestão criada: " + interface_item_obj.serial);
                     var unique_id_mesa_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA, territory_id); 
                     SetObjProperty(interface_item_obj, UNIQUE_ID_PROP, unique_id_mesa_local);
                     
-                    interface_item_obj.name := "Mesa de Gestão [" + player_faction_name_mon + "] - " + territory_id;
-                    SetObjProperty(interface_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+                    interface_item_obj.name := "Mesa de Gestão [" + player_faction_name_mon + "] - " + territory_id;                    SetObjProperty(interface_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
                     SetObjProperty(interface_item_obj, TERRITORY_ID_PROP, territory_id);
-                    interface_item_obj.movable := 0;
-                    interface_item_obj.usescript := ":faccao:gestao_use";
-                      // Criar Mesa de Inscrição na posição especificada (X vermelho)
+                    SetObjProperty(interface_item_obj, "cultura", cultura_escolhida); // Definir cultura na mesa                    interface_item_obj.movable := 0;
+                    interface_item_obj.usescript := ":faccao:gestao_use";                      
+                    
+                    // Declarar variável da bandeira no escopo correto
+                    var bandeira_item_obj := 0;
+                    
+                    // Criar Bandeira do Reino apenas se o jogador comprou um estandarte
+                    if (estandarte_escolhido && estandarte_escolhido != 0)
+                        bandeira_item_obj := CreateItemAtLocation(center_x, center_y - 1, center_z, 0xfddf, 1, realm_prop_mon);
+                        if (bandeira_item_obj)
+                            LogDebug("faccao_monument", "Bandeira do reino criada: " + bandeira_item_obj.serial);
+                            
+                            // Definir o graphic escolhido pelo jogador
+                            bandeira_item_obj.graphic := estandarte_escolhido;
+                            bandeira_item_obj.name := "Estandarte de [" + player_faction_name_mon + "] - " + territory_id;
+                            SetObjProperty(bandeira_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+                            SetObjProperty(bandeira_item_obj, TERRITORY_ID_PROP, territory_id);
+                            SetObjProperty(bandeira_item_obj, "cultura", cultura_escolhida);
+                            SetObjProperty(bandeira_item_obj, "estandarte_graphic", estandarte_escolhido);
+                            bandeira_item_obj.movable := 0;
+                            
+                            var unique_id_bandeira := TM_CreateUniqueItemID(player_faction_name_mon, "BANDEIRA", territory_id);
+                            SetObjProperty(bandeira_item_obj, UNIQUE_ID_PROP, unique_id_bandeira);
+                        else
+                            LogWarning("faccao_monument", "Falha ao criar bandeira do reino, mas território ainda é válido");
+                        endif;
+                    else
+                        LogDebug("faccao_monument", "Estandarte não foi comprado, nenhuma bandeira criada");
+                    endif;// Criar Mesa de Inscrição na posição especificada (X vermelho)
                     var inscricao_item_obj := CreateItemAtLocation(center_x + 1, center_y + 1, center_z, 0xF8A8, 1, realm_prop_mon);
                     if (inscricao_item_obj)
                         LogDebug("faccao_monument", "Mesa de inscrição criada: " + inscricao_item_obj.serial);
@@ -296,17 +520,21 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
                         inscricao_item_obj.name := "Mesa de Inscrição [" + player_faction_name_mon + "] - " + territory_id;
                         SetObjProperty(inscricao_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
                         SetObjProperty(inscricao_item_obj, TERRITORY_ID_PROP, territory_id);
+                        SetObjProperty(inscricao_item_obj, "cultura", cultura_escolhida); // Definir cultura na mesa de inscrição
                         inscricao_item_obj.movable := 0;
-                        inscricao_item_obj.usescript := ":faccao:mesainscricao";
-                        
-                        var object_serials_struct := struct; 
+                        inscricao_item_obj.usescript := ":faccao:mesainscricao";                        var object_serials_struct := struct; 
                         object_serials_struct.+bau := donation_chest_obj.serial;
                         object_serials_struct.+mesa := interface_item_obj.serial;
                         object_serials_struct.+mesa_inscricao := inscricao_item_obj.serial;
                         object_serials_struct.+mural := monument_obj.serial;
+                        if (bandeira_item_obj)
+                            object_serials_struct.+bandeira := bandeira_item_obj.serial;
+                        endif
                         object_serials_struct.+faction := player_faction_name_mon;
                         object_serials_struct.+coords := rect; 
                         object_serials_struct.+realm := realm_prop_mon; // Usar realm_prop_mon
+                        object_serials_struct.+cultura := cultura_escolhida; // Armazenar cultura escolhida
+                        object_serials_struct.+estandarte := estandarte_escolhido; // Armazenar estandarte escolhido
                         
                         TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
                         
@@ -346,4 +574,90 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id) // REMOVIDO
     endif;
     
     return 0;
+endfunction
+
+function ConfirmBannerPurchase(who)
+    // Constantes para o Banner (mesmo padrão do gestao_use)
+    const BANNER_CUSTO := 500;    var gump := GFECreateGump("Compra de Estandarte do Reino", 400, 300, array{});
+    
+    // Título
+    GFTextLine(gump, 140, 85, 53, "Estandarte do Reino");
+    
+    // Informações
+    GFTextLine(gump, 50, 120, 230, "Deseja adquirir um estandarte para");
+    GFTextLine(gump, 70, 140, 230, "representar seu reino?");
+    
+    // Imagem do estandarte na posição do X vermelho
+    GFGumpPic(gump, 350, 120, 0xC2F7);
+    
+    // Calcular moedas disponíveis (mesmo padrão do gestao_use)
+    var moedas_disponiveis := 0;
+    foreach moeda in EnumerateItemsInContainer(who.backpack)
+        if (moeda.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += moeda.amount;
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Custo e moedas disponíveis
+    GFTextLine(gump, 110, 180, 68, "Custo: " + BANNER_CUSTO + " moedas");
+    GFTextLine(gump, 80, 200, 230, "Você possui: " + moedas_disponiveis);
+    
+    // Verificar se tem moedas suficientes
+    if (moedas_disponiveis < BANNER_CUSTO)
+        GFTextLine(gump, 100, 220, 38, "Moedas insuficientes!");
+        GFAddButton(gump, 150, 250, 4017, 4019, GF_CLOSE_BTN, 0);
+        GFTextLine(gump, 180, 253, 38, "Fechar");
+    else
+        // Botões
+        GFAddButton(gump, 80, 240, 4005, 4007, GF_CLOSE_BTN, 1); // Sim
+        GFTextLine(gump, 110, 243, 68, "Comprar");
+        
+        GFAddButton(gump, 220, 240, 4017, 4019, GF_CLOSE_BTN, 2); // Não
+        GFTextLine(gump, 250, 243, 38, "Cancelar");
+    endif
+    
+    var input := GFSendGump(who, gump);
+    
+    if (!input)
+        return -1; // Cancelou
+    endif
+    
+    var button := input[0];
+    
+    if (button == 1) // Sim, quer comprar
+        // Consumir as moedas (mesmo padrão do gestao_use)
+        var moedas_restantes := BANNER_CUSTO;
+        var moedas_items := array{};
+        
+        foreach moeda in EnumerateItemsInContainer(who.backpack)
+            if (moeda.objtype == MOEDAS_COBRE)
+                moedas_items.append(moeda);
+            endif
+            sleepms(2);
+        endforeach
+        
+        foreach moeda in moedas_items
+            if (moedas_restantes <= 0)
+                break;
+            endif
+            
+            if (moeda.amount >= moedas_restantes)
+                SubtractAmount(moeda, moedas_restantes);
+                moedas_restantes := 0;
+            else
+                moedas_restantes -= moeda.amount;
+                DestroyItem(moeda);
+            endif
+            sleepms(2);
+        endforeach
+        
+        SendSysMessage(who, "Compra realizada com sucesso! " + BANNER_CUSTO + " moedas de cobre foram debitadas.");
+        return 1; // Prosseguir para seleção
+        
+    elseif (button == 2) // Não quer comprar
+        return 0; // Pular estandarte
+    endif
+    
+    return -1; // Cancelou por padrão
 endfunction
