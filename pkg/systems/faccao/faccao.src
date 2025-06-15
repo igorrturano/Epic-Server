@@ -128,11 +128,11 @@ program faccao(params)
 
    var members := guild.members;
    guild_obj := GetFaccao(guild);
-   var guild_leader;
-   if (guild_obj && guild_obj.leader)
+   var guild_leader;   if (guild_obj && guild_obj.leader)
       guild_leader := SystemFindObjectBySerial(guild_obj.leader, SYSFIND_SEARCH_OFFLINE_MOBILES);
       if (!guild_leader)
-         guild.SetProp("leader", 0x0);
+         // CORREÇÃO: Usar função de sincronização quando limpar líder inexistente
+         RemoveFactionLeader(guild);
       else
          members := RemoveFromArray(members, guild_leader);
       endif
@@ -482,9 +482,7 @@ function Faccoes(who)
       
       if (!nome_lider || nome_lider == "")
          return SendSysMessageEx(who, "Você deve informar como será conhecido.");
-      endif
-
-      var arearray := array{};
+      endif      var arearray := array{};
         // Criar a facção
       var nova_guild := CreateFaccao(output[1], arearray, cint(output[2]));
       
@@ -492,8 +490,9 @@ function Faccoes(who)
          // Adicionar o criador como membro da facção
          nova_guild.addMember(who);
          
-         // Definir o criador como líder da facção
-         nova_guild.SetProp("leader", who.serial);
+         // CORREÇÃO: Usar a função de sincronização em vez de SetProp diretamente
+         // Isso garante que guild.leader e guild.GetProp("leader") sejam sincronizados
+         SetFactionLeader(nova_guild, who.serial);
          
          // Salvar dados personalizados do líder
          var leader_data := struct{};
@@ -778,14 +777,15 @@ function playerHandler(who, input)
          privs[opt] := (name in output) >= 1;
       endforeach
 
-      guild.SetProp(cstr(input), privs);
-   elseif (output["Remover Lider"])
-      guild.SetProp("leader", 0x0);
+      guild.SetProp(cstr(input), privs);   elseif (output["Remover Lider"])
+      // CORREÇÃO: Usar função de sincronização
+      RemoveFactionLeader(guild);
       ResetAllNpcs();
    elseif (output["Tornar Lider"])
-      guild.SetProp("leader", input);
+      // CORREÇÃO: Usar função de sincronização
+      SetFactionLeader(guild, input);
       SendSysMessageEx(who, "{} agora e o lider da faccao".format(player.name), SSM_INFO);
-      ResetAllNpcs();   elseif (output["Remover"])
+      ResetAllNpcs();elseif (output["Remover"])
       if (YesNo(who, "Deseja mesmo remover este personagem da faccao?"))
          RemMember(guild, player);
          SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);

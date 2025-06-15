@@ -4,12 +4,18 @@ use basic;
 
 include "include/say";
 include ":destroyable:include/destroyItem";
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_constants";
 
 program fix(who, param)
 	if (param == "help")
 		SendSysMessage(who, "Opcoes de uso do .fix:");
 		SendSysMessage(who, "\".fix\" Personagem fixa ou desfixa itens.");
 		SendSysMessage(who, "\".fix transferir\" Personagem passa controle do item para outro.");
+		SendSysMessage(who, "");
+		SendSysMessage(who, "Itens territoriais (Baú, Mesa, Mural, Estandarte, Mesa de Inscrição):");
+		SendSysMessage(who, "- Apenas o líder da facção proprietária pode fixar/desfixar");
+		SendSysMessage(who, "- Não podem ser transferidos");
 		if(who.cmdlevel)
 			SendSysMessage(who, "\".fix travar\" GM fixa ou desfixa itens (Player NAO PODE mais usar .fix).");
 			SendSysMessage(who, "\".fix liberar\" GM fixa ou desfixa itens (Qualquer Player pode tomar controle do item com .fix).");
@@ -25,16 +31,13 @@ program fix(who, param)
 	elseif (!Accessible(who, alvo,2))
 		SendSysMessageEx(who, "Voce nao alcanca o alvo.", SSM_FAIL);
 		return 0;
-/*	elseif (GetObjProperty(alvo, "canfix") != 1) //Sem isso qualquer item pode ser fizavel por qualquer um
-		SendSysMessageEx(who, "Voce nao pode fixar este item.");
-		return 0;
-*/
 	elseif (TypeOf(alvo.container) == "ItemRef")
 		SendSysMessageEx(who, "Voce nao pode fixar itens dentro de containers.", SSM_FAIL);
 		return 0;
 	endif
+	
 	var fixer := GetObjProperty(alvo, "fixer");
-	if(!param)
+		if(!param)
 		if(who.cmdlevel)
 			if (alvo.movable == 0)
 				Fixar(alvo,false);
@@ -44,16 +47,33 @@ program fix(who, param)
 				SendSysMessage(who, "O item esta imovel.");
 			endif
 			return 1;
+		elseif (IsTerritoralItem(alvo))
+			// Verificar se pode fixar item territorial
+			if (CanPlayerFixTerritorialItem(who, alvo))
+				// Lógica especial para itens territoriais - líder da facção proprietária do território
+				if (alvo.movable == 1)
+					Fixar(alvo,true);
+					PrintTextAbove(alvo, who.name +" fixou "+alvo.name+".");
+					SendSysMessageEx(who, "O item territorial esta protegido contra decay.", SSM_INFO);
+				else
+					if (who.hidden)
+						PrintTextAbove(who, who.name +" tenta desfixar "+alvo.name+" e saiu do esconderijo.");
+						who.hidden := 1;
+					else
+						PrintTextAbove(who, who.name +" tenta desfixar "+alvo.name+".");
+					endif
+					Sleep(2);
+					Fixar(alvo,false);
+					PrintTextAbove(alvo, who.name +" soltou "+alvo.name+".");
+				endif
+				return 1;
+			else
+				// Item territorial mas jogador não tem permissão - a mensagem já foi enviada em CanPlayerFixTerritorialItem
+				return 0;
+			endif
 		elseif (GetObjProperty(alvo, "crafterserial") == error)
 			SendSysMessageEx(who, "Esse item so pode ser fixado ou desfixado pela Staff.", SSM_FAIL);
 			return 0;
-/*
-			// Edmond - Atualizado para uso do script de placas. Marck - Sei nem que script é esse das placas
-			if ((alvo.objtype != 1111) || (alvo.objtype != 1112) || (alvo.objtype != 1113) ||  (alvo.objtype != 1114) || (alvo.objtype != 1115) || (alvo.objtype != 1118))
-				SendSysMessageEx(who, "Voce so pode fixar itens que foram criados por algum player.", SSM_FAIL);
-				return 0;
-			endif
-*/
 		else
 			if (!fixer)
 				SetObjProperty(alvo, "fixer", who.serial);
@@ -79,6 +99,12 @@ program fix(who, param)
 			return 1;
 		endif
 	elseif (param == "transferir")
+		// Verificar se é item territorial - não pode ser transferido
+		if (IsTerritoralItem(alvo))
+			SendSysMessageEx(who, "Itens territoriais não podem ser transferidos. Apenas o líder da facção proprietária pode fixá-los.", SSM_FAIL);
+			return 0;
+		endif
+		
 		if (who.serial != fixer)
 			SendSysMessageEx(who, "Esse item precisa ser transferido para voce antes de usar esse comando.", SSM_FAIL);
 			return 0;
@@ -178,4 +204,88 @@ function Fixar(byref item,devefixar)
 	endif
 	
 	return item.movable;
+endfunction
+
+// Função para verificar se um item é territorial
+function IsTerritoralItem(item)
+	if (!item)
+		return 0;
+	endif
+	
+	// Verificar pelos objtypes dos 5 itens territoriais especificados
+	// Usando as constantes definidas em faccao_constants.inc
+	if (item.objtype == TERRITORIO_MURAL ||       // 0x46AE - muralrecrutamento
+		item.objtype == TERRITORIO_MESA_INSCRICAO || // 0xF8A8 - MesaDeInscricao  
+		item.objtype == TERRITORIO_MESA ||        // 0xFE5C - mesadegestaodereino
+		item.objtype == TERRITORIO_BAU ||         // 0xFF11 - BaudeDoacoes
+		item.objtype == TERRITORIO_ESTANDARTE)    // 0xFDDF - EstandarteReino
+		return 1;
+	endif
+	
+	return 0;
+endfunction
+
+// Função para verificar se um jogador pode fixar/desfixar um item territorial
+function CanPlayerFixTerritorialItem(who, item)
+	if (!who || !item)
+		return 0;
+	endif
+	
+	// Verificar se o item é territorial
+	if (!IsTerritoralItem(item))
+		return 0;
+	endif
+	
+	// Staff sempre pode fixar itens territoriais
+	if (who.cmdlevel)
+		return 1;
+	endif
+	
+	// USAR EXATAMENTE A MESMA VERIFICAÇÃO DOS OUTROS ITENS
+	// Método 1: Verificar se tem uma guilda e se é o líder
+	var player_guild := who.guild;
+	if (player_guild)
+		if (player_guild.leader == who.serial)
+			return 1;
+		endif
+	endif
+
+	// Método 2: Verificar por cargo armazenado em propriedade
+	var player_rank := GetObjProperty(who, "guild_rank");
+	if (player_rank in {"Lider", "Leader"})
+		return 1;
+	endif
+	
+	SendSysMessage(who, "Apenas o líder da facção pode fixar/desfixar itens territoriais.");
+	return 0;
+endfunction
+
+// Função para verificar se um jogador é líder de uma facção
+function IsPlayerFactionLeader(who, faction_name)
+	if (!who || !faction_name)
+		return 0;
+	endif
+	
+	// Obter a guilda do jogador
+	if (!who.guild)
+		return 0;
+	endif
+	
+	// Verificar se o nome da guilda corresponde à facção
+	var guild_faction := who.guild.GetProp(FACTION_PROP_NAME);
+	if (!guild_faction)
+		guild_faction := who.guild.guildname;
+	endif
+	
+	if (guild_faction != faction_name)
+		return 0;
+	endif
+	
+	// USAR A MESMA VERIFICAÇÃO DA MESA DE INSCRIÇÃO
+	// Verificar se o jogador é o líder da guilda (mesmo método do permissions.inc)
+	if (who.guild.leader != who.serial)
+		return 0;
+	endif
+	
+	return 1;
 endfunction

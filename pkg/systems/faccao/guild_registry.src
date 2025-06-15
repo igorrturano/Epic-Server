@@ -29,14 +29,23 @@ program guild_registry()
     
     // Inicializar o registro
     InitializeGuildRegistry();
-    
-    // Loop principal - Atualizar o registro periodicamente
+      // Loop principal - Atualizar o registro periodicamente E validar guild.leader
     var last_check := ReadGameClock();
+    var last_validation := ReadGameClock();
     
     while(1)
-        if ((ReadGameClock() - last_check) >= 3600) // 1 hora
+        var current_time := ReadGameClock();
+        
+        // Atualizar registro de guildas a cada 1 hora
+        if ((current_time - last_check) >= 3600)
             UpdateGuildRegistry();
-            last_check := ReadGameClock();
+            last_check := current_time;
+        endif
+        
+        // NOVO: Validar guild.leader a cada 1 hora (offset de 30 min do registro)
+        if ((current_time - last_validation) >= 3600)
+            ValidateAllGuildLeaders();
+            last_validation := current_time;
         endif
         
         // Verificar eventos e comandos
@@ -353,4 +362,153 @@ function PadRegistryStr(str, length, padchar := "0")
     endwhile
     
     return str;
+endfunction
+
+/*
+ * ValidateAllGuildLeaders()
+ * 
+ * Purpose: Verificar e corrigir automaticamente problemas com guild.leader
+ * Returns: Número de guildas corrigidas
+ */
+function ValidateAllGuildLeaders()
+    LogInfo("guild_validator", "Iniciando validação automática de guild.leader");
+    
+    var guilds_verificadas := 0;
+    var guilds_corrigidas := 0;
+    var erros := 0;
+    
+    var guild_list := ListGuilds();
+    if (!guild_list)
+        LogWarning("guild_validator", "ListGuilds() retornou vazio ou erro");
+        return 0;
+    endif
+    
+    foreach guild_id in guild_list
+        guilds_verificadas += 1;
+        
+        var guild := FindGuild(guild_id);
+        if (!guild)
+            erros += 1;
+            continue;
+        endif
+        
+        // Verificar se é uma facção (tem propriedade "name")
+        var faction_name := guild.GetProp("name");
+        if (!faction_name || faction_name == error)
+            continue; // Não é uma facção, pular
+        endif
+        
+        var current_leader := guild.leader;
+        var guildmaster := guild.guildmaster;
+        var custom_leader := guild.GetProp("leader");
+        
+        var needs_fix := 0;
+        var fix_reason := "";
+        
+        // Verificar se guild.leader está bugado
+        if (!current_leader || current_leader == error || 
+            CStr(current_leader) == "<uninitialized object>")
+            needs_fix := 1;
+            fix_reason := "guild.leader está <uninitialized object>";
+        // Verificar inconsistência entre guild.leader e custom leader
+        elseif (custom_leader && custom_leader != error && 
+                custom_leader != current_leader)
+            needs_fix := 1;
+            fix_reason := "guild.leader != custom leader";
+        // Verificar inconsistência entre guild.leader e guildmaster
+        elseif (guildmaster && guildmaster != error && 
+                current_leader != guildmaster)
+            needs_fix := 1;
+            fix_reason := "guild.leader != guildmaster";
+        endif
+        
+        if (needs_fix)
+            // Determinar o líder correto (prioridade: guildmaster > custom_leader)
+            var correct_leader := guildmaster;
+            if (!correct_leader && custom_leader && custom_leader != error)
+                correct_leader := custom_leader;
+            endif
+            
+            if (correct_leader)
+                // Corrigir usando sincronização correta
+                var success := SetFactionLeaderInternal(guild, correct_leader);
+                if (success)
+                    guilds_corrigidas += 1;
+                    LogInfo("guild_validator", "AUTO-CORREÇÃO: " + faction_name + " - " + fix_reason);
+                else
+                    erros += 1;
+                    LogError("guild_validator", "FALHA na correção: " + faction_name + " - " + fix_reason);
+                endif
+            else
+                // Remover líder se não há líder válido
+                RemoveFactionLeaderInternal(guild);
+                guilds_corrigidas += 1;
+                LogInfo("guild_validator", "AUTO-LIMPEZA: " + faction_name + " - removido líder inválido");
+            endif
+        endif
+        
+        sleepms(50); // Pequena pausa para não sobrecarregar
+    endforeach
+    
+    LogInfo("guild_validator", "Validação concluída: " + guilds_verificadas + " verificadas, " + 
+            guilds_corrigidas + " corrigidas, " + erros + " erros");
+    
+    return guilds_corrigidas;
+endfunction
+
+/*
+ * SetFactionLeaderInternal(guild, player_serial)
+ * 
+ * Purpose: Sincronizar corretamente guild.leader com custom properties (versão interna)
+ * Returns: 1 se bem-sucedido, 0 se falha
+ */
+function SetFactionLeaderInternal(guild, player_serial)
+    if (!guild || !player_serial)
+        return 0;
+    endif
+    
+    // Definir custom property
+    guild.SetProp("leader", player_serial);
+    
+    // Sincronizar com propriedade nativa do POL
+    guild.leader := player_serial;
+    
+    // Atualizar guild_rank do jogador se estiver online
+    var player := SystemFindObjectBySerial(player_serial);
+    if (player)
+        player.SetProp("guild_rank", "Lider");
+    endif
+    
+    return 1;
+endfunction
+
+/*
+ * RemoveFactionLeaderInternal(guild)
+ * 
+ * Purpose: Remover líder de forma sincronizada (versão interna)
+ * Returns: 1 se bem-sucedido, 0 se falha
+ */
+function RemoveFactionLeaderInternal(guild)
+    if (!guild)
+        return 0;
+    endif
+    
+    // Obter líder atual antes de remover
+    var current_leader_serial := guild.GetProp("leader");
+    
+    // Remover de custom property
+    guild.SetProp("leader", 0x0);
+    
+    // Remover de propriedade nativa do POL
+    guild.leader := 0x0;
+    
+    // Limpar guild_rank do ex-líder se estiver online
+    if (current_leader_serial)
+        var former_leader := SystemFindObjectBySerial(current_leader_serial);
+        if (former_leader)
+            former_leader.EraseObjProperty("guild_rank");
+        endif
+    endif
+    
+    return 1;
 endfunction

@@ -60,13 +60,13 @@ const DONATION_PREFIX := "IsKingdomDonation";
 
 // Tipos de recursos
 const RESOURCE_TYPE_COMIDA := "Comida";
-const RESOURCE_TYPE_MOEDAS := "Moedas"; // <<< VERIFIQUE ESTA
+const RESOURCE_TYPE_MOEDAS := "Moedas";
 const RESOURCE_TYPE_COURO := "Couro";
 const RESOURCE_TYPE_METAL := "Metal";
 const RESOURCE_TYPE_MADEIRA := "Madeira";
 const RESOURCE_TYPE_PANO := "Pano";
 const RESOURCE_TYPE_PEDRA := "Pedra";
-const RESOURCE_TYPE_JOIAS := "Joias";   // <<< E ESTA
+const RESOURCE_TYPE_JOIAS := "Joias";
 
 // =======================================
 // Valores padrão
@@ -130,12 +130,43 @@ const CACHE_DIRTY_FLAG := "recursos_cache_dirty";
 const UNIQUE_ID_PROP := "unique_id";
 const ITEM_UNIQUE_ID_PROP := "unique_id";
 
+// =======================================
+// Objtypes dos Itens Territoriais
+// =======================================
+
+// Baú de doações
+const TERRITORIO_BAU := 0xFF11;
+
+// Mesa de gestão de reino
+const TERRITORIO_MESA := 0xFE5C; 
+
+// Mesa de inscrição da facção
+const TERRITORIO_MESA_INSCRICAO := 0xF8A8;
+
+// Mural de recrutamento
+const TERRITORIO_MURAL := 0x46AE;
+
+// Estandarte do reino
+const TERRITORIO_ESTANDARTE := 0xFDDF;
+
 // Tipos de itens
 const ITEM_TYPE_BAU := "BAU";
 const ITEM_TYPE_MESA := "MESA";
 const ITEM_TYPE_MESA_INSCRICAO := "MESA_INSCRICAO";
 const ITEM_TYPE_MURAL := "MURAL";
+const ITEM_TYPE_ESTANDARTE := "ESTANDARTE";
 const ITEM_TYPE_FERRAMENTAS_CONSTRUCAO := "FERRAMENTAS_CONSTRUCAO";
+
+// =======================================
+// Comentários para referência dos Objtypes Territoriais
+// =======================================
+
+// Lista de objtypes territoriais (não pode ser array constante no POL):
+// 0x46AE - muralrecrutamento
+// 0xF8A8 - MesaDeInscricao  
+// 0xFE5C - mesadegestaodereino
+// 0xFF11 - BaudeDoacoes
+// 0xFDDF - EstandarteReino
 
 // =======================================
 // Constantes para sistema de caravanas

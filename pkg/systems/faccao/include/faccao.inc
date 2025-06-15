@@ -24,7 +24,13 @@ function CreateFaccao(name, rect, money := 0)
    if (!name || typeof(name) != "String") return 0; endif
    var guild := CreateGuild();
    guild.setProp("name", name);
-   guild.setProp("leader", 0);
+   
+   // CORREÇÃO: Inicializar leader como 0x0 em vez de 0 para evitar problemas
+   guild.setProp("leader", 0x0);
+   
+   // IMPORTANTE: Não definir guild.leader aqui pois ainda não há membros
+   // O líder será definido via SetFactionLeader() quando alguém criar a facção
+   
    guild.setProp("npcs_active", array{});
    guild.setProp("npcs", array{});
    guild.setProp("report", array{"Faccao Criada"});
