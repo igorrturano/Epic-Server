@@ -13,6 +13,7 @@ include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
+include ":faccao:include/guild_xp";
 
 function UpdateXPBar(who)
    if (!GetObjProperty(who, "chardata")) 
@@ -146,9 +147,12 @@ function AddXP(who, amount)
       return 0;
    endif
    
-   // Add XP
+   // Add XP to player
    curr_xp += amount;
    SetObjProperty(who, "Experience", curr_xp);
+   
+   // *** NOVO: Contribuir XP para a guild ***
+   AddGuildXP(who, amount);
    
    // Check for level up
    var next_level_xp := CalculateNextLevelXP(curr_level);

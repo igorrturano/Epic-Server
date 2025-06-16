@@ -20,6 +20,7 @@ include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";
 include ":faccao:include/datafile_helpers";
+include ":faccao:include/guild_xp";
 include ":architect:architect";
 
 
@@ -109,10 +110,9 @@ endfunction
 
 function CreateKingdomManagementGump(who, cur_menu, item)
     var gump := CriarLayoutBase();
-    
-    case (cur_menu)
+      case (cur_menu)
         MENU_REINO:
-            ReinoGump(gump, item);  // Passar o item (mesa de gestão) para ReinoGump
+            ReinoGump(gump, item, who);  // Passar o item (mesa de gestão) e who para ReinoGump
         MENU_LEIS:
             LeisGump(gump);
         MENU_FACCOES:
@@ -203,7 +203,7 @@ function AtualizarEstadoMenu(input)
     endcase
 endfunction
 
-function ReinoGump(byref gump, item)
+function ReinoGump(byref gump, item, who := 0)
     LogDebug("territorio", "Iniciando ReinoGump");
 
     GFResizePic(gump, 38, 60, 40267, 400, 502);
@@ -213,13 +213,89 @@ function ReinoGump(byref gump, item)
       // Título personalizado com o nome da facção
     var titulo := mesa_faction ? "Gestão de " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
-    
-    // Obter e exibir informação sobre a cultura do reino
+      // Obter e exibir informação sobre a cultura do reino
     var cultura_reino := GetKingdomCulture(item, mesa_faction);
     if (cultura_reino)
         var texto_cultura := "O reino " + mesa_faction + " está associado à cultura " + cultura_reino;
         GFTextMid(gump, 490, 85, 263, 53, texto_cultura);
     endif
+      // ===== SEÇÃO DE XP DO REINO =====
+    // Obter informações da guild para mostrar progresso do reino
+    var guild := FindGuild(FindGuildByName(mesa_faction));
+    if (guild)        // DEBUG: Verificar cultura da guild
+        var guild_culture_debug := SafeGetGuildProperty(guild, "culture", "");
+        var cultura_reino_debug := GetKingdomCulture(item, mesa_faction);
+        
+        // DEBUG: Mostrar informações antes da correção
+        PrintText(who, "DEBUG - Antes: guild_culture=" + guild_culture_debug + ", reino_culture=" + cultura_reino_debug + ", mesa_faction=" + mesa_faction);
+        
+        // Se a guild não tem cultura definida, vamos tentar definir ANTES de chamar GetGuildXPInfo
+        if (!guild_culture_debug || guild_culture_debug == "")
+            // Primeiro tenta pela mesa/território
+            if (cultura_reino_debug && cultura_reino_debug != "")
+                SafeSetGuildProperty(guild, "culture", cultura_reino_debug);
+                guild_culture_debug := cultura_reino_debug;
+            else
+                // Se não encontrou, usa mapeamento por nome da facção
+                var cultura_por_faccao := GetCultureFromFactionName(mesa_faction);
+                if (cultura_por_faccao && cultura_por_faccao != "")
+                    SafeSetGuildProperty(guild, "culture", cultura_por_faccao);
+                    guild_culture_debug := cultura_por_faccao;
+                endif
+            endif
+            
+            // DEBUG: Mostrar informações após a correção
+            PrintText(who, "DEBUG - Depois: guild_culture=" + guild_culture_debug);
+        endif
+        
+        // Agora que a cultura está definida, obtém as informações de XP
+        var xp_info := GetGuildXPInfo(guild);
+          // Background para seção de XP do reino (aumentado)
+        GFResizePic(gump, 460, 110, 9350, 320, 120);
+        
+        // Título da seção
+        GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");        // Nome do reino atual - usar o level_name atualizado
+        var reino_atual := xp_info.level_name;
+        if (!reino_atual || reino_atual == "")
+            reino_atual := "Reino Nível " + xp_info.current_level;
+        endif
+        
+        GFTextLine(gump, 470, 135, 2100, "Reino Atual:");
+        GFTextLine(gump, 570, 135, 53, reino_atual);        // DEBUG: Mostrar informações de depuração
+        if (guild_culture_debug && guild_culture_debug != "")
+            GFTextLine(gump, 470, 150, 1153, "Cultura: " + guild_culture_debug);
+        endif
+        
+        // DEBUG: Mostrar facção
+        if (mesa_faction && mesa_faction != "")
+            GFTextLine(gump, 470, 160, 1153, "Facção: " + mesa_faction);
+        endif        // XP Total (movido para baixo devido aos debugs)
+        GFTextLine(gump, 470, 180, 2100, "XP Total:");
+        GFTextLine(gump, 570, 180, 1153, FormatNumber(xp_info.current_xp));
+        
+        // Progresso para próximo nível (se não for nível máximo)
+        if (!xp_info.is_max_level)
+            var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, guild_culture_debug);
+            if (proximo_reino == "" || proximo_reino == "Sem Reino")
+                proximo_reino := "Reino Nível " + (xp_info.current_level + 1);
+            endif              GFTextLine(gump, 470, 195, 2100, "Próximo:");
+            GFTextLine(gump, 530, 195, 1153, proximo_reino);
+            
+            // Barra de progresso (ajustada para novo layout)
+            GFResizePic(gump, 470, 215, 9200, 280, 15);
+            var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
+            if (progress_width > 0)
+                GFResizePic(gump, 470, 215, 9350, progress_width, 15);
+            endif
+            
+            // Porcentagem
+            var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
+            GFTextMid(gump, 470, 217, 280, 1153, percentage_text);
+        else
+            GFTextMid(gump, 470, 195, 280, 53, "REINO MÁXIMO ATINGIDO");
+        endif
+    endif
+    // ===== FIM DA SEÇÃO DE XP =====
       var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         // Criar lista de territórios visíveis baseados na mesa_faction
@@ -248,17 +324,15 @@ function ReinoGump(byref gump, item)
                 });
             endif
             sleepms(2);
-        endforeach
+        endforeach        // Criar um único background para a área de territórios (ajustado para nova altura)
+        GFResizePic(gump, 460, 240, 9350, 320, 260);
         
-        // Criar um único background para a área de territórios (movido para baixo)
-        GFResizePic(gump, 460, 120, 9350, 320, 280);
+        // Adicionar cabeçalhos
+        GFTextLine(gump, 485, 245, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 245, 53, "Info");
+        GFTextLine(gump, 730, 245, 53, "Aliados");
         
-        // Adicionar cabeçalhos (movidos para baixo)
-        GFTextLine(gump, 485, 125, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 125, 53, "Info");
-        GFTextLine(gump, 730, 125, 53, "Aliados");
-        
-        var y := 160; // Começar após os cabeçalhos (movido para baixo)
+        var y := 280; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
         
 foreach territorio in (territorios_visiveis)
@@ -290,15 +364,14 @@ foreach territorio in (territorios_visiveis)
             
             sleepms(2);
         endforeach
-        
-        if (territorios_mostrados == 0)
+          if (territorios_mostrados == 0)
             var msg := mesa_faction ? 
                        "Não há territórios controlados por " + mesa_faction + "." :
                        "Não há territórios controlados por facções.";
-            GFTextMid(gump, 540, 200, 150, 38, msg);
+            GFTextMid(gump, 540, 300, 150, 38, msg);
         endif
     else
-        GFTextMid(gump, 620, 200, 150, 38, "Sistema de territórios indisponível.");
+        GFTextMid(gump, 620, 300, 150, 38, "Sistema de territórios indisponível.");
     endif
     
     return gump;
@@ -1961,13 +2034,10 @@ function CancelarCaravanaTerritorioIndividual(who, origin_territory_id, faction_
     if (!contratos_atuais || TypeOf(contratos_atuais) != "Array")
         SendSysMessage(who, "Nenhum contrato de caravana encontrado para este território.");
         return 0;
-    endif
-
-    var novos_contratos_apos_remocao := array{};
+    endif    var novos_contratos_apos_remocao := array{};
     var contrato_removido := 0;
     var capital_id_do_contrato_removido := ""; // Para notificação
-
-    foreach c_existente in contratos_atuais
+      foreach c_existente in contratos_atuais
         if (c_existente.origin_territory_id == origin_territory_id)
             // Verificar se está realmente ativo (embora o gump já deva ter filtrado isso)
             if (CInt(c_existente.next_payment_due) > polcore().systime)
@@ -1991,7 +2061,8 @@ function CancelarCaravanaTerritorioIndividual(who, origin_territory_id, faction_
         var event_data_caravana_cancel := struct;
         event_data_caravana_cancel.+faction := faction_name;
         event_data_caravana_cancel.+origin_territory_id := origin_territory_id;
-        event_data_caravana_cancel.+capital_territory_id := capital_id_do_contrato_removido;        TM_NotifyTerritoryChange(origin_territory_id, "caravan_deactivated_from_territory", event_data_caravana_cancel);
+        event_data_caravana_cancel.+capital_territory_id := capital_id_do_contrato_removido;        
+        TM_NotifyTerritoryChange(origin_territory_id, "caravan_deactivated_from_territory", event_data_caravana_cancel);
     else
         SendSysMessage(who, "Nenhuma caravana ativa encontrada partindo deste território para cancelar.");
     endif
@@ -2176,11 +2247,9 @@ function GetKingdomCulture(item, faction_name)
     if (cultura_mesa)
         return cultura_mesa;
     endif
-    
-    // Se não encontrou na mesa, busca em territórios da facção
+      // Se não encontrou na mesa, busca em territórios da facção
     var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-    if (territory_id)
-        // Busca objetos do território para encontrar a cultura
+    if (territory_id)        // Busca objetos do território para encontrar a cultura
         var seriais_df := SafeOpenDataFile(":faccao:seriais");
         if (seriais_df)
             var territory_elem := seriais_df.FindElement(territory_id);
@@ -2200,4 +2269,33 @@ function GetKingdomCulture(item, faction_name)
     endif
     
     return 0;
+endfunction
+
+/*
+ * FormatNumber(number)
+ * 
+ * Purpose: Formata números adicionando pontos como separadores de milhares
+ * Parameters:
+ *   number - Número a ser formatado
+ * Return:
+ *   String formatada (ex: 1.500.000)
+ */
+function FormatNumber(number)
+    var str := CStr(number);
+    var result := "";
+    var count := 0;
+    
+    // Adicionar pontos a cada 3 dígitos (da direita para esquerda)
+    var i := str.size();
+    while (i >= 1)
+        if (count == 3)
+            result := "." + result;
+            count := 0;
+        endif
+        result := str[i] + result;
+        count += 1;
+        i := i - 1;
+    endwhile
+    
+    return result;
 endfunction

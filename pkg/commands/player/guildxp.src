@@ -1,0 +1,7 @@
+// Comando para visualizar XP da guild/facção
+use os;
+
+program guildxp_command(who)
+    var result := start_script(":faccao:guildxp", who);
+    return 1;
+endprogram

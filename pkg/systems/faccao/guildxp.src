@@ -1,0 +1,298 @@
+// :faccao:guildxp.src
+//
+// Comando para visualizar informações de XP da guild
+
+use uo;
+use os;
+use guilds;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include ":faccao:include/guild_xp";
+include ":faccao:include/safe_guild_utils";
+include ":faccao:include/permissions";
+
+program guild_xp_command(who)
+    // Verificar se o jogador está em uma guild
+    if (!who.guild)
+        SendSysMessage(who, "Você precisa estar em uma facção para usar este comando.");
+        return 0;
+    endif
+    
+    var guild := who.guild;
+    var guild_name := SafeGetGuildName(guild);
+    
+    // Verificar se tem permissão para ver informações da guild
+    var is_member := 0;
+    foreach member in (guild.members)
+        if (member.serial == who.serial)
+            is_member := 1;
+            break;
+        endif
+    endforeach
+    
+    if (!is_member)
+        SendSysMessage(who, "Você não tem permissão para ver essas informações.");
+        return 0;
+    endif
+    
+    // Obter informações de XP da guild
+    var xp_info := GetGuildXPInfo(guild);
+      // Criar e mostrar o gump
+    ShowGuildXPGump(who, guild, xp_info);
+    
+    return 1;
+endprogram
+
+function ShowGuildXPGump(who, guild, xp_info)
+    var guild_name := SafeGetGuildName(guild);
+    var width := 500;
+    var height := 450;
+    
+    // Criar gump usando o estilo padronizado
+    var gump := GFECreateGump("Reino de " + guild_name, width, height, array{BORDER_GOLDEN});
+    
+    var y := 70;
+    var x := 30;
+    
+    // Informações da cultura
+    if (xp_info.culture != "")
+        GFTextLine(gump, x, y, 2100, "Cultura:");
+        GFTextLine(gump, x + 120, y, 1153, CapitalizeFirst(xp_info.culture));
+        y += 25;
+    endif
+    
+    // Nome do nível atual
+    GFTextLine(gump, x, y, 2100, "Reino Atual:");
+    if (xp_info.level_name != "")
+        GFTextLine(gump, x + 120, y, 53, xp_info.level_name);
+    else
+        GFTextLine(gump, x + 120, y, 53, "Nível " + xp_info.current_level);
+    endif
+    y += 25;
+    
+    // Bônus do nível
+    if (xp_info.bonus > 0)
+        GFTextLine(gump, x, y, 2100, "Bônus:");
+        GFTextLine(gump, x + 120, y, 1153, "+" + xp_info.bonus + "%");
+        y += 25;
+    endif
+    
+    // XP atual
+    GFTextLine(gump, x, y, 2100, "XP Total:");
+    GFTextLine(gump, x + 120, y, 1153, FormatNumber(xp_info.current_xp));
+    y += 25;
+    
+    // Progresso para próximo nível
+    if (!xp_info.is_max_level)
+        GFTextLine(gump, x, y, 2100, "Próximo Reino:");
+        var next_level_name := GetGuildLevelName(xp_info.current_level + 1, xp_info.culture);
+        GFTextLine(gump, x + 120, y, 1153, next_level_name);
+        y += 25;
+        
+        GFTextLine(gump, x, y, 2100, "XP Necessário:");
+        GFTextLine(gump, x + 120, y, 63, FormatNumber(xp_info.xp_to_next_level));
+        y += 25;
+        
+        // Barra de progresso
+        GFTextLine(gump, x, y, 2100, "Progresso:");
+        y += 20;
+        
+        // Background da barra
+        GFResizePic(gump, x, y, 9200, 300, 20);
+        
+        // Progresso preenchido
+        var progress_width := CInt((xp_info.progress_percentage * 300) / 100);
+        if (progress_width > 0)
+            GFResizePic(gump, x, y, 9350, progress_width, 20);
+        endif
+        
+        // Texto de porcentagem
+        var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
+        GFTextMid(gump, x, y + 2, 300, 1153, percentage_text);
+        y += 30;
+    else
+        GFTextLine(gump, x, y, 53, "*** REINO MÁXIMO ATINGIDO ***");
+        y += 25;
+    endif
+    
+    // Linha de separação
+    GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
+    y += 15;
+    
+    // Benefícios do nível atual
+    var benefit_title := "Benefícios";
+    if (xp_info.level_name != "")
+        benefit_title := "Benefícios de " + xp_info.level_name;
+    else
+        benefit_title := "Benefícios do Nível " + xp_info.current_level;
+    endif
+    GFTextLine(gump, x, y, 2100, benefit_title + ":");
+    y += 20;
+    
+    var benefits := GetLevelBenefits(xp_info.current_level, xp_info.culture);
+    foreach benefit in benefits
+        GFTextLine(gump, x + 10, y, 1153, "• " + benefit);
+        y += 15;
+    endforeach
+    
+    // Botão para ver top contribuidores
+    GFAddButton(gump, width/2 - 80, height - 50, 2130, 2129, GF_CLOSE_BTN, 100);
+    GFTextLine(gump, width/2 - 60, height - 50, 1153, "Top Contribuidores");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 100)
+        ShowTopContributors(who, guild);
+    endif
+endfunction
+
+function ShowTopContributors(who, guild)
+    var contributors := GetTopGuildContributors(guild, 10);
+    var guild_name := SafeGetGuildName(guild);
+    var width := 450;
+    var height := 350;
+    
+    var gump := GFECreateGump("Top Contribuidores - " + guild_name, width, height, array{BORDER_GOLDEN});
+    
+    var y := 70;
+    var x := 30;
+    
+    if (contributors.size() == 0)
+        GFTextMid(gump, x, y, width-60, 1153, "Nenhum contribuidor encontrado.");
+    else
+        // Cabeçalho
+        GFTextLine(gump, x, y, 2100, "Posição");
+        GFTextLine(gump, x + 70, y, 2100, "Nome");
+        GFTextLine(gump, x + 250, y, 2100, "Contribuição XP");
+        y += 25;
+        
+        // Linha de separação
+        GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
+        y += 10;
+        
+        // Lista de contribuidores
+        var position := 1;
+        foreach contributor in contributors
+            var color := 1153; // Cor padrão
+            if (position == 1)
+                color := 53; // Dourado para 1º lugar
+            elseif (position == 2)
+                color := 1151; // Prata para 2º lugar
+            elseif (position == 3)
+                color := 2413; // Bronze para 3º lugar
+            endif
+            
+            GFTextLine(gump, x + 10, y, color, CStr(position) + "º");
+            GFTextLine(gump, x + 70, y, color, contributor.name);
+            GFTextLine(gump, x + 250, y, color, FormatNumber(contributor.contribution));
+            
+            y += 20;
+            position += 1;
+        endforeach
+    endif
+    
+    // Botão para voltar
+    GFAddButton(gump, width/2 - 40, height - 50, 2119, 2120, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, width/2 - 20, height - 50, 1153, "Voltar");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        // Voltar para o gump principal
+        var xp_info := GetGuildXPInfo(who.guild);
+        ShowGuildXPGump(who, who.guild, xp_info);
+    endif
+endfunction
+
+function GetLevelBenefits(level, culture := "")
+    var benefits := array{};
+    
+    case (level)
+        0:
+            benefits.append("Nenhum benefício especial");
+            break;
+        1:
+            benefits.append("Acesso a benefícios básicos da facção");
+            benefits.append("Reconhecimento como reino estabelecido");
+            if (culture == "aigla" || culture == "aiglanos")
+                benefits.append("Disciplina militar aprimorada");
+            elseif (culture == "bjorske")
+                benefits.append("Tradições guerreiras fortalecidas");
+            elseif (culture == "aluriel")
+                benefits.append("Harmonia com a natureza");
+            endif
+            break;
+        2:
+            benefits.append("Todos os benefícios anteriores");
+            benefits.append("Slots adicionais para NPCs contratados");
+            benefits.append("Bônus na geração de recursos (+10%)");
+            if (culture == "polkinea")
+                benefits.append("Produtividade agrícola aumentada");
+            elseif (culture == "baduran")
+                benefits.append("Eficiência de forja melhorada");
+            endif
+            break;
+        3:
+            benefits.append("Todos os benefícios anteriores");
+            benefits.append("Bônus maior na geração de recursos (+15%)");
+            benefits.append("Acesso a construções especiais");
+            if (culture == "haroloth")
+                benefits.append("Influência política ampliada");
+            elseif (culture == "leste")
+                benefits.append("Sabedoria ancestral desbloqueada");
+            endif
+            break;
+        4:
+            benefits.append("Todos os benefícios anteriores");
+            benefits.append("Benefícios avançados de reino (+25%)");
+            benefits.append("Prestígio elevado no mundo");
+            if (culture == "gulthrak")
+                benefits.append("Força tribal suprema");
+            endif
+            break;
+        5:
+            benefits.append("Todos os benefícios anteriores");
+            benefits.append("Benefícios máximos de reino (+40%)");
+            benefits.append("Status de reino lendário");
+            benefits.append("Acesso a conteúdo exclusivo");
+            break;
+    endcase
+    
+    return benefits;
+endfunction
+
+function CapitalizeFirst(text)
+    if (text == "" || text.size() == 0)
+        return text;
+    endif
+    
+    var first_char := text[1];
+    var rest := "";
+    if (text.size() > 1)
+        rest := text[2, text.size()];
+    endif
+    
+    return Upper(first_char) + Lower(rest);
+endfunction
+
+function FormatNumber(number)
+    var str := CStr(number);
+    var result := "";
+    var count := 0;
+    
+    // Adicionar pontos a cada 3 dígitos (da direita para esquerda)
+    var i := str.size();
+    while (i >= 1)
+        if (count == 3)
+            result := "." + result;
+            count := 0;
+        endif
+        result := str[i] + result;
+        count += 1;
+        i := i - 1;
+    endwhile
+    
+    return result;
+endfunction

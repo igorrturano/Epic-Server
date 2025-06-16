@@ -130,10 +130,40 @@ program TotemDeAquisicao(who, totem)
     endif
     
     LogDebug("faccao", "TotemDeAquisicao: Estandarte escolhido para o reino: " + estandarte_escolhido);
-    
-    LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
+      LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
     var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name);
-    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);
+    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);    // Definir a cultura na guild
+    LogDebug("faccao", "TotemDeAquisicao: Definindo cultura '" + cultura_escolhida + "' na guild " + guild.guildid);
+    
+    // Converter o enum para string que o sistema XP entende
+    var cultura_string := "";
+    case (cultura_escolhida)
+        "Aiglana":
+            cultura_string := "aiglanos";
+        "Har'oloth":
+            cultura_string := "haroloth";
+        "Povos do Leste":
+            cultura_string := "leste";
+        "Björska":
+            cultura_string := "bjorske";
+        "Alüriel":
+            cultura_string := "aluriel";
+        "Badûran":
+            cultura_string := "baduran";
+        "Gulthrak":
+            cultura_string := "gulthrak";
+        "Polkinea":
+            cultura_string := "polkinea";
+        default:
+            cultura_string := "baduran"; // Default para Baduran se não identificar
+    endcase
+    
+    var set_culture_result := guild.SetProp("culture", cultura_string);
+    if (set_culture_result == error)
+        LogWarning("faccao", "TotemDeAquisicao: Falha ao definir cultura na guild: " + set_culture_result);
+    else
+        LogDebug("faccao", "TotemDeAquisicao: Cultura '" + cultura_string + "' definida com sucesso na guild");
+    endif
     
     LogDebug("faccao", "TotemDeAquisicao: Adicionando território à CProp 'territories' da guilda " + guild.guildid);
     var territories_list := guild.GetProp("territories");
