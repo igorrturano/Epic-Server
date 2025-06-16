@@ -2238,28 +2238,77 @@ endfunction
  * Return: String da cultura ou 0 se não encontrada
  */
 function GetKingdomCulture(item, faction_name)
-    if (!item || !faction_name)
+    if (!item)
         return 0;
     endif
     
-    // Primeiro, tenta obter a cultura diretamente da mesa
+    // DEBUG: Vamos verificar passo a passo o que está acontecendo
+    var debug_msg := "DEBUG GetKingdomCulture: Iniciando para item " + item.serial;
+    syslog(debug_msg);
+    
+    // Verificar se o item tem guild_id
+    var guild_id := GetObjProperty(item, "guild_id");
+    debug_msg := "DEBUG GetKingdomCulture: guild_id encontrado = " + guild_id;
+    syslog(debug_msg);
+    
+    if (guild_id)
+        // Verificar se a guild existe
+        var guild_obj := FindGuild(guild_id);
+        debug_msg := "DEBUG GetKingdomCulture: guild_obj = " + guild_obj;
+        syslog(debug_msg);
+        
+        if (guild_obj)
+            // Verificar propriedades da guild
+            var cultura_guild := guild_obj.GetProp("culture");
+            debug_msg := "DEBUG GetKingdomCulture: cultura_guild direta = " + cultura_guild;
+            syslog(debug_msg);
+            
+            var cultura_safe := SafeGetGuildProperty(guild_obj, "culture", "Selvagem");
+            debug_msg := "DEBUG GetKingdomCulture: cultura_safe = " + cultura_safe;
+            syslog(debug_msg);
+            
+            if (cultura_safe && cultura_safe != "Selvagem")
+                return cultura_safe;
+            endif
+        endif
+    endif
+    
+    // NOVA ABORDAGEM: Obter cultura através da referência da guild
+    var cultura := GetObjectCulture(item);
+    if (cultura)
+        LogDebug("cultura", "GetKingdomCulture: Cultura obtida da guild: " + cultura);
+        return cultura;
+    endif
+    
+    // FALLBACK: Para objetos antigos que ainda não foram migrados
     var cultura_mesa := GetObjProperty(item, "cultura");
     if (cultura_mesa)
+        LogWarning("cultura", "GetKingdomCulture: Usando cultura hardcoded (objeto não migrado): " + cultura_mesa);
         return cultura_mesa;
     endif
-      // Se não encontrou na mesa, busca em territórios da facção
+    
+    // FALLBACK: Buscar em outros objetos do território
     var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-    if (territory_id)        // Busca objetos do território para encontrar a cultura
+    if (territory_id)
+        // Busca objetos do território para encontrar a cultura
         var seriais_df := SafeOpenDataFile(":faccao:seriais");
         if (seriais_df)
-            var territory_elem := seriais_df.FindElement(territory_id);
+            var territory_elem := seriais_df.FindElement(territorio_id);
             if (territory_elem)
                 var mural_serial := GetElementProp(territory_elem, "mural");
                 if (mural_serial)
                     var mural_obj := SystemFindObjectBySerial(mural_serial);
                     if (mural_obj)
-                        var cultura_mural := GetObjProperty(mural_obj, "cultura");
+                        // Tentar nova abordagem primeiro
+                        var cultura_mural := GetObjectCulture(mural_obj);
                         if (cultura_mural)
+                            return cultura_mural;
+                        endif
+                        
+                        // Fallback para cultura hardcoded
+                        cultura_mural := GetObjProperty(mural_obj, "cultura");
+                        if (cultura_mural)
+                            LogWarning("cultura", "GetKingdomCulture: Usando cultura hardcoded do mural (não migrado): " + cultura_mural);
                             return cultura_mural;
                         endif
                     endif

@@ -3374,6 +3374,30 @@ if (df)
 endfunction
 
 
+/*
+ * GetObjectCulture(obj)
+ * Obtém a cultura de um objeto através de sua guilda
+ */
+function GetObjectCulture(obj)
+    if (!obj)
+        return "Selvagem";
+    endif
+    
+    var guild_id := GetObjProperty(obj, "guild_id");
+    if (!guild_id)
+        return "Selvagem";
+    endif
+    
+    // Obter objeto da guild
+    var guild_obj := FindGuild(guild_id);
+    if (!guild_obj)
+        return "Selvagem";
+    endif
+    
+    // Retornar cultura da guild
+    return SafeGetGuildProperty(guild_obj, "culture", "Selvagem");
+endfunction
+
 
 // Funções de compatibilidade para código legado
 function GetResourceCategory(resource)
