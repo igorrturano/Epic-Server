@@ -5,6 +5,9 @@
  *
  */
 
+use util;
+use cfgfile;
+
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
