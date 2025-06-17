@@ -294,18 +294,17 @@ function ReinoGump(byref gump, item, who := 0)
                 proximo_reino := "Reino Nível " + (xp_info.current_level + 1);
             endif
               GFTextLine(gump, 470, 175, 2100, "Próximo:");
-            GFTextLine(gump, 570, 175, 1153, proximo_reino);
-            
-            // Barra de progresso com espaçamento melhorado
-            GFResizePic(gump, 470, 215, 9200, 280, 15);
+            GFTextLine(gump, 570, 175, 1153, proximo_reino);            // Barra de progresso ajustada - posição Y subiu 15 pixels, altura diminuiu para 15
+            GFResizePic(gump, 470, 200, 9200, 280, 20);
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
             if (progress_width > 0)
-                GFResizePic(gump, 470, 215, 9350, progress_width, 15);
+                // Barra de progresso com arte azul específica da imagem
+                GFResizePic(gump, 470, 200, 48, progress_width, 20);
             endif
             
-            // Porcentagem
+            // Porcentagem ajustada para nova posição da barra
             var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
-            GFTextMid(gump, 470, 217, 280, 1153, percentage_text);
+            GFTextMid(gump, 470, 202, 280, 1153, percentage_text);
         else
             GFTextMid(gump, 470, 195, 280, 53, "REINO MÁXIMO ATINGIDO");
         endif

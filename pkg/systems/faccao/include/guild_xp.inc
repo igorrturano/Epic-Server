@@ -17,12 +17,12 @@ include ":faccao:include/datafile_helpers";
 // Constantes do Sistema de XP de Guild
 // =======================================
 
-// XP necessário para cada nível de guild (genérico)
-const GUILD_LEVEL_1_XP := 50000;    // 50k XP
-const GUILD_LEVEL_2_XP := 150000;   // 150k XP total (100k para subir de 1→2)
-const GUILD_LEVEL_3_XP := 350000;   // 350k XP total (200k para subir de 2→3)
-const GUILD_LEVEL_4_XP := 750000;   // 750k XP total (400k para subir de 3→4)
-const GUILD_LEVEL_5_XP := 1500000;  // 1.5M XP total (750k para subir de 4→5)
+// XP necessário para cada nível de guild (genérico) - VALORES DE TESTE
+const GUILD_LEVEL_1_XP := 100;      // 100 XP
+const GUILD_LEVEL_2_XP := 200;      // 200 XP total (100 para subir de 1→2)
+const GUILD_LEVEL_3_XP := 300;      // 300 XP total (100 para subir de 2→3)
+const GUILD_LEVEL_4_XP := 400;      // 400 XP total (100 para subir de 3→4)
+const GUILD_LEVEL_5_XP := 500;      // 500 XP total (100 para subir de 4→5)
 
 // Percentual do XP do jogador que vai para a guild
 const GUILD_XP_PERCENTAGE := 1.0;   // 100% do XP do jogador vai para a guild
@@ -95,99 +95,99 @@ endfunction
 // 🦅 Aiglanos - Tema: Ascensão Imperial e Águias
 function GetAiglaLevels()
     return array{
-        struct{ name := "Acampamento Legionário", xp := 50000, bonus := 5 },
-        struct{ name := "Castrum Consolidado", xp := 150000, bonus := 10 },
-        struct{ name := "Civitas Próspera", xp := 350000, bonus := 15 },
-        struct{ name := "Império Aquilino", xp := 750000, bonus := 25 },
-        struct{ name := "Hegemonia Augusta", xp := 1500000, bonus := 40 }
+        struct{ name := "Acampamento Legionário", xp := 100, bonus := 5 },
+        struct{ name := "Castrum Consolidado", xp := 200, bonus := 10 },
+        struct{ name := "Civitas Próspera", xp := 300, bonus := 15 },
+        struct{ name := "Império Aquilino", xp := 400, bonus := 25 },
+        struct{ name := "Hegemonia Augusta", xp := 500, bonus := 40 }
     };
 endfunction
 
 // 🐉 Povos do Leste - Tema: Dinastia e Dragão
 function GetLesteLevels()
     return array{
-        struct{ name := "Aldeia Unificada", xp := 50000, bonus := 5 },
-        struct{ name := "Província Disciplinada", xp := 150000, bonus := 10 },
-        struct{ name := "Domínio do Dragão", xp := 350000, bonus := 15 },
-        struct{ name := "Império Celestial", xp := 750000, bonus := 25 },
-        struct{ name := "Dinastia Imortal", xp := 1500000, bonus := 40 }
+        struct{ name := "Aldeia Unificada", xp := 100, bonus := 5 },
+        struct{ name := "Província Disciplinada", xp := 200, bonus := 10 },
+        struct{ name := "Domínio do Dragão", xp := 300, bonus := 15 },
+        struct{ name := "Império Celestial", xp := 400, bonus := 25 },
+        struct{ name := "Dinastia Imortal", xp := 500, bonus := 40 }
     };
 endfunction
 
 // 🕷️ Haroloth (Drows) - Tema: Casas Nobres e Subterrâneos
 function GetHarolothLevels()
     return array{
-        struct{ name := "Covil Nascente", xp := 50000, bonus := 5 },
-        struct{ name := "Casa Menor", xp := 150000, bonus := 10 },
-        struct{ name := "Casa Nobre", xp := 350000, bonus := 15 },
-        struct{ name := "Grande Casa", xp := 750000, bonus := 25 },
-        struct{ name := "Casa Suprema", xp := 1500000, bonus := 40 }
+        struct{ name := "Covil Nascente", xp := 100, bonus := 5 },
+        struct{ name := "Casa Menor", xp := 200, bonus := 10 },
+        struct{ name := "Casa Nobre", xp := 300, bonus := 15 },
+        struct{ name := "Grande Casa", xp := 400, bonus := 25 },
+        struct{ name := "Casa Suprema", xp := 500, bonus := 40 }
     };
 endfunction
 
 // ⚔️ Björske - Tema: Clãs e Tradições Nórdicas
 function GetBjorskeLevels()
     return array{
-        struct{ name := "Clã Unido", xp := 50000, bonus := 5 },
-        struct{ name := "Jarl Respeitado", xp := 150000, bonus := 10 },
-        struct{ name := "Reino dos Lobos", xp := 350000, bonus := 15 },
-        struct{ name := "Grande Jarl", xp := 750000, bonus := 25 },
-        struct{ name := "Lenda Imortal", xp := 1500000, bonus := 40 }
+        struct{ name := "Clã Unido", xp := 100, bonus := 5 },
+        struct{ name := "Jarl Respeitado", xp := 200, bonus := 10 },
+        struct{ name := "Reino dos Lobos", xp := 300, bonus := 15 },
+        struct{ name := "Grande Jarl", xp := 400, bonus := 25 },
+        struct{ name := "Lenda Imortal", xp := 500, bonus := 40 }
     };
 endfunction
 
 // 🌿 Aluriel (Elfos) - Tema: Natureza e Eternidade
 function GetAlurielLevels()
     return array{
-        struct{ name := "Bosque Guardião", xp := 50000, bonus := 5 },
-        struct{ name := "Clarão Abençoado", xp := 150000, bonus := 10 },
-        struct{ name := "Reino Silvestre", xp := 350000, bonus := 15 },
-        struct{ name := "Corte Eterna", xp := 750000, bonus := 25 },
-        struct{ name := "Luz Imperecível", xp := 1500000, bonus := 40 }
+        struct{ name := "Bosque Guardião", xp := 100, bonus := 5 },
+        struct{ name := "Clarão Abençoado", xp := 200, bonus := 10 },
+        struct{ name := "Reino Silvestre", xp := 300, bonus := 15 },
+        struct{ name := "Corte Eterna", xp := 400, bonus := 25 },
+        struct{ name := "Luz Imperecível", xp := 500, bonus := 40 }
     };
 endfunction
 
 // 🌾 Polkinea (Polski) - Tema: Agricultura e Simplicidade
 function GetPolkineaLevels()
     return array{
-        struct{ name := "Sítio Próspero", xp := 50000, bonus := 5 },
-        struct{ name := "Vila Abundante", xp := 150000, bonus := 10 },
-        struct{ name := "Condado Fértil", xp := 350000, bonus := 15 },
-        struct{ name := "Reino Pastoral", xp := 750000, bonus := 25 },
-        struct{ name := "Terra Dourada", xp := 1500000, bonus := 40 }
+        struct{ name := "Sítio Próspero", xp := 100, bonus := 5 },
+        struct{ name := "Vila Abundante", xp := 200, bonus := 10 },
+        struct{ name := "Condado Fértil", xp := 300, bonus := 15 },
+        struct{ name := "Reino Pastoral", xp := 400, bonus := 25 },
+        struct{ name := "Terra Dourada", xp := 500, bonus := 40 }
     };
 endfunction
 
 // ⚒️ Baduran (Anões) - Tema: Forja e Montanhas
 function GetBaduranLevels()
     return array{
-        struct{ name := "Forja Acesa", xp := 50000, bonus := 5 },
-        struct{ name := "Salão do Martelo", xp := 150000, bonus := 10 },
-        struct{ name := "Cidadela de Ferro", xp := 350000, bonus := 15 },
-        struct{ name := "Reino Subterrâneo", xp := 750000, bonus := 25 },
-        struct{ name := "Khron Kaz'ad Supremo", xp := 1500000, bonus := 40 }
+        struct{ name := "Forja Acesa", xp := 100, bonus := 5 },
+        struct{ name := "Salão do Martelo", xp := 200, bonus := 10 },
+        struct{ name := "Cidadela de Ferro", xp := 300, bonus := 15 },
+        struct{ name := "Reino Subterrâneo", xp := 400, bonus := 25 },
+        struct{ name := "Khron Kaz'ad Supremo", xp := 500, bonus := 40 }
     };
 endfunction
 
 // 🗡️ Gulthrak (Orcs) - Tema: Tribos e Deserto
 function GetGulthrakLevels()
     return array{
-        struct{ name := "Bando Errante", xp := 50000, bonus := 5 },
-        struct{ name := "Tribo Unida", xp := 150000, bonus := 10 },
-        struct{ name := "Horda Temida", xp := 350000, bonus := 15 },
-        struct{ name := "Grande Tribo", xp := 750000, bonus := 25 },
-        struct{ name := "Legado de Adar", xp := 1500000, bonus := 40 }
+        struct{ name := "Bando Errante", xp := 100, bonus := 5 },
+        struct{ name := "Tribo Unida", xp := 200, bonus := 10 },
+        struct{ name := "Horda Temida", xp := 300, bonus := 15 },
+        struct{ name := "Grande Tribo", xp := 400, bonus := 25 },
+        struct{ name := "Legado de Adar", xp := 500, bonus := 40 }
     };
 endfunction
 
 // Níveis genéricos para guilds sem cultura definida
 function GetGenericLevels()
     return array{
-        struct{ name := "Reino Nível 1", xp := 50000, bonus := 5 },
-        struct{ name := "Reino Nível 2", xp := 150000, bonus := 10 },
-        struct{ name := "Reino Nível 3", xp := 350000, bonus := 15 },
-        struct{ name := "Reino Nível 4", xp := 750000, bonus := 25 },
-        struct{ name := "Reino Nível 5", xp := 1500000, bonus := 40 }
+        struct{ name := "Reino Nível 1", xp := 100, bonus := 5 },
+        struct{ name := "Reino Nível 2", xp := 200, bonus := 10 },
+        struct{ name := "Reino Nível 3", xp := 300, bonus := 15 },
+        struct{ name := "Reino Nível 4", xp := 400, bonus := 25 },
+        struct{ name := "Reino Nível 5", xp := 500, bonus := 40 }
     };
 endfunction
 
