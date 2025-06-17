@@ -133,13 +133,11 @@ program TotemDeAquisicao(who, totem)
       LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
     var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name);
     LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);    // Definir a cultura na guild
-    LogDebug("faccao", "TotemDeAquisicao: Definindo cultura '" + cultura_escolhida + "' na guild " + guild.guildid);
-    
-    // Converter o enum para string que o sistema XP entende
+    // LogDebug("faccao", "TotemDeAquisicao: Definindo cultura '" + cultura_escolhida + "' na guild " + guild.guildid);    SendSysMessage(who, "DEBUG: Valor de cultura_escolhida recebido: '" + cultura_escolhida + "'");    // Converter o enum para string que o sistema XP entende
     var cultura_string := "";
     case (cultura_escolhida)
         "Aiglana":
-            cultura_string := "aiglanos";
+            cultura_string := "aiglana";
         "Har'oloth":
             cultura_string := "haroloth";
         "Povos do Leste":
@@ -155,14 +153,13 @@ program TotemDeAquisicao(who, totem)
         "Polkinea":
             cultura_string := "polkinea";
         default:
-            cultura_string := "baduran"; // Default para Baduran se não identificar
-    endcase
-    
+            cultura_string := "baduran";
+    endcase    // Salvar cultura na guild
     var set_culture_result := guild.SetProp("culture", cultura_string);
-    if (set_culture_result == error)
-        LogWarning("faccao", "TotemDeAquisicao: Falha ao definir cultura na guild: " + set_culture_result);
-    else
-        LogDebug("faccao", "TotemDeAquisicao: Cultura '" + cultura_string + "' definida com sucesso na guild");
+    
+    if (set_culture_result != error)
+        // Verificar se foi salva corretamente
+        var cultura_verificacao := guild.GetProp("culture");
     endif
     
     LogDebug("faccao", "TotemDeAquisicao: Adicionando território à CProp 'territories' da guilda " + guild.guildid);
@@ -305,10 +302,24 @@ function SelectKingdomCulture(who)
     var button_pressed := input[0];
     
     if (button_pressed == 200) // Cancelar
-        return 0;
-    elseif (button_pressed >= 100 && button_pressed <= 107)
+        return 0;    elseif (button_pressed >= 100 && button_pressed <= 107)
         var cultura_index := button_pressed - 100 + 1;
+        
+        // DEBUG: Mostrar informações de debug
+        SendSysMessage(who, "DEBUG: Botão pressionado = " + button_pressed);
+        SendSysMessage(who, "DEBUG: Cultura index calculado = " + cultura_index);
+        SendSysMessage(who, "DEBUG: Total de culturas = " + culturas.size());
+        
+        if (cultura_index < 1 || cultura_index > culturas.size())
+            SendSysMessage(who, "ERRO: Índice da cultura fora dos limites!");
+            return 0;
+        endif
+        
         var cultura_escolhida := culturas[cultura_index];
+        
+        // DEBUG: Mostrar cultura escolhida
+        SendSysMessage(who, "DEBUG: Cultura escolhida - Nome: " + cultura_escolhida.nome);
+        SendSysMessage(who, "DEBUG: Cultura escolhida - Enum: " + cultura_escolhida.enum_val);
         
         // Confirmação
         var confirm_msg := "Você escolheu a cultura " + cultura_escolhida.nome + " para seu reino.\n" +

@@ -41,32 +41,53 @@ const GUILD_XP_PERCENTAGE := 1.0;   // 100% do XP do jogador vai para a guild
  *   Array com informações dos níveis
  */
 function GetKingdomLevels(guild_culture)
-    case (Lower(guild_culture))
-        "aigla":
+    // DEBUG: Log da cultura recebida
+    LogDebug("kingdom_levels", "GetKingdomLevels: Cultura recebida = '" + guild_culture + "'");
+    var lower_culture := Lower(guild_culture);
+    LogDebug("kingdom_levels", "GetKingdomLevels: Cultura em lowercase = '" + lower_culture + "'");
+    
+    case (lower_culture)        "aigla":
         "aiglanos":
+        "aiglana":
+        "saiglana":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Aigla levels");
             return GetAiglaLevels();
         "leste":
         "povos_do_leste":
+        "sleste":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Leste levels");
             return GetLesteLevels();
         "haroloth":
         "drow":
+        "sharoloth":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Haroloth levels");
             return GetHarolothLevels();
         "bjorske":
         "bjornske":
+        "sbjorske":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Bjorske levels");
             return GetBjorskeLevels();
         "aluriel":
         "elfo":
+        "saluriel":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Aluriel levels");
             return GetAlurielLevels();
         "polkinea":
         "polski":
+        "spolkinea":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Polkinea levels");
             return GetPolkineaLevels();
         "baduran":
         "anao":
-            return GetBaduranLevels();
-        "gulthrak":
+        "sbaduran":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Baduran levels");
+            return GetBaduranLevels();"gulthrak":
+        "sgulthrak":
         "orc":
+            LogDebug("kingdom_levels", "GetKingdomLevels: Usando Gulthrak levels");
             return GetGulthrakLevels();
         default:
+            LogDebug("kingdom_levels", "GetKingdomLevels: FALLBACK - Usando Generic levels para cultura '" + guild_culture + "'");
             return GetGenericLevels();
     endcase
 endfunction
@@ -685,18 +706,28 @@ function GetCultureFromFactionName(faction_name)
         "anões":
         "anoes":
         "anão":
-        "anao":
-        "forja":
-        "guerreiros de jô":
-        "guerreiros de jo":
+        "anao":        "forja":
         "badoran":
-            return "baduran";
-        "gulthrak":
+            return "baduran";        "guerreiros de jô":
+        "guerreiros de jo":
+            return "haroloth";        "gulthrak":
         "reino_gulthrak":
         "orcs":
         "orc":
         "deserto":
             return "gulthrak";
+        
+        // Facções de teste - assumir cultura neutra
+        "teste":
+        "teste 1":
+        "teste 2":
+        "teste 3":
+        "teste 4":
+        "teste 5":
+        "test":
+        "testing":
+            return "polkinea"; // Usar Polkinea como padrão para testes
+
         default:
             // Verificar se contém palavras-chave específicas usando find()
             if (faction_lower.find("guerreiros") != 0 && faction_lower.find("jo") != 0)
@@ -714,6 +745,9 @@ function GetCultureFromFactionName(faction_name)
             if (faction_lower.find("drow") != 0)
                 return "haroloth";
             endif
-            return "";
+            if (faction_lower.find("teste") != 0)
+                return "polkinea";
+            endif
+            return "polkinea"; // Fallback padrão para facções desconhecidas
     endcase
 endfunction

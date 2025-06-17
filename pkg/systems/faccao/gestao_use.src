@@ -210,78 +210,93 @@ function ReinoGump(byref gump, item, who := 0)
     
     // Obter a facção da mesa de gestão
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-      // Título personalizado com o nome da facção
-    var titulo := mesa_faction ? "Gestão de " + mesa_faction : "Gestão do Reino";
+    
+    // Título personalizado com o nome da facção
+    var titulo := mesa_faction ? "Gestão do Reino " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
-      // Obter e exibir informação sobre a cultura do reino
-    var cultura_reino := GetKingdomCulture(item, mesa_faction);
-    if (cultura_reino)
-        var texto_cultura := "O reino " + mesa_faction + " está associado à cultura " + cultura_reino;
-        GFTextMid(gump, 490, 85, 263, 53, texto_cultura);
-    endif
-      // ===== SEÇÃO DE XP DO REINO =====
+    
+    // ===== SEÇÃO DE XP DO REINO =====
+    // Obter e exibir informação sobre a cultura do reino
+    // ===== SEÇÃO DE XP DO REINO =====
     // Obter informações da guild para mostrar progresso do reino
     var guild := FindGuild(FindGuildByName(mesa_faction));
-    if (guild)        // DEBUG: Verificar cultura da guild
+    var cultura_reino := "";
+      if (guild)
+        // PRIMEIRA PRIORIDADE: Verificar cultura salva na guild (escolha do totem)
         var guild_culture_debug := SafeGetGuildProperty(guild, "culture", "");
-        var cultura_reino_debug := GetKingdomCulture(item, mesa_faction);
         
-        // DEBUG: Mostrar informações antes da correção
-        PrintText(who, "DEBUG - Antes: guild_culture=" + guild_culture_debug + ", reino_culture=" + cultura_reino_debug + ", mesa_faction=" + mesa_faction);
+        // LÓGICA SIMPLIFICADA: 
+        // 1. Se a guild tem cultura definida (escolha do totem), usar ela
+        // 2. Se não tem, obter a cultura correta e definir na guild
+        cultura_reino := guild_culture_debug;
         
-        // Se a guild não tem cultura definida, vamos tentar definir ANTES de chamar GetGuildXPInfo
-        if (!guild_culture_debug || guild_culture_debug == "")
-            // Primeiro tenta pela mesa/território
-            if (cultura_reino_debug && cultura_reino_debug != "")
-                SafeSetGuildProperty(guild, "culture", cultura_reino_debug);
-                guild_culture_debug := cultura_reino_debug;
-            else
-                // Se não encontrou, usa mapeamento por nome da facção
-                var cultura_por_faccao := GetCultureFromFactionName(mesa_faction);
-                if (cultura_por_faccao && cultura_por_faccao != "")
-                    SafeSetGuildProperty(guild, "culture", cultura_por_faccao);
-                    guild_culture_debug := cultura_por_faccao;
-                endif
-            endif
+        if (!cultura_reino || cultura_reino == "" || cultura_reino == "0")
+            // Obter a cultura através do mapeamento por nome da facção
+            cultura_reino := GetCultureFromFactionName(mesa_faction);
             
-            // DEBUG: Mostrar informações após a correção
-            PrintText(who, "DEBUG - Depois: guild_culture=" + guild_culture_debug);
-        endif
-        
+            // Definir na guild para futuras consultas
+            if (cultura_reino && cultura_reino != "")
+                SafeSetGuildProperty(guild, "culture", cultura_reino);
+                guild_culture_debug := cultura_reino;
+            endif
+        endif          cultura_reino := guild_culture_debug;
+    endif    // Exibir a cultura do reino (com primeira letra maiúscula)
+    if (cultura_reino)
+        var cultura_display := cultura_reino;
+        // Converter primeira letra para maiúscula usando mapeamento direto
+        case (cultura_reino[1])
+            "a": cultura_display := "A" + cultura_reino[2, cultura_reino.size()];
+            "b": cultura_display := "B" + cultura_reino[2, cultura_reino.size()];
+            "g": cultura_display := "G" + cultura_reino[2, cultura_reino.size()];
+            "h": cultura_display := "H" + cultura_reino[2, cultura_reino.size()];
+            "l": cultura_display := "L" + cultura_reino[2, cultura_reino.size()];
+            "p": cultura_display := "P" + cultura_reino[2, cultura_reino.size()];
+        endcase
+             
+    endif
+    
+    if (guild)
         // Agora que a cultura está definida, obtém as informações de XP
         var xp_info := GetGuildXPInfo(guild);
-          // Background para seção de XP do reino (aumentado)
-        GFResizePic(gump, 460, 110, 9350, 320, 120);
+          // Background para seção de XP do reino (ajustado para novo espaçamento)
+        GFResizePic(gump, 460, 110, 9350, 320, 130);
         
         // Título da seção
-        GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");        // Nome do reino atual - usar o level_name atualizado
+        GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");
+        
+        // Nome do reino atual - usar o level_name atualizado
         var reino_atual := xp_info.level_name;
         if (!reino_atual || reino_atual == "")
             reino_atual := "Reino Nível " + xp_info.current_level;
+        endif        GFTextLine(gump, 470, 135, 2100, "Reino Atual:");
+        GFTextLine(gump, 570, 135, 53, reino_atual);        // Cultura do reino
+        if (cultura_reino)
+            var cultura_display := cultura_reino;
+            // Converter culturas conhecidas para exibição com primeira letra maiúscula
+            case (cultura_reino)
+                "polkinea": cultura_display := "Polkinea";
+                "aiglanos": cultura_display := "Aiglanos";
+                "baduran": cultura_display := "Baduran";
+                "gulthrak": cultura_display := "Gulthrak";
+                "haroloth": cultura_display := "Haroloth";
+                "leste": cultura_display := "Leste";
+                "bjorske": cultura_display := "Bjorske";
+                "aluriel": cultura_display := "Aluriel";
+                default: cultura_display := cultura_reino; // Usar como está se não reconhecer
+            endcase
+            GFTextLine(gump, 470, 155, 2100, "Cultura:");
+            GFTextLine(gump, 570, 155, 1153, cultura_display);
         endif
         
-        GFTextLine(gump, 470, 135, 2100, "Reino Atual:");
-        GFTextLine(gump, 570, 135, 53, reino_atual);        // DEBUG: Mostrar informações de depuração
-        if (guild_culture_debug && guild_culture_debug != "")
-            GFTextLine(gump, 470, 150, 1153, "Cultura: " + guild_culture_debug);
-        endif
-        
-        // DEBUG: Mostrar facção
-        if (mesa_faction && mesa_faction != "")
-            GFTextLine(gump, 470, 160, 1153, "Facção: " + mesa_faction);
-        endif        // XP Total (movido para baixo devido aos debugs)
-        GFTextLine(gump, 470, 180, 2100, "XP Total:");
-        GFTextLine(gump, 570, 180, 1153, FormatNumber(xp_info.current_xp));
-        
-        // Progresso para próximo nível (se não for nível máximo)
         if (!xp_info.is_max_level)
-            var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, guild_culture_debug);
+            var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, cultura_reino);
             if (proximo_reino == "" || proximo_reino == "Sem Reino")
                 proximo_reino := "Reino Nível " + (xp_info.current_level + 1);
-            endif              GFTextLine(gump, 470, 195, 2100, "Próximo:");
-            GFTextLine(gump, 530, 195, 1153, proximo_reino);
+            endif
+              GFTextLine(gump, 470, 175, 2100, "Próximo:");
+            GFTextLine(gump, 570, 175, 1153, proximo_reino);
             
-            // Barra de progresso (ajustada para novo layout)
+            // Barra de progresso com espaçamento melhorado
             GFResizePic(gump, 470, 215, 9200, 280, 15);
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
             if (progress_width > 0)
@@ -325,12 +340,11 @@ function ReinoGump(byref gump, item, who := 0)
             endif
             sleepms(2);
         endforeach        // Criar um único background para a área de territórios (ajustado para nova altura)
-        GFResizePic(gump, 460, 240, 9350, 320, 260);
-        
-        // Adicionar cabeçalhos
-        GFTextLine(gump, 485, 245, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 245, 53, "Info");
-        GFTextLine(gump, 730, 245, 53, "Aliados");
+        GFResizePic(gump, 460, 250, 9350, 320, 260);
+          // Adicionar cabeçalhos (alinhados na mesma altura Y)
+        GFTextLine(gump, 485, 255, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 255, 53, "Info");
+        GFTextLine(gump, 730, 255, 53, "Aliados");
         
         var y := 280; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
@@ -450,8 +464,12 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
     var gump_width := 550;
     var num_territorios_listados := todos_territorios_da_faccao_ordenados.size();
     var gump_height := 150 + (num_territorios_listados * 30); // Altura base + espaço por território
-    if (gump_height < 400) gump_height := 400; endif;
-    if (gump_height > 650) gump_height := 650; endif; // Limite máximo de altura
+    if (gump_height < 400) 
+        gump_height := 400; 
+    endif
+    if (gump_height > 650) 
+        gump_height := 650; // Limite máximo de altura
+    endif
 
     GFResizePic(gump_mapa, 0, 0, BKGND_BLUESLAB_GUMPMAPA, gump_width, gump_height);
     GFResizePic(gump_mapa, 15, 15, BKGND_STONESLAB_GUMPMAPA, gump_width - 30, gump_height - 30);
@@ -483,7 +501,7 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
     if (!contratos_ativos_da_faccao || TypeOf(contratos_ativos_da_faccao) != "Array")
         contratos_ativos_da_faccao := array{};
     endif
-    var contratos_dict_lookup := dictionary; // Para busca rápida por origin_territory_id
+    var contratos_dict_lookup := dictionary{}; // Para busca rápida por origin_territory_id
     foreach contrato_existente_loop in contratos_ativos_da_faccao
         if (contrato_existente_loop && contrato_existente_loop.origin_territory_id)
             contratos_dict_lookup[CStr(contrato_existente_loop.origin_territory_id)] := contrato_existente_loop;
@@ -508,7 +526,7 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
             GFTextLine(gump_mapa, x_nome_iter, y_gump, cor_texto_nome_iter, territorio_gump_list_index + ". " + nome_exib_iter);
 
             // Lógica para capital e territórios não-capital
-           if (capital_da_faccao_info && id_exib_origem_iter == CStr(capital_da_faccao_info.id))
+            if (capital_da_faccao_info && id_exib_origem_iter == CStr(capital_da_faccao_info.id))
                 GFTextLine(gump_mapa, x_status_iter, y_gump, 230, "[CAPITAL - Destino]"); // Cor amarela para capital
             elseif (capital_da_faccao_info) // Só mostrar opções se houver capital e não for a própria capital
                 var contrato_deste_territorio := contratos_dict_lookup[id_exib_origem_iter];
@@ -1308,6 +1326,7 @@ endif
             var new_guild_obj := FindGuild(new_guild);
             LogDebug("territorio", "Resultado FindGuild para nova facção: " + (new_guild_obj ? "OK" : "FALHA"));
             
+            
             if (new_guild_obj)
                 var new_territories := new_guild_obj.GetProp("territories");
                 LogDebug("territorio", "Territories da nova facção: " + (new_territories ? "Encontrados" : "NULL") + 
@@ -1916,7 +1935,7 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
             LogWarning("ContratarCaravana", "Contrato de caravana malformado encontrado no array para facção " + faction_name + ". Contrato: " + c_existente);
         endif;
     endforeach;
-    LogDebug("ContratarCaravana", "Verificação de contrato duplicado para " + origin_territory_id + " passou.");
+   LogDebug("ContratarCaravana", "Verificação de contrato duplicado para " + origin_territory_id + " passou.");
 
     LogInfo("ContratarCaravana", "Tentando debitar " + custo_caravana + " moedas FÍSICAS do baú da capital " + capital_id + " para facção " + faction_name);
     var capital_donation_chest := FindFactionChest(faction_name, capital_id, 0); 
@@ -2239,41 +2258,68 @@ endfunction
  */
 function GetKingdomCulture(item, faction_name)
     if (!item)
+        LogDebug("cultura", "GetKingdomCulture: item é NULL, retornando 0");
         return 0;
     endif
     
-    // DEBUG: Vamos verificar passo a passo o que está acontecendo
-    var debug_msg := "DEBUG GetKingdomCulture: Iniciando para item " + item.serial;
+    // DEBUG: Informações básicas
+    var debug_msg := "DEBUG GetKingdomCulture: Iniciando para facção: " + faction_name;
     syslog(debug_msg);
+    LogDebug("cultura", debug_msg);
     
-    // Verificar se o item tem guild_id
+    // PRIMEIRA PRIORIDADE: Verificar a cultura salva na guild (escolha do jogador no totem)
     var guild_id := GetObjProperty(item, "guild_id");
     debug_msg := "DEBUG GetKingdomCulture: guild_id encontrado = " + guild_id;
     syslog(debug_msg);
+    LogDebug("cultura", debug_msg);
     
     if (guild_id)
-        // Verificar se a guild existe
         var guild_obj := FindGuild(guild_id);
         debug_msg := "DEBUG GetKingdomCulture: guild_obj = " + guild_obj;
         syslog(debug_msg);
+        LogDebug("cultura", debug_msg);
         
         if (guild_obj)
-            // Verificar propriedades da guild
-            var cultura_guild := guild_obj.GetProp("culture");
-            debug_msg := "DEBUG GetKingdomCulture: cultura_guild direta = " + cultura_guild;
+            // PRIORIDADE MÁXIMA: Cultura escolhida pelo jogador no totem
+            var cultura_escolhida := SafeGetGuildProperty(guild_obj, "culture", "");
+            debug_msg := "DEBUG GetKingdomCulture: cultura escolhida pelo jogador = '" + cultura_escolhida + "'";
             syslog(debug_msg);
+            LogDebug("cultura", debug_msg);
             
-            var cultura_safe := SafeGetGuildProperty(guild_obj, "culture", "Selvagem");
-            debug_msg := "DEBUG GetKingdomCulture: cultura_safe = " + cultura_safe;
+            // Também testar acesso direto sem SafeGetGuildProperty
+            var cultura_direta := guild_obj.GetProp("culture");
+            debug_msg := "DEBUG GetKingdomCulture: cultura via GetProp direto = '" + cultura_direta + "'";
             syslog(debug_msg);
+            LogDebug("cultura", debug_msg);
             
-            if (cultura_safe && cultura_safe != "Selvagem")
-                return cultura_safe;
+            if (cultura_escolhida && cultura_escolhida != "" && cultura_escolhida != "Selvagem")
+                debug_msg := "DEBUG GetKingdomCulture: USANDO cultura escolhida = " + cultura_escolhida;
+                syslog(debug_msg);
+                LogDebug("cultura", debug_msg);
+                return cultura_escolhida;
+            endif
+            
+            if (cultura_direta && cultura_direta != "" && cultura_direta != "Selvagem")
+                debug_msg := "DEBUG GetKingdomCulture: USANDO cultura direta = " + cultura_direta;
+                syslog(debug_msg);
+                LogDebug("cultura", debug_msg);
+                return cultura_direta;
             endif
         endif
     endif
     
-    // NOVA ABORDAGEM: Obter cultura através da referência da guild
+    // SEGUNDA PRIORIDADE: Se não há cultura escolhida, usar mapeamento por nome da facção
+    if (faction_name)
+        var cultura_por_nome := GetCultureFromFactionName(faction_name);
+        debug_msg := "DEBUG GetKingdomCulture: Cultura por nome da facção '" + faction_name + "' = " + cultura_por_nome;
+        syslog(debug_msg);
+        LogDebug("cultura", debug_msg);        
+        if (cultura_por_nome && cultura_por_nome != "")
+            return cultura_por_nome;
+        endif
+    endif
+    
+    // TERCEIRA PRIORIDADE: Obter cultura através da referência da guild
     var cultura := GetObjectCulture(item);
     if (cultura)
         LogDebug("cultura", "GetKingdomCulture: Cultura obtida da guild: " + cultura);
@@ -2286,8 +2332,7 @@ function GetKingdomCulture(item, faction_name)
         LogWarning("cultura", "GetKingdomCulture: Usando cultura hardcoded (objeto não migrado): " + cultura_mesa);
         return cultura_mesa;
     endif
-    
-    // FALLBACK: Buscar em outros objetos do território
+      // FALLBACK: Buscar em outros objetos do território
     var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
     if (territory_id)
         // Busca objetos do território para encontrar a cultura
