@@ -3,7 +3,7 @@ use os;
 include ":debug:main";
 include ":equipsys:utils";
 include ":tn:cooldown";
-include ":attributes:vitals";
+include ":attributes:attributes";
 
 // Verificador de armas para situações especiais
 var compatibleWeapons := struct{
@@ -68,53 +68,54 @@ function ExecuteAfterEngage(byRef combatInfo)
 
 	if (weapon.isRanged())
 		if (weapon.isBow())
-			ExecuteMasteryAbility_DoubleShot(combatInfo); // Done
+			ExecuteMasteryAbility_DoubleShot(combatInfo);
 		elseif (weapon.isCrossbow())
-			ExecuteMasteryAbility_Lame(combatInfo); // Done
+			ExecuteMasteryAbility_Lame(combatInfo);
 		endif
 	else
 		if (Upper(weaponCfg.Type) == Upper(UNARMED))
 		elseif (weapon.objtype in compatibleWeapons.montante)
-			ExecuteMasteryAbility_DownwardCut(combatInfo); // Done
+			ExecuteMasteryAbility_DownwardCut(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
-			ExecuteMasteryAbility_Cutthroat(combatInfo); // Done
+			ExecuteMasteryAbility_Cutthroat(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_SwordBlock(combatInfo);
+				ExecuteMasteryAbility_SwordBlock(combatInfo); // TODO: Implementar
 			else
-				ExecuteMasteryAbility_CounterAttack(combatInfo);
+				ExecuteMasteryAbility_CounterAttack(combatInfo); // TODO: Implementar
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(AXE))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Cleave(combatInfo); // Done
+				ExecuteMasteryAbility_Cleave(combatInfo);
 			elseif (weapon.isDualWield())
 				
 			else
-				ExecuteMasteryAbility_KneeBreaker(combatInfo); // Done
+				ExecuteMasteryAbility_KneeBreaker(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			ExecuteMasteryAbility_SpearPush(combatInfo); // Done
+			ExecuteMasteryAbility_SpearPush(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(MACE))
 			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Knockdown(combatInfo); // Done
+				ExecuteMasteryAbility_Knockdown(combatInfo);
 			else
 				ExecuteMasteryAbility_BoneBreaker(combatInfo);
 			endif
 		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
-			ExecuteMasteryAbility_Whirlwind(combatInfo); // Done
+			ExecuteMasteryAbility_Whirlwind(combatInfo);
 		elseif (Upper(weaponCfg.Type) == Upper(THROWING))
-			ExecuteMasteryAbility_Pillum(combatInfo); // Done
+			ExecuteMasteryAbility_Pillum(combatInfo);
 		endif
 	endif
 endfunction
 
 function CalculateCooldown(byRef combatInfo)
-	var cooldown := CInt(1);
+	var cooldown := CInt(150); // TODO: fazer basaeado na skill do personagem
 	return cooldown;
 endfunction
 
 function CalculateEffectTime(attacker)
-	var effectTime := CInt(5);
+	// var effectTime := CInt(5);
+	var effectTime := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 	return effectTime;
 endfunction
 
