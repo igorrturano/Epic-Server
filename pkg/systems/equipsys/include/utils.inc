@@ -1,10 +1,3 @@
-use uo;
-use util;
-use cfgfile;
-
-include "include/client";
-include ":attributes:attributeConstants";
-
 enum TIERS
 	TIER0,
 	TIER1,
@@ -51,6 +44,7 @@ enum WEAPONTYPE
 
 	DAGGER := "Dagger",
 	SWORD := "Sword",
+	GREATSWORD := "GreatSword",
 	AXE := "Axe",
 	SPEAR := "Spear",
 	MACE := "Mace",
