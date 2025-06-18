@@ -1797,7 +1797,7 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
             if (!skip)
                 new_territories.append(terr);
             else
-                changed := 1;
+                               changed := 1;
                 LogInfo("territorio", "Removendo território \"" + territory_name + "\" da facção: " + guild.GetProp("name"));
             endif
             
@@ -2268,8 +2268,6 @@ function FindTerritoryIdByName(territory_name)
     return "";
 endfunction
 
-
-
 /*
  * CreateEmptyResourceStruct()
  *
@@ -2625,16 +2623,23 @@ function SafeStackItems(container, objtype, amount_to_add_or_create, properties 
 
     // Se não conseguiu empilhar tudo (ou nada) em um item existente, criar um novo.
     if (amount_to_add_or_create > 0)
-        var new_item := CreateItemInContainer(container, objtype, amount_to_add_or_create);
+        LogDebug("SafeStackItems", $"Passo 2: Criando novo item com {amount_to_add_or_create} unidades.");
+        var new_item := CreateItemInContainer(container, objtype, amount_to_add_or_create, creator_char);
+        
         if (new_item && new_item != error)
-            LogInfo("SafeStackItems", $"Criado novo item {new_item.serial} com {new_item.amount} de 0x{Hex(objtype)}.");
-            if (TypeOf(properties) == "Dictionary")
+            LogInfo("SafeStackItems", $"SUCESSO na criação: Novo item {new_item.serial} (Amount: {new_item.amount}).");
+            if (TypeOf(properties) == "Dictionary" && properties.Size() > 0)
+                LogDebug("SafeStackItems", "Aplicando propriedades ao novo item: " + new_item.serial);
                 ApplyPropertiesToItem(new_item, properties);
+            else
+                LogDebug("SafeStackItems", "Nenhuma propriedade adicional para aplicar ao novo item: " + new_item.serial);
             endif
-            return new_item; // Retorna o novo item
+            item_resultante := new_item; 
         else
-            LogError("SafeStackItems", $"Falha ao criar novo item para 0x{Hex(objtype)}.");
-            return 0; // Ou error
+            LogError("SafeStackItems", $"FALHA ao criar novo item. Erro: {(new_item && new_item.errortext ? CStr(new_item.errortext) : "Desconhecido/NULL")}");
+            if (!item_resultante) 
+                return error{"errortext" := "Falha total ao criar ou empilhar o item."};
+            endif
         endif
     elseif (existing_item) // Se amount_to_add_or_create chegou a zero e tínhamos um existing_item
         return existing_item; // Retorna o item que foi empilhado
@@ -2827,7 +2832,7 @@ endfunction
 function MergeItemProperties(item, properties)
     if (!item || !properties)
         return 0;
-    endif
+    endif;
     
     LogDebug("MergeProps_DEBUG", "Iniciando mesclagem de propriedades para item " + item.serial);
     var merged := 0;
@@ -2842,10 +2847,10 @@ function MergeItemProperties(item, properties)
                 merged += 1;
             else
                 LogError("MergeProps_DEBUG", "  -> FALHA ao definir " + prop_name + "!");
-            endif
+            endif;
             sleepms(1);
-        endforeach
-    endif
+        endforeach;
+    endif;
     
     // Se propriedades é outro item, copiar suas propriedades
     if (TypeOf(properties) == "ItemRef")
@@ -2861,16 +2866,17 @@ function MergeItemProperties(item, properties)
                 merged += 1;
             else
                 LogError("MergeProps_DEBUG", "  -> FALHA ao copiar " + prop_name + "!");
-            endif
+            endif;
             sleepms(1);
-        endforeach
-    endif
+        endforeach;
+    endif;
     
     LogDebug("MergeProps_DEBUG", "Mesclagem concluída: " + merged + " propriedades aplicadas");
     return merged;
 endfunction
 
 
+// Função para aplicar propriedades a um item
 function ApplyPropertiesToItem(item, properties)
     if (!item || !properties)
         return 0;
@@ -2884,7 +2890,6 @@ function ApplyPropertiesToItem(item, properties)
             if (prop_value != error && prop_name && prop_name != "")
                 SetObjProperty(item, prop_name, prop_value);
                 applied_count += 1;
-                sleepms(1);
             endif
         endforeach
     elseif (TypeOf(properties) == "Struct")
@@ -2894,7 +2899,6 @@ function ApplyPropertiesToItem(item, properties)
             if (prop_value != error && prop_name && prop_name != "")
                 SetObjProperty(item, prop_name, prop_value);
                 applied_count += 1;
-                sleepms(1);
             endif
         endforeach
     else
@@ -2906,20 +2910,18 @@ function ApplyPropertiesToItem(item, properties)
     return applied_count;
 endfunction
 
-
-
 // Função para substituir um item existente por um novo com quantidade acumulada
 function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     if (!old_item)
         LogError("ReplaceStack_DEBUG", "Erro: old_item é NULL");
         return 0;
-    endif
+    endif;
     
     var container := old_item.container;
     if (!container)
         LogError("ReplaceStack_DEBUG", "Erro: container do old_item é NULL. Item: " + old_item.serial);
         return 0;
-    endif
+    endif;
     
     LogDebug("ReplaceStack_DEBUG", "Iniciando SafeReplaceStackWithNew para item " + old_item.serial + " em container " + container.serial);
     LogDebug("ReplaceStack_DEBUG", "Quantidade atual: " + old_item.amount + ", Quantidade a adicionar: " + amount_to_add);
@@ -2932,7 +2934,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     if (total_amount > 60000)
         LogDebug("ReplaceStack_DEBUG", "Limite de 60000 excedido. Ajustando de " + total_amount + " para 60000");
         total_amount := 60000;
-    endif
+    endif;
     
     // Capturar propriedades do item antigo ANTES de fazer qualquer alteração
     var old_properties := dictionary{};
@@ -2943,19 +2945,14 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
         foreach prop_name in prop_names
             old_properties[prop_name] := GetObjProperty(old_item, prop_name);
             sleepms(1);
-        endforeach
-    endif
+        endforeach;
+    endif;
     
     LogDebug("ReplaceStack_DEBUG", "Propriedades capturadas: " + old_properties.size());
     
     // Verificar se é apenas atualização de quantidade (mesmo objtype)
-    // Para casos simples onde só aumentamos a quantidade
     if (amount_to_add > 0 && old_item.objtype == objtype)
         LogDebug("ReplaceStack_DEBUG", "Mesmo objtype, tentando atualização simples primeiro");
-        
-        // Obter posição do item antigo para verificação
-        var old_pos_x := old_item.x;
-        var old_pos_y := old_item.y;
         
         // Verificar se o container ainda está válido
         if (old_item.container && old_item.container.serial == container.serial)
@@ -2966,13 +2963,13 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
                 foreach prop_name in (properties.keys())
                     SetObjProperty(old_item, prop_name, properties[prop_name]);
                     sleepms(1);
-                endforeach
-            endif
+                endforeach;
+            endif;
             
             LogInfo("ReplaceStack_DEBUG", "Atualização simples bem-sucedida: " + old_item.serial + " agora com " + old_item.amount);
             return old_item;
-        endif
-    endif
+        endif;
+    endif;
     
     // Se chegou aqui, precisa criar um novo item
     LogDebug("ReplaceStack_DEBUG", "Criando novo item para substituição completa");
@@ -2995,7 +2992,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
         if (!new_item)
             LogError("ReplaceStack_DEBUG", "FALHA total na criação do novo item");
             return 0;
-        endif
+        endif;
         
         // Mover para o container
         var move_result := MoveItemToContainer(new_item, container, old_x, old_y);
@@ -3003,10 +3000,10 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             LogError("ReplaceStack_DEBUG", "Falha ao mover item para container: " + move_result);
             DestroyItem(new_item);
             return 0;
-        endif
+        endif;
         
         LogDebug("ReplaceStack_DEBUG", "Item movido com sucesso para container");
-    endif
+    endif;
     
     LogInfo("ReplaceStack_DEBUG", "SUCESSO: Novo item criado com serial " + new_item.serial);
     
@@ -3015,9 +3012,9 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     foreach prop_name in (old_properties.keys())
         if (old_properties[prop_name] != error)
             SetObjProperty(new_item, prop_name, old_properties[prop_name]);
-        endif
+        endif;
         sleepms(1);
-    endforeach
+    endforeach;
     
     // Adicionar novas propriedades
     if (properties)
@@ -3026,46 +3023,42 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             foreach prop_name in (properties.keys())
                 SetObjProperty(new_item, prop_name, properties[prop_name]);
                 sleepms(1);
-            endforeach
+            endforeach;
         else
             LogWarning("ReplaceStack_DEBUG", "Propriedades fornecidas não são um Dictionary: " + TypeOf(properties));
-        endif
-    endif
+        endif;
+    endif;
     
     LogDebug("ReplaceStack_DEBUG", "Propriedades transferidas");
     
-    // Aguardar um momento para garantir que o item foi processado
     sleepms(50);
     
     // Verificar se o novo item está realmente válido e no container
     if (!new_item.container || new_item.container.serial != container.serial)
         LogWarn("ReplaceStack_DEBUG", "Novo item pode não estar corretamente no container");
-        // Mas continuar mesmo assim, pois pode ser questão de timing
-    endif
+    endif;
     
     // CRÍTICO: Destruir o item antigo com verificações extras
     if (old_item && old_item.serial && old_item.serial != new_item.serial)
         LogDebug("ReplaceStack_DEBUG", "Destruindo item antigo " + old_item.serial);
         
-        // Aguardar um pouco mais para garantir estabilidade
         sleepms(25);
         
- var destroy_result := DestroyItem(old_item);
+        var destroy_result := DestroyItem(old_item);
         if (destroy_result)
             LogDebug("ReplaceStack_DEBUG", "Item antigo destruído com sucesso");
         else
             LogWarning("ReplaceStack_DEBUG", "Falha ao destruir item antigo: " + destroy_result);
             LogWarning("ReplaceStack_DEBUG", "Tentando mover item antigo para o void como fallback");
             
-            // Tentar mover para uma localização inacessível como fallback
             var move_result := MoveObjectToLocation(old_item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
             if (move_result != error)
                 LogDebug("ReplaceStack_DEBUG", "Item antigo movido para o void");
             else
                 LogError("ReplaceStack_DEBUG", "Falha total ao remover item antigo: " + move_result);
-            endif
-        endif
-    endif
+            endif;
+        endif;
+    endif;
     
     LogInfo("ReplaceStack_DEBUG", "SafeReplaceStackWithNew concluído. Novo item: " + new_item.serial + " com quantidade " + new_item.amount);
     return new_item;
@@ -3189,9 +3182,10 @@ function VerificarInconsistencias(container, recursos_atuais := 0, nivel := "loc
                 "diff" := 1
             });
             
-            if (historico.size() > 20)
-                historico.Erase(1); // Manter apenas os 20 mais recentes
-            endif
+            // Limitar o tamanho do histórico
+            while (historico.size() > 20)
+                historico.Erase(1);
+            endwhile
             
             SetObjProperty(container, "recursos_verify_history", historico);
             RegistrarInconsistencia(container, recursos_cache, recursos_atuais, inconsistencias);
@@ -3426,56 +3420,8 @@ function DeterminarTipoRecursoAutomatico(item)
     else
         objtype := CInt(item);
     endif
-    
-    // Usar ClassificarRecurso para determinar o tipo
+      // Usar ClassificarRecurso para determinar o tipo
     return ClassificarRecurso(objtype);
-endfunction
-
-/*
- * GetActiveFactions()
- *
- * Purpose: Obtém uma lista de facções ativas no servidor
- * Parameters: Nenhum
- * Return: Array com nomes de facções ativas
- */
-function GetActiveFactions()
-    var active_factions := array{};
-    
-    // Adicionar o Reino como facção padrão
-    active_factions.append(KINGDOM_FACTION);
-    
-    // Obter facções de guildas
-    var guilds := ListGuilds();
-    foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
-        if (guild && guild.members.size() > 0)
-            var faction_name := guild.GetProp("name");
-            if (!faction_name)
-                faction_name := guild.guildname;
-            endif
-            
-            if (faction_name && !(faction_name in active_factions))
-                active_factions.append(faction_name);
-            endif
-        endif
-        sleepms(1);
-    endforeach
-    
-    // Verificar também no datafile
-var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
-if (df)
-    foreach key in (df.keys())
-        if (key.find("faction_") == 0)
-            var faction_name := key[8, key.size()-7]; // Remover o prefixo "faction_"
-            if (!(faction_name in active_factions))
-                active_factions.append(faction_name);
-            endif
-        endif
-        sleepms(1);
-    endforeach
-endif
-    
-    return active_factions;
 endfunction
 
 
@@ -3561,12 +3507,13 @@ endfunction
  * mas mantida para compatibilidade caso o script process_recursos_updates.src ainda a passe.
  */
 exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref_dummy)
-    // (updates_pending_dict_ref_dummy não será usado ativamente aqui, pois vamos processar todos os baús da facção)
+    // Marcar parâmetro como utilizado para evitar warning
+    updates_pending_dict_ref_dummy := updates_pending_dict_ref_dummy;
 
     if (!faction_name || faction_name == error)
         LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nome da facção inválido.");
         return 0;
-    endif
+    endif;
 
     LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Iniciando processamento agregado para facção '" + faction_name + "'.");
     var total_recursos_da_faccao := CreateEmptyResourceStruct();
@@ -3582,7 +3529,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         // Formato Novo (elemento por territory_id)
         var all_territory_ids := seriais_df.keys();
         foreach terr_id_key in all_territory_ids
-            if (terr_id_key == "territorios") continue; endif // Pular o elemento legado
+            if (terr_id_key == "territorios") continue; endif; // Pular o elemento legado
             var terr_elem := SafeFindElement(seriais_df, terr_id_key);
             if (terr_elem)
                 var elem_faction_name := GetElementProp(terr_elem, "faction");
@@ -3593,12 +3540,12 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                         if (bau_obj && !(bau_obj in todos_os_baus_da_faccao))
                             todos_os_baus_da_faccao.append(bau_obj);
                             LogDebug("recursos_proc", "Baú " + bau_serial + " adicionado à lista (via datafile novo formato).");
-                        endif
-                    endif
-                endif
-            endif
+                        endif;
+                    endif;
+                endif;
+            endif;
             SleepMS(1);
-        endforeach
+        endforeach;
 
         // Formato Legado (dicionário "territorios")
         var territorios_seriais_legado := GetElementProp(seriais_df, "territorios", dictionary{});
@@ -3610,15 +3557,14 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                     if (bau_obj_legado && !(bau_obj_legado in todos_os_baus_da_faccao))
                         todos_os_baus_da_faccao.append(bau_obj_legado);
                         LogDebug("recursos_proc", "Baú " + info_legado.bau + " adicionado à lista (via datafile formato legado).");
-                    endif
-                endif
+                    endif;
+                endif;
                 SleepMS(1);
-            endforeach
-        endif
-    endif // Closes if (seriais_df)
+            endforeach;
+        endif;
+    endif; // Closes if (seriais_df)
 
     // Sub-Passo 1.2: Iterar sobre itens no mundo para encontrar baús da facção não registrados
-    // Isso pode ser pesado, então limitamos a quantidade de itens verificados.
     var items_scanned_world := 0;
     var max_items_to_scan_world := 10000; // Ajustável
     LogDebug("recursos_proc", "Procurando baús adicionais da facção '" + faction_name + "' no mundo...");
@@ -3627,21 +3573,21 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         if (items_scanned_world > max_items_to_scan_world)
             LogWarning("recursos_proc", "ProcessarRecursosDeUmaFaccao: Limite de scan no mundo ("+max_items_to_scan_world+") atingido para facção " + faction_name);
             break;
-        endif
+        endif;
 
         if (item_no_mundo.objtype == 0xFF11) // ObjType do baú de doações
             var chest_faction_prop := GetObjProperty(item_no_mundo, OBJ_FACTION_PROP);
-            if (!chest_faction_prop) chest_faction_prop := GetObjProperty(item_no_mundo, "FactionName"); endif // Fallback
+            if (!chest_faction_prop) chest_faction_prop := GetObjProperty(item_no_mundo, "FactionName"); endif; // Fallback
 
             if (chest_faction_prop == faction_name)
                 if (!(item_no_mundo in todos_os_baus_da_faccao))
                     todos_os_baus_da_faccao.append(item_no_mundo);
                     LogDebug("recursos_proc", "Baú " + item_no_mundo.serial + " adicionado à lista (encontrado no mundo).");
-                endif
-            endif
-        endif
-        if (items_scanned_world % 1000 == 0) SleepMS(1); endif // Pequena pausa a cada 1000 itens
-    endforeach
+                endif;
+            endif;
+        endif;
+        if (items_scanned_world % 1000 == 0) SleepMS(1); endif;
+    endforeach;
     LogInfo("recursos_proc", "Total de baús identificados para facção '" + faction_name + "': " + todos_os_baus_da_faccao.size());
 
 
@@ -3649,58 +3595,50 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
     if (todos_os_baus_da_faccao.size() == 0)
         LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nenhum baú encontrado para a facção '" + faction_name + "'. Sincronizando com zero no datafile.");
         // Se não há baús, o total de recursos é zero. Sincronizar isso.
-        AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao); // total_recursos_da_faccao ainda está zerado
+        AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao);
         AtualizarPropriedadesGuildaRecursos(faction_name, total_recursos_da_faccao);
-        return 1; // Sucesso, pois não havia nada para processar além de zerar.
-    endif
+        return 1;
+    endif;
 
     foreach bau_individual in todos_os_baus_da_faccao
-        if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER)) // Checagem extra
-            // Evitar reprocessamento se outro script estiver mexendo (improvável aqui, mas seguro)
+        if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER))
             if (GetObjProperty(bau_individual, "being_processed_by_aggregator") && (current_processing_timestamp - CInt(GetObjProperty(bau_individual, "being_processed_by_aggregator")) < 60) )
                 LogWarning("recursos_proc", "Baú #" + bau_individual.serial + " pulado, já 'being_processed_by_aggregator' recentemente.");
-                // Tentar usar o cache existente se estiver válido para a soma agregada
                 var cache_bau_individual_skip := GetObjProperty(bau_individual, CACHE_PROP_NAME);
                 var cache_sujo_skip := GetObjProperty(bau_individual, CACHE_DIRTY_FLAG);
                 if (cache_bau_individual_skip && TypeOf(cache_bau_individual_skip) == "Struct" && !cache_sujo_skip)
                      foreach key_recurso_cache_skip in (cache_bau_individual_skip.keys())
                         if (total_recursos_da_faccao.exists(key_recurso_cache_skip))
                             total_recursos_da_faccao[key_recurso_cache_skip] := total_recursos_da_faccao[key_recurso_cache_skip] + CInt(cache_bau_individual_skip[key_recurso_cache_skip]);
-                        endif
-                    endforeach
-                endif
+                        endif;
+                    endforeach;
+                endif;
                 continue;
-            endif
+            endif;
 
             SetObjProperty(bau_individual, "being_processed_by_aggregator", current_processing_timestamp);
-
-            var recursos_deste_bau := ContarRecursosReais(bau_individual); // Esta função já lida com logs internos da contagem
+            var recursos_deste_bau := ContarRecursosReais(bau_individual);
             baus_da_faccao_processados_neste_ciclo += 1;
-
-            // Atualizar o cache individual deste baú
             SetObjProperty(bau_individual, CACHE_PROP_NAME, recursos_deste_bau);
             SetObjProperty(bau_individual, CACHE_UPDATE_PROP, current_processing_timestamp);
-            EraseObjProperty(bau_individual, CACHE_DIRTY_FLAG); // Limpar a flag de sujo
+            EraseObjProperty(bau_individual, CACHE_DIRTY_FLAG);
             LogDebug("recursos_proc", "Cache individual do baú #" + bau_individual.serial + " atualizado.");
 
-            // Somar ao total da facção
             foreach key_recurso in (recursos_deste_bau.keys())
-                if (total_recursos_da_faccao.exists(key_recurso)) // Garante que a chave existe no struct de destino
+                if (total_recursos_da_faccao.exists(key_recurso))
                     total_recursos_da_faccao[key_recurso] := total_recursos_da_faccao[key_recurso] + CInt(recursos_deste_bau[key_recurso]);
-                endif
-            endforeach
-
+                endif;
+            endforeach;
             EraseObjProperty(bau_individual, "being_processed_by_aggregator");
         else
             LogWarning("recursos_proc", "Item inválido ou não é container na lista de baús da facção " + faction_name + ". Serial (se disponível): " + (bau_individual ? bau_individual.serial : "N/A"));
-        endif // Closes 'if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER))'
-        SleepMS(50); // Pausa entre processamento de baús
-    endforeach
+        endif;
+        SleepMS(50);
+    endforeach;
 
     LogInfo("recursos_proc", "Processamento agregado para facção '" + faction_name + "' concluído.");
     LogInfo("recursos_proc", "  Baús processados neste ciclo: " + baus_da_faccao_processados_neste_ciclo);
     LogCritical("recursos_proc", "  Total de MOEDAS AGREGADO para '" + faction_name + "': " + total_recursos_da_faccao.moedas);
-    // (Você pode adicionar logs para outros recursos se necessário)
 
     // Passo 3: Sincronizar o total agregado com o Datafile e CProps da Guilda
     var sucesso_sincronizacao_agregada := SincronizarComDataFile(faction_name, total_recursos_da_faccao);
@@ -3709,7 +3647,48 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Sincronização do total para facção '" + faction_name + "' realizada com sucesso.");
     else
         LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: FALHA na sincronização do total para facção '" + faction_name + "'.");
-    endif
+    endif;
 
     return sucesso_sincronizacao_agregada;
+endfunction
+
+/*
+ * GetActiveFactionsFromTerritories()
+ * 
+ * MÉTODO KISS: Encontra facções ativas baseado em territórios
+ * Substitui ListGuilds() que pode ser não confiável
+ * 
+ * Return: Array de structs {name, guild_id, territory_id}
+ */
+function GetActiveFactionsFromTerritories()
+    var active_factions := array{};
+    var seen_factions := dictionary{};
+      // Buscar via datafile de seriais (método que funciona no upkeep)
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    if (seriais_df)
+        var elem_names := seriais_df.keys();
+        foreach elem_name in elem_names
+            if (elem_name.find("TER_") == 1) // É um território
+                var territory_elem := SafeFindElement(seriais_df, elem_name);
+                if (territory_elem)
+                    var faction_name := GetElementProp(territory_elem, "faction");
+                    if (faction_name && !seen_factions.exists(faction_name))
+                        var guild_id := FindGuildByName(faction_name); // Usar função robusta existente
+                        if (guild_id)
+                            var faction_info := struct{
+                                "name" := faction_name,
+                                "guild_id" := guild_id,
+                                "territory_id" := elem_name
+                            };
+                            active_factions.append(faction_info);
+                            seen_factions[faction_name] := 1;
+                        endif
+                    endif
+                endif
+            endif
+            sleepms(1);
+        endforeach
+    endif
+    
+    return active_factions;
 endfunction

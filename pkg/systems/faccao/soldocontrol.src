@@ -3,6 +3,7 @@ use uo;
 use guilds;
 
 include ":faccao:faccao";
+include ":faccao:include/shared_functions";
 include ":timeUtils:time";
 include ":attributes:attributes";
 
@@ -14,8 +15,13 @@ program startprogram()
 endprogram
 
 function ControleDeSoldo()
-   var guild_list := ListGuilds();
-   foreach guild in guild_list
+   // Usar método baseado em territórios em vez de ListGuilds()
+   var active_factions := GetActiveFactionsFromTerritories();
+   foreach faction_info in active_factions
+      var guild := FindGuild(faction_info.guild_id);
+      if (!guild)
+         continue;
+      endif
       var npcs := guild.GetProp("npcs_active");
       var npcs_conf := guild.GetProp("npcs");
       var money := guild.GetProp("money");
@@ -42,9 +48,7 @@ function ControleDeSoldo()
                money -= soldo;
             endif
          endif
-      endforeach
-
-      guild.SetProp("money", money);
+      endforeach      guild.SetProp("money", money);
       sleepms(5);
    endforeach
 endfunction

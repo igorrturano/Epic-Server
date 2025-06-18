@@ -7,6 +7,7 @@ include ":datafile:datafile";
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
+include ":faccao:include/shared_functions";
 
 /* 
  * guild_registry.src
@@ -141,16 +142,19 @@ function UpdateGuildRegistry()
     
     // Obter o registro atual para verificação usando função auxiliar
     var registry := GetElementProp(elem, "registry", dictionary{});
-    
-    // Mapear nome da guilda -> ID da guilda
+      // Mapear nome da guilda -> ID da guilda
     var guild_map := dictionary{};
     
-    // Registrar todas as guildas existentes
-    var guilds := ListGuilds();
-    if (guilds)
-        LogDebug("registro_guildas", "Encontradas " + guilds.size() + " guildas para registrar");
+    // Registrar todas as facções existentes usando método baseado em territórios
+    var active_factions := GetActiveFactionsFromTerritories();
+    if (active_factions)
+        LogDebug("registro_guildas", "Encontradas " + active_factions.size() + " facções ativas para registrar");
         
-        foreach guild in (guilds)
+        foreach faction_info in (active_factions)
+            var guild := FindGuild(faction_info.guild_id);
+            if (!guild)
+                continue;
+            endif
             var guild_name := guild.GetProp("name");
             if (!guild_name || guild_name == error)
                 guild_name := guild.GetProp(FACTION_PROP_NAME);
@@ -176,9 +180,8 @@ function UpdateGuildRegistry()
             endif
             
             sleepms(2);
-        endforeach
-    else
-        LogWarning("registro_guildas", "ListGuilds() falhou, tentando métodos alternativos");
+        endforeach    else
+        LogWarning("registro_guildas", "GetActiveFactionsFromTerritories() retornou vazio, tentando métodos alternativos");
         
         // Método alternativo: obter informações de guildas dos jogadores online
         foreach player in (EnumerateOnlineCharacters())
@@ -376,17 +379,16 @@ function ValidateAllGuildLeaders()
     var guilds_verificadas := 0;
     var guilds_corrigidas := 0;
     var erros := 0;
-    
-    var guild_list := ListGuilds();
-    if (!guild_list)
-        LogWarning("guild_validator", "ListGuilds() retornou vazio ou erro");
+      var active_factions := GetActiveFactionsFromTerritories();
+    if (!active_factions)
+        LogWarning("guild_validator", "GetActiveFactionsFromTerritories() retornou vazio");
         return 0;
     endif
     
-    foreach guild_id in guild_list
+    foreach faction_info in (active_factions)
         guilds_verificadas += 1;
         
-        var guild := FindGuild(guild_id);
+        var guild := FindGuild(faction_info.guild_id);
         if (!guild)
             erros += 1;
             continue;

@@ -89,11 +89,12 @@ function VerificarConsistenciaOptimizada()
     // Verificar Reino primeiro
     VerificarConsistenciaReinoOptimizada(df);
     
-    // Verificar facções
-    var guilds := ListGuilds();
-    foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
-        if (guild)            var faction_name := SafeGetGuildName(guild);
+    // Usar método baseado em territórios em vez de ListGuilds()
+    var active_factions := GetActiveFactionsFromTerritories();
+    foreach faction_info in active_factions
+        var guild := FindGuild(faction_info.guild_id);
+        if (guild)
+            var faction_name := faction_info.name;
             
             if (faction_name && faction_name != "Unknown Guild")
                 VerificarConsistenciaFaccaoOptimizada(faction_name, df);
@@ -345,32 +346,19 @@ function CriarEstruturaNovaRecursos()
     
     // Criar elemento para o Reino
     var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);  // 1 = criar
-    SetElementProp(reino_elem, "recursos", CreateEmptyResourceStruct());
-    
-    // Criar elementos para facções existentes
-    var guilds := ListGuilds();
-    foreach guild in guilds
-        var guild_obj := FindGuild(guild.guildid);
-        if (guild_obj)
-            var faction_name := guild_obj.GetProp(FACTION_PROP_NAME);
-            if (!faction_name)            faction_name := guild_obj.GetProp("name");
-            endif
-            if (!faction_name)
-                faction_name := SafeGetGuildName(guild);
-            endif
-            
-if (faction_name)
-    var elem_name_normalizado := NormalizarNomeElementoFaccao(faction_name);
-    if (elem_name_normalizado != error)
-        var faction_elem := SafeFindElement(df, elem_name_normalizado, 1);
-        SetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
-    endif
-endif
-endif
+    SetElementProp(reino_elem, "recursos", CreateEmptyResourceStruct());    // Criar elementos para facções ativas baseado em territórios
+    var active_factions := GetActiveFactionsFromTerritories();
+    foreach faction_info in active_factions
+        var faction_name := faction_info.name;
+        var elem_name_normalizado := NormalizarNomeElementoFaccao(faction_name);
+        if (elem_name_normalizado != error)
+            var faction_elem := SafeFindElement(df, elem_name_normalizado, 1);
+            SetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
+        endif
         Sleep(1);
     endforeach
     
-    LogInfo("recursos", "Nova estrutura de recursos criada para " + (guilds.size() + 1) + " facções");
+    LogInfo("recursos", "Nova estrutura de recursos criada para " + (active_factions.size() + 1) + " facções");
 
     return 1;
 endfunction
@@ -802,9 +790,10 @@ function VerificarPropriedadesGuildas()
     LogInfo("recursos", "Verificando propriedades de guildas relacionadas a facções...");
     var guildas_atualizadas := 0;
     
-    var guilds := ListGuilds();
-    foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
+    // KISS: Usar método baseado em territórios em vez de ListGuilds()
+    var active_factions := GetActiveFactionsFromTerritories();
+    foreach faction_info in active_factions
+        var guild := FindGuild(faction_info.guild_id);
         if (!guild)
             continue;
         endif
@@ -1228,34 +1217,14 @@ function VerificarDatafileFaccoesAtivas()
             SetElementProp(reino_elem, "recursos", recursos_validados);
             facoes_verificadas := facoes_verificadas + 1;
         endif
-    endif
-    
-    // 2. Obter facções ativas (guildas com membros)
-    var faccoes_ativas := array{};
-    var guilds := ListGuilds();
-    
-    var i;
-    for (i := 1; i <= guilds.size(); i := i + 1)
-        var guild := FindGuild(guilds[i]);
-        if (guild && guild.members.size() > 0)
-            var faction_name := guild.GetProp(FACTION_PROP_NAME);            if (!faction_name)
-                faction_name := SafeGetGuildName(guild);
-            endif
-            
-            if (faction_name)
-                // Guardar apenas o nome base, sem prefixo
-                if (faction_name.find("faction_") == 1)
-                    faction_name := faction_name[9, faction_name.len()-8];
-                endif
-                faccoes_ativas.append(faction_name);
-            endif
-        endif
-        sleepms(2);
-    endfor
+    endif    // 2. Obter facções ativas baseado em territórios
+    var faccoes_ativas := GetActiveFactionsFromTerritories();
     
     // 3. Verificar cada facção ativa
+    var i;
     for (i := 1; i <= faccoes_ativas.size(); i := i + 1)
-        var faction_name_base := faccoes_ativas[i];
+        var faction_info := faccoes_ativas[i];
+        var faction_name_base := faction_info.name;
         var elem_name_normalizado := NormalizarNomeElementoFaccao(faction_name_base);
         
         if (elem_name_normalizado == error)

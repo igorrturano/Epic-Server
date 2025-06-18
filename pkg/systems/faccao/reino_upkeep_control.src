@@ -1,62 +1,140 @@
 use uo;
 use os;
 use guilds;
+use datafile;
+use polsys;
 
 include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":faccao:include/guild_xp";
+include ":faccao:include/safe_guild_utils";
+include ":faccao:include/datafile_helpers";
+include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 
 // Constantes simples
-const UPKEEP_CYCLE_WAIT := 60; // 1 minuto (para teste)
+const UPKEEP_CYCLE_WAIT := 60; // 1 minuto (para teste - debug)
 const MOEDAS_COBRE := 0xba63;
 
 program ReinoUpkeepControl()
-    LogInfo("ReinoUpkeep", "=== INICIANDO CONTROLADOR DE UPKEEP - MODO TESTE (1 MINUTO) ===");
+    LogDebug("upkeep", "=== REINO UPKEEP CONTROL INICIADO ===");
+    LogDebug("upkeep", "UPKEEP: === CONTROLADOR DE UPKEEP INICIADO - MODO TESTE (1 MINUTO) ===");
     
     while(1)
+        LogDebug("upkeep", "UPKEEP: Iniciando ciclo de verificação...");
         ProcessarUpkeepSimples();
+        LogDebug("upkeep", "UPKEEP: Ciclo concluído, aguardando " + UPKEEP_CYCLE_WAIT + " segundos...");
         sleep(UPKEEP_CYCLE_WAIT);
     endwhile
 endprogram
 
 function ProcessarUpkeepSimples()
-    LogInfo("ReinoUpkeep", "Iniciando ciclo de cobrança (TESTE - a cada 1 minuto)");
+    LogDebug("upkeep", "UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
+    syslog("UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
+      LogDebug("upkeep", "UPKEEP: Buscando guilds ativas através de territórios...");
     
-    var guild_list := ListGuilds();
+    // Nova abordagem: buscar guilds através dos territórios
+    var active_guilds := struct{};
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (rect_df)
+        foreach elem_name in (rect_df.keys())
+            var elem := SafeFindElement(rect_df, elem_name);
+            if (elem)
+                var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+                if (!territory_faction)
+                    territory_faction := GetElementProp(elem, "Faction");
+                endif
+                
+                if (territory_faction && territory_faction != "" && territory_faction != "Reino")
+                    active_guilds[territory_faction] := 1;
+                endif
+            endif
+            sleepms(1);
+        endforeach
+    endif
     
-    foreach guild in guild_list
-        var guild_name := SafeGetGuildName(guild);
-        if (!guild_name || guild_name == "Reino")
+    var guild_names := array{};
+    foreach faction_name in (active_guilds.keys())
+        guild_names.append(faction_name);
+    endforeach
+    
+    Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
+    syslog("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());    
+    var processed_count := 0;
+    var payment_attempts := 0;
+    var successful_payments := 0;
+    
+    foreach guild_name in guild_names
+        Print("UPKEEP: === Processando facção: " + guild_name + " ===");
+        
+        if (!guild_name || guild_name == "Reino" || guild_name == "Unknown Guild")
+            Print("UPKEEP: Facção " + guild_name + " pulada (nome inválido ou Reino)");
             continue;
         endif
+          processed_count += 1;
         
         // Cálculo super simples: 100 moedas por território + 10 por nível
         var territories := GetGuildTerritoryCount(guild_name);
-        var guild_level := GetSimpleGuildLevel(guild);
+        var guild_level := 1; // Simplificado - assumir nível 1 
         var cost := (territories * 100) + (guild_level * 10);
+        Print("UPKEEP: " + guild_name + " - Territórios: " + territories + ", Nível: " + guild_level + ", Custo: " + cost);
         
         if (cost <= 0)
+            Print("UPKEEP: " + guild_name + " não possui territórios ou custo é zero");
             continue;
         endif
         
-        LogInfo("ReinoUpkeep", guild_name + " deve pagar " + cost + " moedas");
+        payment_attempts += 1;
+        Print("UPKEEP: " + guild_name + " deve pagar " + cost + " moedas");
         
-        // Tentar cobrar
-        if (CobrarUpkeepSimples(guild_name, cost))
-            LogInfo("ReinoUpkeep", guild_name + " pagou com sucesso");
-            SafeSetGuildProperty(guild, "last_upkeep_payment", polcore().systime);
+        // Tentar cobrar usando método robusto
+        if (CobrarUpkeepRobusto(guild_name, cost))
+            Print("UPKEEP: " + guild_name + " pagou com sucesso");
+            successful_payments += 1;
         else
-            LogWarning("ReinoUpkeep", guild_name + " falhou no pagamento");
+            Print("UPKEEP: " + guild_name + " falhou no pagamento - recursos insuficientes ou baú não encontrado");
         endif
         
         sleepms(100);
     endforeach
+    
+    Print("UPKEEP: Ciclo concluído - Guildas processadas: " + processed_count + ", Tentativas de pagamento: " + payment_attempts + ", Pagamentos bem-sucedidos: " + successful_payments);
+endfunction
+
+function GetGuildTerritories(faction_name)
+    var territories := array{};
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return territories;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var territory_faction := GetElementProp(elem, "faction");
+            if (!territory_faction)
+                territory_faction := GetElementProp(elem, "Faction");
+            endif
+            if (territory_faction == faction_name)
+                var territory_info := struct{
+                    "name" := rect_name,
+                    "rect" := GetElementProp(elem, "Rect", ""),
+                    "realm" := GetElementProp(elem, "Realm", "britannia")
+                };
+                territories.append(territory_info);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return territories;
 endfunction
 
 function GetGuildTerritoryCount(guild_name)
     var count := 0;
     var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
+        LogError("ReinoUpkeep", "Falha ao abrir datafile de áreas");
         return 0;
     endif
     
@@ -74,6 +152,7 @@ function GetGuildTerritoryCount(guild_name)
         sleepms(2);
     endforeach
     
+    LogDebug("ReinoUpkeep", guild_name + " possui " + count + " territórios");
     return count;
 endfunction
 
@@ -85,45 +164,135 @@ function GetSimpleGuildLevel(guild)
     return 1;
 endfunction
 
-function CobrarUpkeepSimples(guild_name, amount)
-    var faction_chest := FindFactionChest(guild_name);
-    if (!faction_chest)
-        return 0;
-    endif
+// Função robusta baseada no sistema de caravanas
+function CobrarUpkeepRobusto(guild_name, cost_amount)
+    LogCritical("UpkeepPayment_START", "Iniciando cobrança de " + cost_amount + " moedas para facção " + guild_name);
     
-    // Contar moedas simples
-    var total := 0;
-    foreach item in EnumerateItemsInContainer(faction_chest)
-        case (item.objtype)
-            0xba63: total += item.amount; // cobre
-            0xba64: total += item.amount * 10; // prata 
-            0xba65: total += item.amount * 100; // ouro
-            0xeed: total += item.amount * 100; // gold coin
-        endcase
-    endforeach
+    // NOVA ESTRATÉGIA: Buscar territórios e usar territory_id (como ResourceController)
+    var faction_chest := 0;
+    var territories_found := array{};
     
-    if (total < amount)
-        return 0;
-    endif
-    
-    // Debitar simples - só cobre primeiro
-    var falta := amount;
-    Set_Critical(1);
-    
-    foreach item in EnumerateItemsInContainer(faction_chest)
-        if (falta <= 0) break; endif
-        
-        if (item.objtype == MOEDAS_COBRE)
-            if (item.amount >= falta)
-                SubtractAmount(item, falta);
-                falta := 0;
-            else
-                falta -= item.amount;
-                DestroyItem(item);
+    // Buscar territórios no datafile :architect:areas
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (rect_df)
+        LogCritical("UpkeepPayment_SEARCH", "Buscando territórios da facção " + guild_name);
+        foreach elem_name in (rect_df.keys())
+            var elem := SafeFindElement(rect_df, elem_name);
+            if (elem)
+                var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+                if (!territory_faction)
+                    territory_faction := GetElementProp(elem, "Faction");
+                endif
+                
+                if (territory_faction == guild_name)
+                    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, elem_name);
+                    territories_found.append(territory_id);
+                    LogCritical("UpkeepPayment_TERRITORY", "Território encontrado: " + territory_id);
+                endif
             endif
+            Sleep(1);
+        endforeach
+    endif
+    
+    LogCritical("UpkeepPayment_SEARCH", "Encontrados " + territories_found.size() + " territórios para " + guild_name);
+      // Tentar encontrar baú usando territory_id específico (como ResourceController faz)
+    foreach territory_id in territories_found
+        LogCritical("UpkeepPayment_CHEST_SEARCH", "Tentando encontrar baú para território: " + territory_id);
+        LogCritical("UpkeepPayment_CHEST_SEARCH", "Chamando: FindFactionChest('" + guild_name + "', '" + territory_id + "')");
+        faction_chest := FindFactionChest(guild_name, territory_id);
+        if (faction_chest)
+            LogCritical("UpkeepPayment_CHEST", "✓ Baú encontrado no território " + territory_id + ": Serial " + faction_chest.serial);
+            break;
+        else
+            LogCritical("UpkeepPayment_CHEST_FAIL", "✗ FindFactionChest retornou NULL para território " + territory_id);
         endif
+        Sleep(1);
+    endforeach
+      // Fallback: busca genérica (como antes)
+    if (!faction_chest)
+        LogCritical("UpkeepPayment_FALLBACK", "Tentando busca genérica para facção " + guild_name);
+        faction_chest := FindFactionChest(guild_name);
+    endif
+    
+    if (!faction_chest)
+        LogError("UpkeepPayment_ERROR", "Baú da facção " + guild_name + " não encontrado após todas as estratégias");
+        return 0;
+    endif
+    
+    LogInfo("UpkeepPayment_CHEST", "Baú encontrado: Serial " + faction_chest.serial);
+    
+    // Validar o baú
+    if (!faction_chest.isA(POLCLASS_CONTAINER) || !faction_chest.serial || faction_chest.serial <= 0)
+        LogError("UpkeepPayment_ERROR", "Baú inválido para facção " + guild_name);
+        return 0;
+    endif
+    
+    // Contar moedas disponíveis
+    var coins_available := 0;
+    var coin_items_list := array{};
+    
+    var items_in_chest := EnumerateItemsInContainer(faction_chest);
+    if (items_in_chest == error)
+        LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
+        return 0;
+    endif
+    
+    foreach item in items_in_chest
+        if (item && item.objtype == MOEDAS_COBRE) // Só moedas de cobre para simplicidade
+            coins_available += CInt(item.amount);
+            coin_items_list.append(item);
+            LogDebug("UpkeepPayment_COINS", "Stack de moedas encontrado: Serial " + item.serial + ", Quantidade: " + item.amount);
+        endif
+        sleepms(1);
     endforeach
     
-    Set_Critical(0);
-    return (falta <= 0);
+    LogCritical("UpkeepPayment_TOTAL", "Total de moedas disponíveis: " + coins_available + ", Necessário: " + cost_amount);
+    
+    // Verificar se há moedas suficientes
+    if (coins_available < cost_amount)
+        LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes. Disponível: " + coins_available + ", Necessário: " + cost_amount);
+        return 0;
+    endif
+    
+    // Executar o débito
+    var coins_debited := 0;
+    var coins_remaining := cost_amount;
+    
+    foreach coin_item in coin_items_list
+        if (coins_remaining <= 0) break; endif
+        
+        if (!coin_item || coin_item.objtype != MOEDAS_COBRE)
+            continue;
+        endif
+        
+        var amount_to_take := CInt(coin_item.amount);
+        if (amount_to_take > coins_remaining)
+            amount_to_take := coins_remaining;
+        endif
+        
+        // Tentar remover as moedas
+        var subtract_result := SubtractAmount(coin_item, amount_to_take);
+        if (subtract_result)
+            coins_debited += amount_to_take;
+            coins_remaining -= amount_to_take;
+            LogInfo("UpkeepPayment_DEBIT", amount_to_take + " moedas debitadas do stack " + coin_item.serial);
+        else
+            LogError("UpkeepPayment_ERROR", "Falha ao debitar " + amount_to_take + " moedas do stack " + coin_item.serial);
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    LogCritical("UpkeepPayment_RESULT", "Débito concluído. Total debitado: " + coins_debited + " de " + cost_amount + " necessário");
+    
+    // Verificar se o débito foi completo
+    if (coins_debited >= cost_amount)
+        LogInfo("UpkeepPayment_SUCCESS", "Pagamento de upkeep bem-sucedido para " + guild_name);
+        // Forçar atualização do cache do baú
+        SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
+        return 1;
+    else
+        LogError("UpkeepPayment_FAILED", "Pagamento incompleto. Debitado: " + coins_debited + ", Necessário: " + cost_amount);
+        return 0;
+    endif
 endfunction

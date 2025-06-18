@@ -1151,15 +1151,15 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     GFResizePic(gump, 15, 15, 9350, 370, 270);
     
     GFTextMid(gump, 15, 25, 380, 53, "Escolha a facção para transferir " + territorio_nome);
-    
-    var y := 60;
-    var guilds := ListGuilds();
-    LogDebug("territorio", "Total de guildas encontradas: " + guilds.size());
+      var y := 60;
+    // Usar método baseado em territórios em vez de ListGuilds()
+    var active_factions := GetActiveFactionsFromTerritories();
+    LogDebug("territorio", "Total de facções ativas encontradas: " + active_factions.size());
     
     var guild_names := array{};
     var button_id := 1;
-      foreach guild in (guilds)
-        var name := SafeGetGuildName(guild);
+    foreach faction_info in active_factions
+        var name := faction_info.name;
         
         if (name && name != old_faction)
             guild_names.append(name);

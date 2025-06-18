@@ -11,6 +11,7 @@ include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
 include ":faccao:include/safe_guild_utils";
+include ":faccao:include/shared_functions";
 include ":gumps:gumps";
 include ":tn:tngumps";
 //include ":yggdrasil:boss";
@@ -379,13 +380,18 @@ function Faccoes(who)
    GFResizePic(gump, 84, 90, 9260, 280, 260);
 
    GFGumpPicTiled(gump, 100,100,30,235,10460);
-   GFGumpPicTiled(gump, 320,100,30,235,10460);
-
-   var y := 120;
-
-   var guilds := ListGuilds();
-   foreach guild in guilds
-      //fix area
+   GFGumpPicTiled(gump, 320,100,30,235,10460);   var y := 120;   // Usar método baseado em territórios em vez de ListGuilds()
+   var active_factions := GetActiveFactionsFromTerritories();
+   var guilds := array{}; // Array para compatibilidade com código existente
+   var guild_iter := 0; // Declarar contador para os botões
+   foreach faction_info in active_factions
+      var guild := FindGuild(faction_info.guild_id);
+      if (!guild)
+         continue;
+      endif
+      
+      guilds.append(guild); // Adicionar ao array para compatibilidade
+      
       var name := guild.getprop("name");
      // if (typeof(name[1]) != "Array")
      //    name := array{name};
@@ -395,7 +401,8 @@ function Faccoes(who)
 
       GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp("name")));
       // GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
-      GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+_guild_iter);
+      GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+guild_iter);
+      guild_iter++; // Incrementar contador
       y+= 20;
       sleepms(2);
    endforeach
@@ -602,21 +609,20 @@ function guildHandler(who, input)
             guild.setProp("money", guild.getProp("money") - qty);
             CreateItemInBackpack(who, 0xba63, qty);
             SendSysMessageEx(who, "Moedas removidas");
-            return;
-         elseif (output["Transferir"])
+            return;         elseif (output["Transferir"])
             var guild_opts := struct{};
-            var guilds := ListGuilds();
-            if (guilds)
-                foreach guild_ref in guilds
-                    if (guild_ref && guild_ref.guildid != guild.guildid)
-                        var name := guild_ref.GetProp("name");
-                        if (name)
-                            guild_opts[name] := guild_ref.guildid;
-                        endif
+            // Usar método baseado em territórios em vez de ListGuilds()
+            var active_factions := GetActiveFactionsFromTerritories();
+            foreach faction_info in active_factions
+                var guild_ref := FindGuild(faction_info.guild_id);
+                if (guild_ref && guild_ref.guildid != guild.guildid)
+                    var name := guild_ref.GetProp("name");
+                    if (name)
+                        guild_opts[name] := guild_ref.guildid;
                     endif
-                    sleepms(2);
-                endforeach
-            endif
+                endif
+                sleepms(2);
+            endforeach
             guild_opts["Cancelar"] := 0;
             var guildenemy := RadioGump(who, 400, 0, "Escolha qual faccao recebera o dinheiro", guild_opts.keys(), 0, guild_opts.keys().size());
             if (guildenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
@@ -845,12 +851,13 @@ function gmHandler(who)
       guild.SetProp("name", gname);
       SendSysMessageEx(who, "Nome alterado pra {}".format(gname));
    elseif (output["GuildID"])
-      SendSysMessageEx(who, "Guild ID: {}".format(guild.guildid));
-   elseif (output["Sub-Guilds"])
+      SendSysMessageEx(who, "Guild ID: {}".format(guild.guildid));   elseif (output["Sub-Guilds"])
       var guild_opts := struct{};
-      var guilds := ListGuilds();
-      foreach guild_ref in guilds
-         if (guild_ref.guildid != guild.guildid)
+      // Usar método baseado em territórios em vez de ListGuilds()
+      var active_factions := GetActiveFactionsFromTerritories();
+      foreach faction_info in active_factions
+         var guild_ref := FindGuild(faction_info.guild_id);
+         if (guild_ref && guild_ref.guildid != guild.guildid)
             guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
          endif
          sleepms(2);
