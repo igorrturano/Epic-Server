@@ -1,0 +1,129 @@
+use uo;
+use os;
+use guilds;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/guild_xp";
+
+// Constantes simples
+const UPKEEP_CYCLE_WAIT := 60; // 1 minuto (para teste)
+const MOEDAS_COBRE := 0xba63;
+
+program ReinoUpkeepControl()
+    LogInfo("ReinoUpkeep", "=== INICIANDO CONTROLADOR DE UPKEEP - MODO TESTE (1 MINUTO) ===");
+    
+    while(1)
+        ProcessarUpkeepSimples();
+        sleep(UPKEEP_CYCLE_WAIT);
+    endwhile
+endprogram
+
+function ProcessarUpkeepSimples()
+    LogInfo("ReinoUpkeep", "Iniciando ciclo de cobrança (TESTE - a cada 1 minuto)");
+    
+    var guild_list := ListGuilds();
+    
+    foreach guild in guild_list
+        var guild_name := SafeGetGuildName(guild);
+        if (!guild_name || guild_name == "Reino")
+            continue;
+        endif
+        
+        // Cálculo super simples: 100 moedas por território + 10 por nível
+        var territories := GetGuildTerritoryCount(guild_name);
+        var guild_level := GetSimpleGuildLevel(guild);
+        var cost := (territories * 100) + (guild_level * 10);
+        
+        if (cost <= 0)
+            continue;
+        endif
+        
+        LogInfo("ReinoUpkeep", guild_name + " deve pagar " + cost + " moedas");
+        
+        // Tentar cobrar
+        if (CobrarUpkeepSimples(guild_name, cost))
+            LogInfo("ReinoUpkeep", guild_name + " pagou com sucesso");
+            SafeSetGuildProperty(guild, "last_upkeep_payment", polcore().systime);
+        else
+            LogWarning("ReinoUpkeep", guild_name + " falhou no pagamento");
+        endif
+        
+        sleepms(100);
+    endforeach
+endfunction
+
+function GetGuildTerritoryCount(guild_name)
+    var count := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 0;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var faction := GetElementProp(elem, "faction");
+            if (!faction)
+                faction := GetElementProp(elem, "Faction");
+            endif
+            if (faction == guild_name)
+                count += 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return count;
+endfunction
+
+function GetSimpleGuildLevel(guild)
+    var guild_xp_info := GetGuildXPInfo(guild);
+    if (guild_xp_info && guild_xp_info.level)
+        return guild_xp_info.level;
+    endif
+    return 1;
+endfunction
+
+function CobrarUpkeepSimples(guild_name, amount)
+    var faction_chest := FindFactionChest(guild_name);
+    if (!faction_chest)
+        return 0;
+    endif
+    
+    // Contar moedas simples
+    var total := 0;
+    foreach item in EnumerateItemsInContainer(faction_chest)
+        case (item.objtype)
+            0xba63: total += item.amount; // cobre
+            0xba64: total += item.amount * 10; // prata 
+            0xba65: total += item.amount * 100; // ouro
+            0xeed: total += item.amount * 100; // gold coin
+        endcase
+    endforeach
+    
+    if (total < amount)
+        return 0;
+    endif
+    
+    // Debitar simples - só cobre primeiro
+    var falta := amount;
+    Set_Critical(1);
+    
+    foreach item in EnumerateItemsInContainer(faction_chest)
+        if (falta <= 0) break; endif
+        
+        if (item.objtype == MOEDAS_COBRE)
+            if (item.amount >= falta)
+                SubtractAmount(item, falta);
+                falta := 0;
+            else
+                falta -= item.amount;
+                DestroyItem(item);
+            endif
+        endif
+    endforeach
+    
+    Set_Critical(0);
+    return (falta <= 0);
+endfunction

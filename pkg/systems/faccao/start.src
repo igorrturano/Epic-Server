@@ -157,6 +157,13 @@ else
     LogDebug("sistema", "Starting caravan payment control script... ok.");
 endif;
 
+// Iniciar o controlador de upkeep do reino
+var upkeep_script := start_script(":faccao:reino_upkeep_control");
+if (upkeep_script.errortext)
+    LogError("sistema", "Erro no script de controle de upkeep do reino: " + upkeep_script.errortext);
+else
+    LogDebug("sistema", "Starting reino upkeep control script... ok.");
+endif
 
 start_resource_controller(); // Chamada para a função
 

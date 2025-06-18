@@ -1,0 +1,60 @@
+use uo;
+use os;
+use guilds;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/guild_xp";
+
+program CheckUpkeep(who)
+    if (!who.guild)
+        SendSysMessage(who, "Você precisa estar em uma guild para verificar o upkeep.");
+        return 0;
+    endif
+    
+    var guild := who.guild;
+    var guild_name := SafeGetGuildName(guild);
+    
+    // Cálculo simples igual ao do controlador
+    var territories := GetGuildTerritoryCount(guild_name);
+    var guild_level := GetSimpleGuildLevel(guild);
+    var cost := (territories * 100) + (guild_level * 10);
+    
+    SendSysMessage(who, "=== UPKEEP DO REINO ===");
+    SendSysMessage(who, "Reino: " + guild_name);
+    SendSysMessage(who, "Nível: " + guild_level);
+    SendSysMessage(who, "Territórios: " + territories);
+    SendSysMessage(who, "Custo Semanal: " + cost + " moedas de cobre");
+    
+    return 1;
+endprogram
+
+function GetGuildTerritoryCount(guild_name)
+    var count := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 0;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var faction := GetElementProp(elem, "faction");
+            if (!faction)
+                faction := GetElementProp(elem, "Faction");
+            endif
+            if (faction == guild_name)
+                count += 1;
+            endif
+        endif
+    endforeach
+    
+    return count;
+endfunction
+
+function GetSimpleGuildLevel(guild)
+    var guild_xp_info := GetGuildXPInfo(guild);
+    if (guild_xp_info && guild_xp_info.current_level)
+        return guild_xp_info.current_level;
+    endif
+    return 1;
+endfunction

@@ -257,9 +257,8 @@ function ReinoGump(byref gump, item, who := 0)
     
     if (guild)
         // Agora que a cultura está definida, obtém as informações de XP
-        var xp_info := GetGuildXPInfo(guild);
-          // Background para seção de XP do reino (ajustado para novo espaçamento)
-        GFResizePic(gump, 460, 110, 9350, 320, 130);
+        var xp_info := GetGuildXPInfo(guild);          // Background para seção de XP do reino (ajustado para incluir a barra de XP)
+        GFResizePic(gump, 460, 110, 9350, 320, 150);
         
         // Título da seção
         GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");
@@ -292,21 +291,32 @@ function ReinoGump(byref gump, item, who := 0)
             var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, cultura_reino);
             if (proximo_reino == "" || proximo_reino == "Sem Reino")
                 proximo_reino := "Reino Nível " + (xp_info.current_level + 1);
-            endif
-              GFTextLine(gump, 470, 175, 2100, "Próximo:");
-            GFTextLine(gump, 570, 175, 1153, proximo_reino);            // Barra de progresso ajustada - posição Y subiu 15 pixels, altura diminuiu para 15
-            GFResizePic(gump, 470, 200, 9200, 280, 20);
-            var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
+            endif              GFTextLine(gump, 470, 175, 2100, "Próximo:");
+            GFTextLine(gump, 570, 175, 1153, proximo_reino);
+            
+            // Calcular e mostrar custo semanal de upkeep
+            var territories_count := GetGuildTerritoryCount(mesa_faction);
+            var weekly_cost := (territories_count * 100) + (xp_info.current_level * 10);
+            GFTextLine(gump, 470, 195, 2100, "Custo Semanal:");
+            GFTextLine(gump, 570, 195, 1153, CStr(weekly_cost) + " cobre");
+            
+            // Barra de progresso ajustada - posição Y movida para baixo
+            GFResizePic(gump, 470, 220, 9200, 280, 20);            var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
             if (progress_width > 0)
                 // Barra de progresso com arte azul específica da imagem
-                GFResizePic(gump, 470, 200, 48, progress_width, 20);
+                GFResizePic(gump, 470, 220, 48, progress_width, 20);
             endif
             
             // Porcentagem ajustada para nova posição da barra
             var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
-            GFTextMid(gump, 470, 202, 280, 1153, percentage_text);
-        else
-            GFTextMid(gump, 470, 195, 280, 53, "REINO MÁXIMO ATINGIDO");
+            GFTextMid(gump, 470, 222, 280, 1153, percentage_text);        else
+            // Mostrar custo mesmo no reino máximo
+            var territories_count := GetGuildTerritoryCount(mesa_faction);
+            var weekly_cost := (territories_count * 100) + (xp_info.current_level * 10);
+            GFTextLine(gump, 470, 195, 2100, "Custo Semanal:");
+            GFTextLine(gump, 570, 195, 1153, CStr(weekly_cost) + " cobre");
+            
+            GFTextMid(gump, 470, 220, 280, 53, "REINO MÁXIMO ATINGIDO");
         endif
     endif
     // ===== FIM DA SEÇÃO DE XP =====
@@ -339,13 +349,13 @@ function ReinoGump(byref gump, item, who := 0)
             endif
             sleepms(2);
         endforeach        // Criar um único background para a área de territórios (ajustado para nova altura)
-        GFResizePic(gump, 460, 250, 9350, 320, 260);
+        GFResizePic(gump, 460, 280, 9350, 320, 230);
           // Adicionar cabeçalhos (alinhados na mesma altura Y)
-        GFTextLine(gump, 485, 255, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 255, 53, "Info");
-        GFTextLine(gump, 730, 255, 53, "Aliados");
+        GFTextLine(gump, 485, 285, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 285, 53, "Info");
+        GFTextLine(gump, 730, 285, 53, "Aliados");
         
-        var y := 280; // Começar após os cabeçalhos
+        var y := 310; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
         
 foreach territorio in (territorios_visiveis)
@@ -2391,4 +2401,451 @@ function FormatNumber(number)
     endwhile
     
     return result;
+endfunction
+
+// ===== FUNÇÕES DE SUPORTE PARA O SISTEMA DE UPKEEP =====
+
+function GetGuildTerritories(faction_name)
+	LogDebug("upkeep", "Obtendo territórios para facção: " + faction_name);
+	
+	var territories := array{};
+	var rect_df := SafeOpenDataFile(":architect:areas");
+	if (!rect_df)
+		LogWarning("upkeep", "Não foi possível abrir datafile de áreas");
+		return territories;
+	endif
+	
+	foreach rect_name in (rect_df.keys())
+		var elem := SafeFindElement(rect_df, rect_name);
+		if (elem)
+			var territory_faction := GetElementProp(elem, "faction");
+			if (!territory_faction)
+				territory_faction := GetElementProp(elem, "Faction");
+			endif
+			
+			if (territory_faction == faction_name)
+				var territory_info := struct{
+					"name" := rect_name,
+					"rect" := GetElementProp(elem, "Rect", ""),
+					"realm" := GetElementProp(elem, "Realm", "britannia")
+				};
+				territories.append(territory_info);
+			endif
+		endif
+		sleepms(2);
+	endforeach
+	
+	LogDebug("upkeep", "Encontrados " + territories.size() + " territórios para " + faction_name);
+	return territories;
+endfunction
+
+function CalcularCustoUpkeep(guild, territories)
+	var total_cost := 0;
+	var guild_level := GetSimpleGuildLevel(guild);
+	
+	LogDebug("upkeep", "Calculando custo para guild level " + guild_level + " com " + territories.size() + " territórios");
+	
+	foreach territory_info in territories
+		var territory_size := CalcularTamanhoTerritorio(territory_info);
+		var territory_cost := CalcularCustoTerritorio(guild_level, territory_size);
+		total_cost += territory_cost;
+		
+		LogDebug("upkeep", "Território " + territory_info.name + ": tamanho=" + territory_size + ", custo=" + territory_cost);
+		sleepms(2);
+	endforeach
+	
+	// Custo base por nível de guild
+	var level_cost := guild_level * 10;
+	total_cost += level_cost;
+	
+	LogDebug("upkeep", "Custo total: " + total_cost + " (territórios + level_cost " + level_cost + ")");
+	return total_cost;
+endfunction
+
+function CalcularTamanhoTerritorio(territory_info)
+	if (!territory_info.rect || territory_info.rect == "")
+		return 1; // Tamanho padrão para territórios sem coordenadas
+	endif
+	
+	var coords := SplitWords(territory_info.rect);
+	if (coords.size() < 4)
+		return 1;
+	endif
+	
+	var x1 := CInt(coords[1]);
+	var y1 := CInt(coords[2]);
+	var x2 := CInt(coords[3]);
+	var y2 := CInt(coords[4]);
+	
+	var width := Abs(x2 - x1);
+	var height := Abs(y2 - y1);
+	var area := width * height;
+	
+	// Classificar por tamanho:
+	// Pequeno (até 2500): multiplicador 1
+	// Médio (2501-10000): multiplicador 2
+	// Grande (10001+): multiplicador 3
+	if (area <= 2500)
+		return 1;
+	elseif (area <= 10000)
+		return 2;
+	else
+		return 3;
+	endif
+endfunction
+
+function CalcularCustoTerritorio(guild_level, territory_size)
+	// Custo base por território: 100 moedas
+	var base_cost := 100;
+	
+	// Multiplicador por tamanho
+	var size_multiplier := territory_size;
+	
+	// Multiplicador por nível (guilds de nível alto pagam mais)
+	var level_multiplier := 1.0;
+	if (guild_level >= 5)
+		level_multiplier := 1.5;
+	elseif (guild_level >= 10)
+		level_multiplier := 2.0;
+	endif
+	
+	var final_cost := CInt(base_cost * size_multiplier * level_multiplier);
+	return final_cost;
+endfunction
+
+function CalculaRecursosDisponiveis(faction_chest)
+	var total := 0;
+	
+	if (!faction_chest)
+		return 0;
+	endif
+	
+	foreach item in EnumerateItemsInContainer(faction_chest)
+		case (item.objtype)
+			0xba63: total += item.amount; // cobre
+			0xba64: total += item.amount * 10; // prata
+			0xba65: total += item.amount * 100; // ouro
+			0xeed: total += item.amount * 100; // gold coin
+		endcase
+		sleepms(2);
+	endforeach
+	
+	return total;
+endfunction
+
+function GetSimpleGuildLevel(guild)
+	if (!guild)
+		return 1;
+	endif
+	
+	// Tentar obter do sistema de XP da guild primeiro
+	var guild_xp_info := GetGuildXPInfo(guild);
+	if (guild_xp_info && guild_xp_info.current_level)
+		return guild_xp_info.current_level;
+	endif
+	
+	// Fallback: tentar propriedade direta
+	var level := SafeGetGuildProperty(guild, "level", 1);
+	if (level && level > 0)
+		return level;
+	endif
+		return 1; // Nível padrão
+endfunction
+
+// ===== MELHORIAS E CORREÇÕES ADICIONAIS =====
+
+// 1. Função para formatar tempo restante de forma mais legível
+function FormatTimeRemaining(seconds)
+	if (seconds <= 0)
+		return "Vencido";
+	endif
+	
+	var days := CInt(seconds / 86400);
+	var hours := CInt((seconds % 86400) / 3600);
+	var minutes := CInt((seconds % 3600) / 60);
+	
+	var result := "";
+	
+	if (days > 0)
+		result += days + " dia" + (days == 1 ? "" : "s");
+		if (hours > 0)
+			result += ", " + hours + " hora" + (hours == 1 ? "" : "s");
+		endif
+	elseif (hours > 0)
+		result += hours + " hora" + (hours == 1 ? "" : "s");
+		if (minutes > 0)
+			result += ", " + minutes + " min";
+		endif
+	else
+		result += minutes + " minuto" + (minutes == 1 ? "" : "s");
+	endif
+	
+	return result;
+endfunction
+
+// 2. Função para verificar se o reino está em risco de perder territórios
+function CheckUpkeepStatus(guild, faction_name)
+	var last_payment := SafeGetGuildProperty(guild, "last_upkeep_payment", 0);
+	var current_time := polcore().systime;
+	
+	var result := struct;
+	
+	if (last_payment == 0)
+		result.+status := "first_payment";
+		result.+message := "Primeiro pagamento ainda não foi cobrado";
+		result.+color := 1890; // Azul
+		return result;
+	endif
+	
+	var next_payment := last_payment + 604800; // 7 dias
+	var time_until := next_payment - current_time;
+	
+	if (time_until > 86400) // Mais de 1 dia
+		result.+status := "ok";
+		result.+message := "Em dia - próximo pagamento em " + FormatTimeRemaining(time_until);
+		result.+color := 68; // Verde
+		return result;
+	elseif (time_until > 0) // Menos de 1 dia mas ainda não venceu
+		result.+status := "warning";
+		result.+message := "ATENÇÃO - Vence em " + FormatTimeRemaining(time_until);
+		result.+color := 53; // Amarelo
+		return result;
+	else // Vencido
+		var days_overdue := CInt(Abs(time_until) / 86400);
+		result.+status := "overdue";
+		result.+message := "PAGAMENTO VENCIDO há " + days_overdue + " dia" + (days_overdue == 1 ? "" : "s");
+		result.+color := 37; // Vermelho
+		return result;
+	endif
+endfunction
+
+// 3. Versão melhorada da seção de upkeep no ReinoGump
+function AddUpkeepSectionToGump(byref gump, guild, mesa_faction)
+	if (!guild || !mesa_faction || mesa_faction == KINGDOM_FACTION)
+		return; // Não mostrar upkeep para o Reino principal
+	endif
+	
+	// Background para seção de upkeep
+	GFResizePic(gump, 50, 440, 9350, 380, 120);
+	
+	// Título da seção
+	GFTextMid(gump, 50, 445, 380, 2100, "Upkeep Semanal do Reino");
+	
+	// Calcular custo de upkeep
+	var territories := GetGuildTerritories(mesa_faction);
+	var total_cost := CalcularCustoUpkeep(guild, territories);
+	
+	// Obter recursos disponíveis
+	var faction_chest := FindFactionChest(mesa_faction);
+	var recursos_disponiveis := CalculaRecursosDisponiveis(faction_chest);
+	
+	// Verificar status do pagamento
+	var upkeep_status := CheckUpkeepStatus(guild, mesa_faction);
+	
+	// Informações de custo
+	GFTextLine(gump, 60, 470, 2100, "Custo semanal:");
+	var cost_color := (recursos_disponiveis >= total_cost) ? 68 : 37;
+	GFTextLine(gump, 200, 470, cost_color, FormatNumber(total_cost) + " moedas");
+	
+	// Recursos disponíveis
+	GFTextLine(gump, 60, 485, 2100, "Recursos disponíveis:");
+	GFTextLine(gump, 200, 485, 1890, FormatNumber(recursos_disponiveis) + " moedas");
+	
+	// Status do pagamento
+	GFTextLine(gump, 60, 500, 2100, "Status:");
+	GFTextLine(gump, 120, 500, upkeep_status.color, upkeep_status.message);
+	
+	// Aviso se recursos insuficientes
+	if (recursos_disponiveis < total_cost)
+		GFTextLine(gump, 60, 515, 37, "ATENÇÃO: Recursos insuficientes!");
+		GFTextLine(gump, 60, 528, 37, "Deposite moedas no baú da facção!");
+	endif
+	
+	// Mostrar breakdown apenas se houver poucos territórios
+	if (territories.size() > 0 && territories.size() <= 2)
+		var detail_y := 540;
+		var guild_level := GetSimpleGuildLevel(guild);
+		
+		GFTextLine(gump, 60, detail_y, 1890, "Detalhes (Nível " + guild_level + "):");
+		detail_y += 12;
+		
+		foreach territory_info in territories
+			var territory_size := CalcularTamanhoTerritorio(territory_info);
+			var territory_cost := CalcularCustoTerritorio(guild_level, territory_size);
+			
+			var territory_name := territory_info.name;
+			if (territory_name.size() > 12)
+				territory_name := territory_name[1, 12] + "...";
+			endif
+			
+			var size_text := "";
+			case (territory_size)
+				1: size_text := "P";
+				2: size_text := "M";
+				3: size_text := "G";
+			endcase
+			
+			GFTextLine(gump, 70, detail_y, 1890, territory_name + " (" + size_text + "): " + territory_cost);
+			detail_y += 10;
+			
+			if (detail_y > 555)
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+// SUBSTITUA COMPLETAMENTE a função GetUpkeepSummary por esta versão corrigida:
+
+function GetUpkeepSummary(faction_name)
+	var guild_id := FindGuildByName(faction_name);
+	if (!guild_id)
+		var error_result := struct;
+		error_result.+error := "Guild não encontrada";
+		error_result.+total_cost := 0;
+		error_result.+available_resources := 0;
+		error_result.+status := "error";
+		return error_result;
+	endif
+	
+	var guild := FindGuild(guild_id);
+	if (!guild)
+		var error_result := struct;
+		error_result.+error := "Objeto da guild não encontrado";
+		error_result.+total_cost := 0;
+		error_result.+available_resources := 0;
+		error_result.+status := "error";
+		return error_result;
+	endif
+	
+	var territories := GetGuildTerritories(faction_name);
+	var total_cost := CalcularCustoUpkeep(guild, territories);
+	var faction_chest := FindFactionChest(faction_name);
+	var recursos_disponiveis := CalculaRecursosDisponiveis(faction_chest);
+	var upkeep_status := CheckUpkeepStatus(guild, faction_name);
+	
+	var result := struct;
+	result.+total_cost := total_cost;
+	result.+available_resources := recursos_disponiveis;
+	result.+status := upkeep_status.status;
+	result.+status_message := upkeep_status.message;
+	result.+status_color := upkeep_status.color;
+	result.+territory_count := territories.size();
+	result.+guild_level := GetSimpleGuildLevel(guild);
+	result.+sufficient_resources := (recursos_disponiveis >= total_cost);
+	
+	return result;
+endfunction
+
+function CalculateUpkeepSustainability(faction_name)
+	var summary := GetUpkeepSummary(faction_name);	if (summary.exists("error"))
+		var error_result := struct;
+		error_result.+error_msg := summary["error"];
+		error_result.+weeks_sustainable := 0;
+		return error_result;
+	endif
+	
+	if (summary.total_cost <= 0)
+		var infinite_result := struct;
+		infinite_result.+weeks_sustainable := -1;
+		infinite_result.+message := "Sem custos de upkeep";
+		return infinite_result;
+	endif
+	
+	var weeks := CInt(summary.available_resources / summary.total_cost);
+	
+	var result := struct;
+	result.+weeks_sustainable := weeks;
+	if (weeks == 0)
+		result.+message := "Recursos insuficientes";
+	elseif (weeks == 1)
+		result.+message := "1 semana sustentável";
+	else
+		result.+message := weeks + " semanas sustentáveis";
+	endif
+	
+	return result;
+endfunction
+
+// ===== FIM DAS MELHORIAS E CORREÇÕES =====
+
+
+// Função auxiliar para verificar erros de forma segura
+function HasUpkeepError(summary_struct)
+	if (!summary_struct)
+		return 1;
+	endif
+	
+	if (summary_struct.exists("error"))
+		return 1;
+	endif
+	
+	return 0;
+endfunction
+
+// Funções auxiliares simplificadas para uso no gump
+function GetUpkeepWeeksSustainable(faction_name)
+	var summary := GetUpkeepSummary(faction_name);
+	
+	if (HasUpkeepError(summary))
+		return 0;
+	endif
+	
+	if (summary.total_cost <= 0)
+		return 999; // Valor alto para representar "infinito"
+	endif
+	
+	return CInt(summary.available_resources / summary.total_cost);
+endfunction
+
+function GetUpkeepStatusMessage(faction_name)
+	var summary := GetUpkeepSummary(faction_name);
+	
+	if (HasUpkeepError(summary))
+		return "Erro ao obter informações";
+	endif
+	
+	if (summary.exists("status_message"))
+		return summary.status_message;
+	endif
+	
+	return "Status desconhecido";
+endfunction
+
+function GetUpkeepStatusColor(faction_name)
+	var summary := GetUpkeepSummary(faction_name);
+	
+	if (HasUpkeepError(summary))
+		return 37; // Vermelho para erro
+	endif
+	
+	if (summary.exists("status_color"))
+		return summary.status_color;
+	endif
+		return 1890; // Azul padrão
+endfunction
+
+// Função para contar territórios de uma guild (similar à do check_upkeep.src)
+function GetGuildTerritoryCount(guild_name)
+    var count := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 0;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var faction := GetElementProp(elem, "faction");
+            if (!faction)
+                faction := GetElementProp(elem, "Faction");
+            endif
+            if (faction == guild_name)
+                count += 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return count;
 endfunction
