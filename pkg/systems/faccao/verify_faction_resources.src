@@ -474,7 +474,7 @@ function VerificarBausTodosSistema()
     
     foreach item in EnumerateItemsInContainer(0)
         if (item.objtype == 0xFF11)
-            var faction := GetObjProperty(item, OBJ_FACTION_PROP);
+            var faction := GetObjectFaction(item);
             if (faction)
                 baús_verificados += 1;
                 var inconsistencias := VerificarEResolverInconsistencias(item);
@@ -921,13 +921,10 @@ function VerificarTerritoriosEFaccoes()
         endif
 
         territorios_verificados += 1;
-        var atualizacoes := 0;
-
-        // 1. Verificar propriedade de facção (padronizar)
-        var faction := GetElementProp(elem_arch, "Faction", "");  // Legado (maiúscula)
-        var faction_std := GetElementProp(elem_arch, TERRITORY_FACTION_PROP, "");  // Novo padrão (minúscula)
+        var atualizacoes := 0;        // 1. Verificar propriedade de facção (usando função utilitária)
+        var faction := GetTerritoryFaction(elem_arch);
         
-        if (faction && !faction_std)
+        if (faction && faction != "")
             SetElementProp(elem_arch, TERRITORY_FACTION_PROP, faction);
             atualizacoes += 1;
         endif

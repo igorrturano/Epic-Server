@@ -6,6 +6,7 @@ use polsys;
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
+include ":faccao:include/shared_functions";
 
 // Tipos de objetos a procurar
 var TIPO_BAU := 0xFF11;
@@ -478,20 +479,15 @@ function VerificarObjeto(item, territorio_id, faction)
     
     if (territory_id_prop == territorio_id || territory_id_raw == territorio_id)
         territorio_match := 1;
-        LogDebug("territorio", "Match encontrado por propriedade de território");
-    endif
+        LogDebug("territorio", "Match encontrado por propriedade de território");    endif
     
     // Verificar facção
     var faction_match := 0;
-    var faction_prop := GetObjProperty(item, OBJ_FACTION_PROP);
-    var faction_raw := GetObjProperty(item, "Faction");
-    var faction_lower := GetObjProperty(item, "faction");
+    var item_faction := GetObjectFaction(item);
     
-    LogDebug("territorio", "Propriedade " + OBJ_FACTION_PROP + ": " + faction_prop);
-    LogDebug("territorio", "Propriedade Faction: " + faction_raw);
-    LogDebug("territorio", "Propriedade faction: " + faction_lower);
+    LogDebug("territorio", "Facção do item: " + item_faction);
     
-    if (faction_prop == faction || faction_raw == faction || faction_lower == faction)
+    if (item_faction == faction)
         faction_match := 1;
         LogDebug("territorio", "Match encontrado por propriedade de facção");
     endif

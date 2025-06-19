@@ -249,13 +249,9 @@ function UpdateTerritorySchedule(territory_id_to_update)
     LogInfo("ResourceController_Schedule", "Tentando atualizar agenda para ID: " + territory_id_to_update);
     
     var elem := TM_FindTerritory(territory_id_to_update); 
-    
-    if (elem)
+      if (elem)
         var friendly_name_for_log := GetElementProp(elem, "Name", territory_id_to_update); 
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!faction)
-            faction := GetElementProp(elem, "Faction"); 
-        endif
+        var faction := GetTerritoryFaction(elem);
         
         var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
         
@@ -360,13 +356,9 @@ function ProcessTerritory(territory_id_param, current_time)
         if (!next_territory_checks.exists(territory_id_param) || next_territory_checks[territory_id_param] != next_time_val)
              next_territory_checks[territory_id_param] := next_time_val; 
         endif
-        return 1; 
-    endif
+        return 1;    endif
 
-    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-    if (!faction)
-        faction := GetElementProp(elem, "Faction"); 
-    endif
+    var faction := GetTerritoryFaction(elem);
     
     var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
     var resources_string := GetElementProp(elem, "Resources");
@@ -561,7 +553,7 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
     LogDebug("recursos_gen", "Iniciando geração para Território: '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ")");
     LogDebug("recursos_gen", "Facção Param: '" + faction_name + "', Quantidade: " + resource_amount);
 
-    var faction_on_elem := GetElementProp(elem, TERRITORY_FACTION_PROP, GetElementProp(elem, "Faction")); // Checa novo e antigo
+    var faction_on_elem := GetTerritoryFaction(elem);
     if (!faction_on_elem)
         LogError("recursos_gen", "Informação de facção inválida para o território '" + territory_name_from_elem + "'.");
         return 0;
@@ -1171,12 +1163,7 @@ function LoadAllTerritories()
         endif
         
         var territory_id_for_schedule := GetElementProp(elem, TERRITORY_ID_PROP, element_name_key);
-        var friendly_name_for_log := GetElementProp(elem, "Name", element_name_key);
-
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!faction)
-            faction := GetElementProp(elem, "Faction"); 
-        endif
+        var friendly_name_for_log := GetElementProp(elem, "Name", element_name_key);        var faction := GetTerritoryFaction(elem);
         
         var resources_str := GetElementProp(elem, "Resources");
         

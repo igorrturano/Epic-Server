@@ -7,6 +7,7 @@ include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
 include ":faccao:include/process_registry"; // <<< CERTIFIQUE-SE QUE ESTA LINHA ESTÁ NO TOPO DO SEU start.src
+include ":faccao:include/territory_management";
 
 // Opcional: include ":faccao:include/permissions.inc"; 
 
@@ -60,11 +61,7 @@ function GetMinimumTerritoryInterval()
         if (!elem)
             continue;
         endif
-        
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!faction) 
-            faction := GetElementProp(elem, "Faction"); 
-        endif
+          var faction := GetTerritoryFaction(elem);
         
         if (faction && faction != DEFAULT_FACTION && faction != "")
             var territory_interval := CInt(GetElementProp(elem, "ResourceInterval", 60));

@@ -1707,7 +1707,7 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
     
     chest.movable := 0;
     SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
-    SetObjProperty(chest, "FactionName", new_faction);
+    SetObjectFaction(chest, new_faction);
     SetObjProperty(chest, TERRITORY_ID_PROP, territory_id);
     
     var chest_id := new_faction + "_" + territory_id;
@@ -1739,7 +1739,7 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
     
     table.movable := 0;
     SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
-    SetObjProperty(table, "FactionName", new_faction);
+    SetObjectFaction(table, new_faction);
     SetObjProperty(table, TERRITORY_ID_PROP, territory_id);
     
     var nome_mesa := "Mesa de Gestão de " + new_faction;
@@ -1765,7 +1765,7 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
     
     mural.movable := 0;
     SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-    SetObjProperty(mural, "FactionName", new_faction);
+    SetObjectFaction(mural, new_faction);
     SetObjProperty(mural, TERRITORY_ID_PROP, territory_id);
     
     var nome_mural := "Mural de Recrutamento de " + new_faction;

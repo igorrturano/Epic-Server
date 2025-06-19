@@ -4,6 +4,8 @@ use datafile;
 
 include ":faccao:faccao_constants";
 include ":faccao:include/safe_guild_utils";
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
 include ":datafile:datafile";
 
 // Controle de depuração global - 0 = desligado, 1 = ligado
@@ -474,25 +476,16 @@ function GetFactionOfChest(chest)
         LogDebug("permissao", "Usando facção em cache: " + cached_faction);
         return cached_faction;
     endif
-    
-var faction_sources := array{
-    OBJ_FACTION_PROP,  // Propriedade principal
-    "FactionName"      // Propriedade legada
-};
-
-var faction;
-    
-    foreach source in faction_sources
-        faction := GetObjProperty(chest, source);
-        if (faction)
-            // Atualizar cache
-            SetObjProperty(chest, "cache_faction", faction);
-            SetObjProperty(chest, "last_accessed", ReadGameClock());
-            
-            LogInfo("permissao", "Facção encontrada via " + source + ": " + faction);
-            return faction;
-        endif
-    endforeach
+      // Usar função utilitária que já tem fallbacks
+    var faction := GetObjectFaction(chest);
+    if (faction && faction != "")
+        // Atualizar cache
+        SetObjProperty(chest, "cache_faction", faction);
+        SetObjProperty(chest, "last_accessed", ReadGameClock());
+        
+        LogInfo("permissao", "Facção encontrada: " + faction);
+        return faction;
+    endif
     
     // Valor padrão com log
     LogWarning("permissao", "Não foi possível determinar facção do baú " + chest.serial);
@@ -511,13 +504,11 @@ endfunction
 function GetPlayerFaction(who)
     if (!who)
         return "";
-    endif
-
-    // Verificar se o jogador pertence a uma guilda
+    endif    // Verificar se o jogador pertence a uma guilda
     if (!who.guildid)
-        // Verificar propriedade alternativa como fallback
-        var faction := GetObjProperty(who, "faction");
-        if (faction && faction != error)
+        // Usar função utilitária que já tem fallbacks
+        var faction := GetObjectFaction(who);
+        if (faction && faction != "")
             return faction;
         endif
 
@@ -533,12 +524,10 @@ function GetPlayerFaction(who)
     // Se falhar, tentar FindGuild
     if (!player_guild)
         player_guild := FindGuild(who.guildid);
-    endif
-
-    if (!player_guild)
-        // Se não conseguir obter a guilda, verificar propriedade alternativa
-        var faction := GetObjProperty(who, "faction");
-        if (faction && faction != error)
+    endif    if (!player_guild)
+        // Se não conseguir obter a guilda, usar função utilitária
+        var faction := GetObjectFaction(who);
+        if (faction && faction != "")
             return faction;
         endif
 
@@ -562,11 +551,9 @@ function GetPlayerFaction(who)
     var safe_guild_name := SafeGetGuildName(player_guild);
     if (safe_guild_name && safe_guild_name != "Unknown Guild")
         return safe_guild_name;
-    endif
-
-    // Método 4: Verificar propriedade alternativa como último recurso
-    var faction := GetObjProperty(who, "faction");
-    if (faction && faction != error)
+    endif    // Método 4: Usar função utilitária como último recurso
+    var faction := GetObjectFaction(who);
+    if (faction && faction != "")
         return faction;
     endif
 

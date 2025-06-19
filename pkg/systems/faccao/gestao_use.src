@@ -1081,12 +1081,8 @@ function ToggleStatusCapital(who, territorio, item)
         // Verificar se a mesa está associada a uma facção específica
         var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
         if (!mesa_faction)
-            var territorio_faction := "";
-            if (territorio.elem)
-                territorio_faction := GetObjProperty(territorio.elem, TERRITORY_FACTION_PROP);
-                if (!territorio_faction)
-                    territorio_faction := GetObjProperty(territorio.elem, "Faction");
-                endif
+            var territorio_faction := "";            if (territorio.elem)
+                territorio_faction := GetTerritoryFaction(territorio.elem);
             endif
             
             mesa_faction := territorio_faction ? territorio_faction : "Desconhecida";
@@ -1407,7 +1403,7 @@ endif
             
             chest.movable := 0;
             SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
-            SetObjProperty(chest, "FactionName", new_faction);
+            SetObjectFaction(chest, new_faction);
             SetObjProperty(chest, TERRITORY_ID_PROP, territorio_id);
             
             var chest_id := new_faction + "_" + territorio_id;
@@ -1442,7 +1438,7 @@ endif
             
             table.movable := 0;
             SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
-            SetObjProperty(table, "FactionName", new_faction);
+            SetObjectFaction(table, new_faction);
             SetObjProperty(table, TERRITORY_ID_PROP, territorio_id);
             
             var nome_mesa := "Mesa de Gestão de " + new_faction;
@@ -1470,7 +1466,7 @@ endif
             
             mural.movable := 0;
             SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-            SetObjProperty(mural, "FactionName", new_faction);
+            SetObjectFaction(mural, new_faction);
             SetObjProperty(mural, TERRITORY_ID_PROP, territorio_id);
             
             var nome_mural := "Mural de Recrutamento de " + new_faction;
@@ -1575,7 +1571,7 @@ function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
             PrintTextAbove(bau, "*Atualizando propriedades*");
             Sleep(1);
             SetObjProperty(bau, OBJ_FACTION_PROP, new_faction);
-            SetObjProperty(bau, "FactionName", new_faction);
+            SetObjectFaction(bau, new_faction);
             
             // ATUALIZAÇÃO IMPORTANTE: Atualizar faction_chest_id
             var chest_id := new_faction + "_" + territorio_id;
@@ -1606,7 +1602,7 @@ if (info.mesa)
         PrintTextAbove(mesa, "*Atualizando propriedades*");
         Sleep(1);
         SetObjProperty(mesa, OBJ_FACTION_PROP, new_faction);
-        SetObjProperty(mesa, "FactionName", new_faction);
+        SetObjectFaction(mesa, new_faction);
         // Atualizar nome
         var nome_mesa := "Mesa de Gestão de " + new_faction;
         if (territorio_id)
@@ -1631,7 +1627,7 @@ if (info.mural)
         PrintTextAbove(mural, "*Atualizando propriedades*");
         Sleep(1);
         SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-        SetObjProperty(mural, "FactionName", new_faction);
+        SetObjectFaction(mural, new_faction);
         // Atualizar nome
         var nome_mural := "Mural de Recrutamento de " + new_faction;
         if (territorio_id)
@@ -2408,12 +2404,8 @@ function GetGuildTerritories(faction_name)
 	endif
 	
 	foreach rect_name in (rect_df.keys())
-		var elem := SafeFindElement(rect_df, rect_name);
-		if (elem)
-			var territory_faction := GetElementProp(elem, "faction");
-			if (!territory_faction)
-				territory_faction := GetElementProp(elem, "Faction");
-			endif
+		var elem := SafeFindElement(rect_df, rect_name);		if (elem)
+			var territory_faction := GetTerritoryFaction(elem);
 			
 			if (territory_faction == faction_name)
 				var territory_info := struct{

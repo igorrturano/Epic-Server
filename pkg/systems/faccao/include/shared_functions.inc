@@ -1066,10 +1066,9 @@ function ObterEstatisticasBau(container)
         "ultima_contagem" := GetObjProperty(container, "recursos_ultimo_update"),
         "ultima_sync" := GetObjProperty(container, "recursos_ultima_sync"),
         "ultima_modificacao" := GetObjProperty(container, "recursos_last_modified"),
-        "cache_sujo" := GetObjProperty(container, "recursos_cache_dirty") ? 1 : 0,
-        "historico_sync" := GetObjProperty(container, "recursos_sync_history"),
+        "cache_sujo" := GetObjProperty(container, "recursos_cache_dirty") ? 1 : 0,        "historico_sync" := GetObjProperty(container, "recursos_sync_history"),
         "historico_verificacao" := GetObjProperty(container, "recursos_verify_history"),
-        "faction" := GetObjProperty(container, "faction")
+        "faction" := GetObjectFaction(container)
     };
     
     return stats;
@@ -1552,7 +1551,7 @@ function DesfazerTransferenciaTerritorio(dados)
                     if (bau)
                         bau.movable := 0;
                         SetObjProperty(bau, OBJ_FACTION_PROP, faccao_original);
-                        SetObjProperty(bau, "FactionName", faccao_original);
+                        SetObjectFaction(bau, faccao_original);
                         SetObjProperty(bau, TERRITORY_ID_PROP, territorio_id);
                         
                         var chest_id := faccao_original + "_" + territorio_id;
@@ -1584,7 +1583,7 @@ function DesfazerTransferenciaTerritorio(dados)
                     if (mesa)
                         mesa.movable := 0;
                         SetObjProperty(mesa, OBJ_FACTION_PROP, faccao_original);
-                        SetObjProperty(mesa, "FactionName", faccao_original);
+                        SetObjectFaction(mesa, faccao_original);
                         SetObjProperty(mesa, TERRITORY_ID_PROP, territorio_id);
                         
                         var nome_mesa := "Mesa de Gestão de " + faccao_original;
@@ -1609,7 +1608,7 @@ function DesfazerTransferenciaTerritorio(dados)
                     if (mural)
                         mural.movable := 0;
                         SetObjProperty(mural, OBJ_FACTION_PROP, faccao_original);
-                        SetObjProperty(mural, "FactionName", faccao_original);
+                        SetObjectFaction(mural, faccao_original);
                         SetObjProperty(mural, TERRITORY_ID_PROP, territorio_id);
                         
                         var nome_mural := "Mural de Recrutamento de " + faccao_original;
@@ -1797,7 +1796,8 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
             if (!skip)
                 new_territories.append(terr);
             else
-                               changed := 1;
+                              
+                changed := 1;
                 LogInfo("territorio", "Removendo território \"" + territory_name + "\" da facção: " + guild.GetProp("name"));
             endif
             
@@ -1990,7 +1990,7 @@ function ClassificarPorObjtype(objtype_param)
     endif
     
     // Se ainda falhar (o que não deveria acontecer se as chaves são inteiras),
-    // tentar a iteração como um fallback de depuração extremo,
+    // tentar a iteração como um fallback de depuração,
     // mas a intenção é que o .exists() acima resolva.
     // Este loop de fallback pode ser removido se o .exists() funcionar consistentemente.
     /*
@@ -2041,19 +2041,19 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
             var territory_elem_s1 := SafeFindElement(seriais_df_s1, territory_id);
             if (territory_elem_s1)
                 LogDebug("recursos_FindChest", "Elemento do território '" + territory_id + "' encontrado no datafile de seriais (Estratégia 1).");
-                var elem_faction_s1 := GetElementProp(territory_elem_s1, "faction");
+                var elem_faction_s1 := GetTerritoryFaction(territory_elem_s1);
                 if (elem_faction_s1 == faction_name)
                     var chest_serial_s1 := GetElementProp(territory_elem_s1, "bau");
                     if (chest_serial_s1)
                         chest := SystemFindObjectBySerial(CInt(chest_serial_s1)); 
-                        if (chest && IsValidContainer(chest) && GetObjProperty(chest, "faction") == faction_name)
+                        if (chest && IsValidContainer(chest) && GetObjectFaction(chest) == faction_name)
                             LogDebug("recursos_FindChest", "Baú " + chest.serial + " encontrado e validado via datafile (novo formato) para território " + territory_id);
                             return chest;
                         else
                             LogWarning("recursos_FindChest", "Serial " + chest_serial_s1 + " para baú do terr " + territory_id + " encontrado, mas objeto inválido, não encontrado no mundo ou facção do objeto não bate. Chest: " + (chest ? chest.serial : "NULL"));
                             chest := 0; 
                         endif;
-                    endif;
+                    endif
                 else
                     LogDebug("recursos_FindChest", "Elemento de seriais para '" + territory_id + "' encontrado, mas facção no datafile de seriais ('" + elem_faction_s1 + "') não corresponde à facção buscada ('" + faction_name + "').");
                 endif;
@@ -2087,7 +2087,7 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
     
     foreach item_s3 in EnumerateItemsInContainer(0)
         if (item_s3.objtype == 0xFF11) 
-            var item_faction_prop_s3 := GetObjProperty(item_s3, "faction"); 
+            var item_faction_prop_s3 := GetObjectFaction(item_s3); 
             if (item_faction_prop_s3 == faction_name)
                 if (territory_id)
                     var item_territory_id_prop_s3 := GetObjProperty(item_s3, "territory_id");
@@ -2164,10 +2164,9 @@ function CreateEmergencyDonationChest(faction_name)
         LogError("recursos", "Falha ao criar baú de emergência");
         return 0;
     endif
-    
-    // Configurar o baú
+      // Configurar o baú
     chest.name := "Baú de Doações de " + faction_name + " [Emergência]";
-    SetObjProperty(chest, "faction", faction_name);
+    SetObjectFaction(chest, faction_name);
     SetObjProperty(chest, "faction_chest_id", faction_name + "_emergency_" + polcore().systime);
     SetObjProperty(chest, "is_emergency_chest", 1);
     SetObjProperty(chest, "created_time", polcore().systime);
@@ -2421,7 +2420,7 @@ function SincronizarComDataFile(container_ou_faction_name, recursos_totais_agreg
     if (TypeOf(container_ou_faction_name) == "ItemRef")
         faction_name := GetObjProperty(container_ou_faction_name, OBJ_FACTION_PROP);
         if (faction_name == error || !faction_name)
-            faction_name := GetObjProperty(container_ou_faction_name, "FactionName");
+            faction_name := GetObjectFaction(container_ou_faction_name);
             if (faction_name == error || !faction_name)
                 faction_name := GetFactionOfChest(container_ou_faction_name);
             endif
@@ -2869,7 +2868,10 @@ function MergeItemProperties(item, properties)
             endif;
             sleepms(1);
         endforeach;
-    endif;
+    else
+        LogWarning("MergeProps_DEBUG", "Tipo de propriedades não suportado: " + TypeOf(properties));
+        return 0;
+    endif
     
     LogDebug("MergeProps_DEBUG", "Mesclagem concluída: " + merged + " propriedades aplicadas");
     return merged;
@@ -2934,7 +2936,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     if (total_amount > 60000)
         LogDebug("ReplaceStack_DEBUG", "Limite de 60000 excedido. Ajustando de " + total_amount + " para 60000");
         total_amount := 60000;
-    endif;
+    endif
     
     // Capturar propriedades do item antigo ANTES de fazer qualquer alteração
     var old_properties := dictionary{};
@@ -3304,11 +3306,7 @@ endfunction
  * Return: 1 para sucesso, 0 para falha
  */
 function RegistrarInconsistencia(container, recursos_antigos, recursos_novos, inconsistencias)
-    var timestamp := polcore().systime;
-    var container_faction := GetObjProperty(container, OBJ_FACTION_PROP);
-    if (!container_faction)
-        container_faction := GetObjProperty(container, "faction");
-    endif
+    var timestamp := polcore().systime;    var container_faction := GetObjectFaction(container);
     
     // Criar mensagem detalhada para o log
     var log_msg := "[" + timestamp + "] Inconsistência no baú " + container.serial + " (Facção: " + container_faction + ")";
@@ -3403,11 +3401,6 @@ function GetResourceObjtype(resource_name)
 endfunction
 
 /*
- * DeterminarTipoRecursoAutomatico(item)
- *
- * Purpose: Determina automaticamente o tipo de recurso com base no objtype
- * Parameters: item - O item a ser analisado
- * Return: String com o tipo de recurso
  */
 function DeterminarTipoRecursoAutomatico(item)
     if (!item)
@@ -3532,7 +3525,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
             if (terr_id_key == "territorios") continue; endif; // Pular o elemento legado
             var terr_elem := SafeFindElement(seriais_df, terr_id_key);
             if (terr_elem)
-                var elem_faction_name := GetElementProp(terr_elem, "faction");
+                var elem_faction_name := GetTerritoryFaction(terr_elem);
                 if (elem_faction_name == faction_name)
                     var bau_serial := GetElementProp(terr_elem, "bau");
                     if (bau_serial)
@@ -3577,7 +3570,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
 
         if (item_no_mundo.objtype == 0xFF11) // ObjType do baú de doações
             var chest_faction_prop := GetObjProperty(item_no_mundo, OBJ_FACTION_PROP);
-            if (!chest_faction_prop) chest_faction_prop := GetObjProperty(item_no_mundo, "FactionName"); endif; // Fallback
+            if (!chest_faction_prop) chest_faction_prop := GetObjectFaction(item_no_mundo); endif; // Fallback com função utilitária
 
             if (chest_faction_prop == faction_name)
                 if (!(item_no_mundo in todos_os_baus_da_faccao))
@@ -3766,4 +3759,88 @@ function RemoveTerritoryFaction(elem)
     var result1 := EraseElementProp(elem, TERRITORY_FACTION_PROP);
     var result2 := EraseElementProp(elem, "Faction");
     return (result1 && result2);
+endfunction
+
+// =======================================
+// FUNÇÕES UTILITÁRIAS PARA OBJETOS
+// =======================================
+
+/*
+ * GetObjectFaction(obj)
+ * 
+ * Obtém a facção associada a um objeto, com fallback para propriedades legadas.
+ * Retorna: string com o nome da facção ou "" se não houver.
+ */
+function GetObjectFaction(obj)
+    if (!obj)
+        return "";
+    endif
+
+    // Padrão novo
+    var faction := GetObjProperty(obj, OBJ_FACTION_PROP);
+    if (faction && faction != error)
+        return faction;
+    endif
+
+    // Fallback legado
+    faction := GetObjProperty(obj, "FactionName");
+    if (faction && faction != error)
+        return faction;
+    endif
+
+    // Fallback adicional (caso alguém use "Faction" com F maiúsculo)
+    faction := GetObjProperty(obj, "Faction");
+    if (faction && faction != error)
+        return faction;
+    endif
+
+    return "";
+endfunction
+
+/*
+ * SetObjectFaction(obj, faction_name)
+ * 
+ * Define a facção de um objeto de forma padronizada.
+ * Remove propriedades legadas para evitar inconsistências.
+ */
+function SetObjectFaction(obj, faction_name)
+    if (!obj)
+        return 0;
+    endif
+
+    // Primeiro, remover propriedades legadas para evitar inconsistências
+    if (GetObjProperty(obj, "FactionName") != error)
+        EraseObjProperty(obj, "FactionName");
+    endif
+    if (GetObjProperty(obj, "Faction") != error)
+        EraseObjProperty(obj, "Faction");
+    endif
+
+    // Depois, definir a nova propriedade padrão
+    SetObjProperty(obj, OBJ_FACTION_PROP, faction_name);
+
+    return 1;
+endfunction
+
+/*
+ * RemoveObjectFaction(obj)
+ * 
+ * Remove todas as propriedades de facção do objeto (atual e legadas).
+ */
+function RemoveObjectFaction(obj)
+    if (!obj)
+        return 0;
+    endif
+
+    if (GetObjProperty(obj, OBJ_FACTION_PROP) != error)
+        EraseObjProperty(obj, OBJ_FACTION_PROP);
+    endif
+    if (GetObjProperty(obj, "FactionName") != error)
+        EraseObjProperty(obj, "FactionName");
+    endif
+    if (GetObjProperty(obj, "Faction") != error)
+        EraseObjProperty(obj, "Faction");
+    endif
+
+    return 1;
 endfunction
