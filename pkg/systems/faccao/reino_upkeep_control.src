@@ -130,31 +130,8 @@ function GetGuildTerritories(faction_name)
     return territories;
 endfunction
 
-function GetGuildTerritoryCount(guild_name)
-    var count := 0;
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        LogError("ReinoUpkeep", "Falha ao abrir datafile de áreas");
-        return 0;
-    endif
-    
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        if (elem)
-            var faction := GetElementProp(elem, "faction");
-            if (!faction)
-                faction := GetElementProp(elem, "Faction");
-            endif
-            if (faction == guild_name)
-                count += 1;
-            endif
-        endif
-        sleepms(2);
-    endforeach
-    
-    LogDebug("ReinoUpkeep", guild_name + " possui " + count + " territórios");
-    return count;
-endfunction
+// Função GetGuildTerritoryCount movida para shared_functions.inc
+// para eliminar duplicação - use a versão centralizada
 
 function GetSimpleGuildLevel(guild)
     var guild_xp_info := GetGuildXPInfo(guild);

@@ -3692,3 +3692,38 @@ function GetActiveFactionsFromTerritories()
     
     return active_factions;
 endfunction
+
+function GetGuildTerritoryCount(guild_name)
+    if (!guild_name)
+        LogWarning("shared_functions", "GetGuildTerritoryCount chamada com guild_name vazio");  // ✅ Validação
+        return 0;
+    endif
+    
+    var count := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("shared_functions", "Falha ao abrir datafile :architect:areas em GetGuildTerritoryCount");  // ✅ Logging
+        return 0;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            // Verificar primeiro a propriedade padrão (lowercase)
+            var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);  // ✅ Constante
+            
+            // Fallback para compatibilidade com versões antigas (uppercase)
+            if (!faction)
+                faction := GetElementProp(elem, "Faction");  // ✅ Fallback
+            endif
+            
+            if (faction == guild_name)
+                count += 1;  // ✅ Incrementa corretamente
+            endif
+        endif
+        sleepms(2);  // ✅ Anti-lag
+    endforeach
+    
+    LogDebug("shared_functions", "GetGuildTerritoryCount(" + guild_name + ") = " + count);  // ✅ Debug detalhado
+    return count;
+endfunction

@@ -1,7 +1,0 @@
-use uo;
-
-program remove_temp_access(who)
-    EraseObjProperty(who, "AllowAllChestAccess");
-    SendSysMessage(who, "Acesso temporário removido.");
-    return 1;
-endprogram
