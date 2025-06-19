@@ -22,8 +22,9 @@ var EL_BOW := Dictionary{
 	"anim" -> 0x20
 };
 
+// Para gritar, usar a animação "inquietar" (0x06)
 var EL_GRITAR := Dictionary{
-	"anim" -> "",
+	"anim" -> 0x06,
 	"sound" -> {0x441, 0x32F},
 	"emote" -> "*Gritando*"
 };
@@ -34,14 +35,16 @@ var EL_GRITAR2 := Dictionary{
 	"emote" -> "*Gritando*"
 };
 
+// Para "huh", também usar "inquietar" (0x06)
 var EL_HUH := Dictionary{
-	"anim" -> "",
+	"anim" -> 0x06,
 	"sound" -> {0x441, 0x32F},
 	"emote" -> "*Huh*"
 };
 
+// Para tossir, usar a animação de "comer" (0x22) - mão na boca é mais realista para tosse
 var EL_TOSSIR1 := Dictionary{
-	"anim" -> "",
+	"anim" -> 0x22,
 	"sound" -> {0x421, 0x312},
 	"emote" -> "*Tossindo*"
 };
@@ -52,8 +55,9 @@ var EL_TOSSIR2 := Dictionary{
 	"emote" -> "*Gritando*"
 };
 
+//Parecido com saudar, mão no peito
 var EL_ARFAR := Dictionary{
-	"anim" -> "",
+	"anim" -> "ox21",
 	"sound" -> {0x42A, 0x31A},
 	"emote" -> "*Arfar*"
 };
@@ -65,7 +69,7 @@ var EL_GEMER := Dictionary{
 };
 
 var EL_CAIR := Dictionary{
-	"anim" -> "", //PROCURAR
+	"anim" -> "0x15", //cair para trás
 	"sound" -> {EL_GEMER["sound"][1], EL_GEMER["sound"][2]},
 	"emote" -> ""
 };
@@ -74,6 +78,13 @@ var EL_GOLPEAR := Dictionary{
 	"anim" -> 0x441,
 	"sound" -> {EL_GRITAR2["sound"][1], EL_GRITAR2["sound"][2]},
 	"emote" -> "*Golpeando*"
+};
+
+// Para "sentir dor de barriga" (anim parece se contorcer)
+var EL_SENTIRDOR := Dictionary{
+	"anim" -> 0x14, // "levargolpe" (0x14)
+	"sound" -> {EL_GEMER["sound"][1], EL_GEMER["sound"][2]},
+	"emote" -> "*Sente dor lacerante*"
 };
 
 var EL_SUSTO := Dictionary{
@@ -433,6 +444,34 @@ function Imersao(who, tipoimersao, qtdloops:=1, tempoloop:=0, saisom:=1, saiemot
 				default: erro := " HUMANOIDE";
 			endcase
 			break;
+
+	"sentirdor":
+		whoemote := EL_SENTIRDOR["emote"];
+		whoanim := EL_SENTIRDOR["anim"];
+		case (who.graphic)
+			400:
+				whosound := EL_SENTIRDOR["sound"][1];
+			401:
+				whosound := EL_SENTIRDOR["sound"][2];
+			1828:
+				whosound := EL_SENTIRDOR["sound"][1];
+			1829:
+				whosound := EL_SENTIRDOR["sound"][2];
+			1830:
+				whosound := EL_SENTIRDOR["sound"][1];
+			1831:
+				whosound := EL_SENTIRDOR["sound"][2];
+			1832:
+				whosound := EL_SENTIRDOR["sound"][1];
+			1833:
+				whosound := EL_SENTIRDOR["sound"][2];
+			1834:
+				whosound := EL_SENTIRDOR["sound"][1];
+			1835:
+				whosound := EL_SENTIRDOR["sound"][2];
+			default: erro := " HUMANOIDE";
+		endcase
+		break;
 		
 		"vomitar":
 			whoemote := EL_VOMITAR["emote"];

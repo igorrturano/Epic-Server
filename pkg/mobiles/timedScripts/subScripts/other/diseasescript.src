@@ -1,0 +1,272 @@
+use uo;
+use os;
+use util;
+use vitals;
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":medicine:anatomy";
+
+program diseaseScript(params)
+    var mobile := params[1];
+    var attacker := params[2]; // Pode ser null quando chamado de outro script
+    var level := params[3]; // Level 1-5
+    
+    // Verifica se é uma falha de cura
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+	var falhou_cura := diseases_system.falhou_cura;
+    
+    // Se falhou na tentativa de cura
+    if (falhou_cura)
+        // Remove a flag de falha na cura 
+		UpdateDiseaseProperty(mobile, "falhou_cura", 0);
+        // Reseta o timer
+        return 1;
+    else
+        // Primeira infecção ou nova infecção
+        // Verifica se já está infectado
+		if (!diseases_system)
+			diseases_system := struct{};
+		endif
+        var current_diseases := diseases_system.diseases;
+        
+        if (current_diseases.size() > 0)
+            // Já está infectado, não faz nada
+            SendSysMessageEx(mobile, "Você já está doente e seu corpo resiste a nova infecção.", SSM_INFO);
+            return 0;
+        endif
+        
+        // Gera sintomas aleatórios baseados no nível
+        var new_diseases := GenerateRandomDiseases(level);
+        
+		diseases_system.diseases := new_diseases;
+		diseases_system.grade := "Leve";  // Adiciona outras propriedades necessárias
+		diseases_system.falhou_cura := 0;
+
+        SendSysMessageEx(mobile, "Você começa a se sentir doente!", SSM_FAIL);
+		var corpo_peste := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x2FB7, 1);
+		EquipItem(mobile, corpo_peste);
+		diseases_system.serial_peste_corpse := corpo_peste.serial;
+		
+		diseases_system.RegenDiseaseMod := -50;
+		AP_SetVitalRegenRateMod(mobile, "Stamina", -50);
+		AP_SetVitalRegenRateMod(mobile, "Mana", -50);
+		RecalcVitals(mobile);
+		
+		SetObjProperty(mobile, "Diseases_System", diseases_system);
+        
+		if (attacker)
+            PrintTextAbove(attacker, "*Infecta " + mobile.name + "*");
+        endif
+        
+        ApplyDiseaseEffects(mobile, new_diseases, "Leve");
+		ScheduleNextDiseaseEffect(mobile, current_diseases);
+    endif
+    
+    return 1;
+endprogram
+
+function ScheduleNextDiseaseEffect(subject, disease_grade)
+    // Base: 3-5 horas para leve, 1-3 horas para moderado, 30min-1hora para grave
+    var min_minutes, max_minutes;
+    
+    case (disease_grade)
+        "Leve": 
+            min_minutes := 180; // 3 horas
+            max_minutes := 300; // 5 horas
+            break;
+        "Moderado":
+            min_minutes := 60;  // 1 hora
+            max_minutes := 180; // 3 horas
+            break;
+        "Grave":
+            min_minutes := 30;  // 30 minutos
+            max_minutes := 60;  // 1 hora
+            break;
+        default:
+            min_minutes := 120;
+            max_minutes := 240;
+    endcase
+    
+    // Adiciona variação aleatória no intervalo definido
+    var next_effect_minutes := RandomInt(max_minutes - min_minutes + 1) + min_minutes;
+    
+    // Converte para segundos do jogo
+    var next_effect_time := next_effect_minutes * 60;
+    
+    // Programa o próximo efeito
+    TS_StartTimer(subject, "diseaseeffect", next_effect_time, 1);
+    return 1;
+endfunction
+
+// Função para gerar sintomas aleatórios baseados no nível
+function GenerateRandomDiseases(level)
+    var all_diseases := array{
+        "Febre",
+        "Trombo",
+        "Pustulas",
+        "Laceracao",
+        "Prurido",
+        "Colicas",
+        "Palpitacoes",
+        "Nausea",
+        "Cefaleia"
+    };
+    
+    var diseases := array{};
+    var max_symptoms := Min(level * 2, 9); // Máximo de sintomas baseado no nível
+    var chance_per_symptom := 40 + (level * 10); // Base 40% + 10% por nível
+    
+    // Embaralha o array de doenças
+    all_diseases := RandomizeArray(all_diseases);
+    
+    // Seleciona sintomas aleatórios baseados no nível e chance
+    foreach disease in all_diseases
+        if (diseases.size() >= max_symptoms)
+            break;
+        endif
+        
+        if (RandomInt(100) < chance_per_symptom)
+            diseases.append(disease);
+        endif
+    endforeach
+    
+    // Garante pelo menos um sintoma
+    if (diseases.size() == 0)
+        diseases.append(all_diseases[RandomInt(all_diseases.size())+1]);
+    endif
+    
+    return diseases;
+endfunction
+
+// Função para embaralhar um array (Fisher-Yates shuffle)
+function RandomizeArray(array_to_shuffle)
+    var size := array_to_shuffle.size();
+    var shuffled := array{};
+    
+    // Cria uma cópia do array original
+    foreach item in array_to_shuffle
+        shuffled.append(item);
+    endforeach
+    
+    // Embaralha o array usando um loop while ao invés de for
+    var i := size;
+    while (i >= 2)
+        var j := RandomInt(i) + 1;
+        var temp := shuffled[i];
+        shuffled[i] := shuffled[j];
+        shuffled[j] := temp;
+        i := i - 1;
+    endwhile;
+    
+    return shuffled;
+endfunction
+
+// Aplica efeitos baseados nas doenças e gravidade
+function ApplyDiseaseEffects(mobile, diseases, grade)
+    // Primeiro remove quaisquer efeitos existentes
+    RemoveDiseaseEffects(mobile);
+    
+    var strength_mod := 0;
+    var dex_mod := 0;
+    var int_mod := 0;
+    var regen_mod := 0;
+    
+    // Multiplicador de efeito baseado na gravidade
+    var effect_mult := 1;
+    if (grade == "Moderado")
+        effect_mult := 2;
+    elseif (grade == "Grave")
+        effect_mult := 3;
+    endif
+    
+    // Aplica efeitos baseados nos sintomas
+    foreach disease in diseases
+        case (disease)
+            "Febre":
+                strength_mod -= 5 * effect_mult;
+                regen_mod -= 1 * effect_mult;
+                break;
+            "Trombo":
+                dex_mod -= 5 * effect_mult;
+                break;
+            "Pustulas":
+                // Efeito visual apenas
+                break;
+            "Laceracao":
+                strength_mod -= 3 * effect_mult;
+                dex_mod -= 3 * effect_mult;
+                break;
+            "Prurido":
+                int_mod -= 3 * effect_mult;
+                break;
+            "Colicas":
+                strength_mod -= 2 * effect_mult;
+                dex_mod -= 2 * effect_mult;
+                int_mod -= 2 * effect_mult;
+                break;
+            "Palpitacoes":
+                dex_mod -= 4 * effect_mult;
+                break;
+            "Nausea":
+                int_mod -= 4 * effect_mult;
+                regen_mod -= 1 * effect_mult;
+                break;
+            "Cefaleia":
+                int_mod -= 5 * effect_mult;
+                break;
+        endcase
+    endforeach
+    
+    // Aplica modificações de atributos
+    if (strength_mod != 0)
+        AP_ModifyStatMod(mobile, STRENGTH, strength_mod);
+		UpdateDiseaseProperty(mobile, "StrDiseaseMod", strength_mod);
+    endif
+    
+    if (dex_mod != 0)
+        AP_ModifyStatMod(mobile, DEXTERITY, dex_mod);
+        UpdateDiseaseProperty(mobile, "DexDiseaseMod", dex_mod);
+    endif
+    
+    if (int_mod != 0)
+        AP_ModifyStatMod(mobile, INTELLIGENCE, int_mod);
+        UpdateDiseaseProperty(mobile, "IntDiseaseMod", int_mod);
+    endif
+    
+    if (regen_mod != 0)
+        // Implementar mod de regeneração se seu sistema suportar
+        UpdateDiseaseProperty(mobile, "RegenDiseaseMod", regen_mod);
+    endif
+endfunction
+
+// Função para remover efeitos de doença
+function RemoveDiseaseEffects(mobile)
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+	var falhou_cura := diseases_system.falhou_cura;
+
+    // Remove modificadores de atributos anteriores
+    var str_mod := diseases_system.StrDiseaseMod;
+    if (str_mod)
+        AP_ModifyStatMod(mobile, STRENGTH, -str_mod);
+        UpdateDiseaseProperty(mobile, "StrDiseaseMod", 0);
+    endif
+    
+    var dex_mod := diseases_system.DexDiseaseMod;
+    if (dex_mod)
+        AP_ModifyStatMod(mobile, DEXTERITY, -dex_mod);
+        UpdateDiseaseProperty(mobile, "DexDiseaseMod", 0);
+    endif
+    
+    var int_mod := diseases_system.IntDiseaseMod;
+    if (int_mod)
+        AP_ModifyStatMod(mobile, INTELLIGENCE, -int_mod);
+        UpdateDiseaseProperty(mobile, "IntDiseaseMod", 0);
+    endif
+    
+    var regen_mod := diseases_system.RegenDiseaseMod;
+    if (regen_mod)
+        // Remover mod de regeneração se implementado
+        UpdateDiseaseProperty(mobile, "RegenDiseaseMod", 0);
+    endif
+endfunction

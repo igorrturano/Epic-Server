@@ -263,6 +263,71 @@ function SetLastDamageInfo(mobile, amount, type, source, spell := "")
 		last_damage.+spell := spell;
 	endif
 
+////AUTOPSIA
+var life := AP_GetVital(mobile, "HITS");
+if (amount >= life)
+var autopsy := struct;
+	if ( source.weapon )// adicionado para o forensicevaluation detectar a arma do crime
+		//last_damage.+weapon := source.weapon;
+		autopsy.+serial_weapon := source.weapon.serial; 
+		autopsy.+objtype := source.weapon.objtype;
+	endif
+	
+    // Descobrir mais Dano
+    var slashDamage := getNPCMainDamage(mobile, SLASHDAMAGE);
+    var piercingDamage := getNPCMainDamage(mobile, PIERCINGDAMAGE);
+    var bluntDamage := getNPCMainDamage(mobile, BLUNTDAMAGE);
+    // Compara os valores dos dados (assumindo que dice tem um valor numérico)
+    var maxDamage := slashDamage.dice;
+    var maxType := SLASHDAMAGE;  
+    if (piercingDamage.dice > maxDamage)
+        maxDamage := piercingDamage.dice;
+        maxType := PIERCINGDAMAGE;
+    endif
+    if (bluntDamage.dice > maxDamage)
+        maxDamage := bluntDamage.dice;
+        maxType := BLUNTDAMAGE;
+    endif
+    autopsy.+dano_principal := maxType;
+
+	var stat := struct;
+	stat.+STR := AP_GetStat(mobile, "STRENGTH");
+	stat.+DEX := AP_GetStat(mobile, "DEXTERITY");
+	stat.+INT := AP_GetStat(mobile, "INTELLIGENCE");
+	
+	var vital := struct;
+	vital.+HIT := AP_GetVitalMaximumValue(mobile, "HITS");
+	vital.+STA := AP_GetVitalMaximumValue(mobile, "STAMINA");
+	vital.+MAN := AP_GetVitalMaximumValue(mobile, "MANA");
+	//Descobir as resits
+	autopsy.+resists := getNPCResists(mobile);
+	autopsy.+elemdamage := getNPCElemDamages(mobile);
+	autopsy.+stats := stat;
+	autopsy.+vitals := vital;
+	
+	var npc_elem := NPC_GetNPCConfig(mobile);
+	var classe := npc_elem.Classe;
+	var skills_combat := struct;
+	
+	if (classe == SABIO)
+		skills_combat.+magery := AP_GetTrueSkill(mobile, MAGERY);
+		skills_combat.+arcana := AP_GetTrueSkill(mobile, ARCANA);
+	elseif(classe == LADINO || mobile.isSpider())
+		skills_combat.+sneak := AP_GetTrueSkill(mobile, SNEAK);
+		skills_combat.+awareness := AP_GetTrueSkill(mobile, AWARENESS);
+		skills_combat.+pickpocketing := AP_GetTrueSkill(mobile, PICKPOCKETING);
+	else
+		skills_combat.+wrestling := AP_GetTrueSkill(mobile, WRESTLING);
+		skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
+	endif
+	autopsy.+skills := skills_combat;
+	autopsy.+taxonomy := npc_elem.Taxonomy;
+	autopsy.+rastros := npc_elem.rastro;
+
+	SetObjProperty(mobile, "Autopsy", autopsy);
+endif	
+//FIM AUTOPSIA
+
 	if ( last_damage.acctname )
 		last_damage.+acctname := source.acctname;
 	endif
