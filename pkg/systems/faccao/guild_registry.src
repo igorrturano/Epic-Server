@@ -56,10 +56,9 @@ program guild_registry()
                 "update": 
                     LogInfo("registro_guildas", "Atualizando registro de guildas sob demanda");
                     UpdateGuildRegistry();
-                    last_check := ReadGameClock();
-                "lookup":
+                    last_check := ReadGameClock();                "lookup":
                     if (ev.name)
-                        var guild_id := LookupGuildByName(ev.name);
+                        var guild_id := FindGuildByName(ev.name);
                         if (ev.process)
                             var process := GetProcess(ev.process);
                             if (process)
@@ -230,56 +229,11 @@ function UpdateGuildRegistry()
 endfunction
 
 /*
- * LookupGuildByName(name)
- *
- * Purpose: Buscar o ID de uma guilda pelo nome
- * Parameters: 
- *   name - Nome da guilda a ser buscada
- * Return: ID da guilda ou 0 se não encontrada
+ * FUNÇÃO REMOVIDA: LookupGuildByName 
+ * 
+ * Esta função foi consolidada em FindGuildByName() em shared_functions.inc
+ * para eliminar duplicação de código conforme REFACTOR_PLAN.md
  */
-function LookupGuildByName(name)
-    if (!name || name == "")
-        return 0;
-    endif
-    
-    // Usar funções auxiliares do datafile_helpers.inc
-    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE);
-    if (!df)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
-    
-    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM);
-    if (!elem)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
-    
-    // Usar função auxiliar com valor padrão para caso de erro
-    var registry := GetElementProp(elem, "registry", dictionary{});
-    
-    // Verificar se existe exatamente
-    if (registry.exists(name))
-        return registry[name];
-    endif
-    
-    // Verificar case-insensitive
-    var lower_name := Lower(name);
-    foreach key in (registry.keys())
-        if (Lower(key) == lower_name)
-            return registry[key];
-        endif
-        sleepms(2);
-    endforeach
-    
-    // Verificar nomes parciais como último recurso
-    foreach key in (registry.keys())
-        if (Lower(key).find(lower_name) != error || lower_name.find(Lower(key)) != error)
-            return registry[key];
-        endif
-        sleepms(2);
-    endforeach
-    
-    return 0;
-endfunction
 
 /*
  * RegisterGuild(name, guild_id)

@@ -36,14 +36,10 @@ function ProcessarUpkeepSimples()
     // Nova abordagem: buscar guilds através dos territórios
     var active_guilds := struct{};
     var rect_df := SafeOpenDataFile(":architect:areas");
-    if (rect_df)
-        foreach elem_name in (rect_df.keys())
+    if (rect_df)        foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
             if (elem)
-                var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                if (!territory_faction)
-                    territory_faction := GetElementProp(elem, "Faction");
-                endif
+                var territory_faction := GetTerritoryFaction(elem);
                 
                 if (territory_faction && territory_faction != "" && territory_faction != "Reino")
                     active_guilds[territory_faction] := 1;
@@ -110,11 +106,7 @@ function GetGuildTerritories(faction_name)
     
     foreach rect_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, rect_name);
-        if (elem)
-            var territory_faction := GetElementProp(elem, "faction");
-            if (!territory_faction)
-                territory_faction := GetElementProp(elem, "Faction");
-            endif
+        if (elem)            var territory_faction := GetTerritoryFaction(elem);
             if (territory_faction == faction_name)
                 var territory_info := struct{
                     "name" := rect_name,
@@ -155,11 +147,7 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
         LogCritical("UpkeepPayment_SEARCH", "Buscando territórios da facção " + guild_name);
         foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
-            if (elem)
-                var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                if (!territory_faction)
-                    territory_faction := GetElementProp(elem, "Faction");
-                endif
+            if (elem)                var territory_faction := GetTerritoryFaction(elem);
                 
                 if (territory_faction == guild_name)
                     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, elem_name);

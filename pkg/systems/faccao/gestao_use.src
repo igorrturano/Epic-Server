@@ -925,12 +925,8 @@ function MostrarInformacoesTerritorio(who, index, item)
     var territorios := array{};
     foreach elem_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, elem_name);
-        
-        // Verificar propriedades de facção
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
-        if (!faction)
-            faction := GetElementProp(elem, "Faction", ""); // Compatibilidade
-        endif
+          // Verificar propriedades de facção
+        var faction := GetTerritoryFaction(elem);
         
         // Obter ID do território
         var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
@@ -968,12 +964,8 @@ function MostrarInformacoesTerritorio(who, index, item)
         SendSysMessage(who, "Elemento do território não encontrado.");
         return 0;
     endif
-    
-    // Obter propriedades
-    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
-    if (!faction)
-        faction := GetElementProp(elem, "Faction", "");
-    endif
+      // Obter propriedades
+    var faction := GetTerritoryFaction(elem);
     if (!faction) faction := "Desconhecida"; endif
     
     var rect := GetElementProp(elem, "Rect", "");

@@ -3671,7 +3671,7 @@ function GetActiveFactionsFromTerritories()
             if (elem_name.find("TER_") == 1) // É um território
                 var territory_elem := SafeFindElement(seriais_df, elem_name);
                 if (territory_elem)
-                    var faction_name := GetElementProp(territory_elem, "faction");
+                    var faction_name := GetTerritoryFaction(territory_elem);
                     if (faction_name && !seen_factions.exists(faction_name))
                         var guild_id := FindGuildByName(faction_name); // Usar função robusta existente
                         if (guild_id)
@@ -3708,14 +3708,7 @@ function GetGuildTerritoryCount(guild_name)
     
     foreach rect_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, rect_name);
-        if (elem)
-            // Verificar primeiro a propriedade padrão (lowercase)
-            var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);  // ✅ Constante
-            
-            // Fallback para compatibilidade com versões antigas (uppercase)
-            if (!faction)
-                faction := GetElementProp(elem, "Faction");  // ✅ Fallback
-            endif
+        if (elem)            var faction := GetTerritoryFaction(elem);
             
             if (faction == guild_name)
                 count += 1;  // ✅ Incrementa corretamente
@@ -3726,4 +3719,51 @@ function GetGuildTerritoryCount(guild_name)
     
     LogDebug("shared_functions", "GetGuildTerritoryCount(" + guild_name + ") = " + count);  // ✅ Debug detalhado
     return count;
+endfunction
+
+/*
+ * GetTerritoryFaction(elem)
+ * Obtém a facção de um território de forma padronizada (case-insensitive)
+ */
+function GetTerritoryFaction(elem)
+    if (!elem)
+        return "";
+    endif
+    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+    if (!faction)
+        faction := GetElementProp(elem, "Faction");
+    endif
+    if (!faction)
+        faction := "";
+    endif
+    return faction;
+endfunction
+
+/*
+ * SetTerritoryFaction(elem, faction_name)
+ * Define a facção de um território de forma padronizada (ambas as props)
+ */
+function SetTerritoryFaction(elem, faction_name)
+    if (!elem)
+        return 0;
+    endif
+    if (!faction_name)
+        faction_name := "";
+    endif
+    var result1 := SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name);
+    var result2 := SetElementProp(elem, "Faction", faction_name);
+    return (result1 && result2);
+endfunction
+
+/*
+ * RemoveTerritoryFaction(elem)
+ * Remove a facção de um território (ambas as propriedades)
+ */
+function RemoveTerritoryFaction(elem)
+    if (!elem)
+        return 0;
+    endif
+    var result1 := EraseElementProp(elem, TERRITORY_FACTION_PROP);
+    var result2 := EraseElementProp(elem, "Faction");
+    return (result1 && result2);
 endfunction
