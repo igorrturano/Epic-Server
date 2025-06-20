@@ -327,11 +327,10 @@ function ReinoGump(byref gump, item, who := 0)
             
             // Filtrar por facção
             if (faction && faction != DEFAULT_FACTION && 
-                (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
-                territorios_visiveis.append(struct{
+                (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))                territorios_visiveis.append(struct{
                     "name" := elem_name,
                     "id" := territory_id,
-                    "faction" := faction
+                    TERRITORY_FACTION_PROP := faction
                 });
             endif
             sleepms(2);
@@ -652,7 +651,7 @@ function DoacoesGump(byref gump, item_mesa_gestao)
     var recursos_a_exibir := CreateEmptyResourceStruct();
     var log_message := ""; // Variável para construir a mensagem de log
 
-    if (faction_name_da_mesa && faction_name_da_mesa != KINGDOM_FACTION && faction_name_da_mesa != "Reino")
+    if (faction_name_da_mesa && faction_name_da_mesa != KINGDOM_FACTION)
         titulo_gump := "Recursos de " + faction_name_da_mesa;
         var nome_elemento_debug := NormalizarNomeElementoFaccao(faction_name_da_mesa);
         log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Nome do Elemento Normalizado: '" + nome_elemento_debug + "'";
@@ -1228,12 +1227,11 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         LogDebug("territorio", "Chamando TM_SetTerritoryFaction(" + territorio_id + ", " + new_faction + ")");
         var tm_result := TM_SetTerritoryFaction(territorio_id, new_faction);
         LogDebug("territorio", "Resultado TM_SetTerritoryFaction: " + tm_result);
-        
-        // Também definimos as propriedades tradicionais para compatibilidade
+          // Também definimos as propriedades tradicionais para compatibilidade
         LogDebug("territorio", "Atualizando propriedades diretas para compatibilidade");
-        var prop1 := SetElementProp(elem, "Faction", new_faction);
+        var prop1 := SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
         var prop2 := SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
-        LogDebug("territorio", "Resultados: Faction=" + prop1 + ", " + TERRITORY_FACTION_PROP + "=" + prop2);
+        LogDebug("territorio", "Resultados: " + TERRITORY_FACTION_PROP + "=" + prop1 + ", " + TERRITORY_FACTION_PROP + "=" + prop2);
         
         // ===== ETAPA 3: ATUALIZAR AS GUILDAS =====
         LogDebug("territorio", "ETAPA 3: Atualizando guildas");
@@ -1468,11 +1466,10 @@ endif
   // 4.4 Salvar os seriais no datafile - USANDO O NOVO MÉTODO CENTRALIZADO
 LogDebug("territorio", "4.4: Registrando seriais via TM_RegisterTerritoryObjects");
 
-var objeto_seriais := struct{
-    "bau" := chest ? chest.serial : 0,
+var objeto_seriais := struct{    "bau" := chest ? chest.serial : 0,
     "mesa" := table ? table.serial : 0,
     "mural" := mural ? mural.serial : 0,
-    "faction" := new_faction,
+    TERRITORY_FACTION_PROP := new_faction,
     "coords" := GetElementProp(elem, "Rect", ""),
     "realm" := realm
 };
@@ -1825,9 +1822,8 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
           // === SOLUÇÃO KISS: Uma única linha para remover tudo ===
         var objetos_removidos := TM_DeleteTerritoryObjects(territorio_id, faction);
         SendSysMessage(who, "Objetos removidos: " + objetos_removidos);
-        
-        // Atualizar propriedades no datafile
-        SetElementProp(elem, "Faction", DEFAULT_FACTION);
+          // Atualizar propriedades no datafile
+        SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
         SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
         elem.EraseProp("NextResourceTime");
         
@@ -1880,7 +1876,7 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
        LogInfo("territorio", "Notificando sistema de eventos sobre revogação de território: " + territorio_id);
 TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
     "name" := territorio_nome, 
-    "faction" := faction 
+    TERRITORY_FACTION_PROP := faction 
 });
 
         return 1; // Indica que deve sair do gump

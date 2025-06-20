@@ -9,7 +9,7 @@ include ":gumps:yesNo";
 include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 

@@ -153,8 +153,7 @@ function UpdateGuildRegistry()
             var guild := FindGuild(faction_info.guild_id);
             if (!guild)
                 continue;
-            endif
-            var guild_name := guild.GetProp("name");
+            endif            var guild_name := guild.GetProp(FACTION_PROP_NAME);
             if (!guild_name || guild_name == error)
                 guild_name := guild.GetProp(FACTION_PROP_NAME);
             endif
@@ -185,11 +184,10 @@ function UpdateGuildRegistry()
         // Método alternativo: obter informações de guildas dos jogadores online
         foreach player in (EnumerateOnlineCharacters())
             if (player.guildid)
-                var player_guild := player.guild;
-                if (player_guild)
-                    var guild_name := player_guild.GetProp("name");
+                var player_guild := player.guild;                if (player_guild)
+                    var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
                     if (!guild_name || guild_name == error)
-                        guild_name := player_guild.GetProp(FACTION_PROP_NAME);
+                        guild_name := player_guild.GetProp("name"); // Propriedade legada
                     endif
                     
                     if (!guild_name || guild_name == error)
@@ -347,9 +345,8 @@ function ValidateAllGuildLeaders()
             erros += 1;
             continue;
         endif
-        
-        // Verificar se é uma facção (tem propriedade "name")
-        var faction_name := guild.GetProp("name");
+          // Verificar se é uma facção (tem propriedade "name")
+        var faction_name := guild.GetProp(FACTION_PROP_NAME);
         if (!faction_name || faction_name == error)
             continue; // Não é uma facção, pular
         endif

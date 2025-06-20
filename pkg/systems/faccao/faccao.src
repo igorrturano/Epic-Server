@@ -10,6 +10,7 @@ include "include/arrays";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/safe_guild_utils";
 include ":faccao:include/shared_functions";
 include ":gumps:gumps";
@@ -18,8 +19,6 @@ include ":gumps:yesNo";
 include ":merchants:item_template";
 include ":gumps:htmlGump";
 include ":keys:key";
-// Incluir o arquivo de constantes para resolver os erros
-include ":faccao:include/faccao_constants";
 include ":architect:include/architect";
 include ":faccao:include/logging";
 include ":datafile:datafile";
@@ -128,7 +127,7 @@ program faccao(params)
    if (is_gm_or_leader)
       foreach g_n in (guild_obj.subguilds)
 	      GFResizePic(gump, 570, 40+(_g_n_iter * 38), 0x9C40, 200, 40); //background
-         GFHtmlShadowed(gump, 605, 48+(_g_n_iter * 38), 165, 20, "#FBE2B4", "{}".format(FindGuild(g_n).getProp("name")), 8);
+         GFHtmlShadowed(gump, 605, 48+(_g_n_iter * 38), 165, 20, "#FBE2B4", "{}".format(FindGuild(g_n).getProp(FACTION_PROP_NAME)), 8);
          GFAddButton(gump, 740, 48+(_g_n_iter * 38), 5605, 5605, GF_CLOSE_BTN, BUTTON_CHECK_GUILD+g_n);
          sleepms(2);
       endforeach
@@ -374,14 +373,14 @@ function Faccoes(who)
       
       guilds.append(guild); // Adicionar ao array para compatibilidade
       
-      var name := guild.getprop("name");
+      var name := guild.getprop(FACTION_PROP_NAME);
      // if (typeof(name[1]) != "Array")
      //    name := array{name};
      //    guild.setProp("name", name);
      // endif
       //fix area
 
-      GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp("name")));
+      GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp(FACTION_PROP_NAME)));
       // GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
       GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+guild_iter);
       guild_iter++; // Incrementar contador
@@ -511,7 +510,7 @@ function CloseFactionHandler(who, guild)
       return 0;
    endif
    
-   var guild_name := guild.GetProp("name");
+   var guild_name := guild.GetProp(FACTION_PROP_NAME);
    if (!guild_name) guild_name := guild.guildname; endif
    
    // Confirmação dupla para evitar fechamento acidental
@@ -564,7 +563,7 @@ function guildHandler(who, input)
 
       SendSysMessageEx(who, "O alvo foi convidado para se juntar a faccao", SSM_INFO);
 
-      var guild_name := guild.getProp("name");
+      var guild_name := guild.getProp(FACTION_PROP_NAME);
       if (!YesNo(targ, "{} te convidou para se juntar a {}. Deseja aceitar?".format(who.name, guild_name)))
          return SendSysMessageEx(who, "{} recusou o convite.".format(targ.name), SSM_INFO);
       endif
@@ -598,7 +597,7 @@ function guildHandler(who, input)
             foreach faction_info in active_factions
                 var guild_ref := FindGuild(faction_info.guild_id);
                 if (guild_ref && guild_ref.guildid != guild.guildid)
-                    var name := guild_ref.GetProp("name");
+                    var name := guild_ref.GetProp(FACTION_PROP_NAME);
                     if (name)
                         guild_opts[name] := guild_ref.guildid;
                     endif
@@ -797,11 +796,11 @@ function playerHandler(who, input)
             SendSysMessageEx(who, "{} não é mais arquiteto da facção".format(player.name), SSM_INFO);
             
             // Log da ação
-            SysLog("ARCHITECT_FACTION: {} removeu privilégio de arquiteto de {} na facção {}".format(who.name, player.name, guild.getProp("name")));
+            SysLog("ARCHITECT_FACTION: {} removeu privilégio de arquiteto de {} na facção {}".format(who.name, player.name, guild.getProp(FACTION_PROP_NAME)));
          endif
       else
          // Verificar limite de arquitetos antes de conceder
-         var faction_name := guild.getProp("name");
+         var faction_name := guild.getProp(FACTION_PROP_NAME);
          if (CheckArchitectLimit(faction_name))
             member_privs.architect := 1;
             guild.SetProp(cstr(input), member_privs);
@@ -830,7 +829,7 @@ function gmHandler(who)
       var gname := GetInput(who, who.backpack, "Qual o novo nome da faccao? (aperte esc para cancelar)");
       if (!gname) return SendSysMessageEx(who, "Cancelado"); endif
 
-      guild.SetProp("name", gname);
+      guild.SetProp(FACTION_PROP_NAME, gname);
       SendSysMessageEx(who, "Nome alterado pra {}".format(gname));
    elseif (output["GuildID"])
       SendSysMessageEx(who, "Guild ID: {}".format(guild.guildid));   elseif (output["Sub-Guilds"])
@@ -840,7 +839,7 @@ function gmHandler(who)
       foreach faction_info in active_factions
          var guild_ref := FindGuild(faction_info.guild_id);
          if (guild_ref && guild_ref.guildid != guild.guildid)
-            guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
+            guild_opts[guild_ref.GetProp(FACTION_PROP_NAME)] := guild_ref.guildid;
          endif
          sleepms(2);
       endforeach
@@ -1215,8 +1214,7 @@ endif
         guild.SetProp("territories", territories);
         return SendSysMessageEx(who, "Este território não existe mais e foi removido da lista.", SSM_FAIL);
     endif
-    
-   var faction := GetElementProp(elem, "Faction", "");
+      var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
     if (!faction || faction == error)
         faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
         if (!faction || faction == error)
@@ -1285,10 +1283,9 @@ endif
         endif
         
     elseif (output["Abandonar"])
-        if (is_gm_or_leader)
-            if (YesNo(who, "Tem certeza que deseja abandonar o território '" + territory + "'?"))
+        if (is_gm_or_leader)            if (YesNo(who, "Tem certeza que deseja abandonar o território '" + territory + "'?"))
                 // Atualizar AMBAS as propriedades para compatibilidade completa
-                SetElementProp(elem, "Faction", DEFAULT_FACTION);
+                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                 SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                 
                 territories.Erase(input+1); // Ajustar para indexação base-1 do POL
@@ -1371,9 +1368,8 @@ territories := cleaned_territories;
                 if (!rect_elem)
                     continue;
                 endif
-                
-            // Verificar AMBAS as formas da propriedade
-var faction := GetElementProp(rect_elem, "Faction", ""); // Corrigido: rect_elem em vez de elem
+                  // Verificar AMBAS as formas da propriedade
+var faction := GetElementProp(rect_elem, TERRITORY_FACTION_PROP, ""); // Corrigido: rect_elem em vez de elem
 if (!faction || faction == error)
     faction := GetElementProp(rect_elem, TERRITORY_FACTION_PROP, ""); 
     if (!faction || faction == error)
@@ -1435,13 +1431,13 @@ function CanAccessMural(who, item)
     
     // Verificar se é um mural específico de uma facção
     var mural_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    if (mural_faction && mural_faction != "Reino")
+    if (mural_faction && mural_faction != KINGDOM_FACTION)
         // Obter facção do jogador
         var player_guild := who.guild;
         if (player_guild)
             var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
             if (!guild_name)
-                guild_name := player_guild.GetProp("name");
+                guild_name := player_guild.GetProp(FACTION_PROP_NAME);
             endif
             
             // Verificação da facção
@@ -1506,7 +1502,7 @@ function RemFaccaoComplete(guild_obj)
    endif
 
    // === OBTER INFORMAÇÕES BÁSICAS ===
-   var guild_name := guild_obj.GetProp("name");
+   var guild_name := guild_obj.GetProp(FACTION_PROP_NAME);
    if (!guild_name) guild_name := guild_obj.guildname; endif
    
    LogToFile("faccoes.log", "FACTION_REMOVAL_START: Iniciando remoção da facção '" + guild_name + "' (ID: " + guild_obj.guildid + ") em " + CStr(ReadGameClock()));
@@ -1541,9 +1537,8 @@ function RemFaccaoComplete(guild_obj)
          // 2. Atualizar facção no datafile para DEFAULT_FACTION
          var rect_df := SafeOpenDataFile(":architect:areas");
          if (rect_df)
-            var elem := SafeFindElement(rect_df, territory_id);
-            if (elem)
-               SetElementProp(elem, "Faction", DEFAULT_FACTION);
+            var elem := SafeFindElement(rect_df, territory_id);            if (elem)
+               SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                elem.EraseProp("NextResourceTime");
                LogToFile("faccoes.log", "FACTION_REMOVAL: Território '" + territory_id + "' transferido para " + DEFAULT_FACTION);
@@ -1555,11 +1550,10 @@ function RemFaccaoComplete(guild_obj)
          if (seriais_df)
             // Novo formato: elemento direto por território
             var territory_elem := SafeFindElement(seriais_df, territory_id);
-            if (territory_elem)
-               territory_elem.EraseProp("bau");
+            if (territory_elem)               territory_elem.EraseProp("bau");
                territory_elem.EraseProp("mesa");
                territory_elem.EraseProp("mural");
-               territory_elem.EraseProp("faction");
+               territory_elem.EraseProp(OBJ_FACTION_PROP);
                LogToFile("faccoes.log", "FACTION_REMOVAL: Seriais do território '" + territory_id + "' limpos (formato novo)");
             endif
             

@@ -79,19 +79,17 @@ function TM_GetTerritoryInfo(territory_id_or_name)
     if (!elem)
         return 0;
     endif
-    
-    var info := struct{
-        "name" := GetElementProp(elem, "Name", territory_id_or_name),
+      var info := struct{
+        "name" := GetElementProp(elem, TERRITORY_NAME_PROP, territory_id_or_name),
         "id" := GetElementProp(elem, TERRITORY_ID_PROP, territory_id_or_name),
         "faction" := GetElementProp(elem, TERRITORY_FACTION_PROP, ""),
-        "rect" := GetElementProp(elem, "Rect", ""),
-        "realm" := GetElementProp(elem, "Realm", "britannia"),
+        "rect" := GetElementProp(elem, TERRITORY_RECT_PROP, ""),
+        "realm" := GetElementProp(elem, TERRITORY_REALM_PROP, "britannia"),
         "is_capital" := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP, 0) // Adicionar status de capital aqui
     };
-    
-    // Compatibilidade retroativa
+      // Compatibilidade retroativa
     if (!info.faction)
-        info.faction := GetElementProp(elem, "Faction", "");
+        info.faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
     endif
     
     return info;
@@ -168,8 +166,7 @@ endfunction
  *   1 para sucesso, 0 para falha
  */
 function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
-    var territory_elem := TM_FindTerritory(territory_id_or_name);
-    if (!territory_elem)
+    var territory_elem := TM_FindTerritory(territory_id_or_name);    if (!territory_elem)
         LogError("territorio", "TM_SetTerritoryFaction: Território não encontrado: " + territory_id_or_name);
         return 0;
     endif
@@ -177,14 +174,11 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
     // Obter a facção antiga antes de mudar
     var old_faction := GetElementProp(territory_elem, TERRITORY_FACTION_PROP);
     if (!old_faction)
-        old_faction := GetElementProp(territory_elem, "Faction");
+        old_faction := GetElementProp(territory_elem, LEGACY_FACTION_PROP); // Tentar propriedade legada
     endif
     
     // Definir a propriedade principal
     var result := SetElementProp(territory_elem, TERRITORY_FACTION_PROP, faction_name);
-    
-    // Definir também a propriedade alternativa para compatibilidade
-    SetElementProp(territory_elem, "Faction", faction_name);
     
     LogInfo("territorio", "Facção do território " + territory_id_or_name + " definida para " + faction_name);
     
@@ -431,13 +425,12 @@ function TM_SetTerritoryAsCapital(territory_id, faction_name)
     foreach elem_name in (rect_df.keys())
         var elem := rect_df.FindElement(elem_name);
         if (!elem)
-            continue;
-        endif
+            continue;        endif
         
         // Verificar se é da mesma facção
         var elem_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
         if (!elem_faction)
-            elem_faction := GetElementProp(elem, "Faction");
+            elem_faction := GetElementProp(elem, LEGACY_FACTION_PROP); // Tentar propriedade legada
         endif
         
         // Se encontrar uma capital existente da mesma facção
@@ -593,7 +586,8 @@ function BackupTerritoryData(territory_id, object_serials)
     // Create backup using datafile instead of raw file
     var backup_df := SafeOpenDataFile(":faccao:backup_seriais", DF_CREATE);
     if (backup_df)
-        var timestamp := polcore().systime;
+        // TODO: Usar polcore().systime quando incluído em arquivo .src
+        var timestamp := 0; // polcore().systime;
         var backup_elem := SafeFindElement(backup_df, "backup_" + timestamp + "_" + territory_id, DF_CREATE);
         
         if (backup_elem)
@@ -666,9 +660,8 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
     // Estratégia 1: Buscar pelo elemento específico no datafile
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
     if (seriais_df)
-        var territory_elem := SafeFindElement(seriais_df, territory_id);
-        if (territory_elem)
-            var elem_faction := GetElementProp(territory_elem, "faction");
+        var territory_elem := SafeFindElement(seriais_df, territory_id);        if (territory_elem)
+            var elem_faction := GetElementProp(territory_elem, TERRITORY_FACTION_PROP);
             
             // Verificar se a facção corresponde, se especificada
             if (!faction_name || !elem_faction || elem_faction == faction_name)
@@ -1036,9 +1029,8 @@ SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     if (!faction_name)
         faction_name := DEFAULT_FACTION;
     endif
-    
-    SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name);
-    SetElementProp(elem, "Faction", faction_name); // Para compatibilidade
+      SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name); // Para compatibilidade
     
     // Configurar recursos padrão
     SetElementProp(elem, "Resources", "");
@@ -1063,7 +1055,7 @@ function DisplayRectangleDetailsComplete(who, elem)
     // Verificar permissões do jogador
     var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
     if (!territory_faction)
-        territory_faction := GetElementProp(elem, "Faction");
+        territory_faction := GetElementProp(elem, "Faction"); // Tentar propriedade legada
     endif
     
     // Verificar se o jogador pertence à facção ou é GM
@@ -1847,7 +1839,8 @@ function BackupTerritoryFactionRelation(territory_id, faction_name)
         return 0;
     endif
     
-    var elem_name := "territory_faction_" + territory_id + "_" + polcore().systime;
+    // TODO: Usar polcore().systime quando incluído em arquivo .src
+    var elem_name := "territory_faction_" + territory_id + "_0"; // + polcore().systime;
     var backup_elem := SafeFindElement(backup_df, elem_name, DF_CREATE);
     if (!backup_elem)
         LogError("territorio", "BackupTerritoryFactionRelation: Failed to create backup element");
@@ -1856,7 +1849,8 @@ function BackupTerritoryFactionRelation(territory_id, faction_name)
     
     SetElementProp(backup_elem, "territory_id", territory_id);
     SetElementProp(backup_elem, "faction", faction_name);
-    SetElementProp(backup_elem, "timestamp", polcore().systime);
+    // TODO: Usar polcore().systime quando incluído em arquivo .src
+    SetElementProp(backup_elem, "timestamp", 0); // polcore().systime;
     
     LogInfo("territorio", "Backup created for territory " + territory_id + " with faction " + faction_name);
     return 1;
@@ -1877,11 +1871,10 @@ function TM_HasCapital(faction_name)
         if (!elem)
             continue;
         endif
-        
-        // Verificar a facção atual
+          // Verificar a facção atual
         var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
         if (!territory_faction)
-            territory_faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
+            territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP); // Compatibilidade legada
         endif
         
         // Se for da facção procurada e for capital
@@ -1923,7 +1916,8 @@ function TM_NotifyTerritoryChange(territory_id, change_type, change_data := 0)
                  "territory_id" := territory_id,
                  "type" := change_type, // Manter o nome 'type' para consistência
                  "data" := change_data,
-                 "timestamp" := polcore().systime
+                 // TODO: Usar polcore().systime quando incluído em arquivo .src
+                 "timestamp" := 0 // polcore().systime
              };
 
              // Adicionar evento (evita duplicatas se necessário, mas para simplicidade, apenas adiciona)
@@ -2051,9 +2045,10 @@ function SyncGuildTerritories(faction_name)
     
     var territory_list := array{};
     
-    foreach elem_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, elem_name);
-        if (!elem) continue; endif
+    foreach elem_name in (rect_df.keys())        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem)
+            continue;
+        endif
         
         var terr_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
         if (!terr_faction)

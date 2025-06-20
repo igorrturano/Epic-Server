@@ -16,9 +16,8 @@ function SafeGetGuildName(guild)
     if (!guild)
         return "No Guild";
     endif
-    
-    // Method 1: Try GetProp("name") - most reliable for faction guilds
-    var guild_name := guild.GetProp("name");
+      // Method 1: Try GetProp(FACTION_PROP_NAME) - most reliable for faction guilds
+    var guild_name := guild.GetProp(FACTION_PROP_NAME);
     if (guild_name && guild_name != error && guild_name != "<uninitialized object>")
         return guild_name;
     endif

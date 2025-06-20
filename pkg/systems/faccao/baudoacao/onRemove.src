@@ -3,7 +3,7 @@ use os;
 use guilds; // Mantido por causa dos includes abaixo
 include "include/say";
 include ":faccao:include/shared_functions"; // Para MarcarRecursosModificados, GetFactionOfChest, GetPlayerFaction
-include ":faccao:faccao_constants";       // Para constantes de tipo de doação
+include ":faccao:include/faccao_constants";       // Para constantes de tipo de doação
 include ":faccao:include/logging";       // Para LogDebug, LogInfo, LogError
 
 program OnRemove(who, container, item, item_amount, movetype)

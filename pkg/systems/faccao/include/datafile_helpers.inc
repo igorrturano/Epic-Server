@@ -9,6 +9,7 @@ use datafile;
 
 include ":datafile:datafile";
 include ":faccao:include/logging";
+include ":faccao:include/faccao_constants";
 
 /*
  * SafeOpenDataFile(datafile_name, create := 0)
@@ -290,7 +291,7 @@ function VerificarIntegridadeDatafile()
     
     // 2. Verificar elementos de facções
     foreach elem_name in (df.keys())
-        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find("faction_") == 1)
+        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find(FACTION_ELEMENT_PREFIX) == 1)
             var faction_elem := SafeFindElement(df, elem_name);
             var recursos := GetElementProp(faction_elem, "recursos");
             
@@ -328,21 +329,19 @@ function LimparElementosDuplicados(df)
     
     // Identificar elementos incorretos e planejar migrações
     foreach elem_name in (df.keys())
-        if (elem_name.find("faction_faction_") == 1)
+        if (elem_name.find(FACTION_DUPLICATE_PREFIX) == 1)
             // Extrair o nome real da facção
             var nome_base := "";
             var partes := SplitWords(elem_name, "_");
-            
-            // Pular os prefixos "faction_" e pegar o resto
+              // Pular os prefixos de facção e pegar o resto
             for i := 3 to partes.size()
                 if (i > 3)
                     nome_base += "_";
                 endif
                 nome_base += partes[i];
             endfor
-            
-            // Nome correto para migração
-            var nome_correto := "faction_" + nome_base;
+              // Nome correto para migração
+            var nome_correto := FACTION_ELEMENT_PREFIX + nome_base;
             
             // Marcar para remoção
             elementos_a_remover.append(elem_name);

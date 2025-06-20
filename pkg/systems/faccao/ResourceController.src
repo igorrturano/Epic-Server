@@ -652,7 +652,7 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         item_properties["GeneratedTime"] := current_time; // Timestamp do início desta geração
         item_properties["GeneratedByFaction"] := faction_name;
         item_properties["CreatedByResourceController"] := 1; // MUITO IMPORTANTE para onInsert.src
-        item_properties["faction"] := faction_name; // Redundante mas pode ser útil
+        item_properties[OBJ_FACTION_PROP] := faction_name; // Redundante mas pode ser útil
         item_properties["territory_id"] := territory_id_from_elem; // ID do território de ORIGEM
 
         LogDebug("recursos_gen", "  Propriedades para criação: " + item_properties.keys());
@@ -937,11 +937,10 @@ endfunction
     if (!history)
         history := array{};
     endif
-    
-    history.append(struct{
+      history.append(struct{
         "time" := polcore().systime,
         "failed_resources" := recursos_falhos,
-        "faction" := faction_name
+        OBJ_FACTION_PROP := faction_name
     });
     
     // Limitar o histórico a 10 entradas
@@ -974,10 +973,9 @@ endfunction
         if (df)
             var elem := SafeFindElement(df, "log", 1);
             var logs := GetElementProp(elem, "entries", array{});
-            
-            logs.append(struct{
+              logs.append(struct{
                 "time" := polcore().systime,
-                "faction" := faction_name,
+                OBJ_FACTION_PROP := faction_name,
                 "territory" := territory_name,
                 "failed_resources" := recursos_falhos
             });

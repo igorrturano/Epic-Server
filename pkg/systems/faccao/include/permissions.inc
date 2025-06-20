@@ -67,9 +67,8 @@ function UnifiedCheckInsertPermission(who, container)
     var player_faction := GetPlayerFaction(who);
     
     LogDebug("permissao", $"Facção do baú: {chest_faction}, Facção do jogador: {player_faction}");
-    
-    // Baús do Reino: inserção livre
-    if (chest_faction == KINGDOM_FACTION || chest_faction == "Reino")
+      // Baús do Reino: inserção livre
+    if (chest_faction == KINGDOM_FACTION)
         LogInfo("permissao", "Baú do Reino - inserção permitida para todos");
         return 1;
     endif
@@ -544,7 +543,7 @@ function GetPlayerFaction(who)
     endif
 
     // Método 2: Verificar propriedade "name"
-    faction_name := player_guild.GetProp("name");
+    faction_name := player_guild.GetProp(FACTION_PROP_NAME);
     if (faction_name && faction_name != error)
         return faction_name;
     endif    // Método 3: Verificar guildname usando SafeGetGuildName

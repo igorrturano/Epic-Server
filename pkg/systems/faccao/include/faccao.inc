@@ -23,7 +23,7 @@ include ":faccao:include/datafile_helpers"; // <--- ADD THIS LINE
 function CreateFaccao(name, rect, money := 0)
    if (!name || typeof(name) != "String") return 0; endif
    var guild := CreateGuild();
-   guild.setProp("name", name);
+   guild.setProp(FACTION_PROP_NAME, name);
    
    // CORREÇÃO: Inicializar leader como 0x0 em vez de 0 para evitar problemas
    guild.setProp("leader", 0x0);
@@ -47,10 +47,8 @@ function GetFaccao(guild)
       guild := FindGuild(guild);
    endif
 
-   if (!guild) return; endif
-
-   var faccao_obj := struct{
-      "name"     := guild.GetProp("name"),
+   if (!guild) return; endif   var faccao_obj := struct{
+      "name"     := guild.GetProp(FACTION_PROP_NAME),
       "npcs"     := guild.GetProp("npcs"),
       "npcs_active"  := guild.GetProp("npcs_active"),
       "laws"     := guild.GetProp("laws"),
@@ -131,10 +129,9 @@ function RemFaccao(guild_obj)
     if (territories)
         var rect_df := SafeOpenDataFile(":architect:areas");
         foreach territory in territories
-            var elem := SafeFindElement(rect_df, territory);
-            if (elem)
+            var elem := SafeFindElement(rect_df, territory);            if (elem)
                 // Atualizar AMBAS as propriedades para compatibilidade completa
-                SetElementProp(elem, "Faction", DEFAULT_FACTION); // Formato antigo
+                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Formato antigo
                 SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Formato novo
                 
                 // Remover monumentos
@@ -144,7 +141,7 @@ function RemFaccao(guild_obj)
                     var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
                     
                     foreach item in ListItemsNearLocation(center_x, center_y, GetWorldHeight(center_x, center_y, elem.GetProp("Realm")), 3, elem.GetProp("Realm"))
-                        if (item.objtype == 0xA104 && GetObjProperty(item, "RectName") == territory)
+                        if (item.objtype == 0xA104 && GetObjProperty(item, TERRITORY_NAME_PROP) == territory)
                             DestroyItem(item);
                             break;
                         endif
@@ -273,15 +270,13 @@ territories := cleaned_territories;
         foreach territory in territories
             var elem := SafeFindElement(rect_df, territory);
             if (!elem) continue; endif
-            
-            // Verificar AMBAS as propriedades possíveis para compatibilidade
-            var faction := elem.GetProp("Faction");  // Maiúscula (legado)
+              // Verificar AMBAS as propriedades possíveis para compatibilidade
+            var faction := elem.GetProp(TERRITORY_FACTION_PROP);  // Maiúscula (legado)
             if (!faction || faction == error)
                 faction := elem.GetProp(TERRITORY_FACTION_PROP);  // Minúscula (novo padrão)
             endif
-            
-            // Compare com o nome da guilda de forma segura
-            var guild_name := guild.GetProp("name");
+              // Compare com o nome da guilda de forma segura
+            var guild_name := guild.GetProp(FACTION_PROP_NAME);
             if (guild_name == error) guild_name := ""; endif
             
             if (faction == guild_name)

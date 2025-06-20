@@ -11,6 +11,9 @@
 const TERRITORY_FACTION_PROP := "faction";  // Padronizado minúsculo
 const OBJ_FACTION_PROP := "faction";        // Padronizado minúsculo
 
+// Propriedade legada para retrocompatibilidade
+const LEGACY_FACTION_PROP := "Faction";     // Formato legado (maiúsculo)
+
 // Propriedade que identifica se um território é capital
 const TERRITORY_IS_CAPITAL_PROP := "IsCapital";
 
@@ -18,9 +21,9 @@ const TERRITORY_IS_CAPITAL_PROP := "IsCapital";
 const TERRITORY_ID_PROP := "TerritoryID";
 
 // Propriedades de território essenciais
-const TERRITORY_NAME_PROP := "RectName";
-const TERRITORY_RECT_PROP := "Rect";
-const TERRITORY_REALM_PROP := "Realm";
+const TERRITORY_NAME_PROP := "Name";        // Nome do território
+const TERRITORY_RECT_PROP := "Rect";        // Retângulo do território
+const TERRITORY_REALM_PROP := "Realm";      // Realm do território
 
 // Propriedade que armazena o nome da facção na guild
 const FACTION_PROP_NAME := "name";          // Nome da facção
@@ -54,6 +57,16 @@ const RESOURCE_TYPE_MADEIRA := "Madeira";
 const RESOURCE_TYPE_PANO := "Pano";
 const RESOURCE_TYPE_PEDRA := "Pedra";
 const RESOURCE_TYPE_JOIAS := "Joias";
+
+// =======================================
+// Prefixos e padrões para datafiles
+// =======================================
+
+// Prefixo para elementos de facção
+const FACTION_ELEMENT_PREFIX := "faction_";
+
+// Padrão incorreto de duplicação de prefixo
+const FACTION_DUPLICATE_PREFIX := "faction_faction_";
 
 // =======================================
 // Valores padrão

@@ -954,24 +954,22 @@ function VerificarTerritoriosEFaccoes()
         var faction_arch := GetElementProp(elem_arch, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
         if (seriais_df && faction_arch != DEFAULT_FACTION)
             // NOVA ABORDAGEM: Buscar elemento correspondente em :faccao:seriais usando o ID
-            var elem_serial := SafeFindElement(seriais_df, territory_id);
-            if (elem_serial)
-                var faction_serial := GetElementProp(elem_serial, "faction");
+            var elem_serial := SafeFindElement(seriais_df, territory_id);            if (elem_serial)
+                var faction_serial := GetElementProp(elem_serial, OBJ_FACTION_PROP);
 
                 // Verificar se a facção no registro corresponde à de :architect:areas
                 if (faction_serial != faction_arch)
                     LogWarning("recursos", "Inconsistência de facção para " + territory_id +
                                ": Arch=" + faction_arch + ", Seriais=" + faction_serial + ". Corrigindo seriais.");
-                    SetElementProp(elem_serial, "faction", faction_arch);
+                    SetElementProp(elem_serial, OBJ_FACTION_PROP, faction_arch);
                     atualizacoes += 1;
                 endif
 
                 // Preparar struct 'info' para VerificarObjetosDoTerritorio
-                var info_seriais := struct{
-                   "bau" := GetElementProp(elem_serial, "bau"),
+                var info_seriais := struct{                   "bau" := GetElementProp(elem_serial, "bau"),
                    "mesa" := GetElementProp(elem_serial, "mesa"),
                    "mural" := GetElementProp(elem_serial, "mural"),
-                   "faction" := faction_arch // Usar a facção confirmada de :architect:areas
+                   OBJ_FACTION_PROP := faction_arch // Usar a facção confirmada de :architect:areas
                 };
                 
                 // Verificar os objetos do território usando os seriais lidos
@@ -993,9 +991,8 @@ function VerificarTerritoriosEFaccoes()
                     
                     // Migrar para o novo formato
                     LogInfo("recursos", "Migrando seriais do território " + territory_id + " para novo formato");
-                    var new_elem := SafeFindElement(seriais_df, territory_id, 1);
-                    if (new_elem)
-                        SetElementProp(new_elem, "faction", faction_arch);
+                    var new_elem := SafeFindElement(seriais_df, territory_id, 1);                    if (new_elem)
+                        SetElementProp(new_elem, OBJ_FACTION_PROP, faction_arch);
                         SetElementProp(new_elem, "bau", info.bau);
                         SetElementProp(new_elem, "mesa", info.mesa);
                         SetElementProp(new_elem, "mural", info.mural);
@@ -1315,10 +1312,9 @@ function VerificarLidasFaccao()
             var j;
             for (j := 1; j <= destinatarios_originais.size(); j := j + 1)
                 var dest := destinatarios_originais[j];
-                
-                if (TypeOf(dest) == "Struct" && dest.exists("faction"))
+                  if (TypeOf(dest) == "Struct" && dest.exists(OBJ_FACTION_PROP))
                     // Verificar se facção/guilda ainda existe
-                    if (FindGuildByName(CStr(dest.faction)))
+                    if (FindGuildByName(CStr(dest[OBJ_FACTION_PROP])))
                         destinatarios_validos.append(dest);
                     else
                         count := count + 1;

@@ -158,10 +158,9 @@ function FindGuildByName(name)
             var prop := guild.GetProp(FACTION_PROP_NAME);
             if (prop != error && prop == name)
                 return guild.guildid;
-            endif
-            
-            // Verificar outras propriedades de nome
-            prop := guild.GetProp("name");            if (prop != error && prop == name)
+            endif            // Verificar outras propriedades de nome
+            prop := guild.GetProp("name"); // Propriedade legada
+            if (prop != error && prop == name)
                 return guild.guildid;
             endif
             
@@ -181,7 +180,9 @@ function FindGuildByName(name)
             return player.guild.guildid;
         endif
         
-        if (player.guildid && player.guild.GetProp("name") == name)            return player.guild.guildid;
+        if (player.guildid && player.guild.GetProp(FACTION_PROP_NAME) == name)
+            return player.guild.guildid;
+        elseif (player.guildid && player.guild.GetProp("name") == name) // Propriedade legada            return player.guild.guildid;
         endif
         
         if (player.guildid && SafeGetGuildName(player.guild) == name)
@@ -196,7 +197,8 @@ function FindGuildByName(name)
     if (guilds && guilds != error)
         foreach guild in guilds
             var guild_name := guild.GetProp(FACTION_PROP_NAME);
-            if (!guild_name || guild_name == error)            guild_name := guild.GetProp("name");
+            if (!guild_name || guild_name == error)
+            guild_name := guild.GetProp("name"); // Propriedade legada
             endif
             if (!guild_name || guild_name == error)
                 guild_name := SafeGetGuildName(guild);
@@ -1801,7 +1803,7 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
             else
                               
                 changed := 1;
-                LogInfo("territorio", "Removendo território \"" + territory_name + "\" da facção: " + guild.GetProp("name"));
+                LogInfo("territorio", "Removendo território \"" + territory_name + "\" da facção: " + guild.GetProp(FACTION_PROP_NAME));
             endif
             
             sleepms(2);
@@ -3789,10 +3791,8 @@ function GetObjectFaction(obj)
     faction := GetObjProperty(obj, "FactionName");
     if (faction && faction != error)
         return faction;
-    endif
-
-    // Fallback adicional (caso alguém use "Faction" com F maiúsculo)
-    faction := GetObjProperty(obj, "Faction");
+    endif    // Fallback adicional (caso alguém use "Faction" com F maiúsculo)
+    faction := GetObjProperty(obj, "Faction"); // Propriedade legada
     if (faction && faction != error)
         return faction;
     endif
@@ -3809,13 +3809,11 @@ endfunction
 function SetObjectFaction(obj, faction_name)
     if (!obj)
         return 0;
-    endif
-
-    // Primeiro, remover propriedades legadas para evitar inconsistências
+    endif    // Primeiro, remover propriedades legadas para evitar inconsistências
     if (GetObjProperty(obj, "FactionName") != error)
         EraseObjProperty(obj, "FactionName");
     endif
-    if (GetObjProperty(obj, "Faction") != error)
+    if (GetObjProperty(obj, "Faction") != error) // Propriedade legada
         EraseObjProperty(obj, "Faction");
     endif
 
@@ -3837,11 +3835,10 @@ function RemoveObjectFaction(obj)
 
     if (GetObjProperty(obj, OBJ_FACTION_PROP) != error)
         EraseObjProperty(obj, OBJ_FACTION_PROP);
-    endif
-    if (GetObjProperty(obj, "FactionName") != error)
+    endif    if (GetObjProperty(obj, "FactionName") != error)
         EraseObjProperty(obj, "FactionName");
     endif
-    if (GetObjProperty(obj, "Faction") != error)
+    if (GetObjProperty(obj, "Faction") != error) // Propriedade legada
         EraseObjProperty(obj, "Faction");
     endif
 

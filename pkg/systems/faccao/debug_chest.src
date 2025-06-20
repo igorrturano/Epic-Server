@@ -66,7 +66,7 @@ program debug_chest(who)
         
         var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
         if (!guild_name)
-            guild_name := player_guild.GetProp("name");
+            guild_name := player_guild.GetProp(FACTION_PROP_NAME);
         endif
         if (!guild_name)
             guild_name := player_guild.guildname;

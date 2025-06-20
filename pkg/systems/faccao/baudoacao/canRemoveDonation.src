@@ -42,7 +42,7 @@ program CanRemove(mobile, container, item, move_type)
         
         if (chest_faction == player_faction)
             SendSysMessage(mobile, "Apenas líderes e oficiais podem remover itens do baú da facção.");
-        elseif (chest_faction == KINGDOM_FACTION || chest_faction == "Reino")
+        elseif (chest_faction == KINGDOM_FACTION)
             SendSysMessage(mobile, "Apenas o monarca e a Mão do Rei podem remover itens do tesouro do Reino.");
         else
             SendSysMessage(mobile, "Você não tem permissão para remover itens deste baú.");

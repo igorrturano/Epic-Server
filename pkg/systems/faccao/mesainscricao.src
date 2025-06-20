@@ -163,7 +163,7 @@ function ConvidarJogador(lider, jogador, nome_personalizado, cargo_rp)
         return 0;
     endif
     
-    var guild_name := guild.GetProp("name");
+    var guild_name := guild.GetProp(FACTION_PROP_NAME);
     if (!guild_name) guild_name := guild.guildname; endif
     
     // Obter nome personalizado do líder

@@ -41,7 +41,7 @@ function ProcessarUpkeepSimples()
             if (elem)
                 var territory_faction := GetTerritoryFaction(elem);
                 
-                if (territory_faction && territory_faction != "" && territory_faction != "Reino")
+                if (territory_faction && territory_faction != "" && territory_faction != KINGDOM_FACTION)
                     active_guilds[territory_faction] := 1;
                 endif
             endif
@@ -64,7 +64,7 @@ function ProcessarUpkeepSimples()
     foreach guild_name in guild_names
         Print("UPKEEP: === Processando facção: " + guild_name + " ===");
         
-        if (!guild_name || guild_name == "Reino" || guild_name == "Unknown Guild")
+        if (!guild_name || guild_name == KINGDOM_FACTION || guild_name == "Unknown Guild")
             Print("UPKEEP: Facção " + guild_name + " pulada (nome inválido ou Reino)");
             continue;
         endif

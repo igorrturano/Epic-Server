@@ -10,6 +10,7 @@ include ":datafile:datafile";
 include "include/say";
 include ":faccao:include/shared_functions";
 include ":faccao:include/permissions";
+include ":faccao:include/faccao_constants";
 
 program use_donation_chest(who, item)
 
@@ -37,7 +38,7 @@ var interface_type := GetObjProperty(item, "interface_type");
 var faction_name := GetFactionOfChest(item);
 
 // Se for um baú de facção específica
-if (faction_name && faction_name != "Reino")
+if (faction_name && faction_name != KINGDOM_FACTION)
     // Se for um item que deve abrir a interface de facção
     if (interface_type == "faccao" || GetObjProperty(item, "is_faction_interface"))
         // Abrir a interface da facção

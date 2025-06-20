@@ -194,9 +194,7 @@ function VerificarRecursosDoReino()
     
     // Verificar baús do Reino
     foreach item in EnumerateItemsInContainer(0)
-        if (item.objtype == 0xFF11 && 
-            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION || 
-             GetObjProperty(item, OBJ_FACTION_PROP) == "Reino"))
+        if (item.objtype == 0xFF11 &&            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION))
              
             // Verificar e corrigir inconsistências
             VerificarEResolverInconsistencias(item);

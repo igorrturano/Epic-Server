@@ -8,9 +8,6 @@ include ":gumps:requestGump";
 include ":gumps:yesNo";
 include ":gumps:epicGumps";
 include ":gumps:/include/epicGumps";
-include ":faccao:faccao_constants";
-include ":faccao:include/shared_functions";
-include ":faccao:include/territory_management";
 
 
 program rectangle_creator(who, params)
@@ -34,9 +31,7 @@ if (rect_df)
         var elem := SafeFindElement(rect_df, elem_name);
         if (!elem)
             continue; // Elemento não encontrado, já logado pelo SafeFindElement
-        endif
-        
-        var old_faction := GetElementProp(elem, "Faction", "");
+        endif          var old_faction := GetElementProp(elem, "Faction", "");
         if (old_faction)
             // Usar o helper para definir a nova propriedade
             SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
@@ -500,8 +495,7 @@ function ShowRectangles(who, rect_df)
         if (faction_property && faction_property != error)
             // Verificar se não é um array ou struct
             if (TypeOf(faction_property) == "String")
-                faction := faction_property;
-            else
+                faction := faction_property;            else
                 // Tentar usar a propriedade legada
                 faction := GetElementProp(elem, "Faction", "");
                 if (!faction || faction == error)

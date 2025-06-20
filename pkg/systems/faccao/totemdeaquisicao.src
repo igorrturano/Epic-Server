@@ -267,8 +267,8 @@ endprogram
  */
 function SelectKingdomCulture(who)
     var gump := GFECreateGump("Seleção de Cultura do Reino", 600, 500, array{});    // Título explicativo usando GFTextLine para garantir que as cores funcionem
-    GFTextLine(gump, 100, 85, 53, "Escolha a cultura que definirá a identidade do seu reino.");
-    GFTextLine(gump, 80, 105, 230, "Esta decisão influenciará a arquitetura e tradições do território.");
+    GFTextLine(gump, 100, 85, 53, "Escolha a cultura que definira a identidade do seu reino.");
+    GFTextLine(gump, 80, 105, 230, "Esta decisao influenciara a arquitetura e tradicoes do territorio.");
     
     // Lista de culturas
     var culturas := array{
@@ -473,7 +473,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
         
         var player_faction_name_mon := GetPlayerFaction(who); 
         if (!player_faction_name_mon) 
-            player_faction_name_mon := who.guild.GetProp("name", who.guild.guildname); // Tenta prop "name" ou guildname
+            player_faction_name_mon := who.guild.GetProp(FACTION_PROP_NAME, who.guild.guildname); // Tenta constante ou guildname
             if (!player_faction_name_mon) player_faction_name_mon := "Desconhecida"; endif;
         endif;
         
