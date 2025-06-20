@@ -14,10 +14,11 @@ program habilidade(who)
 
     case (religiao)
         KAI:
-            PlayObjectCenteredEffect(who, 0x37B9, 0x0A, 0x1E);
-            PlaySoundEffect(who, 0x51D);
-            SetCooldown(who, "vitalidadeinabalavel", theology_bonus);
-            SendSysMessageEx(who, "Você sente vitalidade inabalável fluindo por seu corpo!", SSM_INFO);
+            var targ := Target(who);
+            PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);
+            PlaySoundEffect(targ, 0x51D);
+            SetCooldown(targ, "vitalidadeinabalavel", theology_bonus);
+            SendSysMessageEx(targ, "Você sente vitalidade inabalável fluindo por seu corpo!", SSM_INFO);
         
         ELUITHORTH:
             // Use truesight ability
@@ -30,9 +31,9 @@ program habilidade(who)
             PlayMovingEffectXYZHued(who, targ, FX_MAGIC_ARROW, 10, 1643, 0);
             SetCooldown(who, "silence", theology_bonus);
             SendSysMessageEx(targ, "Você foi silenciado pela conexão divina!", SSM_INFO);
-                var dmg := RandomDiceRoll("1d4"); 
-                dmg += epicWisdomPathBonus(who);
-                DamageFLS(targ, cint(dmg), DMG_FORCED, who, "Conexão Divina");  
+            var dmg := RandomDiceRoll("1d4"); 
+            dmg += epicWisdomPathBonus(who);
+            DamageFLS(targ, cint(dmg), DMG_FORCED, who, "Conexão Divina");  
 
         BOKK_BHARAZ:
             // Use barreira de escudos ability
@@ -42,23 +43,24 @@ program habilidade(who)
 
         HALLEUAD:
             var skill := TACTICS;
+            var targ := Target(who);
             if(diaounoite == "dia")
                 // Dawn/day: Tactics bonus
-                AP_ModifySkillMod(who, skill, theology_bonus);
-                SendSysMessageEx(who, "A luz do dia fortalece suas táticas de combate!", SSM_INFO);
-                PlayObjectCenteredEffect(who, 0x373A, 10, 20);
-                PlaySoundEffect(who, 0x1F5);
+                AP_ModifySkillMod(targ, skill, theology_bonus);
+                SendSysMessageEx(targ, "A luz do dia fortalece suas táticas de combate!", SSM_INFO);
+                PlayObjectCenteredEffect(targ, 0x373A, 10, 20);
+                PlaySoundEffect(targ, 0x1F5);
                 sleep(theology_bonus);
             else
                 // Dusk/night: Awareness bonus
                 skill := AWARENESS;
-                AP_ModifySkillMod(who, skill, theology_bonus);
-                SendSysMessageEx(who, "A escuridão aguça seus sentidos!", SSM_INFO);
-                PlayObjectCenteredEffect(who, 0x375A, 10, 20);
-                PlaySoundEffect(who, 0x1F8);
+                AP_ModifySkillMod(targ, skill, theology_bonus);
+                SendSysMessageEx(targ, "A escuridão aguça seus sentidos!", SSM_INFO);
+                PlayObjectCenteredEffect(targ, 0x375A, 10, 20);
+                PlaySoundEffect(targ, 0x1F8);
             endif
             sleep(theology_bonus);
-            AP_ModifySkillMod(who, skill, -theology_bonus);
+            AP_ModifySkillMod(targ, skill, -theology_bonus);
     endcase
 
     return 1;
