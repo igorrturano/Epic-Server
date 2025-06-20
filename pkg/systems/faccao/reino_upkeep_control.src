@@ -3,18 +3,17 @@ use os;
 use guilds;
 use datafile;
 use polsys;
+use util;
 
-include ":faccao:include/shared_functions";
-include ":faccao:include/logging";
-include ":faccao:include/guild_xp";
-include ":faccao:include/safe_guild_utils";
-include ":faccao:include/datafile_helpers";
-include ":faccao:faccao_constants";
-include ":faccao:include/faccao_constants";
+include "include/shared_functions";
+include "include/logging";
+include "include/guild_xp";
+include "include/safe_guild_utils";
+include "include/datafile_helpers";
+include "include/faccao_constants";
 
-// Constantes simples
-const UPKEEP_CYCLE_WAIT := 60; // 1 minuto (para teste - debug)
-const MOEDAS_COBRE := 0xba63;
+// Constante local (removida de faccao_constants.inc para evitar conflito com merchants)
+const MOEDAS_COBRE := 0xBA63;
 
 program ReinoUpkeepControl()
     LogDebug("upkeep", "=== REINO UPKEEP CONTROL INICIADO ===");
@@ -31,12 +30,13 @@ endprogram
 function ProcessarUpkeepSimples()
     LogDebug("upkeep", "UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
     syslog("UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
-      LogDebug("upkeep", "UPKEEP: Buscando guilds ativas através de territórios...");
+    LogDebug("upkeep", "UPKEEP: Buscando guilds ativas através de territórios...");
     
     // Nova abordagem: buscar guilds através dos territórios
     var active_guilds := struct{};
     var rect_df := SafeOpenDataFile(":architect:areas");
-    if (rect_df)        foreach elem_name in (rect_df.keys())
+    if (rect_df)
+        foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
             if (elem)
                 var territory_faction := GetTerritoryFaction(elem);
@@ -55,7 +55,8 @@ function ProcessarUpkeepSimples()
     endforeach
     
     Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
-    syslog("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());    
+    syslog("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
+    
     var processed_count := 0;
     var payment_attempts := 0;
     var successful_payments := 0;
@@ -67,7 +68,8 @@ function ProcessarUpkeepSimples()
             Print("UPKEEP: Facção " + guild_name + " pulada (nome inválido ou Reino)");
             continue;
         endif
-          processed_count += 1;
+        
+        processed_count += 1;
         
         // Cálculo super simples: 100 moedas por território + 10 por nível
         var territories := GetGuildTerritoryCount(guild_name);
@@ -106,7 +108,8 @@ function GetGuildTerritories(faction_name)
     
     foreach rect_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, rect_name);
-        if (elem)            var territory_faction := GetTerritoryFaction(elem);
+        if (elem)
+            var territory_faction := GetTerritoryFaction(elem);
             if (territory_faction == faction_name)
                 var territory_info := struct{
                     "name" := rect_name,
@@ -121,9 +124,6 @@ function GetGuildTerritories(faction_name)
     
     return territories;
 endfunction
-
-// Função GetGuildTerritoryCount movida para shared_functions.inc
-// para eliminar duplicação - use a versão centralizada
 
 function GetSimpleGuildLevel(guild)
     var guild_xp_info := GetGuildXPInfo(guild);
@@ -147,7 +147,8 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
         LogCritical("UpkeepPayment_SEARCH", "Buscando territórios da facção " + guild_name);
         foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
-            if (elem)                var territory_faction := GetTerritoryFaction(elem);
+            if (elem)
+                var territory_faction := GetTerritoryFaction(elem);
                 
                 if (territory_faction == guild_name)
                     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, elem_name);
@@ -160,7 +161,8 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     endif
     
     LogCritical("UpkeepPayment_SEARCH", "Encontrados " + territories_found.size() + " territórios para " + guild_name);
-      // Tentar encontrar baú usando territory_id específico (como ResourceController faz)
+    
+    // Tentar encontrar baú usando territory_id específico (como ResourceController faz)
     foreach territory_id in territories_found
         LogCritical("UpkeepPayment_CHEST_SEARCH", "Tentando encontrar baú para território: " + territory_id);
         LogCritical("UpkeepPayment_CHEST_SEARCH", "Chamando: FindFactionChest('" + guild_name + "', '" + territory_id + "')");
@@ -173,7 +175,8 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
         endif
         Sleep(1);
     endforeach
-      // Fallback: busca genérica (como antes)
+    
+    // Fallback: busca genérica (como antes)
     if (!faction_chest)
         LogCritical("UpkeepPayment_FALLBACK", "Tentando busca genérica para facção " + guild_name);
         faction_chest := FindFactionChest(guild_name);

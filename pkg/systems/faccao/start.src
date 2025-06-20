@@ -19,8 +19,6 @@ else
     LogDebug("sistema", "Starting guild npc check script... ok.");
 endif
 
-const CYCLE_WAIT := 120; // 2 MINUTOS
-
 // Iniciar o processador de atualizações de recursos
 var update_script := start_script(":faccao:process_recursos_updates");
 if (update_script.errortext)

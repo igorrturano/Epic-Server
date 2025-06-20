@@ -13,12 +13,6 @@ include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":architect:architect";
 
-// Constantes para o Mapeador
-const BORDER_ITEM_LATERAL := 0xF873; // Item para bordas laterais (esquerda/direita)
-const BORDER_ITEM_TRANSVERSAL := 0xF878; // Item para bordas transversais (superior/inferior)
-const BORDER_DURATION := 300; // 5 minutos em segundos
-const BORDER_HUE := 39; // Cor da borda (definida no itemdesc.cfg)
-
 // Configurar nível de logging para debug detalhado do mapeador
 function InitMapeadorLogging()
     SetCategoryLogLevel("mapeador", LOG_DEBUG);

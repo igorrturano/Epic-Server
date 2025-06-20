@@ -611,9 +611,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
     return 0;
 endfunction
 
-function ConfirmBannerPurchase(who)
-    // Constantes para o Banner (mesmo padrão do gestao_use)
-    const BANNER_CUSTO := 500;    var gump := GFECreateGump("Compra de Estandarte do Reino", 400, 300, array{});
+function ConfirmBannerPurchase(who)    var gump := GFECreateGump("Compra de Estandarte do Reino", 400, 300, array{});
     
     // Título
     GFTextLine(gump, 140, 85, 53, "Estandarte do Reino");

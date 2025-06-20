@@ -271,12 +271,12 @@ function CapitalizeFirst(text)
     var first_char := text[1];
     var rest := "";
     if (text.size() > 1)
-        rest := text[2, text.size()];
-    endif
+        rest := text[2, text.size()];    endif
     
     return Upper(first_char) + Lower(rest);
 endfunction
 
+// Função utilitária para formatação de números
 function FormatNumber(number)
     var str := CStr(number);
     var result := "";

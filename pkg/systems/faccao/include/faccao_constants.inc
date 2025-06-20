@@ -177,3 +177,48 @@ const CARAVAN_CYCLE_WAIT := 60; // 1 minuto
 
 // Duração (em segundos) de um contrato de caravana para testes
 const CARAVAN_TEST_DURATION_SECONDS := 300; // 5 minutos para testes rápidos
+
+// =======================================
+// CONSTANTES CONSOLIDADAS (ANTI-DUPLICAÇÃO) - APENAS SISTEMA DE FACÇÃO
+// =======================================
+// As constantes abaixo consolidam valores que estavam duplicados
+// APENAS DENTRO DO SISTEMA DE FACÇÃO. Outros sistemas mantêm suas próprias constantes.
+// 
+// NOTA: Constantes como MOEDAS_COBRE e BKGND_* foram removidas daqui para evitar
+// conflitos com o sistema de merchants. Cada arquivo do sistema de facção que
+// precisa dessas constantes deve defini-las localmente.
+
+// TIMING DE CICLOS
+const UPKEEP_CYCLE_WAIT := 60;          // 1 minuto para upkeep
+const CYCLE_WAIT := 120;                // 2 minutos para ciclos gerais
+
+// BORDAS DO MAPEADOR
+const BORDER_ITEM_LATERAL := 0xF873;
+const BORDER_ITEM_TRANSVERSAL := 0xF878;
+const BORDER_DURATION := 300;           // 5 minutos
+const BORDER_HUE := 39;
+
+// CUSTOS PADRÃO
+const MAPEADOR_CUSTO := 500;
+const FERRAMENTAS_CUSTO := 500;
+const BANNER_CUSTO := 500;
+
+// OBJTYPES DE FERRAMENTAS
+const MAPEADOR_OBJTYPE := 0x14F5;
+const FERRAMENTAS_OBJTYPE := 0xFA50;
+
+// =======================================
+// MIGRAÇÃO LOCAL - APENAS SISTEMA DE FACÇÃO
+// =======================================
+/*
+ESCOPO: Apenas arquivos do sistema de facção (pkg/systems/faccao/)
+
+TODO: Substituir gradualmente APENAS nos arquivos de facção:
+- gestao_use.src: BKGND_*, MOEDAS_COBRE
+- reino_upkeep_control.src: MOEDAS_COBRE, UPKEEP_CYCLE_WAIT 
+- totemdeaquisicao.src: MOEDAS_COBRE
+- portaalugavelfac.src: BKGND_*
+- mapeador.src: BORDER_*
+
+NOTA: Outros sistemas (merchants, etc.) mantêm suas próprias constantes.
+*/

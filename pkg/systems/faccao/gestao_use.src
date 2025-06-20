@@ -2091,12 +2091,7 @@ function ProcessarCompraMapeador(who, item)
     if (!IsArchitectOfGuild(who))
         SendSysMessage(who, "Apenas arquitetos de guilda podem comprar o Mapeador.", 3, 38);
         return 0;
-    endif
-      // Constantes para o Mapeador
-    const MAPEADOR_OBJTYPE := 0x14F5; // Objtype do Mapeador
-    const MAPEADOR_CUSTO := 500; // Custo em moedas de cobre
-    
-    // Calcular moedas disponíveis
+    endif    // Calcular moedas disponíveis
     var moedas_disponiveis := 0;
     var moedas_items := array{};
     
@@ -2161,11 +2156,7 @@ function ProcessarCompraFerramentas(who, item)
     if (!IsArchitectOfGuild(who))
         SendSysMessage(who, "Apenas arquitetos de guilda podem comprar Ferramentas de Construção.", 3, 38);
         return 0;
-    endif    // Constantes para as Ferramentas de Construção
-    const FERRAMENTAS_OBJTYPE := 0xFA50; // Objtype das Ferramentas de Construção
-    const FERRAMENTAS_CUSTO := 500; // Custo em moedas de cobre
-    
-    // Calcular moedas disponíveis
+    endif    // Constantes para as Ferramentas de Construção    // Calcular moedas disponíveis
     var moedas_disponiveis := 0;
     var moedas_items := array{};
     
