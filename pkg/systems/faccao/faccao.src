@@ -1,4 +1,4 @@
-use uo;
+   use uo;
 use os;
 use datafile;
 use guilds;
@@ -14,7 +14,6 @@ include ":faccao:include/safe_guild_utils";
 include ":faccao:include/shared_functions";
 include ":gumps:gumps";
 include ":tn:tngumps";
-//include ":yggdrasil:boss";
 include ":gumps:yesNo";
 include ":merchants:item_template";
 include ":gumps:htmlGump";
@@ -26,27 +25,10 @@ include ":faccao:include/logging";
 include ":datafile:datafile";
 include ":faccao:include/datafile_helpers";
 
-const BUTTON_BUY_UNIFORM := 0x2;
-const BUTTON_ADD_PLAYER := 0x3;
-const BUTTON_MONEY_TRANSFER := 0x5;
-const BUTTON_CHANGE_DOORS := 0x4;
-const BUTTON_BAN_PLAYER := 0x6;
-const BUTTON_CHANGE_PLAYER := 0x1222;
+// Constantes locais para este arquivo (evita conflito com outros sistemas)
+const MOEDAS := 47715;              // Moedas genéricas (local para este arquivo)
 
-const BUTTON_ADD_NPC := 0x100;
-const BUTTON_REPORT_NPC := 0x109;
-const BUTTON_CONTRACT_NPC := 0x110;
-const BUTTON_DISMISS_NPC := 0x115;
-
-const BUTTON_ADD_LAW := 0x200;
-const BUTTON_CHANGE_LAW := 0x225;
-
-const BUTTON_GM_OPTS := 0x301;
-
-const BTN_FACCAO := 0x100;
-const BTN_NEW_FACCAO := 0x4;
-
-const BUTTON_CHECK_GUILD := 0x350;
+// Outras constantes estão em faccao_constants.inc
 
 const BUTTON_TERRITORY := 0x500; // ID de botão para manipulador de territórios
 const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios

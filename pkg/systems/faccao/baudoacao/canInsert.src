@@ -23,15 +23,7 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
     if (GetObjProperty(adding_item, "CreatedByResourceController"))
         LogDebug("recursos", "Item criado pelo ResourceController, permitindo inserção");
         return 1;
-    endif
-
-    // Parâmetros que precisamos preservar mesmo que não usemos
-    amt_to_add := amt_to_add;
-    existing_stack := existing_stack;
-    insert_type := insert_type;
-    movetype := movetype;
-
-    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
+    endif    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
     var can_insert := CanInsertItems(mobile, container);
     
     // Logging padronizado

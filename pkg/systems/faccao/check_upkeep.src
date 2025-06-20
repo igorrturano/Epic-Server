@@ -28,13 +28,4 @@ program CheckUpkeep(who)
     return 1;
 endprogram
 
-// Função GetGuildTerritoryCount movida para shared_functions.inc
-// para eliminar duplicação - use a versão centralizada
-
-function GetSimpleGuildLevel(guild)
-    var guild_xp_info := GetGuildXPInfo(guild);
-    if (guild_xp_info && guild_xp_info.current_level)
-        return guild_xp_info.current_level;
-    endif
-    return 1;
-endfunction
+// Função GetSimpleGuildLevel movida para shared_functions.inc para evitar duplicação

@@ -23,22 +23,9 @@ include ":faccao:include/datafile_helpers";
 include ":faccao:include/guild_xp";
 include ":architect:architect";
 
-
-
-
-const BKGND_BLUESLAB := 9200;
-const BKGND_STONESLAB := 3500;
-const MOEDAS_COBRE := 0xBA63; // Tipo das moedas de cobre - usado em ambas as funções de compra
-
-const BOTAO_REINO := 1;
-const BOTAO_LEIS := 2;
-const BOTAO_FACCOES := 3;
-const BOTAO_DOACOES := 4;
-const BOTAO_CONSTRUCOES := 5;
-const BOTAO_GUERRA := 6;
-
-const BKGND_BLUESLAB_GUMPMAPA := 9200;  // Ou use BKGND_BLUESLAB se for o mesmo
-const BKGND_STONESLAB_GUMPMAPA := 3500; // Ou use BKGND_STONESLAB se for o mesmo
+// Constantes locais não movidas para faccao_constants.inc (específicas deste arquivo)
+const MOEDAS_COBRE := 0xBA63;            // Moedas de cobre (local para este package)
+const BKGND_STONESLAB := 9200;           // Background de pedra (local para este arquivo)
 const BTN_CONTRATAR_GFX_NORMAL := 0x93A; // Exemplo de Gump ID para botão verde/azul
 const BTN_CONTRATAR_GFX_OVER := 0x93A;   // Gump ID para mouse over (pode ser o mesmo ou diferente)
 const BTN_CANCELAR_GFX_NORMAL := 0x938;  // Exemplo de Gump ID para botão vermelho
@@ -480,8 +467,8 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
         gump_height := 650; // Limite máximo de altura
     endif
 
-    GFResizePic(gump_mapa, 0, 0, BKGND_BLUESLAB_GUMPMAPA, gump_width, gump_height);
-    GFResizePic(gump_mapa, 15, 15, BKGND_STONESLAB_GUMPMAPA, gump_width - 30, gump_height - 30);
+    GFResizePic(gump_mapa, 0, 0, BKGND_BLUESLAB_FACCAO, gump_width, gump_height);
+    GFResizePic(gump_mapa, 15, 15, BKGND_STONESLAB, gump_width - 30, gump_height - 30);
     GFTextMid(gump_mapa, 20, 25, gump_width - 40, 2100, "Gerenciar Caravanas para Facção: " + mesa_faction_name);
 
     var y_gump := 65;
@@ -494,7 +481,7 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
         y_gump += 25;
     endif
 
-    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB_GUMPMAPA - 100, gump_width - 40, 2); // Linha divisória
+    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB - 100, gump_width - 40, 2); // Linha divisória
     y_gump += 15;
 
     GFTextLine(gump_mapa, 30, y_gump, 1153, "Territórios de Origem da Facção (" + mesa_faction_name + "):");
@@ -2362,25 +2349,7 @@ endfunction
  * Return:
  *   String formatada (ex: 1.500.000)
  */
-function FormatNumber(number)
-    var str := CStr(number);
-    var result := "";
-    var count := 0;
-    
-    // Adicionar pontos a cada 3 dígitos (da direita para esquerda)
-    var i := str.size();
-    while (i >= 1)
-        if (count == 3)
-            result := "." + result;
-            count := 0;
-        endif
-        result := str[i] + result;
-        count += 1;
-        i := i - 1;
-    endwhile
-    
-    return result;
-endfunction
+// Função FormatNumber movida para shared_functions.inc para evitar duplicação
 
 // ===== FUNÇÕES DE SUPORTE PARA O SISTEMA DE UPKEEP =====
 
@@ -2504,28 +2473,10 @@ function CalculaRecursosDisponiveis(faction_chest)
 		endcase
 		sleepms(2);
 	endforeach
-	
-	return total;
+		return total;
 endfunction
 
-function GetSimpleGuildLevel(guild)
-	if (!guild)
-		return 1;
-	endif
-	
-	// Tentar obter do sistema de XP da guild primeiro
-	var guild_xp_info := GetGuildXPInfo(guild);
-	if (guild_xp_info && guild_xp_info.current_level)
-		return guild_xp_info.current_level;
-	endif
-	
-	// Fallback: tentar propriedade direta
-	var level := SafeGetGuildProperty(guild, "level", 1);
-	if (level && level > 0)
-		return level;
-	endif
-		return 1; // Nível padrão
-endfunction
+// Função GetSimpleGuildLevel movida para shared_functions.inc para evitar duplicação
 
 // ===== MELHORIAS E CORREÇÕES ADICIONAIS =====
 

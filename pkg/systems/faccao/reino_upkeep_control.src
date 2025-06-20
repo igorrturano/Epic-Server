@@ -12,8 +12,8 @@ include "include/safe_guild_utils";
 include "include/datafile_helpers";
 include "include/faccao_constants";
 
-// Constante local (removida de faccao_constants.inc para evitar conflito com merchants)
-const MOEDAS_COBRE := 0xBA63;
+// Constantes locais específicas deste arquivo
+const MOEDAS_COBRE := 0xBA63;       // Moedas de cobre (local para este package)
 
 program ReinoUpkeepControl()
     LogDebug("upkeep", "=== REINO UPKEEP CONTROL INICIADO ===");
@@ -125,13 +125,7 @@ function GetGuildTerritories(faction_name)
     return territories;
 endfunction
 
-function GetSimpleGuildLevel(guild)
-    var guild_xp_info := GetGuildXPInfo(guild);
-    if (guild_xp_info && guild_xp_info.level)
-        return guild_xp_info.level;
-    endif
-    return 1;
-endfunction
+// Função GetSimpleGuildLevel movida para shared_functions.inc para evitar duplicação
 
 // Função robusta baseada no sistema de caravanas
 function CobrarUpkeepRobusto(guild_name, cost_amount)

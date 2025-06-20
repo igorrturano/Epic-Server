@@ -14,7 +14,8 @@ include "include/epicConstants";
 include "include/say";
 include "include/client";
 
-const MOEDAS_COBRE := 0xBA63; // Moedas de cobre - mesmo padrão do gestao_use
+// Constantes locais específicas deste arquivo
+const MOEDAS_COBRE := 0xBA63;       // Moedas de cobre (local para este package)
 
 program TotemDeAquisicao(who, totem)
     LogDebug("faccao", "TotemDeAquisicao: Iniciando função com who=" + who.serial + ", totem=" + totem.serial);

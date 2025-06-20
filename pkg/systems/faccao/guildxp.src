@@ -272,27 +272,7 @@ function CapitalizeFirst(text)
     var rest := "";
     if (text.size() > 1)
         rest := text[2, text.size()];    endif
-    
-    return Upper(first_char) + Lower(rest);
+      return Upper(first_char) + Lower(rest);
 endfunction
 
-// Função utilitária para formatação de números
-function FormatNumber(number)
-    var str := CStr(number);
-    var result := "";
-    var count := 0;
-    
-    // Adicionar pontos a cada 3 dígitos (da direita para esquerda)
-    var i := str.size();
-    while (i >= 1)
-        if (count == 3)
-            result := "." + result;
-            count := 0;
-        endif
-        result := str[i] + result;
-        count += 1;
-        i := i - 1;
-    endwhile
-    
-    return result;
-endfunction
+// Função FormatNumber movida para shared_functions.inc para evitar duplicação

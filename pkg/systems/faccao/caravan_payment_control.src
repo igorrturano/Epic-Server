@@ -89,13 +89,9 @@ foreach faction_info in active_factions
     if (!factions_processed_this_cycle.exists(faction_name_loop))
         LogDebug("CaravanPaymentCtrl_Fixed", "Processando facção: " + faction_name_loop + " (GuildID: " + faction_info.guild_id + ")");
         factions_processed_this_cycle[faction_name_loop] := 1;
-    endif;
-
-    // ETAPA 1: Validar e limpar contratos
+    endif;    // ETAPA 1: Validar e limpar contratos
     var contracts_from_prop := guild_obj_loop.GetProp("caravan_contracts");
-   // var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
-
-var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
+    var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
 if (!valid_contracts_after_validation || valid_contracts_after_validation.size() == 0)
 LogDebug("CaravanPaymentCtrl_Fixed", "Nenhum contrato válido encontrado para " + faction_name_loop + " após validação.");
 continue;

@@ -222,3 +222,76 @@ TODO: Substituir gradualmente APENAS nos arquivos de facção:
 
 NOTA: Outros sistemas (merchants, etc.) mantêm suas próprias constantes.
 */
+
+// =======================================
+// Constantes de Interface Gráfica (Gumps)
+// =======================================
+
+// Backgrounds padrão para gumps do sistema (SOMENTE ESPECÍFICOS DA FACÇÃO)
+const BKGND_BLUESLAB_FACCAO := 9200;  // Blue slab background (específico para sistema de facção)
+
+// =======================================
+// Constantes de Itens e Moedas
+// =======================================
+
+// Tipos de moedas padronizadas (MAIÚSCULO)
+// NOTA: MOEDAS_COBRE removida - deve ser definida localmente em cada package
+// NOTA: MOEDAS, BKGND_STONESLAB, GF_STDCOLOR removidas - causam conflito com outros sistemas
+
+// =======================================
+// Constantes de Botões e Interface
+// =======================================
+
+// Botões principais do sistema de gestão
+const BUTTON_BUY_UNIFORM := 0x2;
+const BUTTON_ADD_PLAYER := 0x3;
+const BUTTON_MONEY_TRANSFER := 0x5;
+const BUTTON_CHANGE_DOORS := 0x4;
+const BUTTON_BAN_PLAYER := 0x6;
+const BUTTON_CHANGE_PLAYER := 0x1222;
+
+// Botões de NPC
+const BUTTON_ADD_NPC := 0x100;
+const BUTTON_REPORT_NPC := 0x109;
+const BUTTON_CONTRACT_NPC := 0x110;
+const BUTTON_DISMISS_NPC := 0x115;
+
+// Botões de leis
+const BUTTON_ADD_LAW := 0x200;
+const BUTTON_CHANGE_LAW := 0x225;
+
+// Botões administrativos
+const BUTTON_GM_OPTS := 0x301;
+const BTN_FACCAO := 0x100;
+const BTN_NEW_FACCAO := 0x4;
+const BUTTON_CHECK_GUILD := 0x350;
+
+// Botões de gestão de reino
+const BOTAO_REINO := 1;
+const BOTAO_LEIS := 2;
+const BOTAO_FACCOES := 3;
+const BOTAO_DOACOES := 4;
+const BOTAO_CONSTRUCOES := 5;
+const BOTAO_GUERRA := 6;
+
+// =======================================
+// Constantes de Tipos de Objetos (MAIÚSCULO)
+// =======================================
+
+// Tipos de containers
+const TIPO_BAU := 0xFF11;
+const TIPO_BAU_DOACOES := 0xFF11;
+
+// Tipos de mobília
+const TIPO_MESA := 0xFE5C;
+const TIPO_MESA_INSCRICAO := 0xF8A8;
+const TIPO_MURAL := 0x46AE;
+
+// Tipos de itens especiais
+const TIPO_TOTEM_AQUISICAO := 0xA102;
+const TIPO_MAPEADOR := 0xA103;
+const TIPO_MESA_INSCRICAO_ITEM := 0xA104;
+const TIPO_FERRAMENTAS_CONSTRUCAO := 0xFA50;
+const TIPO_ESTANDARTE := 0xFDDF;
+
+// =======================================

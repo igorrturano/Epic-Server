@@ -9,13 +9,7 @@ include ":gumps:yesNo";
 include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
-
-//Gump Constants
-const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
-const BKGND_BLUESLAB		:= 3600;  // Raised edge (blocky)
-const GF_STDCOLOR		:= 1890;
-
-const MOEDAS			:= 47715;
+include ":faccao:faccao_constants";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 
@@ -31,8 +25,7 @@ function portafacc(params)
         endif
 
         var gump := GFCreateGump(0, 0);
-        GFPage(gump, 0);
-        GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 640, 480);
+        GFPage(gump, 0);        GFResizePic(gump, 0, 0, BKGND_RAISED_EDGE, 640, 480);
         GFResizePic(gump, 15, 15, BKGND_STONESLAB, 150, 450);
 
         var quartos := GetObjProperty(porta, "quartos");

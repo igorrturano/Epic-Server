@@ -3844,3 +3844,51 @@ function RemoveObjectFaction(obj)
 
     return 1;
 endfunction
+
+function GetSimpleGuildLevel(guild)
+    if (!guild)
+        return 1;
+    endif
+    
+    // Tentar obter do sistema de XP da guild primeiro
+    var guild_xp_info := GetGuildXPInfo(guild);
+    if (guild_xp_info)
+        // Tentar ambas as propriedades para compatibilidade
+        if (guild_xp_info.current_level)
+            return guild_xp_info.current_level;
+        elseif (guild_xp_info.level)
+            return guild_xp_info.level;
+        endif
+    endif
+    
+    // Fallback: tentar propriedade direta
+    var level := SafeGetGuildProperty(guild, "level", 1);
+    if (level && level > 0)
+        return level;
+    endif
+    
+    return 1; // Nível padrão
+endfunction
+
+function FormatNumber(number)
+    var str := CStr(number);
+    var result := "";
+    var count := 0;
+    
+    // Adicionar pontos a cada 3 dígitos (da direita para esquerda)
+    var i := str.size();
+    while (i >= 1)
+
+        if (count == 3)
+    
+            result := "." + result;
+            count := 0;
+        endif
+        result := str[i] + result;  
+        count += 1;
+        i := i - 1;
+       endwhile
+    
+    return result;
+
+endfunction

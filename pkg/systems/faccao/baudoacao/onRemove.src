@@ -33,13 +33,9 @@ program OnRemove(who, container, item, item_amount, movetype)
     // CASO 2: Remoção por jogador
     // O hook CanRemove já tratou das permissões.
     // Aqui, focamos no feedback e na atualização do cache.
-    LogDebug("onRemove_PLAYER", who.name + " está removendo " + (item && item != error ? item.desc : "um item (possivelmente stack esgotado)") + " do container " + container.serial);
-
-    var is_tracked_donation_removal := 0;
-    // var original_item_objtype_if_known := 0; // Esta variável não estava sendo usada
+    LogDebug("onRemove_PLAYER", who.name + " está removendo " + (item && item != error ? item.desc : "um item (possivelmente stack esgotado)") + " do container " + container.serial);    var is_tracked_donation_removal := 0;
 
     if (item && item != error) // Se o item ainda existe (remoção parcial do stack)
-        // original_item_objtype_if_known := item.objtype; // Não usado
         var donation_types := array{
             "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro",
             "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano",
