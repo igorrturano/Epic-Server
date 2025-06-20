@@ -4,7 +4,7 @@ use datafile;
 
 include "include/say"; // Se usado para PrintText/SendSysMessage, mas parece não ser o caso aqui diretamente
 include ":faccao:include/shared_functions"; // Para GetFactionOfChest, GetPlayerFaction, LogPermissionCheck, CanRemoveItems
-include ":faccao:faccao_constants";       // Para KINGDOM_FACTION
+include ":faccao:include/faccao_constants";       // Para KINGDOM_FACTION
 include ":faccao:include/permissions";    // CanRemoveItems pode estar aqui ou em shared_functions
 include ":faccao:include/logging";       // Para LogInfo, LogWarning
 

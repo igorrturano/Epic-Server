@@ -4,7 +4,7 @@ use guilds;
 use datafile;
 
 include ":datafile:datafile";
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
 include ":faccao:include/shared_functions";

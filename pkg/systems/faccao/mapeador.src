@@ -8,7 +8,7 @@ include "include/objtype";
 include ":gumps:gumps";
 include ":gumps:requestGump";
 include ":faccao:faccao";
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":architect:architect";

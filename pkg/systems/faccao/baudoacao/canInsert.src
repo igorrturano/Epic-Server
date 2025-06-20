@@ -5,7 +5,7 @@ use datafile;
 
 include "include/say";
 include ":faccao:include/shared_functions";
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":datafile:datafile";
 include ":faccao:include/permissions";
 
