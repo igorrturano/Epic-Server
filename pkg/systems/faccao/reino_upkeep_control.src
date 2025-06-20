@@ -5,12 +5,12 @@ use datafile;
 use polsys;
 use util;
 
-include "include/shared_functions";
-include "include/logging";
-include "include/guild_xp";
-include "include/safe_guild_utils";
-include "include/datafile_helpers";
-include "include/faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/guild_xp";
+include ":faccao:include/safe_guild_utils";
+include ":faccao:include/datafile_helpers";
+include ":faccao:include/faccao_constants";
 
 // Constantes locais específicas deste arquivo
 const MOEDAS_COBRE := 0xBA63;       // Moedas de cobre (local para este package)
@@ -131,6 +131,11 @@ endfunction
 function CobrarUpkeepRobusto(guild_name, cost_amount)
     LogCritical("UpkeepPayment_START", "Iniciando cobrança de " + cost_amount + " moedas para facção " + guild_name);
     
+    // === IMPLEMENTAÇÃO DE LOCK PARA PREVENIR RACE CONDITIONS ===
+    var lock_prop := "upkeep_payment_lock";
+    var lock_timeout := 30; // 30 segundos de timeout
+    var current_time := POLCore().systime;
+    
     // NOVA ESTRATÉGIA: Buscar territórios e usar territory_id (como ResourceController)
     var faction_chest := 0;
     var territories_found := array{};
@@ -183,18 +188,46 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     
     LogInfo("UpkeepPayment_CHEST", "Baú encontrado: Serial " + faction_chest.serial);
     
+    // === VERIFICAR E ADQUIRIR LOCK NO BAÚ ===
+    var existing_lock := GetObjProperty(faction_chest, lock_prop);
+    if (existing_lock)
+        var lock_age := current_time - existing_lock.timestamp;
+        if (lock_age < lock_timeout)
+            if (existing_lock.pid == GetPid())
+                LogDebug("upkeep", "Lock já pertence a este processo, continuando...");
+            else
+                LogWarning("upkeep", "Baú bloqueado por outro processo (PID: " + existing_lock.pid + "), abortando cobrança");
+                return 0;
+            endif
+        else
+            LogWarning("upkeep", "Lock expirado encontrado no baú, removendo...");
+            EraseObjProperty(faction_chest, lock_prop);
+        endif
+    endif
+    
+    // Adquirir lock no baú
+    var lock_data := struct{
+        "pid" := GetPid(),
+        "timestamp" := current_time,
+        "operation" := "upkeep_payment"
+    };
+    SetObjProperty(faction_chest, lock_prop, lock_data);
+    LogDebug("upkeep", "Lock adquirido no baú para cobrança de upkeep");
+    
     // Validar o baú
     if (!faction_chest.isA(POLCLASS_CONTAINER) || !faction_chest.serial || faction_chest.serial <= 0)
+        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
         LogError("UpkeepPayment_ERROR", "Baú inválido para facção " + guild_name);
         return 0;
     endif
     
-    // Contar moedas disponíveis
+    // Contar moedas disponíveis (operação protegida por lock)
     var coins_available := 0;
     var coin_items_list := array{};
     
     var items_in_chest := EnumerateItemsInContainer(faction_chest);
     if (items_in_chest == error)
+        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
         LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
         return 0;
     endif
@@ -212,11 +245,12 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     
     // Verificar se há moedas suficientes
     if (coins_available < cost_amount)
+        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
         LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes. Disponível: " + coins_available + ", Necessário: " + cost_amount);
         return 0;
     endif
     
-    // Executar o débito
+    // Executar o débito (operação crítica protegida por lock)
     var coins_debited := 0;
     var coins_remaining := cost_amount;
     
@@ -248,13 +282,20 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     LogCritical("UpkeepPayment_RESULT", "Débito concluído. Total debitado: " + coins_debited + " de " + cost_amount + " necessário");
     
     // Verificar se o débito foi completo
+    var payment_success := 0;
     if (coins_debited >= cost_amount)
         LogInfo("UpkeepPayment_SUCCESS", "Pagamento de upkeep bem-sucedido para " + guild_name);
         // Forçar atualização do cache do baú
         SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
-        return 1;
+        payment_success := 1;
     else
         LogError("UpkeepPayment_FAILED", "Pagamento incompleto. Debitado: " + coins_debited + ", Necessário: " + cost_amount);
-        return 0;
+        payment_success := 0;
     endif
+    
+    // === SEMPRE LIBERAR O LOCK ===
+    EraseObjProperty(faction_chest, lock_prop);
+    LogDebug("upkeep", "Lock liberado após cobrança de upkeep");
+    
+    return payment_success;
 endfunction

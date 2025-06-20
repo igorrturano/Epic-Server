@@ -15,7 +15,7 @@ include "include/arrays";
 include ":tn:tngumps";
 include ":faccao:include/shared_functions";
 include ":faccao:include/safe_guild_utils";
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";

@@ -4,7 +4,7 @@ use datafile;
 use math;
 
 include ":faccao:faccao"; 
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions"; 
 include ":faccao:include/territory_management"; 
 include ":gumps:gumps";

@@ -2,7 +2,7 @@ use uo;
 use os;
 use guilds;
 
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions";
 include ":faccao:include/permissions";
 

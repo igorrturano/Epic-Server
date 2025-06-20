@@ -19,7 +19,7 @@ include ":merchants:item_template";
 include ":gumps:htmlGump";
 include ":keys:key";
 // Incluir o arquivo de constantes para resolver os erros
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":architect:include/architect";
 include ":faccao:include/logging";
 include ":datafile:datafile";

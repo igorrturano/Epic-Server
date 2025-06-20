@@ -3,7 +3,7 @@ use datafile;
 use uo;
 
 // Includes essenciais para as funções neste arquivo
-include ":faccao:faccao_constants";
+include ":faccao:include/faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
 include ":faccao:include/process_registry"; // <<< CERTIFIQUE-SE QUE ESTA LINHA ESTÁ NO TOPO DO SEU start.src

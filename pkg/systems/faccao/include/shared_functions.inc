@@ -1,3 +1,6 @@
+// Marcador de inclusão para evitar problemas de redefinição
+const SHARED_FUNCTIONS_INCLUDED := 1;
+
 use uo;
 use os;
 use cfgfile;

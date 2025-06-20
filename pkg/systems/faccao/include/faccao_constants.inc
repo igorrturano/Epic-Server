@@ -1,42 +1,29 @@
 // faccao_constants.inc
 //
-// Este arquivo define constantes padronizadas para propriedades
-// usadas pelo sistema de facções, territórios e recursos.
-// 
-// Usar estas constantes em vez de strings hardcoded evita
-// erros de digitação e inconsistências no sistema.
+// CONSTANTES COMPLETAS para o sistema de facções.
+// ABORDAGEM CONSERVADORA: Mantém todas as constantes para evitar quebras.
 
 // =======================================
-// Propriedades de Facção
+// Propriedades padronizadas
 // =======================================
 
-// Propriedade que armazena o nome da facção em objetos de facção
-const FACTION_PROP_NAME := "name";
-
-// Propriedade que armazena a facção em objetos do mundo
-const OBJ_FACTION_PROP := "faction";  // Padronizado para minúsculo
-
-// Propriedade que armazena a facção em elementos de território
-const TERRITORY_FACTION_PROP := "faction";  // Padronizado para minúsculo
-
-// =======================================
-// Propriedades de Território
-// =======================================
-
-// Propriedade que armazena o nome do território
-const TERRITORY_NAME_PROP := "RectName";
-
-// Propriedade que armazena as coordenadas do território
-const TERRITORY_RECT_PROP := "Rect";
-
-// Propriedade que armazena o realm do território
-const TERRITORY_REALM_PROP := "Realm";
+// Propriedades padronizadas (resolve inconsistência de casing)
+const TERRITORY_FACTION_PROP := "faction";  // Padronizado minúsculo
+const OBJ_FACTION_PROP := "faction";        // Padronizado minúsculo
 
 // Propriedade que identifica se um território é capital
 const TERRITORY_IS_CAPITAL_PROP := "IsCapital";
 
 // Propriedade que armazena o ID único do território
 const TERRITORY_ID_PROP := "TerritoryID";
+
+// Propriedades de território essenciais
+const TERRITORY_NAME_PROP := "RectName";
+const TERRITORY_RECT_PROP := "Rect";
+const TERRITORY_REALM_PROP := "Realm";
+
+// Propriedade que armazena o nome da facção na guild
+const FACTION_PROP_NAME := "name";          // Nome da facção
 
 // =======================================
 // Propriedades de Baús de Doação
@@ -158,17 +145,6 @@ const ITEM_TYPE_ESTANDARTE := "ESTANDARTE";
 const ITEM_TYPE_FERRAMENTAS_CONSTRUCAO := "FERRAMENTAS_CONSTRUCAO";
 
 // =======================================
-// Comentários para referência dos Objtypes Territoriais
-// =======================================
-
-// Lista de objtypes territoriais (não pode ser array constante no POL):
-// 0x46AE - muralrecrutamento
-// 0xF8A8 - MesaDeInscricao  
-// 0xFE5C - mesadegestaodereino
-// 0xFF11 - BaudeDoacoes
-// 0xFDDF - EstandarteReino
-
-// =======================================
 // Constantes para sistema de caravanas
 // =======================================
 
@@ -179,49 +155,31 @@ const CARAVAN_CYCLE_WAIT := 60; // 1 minuto
 const CARAVAN_TEST_DURATION_SECONDS := 300; // 5 minutos para testes rápidos
 
 // =======================================
-// CONSTANTES CONSOLIDADAS (ANTI-DUPLICAÇÃO) - APENAS SISTEMA DE FACÇÃO
-// =======================================
-// As constantes abaixo consolidam valores que estavam duplicados
-// APENAS DENTRO DO SISTEMA DE FACÇÃO. Outros sistemas mantêm suas próprias constantes.
-// 
-// NOTA: Constantes como MOEDAS_COBRE e BKGND_* foram removidas daqui para evitar
-// conflitos com o sistema de merchants. Cada arquivo do sistema de facção que
-// precisa dessas constantes deve defini-las localmente.
-
 // TIMING DE CICLOS
+// =======================================
 const UPKEEP_CYCLE_WAIT := 60;          // 1 minuto para upkeep
 const CYCLE_WAIT := 120;                // 2 minutos para ciclos gerais
 
+// =======================================
 // BORDAS DO MAPEADOR
+// =======================================
 const BORDER_ITEM_LATERAL := 0xF873;
 const BORDER_ITEM_TRANSVERSAL := 0xF878;
 const BORDER_DURATION := 300;           // 5 minutos
 const BORDER_HUE := 39;
 
+// =======================================
 // CUSTOS PADRÃO
+// =======================================
 const MAPEADOR_CUSTO := 500;
 const FERRAMENTAS_CUSTO := 500;
 const BANNER_CUSTO := 500;
 
+// =======================================
 // OBJTYPES DE FERRAMENTAS
+// =======================================
 const MAPEADOR_OBJTYPE := 0x14F5;
 const FERRAMENTAS_OBJTYPE := 0xFA50;
-
-// =======================================
-// MIGRAÇÃO LOCAL - APENAS SISTEMA DE FACÇÃO
-// =======================================
-/*
-ESCOPO: Apenas arquivos do sistema de facção (pkg/systems/faccao/)
-
-TODO: Substituir gradualmente APENAS nos arquivos de facção:
-- gestao_use.src: BKGND_*, MOEDAS_COBRE
-- reino_upkeep_control.src: MOEDAS_COBRE, UPKEEP_CYCLE_WAIT 
-- totemdeaquisicao.src: MOEDAS_COBRE
-- portaalugavelfac.src: BKGND_*
-- mapeador.src: BORDER_*
-
-NOTA: Outros sistemas (merchants, etc.) mantêm suas próprias constantes.
-*/
 
 // =======================================
 // Constantes de Interface Gráfica (Gumps)
@@ -229,14 +187,6 @@ NOTA: Outros sistemas (merchants, etc.) mantêm suas próprias constantes.
 
 // Backgrounds padrão para gumps do sistema (SOMENTE ESPECÍFICOS DA FACÇÃO)
 const BKGND_BLUESLAB_FACCAO := 9200;  // Blue slab background (específico para sistema de facção)
-
-// =======================================
-// Constantes de Itens e Moedas
-// =======================================
-
-// Tipos de moedas padronizadas (MAIÚSCULO)
-// NOTA: MOEDAS_COBRE removida - deve ser definida localmente em cada package
-// NOTA: MOEDAS, BKGND_STONESLAB, GF_STDCOLOR removidas - causam conflito com outros sistemas
 
 // =======================================
 // Constantes de Botões e Interface
@@ -293,5 +243,3 @@ const TIPO_MAPEADOR := 0xA103;
 const TIPO_MESA_INSCRICAO_ITEM := 0xA104;
 const TIPO_FERRAMENTAS_CONSTRUCAO := 0xFA50;
 const TIPO_ESTANDARTE := 0xFDDF;
-
-// =======================================

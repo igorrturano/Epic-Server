@@ -826,33 +826,63 @@ endfunction
                     SendSysMessageEx(leader, message, SSM_INFO);
                     sleepms(200); // Pequena pausa entre mensagens para o mesmo jogador
                 endforeach
-            endif
-        endforeach
+            endif        endforeach
         
         return leader_serials.size();
     endfunction
-
 
     // Função para atualizar a contagem de recursos diretamente no baú
     function AtualizarContagemRecursos(bau, force_update := 0)
         // Registrar início para depuração
         LogDebug("recursos", "AtualizarContagemRecursos() iniciada para baú: " + bau.serial);
         
-        // Obter último timestamp de atualização
-        var ultimo_update := GetObjProperty(bau, "recursos_ultimo_update");
+        // === IMPLEMENTAÇÃO DE LOCK PARA PREVENIR RACE CONDITIONS ===
+        var lock_prop := "recursos_update_lock";
+        var lock_timeout := 30; // 30 segundos de timeout
         var current_time := polcore().systime;
+        
+        // Verificar se há lock ativo
+        var existing_lock := GetObjProperty(bau, lock_prop);
+        if (existing_lock)
+            var lock_age := current_time - existing_lock.timestamp;
+            if (lock_age < lock_timeout)
+                if (existing_lock.pid == GetPid())
+                    LogDebug("recursos", "Lock já pertence a este processo, continuando...");
+                else
+                    LogWarning("recursos", "Operação bloqueada por lock ativo (PID: " + existing_lock.pid + ", idade: " + lock_age + "s)");
+                    return 0; // Retorna 0 em caso de lock ativo
+                endif
+            else
+                LogWarning("recursos", "Lock expirado encontrado, removendo...");
+                EraseObjProperty(bau, lock_prop);
+            endif
+        endif
+        
+        // Adquirir lock
+        var lock_data := struct{
+            "pid" := GetPid(),
+            "timestamp" := current_time,
+            "operation" := "update_recursos"
+        };
+        SetObjProperty(bau, lock_prop, lock_data);
+        LogDebug("recursos", "Lock adquirido para atualização de recursos");
+        
+        // Obter último timestamp de atualização (dentro do lock)
+        var ultimo_update := GetObjProperty(bau, "recursos_ultimo_update");
         
         // Se a última atualização foi recente e não estamos forçando nova contagem, usar o cache
         if (!force_update && ultimo_update && (current_time - ultimo_update < 300))
             LogDebug("recursos", "Usando cache - última atualização há " + (current_time - ultimo_update) + " segundos");
             var recursos_cache := GetObjProperty(bau, "recursos_cache");
             if (recursos_cache)
+                // Liberar lock antes de retornar cache
+                EraseObjProperty(bau, lock_prop);
                 return recursos_cache;
             endif
         endif
         
-        // Realizar contagem completa
-        LogDebug("recursos", "Realizando contagem completa dos recursos no baú");
+        // Realizar contagem completa (operação crítica protegida por lock)
+        LogDebug("recursos", "Realizando contagem completa dos recursos no baú (protegida por lock)");
         var recursos := ContarRecursosReais(bau);
         
         // Verificar inconsistências se houver cache anterior
@@ -867,15 +897,16 @@ endfunction
             endif
         endif
         
-        // Atualizar o cache no baú
+        // Atualizar o cache no baú (operação atômica)
         SetObjProperty(bau, "recursos_cache", recursos);
         SetObjProperty(bau, "recursos_ultimo_update", current_time);
-        LogDebug("recursos", "Cache atualizado no baú");
+        LogDebug("recursos", "Cache atualizado no baú (protegido por lock)");
         
         // Verificar se devemos atualizar o datafile global também
         var ultima_sync := GetObjProperty(bau, "recursos_ultima_sync");
         if (!ultima_sync || (current_time - ultima_sync > 1800) || force_update)
             // Se passou mais de 30 minutos da última sincronização ou estamos forçando
+            LogDebug("recursos", "Sincronizando com datafile global (protegido por lock)");
             SincronizarComDataFile(bau, recursos);
             SetObjProperty(bau, "recursos_ultima_sync", current_time);
             LogDebug("recursos", "Datafile global atualizado");
@@ -884,6 +915,10 @@ endfunction
             // Agendar atualização futura se necessário
             AgendarAtualizacaoDataFileLocal(bau);
         endif
+        
+        // === SEMPRE LIBERAR O LOCK ===
+        EraseObjProperty(bau, lock_prop);
+        LogDebug("recursos", "Lock liberado após atualização de recursos");
         
         return recursos;
     endfunction
