@@ -869,7 +869,6 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	var subEfeitosMaterial;
 	var valorEfeitoMaterial := 0;
 	
-	Print("quantidadeOpicionais: " + quantidadeOpicionais);
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
 	else

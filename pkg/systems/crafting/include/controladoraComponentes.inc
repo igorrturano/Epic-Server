@@ -150,7 +150,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 							SendSysMessageEX(quem,"Você não pode trabalhar o material indicado para este componente .",SSM_HARMFUL);
 						endif
 					else
-						SendSysMessageEX(quem,"O Alvo não é um material trabalhavel.",SSM_HARMFUL);
+						SendSysMessageEX(quem,"O Alvo não é um material trabalhável.",SSM_HARMFUL);
 					endif
 				else
 					SendSysMessageEX(quem,"Alvo cancelado.",SSM_FAIL);
@@ -158,7 +158,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				
 			RT_BTN_FABRICAR:
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
-				//TODO Animações e emotes de construção.
 
 				var materiaisEscolhidos := array;
 				var isValidado := true;
