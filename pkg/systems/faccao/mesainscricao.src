@@ -14,34 +14,51 @@ include ":faccao:include/logging";
 include ":faccao:include/permissions";
 
 program mesainscricao_use(who, item)
-    // === PROTEÇÃO ANTI-CRASH ===
+    // Etapa 1: Proteção anti-crash (lock)
     var lock_prop := "mesa_em_uso_" + who.serial;
-    
-    // Verificar se já está em uso
     if (GetObjProperty(item, lock_prop))
         SendSysMessage(who, "Aguarde, a mesa ainda esta processando sua solicitacao anterior.");
         return 0;
-    endif
-      // Marcar como em uso
-    SetObjProperty(item, lock_prop, 1);
-      // Verificar se o jogador está em uma facção (usando verificação padrão do POL)
-    if (!who.guildid)
-        SendSysMessage(who, "Voce precisa estar em uma faccao para usar esta mesa.");
-        EraseObjProperty(item, lock_prop);
-        return 0;
-    endif
+    endif;
     
-    // === VERIFICAÇÃO DE LIDERANÇA USANDO SISTEMA UNIFICADO ===
-    if (!IsGuildLeader(who))
-        SendSysMessage(who, "Apenas o lider da faccao pode usar esta mesa.");
+    SetObjProperty(item, lock_prop, 1);
+
+    // Etapa 2: Obter as informações de facção da MESA e do JOGADOR
+    var mesa_faction_name := GetObjectFaction(item);
+    var player_faction_name := GetPlayerFaction(who);
+
+    // Se a mesa não tem uma facção definida, ela é inútil.
+    if (!mesa_faction_name)
+        SendSysMessage(who, "Esta mesa de inscrição não parece pertencer a nenhuma facção.");
         EraseObjProperty(item, lock_prop);
         return 0;
-    endif
+    endif;
 
-    // Abrir interface simplificada
+    // Etapa 3: Verificação de Permissão - LÓGICA CORRIGIDA
+    
+    // CASO 1: O jogador não pertence à facção dona da mesa.
+    if (player_faction_name != mesa_faction_name)
+        // A mensagem de erro que você pediu: "Apenas o líder da facção XXX..."
+        SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
+        EraseObjProperty(item, lock_prop);
+        return 0;
+    endif;
+    
+    // CASO 2: O jogador pertence à facção correta, mas não é o líder.
+    if (!IsGuildLeader(who))
+        // A mensagem de erro que você pediu: "Apenas o líder da facção XXX..."
+        SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
+        EraseObjProperty(item, lock_prop);
+        return 0;
+    endif;
+    
+    // Se passou por todas as verificações, o jogador é o líder da facção dona da mesa.
+    // Pode continuar...
+
+    // Abrir a interface de convite
     var result := OpenSimpleInviteGump(who, item);
     
-    // === SEMPRE LIMPAR O LOCK NO FINAL ===
+    // Etapa 4: Limpar o lock no final da execução
     EraseObjProperty(item, lock_prop);
     
     return result;
