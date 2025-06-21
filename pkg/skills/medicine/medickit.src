@@ -52,6 +52,7 @@ program medical_items_gump(who, item)
                 return 1;
             endif
         endif
+		Sleepms(2);
     endforeach
     
     // Verificar se está em área de pântano para recarregar inalação de vapores
@@ -71,6 +72,7 @@ program medical_items_gump(who, item)
                 recharged := 1;
                 return 1;
             endif
+			Sleepms(2);
         endforeach
     endif
     
@@ -93,6 +95,7 @@ program medical_items_gump(who, item)
                 recharged := 1;
                 return 1;
             endif
+			Sleepms(2);
         endforeach
     endif
 
@@ -153,6 +156,7 @@ endif
         
         y_pos += 40;
         btn_id += 1;
+		Sleepms(2);
     endforeach
 
     var result := GFSendGump(who, gump);
@@ -239,6 +243,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
         original_symptoms := array{};
         foreach disease in diseases
             original_symptoms.append(disease);
+			Sleepms(2);
         endforeach
         original_symptoms.sort();
         UpdateDiseaseProperty(patient, "temp_symptoms", original_symptoms);
@@ -338,6 +343,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
     
     // Verificar se o tratamento é adequado para algum sintoma
     foreach disease in diseases
+	Sleepms(2);
         if (disease == symptom)
             found := 1;
             if (skill_check > 0)
@@ -471,6 +477,7 @@ function CheckShortcutCure(cure_history, disease_info)
             // Encontrou a sequência correta: primário seguido imediatamente por secundário
             return "shortcut_complete";
         endif
+		Sleepms(2);
     endfor
     
     return "no_shortcut";
@@ -481,6 +488,7 @@ function AddDiseaseToPersonalKnowledge(who, disease_name)
     var known_diseases := GetObjProperty(who, "KnownDiseases");
     if (!known_diseases)
         known_diseases := array{};
+		Sleepms(2);
     endif
     
     // Verificar se já conhece esta doença
@@ -517,6 +525,7 @@ function DiscoverNewDisease(who, original_symptoms)
         GFTextLine(gump, 50, y_pos, COLOR_REGULAR, symptom);
         GFRadioButton(gump, 200, y_pos, 210, 211, 0, 100 + _symptom_iter);
         y_pos += 25;
+		Sleepms(2);
     endforeach
     
     y_pos := 170;
@@ -525,6 +534,7 @@ function DiscoverNewDisease(who, original_symptoms)
     foreach symptom in original_symptoms
         GFRadioButton(gump, 300, y_pos, 210, 211, 0, 200 + _symptom_iter);
         y_pos += 25;
+		Sleepms(2);
     endforeach
     
     GFAddButton(gump, 150, y_pos + 20, 2130, 2129, GF_CLOSE_BTN, 1);
@@ -544,6 +554,7 @@ function DiscoverNewDisease(who, original_symptoms)
             if (input[200 + i])
                 secondary_symptom := original_symptoms[i];
             endif
+			Sleepms(2);
         endfor
         
         if (!disease_name)
@@ -608,7 +619,8 @@ function GetDiseaseInfoFromDatafile(patient_symptoms)
     var disease_elements := DFGetElemNames(diseases_data);
     
     foreach disease_name in disease_elements
-        var elem := DFFindElement(diseases_data, disease_name);
+        Sleepms(2);
+		var elem := DFFindElement(diseases_data, disease_name);
         if (!elem)
             continue;
         endif
@@ -632,12 +644,14 @@ function GetDiseaseInfoFromDatafile(patient_symptoms)
             if (symptom != error && typeof(symptom) == "String")
                 temp_disease_symptoms.append(Lower(symptom));
             endif
+			Sleepms(2);
         endforeach
         
         foreach symptom in patient_symptoms
             if (symptom != error && typeof(symptom) == "String")
                 temp_patient_symptoms.append(Lower(symptom));
             endif
+			Sleepms(2);
         endforeach
         
         // Ordenar ambos para comparação consistente
@@ -654,6 +668,7 @@ function GetDiseaseInfoFromDatafile(patient_symptoms)
                     break;
                 endif
                 i := i + 1;
+				Sleepms(2);
             endwhile
         else
             matches := false;

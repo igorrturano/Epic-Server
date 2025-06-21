@@ -68,6 +68,7 @@ program forensic(who)
             SendSysMessageEX(who, "Por estar usando um estetoscópio: +5 na análise", SSM_INFO);
             break;
         endif
+		Sleepms(2);
     endforeach
     
     Printtextabove(who, "*Tateando e analisando*");
@@ -375,6 +376,7 @@ function HandleFracture(subject, fractureName)
         if (element != fractureName)
             newFracture.append(element);
         endif
+		Sleepms(2);
     endforeach
 
     // Verifica se o novo array está vazio
@@ -448,6 +450,7 @@ function Autopsy(who, corpse)
     // Props do lastDamage - todas são repassadas
     foreach key in (lastDamage.keys())
         discovery_results["lastdamage_" + key] := lastDamage[key];
+		Sleepms(2);
     endforeach
 
     // Criar lista de categorias completas para sorteio
@@ -544,6 +547,7 @@ function Autopsy(who, corpse)
         endif
         discoveries_per_stage.append(per_stage);
         remaining -= per_stage;
+		Sleepms(2);
     endfor
 
     // Embaralhar categorias
@@ -553,6 +557,7 @@ function Autopsy(who, corpse)
         var index := RandomInt(temp_categories.size()) + 1;
         shuffled_categories.append(temp_categories[index]);
         temp_categories.erase(index);
+		Sleepms(2);
     endwhile
 
     var category_index := 1;
@@ -582,6 +587,7 @@ function Autopsy(who, corpse)
                     // Para categorias que são dicionários/structs, adicionar todas as propriedades
                     foreach key in (category.data.keys())
                         discovery_results[category.name + "_" + key] := category.data[key];
+						Sleepms(2);
                     endforeach
                 endif
                 
@@ -628,6 +634,7 @@ function CreateReportItem(who, discovery_results, corpse)
 		if (item.objtype == 0xedfd)
 			report_counter += 1;
 		endif
+		Sleepms(2);
 	endforeach
 	var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 	// Criar gump para definir o nome do laudo
@@ -685,6 +692,7 @@ endfunction
 		  else
 			MoveObjectToLocation(thing, cadaver.x, cadaver.y, cadaver.z, thing.realm, MOVEOBJECT_FORCELOCATION);
 		  endif
+		  Sleepms(2);
 		endforeach
 		var partsarray := {};
 		var part;
@@ -731,6 +739,7 @@ function GetKnownDiseaseInfo(who, patient_symptoms)
             player_knows_disease := true;
             break;
         endif
+		Sleepms(2);
     endforeach
     
     // Se o jogador conhece a doença, retorna as informações completas do datafile
@@ -776,17 +785,19 @@ function GetDiseaseInfo(patient_symptoms)
         // Criar cópias normalizadas dos arrays de sintomas
         var temp_disease_symptoms := array{};
         var temp_patient_symptoms := array{};
-        
+        Sleepms(2);
         foreach symptom in disease_symptoms
             if (symptom != error && typeof(symptom) == "String")
                 temp_disease_symptoms.append(Lower(symptom));
             endif
+			Sleepms(2);
         endforeach
         
         foreach symptom in patient_symptoms
             if (symptom != error && typeof(symptom) == "String")
                 temp_patient_symptoms.append(Lower(symptom));
             endif
+			Sleepms(2);
         endforeach
         
         // Ordenar ambos para comparação consistente
@@ -803,6 +814,7 @@ function GetDiseaseInfo(patient_symptoms)
                     break;
                 endif
                 i := i + 1;
+				Sleepms(2);
             endwhile
         else
             matches := false;
@@ -830,6 +842,7 @@ function SortArray(symptoms_array)
     var sorted_array := array{};
     foreach symptom in symptoms_array
         sorted_array.append(symptom);
+		Sleepms(2);
     endforeach
     sorted_array.sort();
     

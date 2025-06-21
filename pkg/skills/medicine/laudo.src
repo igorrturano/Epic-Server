@@ -162,6 +162,7 @@ function CreateMedicalReport(results)
             report += finding + ". ";
         endforeach
         report += "\n\n";
+		Sleepms(2);
     endif
     
     // CAPACIDADES VITAIS
@@ -195,6 +196,7 @@ function CreateMedicalReport(results)
             var skill_name := key[8, len(key)];
             skills_found.append(FormatSkillAnalysis(skill_name, results[key]));
         endif
+		Sleepms(2);
     endforeach
     
     if (skills_found.size() > 0)
@@ -209,6 +211,7 @@ function CreateMedicalReport(results)
             else
                 report += skills_found[i];
             endif
+			Sleepms(2);
         endfor
         
         report += ". Estas evidências sugerem uma dedicação específica ao desenvolvimento dessas capacidades durante a vida do indivíduo.\n\n";
@@ -264,6 +267,7 @@ function GetResistanceAnalysis(results)
                 significant_resistances.append(FormatResistanceDescription(resist_type, resist_value));
             endif
         endif
+		Sleepms(2);
     endforeach
     
     if (significant_resistances.size() == 0)
@@ -280,6 +284,7 @@ function GetResistanceAnalysis(results)
         else
             analysis += significant_resistances[i];
         endif
+		Sleepms(2);
     endfor
     
     analysis += ". Estas características sugerem exposição prolongada ou condicionamento específico a tais elementos.";
@@ -301,6 +306,7 @@ function GetCombatAnalysis(results)
                 endif
             endif
         endif
+		Sleepms(2);
     endforeach
     
     if (combat_capabilities.size() == 0)
@@ -317,6 +323,7 @@ function GetCombatAnalysis(results)
         else
             analysis += combat_capabilities[i];
         endif
+		Sleepms(2);
     endfor
     
     analysis += ". Tais características indicam treinamento avançado em técnicas de combate especializado.";
@@ -393,6 +400,7 @@ function SplitTextIntoLines(text, max_length)
                 current_line := word;
             endif
         endif
+		Sleepms(2);
     endforeach
     
     if (current_line != "")

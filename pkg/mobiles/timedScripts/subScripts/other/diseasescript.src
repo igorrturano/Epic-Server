@@ -122,6 +122,7 @@ function GenerateRandomDiseases(level)
     
     // Seleciona sintomas aleatórios baseados no nível e chance
     foreach disease in all_diseases
+	Sleepms(2);
         if (diseases.size() >= max_symptoms)
             break;
         endif
@@ -147,6 +148,7 @@ function RandomizeArray(array_to_shuffle)
     // Cria uma cópia do array original
     foreach item in array_to_shuffle
         shuffled.append(item);
+		Sleepms(2);
     endforeach
     
     // Embaralha o array usando um loop while ao invés de for
@@ -157,6 +159,7 @@ function RandomizeArray(array_to_shuffle)
         shuffled[i] := shuffled[j];
         shuffled[j] := temp;
         i := i - 1;
+		Sleepms(2);
     endwhile;
     
     return shuffled;
@@ -182,6 +185,7 @@ function ApplyDiseaseEffects(mobile, diseases, grade)
     
     // Aplica efeitos baseados nos sintomas
     foreach disease in diseases
+	Sleepms(2);
         case (disease)
             "Febre":
                 strength_mod -= 5 * effect_mult;
