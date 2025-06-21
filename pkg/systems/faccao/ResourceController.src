@@ -255,7 +255,7 @@ function UpdateTerritorySchedule(territory_id_to_update)
         
         var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
         
-        if (faction && faction != DEFAULT_FACTION && faction != "Selvagem")
+        if (faction && faction != DEFAULT_FACTION)
             var schedule_time_val := 0;
             if (next_time_from_prop)
                 schedule_time_val := CInt(next_time_from_prop);
@@ -425,10 +425,10 @@ function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
         return validade;
     endif
     
-    if (faction == "Selvagem" || faction == DEFAULT_FACTION)
-        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Território selvagem (" + faction + ")");
+    if (faction == DEFAULT_FACTION)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Território default (" + faction + ")");
         validade.valido := 0;
-        validade.mensagem := "Facção inválida ou território selvagem: " + faction;
+        validade.mensagem := "Facção inválida ou território default: " + faction;
         return validade;
     endif
     
@@ -558,8 +558,8 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         LogError("recursos_gen", "Informação de facção inválida para o território '" + territory_name_from_elem + "'.");
         return 0;
     endif
-    if (faction_on_elem == DEFAULT_FACTION || faction_on_elem == "Selvagem")
-        LogDebug("recursos_gen", "Território '" + territory_name_from_elem + "' é selvagem. Pulando geração.");
+    if (faction_on_elem == DEFAULT_FACTION)
+        LogDebug("recursos_gen", "Território '" + territory_name_from_elem + "' é default. Pulando geração.");
         return 0;
     endif
     if (faction_name != faction_on_elem)
@@ -1036,10 +1036,10 @@ endfunction
                 var elem := SafeFindElement(rect_df, territorio);
                 if (elem)
                     var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                    // Se o território agora é selvagem, remover do agendamento
+                    // Se o território agora é default, remover do agendamento
                     if (!faction || faction == DEFAULT_FACTION)
                         next_territory_checks.Erase(territorio);
-                        LogInfo("recursos", "Território " + territorio + " agora é selvagem, removido do agendamento");
+                        LogInfo("recursos", "Território " + territorio + " agora é default, removido do agendamento");
                     endif
                 endif
             endif
@@ -1202,7 +1202,7 @@ function LoadAllTerritories()
         
         LogDebug("ResourceController_Load", "Verificando Elemento: '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + "), Facção: " + (faction ? faction : "N/A") + ", Recursos: " + (resources_str ? resources_str : "N/A"));
         
-        if (faction && faction != "" && faction != "Selvagem" && faction != DEFAULT_FACTION && resources_str && resources_str != "")
+        if (faction && faction != "" && faction != DEFAULT_FACTION && resources_str && resources_str != "")
             LogInfo("ResourceController_Load", "Território VÁLIDO para agendamento: '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + "), Facção: " + faction);
             territories_loaded_count +=1;
 

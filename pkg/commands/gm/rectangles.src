@@ -718,10 +718,10 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
     
     // Facção controladora
     GFTextLine(gump, x, y, 2100, "Controlado por:");
-    // Cor diferente dependendo se é selvagem ou controlado
+    // Cor diferente dependendo se é default ou controlado
     var control_color := 63; // Verde normal
     if (faction == DEFAULT_FACTION)
-        control_color := 38; // Vermelho para selvagem
+        control_color := 38; // Vermelho para default
     endif
     GFTextLine(gump, x+110, y, control_color, faction);
     y += 25;

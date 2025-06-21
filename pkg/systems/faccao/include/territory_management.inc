@@ -184,7 +184,7 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
     
     // --- SINCRONIZAÇÃO AUTOMÁTICA DA CPROP TERRITORIES ---
     // Atualizar CProp da guilda ANTIGA (remover o território)
-    if (old_faction && old_faction != DEFAULT_FACTION && old_faction != "Selvagem")
+    if (old_faction && old_faction != DEFAULT_FACTION)
         LogDebug("TM_SetTerritoryFaction", "Removendo território da lista da facção antiga: " + old_faction);
         var old_guild_id := FindGuildByName(old_faction);
         if (old_guild_id)
@@ -209,7 +209,7 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
     endif
 
     // Atualizar CProp da guilda NOVA (adicionar o território)
-    if (faction_name && faction_name != DEFAULT_FACTION && faction_name != "Selvagem")
+    if (faction_name && faction_name != DEFAULT_FACTION)
         LogDebug("TM_SetTerritoryFaction", "Adicionando território à lista da nova facção: " + faction_name);
         var new_guild_id := FindGuildByName(faction_name);
         if (new_guild_id)
@@ -965,7 +965,7 @@ endfunction
  *   territory_name - Nome do território
  *   x1, y1, x2, y2 - Coordenadas do retângulo
  *   realm - Realm do território
- *   faction_name - Nome da facção (opcional, padrão: Selvagem)
+ *   faction_name - Nome da facção (opcional, padrão: DEFAULT_FACTION)
  * Return:
  *   ID do território criado ou 0 em caso de falha
  */
@@ -1025,7 +1025,7 @@ function TM_CreateNewTerritory(territory_name, x1, y1, x2, y2, realm, faction_na
     SetElementProp(elem, "Name", territory_name);
 SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     
-    // Definir a facção controladora (padrão: Selvagem)
+    // Definir a facção controladora (padrão: DEFAULT_FACTION)
     if (!faction_name)
         faction_name := DEFAULT_FACTION;
     endif

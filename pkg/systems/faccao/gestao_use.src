@@ -2263,14 +2263,14 @@ function GetKingdomCulture(item, faction_name)
             syslog(debug_msg);
             LogDebug("cultura", debug_msg);
             
-            if (cultura_escolhida && cultura_escolhida != "" && cultura_escolhida != "Selvagem")
+            if (cultura_escolhida && cultura_escolhida != "" && cultura_escolhida != DEFAULT_FACTION)
                 debug_msg := "DEBUG GetKingdomCulture: USANDO cultura escolhida = " + cultura_escolhida;
                 syslog(debug_msg);
                 LogDebug("cultura", debug_msg);
                 return cultura_escolhida;
             endif
             
-            if (cultura_direta && cultura_direta != "" && cultura_direta != "Selvagem")
+            if (cultura_direta && cultura_direta != "" && cultura_direta != DEFAULT_FACTION)
                 debug_msg := "DEBUG GetKingdomCulture: USANDO cultura direta = " + cultura_direta;
                 syslog(debug_msg);
                 LogDebug("cultura", debug_msg);

@@ -93,7 +93,7 @@ program TotemDeAquisicao(who, totem)
     var current_faction_in_datafile := territory_info_from_datafile.faction;
     LogDebug("faccao", "TotemDeAquisicao: Facção atual do território no datafile: " + current_faction_in_datafile);
 
-    if (current_faction_in_datafile && current_faction_in_datafile != DEFAULT_FACTION && current_faction_in_datafile != "Selvagem")
+    if (current_faction_in_datafile && current_faction_in_datafile != DEFAULT_FACTION)
         LogWarning("faccao", "TotemDeAquisicao: Território '" + rect_name + "' já está reivindicado por: " + current_faction_in_datafile);
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction_in_datafile);
         return 0;
