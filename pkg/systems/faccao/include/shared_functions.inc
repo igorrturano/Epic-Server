@@ -16,6 +16,62 @@ include ":faccao:include/datafile_helpers"; // ESSENCIAL
 include ":faccao:include/permissions";      // Para GetFactionOfChest
 include ":faccao:include/safe_guild_utils"; // Funções seguras para propriedades de guild
 include ":faccao:include/territory_management"; // Para TM_ funções
+
+// =============================================================================
+// SEÇÃO 1: FUNÇÕES SIMPLES PARA ACESSO SEGURO (FASE 1.1 KISS)
+// =============================================================================
+
+/*
+ * GetGuildFaction(guild)
+ * 
+ * Obtém a facção de uma guilda - SOLUÇÃO KISS
+ * Tenta "faction" primeiro, depois "Faction" como fallback
+ */
+function GetGuildFaction(guild)
+    if (!guild)
+        return DEFAULT_FACTION;
+    endif
+    
+    // Tentar propriedade padrão primeiro
+    var faction := guild.GetProp(FACTION_PROP_NAME);
+    if (faction != error)
+        return faction;
+    endif
+    
+    // Fallback simples para propriedade legada
+    faction := guild.GetProp("Faction");
+    if (faction != error)
+        return faction;
+    endif
+    
+    return DEFAULT_FACTION;
+endfunction
+
+/*
+ * SetGuildFaction(guild, faction_name)
+ * 
+ * Define a facção de uma guilda - SOLUÇÃO KISS
+ * Define a nova e remove a antiga
+ */
+function SetGuildFaction(guild, faction_name)
+    if (!guild)
+        return 0;
+    endif
+    
+    if (!faction_name)
+        faction_name := DEFAULT_FACTION;
+    endif
+    
+    // Definir a nova propriedade
+    guild.SetProp(FACTION_PROP_NAME, faction_name);
+    
+    // Remover a propriedade legada se existir
+    if (guild.GetProp("Faction") != error)
+        guild.EraseProp("Faction");
+    endif
+    
+    return 1;
+endfunction
 /* 
  * ContarItensDoadosNoBau(bau)
  * 
@@ -3377,22 +3433,22 @@ endfunction
  */
 function GetObjectCulture(obj)
     if (!obj)
-        return "Selvagem";
+        return DEFAULT_FACTION;
     endif
     
     var guild_id := GetObjProperty(obj, "guild_id");
     if (!guild_id)
-        return "Selvagem";
+        return DEFAULT_FACTION;
     endif
     
     // Obter objeto da guild
     var guild_obj := FindGuild(guild_id);
     if (!guild_obj)
-        return "Selvagem";
+        return DEFAULT_FACTION;
     endif
     
     // Retornar cultura da guild
-    return SafeGetGuildProperty(guild_obj, "culture", "Selvagem");
+    return SafeGetGuildProperty(guild_obj, "culture", DEFAULT_FACTION);
 endfunction
 
 

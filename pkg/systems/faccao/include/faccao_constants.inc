@@ -57,6 +57,7 @@ const RESOURCE_TYPE_MADEIRA := "Madeira";
 const RESOURCE_TYPE_PANO := "Pano";
 const RESOURCE_TYPE_PEDRA := "Pedra";
 const RESOURCE_TYPE_JOIAS := "Joias";
+const RESOURCE_TYPE_UNKNOWN := "desconhecido";
 
 // =======================================
 // Prefixos e padrões para datafiles

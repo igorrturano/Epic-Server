@@ -22,18 +22,12 @@ function SafeGetGuildName(guild)
         return guild_name;
     endif
     
-    // Method 2: Try FACTION_PROP_NAME if available
-    guild_name := guild.GetProp(FACTION_PROP_NAME);
-    if (guild_name && guild_name != error && guild_name != "<uninitialized object>")
-        return guild_name;
-    endif
-    
-    // Method 3: Try guildname property as fallback
+    // Method 2: Try guildname property as fallback
     if (guild.guildname && guild.guildname != error && guild.guildname != "<uninitialized object>")
         return guild.guildname;
     endif
     
-    // Method 4: Last resort - return guild ID with prefix
+    // Method 3: Last resort - return guild ID with prefix
     if (guild.guildid)
         return "Guild #" + guild.guildid;
     endif
