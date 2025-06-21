@@ -34,14 +34,15 @@ function ProcessarUpkeepSimples()
     
     // Nova abordagem: buscar guilds através dos territórios
     var active_guilds := struct{};
-    var rect_df := SafeOpenDataFile(":architect:areas");
+  var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
             if (elem)
                 var territory_faction := GetTerritoryFaction(elem);
                 
-                if (territory_faction && territory_faction != "" && territory_faction != KINGDOM_FACTION)
+                // Adiciona a facção ao dicionário se for válida e ainda não estiver lá
+                if (territory_faction && territory_faction != "" && territory_faction != DEFAULT_FACTION)
                     active_guilds[territory_faction] := 1;
                 endif
             endif
@@ -49,7 +50,7 @@ function ProcessarUpkeepSimples()
         endforeach
     endif
     
-    var guild_names := array{};
+     var guild_names := active_guilds.keys();
     foreach faction_name in (active_guilds.keys())
         guild_names.append(faction_name);
     endforeach

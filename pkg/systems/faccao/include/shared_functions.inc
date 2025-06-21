@@ -453,39 +453,31 @@ function FindItemsByFactionAndType(faction_name, item_type := "", territory_id :
     return matching_items;
 endfunction
 
-
 /*
- * FindTerritoryByID(territory_id)
+ * GetAllFactions_KISS()
  *
- * Purpose: Localiza o elemento de território pelo ID
- * Parameters:
- *   territory_id - ID do território
- * Return:
- *   Elemento do datafile ou 0 se não encontrado
+ * Retorna todas as facções existentes (guildas), mesmo sem território.
+ * Retorna array de structs: { name, guild_id }
  */
-function FindTerritoryByID(territory_id)
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
+function GetAllFactions_KISS()
+    var all_factions := array{};
+    var guilds := ListGuilds();
+    if (!guilds || guilds == error)
+        return all_factions;
     endif
-    
-    // Primeiro tentar encontrar pelo ID direto (se o ID for o nome)
-    var elem := SafeFindElement(rect_df, territory_id);
-    if (elem)
-        return elem;
-    endif
-    
-    // Se não encontrar, procurar em todos os elementos
-    foreach elem_name in (rect_df.keys())
-        elem := SafeFindElement(rect_df, elem_name);
-        var id := GetElementProp(elem, TERRITORY_ID_PROP);
-        if (id == territory_id)
-            return elem;
+    var seen := dictionary{};
+    foreach guild in guilds
+        var name := GetGuildFaction(guild);
+        if (name && !seen.exists(name))
+            all_factions.append(struct{
+                "name" := name,
+                "guild_id" := guild.guildid
+            });
+            seen[name] := 1;
         endif
-        sleepms(2);
+        sleepms(1);
     endforeach
-    
-    return 0;
+    return all_factions;
 endfunction
 
 

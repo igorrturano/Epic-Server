@@ -560,7 +560,7 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
                 SendSysMessage(who, "Não é possível contratar uma caravana da própria capital.");
             endif
         else
-            LogWarning("gestao_use_mapa_v3", "Índice de botão de contratar inválido: " + idx_na_lista_ordenada);
+            LogWarning("gestao_use_mapa_acao_v3", "Índice de botão de contratar inválido: " + idx_na_lista_ordenada);
         endif
         // Reabrir este mesmo Gump para refletir mudanças ou se o usuário quiser fazer outra ação
         MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
@@ -574,7 +574,7 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
             LogInfo("gestao_use_mapa_acao_v3", who.name + " tentando cancelar caravana DO território: " + terr_para_cancelar_info_clicado.name + " (ID: " + terr_para_cancelar_info_clicado.id + ")");
             CancelarCaravanaTerritorioIndividual(who, terr_para_cancelar_info_clicado.id, mesa_faction_name);
         else
-            LogWarning("gestao_use_mapa_v3", "Índice de botão de cancelar inválido: " + idx_na_lista_ordenada_cancel);
+            LogWarning("gestao_use_mapa_acao_v3", "Índice de botão de cancelar inválido: " + idx_na_lista_ordenada_cancel);
         endif
         // Reabrir este mesmo Gump
         MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
@@ -1127,23 +1127,28 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     GFTextMid(gump, 15, 25, 380, 53, "Escolha a facção para transferir " + territorio_nome);
       var y := 60;
     // Usar método baseado em territórios em vez de ListGuilds()
-    var active_factions := GetActiveFactionsFromTerritories();
-    LogDebug("territorio", "Total de facções ativas encontradas: " + active_factions.size());
+   var all_factions := GetAllFactions_KISS(); // Sua nova função já está aqui, ótimo!
+LogDebug("territorio", "Total de facções encontradas: " + all_factions.size());
+
+var guild_names := array{};
+var button_id := 1;
+foreach faction_info in all_factions
+    var name := faction_info.name; // Você já está pegando o nome corretamente
     
-    var guild_names := array{};
-    var button_id := 1;
-    foreach faction_info in active_factions
-        var name := faction_info.name;
+    if (name && name != old_faction)
+        guild_names.append(name);
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, button_id);
+
+        // =======================================================
+        // >>>>> LINHA DA CORREÇÃO - ADICIONE ESTA LINHA AQUI <<<<<
+        // =======================================================
+        GFTextLine(gump, 60, y, 1153, name); // Esta linha estava faltando
         
-        if (name && name != old_faction)
-            guild_names.append(name);
-            GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, button_id);
-            GFTextLine(gump, 60, y, 1153, name);
-            y += 25;
-            button_id += 1;
-        endif
-        sleepms(2);
-    endforeach
+        y += 25;
+        button_id += 1;
+    endif
+    sleepms(2);
+endforeach
     
     // Adicionar opção Cancelar
     GFAddButton(gump, 30, y + 20, 2117, 2118, GF_CLOSE_BTN, 0);
@@ -1466,16 +1471,17 @@ endif
   // 4.4 Salvar os seriais no datafile - USANDO O NOVO MÉTODO CENTRALIZADO
 LogDebug("territorio", "4.4: Registrando seriais via TM_RegisterTerritoryObjects");
 
-var objeto_seriais := struct{    "bau" := chest ? chest.serial : 0,
-    "mesa" := table ? table.serial : 0,
-    "mural" := mural ? mural.serial : 0,
-    TERRITORY_FACTION_PROP := new_faction,
-    "coords" := GetElementProp(elem, "Rect", ""),
-    "realm" := realm
+var objeto_seriais := struct{
+    "bau"     := chest ? chest.serial : 0,
+    "mesa"    := table ? table.serial : 0,
+    "mural"   := mural ? mural.serial : 0,
+    "faction" := new_faction, // <-- CORREÇÃO: Usar a chave "faction" diretamente
+    "coords"  := GetElementProp(elem, "Rect", ""),
+    "realm"   := realm
 };
 
+// A chamada para a função de registro continua a mesma
 var register_result := TM_RegisterTerritoryObjects(territorio_id, objeto_seriais);
-
 if (!register_result) // Se TM_RegisterTerritoryObjects retornar 0 ou error
     LogError("territorio", "FALHA ao registrar seriais usando TM_RegisterTerritoryObjects");
     DesfazerTransacao(transaction_id);

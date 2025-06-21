@@ -1,0 +1,90 @@
+use os;
+use uo;
+use guilds;
+
+include ":gumps:yesNo";
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao";
+// Remova o "include/client" se ele não for mais necessário por outras funções.
+
+program apagar_todas_faccoes(who)
+    // Etapa 1: Verificação de Permissão
+    if (!who || who.cmdlevel < 2)
+        SendSysMessage(who, "Apenas Administradores (nível 5) podem usar este comando.");
+        return 0;
+    endif;
+
+    // Etapa 2: Confirmação Dupla
+    if (!YesNo(who, "ATENÇÃO MÁXIMA: Esta ação irá apagar TODAS AS FACÇÕES, remover todos os seus membros, territórios e dados. É IRREVERSÍVEL. Continuar?"))
+        SendSysMessage(who, "Ação cancelada.");
+        return 0;
+    endif;
+    if (!YesNo(who, "ÚLTIMA CHANCE: Você está absolutamente certo de que deseja apagar permanentemente TODAS as facções do servidor?"))
+        SendSysMessage(who, "Ação cancelada.");
+        return 0;
+    endif;
+
+    // Etapa 3: Iniciar o processo
+    SendSysMessage(who, "INICIANDO PROCESSO DE REMOÇÃO COMPLETA DE TODAS AS FACÇÕES...");
+    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES INICIADA]] por " + who.name);
+
+    // Etapa 4: Obter a lista de guildas
+    var guilds_para_apagar := ListGuilds();
+    if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
+        SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
+        return 1;
+    endif;
+    
+    SendSysMessage(who, "Encontradas " + guilds_para_apagar.size() + " facções para apagar.");
+    var faccoes_apagadas := 0;
+
+    // Etapa 5: Iterar, notificar e apagar
+    foreach guild_obj in guilds_para_apagar
+        if (!guild_obj) continue; endif;
+        
+        var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda " + guild_obj.guildid);
+        SendSysMessage(who, "Apagando facção: " + guild_name + "...");
+        
+        // --- Notificar membros online ANTES de apagar ---
+        var members_to_notify := guild_obj.members;
+        if(members_to_notify)
+            foreach member in members_to_notify
+                if(member && member.connected)
+                    // Usando SendSysMessage padrão
+                    SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por um administrador.");
+                endif;
+            endforeach;
+        endif;
+        
+        sleepms(200);
+
+        // --- Chamar a função de limpeza ---
+        var resultado := RemFaccao(guild_obj);
+        
+        if (resultado)
+            SendSysMessage(who, "--> " + guild_name + " apagada com sucesso.");
+            faccoes_apagadas += 1;
+        else
+            SendSysMessage(who, "--> ERRO ao apagar " + guild_name + ". Verifique os logs.");
+        endif;
+
+        sleepms(200);
+    endforeach;
+    
+    // Etapa 6: Limpeza final de datafiles
+    LogToFile("faccoes.log", "Limpando o registro de guildas...");
+    var registry_df := SafeOpenDataFile(":faccao:guild_registry");
+    if (registry_df)
+        registry_df.DeleteElement("guilds");
+    endif;
+    
+    // Etapa 7: Mensagem final
+    SendSysMessage(who, "==================================================");
+    SendSysMessage(who, "LIMPEZA COMPLETA DE FACÇÕES CONCLUÍDA!");
+    SendSysMessage(who, "Total de facções apagadas: " + faccoes_apagadas + " de " + guilds_para_apagar.size());
+    SendSysMessage(who, "==================================================");
+    
+    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES FINALIZADA]] por " + who.name + ". Apagadas: " + faccoes_apagadas);
+    
+    return 1;
+endprogram

@@ -82,7 +82,7 @@ function TM_GetTerritoryInfo(territory_id_or_name)
       var info := struct{
         "name" := GetElementProp(elem, TERRITORY_NAME_PROP, territory_id_or_name),
         "id" := GetElementProp(elem, TERRITORY_ID_PROP, territory_id_or_name),
-        "faction" := GetElementProp(elem, TERRITORY_FACTION_PROP, ""),
+        "faction" := GetTerritoryFaction(elem),
         "rect" := GetElementProp(elem, TERRITORY_RECT_PROP, ""),
         "realm" := GetElementProp(elem, TERRITORY_REALM_PROP, "britannia"),
         "is_capital" := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP, 0) // Adicionar status de capital aqui
@@ -178,7 +178,7 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
     endif
     
     // Definir a propriedade principal
-    var result := SetElementProp(territory_elem, TERRITORY_FACTION_PROP, faction_name);
+    var result := SetTerritoryFaction(territory_elem, faction_name);
     
     LogInfo("territorio", "Facção do território " + territory_id_or_name + " definida para " + faction_name);
     
@@ -428,10 +428,7 @@ function TM_SetTerritoryAsCapital(territory_id, faction_name)
             continue;        endif
         
         // Verificar se é da mesma facção
-        var elem_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!elem_faction)
-            elem_faction := GetElementProp(elem, LEGACY_FACTION_PROP); // Tentar propriedade legada
-        endif
+        var elem_faction := GetTerritoryFaction(elem);
         
         // Se encontrar uma capital existente da mesma facção
         if (elem_faction == faction_name && GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP))
@@ -661,7 +658,7 @@ function TM_FindTerritoryObjects(territory_id, faction_name := "", item_type := 
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
     if (seriais_df)
         var territory_elem := SafeFindElement(seriais_df, territory_id);        if (territory_elem)
-            var elem_faction := GetElementProp(territory_elem, TERRITORY_FACTION_PROP);
+            var elem_faction := GetTerritoryFaction(territory_elem);
             
             // Verificar se a facção corresponde, se especificada
             if (!faction_name || !elem_faction || elem_faction == faction_name)
@@ -1053,10 +1050,7 @@ function DisplayRectangleDetailsComplete(who, elem)
     var height := 300;
     
     // Verificar permissões do jogador
-    var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-    if (!territory_faction)
-        territory_faction := GetElementProp(elem, "Faction"); // Tentar propriedade legada
-    endif
+    var territory_faction := GetTerritoryFaction(elem);
     
     // Verificar se o jogador pertence à facção ou é GM
     var has_permission := 0;
@@ -1872,11 +1866,8 @@ function TM_HasCapital(faction_name)
             continue;
         endif
           // Verificar a facção atual
-        var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!territory_faction)
-            territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP); // Compatibilidade legada
-        endif
-        
+        var territory_faction := GetTerritoryFaction(elem);
+
         // Se for da facção procurada e for capital
         if (territory_faction == faction_name && GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP))
             return 1;
@@ -1972,10 +1963,7 @@ function TM_GetAllTerritories(faction_name := "")
         
         // Se um filtro de facção foi especificado
         if (faction_name)
-            var territory_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-            if (!territory_faction)
-                territory_faction := GetElementProp(elem, "Faction"); // Compatibilidade
-            endif
+            var territory_faction := GetTerritoryFaction(elem);
             
             if (territory_faction != faction_name)
                 continue; // Pular territórios que não pertencem à facção
@@ -2050,10 +2038,7 @@ function SyncGuildTerritories(faction_name)
             continue;
         endif
         
-        var terr_faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-        if (!terr_faction)
-            terr_faction := GetElementProp(elem, "Faction");
-        endif
+        var terr_faction := GetTerritoryFaction(elem);
         
         if (terr_faction == faction_name)
             var terr_id := GetElementProp(elem, TERRITORY_ID_PROP);

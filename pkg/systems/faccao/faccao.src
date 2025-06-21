@@ -1,4 +1,4 @@
-   use uo;
+use uo;
 use os;
 use datafile;
 use guilds;
@@ -23,6 +23,7 @@ include ":architect:include/architect";
 include ":faccao:include/logging";
 include ":datafile:datafile";
 include ":faccao:include/datafile_helpers";
+include ":faccao:include/faccao";
 
 // Constantes locais para este arquivo (evita conflito com outros sistemas)
 const MOEDAS := 47715;              // Moedas genéricas (local para este arquivo)
@@ -361,29 +362,22 @@ function Faccoes(who)
    GFResizePic(gump, 84, 90, 9260, 280, 260);
 
    GFGumpPicTiled(gump, 100,100,30,235,10460);
-   GFGumpPicTiled(gump, 320,100,30,235,10460);   var y := 120;   // Usar método baseado em territórios em vez de ListGuilds()
-   var active_factions := GetActiveFactionsFromTerritories();
-   var guilds := array{}; // Array para compatibilidade com código existente
-   var guild_iter := 0; // Declarar contador para os botões
-   foreach faction_info in active_factions
+   GFGumpPicTiled(gump, 320,100,30,235,10460);
+   var y := 120;
+   // Usar método baseado em guildas, não só territórios
+   var all_factions := GetAllFactions_KISS();
+   var guilds := array{};
+   var guild_iter := 0;
+   foreach faction_info in all_factions
       var guild := FindGuild(faction_info.guild_id);
       if (!guild)
          continue;
       endif
-      
-      guilds.append(guild); // Adicionar ao array para compatibilidade
-      
+      guilds.append(guild);
       var name := guild.getprop(FACTION_PROP_NAME);
-     // if (typeof(name[1]) != "Array")
-     //    name := array{name};
-     //    guild.setProp("name", name);
-     // endif
-      //fix area
-
       GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp(FACTION_PROP_NAME)));
-      // GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
       GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+guild_iter);
-      guild_iter++; // Incrementar contador
+      guild_iter++;
       y+= 20;
       sleepms(2);
    endforeach
@@ -500,52 +494,68 @@ function Faccoes(who)
 endfunction
 
 
+/*
+ * CloseFactionHandler(who, guild)
+ * 
+ * Purpose: Gerencia o fluxo completo para que um líder feche a própria facção,
+ *          incluindo confirmações, notificações e a chamada para a função de remoção.
+ * 
+ * Parameters:
+ *   who: O jogador (líder) que está executando a ação.
+ *   guild: O objeto da guilda a ser fechada.
+ * 
+ * Return:
+ *   99: Sinaliza para o GUMP que a operação foi concluída e o gump deve ser fechado.
+ *   0: A operação foi cancelada ou falhou.
+ */
 function CloseFactionHandler(who, guild)
-   // Verificar se é realmente o líder
-   var guild_leader_serial := guild.GetProp("leader");
-   var is_leader := (guild_leader_serial == who.serial);
+    // Etapa 1: Verificar permissão.
+    var guild_leader_serial := guild.GetProp("leader");
+    if (guild_leader_serial != who.serial && !who.cmdlevel)
+        SendSysMessage(who, "Apenas o líder pode fechar a facção.");
+        return 0;
+    endif
    
-   if (!is_leader && !who.cmdlevel)
-      SendSysMessageEx(who, "Apenas o líder pode fechar a facção.", SSM_FAIL);
-      return 0;
-   endif
+    var guild_name := guild.GetProp(FACTION_PROP_NAME) ?: guild.guildname ?: "Facção Desconhecida";
    
-   var guild_name := guild.GetProp(FACTION_PROP_NAME);
-   if (!guild_name) guild_name := guild.guildname; endif
+    // Etapa 2: Confirmação dupla.
+    if (!YesNo(who, "ATENÇÃO: Você tem certeza que deseja fechar permanentemente a facção '" + guild_name + "'?"))
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
+    if (!YesNo(who, "ÚLTIMA CONFIRMAÇÃO: Esta ação não pode ser desfeita! Fechar '" + guild_name + "'?"))
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
    
-   // Confirmação dupla para evitar fechamento acidental
-   if (!YesNo(who, "ATENÇÃO: Você tem certeza que deseja fechar permanentemente a facção '" + guild_name + "'?"))
-      SendSysMessageEx(who, "Operação cancelada.");
-      return 0;
-   endif
+    // Etapa 3: Registrar a ação no log.
+    LogToFile("faccoes.log", "FACTION_CLOSED_BY_LEADER: " + who.name + " fechou a facção '" + guild_name + "' (ID: " + guild.guildid + ").");
    
-   if (!YesNo(who, "ÚLTIMA CONFIRMAÇÃO: Esta ação não pode ser desfeita! Fechar '" + guild_name + "'?"))
-      SendSysMessageEx(who, "Operação cancelada.");
-      return 0;
-   endif
+    // Etapa 4: Notificar todos os membros online sobre o fechamento.
+    var all_members_copy := guild.members;
+    if (all_members_copy)
+        foreach member in all_members_copy
+            if (member && member.connected && member.serial != who.serial)
+                // Usando SendSysMessage padrão
+                SendSysMessage(member, "A facção '" + guild_name + "' foi permanentemente fechada pelo seu líder.");
+            endif
+        endforeach
+    endif
+    
+    sleep(1);
    
-   // Log da ação para auditoria
-   LogToFile("faccoes.log", "FACTION_CLOSED: " + who.name + " (serial: " + who.serial + ") fechou a facção '" + guild_name + "' (ID: " + guild.guildid + ") em " + CStr(ReadGameClock()));
+    // Etapa 5: Chamar a função de backend que faz a limpeza.
+    var resultado := RemFaccao(guild);
+    
+    // Etapa 6: Notificar o líder sobre o resultado.
+    if (resultado)
+        SendSysMessage(who, "Facção '" + guild_name + "' fechada com sucesso.");
+    else
+        SendSysMessage(who, "Ocorreu um erro ao tentar fechar a facção. Verifique os logs do servidor.");
+    endif
    
-   // Notificar todos os membros antes de fechar
-   var all_members := guild.members;
-   if (all_members && all_members.size() > 0)
-      foreach member in all_members
-         if (member && member.connected)
-            SendSysMessageEx(member, "A facção '" + guild_name + "' foi fechada pelo líder " + who.name + ".", SSM_FAIL);
-         endif
-         sleepms(2);
-      endforeach
-   endif
-     // Aguardar um pouco para as mensagens chegarem
-   sleep(2);
-   
-   // Fechar a facção usando a função existente
-   RemFaccaoComplete(guild.guildid);
-   SendSysMessageEx(who, "Facção '" + guild_name + "' fechada com sucesso.");
-   
-   // Retornar código especial para sair do gump
-   return 99;
+    // Etapa 7: Retornar código para fechar o GUMP.
+    return 99;
 endfunction
 
 
@@ -908,7 +918,7 @@ function gmHandler(who)
       if (soltar.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
       guild.SetProp("prision_leave", soltar);      SendSysMessageEx(who, "Prisoes alteradas");
    elseif (output["Remover Guilda"])
-      RemFaccaoComplete(guild.guildid);
+      RemFaccao(guild);
       SendSysMessageEx(who, "Guilda removida");
       return 99;
    endif
@@ -1490,161 +1500,3 @@ function RemoveFactionLeader(guild)
    
    return 1;
 endfunction
-
-// Função completa para remover facção com limpeza adequada de territórios
-function RemFaccaoComplete(guild_obj)
-   if (typeof(guild_obj) == "String")
-      guild_obj := FindGuild(guild_obj);
-   endif
-
-   if (!guild_obj) 
-      return 0; 
-   endif
-
-   // === OBTER INFORMAÇÕES BÁSICAS ===
-   var guild_name := guild_obj.GetProp(FACTION_PROP_NAME);
-   if (!guild_name) guild_name := guild_obj.guildname; endif
-   
-   LogToFile("faccoes.log", "FACTION_REMOVAL_START: Iniciando remoção da facção '" + guild_name + "' (ID: " + guild_obj.guildid + ") em " + CStr(ReadGameClock()));
-
-   // === NOTIFICAR MEMBROS ANTES DE REMOVER ===
-   var all_members := guild_obj.members;
-   if (all_members && all_members.size() > 0)
-      foreach member in all_members
-         if (member && member.connected)
-            SendSysMessageEx(member, "A facção '" + guild_name + "' foi permanentemente fechada.", SSM_FAIL);
-         endif
-         // Limpar dados personalizados do membro
-         EraseObjProperty(member, "dados_convite");
-         sleepms(2);
-      endforeach
-   endif   
-
-   // === LIBERAR TERRITÓRIOS COM LIMPEZA COMPLETA ===
-   var territories := guild_obj.GetProp("territories");
-   if (territories && territories.size() > 0)
-      LogToFile("faccoes.log", "FACTION_REMOVAL: Iniciando limpeza de " + territories.size() + " territórios da facção '" + guild_name + "'");
-      
-      foreach territory in territories
-         if (!territory) continue; endif
-         
-         var territory_id := CStr(territory);
-         LogToFile("faccoes.log", "FACTION_REMOVAL: Processando território '" + territory_id + "'");
-         
-         // 1. Limpar objetos do território usando o script específico
-         start_script(":faccao:limpa_territorio", array{territory_id, guild_name});
-         
-         // 2. Atualizar facção no datafile para DEFAULT_FACTION
-         var rect_df := SafeOpenDataFile(":architect:areas");
-         if (rect_df)
-            var elem := SafeFindElement(rect_df, territory_id);            if (elem)
-               SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-               SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-               elem.EraseProp("NextResourceTime");
-               LogToFile("faccoes.log", "FACTION_REMOVAL: Território '" + territory_id + "' transferido para " + DEFAULT_FACTION);
-            endif
-         endif
-         
-         // 3. Limpar registros de seriais
-         var seriais_df := SafeOpenDataFile(":faccao:seriais");
-         if (seriais_df)
-            // Novo formato: elemento direto por território
-            var territory_elem := SafeFindElement(seriais_df, territory_id);
-            if (territory_elem)               territory_elem.EraseProp("bau");
-               territory_elem.EraseProp("mesa");
-               territory_elem.EraseProp("mural");
-               territory_elem.EraseProp(OBJ_FACTION_PROP);
-               LogToFile("faccoes.log", "FACTION_REMOVAL: Seriais do território '" + territory_id + "' limpos (formato novo)");
-            endif
-            
-            // Formato legado: elemento "territorios"
-            var territorios_seriais := GetElementProp(seriais_df, "territorios", struct{});
-            if (territorios_seriais && territorios_seriais.exists(territory_id))
-               territorios_seriais.erase(territory_id);
-               SetElementProp(seriais_df, "territorios", territorios_seriais);
-               LogToFile("faccoes.log", "FACTION_REMOVAL: Seriais do território '" + territory_id + "' limpos (formato legado)");
-            endif
-         endif
-         
-         sleepms(2);
-      endforeach
-   endif
-
-   // === REMOVER NPCS ATIVOS ===
-   var npcs_active := guild_obj.GetProp("npcs_active");
-   if (npcs_active && npcs_active.size() > 0)
-      foreach npc_data in npcs_active
-         if (npc_data && npc_data.serial)
-            var npc_mob := SystemFindObjectBySerial(npc_data.serial);
-            if (npc_mob)
-               npc_mob.kill();
-               LogToFile("faccoes.log", "FACTION_REMOVAL: NPC ativo removido: " + npc_data.serial);
-            endif
-         endif
-         sleepms(2);
-      endforeach
-   endif
-
-   // === REMOVER MEMBROS DA GUILDA ===
-   var members_copy := array{};
-   foreach member in (guild_obj.members)
-      members_copy.append(member);
-      sleepms(2);
-   endforeach
-   
-   foreach member in members_copy
-      if (member)
-         guild_obj.removemember(member);
-         guild_obj.EraseProp(cstr(member.serial));
-      endif
-      sleepms(2);
-   endforeach
-
-   // === REMOVER GUILDS INIMIGAS ===
-   var enemy_guilds_copy := array{};
-   foreach enemy in (guild_obj.enemyguilds)
-      enemy_guilds_copy.append(enemy);
-      sleepms(2);
-   endforeach
-   
-   foreach enemy in enemy_guilds_copy
-      if (enemy)
-         guild_obj.removeenemyguild(enemy);
-      endif
-      sleepms(2);
-   endforeach
-
-   // === LIMPAR TODAS AS PROPRIEDADES CUSTOMIZADAS ===
-   var props_to_clean := array{
-      "name", "leader", "npcs_active", "npcs", "report", "area", 
-      "money", "uniforms", "link_to", "subguilds", "laws", "territories"
-   };
-   
-   foreach prop in props_to_clean
-      guild_obj.EraseProp(prop);
-      sleepms(2);
-   endforeach
-
-   // === TENTAR DESTRUIR A GUILDA ===
-   var destruction_result := DestroyGuild(guild_obj);
-   
-   if (!destruction_result)
-      // Se não conseguiu destruir, tentar forçar limpeza
-      var remaining_members := guild_obj.members;
-      if (remaining_members && remaining_members.size() > 0)
-         foreach member in remaining_members
-            if (member)
-               guild_obj.removemember(member);
-            endif
-            sleepms(2);
-         endforeach
-         
-         destruction_result := DestroyGuild(guild_obj);
-      endif
-   endif
-   
-   LogToFile("faccoes.log", "FACTION_REMOVAL_END: Facção '" + guild_name + "' removida. Resultado: " + destruction_result);
-   
-   return destruction_result;
-endfunction
-

@@ -928,54 +928,47 @@ endif
 endfunction
 
 function CreateTerritoryTotem(who, elem)
+    // Validação inicial do elemento
+    if (!elem)
+        SendSysMessage(who, "Erro interno: Referência de território inválida.");
+        return 0;
+    endif;
+
     var totem := CreateItemInBackpack(who, 0xA102, 1); // TotemDeAquisicao
     if (!totem)
         SendSysMessage(who, "Falha ao criar o totem. Verifique o espaço na sua mochila.");
         return 0;
     endif
     
-    // NOVO DEBUG
-    var territory_name_to_set := GetElementProp(elem, "Name", "ERRO_NOME");
-    var territory_id_to_set := GetElementProp(elem, TERRITORY_ID_PROP, "ERRO_ID");
-    LogDebug("rectangles_DEBUG", $"Preparando para configurar totem para Território '{territory_name_to_set}' com ID '{territory_id_to_set}'");
-    
-    // Obter informações do território usando TM_GetTerritoryInfo
-    var territory_name := territory_name_to_set;
-    var territory_info := TM_GetTerritoryInfo(territory_name);
-    
-    // Obter o ID do território ou criar um se não existir
-    var territory_id := territory_id_to_set;
+    // Obter ID e Nome do elemento de forma segura
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
+    var territory_name := GetElementProp(elem, "Name", "Território Sem Nome");
+
+    // Se o território não tiver um ID, é um erro de dados que precisa ser corrigido.
     if (!territory_id)
-        territory_id := "TER_" + polcore().systime + "_" + RandomInt(10000);
-        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
-        LogDebug("rectangles_DEBUG", $"Gerado novo ID para território: {territory_id}");
-    endif
+        LogError("rectangles_DEBUG", $"Território '{territory_name}' não possui um ID único. Não é possível criar um totem válido.");
+        SendSysMessage(who, "Erro: O território '" + territory_name + "' não possui um ID válido. Ação cancelada.");
+        DestroyItem(totem);
+        return 0;
+    endif;
     
-    // Configurar propriedades do totem
+    LogDebug("rectangles_DEBUG", $"Preparando para configurar totem para Território '{territory_name}' com ID '{territory_id}'");
+    
+    // Configurar propriedades do totem usando os dados já obtidos.
+    // Não é necessário buscar novamente as informações com TM_GetTerritoryInfo.
+    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
     SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
     
-    // Corrigir o uso de ?.rect e ?.realm
-    var rect_prop := "";
-    var realm_prop := "";
-    if (territory_info)
-        if (territory_info.rect)
-            rect_prop := territory_info.rect;
-        endif
-        if (territory_info.realm)
-            realm_prop := territory_info.realm;
-        endif
-    endif
+    // Adicionar outras propriedades úteis que já estão no elemento
+    SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
+    SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
     
-    SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
-    SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
-    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
+    // Informações de auditoria
     SetObjProperty(totem, "CreatedBy", who.serial);
     SetObjProperty(totem, "CreationDate", polcore().systime);
     
-    // NOVO DEBUG
-    LogDebug("rectangles_DEBUG", $"Propriedades definidas no totem {totem.serial}: Name='{GetObjProperty(totem, TERRITORY_NAME_PROP)}', ID='{GetObjProperty(totem, TERRITORY_ID_PROP)}'");
+    LogDebug("rectangles_DEBUG", $"Propriedades definidas no totem {totem.serial}: ID='{GetObjProperty(totem, TERRITORY_ID_PROP)}', Name='{GetObjProperty(totem, TERRITORY_NAME_PROP)}'");
     
-    // Mensagem mais clara para o GM
     SendSysMessage(who, "Um totem para o território '" + territory_name + "' (ID: " + territory_id + ") foi criado em sua mochila.");
     return 1;
 endfunction
