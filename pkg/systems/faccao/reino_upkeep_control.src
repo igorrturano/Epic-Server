@@ -73,10 +73,17 @@ function ProcessarUpkeepSimples()
         processed_count += 1;
         
         // Cálculo super simples: 100 moedas por território + 10 por nível
-        var territories := GetGuildTerritoryCount(guild_name);
-        var guild_level := 1; // Simplificado - assumir nível 1 
-        var cost := (territories * 100) + (guild_level * 10);
-        Print("UPKEEP: " + guild_name + " - Territórios: " + territories + ", Nível: " + guild_level + ", Custo: " + cost);
+        // var territories := GetGuildTerritoryCount(guild_name);
+        // var guild_level := 1; // Simplificado - assumir nível 1 
+        // var cost := (territories * 100) + (guild_level * 10);
+        // Print("UPKEEP: " + guild_name + " - Territórios: " + territories + ", Nível: " + guild_level + ", Custo: " + cost);
+
+        // NOVO: usar função centralizada do gestao_use para cálculo correto
+        var guild_id := FindGuildByName(guild_name);
+        var guild := FindGuild(guild_id);
+        var territories := GetGuildTerritories(guild_name);
+        var cost := CalcularCustoUpkeep(guild, territories);
+        Print("UPKEEP: " + guild_name + " - Territórios: " + territories.size() + ", Nível: " + GetSimpleGuildLevel(guild) + ", Custo: " + cost);
         
         if (cost <= 0)
             Print("UPKEEP: " + guild_name + " não possui territórios ou custo é zero");

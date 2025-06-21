@@ -751,3 +751,16 @@ function GetCultureFromFactionName(faction_name)
             return "polkinea"; // Fallback padrão para facções desconhecidas
     endcase
 endfunction
+
+
+function CapitalizeFirst(text)
+    if (text == "" || text.size() == 0)
+        return text;
+    endif
+    
+    var first_char := text[1];
+    var rest := "";
+    if (text.size() > 1)
+        rest := text[2, text.size()];    endif
+      return Upper(first_char) + Lower(rest);
+endfunction

@@ -16,6 +16,8 @@ include ":faccao:include/datafile_helpers"; // ESSENCIAL
 include ":faccao:include/permissions";      // Para GetFactionOfChest
 include ":faccao:include/safe_guild_utils"; // Funções seguras para propriedades de guild
 include ":faccao:include/territory_management"; // Para TM_ funções
+include ":faccao:include/safe_guild_utils";
+include ":faccao:include/guild_xp";
 
 // =============================================================================
 // SEÇÃO 1: FUNÇÕES SIMPLES PARA ACESSO SEGURO (FASE 1.1 KISS)
@@ -2112,7 +2114,7 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                 endif;
             endif; 
             
-            var territorios_seriais_s2 := GetElementProp(seriais_df_s1, "territorios", dictionary{});
+           var territorios_seriais_s2 := GetElementProp(seriais_df_s1, "territorios");
             if (territorios_seriais_s2 && territorios_seriais_s2[territory_id]) 
                 var info_s2 := territorios_seriais_s2[territory_id];
                 if (info_s2.faction == faction_name && info_s2.bau)
@@ -3939,4 +3941,33 @@ function FormatNumber(number)
     
     return result;
 
+endfunction
+
+// =============================================================================
+// FUNÇÃO CENTRALIZADA DE CÁLCULO DE UPKEEP DE GUILDAS/FAÇÕES
+// =============================================================================
+exported function CalcularCustoUpkeep(guild, territories)
+    var n_territorios := territories.size();
+    var guild_level := GetSimpleGuildLevel(guild);
+    var n_membros := SafeGetGuildMembers(guild).size();
+    // Cálculo do custo por membros
+    var membros_custo := n_membros * 150;
+    if (n_membros > 10)
+        membros_custo := CInt(membros_custo * 1.5);
+    endif
+    // Fórmula: (n_territorios * 100) + (guild_level * 30) * guild_level + membros_custo
+    var total_cost := (n_territorios * 100) + (guild_level * 30) * guild_level + membros_custo;
+    LogDebug("upkeep", "Novo cálculo: territórios=" + n_territorios + ", nível=" + guild_level + ", membros=" + n_membros + ", custo=" + total_cost);
+    return total_cost;
+endfunction
+
+function SafeGetGuildMembers(guild)
+    if (!guild)
+        return array{};
+    endif
+    var members := guild.members;
+    if (!members || members == error || TypeOf(members) != "Array")
+        return array{};
+    endif
+    return members;
 endfunction

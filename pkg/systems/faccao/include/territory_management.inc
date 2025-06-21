@@ -1527,22 +1527,34 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
         return 0;
     endif
     
+    
     if (who)
         SendSysMessage(who, "Processando: Iniciando transferência de território...");
     endif
     
-    // 1. Remover objetos existentes
-    TM_DeleteTerritoryObjects(territory_id, old_faction);
-    
-    // 2. Atualizar o datafile
-    if (!TM_SetTerritoryFaction(territory_id, new_faction))
-        DesfazerTransacao(transaction_id);
-        if (who)
-            SendSysMessage(who, "Erro ao definir nova facção. Transferência cancelada.");
-        endif
-        LogError("territorio", "TM_TransferTerritoryFaction: Falha ao atualizar facção no datafile");
-        return 0;
+
+    // ====================================================================
+// >>>>> INÍCIO DA CORREÇÃO <<<<<
+// ====================================================================
+
+// 1. Remover objetos existentes - CHAMADA DIRETA DA FUNÇÃO, NÃO START_SCRIPT
+LogInfo("territorio", "Transferência: Chamando TM_DeleteTerritoryObjects para limpar " + old_faction);
+TM_DeleteTerritoryObjects(territory_id, old_faction);
+LogInfo("territorio", "Transferência: Limpeza de objetos antigos concluída.");
+
+// ====================================================================
+// >>>>> FIM DA CORREÇÃO <<<<<
+// ====================================================================
+
+// 2. Atualizar o datafile
+if (!TM_SetTerritoryFaction(territory_id, new_faction))
+    DesfazerTransacao(transaction_id);
+    if (who)
+        SendSysMessage(who, "Erro ao definir nova facção. Transferência cancelada.");
     endif
+    LogError("territorio", "TM_TransferTerritoryFaction: Falha ao atualizar facção no datafile");
+    return 0;
+endif
     
     // 3. Atualizar as guildas
     
@@ -1665,7 +1677,7 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
         endif
     endif
 
-    // 4. Criar novos objetos para a nova facção
+    // ETAPA 4: CRIAR NOVOS OBJETOS PARA A NOVA FACÇÃO
     if (who)
         SendSysMessage(who, "Processando: Criando novos objetos para a facção...");
     endif
@@ -1673,144 +1685,119 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
     var center := TM_GetTerritoryCenter(territory_id);
     if (!center)
         DesfazerTransacao(transaction_id);
-        if (who)
-            SendSysMessage(who, "Erro ao obter centro do território. Transferência cancelada.");
-        endif
+        if (who) SendSysMessage(who, "Erro ao obter centro do território. Transferência cancelada."); endif
         LogError("territorio", "TM_TransferTerritoryFaction: Falha ao obter centro do território");
         return 0;
-    endif
+    endif;
+
+    // --- Declaração de variáveis para os objetos ---
+    var chest := 0;
+    var table := 0;
+    var mural := 0;
+    var inscricao_table := 0;
+    var error_msg := "";
+
+    // --- Bloco de criação de itens com verificação manual ---
     
     // 4.1 Criar o baú
-    var chest := CreateItemAtLocation(center.x, center.y, center.z, 0xFF11, 1, center.realm);
+    chest := CreateItemAtLocation(center.x, center.y, center.z, TERRITORIO_BAU, 1, center.realm);
     if (!chest)
-        DesfazerTransacao(transaction_id);
-        if (who)
-            SendSysMessage(who, "Erro ao criar baú. Transferência revertida.");
-        endif
-        LogError("territorio", "TM_TransferTerritoryFaction: Falha ao criar baú");
-        return 0;
-    endif
-    
-    chest.movable := 0;
-    SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
-    SetObjectFaction(chest, new_faction);
-    SetObjProperty(chest, TERRITORY_ID_PROP, territory_id);
-    
-    var chest_id := new_faction + "_" + territory_id;
-    SetObjProperty(chest, CHEST_ID_PROP, chest_id);
-    
-    var nome_bau := "Baú de Doações de " + new_faction;
-    if (territory_id)
-        nome_bau += " - " + territory_id;
-    endif
-    SetName(chest, nome_bau);
-    
-    chest.usescript := ":faccao:baudoacao/use";
-    SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
-    SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
-    SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
-    SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
-    
+        error_msg := "Falha ao criar o baú.";
+    else
+        chest.movable := 0;
+        SetObjectFaction(chest, new_faction);
+        SetObjProperty(chest, TERRITORY_ID_PROP, territory_id);
+        SetName(chest, "Baú de Doações de " + new_faction + " - " + territory_id);
+        chest.usescript := ":faccao:baudoacao/use";
+        SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+    endif;
+
     // 4.2 Criar a mesa de gestão
-    var table := CreateItemAtLocation(center.x+1, center.y, center.z, 0xFE5C, 1, center.realm);
-    if (!table)
-        DesfazerTransacao(transaction_id);
-        DestroyItem(chest); // Limpar o baú criado
-        if (who)
-            SendSysMessage(who, "Erro ao criar mesa de gestão. Transferência revertida.");
-        endif
-        LogError("territorio", "TM_TransferTerritoryFaction: Falha ao criar mesa");
-        return 0;
-    endif
-    
-    table.movable := 0;
-    SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
-    SetObjectFaction(table, new_faction);
-    SetObjProperty(table, TERRITORY_ID_PROP, territory_id);
-    
-    var nome_mesa := "Mesa de Gestão de " + new_faction;
-    if (territory_id)
-        nome_mesa += " - " + territory_id;
-    endif
-    SetName(table, nome_mesa);
-    
-    table.usescript := ":faccao:gestao_use";
-    
+    if (!error_msg)
+        table := CreateItemAtLocation(center.x + 1, center.y, center.z, TERRITORIO_MESA, 1, center.realm);
+        if (!table)
+            error_msg := "Falha ao criar a mesa de gestão.";
+        else
+            table.movable := 0;
+            SetObjectFaction(table, new_faction);
+            SetObjProperty(table, TERRITORY_ID_PROP, territory_id);
+            SetName(table, "Mesa de Gestão de " + new_faction + " - " + territory_id);
+            table.usescript := ":faccao:gestao_use";
+        endif;
+    endif;
+
     // 4.3 Criar o mural de recrutamento
-    var mural := CreateItemAtLocation(center.x, center.y+1, center.z, 0x46AE, 1, center.realm);
-    if (!mural)
+    if (!error_msg)
+        mural := CreateItemAtLocation(center.x, center.y + 1, center.z, TERRITORIO_MURAL, 1, center.realm);
+        if (!mural)
+            error_msg := "Falha ao criar o mural de recrutamento.";
+        else
+            mural.movable := 0;
+            SetObjectFaction(mural, new_faction);
+            SetObjProperty(mural, TERRITORY_ID_PROP, territory_id);
+            SetName(mural, "Mural de Recrutamento de " + new_faction + " - " + territory_id);
+            mural.usescript := ":faccao:faccao";
+        endif;
+    endif;
+    
+    // 4.4 Criar a mesa de inscrição
+    if (!error_msg)
+        inscricao_table := CreateItemAtLocation(center.x - 1, center.y + 1, center.z, TERRITORIO_MESA_INSCRICAO, 1, center.realm);
+        if (!inscricao_table)
+            error_msg := "Falha ao criar a mesa de inscrição.";
+        else
+            inscricao_table.movable := 0;
+            SetObjectFaction(inscricao_table, new_faction);
+            SetObjProperty(inscricao_table, TERRITORY_ID_PROP, territory_id);
+            SetName(inscricao_table, "Mesa de Inscrição [" + new_faction + "]");
+            inscricao_table.usescript := ":faccao:mesainscricao";
+        endif;
+    endif;
+
+    // --- Verificação de Falhas ---
+    if (error_msg != "")
+        LogError("territorio", "TM_TransferTerritoryFaction: " + error_msg);
+        if (who) SendSysMessage(who, "Erro na criação de objetos: " + error_msg + ". Revertendo."); endif
+        
+        if (chest) DestroyItem(chest); endif;
+        if (table) DestroyItem(table); endif;
+        if (mural) DestroyItem(mural); endif;
+        if (inscricao_table) DestroyItem(inscricao_table); endif;
+        
         DesfazerTransacao(transaction_id);
-        DestroyItem(chest);
-        DestroyItem(table);
-        if (who)
-            SendSysMessage(who, "Erro ao criar mural. Transferência revertida.");
-        endif
-        LogError("territorio", "TM_TransferTerritoryFaction: Falha ao criar mural");
         return 0;
-    endif
+    endif;
+
+    // --- 4.5 Salvar os seriais no datafile (VERSÃO SEGURA) ---
+    var object_serials_struct := struct;
+    object_serials_struct.+faction := new_faction;
     
-    mural.movable := 0;
-    SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-    SetObjectFaction(mural, new_faction);
-    SetObjProperty(mural, TERRITORY_ID_PROP, territory_id);
+    // Adiciona o serial de cada objeto APENAS se ele foi criado com sucesso
+    if(chest) object_serials_struct.+bau := chest.serial; endif;
+    if(table) object_serials_struct.+mesa := table.serial; endif;
+    if(mural) object_serials_struct.+mural := mural.serial; endif;
+    if(inscricao_table) object_serials_struct.+mesa_inscricao := inscricao_table.serial; endif;
     
-    var nome_mural := "Mural de Recrutamento de " + new_faction;
-    if (territory_id)
-        nome_mural += " - " + territory_id;
-    endif
-    SetName(mural, nome_mural);
+    var register_result := TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
     
-    mural.usescript := ":faccao:faccao";
+    if (!register_result)
+        LogError("territorio", "FALHA ao registrar seriais usando TM_RegisterTerritoryObjects na transferência.");
+        DesfazerTransacao(transaction_id);
+        if (who) SendSysMessage(who, "Erro ao registrar seriais. Transferência revertida."); endif
+        return 0;
+    endif;
     
-    // 4.4 Salvar os seriais no datafile
-    if (seriais_df)
-        // NOVA VERSÃO: Criar um elemento específico para este território
-        var territory_elem := SafeFindElement(seriais_df, territory_id, 1); // 1 = criar
-        if (territory_elem)
-            // Definir as propriedades diretamente no elemento
-            SetElementProp(territory_elem, "bau", chest ? chest.serial : 0);
-            SetElementProp(territory_elem, "mesa", table ? table.serial : 0);
-            SetElementProp(territory_elem, "mural", mural ? mural.serial : 0);
-            SetElementProp(territory_elem, "faction", new_faction);
-            
-            LogInfo("territorio", "Seriais registrados no novo formato para território: " + territory_id);
-        endif
-        
-        // LEGADO: Também manter o formato antigo temporariamente
-        var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
-        if (!territorios_seriais)
-            territorios_seriais := dictionary{};
-        endif
-        
-        territorios_seriais[territory_id] := struct{
-            "bau" := chest ? chest.serial : 0,
-            "mesa" := table ? table.serial : 0,
-            "mural" := mural ? mural.serial : 0,
-            "faction" := new_faction
-        };
-        
-        // Tentar salvar, mas não bloquear se falhar
-        var result := SetElementProp(seriais_df, "territorios", territorios_seriais);
-        if (result != 1)
-            LogWarning("territorio", "Aviso: Falha ao salvar no formato antigo, mas o novo formato foi utilizado.");
-        endif
-    endif
+    // Etapa 5: Notificar os sistemas sobre a mudança.
+    TM_NotifyTerritoryChange(territory_id, "transfer", struct{"old_faction" := old_faction, "new_faction" := new_faction});
     
-    // 5. Notificar o controlador de recursos
-    TM_NotifyTerritoryChange(territory_id, "transfer", struct{
-        "old_faction" := old_faction,
-        "new_faction" := new_faction
-    });
-    
-    // Finalizar a transação com sucesso
+    // Etapa 6: Finalizar a transação e notificar o jogador.
     FinalizarTransacao(transaction_id);
     
     if (who)
         SendSysMessage(who, "Território transferido com sucesso para " + new_faction + "!");
     endif
     
-    LogInfo("territorio", "Transferência concluída. Território " + territory_id + " transferido de " + 
-                           old_faction + " para " + new_faction);
+    LogInfo("territorio", "Transferência concluída. Território " + territory_id + " transferido de " + old_faction + " para " + new_faction);
     
     return 1;
 endfunction

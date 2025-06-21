@@ -156,7 +156,7 @@ function VerificarFaccoesImportantes()
     var active_factions := GetActiveFactionsFromTerritories();
     foreach faction_info in active_factions
         var guild := FindGuild(faction_info.guild_id);
-        if (guild && guild.members.size() > 0)
+        if (guild && SafeGetGuildMembers(guild).size() > 0)
             var faction_name := faction_info.name;
             
             if (faction_name && faction_name != "Unknown Guild")
