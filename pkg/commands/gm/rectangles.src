@@ -16,49 +16,34 @@ program rectangle_creator(who, params)
         return;
     endif
     
-    // Checar se o comando é para visualização direta
-    if (Lower(params) == "ver")
-        var rect_df := SafeOpenDataFile(":architect:areas");
-        ShowRectangles(who, rect_df);
+    // Abrir o datafile e verificar se o comando é para visualização
+    var rect_df := SafeOpenDataFile(":architect:areas", 1);
+    if (!rect_df)
+        SendSysMessage(who, "Erro ao abrir ou criar o arquivo de dados de áreas!");
         return;
     endif
-    
-    // Abrir datafile apenas uma vez
-    var rect_df := SafeOpenDataFile(":architect:areas");
-// Verificar de migração: converter propriedades "Faction" para "faction"
-if (rect_df)
-    foreach elem_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, elem_name);
-        if (!elem)
-            continue; // Elemento não encontrado, já logado pelo SafeFindElement
-        endif          var old_faction := GetElementProp(elem, "Faction", "");
-        if (old_faction)
-            // Usar o helper para definir a nova propriedade
-            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
-            
-            // Ainda precisamos usar EraseProp diretamente pois não há helper para isso
-            elem.EraseProp("Faction");
-        endif
-    endforeach
-endif
 
-    // Depois reutilizar a mesma variável sem o "var"
-    if (rect_df == error)
-        rect_df := SafeOpenDataFile(":architect:areas", 1); // 1 = criar se não existir
-        if (rect_df == error)
-            SendSysMessage(who, "Erro ao criar arquivo de dados!");
-            return;
-        endif
-    endif
-    
-    // Checar se o comando é para visualização direta
-    params := Lower(params);
-    if (params == "ver")
+    if (Lower(params) == "ver")
         ShowRectangles(who, rect_df);
         return;
     endif
-    
-    // Processo normal de criação de retângulo
+
+    // Rotina de migração: converter propriedades "Faction" para "faction"
+	if (rect_df)
+	    foreach elem_name in (rect_df.keys())
+	        var elem := SafeFindElement(rect_df, elem_name);
+	        if (!elem)
+	            continue;
+	        endif
+	        var old_faction := GetElementProp(elem, "Faction", "");
+	        if (old_faction)
+	            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
+	            elem.EraseProp("Faction");
+	        endif
+	    endforeach
+	endif
+
+    // ===== FLUXO ORIGINAL (INTACTO) =====
     SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
     var first_point := TargetCoordinates(who);
     if (!first_point)
@@ -73,78 +58,111 @@ endif
         return;
     endif
     
-    // Organizar coordenadas para que x1,y1 seja o canto superior esquerdo
-    // e x2,y2 seja o canto inferior direito
     var x1 := first_point.x;
     var y1 := first_point.y;
     var x2 := second_point.x;
     var y2 := second_point.y;
     
-    if (x1 > x2)
-        var temp := x1;
-        x1 := x2;
-        x2 := temp;
-    endif
+    if (x1 > x2) var temp := x1; x1 := x2; x2 := temp; endif
+    if (y1 > y2) var temp := y1; y1 := y2; y2 := temp; endif
     
-    if (y1 > y2)
-        var temp := y1;
-        y1 := y2;
-        y2 := temp;
-    endif
-    
-    var rect_str := $"{x1} {y1} {x2} {y2}";
+    var rect_str_selecionado := $"{x1} {y1} {x2} {y2}";
     var realm := first_point.realm;
     
-    // Mostrar o retângulo selecionado
-    SendSysMessage(who, $"Retângulo definido: {rect_str} no realm {realm}");
+    SendSysMessage(who, $"Área selecionada: {rect_str_selecionado} no realm {realm}");
     
-    // Pedir o nome do retângulo
-    var rect_name := RequestGump(who, "Digite um nome para este retângulo:");
-    if (!rect_name || rect_name == "")
+    var rect_name := RequestGump(who, "Digite um nome para este território:");
+    if (!rect_name)
         SendSysMessage(who, "Operação cancelada - nome não fornecido.");
         return;
     endif
+
+    // ===== PONTO DE INTERCEPÇÃO =====
     
-    // Verificar se o retângulo se sobrepõe a outro existente
-    if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
-        SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
-        SendSysMessage(who, "Operação cancelada.");
+    // Pergunta ao GM o tipo de território, usando uma função auxiliar limpa.
+    var territory_type := AskTerritoryType(who);
+    if (territory_type == 0) // 0 significa que o GM cancelou
+        SendSysMessage(who, "Criação de território cancelada.");
+        return;
+    endif
+
+    // ===== CONTINUAÇÃO DO FLUXO ORIGINAL (COM LÓGICA CONDICIONAL) =====
+
+    // A verificação de sobreposição usa a área que o GM desenhou.
+    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
+        SendSysMessage(who, "A área selecionada se sobrepõe a um território existente. Operação cancelada.");
         return;
     endif
     
-    // Verificar se o nome já existe e confirmar sobrescrita
-    var elem := SafeFindElement(rect_df, rect_name);
-    if (elem)
-        var confirm := YesNo(who, $"Já existe um retângulo com o nome '{rect_name}'. Sobrescrever?");
-        if (!confirm)
-            SendSysMessage(who, "Operação cancelada.");
-            return;
-        endif
-    else
-        elem := rect_df.CreateElement(rect_name);
+    // Cria ou encontra o elemento no datafile.
+    var elem := SafeFindElement(rect_df, rect_name, 1);
+    
+    // Salva as propriedades comuns a ambos os tipos.
+    var territory_id := CreateTerritoryID();
+    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    SetElementProp(elem, "Name", rect_name);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+
+    // Agora, salva as propriedades específicas com base na escolha do GM.
+    if (territory_type == 1) // **Customizado (Estático)**
+        SendSysMessage(who, "Salvando como Território Customizado (Estático)...");
+        // A área desenhada é o retângulo final.
+        SetElementProp(elem, "Rect", rect_str_selecionado);
+        // Marca como não expansível.
+        SetElementProp(elem, "IsExpandable", 0);
+        
+    elseif (territory_type == 2) // **Padrão (Expansível)**
+        SendSysMessage(who, "Salvando como Território Padrão (Expansível)...");
+        
+        // A área desenhada é a zona de buffer.
+        SetElementProp(elem, "MaxRect", rect_str_selecionado);
+        
+        // Calcula o Rect inicial (Nível 1) a partir do centro da zona de buffer.
+        var center_x := CInt((x1 + x2) / 2);
+        var center_y := CInt((y1 + y2) / 2);
+        var dims_lvl1 := TERRITORY_DIMS_LEVEL_1;
+        var x1_lvl1 := center_x - CInt(dims_lvl1[1] / 2);
+        var y1_lvl1 := center_y - CInt(dims_lvl1[2] / 2);
+        var current_rect_str := $"{x1_lvl1} {y1_lvl1} {x1_lvl1 + dims_lvl1[1]} {y1_lvl1 + dims_lvl1[2]}";
+        
+        SetElementProp(elem, "Rect", current_rect_str);
+        // Marca como expansível.
+        SetElementProp(elem, "IsExpandable", 1);
     endif
     
-    // Gerar e salvar um ID único para o território
-var territory_id := CreateTerritoryID();
-SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
-
-    // Salvar as informações do retângulo
-    SetElementProp(elem, "Name", rect_name);
-   SetElementProp(elem, "Rect", rect_str);
-    SetElementProp(elem, "Realm", realm);
-    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Usar constante para facção padrão
-
-    
-    // Configurar recursos e intervalos para o território
+    // O resto do fluxo original continua normalmente.
     SetupResourcesForTerritory(who, elem);
     
-    SendSysMessage(who, $"Retângulo '{rect_name}' salvo com sucesso!");
+    SendSysMessage(who, $"Território '{rect_name}' salvo com sucesso!");
     
-    // Opção para visualizar os retângulos existentes
     if (YesNo(who, "Deseja visualizar todos os retângulos salvos?"))
         ShowRectangles(who, rect_df);
     endif
 endprogram
+
+
+function AskTerritoryType(who)
+    var gump := GFECreateGump("Definir Tipo de Território", 450, 220, array{BORDER_GOLDEN});
+    var x := 30;
+    var y := 70;
+    
+    GFTextMid(gump, 15, y, 420, 53, "A área foi selecionada. Que tipo de território é este?");
+    y += 45;
+    
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Customizado (Tamanho Fixo)");
+    GFTooltipText(gump, "A área que você desenhou será o tamanho final. Este tipo não expandirá.");
+    y += 50;
+    
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Padrão (Expansível)");
+    GFTooltipText(gump, "A área que você desenhou será a 'zona de buffer' máxima. O território começará pequeno no centro e crescerá dentro dela.");
+    
+    var input := GFSendGump(who, gump);
+    return CInt(input[0]);
+endfunction
+
 
 function SetupResourcesForTerritory(who, elem)
     // Lista de recursos disponíveis (sem repetições)
@@ -1004,7 +1022,7 @@ function IsTerritoryCapital(territory_id)
 endfunction
 
 
-// Função para mostrar gump de escolha do tipo de território
+
 // Função para mostrar gump de escolha do tipo de território
 function ShowTerritoryTypeSelection(who)
     var gump := GFECreateGump("Escolha o tipo de território", 350, 200, array{BORDER_GOLDEN});
@@ -1015,14 +1033,16 @@ function ShowTerritoryTypeSelection(who)
     GFTextLine(gump, x, y, 53, "Selecione como criar o novo território:");
     y += 35;
     
+    // Opção 1: Território com tamanho customizado (não expansível)
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 100);
     GFTextLine(gump, x + 40, y - 4, 1153, "Território Customizado");
-    GFTooltipText(gump, "Selecione manualmente as coordenadas do território");
+    GFTooltipText(gump, "Selecione manualmente as coordenadas do território. Este tipo NÃO expande.");
     y += 50;
     
+    // Opção 2: Território com tamanho padrão (expansível)
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 200);
-    GFTextLine(gump, x + 40, y - 4, 1153, "Território Padrão (50x50)");
-    GFTooltipText(gump, "Território 50x50 tiles automático (centrado no ponto selecionado)");
+    GFTextLine(gump, x + 40, y - 4, 1153, "Território Padrão (Expansível)");
+    GFTooltipText(gump, "Selecione o ponto central. O território começará no Nível 1 e expandirá automaticamente.");
     
     var input := GFSendGump(who, gump);
     var button := input[0];
@@ -1035,88 +1055,128 @@ function ShowTerritoryTypeSelection(who)
 endfunction
 
 
+
 // Função para criar território customizado (processo atual)
 function CreateCustomTerritory(who)
-    SendSysMessage(who, "Executando o comando de criar território customizado...");
-    start_script(":commands:gm/rectangles", who);
-endfunction
+	var rect_df := SafeOpenDataFile(":architect:areas", 1);
 
-
-// Função para criar território padrão
-function CreateStandardTerritory(who)
-    SendSysMessage(who, "Selecione o centro do território padrão (50x50)");
-    var center_point := TargetCoordinates(who);
-    if (!center_point)
+    SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
+    var first_point := TargetCoordinates(who);
+    if (!first_point)
         SendSysMessage(who, "Cancelado.");
         return;
     endif
     
-    // Definir tamanho padrão do território (50x50)
-    var size := 25; // Raio de 25 tiles (50x50 total)
-    var x1 := center_point.x - size;
-    var y1 := center_point.y - size;
-    var x2 := center_point.x + size;
-    var y2 := center_point.y + size;
+    SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
+    var second_point := TargetCoordinates(who);
+    if (!second_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+    
+    var x1 := first_point.x;
+    var y1 := first_point.y;
+    var x2 := second_point.x;
+    var y2 := second_point.y;
+    
+    if (x1 > x2) var temp := x1; x1 := x2; x2 := temp; endif
+    if (y1 > y2) var temp := y1; y1 := y2; y2 := temp; endif
     
     var rect_str := $"{x1} {y1} {x2} {y2}";
-    var realm := center_point.realm;
+    var realm := first_point.realm;
     
-    // Mostrar o retângulo selecionado
-    SendSysMessage(who, $"Território padrão definido: {rect_str} no realm {realm}");
+    SendSysMessage(who, $"Retângulo definido: {rect_str} no realm {realm}");
     
-    // Abrir datafile apenas uma vez
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (rect_df == error)
-        rect_df := SafeOpenDataFile(":architect:areas", 1);
-        if (rect_df == error)
-            SendSysMessage(who, "Erro ao criar arquivo de dados!");
-            return;
-        endif
-    endif
+    var rect_name := RequestGump(who, "Digite um nome para este território customizado:");
+    if (!rect_name) return; endif
     
-    // Verificar sobreposição
-    if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
-        SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
-        SendSysMessage(who, "Operação cancelada.");
+    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
+        SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente. Operação cancelada.");
         return;
     endif
     
-    // Pedir o nome do território (sistema normal)
-    var rect_name := RequestGump(who, "Digite um nome para este território:");
-    if (!rect_name || rect_name == "")
-        SendSysMessage(who, "Operação cancelada - nome não fornecido.");
-        return;
-    endif
+    var elem := SafeFindElement(rect_df, rect_name, 1);
     
-    // Verificar se o nome já existe e confirmar sobrescrita
-    var elem := SafeFindElement(rect_df, rect_name);
-    if (elem)
-        var confirm := YesNo(who, $"Já existe um território com o nome '{rect_name}'. Sobrescrever?");
-        if (!confirm)
-            SendSysMessage(who, "Operação cancelada.");
-            return;
-        endif
-    else
-        elem := rect_df.CreateElement(rect_name);
-    endif
-    
-    // Gerar e salvar um ID único para o território
+    // Salvar as informações
     var territory_id := CreateTerritoryID();
     SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
-    
-    // Salvar as informações do território
     SetElementProp(elem, "Name", rect_name);
     SetElementProp(elem, "Rect", rect_str);
     SetElementProp(elem, "Realm", realm);
     SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
     
-    // Configurar recursos e intervalos para o território (sistema normal)
+    // AÇÃO 1: Marcar como NÃO expansível
+    SetElementProp(elem, "IsExpandable", 0); 
+    
     SetupResourcesForTerritory(who, elem);
-    
-    SendSysMessage(who, $"Território '{rect_name}' criado com sucesso!");
-    
-    // Opção para visualizar os territórios existentes
-    if (YesNo(who, "Deseja visualizar todos os territórios salvos?"))
-        ShowRectangles(who, rect_df);
+    SendSysMessage(who, $"Território customizado '{rect_name}' salvo com sucesso!");
+endfunction
+
+
+
+// Função para criar território padrão
+function CreateStandardTerritory(who)
+    var rect_df := SafeOpenDataFile(":architect:areas", 1);
+
+    SendSysMessage(who, "Selecione o centro do novo território padrão expansível.");
+    var center_point := TargetCoordinates(who);
+    if (!center_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
     endif
+
+    // AÇÃO 2: Calcular CurrentRect (Nível 1) e MaxRect (Nível 5)
+    var center_x := center_point.x;
+    var center_y := center_point.y;
+    
+    // Dimensões de Nível 1
+    var dims_lvl1 := TERRITORY_DIMS_LEVEL_1;
+    var width_lvl1 := dims_lvl1[1];
+    var height_lvl1 := dims_lvl1[2];
+    var x1_lvl1 := center_x - CInt(width_lvl1 / 2);
+    var y1_lvl1 := center_y - CInt(height_lvl1 / 2);
+    var x2_lvl1 := x1_lvl1 + width_lvl1;
+    var y2_lvl1 := y1_lvl1 + height_lvl1;
+    var current_rect_str := $"{x1_lvl1} {y1_lvl1} {x2_lvl1} {y2_lvl1}";
+    
+    // Dimensões de Nível 5 (para o buffer)
+    var dims_lvl5 := TERRITORY_DIMS_LEVEL_5;
+    var width_lvl5 := dims_lvl5[1];
+    var height_lvl5 := dims_lvl5[2];
+    var x1_lvl5 := center_x - CInt(width_lvl5 / 2);
+    var y1_lvl5 := center_y - CInt(height_lvl5 / 2);
+    var x2_lvl5 := x1_lvl5 + width_lvl5;
+    var y2_lvl5 := y1_lvl5 + height_lvl5;
+    var max_rect_str := $"{x1_lvl5} {y1_lvl5} {x2_lvl5} {y2_lvl5}";
+    var realm := center_point.realm;
+
+    // AÇÃO 2: Verificar sobreposição usando MaxRect
+    if (TM_CheckRectangleOverlap(rect_df, x1_lvl5, y1_lvl5, x2_lvl5, y2_lvl5, realm, ""))
+        SendSysMessage(who, "A área máxima de expansão deste território (Nível 5) se sobrepõe a outro já existente.");
+        SendSysMessage(who, "Operação cancelada. Tente em um local mais afastado.");
+        return;
+    endif
+    
+    var rect_name := RequestGump(who, "Digite um nome para este território padrão:");
+    if (!rect_name) return; endif
+
+    var elem := SafeFindElement(rect_df, rect_name, 1);
+    
+    // Salvar as informações
+    var territory_id := CreateTerritoryID();
+    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    SetElementProp(elem, "Name", rect_name);
+    
+    // AÇÃO 2: Salvar AMBOS os retângulos
+    SetElementProp(elem, "Rect", current_rect_str);
+    SetElementProp(elem, "MaxRect", max_rect_str);
+    
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+    
+    // AÇÃO 1: Marcar como EXPANSÍVEL
+    SetElementProp(elem, "IsExpandable", 1);
+    
+    SetupResourcesForTerritory(who, elem);
+    SendSysMessage(who, $"Território padrão '{rect_name}' criado com sucesso!");
 endfunction

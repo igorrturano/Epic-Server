@@ -3946,18 +3946,44 @@ endfunction
 // =============================================================================
 // FUNÇÃO CENTRALIZADA DE CÁLCULO DE UPKEEP DE GUILDAS/FAÇÕES
 // =============================================================================
-exported function CalcularCustoUpkeep(guild, territories)
-    var n_territorios := territories.size();
+exported function CalcularCustoUpkeep(guild, territories_info_array)
+    if (!guild || !territories_info_array)
+        return 0;
+    endif
+
+    if (territories_info_array.size() == 0)
+        return 0; 
+    endif
+
     var guild_level := GetSimpleGuildLevel(guild);
     var n_membros := SafeGetGuildMembers(guild).size();
-    // Cálculo do custo por membros
-    var membros_custo := n_membros * 150;
-    if (n_membros > 10)
-        membros_custo := CInt(membros_custo * 1.5);
+
+    // --- CÁLCULO DO CUSTO DOS TERRITÓRIOS ---
+    var custo_total_territorios := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+
+    if (rect_df)
+        foreach territory_info in (territories_info_array)
+            var elem := SafeFindElement(rect_df, territory_info.name);
+            custo_total_territorios += GetTerritoryUpkeepCost(elem, guild_level);
+        endforeach
     endif
-    // Fórmula: (n_territorios * 100) + (guild_level * 30) * guild_level + membros_custo
-    var total_cost := (n_territorios * 100) + (guild_level * 30) * guild_level + membros_custo;
-    LogDebug("upkeep", "Novo cálculo: territórios=" + n_territorios + ", nível=" + guild_level + ", membros=" + n_membros + ", custo=" + total_cost);
+
+    // --- CÁLCULO DO CUSTO DOS MEMBROS ---
+    var custo_membros := n_membros * 150;
+    if (n_membros > 10)
+        custo_membros := CInt(custo_membros * 1.5);
+    endif
+
+    var total_cost := custo_total_territorios + custo_membros;
+    
+    LogDebug("upkeep", "Cálculo Upkeep (v3): Facção=" + SafeGetGuildName(guild) + 
+                       ", Nível=" + guild_level + 
+                       ", N_Territórios=" + territories_info_array.size() +
+                       ", CustoTerritórios=" + custo_total_territorios +
+                       ", CustoMembros=" + custo_membros +
+                       ", Total=" + total_cost);
+
     return total_cost;
 endfunction
 
@@ -3970,4 +3996,35 @@ function SafeGetGuildMembers(guild)
         return array{};
     endif
     return members;
+endfunction
+
+/*
+ * GetTerritoryUpkeepCost(territory_elem, guild_level)
+ *
+ * Purpose: Calcula o custo de upkeep para um único território.
+ */
+function GetTerritoryUpkeepCost(territory_elem, guild_level)
+    if (!territory_elem)
+        return 0; // Custo zero se o elemento for inválido
+    endif
+
+    var base_cost := 100; // Custo mínimo para qualquer território
+
+    // Territórios expansíveis são mais caros
+    if (GetElementProp(territory_elem, "IsExpandable"))
+        // O custo escala com o nível do REINO, não com o tamanho físico
+        case (guild_level)
+            1: base_cost := 200;
+            2: base_cost := 450;
+            3: base_cost := 900;
+            4: base_cost := 2000;
+            5: base_cost := 5000;
+            default: base_cost := 200;
+        endcase
+    else
+        // Territórios estáticos (customizados) têm um custo fixo baixo
+        base_cost := 150; 
+    endif
+
+    return base_cost;
 endfunction

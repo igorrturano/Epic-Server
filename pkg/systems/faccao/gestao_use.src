@@ -204,47 +204,11 @@ function ReinoGump(byref gump, item, who := 0)
     var titulo := mesa_faction ? "Gestão do Reino " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
     
-    // ===== SEÇÃO DE XP DO REINO =====
-    // Obter e exibir informação sobre a cultura do reino
-    // ===== SEÇÃO DE XP DO REINO =====
     // Obter informações da guild para mostrar progresso do reino
     var guild := FindGuild(FindGuildByName(mesa_faction));
-    var cultura_reino := "";
-      if (guild)
-        // PRIMEIRA PRIORIDADE: Verificar cultura salva na guild (escolha do totem)
-        var guild_culture_debug := SafeGetGuildProperty(guild, "culture", "");
-        
-        // LÓGICA SIMPLIFICADA: 
-        // 1. Se a guild tem cultura definida (escolha do totem), usar ela
-        // 2. Se não tem, obter a cultura correta e definir na guild
-        cultura_reino := guild_culture_debug;
-        
-        if (!cultura_reino || cultura_reino == "" || cultura_reino == "0")
-            // Obter a cultura através do mapeamento por nome da facção
-            cultura_reino := GetCultureFromFactionName(mesa_faction);
-            
-            // Definir na guild para futuras consultas
-            if (cultura_reino && cultura_reino != "")
-                SafeSetGuildProperty(guild, "culture", cultura_reino);
-                guild_culture_debug := cultura_reino;
-            endif
-        endif          cultura_reino := guild_culture_debug;
-    endif    // Exibir a cultura do reino (com primeira letra maiúscula)
-    if (cultura_reino)
-        var cultura_display := cultura_reino;
-        // Converter primeira letra para maiúscula usando mapeamento direto
-        case (cultura_reino[1])
-            "a": cultura_display := "A" + cultura_reino[2, cultura_reino.size()];
-            "b": cultura_display := "B" + cultura_reino[2, cultura_reino.size()];
-            "g": cultura_display := "G" + cultura_reino[2, cultura_reino.size()];
-            "h": cultura_display := "H" + cultura_reino[2, cultura_reino.size()];
-            "l": cultura_display := "L" + cultura_reino[2, cultura_reino.size()];
-            "p": cultura_display := "P" + cultura_reino[2, cultura_reino.size()];
-        endcase
-             
-    endif
     
-        if (guild)
+    // Só prossegue se a guilda existir
+    if (guild)
         // 1. Obter informações de XP (feito uma única vez)
         var xp_info := GetGuildXPInfo(guild);
         
@@ -252,36 +216,57 @@ function ReinoGump(byref gump, item, who := 0)
         GFResizePic(gump, 460, 110, 9350, 320, 150);
         GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");
 
-        // 3. Exibir informações que aparecem sempre: Reino Atual e Cultura
+        // 3. Exibir informações que aparecem sempre: Reino Atual
         var reino_atual := xp_info.level_name ?: "Reino Nível " + xp_info.current_level;
         GFTextLine(gump, 470, 135, 2100, "Reino Atual:");
         GFTextLine(gump, 570, 135, 53, reino_atual);
 
-        if (cultura_reino)
-            // Lógica para capitalizar o nome da cultura...
-            var cultura_display := CapitalizeFirst(cultura_reino); // Usando a função que você já tem
+        // ====================================================================
+        // AQUI ESTÁ A ÚNICA MUDANÇA NECESSÁRIA
+        // ====================================================================
+        // A lógica para obter e exibir a cultura está agora em um único lugar.
+        if (xp_info.culture)
+            var cultura_display := xp_info.culture; // Valor padrão
+            
+            // Usar um case para garantir a capitalização correta.
+            // O uso de Lower() torna a comparação à prova de erros de maiúsculas/minúsculas.
+            case (Lower(xp_info.culture))
+                "polkinea": cultura_display := "Polkinea";
+                "aiglanos": cultura_display := "Aiglanos";
+                "baduran":  cultura_display := "Baduran";
+                "gulthrak": cultura_display := "Gulthrak";
+                "haroloth": cultura_display := "Haroloth";
+                "leste":    cultura_display := "Leste";
+                "bjorske":  cultura_display := "Bjorske";
+                "aluriel":  cultura_display := "Aluriel";
+            endcase
+            
             GFTextLine(gump, 470, 155, 2100, "Cultura:");
             GFTextLine(gump, 570, 155, 1153, cultura_display);
         endif
+        // ====================================================================
+        // FIM DA MUDANÇA
+        // ====================================================================
 
-        // 4. Calcular e exibir o custo semanal (também aparece sempre)
+        // Exibir Próximo Nível (se aplicável)
+        if (!xp_info.is_max_level)
+            var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, xp_info.culture);
+            GFTextLine(gump, 470, 175, 2100, "Próximo:");
+            GFTextLine(gump, 570, 175, 1153, proximo_reino);
+        endif
+        
+        // Calcular e exibir o custo semanal
         var territories := GetGuildTerritories(mesa_faction);
         var weekly_cost := CalcularCustoUpkeep(guild, territories);
         var tooltip_text := "O Upkeep é calculado levando-se em conta os territórios dominados pelo Reino, o seu desenvolvimento e a quantidade de cidadãos que o compõe.";
         
         GFTextLine(gump, 470, 195, 2100, "Custo Semanal:");
-        GFTooltipText(gump, tooltip_text); // Adiciona o tooltip ao rótulo
+        GFTooltipText(gump, tooltip_text);
         GFTextLine(gump, 570, 195, 1153, CStr(weekly_cost) + " cobre");
-        GFTooltipText(gump, tooltip_text); // Adiciona o tooltip ao valor (aumenta área de hover)
+        GFTooltipText(gump, tooltip_text);
 
-        // 5. Exibir a parte que MUDA: Próximo Nível vs. Nível Máximo
+        // Barra de progresso ou mensagem de Nível Máximo
         if (!xp_info.is_max_level)
-            // Se NÃO é nível máximo, mostra o próximo nível e a barra de progresso.
-            var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, cultura_reino);
-            GFTextLine(gump, 470, 175, 2100, "Próximo:");
-            GFTextLine(gump, 570, 175, 1153, proximo_reino);
-            
-            // Barra de progresso
             GFResizePic(gump, 470, 220, 9200, 280, 20);         
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
             if (progress_width > 0)
@@ -290,8 +275,6 @@ function ReinoGump(byref gump, item, who := 0)
             var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
             GFTextMid(gump, 470, 222, 280, 1153, percentage_text);
         else
-            // Se for nível máximo, mostra a mensagem.
-            // Note que o campo "Próximo" fica em branco, o que é visualmente correto.
             GFTextMid(gump, 470, 220, 280, 53, "REINO MÁXIMO ATINGIDO");
         endif
     endif
@@ -1013,19 +996,20 @@ function MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm,
     // Processar escolha
     ProcessarAcaoTerritorioGump(who, input[0], territorio, faction, item);
 endfunction
+
 function ProcessarAcaoTerritorioGump(who, choice, territorio, faction, item)
     if (choice == 0)
         return 0;
     endif
     
     if (choice == 1)
-        // Revogar controle
-        RevogarTerritorioFaccao(who, territorio.elem, territorio, faction);
+        // A chamada está correta: passamos o struct de informações do território.
+        RevogarTerritorioFaccao(who, territorio, faction);
     elseif (choice == 2)
         // Transferir para outra facção
         TransferirTerritorioFaccao(who, territorio.elem, territorio, faction);
     elseif (choice == 3)
-        // Toggle status de capital - CORREÇÃO: passa faction como parâmetro
+        // Toggle status de capital
         ToggleStatusCapital(who, territorio, item);
     endif
     
@@ -1797,87 +1781,90 @@ function ShowPermissionsManagementGump(who, faction_name)
     return 1;
 endfunction
 
-function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
-    // Garantir compatibilidade com ambos os formatos
-    var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
-    var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
-    var seriais_df := SafeOpenDataFile(":faccao:seriais");
-    
-    if (YesNo(who, "Tem certeza que deseja revogar o controle de " + faction + " sobre este território?"))
-        // Obter o realm do território para passar ao script de limpeza
-        var territorio_realm := GetElementProp(elem, "Realm", "");
-        if (!territorio_realm)
-            territorio_realm := "britannia"; // Padrão se não encontrar
-        endif
+function RevogarTerritorioFaccao(who, territorio_info, old_faction)
+    // Extrair o ID e o Nome do struct recebido.
+    var territorio_id := territorio_info.id;
+    var territorio_nome := territorio_info.name;
+
+    if (!territorio_id)
+        SendSysMessage(who, "Erro crítico: ID do território não encontrado. Ação cancelada.");
+        LogError("gestao_use", "RevogarTerritorioFaccao chamada sem ID de território.");
+        return 0;
+    endif
+
+    // Obter o elemento do datafile usando o ID. Esta é a etapa que faltava.
+    var elem := TM_FindTerritory(territorio_id);
+    if (!elem)
+        SendSysMessage(who, "Erro crítico: Não foi possível encontrar os dados do território no sistema. Ação cancelada.");
+        LogError("gestao_use", "RevogarTerritorioFaccao: Falha ao encontrar elemento para ID " + territorio_id);
+        return 0;
+    endif
+
+    if (YesNo(who, "Tem certeza que deseja revogar o controle de " + old_faction + " sobre o território '" + territorio_nome + "'?"))
         
-        LogDebug("territorio", "Iniciando remoção para território: " + territorio_id);
-        LogDebug("territorio", "Facção: " + faction);
-        LogDebug("territorio", "Realm: " + territorio_realm);
-        LogDebug("territorio", "Nome: " + territorio_nome);
-          // === SOLUÇÃO KISS: Uma única linha para remover tudo ===
-        var objetos_removidos := TM_DeleteTerritoryObjects(territorio_id, faction);
-        SendSysMessage(who, "Objetos removidos: " + objetos_removidos);
-          // Atualizar propriedades no datafile
+        SendSysMessage(who, "Processando revogação...");
+        
+        // PASSO 1: Destruir os objetos físicos.
+        var objetos_removidos := TM_DeleteTerritoryObjects(territorio_id, old_faction);
+        SendSysMessage(who, "Objetos do território removidos: " + objetos_removidos);
+        
+        // PASSO 2: Atualizar propriedades no datafile usando o 'elem' que acabamos de buscar.
         SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-        SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+        SetElementProp(elem, LEGACY_FACTION_PROP, DEFAULT_FACTION);
         elem.EraseProp("NextResourceTime");
         
-        // Remover da lista de territórios da facção
-        var fac_guildid := FindGuildByName(faction);
+        // PASSO 3: Remover da lista de territórios da guilda.
+        var fac_guildid := FindGuildByName(old_faction);
         if (fac_guildid)
             var guild := FindGuild(fac_guildid);
             if (guild)
-               var territories := guild.GetProp("territories");
-               if (!territories || territories == error || TypeOf(territories) != "Array")
-                   territories := array{};
-               endif
+                var territories := guild.GetProp("territories");
+                if (!territories || territories == error || TypeOf(territories) != "Array")
+                    territories := array{};
+                endif
                
-               // Garantir que seja um array limpo
-               var cleaned_territories := array{};
-               foreach terr in territories
-                   // Apenas adicionar itens válidos
-                   if (TypeOf(terr) == "String" && terr != "")
-                       cleaned_territories.append(terr);
-                   endif
-                   sleepms(2);
-               endforeach
-               territories := cleaned_territories;
+                var cleaned_territories := array{};
+                foreach terr in territories
+                    if (TypeOf(terr) == "String" && terr != "")
+                        cleaned_territories.append(terr);
+                    endif
+                    sleepms(2);
+                endforeach
+                territories := cleaned_territories;
                
-               if (territories)
-                   // Procurar pelo ID ou pelo nome
-                   var territory_index := 0;
-                   for i := 1 to territories.size()
-                       if ((TypeOf(territories[i]) == "Struct" && territories[i].id == territorio_id) ||
-                           (TypeOf(territories[i]) == "String" && territories[i] == territorio_nome))
-                           territory_index := i;
-                           break;
-                       endif
-                   endfor
+                if (territories)
+                    var territory_index := 0;
+                    for i := 1 to territories.size()
+                        if ((TypeOf(territories[i]) == "String" && territories[i] == territorio_nome) ||
+                            (TypeOf(territories[i]) == "String" && territories[i] == territorio_id))
+                            territory_index := i;
+                            break;
+                        endif
+                    endfor
                    
-                   if (territory_index > 0)
-                       territories.Erase(territory_index);
-                       guild.SetProp("territories", territories);
-                       SendSysMessage(who, "Território removido da lista da facção.");
-                   endif
-               endif
+                    if (territory_index > 0)
+                        territories.Erase(territory_index);
+                        guild.SetProp("territories", territories);
+                        SendSysMessage(who, "Território removido da lista da facção.");
+                    endif
+                endif
             endif
         endif
         
-
-        
         SendSysMessage(who, "Controle do território revogado com sucesso!");
-        SendSysMessage(who, "Os objetos do território foram removidos.");
+        SendSysMessage(who, "O território agora é 'Selvagem'.");
 
-       LogInfo("territorio", "Notificando sistema de eventos sobre revogação de território: " + territorio_id);
-TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
-    "name" := territorio_nome, 
-    TERRITORY_FACTION_PROP := faction 
-});
+        // PASSO 4: Notificar o sistema.
+        LogInfo("territorio", "Notificando sistema de eventos sobre revogação de território: " + territorio_id);
+        TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
+            "name" := territorio_nome, 
+            "old_faction" := old_faction 
+        });
 
-        return 1; // Indica que deve sair do gump
+        return 1;
     endif
     
-    return 1;
+    return 1; // Retorna 1 mesmo se o usuário cancelar para fechar o gump de detalhes
 endfunction
 
 function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital_id, faction_name)

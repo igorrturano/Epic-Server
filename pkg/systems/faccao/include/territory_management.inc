@@ -2046,3 +2046,80 @@ function SyncGuildTerritories(faction_name)
     
     return territory_list.size();
 endfunction
+
+// ====================================================================
+// AÇÃO 4 (Adição): Nova função para expandir um território
+// ====================================================================
+/*
+ * TM_ExpandTerritory(territory_id, new_level)
+ *
+ * Purpose: Expande o retângulo de um território para as dimensões de um novo nível.
+ * Parameters:
+ *   territory_id - ID do território a ser expandido
+ *   new_level - O novo nível do reino (para buscar as dimensões corretas)
+ * Return:
+ *   1 para sucesso, 0 para falha.
+ */
+function TM_ExpandTerritory(territory_id, new_level)
+    // 1. Encontrar o território
+    var elem := TM_FindTerritory(territory_id);
+    if (!elem) 
+        LogError("territorio", "TM_ExpandTerritory: Não foi possível encontrar o território com ID: " + territory_id);
+        return 0;
+    endif
+
+    // 2. Obter o retângulo MÁXIMO (buffer) para achar o centro verdadeiro
+    var max_rect_str := GetElementProp(elem, "MaxRect");
+    if (!max_rect_str)
+    	// Se não tem MaxRect, não é um território expansível.
+    	LogWarning("territorio", "TM_ExpandTerritory: Tentativa de expandir território não-expansível (sem MaxRect): " + territory_id);
+    	return 0; 
+    endif
+    
+    var coords := SplitWords(max_rect_str);
+    var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
+    var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+
+    // 3. Obter as NOVAS dimensões para o new_level
+    var new_dims := GetDimensionsForLevel(new_level); 
+    if (!new_dims)
+        LogError("territorio", "TM_ExpandTerritory: Dimensões não encontradas para o nível: " + new_level);
+        return 0;
+    endif
+    var new_width := new_dims[1];
+    var new_height := new_dims[2];
+
+    // 4. Calcular o NOVO retângulo a partir do centro
+    var new_x1 := center_x - CInt(new_width / 2);
+    var new_y1 := center_y - CInt(new_height / 2);
+    var new_x2 := new_x1 + new_width;
+    var new_y2 := new_y1 + new_height;
+    var new_rect_str := new_x1 + " " + new_y1 + " " + new_x2 + " " + new_y2;
+
+    // 5. Salvar o novo retângulo (SEM verificação de overlap, pois confiamos no MaxRect)
+    SetElementProp(elem, "Rect", new_rect_str);
+    
+    LogInfo("territorio", "Território " + territory_id + " expandido para Nível " + new_level + ". Novas Coords: " + new_rect_str);
+    return 1; // Sucesso
+endfunction
+
+
+/*
+ * GetDimensionsForLevel(level)
+ *
+ * Purpose: Função auxiliar para obter as dimensões de um território com base no nível.
+ * Parameters:
+ *   level - O nível do reino.
+ * Return:
+ *   Array com {largura, altura} ou 0 se o nível for inválido.
+ */
+function GetDimensionsForLevel(level)
+    case (level)
+        1: return TERRITORY_DIMS_LEVEL_1;
+        2: return TERRITORY_DIMS_LEVEL_2;
+        3: return TERRITORY_DIMS_LEVEL_3;
+        4: return TERRITORY_DIMS_LEVEL_4;
+        5: return TERRITORY_DIMS_LEVEL_5;
+        default: return 0;
+    endcase
+endfunction

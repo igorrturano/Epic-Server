@@ -413,6 +413,26 @@ function GuildLevelUp(guild, new_level, old_level, guild_culture := "")
     ApplyGuildLevelBenefits(guild, new_level, guild_culture);
     
     LogInfo("guild_xp", "Guild " + guild_name + " subiu para " + level_name + " (Nível " + new_level + ")!");
+    
+    // ====================================================================
+    // AÇÃO 5 (Adição): Acionar expansão automática de territórios
+    // ====================================================================
+    LogInfo("guild_xp", "Verificando territórios da facção '" + guild_name + "' para expansão para o Nível " + new_level);
+    
+    var territories_to_expand := guild.GetProp("territories");
+    if (territories_to_expand && TypeOf(territories_to_expand) == "Array")
+        foreach territory_id in territories_to_expand
+            if (territory_id)
+                var elem := TM_FindTerritory(territory_id);
+                if (elem && GetElementProp(elem, "IsExpandable"))
+                    LogInfo("guild_xp", "--> Território EXPANSÍVEL encontrado: " + territory_id + ". Expandindo...");
+                    TM_ExpandTerritory(territory_id, new_level);
+                endif
+            endif
+            sleepms(5); // Pequena pausa entre cada território
+        endforeach
+    endif
+    
     return 1;
 endfunction
 
