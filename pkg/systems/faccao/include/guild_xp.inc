@@ -214,15 +214,18 @@ const GUILD_XP_HISTORY_PROP := "guild_xp_history";
 // Funções Principais
 // =======================================
 
+// Localizado em: :faccao:include/guild_xp.inc
+
 /*
  * AddGuildXP(who, xp_amount)
  * 
- * Purpose: Adiciona XP à guild do jogador
+ * Purpose: Adiciona XP à guild do jogador.
+ *          VERSÃO MODIFICADA: A guild só ganha XP se possuir pelo menos um território.
  * Parameters:
  *   who - O jogador que ganhou XP
  *   xp_amount - Quantidade de XP que o jogador ganhou
  * Return:
- *   1 se sucesso, 0 se falha
+ *   1 se sucesso, 0 se falha ou se a guild não tem território.
  */
 function AddGuildXP(who, xp_amount)
     if (!who || !who.guild || xp_amount <= 0)
@@ -230,6 +233,22 @@ function AddGuildXP(who, xp_amount)
     endif
     
     var guild := who.guild;
+
+    // ========================================================
+    // >>>>> INÍCIO DA MODIFICAÇÃO <<<<<
+    // ========================================================
+    // Verifica se a guilda possui territórios antes de conceder XP.
+    var territories := guild.GetProp("territories");
+    if (!territories || territories == error || TypeOf(territories) != "Array" || territories.size() == 0)
+        // A facção não tem territórios, então não ganha XP de reino.
+        // Opcional: Log para registrar a tentativa de ganho de XP sem território.
+LogDebug("guild_xp", "Tentativa de ganho de XP para a facção '" + SafeGetGuildName(guild) + "' ignorada (sem territórios).");
+        return 0; 
+    endif
+    // ========================================================
+    // >>>>> FIM DA MODIFICAÇÃO <<<<<
+    // ========================================================
+
     var guild_name := SafeGetGuildName(guild);
     var guild_culture := SafeGetGuildProperty(guild, "culture", "");
     

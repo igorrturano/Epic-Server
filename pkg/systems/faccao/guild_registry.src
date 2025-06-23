@@ -1,3 +1,9 @@
+// :faccao:guild_registry.src
+//
+// Sistema de registro persistente e validador de integridade de guildas/facções.
+// Mantém um registro confiável e limpa dados corrompidos ou órfãos.
+// Versão 2.0
+
 use uo;
 use os;
 use guilds;
@@ -6,16 +12,9 @@ use datafile;
 include ":datafile:datafile";
 include ":faccao:include/faccao_constants";
 include ":faccao:include/logging";
-include ":faccao:include/datafile_helpers";  // Nova inclusão
-include ":faccao:include/shared_functions";
-
-/* 
- * guild_registry.src
- *
- * Sistema de registro persistente de guildas/facções
- * Mantém um registro de todas as guildas do servidor com suas informações
- * básicas em um datafile para acesso confiável, independente de jogadores online.
- */
+include ":faccao:include/datafile_helpers";
+include ":faccao:include/shared_functions"; // Contém SafeGetGuildName
+include ":faccao:include/safe_guild_utils"; // Contém SafeGetGuildName (redundante, mas seguro)
 
 // Constantes para datafile
 const GUILD_REGISTRY_DATAFILE := "guild_registry";
@@ -23,30 +22,38 @@ const GUILD_REGISTRY_ELEM := "guilds";
 const GUILD_REGISTRY_TIMESTAMP := "last_update";
 
 program guild_registry()
-    LogInfo("registro_guildas", "Iniciando sistema de registro de guildas...");
+    LogInfo("registro_guildas", "Iniciando sistema de registro e validação de guildas...");
     
     // Registrar o script como um serviço contínuo
     SetGlobalProperty("guild_registry_pid", GetPid());
     
     // Inicializar o registro
     InitializeGuildRegistry();
-      // Loop principal - Atualizar o registro periodicamente E validar guild.leader
-    var last_check := ReadGameClock();
-    var last_validation := ReadGameClock();
-    
+      
+    // Loop principal - Atualizar o registro periodicamente E validar dados
+    var last_registry_update := ReadGameClock();
+    var last_leader_validation := ReadGameClock();
+    var last_player_validation := ReadGameClock(); // <<< NOVO
+
     while(1)
         var current_time := ReadGameClock();
         
         // Atualizar registro de guildas a cada 1 hora
-        if ((current_time - last_check) >= 3600)
+        if ((current_time - last_registry_update) >= 3600)
             UpdateGuildRegistry();
-            last_check := current_time;
+            last_registry_update := current_time;
         endif
         
-        // NOVO: Validar guild.leader a cada 1 hora (offset de 30 min do registro)
-        if ((current_time - last_validation) >= 3600)
+        // Validar líderes de guildas a cada 2 horas
+        if ((current_time - last_leader_validation) >= 7200)
             ValidateAllGuildLeaders();
-            last_validation := current_time;
+            last_leader_validation := current_time;
+        endif
+
+        // <<< NOVO >>> Validar referências de guildas nos jogadores a cada 4 horas
+        if ((current_time - last_player_validation) >= 14400)
+            ValidatePlayerGuildReferences();
+            last_player_validation := current_time;
         endif
         
         // Verificar eventos e comandos
@@ -56,7 +63,8 @@ program guild_registry()
                 "update": 
                     LogInfo("registro_guildas", "Atualizando registro de guildas sob demanda");
                     UpdateGuildRegistry();
-                    last_check := ReadGameClock();                "lookup":
+                    last_registry_update := ReadGameClock();                
+                "lookup":
                     if (ev.name)
                         var guild_id := FindGuildByName(ev.name);
                         if (ev.process)
@@ -91,29 +99,20 @@ endprogram
 function InitializeGuildRegistry()
     LogInfo("registro_guildas", "Inicializando registro de guildas...");
     
-    // Usar a nova função auxiliar SafeOpenDataFile
-    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);  // 1 = criar se não existir
-    if (!df)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);
+    if (!df) return 0; endif
     
-    // Usar a nova função auxiliar SafeFindElement
-    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);  // 1 = criar se não existir
-    if (!elem)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);
+    if (!elem) return 0; endif
     
-    // Usar a nova função auxiliar GetElementProp
     var last_update := GetElementProp(elem, GUILD_REGISTRY_TIMESTAMP, 0);
     var current_time := polcore().systime;
     
-    // Se nunca foi atualizado ou foi há mais de 24 horas, atualizar agora
     if (!last_update || (current_time - last_update) > 86400)
         return UpdateGuildRegistry();
     endif
     
-    LogInfo("registro_guildas", "Registro de guildas já inicializado e atualizado. Última atualização: " +
-        FormatRegistryTime(last_update));
+    LogInfo("registro_guildas", "Registro de guildas já inicializado. Última atualização: " + FormatRegistryTime(last_update));
     
     return 1;
 endfunction
@@ -128,96 +127,45 @@ endfunction
 function UpdateGuildRegistry()
     LogInfo("registro_guildas", "Atualizando registro de guildas...");
     
-    // Usar as funções auxiliares do datafile_helpers.inc
     var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);
-    if (!df)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    if (!df) return 0; endif
     
     var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);
-    if (!elem)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    if (!elem) return 0; endif
     
-    // Obter o registro atual para verificação usando função auxiliar
     var registry := GetElementProp(elem, "registry", dictionary{});
-      // Mapear nome da guilda -> ID da guilda
     var guild_map := dictionary{};
     
-    // Registrar todas as facções existentes usando método baseado em territórios
-    var active_factions := GetActiveFactionsFromTerritories();
-    if (active_factions)
-        LogDebug("registro_guildas", "Encontradas " + active_factions.size() + " facções ativas para registrar");
-        
-        foreach faction_info in (active_factions)
-            var guild := FindGuild(faction_info.guild_id);
-            if (!guild)
-                continue;
-            endif            var guild_name := guild.GetProp(FACTION_PROP_NAME);
-            if (!guild_name || guild_name == error)
-                guild_name := guild.GetProp(FACTION_PROP_NAME);
-            endif
-            
-            if (!guild_name || guild_name == error)
-                guild_name := guild.guildname;
-            endif
-            
-            if (guild_name && guild_name != error)
-                guild_map[guild_name] := guild.guildid;
-                
-                // Verificar guildas com nomes alternativos registrados
-                var alt_names := guild.GetProp("alt_names");
-                if (alt_names && typeof(alt_names) == "Array")
-                    foreach alt_name in (alt_names)
-                        if (alt_name && alt_name != "")
-                            guild_map[alt_name] := guild.guildid;
-                        endif
-                        sleepms(2);
-                    endforeach
-                endif
-            endif
-            
-            sleepms(2);
-        endforeach    else
-        LogWarning("registro_guildas", "GetActiveFactionsFromTerritories() retornou vazio, tentando métodos alternativos");
-        
-        // Método alternativo: obter informações de guildas dos jogadores online
-        foreach player in (EnumerateOnlineCharacters())
-            if (player.guildid)
-                var player_guild := player.guild;                if (player_guild)
-                    var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
-                    if (!guild_name || guild_name == error)
-                        guild_name := player_guild.GetProp("name"); // Propriedade legada
-                    endif
-                    
-                    if (!guild_name || guild_name == error)
-                        guild_name := player_guild.guildname;
-                    endif
-                    
-                    if (guild_name && guild_name != error)
-                        guild_map[guild_name] := player_guild.guildid;
-                    endif
-                endif
-            endif
-            sleepms(2);
-        endforeach
-        
-        // Combinar com registros existentes
-        foreach name in (registry.keys())
-            if (!guild_map.exists(name))
-                var guild_id := registry[name];
-                if (guild_id)
-                    var guild := FindGuild(guild_id);
-                    if (guild) // Verificar se a guilda ainda existe
-                        guild_map[name] := guild_id;
-                    endif
-                endif
-            endif
-            sleepms(2);
-        endforeach
+    // Usar a função ListGuilds() como fonte principal, pois é a lista definitiva do POL.
+    var all_guilds := ListGuilds();
+    if (!all_guilds || all_guilds == error)
+        LogWarning("registro_guildas", "ListGuilds() falhou ou retornou vazio. Registro não pode ser atualizado.");
+        return 0;
     endif
+
+    LogDebug("registro_guildas", "Encontradas " + all_guilds.size() + " guildas para registrar via ListGuilds()");
     
-    // Atualizar o datafile com as informações coletadas - usar funções auxiliares
+    foreach guild in all_guilds
+        // >>>>> REATORAÇÃO APLICADA AQUI <<<<<
+        // Usando a função segura para obter o nome, prevenindo erros e inconsistências.
+        var guild_name := SafeGetGuildName(guild);
+
+        if (guild_name && guild_name != "Unknown Guild" && guild_name != "No Guild")
+            guild_map[guild_name] := guild.guildid;
+            
+            var alt_names := guild.GetProp("alt_names");
+            if (alt_names && typeof(alt_names) == "Array")
+                foreach alt_name in (alt_names)
+                    if (alt_name && alt_name != "")
+                        guild_map[alt_name] := guild.guildid;
+                    endif
+                    sleepms(2);
+                endforeach
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
     SetElementProp(elem, "registry", guild_map);
     SetElementProp(elem, GUILD_REGISTRY_TIMESTAMP, polcore().systime);
     
@@ -227,42 +175,22 @@ function UpdateGuildRegistry()
 endfunction
 
 /*
- * FUNÇÃO REMOVIDA: LookupGuildByName 
- * 
- * Esta função foi consolidada em FindGuildByName() em shared_functions.inc
- * para eliminar duplicação de código conforme REFACTOR_PLAN.md
- */
-
-/*
  * RegisterGuild(name, guild_id)
  *
  * Purpose: Registrar manualmente uma guilda no registro
- * Parameters:
- *   name - Nome da guilda
- *   guild_id - ID da guilda a ser registrada
- * Return: 1 se bem-sucedido, 0 se falha
  */
 function RegisterGuild(name, guild_id)
-    if (!name || !guild_id)
-        return 0;
-    endif
+    if (!name || !guild_id) return 0; endif
     
-    // Usar funções auxiliares do datafile_helpers.inc
     var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);
-    if (!df)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    if (!df) return 0; endif
     
     var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);
-    if (!elem)
-        return 0;  // Erro já foi logado pela função auxiliar
-    endif
+    if (!elem) return 0; endif
     
-    // Usar função auxiliar com valor padrão para caso de erro
     var registry := GetElementProp(elem, "registry", dictionary{});
     
     registry[name] := guild_id;
-    // Usar função auxiliar para definir propriedade com tratamento de erro
     return SetElementProp(elem, "registry", registry);
 endfunction
 
@@ -270,16 +198,10 @@ endfunction
  * FormatRegistryTime(timestamp)
  *
  * Purpose: Formatar timestamp para exibição
- * Parameters:
- *   timestamp - Timestamp Unix
- * Return: String formatada com data e hora
  */
 function FormatRegistryTime(timestamp)
-    if (!timestamp || timestamp == error)
-        return "Data desconhecida";
-    endif
+    if (!timestamp || timestamp == error) return "Data desconhecida"; endif
     
-    // Método simples que não usa systime_precise
     var seconds_per_day := 86400;
     var seconds_per_hour := 3600;
     var seconds_per_minute := 60;
@@ -289,8 +211,7 @@ function FormatRegistryTime(timestamp)
     var minutes := CInt((timestamp % seconds_per_hour) / seconds_per_minute);
     var seconds := CInt(timestamp % seconds_per_minute);
     
-    // Formatar simples (ano fixo - mais para exibição do que precisão)
-    var formatted := CStr(2023) + "-" + 
+    var formatted := CStr(2024) + "-" + 
                    PadRegistryStr(CStr(1), 2, "0") + "-" + 
                    PadRegistryStr(CStr(days+1), 2, "0") + " " + 
                    PadRegistryStr(CStr(hours), 2, "0") + ":" + 
@@ -304,11 +225,6 @@ endfunction
  * PadRegistryStr(str, length, padchar)
  *
  * Purpose: Adicionar padding a uma string
- * Parameters:
- *   str - String a ser padronizada
- *   length - Comprimento desejado
- *   padchar - Caractere de padding (default: "0")
- * Return: String com padding
  */
 function PadRegistryStr(str, length, padchar := "0")
     str := CStr(str);
@@ -328,28 +244,13 @@ endfunction
 function ValidateAllGuildLeaders()
     LogInfo("guild_validator", "Iniciando validação automática de guild.leader");
     
-    var guilds_verificadas := 0;
     var guilds_corrigidas := 0;
-    var erros := 0;
-      var active_factions := GetActiveFactionsFromTerritories();
-    if (!active_factions)
-        LogWarning("guild_validator", "GetActiveFactionsFromTerritories() retornou vazio");
-        return 0;
-    endif
-    
-    foreach faction_info in (active_factions)
-        guilds_verificadas += 1;
-        
-        var guild := FindGuild(faction_info.guild_id);
-        if (!guild)
-            erros += 1;
-            continue;
-        endif
-          // Verificar se é uma facção (tem propriedade "name")
-        var faction_name := guild.GetProp(FACTION_PROP_NAME);
-        if (!faction_name || faction_name == error)
-            continue; // Não é uma facção, pular
-        endif
+    var all_guilds := ListGuilds();
+    if (!all_guilds) return 0; endif;
+
+    foreach guild in all_guilds
+        var faction_name := SafeGetGuildName(guild);
+        if (!faction_name) continue; endif; // Pular se não for uma facção válida
         
         var current_leader := guild.leader;
         var guildmaster := guild.guildmaster;
@@ -358,76 +259,94 @@ function ValidateAllGuildLeaders()
         var needs_fix := 0;
         var fix_reason := "";
         
-        // Verificar se guild.leader está bugado
-        if (!current_leader || current_leader == error || 
-            CStr(current_leader) == "<uninitialized object>")
+        if (!current_leader || current_leader == error || CStr(current_leader) == "<uninitialized object>")
             needs_fix := 1;
             fix_reason := "guild.leader está <uninitialized object>";
-        // Verificar inconsistência entre guild.leader e custom leader
-        elseif (custom_leader && custom_leader != error && 
-                custom_leader != current_leader)
+        elseif (custom_leader && custom_leader != error && custom_leader != current_leader)
             needs_fix := 1;
-            fix_reason := "guild.leader != custom leader";
-        // Verificar inconsistência entre guild.leader e guildmaster
-        elseif (guildmaster && guildmaster != error && 
-                current_leader != guildmaster)
+            fix_reason := "guild.leader (" + CStr(current_leader) + ") != custom leader (" + CStr(custom_leader) + ")";
+        elseif (guildmaster && guildmaster != error && current_leader != guildmaster)
             needs_fix := 1;
-            fix_reason := "guild.leader != guildmaster";
+            fix_reason := "guild.leader (" + CStr(current_leader) + ") != guildmaster (" + CStr(guildmaster) + ")";
         endif
         
         if (needs_fix)
-            // Determinar o líder correto (prioridade: guildmaster > custom_leader)
             var correct_leader := guildmaster;
             if (!correct_leader && custom_leader && custom_leader != error)
                 correct_leader := custom_leader;
             endif
             
             if (correct_leader)
-                // Corrigir usando sincronização correta
-                var success := SetFactionLeaderInternal(guild, correct_leader);
-                if (success)
+                if (SetFactionLeaderInternal(guild, correct_leader))
                     guilds_corrigidas += 1;
                     LogInfo("guild_validator", "AUTO-CORREÇÃO: " + faction_name + " - " + fix_reason);
                 else
-                    erros += 1;
                     LogError("guild_validator", "FALHA na correção: " + faction_name + " - " + fix_reason);
                 endif
             else
-                // Remover líder se não há líder válido
                 RemoveFactionLeaderInternal(guild);
                 guilds_corrigidas += 1;
                 LogInfo("guild_validator", "AUTO-LIMPEZA: " + faction_name + " - removido líder inválido");
             endif
         endif
         
-        sleepms(50); // Pequena pausa para não sobrecarregar
+        sleepms(5);
     endforeach
     
-    LogInfo("guild_validator", "Validação concluída: " + guilds_verificadas + " verificadas, " + 
-            guilds_corrigidas + " corrigidas, " + erros + " erros");
-    
+    LogInfo("guild_validator", "Validação de líderes concluída. Corrigidas: " + guilds_corrigidas);
     return guilds_corrigidas;
+endfunction
+
+/*
+ * <<< NOVA FUNÇÃO - VERSÃO COMPATÍVEL COM ENUMERATEONLINECHARACTERS >>>
+ * ValidatePlayerGuildReferences()
+ * 
+ * Purpose: Varre os jogadores ONLINE e remove referências a guildas que não existem mais.
+ *          Isso resolve a causa raiz do erro '<uninitialized object>' para jogadores ativos.
+ * Returns: Número de jogadores corrigidos.
+ */
+function ValidatePlayerGuildReferences()
+    LogInfo("guild_validator", "Iniciando validação de referências de guilda nos jogadores ONLINE...");
+
+    var players_corrigidos := 0;
+    // Usa EnumerateOnlineCharacters(), que é uma função core padrão e garantida.
+    var online_players := EnumerateOnlineCharacters();
+
+    foreach player in online_players
+        // Verificar apenas jogadores que pertencem a uma guilda
+        if (player && player.guildid)
+            var guild_obj := FindGuild(player.guildid);
+            if (!guild_obj || guild_obj == error)
+                // A guilda não existe mais. Limpar a referência do jogador.
+                LogWarning("guild_validator", "Jogador online " + player.name + " (Serial: " + player.serial + ") tinha um guildid inválido (" + player.guildid + "). Limpando referência.");
+                player.guildid := 0;
+                
+                // Opcional: remover CProps de facção do jogador também
+                player.EraseObjProperty("dados_convite");
+                player.EraseObjProperty("guild_rank");
+                
+                players_corrigidos += 1;
+            endif
+        endif
+        sleepms(2); // Pequena pausa para não sobrecarregar
+    endforeach
+
+    LogInfo("guild_validator", "Validação de referências de guilda nos jogadores ONLINE concluída. Corrigidos: " + players_corrigidos);
+    return players_corrigidos;
 endfunction
 
 /*
  * SetFactionLeaderInternal(guild, player_serial)
  * 
  * Purpose: Sincronizar corretamente guild.leader com custom properties (versão interna)
- * Returns: 1 se bem-sucedido, 0 se falha
  */
 function SetFactionLeaderInternal(guild, player_serial)
-    if (!guild || !player_serial)
-        return 0;
-    endif
+    if (!guild || !player_serial) return 0; endif
     
-    // Definir custom property
     guild.SetProp("leader", player_serial);
-    
-    // Sincronizar com propriedade nativa do POL
     guild.leader := player_serial;
     
-    // Atualizar guild_rank do jogador se estiver online
-    var player := SystemFindObjectBySerial(player_serial);
+    var player := SystemFindObjectBySerial(player_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
     if (player)
         player.SetProp("guild_rank", "Lider");
     endif
@@ -439,25 +358,17 @@ endfunction
  * RemoveFactionLeaderInternal(guild)
  * 
  * Purpose: Remover líder de forma sincronizada (versão interna)
- * Returns: 1 se bem-sucedido, 0 se falha
  */
 function RemoveFactionLeaderInternal(guild)
-    if (!guild)
-        return 0;
-    endif
+    if (!guild) return 0; endif
     
-    // Obter líder atual antes de remover
     var current_leader_serial := guild.GetProp("leader");
     
-    // Remover de custom property
     guild.SetProp("leader", 0x0);
-    
-    // Remover de propriedade nativa do POL
     guild.leader := 0x0;
     
-    // Limpar guild_rank do ex-líder se estiver online
     if (current_leader_serial)
-        var former_leader := SystemFindObjectBySerial(current_leader_serial);
+        var former_leader := SystemFindObjectBySerial(current_leader_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
         if (former_leader)
             former_leader.EraseObjProperty("guild_rank");
         endif
