@@ -1,5 +1,8 @@
 /*
- * Mesa de Inscrição da Facção - Versão Corrigida POL EScript
+ * Mesa de Inscrição da Facção - Versão Corrigida e Modular
+ *
+ * Este script gerencia a interface para convidar novos membros para uma facção.
+ * Apenas o líder da facção dona da mesa pode usar esta funcionalidade.
  */
 
 use uo;
@@ -7,17 +10,26 @@ use os;
 use guilds;
 use polsys;
 
+// =======================================
+// INCLUDES CORRIGIDOS
+// =======================================
+// Inclui as funções auxiliares centralizadas em vez de redefini-las localmente.
 include ":gumps:gumps";
 include "include/say";
 include ":tn:tngumps";
 include ":faccao:include/logging";
-include ":faccao:include/permissions";
+include ":faccao:include/shared_functions"; // Contém GetObjectFaction, etc.
+include ":faccao:include/permissions";    // Contém IsGuildLeader
+
+// =======================================
+// Programa Principal (Hook do Item)
+// =======================================
 
 program mesainscricao_use(who, item)
     // Etapa 1: Proteção anti-crash (lock)
     var lock_prop := "mesa_em_uso_" + who.serial;
     if (GetObjProperty(item, lock_prop))
-        SendSysMessage(who, "Aguarde, a mesa ainda esta processando sua solicitacao anterior.");
+        SendSysMessage(who, "Aguarde, a mesa ainda está processando sua solicitação anterior.");
         return 0;
     endif;
     
@@ -34,11 +46,10 @@ program mesainscricao_use(who, item)
         return 0;
     endif;
 
-    // Etapa 3: Verificação de Permissão - LÓGICA CORRIGIDA
+    // Etapa 3: Verificação de Permissão
     
     // CASO 1: O jogador não pertence à facção dona da mesa.
     if (player_faction_name != mesa_faction_name)
-        // A mensagem de erro que você pediu: "Apenas o líder da facção XXX..."
         SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
         EraseObjProperty(item, lock_prop);
         return 0;
@@ -46,17 +57,13 @@ program mesainscricao_use(who, item)
     
     // CASO 2: O jogador pertence à facção correta, mas não é o líder.
     if (!IsGuildLeader(who))
-        // A mensagem de erro que você pediu: "Apenas o líder da facção XXX..."
         SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
         EraseObjProperty(item, lock_prop);
         return 0;
     endif;
     
-    // Se passou por todas as verificações, o jogador é o líder da facção dona da mesa.
-    // Pode continuar...
-
     // Abrir a interface de convite
-    var result := OpenSimpleInviteGump(who, item);
+    var result := OpenSimpleInviteGump(who);
     
     // Etapa 4: Limpar o lock no final da execução
     EraseObjProperty(item, lock_prop);
@@ -64,39 +71,34 @@ program mesainscricao_use(who, item)
     return result;
 endprogram
 
-function OpenSimpleInviteGump(who, item)
-    // === FECHAR GUMPS ANTERIORES ===
+// =======================================
+// Funções de Interface Gráfica (Gumps)
+// =======================================
+
+function OpenSimpleInviteGump(who)
     CloseGump(who, 0x12345, 0);
     
     var gump := GFCreateGump();
     GFSetId(gump, 0x12345);
     
-    // Background
     GFResizePic(gump, 0, 0, 9200, 350, 200);
     GFResizePic(gump, 15, 15, 9350, 320, 170);
-    
-    // Título
     GFTextMid(gump, 15, 25, 320, 53, "Mesa de Inscrição da Facção");
     
-    // Campo: Nome do Convidado
     GFTextLine(gump, 30, 60, 1153, "Nome do Convidado:");
     GFResizePic(gump, 30, 80, 9350, 200, 25);
     var nome_entry := GFTextEntry(gump, 35, 85, 190, 20, 1153, "", 1);
     
-    // Campo: Cargo RP
     GFTextLine(gump, 30, 115, 1153, "Cargo RP:");
     GFResizePic(gump, 30, 135, 9350, 200, 25);
     var cargo_entry := GFTextEntry(gump, 35, 140, 190, 20, 1153, "", 2);
     
-    // Botão Convidar
     GFAddButton(gump, 250, 80, 4005, 4006, GF_CLOSE_BTN, 1);
     GFTextLine(gump, 275, 82, 1153, "Convidar");
         
-    // Botão Cancelar
     GFAddButton(gump, 250, 120, 4017, 4018, GF_CLOSE_BTN, 0);
     GFTextLine(gump, 275, 122, 1153, "Cancelar");
     
-    // === ENVIAR GUMP ===
     var input := GFSendGump(who, gump);
     
     if (!input)
@@ -108,160 +110,54 @@ function OpenSimpleInviteGump(who, item)
         var nome_convidado := GFExtractData(input, nome_entry);
         var cargo_rp := GFExtractData(input, cargo_entry);
         
-        // Validação básica
         if (!nome_convidado || nome_convidado == "" || nome_convidado == " ")
-            SendSysMessage(who, "Voce deve informar o nome do convidado.");
+            SendSysMessage(who, "Você deve informar o nome do convidado.");
             sleep(1);
-            return OpenSimpleInviteGump(who, item);
+            return OpenSimpleInviteGump(who);
         endif
         
         if (!cargo_rp || cargo_rp == "" || cargo_rp == " ")
-            SendSysMessage(who, "Voce deve informar o cargo RP.");
+            SendSysMessage(who, "Você deve informar o cargo RP.");
             sleep(1);
-            return OpenSimpleInviteGump(who, item);
+            return OpenSimpleInviteGump(who);
         endif
         
-        return PrepararConvite(who, item, nome_convidado, cargo_rp);
-    endif
-    
-    return 1;
-endfunction
-
-function PrepararConvite(who, item, nome, cargo)
-    SendSysMessage(who, "Convite preparado para: " + nome + " como " + cargo);
-    SendSysMessage(who, "Agora clique no jogador que deseja convidar.");
-    
-    // Salvar dados temporários no líder para usar no target
-    SetObjProperty(who, "convite_nome", nome);
-    SetObjProperty(who, "convite_cargo", cargo);
-    SetObjProperty(who, "convite_time", ReadGameClock());
-    
-    // === TARGET COM PROTEÇÃO ===
-    var targ := Target(who, TGTOPT_CHECK_LOS);
-    
-    if (targ)
-        if (targ.isa(POLCLASS_MOBILE) && !targ.npctemplate && targ.connected)
-            ConvidarJogador(who, targ, nome, cargo);
-        else
-            SendSysMessage(who, "Voce precisa clicar em um jogador online.");
-        endif
-    else
-        SendSysMessage(who, "Targeting cancelado.");
-    endif
-    
-    // === SEMPRE LIMPAR DADOS TEMPORÁRIOS ===
-    EraseObjProperty(who, "convite_nome");
-    EraseObjProperty(who, "convite_cargo");
-    EraseObjProperty(who, "convite_time");
-    
-    return 1;
-endfunction
-
-function ConvidarJogador(lider, jogador, nome_personalizado, cargo_rp)
-    // Verificações básicas
-    if (!lider || !jogador)
-        return 0;
-    endif
-    
-    var guild := lider.guild;
-    
-    if (!guild)
-        SendSysMessage(lider, "Erro: Voce nao esta em uma faccao.");
-        return 0;
-    endif
-    
-    if (jogador.guild)
-        SendSysMessage(lider, jogador.name + " ja esta em uma faccao.");
-        return 0;
-    endif
-    
-    if (jogador == lider)
-        SendSysMessage(lider, "Voce nao pode convidar a si mesmo.");
-        return 0;
-    endif
-    
-    var guild_name := guild.GetProp(FACTION_PROP_NAME);
-    if (!guild_name) guild_name := guild.guildname; endif
-    
-    // Obter nome personalizado do líder
-    var lider_display_name := lider.name; // Fallback padrão
-    var lider_dados := GetObjProperty(lider, "dados_convite");
-    if (lider_dados && lider_dados.nome_personalizado)
-        lider_display_name := lider_dados.nome_personalizado;
-    endif
-    
-    // Mostrar gump de confirmação para o jogador convidado
-    var aceita := MostrarGumpConfirmacao(jogador, guild_name, nome_personalizado, cargo_rp, lider_display_name);
-    
-    if (aceita)
-        // === USAR FUNÇÃO PADRÃO DE GUILDA ===
-        var result := guild.AddMember(jogador);
-        if (result)
-            SendSysMessage(lider, "Jogador " + jogador.name + " aceitou o convite!");
-            SendSysMessage(jogador, "Voce foi aceito na faccao " + guild_name + "!");
-            
-            // Salvar dados personalizados do convite
-            var convite_data := struct{};
-            convite_data.+nome_personalizado := nome_personalizado;
-            convite_data.+cargo_rp := cargo_rp;
-            convite_data.+data_convite := POLCore().systime;
-            convite_data.+convidado_por := lider.name;
-            
-            SetObjProperty(jogador, "dados_convite", convite_data);
-            
-            SendSysMessage(lider, "Nome registrado: " + nome_personalizado);
-            SendSysMessage(lider, "Cargo RP registrado: " + cargo_rp);
-            
-            return 1;
-        else
-            SendSysMessage(lider, "Erro ao adicionar jogador a faccao.");
-            return 0;
-        endif
-    else
-        SendSysMessage(lider, "Jogador " + jogador.name + " recusou o convite.");
-        SendSysMessage(jogador, "Voce recusou o convite da faccao.");
+        return PrepararConvite(who, nome_convidado, cargo_rp);
     endif
     
     return 1;
 endfunction
 
 function MostrarGumpConfirmacao(jogador, guild_name, nome_personalizado, cargo_rp, lider_name)
-    // === FECHAR GUMPS ANTERIORES ===
     CloseGump(jogador, 0x12346, 0);
     
     var gump := GFCreateGump();
     GFSetId(gump, 0x12346);
     
-    // Background
     GFResizePic(gump, 0, 0, 9200, 400, 250);
     GFResizePic(gump, 15, 15, 9350, 370, 220);
-    
-    // Título
     GFTextMid(gump, 15, 25, 370, 53, "Convite para Facção");
     
-    // Informações do convite
     var y := 60;
-    GFTextLine(gump, 30, y, 1153, "Voce foi convidado para a faccao: " + guild_name);
+    GFTextLine(gump, 30, y, 1153, "Você foi convidado para a facção: " + guild_name);
     y += 25;
     GFTextLine(gump, 30, y, 1153, "Por: " + lider_name);
     y += 35;
     
-    GFTextLine(gump, 30, y, 63, "Nome que voce tera: " + nome_personalizado);
+    GFTextLine(gump, 30, y, 63, "Nome que você terá: " + nome_personalizado);
     y += 25;
     GFTextLine(gump, 30, y, 63, "Cargo RP: " + cargo_rp);
     y += 40;
     
-    GFTextLine(gump, 30, y, 1153, "Voce aceita este convite?");
+    GFTextLine(gump, 30, y, 1153, "Você aceita este convite?");
     y += 30;
     
-    // Botões
     GFAddButton(gump, 80, y, 4005, 4006, GF_CLOSE_BTN, 1);
     GFTextLine(gump, 120, y+2, 1153, "Aceitar");
     
     GFAddButton(gump, 220, y, 4017, 4018, GF_CLOSE_BTN, 0);
     GFTextLine(gump, 260, y+2, 1153, "Recusar");
     
-    // === ENVIAR GUMP ===
     var input := GFSendGump(jogador, gump);
     
     if (!input)
@@ -271,3 +167,87 @@ function MostrarGumpConfirmacao(jogador, guild_name, nome_personalizado, cargo_r
     
     return (input[0] == 1);
 endfunction
+
+
+// =======================================
+// Funções de Lógica e Ação
+// =======================================
+
+function PrepararConvite(who, nome, cargo)
+    SendSysMessage(who, "Convite preparado para: " + nome + " como " + cargo);
+    SendSysMessage(who, "Agora clique no jogador que deseja convidar.");
+    
+    SetObjProperty(who, "convite_nome", nome);
+    SetObjProperty(who, "convite_cargo", cargo);
+    
+    var targ := Target(who, TGTOPT_CHECK_LOS);
+    
+    if (targ)
+        if (targ.isA(POLCLASS_MOBILE) && !targ.npctemplate && targ.connected)
+            ConvidarJogador(who, targ, nome, cargo);
+        else
+            SendSysMessage(who, "Você precisa clicar em um jogador online.");
+        endif
+    else
+        SendSysMessage(who, "Targeting cancelado.");
+    endif
+    
+    EraseObjProperty(who, "convite_nome");
+    EraseObjProperty(who, "convite_cargo");
+    
+    return 1;
+endfunction
+
+function ConvidarJogador(lider, jogador, nome_personalizado, cargo_rp)
+    if (!lider || !jogador) return 0; endif
+    
+    var guild := lider.guild;
+    if (!guild)
+        SendSysMessage(lider, "Erro: Você não está em uma facção.");
+        return 0;
+    endif
+    
+    if (jogador.guild)
+        SendSysMessage(lider, jogador.name + " já está em uma facção.");
+        return 0;
+    endif
+    
+    if (jogador == lider)
+        SendSysMessage(lider, "Você não pode convidar a si mesmo.");
+        return 0;
+    endif
+    
+    var guild_name := guild.GetProp("name") ?: guild.guildname;
+    
+    var lider_display_name := GetObjProperty(lider, "dados_convite").nome_personalizado ?: lider.name;
+    
+    var aceita := MostrarGumpConfirmacao(jogador, guild_name, nome_personalizado, cargo_rp, lider_display_name);
+    
+    if (aceita)
+        if (guild.AddMember(jogador))
+            SendSysMessage(lider, "Jogador " + jogador.name + " aceitou o convite!");
+            SendSysMessage(jogador, "Você foi aceito na facção " + guild_name + "!");
+            
+            var convite_data := struct{
+                "nome_personalizado" := nome_personalizado,
+                "cargo_rp" := cargo_rp,
+                "data_convite" := POLCore().systime,
+                "convidado_por" := lider.name
+            };
+            SetObjProperty(jogador, "dados_convite", convite_data);
+            
+            SendSysMessage(lider, "Nome registrado: " + nome_personalizado);
+            SendSysMessage(lider, "Cargo RP registrado: " + cargo_rp);
+            return 1;
+        else
+            SendSysMessage(lider, "Erro ao adicionar jogador à facção.");
+            return 0;
+        endif
+    else
+        SendSysMessage(lider, "Jogador " + jogador.name + " recusou o convite.");
+        SendSysMessage(jogador, "Você recusou o convite.");
+    endif
+    
+    return 1;
+endfunction
+

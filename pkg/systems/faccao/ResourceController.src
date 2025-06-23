@@ -38,20 +38,24 @@ function RegisterProcessFast()
 endfunction
 
 program ResourceController()
-    LogInfo("ResourceController", "=== INICIANDO RESOURCECONTROLLER ===");
-    LogInfo("ResourceController", "PID do processo atual: " + GetPid());
+    LogInfo("ResourceController", "=== INICIANDO RESOURCECONTROLLER (PID: " + GetPid() + ") ===");
 
-    ForcedSystemCleanup(); // Limpa PIDs antigos e locks
+    // ========================================================
+    // >>>>> INÍCIO DA MUDANÇA <<<<<
+    // ========================================================
+    // REMOVIDO: ForcedSystemCleanup(); 
+    // O sistema de registro com heartbeat já lida com processos zumbis.
+    // Esta chamada estava causando uma condição de corrida com o start.src.
 
-    var reg_status := RegisterProcessFast();
-    if (reg_status == 0)
-        LogWarning("ResourceController", "Abortando inicialização pois outra instância está ativa (detectado pelo process_registry).");
-        return 0;
-    elseif (reg_status == error)
-        LogCritical("ResourceController", "Abortando inicialização devido a erro crítico no registro do processo.");
+    // Tenta se registrar. Se falhar, encerra.
+    if (!RegisterProcessFast())
         return 0;
     endif
+    // ========================================================
+    // >>>>> FIM DA MUDANÇA <<<<<
+    // ========================================================
 
+    // O código abaixo permanece o mesmo
     var controller_pid := GetPid();
     var pid_result := SetGlobalProperty("ResourceControllerPID", controller_pid);
     if (pid_result == error)
@@ -73,59 +77,51 @@ program ResourceController()
     LoadAllTerritories();
     LogInfo("ResourceController", "Territórios carregados: " + next_territory_checks.size());
 
-    // Exibir lista de territórios encontrados (opcional, pode ser removido se poluir muito o log)
-    // foreach territory_name_log_init in (next_territory_checks.keys())
-    //     LogInfo("ResourceController_Init", "  - Território agendado inicialmente: " + territory_name_log_init);
-    //     SleepMS(2);
-    // endforeach
+    // Constantes do loop principal
+    const CHECK_INTERVAL := 30;
+    const RELOAD_INTERVAL := 300;
+    
+    var last_reload_time := polcore().systime;
 
-    var check_interval := 30; // Segundos base para o ciclo
-    var last_event_check_time := 0;
-    var event_check_interval := 15; // Verificar eventos a cada 15 segundos
-    var last_reload_check_time := polcore().systime;
-    var reload_interval := 300; // Recarregar territórios a cada 5 minutos
+    while (1)
+        var loop_start_time := polcore().systime;
+        UpdateProcessHeartbeat("ResourceController");
 
-    while(1)
-        var current_time_loop_start := polcore().systime;
-        UpdateProcessHeartbeat("ResourceController"); // Envia heartbeat para o registro de processos
-        LogInfo("ResourceController_Loop", "Ciclo iniciado. PID: " + GetPid() + ". Próximo Heartbeat em " + check_interval + "s (aprox).");
+        // 1. Processar eventos pendentes primeiro
+        ProcessPendingEvents();
 
-        // 1. VERIFICAR SE DEVEMOS RECARREGAR A LISTA DE TERRITÓRIOS
-        if (current_time_loop_start - last_reload_check_time > reload_interval)
-            LogInfo("ResourceController_Loop", "Recarregando lista de territórios...");
-            LoadAllTerritories(); // Recarrega e reagenda territórios
-            last_reload_check_time := current_time_loop_start;
-            LogInfo("ResourceController_Loop", "Lista de territórios atualizada. Total agendado: " + next_territory_checks.size());
+        // 2. Recarregar lista de territórios periodicamente
+        if (loop_start_time - last_reload_time > RELOAD_INTERVAL)
+            LogInfo("ResourceController_Loop", "Recarregando lista completa de territórios...");
+            LoadAllTerritories();
+            last_reload_time := loop_start_time;
         endif
 
-        // 2. VERIFICAR E PROCESSAR EVENTOS PENDENTES
-        if (current_time_loop_start - last_event_check_time >= event_check_interval)
-            ProcessPendingEvents(); // Processa eventos como 'created', 'deleted', 'caravan_activated'
-            last_event_check_time := current_time_loop_start;
+        // 3. Otimização
+        if (next_territory_checks.size() == 0)
+            LogDebug("ResourceController_Loop", "Nenhum território agendado. Aguardando " + CHECK_INTERVAL + "s.");
+            Sleep(CHECK_INTERVAL);
+            continue;
         endif
-
-        // 3. Obter territórios que estão na hora de gerar recursos
-        var territories_to_process_now := GetTerritoriesDueForCheck(current_time_loop_start);
-        LogDebug("ResourceController_Loop", territories_to_process_now.size() + " territórios devidos para processamento de recursos neste ciclo.");
-
-        // 4. PROCESSAR CADA TERRITÓRIO DEVIDO
-        foreach territory_id_to_process in territories_to_process_now
-            LogDebug("ResourceController_Loop", "Processando geração de recursos para território ID: " + territory_id_to_process);
-            ProcessTerritory(territory_id_to_process, current_time_loop_start); // Gera recursos e reagenda
-            SleepMS(100); // Pequena pausa entre processamento de territórios para não sobrecarregar
-        endforeach
-
-        // 5. Calcular tempo de espera para o próximo ciclo do loop principal
-        // Isso tenta ser um pouco mais dinâmico para verificar mais cedo se houve processamento.
-        var time_for_next_due_territory_check := GetTimeForNextDue(current_time_loop_start, check_interval);
-        var wait_time_for_sleep := CInt(time_for_next_due_territory_check);
         
-        // Garantir um tempo mínimo e máximo de espera
-        if (wait_time_for_sleep < 1) wait_time_for_sleep := 1; endif;
-        if (wait_time_for_sleep > check_interval) wait_time_for_sleep := check_interval; endif;
+        // 4. Obter territórios devidos
+        var territories_to_process := GetTerritoriesDueForCheck(loop_start_time);
+        
+        if (territories_to_process.size() > 0)
+            LogInfo("ResourceController_Loop", territories_to_process.size() + " territórios prontos para gerar recursos.");
+            
+            // 5. Processar cada território
+            foreach territory_id in territories_to_process
+                ProcessTerritory(territory_id, loop_start_time);
+                SleepMS(150);
+            endforeach
+        endif
 
-        LogDebug("ResourceController_Loop", "Próxima verificação de território em " + wait_time_for_sleep + " segundos. Indo para Sleep.");
-        Sleep(wait_time_for_sleep);
+        // 6. Calcular tempo de espera
+        var wait_time := GetTimeForNextDue(loop_start_time, CHECK_INTERVAL);
+        
+        LogDebug("ResourceController_Loop", "Próxima verificação em " + wait_time + " segundos. Indo para Sleep.");
+        Sleep(wait_time);
     endwhile
 endprogram
 

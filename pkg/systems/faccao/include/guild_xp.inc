@@ -46,46 +46,57 @@ function GetKingdomLevels(guild_culture)
     var lower_culture := Lower(guild_culture);
     LogDebug("kingdom_levels", "GetKingdomLevels: Cultura em lowercase = '" + lower_culture + "'");
     
-    case (lower_culture)        "aigla":
+    case (lower_culture)
+        "aigla":
         "aiglanos":
         "aiglana":
         "saiglana":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Aigla levels");
             return GetAiglaLevels();
+
         "leste":
         "povos_do_leste":
         "sleste":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Leste levels");
             return GetLesteLevels();
+
         "haroloth":
+        "har'oloth":  // <-- CORREÇÃO APLICADA AQUI
         "drow":
         "sharoloth":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Haroloth levels");
             return GetHarolothLevels();
+
         "bjorske":
         "bjornske":
         "sbjorske":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Bjorske levels");
             return GetBjorskeLevels();
+
         "aluriel":
         "elfo":
         "saluriel":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Aluriel levels");
             return GetAlurielLevels();
+
         "polkinea":
         "polski":
         "spolkinea":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Polkinea levels");
             return GetPolkineaLevels();
+
         "baduran":
         "anao":
         "sbaduran":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Baduran levels");
-            return GetBaduranLevels();"gulthrak":
+            return GetBaduranLevels();
+
+        "gulthrak":
         "sgulthrak":
         "orc":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Gulthrak levels");
             return GetGulthrakLevels();
+
         default:
             LogDebug("kingdom_levels", "GetKingdomLevels: FALLBACK - Usando Generic levels para cultura '" + guild_culture + "'");
             return GetGenericLevels();
@@ -783,4 +794,51 @@ function CapitalizeFirst(text)
     if (text.size() > 1)
         rest := text[2, text.size()];    endif
       return Upper(first_char) + Lower(rest);
+endfunction
+
+
+/*
+ * ResetKingdomLevelAndXP(guild_obj)
+ * 
+ * Purpose: Reseta completamente o nível e o XP de uma facção que perdeu seu último território.
+ *          Ao zerar o nível e o XP, a facção retorna a um estado "pré-nível 1",
+ *          precisando acumular o XP necessário para atingir o Nível 1 novamente.
+ *          Notifica os membros sobre a dissolução do status de Reino.
+ * Parameters:
+ *   guild_obj - A referência do objeto da guilda a ser resetada.
+ * Return:
+ *   1 para sucesso, 0 para falha.
+ */
+function ResetKingdomLevelAndXP(guild_obj)
+    if (!guild_obj)
+        LogError("guild_xp", "ResetKingdomLevelAndXP chamado com objeto de guilda nulo.");
+        return 0;
+    endif
+
+    var guild_name := SafeGetGuildName(guild_obj);
+    LogInfo("guild_xp", "!!! RESET DE REINO !!! A facção '" + guild_name + "' perdeu seu último território. Nível e XP serão zerados.");
+
+    // Zerar as propriedades de progresso.
+    // Setar GUILD_LEVEL_PROP para 0 efetivamente coloca a facção em um estado
+    // onde ela precisa alcançar o XP do Nível 1 para ser considerada ativa novamente.
+    SafeSetGuildProperty(guild_obj, GUILD_XP_PROP, 0);
+    SafeSetGuildProperty(guild_obj, GUILD_LEVEL_PROP, 0);
+
+    // Limpar o histórico de XP para um novo começo
+    SafeSetGuildProperty(guild_obj, GUILD_XP_HISTORY_PROP, array{});
+
+    // Notificar todos os membros online sobre a catástrofe
+    var message := "Seu Reino, " + guild_name + ", perdeu seu último território e foi dissolvido! Todo o progresso foi perdido. É hora de recomeçar do Nível 1!";
+    
+    foreach member in (guild_obj.members)
+        if (member.connected)
+            PlaySoundEffect(member, 0x1F3); // Som de falha
+            SendSysMessage(member, message, 3, 38); // Vermelho
+        endif
+        sleepms(2);
+    endforeach
+    
+    LogToFile("faccoes.log", "REINO DISSOLVIDO: " + guild_name + " (GuildID: " + guild_obj.guildid + ") perdeu seu último território. XP e Nível zerados.");
+    
+    return 1;
 endfunction

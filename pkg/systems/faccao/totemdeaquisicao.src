@@ -98,20 +98,43 @@ program TotemDeAquisicao(who, totem)
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction_in_datafile);
         return 0;
     endif;
-      var player_faction_name := GetPlayerFaction(who); 
+    
+    var player_faction_name := GetPlayerFaction(who); 
     if (!player_faction_name)
         player_faction_name := "Desconhecido"; 
         LogWarning("faccao", "TotemDeAquisicao: Não foi possível obter o nome da facção do jogador " + who.name + ". Usando 'Desconhecido'.");
     endif;
     LogDebug("faccao", "TotemDeAquisicao: Facção do jogador obtida: " + player_faction_name);
-      // Seleção de Cultura do Reino
-    var cultura_escolhida := SelectKingdomCulture(who);
-    if (!cultura_escolhida)
-        SendSysMessage(who, "Você cancelou a seleção de cultura. Aquisição de território cancelada.");
-        return 0;
-    endif;
     
-    LogDebug("faccao", "TotemDeAquisicao: Cultura escolhida para o reino: " + cultura_escolhida);      // Confirmação de compra do estandarte
+    // ========================================================
+    // >>>>> LÓGICA DE CULTURA CORRIGIDA <<<<<
+    // ========================================================
+    var cultura_final_reino := "";
+    var cultura_existente := SafeGetGuildProperty(guild, "culture", "");
+
+    if (cultura_existente && cultura_existente != "")
+        LogInfo("faccao", "TotemDeAquisicao: Usando cultura já existente do reino: " + cultura_existente);
+        cultura_final_reino := cultura_existente;
+    else
+        // A facção não tem cultura, então é a primeira conquista de território. Perguntar.
+        LogInfo("faccao", "TotemDeAquisicao: Nenhuma cultura encontrada para o reino. Solicitando seleção do líder.");
+        var cultura_escolhida_agora := SelectKingdomCulture(who);
+        
+        if (!cultura_escolhida_agora)
+            SendSysMessage(who, "Você cancelou a seleção de cultura. Aquisição de território cancelada.");
+            return 0;
+        endif;
+        
+        // Salva a cultura escolhida na CProp da guilda para uso futuro
+        guild.SetProp("culture", cultura_escolhida_agora);
+        LogInfo("faccao", "TotemDeAquisicao: Cultura '" + cultura_escolhida_agora + "' definida pela primeira vez para o reino " + player_faction_name);
+        cultura_final_reino := cultura_escolhida_agora;
+    endif
+    // ========================================================
+
+    LogDebug("faccao", "TotemDeAquisicao: Cultura final para o reino: " + cultura_final_reino);
+    
+    // Confirmação de compra do estandarte
     var estandarte_escolhido := 0;
     var compra_banner := ConfirmBannerPurchase(who);
     
@@ -131,37 +154,10 @@ program TotemDeAquisicao(who, totem)
     endif
     
     LogDebug("faccao", "TotemDeAquisicao: Estandarte escolhido para o reino: " + estandarte_escolhido);
-      LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
-    var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name);
-    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);    // Definir a cultura na guild
-    // LogDebug("faccao", "TotemDeAquisicao: Definindo cultura '" + cultura_escolhida + "' na guild " + guild.guildid);    SendSysMessage(who, "DEBUG: Valor de cultura_escolhida recebido: '" + cultura_escolhida + "'");    // Converter o enum para string que o sistema XP entende
-    var cultura_string := "";
-    case (cultura_escolhida)
-        "Aiglana":
-            cultura_string := "aiglana";
-        "Har'oloth":
-            cultura_string := "haroloth";
-        "Povos do Leste":
-            cultura_string := "leste";
-        "Björska":
-            cultura_string := "bjorske";
-        "Alüriel":
-            cultura_string := "aluriel";
-        "Badûran":
-            cultura_string := "baduran";
-        "Gulthrak":
-            cultura_string := "gulthrak";
-        "Polkinea":
-            cultura_string := "polkinea";
-        default:
-            cultura_string := "baduran";
-    endcase    // Salvar cultura na guild
-    var set_culture_result := guild.SetProp("culture", cultura_string);
     
-    if (set_culture_result != error)
-        // Verificar se foi salva corretamente
-        var cultura_verificacao := guild.GetProp("culture");
-    endif
+    LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território '" + rect_name + "' (ID: " + territory_id + ") para '" + player_faction_name + "'");
+    var set_faction_result := TM_SetTerritoryFaction(territory_id, player_faction_name);
+    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + set_faction_result);    
     
     LogDebug("faccao", "TotemDeAquisicao: Adicionando território à CProp 'territories' da guilda " + guild.guildid);
     var territories_list := guild.GetProp("territories");
@@ -209,9 +205,10 @@ program TotemDeAquisicao(who, totem)
         endif;
     else
         LogInfo("faccao_totem", "Território ID '" + territory_id + "' (Nome: '" + rect_name + "') já existe na lista da guilda " + guild.guildid + ". Não foi adicionado novamente.");
-    endif;    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território '" + rect_name + "' (ID: " + territory_id + ")");
-    // CORREÇÃO: Removido 'totem' da chamada, pois CreateTerritoryMonument foi ajustada para não recebê-lo.
-    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, cultura_escolhida, estandarte_escolhido);
+    endif;
+    
+    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território '" + rect_name + "' (ID: " + territory_id + ")");
+    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, cultura_final_reino, estandarte_escolhido);
     LogDebug("faccao", "TotemDeAquisicao: Monumento criado: " + (monument ? "Sim, serial=" + monument.serial : "Não"));
     
     LogDebug("faccao", "TotemDeAquisicao: Configurando recursos para o território '" + rect_name + "'");
@@ -252,13 +249,14 @@ program TotemDeAquisicao(who, totem)
     SendSysMessage(who, "O território começará a produzir recursos em breve.");
     PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + player_faction_name + "*");
 
- // Sincronizar lista de territórios
+    // Sincronizar lista de territórios
     SyncGuildTerritories(player_faction_name);
     
     LogInfo("faccao", "TotemDeAquisicao: Território '" + rect_name + "' (ID: " + territory_id + ") reivindicado com sucesso por " + player_faction_name);
     
     return 1;
 endprogram
+
 
 /**
  * Purpose: Exibe um gump para o líder selecionar a cultura do reino

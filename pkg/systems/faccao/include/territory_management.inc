@@ -11,6 +11,7 @@ include ":datafile:datafile";
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
+include ":faccao:include/guild_xp";
 
 // =======================================
 // Funções de Busca Essenciais
@@ -152,63 +153,25 @@ function TM_IsMobileInTerritory(mobile, territory_id_or_name)
 endfunction
 
 
-// =======================================
-// Funções de Modificação Básicas
-// =======================================
-/*
- * TM_SetTerritoryFaction(territory_id_or_name, faction_name)
- *
- * Purpose: Define a facção controladora de um território
- * Parameters:
- *   territory_id_or_name - ID ou nome do território
- *   faction_name - Nome da facção
- * Return:
- *   1 para sucesso, 0 para falha
- */
 function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
-    var territory_elem := TM_FindTerritory(territory_id_or_name);    if (!territory_elem)
+    var territory_elem := TM_FindTerritory(territory_id_or_name);
+    if (!territory_elem)
         LogError("territorio", "TM_SetTerritoryFaction: Território não encontrado: " + territory_id_or_name);
         return 0;
     endif
     
-    // Obter a facção antiga antes de mudar
+    // Obter a facção antiga antes de mudar (para logs e referência)
     var old_faction := GetElementProp(territory_elem, TERRITORY_FACTION_PROP);
     if (!old_faction)
-        old_faction := GetElementProp(territory_elem, LEGACY_FACTION_PROP); // Tentar propriedade legada
+        old_faction := GetElementProp(territory_elem, LEGACY_FACTION_PROP);
     endif
     
-    // Definir a propriedade principal
+    // Definir a propriedade principal no datafile do território
     var result := SetTerritoryFaction(territory_elem, faction_name);
     
-    LogInfo("territorio", "Facção do território " + territory_id_or_name + " definida para " + faction_name);
+    LogInfo("territorio", "Facção do território " + territory_id_or_name + " definida de '" + (old_faction ? old_faction : "N/A") + "' para '" + faction_name + "'");
     
-    // --- SINCRONIZAÇÃO AUTOMÁTICA DA CPROP TERRITORIES ---
-    // Atualizar CProp da guilda ANTIGA (remover o território)
-    if (old_faction && old_faction != DEFAULT_FACTION)
-        LogDebug("TM_SetTerritoryFaction", "Removendo território da lista da facção antiga: " + old_faction);
-        var old_guild_id := FindGuildByName(old_faction);
-        if (old_guild_id)
-            var old_guild_obj := FindGuild(old_guild_id);
-            if (old_guild_obj)
-                var old_territories := old_guild_obj.GetProp("territories");
-                if (old_territories && TypeOf(old_territories) == "Array")
-                    var new_old_territories := array{};
-                    foreach terr in old_territories
-                        // Adicionar apenas se não for este território
-                        if (CStr(terr) != CStr(territory_id_or_name))
-                            new_old_territories.append(terr);
-                        endif
-                        sleepms(2);
-                    endforeach
-                    
-                    old_guild_obj.SetProp("territories", new_old_territories);
-                    LogDebug("TM_SetTerritoryFaction", "Território removido da facção " + old_faction + ". Territórios restantes: " + new_old_territories.size());
-                endif
-            endif
-        endif
-    endif
-
-    // Atualizar CProp da guilda NOVA (adicionar o território)
+    // Adicionar o território à lista da NOVA facção
     if (faction_name && faction_name != DEFAULT_FACTION)
         LogDebug("TM_SetTerritoryFaction", "Adicionando território à lista da nova facção: " + faction_name);
         var new_guild_id := FindGuildByName(faction_name);
@@ -220,14 +183,21 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
                     new_territories := array{};
                 endif
                 
-                // Verificar se já não existe na lista
+                var cleaned_new_territories := array{};
+                foreach terr in new_territories
+                    if(TypeOf(terr) == "String" && terr != "")
+                        cleaned_new_territories.append(terr);
+                    endif
+                endforeach
+                new_territories := cleaned_new_territories;
+
                 var exists := 0;
                 foreach terr in new_territories
                     if (CStr(terr) == CStr(territory_id_or_name))
                         exists := 1;
                         break;
                     endif
-                    sleepms(2);
+                    sleepms(1);
                 endforeach
                 
                 if (!exists)
@@ -235,12 +205,11 @@ function TM_SetTerritoryFaction(territory_id_or_name, faction_name)
                     new_guild_obj.SetProp("territories", new_territories);
                     LogDebug("TM_SetTerritoryFaction", "Território adicionado à facção " + faction_name + ". Total de territórios: " + new_territories.size());
                 else
-                    LogDebug("TM_SetTerritoryFaction", "Território já existe na lista da facção " + faction_name);
+                    LogDebug("TM_SetTerritoryFaction", "Território já existe na lista da facção " + faction_name + ". Nenhuma alteração necessária na lista.");
                 endif
             endif
         endif
     endif
-    // --- FIM DA SINCRONIZAÇÃO ---
     
     return result;
 endfunction
@@ -1337,76 +1306,74 @@ endfunction
 /*
  * TM_RemoveTerritoryFromGuilds(territory_id, territory_name := "")
  *
- * Purpose: Remove um território das listas de territórios de todas as guildas
+ * Purpose: Remove um território das listas de territórios de todas as guildas.
+ *          Esta função agora também aciona o reset de nível e XP da guilda
+ *          se o território removido for o último que ela possuía.
+ *          VERSÃO OTIMIZADA: Não varre todas as guildas.
+ *
  * Parameters:
- *   territory_id - ID do território
- *   territory_name - Nome do território (opcional)
+ *   territory_id - ID do território a ser removido.
+ *   territory_name - Nome do território (opcional, para correspondência adicional).
  * Return:
- *   Número de guildas atualizadas
+ *   1 se a guilda foi atualizada com sucesso, 0 caso contrário.
  */
 function TM_RemoveTerritoryFromGuilds(territory_id, territory_name := "")
-    var guilds_updated := 0;
-    var guilds := ListGuilds();
-    
-    foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
-        if (!guild)
-            continue;
-        endif
-        
-       var territories := guild.GetProp("territories");
-if (!territories || territories == error || TypeOf(territories) != "Array")
-    territories := array{};
-endif
-
-// Garantir que seja um array limpo
-var cleaned_territories := array{};
-foreach terr in territories
-    // Apenas adicionar itens válidos
-    if (TypeOf(terr) == "String" && terr != "")
-        cleaned_territories.append(terr);
+    // 1. Descobrir a qual facção o território pertence ANTES de remover
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (!territory_info)
+        LogWarning("TM_RemoveTerritory", "Não foi possível encontrar informações para o território ID '" + territory_id + "'. Impossível remover da guilda.");
+        return 0;
     endif
-    sleepms(2);
-endforeach
-territories := cleaned_territories;
-        if (!territories || typeof(territories) != "Array")
-            continue;
-        endif
-        
-        var changed := 0;
-        var new_territories := array{};
-        
-        foreach terr in territories
-            // Verificar diferentes formatos de comparação (nome, ID, estrutura)
-            var skip := 0;
-            
-            if (typeof(terr) == "String")
-                if (terr == territory_id || (territory_name && terr == territory_name))
-                    skip := 1;
-                endif
-            elseif (typeof(terr) == "Struct")
-                if ((terr.id && terr.id == territory_id) || 
-                    (territory_name && terr.name && terr.name == territory_name))
-                    skip := 1;
-                endif
-            endif
-            
-            if (!skip)
-                new_territories.append(terr);
-            else
-                changed := 1;
-            endif
-        endforeach
-        
-        if (changed)
-            guild.SetProp("territories", new_territories);
-            guilds_updated += 1;
-        endif
-        
-        sleepms(2);
-    endforeach
+    var faction_name := territory_info.faction;
+
+    // Se o território já é Selvagem, não há nada a fazer.
+    if (!faction_name || faction_name == DEFAULT_FACTION)
+        LogInfo("TM_RemoveTerritory", "Território '" + territory_id + "' já é Selvagem. Nenhuma guilda para atualizar.");
+        return 1;
+    endif
     
-    return guilds_updated;
+    // 2. Encontrar a guilda específica da facção
+    var guild := FindGuild(FindGuildByName(faction_name));
+    if (!guild)
+        LogError("TM_RemoveTerritory", "Guilda para a facção '" + faction_name + "' não encontrada. Impossível remover o território da lista.");
+        return 0;
+    endif
+    
+    // 3. Modificar a lista de territórios da guilda específica
+    var territories := guild.GetProp("territories");
+    if (!territories || TypeOf(territories) != "Array")
+        LogWarning("TM_RemoveTerritory", "Guilda '" + faction_name + "' não tinha uma CProp 'territories' válida. Nada a fazer.");
+        return 1; // Não é um erro, apenas não havia o que remover.
+    endif
+
+    var new_territories := array{};
+    var changed := 0;
+
+    foreach terr in territories
+        if (TypeOf(terr) == "String" && (terr == territory_id || (territory_name && terr == territory_name)))
+            changed := 1;
+        else
+            new_territories.append(terr);
+        endif
+    endforeach
+
+    if (changed)
+        LogInfo("TM_RemoveTerritory", "Removendo território '" + territory_id + "' da guilda '" + faction_name + "'.");
+        guild.SetProp("territories", new_territories);
+        
+        // ========================================================
+        // >>>>> LÓGICA DE RESET DO REINO <<<<<
+        // ========================================================
+        if (new_territories.size() == 0)
+            LogWarning("TM_RemoveTerritory", "ÚLTIMO TERRITÓRIO REMOVIDO! A facção '" + faction_name + "' foi dissolvida. Acionando reset do reino...");
+            ResetKingdomLevelAndXP(guild); 
+        endif
+        // ========================================================
+    else
+        LogWarning("TM_RemoveTerritory", "O território '" + territory_id + "' deveria estar na lista da guilda '" + faction_name + "', mas não foi encontrado para remoção.");
+    endif
+
+    return 1;
 endfunction
 
 
@@ -2123,4 +2090,53 @@ function GetDimensionsForLevel(level)
         5: return TERRITORY_DIMS_LEVEL_5;
         default: return 0;
     endcase
+endfunction
+
+
+/*
+ * TM_RevokeTerritory(territory_id, who := 0)
+ *
+ * Purpose: Revoga o controle de um território, retornando-o ao estado "Selvagem".
+ *          Esta função centraliza a lógica de limpeza de objetos e a verificação
+ *          de reset do reino caso este seja o último território.
+ * Parameters:
+ *   territory_id - O ID do território a ser revogado.
+ *   who - O jogador/GM que está executando a ação (para mensagens).
+ * Return:
+ *   1 para sucesso, 0 para falha.
+ */
+function TM_RevokeTerritory(territory_id, who := 0)
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (!territory_info)
+        if (who) SendSysMessage(who, "Erro: Território com ID " + territory_id + " não encontrado."); endif
+        LogError("territorio", "TM_RevokeTerritory: Falha ao encontrar território com ID " + territory_id);
+        return 0;
+    endif
+
+    var old_faction_name := territory_info.faction;
+    if (!old_faction_name || old_faction_name == DEFAULT_FACTION)
+        if (who) SendSysMessage(who, "Este território já é Selvagem."); endif
+        return 1; // Não é um erro, a ação já foi cumprida.
+    endif
+    
+    // 1. Remover o território da lista da guilda antiga e acionar o reset se for o último.
+    TM_RemoveTerritoryFromGuilds(territory_id, territory_info.name);
+    
+    // 2. Destruir os objetos físicos associados à facção antiga.
+    TM_DeleteTerritoryObjects(territory_id, old_faction_name);
+    
+    // 3. Mudar a facção do território para "Selvagem" no datafile :architect:areas.
+    TM_SetTerritoryFaction(territory_id, DEFAULT_FACTION);
+    
+    LogInfo("territorio", "Território '" + territory_info.name + "' (ID: " + territory_id + ") foi revogado da facção '" + old_faction_name + "'.");
+    
+    // 4. Notificar os sistemas sobre a mudança.
+    TM_NotifyTerritoryChange(territory_id, "revoked", struct{ 
+        "name" := territory_info.name, 
+        "old_faction" := old_faction_name 
+    });
+
+    if (who) SendSysMessage(who, "O controle do território '" + territory_info.name + "' foi revogado com sucesso."); endif
+    
+    return 1;
 endfunction

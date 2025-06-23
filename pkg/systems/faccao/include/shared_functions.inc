@@ -3542,18 +3542,6 @@ function CleanDuplicateItems(container)
     return cleaned_count;
 endfunction
 
-
-/*
- * ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref_dummy)
- *
- * Calcula o total de recursos para TODOS os baús de uma facção específica
- * e sincroniza esse total com o datafile e CProps da guilda.
- * Também atualiza o cache individual de cada baú processado da facção.
- *
- * MODIFICADO PARA SER CHAMADO DE FORMA SÍNCRONA E ATUALIZAR TODOS OS BAÚS DA FACÇÃO.
- * A variável 'updates_pending_dict_ref_dummy' não é ativamente usada nesta versão,
- * mas mantida para compatibilidade caso o script process_recursos_updates.src ainda a passe.
- */
 exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref_dummy)
     // Marcar parâmetro como utilizado para evitar warning
     updates_pending_dict_ref_dummy := updates_pending_dict_ref_dummy;
@@ -3566,18 +3554,17 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
     LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Iniciando processamento agregado para facção '" + faction_name + "'.");
     var total_recursos_da_faccao := CreateEmptyResourceStruct();
     var baus_da_faccao_processados_neste_ciclo := 0;
-    var current_processing_timestamp := polcore().systime; // Usar um timestamp consistente para este ciclo
+    var current_processing_timestamp := polcore().systime;
 
     // Passo 1: Identificar todos os baús conhecidos desta facção
     var todos_os_baus_da_faccao := array{};
 
-    // Sub-Passo 1.1: Verificar baús registrados no datafile :faccao:seriais
+    // ... (toda a lógica de encontrar baús permanece a mesma) ...
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
     if (seriais_df)
-        // Formato Novo (elemento por territory_id)
         var all_territory_ids := seriais_df.keys();
         foreach terr_id_key in all_territory_ids
-            if (terr_id_key == "territorios") continue; endif; // Pular o elemento legado
+            if (terr_id_key == "territorios") continue; endif;
             var terr_elem := SafeFindElement(seriais_df, terr_id_key);
             if (terr_elem)
                 var elem_faction_name := GetTerritoryFaction(terr_elem);
@@ -3587,7 +3574,6 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                         var bau_obj := SystemFindObjectBySerial(CInt(bau_serial));
                         if (bau_obj && !(bau_obj in todos_os_baus_da_faccao))
                             todos_os_baus_da_faccao.append(bau_obj);
-                            LogDebug("recursos_proc", "Baú " + bau_serial + " adicionado à lista (via datafile novo formato).");
                         endif;
                     endif;
                 endif;
@@ -3595,7 +3581,6 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
             SleepMS(1);
         endforeach;
 
-        // Formato Legado (dicionário "territorios")
         var territorios_seriais_legado := GetElementProp(seriais_df, "territorios", dictionary{});
         if (TypeOf(territorios_seriais_legado) == "Dictionary")
             foreach terr_id_legado in (territorios_seriais_legado.keys())
@@ -3604,33 +3589,28 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                     var bau_obj_legado := SystemFindObjectBySerial(CInt(info_legado.bau));
                     if (bau_obj_legado && !(bau_obj_legado in todos_os_baus_da_faccao))
                         todos_os_baus_da_faccao.append(bau_obj_legado);
-                        LogDebug("recursos_proc", "Baú " + info_legado.bau + " adicionado à lista (via datafile formato legado).");
                     endif;
                 endif;
                 SleepMS(1);
             endforeach;
         endif;
-    endif; // Closes if (seriais_df)
+    endif;
 
-    // Sub-Passo 1.2: Iterar sobre itens no mundo para encontrar baús da facção não registrados
     var items_scanned_world := 0;
-    var max_items_to_scan_world := 10000; // Ajustável
-    LogDebug("recursos_proc", "Procurando baús adicionais da facção '" + faction_name + "' no mundo...");
-    foreach item_no_mundo in EnumerateItemsInContainer(0) // 0 para root (mundo)
+    var max_items_to_scan_world := 10000;
+    foreach item_no_mundo in EnumerateItemsInContainer(0)
         items_scanned_world +=1;
         if (items_scanned_world > max_items_to_scan_world)
-            LogWarning("recursos_proc", "ProcessarRecursosDeUmaFaccao: Limite de scan no mundo ("+max_items_to_scan_world+") atingido para facção " + faction_name);
             break;
         endif;
 
-        if (item_no_mundo.objtype == 0xFF11) // ObjType do baú de doações
+        if (item_no_mundo.objtype == 0xFF11)
             var chest_faction_prop := GetObjProperty(item_no_mundo, OBJ_FACTION_PROP);
-            if (!chest_faction_prop) chest_faction_prop := GetObjectFaction(item_no_mundo); endif; // Fallback com função utilitária
+            if (!chest_faction_prop) chest_faction_prop := GetObjectFaction(item_no_mundo); endif;
 
             if (chest_faction_prop == faction_name)
                 if (!(item_no_mundo in todos_os_baus_da_faccao))
                     todos_os_baus_da_faccao.append(item_no_mundo);
-                    LogDebug("recursos_proc", "Baú " + item_no_mundo.serial + " adicionado à lista (encontrado no mundo).");
                 endif;
             endif;
         endif;
@@ -3638,16 +3618,16 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
     endforeach;
     LogInfo("recursos_proc", "Total de baús identificados para facção '" + faction_name + "': " + todos_os_baus_da_faccao.size());
 
-
     // Passo 2: Processar cada baú identificado
     if (todos_os_baus_da_faccao.size() == 0)
         LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nenhum baú encontrado para a facção '" + faction_name + "'. Sincronizando com zero no datafile.");
         // Se não há baús, o total de recursos é zero. Sincronizar isso.
         AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao);
         AtualizarPropriedadesGuildaRecursos(faction_name, total_recursos_da_faccao);
-        return 1;
+        return 1; // <--- MELHORIA ADICIONADA AQUI
     endif;
 
+    // ... (o resto da função permanece exatamente o mesmo) ...
     foreach bau_individual in todos_os_baus_da_faccao
         if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER))
             if (GetObjProperty(bau_individual, "being_processed_by_aggregator") && (current_processing_timestamp - CInt(GetObjProperty(bau_individual, "being_processed_by_aggregator")) < 60) )

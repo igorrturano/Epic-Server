@@ -556,53 +556,6 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
 endfunction
 
 
-
-function CancelarContratoCaravana(who, capital_territory_id, faction_name)
-    var guild_id := FindGuildByName(faction_name);
-    if (!guild_id)
-        SendSysMessage(who, "Erro: Guilda da facção '" + faction_name + "' não encontrada.");
-        LogError("caravana_cancela", "Guilda '" + faction_name + "' não encontrada ao tentar cancelar caravana para capital " + capital_territory_id);
-        return 0;
-    endif; 
-
-    var guild_obj := FindGuild(guild_id);
-
-    if (guild_obj)
-        var active_caravan_capital_id := CStr(guild_obj.GetProp("active_caravan_to_capital"));
-        var caravan_until := CInt(guild_obj.GetProp("caravan_next_payment_due")); 
-
-        if (active_caravan_capital_id == CStr(capital_territory_id) && caravan_until > polcore().systime)
-            if (YesNo(who, "Tem certeza que deseja cancelar o contrato da caravana para esta capital? Não haverá reembolso da semana/período atual."))
-                guild_obj.EraseProp("active_caravan_to_capital");
-                guild_obj.EraseProp("caravan_contract_start_time");
-                guild_obj.EraseProp("caravan_next_payment_due");
-                guild_obj.EraseProp("caravan_weekly_cost");
-
-                SendSysMessage(who, "Contrato da caravana cancelado com sucesso.");
-                LogInfo("caravana_cancela", "Facção " + faction_name + " cancelou contrato da caravana para capital " + capital_territory_id);
-                
-                var event_data_cancel := struct;
-                event_data_cancel.+faction := faction_name;
-                // A LINHA PROBLEMÁTICA FOI REMOVIDA DAQUI
-
-                TM_NotifyTerritoryChange(capital_territory_id, "caravan_deactivated", event_data_cancel);
-                return 1; 
-            else
-                SendSysMessage(who, "Cancelamento abortado.");
-                return 0; 
-            endif; 
-        else
-            SendSysMessage(who, "Nenhuma caravana ativa encontrada para esta capital ou o contrato já expirou.");
-            LogInfo("caravana_cancela", "Tentativa de cancelar caravana para " + capital_territory_id + " (facção " + faction_name + ") falhou: Nenhuma caravana ativa/válida. ID na prop: " + active_caravan_capital_id + ", Expira em: " + caravan_until);
-            return 0; 
-        endif; 
-    else
-        SendSysMessage(who, "Erro ao acessar dados da guilda.");
-        LogError("caravana_cancela", "Falha ao obter objeto da guilda para ID " + guild_id + " (facção " + faction_name + ") ao tentar cancelar caravana.");
-        return 0; 
-    endif; 
-endfunction
-
 function LeisGump(byref gump)
     GFResizePic(gump, 38, 60, 40266, 400, 502);
     GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Leis");
@@ -1782,89 +1735,49 @@ function ShowPermissionsManagementGump(who, faction_name)
 endfunction
 
 function RevogarTerritorioFaccao(who, territorio_info, old_faction)
-    // Extrair o ID e o Nome do struct recebido.
-    var territorio_id := territorio_info.id;
-    var territorio_nome := territorio_info.name;
+    // Lógica robusta para extrair ID e Nome do território.
+    var territorio_id := "";
+    var territorio_nome := "";
+    
+    if (TypeOf(territorio_info) == "Struct")
+        territorio_id := territorio_info.id;
+        territorio_nome := territorio_info.name;
+    elseif (TypeOf(territorio_info) == "String")
+        var temp_info := TM_GetTerritoryInfo(territorio_info);
+        if (temp_info)
+            territorio_id := temp_info.id;
+            territorio_nome := temp_info.name;
+        else
+            SendSysMessage(who, "Erro: O território '" + territorio_info + "' não foi encontrado.");
+            return 0;
+        endif
+    endif
 
     if (!territorio_id)
-        SendSysMessage(who, "Erro crítico: ID do território não encontrado. Ação cancelada.");
-        LogError("gestao_use", "RevogarTerritorioFaccao chamada sem ID de território.");
+        SendSysMessage(who, "Erro: Não foi possível identificar o território para revogação.");
         return 0;
     endif
 
-    // Obter o elemento do datafile usando o ID. Esta é a etapa que faltava.
-    var elem := TM_FindTerritory(territorio_id);
-    if (!elem)
-        SendSysMessage(who, "Erro crítico: Não foi possível encontrar os dados do território no sistema. Ação cancelada.");
-        LogError("gestao_use", "RevogarTerritorioFaccao: Falha ao encontrar elemento para ID " + territorio_id);
-        return 0;
-    endif
-
-    if (YesNo(who, "Tem certeza que deseja revogar o controle de " + old_faction + " sobre o território '" + territorio_nome + "'?"))
+    if (YesNo(who, "Tem certeza que deseja revogar o controle de '" + old_faction + "' sobre o território '" + territorio_nome + "'?"))
+        SendSysMessage(who, "Processando revogação de " + territorio_nome + "...");
         
-        SendSysMessage(who, "Processando revogação...");
+        // A função TM_RevokeTerritory agora centraliza toda a lógica necessária.
+        // Ela vai destruir os objetos, mudar a facção para "Selvagem" no datafile,
+        // E, o mais importante, chamar TM_RemoveTerritoryFromGuilds, que por sua vez
+        // verificará se é o último território e chamará ResetKingdomLevelAndXP.
+        var resultado := TM_RevokeTerritory(territorio_id, who);
         
-        // PASSO 1: Destruir os objetos físicos.
-        var objetos_removidos := TM_DeleteTerritoryObjects(territorio_id, old_faction);
-        SendSysMessage(who, "Objetos do território removidos: " + objetos_removidos);
-        
-        // PASSO 2: Atualizar propriedades no datafile usando o 'elem' que acabamos de buscar.
-        SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-        SetElementProp(elem, LEGACY_FACTION_PROP, DEFAULT_FACTION);
-        elem.EraseProp("NextResourceTime");
-        
-        // PASSO 3: Remover da lista de territórios da guilda.
-        var fac_guildid := FindGuildByName(old_faction);
-        if (fac_guildid)
-            var guild := FindGuild(fac_guildid);
-            if (guild)
-                var territories := guild.GetProp("territories");
-                if (!territories || territories == error || TypeOf(territories) != "Array")
-                    territories := array{};
-                endif
-               
-                var cleaned_territories := array{};
-                foreach terr in territories
-                    if (TypeOf(terr) == "String" && terr != "")
-                        cleaned_territories.append(terr);
-                    endif
-                    sleepms(2);
-                endforeach
-                territories := cleaned_territories;
-               
-                if (territories)
-                    var territory_index := 0;
-                    for i := 1 to territories.size()
-                        if ((TypeOf(territories[i]) == "String" && territories[i] == territorio_nome) ||
-                            (TypeOf(territories[i]) == "String" && territories[i] == territorio_id))
-                            territory_index := i;
-                            break;
-                        endif
-                    endfor
-                   
-                    if (territory_index > 0)
-                        territories.Erase(territory_index);
-                        guild.SetProp("territories", territories);
-                        SendSysMessage(who, "Território removido da lista da facção.");
-                    endif
-                endif
-            endif
+        if (resultado)
+             SendSysMessage(who, "Território revogado com sucesso!");
+        else
+             SendSysMessage(who, "Falha ao revogar o território. Verifique os logs.");
         endif
         
-        SendSysMessage(who, "Controle do território revogado com sucesso!");
-        SendSysMessage(who, "O território agora é 'Selvagem'.");
-
-        // PASSO 4: Notificar o sistema.
-        LogInfo("territorio", "Notificando sistema de eventos sobre revogação de território: " + territorio_id);
-        TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
-            "name" := territorio_nome, 
-            "old_faction" := old_faction 
-        });
-
-        return 1;
+        return resultado;
     endif
     
-    return 1; // Retorna 1 mesmo se o usuário cancelar para fechar o gump de detalhes
+    SendSysMessage(who, "Operação cancelada.");
+    return 0;
 endfunction
 
 function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital_id, faction_name)
