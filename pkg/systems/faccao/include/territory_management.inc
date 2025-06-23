@@ -1248,8 +1248,8 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
     // Encontrar objetos associados ao território
     var objetos := TM_FindTerritoryObjects(territory_id, faction_name);
     
-    // Remover baú
-    if (objetos.bau)
+    // Remover baú (com verificação)
+    if (objetos.bau && objetos.bau.serial) // <-- ADICIONADA VERIFICAÇÃO .serial
         var result := DestroyItem(objetos.bau);
         if (result)
             objetos_removidos += 1;
@@ -1257,9 +1257,10 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         else
             LogError("territorio", "Falha ao remover baú: " + objetos.bau.serial + ", Resultado: " + result);
         endif
-    endif
-      // Remover mesa
-    if (objetos.mesa)
+    endif; // Adicionado ponto e vírgula
+
+    // Remover mesa (com verificação)
+    if (objetos.mesa && objetos.mesa.serial) // <-- ADICIONADA VERIFICAÇÃO .serial
         var result := DestroyItem(objetos.mesa);
         if (result)
             objetos_removidos += 1;
@@ -1267,7 +1268,7 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         else
             LogError("territorio", "Falha ao remover mesa: " + objetos.mesa.serial + ", Resultado: " + result);
         endif
-    endif
+    endif;
     
     // Remover mesa de inscrição
     if (objetos.mesa_inscricao)

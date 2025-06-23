@@ -19,9 +19,28 @@ include ":faccao:include/faccao_constants";
  * 
  * Retorna o datafile ou 0 em caso de erro
  */
+/*
+ * SafeOpenDataFile(datafile_name, create := 0)
+ * 
+ * Abre um datafile com tratamento de erro padronizado.
+ * Se create=1, cria o datafile se não existir.
+ * VERSÃO MELHORADA: Sempre cria datafiles críticos se ausentes.
+ */
 function SafeOpenDataFile(datafile_name, create := 0)
     LogDebug("datafile", "SafeOpenDataFile: Tentando abrir " + datafile_name + (create ? " (criando se não existir)" : ""));
     
+    // Lista de datafiles críticos que devem sempre existir.
+    var critical_datafiles := array{
+        KINGDOM_RESOURCE_DATAFILE,
+        ":faccao:seriais",
+        ":faccao:guild_registry"
+    };
+    
+    // Força a criação se o datafile estiver na lista crítica.
+    if (datafile_name in critical_datafiles)
+        create := 1;
+    endif;
+
     var df;
     
     if (create)
@@ -30,7 +49,7 @@ function SafeOpenDataFile(datafile_name, create := 0)
             LogError("datafile", "Falha ao criar datafile: " + datafile_name + ", Erro: " + df);
             return 0;
         endif
-        LogDebug("datafile", "Datafile criado com sucesso: " + datafile_name);
+        LogDebug("datafile", "Datafile aberto/criado com sucesso: " + datafile_name);
     else
         df := DFOpenDataFile(datafile_name);
         if (df == error)
@@ -174,34 +193,59 @@ function GetDatafileEntries(datafile_name, entry_type := "")
     return entries;
 endfunction
 
+
 /*
- * DeleteDatafileEntry(datafile_name, elem_name)
+ * DeleteDatafileEntry(datafile_descriptor, elem_name)
  * 
- * Remove um elemento do datafile com tratamento de erro e lógica aprimorada
- * para lidar tanto com nomes quanto com IDs de território
+ * Remove um elemento de um datafile de forma segura.
+ * Não gera erro se o elemento já não existir.
+ * Lida com chaves que são nomes ou IDs de território.
+ *
+ * Parameters:
+ *   datafile_descriptor: O descriptor do datafile (ex: ":faccao:seriais").
+ *   elem_name: A chave do elemento a ser deletado.
+ * 
+ * Return:
+ *   1 se o elemento foi deletado com sucesso ou se já não existia.
+ *   0 se ocorreu um erro ao abrir o datafile ou ao deletar um elemento existente.
  */
-function DeleteDatafileEntry(datafile_name, elem_name)
-    var df := SafeOpenDataFile(datafile_name);
+function DeleteDatafileEntry(datafile_descriptor, elem_name)
+    // Etapa 1: Abrir o datafile de forma segura.
+    var df := SafeOpenDataFile(datafile_descriptor);
     if (!df)
-        LogError("datafile", "Datafile não encontrado: " + datafile_name);
+        // SafeOpenDataFile já terá logado o erro.
         return 0;
     endif
     
-    // Tentar deletar diretamente pelo nome
-    var result := df.DeleteElement(elem_name);
-    if (result && result != error)
-        return 1;
-    endif
+    // Etapa 2: Tentar encontrar e deletar o elemento pela chave fornecida (elem_name).
+    var elem := df.FindElement(elem_name);
     
-    // Se falhou e parece ser um ID de território (começando com TER_)
+    if (elem) // Se o elemento foi encontrado com a chave direta...
+        var result := df.DeleteElement(elem_name);
+        if (result == error)
+            LogError("datafile", "Falha ao deletar elemento existente '" + elem_name + "' de " + datafile_descriptor);
+            return 0; // A deleção falhou.
+        else
+            LogDebug("datafile", "Elemento '" + elem_name + "' deletado com sucesso de " + datafile_descriptor);
+            return 1; // Sucesso.
+        endif
+    endif
+
+    // Etapa 3: Se não encontrou pela chave direta, verificar se é um ID de território.
+    // Esta parte lida com datafiles onde a chave não é o ID (como :architect:areas).
     if (elem_name.find("TER_") == 1)
         foreach key in (df.Keys())
-            var elem := df.FindElement(key);
+            elem := df.FindElement(key);
             if (elem)
-                var id := elem.GetProp(TERRITORY_ID_PROP);
-                if (id == elem_name)
-                    result := df.DeleteElement(key);
-                    if (result && result != error)
+                var id_prop := elem.GetProp(TERRITORY_ID_PROP);
+                if (id_prop == elem_name)
+                    // Encontramos o elemento correto cuja propriedade ID corresponde.
+                    var result := df.DeleteElement(key); // Deletar usando a CHAVE do elemento.
+                    if (result == error)
+                        LogError("datafile", "Falha ao deletar elemento por ID '" + elem_name + "' (chave: '"+key+"') de " + datafile_descriptor);
+                        return 0;
+                    else
+                        LogDebug("datafile", "Elemento por ID '" + elem_name + "' (chave: '"+key+"') deletado com sucesso de " + datafile_descriptor);
                         return 1;
                     endif
                 endif
@@ -209,9 +253,11 @@ function DeleteDatafileEntry(datafile_name, elem_name)
             sleepms(2);
         endforeach
     endif
-    
-    LogError("datafile", "Falha ao deletar elemento: " + elem_name);
-    return 0;
+
+    // Se chegou aqui, o elemento não foi encontrado por chave direta nem por busca de ID.
+    // Isso não é um erro, apenas significa que não havia nada para deletar.
+    LogDebug("datafile", "Elemento '" + elem_name + "' não encontrado para deletar em " + datafile_descriptor + ". Nenhuma ação necessária.");
+    return 1; // Retorna sucesso, pois o estado desejado (elemento não existe) foi alcançado.
 endfunction
 
 /*

@@ -537,22 +537,23 @@ endfunction
 
 // FUNÇÃO GenerateResourcesForTerritory (REIMPRESSA E ATUALIZADA)
 function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount)
-    var donation_chest := 0;
     var log_entries := array{};
     var current_time := polcore().systime;
-    var faction_name := faction_name_param; // Usar uma variável local para faction_name
+    var faction_name := faction_name_param; // Usar uma variável local
 
     if (!elem || !faction_name || resource_amount <= 0)
-        LogError("recursos_gen", "Parâmetros inválidos para GenerateResourcesForTerritory. Elem: " + (elem ? "OK" : "NULL") + ", Faction: " + (faction_name ? faction_name : "NULL") + ", Amount: " + resource_amount);
+        LogError("recursos_gen", "Parâmetros inválidos para GenerateResourcesForTerritory.");
         return 0;
     endif
 
-    var territory_name_from_elem := GetElementProp(elem, "Name", "Desconhecido_" + elem.name); // elem.name é o nome da chave no datafile
-    var territory_id_from_elem := GetElementProp(elem, TERRITORY_ID_PROP, elem.name); // Usa chave como fallback
+    // CORREÇÃO: Declarar as variáveis do território ANTES de usá-las.
+    var territory_name_from_elem := GetElementProp(elem, "Name", "Desconhecido_" + elem.name);
+    var territory_id_from_elem := GetElementProp(elem, TERRITORY_ID_PROP, elem.name); 
 
     LogDebug("recursos_gen", "Iniciando geração para Território: '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ")");
     LogDebug("recursos_gen", "Facção Param: '" + faction_name + "', Quantidade: " + resource_amount);
 
+    var donation_chest := 0; 
     var faction_on_elem := GetTerritoryFaction(elem);
     if (!faction_on_elem)
         LogError("recursos_gen", "Informação de facção inválida para o território '" + territory_name_from_elem + "'.");
@@ -621,8 +622,41 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         // Opcional: Tentar criar baú de emergência aqui, mas pode ser complexo se for para a capital.
         return 0;
     endif
+
+    // ====================================================================
+    //              INÍCIO DA IMPLEMENTAÇÃO DO LOCK
+    // ====================================================================
+    var lock_prop := "operation_lock";
+    var lock_timeout := 30; // 30 segundos
+    var current_time_lock := polcore().systime;
+
+    // 1. VERIFICAR LOCK
+    var existing_lock := GetObjProperty(donation_chest, lock_prop);
+    if (existing_lock)
+        if (current_time_lock - CInt(existing_lock.timestamp) < lock_timeout)
+            LogWarning("recursos_gen", "Baú " + donation_chest.serial + " está bloqueado por outra operação ("+existing_lock.operation+"). Geração de recursos para '" + territory_name_from_elem + "' adiada.");
+            return 0; // Adia a geração para o próximo ciclo
+        else
+            LogWarning("recursos_gen", "Lock expirado encontrado no baú. Limpando e prosseguindo...");
+            EraseObjProperty(donation_chest, lock_prop);
+        endif
+    endif
+
+    // 2. ADQUIRIR LOCK
+    var lock_data := struct{
+        "operation" := "resource_generation", 
+        "pid"       := GetPid(),
+        "timestamp" := current_time_lock
+    };
+    SetObjProperty(donation_chest, lock_prop, lock_data);
+    LogDebug("recursos_gen", "Lock adquirido no baú " + donation_chest.serial + " para geração de recursos.");
+    // ====================================================================
+
+
+
     if (!IsValidContainer(donation_chest))
         LogError("recursos_gen", "Baú de doações (Serial: " + donation_chest.serial + ") encontrado, mas não é válido ou está inacessível. Geração abortada.");
+        EraseObjProperty(donation_chest, lock_prop); // <-- ADICIONAR LIBERAÇÃO AQUI
         return 0;
     endif
     if (!HasContainerSpace(donation_chest, resources_array_parsed.size()))
@@ -696,7 +730,12 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
 
         NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name_from_elem, resources_array_parsed, resource_amount, items_created_successfully_count, caravan_redirected_flag, (donation_chest ? donation_chest.name : ""));
     endif
-
+    // ====================================================================
+    //              3. LIBERAR O LOCK (SEMPRE)
+    // ====================================================================
+    EraseObjProperty(donation_chest, lock_prop);
+    LogDebug("recursos_gen", "Lock liberado no baú " + donation_chest.serial + " após geração de recursos.");
+    // ====================================================================
     LogInfo("recursos_gen", "=== GERAÇÃO FINALIZADA para '" + territory_name_from_elem + "' ===");
     return items_created_successfully_count;
 endfunction

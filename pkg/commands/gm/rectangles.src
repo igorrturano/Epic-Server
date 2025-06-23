@@ -689,6 +689,7 @@ function DestruirObjetosTerritorio(territorio_id, faction)
 endfunction
 
 function DisplayRectangleDetails(who, elem)
+if (!elem) return; endif;
     var width := 400;
     var height := 380;
     var name := GetElementProp(elem, "Name", "");
@@ -844,51 +845,40 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
     
 
     
-    var input := GFSendGump(who, gump);
+var input := GFSendGump(who, gump);
     var button := input[0];
     
     if (button == 100) // Deletar
-    if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
-        // Primeiro, destruir os objetos do território, se houver
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
-if (!faction)
-    faction := GetElementProp(elem, "Faction", "");  // Compatibilidade legada
-endif
-          var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-        if (territory_id && faction)
-            SendSysMessage(who, "Destruindo objetos do território...");
-            var objetos_destruidos := DestruirObjetosTerritorio(territory_id, faction);
-            SendSysMessage(who, $"Destruídos {objetos_destruidos} objetos do território.");
+        if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'? Esta ação é irreversível."))
+            // **AQUI ESTÁ A CORREÇÃO**
+            // Notificamos o sistema ANTES de apagar qualquer coisa.
+            TM_NotifyTerritoryChange(territory_id, "deleted", struct{ "name" := name });
+            
+            // Agora chamamos a função centralizada que faz todo o trabalho sujo.
+            // Ela apaga objetos, remove referências da guilda e o registro do datafile.
+            var resultado_delecao := TM_DeleteTerritory(territory_id); 
+            
+            if (resultado_delecao)
+                SendSysMessage(who, "Território '" + name + "' e todos os seus dados foram deletados com sucesso!");
+            else
+                SendSysMessage(who, "Erro ao deletar o território '" + name + "'. Verifique os logs do servidor.");
+            endif
         endif
-        
-        // NOVA LINHA: Remover referências do território em todas as guildas
-        RemoveTerritoryFromGuilds(name, territory_id);
-        
-        // Agora deletar o território
-        var rect_df := SafeOpenDataFile(":architect:areas");
-       DeleteDatafileEntry(":architect:areas", name);
-        SendSysMessage(who, "Território deletado com sucesso!");
-    endif
-
     elseif (button == 200) // Editar
-        // Implementação existente para editar território
         SendSysMessage(who, "Selecione novos pontos para o território");
         
-        SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
         var first_point := TargetCoordinates(who);
         if (!first_point)
             SendSysMessage(who, "Edição cancelada.");
             return;
         endif
         
-        SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
         var second_point := TargetCoordinates(who);
         if (!second_point)
             SendSysMessage(who, "Edição cancelada.");
             return;
         endif
         
-        // Organizar coordenadas
         var x1 := first_point.x;
         var y1 := first_point.y;
         var x2 := second_point.x;
@@ -908,19 +898,18 @@ endif
         
         var rect_str := $"{x1} {y1} {x2} {y2}";
         
-// Verificar sobreposição
-var areas_df := SafeOpenDataFile(":architect:areas");
-if (CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
-    SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
-    SendSysMessage(who, "Edição cancelada.");
-    return;
-endif
+        var areas_df := SafeOpenDataFile(":architect:areas");
+        if (CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
+            SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
+            SendSysMessage(who, "Edição cancelada.");
+            return;
+        endif
         
-        // Atualizar elemento
         SetElementProp(elem, "Rect", rect_str);
         SetElementProp(elem, "Realm", first_point.realm);
         
         SendSysMessage(who, $"Território '{name}' atualizado!");
+
     elseif (button == 300) // Ir para território
         var coords := SplitWords(rect);
         if (coords.size() >= 4)
@@ -938,8 +927,10 @@ endif
         else
             SendSysMessage(who, "Erro ao analisar as coordenadas do território!");
         endif
+
     elseif (button == 400) // Criar Totem
         CreateTerritoryTotem(who, elem);
+        
     elseif (button == 500) // Configurar Recursos
         SetupResourcesForTerritory(who, elem);
     endif

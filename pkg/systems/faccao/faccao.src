@@ -27,7 +27,8 @@ include ":faccao:include/faccao";
 
 // Constantes locais para este arquivo (evita conflito com outros sistemas)
 const MOEDAS := 47715;              // Moedas genéricas (local para este arquivo)
-
+const BTN_FACCAO_DELETE := 0x800; // Para deleção individual
+const BTN_DELETE_ALL_CONFIRM := 0x900; // Para deleção em massa
 // Outras constantes estão em faccao_constants.inc
 
 const BUTTON_TERRITORY := 0x500; // ID de botão para manipulador de territórios
@@ -311,14 +312,14 @@ var leader_name := "";
 	GFGumpPic(gump, 491, 330, 40034, 0);
 
    if (is_gm_or_leader || privilegies.unlockdoors)
-      GFAddButton(gump, 240-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CHANGE_DOORS);
-      GFTextLine(gump, 240, 401, 0, "Portas");
+      GFAddButton(gump, 190, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CHANGE_DOORS);
+      GFTextLine(gump, 210, 401, 0, "Portas");
    endif
 
    // NOVO BOTÃO: Fechar Facção (apenas para líder)
    if (is_gm_or_leader)
-      GFAddButton(gump, 350-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CLOSE_FACTION);
-      GFTextLine(gump, 350, 401, 0, "Fechar Facção");
+      GFAddButton(gump, 280, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CLOSE_FACTION);
+      GFTextLine(gump, 300, 401, 0, "Fechar Facção");
    endif
 
    // IMPORTANTE: Esta linha estava faltando, causando o erro - precisamos enviar o gump antes de processar os inputs
@@ -335,9 +336,14 @@ var leader_name := "";
       ShowTerritoriesGump(who, guild);
       return; // Importante retornar aqui para evitar reabrir o gump principal
    elseif (input[0] == BUTTON_CLOSE_FACTION)
-      // Nova condição para fechar facção
-      if (CloseFactionHandler(who, guild) == 99)
-         return;
+      // VERIFICAÇÃO DE PERMISSÃO ANTES DE CHAMAR
+      if (is_gm_or_leader)
+         if (IniciarDelecaoFaccao(who, guild))
+            // Se a deleção foi bem-sucedida, não há mais GUMP para reabrir.
+            return; 
+         endif
+      else 
+         SendSysMessage(who, "Apenas o líder pode fechar a facção.");
       endif
    elseif (input[0] >= BUTTON_CHANGE_PLAYER)
       playerHandler(who, input[0]);
@@ -358,48 +364,66 @@ endprogram
 
 
 function Faccoes(who)
-   var gump := GFCreateGump();
-   GFResizePic(gump, 84, 90, 9260, 280, 260);
+    var gump := GFCreateGump();
+    GFResizePic(gump, 84, 90, 9260, 280, 260);
 
-   GFGumpPicTiled(gump, 100,100,30,235,10460);
-   GFGumpPicTiled(gump, 320,100,30,235,10460);
-   var y := 120;
-   // Usar método baseado em guildas, não só territórios
-   var all_factions := GetAllFactions_KISS();
-   var guilds := array{};
-   var guild_iter := 0;
-   foreach faction_info in all_factions
-      var guild := FindGuild(faction_info.guild_id);
-      if (!guild)
-         continue;
-      endif
-      guilds.append(guild);
-      var name := guild.getprop(FACTION_PROP_NAME);
-      GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp(FACTION_PROP_NAME)));
-      GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+guild_iter);
-      guild_iter++;
-      y+= 20;
-      sleepms(2);
-   endforeach
-   y+=10;
-   GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
-   GFHTMLArea(gump,  170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
+    GFGumpPicTiled(gump, 100, 100, 30, 235, 10460);
+    GFGumpPicTiled(gump, 320, 100, 30, 235, 10460);
+    
+    var y := 120;
+    var all_factions := GetAllFactions_KISS();
+    var guilds := array{};
+    var guild_iter := 0;
 
-   var input := GFSendGump(who, gump)[0];
+    foreach faction_info in all_factions
+        var guild := FindGuild(faction_info.guild_id);
+        if (!guild)
+            continue;
+        endif;
+        guilds.append(guild);
+        
+        var name := guild.getprop(FACTION_PROP_NAME);
+        
+        GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + guild_iter);
+        GFTextLine(gump, 170, y, 2100, "{}".format(name));
+        
+        if (who.cmdlevel > 3)
+            GFAddButton(gump, 300, y+3, 11410, 11412, GF_CLOSE_BTN, BTN_FACCAO_DELETE + guild_iter);
+        endif;
+        
+        guild_iter += 1;
+        y += 20;
+        sleepms(2);
+    endforeach;
+    
+    y += 10;
+    
+    GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
+    GFHTMLArea(gump, 170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
 
-   if (input >= BTN_FACCAO)
-      var g := guilds[input - BTN_FACCAO];
+    // ====================================================================
+    // CORREÇÃO 2: Remover a chamada GFSendGump redundante
+    // ====================================================================
+    var input := GFSendGump(who, gump)[0]; // A chamada correta já está aqui
 
-      if (is_gm_or_leader)
-         start_script(":faccao:faccao", array{who, g.guildid, "guild"});
-      elseif (who.guildid == guild.guildid || who.cmdlevel)
-         start_script(":faccao:faccao", array{who, g.guildid, "guild"});
-      elseif (who.guildid != guild.guildid)
-         SendSysMessage(who, "Voce nao faz parte dessa Faccao");
-         return;
-      endif
+    if (input >= BTN_FACCAO_DELETE)
+        var g_index := input - BTN_FACCAO_DELETE;
+        if (g_index >= 0 && g_index < guilds.size())
+            var guild_to_delete := guilds[g_index + 1];
+            
+            // Apenas chama a nova função. Todas as confirmações estão dentro dela.
+            IniciarDelecaoFaccao(who, guild_to_delete);
 
-   elseif (input == BTN_NEW_FACCAO)
+            // Recarrega o GUMP para mostrar a lista atualizada
+            Faccoes(who); 
+        endif;
+    elseif (input >= BTN_FACCAO)
+        var g_index := input - BTN_FACCAO;
+        if(g_index >= 0 && g_index < guilds.size())
+             var g := guilds[g_index + 1];
+             start_script(":faccao:faccao", array{who, g.guildid, "guild"});
+        endif;
+    elseif (input == BTN_NEW_FACCAO)
       var custo := 10000;
       SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
       var targ := Target(who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
@@ -493,70 +517,6 @@ function Faccoes(who)
    endif
 endfunction
 
-
-/*
- * CloseFactionHandler(who, guild)
- * 
- * Purpose: Gerencia o fluxo completo para que um líder feche a própria facção,
- *          incluindo confirmações, notificações e a chamada para a função de remoção.
- * 
- * Parameters:
- *   who: O jogador (líder) que está executando a ação.
- *   guild: O objeto da guilda a ser fechada.
- * 
- * Return:
- *   99: Sinaliza para o GUMP que a operação foi concluída e o gump deve ser fechado.
- *   0: A operação foi cancelada ou falhou.
- */
-function CloseFactionHandler(who, guild)
-    // Etapa 1: Verificar permissão.
-    var guild_leader_serial := guild.GetProp("leader");
-    if (guild_leader_serial != who.serial && !who.cmdlevel)
-        SendSysMessage(who, "Apenas o líder pode fechar a facção.");
-        return 0;
-    endif
-   
-    var guild_name := guild.GetProp(FACTION_PROP_NAME) ?: guild.guildname ?: "Facção Desconhecida";
-   
-    // Etapa 2: Confirmação dupla.
-    if (!YesNo(who, "ATENÇÃO: Você tem certeza que deseja fechar permanentemente a facção '" + guild_name + "'?"))
-        SendSysMessage(who, "Operação cancelada.");
-        return 0;
-    endif
-    if (!YesNo(who, "ÚLTIMA CONFIRMAÇÃO: Esta ação não pode ser desfeita! Fechar '" + guild_name + "'?"))
-        SendSysMessage(who, "Operação cancelada.");
-        return 0;
-    endif
-   
-    // Etapa 3: Registrar a ação no log.
-    LogToFile("faccoes.log", "FACTION_CLOSED_BY_LEADER: " + who.name + " fechou a facção '" + guild_name + "' (ID: " + guild.guildid + ").");
-   
-    // Etapa 4: Notificar todos os membros online sobre o fechamento.
-    var all_members_copy := guild.members;
-    if (all_members_copy)
-        foreach member in all_members_copy
-            if (member && member.connected && member.serial != who.serial)
-                // Usando SendSysMessage padrão
-                SendSysMessage(member, "A facção '" + guild_name + "' foi permanentemente fechada pelo seu líder.");
-            endif
-        endforeach
-    endif
-    
-    sleep(1);
-   
-    // Etapa 5: Chamar a função de backend que faz a limpeza.
-    var resultado := RemFaccao(guild);
-    
-    // Etapa 6: Notificar o líder sobre o resultado.
-    if (resultado)
-        SendSysMessage(who, "Facção '" + guild_name + "' fechada com sucesso.");
-    else
-        SendSysMessage(who, "Ocorreu um erro ao tentar fechar a facção. Verifique os logs do servidor.");
-    endif
-   
-    // Etapa 7: Retornar código para fechar o GUMP.
-    return 99;
-endfunction
 
 
 function guildHandler(who, input)
@@ -1499,4 +1459,130 @@ function RemoveFactionLeader(guild)
    endif
    
    return 1;
+endfunction
+
+
+function HandleDeleteAllFactions(who)
+    // Verificação de permissão (redundante, mas segura)
+    if (!who || who.cmdlevel < 5)
+        SendSysMessage(who, "Apenas Administradores (nível 5) podem usar este comando.");
+        return 0;
+    endif;
+
+    // Confirmação Inicial
+    if (!YesNo(who, "ATENÇÃO MÁXIMA: Esta ação irá apagar TODAS AS FACÇÕES. É IRREVERSÍVEL. Continuar?"))
+        SendSysMessage(who, "Ação cancelada.");
+        return 0;
+    endif;
+
+    var guilds_para_apagar := ListGuilds();
+    if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
+        SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
+        return 1;
+    endif;
+    
+    // Confirmação Final com a quantidade
+    if (!YesNo(who, "ÚLTIMA CHANCE: Confirma a remoção permanente de TODAS as " + guilds_para_apagar.size() + " facções?"))
+        SendSysMessage(who, "Ação cancelada.");
+        return 0;
+    endif;
+
+    // Inicia o processo
+    SendSysMessage(who, "INICIANDO PROCESSO DE REMOÇÃO COMPLETA DE TODAS AS FACÇÕES...");
+    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES INICIADA]] por " + who.name);
+    
+    var faccoes_apagadas := 0;
+
+    // Itera e apaga
+    foreach guild_obj in guilds_para_apagar
+        if (!guild_obj) continue; endif;
+        
+        var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda " + guild_obj.guildid);
+        
+        // Notifica membros online
+        var members_to_notify := guild_obj.members;
+        if(members_to_notify)
+            foreach member in members_to_notify
+                if(member && member.connected)
+                    SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por um administrador.");
+                endif;
+            endforeach;
+        endif;
+        
+        var resultado := RemFaccao(guild_obj);
+        if (resultado)
+            faccoes_apagadas += 1;
+        endif;
+        sleepms(100);
+    endforeach;
+    
+    // Limpeza final de datafiles
+    var registry_df := SafeOpenDataFile(":faccao:guild_registry");
+    if (registry_df)
+        registry_df.DeleteElement("guilds");
+    endif;
+    
+    // Mensagem final
+    SendSysMessage(who, "==================================================");
+    SendSysMessage(who, "LIMPEZA COMPLETA DE FACÇÕES CONCLUÍDA!");
+    SendSysMessage(who, "Total de facções apagadas: " + faccoes_apagadas);
+    SendSysMessage(who, "==================================================");
+    
+    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES FINALIZADA]]");
+    
+    // Recarrega o GUMP principal para mostrar que a lista está vazia
+    Faccoes(who);
+    return 1;
+endfunction
+
+// Adicione esta nova função ao seu arquivo faccao.src
+
+/*
+ * Inicia o processo de deleção de uma facção, com todas as
+ * confirmações e verificações de segurança necessárias.
+ * Pode ser chamada por um GM ou pelo líder da facção.
+ */
+function IniciarDelecaoFaccao(who, guild_to_delete)
+    // Validação inicial
+    if (!guild_to_delete || TypeOf(guild_to_delete) != "GuildRef")
+        SendSysMessage(who, "Erro: Guilda inválida para deleção.");
+        return 0;
+    endif
+
+    var guild_name := guild_to_delete.GetProp(FACTION_PROP_NAME) ?: guild_to_delete.guildname ?: "Guilda Desconhecida";
+
+    // Confirmação dupla
+    if (!YesNo(who, "ATENÇÃO: Você tem certeza que deseja fechar permanentemente a facção '" + guild_name + "'?"))
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
+    if (!YesNo(who, "ÚLTIMA CONFIRMAÇÃO: Esta ação não pode ser desfeita! Fechar '" + guild_name + "'?"))
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
+
+    // Notificar membros online
+    var members_to_notify := guild_to_delete.members;
+    if(members_to_notify)
+        foreach member in members_to_notify
+            if(member && member.connected && member.serial != who.serial)
+                SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por uma autoridade.");
+            endif
+        endforeach
+    endif
+    
+    sleep(1);
+
+    // Chamar a função de backend que faz a limpeza
+    SendSysMessage(who, "Apagando facção: " + guild_name + "...");
+    var resultado := RemFaccao(guild_to_delete);
+    
+    // Notificar sobre o resultado
+    if (resultado)
+        SendSysMessage(who, "Facção '" + guild_name + "' fechada com sucesso.");
+    else
+        SendSysMessage(who, "Ocorreu um erro ao tentar fechar a facção. Verifique os logs do servidor.");
+    endif
+
+    return 1; // Retorna 1 para indicar que a operação foi concluída
 endfunction

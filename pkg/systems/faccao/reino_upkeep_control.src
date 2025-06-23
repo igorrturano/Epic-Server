@@ -5,6 +5,8 @@ use datafile;
 use polsys;
 use util;
 
+// Includes essenciais
+include ":faccao:include/process_registry";
 include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":faccao:include/guild_xp";
@@ -12,36 +14,45 @@ include ":faccao:include/safe_guild_utils";
 include ":faccao:include/datafile_helpers";
 include ":faccao:include/faccao_constants";
 
-// Constantes locais específicas deste arquivo
-const MOEDAS_COBRE := 0xBA63;       // Moedas de cobre (local para este package)
+// Constantes locais
+const MOEDAS_COBRE := 0xBA63;
 
 program ReinoUpkeepControl()
-    LogDebug("upkeep", "=== REINO UPKEEP CONTROL INICIADO ===");
-    LogDebug("upkeep", "UPKEEP: === CONTROLADOR DE UPKEEP INICIADO - MODO TESTE (1 MINUTO) ===");
+
+    LogInfo("upkeep_ctrl", "=== Controlador de Upkeep tentando iniciar (PID: " + GetPid() + ") ===");
+
+    // Garante que apenas uma instância deste script rode por vez.
+    if (!RegisterProcess("ReinoUpkeepControl"))
+        LogWarning("upkeep_ctrl", "Outra instância de ReinoUpkeepControl já está ativa. Este processo (PID: " + GetPid() + ") será encerrado.");
+        return 0;
+    endif
+
+    LogInfo("upkeep_ctrl", "Registro bem-sucedido. Este processo é agora o controlador oficial de upkeep.");
     
     while(1)
-        LogDebug("upkeep", "UPKEEP: Iniciando ciclo de verificação...");
+        UpdateProcessHeartbeat("ReinoUpkeepControl");
+        
+        LogDebug("upkeep_ctrl", "Iniciando ciclo de verificação de upkeep...");
         ProcessarUpkeepSimples();
-        LogDebug("upkeep", "UPKEEP: Ciclo concluído, aguardando " + UPKEEP_CYCLE_WAIT + " segundos...");
+        
+        LogDebug("upkeep_ctrl", "Ciclo de upkeep concluído, aguardando " + UPKEEP_CYCLE_WAIT + " segundos...");
         sleep(UPKEEP_CYCLE_WAIT);
     endwhile
 endprogram
 
 function ProcessarUpkeepSimples()
+
     LogDebug("upkeep", "UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
     syslog("UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
-    LogDebug("upkeep", "UPKEEP: Buscando guilds ativas através de territórios...");
     
-    // Nova abordagem: buscar guilds através dos territórios
+    // Coletar nomes de facções ativas a partir dos territórios.
     var active_guilds := struct{};
-  var rect_df := SafeOpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         foreach elem_name in (rect_df.keys())
             var elem := SafeFindElement(rect_df, elem_name);
             if (elem)
                 var territory_faction := GetTerritoryFaction(elem);
-                
-                // Adiciona a facção ao dicionário se for válida e ainda não estiver lá
                 if (territory_faction && territory_faction != "" && territory_faction != DEFAULT_FACTION)
                     active_guilds[territory_faction] := 1;
                 endif
@@ -50,10 +61,8 @@ function ProcessarUpkeepSimples()
         endforeach
     endif
     
-     var guild_names := active_guilds.keys();
-    foreach faction_name in (active_guilds.keys())
-        guild_names.append(faction_name);
-    endforeach
+    // CORREÇÃO FINAL: Obter a lista de nomes de guildas UMA ÚNICA VEZ.
+    var guild_names := active_guilds.keys();
     
     Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
     syslog("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
@@ -72,15 +81,18 @@ function ProcessarUpkeepSimples()
         
         processed_count += 1;
         
-        // Cálculo super simples: 100 moedas por território + 10 por nível
-        // var territories := GetGuildTerritoryCount(guild_name);
-        // var guild_level := 1; // Simplificado - assumir nível 1 
-        // var cost := (territories * 100) + (guild_level * 10);
-        // Print("UPKEEP: " + guild_name + " - Territórios: " + territories + ", Nível: " + guild_level + ", Custo: " + cost);
-
-        // NOVO: usar função centralizada do gestao_use para cálculo correto
         var guild_id := FindGuildByName(guild_name);
+        if (!guild_id)
+            Print("UPKEEP: Guilda '" + guild_name + "' não encontrada. Pulando.");
+            continue;
+        endif
+
         var guild := FindGuild(guild_id);
+        if (!guild)
+             Print("UPKEEP: Objeto da guilda '" + guild_name + "' não encontrado. Pulando.");
+             continue;
+        endif
+
         var territories := GetGuildTerritories(guild_name);
         var cost := CalcularCustoUpkeep(guild, territories);
         Print("UPKEEP: " + guild_name + " - Territórios: " + territories.size() + ", Nível: " + GetSimpleGuildLevel(guild) + ", Custo: " + cost);
@@ -93,7 +105,6 @@ function ProcessarUpkeepSimples()
         payment_attempts += 1;
         Print("UPKEEP: " + guild_name + " deve pagar " + cost + " moedas");
         
-        // Tentar cobrar usando método robusto
         if (CobrarUpkeepRobusto(guild_name, cost))
             Print("UPKEEP: " + guild_name + " pagou com sucesso");
             successful_payments += 1;
@@ -107,6 +118,7 @@ function ProcessarUpkeepSimples()
     Print("UPKEEP: Ciclo concluído - Guildas processadas: " + processed_count + ", Tentativas de pagamento: " + payment_attempts + ", Pagamentos bem-sucedidos: " + successful_payments);
 endfunction
 
+
 function GetGuildTerritories(faction_name)
     var territories := array{};
     var rect_df := SafeOpenDataFile(":architect:areas");
@@ -119,11 +131,10 @@ function GetGuildTerritories(faction_name)
         if (elem)
             var territory_faction := GetTerritoryFaction(elem);
             if (territory_faction == faction_name)
-                var territory_info := struct{
-                    "name" := rect_name,
-                    "rect" := GetElementProp(elem, "Rect", ""),
-                    "realm" := GetElementProp(elem, "Realm", "britannia")
-                };
+                var territory_info := struct{};
+                territory_info.+name := rect_name;
+                territory_info.+rect := GetElementProp(elem, "Rect", "");
+                territory_info.+realm := GetElementProp(elem, "Realm", "britannia");
                 territories.append(territory_info);
             endif
         endif
@@ -133,177 +144,121 @@ function GetGuildTerritories(faction_name)
     return territories;
 endfunction
 
-// Função GetSimpleGuildLevel movida para shared_functions.inc para evitar duplicação
 
-// Função robusta baseada no sistema de caravanas
 function CobrarUpkeepRobusto(guild_name, cost_amount)
     LogCritical("UpkeepPayment_START", "Iniciando cobrança de " + cost_amount + " moedas para facção " + guild_name);
-    
-    // === IMPLEMENTAÇÃO DE LOCK PARA PREVENIR RACE CONDITIONS ===
-    var lock_prop := "upkeep_payment_lock";
-    var lock_timeout := 30; // 30 segundos de timeout
-    var current_time := POLCore().systime;
-    
-    // NOVA ESTRATÉGIA: Buscar territórios e usar territory_id (como ResourceController)
+
     var faction_chest := 0;
-    var territories_found := array{};
-    
-    // Buscar territórios no datafile :architect:areas
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (rect_df)
-        LogCritical("UpkeepPayment_SEARCH", "Buscando territórios da facção " + guild_name);
-        foreach elem_name in (rect_df.keys())
-            var elem := SafeFindElement(rect_df, elem_name);
-            if (elem)
-                var territory_faction := GetTerritoryFaction(elem);
-                
-                if (territory_faction == guild_name)
-                    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, elem_name);
-                    territories_found.append(territory_id);
-                    LogCritical("UpkeepPayment_TERRITORY", "Território encontrado: " + territory_id);
-                endif
-            endif
-            Sleep(1);
-        endforeach
-    endif
-    
+    var territories_found := GetGuildTerritories(guild_name);
+
     LogCritical("UpkeepPayment_SEARCH", "Encontrados " + territories_found.size() + " territórios para " + guild_name);
-    
-    // Tentar encontrar baú usando territory_id específico (como ResourceController faz)
-    foreach territory_id in territories_found
+
+    foreach territory_info in territories_found
+        var territory_id := territory_info.id ?: territory_info.name;
         LogCritical("UpkeepPayment_CHEST_SEARCH", "Tentando encontrar baú para território: " + territory_id);
-        LogCritical("UpkeepPayment_CHEST_SEARCH", "Chamando: FindFactionChest('" + guild_name + "', '" + territory_id + "')");
         faction_chest := FindFactionChest(guild_name, territory_id);
         if (faction_chest)
             LogCritical("UpkeepPayment_CHEST", "✓ Baú encontrado no território " + territory_id + ": Serial " + faction_chest.serial);
             break;
-        else
-            LogCritical("UpkeepPayment_CHEST_FAIL", "✗ FindFactionChest retornou NULL para território " + territory_id);
         endif
         Sleep(1);
     endforeach
-    
-    // Fallback: busca genérica (como antes)
+
     if (!faction_chest)
         LogCritical("UpkeepPayment_FALLBACK", "Tentando busca genérica para facção " + guild_name);
         faction_chest := FindFactionChest(guild_name);
     endif
-    
+
     if (!faction_chest)
-        LogError("UpkeepPayment_ERROR", "Baú da facção " + guild_name + " não encontrado após todas as estratégias");
+        LogError("UpkeepPayment_ERROR", "Baú da facção " + guild_name + " não encontrado após todas as estratégias. Pagamento falhou.");
         return 0;
     endif
     
-    LogInfo("UpkeepPayment_CHEST", "Baú encontrado: Serial " + faction_chest.serial);
-    
-    // === VERIFICAR E ADQUIRIR LOCK NO BAÚ ===
+    LogInfo("UpkeepPayment_CHEST", "Baú alvo para cobrança: Serial " + faction_chest.serial);
+
+    var lock_prop := "operation_lock"; 
+    var lock_timeout := 30;
+    var current_time_lock := POLCore().systime;
+
     var existing_lock := GetObjProperty(faction_chest, lock_prop);
     if (existing_lock)
-        var lock_age := current_time - existing_lock.timestamp;
+        var lock_age := current_time_lock - CInt(existing_lock.timestamp);
         if (lock_age < lock_timeout)
-            if (existing_lock.pid == GetPid())
-                LogDebug("upkeep", "Lock já pertence a este processo, continuando...");
-            else
-                LogWarning("upkeep", "Baú bloqueado por outro processo (PID: " + existing_lock.pid + "), abortando cobrança");
-                return 0;
-            endif
+            LogWarning("upkeep", "Baú " + faction_chest.serial + " está bloqueado por outra operação ("+existing_lock.operation+"). Cobrança de upkeep adiada.");
+            return 0;
         else
-            LogWarning("upkeep", "Lock expirado encontrado no baú, removendo...");
+            LogWarning("upkeep", "Lock expirado encontrado no baú. Limpando e prosseguindo...");
             EraseObjProperty(faction_chest, lock_prop);
         endif
     endif
-    
-    // Adquirir lock no baú
-    var lock_data := struct{
-        "pid" := GetPid(),
-        "timestamp" := current_time,
-        "operation" := "upkeep_payment"
-    };
+
+    var lock_data := struct{};
+    lock_data.+operation := "upkeep_payment";
+    lock_data.+pid := GetPid();
+    lock_data.+timestamp := current_time_lock;
     SetObjProperty(faction_chest, lock_prop, lock_data);
-    LogDebug("upkeep", "Lock adquirido no baú para cobrança de upkeep");
-    
-    // Validar o baú
-    if (!faction_chest.isA(POLCLASS_CONTAINER) || !faction_chest.serial || faction_chest.serial <= 0)
-        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
-        LogError("UpkeepPayment_ERROR", "Baú inválido para facção " + guild_name);
-        return 0;
-    endif
-    
-    // Contar moedas disponíveis (operação protegida por lock)
-    var coins_available := 0;
-    var coin_items_list := array{};
-    
-    var items_in_chest := EnumerateItemsInContainer(faction_chest);
-    if (items_in_chest == error)
-        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
-        LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
-        return 0;
-    endif
-    
-    foreach item in items_in_chest
-        if (item && item.objtype == MOEDAS_COBRE) // Só moedas de cobre para simplicidade
-            coins_available += CInt(item.amount);
-            coin_items_list.append(item);
-            LogDebug("UpkeepPayment_COINS", "Stack de moedas encontrado: Serial " + item.serial + ", Quantidade: " + item.amount);
-        endif
-        sleepms(1);
-    endforeach
-    
-    LogCritical("UpkeepPayment_TOTAL", "Total de moedas disponíveis: " + coins_available + ", Necessário: " + cost_amount);
-    
-    // Verificar se há moedas suficientes
-    if (coins_available < cost_amount)
-        EraseObjProperty(faction_chest, lock_prop); // Liberar lock
-        LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes. Disponível: " + coins_available + ", Necessário: " + cost_amount);
-        return 0;
-    endif
-    
-    // Executar o débito (operação crítica protegida por lock)
-    var coins_debited := 0;
-    var coins_remaining := cost_amount;
-    
-    foreach coin_item in coin_items_list
-        if (coins_remaining <= 0) break; endif
-        
-        if (!coin_item || coin_item.objtype != MOEDAS_COBRE)
-            continue;
-        endif
-        
-        var amount_to_take := CInt(coin_item.amount);
-        if (amount_to_take > coins_remaining)
-            amount_to_take := coins_remaining;
-        endif
-        
-        // Tentar remover as moedas
-        var subtract_result := SubtractAmount(coin_item, amount_to_take);
-        if (subtract_result)
-            coins_debited += amount_to_take;
-            coins_remaining -= amount_to_take;
-            LogInfo("UpkeepPayment_DEBIT", amount_to_take + " moedas debitadas do stack " + coin_item.serial);
-        else
-            LogError("UpkeepPayment_ERROR", "Falha ao debitar " + amount_to_take + " moedas do stack " + coin_item.serial);
-        endif
-        
-        sleepms(5);
-    endforeach
-    
-    LogCritical("UpkeepPayment_RESULT", "Débito concluído. Total debitado: " + coins_debited + " de " + cost_amount + " necessário");
-    
-    // Verificar se o débito foi completo
+    LogDebug("upkeep", "Lock adquirido no baú " + faction_chest.serial + " para cobrança de upkeep.");
+
     var payment_success := 0;
-    if (coins_debited >= cost_amount)
-        LogInfo("UpkeepPayment_SUCCESS", "Pagamento de upkeep bem-sucedido para " + guild_name);
-        // Forçar atualização do cache do baú
-        SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
-        payment_success := 1;
+    var error_occurred := 0;
+
+    if (!faction_chest.isA(POLCLASS_CONTAINER) || !faction_chest.serial || faction_chest.serial <= 0)
+        LogError("UpkeepPayment_ERROR", "Baú inválido para facção " + guild_name);
+        error_occurred := 1;
     else
-        LogError("UpkeepPayment_FAILED", "Pagamento incompleto. Debitado: " + coins_debited + ", Necessário: " + cost_amount);
-        payment_success := 0;
+        var items_in_chest := EnumerateItemsInContainer(faction_chest);
+        if (items_in_chest == error)
+             LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
+             error_occurred := 1;
+        else
+            var coins_available := 0;
+            var coin_items_list := array{};
+            foreach item in items_in_chest
+                if (item && item.objtype == MOEDAS_COBRE)
+                    coins_available += CInt(item.amount);
+                    coin_items_list.append(item);
+                endif
+                sleepms(1);
+            endforeach
+            
+            LogCritical("UpkeepPayment_TOTAL", "Total de moedas disponíveis: " + coins_available + ", Necessário: " + cost_amount);
+
+            if (coins_available < cost_amount)
+                LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes. Disponível: " + coins_available + ", Necessário: " + cost_amount);
+            else
+                var coins_debited := 0;
+                var coins_remaining := cost_amount;
+                
+                foreach coin_item in coin_items_list
+                    if (coins_remaining <= 0) break; endif
+                    
+                    var amount_to_take := (CInt(coin_item.amount) > coins_remaining) ? coins_remaining : CInt(coin_item.amount);
+                    
+                    if (SubtractAmount(coin_item, amount_to_take))
+                        coins_debited += amount_to_take;
+                        coins_remaining -= amount_to_take;
+                        LogInfo("UpkeepPayment_DEBIT", amount_to_take + " moedas debitadas do stack " + (coin_item.serial ? coin_item.serial : "novo"));
+                    else
+                        LogError("UpkeepPayment_ERROR", "Falha ao debitar " + amount_to_take + " moedas do stack " + (coin_item.serial ? coin_item.serial : "inválido"));
+                        error_occurred := 1;
+                        break;
+                    endif
+                    sleepms(5);
+                endforeach
+
+                if (!error_occurred && coins_debited >= cost_amount)
+                    payment_success := 1;
+                    SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
+                    LogInfo("UpkeepPayment_SUCCESS", "Pagamento de upkeep bem-sucedido para " + guild_name);
+                elseif (!error_occurred)
+                    LogError("UpkeepPayment_FAILED", "Pagamento incompleto. Debitado: " + coins_debited + ", Necessário: " + cost_amount);
+                endif
+            endif
+        endif
     endif
     
-    // === SEMPRE LIBERAR O LOCK ===
     EraseObjProperty(faction_chest, lock_prop);
-    LogDebug("upkeep", "Lock liberado após cobrança de upkeep");
+    LogDebug("upkeep", "Lock liberado no baú " + faction_chest.serial + " após tentativa de cobrança. Sucesso: " + payment_success);
     
     return payment_success;
 endfunction

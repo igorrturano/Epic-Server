@@ -1,90 +1,270 @@
 use os;
 use uo;
+use file; 
 use guilds;
+use datafile;
 
 include ":gumps:yesNo";
 include ":faccao:include/shared_functions";
 include ":faccao:include/faccao";
-// Remova o "include/client" se ele não for mais necessário por outras funções.
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include ":faccao:include/datafile_helpers";
+
 
 program apagar_todas_faccoes(who)
     // Etapa 1: Verificação de Permissão
     if (!who || who.cmdlevel < 2)
-        SendSysMessage(who, "Apenas Administradores (nível 5) podem usar este comando.");
+        SendSysMessage(who, "Apenas Administradores (nível 2) podem usar este comando.");
         return 0;
     endif;
 
-    // Etapa 2: Confirmação Dupla
-    if (!YesNo(who, "ATENÇÃO MÁXIMA: Esta ação irá apagar TODAS AS FACÇÕES, remover todos os seus membros, territórios e dados. É IRREVERSÍVEL. Continuar?"))
-        SendSysMessage(who, "Ação cancelada.");
-        return 0;
-    endif;
-    if (!YesNo(who, "ÚLTIMA CHANCE: Você está absolutamente certo de que deseja apagar permanentemente TODAS as facções do servidor?"))
-        SendSysMessage(who, "Ação cancelada.");
-        return 0;
-    endif;
+    // Etapa 2: Confirmação Inicial para DELEÇÃO TOTAL
+    if (!YesNo(who, "Você deseja apagar TODAS as facções ou gerenciar individualmente? [Sim para apagar TODAS / Não para gerenciar]"))
+        // O usuário escolheu apagar TODAS. Continua para o fluxo de deleção em massa.
+        var guilds_para_apagar := ListGuilds();
+        if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
+            SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
+            return 1;
+        endif;
+        
+        // Gump de revisão ANTES da deleção em massa
+        if (!ShowFactionReviewGump(who, guilds_para_apagar, 1, 1)) // modo_delecao_total = 1
+            SendSysMessage(who, "Deleção em massa cancelada.");
+            return 0;
+        endif;
 
-    // Etapa 3: Iniciar o processo
-    SendSysMessage(who, "INICIANDO PROCESSO DE REMOÇÃO COMPLETA DE TODAS AS FACÇÕES...");
-    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES INICIADA]] por " + who.name);
-
-    // Etapa 4: Obter a lista de guildas
-    var guilds_para_apagar := ListGuilds();
-    if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
-        SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
+        // Confirmação final e DESTRUTIVA
+        if (!YesNo(who, "CONFIRMAÇÃO FINAL: Apagar permanentemente TODAS as " + guilds_para_apagar.size() + " facções?"))
+            SendSysMessage(who, "Ação cancelada.");
+            return 0;
+        endif;
+        
+        // Se confirmou tudo, executa a deleção em massa
+        DeletarTodasAsFaccoes(who, guilds_para_apagar);
         return 1;
     endif;
     
-    SendSysMessage(who, "Encontradas " + guilds_para_apagar.size() + " facções para apagar.");
-    var faccoes_apagadas := 0;
+    // Se o usuário clicou "Não" na primeira pergunta, ele entra no modo de gerenciamento individual.
+    SendSysMessage(who, "Entrando no modo de gerenciamento individual de facções.");
+    
+    var pagina_atual := 1;
+    while (1) // Loop para controlar a paginação
+        // Recarregar a lista de guildas a cada iteração do loop para refletir as deleções
+        var guilds_para_gerenciar := ListGuilds();
+        if (!guilds_para_gerenciar || guilds_para_gerenciar.size() == 0)
+            SendSysMessage(who, "Não há mais facções para gerenciar.");
+            break;
+        endif;
 
-    // Etapa 5: Iterar, notificar e apagar
-    foreach guild_obj in guilds_para_apagar
+        var resultado_gump := ShowFactionReviewGump(who, guilds_para_gerenciar, pagina_atual, 0); // modo_delecao_total = 0
+        
+        if (resultado_gump.button_id == 0) // Clicou em "Sair" ou fechou o gump
+            break;
+        elseif (resultado_gump.button_id == 2) // Próxima
+            pagina_atual += 1;
+        elseif (resultado_gump.button_id == 3) // Anterior
+            pagina_atual -= 1;
+        elseif (resultado_gump.button_id >= 100) // Clicou em um botão de apagar individual
+            var index_para_apagar := resultado_gump.button_id - 100;
+            if (index_para_apagar >= 1 && index_para_apagar <= guilds_para_gerenciar.size())
+                var guild_para_apagar := guilds_para_gerenciar[index_para_apagar];
+                DeletarFaccaoIndividual(who, guild_para_apagar);
+                // A página permanecerá a mesma, e a lista será recarregada no início do próximo loop.
+            else
+                 SendSysMessage(who, "Erro: Índice de facção inválido.");
+            endif;
+        endif;
+    endwhile;
+
+endprogram
+
+
+/*
+ * Função ShowFactionReviewGump com Paginação e Botões de Deleção
+ */
+function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total := 0)
+    const ITEMS_PER_PAGE := 15;
+    var width := 450;
+    var height := 480;
+    
+    var title := modo_delecao_total ? "Revisão Final - Deleção em Massa" : "Gerenciador de Facções";
+    var gump := GFECreateGump(title, width, height, array{BORDER_GOLDEN});
+    
+    var total_pages := CInt(guilds_array.size() / ITEMS_PER_PAGE) + 1;
+    if (guilds_array.size() > 0 && guilds_array.size() % ITEMS_PER_PAGE == 0)
+        total_pages -= 1;
+    endif;
+    if (total_pages == 0) 
+        total_pages := 1; 
+    endif;
+
+    var y := 70;
+    var x := 30;
+
+    var header_text := modo_delecao_total ? "As seguintes " + guilds_array.size() + " facções serão APAGADAS:" : "Gerenciar facções individualmente:";
+    var header_color := modo_delecao_total ? 38 : 63;
+    GFTextLine(gump, x, y, header_color, header_text);
+    GFTextLine(gump, x + 280, y, 1153, "Página " + page + "/" + total_pages);
+    y += 25;
+    
+    GFResizePic(gump, x - 10, y, 9270, width - 40, 295);
+
+    var start_index := (page - 1) * ITEMS_PER_PAGE + 1;
+    var end_index := start_index + ITEMS_PER_PAGE - 1;
+    if (end_index > guilds_array.size())
+        end_index := guilds_array.size();
+    endif;
+
+    y += 5;
+    for i := start_index to end_index
+        var guild_obj := guilds_array[i];
         if (!guild_obj) continue; endif;
         
-        var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda " + guild_obj.guildid);
+        var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("ID: " + guild_obj.guildid);
+        GFTextLine(gump, x + 25, y, 1153, "• " + guild_name);
+        
+        // Adiciona o botão de apagar individualmente apenas no modo de gerenciamento
+        if (!modo_delecao_total)
+            // Botão 'X' vermelho para apagar
+           GFAddButton(gump, x, y, 11410, 11412, GF_CLOSE_BTN, 100 + i);
+        endif;
+
+        y += 20;
+    endfor;
+    
+    y := height - 60;
+
+    if (modo_delecao_total)
+        GFAddButton(gump, 20, y, 4005, 4007, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 50, y+2, 63, "CONFIRMAR DELEÇÃO EM MASSA");
+        GFAddButton(gump, 310, y, 4017, 4019, GF_CLOSE_BTN, 0);
+        GFTextLine(gump, 340, y+2, 38, "Cancelar");
+    else
+        GFAddButton(gump, width/2 - 30, y, 246, 248, GF_CLOSE_BTN, 0); // Botão de Sair
+        GFTextLine(gump, width/2, y-2, 1153, "Sair");
+    endif;
+    
+    // Botões de Paginação
+    if (page > 1)
+        GFAddButton(gump, x, y, 4014, 4016, GF_CLOSE_BTN, 3); // Anterior
+    endif;
+    if (page < total_pages)
+        GFAddButton(gump, width-x-20, y, 4005, 4007, GF_CLOSE_BTN, 2); // Próxima
+    endif;
+
+    var input := GFSendGump(who, gump);
+    
+    if (modo_delecao_total)
+        return CInt(input[0]);
+    else
+        return struct { "button_id" := CInt(input[0]) };
+    endif;
+endfunction
+
+function DeletarTodasAsFaccoes(who, guilds_para_apagar)
+    LogToFile("faccoes.log", "[[DELEÇÃO EM MASSA CONFIRMADA]] por " + who.name);
+    SendSysMessage(who, "INICIANDO PROCESSO DE REMOÇÃO COMPLETA DE TODAS AS FACÇÕES...");
+    
+    var faccoes_apagadas := 0;
+
+    // Etapa 1: Remover as guildas ativas (esta parte está correta)
+    SendSysMessage(who, "--> Removendo " + guilds_para_apagar.size() + " guildas ativas...");
+    foreach guild_obj in guilds_para_apagar
+        var resultado := RemFaccao(guild_obj);
+        if(resultado)
+            faccoes_apagadas += 1;
+        endif;
+        sleepms(100);
+    endforeach;
+    SendSysMessage(who, "--> Guildas ativas removidas: " + faccoes_apagadas);
+
+     // ====================================================================
+    // ETAPA 2: LIMPEZA COMPLETA DOS DATAFILES (MODO "LIMPAR CONTEÚDO")
+    // ====================================================================
+    SendSysMessage(who, "--> Iniciando limpeza do conteúdo dos datafiles e seus backups...");
+
+    // Lista com os NOMES BASE dos datafiles que queremos limpar TOTALMENTE.
+    var basenames_to_clean := array{
+        "guild_xp_stats", "guild_registry", "seriais", "recursos_inconsistencias",
+        "resource_failures", "process_registry", "chest_access_log", "transacoes", 
+        "backup_seriais", "kingdom_resources", "resource_stats"
+    };
+
+    var all_datafiles_info := ListDataFiles();
+    var files_cleaned_count := 0;
+
+    foreach df_info in all_datafiles_info
+        if (df_info.name in basenames_to_clean)
+            var descriptor := df_info.descriptor;
+            var df := OpenDataFile(descriptor);
+            
+            if (df)
+                var keys_to_delete := df.Keys();
+                if (keys_to_delete.size() > 0)
+                    foreach key in keys_to_delete
+                        df.DeleteElement(key);
+                        sleepms(1);
+                    endforeach;
+                    SendSysMessage(who, "--> Conteúdo limpo: " + descriptor + " (" + keys_to_delete.size() + " elementos removidos)");
+                    LogToFile("faccoes.log", "CLEAN: Conteúdo de " + descriptor + " limpo. " + keys_to_delete.size() + " elementos removidos.");
+                    files_cleaned_count += 1;
+                else
+                    files_cleaned_count += 1; 
+                endif
+            endif
+        endif;
+        sleepms(10);
+    endforeach;
+    SendSysMessage(who, "--> Total de arquivos de datafile limpos: " + files_cleaned_count);
+
+
+
+    // ====================================================================
+    // FIM DA LIMPEZA
+    // ====================================================================
+    
+    
+    SendSysMessage(who, "==================================================");
+    SendSysMessage(who, "LIMPEZA COMPLETA DE FACÇÕES CONCLUÍDA!");
+    SendSysMessage(who, "Total de guildas apagadas: " + faccoes_apagadas + ".");
+    SendSysMessage(who, "O conteúdo de todos os datafiles de facção (incluindo backups) foi limpo.");
+    SendSysMessage(who, "==================================================");
+    
+    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES FINALIZADA]] por " + who.name);
+endfunction
+
+
+/*
+ * Função auxiliar para deletar uma facção individualmente
+ */
+function DeletarFaccaoIndividual(who, guild_obj)
+    if (!guild_obj) return; endif;
+
+    var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda ID: " + guild_obj.guildid);
+
+    if (YesNo(who, "Tem certeza que deseja apagar a facção '" + guild_name + "'?"))
         SendSysMessage(who, "Apagando facção: " + guild_name + "...");
         
-        // --- Notificar membros online ANTES de apagar ---
         var members_to_notify := guild_obj.members;
         if(members_to_notify)
             foreach member in members_to_notify
                 if(member && member.connected)
-                    // Usando SendSysMessage padrão
                     SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por um administrador.");
                 endif;
             endforeach;
         endif;
-        
-        sleepms(200);
 
-        // --- Chamar a função de limpeza ---
+        // Chama a função de remoção centralizada do include de faccao
         var resultado := RemFaccao(guild_obj);
-        
         if (resultado)
             SendSysMessage(who, "--> " + guild_name + " apagada com sucesso.");
-            faccoes_apagadas += 1;
+            LogToFile("faccoes.log", "Facção '" + guild_name + "' (ID: " + guild_obj.guildid + ") apagada individualmente por " + who.name);
         else
             SendSysMessage(who, "--> ERRO ao apagar " + guild_name + ". Verifique os logs.");
         endif;
-
-        sleepms(200);
-    endforeach;
-    
-    // Etapa 6: Limpeza final de datafiles
-    LogToFile("faccoes.log", "Limpando o registro de guildas...");
-    var registry_df := SafeOpenDataFile(":faccao:guild_registry");
-    if (registry_df)
-        registry_df.DeleteElement("guilds");
+    else
+        SendSysMessage(who, "Deleção de '" + guild_name + "' cancelada.");
     endif;
-    
-    // Etapa 7: Mensagem final
-    SendSysMessage(who, "==================================================");
-    SendSysMessage(who, "LIMPEZA COMPLETA DE FACÇÕES CONCLUÍDA!");
-    SendSysMessage(who, "Total de facções apagadas: " + faccoes_apagadas + " de " + guilds_para_apagar.size());
-    SendSysMessage(who, "==================================================");
-    
-    LogToFile("faccoes.log", "[[LIMPEZA GERAL DE FACÇÕES FINALIZADA]] por " + who.name + ". Apagadas: " + faccoes_apagadas);
-    
-    return 1;
-endprogram
+endfunction

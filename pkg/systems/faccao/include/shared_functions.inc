@@ -713,7 +713,7 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
 
 
     // Abrir o datafile
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE); // Antes era só SafeOpenDataFile(...)
     if (!df)
         LogError(debug_category, $"Falha ao abrir/criar datafile '{KINGDOM_RESOURCE_DATAFILE}'. Abortando.");
         return 0;

@@ -1,0 +1,81 @@
+use uo;
+use os;
+use guilds;
+use datafile;
+
+include ":faccao:include/datafile_helpers";
+include ":faccao:include/faccao_constants";
+
+program verificar_limpeza(who)
+
+    if (!who || who.cmdlevel < 2)
+        SendSysMessage(who, "Apenas administradores podem usar este comando.");
+        return 0;
+    endif;
+
+    SendSysMessage(who, "--- INICIANDO DIAGNÓSTICO DO SISTEMA DE FACÇÕES ---");
+    
+    // 1. Verificar Guildas Ativas
+    var guilds := ListGuilds();
+    if (guilds.size() == 0)
+        SendSysMessage(who, "[OK] Nenhuma guilda/facção encontrada no sistema.");
+    else
+        SendSysMessage(who, "[AVISO] " + guilds.size() + " guildas/facções ainda existem!");
+    endif;
+    sleepms(100);
+
+    // 2. Verificar Datafile de Registro de Guildas
+    var registry_df := SafeOpenDataFile(":faccao:guild_registry");
+    if (registry_df)
+        var keys := registry_df.Keys();
+        if (keys.size() == 0 || (keys.size() == 1 && keys[1] == "guilds" && registry_df.FindElement("guilds").GetProp("registry").size() == 0) )
+            SendSysMessage(who, "[OK] Datafile de registro de guildas está limpo.");
+        else
+            SendSysMessage(who, "[AVISO] Datafile de registro de guildas contém " + keys.size() + " elementos.");
+        endif;
+    else
+        SendSysMessage(who, "[OK] Datafile de registro de guildas não existe (foi destruído).");
+    endif;
+    sleepms(100);
+
+    // 3. Verificar Datafile de Seriais
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    if (seriais_df)
+        var keys := seriais_df.Keys();
+        if (keys.size() == 0)
+            SendSysMessage(who, "[OK] Datafile de seriais está limpo.");
+        else
+            SendSysMessage(who, "[AVISO] Datafile de seriais contém " + keys.size() + " elementos.");
+        endif;
+    else
+        SendSysMessage(who, "[OK] Datafile de seriais não existe (foi destruído).");
+    endif;
+    sleepms(100);
+
+    // 4. Verificar Territórios
+    var territorios_controlados := 0;
+    var areas_df := SafeOpenDataFile(":architect:areas");
+    if (areas_df)
+        foreach key in (areas_df.Keys())
+            var elem := SafeFindElement(areas_df, key);
+            if (elem)
+                var faccao := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+                if (faccao != DEFAULT_FACTION)
+                    territorios_controlados += 1;
+                endif;
+            endif;
+            sleepms(1);
+        endforeach;
+        
+        if (territorios_controlados == 0)
+            SendSysMessage(who, "[OK] Nenhum território está controlado por uma facção.");
+        else
+            SendSysMessage(who, "[AVISO] " + territorios_controlados + " territórios ainda estão controlados por facções!");
+        endif;
+    else
+        SendSysMessage(who, "[ERRO] Não foi possível verificar o datafile de territórios.");
+    endif;
+
+    SendSysMessage(who, "--- DIAGNÓSTICO CONCLUÍDO ---");
+
+endprogram
