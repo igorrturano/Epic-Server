@@ -15,10 +15,12 @@ var LOGGING_ENABLED := 1;  // 1 = ativado, 0 = desativado
 
 // Variável para controle por categoria
 var LOG_CATEGORIES := dictionary{
-    "recursos" := 3,   // Warning
-    "permissao" := 3,  // Warning
-    "territorio" := 3, // Warning
-    "bau" := 3         // Warning
+    "recursos" := 3,
+    "permissao" := 3,
+    "territorio" := 3,
+    "bau" := 3,
+    "CompraMapeador" := 5, // [NOVO] Adicione esta linha para ver todos os logs desta categoria
+    "CompraFerramentas" := 5 // [NOVO] E esta para as ferramentas
 };
 
 function EnableLogging(enable := 1)

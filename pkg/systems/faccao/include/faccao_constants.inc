@@ -117,8 +117,8 @@ const CYCLE_WAIT := 120;
 // =======================================
 // BORDAS DO MAPEADOR
 // =======================================
-const BORDER_ITEM_LATERAL := 0xF873;
-const BORDER_ITEM_TRANSVERSAL := 0xF878;
+const BORDER_ITEM_LATERAL := 0xF878;
+const BORDER_ITEM_TRANSVERSAL := 0xF873;
 const BORDER_DURATION := 300;
 const BORDER_HUE := 39;
 

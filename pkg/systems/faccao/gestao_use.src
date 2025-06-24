@@ -70,30 +70,54 @@ endfunction
 
 function ShowKingdomManagementGump(who, item)
     var cur_menu := MENU_DOACOES;
-    var continuar := 1;    while(continuar)
+    var continuar := 1;
+    while(continuar)
+        // O GUMP é criado com base no menu atual.
+        // Na primeira vez, cur_menu é MENU_DOACOES.
+        // Se o usuário clicar em "Construções", cur_menu mudará para MENU_CONSTRUCOES
+        // e o GUMP será recriado com os botões de compra.
         var gump := CreateKingdomManagementGump(who, cur_menu, item);
         var input := GFSendGump(who, gump);
         
-        if (input[0] >= 700 && input[0] < 900)
-            // Ações de território sempre finalizam o loop
-            ProcessarAcaoTerritorio(who, input[0], item);
-            return; // Saída imediata e definitiva        elseif (input[0] == 100)
-            // Botão de compra do Mapeador
-            if (ProcessarCompraMapeador(who, item))
-                continuar := 0; // Sair após compra bem-sucedida
-            endif
-            // Se a compra falhar, continua no loop para mostrar novamente o gump
-        elseif (input[0] == 101)
-            // Botão de compra das Ferramentas de Construção
-            if (ProcessarCompraFerramentas(who, item))
-                continuar := 0; // Sair após compra bem-sucedida
-            endif
-            // Se a compra falhar, continua no loop para mostrar novamente o gump
-        elseif (input[0] != 0)
-            cur_menu := AtualizarEstadoMenu(input[0]);
-        else
-            continuar := 0; // Sair do loop se o usuário fechar o gump
+        // Se o usuário fechou o GUMP
+        if (!input || input[0] == 0)
+            continuar := 0;
+            break;
         endif
+        
+        // ===============================================
+        // == INÍCIO DA CORREÇÃO LÓGICA DO GUMP ==
+        // ===============================================
+
+        var button_id := input[0];
+
+        if (button_id == 100) // Botão Comprar Mapeador
+            // Chama a função de processamento com os logs que adicionamos.
+            // Se a compra for bem-sucedida, a função retorna 1.
+            // Poderíamos sair do GUMP após a compra ou continuar.
+            // Vamos manter o GUMP aberto por enquanto.
+            ProcessarCompraMapeador(who, item);
+            
+            // Força o menu a permanecer em "Construções" para que o jogador veja
+            // que a ação foi registrada (ou que falhou).
+            cur_menu := MENU_CONSTRUCOES;
+
+        elseif (button_id == 101) // Botão Comprar Ferramentas
+            ProcessarCompraFerramentas(who, item); // Assumindo que você criou esta função com logs também
+            cur_menu := MENU_CONSTRUCOES;
+
+        elseif (button_id >= 700 && button_id < 900) // Ações de Território
+            ProcessarAcaoTerritorio(who, button_id, item);
+            continuar := 0; // Sai do GUMP após ações de território
+
+        else // Botões de navegação do menu principal
+            cur_menu := AtualizarEstadoMenu(button_id);
+        
+        endif
+
+        // ===============================================
+        // === FIM DA CORREÇÃO LÓGICA DO GUMP ===
+        // ===============================================
     endwhile
 endfunction
 
@@ -1965,11 +1989,24 @@ function CancelarCaravanaTerritorioIndividual(who, origin_territory_id, faction_
 endfunction
 
 function ProcessarCompraMapeador(who, item)
-    // Verificar se o jogador tem privilégios de arquiteto
-    if (!IsArchitectOfGuild(who))
+    // [LOG] Inicia o processo de log detalhado para a compra.
+    LogInfo("CompraMapeador", "==================================================");
+    LogInfo("CompraMapeador", "INÍCIO da tentativa de compra do Mapeador por: " + who.name + " (Serial: " + who.serial + ")");
+
+    // Etapa 1: Verificar se o jogador tem privilégios de arquiteto
+    var tem_permissao := IsArchitectOfGuild(who);
+    // [LOG] Loga o resultado da verificação de permissão.
+    LogInfo("CompraMapeador", "ETAPA 1: Verificação de Permissão (IsArchitectOfGuild) -> Resultado: " + (tem_permissao ? "SUCESSO" : "FALHA"));
+    if (!tem_permissao)
         SendSysMessage(who, "Apenas arquitetos de guilda podem comprar o Mapeador.", 3, 38);
+        LogWarning("CompraMapeador", "FALHA na compra: " + who.name + " não tem permissão de arquiteto. Processo encerrado.");
+        LogInfo("CompraMapeador", "==================================================");
         return 0;
-    endif    // Calcular moedas disponíveis
+    endif
+
+    // Etapa 2: Calcular moedas disponíveis
+    // [LOG] Inicia a contagem de moedas.
+    LogInfo("CompraMapeador", "ETAPA 2: Contando moedas na mochila de " + who.name);
     var moedas_disponiveis := 0;
     var moedas_items := array{};
     
@@ -1977,17 +2014,25 @@ function ProcessarCompraMapeador(who, item)
         if (moeda.objtype == MOEDAS_COBRE)
             moedas_disponiveis += moeda.amount;
             moedas_items.append(moeda);
+            // [LOG] Loga cada pilha de moedas encontrada.
+            LogDebug("CompraMapeador", "  -> Pilha de moedas encontrada: Serial=" + moeda.serial + ", Quantidade=" + moeda.amount);
         endif
         sleepms(2);
     endforeach
     
+    // [LOG] Loga o total de moedas e o custo necessário.
+    LogInfo("CompraMapeador", "ETAPA 3: Verificação de Custo -> Moedas disponíveis: " + moedas_disponiveis + " / Custo necessário: " + MAPEADOR_CUSTO);
     // Verificar se tem moedas suficientes
     if (moedas_disponiveis < MAPEADOR_CUSTO)
         SendSysMessage(who, "Você precisa de " + MAPEADOR_CUSTO + " moedas de cobre para comprar um Mapeador. Você tem apenas " + moedas_disponiveis + ".");
+        LogWarning("CompraMapeador", "FALHA na compra: Fundos insuficientes. Processo encerrado.");
+        LogInfo("CompraMapeador", "==================================================");
         return 0;
     endif
     
-    // Consumir as moedas
+    // Etapa 4: Consumir as moedas
+    // [LOG] Inicia o débito das moedas.
+    LogInfo("CompraMapeador", "ETAPA 4: Debitando " + MAPEADOR_CUSTO + " moedas da mochila de " + who.name);
     var moedas_restantes := MAPEADOR_CUSTO;
     foreach moeda in moedas_items
         if (moedas_restantes <= 0)
@@ -1996,34 +2041,53 @@ function ProcessarCompraMapeador(who, item)
         
         if (moeda.amount >= moedas_restantes)
             // Esta pilha tem moedas suficientes
+            // [LOG] Loga a subtração parcial de uma pilha.
+            LogDebug("CompraMapeador", "  -> Subtraindo " + moedas_restantes + " da pilha " + moeda.serial);
             SubtractAmount(moeda, moedas_restantes);
             moedas_restantes := 0;
         else
             // Consumir toda esta pilha
+            // [LOG] Loga a destruição de uma pilha inteira.
+            LogDebug("CompraMapeador", "  -> Consumindo pilha inteira " + moeda.serial + " (" + moeda.amount + " moedas)");
             moedas_restantes -= moeda.amount;
             DestroyItem(moeda);
         endif
         sleepms(2);
     endforeach
-      // Criar o Mapeador na mochila do jogador
+    // [LOG] Confirma que o débito foi concluído.
+    LogInfo("CompraMapeador", "Débito de moedas concluído com sucesso.");
+
+    // Etapa 5: Criar o Mapeador na mochila do jogador
+    // [LOG] Inicia a criação do item.
+    LogInfo("CompraMapeador", "ETAPA 5: Tentando criar o Mapeador (Objtype: 0x" + Hex(MAPEADOR_OBJTYPE) + ") na mochila.");
     var mapeador := CreateItemInBackpack(who, MAPEADOR_OBJTYPE, 1);
+    
     if (!mapeador)
-        // Tentar criar no chão se não couber na mochila
+        // [LOG] Loga a falha na criação na mochila e a tentativa de fallback.
+        LogWarning("CompraMapeador", "Falha ao criar na mochila. Tentando criar no chão como fallback.");
         mapeador := CreateItemAtLocation(who.x, who.y, who.z, MAPEADOR_OBJTYPE, 1, who.realm);
         if (mapeador)
             // Configurar o script de uso do Mapeador
             mapeador.usescript := ":faccao:mapeador";
             SendSysMessage(who, "Mapeador comprado com sucesso! O item foi colocado no chão pois sua mochila está cheia.");
+            // [LOG] Loga o sucesso do fallback.
+            LogInfo("CompraMapeador", "SUCESSO (Fallback): Mapeador criado no chão. Serial: " + mapeador.serial);
+            LogInfo("CompraMapeador", "==================================================");
         else
             SendSysMessage(who, "Erro ao criar o Mapeador. Contacte a administração.");
-            // Devolver as moedas em caso de erro
+            // [LOG] Loga a falha crítica e a devolução das moedas.
+            LogError("CompraMapeador", "FALHA CRÍTICA: Falha ao criar Mapeador na mochila E no chão. Devolvendo moedas.");
             CreateItemInBackpack(who, MOEDAS_COBRE, MAPEADOR_CUSTO);
+            LogInfo("CompraMapeador", "==================================================");
             return 0;
         endif
     else
         // Configurar o script de uso do Mapeador
         mapeador.usescript := ":faccao:mapeador";
         SendSysMessage(who, "Mapeador comprado com sucesso por " + MAPEADOR_CUSTO + " moedas de cobre!");
+        // [LOG] Loga o sucesso da criação na mochila.
+        LogInfo("CompraMapeador", "SUCESSO: Mapeador criado na mochila. Serial: " + mapeador.serial);
+        LogInfo("CompraMapeador", "==================================================");
     endif
     
     return 1;
