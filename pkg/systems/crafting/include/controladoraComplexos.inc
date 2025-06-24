@@ -318,13 +318,19 @@ function MontaMelhorEsquema(quem, sessao)
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(
-				sessao.receitaSelecionada.esquemaSelecionado,
-				componenteNecessario,
-				componenteEscolhido, 
-				opcaoEncontrada.indiceEncaixeComponente, 
-				sessao.receitaSelecionada.receita.receitaClassificada.classe);
+		if(opcaoEncontrada.itemRef)
+			var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
+			
+			AcrescentaComponenteEscolhido(
+					sessao.receitaSelecionada.esquemaSelecionado,
+					componenteNecessario,
+					componenteEscolhido, 
+					opcaoEncontrada.indiceEncaixeComponente, 
+					sessao.receitaSelecionada.receita.receitaClassificada.classe);
+		else
+			//marreta básica pra não ter que ficar contando tudo varias vezes.
+			SendSysMessageEX(quem, "Dificuldades para encontrar melhor componente para {}, componente ignorado. Por favor tente empilhar todos materiais juntos".format(componenteNecessario.encaixe), SSM_INFO_IC);
+		endif
 	endforeach
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
@@ -358,7 +364,7 @@ endfunction
 function FabricaItemMontado(quem,esquema, receita, quantidade := 1)
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita);
 	
-	if(isRequisitoSuficiente(quem,contagem, receita, quantidade))
+	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade))
 		ConsomeRequisitos(contagem, quantidade);
 		CriaItemMontado(quem,esquema,receita, quantidade);
 	else 
@@ -421,9 +427,11 @@ function DefinePropFabricado(esquema,receita)
 	return propFabricado;
 endfunction
 
-function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
+function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1)
 
 	var encaixesEncontrados := array;
+	var configEncaixes := ReadConfigFile(":*:encaixes");
+
 	foreach elemento in  contagem
 		Sleepms(2);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
@@ -444,10 +452,24 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 
 	foreach necessario in (receita.componentesNecessarios)
 		Sleepms(2);
-		if(!(necessario.encaixe in encaixesEncontrados) && !necessario.isOpcional)
-			SendSysMessageEX(quem,"O encaixe {} é obrigatório e não foi preenchido.".format(necessario.encaixe),SSM_FAIL);
-			return false;
+		if(!(necessario.encaixe in encaixesEncontrados))
+			if(necessario.isOpcional)
+				foreach componenteEscolhido in (esquema.componentesEscolhidos)
+					if((componenteEscolhido.componenteNecessario.encaixe == necessario.encaixe))//o cara selecionou, mas não tinha nenhum componente. Neste caso acaba não caíndo na contagem.
+						SendSysMessageEX(quem,"Você não tem componentes suficientes para o encaixe opcional [{}].".format(configEncaixes[necessario.encaixe].desc),SSM_FAIL);
+						return false;
+					endif
+				endforeach
+			else
+				SendSysMessageEX(quem,"O encaixe [{}] é obrigatório e não foi preenchido.".format(configEncaixes[necessario.encaixe].desc),SSM_FAIL);
+				return false;
+			endif
 		endif
+
+		if(necessario.isOpcional)
+			
+		endif
+	
 	endforeach
 
 	if(IsMateriaisNaoEncontrados(receita, contagem))
@@ -777,6 +799,7 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 					material := material,
 					tier := tier,
 					quantidade := item.amount};
+				//Print("envelope ------- " + envelope);
 
 				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe],
 										envelope,

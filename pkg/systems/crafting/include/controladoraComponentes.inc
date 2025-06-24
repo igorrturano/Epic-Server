@@ -26,6 +26,8 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 		"wood":
 			return "Wood_Working";
 		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
+		"oleo":
+		"solvente":
 			return "Alchemy";
 		default:
 			return "Wood_Working";
@@ -95,6 +97,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				break;
 			
 			RT_ESCOLHA_COMPONENTE:
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				GerenciadorDropDown::LimpaDropDowns(gerenciador);
 				sessao.devePopularDropDown := true;
 				sessao.componenteSelecionado := sessao.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
@@ -143,11 +146,12 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				if(alvo)
 					var materialDetalhes := configRecursos[alvo.objtype];
 					if(materialDetalhes)
-						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,configComponentes[sessao.componenteSelecionado.selecione.objtype].pericia);
-						if(isTrabalhavel)
-							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar o material indicado.",SSM_HELPFU);
+						var informacaoComponente := configComponentes[sessao.componenteSelecionado.selecione.objtype];
+						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,informacaoComponente.pericia);
+						if(IsMaterialTrabalhavel(quem, sessao.componenteSelecionado, alvo.objtype))
+							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar o material para este componente.",SSM_HELPFU);
 						else
-							SendSysMessageEX(quem,"Você não pode trabalhar o material indicado para este componente .",SSM_HARMFUL);
+							SendSysMessageEX(quem,"Você não pode trabalhar o material indicado para este componente. (Obs: Só há dificuldade para materiais principais.)",SSM_HARMFUL);
 						endif
 					else
 						SendSysMessageEX(quem,"O Alvo não é um material trabalhável.",SSM_HARMFUL);
@@ -199,6 +203,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					for i := 1 to lotes
 						
 						var interrompido := CheckCanWork(quem, vidaInicial, posicaoInicial);
+
 						PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
 						PlaySoundEffect(quem, SFX_56);
 						
@@ -284,7 +289,7 @@ function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEnco
 	
 	foreach materialEscolhido in materiaisEscolhidos
 
-		var qtdPossivel := cInt(materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria );
+		var qtdPossivel := cInt(materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria );
 		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
 		
 		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
@@ -307,7 +312,7 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
 		var quantidadeRestante := quantidadeConsumo;
 
-		foreach itemEncontrado in (materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].itensEncontrados)			
+		foreach itemEncontrado in (materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].itensEncontrados)			
 
 			If(quantidadeRestante <= 0) 
 				break; 
@@ -328,32 +333,38 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 endfunction
 
-function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
-	var materiais := SplitWords( sessao.componenteSelecionado.materiais,",");
-	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,sessao.componenteSelecionado.materialPrincipal);
-	
-	foreach material in materiais
 
-		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_material_iter);
+function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
+	var materiaisNecessarios := sessao.componenteSelecionado.selecione.materiais;
+	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(
+																quem,
+																configRecursos,
+																sessao.componenteSelecionado);
+	
+	var materiaisNecessariosInvertidos :=  materiaisNecessarios.keys();
+	materiaisNecessariosInvertidos.reverse();//Foi preciso inverter para ficar de acordo com a ordem na string da tabela.
+
+	foreach materialNecessario in (materiaisNecessariosInvertidos)
+		
+		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_materialNecessario_iter);
 		
 		if(!dropDown) 
-			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_material_iter);
+			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_materialNecessario_iter);
 		else
 			DropDown::ResetaValores(dropDown);
 		endif
 
-		var splitMaterial := SplitWords(material);
-		var tipo := Trim(Lower(splitMaterial[1]));
-		var qtd := splitMaterial[2];
+		var tipo := materiaisNecessariosInvertidos[_materialNecessario_iter];
+		var qtd := materiaisNecessarios[materialNecessario];
 		var indiceOpcoes := 1;
-		var materiaisEncontrados := sessao.materiaisEncontrados[tipo].keys();
+		var materiaisEncontrados := sessao.materiaisEncontrados[Lower(materialNecessario)].keys();
 
 		if(materiaisEncontrados)
 
 			var isValorEscolhidoPresente := false;
 
 			foreach chave in (materiaisEncontrados)
-				Sleepms(2);
+				Sleepms(2); 
 				if (dropDown.valorEscolhido.objtype == chave)
 					isValorEscolhidoPresente := true;
 				endif
@@ -387,35 +398,41 @@ function MontaValorOpcaoComponente(chave,qtd,tipo,sessao)
 					objtype := chave,
 					nome := configRecursos[chave].name,
 					quantidadeNecessaria := qtd,
-					tipoMaterial := tipo,
-					isPrincipal := tipo == Trim(Lower(sessao.componenteSelecionado.materialPrincipal))
+					tipoMaterial := Lower(tipo),
+					isPrincipal := Lower(tipo) == Trim(Lower(sessao.componenteSelecionado.materialPrincipal))
 					};
 endfunction
 
-function CarregaMateriaisEncontrados(quem,configRecursos, materialPrincipal)
+function CarregaMateriaisEncontrados(quem,configRecursos, componente)
 	var retorno := dictionary;
+	var materiaisComponente;
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
-			materialPrincipal := Lower(materialPrincipal);
-			var tipoMaterial := Lower(materialDetalhe.type);
-			var pericia := PegaPericiaPeloMaterial(materialPrincipal);
-
-			if(materialPrincipal == tipoMaterial &&  materialDetalhe.Skill > AP_GetSkill(quem,pericia)) continue; endif
-			
-			MontaMaterialEncontrado(retorno,tipoMaterial,item);
-		else
-			var itemCfg := itemsConfig[item.objtype];
-
-			if(itemCfg)
-				MontaMaterialEncontrado(retorno,item.objtype,item);
-			endif
+			if(!IsMaterialTrabalhavel(quem, componente, item.objtype)) continue; endif //Só importa skill para o material principal.
+			MontaMaterialEncontrado(retorno,Lower(materialDetalhe.type),item);
 		endif
 	endforeach 
 
 	return retorno;
+endfunction
+
+function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
+
+	var materialDetalhe := configRecursos[chaveMaterial];
+
+	var tipoMaterial := Lower(materialDetalhe.type);
+	var materialPrincipal := Lower(componente.materialPrincipal);
+	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
+
+	if(materialPrincipal == tipoMaterial)
+		return materialDetalhe.Skill <= AP_GetSkill(quem,pericia);
+	else
+		return tipoMaterial in (componente.selecione.materiais.keys());
+	endif
+
 endfunction
 
 function MontaMaterialEncontrado(byref categorias, tipo, item)
@@ -538,12 +555,16 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		endif
 
 		var materiaisNecessarios := GetConfigStringArray( configProfissao[chave], "materials" );
-		var materiaisConcatenados := "";  
+		var materiaisConcatenados := "";
+		var dicionarioMateriais := dictionary;
+
 		foreach material in materiaisNecessarios
 			if(_material_iter != 1)
 				materiaisConcatenados += ", ";
 			endif
 
+			var tipoEQuantidade := SplitWords(material);
+			dicionarioMateriais.insert(tipoEQuantidade[1],tipoEQuantidade[2]);
 			materiaisConcatenados += material;
 			Sleepms(2);
 		endforeach
@@ -555,7 +576,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := encaixesConfig[configProfissao[chave].encaixe].Desc;
-		componente.+selecione := struct{isColunaBotao := true, objtype := chave};
+		componente.+selecione := struct{isColunaBotao := true, objtype := chave, materiais := dicionarioMateriais};
 
 		componentes.append(componente);
 	endforeach
