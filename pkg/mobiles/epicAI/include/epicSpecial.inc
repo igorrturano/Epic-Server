@@ -1001,7 +1001,7 @@ function CreateInvisibleWeb(spider)
     if (web)
         PrintTextAbove(spider, "*tece teia*");
         SetObjProperty(web, "Creator", spider.serial);
-        SetCooldown(spider, "create_web", 30);
+        SetCooldown(spider, "create_web", 600);
         
         // Random static web graphic
         var web_graphics := array{4280, 4281, 4282, 4283, 4284, 4285, 4286, 4287, 4288, 
