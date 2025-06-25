@@ -61,7 +61,7 @@ function ProcessarUpkeepSimples()
         endforeach
     endif
     
-    // CORREÇÃO FINAL: Obter a lista de nomes de guildas UMA ÚNICA VEZ.
+    // Obter a lista de nomes de guildas UMA ÚNICA VEZ.
     var guild_names := active_guilds.keys();
     
     Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
@@ -105,19 +105,61 @@ function ProcessarUpkeepSimples()
         payment_attempts += 1;
         Print("UPKEEP: " + guild_name + " deve pagar " + cost + " moedas");
         
-        if (CobrarUpkeepRobusto(guild_name, cost))
+        if (CobrarUpkeepRobusto(guild, guild_name, cost))
             Print("UPKEEP: " + guild_name + " pagou com sucesso");
             successful_payments += 1;
         else
             Print("UPKEEP: " + guild_name + " falhou no pagamento - recursos insuficientes ou baú não encontrado");
         endif
         
+        var inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0));
+		if (inadimplencia > 0)
+			AplicarPenalidades(guild, inadimplencia);
+		endif
+
         sleepms(100);
     endforeach
     
     Print("UPKEEP: Ciclo concluído - Guildas processadas: " + processed_count + ", Tentativas de pagamento: " + payment_attempts + ", Pagamentos bem-sucedidos: " + successful_payments);
 endfunction
 
+function AplicarPenalidades(guild, pontos)
+    var guild_name := SafeGetGuildName(guild);
+    
+    if (pontos >= 3) // 3 falhas (3 ciclos) -> Perda de território
+        LogCritical("upkeep", "PENALIDADE MÁXIMA para " + guild_name + "! Revogando um território.");
+        var territories := GetGuildTerritories(guild_name);
+        if (territories.size() > 0)
+            // Revoga um território aleatório que NÃO seja a capital.
+            var territory_to_revoke := FindTerritoryToRevoke(territories);
+            if (territory_to_revoke)
+                TM_RevokeTerritory(territory_to_revoke.id, 0); // Adicionado 0 para o parâmetro 'who'
+                NotificarLider(guild, "Sua facção falhou em pagar o upkeep por 3 ciclos. O território '" + territory_to_revoke.name + "' foi perdido!");
+                // Zera os pontos de inadimplência após a penalidade
+                SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
+            endif
+        endif
+    elseif (pontos == 2) // 2 falhas
+         NotificarLider(guild, "ALERTA FINAL: O próximo ciclo de upkeep sem pagamento resultará na PERDA de um território!");
+    elseif (pontos == 1) // 1 falha
+         NotificarLider(guild, "AVISO: Sua facção está inadimplente. A geração de recursos e o ganho de XP estão suspensos até o pagamento do upkeep.");
+    endif
+endfunction
+
+function FindTerritoryToRevoke(territories)
+    // Lógica para escolher um território que não seja a capital
+    foreach t in territories
+        if (!TM_IsTerritoryCapital(t.id))
+            return t;
+        endif
+    endforeach
+    // Se só sobrar a capital, retorna a capital
+    if(territories.size() > 0)
+		return territories[1];
+	else
+		return 0;
+	endif
+endfunction
 
 function GetGuildTerritories(faction_name)
     var territories := array{};
@@ -133,6 +175,7 @@ function GetGuildTerritories(faction_name)
             if (territory_faction == faction_name)
                 var territory_info := struct{};
                 territory_info.+name := rect_name;
+                territory_info.+id   := GetElementProp(elem, TERRITORY_ID_PROP, rect_name);
                 territory_info.+rect := GetElementProp(elem, "Rect", "");
                 territory_info.+realm := GetElementProp(elem, "Realm", "britannia");
                 territories.append(territory_info);
@@ -145,7 +188,7 @@ function GetGuildTerritories(faction_name)
 endfunction
 
 
-function CobrarUpkeepRobusto(guild_name, cost_amount)
+function CobrarUpkeepRobusto(guild, guild_name, cost_amount)
     LogCritical("UpkeepPayment_START_v2", "Iniciando cobrança (v2) de " + cost_amount + " moedas para facção " + guild_name);
 
     var faction_chest := 0;
@@ -155,10 +198,6 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
 
     LogInfo("UpkeepPayment_SEARCH_v2", "Encontrados " + territories_found.size() + " territórios para " + guild_name + ". Procurando a capital...");
 
-    // ====================================================================
-    // == INÍCIO DA MODIFICAÇÃO: LÓGICA PARA ENCONTRAR A CAPITAL ==
-    // ====================================================================
-
     // 1. Iterar pelos territórios para encontrar a capital designada.
     foreach territory_info in territories_found
         var current_territory_id := territory_info.id ?: territory_info.name;
@@ -166,7 +205,7 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
             capital_territory_id := current_territory_id;
             capital_territory_name := territory_info.name;
             LogInfo("UpkeepPayment_CAPITAL_FOUND_v2", "✓ Capital da facção '" + guild_name + "' encontrada: '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
-            break; // Encontrou a capital, pode parar de procurar.
+            break; 
         endif
         SleepMS(1);
     endforeach
@@ -174,28 +213,20 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     // 2. Se nenhuma capital foi encontrada, o pagamento não pode prosseguir de forma previsível.
     if (!capital_territory_id)
         LogError("UpkeepPayment_ERROR_v2", "NENHUMA CAPITAL designada para a facção '" + guild_name + "'. Cobrança de upkeep abortada.");
-        // Opcional: Notificar o líder da facção sobre a necessidade de designar uma capital.
-        return 0; // Falha no pagamento.
+		NotificarLider(guild, "AVISO DE UPKEEP: Seu reino não possui uma capital designada! O pagamento do upkeep não pode ser processado. Use a Mesa de Gestão para definir uma capital.");
+		return 0;
     endif
 
     // 3. Buscar o baú EXCLUSIVAMENTE no território da capital.
     LogInfo("UpkeepPayment_CHEST_SEARCH_v2", "Buscando baú na capital '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
     faction_chest := FindFactionChest(guild_name, capital_territory_id);
 
-    // ====================================================================
-    // == FIM DA MODIFICAÇÃO ==
-    // ====================================================================
-
     if (!faction_chest)
         LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' não encontrado. Pagamento falhou para a facção " + guild_name);
-        // Opcional: Notificar o líder sobre o baú ausente na capital.
         return 0;
     endif
     
     LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança (Capital): Serial " + faction_chest.serial);
-
-    // O resto da função (lógica de lock, contagem e débito) permanece EXATAMENTE O MESMO.
-    // Ela agora operará sobre o 'faction_chest' que garantimos ser o da capital.
 
     var lock_prop := "operation_lock"; 
     var lock_timeout := 30;
@@ -278,8 +309,22 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
         endif
     endif
     
- EraseObjProperty(faction_chest, lock_prop);
+    EraseObjProperty(faction_chest, lock_prop);
     LogDebug("upkeep", "Lock liberado no baú da capital " + faction_chest.serial + ". Sucesso: " + payment_success);
     
-    return payment_success;
+	if (!payment_success)
+		var inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) + 1;
+		SafeSetGuildProperty(guild, "pontos_inadimplencia", inadimplencia);
+		LogWarning("upkeep", "FALHA no pagamento de upkeep para " + guild_name + ". Pontos de inadimplência: " + inadimplencia);
+		
+		// Notificar o líder sobre a falha
+		NotificarLider(guild, "AVISO DE UPKEEP: O pagamento do upkeep semanal falhou. Sua facção agora tem " + inadimplencia + " ponto(s) de inadimplência. Reabasteça o tesouro da capital!");
+	else
+		// Se o pagamento foi bem-sucedido, zera os pontos de inadimplência.
+		SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
+		LogInfo("upkeep", "Pagamento bem-sucedido para " + guild_name + ". Pontos de inadimplência zerados.");
+		NotificarLider(guild, "O pagamento do upkeep semanal foi realizado com sucesso. Seu reino está em dia.");
+	endif;
+	
+	return payment_success;
 endfunction

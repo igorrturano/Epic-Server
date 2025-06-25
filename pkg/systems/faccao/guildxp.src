@@ -51,20 +51,17 @@ function ShowGuildXPGump(who, guild, xp_info)
     var width := 500;
     var height := 450;
     
-    // Criar gump usando o estilo padronizado
     var gump := GFECreateGump("Reino de " + guild_name, width, height, array{BORDER_GOLDEN});
     
     var y := 70;
     var x := 30;
     
-    // Informações da cultura
     if (xp_info.culture != "")
         GFTextLine(gump, x, y, 2100, "Cultura:");
         GFTextLine(gump, x + 120, y, 1153, CapitalizeFirst(xp_info.culture));
         y += 25;
     endif
     
-    // Nome do nível atual
     GFTextLine(gump, x, y, 2100, "Reino Atual:");
     if (xp_info.level_name != "")
         GFTextLine(gump, x + 120, y, 53, xp_info.level_name);
@@ -73,19 +70,14 @@ function ShowGuildXPGump(who, guild, xp_info)
     endif
     y += 25;
     
-    // Bônus do nível
-    if (xp_info.bonus > 0)
-        GFTextLine(gump, x, y, 2100, "Bônus:");
-        GFTextLine(gump, x + 120, y, 1153, "+" + xp_info.bonus + "%");
-        y += 25;
-    endif
+    // ===================================
+    // == Bloco de Bônus REMOVIDO daqui ==
+    // ===================================
     
-    // XP atual
     GFTextLine(gump, x, y, 2100, "XP Total:");
     GFTextLine(gump, x + 120, y, 1153, FormatNumber(xp_info.current_xp));
     y += 25;
     
-    // Progresso para próximo nível
     if (!xp_info.is_max_level)
         GFTextLine(gump, x, y, 2100, "Próximo Reino:");
         var next_level_name := GetGuildLevelName(xp_info.current_level + 1, xp_info.culture);
@@ -96,20 +88,16 @@ function ShowGuildXPGump(who, guild, xp_info)
         GFTextLine(gump, x + 120, y, 63, FormatNumber(xp_info.xp_to_next_level));
         y += 25;
         
-        // Barra de progresso
         GFTextLine(gump, x, y, 2100, "Progresso:");
         y += 20;
         
-        // Background da barra
         GFResizePic(gump, x, y, 9200, 300, 20);
         
-        // Progresso preenchido
         var progress_width := CInt((xp_info.progress_percentage * 300) / 100);
         if (progress_width > 0)
             GFResizePic(gump, x, y, 9350, progress_width, 20);
         endif
         
-        // Texto de porcentagem
         var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
         GFTextMid(gump, x, y + 2, 300, 1153, percentage_text);
         y += 30;
@@ -118,17 +106,10 @@ function ShowGuildXPGump(who, guild, xp_info)
         y += 25;
     endif
     
-    // Linha de separação
     GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
     y += 15;
     
-    // Benefícios do nível atual
-    var benefit_title := "Benefícios";
-    if (xp_info.level_name != "")
-        benefit_title := "Benefícios de " + xp_info.level_name;
-    else
-        benefit_title := "Benefícios do Nível " + xp_info.current_level;
-    endif
+    var benefit_title := "Benefícios do Nível " + xp_info.current_level;
     GFTextLine(gump, x, y, 2100, benefit_title + ":");
     y += 20;
     
@@ -138,7 +119,6 @@ function ShowGuildXPGump(who, guild, xp_info)
         y += 15;
     endforeach
     
-    // Botão para ver top contribuidores
     GFAddButton(gump, width/2 - 80, height - 50, 2130, 2129, GF_CLOSE_BTN, 100);
     GFTextLine(gump, width/2 - 60, height - 50, 1153, "Top Contribuidores");
     

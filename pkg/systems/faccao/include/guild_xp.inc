@@ -12,6 +12,7 @@ include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/safe_guild_utils";
 include ":faccao:include/datafile_helpers";
+include ":faccao:faccao_constants";
 
 // =======================================
 // Constantes do Sistema de XP de Guild
@@ -106,99 +107,99 @@ endfunction
 // 🦅 Aiglanos - Tema: Ascensão Imperial e Águias
 function GetAiglaLevels()
     return array{
-        struct{ name := "Acampamento Legionário", xp := 100, bonus := 5 },
-        struct{ name := "Castrum Consolidado", xp := 200, bonus := 10 },
-        struct{ name := "Civitas Próspera", xp := 300, bonus := 15 },
-        struct{ name := "Império Aquilino", xp := 400, bonus := 25 },
-        struct{ name := "Hegemonia Augusta", xp := 500, bonus := 40 }
+        struct{ name := "Acampamento Legionário", xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Castrum Consolidado",    xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Civitas Próspera",       xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Império Aquilino",       xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Hegemonia Augusta",      xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // 🐉 Povos do Leste - Tema: Dinastia e Dragão
 function GetLesteLevels()
     return array{
-        struct{ name := "Aldeia Unificada", xp := 100, bonus := 5 },
-        struct{ name := "Província Disciplinada", xp := 200, bonus := 10 },
-        struct{ name := "Domínio do Dragão", xp := 300, bonus := 15 },
-        struct{ name := "Império Celestial", xp := 400, bonus := 25 },
-        struct{ name := "Dinastia Imortal", xp := 500, bonus := 40 }
+        struct{ name := "Aldeia Unificada",       xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Província Disciplinada", xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Domínio do Dragão",      xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Império Celestial",      xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Dinastia Imortal",       xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // 🕷️ Haroloth (Drows) - Tema: Casas Nobres e Subterrâneos
 function GetHarolothLevels()
     return array{
-        struct{ name := "Covil Nascente", xp := 100, bonus := 5 },
-        struct{ name := "Casa Menor", xp := 200, bonus := 10 },
-        struct{ name := "Casa Nobre", xp := 300, bonus := 15 },
-        struct{ name := "Grande Casa", xp := 400, bonus := 25 },
-        struct{ name := "Casa Suprema", xp := 500, bonus := 40 }
+        struct{ name := "Covil Nascente",   xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Casa Menor",       xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Casa Nobre",       xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Grande Casa",      xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Casa Suprema",     xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // ⚔️ Björske - Tema: Clãs e Tradições Nórdicas
 function GetBjorskeLevels()
     return array{
-        struct{ name := "Clã Unido", xp := 100, bonus := 5 },
-        struct{ name := "Jarl Respeitado", xp := 200, bonus := 10 },
-        struct{ name := "Reino dos Lobos", xp := 300, bonus := 15 },
-        struct{ name := "Grande Jarl", xp := 400, bonus := 25 },
-        struct{ name := "Lenda Imortal", xp := 500, bonus := 40 }
+        struct{ name := "Clã Unido",       xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Jarl Respeitado", xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Reino dos Lobos", xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Grande Jarl",     xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Lenda Imortal",   xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // 🌿 Aluriel (Elfos) - Tema: Natureza e Eternidade
 function GetAlurielLevels()
     return array{
-        struct{ name := "Bosque Guardião", xp := 100, bonus := 5 },
-        struct{ name := "Clarão Abençoado", xp := 200, bonus := 10 },
-        struct{ name := "Reino Silvestre", xp := 300, bonus := 15 },
-        struct{ name := "Corte Eterna", xp := 400, bonus := 25 },
-        struct{ name := "Luz Imperecível", xp := 500, bonus := 40 }
+        struct{ name := "Bosque Guardião",   xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Clarão Abençoado",  xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Reino Silvestre",   xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Corte Eterna",      xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Luz Imperecível",   xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // 🌾 Polkinea (Polski) - Tema: Agricultura e Simplicidade
 function GetPolkineaLevels()
     return array{
-        struct{ name := "Sítio Próspero", xp := 100, bonus := 5 },
-        struct{ name := "Vila Abundante", xp := 200, bonus := 10 },
-        struct{ name := "Condado Fértil", xp := 300, bonus := 15 },
-        struct{ name := "Reino Pastoral", xp := 400, bonus := 25 },
-        struct{ name := "Terra Dourada", xp := 500, bonus := 40 }
+        struct{ name := "Sítio Próspero", xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Vila Abundante", xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Condado Fértil", xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Reino Pastoral", xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Terra Dourada",  xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // ⚒️ Baduran (Anões) - Tema: Forja e Montanhas
 function GetBaduranLevels()
     return array{
-        struct{ name := "Forja Acesa", xp := 100, bonus := 5 },
-        struct{ name := "Salão do Martelo", xp := 200, bonus := 10 },
-        struct{ name := "Cidadela de Ferro", xp := 300, bonus := 15 },
-        struct{ name := "Reino Subterrâneo", xp := 400, bonus := 25 },
-        struct{ name := "Khron Kaz'ad Supremo", xp := 500, bonus := 40 }
+        struct{ name := "Forja Acesa",           xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Salão do Martelo",      xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Cidadela de Ferro",     xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Reino Subterrâneo",     xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Khron Kaz'ad Supremo",  xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // 🗡️ Gulthrak (Orcs) - Tema: Tribos e Deserto
 function GetGulthrakLevels()
     return array{
-        struct{ name := "Bando Errante", xp := 100, bonus := 5 },
-        struct{ name := "Tribo Unida", xp := 200, bonus := 10 },
-        struct{ name := "Horda Temida", xp := 300, bonus := 15 },
-        struct{ name := "Grande Tribo", xp := 400, bonus := 25 },
-        struct{ name := "Legado de Adar", xp := 500, bonus := 40 }
+        struct{ name := "Bando Errante",  xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Tribo Unida",    xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Horda Temida",   xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Grande Tribo",   xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Legado de Adar", xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
 // Níveis genéricos para guilds sem cultura definida
 function GetGenericLevels()
     return array{
-        struct{ name := "Reino Nível 1", xp := 100, bonus := 5 },
-        struct{ name := "Reino Nível 2", xp := 200, bonus := 10 },
-        struct{ name := "Reino Nível 3", xp := 300, bonus := 15 },
-        struct{ name := "Reino Nível 4", xp := 400, bonus := 25 },
-        struct{ name := "Reino Nível 5", xp := 500, bonus := 40 }
+        struct{ name := "Reino Nível 1", xp := KINGDOM_XP_LEVELS[1] },
+        struct{ name := "Reino Nível 2", xp := KINGDOM_XP_LEVELS[2] },
+        struct{ name := "Reino Nível 3", xp := KINGDOM_XP_LEVELS[3] },
+        struct{ name := "Reino Nível 4", xp := KINGDOM_XP_LEVELS[4] },
+        struct{ name := "Reino Nível 5", xp := KINGDOM_XP_LEVELS[5] }
     };
 endfunction
 
@@ -220,12 +221,13 @@ const GUILD_XP_HISTORY_PROP := "guild_xp_history";
  * AddGuildXP(who, xp_amount)
  * 
  * Purpose: Adiciona XP à guild do jogador.
- *          VERSÃO MODIFICADA: A guild só ganha XP se possuir pelo menos um território.
+ *          VERSÃO CORRIGIDA: A guild só ganha XP se possuir pelo menos um território
+ *          E se NÃO estiver inadimplente com o upkeep.
  * Parameters:
  *   who - O jogador que ganhou XP
  *   xp_amount - Quantidade de XP que o jogador ganhou
  * Return:
- *   1 se sucesso, 0 se falha ou se a guild não tem território.
+ *   1 se sucesso, 0 se falha ou se a guild não pode ganhar XP.
  */
 function AddGuildXP(who, xp_amount)
     if (!who || !who.guild || xp_amount <= 0)
@@ -234,27 +236,41 @@ function AddGuildXP(who, xp_amount)
     
     var guild := who.guild;
 
-    // ========================================================
-    // >>>>> INÍCIO DA MODIFICAÇÃO <<<<<
-    // ========================================================
+    // ==========================================================
+    // >>>>> INÍCIO DA VERIFICAÇÃO DE INADIMPLÊNCIA <<<<<
+    // ==========================================================
+    // Verifica se a guilda tem pontos de inadimplência.
+    var pontos_inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0));
+    if (pontos_inadimplencia > 0)
+        // A facção está em débito, então não ganha XP.
+        // Envia a mensagem para o jogador TODA VEZ que ele ganha XP.
+        SendSysMessage(who, "Seu reino não evoluirá por que está com débitos de upkeep.", 3, 38);
+        
+        // Log para o servidor (opcional, mas bom para depuração)
+        LogDebug("guild_xp", "Ganho de XP para a facção '" + SafeGetGuildName(guild) + "' bloqueado (inadimplente com " + pontos_inadimplencia + " pontos).");
+        return 0; // Impede o ganho de XP e encerra a função.
+    endif
+    // ==========================================================
+    // >>>>> FIM DA VERIFICAÇÃO DE INADIMPLÊNCIA <<<<<
+    // ==========================================================
+
     // Verifica se a guilda possui territórios antes de conceder XP.
     var territories := guild.GetProp("territories");
     if (!territories || territories == error || TypeOf(territories) != "Array" || territories.size() == 0)
         // A facção não tem territórios, então não ganha XP de reino.
-        // Opcional: Log para registrar a tentativa de ganho de XP sem território.
-LogDebug("guild_xp", "Tentativa de ganho de XP para a facção '" + SafeGetGuildName(guild) + "' ignorada (sem territórios).");
+        SendSysMessage(who, "Seu reino não ganhou XP porque não controla nenhum território.", 3, 38);
+        LogDebug("guild_xp", "Tentativa de ganho de XP para a facção '" + SafeGetGuildName(guild) + "' ignorada (sem territórios).");
         return 0; 
     endif
-    // ========================================================
-    // >>>>> FIM DA MODIFICAÇÃO <<<<<
-    // ========================================================
+    
+    // O resto da função continua normalmente...
 
     var guild_name := SafeGetGuildName(guild);
     var guild_culture := SafeGetGuildProperty(guild, "culture", "");
     
     LogDebug("guild_xp", "Processando XP para guild " + guild_name + " (" + guild_culture + "): jogador=" + who.name + ", xp=" + xp_amount);
     
-    // Calcular XP para a guild (porcentagem do XP do jogador)
+    // Calcular XP para a guild
     var guild_xp_gain := CInt(xp_amount * GUILD_XP_PERCENTAGE);
     if (guild_xp_gain <= 0)
         guild_xp_gain := 1; // Mínimo de 1 XP para a guild
@@ -385,13 +401,11 @@ endfunction
  *   Valor do bônus do nível
  */
 function GetGuildLevelBonus(level, guild_culture := "")
-    var levels := GetKingdomLevels(guild_culture);
-    
-    if (level < 1 || level > levels.size())
-        return 0;
-    endif
-    
-    return levels[level].bonus;
+    // Mantida para compatibilidade, mas os bônus foram removidos.
+    // Otimizada para não fazer nada e apenas retornar 0.
+    level := level; // Evita warnings de variável não usada
+    guild_culture := guild_culture; // Evita warnings de variável não usada
+    return 0; 
 endfunction
 
 /*
@@ -514,31 +528,23 @@ endfunction
  * Return:
  *   1 se sucesso
  */
+/*
+ * ApplyGuildLevelBenefits(guild, level, guild_culture := "")
+ */
 function ApplyGuildLevelBenefits(guild, level, guild_culture := "")
     var guild_name := SafeGetGuildName(guild);
     var level_name := GetGuildLevelName(level, guild_culture);
-    var bonus := GetGuildLevelBonus(level, guild_culture);
     
-    LogInfo("guild_xp", "Aplicando benefícios do " + level_name + " (+" + bonus + "% bônus) para guild " + guild_name);
+    // LINHA DO BÔNUS REMOVIDA DAQUI
     
-    // Aqui você pode adicionar benefícios específicos por nível
-    // Exemplos:
+    LogInfo("guild_xp", "Aplicando benefícios do " + level_name + " para guild " + guild_name);
+    
     case (level)
-        1:
-            LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou benefícios básicos (" + level_name + ")");
-            break;
-        2:
-            LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou slots adicionais de NPCs (" + level_name + ")");
-            break;
-        3:
-            LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou bônus de geração de recursos (" + level_name + ")");
-            break;
-        4:
-            LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou benefícios avançados (" + level_name + ")");
-            break;
-        5:
-            LogInfo("guild_xp", "Guild " + guild_name + " atingiu o nível máximo (" + level_name + ")");
-            break;
+        1: LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou benefícios básicos (" + level_name + ")"); break;
+        2: LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou slots adicionais de NPCs (" + level_name + ")"); break;
+        3: LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou bônus de geração de recursos (" + level_name + ")"); break;
+        4: LogInfo("guild_xp", "Guild " + guild_name + " desbloqueou benefícios avançados (" + level_name + ")"); break;
+        5: LogInfo("guild_xp", "Guild " + guild_name + " atingiu o nível máximo (" + level_name + ")"); break;
     endcase
     
     return 1;
@@ -595,12 +601,12 @@ endfunction
  * Return:
  *   Struct com informações de XP
  */
+
 function GetGuildXPInfo(guild)
     var current_xp := SafeGetGuildProperty(guild, GUILD_XP_PROP, 0);
-    var current_level := SafeGetGuildProperty(guild, GUILD_LEVEL_PROP, 1); // Sempre começa no nível 1
+    var current_level := SafeGetGuildProperty(guild, GUILD_LEVEL_PROP, 1);
     var guild_culture := SafeGetGuildProperty(guild, "culture", "");
     
-    // Garantir que o nível nunca seja menor que 1
     if (current_level < 1)
         current_level := 1;
         SafeSetGuildProperty(guild, GUILD_LEVEL_PROP, 1);
@@ -608,21 +614,19 @@ function GetGuildXPInfo(guild)
     
     var next_level_xp := GetGuildXPForNextLevel(current_level, guild_culture);
     var level_name := GetGuildLevelName(current_level, guild_culture);
-    var bonus := GetGuildLevelBonus(current_level, guild_culture);
+    
     
     var info := struct{
         "current_xp" := current_xp,
         "current_level" := current_level,
         "level_name" := level_name,
-        "bonus" := bonus,
         "culture" := guild_culture,
         "next_level_xp" := next_level_xp,
         "xp_to_next_level" := (next_level_xp > 0 ? next_level_xp - current_xp : 0),
-        "progress_percentage" := 0,
+        "progress_percentage" := 0.0, // Mantido como double
         "is_max_level" := (current_level >= 5)
     };
     
-    // Calcular progresso baseado no nível atual
     if (next_level_xp > 0)
         var levels := GetKingdomLevels(guild_culture);
         if (current_level <= levels.size())

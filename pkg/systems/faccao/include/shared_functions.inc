@@ -4008,3 +4008,15 @@ function GetTerritoryUpkeepCost(territory_elem, guild_level)
 
     return base_cost;
 endfunction
+
+function NotificarLider(guild, message_text)
+    if (!guild) return; endif
+    
+    var leader_serial := SafeGetGuildProperty(guild, "leader");
+    if (leader_serial)
+        var leader_char := SystemFindObjectBySerial(leader_serial);
+        if (leader_char && leader_char.connected)
+            SendSysMessage(leader_char, message_text, 3, 38); // Mensagem em vermelho
+        endif
+    endif
+endfunction

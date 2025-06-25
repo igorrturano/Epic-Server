@@ -194,3 +194,7 @@ var TERRITORY_DIMS_LEVEL_3 := array{40, 35};
 var TERRITORY_DIMS_LEVEL_4 := array{45, 45};
 var TERRITORY_DIMS_LEVEL_5 := array{50, 70};
 const TERRITORY_TYPE_CUSTOM  := 0;
+
+
+// Em :faccao:include/faccao_constants.inc
+var KINGDOM_XP_LEVELS := array{ 100, 200, 300, 400, 500 };
