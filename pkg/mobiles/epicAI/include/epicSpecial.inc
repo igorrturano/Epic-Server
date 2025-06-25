@@ -983,7 +983,7 @@ function LayEggSac(spider)
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
       SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
-      SetCooldown(spider, "egg_sac", 60);
+      SetCooldown(spider, "egg_sac", 600);
 
       egg.decayAt := ReadGameClock() + (60 * 15);
       return 1;
