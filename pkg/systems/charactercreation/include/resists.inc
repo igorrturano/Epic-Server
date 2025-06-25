@@ -157,7 +157,7 @@ function ShouldGetSecondChance(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     return (
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
-        (TemHabilidade(defender, "Fortitudo Impia") && resist_type == FORTITUDE) ||
+        (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == VONTADE) ||
         (chardata.culture == POLKINEA)
     );
@@ -167,8 +167,8 @@ function GetSecondChanceMessage(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     if (chardata.culture == HAROLOTH && resist_type == FORTITUDE)
         return "Seu organismo drow expurga o veneno";
-    elseif (TemHabilidade(defender, "Fortitudo Impia") && resist_type == FORTITUDE)
-        return "Sua resiliência ímpia expurga o veneno";
+    elseif (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE)
+        return "Sua aura divina expurga o veneno";
     elseif (chardata.raca == ANAO && resist_type == VONTADE)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)

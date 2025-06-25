@@ -359,6 +359,15 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 		return;
 	endif
 
+	// Check for true darkness from Shadow Dominion
+    if (GetCooldown(defender, "true_darkness") > 0)
+        if (attacker_race != DROW)
+            hit_chance -= 30; // Heavy penalty for attacking someone in true darkness
+            SendSysMessageEx(attacker, "Você luta contra as trevas sagradas!", SSM_FAIL);
+        endif
+        return; // True darkness overrides normal darkness checks
+    endif
+
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
