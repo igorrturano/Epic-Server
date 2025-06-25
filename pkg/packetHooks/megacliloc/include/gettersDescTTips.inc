@@ -313,8 +313,6 @@ function PegaDescResistArmadura(objeto,cfg,atributosArmadura, xDesc := "")
 		atrib := getArmorStats(cfg.elem); //Foi a marreta que eu encontrei 
 	endif
 
-	Print("Objtype: " +  GetObjtypeByName(cfg.elem.name) + " atrib " + atrib);
-
 	var bluntRes,slashRes,pircRes :=0;
 	// if(!atrib)
 	// 	atrib := getResistByProtection(cfg.elem.TipoProtecao);
