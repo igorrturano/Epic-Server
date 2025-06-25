@@ -161,57 +161,45 @@ program TotemDeAquisicao(who, totem)
     return 1;
 endprogram
 
-
-/**
- * Purpose: Exibe um gump para o líder selecionar a cultura do reino
- * Parameters: who - jogador que está selecionando
- * Return: String da cultura escolhida ou 0 se cancelou
- */
 function SelectKingdomCulture(who)
-    var gump := GFECreateGump("Seleção de Cultura do Reino", 600, 500, array{});    // Título explicativo usando GFTextLine para garantir que as cores funcionem
-    GFTextLine(gump, 100, 85, 53, "Escolha a cultura que definira a identidade do seu reino.");
-    GFTextLine(gump, 80, 105, 230, "Esta decisao influenciara a arquitetura e tradicoes do territorio.");
+    var gump := GFECreateGump("Seleção de Cultura do Reino", 600, 500, array{});
+    GFTextLine(gump, 100, 85, 53, "Escolha a cultura que definirá a identidade do seu reino.");
+    GFTextLine(gump, 80, 105, 230, "Esta decisão influenciará a arquitetura e tradições do território.");
     
-    // Lista de culturas
     var culturas := array{
-        struct{ nome := "Aiglana", enum_val := AIGLANA, descricao := "Império organizado com tradições militares" },
-        struct{ nome := "Har'oloth", enum_val := HAROLOTH, descricao := "Cultura drow subterrânea e misteriosa" },
-        struct{ nome := "Povos do Leste", enum_val := LESTE, descricao := "Tradições orientais e disciplina marcial" },
-        struct{ nome := "Björska", enum_val := BJORSKA, descricao := "Guerreiros nórdicos valorosos e tradicionais" },
-        struct{ nome := "Alüriel", enum_val := ALURIEL, descricao := "Cultura élfica ligada à natureza e magia" },
-        struct{ nome := "Badûran", enum_val := BADURAN, descricao := "Anões mestres da forja e engenharia" },
-        struct{ nome := "Gulthrak", enum_val := GULTHRAK, descricao := "Orcs do deserto adaptados ao clima árido" },
-        struct{ nome := "Polkinea", enum_val := POLKINEA, descricao := "Polski pacíficos e agricultores habilidosos" }
+        struct{ nome := "Aiglana",          enum_val := "aiglana",          descricao := "Império organizado com tradições militares" },
+        struct{ nome := "Har'oloth",        enum_val := "haroloth",         descricao := "Cultura drow subterrânea e misteriosa" },
+        struct{ nome := "Povos do Leste",   enum_val := "povos_do_leste",   descricao := "Tradições orientais e disciplina marcial" },
+        struct{ nome := "Björska",          enum_val := "bjorske",          descricao := "Guerreiros nórdicos valorosos e tradicionais" },
+        struct{ nome := "Alüriel",          enum_val := "aluriel",          descricao := "Cultura élfica ligada à natureza e magia" },
+        struct{ nome := "Badûran",          enum_val := "baduran",          descricao := "Anões mestres da forja e engenharia" },
+        struct{ nome := "Gulthrak",         enum_val := "gulthrak",         descricao := "Orcs do deserto adaptados ao clima árido" },
+        struct{ nome := "Polkinea",         enum_val := "polkinea",         descricao := "Polski pacíficos e agricultores habilidosos" }
     };
     
     var y_pos := 130;
     var button_id := 100;
     
-    foreach cultura in culturas        // Botão da cultura com estilo semelhante ao menu de construção
+    foreach cultura in culturas
         GFAddButton(gump, 40, y_pos, 4005, 4007, GF_CLOSE_BTN, button_id);
-        
-        // Nome da cultura com cor 53 (usando GFTextLine)
         GFTextLine(gump, 80, y_pos + 3, 53, cultura.nome);
-        
-        // Descrição com cor 230 (usando GFTextLine)
         GFTextLine(gump, 290, y_pos + 3, 230, cultura.descricao);
-          y_pos += 35;
+        y_pos += 35;
         button_id += 1;
-    endforeach;
+    endforeach
     
-    // Botão cancelar (usando o botão padrão do servidor)
-    GFAddButton(gump, 250, 450, 2071, 2072, GF_CLOSE_BTN, 200);    
+    GFAddButton(gump, 250, 450, 2071, 2072, GF_CLOSE_BTN, 0); // Botão Cancelar genérico
+    
     var input := GFSendGump(who, gump);
+
+    if (!input || input[0] == 0)
+        return 0;
+    endif
+
     var button_pressed := input[0];
     
-    if (button_pressed == 200) // Cancelar
-        return 0;    elseif (button_pressed >= 100 && button_pressed <= 107)
+    if (button_pressed >= 100 && button_pressed < 200)
         var cultura_index := button_pressed - 100 + 1;
-        
-        // DEBUG: Mostrar informações de debug
-        SendSysMessage(who, "DEBUG: Botão pressionado = " + button_pressed);
-        SendSysMessage(who, "DEBUG: Cultura index calculado = " + cultura_index);
-        SendSysMessage(who, "DEBUG: Total de culturas = " + culturas.size());
         
         if (cultura_index < 1 || cultura_index > culturas.size())
             SendSysMessage(who, "ERRO: Índice da cultura fora dos limites!");
@@ -220,17 +208,15 @@ function SelectKingdomCulture(who)
         
         var cultura_escolhida := culturas[cultura_index];
         
-        // DEBUG: Mostrar cultura escolhida
-        SendSysMessage(who, "DEBUG: Cultura escolhida - Nome: " + cultura_escolhida.nome);
-        SendSysMessage(who, "DEBUG: Cultura escolhida - Enum: " + cultura_escolhida.enum_val);
-        
-        // Confirmação
         var confirm_msg := "Você escolheu a cultura " + cultura_escolhida.nome + " para seu reino.\n" +
                           cultura_escolhida.descricao + "\n\n" +
                           "Tem certeza desta escolha? Esta decisão é permanente.";
         
         if (YesNo(who, confirm_msg))
             SendSysMessage(who, "Cultura " + cultura_escolhida.nome + " definida para o reino!");
+            
+            // ===== MUDANÇA CRÍTICA =====
+            // Retorna o valor padronizado para ser salvo na CProp, sem espaços ou acentos.
             return cultura_escolhida.enum_val;
         else
             SendSysMessage(who, "Seleção de cultura cancelada.");

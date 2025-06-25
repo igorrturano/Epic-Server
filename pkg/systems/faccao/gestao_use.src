@@ -3,7 +3,6 @@ use os;
 use cfgfile;
 use util;
 use guilds;
-use guilds;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
@@ -25,15 +24,14 @@ include ":architect:architect";
 
 
 
-// Constantes locais não movidas para faccao_constants.inc (específicas deste arquivo)
-const MOEDAS_COBRE := 0xBA63;            // Moedas de cobre (local para este package)
-const BKGND_STONESLAB := 9200;           // Background de pedra (local para este arquivo)
-const BTN_CONTRATAR_GFX_NORMAL := 0x93A; // Exemplo de Gump ID para botão verde/azul
-const BTN_CONTRATAR_GFX_OVER := 0x93A;   // Gump ID para mouse over (pode ser o mesmo ou diferente)
-const BTN_CANCELAR_GFX_NORMAL := 0x938;  // Exemplo de Gump ID para botão vermelho
-const BTN_CANCELAR_GFX_OVER := 0x938;    // Gump ID para mouse over
 
-const MENU_INTRO := 0;
+// Constantes locais não movidas para faccao_constants.inc (específicas deste arquivo)
+const MOEDAS_COBRE := 0xBA63;
+const BKGND_STONESLAB := 9200;
+const BTN_CONTRATAR_GFX_NORMAL := 0x93A;
+const BTN_CONTRATAR_GFX_OVER := 0x93A;
+const BTN_CANCELAR_GFX_NORMAL := 0x938;
+const BTN_CANCELAR_GFX_OVER := 0x938;
 const MENU_REINO := 1;
 const MENU_LEIS := 2;
 const MENU_FACCOES := 3;
@@ -41,10 +39,9 @@ const MENU_DOACOES := 4;
 const MENU_CONSTRUCOES := 5;
 const MENU_GUERRA := 6;
 var button_states := array{0, 0, 0, 0, 0, 0};
-
-
-// Controle de depuração global - 0 = desligado, 1 = ligado
 var DEBUG_GESTAO := 0;
+
+
 
 program gestao_use(who, item)
     if (!who || !item)
@@ -52,7 +49,7 @@ program gestao_use(who, item)
         return 0;
     endif
 
-      if (!CanAccessGestao(who, item))
+    if (!CanAccessGestao(who, item))
         SendSysMessage(who, "Você não tem permissão para acessar a interface de gestão");
         return 0;
     endif
@@ -64,60 +61,41 @@ program gestao_use(who, item)
 endprogram
 
 function CanAccessGestao(who, item)
-    // Usar sistema de permissões centralizado
     return CheckPermission(who, item, "access");
 endfunction
 
 function ShowKingdomManagementGump(who, item)
-    var cur_menu := MENU_DOACOES;
+    var cur_menu := MENU_REINO;
     var continuar := 1;
     while(continuar)
-        // O GUMP é criado com base no menu atual.
-        // Na primeira vez, cur_menu é MENU_DOACOES.
-        // Se o usuário clicar em "Construções", cur_menu mudará para MENU_CONSTRUCOES
-        // e o GUMP será recriado com os botões de compra.
         var gump := CreateKingdomManagementGump(who, cur_menu, item);
         var input := GFSendGump(who, gump);
         
-        // Se o usuário fechou o GUMP
         if (!input || input[0] == 0)
             continuar := 0;
             break;
         endif
         
-        // ===============================================
-        // == INÍCIO DA CORREÇÃO LÓGICA DO GUMP ==
-        // ===============================================
-
         var button_id := input[0];
 
-        if (button_id == 100) // Botão Comprar Mapeador
-            // Chama a função de processamento com os logs que adicionamos.
-            // Se a compra for bem-sucedida, a função retorna 1.
-            // Poderíamos sair do GUMP após a compra ou continuar.
-            // Vamos manter o GUMP aberto por enquanto.
+        if (button_id == 100)
             ProcessarCompraMapeador(who, item);
-            
-            // Força o menu a permanecer em "Construções" para que o jogador veja
-            // que a ação foi registrada (ou que falhou).
             cur_menu := MENU_CONSTRUCOES;
-
-        elseif (button_id == 101) // Botão Comprar Ferramentas
-            ProcessarCompraFerramentas(who, item); // Assumindo que você criou esta função com logs também
+        elseif (button_id == 101)
+            ProcessarCompraFerramentas(who, item);
             cur_menu := MENU_CONSTRUCOES;
-
-        elseif (button_id >= 700 && button_id < 900) // Ações de Território
+        elseif (button_id == 999)
+            var guild := FindGuild(FindGuildByName(GetObjProperty(item, OBJ_FACTION_PROP)));
+            if (guild)
+                PagarDividaManualmente(who, guild);
+            endif
+            cur_menu := MENU_REINO;
+        elseif (button_id >= 700 && button_id < 900)
             ProcessarAcaoTerritorio(who, button_id, item);
-            continuar := 0; // Sai do GUMP após ações de território
-
-        else // Botões de navegação do menu principal
+            cur_menu := MENU_REINO;
+        else
             cur_menu := AtualizarEstadoMenu(button_id);
-        
         endif
-
-        // ===============================================
-        // === FIM DA CORREÇÃO LÓGICA DO GUMP ===
-        // ===============================================
     endwhile
 endfunction
 
@@ -125,7 +103,7 @@ function CreateKingdomManagementGump(who, cur_menu, item)
     var gump := CriarLayoutBase();
       case (cur_menu)
         MENU_REINO:
-            ReinoGump(gump, item, who);  // Passar o item (mesa de gestão) e who para ReinoGump
+            ReinoGump(gump, item);
         MENU_LEIS:
             LeisGump(gump);
         MENU_FACCOES:
@@ -139,18 +117,15 @@ function CreateKingdomManagementGump(who, cur_menu, item)
         default:
             DoacoesGump(gump, item);
     endcase
-
     return gump;
 endfunction
 
 function CriarLayoutBase()
     var gump := GFCreateGump();
-    
     GFGumpPicTiled(gump, 19, 19, 759, 550, 39929);
     AdicionarMoldura(gump);
     GFGumpPicTiled(gump, 32, 24, 733, 29, 9354);
     AdicionarBotoesNavegacao(gump);
-    
     return gump;
 endfunction
 
@@ -166,26 +141,22 @@ function AdicionarMoldura(byref gump)
         struct{ x := 759, y := 561, width := 36, height := 33, gump := 39933 },
         struct{ x := 444, y := 60, width := 8, height := 502, gump := 39928 }
     };
-
-foreach moldura in (molduras)
-    GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-endforeach
+    foreach moldura in (molduras)
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
 endfunction
 
 function AdicionarBotoesNavegacao(byref gump)
     var textos := array{"Reino", "Leis", "Facções", "Doações", "Construções", "Guerra"};
     var x_positions := array{85, 185, 285, 395, 505, 635};
     var botoes := array{BOTAO_REINO, BOTAO_LEIS, BOTAO_FACCOES, BOTAO_DOACOES, BOTAO_CONSTRUCOES, BOTAO_GUERRA};
-    
     for i := 1 to 6
         var gump_button := 2151;
         var text_color := 53;
-        
         if (button_states[i])
             gump_button := 2153;
             text_color := 230;
         endif
-        
         GFTextLine(gump, x_positions[i], 27, text_color, textos[i]);
         GFAddButton(gump, x_positions[i] - 35, 23, gump_button, gump_button, GF_CLOSE_BTN, botoes[i]);
     endfor
@@ -193,195 +164,177 @@ endfunction
 
 function AtualizarEstadoMenu(input)
     case (input)
-        BOTAO_REINO:
-            button_states := array{1, 0, 0, 0, 0, 0};
-            return MENU_REINO;
-        BOTAO_LEIS:
-            button_states := array{0, 1, 0, 0, 0, 0};
-            return MENU_LEIS;
-        BOTAO_FACCOES:
-            button_states := array{0, 0, 1, 0, 0, 0};
-            return MENU_FACCOES;
-        BOTAO_DOACOES:
-            button_states := array{0, 0, 0, 1, 0, 0};
-            return MENU_DOACOES;
-        BOTAO_CONSTRUCOES:
-            button_states := array{0, 0, 0, 0, 1, 0};
-            return MENU_CONSTRUCOES;
-        BOTAO_GUERRA:
-            button_states := array{0, 0, 0, 0, 0, 1};
-            return MENU_GUERRA;
-        default:
-            return MENU_DOACOES;
+        BOTAO_REINO: button_states := array{1, 0, 0, 0, 0, 0}; return MENU_REINO;
+        BOTAO_LEIS: button_states := array{0, 1, 0, 0, 0, 0}; return MENU_LEIS;
+        BOTAO_FACCOES: button_states := array{0, 0, 1, 0, 0, 0}; return MENU_FACCOES;
+        BOTAO_DOACOES: button_states := array{0, 0, 0, 1, 0, 0}; return MENU_DOACOES;
+        BOTAO_CONSTRUCOES: button_states := array{0, 0, 0, 0, 1, 0}; return MENU_CONSTRUCOES;
+        BOTAO_GUERRA: button_states := array{0, 0, 0, 0, 0, 1}; return MENU_GUERRA;
+        default: return MENU_DOACOES;
     endcase
 endfunction
 
 function ReinoGump(byref gump, item, who := 0)
-    LogDebug("territorio", "Iniciando ReinoGump");
+    // ====================================================================
+    // INÍCIO DO BLOCO DE LOGS DE DEPURAÇÃO
+    // ====================================================================
+    var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+    LogCritical("ReinoGump_DEBUG", "----------------- INICIANDO ReinoGump -----------------");
+    LogCritical("ReinoGump_DEBUG", "1. Lendo CProp da MESA (item): GetObjProperty(item, 'faction') -> '" + mesa_faction + "'");
 
+    var guild := FindGuild(FindGuildByName(mesa_faction));
+    if (guild)
+        var guild_true_name := guild.GetProp(FACTION_PROP_NAME);
+        var guild_culture := guild.GetProp("culture");
+        LogCritical("ReinoGump_DEBUG", "2. Encontrada GUILD ID: " + guild.guildid);
+        LogCritical("ReinoGump_DEBUG", "3. Lendo CProp da GUILDA: guild.GetProp('name') -> '" + guild_true_name + "'");
+        LogCritical("ReinoGump_DEBUG", "4. Lendo CProp da GUILDA: guild.GetProp('culture') -> '" + guild_culture + "'");
+    else
+        LogCritical("ReinoGump_DEBUG", "2. AVISO: Nenhuma GUILD encontrada para o nome '" + mesa_faction + "' lido da mesa.");
+    endif
+    LogCritical("ReinoGump_DEBUG", "---------------------------------------------------------");
+    // ====================================================================
+    // FIM DO BLOCO DE LOGS
+    // ====================================================================
+    
     GFResizePic(gump, 38, 60, 40267, 400, 502);
     
-    // Obter a facção da mesa de gestão
-    var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    
-    // Título personalizado com o nome da facção
     var titulo := mesa_faction ? "Gestão do Reino " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
     
-    // Obter informações da guild para mostrar progresso do reino
-    var guild := FindGuild(FindGuildByName(mesa_faction));
-    
-    // Só prossegue se a guilda existir
     if (guild)
-        // 1. Obter informações de XP (feito uma única vez)
         var xp_info := GetGuildXPInfo(guild);
         
-        // 2. Montar o layout base da seção de progresso
-        GFResizePic(gump, 460, 110, 9350, 320, 150);
+        // ======== DEBUG ADICIONAL PARA CULTURA ========
+        LogCritical("CULTURA_DEBUG", "=== DEBUG CULTURA COMPLETO ===");
+        LogCritical("CULTURA_DEBUG", "xp_info.culture (bruto): '" + xp_info.culture + "'");
+        LogCritical("CULTURA_DEBUG", "Tipo da cultura: " + TypeOf(xp_info.culture));
+        
+        if (xp_info.culture)
+            var cultura_formatada := FormatCultureForDisplay(xp_info.culture);
+            LogCritical("CULTURA_DEBUG", "Cultura formatada: '" + cultura_formatada + "'");
+            
+            // Teste das funções individuais
+            var levels_test := GetKingdomLevels(xp_info.culture);
+            LogCritical("CULTURA_DEBUG", "GetKingdomLevels retornou: " + levels_test.size() + " níveis");
+            if (levels_test.size() > 0)
+                LogCritical("CULTURA_DEBUG", "Primeiro nível: '" + levels_test[1].name + "'");
+            endif
+        else
+            LogCritical("CULTURA_DEBUG", "CULTURA É NULA/VAZIA!");
+        endif
+        LogCritical("CULTURA_DEBUG", "================================");
+        // ======== FIM DEBUG CULTURA ========
+        
+        GFResizePic(gump, 460, 110, 9350, 320, 185); 
         GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");
 
-        // 3. Exibir informações que aparecem sempre: Reino Atual
-        var reino_atual := xp_info.level_name ?: "Reino Nível " + xp_info.current_level;
-        GFTextLine(gump, 470, 135, 2100, "Reino Atual:");
-        GFTextLine(gump, 570, 135, 53, reino_atual);
+        var y_reino := 135;
+        var x_label := 470;
+        var x_value := 580;
 
-        // ====================================================================
-        // AQUI ESTÁ A ÚNICA MUDANÇA NECESSÁRIA
-        // ====================================================================
-        // A lógica para obter e exibir a cultura está agora em um único lugar.
+        GFTextLine(gump, x_label, y_reino, 2100, "Reino Atual:");
+        GFTextLine(gump, x_value, y_reino, 53, (xp_info.level_name ?: "Nível " + xp_info.current_level));
+        y_reino += 20;
+
         if (xp_info.culture)
-            var cultura_display := xp_info.culture; // Valor padrão
+            // ===== MUDANÇA CRÍTICA: USA A NOVA FUNÇÃO DE FORMATAÇÃO =====
+            var cultura_display := FormatCultureForDisplay(xp_info.culture);
             
-            // Usar um case para garantir a capitalização correta.
-            // O uso de Lower() torna a comparação à prova de erros de maiúsculas/minúsculas.
-            case (Lower(xp_info.culture))
-                "polkinea": cultura_display := "Polkinea";
-                "aiglanos": cultura_display := "Aiglanos";
-                "baduran":  cultura_display := "Baduran";
-                "gulthrak": cultura_display := "Gulthrak";
-                "haroloth": cultura_display := "Haroloth";
-                "leste":    cultura_display := "Leste";
-                "bjorske":  cultura_display := "Bjorske";
-                "aluriel":  cultura_display := "Aluriel";
-            endcase
-            
-            GFTextLine(gump, 470, 155, 2100, "Cultura:");
-            GFTextLine(gump, 570, 155, 1153, cultura_display);
+            GFTextLine(gump, x_label, y_reino, 2100, "Cultura:");
+            GFTextLine(gump, x_value, y_reino, 1153, cultura_display);
+            y_reino += 20;
         endif
-        // ====================================================================
-        // FIM DA MUDANÇA
-        // ====================================================================
 
-        // Exibir Próximo Nível (se aplicável)
         if (!xp_info.is_max_level)
             var proximo_reino := GetGuildLevelName(xp_info.current_level + 1, xp_info.culture);
-            GFTextLine(gump, 470, 175, 2100, "Próximo:");
-            GFTextLine(gump, 570, 175, 1153, proximo_reino);
+            GFTextLine(gump, x_label, y_reino, 2100, "Próximo:");
+            GFTextLine(gump, x_value, y_reino, 1153, proximo_reino);
+            y_reino += 20;
         endif
         
-        // Calcular e exibir o custo semanal
         var territories := GetGuildTerritories(mesa_faction);
         var weekly_cost := CalcularCustoUpkeep(guild, territories);
-        var tooltip_text := "O Upkeep é calculado levando-se em conta os territórios dominados pelo Reino, o seu desenvolvimento e a quantidade de cidadãos que o compõe.";
-        
-        GFTextLine(gump, 470, 195, 2100, "Custo Semanal:");
-        GFTooltipText(gump, tooltip_text);
-        GFTextLine(gump, 570, 195, 1153, CStr(weekly_cost) + " cobre");
-        GFTooltipText(gump, tooltip_text);
+        GFTextLine(gump, x_label, y_reino, 2100, "Custo Semanal:");
+        GFTextLine(gump, x_value, y_reino, 1153, CStr(weekly_cost) + " cobre");
+        y_reino += 25;
 
-        // Barra de progresso ou mensagem de Nível Máximo
         if (!xp_info.is_max_level)
-            GFResizePic(gump, 470, 220, 9200, 280, 20);         
+            GFResizePic(gump, x_label, y_reino, 9200, 280, 20);         
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
             if (progress_width > 0)
-                GFResizePic(gump, 470, 220, 48, progress_width, 20);
+                GFResizePic(gump, x_label, y_reino, 48, progress_width, 20);
             endif
             var percentage_text := CStr(CInt(xp_info.progress_percentage)) + "%";
-            GFTextMid(gump, 470, 222, 280, 1153, percentage_text);
+            GFTextMid(gump, x_label, y_reino + 2, 280, 1153, percentage_text);
         else
-            GFTextMid(gump, 470, 220, 280, 53, "REINO MÁXIMO ATINGIDO");
+            GFTextMid(gump, x_label, y_reino, 280, 53, "REINO MÁXIMO ATINGIDO");
+        endif
+        
+        var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
+        if (divida_acumulada > 0)
+            var y_divida := y_reino + 30;
+            GFTextLine(gump, x_label, y_divida, 38, "Dívida: " + divida_acumulada);
+            GFAddButton(gump, x_label + 200, y_divida - 5, 2074, 2075, GF_CLOSE_BTN, 999);
         endif
     endif
-    // ===== FIM DA SEÇÃO DE XP =====
-      var rect_df := SafeOpenDataFile(":architect:areas");
+
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
-        // Criar lista de territórios visíveis baseados na mesa_faction
         var territorios_visiveis := array{};
         
         foreach elem_name in (rect_df.keys())
-            // Usar TM_GetTerritoryInfo para obter informações de território
             var territory_info := TM_GetTerritoryInfo(elem_name);
+            if (!territory_info) continue; endif
             
-            // Verificar se o território existe
-            if (!territory_info)
-                continue;
-            endif
-            
-            // Obter o ID e facção do território
-           var territory_id := territory_info.id ? territory_info.id : "";
+            var territory_id := territory_info.id ?: "";
             var faction := territory_info.faction;
             
-            // Filtrar por facção
-            if (faction && faction != DEFAULT_FACTION && 
-                (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))                territorios_visiveis.append(struct{
-                    "name" := elem_name,
-                    "id" := territory_id,
-                    TERRITORY_FACTION_PROP := faction
-                });
+            if (faction && faction != DEFAULT_FACTION && (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
+                territorios_visiveis.append(struct{ "name" := elem_name, "id" := territory_id, TERRITORY_FACTION_PROP := faction });
             endif
-            sleepms(2);
-        endforeach        // Criar um único background para a área de territórios (ajustado para nova altura)
-        GFResizePic(gump, 460, 280, 9350, 320, 230);
-          // Adicionar cabeçalhos (alinhados na mesma altura Y)
-        GFTextLine(gump, 485, 285, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 285, 53, "Info");
-        GFTextLine(gump, 730, 285, 53, "Aliados");
-        
-        var y := 310; // Começar após os cabeçalhos
-        var territorios_mostrados := 0;
-        
-foreach territorio in (territorios_visiveis)
-    // Usar diretamente a informação do TM_GetTerritoryInfo
-    var territory_info := TM_GetTerritoryInfo(territorio.id);
-    var is_capital := territory_info.is_capital;
-    
-    // Número do território
-    GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
-    
-    // Se for capital, adicionar coroa ou marcador especial
-    if (is_capital)
-        GFTextLine(gump, 485, y+5, 230, territorio.name + " [CAPITAL]");
-    else
-        GFTextLine(gump, 485, y+5, 53, territorio.name);
-    endif
-            
-            // Botões de informação e aliados
-            GFAddButton(gump, 693, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
-            GFAddButton(gump, 740, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
-            
-            y += 35; // Espaçamento entre territórios
-            territorios_mostrados += 1;
-            
-            // Limite para não sobrecarregar a interface
-            if (territorios_mostrados >= 10)
-                break;
-            endif
-            
             sleepms(2);
         endforeach
-          if (territorios_mostrados == 0)
-            var msg := mesa_faction ? 
-                       "Não há territórios controlados por " + mesa_faction + "." :
-                       "Não há territórios controlados por facções.";
-            GFTextMid(gump, 540, 300, 150, 38, msg);
+        
+        GFResizePic(gump, 460, 300, 9350, 320, 212);
+        GFTextLine(gump, 485, 305, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 305, 53, "Info");
+        GFTextLine(gump, 730, 305, 53, "Carav.");
+        
+        var y_terr := 330;
+        var territorios_mostrados := 0;
+        
+        foreach territorio in (territorios_visiveis)
+            var territory_info_loop := TM_GetTerritoryInfo(territorio.id);
+            var is_capital := territory_info_loop.is_capital;
+            
+            GFTextLine(gump, 470, y_terr+5, 2100, territorios_mostrados+1 + ".");
+            
+            if (is_capital)
+                GFTextLine(gump, 485, y_terr+5, 230, territorio.name + " [CAPITAL]");
+            else
+                GFTextLine(gump, 485, y_terr+5, 53, territorio.name);
+            endif
+            
+            GFAddButton(gump, 693, y_terr+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
+            GFAddButton(gump, 740, y_terr+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
+            
+            y_terr += 35;
+            territorios_mostrados += 1;
+            if (territorios_mostrados >= 5) break; endif
+            sleepms(2);
+        endforeach
+
+        if (territorios_mostrados == 0)
+            var msg := mesa_faction ? "Não há territórios controlados por " + mesa_faction + "." : "Não há territórios controlados por facções.";
+            GFTextMid(gump, 540, 350, 150, 38, msg);
         endif
     else
-        GFTextMid(gump, 620, 300, 150, 38, "Sistema de territórios indisponível.");
+        GFTextMid(gump, 620, 350, 150, 38, "Sistema de territórios indisponível.");
     endif
     
     return gump;
 endfunction
-
 function ProcessarAcaoTerritorio(who, input, item)
     if (input >= 700 && input < 800)
         // Botão de visualizar mapa do território
@@ -1169,17 +1122,9 @@ endforeach
         endif
         LogDebug("territorio", "Realm do território: " + territorio_realm);
         
-        var script := start_script(":faccao:limpa_territorio", array{territorio_id, old_faction, who, territorio_realm});
-        if (script == error)
-            LogError("territorio", "Falha ao iniciar script de limpeza: " + script);
-            SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
-            DesfazerTransacao(transaction_id);
-            return 0;
-        endif
-        LogDebug("territorio", "Script de limpeza iniciado: PID " + script);
-        
-        // Aguardar limpeza ser concluída
-        Sleep(3);
+        LogInfo("territorio", "Transferência: Chamando TM_DeleteTerritoryObjects para limpar " + old_faction);
+TM_DeleteTerritoryObjects(territorio_id, old_faction);
+LogInfo("territorio", "Transferência: Limpeza de objetos antigos concluída.");
         LogDebug("territorio", "Aguardando conclusão da limpeza...");
         
         // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
@@ -2103,7 +2048,9 @@ function ProcessarCompraFerramentas(who, item)
     if (!IsArchitectOfGuild(who))
         SendSysMessage(who, "Apenas arquitetos de guilda podem comprar Ferramentas de Construção.", 3, 38);
         return 0;
-    endif    // Constantes para as Ferramentas de Construção    // Calcular moedas disponíveis
+    endif
+
+    // Calcular moedas disponíveis
     var moedas_disponiveis := 0;
     var moedas_items := array{};
     
@@ -2300,48 +2247,8 @@ function GetKingdomCulture(item, faction_name)
     return 0;
 endfunction
 
-/*
- * FormatNumber(number)
- * 
- * Purpose: Formata números adicionando pontos como separadores de milhares
- * Parameters:
- *   number - Número a ser formatado
- * Return:
- *   String formatada (ex: 1.500.000)
- */
-// Função FormatNumber movida para shared_functions.inc para evitar duplicação
 
-// ===== FUNÇÕES DE SUPORTE PARA O SISTEMA DE UPKEEP =====
 
-function GetGuildTerritories(faction_name)
-	LogDebug("upkeep", "Obtendo territórios para facção: " + faction_name);
-	
-	var territories := array{};
-	var rect_df := SafeOpenDataFile(":architect:areas");
-	if (!rect_df)
-		LogWarning("upkeep", "Não foi possível abrir datafile de áreas");
-		return territories;
-	endif
-	
-	foreach rect_name in (rect_df.keys())
-		var elem := SafeFindElement(rect_df, rect_name);		if (elem)
-			var territory_faction := GetTerritoryFaction(elem);
-			
-			if (territory_faction == faction_name)
-				var territory_info := struct{
-					"name" := rect_name,
-					"rect" := GetElementProp(elem, "Rect", ""),
-					"realm" := GetElementProp(elem, "Realm", "britannia")
-				};
-				territories.append(territory_info);
-			endif
-		endif
-		sleepms(2);
-	endforeach
-	
-	LogDebug("upkeep", "Encontrados " + territories.size() + " territórios para " + faction_name);
-	return territories;
-endfunction
 
 function CalcularTamanhoTerritorio(territory_info)
 	if (!territory_info.rect || territory_info.rect == "")
@@ -2628,4 +2535,145 @@ function CalculateUpkeepSustainability(faction_name)
 	endif
 	
 	return result;
+endfunction
+
+function PagarDividaManualmente(who, guild)
+    var guild_name := SafeGetGuildName(guild);
+    var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
+
+    if (divida_acumulada <= 0)
+        SendSysMessage(who, "Seu reino não possui débitos pendentes.");
+        return 0;
+    endif
+
+    if (!YesNo(who, "Você deseja tentar quitar a dívida de " + divida_acumulada + " moedas agora? As moedas serão debitadas do baú da sua capital."))
+        SendSysMessage(who, "Operação cancelada.");
+        return 0;
+    endif
+
+    // Implementar cobrança básica ou incluir a função do arquivo reino_upkeep_control.src
+    var guild_territories := GetGuildTerritories(guild_name);
+    if (!guild_territories || guild_territories.size() == 0)
+        SendSysMessage(who, "Erro: Nenhum território encontrado para sua facção.");
+        return 0;
+    endif
+
+    // Encontrar a capital
+    var capital_territory_id := "";
+    foreach territory_info in guild_territories
+        var current_territory_id := territory_info.id ?: territory_info.name;
+        if (TM_IsTerritoryCapital(current_territory_id))
+            capital_territory_id := current_territory_id;
+            break;
+        endif
+    endforeach
+
+    if (!capital_territory_id)
+        SendSysMessage(who, "Erro: Sua facção não possui uma capital designada.");
+        return 0;
+    endif
+
+    // Buscar o baú da capital
+    var faction_chest := FindFactionChest(guild_name, capital_territory_id);
+    if (!faction_chest)
+        SendSysMessage(who, "Erro: Baú da capital não encontrado.");
+        return 0;
+    endif
+
+    // Verificar e debitar moedas
+    var moedas_disponiveis := 0;
+    var moedas_items := array{};
+    
+    foreach item in EnumerateItemsInContainer(faction_chest)
+        if (item.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += item.amount;
+            moedas_items.append(item);
+        endif
+        sleepms(2);
+    endforeach
+
+    if (moedas_disponiveis < divida_acumulada)
+        SendSysMessage(who, "Fundos insuficientes no baú da capital. Disponível: " + moedas_disponiveis + ", Necessário: " + divida_acumulada);
+        return 0;
+    endif
+
+    // Debitar as moedas
+    var moedas_restantes := divida_acumulada;
+    foreach moeda in moedas_items
+        if (moedas_restantes <= 0)
+            break;
+        endif
+        
+        if (moeda.amount >= moedas_restantes)
+            SubtractAmount(moeda, moedas_restantes);
+            moedas_restantes := 0;
+        else
+            moedas_restantes -= moeda.amount;
+            DestroyItem(moeda);
+        endif
+        sleepms(2);
+    endforeach
+
+    if (moedas_restantes == 0)
+        SafeSetGuildProperty(guild, "divida_upkeep", 0);
+        SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
+        
+        SendSysMessage(who, "Dívida quitada com sucesso! Os benefícios do seu reino foram restaurados.");
+        NotificarLider(guild, "A dívida do seu reino foi quitada manualmente. Os benefícios foram restaurados!");
+        LogInfo("upkeep", "Facção '" + guild_name + "' quitou dívida manualmente.");
+        return 1;
+    else
+        SendSysMessage(who, "Falha ao quitar a dívida completamente.");
+        return 0;
+    endif
+endfunction
+
+
+function FormatCultureForDisplay(culture_enum)
+    // Tratar tanto formatos com espaços quanto com underscore
+    var culture_lower := Lower(culture_enum);
+    
+    case (culture_lower)
+        "aiglana":
+        "aigla":
+        "aiglanos":
+            return "Aiglana";
+            
+        "haroloth":
+        "har'oloth":
+            return "Har'oloth";
+            
+        "povos do leste":       // <- CORREÇÃO: Tratar formato com espaços
+        "povos_do_leste":       // <- E formato com underscore
+        "leste":
+            return "Povos do Leste";
+            
+        "bjorske":
+        "björska":
+        "bjornske":
+            return "Björska";
+            
+        "aluriel":
+        "alüriel":
+            return "Alüriel";
+            
+        "baduran":
+        "badûran":
+            return "Badûran";
+            
+        "gulthrak":
+            return "Gulthrak";
+            
+        "polkinea":
+        "polski":
+            return "Polkinea";
+            
+        default:
+            // Fallback melhorado - capitalizar primeira letra
+            if (culture_enum && culture_enum != "")
+                return CapitalizeFirst(culture_enum);
+            else
+                return "Cultura Indefinida";
+            endif
+    endcase
 endfunction

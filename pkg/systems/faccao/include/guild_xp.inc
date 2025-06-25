@@ -56,13 +56,14 @@ function GetKingdomLevels(guild_culture)
             return GetAiglaLevels();
 
         "leste":
-        "povos_do_leste":
+        "povos do leste":           // <- CORREÇÃO AQUI: Adicionado espaços
+        "povos_do_leste":          // <- Mantido com underscore também
         "sleste":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Leste levels");
             return GetLesteLevels();
 
         "haroloth":
-        "har'oloth":  // <-- CORREÇÃO APLICADA AQUI
+        "har'oloth":
         "drow":
         "sharoloth":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Haroloth levels");
@@ -70,11 +71,13 @@ function GetKingdomLevels(guild_culture)
 
         "bjorske":
         "bjornske":
+        "björska":      // Mantido para compatibilidade
         "sbjorske":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Bjorske levels");
             return GetBjorskeLevels();
 
         "aluriel":
+        "alüriel":      // Mantido para compatibilidade
         "elfo":
         "saluriel":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Aluriel levels");
@@ -87,6 +90,7 @@ function GetKingdomLevels(guild_culture)
             return GetPolkineaLevels();
 
         "baduran":
+        "badûran":      // Mantido para compatibilidade
         "anao":
         "sbaduran":
             LogDebug("kingdom_levels", "GetKingdomLevels: Usando Baduran levels");
@@ -808,15 +812,18 @@ endfunction
 
 
 function CapitalizeFirst(text)
-    if (text == "" || text.size() == 0)
+    if (!text || text == "" || text.size() == 0)
         return text;
     endif
     
     var first_char := text[1];
-    var rest := "";
+    var rest_of_string := "";
+
     if (text.size() > 1)
-        rest := text[2, text.size()];    endif
-      return Upper(first_char) + Lower(rest);
+        rest_of_string := text[2, text.size() - 1]; 
+    endif
+    
+    return Upper(first_char) + Lower(rest_of_string);
 endfunction
 
 
@@ -864,4 +871,32 @@ function ResetKingdomLevelAndXP(guild_obj)
     LogToFile("faccoes.log", "REINO DISSOLVIDO: " + guild_name + " (GuildID: " + guild_obj.guildid + ") perdeu seu último território. XP e Nível zerados.");
     
     return 1;
+endfunction
+
+// ===== FUNÇÕES DE SUPORTE PARA O SISTEMA DE UPKEEP =====
+
+function GetGuildTerritories(faction_name)
+    var territories := array{};
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return territories;
+    endif
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var territory_faction := GetTerritoryFaction(elem);
+            if (territory_faction == faction_name)
+                var territory_info := struct{};
+                territory_info.+name := rect_name;
+                territory_info.+id   := GetElementProp(elem, TERRITORY_ID_PROP, rect_name);
+                territory_info.+rect := GetElementProp(elem, "Rect", "");
+                territory_info.+realm := GetElementProp(elem, "Realm", "britannia");
+                territories.append(territory_info);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return territories;
 endfunction

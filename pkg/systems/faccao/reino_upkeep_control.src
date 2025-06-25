@@ -14,14 +14,13 @@ include ":faccao:include/safe_guild_utils";
 include ":faccao:include/datafile_helpers";
 include ":faccao:include/faccao_constants";
 
+
 // Constantes locais
 const MOEDAS_COBRE := 0xBA63;
 
 program ReinoUpkeepControl()
-
     LogInfo("upkeep_ctrl", "=== Controlador de Upkeep tentando iniciar (PID: " + GetPid() + ") ===");
 
-    // Garante que apenas uma instância deste script rode por vez.
     if (!RegisterProcess("ReinoUpkeepControl"))
         LogWarning("upkeep_ctrl", "Outra instância de ReinoUpkeepControl já está ativa. Este processo (PID: " + GetPid() + ") será encerrado.");
         return 0;
@@ -41,11 +40,9 @@ program ReinoUpkeepControl()
 endprogram
 
 function ProcessarUpkeepSimples()
-
     LogDebug("upkeep", "UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
     syslog("UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
     
-    // Coletar nomes de facções ativas a partir dos territórios.
     var active_guilds := struct{};
     var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
@@ -61,7 +58,6 @@ function ProcessarUpkeepSimples()
         endforeach
     endif
     
-    // Obter a lista de nomes de guildas UMA ÚNICA VEZ.
     var guild_names := active_guilds.keys();
     
     Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
@@ -95,21 +91,41 @@ function ProcessarUpkeepSimples()
 
         var territories := GetGuildTerritories(guild_name);
         var cost := CalcularCustoUpkeep(guild, territories);
-        Print("UPKEEP: " + guild_name + " - Territórios: " + territories.size() + ", Nível: " + GetSimpleGuildLevel(guild) + ", Custo: " + cost);
         
         if (cost <= 0)
-            Print("UPKEEP: " + guild_name + " não possui territórios ou custo é zero");
+            Print("UPKEEP: " + guild_name + " não possui territórios ou custo é zero. Pulando cobrança.");
             continue;
         endif
         
         payment_attempts += 1;
-        Print("UPKEEP: " + guild_name + " deve pagar " + cost + " moedas");
         
-        if (CobrarUpkeepRobusto(guild, guild_name, cost))
-            Print("UPKEEP: " + guild_name + " pagou com sucesso");
+        var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
+        var custo_total_a_pagar := cost + divida_acumulada;
+
+        Print("UPKEEP: " + guild_name + " - Custo da semana: " + cost + ", Dívida anterior: " + divida_acumulada + ". TOTAL A PAGAR: " + custo_total_a_pagar);
+        
+        if (CobrarUpkeepRobusto(guild, guild_name, custo_total_a_pagar))
+            Print("UPKEEP: " + guild_name + " pagou " + custo_total_a_pagar + " com sucesso.");
             successful_payments += 1;
+            
+            if (divida_acumulada > 0 || CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) > 0)
+                SafeSetGuildProperty(guild, "divida_upkeep", 0);
+                SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
+                NotificarLider(guild, "O upkeep e todos os débitos do seu reino foram pagos. Os benefícios foram restaurados!");
+                LogInfo("upkeep", "Facção '" + guild_name + "' quitou seu débito. Dívida e pontos zerados.");
+            endif
+            
         else
-            Print("UPKEEP: " + guild_name + " falhou no pagamento - recursos insuficientes ou baú não encontrado");
+            Print("UPKEEP: " + guild_name + " FALHOU no pagamento de " + custo_total_a_pagar);
+
+            var pontos := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) + 1;
+            SafeSetGuildProperty(guild, "pontos_inadimplencia", pontos);
+            
+            var nova_divida := divida_acumulada + cost;
+            SafeSetGuildProperty(guild, "divida_upkeep", nova_divida);
+
+            NotificarLider(guild, "AVISO DE UPKEEP: O pagamento do upkeep semanal falhou. Sua dívida acumulou para " + nova_divida + " moedas.");
+            LogWarning("upkeep", "Falha no pagamento para '" + guild_name + "'. Pontos: " + pontos + ", Nova dívida: " + nova_divida);
         endif
         
         var inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0));
@@ -126,34 +142,50 @@ endfunction
 function AplicarPenalidades(guild, pontos)
     var guild_name := SafeGetGuildName(guild);
     
-    if (pontos >= 3) // 3 falhas (3 ciclos) -> Perda de território
-        LogCritical("upkeep", "PENALIDADE MÁXIMA para " + guild_name + "! Revogando um território.");
+    // STRIKE 3 (ou mais): Perda de Território
+    if (pontos >= 3)
+        LogCritical("upkeep_penalty", "STRIKE 3: " + guild_name + " atingiu " + pontos + " pontos de inadimplência. PENALIDADE MÁXIMA ativada.");
+        
         var territories := GetGuildTerritories(guild_name);
         if (territories.size() > 0)
-            // Revoga um território aleatório que NÃO seja a capital.
+            LogInfo("upkeep_penalty", "A facção possui " + territories.size() + " territórios. Selecionando um para revogar...");
             var territory_to_revoke := FindTerritoryToRevoke(territories);
+            
             if (territory_to_revoke)
-                TM_RevokeTerritory(territory_to_revoke.id, 0); // Adicionado 0 para o parâmetro 'who'
+                LogWarning("upkeep_penalty", "Revogando território '" + territory_to_revoke.name + "' (ID: " + territory_to_revoke.id + ") da facção " + guild_name);
+                
+                TM_RevokeTerritory(territory_to_revoke.id, 0);
+                
                 NotificarLider(guild, "Sua facção falhou em pagar o upkeep por 3 ciclos. O território '" + territory_to_revoke.name + "' foi perdido!");
-                // Zera os pontos de inadimplência após a penalidade
+                
                 SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
+                SafeSetGuildProperty(guild, "divida_upkeep", 0);
+                LogInfo("upkeep_penalty", "Penalidade aplicada. Pontos e dívida da facção " + guild_name + " foram ZERADOS.");
+            else
+                LogError("upkeep_penalty", "Erro: Não foi possível selecionar um território para revogar para a facção " + guild_name + " mesmo ela possuindo territórios.");
             endif
+        else
+            LogWarning("upkeep_penalty", "A facção " + guild_name + " está com " + pontos + " pontos de dívida, mas não possui mais territórios para serem revogados.");
         endif
-    elseif (pontos == 2) // 2 falhas
-         NotificarLider(guild, "ALERTA FINAL: O próximo ciclo de upkeep sem pagamento resultará na PERDA de um território!");
-    elseif (pontos == 1) // 1 falha
-         NotificarLider(guild, "AVISO: Sua facção está inadimplente. A geração de recursos e o ganho de XP estão suspensos até o pagamento do upkeep.");
+
+    // STRIKE 2: Aviso Final
+    elseif (pontos == 2)
+        LogWarning("upkeep_penalty", "STRIKE 2: " + guild_name + " atingiu 2 pontos de inadimplência. Enviando aviso final.");
+        NotificarLider(guild, "ALERTA FINAL: O próximo ciclo de upkeep sem pagamento resultará na PERDA de um território!");
+
+    // STRIKE 1: Primeiro Aviso
+    elseif (pontos == 1)
+        LogInfo("upkeep_penalty", "STRIKE 1: " + guild_name + " atingiu 1 ponto de inadimplência. Benefícios suspensos.");
+        NotificarLider(guild, "AVISO: Sua facção está inadimplente. A geração de recursos e o ganho de XP estão suspensos até o pagamento do upkeep.");
     endif
 endfunction
 
 function FindTerritoryToRevoke(territories)
-    // Lógica para escolher um território que não seja a capital
     foreach t in territories
         if (!TM_IsTerritoryCapital(t.id))
             return t;
         endif
     endforeach
-    // Se só sobrar a capital, retorna a capital
     if(territories.size() > 0)
 		return territories[1];
 	else
@@ -161,31 +193,6 @@ function FindTerritoryToRevoke(territories)
 	endif
 endfunction
 
-function GetGuildTerritories(faction_name)
-    var territories := array{};
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return territories;
-    endif
-    
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        if (elem)
-            var territory_faction := GetTerritoryFaction(elem);
-            if (territory_faction == faction_name)
-                var territory_info := struct{};
-                territory_info.+name := rect_name;
-                territory_info.+id   := GetElementProp(elem, TERRITORY_ID_PROP, rect_name);
-                territory_info.+rect := GetElementProp(elem, "Rect", "");
-                territory_info.+realm := GetElementProp(elem, "Realm", "britannia");
-                territories.append(territory_info);
-            endif
-        endif
-        sleepms(2);
-    endforeach
-    
-    return territories;
-endfunction
 
 
 function CobrarUpkeepRobusto(guild, guild_name, cost_amount)
@@ -251,6 +258,14 @@ function CobrarUpkeepRobusto(guild, guild_name, cost_amount)
     SetObjProperty(faction_chest, lock_prop, lock_data);
     LogDebug("upkeep", "Lock adquirido no baú da capital " + faction_chest.serial + " para cobrança de upkeep.");
 
+// ==========================================================
+    // >>>>> ADIÇÃO CRÍTICA: FORÇAR CONTAGEM REAL <<<<<
+    // ==========================================================
+    LogInfo("UpkeepPayment_SYNC", "Forçando contagem real de recursos no baú " + faction_chest.serial + " antes da cobrança.");
+    ContarItensDoadosNoBau(faction_chest, 1); // O '1' força a recontagem e sincronização
+    // ==========================================================
+
+    
     var payment_success := 0;
     var error_occurred := 0;
 
