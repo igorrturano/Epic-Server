@@ -36,7 +36,6 @@ class DropDown()
 		var objeto := struct;
 		objeto.+opcao := opcao;
 		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdValores, valorReal := valor}; 
-		
 
 		return objeto;
 	endfunction
