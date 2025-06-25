@@ -1,6 +1,7 @@
 //Author: Deiro || Rafael Santos
 
 include ":gumps:/include/epicGumps";
+include "include/string";
 
 const G_LARGURA := 800;
 const G_ALTURA := 600;
@@ -17,11 +18,14 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_ESQUEMAS_CPNT := 330,
 	COMPLEXOS_DROPDOWN_INICIAL := 2000,
 	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	3000,
-	COMPLEXOS_DROPDOWN_MAX := 20,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
 	COMPONENTES_DROPDOWN_OPCOES_INICIAL :=	200,
-	COMPONENTES_DROPDOWN_MAX := 10,
 	COMPONENTES_TABELA_INICIAL := 1000
+endenum
+
+enum MAXIMO_BTN_IDS // Valores máixmos dos ids.
+	COMPLEXOS_DROPDOWN_MAX := 20,
+	COMPONENTES_DROPDOWN_MAX := 10,
 endenum
 
 enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
@@ -221,7 +225,7 @@ function MontaEsquemaGump(byref gump,byref sessao)
 
 	var pesoTotalGeral := sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal;
 	if(pesoTotalGeral  != 0)
-		GFTextLine(gump,margemEsquerdaLocal + 10,margemSuperiorModificadores,1153,"PesoTotal:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
+		GFTextLine(gump,margemEsquerdaLocal + 10,margemSuperiorModificadores,1153,"Peso Total:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
 		var corSinalPeso := CriaCorSinal(pesoTotalGeral,true);
 		GFTextLine(
 			gump,
@@ -233,7 +237,7 @@ function MontaEsquemaGump(byref gump,byref sessao)
 
 	var hpTotalGeral := sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal;
 	if(hpTotalGeral != 0)
-		GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorModificadores + 20,1153,"HpTotal:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal));
+		GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorModificadores + 20,1153,"Hp Total:".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal));
 		var corSinalHp := CriaCorSinal(hpTotalGeral);
 		GFTextLine(gump,
 		margemEsquerdaValoresModificadores,
@@ -335,6 +339,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + CINT(larguraCelula * 5.2) - 1,
 							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter,
 							material,
+							componenteSelecionado.materialPrincipal,
 							sessao,
 							_material_iter);
 			Sleepms(2);
@@ -363,7 +368,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	return gump;
 endfunction
 
-function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
+function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessao,indice)
 	if(indice < 1 || indice > 10 )
 		return 0;
 	endif
@@ -373,7 +378,7 @@ function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
 
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
-	GFTextLine(gump,x + 20,y,86, Trim(material) + ": " + nome);
+	GFTextLine(gump,x + 20,y, (Find(material,materialPrincipal,1) ? 253 : 1111), Trim(material) + ": " + nome);
 endfunction
 
 function MontaTratamentoGump(x, y, byref sessao)
@@ -467,7 +472,6 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		GFPicTiled(gump, x, y + 90, larguraLocal - 20, 2, 30002); // 2700 
 	endif
 
-
 	GFTextLine(gump,x + CentralizaEixoX(larguraCelula,encaixeComponente.encaixeDesc,3.7),y + 20,1153,encaixeComponente.encaixeDesc);
 	if(componenteNecessario.isPrincipal)
 		GFGumpPic( gump, x + cint(larguraCelula/ 6), y + 22, 1655);
@@ -497,13 +501,15 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		var materialQualidadeFormatado := "[{}] [{}]".format( componenteEscolhido.material.nome, componenteEscolhido.tier.desc);
 		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,materialQualidadeFormatado,3.7) ,y + 85,89,materialQualidadeFormatado);
 	else
+		var caracteristica := "*" + UCFirst(encaixeComponente.caracteristica) + "*";
+		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,caracteristica,3.7) ,y + 103,915,caracteristica);
 		GFTextLine(gump,x + 22 ,y + 60,1153,"Escolha um componente.");
 	endif
 
 	var posYcaracteristicas := y + (componenteEscolhido ? 120 : 100);
 	var posYSetasDeslocamento := 2;
 	if(componenteEscolhido.propriedades.valorPrincipal)
-		GFTextLine(gump,x + 5,posYcaracteristicas,1153,encaixeComponente.caracteristica); // caracteristica;
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;
 		GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
 	endif
 	
@@ -526,7 +532,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	if(isPesoModificado)
 		var info := CriaCorSinal(componenteEscolhido.propriedades.modificadorPeso, true);
-		GFTextLine(gump,x + 5,posYcaracteristicas,1153,"peso");
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,"Peso");
 		GFTextLine(gump,x + 195,posYcaracteristicas,info.cor,"{}{}%".format(info.sinal,componenteEscolhido.propriedades.modificadorPeso));
 	endif
 
@@ -772,6 +778,5 @@ function MontaFabricacaoAjudaGump(byref gump, parametros)
 	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.profissao.textoTratamento);
 
 	gump.cur_page := cint(parametros.pagina);
-	Print("gump.cur_page " + gump.cur_page + " parametros.pagina " +  parametros.pagina);
 	return gump;
 endfunction
