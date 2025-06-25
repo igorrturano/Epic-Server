@@ -126,6 +126,7 @@ function CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo)
 	CheckHab_VinculoElemental(attacker, defender, attackInfo);
 	CheckHab_Backstab(attacker, defender, attackInfo);
 	CheckHab_Charge(attacker, defender, attackInfo);
+    CheckHab_DivineAuthority(attacker, defender, attackInfo);
 
 	return attackInfo.damage < 1 ? 1 : attackInfo.damage; // Garante dano mínimo = 1.
 endfunction
@@ -894,6 +895,21 @@ function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo
 	endif
 
 	return 0;
+endfunction
+
+function CheckHab_DivineAuthority(byref attacker, byref defender, byRef attackInfo := struct{})
+    var HAB_NAME := "Divine Authority - Mountain's Strength";
+    
+    if (IsPhysicalDamage(attackInfo.type))
+        if (GetCooldown(defender, "mountains_strength") > 0)
+            attackInfo.damage := 1; // Reduce physical damage to 1
+            DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+            DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: Dano reduzido para 1");
+            return 1;
+        endif
+    endif
+
+    return 0;
 endfunction
 
 // function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
