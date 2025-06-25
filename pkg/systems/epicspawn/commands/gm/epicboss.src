@@ -68,13 +68,10 @@ program epicBOSS(params)
     
     // Process user input until they close the gump
     while (input[0] != 0)
-        SendSysMessage(who, "DEBUG: input[0] = " + input[0]);
-        
         // Check if any navigation button was clicked
         var nav_button_clicked := 0;
         for i := 1 to 5
             if (input[i])
-                SendSysMessage(who, "DEBUG: Navigation button " + i + " was clicked");
                 nav_button_clicked := i;
             endif
         endfor
@@ -91,7 +88,6 @@ program epicBOSS(params)
         // Check if the Create Boss button was clicked
         if (input[0] == 100 || input[100])
             // Save form data before creating the boss
-            SendSysMessage(who, "DEBUG: Create Boss button was clicked");
             SendSysMessage(who, "Creating boss...");
             CreateBossFromGump(who, form_data, spawner); // Pass the spawner parameter
             break; // Exit after creating the boss
@@ -415,12 +411,8 @@ endfunction
 
 // Function to update which menu is active based on button click
 function UpdateMenuState(input, who)
-    SendSysMessage(who, "DEBUG: UpdateMenuState input = " + input);
-    
     // Update the last clicked button
     last_clicked_button := input;
-    
-    SendSysMessage(who, "DEBUG: last_clicked_button = " + last_clicked_button);
     
     // Inform the user that their data is being saved
     case (input)
@@ -1278,9 +1270,6 @@ function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
         ability_struct.+script_path := script_path;
     endif
     
-    // Debug message to verify the structure
-    SendSysMessage(who, "DEBUG: Adding ability: " + ability + " with script: " + ability_struct.script_path);
-    
     form_data.special.append(ability_struct);
     SendSysMessage(who, "Added " + ability + " to weapon special abilities.");
     
@@ -1424,9 +1413,6 @@ function DisplayArmorAbilityOptions(who, input, ability, byref form_data)
     else
         ability_struct.+script_path := script_path;
     endif
-    
-    // Add debug message
-    SendSysMessage(who, "DEBUG: Adding armor ability: " + ability + " with script: " + ability_struct.script_path);
     
     form_data.armorspecial.append(ability_struct);
     SendSysMessage(who, "Added " + ability + " to armor special abilities.");
@@ -2389,34 +2375,27 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Set race and gender if provided
     if (form_data.race)
         boss.race := form_data.race;
-        SendSysMessage(who, "Boss race set to " + form_data.race);
     endif
     
     if (form_data.gender != error)
         boss.gender := form_data.gender;
-        SendSysMessage(who, "Boss gender set to " + (form_data.gender == 1 ? "Female" : "Male"));
     endif
     
     if (form_data.graphic)
         boss.graphic := form_data.graphic;
-        SendSysMessage(who, "Boss graphic set to " + form_data.graphic);
     endif
 
     // Appearance data
     if (form_data.appearance)
         boss.appearance := form_data.appearance;
-        SendSysMessage(who, "DEBUG: Appearance data transferred to boss structure");
     endif
 
     // Add respawn time values to boss structure
     boss.min_respawn := CInt(form_data.min_respawn);
     boss.max_respawn := CInt(form_data.max_respawn);
 
-    SendSysMessage(who, "DEBUG: Checking form_data combat events");
     if (form_data.combatevents && form_data.combatevents.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.combatevents.size() + " combat events in form_data");
         foreach event in (form_data.combatevents)
-            SendSysMessage(who, "DEBUG: Processing combat event: " + event.name);
             
             // Create a clean event structure with only necessary properties
             var event_struct := struct{};
@@ -2431,26 +2410,17 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             
             // Copy all actions
             if (event.actions && event.actions.size() > 0)
-                SendSysMessage(who, "DEBUG: Event has " + event.actions.size() + " actions");
                 foreach action in (event.actions)
                     event_struct.actions.append(action);
                     event_struct.steps.append(action); // Copy to both arrays for compatibility
                 endforeach
-            else
-                SendSysMessage(who, "DEBUG: Event has no actions");
             endif
             
             boss.combatevents.append(event_struct);
-            SendSysMessage(who, "DEBUG: Added event to boss.combatevents");
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No combat events found in form_data");
     endif
-    SendSysMessage(who, "DEBUG: Checking form_data special abilities");
     if (form_data.special && form_data.special.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.special.size() + " special abilities in form_data");
         foreach ability in (form_data.special)
-            SendSysMessage(who, "DEBUG: form_data ability: " + ability.name + " with script: " + ability.script_path);
             
             // Copy the ability to the boss structure
             var ability_struct := struct{};
@@ -2458,15 +2428,10 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             ability_struct.+script_path := ability.script_path;
             boss.special.append(ability_struct);
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No special abilities found in form_data");
     endif
     
-    SendSysMessage(who, "DEBUG: Checking form_data armor special abilities");
     if (form_data.armorspecial && form_data.armorspecial.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.armorspecial.size() + " armor special abilities in form_data");
         foreach ability in (form_data.armorspecial)
-            SendSysMessage(who, "DEBUG: form_data armor ability: " + ability.name + " with script: " + ability.script_path);
             
             // Copy the ability to the boss structure
             var ability_struct := struct{};
@@ -2480,13 +2445,9 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             
             boss.armorspecial.append(ability_struct);
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No armor special abilities found in form_data");
     endif
     
-    SendSysMessage(who, "DEBUG: Checking form_data timedscripts");
     if (form_data.timedscripts && form_data.timedscripts.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.timedscripts.size() + " timedscripts in form_data");
         
         // Initialize timedscripts array if needed
         if (!boss.timedscripts)
@@ -2706,7 +2667,6 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Save color ranges for boss equipment
     if (form_data.color_ranges && form_data.color_ranges.size() > 0)
         boss.color_ranges := form_data.color_ranges;
-        SendSysMessage(who, "DEBUG: Color ranges saved to boss structure: " + form_data.color_ranges.size() + " ranges");
     endif
 
     // Check if we're updating an existing spawner or creating a new one
@@ -2714,7 +2674,6 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     if (existing_spawner)
         // Use the existing spawner
         spawner := existing_spawner;
-        SendSysMessage(who, "Using existing spawner: " + spawner.serial);
 
         // Check if there's a currently spawned boss linked to this spawner
         var child_serial := Cint(GetObjProperty(spawner, "ChildSerial"));
@@ -2744,7 +2703,6 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         
         // Move the spawner to the ground to ensure it's placed correctly
         MoveObjectToLocation(spawner, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
-        SendSysMessage(who, "Spawner created with serial: " + spawner.serial);
     endif
 
     var amount := boss.amount ? boss.amount : 1;
@@ -2789,17 +2747,6 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         endif
         
         spawner.invisible := 1;
-        
-        if (existing_spawner)
-            SendSysMessage(who, "Boss spawner updated successfully! Spawned " + npcs.size() + " bosses.");
-        else
-            SendSysMessage(who, "Boss created successfully with spawner! Spawned " + npcs.size() + " bosses.");
-        endif
-        
-        SendSysMessage(who, "The boss(es) will respawn between " + Cstr(form_data.min_respawn) + " and " + Cstr(form_data.max_respawn) + " minutes after death.");
-        SendSysMessage(who, "Double-click the spawner (invisible at your feet) to configure.");
-    else
-        SendSysMessage(who, "Boss(es) created successfully, but failed to create spawner!");
     endif
     
     return 1;
