@@ -842,9 +842,11 @@ endfunction
 
 
 
-function MostrarInformacoesTerritorio(who, index, item)
+// Em pkg/systems/faccao/gestao_use.src
+
+function MostrarInformacoesTerritorio(who, index, item) // 'index' aqui é o índice base-0 do botão
     if (DEBUG_GESTAO)
-        LogDebug("territorio", "Iniciando função MostrarInformacoesTerritorio, index: " + index);
+        LogDebug("territorio", "MostrarInformacoesTerritorio: Recebido índice base-0: " + index);
     endif
     
     var rect_df := SafeOpenDataFile(":architect:areas");
@@ -853,42 +855,48 @@ function MostrarInformacoesTerritorio(who, index, item)
         return 0;
     endif
     
-    // Obter a facção da mesa de gestão
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
     
-    // Coletar territórios visíveis para esta facção
+    // Recriar a lista EXATAMENTE como foi criada no Gump
     var territorios := array{};
     foreach elem_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, elem_name);
-          // Verificar propriedades de facção
-        var faction := GetTerritoryFaction(elem);
+        var territory_info := TM_GetTerritoryInfo(elem_name);
+        if (!territory_info) continue; endif
         
-        // Obter ID do território
-        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-        if (!territory_id)
-            territory_id := elem_name; // Compatibilidade retroativa
-        endif
+        var territory_id := territory_info.id ? territory_info.id : "";
+        var faction := territory_info.faction;
         
-        // Filtrar por facção
         if (faction && faction != DEFAULT_FACTION && 
             (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
             territorios.append(struct{
                 "name" := elem_name,
                 "id" := territory_id,
-                "elem" := elem
+                "elem" := TM_FindTerritory(elem_name) // Armazenar o elemento para uso posterior
             });
         endif
         sleepms(2);
     endforeach
     
-    // Verificação de índice
+    // =======================================================
+    // == INÍCIO DA CORREÇÃO DE INDEXAÇÃO ==
+    // =======================================================
+
+    // A verificação de limites deve usar o índice base-0
     if (index < 0 || index >= territorios.size())
-        SendSysMessage(who, "Território não encontrado.");
+        SendSysMessage(who, "Território não encontrado (índice inválido).");
+        LogWarning("gestao_use", "Tentativa de acesso com índice inválido: " + index + ". Tamanho do array: " + territorios.size());
         return 0;
     endif
     
-    // Obter o território pelo índice (ajustado para indexação baseada em 1)
-    var territorio := territorios[index+1];
+    // O acesso ao array POL deve usar o índice base-1
+    var pol_index := index + 1;
+    var territorio := territorios[pol_index]; 
+    LogInfo("gestao_use", "Acessando território no índice POL " + pol_index + ": " + territorio.name);
+
+    // =======================================================
+    // === FIM DA CORREÇÃO DE INDEXAÇÃO ===
+    // =======================================================
+
     if (!territorio)
         SendSysMessage(who, "Nome do território inválido.");
         return 0;
@@ -899,17 +907,14 @@ function MostrarInformacoesTerritorio(who, index, item)
         SendSysMessage(who, "Elemento do território não encontrado.");
         return 0;
     endif
-      // Obter propriedades
+
     var faction := GetTerritoryFaction(elem);
     if (!faction) faction := "Desconhecida"; endif
     
-    var rect := GetElementProp(elem, "Rect", "");
-    if (!rect) rect := "Desconhecidas"; endif
+    var rect := GetElementProp(elem, "Rect", "Desconhecidas");
+    var realm := GetElementProp(elem, "Realm", "Desconhecido");
     
-    var realm := GetElementProp(elem, "Realm", "");
-    if (!realm) realm := "Desconhecido"; endif
-    
-    // Mostrar interface de informações
+    // A chamada para o GUMP final está correta.
     MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm, item);
     
     return 1;

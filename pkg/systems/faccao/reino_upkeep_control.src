@@ -146,35 +146,56 @@ endfunction
 
 
 function CobrarUpkeepRobusto(guild_name, cost_amount)
-    LogCritical("UpkeepPayment_START", "Iniciando cobrança de " + cost_amount + " moedas para facção " + guild_name);
+    LogCritical("UpkeepPayment_START_v2", "Iniciando cobrança (v2) de " + cost_amount + " moedas para facção " + guild_name);
 
     var faction_chest := 0;
+    var capital_territory_id := "";
+    var capital_territory_name := "";
     var territories_found := GetGuildTerritories(guild_name);
 
-    LogCritical("UpkeepPayment_SEARCH", "Encontrados " + territories_found.size() + " territórios para " + guild_name);
+    LogInfo("UpkeepPayment_SEARCH_v2", "Encontrados " + territories_found.size() + " territórios para " + guild_name + ". Procurando a capital...");
 
+    // ====================================================================
+    // == INÍCIO DA MODIFICAÇÃO: LÓGICA PARA ENCONTRAR A CAPITAL ==
+    // ====================================================================
+
+    // 1. Iterar pelos territórios para encontrar a capital designada.
     foreach territory_info in territories_found
-        var territory_id := territory_info.id ?: territory_info.name;
-        LogCritical("UpkeepPayment_CHEST_SEARCH", "Tentando encontrar baú para território: " + territory_id);
-        faction_chest := FindFactionChest(guild_name, territory_id);
-        if (faction_chest)
-            LogCritical("UpkeepPayment_CHEST", "✓ Baú encontrado no território " + territory_id + ": Serial " + faction_chest.serial);
-            break;
+        var current_territory_id := territory_info.id ?: territory_info.name;
+        if (TM_IsTerritoryCapital(current_territory_id))
+            capital_territory_id := current_territory_id;
+            capital_territory_name := territory_info.name;
+            LogInfo("UpkeepPayment_CAPITAL_FOUND_v2", "✓ Capital da facção '" + guild_name + "' encontrada: '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
+            break; // Encontrou a capital, pode parar de procurar.
         endif
-        Sleep(1);
+        SleepMS(1);
     endforeach
 
-    if (!faction_chest)
-        LogCritical("UpkeepPayment_FALLBACK", "Tentando busca genérica para facção " + guild_name);
-        faction_chest := FindFactionChest(guild_name);
+    // 2. Se nenhuma capital foi encontrada, o pagamento não pode prosseguir de forma previsível.
+    if (!capital_territory_id)
+        LogError("UpkeepPayment_ERROR_v2", "NENHUMA CAPITAL designada para a facção '" + guild_name + "'. Cobrança de upkeep abortada.");
+        // Opcional: Notificar o líder da facção sobre a necessidade de designar uma capital.
+        return 0; // Falha no pagamento.
     endif
 
+    // 3. Buscar o baú EXCLUSIVAMENTE no território da capital.
+    LogInfo("UpkeepPayment_CHEST_SEARCH_v2", "Buscando baú na capital '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
+    faction_chest := FindFactionChest(guild_name, capital_territory_id);
+
+    // ====================================================================
+    // == FIM DA MODIFICAÇÃO ==
+    // ====================================================================
+
     if (!faction_chest)
-        LogError("UpkeepPayment_ERROR", "Baú da facção " + guild_name + " não encontrado após todas as estratégias. Pagamento falhou.");
+        LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' não encontrado. Pagamento falhou para a facção " + guild_name);
+        // Opcional: Notificar o líder sobre o baú ausente na capital.
         return 0;
     endif
     
-    LogInfo("UpkeepPayment_CHEST", "Baú alvo para cobrança: Serial " + faction_chest.serial);
+    LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança (Capital): Serial " + faction_chest.serial);
+
+    // O resto da função (lógica de lock, contagem e débito) permanece EXATAMENTE O MESMO.
+    // Ela agora operará sobre o 'faction_chest' que garantimos ser o da capital.
 
     var lock_prop := "operation_lock"; 
     var lock_timeout := 30;
@@ -184,10 +205,10 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     if (existing_lock)
         var lock_age := current_time_lock - CInt(existing_lock.timestamp);
         if (lock_age < lock_timeout)
-            LogWarning("upkeep", "Baú " + faction_chest.serial + " está bloqueado por outra operação ("+existing_lock.operation+"). Cobrança de upkeep adiada.");
+            LogWarning("upkeep", "Baú da capital " + faction_chest.serial + " está bloqueado por outra operação. Cobrança adiada.");
             return 0;
         else
-            LogWarning("upkeep", "Lock expirado encontrado no baú. Limpando e prosseguindo...");
+            LogWarning("upkeep", "Lock expirado encontrado no baú da capital. Limpando e prosseguindo...");
             EraseObjProperty(faction_chest, lock_prop);
         endif
     endif
@@ -197,7 +218,7 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
     lock_data.+pid := GetPid();
     lock_data.+timestamp := current_time_lock;
     SetObjProperty(faction_chest, lock_prop, lock_data);
-    LogDebug("upkeep", "Lock adquirido no baú " + faction_chest.serial + " para cobrança de upkeep.");
+    LogDebug("upkeep", "Lock adquirido no baú da capital " + faction_chest.serial + " para cobrança de upkeep.");
 
     var payment_success := 0;
     var error_occurred := 0;
@@ -257,8 +278,8 @@ function CobrarUpkeepRobusto(guild_name, cost_amount)
         endif
     endif
     
-    EraseObjProperty(faction_chest, lock_prop);
-    LogDebug("upkeep", "Lock liberado no baú " + faction_chest.serial + " após tentativa de cobrança. Sucesso: " + payment_success);
+ EraseObjProperty(faction_chest, lock_prop);
+    LogDebug("upkeep", "Lock liberado no baú da capital " + faction_chest.serial + ". Sucesso: " + payment_success);
     
     return payment_success;
 endfunction
