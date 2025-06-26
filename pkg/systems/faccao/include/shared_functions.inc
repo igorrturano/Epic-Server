@@ -504,8 +504,9 @@ endfunction
 
 /*
  * SubtractAmount(item, amount_to_subtract)
- *
+ * 
  * Purpose: Remove uma quantidade de um item.
+ *          VERSÃO CORRIGIDA: Usa a função nativa SubtractAmount para maior robustez.
  * Parameters:
  *   item - O item do qual remover.
  *   amount_to_subtract - A quantidade a remover.
@@ -516,47 +517,35 @@ function HelpSubtractAmount(item, amount_to_subtract)
     if (!item || !item.isA(POLCLASS_ITEM) || amount_to_subtract <= 0)
         LogError("shared_HelpSubtract", "Parâmetros inválidos para HelpSubtractAmount. Item: " + (item ? item.serial : "NULL") + ", Amount: " + amount_to_subtract);
         return 0;
-    endif;
+    endif
 
     if (item.amount < amount_to_subtract)
         LogWarning("shared_HelpSubtract", "Tentativa de remover " + amount_to_subtract + " de item " + item.serial + " que só tem " + item.amount);
         return 0; // Não tem o suficiente
-    endif;
+    endif
 
-    var container_of_item := item.container; 
+    var container_of_item := item.container;
 
-    // In POL, we need to manually handle item amount reduction
-    var new_amount := item.amount - amount_to_subtract;
-    
-    if (new_amount <= 0)
-        // If the new amount is 0 or less, destroy the item
-        var result := DestroyItem(item);
-        if (result)
-            LogInfo("shared_HelpSubtract", "Item destruído após remover " + amount_to_subtract + " unidades.");
-            if (container_of_item && container_of_item.isA(POLCLASS_CONTAINER))
-                MarcarRecursosModificados(container_of_item); 
-            endif;
-            return 1;
-        else
-            LogError("shared_HelpSubtract", "Falha ao destruir item " + item.serial);
-            return 0;
-        endif;
-    else
-        // Set the new amount
-        item.amount := new_amount;
+    // === INÍCIO DA CORREÇÃO ===
+    // Usa a função nativa do POL, que é mais confiável para modificar a quantidade de itens.
+    var result := SubtractAmount(item, amount_to_subtract);
+    // === FIM DA CORREÇÃO ===
+
+    if (result)
+        // A função nativa já lidou com a destruição do item se a quantidade chegou a zero.
+        LogInfo("shared_HelpSubtract", amount_to_subtract + " unidades removidas com sucesso do item/stack. Resultado de SubtractAmount: " + result);
         
-        // Verify the change took effect
-        if (item.amount == new_amount)
-            LogInfo("shared_HelpSubtract", amount_to_subtract + " unidades removidas do item " + item.serial + ". Nova quantidade: " + item.amount);
-            if (container_of_item && container_of_item.isA(POLCLASS_CONTAINER))
-                MarcarRecursosModificados(container_of_item); 
-            endif;
-            return 1;
-        else
-            LogError("shared_HelpSubtract", "Falha ao atualizar quantidade do item " + item.serial);
-            return 0;
-        endif;
-    endif;
+        // Marcar o container como "sujo" para que o cache de recursos seja atualizado.
+        if (container_of_item && container_of_item.isA(POLCLASS_CONTAINER))
+            MarcarRecursosModificados(container_of_item); 
+        endif
+        
+        return 1; // Sucesso
+    else
+        // Se SubtractAmount() falhar, ela retorna 0.
+        LogError("shared_HelpSubtract", "A função nativa SubtractAmount() falhou ao tentar remover " + amount_to_subtract + " do item " + (item ? item.serial : "DESTRUÍDO"));
+        return 0; // Falha
+    endif
 endfunction
 
 // Função centralizada para agendar atualizações
@@ -670,19 +659,19 @@ function NormalizarNomeElementoFaccao(nome_faccao_bruto)
     if (!nome_faccao_bruto)
         LogError("recursos", "NormalizarNomeElementoFaccao: Nome de facção nulo ou vazio");
         return error{"errortext" := "Nome de facção inválido"};
-    endif;
+    endif
     
     var nome_base := Lower(CStr(nome_faccao_bruto));
     nome_base := StrReplace(nome_base, " ", "_"); 
     
     if (nome_base.find("faction_") == 1) // Corrigido para .find() == 1 (início da string)
         nome_base := nome_base[9, nome_base.len()-8]; // Ajuste para pegar o restante da string
-    endif;
+    endif
     
     if (nome_base == "")
         LogError("recursos", "NormalizarNomeElementoFaccao: Nome de facção ficou vazio após normalização: " + nome_faccao_bruto);
         return error{"errortext" := "Nome de facção resultou em string vazia"};
-    endif;
+    endif
     
     return "faction_" + nome_base;
 endfunction
@@ -2067,7 +2056,7 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
     if (!faction_name)
         LogError("recursos_FindChest", "FindFactionChest() chamado sem nome de facção");
         return 0;
-    endif; // Adicionado ponto e vírgula
+    endif // Adicionado ponto e vírgula
     
     LogDebug("recursos_FindChest", "Buscando baú para facção '" + faction_name + 
              (territory_identifier ? "', território/ID '" + territory_identifier + "'" : "'"));
@@ -2086,9 +2075,9 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                 LogInfo("recursos_FindChest", "Territory_id encontrado para '" + territory_identifier + "': " + territory_id);
             else
                 LogWarning("recursos_FindChest", "Não foi possível encontrar territory_id para nome: '" + territory_identifier + "'. A busca continuará sem ID específico de território.");
-            endif;
-        endif;
-    endif;
+            endif
+        endif
+    endif
     
     if (territory_id)
         var seriais_df_s1 := SafeOpenDataFile(":faccao:seriais"); 
@@ -2107,12 +2096,12 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                         else
                             LogWarning("recursos_FindChest", "Serial " + chest_serial_s1 + " para baú do terr " + territory_id + " encontrado, mas objeto inválido, não encontrado no mundo ou facção do objeto não bate. Chest: " + (chest ? chest.serial : "NULL"));
                             chest := 0; 
-                        endif;
+                        endif
                     endif
                 else
                     LogDebug("recursos_FindChest", "Elemento de seriais para '" + territory_id + "' encontrado, mas facção no datafile de seriais ('" + elem_faction_s1 + "') não corresponde à facção buscada ('" + faction_name + "').");
-                endif;
-            endif; 
+                endif
+            endif 
             
            var territorios_seriais_s2 := GetElementProp(seriais_df_s1, "territorios");
             if (territorios_seriais_s2 && territorios_seriais_s2[territory_id]) 
@@ -2125,18 +2114,18 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                         if (territory_elem_migrate)
                             SetElementProp(territory_elem_migrate, "bau", info_s2.bau);
                             SetElementProp(territory_elem_migrate, "faction", info_s2.faction);
-                            if (info_s2.mesa) SetElementProp(territory_elem_migrate, "mesa", info_s2.mesa); endif;
-                            if (info_s2.mural) SetElementProp(territory_elem_migrate, "mural", info_s2.mural); endif;
-                        endif;
+                            if (info_s2.mesa) SetElementProp(territory_elem_migrate, "mesa", info_s2.mesa); endif
+                            if (info_s2.mural) SetElementProp(territory_elem_migrate, "mural", info_s2.mural); endif
+                        endif
                         return chest;
                     else
                         LogWarning("recursos_FindChest", "Serial " + info_s2.bau + " (legado) para baú do terr " + territory_id + " encontrado, mas objeto inválido ou não encontrado no mundo.");
                         chest := 0; 
-                    endif;
-                endif;
-            endif; 
-        endif; 
-    endif; 
+                    endif
+                endif
+            endif 
+        endif 
+    endif 
     
     LogDebug("recursos_FindChest", "Estratégia 3: Buscando baús no mundo para facção '" + faction_name + "'" + (territory_id ? " e ID '" + territory_id + "'" : " (sem ID específico)"));
     
@@ -2154,16 +2143,16 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                             if (territory_elem_s3_update)
                                 SetElementProp(territory_elem_s3_update, "bau", item_s3.serial);
                                 SetElementProp(territory_elem_s3_update, "faction", faction_name);
-                            endif;
-                        endif;
+                            endif
+                        endif
                         return item_s3;
-                    endif; 
+                    endif 
                 else 
                     LogInfo("recursos_FindChest", "Baú " + item_s3.serial + " da facção '" + faction_name + "' (sem ID de território específico) encontrado no mundo.");
                     return item_s3;
-                endif; 
-            endif; 
-        endif; 
+                endif 
+            endif 
+        endif 
         SleepMS(1); 
     endforeach;
     
@@ -2183,22 +2172,22 @@ function FindFactionChest(faction_name, territory_identifier := "", create_if_mi
                     LogInfo("recursos_FindChest", "Baú de emergência " + chest.serial + " registrado para território ID '" + territory_id + "'.");
                 else
                     LogError("recursos_FindChest", "Falha ao encontrar/criar elemento para registrar baú de emergência para Território ID '" + territory_id + "'.");
-                endif;
+                endif
             else
                 LogError("recursos_FindChest", "Falha ao abrir datafile de seriais para registrar baú de emergência.");
-            endif;
+            endif
         elseif (chest && !territory_id)
              LogInfo("recursos_FindChest", "Baú de emergência " + chest.serial + " criado para facção '" + faction_name + "' (sem ID de território específico).");
-        endif;
+        endif
         return chest; 
-    endif; 
+    endif 
     
     if (!chest)
         LogError("recursos_FindChest", "Nenhum baú encontrado para facção: '" + faction_name + "'" + 
                  (territory_identifier ? " (Território/ID original: '" + territory_identifier + "', ID processado: '" + territory_id + "')" : ""));
     else
         LogInfo("recursos_FindChest", "Baú final retornado (após todas as estratégias) para facção '" + faction_name + "': " + chest.serial);
-    endif;
+    endif
 
     return chest; 
 endfunction
@@ -2886,7 +2875,7 @@ endfunction
 function MergeItemProperties(item, properties)
     if (!item || !properties)
         return 0;
-    endif;
+    endif
     
     LogDebug("MergeProps_DEBUG", "Iniciando mesclagem de propriedades para item " + item.serial);
     var merged := 0;
@@ -2901,10 +2890,10 @@ function MergeItemProperties(item, properties)
                 merged += 1;
             else
                 LogError("MergeProps_DEBUG", "  -> FALHA ao definir " + prop_name + "!");
-            endif;
+            endif
             sleepms(1);
         endforeach;
-    endif;
+    endif
     
     // Se propriedades é outro item, copiar suas propriedades
     if (TypeOf(properties) == "ItemRef")
@@ -2920,7 +2909,7 @@ function MergeItemProperties(item, properties)
                 merged += 1;
             else
                 LogError("MergeProps_DEBUG", "  -> FALHA ao copiar " + prop_name + "!");
-            endif;
+            endif
             sleepms(1);
         endforeach;
     else
@@ -2972,13 +2961,13 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     if (!old_item)
         LogError("ReplaceStack_DEBUG", "Erro: old_item é NULL");
         return 0;
-    endif;
+    endif
     
     var container := old_item.container;
     if (!container)
         LogError("ReplaceStack_DEBUG", "Erro: container do old_item é NULL. Item: " + old_item.serial);
         return 0;
-    endif;
+    endif
     
     LogDebug("ReplaceStack_DEBUG", "Iniciando SafeReplaceStackWithNew para item " + old_item.serial + " em container " + container.serial);
     LogDebug("ReplaceStack_DEBUG", "Quantidade atual: " + old_item.amount + ", Quantidade a adicionar: " + amount_to_add);
@@ -3003,7 +2992,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             old_properties[prop_name] := GetObjProperty(old_item, prop_name);
             sleepms(1);
         endforeach;
-    endif;
+    endif
     
     LogDebug("ReplaceStack_DEBUG", "Propriedades capturadas: " + old_properties.size());
     
@@ -3021,12 +3010,12 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
                     SetObjProperty(old_item, prop_name, properties[prop_name]);
                     sleepms(1);
                 endforeach;
-            endif;
+            endif
             
             LogInfo("ReplaceStack_DEBUG", "Atualização simples bem-sucedida: " + old_item.serial + " agora com " + old_item.amount);
             return old_item;
-        endif;
-    endif;
+        endif
+    endif
     
     // Se chegou aqui, precisa criar um novo item
     LogDebug("ReplaceStack_DEBUG", "Criando novo item para substituição completa");
@@ -3049,7 +3038,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
         if (!new_item)
             LogError("ReplaceStack_DEBUG", "FALHA total na criação do novo item");
             return 0;
-        endif;
+        endif
         
         // Mover para o container
         var move_result := MoveItemToContainer(new_item, container, old_x, old_y);
@@ -3057,10 +3046,10 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             LogError("ReplaceStack_DEBUG", "Falha ao mover item para container: " + move_result);
             DestroyItem(new_item);
             return 0;
-        endif;
+        endif
         
         LogDebug("ReplaceStack_DEBUG", "Item movido com sucesso para container");
-    endif;
+    endif
     
     LogInfo("ReplaceStack_DEBUG", "SUCESSO: Novo item criado com serial " + new_item.serial);
     
@@ -3069,7 +3058,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     foreach prop_name in (old_properties.keys())
         if (old_properties[prop_name] != error)
             SetObjProperty(new_item, prop_name, old_properties[prop_name]);
-        endif;
+        endif
         sleepms(1);
     endforeach;
     
@@ -3083,8 +3072,8 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             endforeach;
         else
             LogWarning("ReplaceStack_DEBUG", "Propriedades fornecidas não são um Dictionary: " + TypeOf(properties));
-        endif;
-    endif;
+        endif
+    endif
     
     LogDebug("ReplaceStack_DEBUG", "Propriedades transferidas");
     
@@ -3093,7 +3082,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     // Verificar se o novo item está realmente válido e no container
     if (!new_item.container || new_item.container.serial != container.serial)
         LogWarn("ReplaceStack_DEBUG", "Novo item pode não estar corretamente no container");
-    endif;
+    endif
     
     // CRÍTICO: Destruir o item antigo com verificações extras
     if (old_item && old_item.serial && old_item.serial != new_item.serial)
@@ -3113,9 +3102,9 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
                 LogDebug("ReplaceStack_DEBUG", "Item antigo movido para o void");
             else
                 LogError("ReplaceStack_DEBUG", "Falha total ao remover item antigo: " + move_result);
-            endif;
-        endif;
-    endif;
+            endif
+        endif
+    endif
     
     LogInfo("ReplaceStack_DEBUG", "SafeReplaceStackWithNew concluído. Novo item: " + new_item.serial + " com quantidade " + new_item.amount);
     return new_item;
@@ -3549,7 +3538,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
     if (!faction_name || faction_name == error)
         LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Nome da facção inválido.");
         return 0;
-    endif;
+    endif
 
     LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Iniciando processamento agregado para facção '" + faction_name + "'.");
     var total_recursos_da_faccao := CreateEmptyResourceStruct();
@@ -3564,7 +3553,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
     if (seriais_df)
         var all_territory_ids := seriais_df.keys();
         foreach terr_id_key in all_territory_ids
-            if (terr_id_key == "territorios") continue; endif;
+            if (terr_id_key == "territorios") continue; endif
             var terr_elem := SafeFindElement(seriais_df, terr_id_key);
             if (terr_elem)
                 var elem_faction_name := GetTerritoryFaction(terr_elem);
@@ -3574,10 +3563,10 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                         var bau_obj := SystemFindObjectBySerial(CInt(bau_serial));
                         if (bau_obj && !(bau_obj in todos_os_baus_da_faccao))
                             todos_os_baus_da_faccao.append(bau_obj);
-                        endif;
-                    endif;
-                endif;
-            endif;
+                        endif
+                    endif
+                endif
+            endif
             SleepMS(1);
         endforeach;
 
@@ -3589,12 +3578,12 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                     var bau_obj_legado := SystemFindObjectBySerial(CInt(info_legado.bau));
                     if (bau_obj_legado && !(bau_obj_legado in todos_os_baus_da_faccao))
                         todos_os_baus_da_faccao.append(bau_obj_legado);
-                    endif;
-                endif;
+                    endif
+                endif
                 SleepMS(1);
             endforeach;
-        endif;
-    endif;
+        endif
+    endif
 
     var items_scanned_world := 0;
     var max_items_to_scan_world := 10000;
@@ -3602,19 +3591,19 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         items_scanned_world +=1;
         if (items_scanned_world > max_items_to_scan_world)
             break;
-        endif;
+        endif
 
         if (item_no_mundo.objtype == 0xFF11)
             var chest_faction_prop := GetObjProperty(item_no_mundo, OBJ_FACTION_PROP);
-            if (!chest_faction_prop) chest_faction_prop := GetObjectFaction(item_no_mundo); endif;
+            if (!chest_faction_prop) chest_faction_prop := GetObjectFaction(item_no_mundo); endif
 
             if (chest_faction_prop == faction_name)
                 if (!(item_no_mundo in todos_os_baus_da_faccao))
                     todos_os_baus_da_faccao.append(item_no_mundo);
-                endif;
-            endif;
-        endif;
-        if (items_scanned_world % 1000 == 0) SleepMS(1); endif;
+                endif
+            endif
+        endif
+        if (items_scanned_world % 1000 == 0) SleepMS(1); endif
     endforeach;
     LogInfo("recursos_proc", "Total de baús identificados para facção '" + faction_name + "': " + todos_os_baus_da_faccao.size());
 
@@ -3625,7 +3614,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao);
         AtualizarPropriedadesGuildaRecursos(faction_name, total_recursos_da_faccao);
         return 1; // <--- MELHORIA ADICIONADA AQUI
-    endif;
+    endif
 
     // ... (o resto da função permanece exatamente o mesmo) ...
     foreach bau_individual in todos_os_baus_da_faccao
@@ -3638,11 +3627,11 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
                      foreach key_recurso_cache_skip in (cache_bau_individual_skip.keys())
                         if (total_recursos_da_faccao.exists(key_recurso_cache_skip))
                             total_recursos_da_faccao[key_recurso_cache_skip] := total_recursos_da_faccao[key_recurso_cache_skip] + CInt(cache_bau_individual_skip[key_recurso_cache_skip]);
-                        endif;
+                        endif
                     endforeach;
-                endif;
+                endif
                 continue;
-            endif;
+            endif
 
             SetObjProperty(bau_individual, "being_processed_by_aggregator", current_processing_timestamp);
             var recursos_deste_bau := ContarRecursosReais(bau_individual);
@@ -3655,12 +3644,12 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
             foreach key_recurso in (recursos_deste_bau.keys())
                 if (total_recursos_da_faccao.exists(key_recurso))
                     total_recursos_da_faccao[key_recurso] := total_recursos_da_faccao[key_recurso] + CInt(recursos_deste_bau[key_recurso]);
-                endif;
+                endif
             endforeach;
             EraseObjProperty(bau_individual, "being_processed_by_aggregator");
         else
             LogWarning("recursos_proc", "Item inválido ou não é container na lista de baús da facção " + faction_name + ". Serial (se disponível): " + (bau_individual ? bau_individual.serial : "N/A"));
-        endif;
+        endif
         SleepMS(50);
     endforeach;
 
@@ -3675,7 +3664,7 @@ exported function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pendi
         LogInfo("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: Sincronização do total para facção '" + faction_name + "' realizada com sucesso.");
     else
         LogError("recursos", "ProcessarRecursosDeUmaFaccao_SHARED: FALHA na sincronização do total para facção '" + faction_name + "'.");
-    endif;
+    endif
 
     return sucesso_sincronizacao_agregada;
 endfunction

@@ -154,17 +154,17 @@ endfunction
 
 function ProcessPendingEvents()
     var df := SafeOpenDataFile(":faccao:messages");
-    if(!df) return; endif;
+    if(!df) return; endif
 
     var elem := SafeFindElement(df, "controller_events");
-    if(!elem) return; endif;
+    if(!elem) return; endif
 
     var events := GetElementProp(elem, "pending");
-    if (!events || TypeOf(events) != "Array" || events.size() == 0) return; endif;
+    if (!events || TypeOf(events) != "Array" || events.size() == 0) return; endif
 
     LogInfo("ResourceController_Event", "Processando " + events.size() + " eventos pendentes...");
     var processed_events_count := 0;
-    var remaining_events_list := array{}; // Eventos que, por algum erro inesperado, não foram processados
+    var remaining_events_list := array{};
 
     foreach ev_data in events
         var event_handled_successfully := 0;
@@ -189,56 +189,68 @@ function ProcessPendingEvents()
                     LogInfo("ResourceController_EventDetail", "Evento de reload recebido. Recarregando territórios...");
                     LoadAllTerritories();
                     event_handled_successfully := 1;
-                "caravan_activated":
-                    if (ev_data.data && ev_data.data.faction && ev_data.territory_id)
-                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_ACTIVATED para Facção: " + ev_data.data.faction + ", Capital: " + ev_data.territory_id);
+                
+                // =======================================================
+                // >> INÍCIO DA CORREÇÃO <<
+                // =======================================================
+                "caravan_activated_from_territory":
+                    if (ev_data.data && ev_data.data.faction && ev_data.data.capital_territory_id && ev_data.data.active_until_next_payment)
+                        LogInfo("ResourceController_Caravana", "Evento CARAVANA ATIVADA para Facção: " + ev_data.data.faction);
                         var caravan_info_global := GetGlobalProperty("active_caravans");
                         if (!caravan_info_global || caravan_info_global == error)
                             caravan_info_global := dictionary{};
                         endif
+                        
+                        // Armazena a informação da caravana indexada pela facção
                         caravan_info_global[ev_data.data.faction] := struct{
-                            "capital_id" := CStr(ev_data.territory_id),
+                            "capital_id"   := CStr(ev_data.data.capital_territory_id),
                             "active_until" := CInt(ev_data.data.active_until_next_payment)
                         };
+                        
                         SetGlobalProperty("active_caravans", caravan_info_global);
+                        LogInfo("ResourceController_Caravana", "GlobalProperty 'active_caravans' atualizada para facção " + ev_data.data.faction);
                     else
-                        LogWarning("ResourceController_Caravana", "Evento caravan_activated recebido com dados insuficientes: " + ev_data);
+                        LogWarning("ResourceController_Caravana", "Evento caravan_activated_from_territory recebido com dados insuficientes: " + ev_data);
                     endif
                     event_handled_successfully := 1;
-                "caravan_deactivated":
+
+                "caravan_deactivated_from_territory":
                     if (ev_data.data && ev_data.data.faction)
-                        LogInfo("ResourceController_Caravana", "Evento CARAVAN_DEACTIVATED para Facção: " + ev_data.data.faction + ", Capital: " + ev_data.territory_id);
+                        LogInfo("ResourceController_Caravana", "Evento CARAVANA DESATIVADA para Facção: " + ev_data.data.faction);
                         var caravan_info_global := GetGlobalProperty("active_caravans");
                         if (caravan_info_global && caravan_info_global.exists(ev_data.data.faction))
                             caravan_info_global.erase(ev_data.data.faction);
                             SetGlobalProperty("active_caravans", caravan_info_global);
+                            LogInfo("ResourceController_Caravana", "GlobalProperty 'active_caravans' limpa para facção " + ev_data.data.faction);
                         endif
                     else
-                        LogWarning("ResourceController_Caravana", "Evento caravan_deactivated recebido com dados insuficientes: " + ev_data);
+                        LogWarning("ResourceController_Caravana", "Evento caravan_deactivated_from_territory recebido com dados insuficientes: " + ev_data);
                     endif
                     event_handled_successfully := 1;
+
+                // =======================================================
+                // >> FIM DA CORREÇÃO <<
+                // =======================================================
+
                 default:
                     LogWarning("ResourceController_EventDetail", "Tipo de evento DESCONHECIDO no datafile: '" + ev_data.type + "' para território '" + ev_data.territory_id + "'. Evento será DESCARTADO.");
-                    event_handled_successfully := 1; // Consideramos "tratado" ao descartar
+                    event_handled_successfully := 1; 
             endcase
 
             if (event_handled_successfully)
                 processed_events_count += 1;
             else
-                // Se algum case não setou event_handled_successfully, algo está errado na lógica do case.
-                LogWarning("ResourceController_EventDetail", "Evento NÃO FOI COMPLETAMENTE TRATADO (lógica interna falhou): Tipo='" + ev_data.type + "'. Mantendo na lista por segurança.");
                 remaining_events_list.append(ev_data);
             endif
         else
             LogWarning("ResourceController_Event", "Evento inválido (não é struct ou faltam props) encontrado no datafile: " + ev_data + ". Descartando.");
-            processed_events_count += 1; // Contabiliza como processado (descartado)
+            processed_events_count += 1;
         endif
         SleepMS(5);
     endforeach
 
-    // Salva a lista de eventos 'pending' atualizada (idealmente vazia)
     SetElementProp(elem, "pending", remaining_events_list);
-    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Total de eventos na lista original: " + events.size() + ". Eventos efetivamente processados/descartados: " + processed_events_count + ". Eventos restantes (se houver erro): " + remaining_events_list.size());
+    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Total: " + events.size() + ". Processados/Descartados: " + processed_events_count + ". Restantes: " + remaining_events_list.size());
 endfunction
 
 function UpdateTerritorySchedule(territory_id_to_update)
@@ -668,7 +680,7 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
             LogError("recursos_gen", "Tipo de objeto não encontrado para recurso: '" + resource_name_loop + "' em território '" + territory_name_from_elem + "'. Pulando este recurso.");
             log_entries.append("Falha ao mapear recurso: " + resource_name_loop);
             continue;
-        endif;
+        endif
         LogDebug("recursos_gen", "  Mapeado Recurso: '" + resource_name_loop + "' -> ObjType: 0x" + Hex(CInt(objtype_to_create)));
 
         var category_for_cprop := ClassificarRecurso(objtype_to_create);
@@ -677,7 +689,7 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         var item_properties := dictionary{};
         if (category_for_cprop != "desconhecido" && category_for_cprop)
             item_properties["IsKingdomDonation" + category_for_cprop] := 1;
-        endif;
+        endif
         item_properties["GeneratedForTerritory"] := territory_name_from_elem;
         item_properties["GeneratedTime"] := current_time; // Timestamp do início desta geração
         item_properties["GeneratedByFaction"] := faction_name;
@@ -696,7 +708,7 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
             log_entries.append("Falha (SafeCreate) ao criar recurso: " + resource_name_loop);
             LogError("recursos_gen", "  FALHA (SafeCreate) ao criar/empilhar " + resource_name_loop + " em '" + territory_name_from_elem + "'. Resultado: " + created_item_ref);
             // Tentar fallback pode ser perigoso aqui se SafeCreate já tentou e falhou.
-        endif;
+        endif
         SleepMS(10);
     endforeach; // Fim do loop foreach resource_name_loop
 
@@ -739,31 +751,31 @@ endfunction
    // Ajuste em NotifyFactionLeadersOfResourceGeneration para incluir info da caravana
 function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name_origin, resources_array, amount_per_type, success_count, was_redirected_to_capital := 0, delivery_chest_name := "")
     var guild := FindGuildByName(faction_name);
-    if (!guild || guild == error) return 0; endif;
+    if (!guild || guild == error) return 0; endif
 
     var leader_serials := array{};
     var guild_leader_serial := guild.GetProp("leader");
-    if (guild_leader_serial) leader_serials.append(guild_leader_serial); endif;
+    if (guild_leader_serial) leader_serials.append(guild_leader_serial); endif
 
     foreach player_char in EnumerateOnlineCharacters()
         if (player_char.guildid == guild.guildid)
             var player_rank_str := GetObjProperty(player_char, "guild_rank");
             if (player_rank_str in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
-                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif;
+                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif
             endif
             var chardata_player := GetObjProperty(player_char, "chardata");
             if (chardata_player && (chardata_player.current_nobility_title in {"Rei", "Rainha"} || chardata_player.current_professional_position in {"Imperador", "Mão do Rei"}))
-                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif;
+                if (!(player_char.serial in leader_serials)) leader_serials.append(player_char.serial); endif
             endif
         endif
     endforeach;
 
-    if (leader_serials.size() == 0) return 0; endif;
+    if (leader_serials.size() == 0) return 0; endif
 
     var resource_names_str := "";
     for i_res := 1 to resources_array.size()
-        if (i_res > 1) resource_names_str += ", "; endif;
-        if (i_res == resources_array.size() && i_res > 1) resource_names_str += "e "; endif;
+        if (i_res > 1) resource_names_str += ", "; endif
+        if (i_res == resources_array.size() && i_res > 1) resource_names_str += "e "; endif
         resource_names_str += resources_array[i_res];
     endfor;
 

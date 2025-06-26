@@ -31,7 +31,7 @@ program mesainscricao_use(who, item)
     if (GetObjProperty(item, lock_prop))
         SendSysMessage(who, "Aguarde, a mesa ainda está processando sua solicitação anterior.");
         return 0;
-    endif;
+    endif
     
     SetObjProperty(item, lock_prop, 1);
 
@@ -44,7 +44,7 @@ program mesainscricao_use(who, item)
         SendSysMessage(who, "Esta mesa de inscrição não parece pertencer a nenhuma facção.");
         EraseObjProperty(item, lock_prop);
         return 0;
-    endif;
+    endif
 
     // Etapa 3: Verificação de Permissão
     
@@ -53,14 +53,14 @@ program mesainscricao_use(who, item)
         SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
         EraseObjProperty(item, lock_prop);
         return 0;
-    endif;
+    endif
     
     // CASO 2: O jogador pertence à facção correta, mas não é o líder.
     if (!IsGuildLeader(who))
         SendSysMessage(who, "Apenas o líder da facção '" + mesa_faction_name + "' pode inscrever novos participantes.");
         EraseObjProperty(item, lock_prop);
         return 0;
-    endif;
+    endif
     
     // Abrir a interface de convite
     var result := OpenSimpleInviteGump(who);

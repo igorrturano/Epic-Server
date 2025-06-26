@@ -379,7 +379,7 @@ function Faccoes(who)
         var guild := FindGuild(faction_info.guild_id);
         if (!guild)
             continue;
-        endif;
+        endif
         guilds.append(guild);
         
         var name := guild.getprop(FACTION_PROP_NAME);
@@ -389,7 +389,7 @@ function Faccoes(who)
         
         if (who.cmdlevel > 3)
             GFAddButton(gump, 300, y+3, 11410, 11412, GF_CLOSE_BTN, BTN_FACCAO_DELETE + guild_iter);
-        endif;
+        endif
         
         guild_iter += 1;
         y += 20;
@@ -416,13 +416,13 @@ function Faccoes(who)
 
             // Recarrega o GUMP para mostrar a lista atualizada
             Faccoes(who); 
-        endif;
+        endif
     elseif (input >= BTN_FACCAO)
         var g_index := input - BTN_FACCAO;
         if(g_index >= 0 && g_index < guilds.size())
              var g := guilds[g_index + 1];
              start_script(":faccao:faccao", array{who, g.guildid, "guild"});
-        endif;
+        endif
     elseif (input == BTN_NEW_FACCAO)
       var custo := 10000;
       SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
@@ -1467,25 +1467,25 @@ function HandleDeleteAllFactions(who)
     if (!who || who.cmdlevel < 5)
         SendSysMessage(who, "Apenas Administradores (nível 5) podem usar este comando.");
         return 0;
-    endif;
+    endif
 
     // Confirmação Inicial
     if (!YesNo(who, "ATENÇÃO MÁXIMA: Esta ação irá apagar TODAS AS FACÇÕES. É IRREVERSÍVEL. Continuar?"))
         SendSysMessage(who, "Ação cancelada.");
         return 0;
-    endif;
+    endif
 
     var guilds_para_apagar := ListGuilds();
     if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
         SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
         return 1;
-    endif;
+    endif
     
     // Confirmação Final com a quantidade
     if (!YesNo(who, "ÚLTIMA CHANCE: Confirma a remoção permanente de TODAS as " + guilds_para_apagar.size() + " facções?"))
         SendSysMessage(who, "Ação cancelada.");
         return 0;
-    endif;
+    endif
 
     // Inicia o processo
     SendSysMessage(who, "INICIANDO PROCESSO DE REMOÇÃO COMPLETA DE TODAS AS FACÇÕES...");
@@ -1495,7 +1495,7 @@ function HandleDeleteAllFactions(who)
 
     // Itera e apaga
     foreach guild_obj in guilds_para_apagar
-        if (!guild_obj) continue; endif;
+        if (!guild_obj) continue; endif
         
         var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda " + guild_obj.guildid);
         
@@ -1505,14 +1505,14 @@ function HandleDeleteAllFactions(who)
             foreach member in members_to_notify
                 if(member && member.connected)
                     SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por um administrador.");
-                endif;
+                endif
             endforeach;
-        endif;
+        endif
         
         var resultado := RemFaccao(guild_obj);
         if (resultado)
             faccoes_apagadas += 1;
-        endif;
+        endif
         sleepms(100);
     endforeach;
     
@@ -1520,7 +1520,7 @@ function HandleDeleteAllFactions(who)
     var registry_df := SafeOpenDataFile(":faccao:guild_registry");
     if (registry_df)
         registry_df.DeleteElement("guilds");
-    endif;
+    endif
     
     // Mensagem final
     SendSysMessage(who, "==================================================");

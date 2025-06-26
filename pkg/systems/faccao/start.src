@@ -150,7 +150,7 @@ if (caravan_payment_script.errortext)
     LogError("sistema", "Erro no script de controle de pagamento de caravanas: " + caravan_payment_script.errortext);
 else
     LogDebug("sistema", "Starting caravan payment control script... ok.");
-endif;
+endif
 
 // Iniciar o controlador de upkeep do reino
 var upkeep_script := start_script(":faccao:reino_upkeep_control");

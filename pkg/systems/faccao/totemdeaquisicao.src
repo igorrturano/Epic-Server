@@ -23,7 +23,7 @@ program TotemDeAquisicao(who, totem)
     if (!who || !totem)
         LogError("faccao", "TotemDeAquisicao: Parâmetros inválidos (who ou totem nulo).");
         return 0;
-    endif;
+    endif
     
     var rect_name := GetObjProperty(totem, TERRITORY_NAME_PROP);
     var territory_id := GetObjProperty(totem, TERRITORY_ID_PROP);
@@ -31,13 +31,13 @@ program TotemDeAquisicao(who, totem)
     if (!rect_name || !territory_id)
         SendSysMessage(who, "Totem inválido.");
         return 0;
-    endif;
+    endif
     
     var territory_info_from_datafile := TM_GetTerritoryInfo(territory_id);
     if (!territory_info_from_datafile)
         SendSysMessage(who, "Território referenciado por este totem não existe mais no sistema.");
         return 0;
-    endif;
+    endif
 
     rect_name := territory_info_from_datafile.name; // Garante que estamos usando o nome atualizado
     
@@ -45,27 +45,27 @@ program TotemDeAquisicao(who, totem)
     if (!guild)
         SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
         return 0;
-    endif;
+    endif
     
     var guild_obj_info := GetFaccao(guild); 
     if (!guild_obj_info || guild_obj_info.leader != who.serial)
         SendSysMessage(who, "Apenas o líder da facção pode reivindicar territórios.");
         return 0;
-    endif;
+    endif
     
     var territorio_elem := TM_FindTerritory(territory_id); 
     if (!territorio_elem)
         SendSysMessage(who, "Erro interno ao processar o território. Avise um administrador.");
         return 0;
-    endif;
+    endif
     
     if (territory_info_from_datafile.faction && territory_info_from_datafile.faction != DEFAULT_FACTION)
         SendSysMessage(who, "Este território já está reivindicado por: " + territory_info_from_datafile.faction);
         return 0;
-    endif;
+    endif
     
     var player_faction_name := GetPlayerFaction(who); 
-    if (!player_faction_name) player_faction_name := "Desconhecido"; endif;
+    if (!player_faction_name) player_faction_name := "Desconhecido"; endif
     
     var cultura_final_reino := SafeGetGuildProperty(guild, "culture", "");
     if (!cultura_final_reino)
@@ -73,9 +73,9 @@ program TotemDeAquisicao(who, totem)
         if (!cultura_final_reino)
             SendSysMessage(who, "Você cancelou a seleção de cultura. Aquisição de território cancelada.");
             return 0;
-        endif;
+        endif
         guild.SetProp("culture", cultura_final_reino);
-    endif;
+    endif
 
     var estandarte_escolhido := 0;
     var compra_banner := ConfirmBannerPurchase(who);
@@ -96,14 +96,14 @@ program TotemDeAquisicao(who, totem)
     var territories_list := guild.GetProp("territories");
     if (!territories_list || territories_list == error || TypeOf(territories_list) != "Array")
         territories_list := array{};
-    endif;
+    endif
 
     // Limpar a lista de quaisquer entradas inválidas antes de adicionar
     var cleaned_territories_list := array{};
     foreach terr_item_loop_local in territories_list 
         if (TypeOf(terr_item_loop_local) == "String" && terr_item_loop_local != "")
             cleaned_territories_list.append(terr_item_loop_local);
-        endif;
+        endif
     endforeach;
     territories_list := cleaned_territories_list;
 
@@ -113,12 +113,12 @@ program TotemDeAquisicao(who, totem)
         if (terr_check_loop_local == territory_id) 
             territory_exists_in_list := 1;
             break;
-        endif;
+        endif
     endforeach;
 
     if (!territory_exists_in_list)
         territories_list.append(territory_id); 
-    endif;
+    endif
 
     guild.SetProp("territories", territories_list);
     
@@ -145,7 +145,7 @@ program TotemDeAquisicao(who, totem)
         var interval_prop := CInt(GetElementProp(territorio_elem, "ResourceInterval", 2)); 
         var next_time_calc := polcore().systime + (interval_prop * 60); 
         SetElementProp(territorio_elem, "NextResourceTime", next_time_calc);
-    endif;
+    endif
     
     var notify_data := struct;
     notify_data.+name := rect_name;
@@ -337,7 +337,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
 
     var rect := GetElementProp(elem, TERRITORY_RECT_PROP, ""); 
     var realm_prop_mon := GetElementProp(elem, TERRITORY_REALM_PROP, ""); 
-    if (!realm_prop_mon) realm_prop_mon := "britannia"; endif; 
+    if (!realm_prop_mon) realm_prop_mon := "britannia"; endif 
     
     var coords := SplitWords(rect);
     
@@ -345,7 +345,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
         LogError("faccao_monument", "CreateTerritoryMonument: ID do território não fornecido ou inválido!");
         territory_id := "TER_ORPHAN_" + CStr(polcore().systime); 
         SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
-    endif;
+    endif
     
     if (coords.size() >= 4)
         var center_info := TM_GetTerritoryCenter(territory_id); 
@@ -353,7 +353,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
             LogError("faccao_monument", "CreateTerritoryMonument: Falha ao obter centro para território ID: " + territory_id);
             SendSysMessage(who, "Erro crítico ao determinar o centro do território.");
             return 0;
-        endif;
+        endif
         var center_x := center_info.x;
         var center_y := center_info.y;
         var center_z := center_info.z;
@@ -362,15 +362,15 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
         var player_faction_name_mon := GetPlayerFaction(who); 
         if (!player_faction_name_mon) 
             player_faction_name_mon := who.guild.GetProp(FACTION_PROP_NAME, who.guild.guildname); // Tenta constante ou guildname
-            if (!player_faction_name_mon) player_faction_name_mon := "Desconhecida"; endif;
-        endif;
+            if (!player_faction_name_mon) player_faction_name_mon := "Desconhecida"; endif
+        endif
         
         var seriais_df := SafeOpenDataFile(":faccao:seriais", 1); 
         if (!seriais_df)
             LogError("faccao_monument", "CreateTerritoryMonument: Falha crítica ao abrir/criar datafile :faccao:seriais");
             SendSysMessage(who, "Erro de sistema ao registrar objetos do território.");
             return 0;
-        endif;        var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon); 
+        endif        var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon); 
         if (monument_obj)
             LogDebug("faccao_monument", "Mural criado: " + monument_obj.serial);
             SetObjProperty(monument_obj, TERRITORY_NAME_PROP, rect_name);
@@ -433,10 +433,10 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
                             SetObjProperty(bandeira_item_obj, UNIQUE_ID_PROP, unique_id_bandeira);
                         else
                             LogWarning("faccao_monument", "Falha ao criar bandeira do reino, mas território ainda é válido");
-                        endif;
+                        endif
                     else
                         LogDebug("faccao_monument", "Estandarte não foi comprado, nenhuma bandeira criada");
-                    endif;// Criar Mesa de Inscrição na posição especificada (X vermelho)
+                    endif// Criar Mesa de Inscrição na posição especificada (X vermelho)
                     var inscricao_item_obj := CreateItemAtLocation(center_x + 1, center_y + 1, center_z, 0xF8A8, 1, realm_prop_mon);
                     if (inscricao_item_obj)
                         LogDebug("faccao_monument", "Mesa de inscrição criada: " + inscricao_item_obj.serial);
@@ -480,22 +480,22 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_esc
                         SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
                         SendSysMessage(who, "Aviso: Mesa de inscrição não pôde ser criada.");
                         return monument_obj;
-                    endif;                else
+                    endif                else
                     SendSysMessage(who, "Falha ao criar a mesa de gestão. Por favor, notifique um GM.");
                     DestroyItem(monument_obj); 
                     DestroyItem(donation_chest_obj); 
-                endif;
+                endif
             else
                 SendSysMessage(who, "Falha ao criar o baú de doações. Por favor, notifique um GM.");
                 DestroyItem(monument_obj); 
-            endif;
+            endif
         else
             SendSysMessage(who, "Falha ao criar o mural de recrutamento. Por favor, notifique um GM.");
-        endif;
+        endif
     else
         LogError("faccao_monument", "CreateTerritoryMonument: Coordenadas inválidas para território ID: " + territory_id + ", Rect: " + rect);
         SendSysMessage(who, "Erro nas coordenadas do território ao criar monumento.");
-    endif;
+    endif
     
     return 0;
 endfunction

@@ -13,7 +13,7 @@ program configminas(who)
     var minasdf := opendatafile(":gathering:miningspots");
     if (minasdf == error)
         minasdf := createdatafile(":gathering:miningspots");
-    endif;
+    endif
     
     // Exibe o gump principal
     ShowMainGump(who, minasdf);
@@ -79,11 +79,11 @@ function ShowMainGump(who, minasdf)
             form_data.+realm := realm;
         else
             form_data.+realm := "britannia"; // Valor padrão
-        endif;
+        endif
         
         // Inicia o processo de edição para mina existente
         EditMineProcess(who, minasdf, form_data);
-    endif;
+    endif
 endfunction;
 
 function EditMineProcess(who, minasdf, byref form_data)
@@ -98,12 +98,12 @@ function EditMineProcess(who, minasdf, byref form_data)
         if (input[0] == 0) // Fechou o gump com X
             EraseObjProperty(who, "#FormData");
             return 0;
-        endif;
+        endif
         
         // Atualiza o nome da mina
         if (input[1])
             form_data.name := GFExtractData(input, 1);
-        endif;
+        endif
         
         var button_id := input[0];
         
@@ -111,7 +111,7 @@ function EditMineProcess(who, minasdf, byref form_data)
             var result := SaveMineConfig(who, minasdf, form_data);
             if (result)
                 done := 1;
-            endif;
+            endif
         elseif (button_id == 666) // Cancelar
             EraseObjProperty(who, "#FormData");
             SendSysMessage(who, "Operação cancelada.");
@@ -130,7 +130,7 @@ function EditMineProcess(who, minasdf, byref form_data)
             ProcessRemoveOre(who, form_data, button_id);
         elseif (button_id >= 4000 && button_id <= 4005) // Botões para editar raridade (OK) - novo range
             ProcessEditRarity(who, form_data, button_id - 1000, input); // Ajuste para corresponder aos IDs 3000+i
-        endif;
+        endif
         
         // Atualiza os dados temporários
         SetObjProperty(who, "#FormData", form_data);
@@ -152,7 +152,7 @@ function ProcessAddOre(who, byref form_data, button_id)
     for i := 1 to form_data.selected_ores.size()
         if (form_data.selected_ores[i] == ore_id)
             exists := 1;
-        endif;
+        endif
     endfor;
     
     // Código normal após a verificação
@@ -164,7 +164,7 @@ function ProcessAddOre(who, byref form_data, button_id)
         SendSysMessage(who, "Este minério já está selecionado.");
     else
         SendSysMessage(who, "Você já selecionou o máximo de 5 minérios.");
-    endif;
+    endif
 endfunction;
 
 function ProcessRemoveOre(who, byref form_data, button_id)
@@ -175,7 +175,7 @@ function ProcessRemoveOre(who, byref form_data, button_id)
         form_data.selected_ores.erase(ore_slot);
         form_data.rarities.erase(ore_slot);
         SendSysMessage(who, "Minério '" + removed_ore + "' removido.");
-    endif;
+    endif
 endfunction;
 
 function ProcessEditRarity(who, byref form_data, button_id, input)
@@ -189,18 +189,18 @@ function ProcessEditRarity(who, byref form_data, button_id, input)
             new_rarity := 0;
         elseif (new_rarity > 999)
             new_rarity := 999;
-        endif;
+        endif
         
         form_data.rarities[rarity_slot] := CStr(new_rarity);
         SendSysMessage(who, "Raridade do minério '" + form_data.selected_ores[rarity_slot] + "' atualizada para " + new_rarity + ".");
-    endif;
+    endif
 endfunction;
 
 function GoToAreaCenter(who, byref form_data)
     if (form_data.rect == "")
         SendSysMessage(who, "A área da mina ainda não foi definida.", 33);
         return 0;
-    endif;
+    endif
     
     // Debug: Mostra o rect bruto
     SendSysMessage(who, "DEBUG: Rect bruto = " + form_data.rect, 66);
@@ -209,7 +209,7 @@ function GoToAreaCenter(who, byref form_data)
     if (coords.size() < 4)
         SendSysMessage(who, "Coordenadas da área incompletas.", 33);
         return 0;
-    endif;
+    endif
     
     // Debug: Mostra coordenadas individuais
     SendSysMessage(who, "DEBUG: Coordenadas: X1=" + coords[1] + " Y1=" + coords[2] + " X2=" + coords[3] + " Y2=" + coords[4], 66);
@@ -224,7 +224,7 @@ function GoToAreaCenter(who, byref form_data)
     var center_z := GetWorldHeight(center_x, center_y);
     if (!center_z)
         center_z := who.z; // Fallback para a altura atual do jogador se GetWorldHeight falhar
-    endif;
+    endif
     
     // Debug: Mostra altura
     SendSysMessage(who, "DEBUG: Altura calculada: Z=" + center_z, 66);
@@ -241,13 +241,13 @@ function GoToAreaCenter(who, byref form_data)
         target_realm := who.realm;
         form_data.realm := who.realm; // Salva o realm atual para uso futuro
         SendSysMessage(who, "DEBUG: Usando realm do jogador = " + target_realm, 66);
-    endif;
+    endif
     
     // Verifica se o realm é válido
     if (!target_realm || target_realm == error)
         SendSysMessage(who, "ERRO: Realm inválido!", 33);
         return 0;
-    endif;
+    endif
     
     // Debug: Mostra todas as informações antes do teleporte
     SendSysMessage(who, "DEBUG: Tentando teleportar para: X=" + center_x + " Y=" + center_y + " Z=" + center_z + " Realm=" + target_realm, 66);
@@ -258,7 +258,7 @@ function GoToAreaCenter(who, byref form_data)
     if (move_result == error)
         SendSysMessage(who, "ERRO ao teleportar: " + move_result, 33);
         return 0;
-    endif;
+    endif
     
     SendSysMessage(who, "Você foi teleportado para o centro da área da mina no realm " + target_realm + ".", 66);
     return 1;
@@ -311,7 +311,7 @@ function DisplayMineGump(who, byref form_data)
     else
         GFTextLine(gump, 30, y_pos, 33, "Nenhum minério selecionado.");
         y_pos += 25;
-    endif;
+    endif
     
     // Divider
     y_pos += 10;
@@ -343,7 +343,7 @@ function DisplayMineGump(who, byref form_data)
             x := 30;
             cur_y := col1_y;
             col1_y += 20;
-        endif;
+        endif
         
         // Adiciona botão para adicionar minério
         GFAddButton(gump, x, cur_y, 2117, 2118, GF_CLOSE_BTN, 1000 + i);
@@ -368,8 +368,8 @@ function DisplayMineGump(who, byref form_data)
         var coords := SplitWords(form_data.rect);
         if (coords.size() >= 4)
             GFTextLine(gump, 30, y_pos, 66, "Área: (" + coords[1] + "," + coords[2] + ") até (" + coords[3] + "," + coords[4] + ")");
-        endif;
-    endif;
+        endif
+    endif
     
     // Botões para selecionar a área
     y_pos += 25;
@@ -402,7 +402,7 @@ function SelectAreaCorner(who, byref form_data, corner)
     if (!targ)
         SendSysMessage(who, "Cancelado.", 33);
         return 0;
-    endif;
+    endif
     
     var coords := array{};
     if (form_data.rect != "")
@@ -413,7 +413,7 @@ function SelectAreaCorner(who, byref form_data, corner)
         endwhile;
     else
         coords := array{0, 0, 0, 0};
-    endif;
+    endif
     
     if (corner == 1)
         coords[1] := targ.x;
@@ -421,20 +421,20 @@ function SelectAreaCorner(who, byref form_data, corner)
     else
         coords[3] := targ.x;
         coords[4] := targ.y;
-    endif;
+    endif
     
     // Garante que x1,y1 é o canto superior esquerdo e x2,y2 é o canto inferior direito
     if (coords[3] && coords[3] < coords[1])
         var temp := coords[1];
         coords[1] := coords[3];
         coords[3] := temp;
-    endif;
+    endif
     
     if (coords[4] && coords[4] < coords[2])
         var temp := coords[2];
         coords[2] := coords[4];
         coords[4] := temp;
-    endif;
+    endif
     
     form_data.rect := coords[1] + " " + coords[2] + " " + coords[3] + " " + coords[4];
     
@@ -448,17 +448,17 @@ function SaveMineConfig(who, minasdf, byref form_data)
     if (form_data.name == "")
         SendSysMessage(who, "Você precisa especificar um nome para a mina.", 33);
         return 0;
-    endif;
+    endif
     
     if (form_data.selected_ores.size() == 0)
         SendSysMessage(who, "Você precisa selecionar pelo menos um minério.", 33);
         return 0;
-    endif;
+    endif
     
     if (form_data.rect == "")
         SendSysMessage(who, "Você precisa definir a área da mina.", 33);
         return 0;
-    endif;
+    endif
     
     // Prepara os dados para salvar
     var ores_str := "";
@@ -469,7 +469,7 @@ function SaveMineConfig(who, minasdf, byref form_data)
         if (i > 1)
             ores_str := ores_str + " ";
             rarities_str := rarities_str + " ";
-        endif;
+        endif
         ores_str := ores_str + form_data.selected_ores[i];
         rarities_str := rarities_str + form_data.rarities[i];
     endfor;
@@ -478,7 +478,7 @@ function SaveMineConfig(who, minasdf, byref form_data)
     var mina := minasdf.FindElement(form_data.name);
     if (mina == error)
         mina := minasdf.CreateElement(form_data.name);
-    endif;
+    endif
     
     // Define as propriedades
     mina.SetProp("Name", form_data.name);

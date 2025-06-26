@@ -36,12 +36,11 @@ program ReinoUpkeepControl()
         
         LogDebug("upkeep_ctrl", "Ciclo de upkeep concluído, aguardando " + UPKEEP_CYCLE_WAIT + " segundos...");
         sleep(UPKEEP_CYCLE_WAIT);
-    endwhile
+    endwhile;
 endprogram
 
 function ProcessarUpkeepSimples()
     LogDebug("upkeep", "UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
-    syslog("UPKEEP: *** CICLO INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
     
     var active_guilds := struct{};
     var rect_df := SafeOpenDataFile(":architect:areas");
@@ -55,37 +54,27 @@ function ProcessarUpkeepSimples()
                 endif
             endif
             sleepms(1);
-        endforeach
+        endforeach;
     endif
     
     var guild_names := active_guilds.keys();
     
     Print("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
-    syslog("UPKEEP: Total de guildas com territórios encontradas: " + guild_names.size());
     
-    var processed_count := 0;
-    var payment_attempts := 0;
     var successful_payments := 0;
     
     foreach guild_name in guild_names
-        Print("UPKEEP: === Processando facção: " + guild_name + " ===");
-        
         if (!guild_name || guild_name == KINGDOM_FACTION || guild_name == "Unknown Guild")
-            Print("UPKEEP: Facção " + guild_name + " pulada (nome inválido ou Reino)");
             continue;
         endif
         
-        processed_count += 1;
-        
         var guild_id := FindGuildByName(guild_name);
         if (!guild_id)
-            Print("UPKEEP: Guilda '" + guild_name + "' não encontrada. Pulando.");
             continue;
         endif
 
         var guild := FindGuild(guild_id);
         if (!guild)
-             Print("UPKEEP: Objeto da guilda '" + guild_name + "' não encontrado. Pulando.");
              continue;
         endif
 
@@ -93,50 +82,41 @@ function ProcessarUpkeepSimples()
         var cost := CalcularCustoUpkeep(guild, territories);
         
         if (cost <= 0)
-            Print("UPKEEP: " + guild_name + " não possui territórios ou custo é zero. Pulando cobrança.");
             continue;
         endif
-        
-        payment_attempts += 1;
         
         var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
         var custo_total_a_pagar := cost + divida_acumulada;
 
-        Print("UPKEEP: " + guild_name + " - Custo da semana: " + cost + ", Dívida anterior: " + divida_acumulada + ". TOTAL A PAGAR: " + custo_total_a_pagar);
+        Print("UPKEEP: " + guild_name + " - Custo: " + cost + ", Dívida: " + divida_acumulada + ". TOTAL A PAGAR: " + custo_total_a_pagar);
         
         if (CobrarUpkeepRobusto(guild, guild_name, custo_total_a_pagar))
-            Print("UPKEEP: " + guild_name + " pagou " + custo_total_a_pagar + " com sucesso.");
+            // SUCESSO
             successful_payments += 1;
-            
             if (divida_acumulada > 0 || CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) > 0)
                 SafeSetGuildProperty(guild, "divida_upkeep", 0);
                 SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
                 NotificarLider(guild, "O upkeep e todos os débitos do seu reino foram pagos. Os benefícios foram restaurados!");
-                LogInfo("upkeep", "Facção '" + guild_name + "' quitou seu débito. Dívida e pontos zerados.");
+                LogInfo("upkeep", "Facção '" + guild_name + "' quitou seu débito.");
+            else
+                NotificarLider(guild, "O pagamento do upkeep semanal foi realizado com sucesso. Seu reino está em dia.");
             endif
-            
         else
-            Print("UPKEEP: " + guild_name + " FALHOU no pagamento de " + custo_total_a_pagar);
-
+            // FALHA
             var pontos := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) + 1;
             SafeSetGuildProperty(guild, "pontos_inadimplencia", pontos);
             
             var nova_divida := divida_acumulada + cost;
             SafeSetGuildProperty(guild, "divida_upkeep", nova_divida);
 
-            NotificarLider(guild, "AVISO DE UPKEEP: O pagamento do upkeep semanal falhou. Sua dívida acumulou para " + nova_divida + " moedas.");
-            LogWarning("upkeep", "Falha no pagamento para '" + guild_name + "'. Pontos: " + pontos + ", Nova dívida: " + nova_divida);
+            LogWarning("upkeep", "Falha no pagamento para '" + guild_name + "'. Pontos agora: " + pontos + ", Nova dívida: " + nova_divida);
+            AplicarPenalidades(guild, pontos);
         endif
         
-        var inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0));
-		if (inadimplencia > 0)
-			AplicarPenalidades(guild, inadimplencia);
-		endif
-
         sleepms(100);
-    endforeach
+    endforeach;
     
-    Print("UPKEEP: Ciclo concluído - Guildas processadas: " + processed_count + ", Tentativas de pagamento: " + payment_attempts + ", Pagamentos bem-sucedidos: " + successful_payments);
+    Print("UPKEEP: Ciclo concluído.");
 endfunction
 
 function AplicarPenalidades(guild, pontos)
@@ -196,150 +176,115 @@ endfunction
 
 
 function CobrarUpkeepRobusto(guild, guild_name, cost_amount)
-    LogCritical("UpkeepPayment_START_v2", "Iniciando cobrança (v2) de " + cost_amount + " moedas para facção " + guild_name);
+    LogCritical("UpkeepPayment_START_v2", "Iniciando cobrança de " + cost_amount + " moedas para facção " + guild_name);
 
-    var faction_chest := 0;
     var capital_territory_id := "";
     var capital_territory_name := "";
     var territories_found := GetGuildTerritories(guild_name);
 
-    LogInfo("UpkeepPayment_SEARCH_v2", "Encontrados " + territories_found.size() + " territórios para " + guild_name + ". Procurando a capital...");
-
-    // 1. Iterar pelos territórios para encontrar a capital designada.
+    // 1. Encontra a capital da facção
     foreach territory_info in territories_found
         var current_territory_id := territory_info.id ?: territory_info.name;
         if (TM_IsTerritoryCapital(current_territory_id))
             capital_territory_id := current_territory_id;
             capital_territory_name := territory_info.name;
-            LogInfo("UpkeepPayment_CAPITAL_FOUND_v2", "✓ Capital da facção '" + guild_name + "' encontrada: '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
             break; 
         endif
-        SleepMS(1);
-    endforeach
+    endforeach;
 
-    // 2. Se nenhuma capital foi encontrada, o pagamento não pode prosseguir de forma previsível.
+    // 2. Valida se a capital foi encontrada
     if (!capital_territory_id)
-        LogError("UpkeepPayment_ERROR_v2", "NENHUMA CAPITAL designada para a facção '" + guild_name + "'. Cobrança de upkeep abortada.");
-		NotificarLider(guild, "AVISO DE UPKEEP: Seu reino não possui uma capital designada! O pagamento do upkeep não pode ser processado. Use a Mesa de Gestão para definir uma capital.");
+        LogError("UpkeepPayment_ERROR_v2", "NENHUMA CAPITAL designada para '" + guild_name + "'. Cobrança abortada.");
+		NotificarLider(guild, "AVISO DE UPKEEP: Seu reino não tem uma capital designada! O pagamento não pode ser processado.");
 		return 0;
     endif
 
-    // 3. Buscar o baú EXCLUSIVAMENTE no território da capital.
-    LogInfo("UpkeepPayment_CHEST_SEARCH_v2", "Buscando baú na capital '" + capital_territory_name + "' (ID: " + capital_territory_id + ")");
-    faction_chest := FindFactionChest(guild_name, capital_territory_id);
+    // 3. Busca o baú da capital
+    LogInfo("UpkeepPayment_CHEST_SEARCH_v2", "Buscando baú na capital '" + capital_territory_name + "'");
+    var faction_chest := FindFactionChest(guild_name, capital_territory_id);
 
     if (!faction_chest)
-        LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' não encontrado. Pagamento falhou para a facção " + guild_name);
+        LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' não encontrado.");
         return 0;
     endif
     
-    LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança (Capital): Serial " + faction_chest.serial);
+    LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança: Serial " + faction_chest.serial);
 
+    // Lógica de Lock para evitar concorrência
     var lock_prop := "operation_lock"; 
     var lock_timeout := 30;
     var current_time_lock := POLCore().systime;
-
     var existing_lock := GetObjProperty(faction_chest, lock_prop);
     if (existing_lock)
-        var lock_age := current_time_lock - CInt(existing_lock.timestamp);
-        if (lock_age < lock_timeout)
-            LogWarning("upkeep", "Baú da capital " + faction_chest.serial + " está bloqueado por outra operação. Cobrança adiada.");
+        if ((current_time_lock - CInt(existing_lock.timestamp)) < lock_timeout)
+            LogWarning("upkeep", "Baú " + faction_chest.serial + " está bloqueado. Cobrança adiada.");
             return 0;
         else
-            LogWarning("upkeep", "Lock expirado encontrado no baú da capital. Limpando e prosseguindo...");
             EraseObjProperty(faction_chest, lock_prop);
         endif
     endif
+    SetObjProperty(faction_chest, lock_prop, struct{"operation" := "upkeep_payment", "pid" := GetPid(), "timestamp" := current_time_lock});
+    LogDebug("upkeep", "Lock adquirido no baú da capital " + faction_chest.serial);
 
-    var lock_data := struct{};
-    lock_data.+operation := "upkeep_payment";
-    lock_data.+pid := GetPid();
-    lock_data.+timestamp := current_time_lock;
-    SetObjProperty(faction_chest, lock_prop, lock_data);
-    LogDebug("upkeep", "Lock adquirido no baú da capital " + faction_chest.serial + " para cobrança de upkeep.");
-
-// ==========================================================
-    // >>>>> ADIÇÃO CRÍTICA: FORÇAR CONTAGEM REAL <<<<<
-    // ==========================================================
-    LogInfo("UpkeepPayment_SYNC", "Forçando contagem real de recursos no baú " + faction_chest.serial + " antes da cobrança.");
-    ContarItensDoadosNoBau(faction_chest, 1); // O '1' força a recontagem e sincronização
-    // ==========================================================
-
+    // Forçar a recontagem e sincronização do baú
+    ContarItensDoadosNoBau(faction_chest, 1);
     
     var payment_success := 0;
-    var error_occurred := 0;
-
-    if (!faction_chest.isA(POLCLASS_CONTAINER) || !faction_chest.serial || faction_chest.serial <= 0)
-        LogError("UpkeepPayment_ERROR", "Baú inválido para facção " + guild_name);
-        error_occurred := 1;
+    
+    // ========================================================
+    // >> LÓGICA DE CONTAGEM E DÉBITO CORRIGIDA <<
+    // ========================================================
+    
+    var items_in_chest := EnumerateItemsInContainer(faction_chest);
+    if (items_in_chest == error)
+         LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
     else
-        var items_in_chest := EnumerateItemsInContainer(faction_chest);
-        if (items_in_chest == error)
-             LogError("UpkeepPayment_ERROR", "Falha ao enumerar itens no baú " + faction_chest.serial);
-             error_occurred := 1;
-        else
-            var coins_available := 0;
-            var coin_items_list := array{};
-            foreach item in items_in_chest
-                if (item && item.objtype == MOEDAS_COBRE)
-                    coins_available += CInt(item.amount);
-                    coin_items_list.append(item);
-                endif
-                sleepms(1);
-            endforeach
-            
-            LogCritical("UpkeepPayment_TOTAL", "Total de moedas disponíveis: " + coins_available + ", Necessário: " + cost_amount);
-
-            if (coins_available < cost_amount)
-                LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes. Disponível: " + coins_available + ", Necessário: " + cost_amount);
-            else
-                var coins_debited := 0;
-                var coins_remaining := cost_amount;
-                
-                foreach coin_item in coin_items_list
-                    if (coins_remaining <= 0) break; endif
-                    
-                    var amount_to_take := (CInt(coin_item.amount) > coins_remaining) ? coins_remaining : CInt(coin_item.amount);
-                    
-                    if (SubtractAmount(coin_item, amount_to_take))
-                        coins_debited += amount_to_take;
-                        coins_remaining -= amount_to_take;
-                        LogInfo("UpkeepPayment_DEBIT", amount_to_take + " moedas debitadas do stack " + (coin_item.serial ? coin_item.serial : "novo"));
-                    else
-                        LogError("UpkeepPayment_ERROR", "Falha ao debitar " + amount_to_take + " moedas do stack " + (coin_item.serial ? coin_item.serial : "inválido"));
-                        error_occurred := 1;
-                        break;
-                    endif
-                    sleepms(5);
-                endforeach
-
-                if (!error_occurred && coins_debited >= cost_amount)
-                    payment_success := 1;
-                    SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
-                    LogInfo("UpkeepPayment_SUCCESS", "Pagamento de upkeep bem-sucedido para " + guild_name);
-                elseif (!error_occurred)
-                    LogError("UpkeepPayment_FAILED", "Pagamento incompleto. Debitado: " + coins_debited + ", Necessário: " + cost_amount);
-                endif
+        var coins_available := 0;
+        var coin_items_list := array{};
+        foreach item in items_in_chest
+            if (item && item.objtype == MOEDAS_COBRE)
+                coins_available += CInt(item.amount);
+                coin_items_list.append(item);
             endif
+        endforeach;
+        
+        LogCritical("UpkeepPayment_TOTAL", "Moedas disponíveis: " + coins_available + ", Necessário: " + cost_amount);
+
+        if (coins_available >= cost_amount)
+            var coins_debited := 0;
+            var coins_remaining := cost_amount;
+            
+            foreach coin_item in coin_items_list
+                if (coins_remaining <= 0) break; endif
+                
+                var amount_to_take := (CInt(coin_item.amount) >= coins_remaining) ? coins_remaining : CInt(coin_item.amount);
+                
+                if (SubtractAmount(coin_item, amount_to_take))
+                    coins_debited += amount_to_take;
+                    coins_remaining -= amount_to_take;
+                else
+                    LogError("UpkeepPayment_ERROR", "Falha ao debitar do stack " + coin_item.serial);
+                    // Estorna o que foi debitado até agora neste ciclo
+                    if(coins_debited > 0)
+                        CreateItemInContainer(faction_chest, MOEDAS_COBRE, coins_debited);
+                    endif
+                    coins_debited := 0; // Zera para indicar falha total
+                    break;
+                endif
+            endforeach;
+
+            if (coins_debited >= cost_amount)
+                payment_success := 1;
+                SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
+                LogInfo("UpkeepPayment_SUCCESS", "Pagamento bem-sucedido para " + guild_name);
+            endif
+        else
+            LogWarning("UpkeepPayment_INSUFFICIENT", "Fundos insuficientes para " + guild_name);
         endif
     endif
     
     EraseObjProperty(faction_chest, lock_prop);
-    LogDebug("upkeep", "Lock liberado no baú da capital " + faction_chest.serial + ". Sucesso: " + payment_success);
+    LogDebug("upkeep", "Lock liberado. Resultado do pagamento: " + payment_success);
     
-	if (!payment_success)
-		var inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0)) + 1;
-		SafeSetGuildProperty(guild, "pontos_inadimplencia", inadimplencia);
-		LogWarning("upkeep", "FALHA no pagamento de upkeep para " + guild_name + ". Pontos de inadimplência: " + inadimplencia);
-		
-		// Notificar o líder sobre a falha
-		NotificarLider(guild, "AVISO DE UPKEEP: O pagamento do upkeep semanal falhou. Sua facção agora tem " + inadimplencia + " ponto(s) de inadimplência. Reabasteça o tesouro da capital!");
-	else
-		// Se o pagamento foi bem-sucedido, zera os pontos de inadimplência.
-		SafeSetGuildProperty(guild, "pontos_inadimplencia", 0);
-		LogInfo("upkeep", "Pagamento bem-sucedido para " + guild_name + ". Pontos de inadimplência zerados.");
-		NotificarLider(guild, "O pagamento do upkeep semanal foi realizado com sucesso. Seu reino está em dia.");
-	endif;
-	
-	return payment_success;
+    return payment_success;
 endfunction

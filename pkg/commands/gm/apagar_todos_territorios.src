@@ -9,17 +9,17 @@ program apagar_todos_territorios(who)
     if (!who || who.cmdlevel < 3)
         SendSysMessage(who, "Apenas administradores podem usar este comando.");
         return 0;
-    endif;
+    endif
 
     // 2. CONFIRMAÇÃO DUPLA E EXPLÍCITA
     if (!YesNo(who, "ATENÇÃO: Esta ação é DESTRUTIVA e IRREVERSÍVEL. Você tem certeza que deseja APAGAR TODOS os territórios, objetos e referências do sistema?"))
         SendSysMessage(who, "Ação cancelada.");
         return 0;
-    endif;
+    endif
     if (!YesNo(who, "CONFIRMAÇÃO FINAL: Continuar com a remoção completa de TODOS os territórios?"))
         SendSysMessage(who, "Ação cancelada.");
         return 0;
-    endif;
+    endif
 
     SendSysMessage(who, "INICIANDO LIMPEZA COMPLETA DE TERRITÓRIOS. O servidor pode apresentar lentidão...");
     LogInfo("territorio", "[[LIMPEZA GERAL INICIADA]] por GM " + who.name);
@@ -33,19 +33,19 @@ program apagar_todos_territorios(who)
     if (!rect_df)
         SendSysMessage(who, "Erro: Não foi possível abrir o datafile de territórios. Ação abortada.");
         return 0;
-    endif;
+    endif
     var territorios_para_apagar := rect_df.keys();
 
     // 4. ITERAR SOBRE A LISTA COPIADA E DELETAR UM POR UM
     foreach nome_territorio in (territorios_para_apagar)
         var elem := SafeFindElement(rect_df, nome_territorio);
-        if (!elem) continue; endif;
+        if (!elem) continue; endif
         
         var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-        if (!territory_id) territory_id := nome_territorio; endif;
+        if (!territory_id) territory_id := nome_territorio; endif
 
         var faction := GetTerritoryFaction(elem);
-        if (!faction) faction := DEFAULT_FACTION; endif;
+        if (!faction) faction := DEFAULT_FACTION; endif
         
         SendSysMessage(who, "Apagando " + nome_territorio + " (Facção: " + faction + ")...");
         
@@ -60,7 +60,7 @@ program apagar_todos_territorios(who)
             areas_apagadas += 1;
         else
             LogWarning("apagar_territorios", "Falha ao apagar o elemento '" + nome_territorio + "' do datafile de áreas.");
-        endif;
+        endif
         
         sleepms(10);
     endforeach;
@@ -80,7 +80,7 @@ program apagar_todos_territorios(who)
         endforeach;
         UnloadDataFile(":faccao:seriais");
         LogInfo("territorio", "Datafile :faccao:seriais limpo. " + seriais_apagados + " elementos removidos.");
-    endif;
+    endif
 
     // Limpar :faccao:transacoes
     var transacoes_df := SafeOpenDataFile(":faccao:transacoes");
@@ -94,7 +94,7 @@ program apagar_todos_territorios(who)
         endforeach;
         UnloadDataFile(":faccao:transacoes");
         LogInfo("territorio", "Datafile :faccao:transacoes limpo. " + trans_apagadas + " elementos removidos.");
-    endif;
+    endif
     
     // 6. MENSAGEM FINAL
     SendSysMessage(who, "==================================================");

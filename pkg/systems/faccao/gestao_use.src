@@ -29,9 +29,8 @@ include ":architect:architect";
 const MOEDAS_COBRE := 0xBA63;
 const BKGND_STONESLAB := 9200;
 const BTN_CONTRATAR_GFX_NORMAL := 0x93A;
-const BTN_CONTRATAR_GFX_OVER := 0x93A;
-const BTN_CANCELAR_GFX_NORMAL := 0x938;
-const BTN_CANCELAR_GFX_OVER := 0x938;
+const BTN_CONTRATAR_GFX_OVER := 0x938;
+const BTN_CANCELAR_GFX_NORMAL := 0x939;
 const MENU_REINO := 1;
 const MENU_LEIS := 2;
 const MENU_FACCOES := 3;
@@ -274,14 +273,16 @@ function ReinoGump(byref gump, item, who := 0)
         var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
         if (divida_acumulada > 0)
             var y_divida := y_reino + 30;
-            GFTextLine(gump, x_label, y_divida, 38, "Dívida: " + divida_acumulada);
+            GFTextLine(gump, x_label, y_divida, 38, "Dívida de UpKeep: " + divida_acumulada);
             GFAddButton(gump, x_label + 200, y_divida - 5, 2074, 2075, GF_CLOSE_BTN, 999);
         endif
     endif
 
-    var rect_df := SafeOpenDataFile(":architect:areas");
+var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         var territorios_visiveis := array{};
+        
+        var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
         
         foreach elem_name in (rect_df.keys())
             var territory_info := TM_GetTerritoryInfo(elem_name);
@@ -304,6 +305,24 @@ function ReinoGump(byref gump, item, who := 0)
         var y_terr := 330;
         var territorios_mostrados := 0;
         
+        // ========================================================
+        // >> INÍCIO DA MODIFICAÇÃO <<
+        // ========================================================
+        
+        // Carrega os contratos da guild uma única vez antes do loop
+        var guild := FindGuild(FindGuildByName(mesa_faction));
+        var contratos_ativos_lookup := dictionary{};
+        if (guild)
+            var contratos_prop := guild.GetProp("caravan_contracts");
+            if (contratos_prop && TypeOf(contratos_prop) == "Array")
+                foreach contrato in (contratos_prop)
+                    if (contrato && CInt(contrato.next_payment_due) > polcore().systime)
+                        contratos_ativos_lookup[CStr(contrato.origin_territory_id)] := 1;
+                    endif
+                endforeach
+            endif
+        endif
+
         foreach territorio in (territorios_visiveis)
             var territory_info_loop := TM_GetTerritoryInfo(territorio.id);
             var is_capital := territory_info_loop.is_capital;
@@ -316,8 +335,29 @@ function ReinoGump(byref gump, item, who := 0)
                 GFTextLine(gump, 485, y_terr+5, 53, territorio.name);
             endif
             
+            // Botão de Informações (Info) - continua o mesmo
             GFAddButton(gump, 693, y_terr+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
-            GFAddButton(gump, 740, y_terr+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
+            
+            // --- Lógica para o botão da Caravana (Carav.) ---
+            var caravana_ativa := contratos_ativos_lookup.exists(CStr(territorio.id));
+            var caravana_gump_id := 0;
+
+            if (caravana_ativa)
+                // Se a caravana está ATIVA, mostra a "luz" VERDE (0x939)
+                caravana_gump_id := 2361; // 0x939
+            else
+                // Se a caravana está INATIVA, mostra a "luz" VERMELHA (0x938)
+                caravana_gump_id := 2360; // 0x938
+            endif
+
+            // Adiciona o botão com o gráfico correto. A capital não terá botão clicável.
+            if (!is_capital)
+                 GFAddButton(gump, 740, y_terr+5, caravana_gump_id, caravana_gump_id, GF_CLOSE_BTN, 700 + territorios_mostrados);
+            endif
+
+            // ========================================================
+            // >> FIM DA MODIFICAÇÃO <<
+            // ========================================================
             
             y_terr += 35;
             territorios_mostrados += 1;
@@ -335,6 +375,7 @@ function ReinoGump(byref gump, item, who := 0)
     
     return gump;
 endfunction
+
 function ProcessarAcaoTerritorio(who, input, item)
     if (input >= 700 && input < 800)
         // Botão de visualizar mapa do território
@@ -350,6 +391,9 @@ function ProcessarAcaoTerritorio(who, input, item)
     
     return 0; // Padrão: continuar no gump
 endfunction
+
+// Em :faccao:gestao_use.src
+// SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
 
 function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao)
     LogDebug("gestao_use_mapa_v3", "MostrarMapaTerritorio v3: Index Clicado=" + index_territorio_clicado_no_gump_anterior);
@@ -376,10 +420,10 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
     // 1. Obter todos os territórios DA FACÇÃO da mesa e identificar a capital
     var territorios_nao_capital_da_faccao := array{};
     var capital_da_faccao_info := 0;
+    var todos_os_territorios_keys := rect_df.keys();
 
-    var todos_os_territorios_keys := rect_df.keys(); // Pega todas as chaves uma vez
     foreach elem_key in todos_os_territorios_keys
-        var terr_info_loop := TM_GetTerritoryInfo(elem_key); // TM_GetTerritoryInfo já usa SafeFindElement
+        var terr_info_loop := TM_GetTerritoryInfo(elem_key);
         if (terr_info_loop && terr_info_loop.faction == mesa_faction_name)
             if (terr_info_loop.id && TM_IsTerritoryCapital(terr_info_loop.id))
                 capital_da_faccao_info := terr_info_loop;
@@ -387,8 +431,8 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
                 territorios_nao_capital_da_faccao.append(terr_info_loop);
             endif
         endif
-        SleepMS(1); // Pequena pausa para evitar sobrecarga se houver muitos territórios
-    endforeach
+        SleepMS(1);
+    endforeach;
 
     // Montar a lista final ordenada: capital primeiro
     var todos_territorios_da_faccao_ordenados := array{};
@@ -401,19 +445,15 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
 
     foreach terr_nao_capital_loop in territorios_nao_capital_da_faccao
         todos_territorios_da_faccao_ordenados.append(terr_nao_capital_loop);
-    endforeach
+    endforeach;
 
     // Criação do Gump
     var gump_mapa := GFCreateGump();
     var gump_width := 550;
     var num_territorios_listados := todos_territorios_da_faccao_ordenados.size();
-    var gump_height := 150 + (num_territorios_listados * 30); // Altura base + espaço por território
-    if (gump_height < 400) 
-        gump_height := 400; 
-    endif
-    if (gump_height > 650) 
-        gump_height := 650; // Limite máximo de altura
-    endif
+    var gump_height := 150 + (num_territorios_listados * 30);
+    if (gump_height < 400) gump_height := 400; endif
+    if (gump_height > 650) gump_height := 650; endif
 
     GFResizePic(gump_mapa, 0, 0, BKGND_BLUESLAB_FACCAO, gump_width, gump_height);
     GFResizePic(gump_mapa, 15, 15, BKGND_STONESLAB, gump_width - 30, gump_height - 30);
@@ -429,69 +469,72 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
         y_gump += 25;
     endif
 
-    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB - 100, gump_width - 40, 2); // Linha divisória
+    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB - 100, gump_width - 40, 2);
     y_gump += 15;
-
     GFTextLine(gump_mapa, 30, y_gump, 1153, "Territórios de Origem da Facção (" + mesa_faction_name + "):");
     y_gump += 25;
 
     // IDs dos botões
-    var btn_id_contratar_base := 10;     // Ex: 11, 12, 13...
-    var btn_id_cancelar_base  := 1000;   // Ex: 1001, 1002, 1003...
-    var territorio_gump_list_index := 0; // Índice na lista do GUMP (1-based)
+    var btn_id_contratar_base := 10;
+    var btn_id_cancelar_base  := 1000;
+    var btn_id_pagar_divida_base := 2000; 
+    var territorio_gump_list_index := 0;
 
-    // Carregar contratos de caravana existentes para esta facção
+    // Carregar contratos de caravana
     var contratos_ativos_da_faccao := guild_obj_mapa.GetProp("caravan_contracts");
     if (!contratos_ativos_da_faccao || TypeOf(contratos_ativos_da_faccao) != "Array")
         contratos_ativos_da_faccao := array{};
     endif
-    var contratos_dict_lookup := dictionary{}; // Para busca rápida por origin_territory_id
+    var contratos_dict_lookup := dictionary{};
     foreach contrato_existente_loop in contratos_ativos_da_faccao
         if (contrato_existente_loop && contrato_existente_loop.origin_territory_id)
             contratos_dict_lookup[CStr(contrato_existente_loop.origin_territory_id)] := contrato_existente_loop;
         endif
-    endforeach
+    endforeach;
 
     if (num_territorios_listados == 0)
         GFTextLine(gump_mapa, 30, y_gump, 38, "Nenhum território encontrado para esta facção.");
         y_gump += 20;
     else
         foreach terr_info_iter in todos_territorios_da_faccao_ordenados
-            territorio_gump_list_index += 1; // Este é o índice 1-based para os IDs dos botões
+            territorio_gump_list_index += 1;
             var nome_exib_iter := terr_info_iter.name;
             var id_exib_origem_iter := CStr(terr_info_iter.id);
-            var cor_texto_nome_iter := 1153; // Cor padrão (azul claro)
-
-            // Posicionamento dos elementos na linha
             var x_nome_iter := 30;
-            var x_status_iter := x_nome_iter + 220; // Espaço para o nome do território
-            var x_botao_iter  := x_status_iter + 140; // Espaço para o status
+            var x_status_iter := x_nome_iter + 220;
+            var x_botao_iter  := x_status_iter + 140;
 
-            GFTextLine(gump_mapa, x_nome_iter, y_gump, cor_texto_nome_iter, territorio_gump_list_index + ". " + nome_exib_iter);
+            GFTextLine(gump_mapa, x_nome_iter, y_gump, 1153, territorio_gump_list_index + ". " + nome_exib_iter);
 
-            // Lógica para capital e territórios não-capital
             if (capital_da_faccao_info && id_exib_origem_iter == CStr(capital_da_faccao_info.id))
-                GFTextLine(gump_mapa, x_status_iter, y_gump, 230, "[CAPITAL - Destino]"); // Cor amarela para capital
-            elseif (capital_da_faccao_info) // Só mostrar opções se houver capital e não for a própria capital
+                GFTextLine(gump_mapa, x_status_iter, y_gump, 230, "[CAPITAL - Destino]");
+            elseif (capital_da_faccao_info)
                 var contrato_deste_territorio := contratos_dict_lookup[id_exib_origem_iter];
-
-                if (contrato_deste_territorio && CInt(contrato_deste_territorio.next_payment_due) > polcore().systime)
-                    // Caravana ATIVA deste território
-                    GFTextLine(gump_mapa, x_status_iter, y_gump, 63, "Caravana ATIVA"); // Verde
-                    GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CANCELAR_GFX_NORMAL, BTN_CANCELAR_GFX_OVER, GF_CLOSE_BTN, btn_id_cancelar_base + territorio_gump_list_index);
-                    GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 63, "Cancelar");
+                
+                if (contrato_deste_territorio)
+                    if (contrato_deste_territorio.payment_status == "due")
+                        // DÍVIDA PENDENTE
+                        GFTextLine(gump_mapa, x_status_iter, y_gump, 38, "Dívida de Caravana");
+                        GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CONTRATAR_GFX_NORMAL, BTN_CONTRATAR_GFX_OVER, GF_CLOSE_BTN, btn_id_pagar_divida_base + territorio_gump_list_index);
+                        GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 38, "Pagar (" + contrato_deste_territorio.weekly_cost + ")");
+                    else // Status é "active" ou indefinido (considera ativo)
+                        // CARAVANA ATIVA
+                        GFTextLine(gump_mapa, x_status_iter, y_gump, 63, "Caravana ATIVA");
+                        GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CANCELAR_GFX_NORMAL, BTN_CANCELAR_GFX_NORMAL, GF_CLOSE_BTN, btn_id_cancelar_base + territorio_gump_list_index);
+                        GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 63, "Cancelar");
+                    endif
                 else
-                    // Nenhuma caravana ativa DESTE território (ou contrato expirado)
-                    GFTextLine(gump_mapa, x_status_iter, y_gump, 38, "Caravana INATIVA"); // Vermelho
+                    // NENHUM CONTRATO (INATIVA)
+                    GFTextLine(gump_mapa, x_status_iter, y_gump, 38, "Caravana INATIVA");
                     GFAddButton(gump_mapa, x_botao_iter, y_gump - 2, BTN_CONTRATAR_GFX_NORMAL, BTN_CONTRATAR_GFX_OVER, GF_CLOSE_BTN, btn_id_contratar_base + territorio_gump_list_index);
                     GFTextLine(gump_mapa, x_botao_iter + 25, y_gump, 53, "Contratar");
                 endif
             endif
-            y_gump += 30; // Próxima linha
-        endforeach
+            y_gump += 30;
+        endforeach;
     endif
 
-    GFAddButton(gump_mapa, CInt(gump_width / 2) - 20, gump_height - 45, 2128, 2129, GF_CLOSE_BTN, 0); // Botão "OKAY"
+    GFAddButton(gump_mapa, CInt(gump_width / 2) - 20, gump_height - 45, 2128, 2129, GF_CLOSE_BTN, 0);
 
     var input_mapa := GFSendGump(who, gump_mapa);
     var btn_clicado_gump := input_mapa[0];
@@ -499,37 +542,30 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
     // Processar clique no botão Contratar
     if (btn_clicado_gump >= btn_id_contratar_base && btn_clicado_gump < btn_id_cancelar_base)
         var idx_na_lista_ordenada := btn_clicado_gump - btn_id_contratar_base;
-        // Validar índice (arrays em eScript são 1-based)
         if (idx_na_lista_ordenada > 0 && idx_na_lista_ordenada <= todos_territorios_da_faccao_ordenados.size())
             var terr_para_contratar_info_clicado := todos_territorios_da_faccao_ordenados[idx_na_lista_ordenada];
-            if (capital_da_faccao_info && CStr(terr_para_contratar_info_clicado.id) != CStr(capital_da_faccao_info.id))
-                LogInfo("gestao_use_mapa_acao_v3", who.name + " tentando contratar caravana DO território: " + terr_para_contratar_info_clicado.name + " (ID: " + terr_para_contratar_info_clicado.id + ") PARA a capital " + capital_da_faccao_info.name);
-                ContratarCaravanaTerritorioIndividual(who, terr_para_contratar_info_clicado.id, capital_da_faccao_info.id, mesa_faction_name);
-            else
-                SendSysMessage(who, "Não é possível contratar uma caravana da própria capital.");
-            endif
-        else
-            LogWarning("gestao_use_mapa_acao_v3", "Índice de botão de contratar inválido: " + idx_na_lista_ordenada);
+            ContratarCaravanaTerritorioIndividual(who, terr_para_contratar_info_clicado.id, capital_da_faccao_info.id, mesa_faction_name);
         endif
-        // Reabrir este mesmo Gump para refletir mudanças ou se o usuário quiser fazer outra ação
+        MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
+    
+    // Processar clique no botão Pagar Dívida
+    elseif (btn_clicado_gump >= btn_id_pagar_divida_base)
+        var idx_na_lista_ordenada_divida := btn_clicado_gump - btn_id_pagar_divida_base;
+        if (idx_na_lista_ordenada_divida > 0 && idx_na_lista_ordenada_divida <= todos_territorios_da_faccao_ordenados.size())
+            var terr_para_pagar_info_clicado := todos_territorios_da_faccao_ordenados[idx_na_lista_ordenada_divida];
+            PagarDividaCaravana(who, terr_para_pagar_info_clicado.id, mesa_faction_name);
+        endif
         MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
 
     // Processar clique no botão Cancelar
-    elseif (btn_clicado_gump >= btn_id_cancelar_base)
+    elseif (btn_clicado_gump >= btn_id_cancelar_base && btn_clicado_gump < btn_id_pagar_divida_base)
         var idx_na_lista_ordenada_cancel := btn_clicado_gump - btn_id_cancelar_base;
-        // Validar índice
         if (idx_na_lista_ordenada_cancel > 0 && idx_na_lista_ordenada_cancel <= todos_territorios_da_faccao_ordenados.size())
             var terr_para_cancelar_info_clicado := todos_territorios_da_faccao_ordenados[idx_na_lista_ordenada_cancel];
-            LogInfo("gestao_use_mapa_acao_v3", who.name + " tentando cancelar caravana DO território: " + terr_para_cancelar_info_clicado.name + " (ID: " + terr_para_cancelar_info_clicado.id + ")");
             CancelarCaravanaTerritorioIndividual(who, terr_para_cancelar_info_clicado.id, mesa_faction_name);
-        else
-            LogWarning("gestao_use_mapa_acao_v3", "Índice de botão de cancelar inválido: " + idx_na_lista_ordenada_cancel);
         endif
-        // Reabrir este mesmo Gump
         MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, item_mesa_gestao);
     endif
-    // Se o botão clicado foi 0 (OKAY) ou o gump foi fechado, a execução simplesmente termina aqui,
-    // e o controle volta para a função ShowKingdomManagementGump, que decidirá o que fazer (provavelmente reabrir o MENU_REINO).
 endfunction
 
 
@@ -748,7 +784,7 @@ endfunction
 function AdicionarValoresRecursos(byref gump, byref recursos_struct)
     if (!gump)
         return 0;
-    endif;
+    endif
 
     var log_message := ""; // Variável para construir a mensagem de log
 
@@ -1762,16 +1798,16 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
         SendSysMessage(who, "Erro: Guilda da facção '" + faction_name + "' não encontrada.");
         LogError("ContratarCaravana", "Guilda não encontrada para facção: " + faction_name);
         return 0;
-    endif;
+    endif
 
     var custo_caravana := CInt(GetGlobalProperty("caravan_weekly_cost_setting"));
-    if (!custo_caravana || custo_caravana <= 0) custo_caravana := 50; endif;
+    if (!custo_caravana || custo_caravana <= 0) custo_caravana := 50; endif
     LogDebug("ContratarCaravana", "Custo da caravana definido em: " + custo_caravana);
 
     var contratos_atuais := guild_obj.GetProp("caravan_contracts");
     if (!contratos_atuais || TypeOf(contratos_atuais) != "Array")
         contratos_atuais := array{};
-    endif;
+    endif
 
     foreach c_existente in contratos_atuais
         if (c_existente && c_existente.origin_territory_id && c_existente.next_payment_due)
@@ -1779,10 +1815,10 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
                 SendSysMessage(who, "Já existe uma caravana ativa partindo deste território.");
                 LogInfo("ContratarCaravana", "Tentativa de contratar caravana duplicada de " + origin_territory_id + " para facção " + faction_name + ". Contrato ativo já existe.");
                 return 0;
-            endif;
+            endif
         else
             LogWarning("ContratarCaravana", "Contrato de caravana malformado encontrado no array para facção " + faction_name + ". Contrato: " + c_existente);
-        endif;
+        endif
     endforeach;
    LogDebug("ContratarCaravana", "Verificação de contrato duplicado para " + origin_territory_id + " passou.");
 
@@ -1793,19 +1829,19 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
         SendSysMessage(who, "Erro crítico: Baú da capital (" + capital_id + ") não encontrado para debitar o custo da caravana.");
         LogError("ContratarCaravana", "Baú da capital " + capital_id + " não encontrado para debitar custo para facção " + faction_name);
         return 0;
-    endif;
+    endif
     LogDebug("ContratarCaravana", "Baú da capital encontrado: Serial " + capital_donation_chest.serial);
 
     var moedas_removidas_fisicamente := 0;
     var moedas_a_remover_do_bau := custo_caravana;
 
     var items_no_bau_capital_array := EnumerateItemsInContainer(capital_donation_chest);
-    if (items_no_bau_capital_array == error) items_no_bau_capital_array := array{}; endif;
+    if (items_no_bau_capital_array == error) items_no_bau_capital_array := array{}; endif
 
     LogDebug("ContratarCaravana", "Total de itens no baú da capital: " + items_no_bau_capital_array.size());
 
     foreach item_no_bau_capital in items_no_bau_capital_array
-        if (moedas_a_remover_do_bau <= 0) break; endif;
+        if (moedas_a_remover_do_bau <= 0) break; endif
 
         if (item_no_bau_capital.objtype == 0xBA63) 
             LogDebug("ContratarCaravana", "Stack de moedas (0xBA63) encontrado: Serial " + item_no_bau_capital.serial + ", Amount: " + item_no_bau_capital.amount);
@@ -1823,13 +1859,13 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
                     LogError("ContratarCaravana", "Falha em HelpSubtractAmount (" + amount_to_take_from_this_stack + ") no stack original " + item_no_bau_capital.serial + " do baú da capital.");
                     if (moedas_removidas_fisicamente > 0)
                         var item_estorno := CreateItemInBackpack(who, MOEDAS_COBRE, moedas_removidas_fisicamente);
-                        if (item_estorno) MarcarRecursosModificados(item_estorno); endif;
+                        if (item_estorno) MarcarRecursosModificados(item_estorno); endif
                         LogError("ContratarCaravana", "ESTORNO FÍSICO TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
-                    endif;
+                    endif
                     return 0;
-                endif;
-            endif;
-        endif;
+                endif
+            endif
+        endif
         SleepMS(5); 
     endforeach;
 
@@ -1838,11 +1874,11 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
         LogError("ContratarCaravana", "Moedas físicas insuficientes (" + moedas_removidas_fisicamente + "/" + custo_caravana + ") no baú da capital " + capital_donation_chest.serial);
         if (moedas_removidas_fisicamente > 0)
             var item_estorno_parcial := CreateItemInBackpack(who, MOEDAS_COBRE, moedas_removidas_fisicamente);
-            if (item_estorno_parcial) MarcarRecursosModificados(item_estorno_parcial); endif;
+            if (item_estorno_parcial) MarcarRecursosModificados(item_estorno_parcial); endif
             LogError("ContratarCaravana", "ESTORNO FÍSICO PARCIAL TENTADO: " + moedas_removidas_fisicamente + " moedas para o baú " + capital_donation_chest.serial);
-        endif;
+        endif
         return 0;
-    endif;
+    endif
     LogInfo("ContratarCaravana", "Total de " + moedas_removidas_fisicamente + " moedas FÍSICAS removidas com sucesso do baú da capital " + capital_donation_chest.serial + " para facção " + faction_name + ".");
 
     var current_time_system := polcore().systime;
@@ -1868,11 +1904,11 @@ function ContratarCaravanaTerritorioIndividual(who, origin_territory_id, capital
         LogError("ContratarCaravana", "FALHA CRÍTICA ao salvar 'caravan_contracts' na CProp da guilda " + faction_name + ". Erro: " + set_prop_guild_result.errortext);
         LogCritical("ContratarCaravana_REVERT_FISICO", "REVERTENDO CUSTO FÍSICO para " + faction_name + " devido a falha em SetProp CProp da guilda.");
         var item_estorno_critico := CreateItemInBackpack(who, MOEDAS_COBRE, custo_caravana);
-        if (item_estorno_critico) MarcarRecursosModificados(item_estorno_critico); endif;
+        if (item_estorno_critico) MarcarRecursosModificados(item_estorno_critico); endif
         LogError("ContratarCaravana_REVERT_FISICO", "ESTORNO FÍSICO TENTADO: " + custo_caravana + " moedas para o baú " + capital_donation_chest.serial + ". A próxima execução do process_recursos_updates deve sincronizar o datafile.");
         SendSysMessage(who, "Ocorreu um erro crítico ao registrar o contrato. O custo foi estornado fisicamente. Tente novamente ou contate um GM.");
         return 0;
-    endif;
+    endif
     LogInfo("ContratarCaravana", "CProp 'caravan_contracts' atualizada com sucesso para guilda " + faction_name);
 
     var origin_info := TM_GetTerritoryInfo(origin_territory_id);
@@ -2676,4 +2712,99 @@ function FormatCultureForDisplay(culture_enum)
                 return "Cultura Indefinida";
             endif
     endcase
+endfunction
+
+// Adicione esta nova função ao final de :faccao:gestao_use.src
+
+function PagarDividaCaravana(who, origin_territory_id, faction_name)
+    var guild := FindGuild(FindGuildByName(faction_name));
+    if (!guild)
+        return 0;
+    endif
+    
+    var contratos := guild.GetProp("caravan_contracts");
+    if (!contratos || TypeOf(contratos) != "Array")
+        return 0;
+    endif
+
+    var contrato_encontrado := 0;
+    var contrato_index := 0;
+    var custo_divida := 0;
+
+    foreach contrato in contratos
+        contrato_index += 1;
+        if (CStr(contrato.origin_territory_id) == CStr(origin_territory_id) && contrato.payment_status == "due")
+            contrato_encontrado := contrato;
+            custo_divida := CInt(contrato.weekly_cost);
+            break;
+        endif
+    endforeach;
+
+    if (!contrato_encontrado)
+        SendSysMessage(who, "Não foi encontrada uma dívida para esta caravana.");
+        return 0;
+    endif
+    
+    var capital_id := contrato_encontrado.capital_territory_id;
+    var capital_chest := FindFactionChest(faction_name, capital_id, 0);
+    if (!capital_chest)
+        SendSysMessage(who, "Erro: Baú da capital não encontrado para debitar a dívida.");
+        return 0;
+    endif
+    
+    var moedas_disponiveis := 0;
+    foreach item in EnumerateItemsInContainer(capital_chest)
+        if (item.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += item.amount;
+        endif
+    endforeach;
+
+    if (moedas_disponiveis < custo_divida)
+        SendSysMessage(who, "Fundos insuficientes no baú da capital para pagar a dívida de " + custo_divida + ".");
+        return 0;
+    endif
+    
+    var coins_successfully_debited := 0;
+    var coins_remaining_to_debit := custo_divida;
+    foreach coin_item in EnumerateItemsInContainer(capital_chest)
+        if (coins_remaining_to_debit <= 0)
+            break;
+        endif
+        if (coin_item && coin_item.objtype == MOEDAS_COBRE)
+            var amount_in_stack := CInt(coin_item.amount);
+            var amount_to_take := (coins_remaining_to_debit > amount_in_stack) ? amount_in_stack : coins_remaining_to_debit;
+            if (HelpSubtractAmount(coin_item, amount_to_take))
+                coins_successfully_debited += amount_to_take;
+                coins_remaining_to_debit -= amount_to_take;
+            endif
+        endif
+    endforeach;
+    
+    if (coins_successfully_debited >= custo_divida)
+        // Pagamento OK. Atualizar o contrato.
+        contrato_encontrado.payment_status := "active";
+        contrato_encontrado.next_payment_due := polcore().systime + CARAVAN_TEST_DURATION_SECONDS;
+        
+        contratos[contrato_index] := contrato_encontrado;
+        guild.SetProp("caravan_contracts", contratos);
+        
+        SendSysMessage(who, "Dívida da caravana paga! A rota comercial foi reativada.");
+        
+        var event_data_reactivate := struct;
+        event_data_reactivate.+faction := faction_name;
+        event_data_reactivate.+origin_territory_id := origin_territory_id;
+        event_data_reactivate.+capital_territory_id := capital_id; 
+        event_data_reactivate.+active_until_next_payment := contrato_encontrado.next_payment_due;
+        // ===== INÍCIO DA CORREÇÃO =====
+        TM_NotifyTerritoryChange(origin_territory_id, "caravan_activated_from_territory", event_data_reactivate);
+        // ===== FIM DA CORREÇÃO =====
+        return 1;
+    else
+        SendSysMessage(who, "Ocorreu um erro ao tentar debitar as moedas do baú da capital.");
+        if(coins_successfully_debited > 0)
+            CreateItemInContainer(capital_chest, 0xBA63, coins_successfully_debited);
+            MarcarRecursosModificados(capital_chest);
+        endif
+        return 0;
+    endif
 endfunction

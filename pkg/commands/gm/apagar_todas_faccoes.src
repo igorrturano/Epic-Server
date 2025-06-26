@@ -18,7 +18,7 @@ program apagar_todas_faccoes(who)
     if (!who || who.cmdlevel < 2)
         SendSysMessage(who, "Apenas Administradores (nível 2) podem usar este comando.");
         return 0;
-    endif;
+    endif
 
     // Etapa 2: Confirmação Inicial para DELEÇÃO TOTAL
     if (!YesNo(who, "Você deseja apagar TODAS as facções ou gerenciar individualmente? [Sim para apagar TODAS / Não para gerenciar]"))
@@ -27,24 +27,24 @@ program apagar_todas_faccoes(who)
         if (!guilds_para_apagar || guilds_para_apagar.size() == 0)
             SendSysMessage(who, "Nenhuma facção encontrada para apagar.");
             return 1;
-        endif;
+        endif
         
         // Gump de revisão ANTES da deleção em massa
         if (!ShowFactionReviewGump(who, guilds_para_apagar, 1, 1)) // modo_delecao_total = 1
             SendSysMessage(who, "Deleção em massa cancelada.");
             return 0;
-        endif;
+        endif
 
         // Confirmação final e DESTRUTIVA
         if (!YesNo(who, "CONFIRMAÇÃO FINAL: Apagar permanentemente TODAS as " + guilds_para_apagar.size() + " facções?"))
             SendSysMessage(who, "Ação cancelada.");
             return 0;
-        endif;
+        endif
         
         // Se confirmou tudo, executa a deleção em massa
         DeletarTodasAsFaccoes(who, guilds_para_apagar);
         return 1;
-    endif;
+    endif
     
     // Se o usuário clicou "Não" na primeira pergunta, ele entra no modo de gerenciamento individual.
     SendSysMessage(who, "Entrando no modo de gerenciamento individual de facções.");
@@ -56,7 +56,7 @@ program apagar_todas_faccoes(who)
         if (!guilds_para_gerenciar || guilds_para_gerenciar.size() == 0)
             SendSysMessage(who, "Não há mais facções para gerenciar.");
             break;
-        endif;
+        endif
 
         var resultado_gump := ShowFactionReviewGump(who, guilds_para_gerenciar, pagina_atual, 0); // modo_delecao_total = 0
         
@@ -74,8 +74,8 @@ program apagar_todas_faccoes(who)
                 // A página permanecerá a mesma, e a lista será recarregada no início do próximo loop.
             else
                  SendSysMessage(who, "Erro: Índice de facção inválido.");
-            endif;
-        endif;
+            endif
+        endif
     endwhile;
 
 endprogram
@@ -95,10 +95,10 @@ function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total 
     var total_pages := CInt(guilds_array.size() / ITEMS_PER_PAGE) + 1;
     if (guilds_array.size() > 0 && guilds_array.size() % ITEMS_PER_PAGE == 0)
         total_pages -= 1;
-    endif;
+    endif
     if (total_pages == 0) 
         total_pages := 1; 
-    endif;
+    endif
 
     var y := 70;
     var x := 30;
@@ -115,12 +115,12 @@ function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total 
     var end_index := start_index + ITEMS_PER_PAGE - 1;
     if (end_index > guilds_array.size())
         end_index := guilds_array.size();
-    endif;
+    endif
 
     y += 5;
     for i := start_index to end_index
         var guild_obj := guilds_array[i];
-        if (!guild_obj) continue; endif;
+        if (!guild_obj) continue; endif
         
         var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("ID: " + guild_obj.guildid);
         GFTextLine(gump, x + 25, y, 1153, "• " + guild_name);
@@ -129,7 +129,7 @@ function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total 
         if (!modo_delecao_total)
             // Botão 'X' vermelho para apagar
            GFAddButton(gump, x, y, 11410, 11412, GF_CLOSE_BTN, 100 + i);
-        endif;
+        endif
 
         y += 20;
     endfor;
@@ -144,15 +144,15 @@ function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total 
     else
         GFAddButton(gump, width/2 - 30, y, 246, 248, GF_CLOSE_BTN, 0); // Botão de Sair
         GFTextLine(gump, width/2, y-2, 1153, "Sair");
-    endif;
+    endif
     
     // Botões de Paginação
     if (page > 1)
         GFAddButton(gump, x, y, 4014, 4016, GF_CLOSE_BTN, 3); // Anterior
-    endif;
+    endif
     if (page < total_pages)
         GFAddButton(gump, width-x-20, y, 4005, 4007, GF_CLOSE_BTN, 2); // Próxima
-    endif;
+    endif
 
     var input := GFSendGump(who, gump);
     
@@ -160,7 +160,7 @@ function ShowFactionReviewGump(who, guilds_array, page := 1, modo_delecao_total 
         return CInt(input[0]);
     else
         return struct { "button_id" := CInt(input[0]) };
-    endif;
+    endif
 endfunction
 
 function DeletarTodasAsFaccoes(who, guilds_para_apagar)
@@ -175,7 +175,7 @@ function DeletarTodasAsFaccoes(who, guilds_para_apagar)
         var resultado := RemFaccao(guild_obj);
         if(resultado)
             faccoes_apagadas += 1;
-        endif;
+        endif
         sleepms(100);
     endforeach;
     SendSysMessage(who, "--> Guildas ativas removidas: " + faccoes_apagadas);
@@ -214,7 +214,7 @@ function DeletarTodasAsFaccoes(who, guilds_para_apagar)
                     files_cleaned_count += 1; 
                 endif
             endif
-        endif;
+        endif
         sleepms(10);
     endforeach;
     SendSysMessage(who, "--> Total de arquivos de datafile limpos: " + files_cleaned_count);
@@ -240,7 +240,7 @@ endfunction
  * Função auxiliar para deletar uma facção individualmente
  */
 function DeletarFaccaoIndividual(who, guild_obj)
-    if (!guild_obj) return; endif;
+    if (!guild_obj) return; endif
 
     var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: ("Guilda ID: " + guild_obj.guildid);
 
@@ -252,9 +252,9 @@ function DeletarFaccaoIndividual(who, guild_obj)
             foreach member in members_to_notify
                 if(member && member.connected)
                     SendSysMessage(member, "AVISO: Sua facção, " + guild_name + ", está sendo removida por um administrador.");
-                endif;
+                endif
             endforeach;
-        endif;
+        endif
 
         // Chama a função de remoção centralizada do include de faccao
         var resultado := RemFaccao(guild_obj);
@@ -263,8 +263,8 @@ function DeletarFaccaoIndividual(who, guild_obj)
             LogToFile("faccoes.log", "Facção '" + guild_name + "' (ID: " + guild_obj.guildid + ") apagada individualmente por " + who.name);
         else
             SendSysMessage(who, "--> ERRO ao apagar " + guild_name + ". Verifique os logs.");
-        endif;
+        endif
     else
         SendSysMessage(who, "Deleção de '" + guild_name + "' cancelada.");
-    endif;
+    endif
 endfunction

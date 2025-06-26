@@ -14,7 +14,7 @@ program OnRemove(who, container, item, item_amount, movetype)
     if (container == error)
         LogError("onRemove_ERROR", "OnRemove chamado com container inválido.");
         return 0; // Container é essencial
-    endif;
+    endif
     // 'item' pode ser 'error' se o stack foi completamente removido.
 
     // CASO 1: Remoção pelo sistema (ex: pagamento de caravana)
@@ -22,13 +22,13 @@ program OnRemove(who, container, item, item_amount, movetype)
         var item_desc_sys := "um item desconhecido (possivelmente destruído)";
         if (item && item != error && item.desc) // Verifica se 'item' ainda é um objeto válido
             item_desc_sys := item.desc;
-        endif;
+        endif
         LogInfo("onRemove_SYS", "Sistema removeu '" + item_desc_sys + "' do container " + container.serial);
         // A lógica que chama a remoção pelo sistema (ex: caravan_payment_control)
         // DEVE chamar MarcarRecursosModificados no container apropriado.
         // Não fazemos isso aqui para evitar chamadas duplas.
         return 1;
-    endif; // Fim CASO 1
+    endif // Fim CASO 1
 
     // CASO 2: Remoção por jogador
     // O hook CanRemove já tratou das permissões.
@@ -45,36 +45,36 @@ program OnRemove(who, container, item, item_amount, movetype)
             if (GetObjProperty(item, type_prop))
                 is_tracked_donation_removal := 1;
                 break;
-            endif;
+            endif
         endforeach;
     else
         // Se o item foi completamente removido (item == error)
         if (container.objtype == 0xFF11) // Objtype do baú de doações
             is_tracked_donation_removal := 1;
             LogInfo("onRemove_PLAYER", "Item totalmente removido do baú de doações. Assumindo remoção de recurso rastreado.");
-        endif;
-    endif; // Fim da checagem se item ainda existe
+        endif
+    endif // Fim da checagem se item ainda existe
 
 
     if (is_tracked_donation_removal)
         if (!(who.concealed || who.hidden))
             var item_desc_player := (item && item != error && item.desc ? item.desc : "recursos");
             PrintText(who, "*Removeu " + item_desc_player + " do " + container.desc + "*", 6);
-        endif;
+        endif
 
         var result_mark := MarcarRecursosModificados(container);
         if (result_mark == error)
             LogError("onRemove_ERROR", "Erro ao marcar recursos como modificados para container " + container.serial + " após remoção por " + who.name);
-        endif;
+        endif
 
         var chardata := GetObjProperty(who, "chardata");
         var titulo := "";
         if (chardata && chardata != error)
             titulo := chardata.current_nobility_title ?: chardata.current_professional_position ?: "";
-        endif;
+        endif
         var message := (titulo ? "Você, como " + titulo + ", " : "Você ") + "removeu recursos do tesouro.";
         SendSysMessageEx(who, message, SSM_INFO);
-    endif; // Fim do if (is_tracked_donation_removal)
+    endif // Fim do if (is_tracked_donation_removal)
     
     return 1;
 endprogram

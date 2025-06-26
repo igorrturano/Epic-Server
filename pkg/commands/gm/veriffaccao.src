@@ -11,7 +11,7 @@ program verificar_limpeza(who)
     if (!who || who.cmdlevel < 2)
         SendSysMessage(who, "Apenas administradores podem usar este comando.");
         return 0;
-    endif;
+    endif
 
     SendSysMessage(who, "--- INICIANDO DIAGNÓSTICO DO SISTEMA DE FACÇÕES ---");
     
@@ -21,7 +21,7 @@ program verificar_limpeza(who)
         SendSysMessage(who, "[OK] Nenhuma guilda/facção encontrada no sistema.");
     else
         SendSysMessage(who, "[AVISO] " + guilds.size() + " guildas/facções ainda existem!");
-    endif;
+    endif
     sleepms(100);
 
     // 2. Verificar Datafile de Registro de Guildas
@@ -32,10 +32,10 @@ program verificar_limpeza(who)
             SendSysMessage(who, "[OK] Datafile de registro de guildas está limpo.");
         else
             SendSysMessage(who, "[AVISO] Datafile de registro de guildas contém " + keys.size() + " elementos.");
-        endif;
+        endif
     else
         SendSysMessage(who, "[OK] Datafile de registro de guildas não existe (foi destruído).");
-    endif;
+    endif
     sleepms(100);
 
     // 3. Verificar Datafile de Seriais
@@ -46,10 +46,10 @@ program verificar_limpeza(who)
             SendSysMessage(who, "[OK] Datafile de seriais está limpo.");
         else
             SendSysMessage(who, "[AVISO] Datafile de seriais contém " + keys.size() + " elementos.");
-        endif;
+        endif
     else
         SendSysMessage(who, "[OK] Datafile de seriais não existe (foi destruído).");
-    endif;
+    endif
     sleepms(100);
 
     // 4. Verificar Territórios
@@ -62,8 +62,8 @@ program verificar_limpeza(who)
                 var faccao := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                 if (faccao != DEFAULT_FACTION)
                     territorios_controlados += 1;
-                endif;
-            endif;
+                endif
+            endif
             sleepms(1);
         endforeach;
         
@@ -71,10 +71,10 @@ program verificar_limpeza(who)
             SendSysMessage(who, "[OK] Nenhum território está controlado por uma facção.");
         else
             SendSysMessage(who, "[AVISO] " + territorios_controlados + " territórios ainda estão controlados por facções!");
-        endif;
+        endif
     else
         SendSysMessage(who, "[ERRO] Não foi possível verificar o datafile de territórios.");
-    endif;
+    endif
 
     SendSysMessage(who, "--- DIAGNÓSTICO CONCLUÍDO ---");
 

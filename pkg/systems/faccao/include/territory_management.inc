@@ -1226,7 +1226,7 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         else
             LogError("territorio", "Falha ao remover baú: " + objetos.bau.serial + ", Resultado: " + result);
         endif
-    endif; // Adicionado ponto e vírgula
+    endif // Adicionado ponto e vírgula
 
     // Remover mesa (com verificação)
     if (objetos.mesa && objetos.mesa.serial) // <-- ADICIONADA VERIFICAÇÃO .serial
@@ -1237,7 +1237,7 @@ function TM_DeleteTerritoryObjects(territory_id, faction_name)
         else
             LogError("territorio", "Falha ao remover mesa: " + objetos.mesa.serial + ", Resultado: " + result);
         endif
-    endif;
+    endif
     
     // Remover mesa de inscrição
     if (objetos.mesa_inscricao)
@@ -1656,7 +1656,7 @@ endif
         if (who) SendSysMessage(who, "Erro ao obter centro do território. Transferência cancelada."); endif
         LogError("territorio", "TM_TransferTerritoryFaction: Falha ao obter centro do território");
         return 0;
-    endif;
+    endif
 
     // --- Declaração de variáveis para os objetos ---
     var chest := 0;
@@ -1678,7 +1678,7 @@ endif
         SetName(chest, "Baú de Doações de " + new_faction + " - " + territory_id);
         chest.usescript := ":faccao:baudoacao/use";
         SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
-    endif;
+    endif
 
     // 4.2 Criar a mesa de gestão
     if (!error_msg)
@@ -1691,8 +1691,8 @@ endif
             SetObjProperty(table, TERRITORY_ID_PROP, territory_id);
             SetName(table, "Mesa de Gestão de " + new_faction + " - " + territory_id);
             table.usescript := ":faccao:gestao_use";
-        endif;
-    endif;
+        endif
+    endif
 
     // 4.3 Criar o mural de recrutamento
     if (!error_msg)
@@ -1705,8 +1705,8 @@ endif
             SetObjProperty(mural, TERRITORY_ID_PROP, territory_id);
             SetName(mural, "Mural de Recrutamento de " + new_faction + " - " + territory_id);
             mural.usescript := ":faccao:faccao";
-        endif;
-    endif;
+        endif
+    endif
     
     // 4.4 Criar a mesa de inscrição
     if (!error_msg)
@@ -1719,32 +1719,32 @@ endif
             SetObjProperty(inscricao_table, TERRITORY_ID_PROP, territory_id);
             SetName(inscricao_table, "Mesa de Inscrição [" + new_faction + "]");
             inscricao_table.usescript := ":faccao:mesainscricao";
-        endif;
-    endif;
+        endif
+    endif
 
     // --- Verificação de Falhas ---
     if (error_msg != "")
         LogError("territorio", "TM_TransferTerritoryFaction: " + error_msg);
         if (who) SendSysMessage(who, "Erro na criação de objetos: " + error_msg + ". Revertendo."); endif
         
-        if (chest) DestroyItem(chest); endif;
-        if (table) DestroyItem(table); endif;
-        if (mural) DestroyItem(mural); endif;
-        if (inscricao_table) DestroyItem(inscricao_table); endif;
+        if (chest) DestroyItem(chest); endif
+        if (table) DestroyItem(table); endif
+        if (mural) DestroyItem(mural); endif
+        if (inscricao_table) DestroyItem(inscricao_table); endif
         
         DesfazerTransacao(transaction_id);
         return 0;
-    endif;
+    endif
 
     // --- 4.5 Salvar os seriais no datafile (VERSÃO SEGURA) ---
     var object_serials_struct := struct;
     object_serials_struct.+faction := new_faction;
     
     // Adiciona o serial de cada objeto APENAS se ele foi criado com sucesso
-    if(chest) object_serials_struct.+bau := chest.serial; endif;
-    if(table) object_serials_struct.+mesa := table.serial; endif;
-    if(mural) object_serials_struct.+mural := mural.serial; endif;
-    if(inscricao_table) object_serials_struct.+mesa_inscricao := inscricao_table.serial; endif;
+    if(chest) object_serials_struct.+bau := chest.serial; endif
+    if(table) object_serials_struct.+mesa := table.serial; endif
+    if(mural) object_serials_struct.+mural := mural.serial; endif
+    if(inscricao_table) object_serials_struct.+mesa_inscricao := inscricao_table.serial; endif
     
     var register_result := TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
     
@@ -1753,7 +1753,7 @@ endif
         DesfazerTransacao(transaction_id);
         if (who) SendSysMessage(who, "Erro ao registrar seriais. Transferência revertida."); endif
         return 0;
-    endif;
+    endif
     
     // Etapa 5: Notificar os sistemas sobre a mudança.
     TM_NotifyTerritoryChange(territory_id, "transfer", struct{"old_faction" := old_faction, "new_faction" := new_faction});

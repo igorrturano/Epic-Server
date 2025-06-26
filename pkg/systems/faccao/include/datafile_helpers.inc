@@ -39,7 +39,7 @@ function SafeOpenDataFile(datafile_name, create := 0)
     // Força a criação se o datafile estiver na lista crítica.
     if (datafile_name in critical_datafiles)
         create := 1;
-    endif;
+    endif
 
     var df;
     

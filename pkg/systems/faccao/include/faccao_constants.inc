@@ -69,7 +69,7 @@ const GUILD_RESOURCES_PROP := "faction_resources";
 // Constantes para sistema de cache
 // =======================================
 
-const CACHE_EXPIRY_TIME := 300;
+const CACHE_EXPIRY_TIME := 90;
 const DATAFILE_UPDATE_INTERVAL := 1800;
 const CACHE_PROP_NAME := "recursos_cache";
 const CACHE_UPDATE_PROP := "recursos_ultimo_update";

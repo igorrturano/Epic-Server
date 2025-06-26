@@ -689,7 +689,7 @@ function DestruirObjetosTerritorio(territorio_id, faction)
 endfunction
 
 function DisplayRectangleDetails(who, elem)
-if (!elem) return; endif;
+if (!elem) return; endif
     var width := 400;
     var height := 380;
     var name := GetElementProp(elem, "Name", "");
@@ -941,7 +941,7 @@ function CreateTerritoryTotem(who, elem)
     if (!elem)
         SendSysMessage(who, "Erro interno: Referência de território inválida.");
         return 0;
-    endif;
+    endif
 
     var totem := CreateItemInBackpack(who, 0xA102, 1); // TotemDeAquisicao
     if (!totem)
@@ -959,7 +959,7 @@ function CreateTerritoryTotem(who, elem)
         SendSysMessage(who, "Erro: O território '" + territory_name + "' não possui um ID válido. Ação cancelada.");
         DestroyItem(totem);
         return 0;
-    endif;
+    endif
     
     LogDebug("rectangles_DEBUG", $"Preparando para configurar totem para Território '{territory_name}' com ID '{territory_id}'");
     
