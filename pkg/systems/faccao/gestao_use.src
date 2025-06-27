@@ -466,8 +466,30 @@ function MostrarMapaTerritorio(who, index_territorio_clicado_no_gump_anterior, i
         y_gump += 20;
     else
         GFTextLine(gump_mapa, 30, y_gump, 1153, "Capital da Facção (Destino das Caravanas): " + capital_da_faccao_info.name);
+        
+        // ========================================================
+        // >>>>> INÍCIO DA MELHORIA: EXIBIR SALDO <<<<<
+        // ========================================================
+        var capital_chest := FindFactionChest(mesa_faction_name, capital_da_faccao_info.id);
+        var saldo_capital := 0;
+        if (capital_chest)
+            // Usar a função que você já tem para contar moedas
+            saldo_capital := CalculaRecursosDisponiveis(capital_chest);
+        endif
+
+        GFTextLine(gump_mapa, 350, y_gump, 1153, "Saldo da Capital: " + saldo_capital + " moedas");
+        // ========================================================
+        // >>>>> FIM DA MELHORIA <<<<<
+        // ========================================================
+        
         y_gump += 25;
     endif
+
+    GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB - 100, gump_width - 40, 2);
+    y_gump += 15;
+    GFTextLine(gump_mapa, 30, y_gump, 1153, "Territórios de Origem da Facção (" + mesa_faction_name + "):");
+    y_gump += 25;
+
 
     GFResizePic(gump_mapa, 20, y_gump, BKGND_STONESLAB - 100, gump_width - 40, 2);
     y_gump += 15;

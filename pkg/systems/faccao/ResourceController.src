@@ -19,7 +19,7 @@ include ":attributes:attributes"; // Se usado por algum include indireto
 
     // Lista para rastrear o próximo território a ser verificado
     var next_territory_checks := dictionary{};
-
+    var g_retry_queue := dictionary{};
 
 function RegisterProcessFast()
     var registration_result := RegisterProcess("ResourceController");
@@ -38,24 +38,22 @@ function RegisterProcessFast()
 endfunction
 
 program ResourceController()
+    // ========================================================
+    // >>>>> INÍCIO DA CORREÇÃO (DECLARAÇÃO DE CONSTANTES) <<<<<
+    // ========================================================
+    const CHECK_INTERVAL := 83;
+    const RELOAD_INTERVAL := 300;
+    const RETRY_QUEUE_INTERVAL := 10;
+    // ========================================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ========================================================
+
     LogInfo("ResourceController", "=== INICIANDO RESOURCECONTROLLER (PID: " + GetPid() + ") ===");
 
-    // ========================================================
-    // >>>>> INÍCIO DA MUDANÇA <<<<<
-    // ========================================================
-    // REMOVIDO: ForcedSystemCleanup(); 
-    // O sistema de registro com heartbeat já lida com processos zumbis.
-    // Esta chamada estava causando uma condição de corrida com o start.src.
-
-    // Tenta se registrar. Se falhar, encerra.
     if (!RegisterProcessFast())
         return 0;
     endif
-    // ========================================================
-    // >>>>> FIM DA MUDANÇA <<<<<
-    // ========================================================
 
-    // O código abaixo permanece o mesmo
     var controller_pid := GetPid();
     var pid_result := SetGlobalProperty("ResourceControllerPID", controller_pid);
     if (pid_result == error)
@@ -76,10 +74,6 @@ program ResourceController()
     LogInfo("recursos", "Iniciando Controlador de Recursos de Territórios...");
     LoadAllTerritories();
     LogInfo("ResourceController", "Territórios carregados: " + next_territory_checks.size());
-
-    // Constantes do loop principal
-    const CHECK_INTERVAL := 30;
-    const RELOAD_INTERVAL := 300;
     
     var last_reload_time := polcore().systime;
 
@@ -87,56 +81,58 @@ program ResourceController()
         var loop_start_time := polcore().systime;
         UpdateProcessHeartbeat("ResourceController");
 
-        // 1. Processar eventos pendentes primeiro
         ProcessPendingEvents();
 
-        // 2. Recarregar lista de territórios periodicamente
         if (loop_start_time - last_reload_time > RELOAD_INTERVAL)
             LogInfo("ResourceController_Loop", "Recarregando lista completa de territórios...");
             LoadAllTerritories();
             last_reload_time := loop_start_time;
         endif
 
-        // 3. Otimização
-        if (next_territory_checks.size() == 0)
-            LogDebug("ResourceController_Loop", "Nenhum território agendado. Aguardando " + CHECK_INTERVAL + "s.");
+        ProcessRetryQueue();
+
+        if (next_territory_checks.size() == 0 && g_retry_queue.size() == 0)
+            LogDebug("ResourceController_Loop", "Nenhum território agendado ou em retentativa. Aguardando " + CHECK_INTERVAL + "s.");
             Sleep(CHECK_INTERVAL);
             continue;
         endif
         
-        // 4. Obter territórios devidos
         var territories_to_process := GetTerritoriesDueForCheck(loop_start_time);
         
         if (territories_to_process.size() > 0)
             LogInfo("ResourceController_Loop", territories_to_process.size() + " territórios prontos para gerar recursos.");
             
-            // 5. Processar cada território
             foreach territory_id in territories_to_process
                 ProcessTerritory(territory_id, loop_start_time);
                 SleepMS(150);
             endforeach
         endif
 
-        // 6. Calcular tempo de espera
         var wait_time := GetTimeForNextDue(loop_start_time, CHECK_INTERVAL);
         
+        if (wait_time > RETRY_QUEUE_INTERVAL)
+            wait_time := RETRY_QUEUE_INTERVAL;
+        endif
+        if(wait_time < 1)
+            wait_time := 1;
+        endif
+
         LogDebug("ResourceController_Loop", "Próxima verificação em " + wait_time + " segundos. Indo para Sleep.");
         Sleep(wait_time);
     endwhile
 endprogram
 
-// Adicionada função para calcular o tempo de espera de forma mais inteligente
 function GetTimeForNextDue(current_time, default_wait)
-    var next_due_time := current_time + default_wait * 10; // Um valor alto inicial
+    var next_due_time := current_time + default_wait * 10;
     var found_due := 0;
 
     if (next_territory_checks.size() == 0)
-        return default_wait; // Se não há territórios, espera o padrão
+        return default_wait;
     endif
 
     foreach territory_id_key in (next_territory_checks.keys())
         var check_time_val := CInt(next_territory_checks[territory_id_key]);
-        if (check_time_val > current_time) // Apenas considerar agendamentos futuros
+        if (check_time_val > current_time)
             if (check_time_val < next_due_time)
                 next_due_time := check_time_val;
                 found_due := 1;
@@ -146,11 +142,12 @@ function GetTimeForNextDue(current_time, default_wait)
 
     if (found_due)
         var time_to_wait := next_due_time - current_time;
-        return (time_to_wait > 0 ? time_to_wait : 1); // Espera pelo menos 1 segundo
+        return (time_to_wait > 0 ? time_to_wait : 1);
     else
-        return default_wait; // Se todos já passaram ou não há futuros, espera o padrão
+        return default_wait;
     endif
 endfunction
+
 
 function ProcessPendingEvents()
     var df := SafeOpenDataFile(":faccao:messages");
@@ -189,10 +186,6 @@ function ProcessPendingEvents()
                     LogInfo("ResourceController_EventDetail", "Evento de reload recebido. Recarregando territórios...");
                     LoadAllTerritories();
                     event_handled_successfully := 1;
-                
-                // =======================================================
-                // >> INÍCIO DA CORREÇÃO <<
-                // =======================================================
                 "caravan_activated_from_territory":
                     if (ev_data.data && ev_data.data.faction && ev_data.data.capital_territory_id && ev_data.data.active_until_next_payment)
                         LogInfo("ResourceController_Caravana", "Evento CARAVANA ATIVADA para Facção: " + ev_data.data.faction);
@@ -200,20 +193,13 @@ function ProcessPendingEvents()
                         if (!caravan_info_global || caravan_info_global == error)
                             caravan_info_global := dictionary{};
                         endif
-                        
-                        // Armazena a informação da caravana indexada pela facção
-                        caravan_info_global[ev_data.data.faction] := struct{
-                            "capital_id"   := CStr(ev_data.data.capital_territory_id),
-                            "active_until" := CInt(ev_data.data.active_until_next_payment)
-                        };
-                        
+                        caravan_info_global[ev_data.data.faction] := struct{ "capital_id" := CStr(ev_data.data.capital_territory_id), "active_until" := CInt(ev_data.data.active_until_next_payment) };
                         SetGlobalProperty("active_caravans", caravan_info_global);
                         LogInfo("ResourceController_Caravana", "GlobalProperty 'active_caravans' atualizada para facção " + ev_data.data.faction);
                     else
                         LogWarning("ResourceController_Caravana", "Evento caravan_activated_from_territory recebido com dados insuficientes: " + ev_data);
                     endif
                     event_handled_successfully := 1;
-
                 "caravan_deactivated_from_territory":
                     if (ev_data.data && ev_data.data.faction)
                         LogInfo("ResourceController_Caravana", "Evento CARAVANA DESATIVADA para Facção: " + ev_data.data.faction);
@@ -227,11 +213,6 @@ function ProcessPendingEvents()
                         LogWarning("ResourceController_Caravana", "Evento caravan_deactivated_from_territory recebido com dados insuficientes: " + ev_data);
                     endif
                     event_handled_successfully := 1;
-
-                // =======================================================
-                // >> FIM DA CORREÇÃO <<
-                // =======================================================
-
                 default:
                     LogWarning("ResourceController_EventDetail", "Tipo de evento DESCONHECIDO no datafile: '" + ev_data.type + "' para território '" + ev_data.territory_id + "'. Evento será DESCARTADO.");
                     event_handled_successfully := 1; 
@@ -253,23 +234,23 @@ function ProcessPendingEvents()
     LogInfo("ResourceController_Event", "Processamento de eventos concluído. Total: " + events.size() + ". Processados/Descartados: " + processed_events_count + ". Restantes: " + remaining_events_list.size());
 endfunction
 
+
 function UpdateTerritorySchedule(territory_id_to_update)
     LogInfo("ResourceController_Schedule", "Tentando atualizar agenda para ID: " + territory_id_to_update);
     
     var elem := TM_FindTerritory(territory_id_to_update); 
-      if (elem)
+    if (elem)
         var friendly_name_for_log := GetElementProp(elem, "Name", territory_id_to_update); 
         var faction := GetTerritoryFaction(elem);
-        
         var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
         
         if (faction && faction != DEFAULT_FACTION)
             var schedule_time_val := 0;
             if (next_time_from_prop)
                 schedule_time_val := CInt(next_time_from_prop);
-            endif // Adicionado endif faltante
+            endif
 
-            if (schedule_time_val) 
+            if (schedule_time_val > 0) 
                 LogInfo("ResourceController_Schedule", "Adicionando/Atualizando ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') na agenda. Próximo Check: " + schedule_time_val);
                 next_territory_checks[territory_id_to_update] := schedule_time_val;
             else
@@ -278,71 +259,60 @@ function UpdateTerritorySchedule(territory_id_to_update)
                 SetElementProp(elem, "NextResourceTime", calculated_next_time); 
                 next_territory_checks[territory_id_to_update] := calculated_next_time;
                 LogInfo("ResourceController_Schedule", "Configurando agendamento inicial para ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') para " + calculated_next_time + " (em " + interval_minutes + " min).");
-            endif // Fechando o if (schedule_time_val)
+            endif
             return 1; 
         else 
             if (next_territory_checks.exists(territory_id_to_update))
                 LogInfo("ResourceController_Schedule", "Removendo ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') da agenda (Facção: " + (faction ? faction : "N/A") + " - não ativa para recursos).");
                 next_territory_checks.erase(territory_id_to_update);
-            endif // Adicionado endif faltante
+            endif
             return 0; 
-        endif // Fechando o if (faction && ...)
+        endif
     else 
         if (next_territory_checks.exists(territory_id_to_update))
             LogWarning("ResourceController_Schedule", "Território ID '" + territory_id_to_update + "' não encontrado via TM_FindTerritory. Removendo da agenda.");
             next_territory_checks.erase(territory_id_to_update);
-        endif // Adicionado endif faltante
+        endif
         return 0; 
-    endif // Fechando o if (elem)
+    endif
 endfunction
 
 
 
 
 
-    // Função GetTerritoriesDueForCheck modificada - Adicionar log mais detalhado
-    function GetTerritoriesDueForCheck(current_time)
-        var due_territories := array{};
-        var window_size := 60; // 1 minuto de janela
+function GetTerritoriesDueForCheck(current_time)
+    var due_territories := array{};
+    var window_size := 60;
+    
+    LogDebug("ResourceController_DEBUG", "Verificando territórios com next_territory_checks.size() = " + next_territory_checks.size());
+    
+    foreach territory_name in (next_territory_checks.keys())
+        var check_time := next_territory_checks[territory_name];
         
-        // Log DEBUG
-        LogDebug("ResourceController_DEBUG", "Verificando territórios com next_territory_checks.size() = " + next_territory_checks.size());
+        LogDebug("ResourceController_DEBUG", "Território: " + territory_name + ", CheckTime: " + check_time + ", CurrentTime: " + current_time);
         
-        foreach territory_name in (next_territory_checks.keys())
-            var check_time := next_territory_checks[territory_name];
-            
-            // Log detalhado para cada verificação
-            LogDebug("ResourceController_DEBUG", "Território: " + territory_name + ", CheckTime: " + check_time + ", CurrentTime: " + current_time);
-            
-            // Se está no intervalo de verificação
-            if (check_time <= current_time + window_size)
-                LogDebug("ResourceController_DEBUG", "Adicionando território: " + territory_name + " à lista de verificação");
-                due_territories.append(territory_name);
-            endif
-            
-            sleepms(2);
-        endforeach
-        
-        LogDebug("ResourceController_DEBUG", "GetTerritoriesDueForCheck: Encontrados " + due_territories.size() + " territórios para verificar");
-        return due_territories;
-    endfunction
+        if (check_time <= current_time + window_size)
+            LogDebug("ResourceController_DEBUG", "Adicionando território: " + territory_name + " à lista de verificação");
+            due_territories.append(territory_name);
+        endif
+        sleepms(2);
+    endforeach
+    
+    LogDebug("ResourceController_DEBUG", "GetTerritoriesDueForCheck: Encontrados " + due_territories.size() + " territórios para verificar");
+    return due_territories;
+endfunction
 
-    // Início da função ProcessTerritory modificada - Adicionar mais logs
+
 function ProcessTerritory(territory_id_param, current_time) 
     LogDebug("ProcessTerritory_DEBUG", "-- Iniciando ProcessTerritory para ID: " + territory_id_param + " (CurrentTime: " + current_time + ") --");
     
-    if (!territory_id_param)
-        LogError("ProcessTerritory_DEBUG", "territory_id_param é nulo ou inválido");
-        return 0;
-    endif
-    
-    if (TypeOf(territory_id_param) != "String")
-        LogError("ProcessTerritory_DEBUG", "territory_id_param não é String, é " + TypeOf(territory_id_param));
+    if (!territory_id_param || TypeOf(territory_id_param) != "String")
+        LogError("ProcessTerritory_DEBUG", "territory_id_param é nulo ou inválido. Tipo: " + TypeOf(territory_id_param));
         return 0;
     endif
 
     var elem := TM_FindTerritory(territory_id_param); 
-    
     if (!elem)
         LogWarning("ProcessTerritory_DEBUG", "Elemento para ID '" + territory_id_param + "' não encontrado via TM_FindTerritory. Removendo da agenda.");
         if (next_territory_checks.exists(territory_id_param))
@@ -352,22 +322,17 @@ function ProcessTerritory(territory_id_param, current_time)
     endif
 
     var territory_name_for_log := GetElementProp(elem, "Name", territory_id_param);
-
-    var next_time_prop := GetElementProp(elem, "NextResourceTime");
-    var next_time_val := 0;
-    if (next_time_prop)
-        next_time_val := CInt(next_time_prop);
-    endif
+    var next_time_val := CInt(GetElementProp(elem, "NextResourceTime"));
 
     if (next_time_val > current_time)
         LogDebug("ProcessTerritory_DEBUG", "Território '" + territory_name_for_log + "' (ID: "+territory_id_param+") ainda não está na hora (Next: " + next_time_val + ", Current: " + current_time + "). Reagendando para " + next_time_val + " se necessário.");
         if (!next_territory_checks.exists(territory_id_param) || next_territory_checks[territory_id_param] != next_time_val)
              next_territory_checks[territory_id_param] := next_time_val; 
         endif
-        return 1;    endif
+        return 1;
+    endif
 
     var faction := GetTerritoryFaction(elem);
-    
     var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
     var resources_string := GetElementProp(elem, "Resources");
     var resources_array := ProcessResourceString(resources_string);
@@ -390,13 +355,8 @@ function ProcessTerritory(territory_id_param, current_time)
     next_territory_checks[territory_id_param] := next_generation_schedule; 
     LogDebug("ProcessTerritory_DEBUG", "Próxima geração para '" + territory_name_for_log + "' (ID: " + territory_id_param + ") agendada para " + next_generation_schedule + " (em " + (validated_interval * 60) + "s).");
 
-    // Bloco if (success_count > 0) foi movido para dentro de GenerateResourcesForTerritory
-    // para garantir que NotifyFactionLeadersOfResourceGeneration só seja chamado se a geração ocorreu.
-    // Aqui, a responsabilidade de ProcessTerritory é chamar a geração e reagendar.
-
     return success_count; 
 endfunction
-
 
 // Adicionar função RescheduleTerritoryWithPenalty
 function RescheduleTerritoryWithPenalty(territory_id, byref elem, current_time, penalty_minutes := 5)
@@ -639,16 +599,26 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
     var current_time_lock := polcore().systime;
 
     // 1. VERIFICAR LOCK
-    var existing_lock := GetObjProperty(donation_chest, lock_prop);
-    if (existing_lock)
-        if (current_time_lock - CInt(existing_lock.timestamp) < lock_timeout)
-            LogWarning("recursos_gen", "Baú " + donation_chest.serial + " está bloqueado por outra operação ("+existing_lock.operation+"). Geração de recursos para '" + territory_name_from_elem + "' adiada.");
-            return 0; // Adia a geração para o próximo ciclo
-        else
-            LogWarning("recursos_gen", "Lock expirado encontrado no baú. Limpando e prosseguindo...");
-            EraseObjProperty(donation_chest, lock_prop);
-        endif
+var existing_lock := GetObjProperty(donation_chest, lock_prop);
+if (existing_lock)
+    if (current_time_lock - CInt(existing_lock.timestamp) < lock_timeout)
+        // ========================================================
+        // >>>>> INÍCIO DA CORREÇÃO (ADICIONAR À FILA) <<<<<
+        // ========================================================
+        LogWarning("recursos_gen", "Baú " + donation_chest.serial + " está bloqueado por outra operação ("+existing_lock.operation+"). Geração de recursos para '" + territory_name_from_elem + "' ADICIONADA À FILA DE RETENTATIVA.");
+        
+        // Adiciona à fila de retentativa com um timestamp para tentar novamente em breve
+        g_retry_queue[territory_id_from_elem] := current_time_lock + 15; // Tentar de novo em 15 segundos
+
+        return 0; // Adia a geração para a retentativa
+        // ========================================================
+        // >>>>> FIM DA CORREÇÃO <<<<<
+        // ========================================================
+    else
+        LogWarning("recursos_gen", "Lock expirado encontrado no baú. Limpando e prosseguindo...");
+        EraseObjProperty(donation_chest, lock_prop);
     endif
+endif
 
     // 2. ADQUIRIR LOCK
     var lock_data := struct{
@@ -1243,8 +1213,8 @@ function LoadAllTerritories()
         endif
         
         var territory_id_for_schedule := GetElementProp(elem, TERRITORY_ID_PROP, element_name_key);
-        var friendly_name_for_log := GetElementProp(elem, "Name", element_name_key);        var faction := GetTerritoryFaction(elem);
-        
+        var friendly_name_for_log := GetElementProp(elem, "Name", element_name_key);
+        var faction := GetTerritoryFaction(elem);
         var resources_str := GetElementProp(elem, "Resources");
         
         LogDebug("ResourceController_Load", "Verificando Elemento: '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + "), Facção: " + (faction ? faction : "N/A") + ", Recursos: " + (resources_str ? resources_str : "N/A"));
@@ -1254,29 +1224,22 @@ function LoadAllTerritories()
             territories_loaded_count +=1;
 
             var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
-            var schedule_this_check_at := 0;
-
-            if (next_time_from_prop)
-                schedule_this_check_at := CInt(next_time_from_prop);
-            endif // Adicionado endif faltante
+            var schedule_this_check_at := CInt(next_time_from_prop);
             
             var interval_minutes := GetValidatedResourceInterval(elem); 
             var calculated_next_ideal_check := current_time + (interval_minutes * 60);
 
-            if (!schedule_this_check_at || schedule_this_check_at <= current_time)
-                // Se não há agendamento ou já passou da hora, verificar "agora" (ou o mais breve possível, current_time)
-                // E definir o NextResourceTime no datafile para o próximo ciclo real.
+            if (schedule_this_check_at <= 0 || schedule_this_check_at <= current_time)
                 LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") será verificado AGORA. Próximo ciclo real em " + interval_minutes + " min.");
-                next_territory_checks[territory_id_for_schedule] := current_time; // Agendar para o ciclo atual
-            elseif (schedule_this_check_at > (current_time + (1440 * 60 * 2))) // Se agendado para mais de 2 dias no futuro (erro provável)
+                next_territory_checks[territory_id_for_schedule] := current_time;
+            elseif (schedule_this_check_at > (current_time + (1440 * 60 * 2)))
                 LogWarning("ResourceController_Load", "NextResourceTime para '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") está muito distante ("+schedule_this_check_at+"). Recalculando e corrigindo para " + interval_minutes + " min a partir de agora.");
                 next_territory_checks[territory_id_for_schedule] := calculated_next_ideal_check;
-                SetElementProp(elem, "NextResourceTime", calculated_next_ideal_check); // Corrigir no datafile
+                SetElementProp(elem, "NextResourceTime", calculated_next_ideal_check);
             else
-                // Agendamento futuro válido, usar o valor do datafile.
                 LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") corretamente agendado para " + schedule_this_check_at + " (em " + (schedule_this_check_at - current_time) + "s)");
                 next_territory_checks[territory_id_for_schedule] := schedule_this_check_at;
-            endif // Fechando o if/elseif/else
+            endif
         else
             LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") IGNORADO (sem facção válida ou recursos).");
         endif
@@ -1329,4 +1292,33 @@ function FormatTimeA(timestamp)
     else
         return minutes + "m";
     endif
+endfunction
+
+
+function ProcessRetryQueue()
+    if (g_retry_queue.size() == 0)
+        return;
+    endif
+
+    LogInfo("ResourceController_Retry", "Processando fila de retentativas (" + g_retry_queue.size() + " territórios).");
+    
+    var current_time := polcore().systime;
+    var processed_in_this_cycle := array{};
+
+    foreach territory_id in (g_retry_queue.keys())
+        var retry_time := g_retry_queue[territory_id];
+        
+        if (current_time >= retry_time)
+            LogDebug("ResourceController_Retry", "Tentando reprocessar território: " + territory_id);
+            ProcessTerritory(territory_id, current_time);
+            processed_in_this_cycle.append(territory_id);
+        endif
+        SleepMS(10);
+    endforeach
+    
+    foreach territory_id in processed_in_this_cycle
+        if (g_retry_queue.exists(territory_id))
+            g_retry_queue.erase(territory_id);
+        endif
+    endforeach
 endfunction

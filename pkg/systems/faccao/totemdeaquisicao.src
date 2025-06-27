@@ -23,7 +23,7 @@ program TotemDeAquisicao(who, totem)
     if (!who || !totem)
         LogError("faccao", "TotemDeAquisicao: Parâmetros inválidos (who ou totem nulo).");
         return 0;
-    endif
+    endif;
     
     var rect_name := GetObjProperty(totem, TERRITORY_NAME_PROP);
     var territory_id := GetObjProperty(totem, TERRITORY_ID_PROP);
@@ -31,13 +31,13 @@ program TotemDeAquisicao(who, totem)
     if (!rect_name || !territory_id)
         SendSysMessage(who, "Totem inválido.");
         return 0;
-    endif
+    endif;
     
     var territory_info_from_datafile := TM_GetTerritoryInfo(territory_id);
     if (!territory_info_from_datafile)
         SendSysMessage(who, "Território referenciado por este totem não existe mais no sistema.");
         return 0;
-    endif
+    endif;
 
     rect_name := territory_info_from_datafile.name; // Garante que estamos usando o nome atualizado
     
@@ -45,98 +45,98 @@ program TotemDeAquisicao(who, totem)
     if (!guild)
         SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
         return 0;
-    endif
+    endif;
     
     var guild_obj_info := GetFaccao(guild); 
     if (!guild_obj_info || guild_obj_info.leader != who.serial)
         SendSysMessage(who, "Apenas o líder da facção pode reivindicar territórios.");
         return 0;
-    endif
+    endif;
     
     var territorio_elem := TM_FindTerritory(territory_id); 
     if (!territorio_elem)
         SendSysMessage(who, "Erro interno ao processar o território. Avise um administrador.");
         return 0;
-    endif
+    endif;
     
     if (territory_info_from_datafile.faction && territory_info_from_datafile.faction != DEFAULT_FACTION)
         SendSysMessage(who, "Este território já está reivindicado por: " + territory_info_from_datafile.faction);
         return 0;
-    endif
+    endif;
     
     var player_faction_name := GetPlayerFaction(who); 
-    if (!player_faction_name) player_faction_name := "Desconhecido"; endif
+    if (!player_faction_name)
+        player_faction_name := "Desconhecido";
+    endif;
     
+    // --- LÓGICA DE CULTURA E ESTANDARTE CORRIGIDA ---
+    
+    // 1. CULTURA: Verifica e, se necessário, solicita a escolha.
     var cultura_final_reino := SafeGetGuildProperty(guild, "culture", "");
     if (!cultura_final_reino)
         cultura_final_reino := SelectKingdomCulture(who);
         if (!cultura_final_reino)
             SendSysMessage(who, "Você cancelou a seleção de cultura. Aquisição de território cancelada.");
             return 0;
-        endif
+        endif;
         guild.SetProp("culture", cultura_final_reino);
-    endif
+    endif;
 
-    var estandarte_escolhido := 0;
-    var compra_banner := ConfirmBannerPurchase(who);
-    if (compra_banner == 1)
-        estandarte_escolhido := SelectKingdomBanner(who);
-        if (estandarte_escolhido == 0)
-            SendSysMessage(who, "Seleção de estandarte cancelada, mas as moedas já foram debitadas.");
+    // 2. ESTANDARTE: Verifica e, se necessário, oferece a compra/seleção.
+    var estandarte_escolhido := CInt(SafeGetGuildProperty(guild, "kingdom_banner_graphic", 0));
+    if (!estandarte_escolhido)
+        var compra_banner := ConfirmBannerPurchase(who);
+        if (compra_banner == 1)
+            estandarte_escolhido := SelectKingdomBanner(who);
+            if (estandarte_escolhido)
+                guild.SetProp("kingdom_banner_graphic", estandarte_escolhido);
+            else
+                SendSysMessage(who, "Seleção de estandarte cancelada. Nenhum estandarte será criado desta vez.");
+            endif;
+        elseif (compra_banner == -1)
+            SendSysMessage(who, "Operação cancelada.");
             return 0;
-        endif
-    elseif (compra_banner == -1)
-        SendSysMessage(who, "Operação cancelada.");
-        return 0;
-    endif
+        endif;
+    endif;
+    
+    // --- FIM DA LÓGICA CORRIGIDA ---
     
     TM_SetTerritoryFaction(territory_id, player_faction_name);
     
-    // Adicionar território à lista da facção
     var territories_list := guild.GetProp("territories");
     if (!territories_list || territories_list == error || TypeOf(territories_list) != "Array")
         territories_list := array{};
-    endif
+    endif;
 
-    // Limpar a lista de quaisquer entradas inválidas antes de adicionar
     var cleaned_territories_list := array{};
     foreach terr_item_loop_local in territories_list 
         if (TypeOf(terr_item_loop_local) == "String" && terr_item_loop_local != "")
             cleaned_territories_list.append(terr_item_loop_local);
-        endif
+        endif;
     endforeach;
     territories_list := cleaned_territories_list;
 
-    // Adicionar o novo território se ele já não estiver na lista
     var territory_exists_in_list := 0; 
     foreach terr_check_loop_local in territories_list 
         if (terr_check_loop_local == territory_id) 
             territory_exists_in_list := 1;
             break;
-        endif
+        endif;
     endforeach;
 
     if (!territory_exists_in_list)
         territories_list.append(territory_id); 
-    endif
+    endif;
 
     guild.SetProp("territories", territories_list);
     
-    // ========================================================
-    // >>>>> INÍCIO DA LÓGICA DE CAPITAL AUTOMÁTICA <<<<<
-    // ========================================================
-    // A lista agora contém o novo território. Se o tamanho for 1, é o primeiro.
     if (territories_list.size() == 1)
         SendSysMessage(who, "Como este é o primeiro território do seu reino, '" + rect_name + "' foi automaticamente designada como sua capital!", 3, 53);
         TM_SetTerritoryAsCapital(territory_id, player_faction_name);
-    endif
-    // ========================================================
-    // >>>>> FIM DA LÓGICA DE CAPITAL AUTOMÁTICA <<<<<
-    // ========================================================
+    endif;
     
     CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, cultura_final_reino, estandarte_escolhido);
     
-    // Configurar e notificar recursos
     var recursos_atuais_prop := GetElementProp(territorio_elem, "Resources", "");
     if (!recursos_atuais_prop) 
         var default_resources_list := SplitWords("ironore, couroespesso, cogumelo", ","); 
@@ -145,7 +145,7 @@ program TotemDeAquisicao(who, totem)
         var interval_prop := CInt(GetElementProp(territorio_elem, "ResourceInterval", 2)); 
         var next_time_calc := polcore().systime + (interval_prop * 60); 
         SetElementProp(territorio_elem, "NextResourceTime", next_time_calc);
-    endif
+    endif;
     
     var notify_data := struct;
     notify_data.+name := rect_name;

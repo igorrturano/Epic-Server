@@ -233,68 +233,51 @@ const GUILD_XP_HISTORY_PROP := "guild_xp_history";
  * Return:
  *   1 se sucesso, 0 se falha ou se a guild não pode ganhar XP.
  */
+
+
 function AddGuildXP(who, xp_amount)
     if (!who || !who.guild || xp_amount <= 0)
         return 0;
-    endif
+    endif;
     
     var guild := who.guild;
+    var guild_name := SafeGetGuildName(guild);
 
-    // ==========================================================
-    // >>>>> INÍCIO DA VERIFICAÇÃO DE INADIMPLÊNCIA <<<<<
-    // ==========================================================
-    // Verifica se a guilda tem pontos de inadimplência.
+    // Verificação de inadimplência
     var pontos_inadimplencia := CInt(SafeGetGuildProperty(guild, "pontos_inadimplencia", 0));
     if (pontos_inadimplencia > 0)
-        // A facção está em débito, então não ganha XP.
-        // Envia a mensagem para o jogador TODA VEZ que ele ganha XP.
-        SendSysMessage(who, "Seu reino não evoluirá por que está com débitos de upkeep.", 3, 38);
-        
-        // Log para o servidor (opcional, mas bom para depuração)
-        LogDebug("guild_xp", "Ganho de XP para a facção '" + SafeGetGuildName(guild) + "' bloqueado (inadimplente com " + pontos_inadimplencia + " pontos).");
-        return 0; // Impede o ganho de XP e encerra a função.
-    endif
-    // ==========================================================
-    // >>>>> FIM DA VERIFICAÇÃO DE INADIMPLÊNCIA <<<<<
-    // ==========================================================
+        SendSysMessage(who, "Seu reino não evoluirá porque está com débitos de upkeep.", 3, 38);
+        return 0;
+    endif;
 
-    // Verifica se a guilda possui territórios antes de conceder XP.
-    var territories := guild.GetProp("territories");
-    if (!territories || territories == error || TypeOf(territories) != "Array" || territories.size() == 0)
-        // A facção não tem territórios, então não ganha XP de reino.
+    // Verificação robusta de posse de território
+    LogCritical("AddGuildXP_DEBUG", "Verificando contagem de territórios para '" + guild_name + "' usando GetFactionTerritoryCount...");
+    if (GetFactionTerritoryCount(guild_name) == 0)
         SendSysMessage(who, "Seu reino não ganhou XP porque não controla nenhum território.", 3, 38);
-        LogDebug("guild_xp", "Tentativa de ganho de XP para a facção '" + SafeGetGuildName(guild) + "' ignorada (sem territórios).");
+        LogCritical("AddGuildXP_DEBUG", "Tentativa de ganho de XP para '" + guild_name + "' ignorada (sem territórios, verificado via datafile).");
         return 0; 
-    endif
+    endif;
     
     // O resto da função continua normalmente...
-
-    var guild_name := SafeGetGuildName(guild);
     var guild_culture := SafeGetGuildProperty(guild, "culture", "");
+    LogDebug("guild_xp", "Processando XP para guild " + guild_name + " (" + guild_culture + ")");
     
-    LogDebug("guild_xp", "Processando XP para guild " + guild_name + " (" + guild_culture + "): jogador=" + who.name + ", xp=" + xp_amount);
-    
-    // Calcular XP para a guild
     var guild_xp_gain := CInt(xp_amount * GUILD_XP_PERCENTAGE);
     if (guild_xp_gain <= 0)
-        guild_xp_gain := 1; // Mínimo de 1 XP para a guild
-    endif
+        guild_xp_gain := 1;
+    endif;
     
-    // Obter XP atual da guild
     var current_guild_xp := SafeGetGuildProperty(guild, GUILD_XP_PROP, 0);
     var current_guild_level := SafeGetGuildProperty(guild, GUILD_LEVEL_PROP, 0);
     
-    // Adicionar XP
     var new_guild_xp := current_guild_xp + guild_xp_gain;
     SafeSetGuildProperty(guild, GUILD_XP_PROP, new_guild_xp);
     
-    // Verificar se subiu de nível
     var new_level := CalculateGuildLevel(new_guild_xp, guild_culture);
     if (new_level > current_guild_level)
         GuildLevelUp(guild, new_level, current_guild_level, guild_culture);
-    endif
+    endif;
     
-    // Registrar estatísticas
     RecordGuildXPContribution(guild, who, guild_xp_gain);
     
     LogInfo("guild_xp", "XP adicionado à guild " + guild_name + ": +" + guild_xp_gain + " (total: " + new_guild_xp + ")");

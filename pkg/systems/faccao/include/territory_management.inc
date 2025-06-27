@@ -1837,56 +1837,68 @@ endfunction
 /*
  * TM_NotifyTerritoryChange(territory_id, change_type, change_data := 0)
  *
- * Purpose: Notifica sobre mudanças em um território
+ * Purpose: Centralized function to notify other systems about a change to a territory.
+ *          It writes an event to a persistent message queue in a datafile.
+ *          This allows asynchronous processing by controllers (like ResourceController).
+ *
  * Parameters:
- *   territory_id - ID do território
- *   change_type - Tipo de mudança ("created", "deleted", "transfer", etc.)
- *   change_data - Dados adicionais sobre a mudança (opcional)
+ *   territory_id - The UNIQUE ID of the territory (e.g., "TER_175..."). 
+ *                  Using the name is possible but ID is preferred for consistency.
+ *   change_type  - A string describing the event (e.g., "created", "deleted", "transfer", "claimed").
+ *   change_data  - A struct containing additional data relevant to the event (optional).
+ *
  * Return:
- *   1 para sucesso, 0 para falha
+ *   1 on successful registration of the event.
+ *   0 on failure.
  */
 function TM_NotifyTerritoryChange(territory_id, change_type, change_data := 0)
-    // 1. Registrar no datafile de mensagens
-    var df := SafeOpenDataFile(":faccao:messages", 1); // Usar o datafile existente
-    if (df)
-        // Usar uma chave diferente de "territory_changes" para não conflitar, ex: "controller_events"
-        var elem := SafeFindElement(df, "controller_events", 1);
-        if (elem)
-             var events := GetElementProp(elem, "pending", array{});
-             if(TypeOf(events) != "Array") 
-                 events := array{}; 
-             endif // Garantir que é array
-
-             // Criar entrada do evento
-             var event_entry := struct{
-                 "territory_id" := territory_id,
-                 "type" := change_type, // Manter o nome 'type' para consistência
-                 "data" := change_data,
-                 // TODO: Usar polcore().systime quando incluído em arquivo .src
-                 "timestamp" := 0 // polcore().systime
-             };
-
-             // Adicionar evento (evita duplicatas se necessário, mas para simplicidade, apenas adiciona)
-             events.append(event_entry);
-
-             // Limitar tamanho (opcional, mas recomendado)
-             while (events.size() > 50) 
-                 events.erase(1); 
-             endwhile
-
-             SetElementProp(elem, "pending", events);
-             LogInfo("EventoTerritorio", "Evento " + change_type + " para " + territory_id + " registrado no datafile de mensagens.");
-             return 1; // Indicar sucesso no registro
-        else
-             LogError("EventoTerritorio", "Falha ao encontrar/criar elemento 'controller_events' em :faccao:messages");
-        endif
-    else
-        LogError("EventoTerritorio", "Falha ao abrir datafile :faccao:messages para registrar evento.");
+    // 1. Open the message queue datafile. Using DF_CREATE is safer.
+    var df := SafeOpenDataFile(":faccao:messages", DF_CREATE);
+    if (!df)
+        // SafeOpenDataFile already logs the error.
+        return 0;
     endif
-     
-    // 2. Registrar no log (manter)
-    LogInfo("territorio", "Território " + territory_id + " - " + change_type + " - Dados: " + change_data);
-    return 0; // Indicar falha no registro
+
+    // 2. Access the specific element for controller events.
+    var elem := SafeFindElement(df, "controller_events", DF_CREATE);
+    if (!elem)
+        // SafeFindElement already logs the error.
+        return 0;
+    endif
+
+    // 3. Read-Modify-Write the event array.
+    // NOTE: This operation is not fully atomic. In a high-frequency scenario, a race condition
+    // could lead to a lost event. Given the nature of territory changes (infrequent),
+    // this risk is considered acceptable for simplicity.
+    var events := GetElementProp(elem, "pending", array{});
+    if (TypeOf(events) != "Array") 
+        LogWarning("EventoTerritorio", "CProp 'pending' em :faccao:messages era " + TypeOf(events) + ", resetando para array vazio.");
+        events := array{}; 
+    endif
+
+    // 4. Create the new event entry.
+    var event_entry := struct;
+    event_entry.+territory_id := CStr(territory_id); // Ensure it's a string
+    event_entry.+type         := change_type;
+    event_entry.+data         := change_data;
+    event_entry.+timestamp    := polcore().systime; // CORRECTED: Use actual systime
+
+    // 5. Add the new event to the queue.
+    events.append(event_entry);
+
+    // 6. Limit the queue size to prevent the datafile from growing infinitely.
+    while (events.size() > 50) 
+        events.erase(1); 
+    endwhile
+
+    // 7. Save the updated queue back to the datafile.
+    if (SetElementProp(elem, "pending", events))
+        LogInfo("EventoTerritorio", "Evento '" + change_type + "' para '" + territory_id + "' registrado. Fila agora tem " + events.size() + " eventos.");
+        return 1;
+    else
+        LogError("EventoTerritorio", "FALHA ao salvar a fila de eventos atualizada para '" + change_type + "' em '" + territory_id + "'.");
+        return 0;
+    endif
 endfunction
 
 /*

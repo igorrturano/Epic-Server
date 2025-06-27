@@ -680,12 +680,11 @@ endfunction
 // Em pkg/systems/faccao/include/shared_functions.inc
 
 function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
-    var log_message := ""; // Variável para construir as mensagens de log
-    var debug_category := "AtualizarDatafile"; // Categoria de log para esta função
+    var log_message := ""; 
+    var debug_category := "AtualizarDatafile"; 
 
     LogInfo(debug_category, $"Iniciando para Facção: '{faction_name}'. Recursos a salvar fornecidos (Tipo: {TypeOf(recursos_novos_para_salvar)}).");
 
-    // Validação dos parâmetros de entrada
     if (!faction_name)
         LogError(debug_category, "Nome da facção não fornecido. Abortando.");
         return 0;
@@ -696,19 +695,15 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
         return 0;
     endif
 
-    // Log detalhado do struct recebido
     LogDebug(debug_category, $"Recursos recebidos para '{faction_name}': " + StructToString(recursos_novos_para_salvar));
     LogCritical(debug_category, $"[RASTREIO MOEDAS] '{faction_name}' - Moedas recebidas em 'recursos_novos_para_salvar': {recursos_novos_para_salvar.moedas}");
 
-
-    // Abrir o datafile
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE); // Antes era só SafeOpenDataFile(...)
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE); 
     if (!df)
         LogError(debug_category, $"Falha ao abrir/criar datafile '{KINGDOM_RESOURCE_DATAFILE}'. Abortando.");
         return 0;
     endif
 
-    // Determinar o nome do elemento no datafile
     var elemento_alvo_nome := "";
     if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
         elemento_alvo_nome := KINGDOM_RESOURCE_ELEM;
@@ -721,14 +716,12 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
     endif
     LogInfo(debug_category, $"Elemento alvo no datafile para facção '{faction_name}' é: '{elemento_alvo_nome}'.");
 
-    // Encontrar ou criar o elemento no datafile
     var elem := SafeFindElement(df, elemento_alvo_nome, DF_CREATE);
     if (!elem)
         LogError(debug_category, $"Falha ao encontrar/criar elemento '{elemento_alvo_nome}' no datafile. Abortando.");
         return 0;
     endif
 
-    // 1. Ler o struct de recursos ATUAL do datafile para este elemento
     var recursos_existentes_no_df := GetElementProp(elem, "recursos");
     if (!recursos_existentes_no_df || TypeOf(recursos_existentes_no_df) != "Struct")
         LogWarning(debug_category, $"Elemento '{elemento_alvo_nome}' não continha um struct 'recursos' válido ou estava vazio. Inicializando com struct zerado.");
@@ -737,8 +730,6 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
     LogDebug(debug_category, $"Recursos existentes no datafile para '{elemento_alvo_nome}': " + StructToString(recursos_existentes_no_df));
     LogCritical(debug_category, $"[RASTREIO MOEDAS] '{elemento_alvo_nome}' - Moedas existentes no datafile: {recursos_existentes_no_df.moedas}");
 
-
-    // 2. Garantir que o struct lido e o novo tenham todas as chaves esperadas (completar com 0 se faltar)
     var chaves_padrao := CreateEmptyResourceStruct().keys();
 
     foreach chave in chaves_padrao
@@ -752,18 +743,15 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
         endif
     endforeach
 
-    // 3. Comparar e determinar se houve mudança real
     var alguma_mudanca_real := 0;
-    var struct_final_para_salvar := CreateEmptyResourceStruct(); // Começa zerado, vai ser preenchido
+    var struct_final_para_salvar := CreateEmptyResourceStruct(); 
 
     foreach chave in chaves_padrao
         var valor_existente_df := CInt(recursos_existentes_no_df[chave]);
         var valor_novo_recebido := CInt(recursos_novos_para_salvar[chave]);
 
-        // A lógica aqui é que 'recursos_novos_para_salvar' representa o ESTADO FINAL desejado.
-        // Não estamos somando, estamos definindo o valor total.
+        
         struct_final_para_salvar[chave] := valor_novo_recebido;
-
         if (valor_novo_recebido != valor_existente_df)
             alguma_mudanca_real := 1;
             LogInfo(debug_category, $"Mudança detectada para '{elemento_alvo_nome}', Recurso '{chave}': Datafile={valor_existente_df}, Novo Total={valor_novo_recebido}.");
@@ -773,7 +761,6 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
         endif
     endforeach
 
-    // 4. Salvar o struct final APENAS se houve alguma mudança real
     if (alguma_mudanca_real)
         LogCritical(debug_category, $"PRESTES A SALVAR para '{elemento_alvo_nome}'. Struct Final: {StructToString(struct_final_para_salvar)}");
         LogCritical(debug_category, $"[RASTREIO MOEDAS] '{elemento_alvo_nome}' - Moedas a serem salvas no datafile: {struct_final_para_salvar.moedas}");
@@ -782,9 +769,6 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
 
         if (setResult)
             LogInfo(debug_category, $"SUCESSO ao salvar struct 'recursos' atualizado para o elemento '{elemento_alvo_nome}'.");
-            // Log adicional para confirmar a leitura após salvar (para debug extremo)
-            // var recursos_apos_salvar := GetElementProp(elem, "recursos");
-            // LogCritical(debug_category, $"[RASTREIO MOEDAS] '{elemento_alvo_nome}' - Moedas LIDAS DO DATAFIL IMEDIATAMENTE APÓS SALVAR: {recursos_apos_salvar.moedas}");
             return 1;
         else
             LogError(debug_category, $"FALHA ao salvar struct 'recursos' para o elemento '{elemento_alvo_nome}'.");
@@ -792,9 +776,10 @@ function AtualizarDatafileRecursos(faction_name, recursos_novos_para_salvar)
         endif
     else
         LogInfo(debug_category, $"Nenhuma mudança real nos valores dos recursos para '{elemento_alvo_nome}'. Datafile não modificado.");
-        return 1; // Sucesso, pois não havia nada a mudar.
+        return 1;
     endif
 endfunction
+
 
 function StructToString(s)
     if (!s || TypeOf(s) != "Struct")
@@ -4008,4 +3993,46 @@ function NotificarLider(guild, message_text)
             SendSysMessage(leader_char, message_text, 3, 38); // Mensagem em vermelho
         endif
     endif
+endfunction
+
+
+// Adicione esta função ao final de :faccao:include/shared_functions.inc
+
+/*
+ * GetFactionTerritoryCount(faction_name)
+ *
+ * Purpose: Conta o número de territórios de uma facção diretamente do datafile,
+ *          evitando depender de CProps potencialmente desatualizadas.
+ *          É a forma mais confiável de verificar se uma facção controla territórios.
+ * Parameters:
+ *   faction_name - O nome da facção a ser verificada.
+ * Return:
+ *   O número de territórios controlados.
+ */
+function GetFactionTerritoryCount(faction_name)
+    LogCritical("GetFactionTerritoryCount_DEBUG", "Iniciando contagem de territórios para a facção: '" + faction_name + "'");
+    if (!faction_name)
+        return 0;
+    endif;
+
+    var count := 0;
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("GetFactionTerritoryCount", "Falha crítica ao abrir datafile :architect:areas.");
+        return 0;
+    endif;
+
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (elem)
+            var territory_faction := GetTerritoryFaction(elem);
+            if (territory_faction == faction_name)
+                count += 1;
+            endif;
+        endif;
+        SleepMS(1);
+    endforeach;
+    
+    LogCritical("GetFactionTerritoryCount_DEBUG", "Contagem finalizada para '" + faction_name + "'. Total: " + count + " territórios.");
+    return count;
 endfunction

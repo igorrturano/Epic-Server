@@ -8,7 +8,7 @@ const LOG_INFO     := 4;  // Informações normais
 const LOG_DEBUG    := 5;  // Informação detalhada para depuração
 
 // Variável global para controlar nível de log
-var GLOBAL_LOG_LEVEL := 3;  // Por padrão, mostrar até WARNING
+var GLOBAL_LOG_LEVEL := 5;  // Por padrão, mostrar até WARNING
 
 // Flag para desativar completamente o logging (útil em produção)
 var LOGGING_ENABLED := 1;  // 1 = ativado, 0 = desativado
@@ -30,20 +30,25 @@ endfunction
 
 // RENOMEADA DE 'Log' PARA 'FactionLog' PARA EVITAR CONFLITO
 function FactionLog(level, category, message)
-    // Se logging está desativado globalmente, retornar imediatamente
     if (!LOGGING_ENABLED)
         return 0;
     endif
     
-    // Verificar configuração por categoria
-    if (LOG_CATEGORIES.exists(category) && level > LOG_CATEGORIES[category])
-        return 0;
+    // 1. PRIMEIRO, VERIFICA O NÍVEL GLOBAL
+    var effective_log_level := GLOBAL_LOG_LEVEL;
+
+    // 2. DEPOIS, VERIFICA SE HÁ UMA EXCEÇÃO PARA ESTA CATEGORIA
+    if (LOG_CATEGORIES.exists(category))
+        effective_log_level := LOG_CATEGORIES[category];
+    endif
+
+    // 3. AGORA, COMPARA O NÍVEL DA MENSAGEM COM O NÍVEL EFETIVO
+    if (level > effective_log_level)
+        return 0; // Se o nível da mensagem for maior que o permitido, ignora.
     endif
     
-    // Formatar timestamp
+    // Se passou pelo filtro, formata e exibe o log
     var timestamp := FormatTimeString(polcore().systime);
-    
-    // Formatar nível como texto
     var level_text := "";
     case (level)
         LOG_CRITICAL: level_text := "CRÍTICO";
@@ -53,13 +58,10 @@ function FactionLog(level, category, message)
         LOG_DEBUG:    level_text := "DEBUG";
     endcase
     
-    // Preparar mensagem formatada
     var formatted_message := "[" + timestamp + "] [" + level_text + "] [" + category + "] " + message;
     
-    // Imprimir no console
     Print(formatted_message);
     
-    // Se for erro ou crítico, salvar em arquivo de log
     if (level <= LOG_ERROR)
         WriteToLogFile(formatted_message);
     endif

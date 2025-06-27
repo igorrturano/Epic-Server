@@ -105,14 +105,14 @@ const ITEM_TYPE_FERRAMENTAS_CONSTRUCAO := "FERRAMENTAS_CONSTRUCAO";
 // Constantes para sistema de caravanas
 // =======================================
 
-const CARAVAN_CYCLE_WAIT := 60;
-const CARAVAN_TEST_DURATION_SECONDS := 300;
+const CARAVAN_CYCLE_WAIT := 30;
+const CARAVAN_TEST_DURATION_SECONDS := 140;
 
 // =======================================
 // TIMING DE CICLOS
 // =======================================
-const UPKEEP_CYCLE_WAIT := 60;
-const CYCLE_WAIT := 120;
+const UPKEEP_CYCLE_WAIT := 45;
+const CYCLE_WAIT := 60;
 
 // =======================================
 // BORDAS DO MAPEADOR
