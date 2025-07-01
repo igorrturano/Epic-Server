@@ -8,7 +8,7 @@ const LOG_INFO     := 4;  // Informações normais
 const LOG_DEBUG    := 5;  // Informação detalhada para depuração
 
 // Variável global para controlar nível de log
-var GLOBAL_LOG_LEVEL := 5;  // Por padrão, mostrar até WARNING
+var GLOBAL_LOG_LEVEL := 3;  // Por padrão, mostrar até WARNING
 
 // Flag para desativar completamente o logging (útil em produção)
 var LOGGING_ENABLED := 1;  // 1 = ativado, 0 = desativado

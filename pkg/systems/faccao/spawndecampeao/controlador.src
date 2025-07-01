@@ -1,0 +1,216 @@
+// CONTROLADOR.SRC - Versão corrigida com limpeza dos fogos ao matar o boss
+use uo;
+use os;
+use polsys;
+
+include ":spawndecampeao:include/altarutils";
+include ":faccao:include/logging";
+
+program ChampionController(altar)
+    sleep(5); 
+    
+    var spawn_cfg := GetObjProperty(altar, "ChampionConfig");
+    if (!spawn_cfg)
+        LogError("ChampSpawn", "Altar " + altar.serial + " não tem CProp 'ChampionConfig' - remova e crie novamente");
+        return;
+    endif
+    
+    LogDebug("ChampSpawn", "Controlador iniciado para altar " + altar.serial + " - Evento: '" + spawn_cfg.name + "'");
+    
+    // NOVO: Verifica se há um evento em andamento após reinicialização
+    var was_active := CInt(GetObjProperty(altar, "#active"));
+    if (was_active)
+        LogWarning("ChampSpawn", "Altar " + altar.serial + " estava ativo antes da reinicialização - Limpando estado órfão");
+        CleanupOrphanedItems(altar);
+        EraseObjProperty(altar, "#active");
+        EraseObjProperty(altar, "#completed");
+    endif
+    
+    var player_radius := spawn_cfg.player_radius;
+    if (!player_radius)
+        player_radius := 25;
+    endif
+    
+    while (altar)
+        if (!CInt(GetObjProperty(altar, "#active")))
+            var next_activation := GetObjProperty(altar, "#NextActivation");
+            if (TypeOf(next_activation) == "Error" || ReadGameClock() >= CInt(next_activation))
+                var players_nearby := CountPlayers(altar, player_radius);
+                if (players_nearby > 0)
+                    LogInfo("ChampSpawn", "Altar " + altar.serial + ": " + players_nearby + " jogador(es) detectado(s) - Iniciando evento '" + spawn_cfg.name + "'");
+                    StartEvent(altar, spawn_cfg);
+                endif
+            endif
+        endif
+        sleep(10); 
+    endwhile
+endprogram
+
+function StartEvent(altar, spawn_cfg)
+    LogInfo("ChampSpawn", "StartEvent iniciado para altar " + altar.serial + " - Evento: " + spawn_cfg.name);
+    ActivateAltar(altar);
+    
+    var total_waves := spawn_cfg.waves.size();
+    LogInfo("ChampSpawn", "Evento " + spawn_cfg.name + " configurado com " + total_waves + " ondas");
+
+    if(total_waves < 1)
+        LogError("ChampSpawn", "Configuração inválida - nenhuma onda encontrada para o altar " + altar.serial);
+        DeactivateAltar(altar, spawn_cfg.cooldown);
+        return;
+    endif
+    
+    // NOVO: Verifica se há progresso anterior e restaura o estado
+    var restored_progress := RestoreChampionState(altar);
+    var starting_wave := 1;
+    
+    if (restored_progress > 0)
+        starting_wave := restored_progress + 1; // Continua da próxima onda
+        LogInfo("ChampSpawn", "Continuando do progresso restaurado - Iniciando onda " + starting_wave + "/" + total_waves);
+        
+        if (starting_wave > total_waves)
+            LogInfo("ChampSpawn", "Todas as ondas já foram concluídas - Indo direto para o boss!");
+            // Pula para o final (boss)
+            starting_wave := total_waves + 1;
+        endif
+    else
+        LogInfo("ChampSpawn", "Iniciando evento do zero - Onda 1/" + total_waves);
+    endif
+    
+    for wave_level := starting_wave to total_waves
+        SetObjProperty(altar, "#current_level", wave_level);
+        var wave_info := spawn_cfg.waves[wave_level];
+        var mobs_to_kill := wave_info.amount;
+        
+        LogInfo("ChampSpawn", "Altar " + altar.serial + " - Iniciando Onda " + wave_level + "/" + total_waves + " (" + mobs_to_kill + " monstros) - TIMER: 10 minutos");
+
+        if(mobs_to_kill > 0)
+            // Spawna os monstros e guarda os serials
+            var spawned_serials := SpawnWaveWithTracking(altar, wave_info.mobs, mobs_to_kill);
+            
+            // Sistema UO Original: 10 minutos por onda + velas brancas de progresso
+            var wave_start_time := ReadGameClock();
+            var wave_timeout := 600; // 10 minutos
+            var killed_count := 0;
+            var last_progress := 0;
+            
+            while (killed_count < mobs_to_kill)
+                var alive_mobs := CountAliveMobs(spawned_serials);
+                killed_count := mobs_to_kill - alive_mobs;
+                
+                // Calcula progresso em porcentagem
+                var progress_percent := CInt((killed_count * 100.0) / mobs_to_kill);
+                var progress_level := CInt(progress_percent / 25); // NOVO: 0-4 (25% cada vela)
+                
+                // Cria velas brancas conforme o progresso
+                if (progress_level > last_progress)
+                    CreateWhiteCandle(altar, progress_level);
+                    last_progress := progress_level;
+                    LogInfo("ChampSpawn", "Progresso da onda " + wave_level + ": " + progress_percent + "% (" + killed_count + "/" + mobs_to_kill + ")");
+                endif
+                
+                // Verifica timeout de 10 minutos
+                var elapsed_time := ReadGameClock() - wave_start_time;
+                if (elapsed_time > wave_timeout)
+                    LogWarning("ChampSpawn", "TIMEOUT! Onda " + wave_level + " falhou (apenas " + progress_percent + "% concluído em 10 minutos)");
+                    
+                    // Sistema de punição do UO
+                    if (progress_percent < 30) // Falha miserável
+                        if (wave_level > 1)
+                            LogError("ChampSpawn", "Falha grave! Retrocedendo para onda " + (wave_level - 1));
+                            RemoveLastRedSkull(altar);
+                            wave_level := wave_level - 2; // -2 porque o for vai fazer +1
+                        else
+                            LogWarning("ChampSpawn", "Reiniciando onda 1");
+                            wave_level := 0; // Reinicia a onda 1
+                        endif
+                    else
+                        LogWarning("ChampSpawn", "Reiniciando onda " + wave_level);
+                        wave_level := wave_level - 1; // -1 porque o for vai fazer +1
+                    endif
+                    
+                    // Remove velas brancas e monstros restantes
+                    ClearWhiteCandles(altar);
+                    foreach serial in spawned_serials
+                        var mob := SystemFindObjectBySerial(serial);
+                        if (mob && !mob.dead)
+                            mob.Kill();
+                        endif
+                    endforeach
+                    
+                    break; // Sai do while
+                endif
+                
+                sleep(5); // Verifica a cada 5 segundos
+                
+                // Verifica se ainda há jogadores
+                if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
+                    LogWarning("ChampSpawn", "Altar " + altar.serial + " - Evento pausado por falta de jogadores");
+                    PrintTextAbove(altar, "Evento pausado por falta de jogadores.");
+                    DeactivateAltar(altar, spawn_cfg.cooldown);
+                    return;
+                endif
+            endwhile
+            
+            // Se completou a onda com sucesso
+            if (killed_count >= mobs_to_kill)
+                LogInfo("ChampSpawn", "Altar " + altar.serial + " - Onda " + wave_level + " concluída com sucesso!");
+                ClearWhiteCandles(altar);
+                CreateRedSkull(altar);
+            endif
+        endif
+    endfor
+
+    LogInfo("ChampSpawn", "Altar " + altar.serial + " - Todas as ondas concluídas! Verificando caveiras...");
+    
+    // NOVO: Verifica se todas as caveiras foram criadas
+    VerifyAllSkulls(altar, total_waves);
+    
+    // NOVO: Verifica se já estamos na fase do boss (caso de restauração)
+    if (starting_wave > total_waves)
+        LogInfo("ChampSpawn", "Progresso restaurado indica que o boss deve ser invocado!");
+    endif
+    
+    LogInfo("ChampSpawn", "Iniciando timer para o chefe...");
+    SetObjProperty(altar, "#completed", 1);
+    
+    // NOVO: Timer de 100 segundos antes do boss
+    var timer_result := ShowBossTimer(altar);
+    
+    if (!timer_result)
+        // Timer foi cancelado (sem jogadores)
+        LogWarning("ChampSpawn", "Evento cancelado durante o timer - desativando altar " + altar.serial);
+        DeactivateAltar(altar, spawn_cfg.cooldown);
+        return;
+    endif
+    
+    // Timer completou com sucesso, spawnar o boss
+    var boss := SpawnChampion(altar, spawn_cfg.boss_template);
+    
+    if (boss)
+        LogDebug("ChampSpawn", "Boss spawnado - Serial: " + boss.serial + " na posição " + boss.x + "," + boss.y);
+        
+        // Loop esperando o boss morrer
+        while(SystemFindObjectBySerial(boss.serial))
+            sleep(15);
+        endwhile
+        
+        LogInfo("ChampSpawn", "Boss " + boss.serial + " foi derrotado! Limpando fogos e criando recompensa...");
+        
+        // NOVO: Limpa os fogos imediatamente após a morte do boss
+        ClearBossAreaItems(altar);
+        
+        // Cria o totem no altar
+        var drop_result := CreateChampionDrop(altar, altar.realm);
+        if (drop_result)
+            LogInfo("ChampSpawn", "Recompensa criada com sucesso - Totem serial: " + drop_result.serial);
+        else
+            LogError("ChampSpawn", "FALHA ao criar a recompensa do champion!");
+        endif
+    else
+        LogError("ChampSpawn", "Boss não foi criado! Não haverá recompensa.");
+    endif
+
+    LogInfo("ChampSpawn", "Evento do altar " + altar.serial + " finalizado - Entrando em cooldown");
+    PrintTextAbove(altar, "O campeão foi derrotado! O altar adormece...");
+    DeactivateAltar(altar, spawn_cfg.cooldown);
+endfunction

@@ -16,129 +16,15 @@ program rectangle_creator(who, params)
         return;
     endif
     
-    // Abrir o datafile e verificar se o comando é para visualização
+    // Abrir o datafile
     var rect_df := SafeOpenDataFile(":architect:areas", 1);
     if (!rect_df)
         SendSysMessage(who, "Erro ao abrir ou criar o arquivo de dados de áreas!");
         return;
     endif
 
-    if (Lower(params) == "ver")
-        ShowRectangles(who, rect_df);
-        return;
-    endif
-
-    // Rotina de migração: converter propriedades "Faction" para "faction"
-	if (rect_df)
-	    foreach elem_name in (rect_df.keys())
-	        var elem := SafeFindElement(rect_df, elem_name);
-	        if (!elem)
-	            continue;
-	        endif
-	        var old_faction := GetElementProp(elem, "Faction", "");
-	        if (old_faction)
-	            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
-	            elem.EraseProp("Faction");
-	        endif
-	    endforeach
-	endif
-
-    // ===== FLUXO ORIGINAL (INTACTO) =====
-    SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
-    var first_point := TargetCoordinates(who);
-    if (!first_point)
-        SendSysMessage(who, "Cancelado.");
-        return;
-    endif
-    
-    SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
-    var second_point := TargetCoordinates(who);
-    if (!second_point)
-        SendSysMessage(who, "Cancelado.");
-        return;
-    endif
-    
-    var x1 := first_point.x;
-    var y1 := first_point.y;
-    var x2 := second_point.x;
-    var y2 := second_point.y;
-    
-    if (x1 > x2) var temp := x1; x1 := x2; x2 := temp; endif
-    if (y1 > y2) var temp := y1; y1 := y2; y2 := temp; endif
-    
-    var rect_str_selecionado := $"{x1} {y1} {x2} {y2}";
-    var realm := first_point.realm;
-    
-    SendSysMessage(who, $"Área selecionada: {rect_str_selecionado} no realm {realm}");
-    
-    var rect_name := RequestGump(who, "Digite um nome para este território:");
-    if (!rect_name)
-        SendSysMessage(who, "Operação cancelada - nome não fornecido.");
-        return;
-    endif
-
-    // ===== PONTO DE INTERCEPÇÃO =====
-    
-    // Pergunta ao GM o tipo de território, usando uma função auxiliar limpa.
-    var territory_type := AskTerritoryType(who);
-    if (territory_type == 0) // 0 significa que o GM cancelou
-        SendSysMessage(who, "Criação de território cancelada.");
-        return;
-    endif
-
-    // ===== CONTINUAÇÃO DO FLUXO ORIGINAL (COM LÓGICA CONDICIONAL) =====
-
-    // A verificação de sobreposição usa a área que o GM desenhou.
-    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
-        SendSysMessage(who, "A área selecionada se sobrepõe a um território existente. Operação cancelada.");
-        return;
-    endif
-    
-    // Cria ou encontra o elemento no datafile.
-    var elem := SafeFindElement(rect_df, rect_name, 1);
-    
-    // Salva as propriedades comuns a ambos os tipos.
-    var territory_id := CreateTerritoryID();
-    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
-    SetElementProp(elem, "Name", rect_name);
-    SetElementProp(elem, "Realm", realm);
-    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-
-    // Agora, salva as propriedades específicas com base na escolha do GM.
-    if (territory_type == 1) // **Customizado (Estático)**
-        SendSysMessage(who, "Salvando como Território Customizado (Estático)...");
-        // A área desenhada é o retângulo final.
-        SetElementProp(elem, "Rect", rect_str_selecionado);
-        // Marca como não expansível.
-        SetElementProp(elem, "IsExpandable", 0);
-        
-    elseif (territory_type == 2) // **Padrão (Expansível)**
-        SendSysMessage(who, "Salvando como Território Padrão (Expansível)...");
-        
-        // A área desenhada é a zona de buffer.
-        SetElementProp(elem, "MaxRect", rect_str_selecionado);
-        
-        // Calcula o Rect inicial (Nível 1) a partir do centro da zona de buffer.
-        var center_x := CInt((x1 + x2) / 2);
-        var center_y := CInt((y1 + y2) / 2);
-        var dims_lvl1 := TERRITORY_DIMS_LEVEL_1;
-        var x1_lvl1 := center_x - CInt(dims_lvl1[1] / 2);
-        var y1_lvl1 := center_y - CInt(dims_lvl1[2] / 2);
-        var current_rect_str := $"{x1_lvl1} {y1_lvl1} {x1_lvl1 + dims_lvl1[1]} {y1_lvl1 + dims_lvl1[2]}";
-        
-        SetElementProp(elem, "Rect", current_rect_str);
-        // Marca como expansível.
-        SetElementProp(elem, "IsExpandable", 1);
-    endif
-    
-    // O resto do fluxo original continua normalmente.
-    SetupResourcesForTerritory(who, elem);
-    
-    SendSysMessage(who, $"Território '{rect_name}' salvo com sucesso!");
-    
-    if (YesNo(who, "Deseja visualizar todos os retângulos salvos?"))
-        ShowRectangles(who, rect_df);
-    endif
+    // Sempre abre o gump (params não é usado intencionalmente)
+    ShowRectangles(who, rect_df);
 endprogram
 
 
@@ -513,7 +399,8 @@ function ShowRectangles(who, rect_df)
         if (faction_property && faction_property != error)
             // Verificar se não é um array ou struct
             if (TypeOf(faction_property) == "String")
-                faction := faction_property;            else
+                faction := faction_property;
+            else
                 // Tentar usar a propriedade legada
                 faction := GetElementProp(elem, "Faction", "");
                 if (!faction || faction == error)
@@ -558,7 +445,7 @@ function ShowRectangles(who, rect_df)
         endif
     endforeach
     
-    // Adiciona botão de criação para GMs - modificado para executar .rectangles 
+    // MUDANÇA: Botão de criação agora leva para seleção de tipo
     if (who.cmdlevel >= 1)
         GFAddButton(gump, width/2-70, height-40, 2361, 2361, GF_CLOSE_BTN, 300);
         GFTextLine(gump, width/2-50, height-44, 63, "Criar Novo Território");
@@ -570,14 +457,15 @@ function ShowRectangles(who, rect_df)
     if (button >= 400 && button < 999)
         var index := button - 400;
         var rect_name := rect_df.keys()[index];
-       var elem := SafeFindElement(rect_df, rect_name);
+        var elem := SafeFindElement(rect_df, rect_name);
         
-        DisplayRectangleDetails(who, elem);    elseif (button == 999)
+        DisplayRectangleDetails(who, elem);
+    elseif (button == 999)
         // Implementação de paginação para mostrar mais territórios
         ShowRectanglesPage2(who, rect_df, 19); // Começa do 19º item
     elseif (button == 300)
-        // Mostrar gump de seleção do tipo de território
-        ShowTerritoryTypeSelection(who);
+        // MUDANÇA: Agora pergunta sobre Champion Spawn primeiro
+        ShowChampionSpawnQuestion(who);
     endif
 endfunction
 
@@ -603,16 +491,40 @@ function ShowRectanglesPage2(who, rect_df, start_index)
     
     while (i <= total && displayed <= 18)
         var rect_name := keys[i];
-       var elem := SafeFindElement(rect_df, rect_name);
-var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);        
+        var elem := SafeFindElement(rect_df, rect_name);
+
+        // CORREÇÃO: Tratamento seguro para obter a facção (igual à página 1)
+        var faction := "";
+        var faction_property := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+
+        if (faction_property && faction_property != error)
+            if (TypeOf(faction_property) == "String")
+                faction := faction_property;
+            else
+                faction := GetElementProp(elem, "Faction", "");
+                if (!faction || faction == error)
+                    faction := DEFAULT_FACTION;
+                else
+                    SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+                endif
+            endif
+        else
+            faction := GetElementProp(elem, "Faction", "");
+            if (!faction || faction == error)
+                faction := DEFAULT_FACTION;
+            else
+                SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+            endif
+        endif
+        
         var color := 1153;
         if (faction == DEFAULT_FACTION)
             color := 38;
         endif
         
-        // Elementos com posições ajustadas
-        GFAddButton(gump, x-10+10, y+2, 2117, 2118, GF_CLOSE_BTN, 400+i);
-        GFTextLine(gump, x+15+10, y, color, rect_name);
+        // CORREÇÃO: Posições limpas e consistentes (igual à página 1)
+        GFAddButton(gump, x, y+2, 2117, 2118, GF_CLOSE_BTN, 400+i);
+        GFTextLine(gump, x+25, y, color, rect_name);
         GFTextLine(gump, 280, y, color, faction);
         
         y += 20;
@@ -634,7 +546,6 @@ var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
         
         DisplayRectangleDetails(who, elem);
     elseif (button == 998)
-        // Voltar para a primeira página
         ShowRectangles(who, rect_df);
     endif
 endfunction
@@ -1170,4 +1081,35 @@ function CreateStandardTerritory(who)
     
     SetupResourcesForTerritory(who, elem);
     SendSysMessage(who, $"Território padrão '{rect_name}' criado com sucesso!");
+endfunction
+
+
+function ShowChampionSpawnQuestion(who)
+    var gump := GFECreateGump("Criar Território", 400, 180, array{BORDER_GOLDEN});
+    
+    var x := 30;
+    var y := 70;
+    
+    GFTextMid(gump, 15, y, 370, 53, "Você quer criar um território com Champion Spawn?");
+    y += 50;
+    
+    // Opção SIM
+    GFAddButton(gump, x + 50, y, 2361, 2361, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, x + 70, y - 4, 63, "SIM");
+    
+    // Opção NÃO
+    GFAddButton(gump, x + 200, y, 2361, 2361, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, x + 220, y - 4, 38, "NÃO");
+    
+    var input := GFSendGump(who, gump);
+    var button := input[0];
+    
+    if (button == 1)
+        // SIM - Criar território com Champion Spawn
+        // TODO: Implementar sequência do Champion Spawn
+        SendSysMessage(who, "Função Champion Spawn ainda não implementada!");
+    elseif (button == 2)
+        // NÃO - Criar território normal
+        ShowTerritoryTypeSelection(who);
+    endif
 endfunction
