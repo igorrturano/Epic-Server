@@ -904,28 +904,6 @@ function ChooseHighestOpponent(me, byref opponent, new_opponent := 0, force_chan
    if (GetCooldown(me, "#blockaggro"))
       return 0;
    endif
-
-   var highest_aggro := getHighestAggro(me);
-   if (highest_aggro && (!opponent || highest_aggro != opponent.serial))
-      highest_aggro := SystemFindObjectBySerial(highest_aggro);
-      opponent := highest_aggro;
-      SetOpponent(highest_aggro);
-      TurnToward(highest_aggro);
-      return 1;
-   endif
-endfunction
-
-function getHighestAggro(creature)
-   var aggros := creature.aggroProp();
-   var highest := array{0, -9999999};
-   foreach serial in (aggros.keys())
-      if (aggros[serial] >= highest[2])
-         highest := array{serial, aggros[serial]};
-      endif
-      sleepms(2);
-   endforeach
-
-   return highest[1];
 endfunction
 
 function TacticalReposition(opponent, chasing)
