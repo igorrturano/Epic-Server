@@ -576,11 +576,7 @@ function SetupNPCEquip(who, npc_elem)
 
     // Apply boss colors to clothing AFTER all equipment is set up
     if (boss && boss.color_ranges && boss.color_ranges.size() > 0)
-        print("DEBUG: Applying boss colors. Color ranges: " + boss.color_ranges.size());
         ApplyBossColors(who, boss.color_ranges);
-    else
-        print("DEBUG: No boss colors to apply. Boss: " + (boss ? "exists" : "null") + 
-            ", Color ranges: " + (boss.color_ranges ? boss.color_ranges.size() : "null"));
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
