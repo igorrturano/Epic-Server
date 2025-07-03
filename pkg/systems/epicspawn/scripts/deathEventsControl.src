@@ -29,8 +29,6 @@ program DeathEventsControl(params)
         return 0;
     endif
     
-    print("TRACE: Processing " + death_events.size() + " death events for " + npc.name);
-    
     var event_count := 0;
     var success_count := 0;
     
@@ -38,34 +36,15 @@ program DeathEventsControl(params)
     var last_words_processed := 0;
     foreach event in (death_events)
         if (event.type == "Ultimas Palavras")
-            print("TRACE: Processing Ultimas Palavras event FIRST");
             if (ProcessLastWordsEvent(npc, event))
-                print("TRACE: Ultimas Palavras executed successfully");
                 success_count += 1;
                 last_words_processed := 1;
                 
                 // Note that we DON'T return here so other death events will still process
                 // The speaklastwords script will handle the actual killing
-            else
-                print("TRACE: Ultimas Palavras failed to execute");
             endif
             break; // Only process the first LastWords event found
         endif
-    endforeach
-    
-    // Debug print death events
-    print("TRACE: Death Events Array Contents:");
-    foreach event in (death_events)
-        print("TRACE: Event " + event_count + " - Type: " + event.type);
-        // Add more details about each event
-        case (event.type)
-            "Criar Npcs": print("TRACE: -- Template: " + event.npctemplate + ", Amount: " + event.amount); break;
-            "Criar Itens": print("TRACE: -- Items count: " + (event.items ? event.items.size() : "none")); break;
-            "Abrir Porta": print("TRACE: -- Door count: " + (event.items ? event.items.size() : "none")); break;
-            "Abrir Passagem": print("TRACE: -- Passage count: " + (event.items ? event.items.size() : "none")); break;
-            "Ultimas Palavras": print("TRACE: -- Text lines: " + (event.text ? event.text.size() : "none")); break;
-        endcase
-        event_count += 1;
     endforeach
     
     // Then process all other events (except LastWords which was already processed)
@@ -73,71 +52,51 @@ program DeathEventsControl(params)
     foreach event in (death_events)
         if (event.type != "Ultimas Palavras")
             event_count += 1;
-            print("TRACE: [" + event_count + "/" + death_events.size() + "] Starting event: " + event.type);
             var result := 0;
             
             case (event.type)
                 "Criar Npcs":  
-                    print("TRACE: Processing Criar Npcs event");
                     result := ProcessCreateNpcsEvent(npc, event); 
                     break;
                 "Criar Itens": 
-                    print("TRACE: Processing Criar Itens event");
                     result := ProcessCreateItemsEvent(npc, event); 
                     break;
                 "Abrir Porta": 
-                    print("TRACE: Processing Abrir Porta event");
                     result := ProcessOpenDoorEventNonBlocking(npc, event); 
                     break;
                 "Abrir Passagem": 
-                    print("TRACE: Processing Abrir Passagem event");
                     result := ProcessOpenPassageEventNonBlocking(npc, event); 
                     break;
                 "Sem corpo":
-                    print("TRACE: Processing Sem corpo event");
                     SetObjProperty(npc, "NoCorpse", 1);
                     result := 1;
                     break;
                 "Efeito Grafico":
-                    print("TRACE: Processing Graphic Effect event");
                     result := ProcessGraphicEffectEvent(npc, event);
                     break;
                 "Tocar Som":
-                    print("TRACE: Processing Sound event");
                     result := ProcessSoundEvent(npc, event);
-                    break;
-                default: 
-                    print("TRACE: Unknown event type: " + event.type); 
                     break;
             endcase
             
             if (result)
-                print("TRACE: Event " + event.type + " executed successfully");
                 success_count += 1;
-            else
-                print("TRACE: Event " + event.type + " failed to execute");
             endif
             
-            print("TRACE: Brief delay between events");
             sleepms(100);
         endif
     endforeach
-    
-    print("TRACE: Completed " + success_count + " of " + event_count + " total events" + 
-          (last_words_processed ? " including LastWords" : ""));
     
     // Mark as processed for future reference
     SetObjProperty(npc, "DeathEventsProcessed", 1);
     
     // Allow death now that events are processed
-    print("TRACE: Setting allowdeath=1 to permit NPC to die");
     SetObjProperty(npc, "allowdeath", 1);
     
     // Clear the processing flag
     EraseObjProperty(npc, "ProcessingDeathEvents");
     
     if (!last_words_processed)
-        print("TRACE: Killing NPC since no LastWords event handled it");
         npc.kill();
     endif
     
@@ -146,7 +105,6 @@ endprogram
 
 function ProcessCreateItemsEvent(npc, event)
     if (!event.items || !event.items.size())
-        print("TRACE: CreateItems - No items defined");
         return 0;
     endif
     
@@ -154,16 +112,10 @@ function ProcessCreateItemsEvent(npc, event)
     var i := 1;
     
     foreach iteminfo in (event.items)
-        print("TRACE: CreateItems - Creating item " + i + "/" + event.items.size() + 
-              " at " + iteminfo.x + "," + iteminfo.y + "," + iteminfo.z);
-              
         var item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z), 
                                         CInt(iteminfo.item), 1, CStr(npc.realm));
         
-        if (item == error)
-            print("TRACE: Failed to create item: " + item.errortext);
-        else
-            print("TRACE: Created item: " + item.desc + " [" + item.serial + "]");
+        if (item != error)
             success_count += 1;
         endif
         
@@ -171,51 +123,40 @@ function ProcessCreateItemsEvent(npc, event)
         sleepms(100);
     endforeach
     
-    print("TRACE: CreateItems - Created " + success_count + " of " + event.items.size() + " items");
     return success_count > 0;
 endfunction
 
 function ProcessOpenDoorEventNonBlocking(npc, event)
     if (!event.items || !event.items.size())
-        print("TRACE: OpenDoor - No doors defined");
         return 0;
     endif
     
-    print("TRACE: OpenDoor - Processing " + event.items.size() + " doors");
     var success_count := 0;
     
     foreach serial in (event.items)
         var item := SystemFindObjectBySerial(serial);
         if (item)
-            print("TRACE: OpenDoor - Unlocking door " + item.desc + " [" + serial + "]");
             item.locked := 0;
             SetObjProperty(item, "TempUnlocked", 1);
             start_script(":epicspawn:scripts/relockDoor", array{item, 60});
             success_count += 1;
-        else
-            print("TRACE: OpenDoor - Failed to find door with serial " + serial);
         endif
         sleepms(20);
     endforeach
     
-    print("TRACE: OpenDoor - Successfully processed " + success_count + " of " + event.items.size() + " doors");
-    print("TRACE: OpenDoor - Doors will relock after 60 seconds");
     return success_count > 0;
 endfunction
 
 function ProcessOpenPassageEventNonBlocking(npc, event)
     if (!event.items || !event.items.size())
-        print("TRACE: OpenPassage - No passages defined");
         return 0;
     endif
     
-    print("TRACE: OpenPassage - Processing " + event.items.size() + " passages");
     var success_count := 0;
     
     foreach serial in (event.items)
         var item := SystemFindObjectBySerial(serial);
         if (item)
-            print("TRACE: OpenPassage - Moving passage " + item.desc + " [" + serial + "] up gradually");
             item.movable := 1;
             
             // Store the original location to restore it later
@@ -225,26 +166,18 @@ function ProcessOpenPassageEventNonBlocking(npc, event)
             // This will move the passage up 1 unit at a time and then back down after the delay
             var process := start_script(":epicspawn:scripts/animatePassage", array{item, 20, 60});
             
-            if (process.errortext)
-                print("TRACE: OpenPassage - Error starting animation script: " + process.errortext);
-            else
-                print("TRACE: OpenPassage - Animation script started with PID: " + process.pid);
+            if (!process.errortext)
                 success_count += 1;
             endif
-        else
-            print("TRACE: OpenPassage - Failed to find passage with serial " + serial);
         endif
         sleepms(20);
     endforeach
     
-    print("TRACE: OpenPassage - Successfully processed " + success_count + " of " + event.items.size() + " passages");
-    print("TRACE: OpenPassage - Passages will animate up and close after 60 seconds");
     return success_count > 0;
 endfunction
 
 function ProcessCreateNpcsEvent(npc, event)
     if (!event.amount || !event.npctemplate)
-        print("TRACE: CreateNPCs - Missing template or amount");
         return 0;
     endif
     
@@ -266,7 +199,6 @@ function ProcessCreateNpcsEvent(npc, event)
                 realm := npc.realm;
             endif
             using_targeted_location := 1;
-            print("TRACE: CreateNPCs - Spawning at targeted location: " + base_x + "," + base_y);
         endif
     endif
     
@@ -275,18 +207,11 @@ function ProcessCreateNpcsEvent(npc, event)
         base_y := npc.y;
         base_z := npc.z;
         realm := npc.realm;
-        print("TRACE: CreateNPCs - Spawning around boss location: " + base_x + "," + base_y);
     endif
-    
-    print("TRACE: CreateNPCs - Range=" + range + ", Template=" + event.npctemplate + 
-          ", Amount=" + event.amount);
     
     while (amt < CInt(event.amount) && fail_count < max_attempts)
         var spawn_x := RandomIntMinMax(base_x - range, base_x + range);
         var spawn_y := RandomIntMinMax(base_y - range, base_y + range);
-        
-        print("TRACE: CreateNPCs - Attempt " + (amt+fail_count+1) + " at position " + 
-              spawn_x + "," + spawn_y);
         
         var template := CStr(event.npctemplate);
         var new_npc := error;
@@ -294,7 +219,6 @@ function ProcessCreateNpcsEvent(npc, event)
         if (template[1] != ":")
             var prefixes := array{":epicAI:", ":brainAI:", ":merchants:", ""};
             foreach prefix in prefixes
-                print("TRACE: CreateNPCs - Trying template: " + prefix + template);
                 new_npc := CreateNpcFromTemplate(prefix + template, spawn_x, spawn_y, base_z, 0, realm);
                 if (new_npc && !new_npc.errortext)
                     break;
@@ -302,7 +226,6 @@ function ProcessCreateNpcsEvent(npc, event)
                 sleepms(5);
             endforeach
         else
-            print("TRACE: CreateNPCs - Using template with prefix: " + template);
             new_npc := CreateNpcFromTemplate(template, spawn_x, spawn_y, base_z, 0, realm);
         endif
         
@@ -310,8 +233,6 @@ function ProcessCreateNpcsEvent(npc, event)
             amt := amt + 1;
             var duration := event.duracao ? CInt(event.duracao) : 120;
             TS_StartTimer(new_npc, "summon", duration);
-            print("TRACE: CreateNPCs - NPC #" + amt + " created successfully: " + 
-                  new_npc.name + " [" + new_npc.serial + "]");
             
             if (event.summontext)
                 PrintText(new_npc, event.summontext);
@@ -319,50 +240,38 @@ function ProcessCreateNpcsEvent(npc, event)
             fail_count := 0;
         else
             fail_count := fail_count + 1;
-            print("TRACE: CreateNPCs - Failed to create NPC: " + 
-                  (new_npc.errortext ? new_npc.errortext : "unknown error"));
             sleepms(50);
         endif
         
         sleepms(10);
     endwhile
     
-    print("TRACE: CreateNPCs - Finished with " + amt + " NPCs created and " + 
-          fail_count + " failures");
-          
     return (amt > 0);
 endfunction
 
 function ProcessLastWordsEvent(npc, event)
     if (!event.text || !event.text.size())
-        print("TRACE: LastWords - No text defined");
         return 0;
     endif
     
-    print("TRACE: LastWords - Setting last words with " + event.text.size() + " lines");
     SetObjProperty(npc, "Ultimas Palavras", event.text);
     var script := start_script(":death:hooks/speaklastwords", npc);
     
     if (script.errortext)
-        print("TRACE: LastWords - Error starting speak script: " + script.errortext);
         return 0;
     else
-        print("TRACE: LastWords - Speak script started successfully");
         return 1;
     endif
 endfunction
 
 function ProcessGraphicEffectEvent(npc, event)
     if (!event.fxid)
-        print("TRACE: GraphicEffect - No effect ID defined");
         return 0;
     endif
     
     var fx_id := CInt(event.fxid);
     var speed := event.speed ? CInt(event.speed) : 7;
     var loops := event.loops ? CInt(event.loops) : 1;
-    
-    print("TRACE: GraphicEffect - Playing effect " + fx_id + " with speed " + speed + " and loops " + loops);
     
     // Since this is a death event, we'll only use stationary effects at the NPC's location
     // Moving effects could be problematic since the NPC might be dead
@@ -373,11 +282,9 @@ endfunction
 
 function ProcessSoundEvent(npc, event)
     if (!event.soundid)
-        print("TRACE: Sound - No sound ID defined");
         return 0;
     endif
     
-    print("TRACE: Sound - Playing sound " + event.soundid);
     PlaySoundEffect(npc, CInt(event.soundid));
     return 1;
 endfunction
