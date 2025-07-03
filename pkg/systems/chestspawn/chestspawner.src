@@ -25,7 +25,6 @@ program spawntesthet(item)
 	EraseObjProperty(item, "chests");
 
 	if((!amt) || (!frq))
-		print("Chest Spawner " + item.serial + " at: " + item.x + ", " + item.y + " is improperly configured");
 		return;
 	endif
 
@@ -115,9 +114,7 @@ function ClearChests(spawn)
 
 endfunction
 
-function cleanarray(item)
-    print("DEBUG::CleanArray - Iniciando limpeza para item " + item.serial);
-    
+function cleanarray(item)    
     var chests := GetObjProperty(item, "chests");
     if (!chests)
         chests := array;
@@ -128,20 +125,17 @@ function cleanarray(item)
         var chest := SystemFindObjectBySerial(chestserial);
         
         if (!chest)
-            print("DEBUG::CleanArray - Removendo bau invalido no indice " + index);
             chests.erase(index);
             continue;
         endif
         
         // Checa origem do baú
         if (GetObjProperty(chest, "IsPlayerCreated"))
-            print("DEBUG::CleanArray - Ignorando bau de player " + chest.serial);
             continue;
         endif
         
         if (GetObjProperty(chest, "IsSpawned"))
             if (chest.locked == 0)
-                print("DEBUG::CleanArray - Destruindo bau aberto " + chest.serial);
                 DestroyItem(chest);
                 chests.erase(index);
             endif
@@ -152,5 +146,4 @@ function cleanarray(item)
     endforeach
     
     SetObjProperty(item, "chests", chests);
-    print("DEBUG::CleanArray - Limpeza concluida para item " + item.serial);
 endfunction

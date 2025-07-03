@@ -8,9 +8,7 @@ program revertWildshape(params)
     // Wait for the duration
     sleep(300);
     
-    if (animal && druid)
-        print("DEBUG: Reverting wildshape transformation");
-        
+    if (animal && druid)       
         // Move druid back to animal's location
         druid.hidden := 0;
         MoveObjectToLocation(druid, params.x, params.y, params.z, params.realm, MOVEOBJECT_FORCELOCATION);
@@ -19,7 +17,6 @@ program revertWildshape(params)
         SetObjProperty(animal, "NoCorpse", 1);
         animal.Kill();
     else
-        print("DEBUG: Failed to find animal or druid for reversion");
         // SHould kill which one stills alive
         if (animal)
             animal.Kill();
