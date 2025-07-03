@@ -10,6 +10,7 @@
 use uo;
 use os;
 use storage;
+use cfgfile;
 
 include ":attributes:attributes";
 include ":brainAI:npcUtil";
@@ -25,6 +26,17 @@ CONST START_Y	:= 55;   // These are to track the display area height.
 CONST END_Y	:= 410;  // These are to track the display area height.
 CONST MENU_BTN	:= 0xF000; // Value of the first menu button.
 
+// Adicionar estas constantes no topo do arquivo, junto com as outras
+CONST PROP_PREV_BTN := 0xF100; // Botão para -1
+CONST PROP_NEXT_BTN := 0xF101; // Botão para +1
+CONST PROP_OK_BTN   := 0xF102; // Botão para confirmar valor digitado
+
+// Constantes para edição de sons
+CONST SOUND_PREV_BTN := 0xF110; // Botão para -1 som
+CONST SOUND_NEXT_BTN := 0xF111; // Botão para +1 som
+CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
+CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
+
 // Storing these globally just makes the script easier to use...
 var info_cfg;			// info.cfg
 var index_list; 		// info.cfg "Index" lines from Settings elem
@@ -35,6 +47,14 @@ var btn_info := struct{"editFunc", "name"}; // Individual button tracking that g
 
 var gm;
 var gmParedes := array{"gmjaison"};
+
+// Adicionar variáveis globais para controlar a navegação
+var current_prop_name := "";
+var current_prop_target := 0;
+
+// Variáveis globais para controlar a navegação de sons
+var current_sound_type := "";
+var current_sound_target := 0;
 
 program textcmd_Info(who, serial)
 	if ( Lower(TypeOf(who)) == "array" )
@@ -168,9 +188,16 @@ function DisplayMember(targ, byref gump, byref entry, byref y_pos)
 	var value := "";
 	if ( Lower(entry[1]) == "member" )
 		value := ParseMembers(targ, entry[3]);
+		// Verificar se é um tipo de som e se é um NPC
+		var sound_types := array{"attackhitsound", "attackmisssound", "deathsound", "damagedsound", "idlesound"};
+		if ( Lower(entry[3]) in sound_types && targ.npctemplate )
+			// Para sons, pegar do npcdesc.cfg
+			value := GetNPCSound(targ, entry[3]);
+		endif
 	else
 		value := GetCustom(targ, entry[2]);
 	endif
+	
 	if ( value == error )
 		value := "None";
 	endif
@@ -470,10 +497,22 @@ endfunction
 function ProcessInput(who, targ, input)
 	var input_info := btn_list[input];
 
+	// Verificar se é um dos novos botões de navegação
+	if ( input >= PROP_PREV_BTN && input <= PROP_OK_BTN )
+		return ProcessPropNavigation(who, targ, input);
+	endif
+	
+	// Verificar se é um dos novos botões de navegação de sons
+	if ( input >= SOUND_PREV_BTN && input <= SOUND_OK_BTN )
+		return ProcessSoundNavigation(who, targ, input);
+	endif
+
 	case ( Lower(CStr(input_info.editFunc)) )
 		"propedit":
 			PropEdit(who, targ, input_info);
 			break;
+		"soundedit":
+			SoundEdit(who, targ, input_info);
 		"coordedit":
 			CoordEdit(who, targ, input_info);
 			break;
@@ -503,6 +542,14 @@ function ProcessInput(who, targ, input)
 endfunction
 
 function PropEdit(who, targ, input_info)
+	// Se for graphic, usar o gump especial com navegação
+	if ( Lower(input_info.name) == "graphic" )
+		current_prop_name := input_info.name;
+		current_prop_target := targ;
+		PropEditWithNavigation(who, targ, input_info.name);
+		return 1;
+	endif
+	
 	var value := ParseMembers(targ, input_info.name);
 
 	var change := RequestGump(who, "New value to assign "+input_info.name+" to.", "'NULL' to set as non-value.", CStr(value), CANCEL_BTN_ON);
@@ -640,4 +687,287 @@ function OpenStorage(who, targ, input_info)
 		var container := CP_GetStorageContainerForMobile(targ, storage_area, CP_NOCREATE);
 		return SendOpenSpecialContainer(who, container);
 	endif
+endfunction
+
+// Nova função para criar o gump de navegação
+function PropEditWithNavigation(who, targ, prop_name)
+	var value := ParseMembers(targ, prop_name);
+	
+	var gump := GFCreateGump();
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 200);
+	
+	// Título
+	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 35);
+	GFTextLine(gump, 25, 22, 2100, "Editando: "+prop_name+" de "+targ.name);
+	
+	// Área principal
+	GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 370, 100);
+	
+	// Valor atual
+	GFTextLine(gump, 25, 80, 2100, "Valor atual:");
+	GFTextLine(gump, 120, 80, 2100, CStr(value));
+	
+	// Botões de navegação
+	GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, PROP_PREV_BTN); // Seta esquerda
+	GFTextLine(gump, 50, 113, 2100, "-1");
+	
+	GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, PROP_NEXT_BTN); // Seta direita
+	GFTextLine(gump, 145, 113, 2100, "+1");
+	
+	// Campo de entrada manual
+	GFTextLine(gump, 200, 80, 2100, "Ou digite valor:");
+	var campo_gra := GFTextEntry(gump, 200, 100, 100, 20, 2100, CStr(value), 0, 1);
+	
+	// Botões de ação
+	GFAddButton(gump, 25, 170, 4023, 4024, GF_CLOSE_BTN, PROP_OK_BTN); // OK
+	GFTextLine(gump, 50, 173, 2100, "Fechar");
+	
+	GFAddButton(gump, 120, 170, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
+	GFTextLine(gump, 145, 173, 2100, "Cancelar");
+	
+	// Botão para aplicar valor digitado
+	GFAddButton(gump, 320, 100, 4023, 4024, GF_CLOSE_BTN, 999); // Aplicar
+	GFTextLine(gump, 345, 103, 2100, "Aplicar");
+	
+	var input := GFSendGump(who, gump);
+	var button := input[0];
+	var text := input[1];
+	var novocampogra := GFExtractData(input, campo_gra);
+	
+	if ( button == 999 && novocampogra ) // Aplicar valor digitado
+		var new_value := novocampogra;
+		ParseMembers(targ, prop_name, new_value);
+		PropEditWithNavigation(who, targ, prop_name); // Reabrir para mostrar novo valor
+	elseif ( button >= PROP_PREV_BTN && button <= PROP_OK_BTN )
+		ProcessPropNavigation(who, targ, button);
+	elseif ( button == PROP_OK_BTN || button == 0 )
+		// Fechar ou cancelar
+		current_prop_name := "";
+		current_prop_target := 0;
+	endif
+	
+	return 1;
+endfunction
+
+// Nova função para processar a navegação de propriedades
+function ProcessPropNavigation(who, targ, input)
+	if ( !current_prop_target || !current_prop_name )
+		return 0;
+	endif
+
+	var current_value := ParseMembers(current_prop_target, current_prop_name);
+	var new_value := current_value;
+
+	case ( input )
+		PROP_PREV_BTN:
+			new_value := CInt(current_value) - 1;
+			if ( new_value < 0 )
+				new_value := 0;
+			endif
+			break;
+		PROP_NEXT_BTN:
+			new_value := CInt(current_value) + 1;
+			break;
+		PROP_OK_BTN:
+			// Botão OK - apenas fecha o gump de navegação
+			current_prop_name := "";
+			current_prop_target := 0;
+			return 1;
+	endcase
+
+	// Aplicar o novo valor
+	ParseMembers(current_prop_target, current_prop_name, new_value);
+	
+	// Reabrir o gump de navegação
+	PropEditWithNavigation(who, targ, current_prop_name);
+	
+	return 1;
+endfunction
+
+// Nova função para editar sons do NPC
+function SoundEdit(who, targ, input_info)
+	// Verificar se é um NPC
+
+	// Configurar variáveis globais para navegação
+	current_sound_type := input_info.name;
+	current_sound_target := targ;
+	SoundEditWithNavigation(who, targ, input_info.name);
+	
+	return 1;
+endfunction
+
+// Nova função para criar o gump de navegação de sons
+function SoundEditWithNavigation(who, targ, sound_type)
+	var value := GetNPCSound(targ, sound_type);
+	
+	var gump := GFCreateGump();
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 450, 250);
+	
+	// Título
+	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 420, 35);
+	GFTextLine(gump, 25, 22, 2100, "Editando Som: "+sound_type+" de "+targ.name);
+	
+	// Área principal
+	GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 420, 150);
+	
+	// Valor atual
+	GFTextLine(gump, 25, 80, 2100, "Som atual:");
+	GFTextLine(gump, 120, 80, 2100, CStr(value));
+	
+	// Botões de navegação
+	GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, SOUND_PREV_BTN); // Seta esquerda
+	GFTextLine(gump, 50, 113, 2100, "-1");
+	
+	GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, SOUND_NEXT_BTN); // Seta direita
+	GFTextLine(gump, 145, 113, 2100, "+1");
+	
+	// Botão para tocar som
+	GFAddButton(gump, 220, 110, 4029, 4030, GF_CLOSE_BTN, SOUND_PLAY_BTN); // Play
+	GFTextLine(gump, 245, 113, 2100, "Tocar Som");
+	
+	// Campo de entrada manual
+	GFTextLine(gump, 25, 140, 2100, "Ou digite valor:");
+	var campo_sound := GFTextEntry(gump, 25, 160, 100, 20, 2100, CStr(value), 0, 5);
+	
+	// Botão para aplicar valor digitado
+	GFAddButton(gump, 140, 160, 4023, 4024, GF_CLOSE_BTN, 998); // Aplicar
+	GFTextLine(gump, 165, 163, 2100, "Aplicar");
+	
+	// Informação sobre o tipo de som
+	var sound_desc := GetSoundDescription(sound_type);
+	GFTextLine(gump, 250, 140, 2100, sound_desc);
+	
+	// Botões de ação
+	GFAddButton(gump, 25, 220, 4023, 4024, GF_CLOSE_BTN, SOUND_OK_BTN); // OK
+	GFTextLine(gump, 50, 223, 2100, "Fechar");
+	
+	GFAddButton(gump, 120, 220, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
+	GFTextLine(gump, 145, 223, 2100, "Cancelar");
+	
+	var input := GFSendGump(who, gump);
+	var button := input[0];
+	var text := input[5];
+	var novocampo := GFExtractData(input, campo_sound);
+	
+	if ( button == 998 && novocampo ) // Aplicar valor digitado
+		var new_value := novocampo;
+		SetNPCSound(targ, sound_type, new_value); 
+		SoundEditWithNavigation(who, targ, sound_type); // Reabrir para mostrar novo valor
+	elseif ( button >= SOUND_PREV_BTN && button <= SOUND_OK_BTN )
+		ProcessSoundNavigation(who, targ, button);
+	elseif ( button == SOUND_OK_BTN || button == 0 )
+		// Fechar ou cancelar
+		current_sound_type := "";
+		current_sound_target := 0;
+	endif
+	
+	return 1;
+endfunction
+
+// Função para obter som do NPC do arquivo npcdesc.cfg
+function GetNPCSound(targ, sound_type)
+	if ( !targ.npctemplate )
+		return 0;
+	endif
+
+var prop_name := "CustomSound_" + sound_type;
+	var custom_sound := GetObjProperty(targ, prop_name);
+	if ( custom_sound != error )
+		return custom_sound;
+	endif
+
+	// Se não há propriedade customizada, ler do arquivo npcdesc.cfg
+	var npcdesc_cfg := ReadConfigFile(":*:npcdesc");
+	if ( !npcdesc_cfg )
+		return 0;
+	endif
+
+	var template_name := Lower(NPC_ParseTemplateName(targ.npctemplate).template);
+
+	var npc_elem := npcdesc_cfg[template_name];
+	if ( !npc_elem )
+		return 0;
+	endif
+
+	var sound_value := GetConfigInt(npc_elem, sound_type);
+	return sound_value;
+endfunction
+
+// Função para obter descrição do tipo de som
+function GetSoundDescription(sound_type)
+	case ( Lower(sound_type) )
+		"attackhitsound":
+			return "Som de ataque bem-sucedido";
+		"attackmisssound":
+			return "Som de ataque perdido";
+		"deathsound":
+			return "Som de morte";
+		"damagedsound":
+			return "Som quando ferido";
+		"idlesound":
+			return "Som quando parado";
+		default:
+			return "Som desconhecido";
+	endcase
+endfunction
+
+// Nova função para processar a navegação de sons
+function ProcessSoundNavigation(who, targ, input)
+	if ( !current_sound_target || !current_sound_type )
+		return 0;
+	endif
+
+	var current_value := GetNPCSound(current_sound_target, current_sound_type);
+	var new_value := current_value;
+
+	case ( input )
+		SOUND_PREV_BTN:
+			new_value := CInt(current_value) - 1;
+			if ( new_value < 0 )
+				new_value := 0;
+			endif
+			break;
+		SOUND_NEXT_BTN:
+			new_value := CInt(current_value) + 1;
+			break;
+		SOUND_PLAY_BTN:
+			// Tocar o som atual para todos ao redor
+			PlaySoundEffect(targ, current_value);
+			SoundEditWithNavigation(who, targ, current_sound_type);
+			return 1;
+		SOUND_OK_BTN:
+			// Botão OK - apenas fecha o gump de navegação
+			current_sound_type := "";
+			current_sound_target := 0;
+			return 1;
+	endcase
+
+	// Aplicar o novo valor
+	SetNPCSound(current_sound_target, current_sound_type, new_value);
+	
+	// Reabrir o gump de navegação
+	SoundEditWithNavigation(who, targ, current_sound_type);
+	
+	return 1;
+endfunction
+
+// Função para definir som do NPC no arquivo npcdesc.cfg
+function SetNPCSound(targ, sound_type, sound_value)
+	if ( !targ.npctemplate )
+		return 0;
+	endif
+
+	// Esta função requereria escrita direta no arquivo de configuração
+	// Por simplicidade, vamos armazenar em uma propriedade customizada temporária
+	// Em uma implementação real, você precisaria reescrever o arquivo npcdesc.cfg
+	
+	var prop_name := "CustomSound_" + sound_type;
+	SetObjProperty(targ, prop_name, sound_value);
+	
+	// Log da alteração
+	//LogToFile("log/sound_edits.log", gm.name+" ("+gm.acctname+") alterou som "+sound_type+" de "+targ.name+" para "+sound_value, LOG_DATETIME);
+	
+	return 1;
 endfunction
