@@ -29,8 +29,8 @@ exported function CheckEventsWalk( who, byref packet )
 	// 		endif
 	// 	endif
 	// endforeach
-
-	if (GetObjProperty(who, "neve") && who.concealed == 0 && !GetObjProperty(who, "noprints") && TemHabilidade(who, "Movimento Livre") == 0)
+    var regions := GetObjProperty(who, "neve") || GetObjProperty(who, "calor");
+	if (regions && who.concealed == 0 && !GetObjProperty(who, "noprints") && TemHabilidade(who, "Movimento Livre") == 0)
 		if (who.facing == 0 || who.facing == 7);
 			CreateItemAtLocation(who.x, who.y, who.z+1, 0x1E04, 1, who.realm);
 		elseif (who.facing == 1 || who.facing == 2);
