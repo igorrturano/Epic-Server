@@ -118,7 +118,6 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
         default:    loot_name_prefix := "Humano" + "Guerreiro"; break;
     endcase
     var lootname := loot_name_prefix + "Chest" + level;
-    print("DEBUG::MakeEpicChests - Using loot table: " + lootname);
 
     var created_chests_this_cycle := array;
     var puzzle_chests_spawned_this_cycle := 0;
