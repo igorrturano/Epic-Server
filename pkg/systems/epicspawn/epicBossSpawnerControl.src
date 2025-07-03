@@ -20,7 +20,6 @@ program epicBossSpawnerControl(spawner)
         return 0;
     endif
     
-    print("STARTING BOSS SPAWNER " + spawner.serial);
     InitializeSpawner(spawner);
     
     while (spawner && spawner.serial)
@@ -74,7 +73,6 @@ function ValidateDelaySettings(spawner)
         SetObjProperty(spawner, "MaxDelay", maxDelay);
     endif
     
-    print("DEBUG: Delay settings - Min: " + minDelay + ", Max: " + maxDelay);
 endfunction
 
 function ProcessSpawnerState(spawner)
@@ -113,10 +111,6 @@ function ProcessSpawnerState(spawner)
             var minutesLeft := CInt((respawnTime - ReadGameClock()) / 60);
             if (minutesLeft != spawnQueue)
                 SetObjProperty(spawner, "SpawnQueue", minutesLeft);
-            endif
-            
-            if (minutesLeft % 10 == 0 || minutesLeft <= 5)
-                print("DEBUG: Spawn countdown: " + minutesLeft + " minutes left");
             endif
         endif
     endif
