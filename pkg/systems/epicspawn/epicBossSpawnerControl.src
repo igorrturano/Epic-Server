@@ -16,7 +16,6 @@ endenum
 
 program epicBossSpawnerControl(spawner)
     if (!spawner)
-        print("ERROR: Invalid spawner reference");
         return 0;
     endif
     
@@ -26,8 +25,6 @@ program epicBossSpawnerControl(spawner)
         ProcessSpawnerState(spawner);
         sleep(60);
     endwhile
-    
-    print("WARNING: Control script ended for " + spawner.serial);
 endprogram
 
 function InitializeSpawner(spawner)
@@ -93,7 +90,6 @@ function ProcessSpawnerState(spawner)
     if (state == ACTIVE && childSerial != "Empty")
         var boss := SystemFindObjectBySerial(childSerial);
         if (!boss || boss.dead)
-            print("DEBUG: Boss " + childSerial + " is dead/missing");
             SetObjProperty(spawner, "ChildSerial", "Empty");
             SetObjProperty(spawner, "SpawnerState", INACTIVE);
             CalculateRespawnTime(spawner);
@@ -118,22 +114,17 @@ endfunction
 
 function AttemptBossSpawn(spawner, bossData)
     if (!bossData)
-        print("ERROR: No boss data found");
         return;
     endif
     
-    print("DEBUG: Attempting spawn at X:" + spawner.x + " Y:" + spawner.y + " Z:" + spawner.z + "realm: " + spawner.realm);
-    print("DEBUG BOSS SERIAL: " + spawner.serial + " - " + bossData.name);
     var boss := CreateEpicBoss(bossData, spawner.x, spawner.y, spawner.z, spawner.realm);
     
     if (boss && boss != error)
-        print("DEBUG: Boss spawned: " + boss.serial);
         SetObjProperty(boss, "epicspawner", spawner.serial);
         SetObjProperty(spawner, "ChildSerial", boss.serial);
         SetObjProperty(spawner, "SpawnerState", ACTIVE);
         SetObjProperty(spawner, "SpawnQueue", 0);
     else
-        print("ERROR: Spawn failed: " + boss);
         SetObjProperty(spawner, "SpawnQueue", 5);
     endif
 endfunction
@@ -185,6 +176,5 @@ function CalculateRespawnTime(spawner)
     SetObjProperty(spawner, "RespawnTime", respawnTime);
     SetObjProperty(spawner, "SpawnQueue", delay);
     
-    print("DEBUG: Respawn timer: " + delay + " minutes (at timestamp " + respawnTime + ")");
     return delay;
 endfunction

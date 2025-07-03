@@ -44,7 +44,7 @@ program textcmd_cleanai(who, unused text)
     endif
     
     // Small delay to prevent overloading
-    sleepms(50);
+    sleepms(2);
     
     // Progress update every 1000 serials
     if (checked_count % 1000 == 0)
