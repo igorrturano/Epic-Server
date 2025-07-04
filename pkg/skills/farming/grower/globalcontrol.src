@@ -71,7 +71,15 @@ endfunction
 
 function DestroyPlant(grower, candestroy:=0)
 	var cfgestacao:=ReadConfigFile(":farming:itemdesc");
+	if ( !cfgestacao )
+		return 0;
+	endif
+	
 	var elemestacao := FindConfigElem(cfgestacao, grower.GetGrowerType());
+	if ( !elemestacao )
+		return 0;
+	endif
+	
 	var destroyestacao:= GetConfigStringArray( elemestacao, "DestroyIn" );
 	var estacao := cstr(getglobalproperty("season"));
 	if ( estacao in destroyestacao )
@@ -87,5 +95,5 @@ function DestroyPlant(grower, candestroy:=0)
 		endif
 		destroyitem(grower);
 	endif
-	return;
+	return 0;
 endfunction
