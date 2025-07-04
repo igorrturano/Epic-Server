@@ -1398,10 +1398,15 @@ function HandleIdleState()
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
     
     // Return to spawn point if we have one
-    var spawn_point := SystemFindObjectBySerial(GetObjProperty(me, "spawnpoint"));
+    var spawn_serial := GetObjProperty(me, "spawnpoint");
+    var spawn_point := 0;
+    if (spawn_serial)
+        spawn_point := SystemFindObjectBySerial(spawn_serial);
+    endif
+
     var anchor := GetObjProperty(me, "anchor");
     var home_x, home_y;
-    
+
     if (spawn_point)
         home_x := spawn_point.x;
         home_y := spawn_point.y;
