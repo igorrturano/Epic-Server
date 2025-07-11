@@ -1,11 +1,11 @@
 use uo;
 use os;
 use datafile;
+use cfgfile;
 
 include ":gumps:gumps";
-include ":gumps:gumps_ex";
 include ":gumps:requestGump";
-include ":gumps:yesNo";
+include "include/string";
 include ":gumps:epicGumps";
 include ":gumps:/include/epicGumps";
 
@@ -464,8 +464,19 @@ function ShowRectangles(who, rect_df)
         // Implementação de paginação para mostrar mais territórios
         ShowRectanglesPage2(who, rect_df, 19); // Começa do 19º item
     elseif (button == 300)
-        // MUDANÇA: Agora pergunta sobre Champion Spawn primeiro
-        ShowChampionSpawnQuestion(who);
+        // KISS: Champion Spawn com gump simples de seleção
+        var champion_type := ShowChampionTypeSelectionGump(who);
+        if (champion_type)
+            // Criar território com tipo de Champion selecionado
+            SendSysMessage(who, "Selecione o centro do território com " + champion_type + ".");
+            var loc := TargetCoordinates(who);
+            if (loc)
+                CreateSimpleChampionTerritory(who, loc, champion_type);
+            endif
+        else
+            // Território normal
+            AskTerritoryType(who);
+        endif
     endif
 endfunction
 
@@ -655,6 +666,28 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
     endif
     GFTextLine(gump, x+110, y, control_color, faction);
     y += 25;
+    
+    // NOVO: Informações sobre Champion Spawn
+    var has_champion := GetElementProp(elem, "HasChampionSpawn", 0);
+    if (has_champion)
+        var champion_type := GetElementProp(elem, "ChampionType", "");
+        GFTextLine(gump, x, y, 2100, "Champion Spawn:");
+        var champion_color := 1153;
+        var champion_name := "";
+        
+        if (champion_type == "CavernaDosGoblins")
+            champion_name := "Caverna dos Goblins";
+            champion_color := 63; // Verde
+        elseif (champion_type == "CovilDasAranhas")
+            champion_name := "Covil das Aranhas";
+            champion_color := 38; // Vermelho
+        else
+            champion_name := champion_type;
+        endif
+        
+        GFTextLine(gump, x+110, y, champion_color, champion_name);
+        y += 25;
+    endif
     
     // Linha de separação
     GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
@@ -1083,33 +1116,262 @@ function CreateStandardTerritory(who)
     SendSysMessage(who, $"Território padrão '{rect_name}' criado com sucesso!");
 endfunction
 
+// KISS: Versão ultra-simples do Champion Spawn com gump simples de seleção
+function CreateSimpleChampionTerritory(who, loc, champion_type)
+    var rect_df := SafeOpenDataFile(":architect:areas", 1);
+    if (!rect_df)
+        who.sendsysmessage("Erro no datafile!");
+        return;
+    endif
+    
+    // Verificar sobreposição simples (área máxima 50x50)
+    var x1_check := loc.x - 25;
+    var y1_check := loc.y - 25; 
+    var x2_check := loc.x + 25;
+    var y2_check := loc.y + 25;
+    
+    if (CheckRectangleOverlap(rect_df, x1_check, y1_check, x2_check, y2_check, loc.realm, ""))
+        who.sendsysmessage("Área se sobrepõe a outro território! Escolha outro local.");
+        return;
+    endif
+    
+    // Nome automático baseado no tipo
+    var default_name := "Território Champion";
+    if (champion_type == "CavernaDosGoblins")
+        default_name := "Caverna dos Goblins";
+    elseif (champion_type == "CovilDasAranhas")
+        default_name := "Covil das Aranhas";
+    endif
+    
+    var rect_name := RequestGump(who, "Nome do território:", default_name);
+    if (!rect_name) return; endif
+    
+    var elem := SafeFindElement(rect_df, rect_name, 1);
+    
+    // Território EXPANSÍVEL (Nível 1 = 15x10, Nível 5 = 50x50)
+    var center_x := loc.x;
+    var center_y := loc.y;
+    
+    // Rect atual (Nível 1): 15x10
+    var x1_current := center_x - 7;
+    var y1_current := center_y - 5;
+    var x2_current := x1_current + 15;
+    var y2_current := y1_current + 10;
+    var current_rect := x1_current + " " + y1_current + " " + x2_current + " " + y2_current;
+    
+    // MaxRect (Nível 5): 50x50  
+    var x1_max := center_x - 25;
+    var y1_max := center_y - 25;
+    var x2_max := x1_max + 50;
+    var y2_max := y1_max + 50;
+    var max_rect := x1_max + " " + y1_max + " " + x2_max + " " + y2_max;
+    
+    // Gerar ID único para o território
+    var territory_id := CreateTerritoryID();
+    
+    // Salvar configuração do território expansível
+    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    SetElementProp(elem, "Name", rect_name);
+    SetElementProp(elem, "Rect", current_rect);
+    SetElementProp(elem, "MaxRect", max_rect);
+    SetElementProp(elem, "Realm", loc.realm);
+    SetElementProp(elem, "faction", "Selvagem");
+    SetElementProp(elem, "IsExpandable", 1);
+    SetElementProp(elem, "HasChampionSpawn", 1);
+    SetElementProp(elem, "ChampionType", champion_type);
+    
+    // CORREÇÃO: Usar a função real do criarcampeao.src para construir ambiente completo
+    who.sendsysmessage("Construindo ambiente completo do Champion Spawn...");
+    var items_construidos := BuildChampionEnvironmentFromCriarcampeao(center_x, center_y, loc.z, loc.realm);
+    
+    // CORREÇÃO: Criar altar com configuração completa de waves e bosses
+    var altar := CreateItemAtLocation(center_x, center_y, loc.z + 5, 0x1822, 1, loc.realm);
+    if (altar)
+        altar.movable := 0;
+        
+        // Configurar o altar com as waves e bosses corretos
+        var altar_config := GetChampionConfig(champion_type);
+        if (altar_config)
+            SetObjProperty(altar, "ChampionConfig", altar_config);
+            SetObjProperty(altar, "TerritoryID", territory_id);
+            items_construidos += 1;
+            who.sendsysmessage("Altar configurado com waves e boss: " + altar_config.boss_template);
+        else
+            who.sendsysmessage("ERRO: Configuração de Champion não encontrada!");
+        endif
+    endif
+    
+    // Configurar recursos básicos para o território
+    SetupResourcesForTerritory(who, elem);
+    
+    who.sendsysmessage("Território EXPANSÍVEL com Champion Spawn criado!");
+    who.sendsysmessage("Tipo: " + champion_type + " | Ambiente: " + items_construidos + " itens");
+    who.sendsysmessage("Tamanho atual: 15x10 | Máximo: 50x50 (expande com nível da facção)");
+    who.sendsysmessage("IMPORTANTE: O totem de conquista será dropado pelo Champion quando morto!");
+endfunction
 
-function ShowChampionSpawnQuestion(who)
-    var gump := GFECreateGump("Criar Território", 400, 180, array{BORDER_GOLDEN});
+// CORREÇÃO: Função real do criarcampeao.src para construir ambiente completo
+function BuildChampionEnvironmentFromCriarcampeao(center_x, center_y, center_z, realm)
+    // Lista da Arena Externa (copiado do criarcampeao.src)
+    var outer_arena := array {
+        "0xC5 9 0 0 1", "0xC5 0 9 0 1", "0xC5 -9 0 0 1", "0xC5 0 -9 0 1",
+        "0xC5 -6 -6 0 1", "0xC5 -6 6 0 1", "0xC5 6 6 0 1", "0xC5 6 -6 0 1",
+        "0xDB -4 1 6 1", "0xDB -2 4 6 1", "0xDB 1 4 6 1", "0xDB 4 1 7 1",
+        "0xDB 4 -2 6 1", "0xDB 1 -4 7 1", "0xDB -2 -4 6 1", "0xDB -4 -2 6 1",
+        "0x1ECB -9 0 20 1", "0x1ECB -6 -6 20 1", "0x1ECB -6 6 20 1", "0x1ECB 0 -9 20 1",
+        "0x1ECB 6 -6 20 1", "0x1ECB 9 0 20 1", "0x1ECB 6 6 20 1", "0x1ECB 0 9 20 1",
+        "0x1ECB 4 -2 0 1", "0x1ECB 1 4 0 1", "0x1ECB -2 4 0 1", "0x1ECB -4 1 0 1",
+        "0x1ECB -4 -2 0 1", "0x1ECB -2 -4 0 1", "0x1ECB 4 1 1 1", "0x1ECB 1 -4 1 1"
+    };
+    
+    // Lista da Plataforma Central Elevada (copiado do criarcampeao.src)
+    var center_platform := array {
+        "0x1781 0 0 0 0", "0x49C 0 0 0 1", "0x51B 1 1 5 1", "0x51B 1 0 5 1",
+        "0x51B 1 -1 5 1", "0x51B 0 1 5 1", "0x51B 0 0 5 1", "0x51B 0 -1 5 1",
+        "0x51B -1 1 5 1", "0x51B -1 0 5 1", "0x51B -1 -1 5 1", "0x78D -2 -2 0 1",
+        "0x78C -2 1 0 1", "0x78C -2 0 0 1", "0x78C -2 -1 0 1", "0x78B 1 -2 0 1",
+        "0x78B 0 -2 0 1", "0x78B -1 -2 0 1", "0x78A 2 1 0 1", "0x78A 2 0 0 1",
+        "0x78A 2 -1 0 1", "0x78F 2 -2 0 1", "0x78E 2 2 0 1", "0x789 1 2 0 1",
+        "0x789 0 2 0 1", "0x789 -1 2 0 1", "0x790 -2 2 0 1", "0x788 1 1 0 1",
+        "0x788 1 0 0 1", "0x788 1 -1 0 1", "0x788 0 1 0 1", "0x788 0 0 0 1",
+        "0x788 0 -1 0 1", "0x788 -1 1 0 1", "0x788 -1 0 0 1", "0x788 -1 -1 0 1"
+    };
+
+    // COMBINA AS DUAS LISTAS EM UMA SÓ (exato como no criarcampeao.src)
+    var design_lines := outer_arena + center_platform;
+
+    var items_criados := 0;
+    var erros := 0;
+
+    foreach line in design_lines
+        line := Trim(line);
+        if (!line) continue; endif
+
+        var parts := SplitWords(line);
+        if (parts.size() < 4) 
+            continue; 
+        endif
+
+        var objtype := CInt(parts[1]);
+        var x_offset := CInt(parts[2]);
+        var y_offset := CInt(parts[3]);
+        var z_offset := CInt(parts[4]);
+        
+        var final_x := center_x + x_offset;
+        var final_y := center_y + y_offset;
+        var final_z := center_z + z_offset;
+
+        var item := CreateItemAtLocation(final_x, final_y, final_z, objtype, 1, realm);
+
+        if (item)
+            item.movable := 0; 
+            items_criados += 1;
+        else
+            erros += 1;
+        endif
+
+        sleepms(2);
+    endforeach
+
+    return items_criados;
+endfunction
+
+// CORREÇÃO: Função para obter configuração completa do Champion (waves, boss, etc)
+function GetChampionConfig(champion_type)
+    var altar_config := struct;
+    
+    // Configurações exatas do criarcampeao.src
+    case (Lower(champion_type))
+        "cavernadosgoblins":
+            altar_config.+name               := "Caverna dos Goblins";
+            altar_config.+boss_template      := "orcbrute";
+            altar_config.+cooldown           := 3600;
+            altar_config.+player_radius      := 40;
+            altar_config.+waves              := array(
+                struct{"mobs" := array("goblin", "goblin2"), "amount" := 30}, 
+                struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
+                struct{"mobs" := array("goblin", "goblin2"), "amount" := 1}, 
+                struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
+                struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, 
+                struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
+                struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, 
+                struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
+                struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, 
+                struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
+                struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, 
+                struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
+                struct{"mobs" := array("ettin", "troll"), "amount" := 1}, 
+                struct{"mobs" := array("ettin", "troll"), "amount" := 1},
+                struct{"mobs" := array("ettin", "troll"), "amount" := 1}, 
+                struct{"mobs" := array("ettin", "troll"), "amount" := 1}
+            );
+        "covildasaranhas":
+            altar_config.+name               := "Covil das Aranhas";
+            altar_config.+boss_template      := "dreadspider";
+            altar_config.+cooldown           := 7200;
+            altar_config.+player_radius      := 40;
+            altar_config.+waves              := array(
+                struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, 
+                struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
+                struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, 
+                struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
+                struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, 
+                struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
+                struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, 
+                struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
+                struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, 
+                struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
+                struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, 
+                struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
+                struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, 
+                struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4},
+                struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, 
+                struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}
+            );
+        default:
+            return 0; // Tipo não reconhecido
+    endcase
+    
+    return altar_config;
+endfunction
+
+// KISS: Gump simples para escolher tipo de Champion
+function ShowChampionTypeSelectionGump(who)
+    var gump := GFECreateGump("Escolher Champion Spawn", 400, 250, array{BORDER_GOLDEN});
     
     var x := 30;
     var y := 70;
     
-    GFTextMid(gump, 15, y, 370, 53, "Você quer criar um território com Champion Spawn?");
-    y += 50;
+    GFTextMid(gump, 15, y, 370, 53, "Que tipo de Champion Spawn deseja criar?");
+    y += 40;
     
-    // Opção SIM
-    GFAddButton(gump, x + 50, y, 2361, 2361, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, x + 70, y - 4, 63, "SIM");
+    // Opção 1: Caverna dos Goblins
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 100);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Caverna dos Goblins");
+    GFTooltipText(gump, "Champion Spawn com tema de goblins e orcs");
+    y += 30;
     
-    // Opção NÃO
-    GFAddButton(gump, x + 200, y, 2361, 2361, GF_CLOSE_BTN, 2);
-    GFTextLine(gump, x + 220, y - 4, 38, "NÃO");
+    // Opção 2: Covil das Aranhas  
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 200);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Covil das Aranhas");
+    GFTooltipText(gump, "Champion Spawn com tema de aranhas");
+    y += 30;
+    
+    // Opção 3: Território Normal
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 300);
+    GFTextLine(gump, x + 40, y - 4, 38, "Território Normal (sem Champion)");
+    GFTooltipText(gump, "Criar território comum sem Champion Spawn");
     
     var input := GFSendGump(who, gump);
     var button := input[0];
     
-    if (button == 1)
-        // SIM - Criar território com Champion Spawn
-        // TODO: Implementar sequência do Champion Spawn
-        SendSysMessage(who, "Função Champion Spawn ainda não implementada!");
-    elseif (button == 2)
-        // NÃO - Criar território normal
-        ShowTerritoryTypeSelection(who);
+    if (button == 100)
+        return "CavernaDosGoblins";
+    elseif (button == 200)
+        return "CovilDasAranhas";
+    elseif (button == 300)
+        return ""; // Território normal
     endif
+    
+    return 0; // Cancelado
 endfunction
