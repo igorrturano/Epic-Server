@@ -128,6 +128,7 @@ function CheckAllLevers(lever, lever_list, opts)
                return 0;
             endif
          endif
+
          // Verificar ordem específica
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
