@@ -5,29 +5,42 @@
 
 use uo;
 
-CONST MAX_RANGE := 5;
+CONST MAX_RANGE := 50;
 
 program textcmd_DestroyRadius(who, text)
-	text := SplitWords(text);
-	var ranget := CInt(text[1]);
-	var show := CStr(text[2]);
-	var num_destroyed := 0;
+    text := SplitWords(text);
+    var ranget := CInt(text[1]);
+    var show := CStr(text[2]);
+    var num_destroyed := 0;
 
-	if ( ranget > MAX_RANGE )
-		SendSysMessage(who, "Range has been set to the maximum distance of "+MAX_RANGE);
-		ranget := MAX_RANGE;
-	endif
+    if ( ranget > MAX_RANGE )
+        SendSysMessage(who, "Range has been set to the maximum distance of "+MAX_RANGE);
+        ranget := MAX_RANGE;
+    endif
 
-	foreach thingie in ListItemsNearLocation(who.x, who.y, who.z, ranget, who.realm)
-		if ( show == "show" )
-			SendSysMessage(who, "Destroying "+thingie.desc);
-		endif
+    SendSysMessage(who, "DEBUG: Procurando itens em range "+ranget+" ao redor de "+who.x+","+who.y+","+who.z);
 
-		DestroyItem( thingie );
-		num_destroyed := num_destroyed+1;
-	endforeach
+    // Busca em vários níveis de Z
+    for z_offset := -MAX_RANGE to MAX_RANGE
+        var search_z := who.z + z_offset;
+        foreach thingie in ListItemsNearLocation(who.x, who.y, search_z, ranget, who.realm)
+            SendSysMessage(who, "DEBUG: Item encontrado - ID:"+Hex(thingie.objtype)+" Desc:'"+thingie.desc+"' Pos:"+thingie.x+","+thingie.y+","+thingie.z+" Movable:"+thingie.movable);
 
-	SendSysMessage(who, "Destroyed "+num_destroyed+" items in a radius of "+ranget);
+            if ( show == "show" )
+                SendSysMessage(who, "Destroying "+thingie.desc+" at Z:"+thingie.z+" (your Z:"+who.z+")");
+            endif
 
-	return 1;
+            var destroy_result := DestroyItem( thingie );
+            if ( destroy_result )
+                SendSysMessage(who, "DEBUG: Item destruído com sucesso!");
+                num_destroyed := num_destroyed+1;
+            else
+                SendSysMessage(who, "DEBUG: FALHA ao destruir item!");
+            endif
+        endforeach
+    endfor
+
+    SendSysMessage(who, "Destroyed "+num_destroyed+" items in a radius of "+ranget);
+
+    return 1;
 endprogram

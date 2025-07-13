@@ -7,7 +7,10 @@ include ":gumps:gumps_ex";
 include ":gumps:requestGump";
 include ":gumps:yesNo";
 include ":gumps:epicGumps";
-include ":gumps:/include/epicGumps";
+include ":faccao:include/faccao_constants";
+include ":epicspawn:epicBoss";
+
+
 
 
 program rectangle_creator(who, params)
@@ -752,6 +755,10 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
         // Botão Deletar (separado visualmente)
         GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 100);
         GFTextLine(gump, btn_x+20, btn_y-4, 38, "Deletar Território");
+        
+        // Botão TESTE: Spawnar Boss
+        GFAddButton(gump, btn_x+btn_spacing, btn_y, 2361, 2361, GF_CLOSE_BTN, 600);
+        GFTextLine(gump, btn_x+btn_spacing+20, btn_y-4, 63, "TESTE: Spawnar Boss");
     endif
     
 
@@ -844,6 +851,8 @@ var input := GFSendGump(who, gump);
         
     elseif (button == 500) // Configurar Recursos
         SetupResourcesForTerritory(who, elem);
+    elseif (button == 600) // TESTE: Spawnar Boss
+        CreateSimpleChallenge(who, name);
     endif
 endfunction
 
@@ -1112,4 +1121,252 @@ function ShowChampionSpawnQuestion(who)
         // NÃO - Criar território normal
         ShowTerritoryTypeSelection(who);
     endif
+endfunction
+
+function CreateSimpleChallenge(who, territory_name)
+    // TESTE: Spawnar um orc boss real para o território
+    who.Say("TESTE: Criando desafio de boss para " + territory_name);
+    
+    // Log inicial detalhado usando as mesmas funções do Champion Spawn
+    who.Say("DEBUG: === INICIANDO CRIAÇÃO DE BOSS ===");
+    who.Say("DEBUG: Território: " + territory_name);
+    who.Say("DEBUG: Player: " + who.name + " (Serial: " + who.serial + ")");
+    
+    // Usar coordenadas próximas ao player
+    var boss_x := who.x + 3;
+    var boss_y := who.y + 3;
+    var boss_z := who.z;
+    var boss_realm := who.realm;
+    
+    who.Say("DEBUG: Coordenadas: X=" + boss_x + " Y=" + boss_y + " Z=" + boss_z + " Realm=" + boss_realm);
+    
+    // Usar EXATAMENTE a mesma função que o Champion Spawn usa para criar NPCs
+    who.Say("DEBUG: === USANDO FUNÇÃO DO CHAMPION SPAWN ===");
+    who.Say("DEBUG: Chamando CreateNpcWithPrefix('orcbrute', ...)");
+    
+    // Simulando a mesma estrutura que GetSpawnLocation() retorna
+    var loc := array{boss_x, boss_y, boss_z};
+    var boss := CreateNpcWithPrefix("orcbrute", loc[1], loc[2], loc[3], boss_realm);
+    
+    if (boss && !boss.errortext)
+        who.Say("DEBUG: SUCESSO! Boss criado com CreateNpcWithPrefix");
+        who.Say("DEBUG: Boss Serial: " + boss.serial);
+        who.Say("DEBUG: Boss Name: " + boss.name);
+        who.Say("DEBUG: Boss Position: " + boss.x + "," + boss.y + "," + boss.z);
+        
+        // Usar exatamente os mesmos efeitos do Champion Spawn
+        who.Say("DEBUG: Aplicando efeitos do Champion Spawn...");
+        PlaySoundEffect(boss, 0x2F3);
+        
+        // Configurar como guardião territorial
+        boss.name := "Guardião de " + territory_name;
+        
+        // SALVAR O TERRITÓRIO NO BOSS para criar totem quando morrer
+        SetObjProperty(boss, "TerritoryName", territory_name);
+        SetObjProperty(boss, "IsGuardian", 1);
+        
+        // CONFIGURAR SCRIPT DE MORTE: Adicionar script que detecta morte automaticamente
+        var script_ref := start_script(":faccao:guardian_death_monitor", boss);
+        if (script_ref.errortext)
+            SysLog("TotemCreation: AVISO - Falha ao iniciar script de monitoramento: " + script_ref.errortext);
+        else
+            SysLog("TotemCreation: Script de monitoramento de morte iniciado para boss " + boss.serial);
+        endif
+        
+        who.Say("DEBUG: Nome definido: " + boss.name);
+        who.Say("DEBUG: Território salvo no boss: " + territory_name);
+        SysLog("TotemCreation: Boss " + boss.serial + " configurado como guardião do território: " + territory_name);
+        SysLog("TotemCreation: Propriedades salvas: IsGuardian=" + GetObjProperty(boss, "IsGuardian") + ", TerritoryName=" + GetObjProperty(boss, "TerritoryName"));
+        
+        who.Say("=== BOSS CRIADO COM SUCESSO! ===");
+        who.Say("Usando a MESMA função do Champion Spawn!");
+        
+        return boss;
+    else
+        who.Say("DEBUG: FALHA com CreateNpcWithPrefix");
+        who.Say("DEBUG: Tentando fallback com template 'dreadspider'...");
+        
+        boss := CreateNpcWithPrefix("dreadspider", loc[1], loc[2], loc[3], boss_realm);
+        
+        if (boss && !boss.errortext)
+            who.Say("DEBUG: SUCESSO com dreadspider!");
+            boss.name := "Guardião de " + territory_name;
+            
+            // SALVAR O TERRITÓRIO NO BOSS para criar totem quando morrer
+            SetObjProperty(boss, "TerritoryName", territory_name);
+            SetObjProperty(boss, "IsGuardian", 1);
+            
+            // CONFIGURAR SCRIPT DE MORTE: Adicionar script que detecta morte automaticamente
+            var script_ref := start_script(":faccao:guardian_death_monitor", boss);
+            if (script_ref.errortext)
+                SysLog("TotemCreation: AVISO - Falha ao iniciar script de monitoramento: " + script_ref.errortext);
+            else
+                SysLog("TotemCreation: Script de monitoramento de morte iniciado para boss " + boss.serial);
+            endif
+            
+            PlaySoundEffect(boss, 0x2F3);
+            return boss;
+        else
+            who.Say("ERROR: === FALHA CRÍTICA ===");
+            who.Say("ERROR: CreateNpcWithPrefix falhou com ambos templates");
+            who.Say("ERROR: Boss: " + (boss ? "criado com erro: " + boss.errortext : "null"));
+            return 0;
+        endif
+    endif
+endfunction
+
+// Função chamada quando um boss guardião morre
+function OnBossGuardianDeath(boss)
+    SysLog("TotemCreation: === INICIANDO OnBossGuardianDeath ===");
+    SysLog("TotemCreation: Boss Serial: " + boss.serial + ", Nome: " + boss.name);
+    SysLog("TotemCreation: Posição do boss: " + boss.x + "," + boss.y + "," + boss.z + " Realm: " + boss.realm);
+    
+    // Verificar se é um guardião territorial
+    var is_guardian := GetObjProperty(boss, "IsGuardian");
+    SysLog("TotemCreation: IsGuardian property: " + is_guardian);
+    if (!is_guardian)
+        SysLog("TotemCreation: Boss NÃO é um guardião. Encerrando.");
+        return; // Não é um guardião, não fazer nada
+    endif
+    
+    // Obter o nome do território que ele guardava
+    var territory_name := GetObjProperty(boss, "TerritoryName");
+    SysLog("TotemCreation: TerritoryName property: " + territory_name);
+    if (!territory_name)
+        SysLog("TotemCreation: ERRO - Boss é guardião mas NÃO tem território associado!");
+        return; // Sem território associado
+    endif
+    
+    SysLog("TotemCreation: Boss está guardando o território: " + territory_name);
+    
+    // Buscar o território no datafile
+    var rect_df := SafeOpenDataFile(":architect:areas", 1);
+    if (!rect_df)
+        SysLog("TotemCreation: ERRO - Não foi possível abrir o datafile :architect:areas");
+        return;
+    endif
+    
+    SysLog("TotemCreation: Datafile aberto com sucesso. Procurando elemento: " + territory_name);
+    var elem := SafeFindElement(rect_df, territory_name);
+    if (!elem)
+        SysLog("TotemCreation: ERRO - Território '" + territory_name + "' NÃO encontrado no datafile!");
+        return; // Território não encontrado
+    endif
+    
+    SysLog("TotemCreation: Elemento do território encontrado! Calculando centro do território...");
+    
+    // Obter retângulo do território para calcular centro
+    var rect_str := GetElementProp(elem, "Rect", "");
+    SysLog("TotemCreation: Rect string: " + rect_str);
+    
+    // Calcular centro do território
+    var center_coords := CalculateRectangleCenter(rect_str, boss.realm);
+    var result;
+    if (!center_coords)
+        SysLog("TotemCreation: ERRO - Não foi possível calcular centro. Usando posição do boss como fallback.");
+        result := CreateTerritoryTotemOnGround(boss.x, boss.y, boss.z, boss.realm, elem);
+    else
+        SysLog("TotemCreation: Centro calculado: " + center_coords.x + "," + center_coords.y + "," + center_coords.z);
+        result := CreateTerritoryTotemOnGround(center_coords.x, center_coords.y, center_coords.z, center_coords.realm, elem);
+    endif
+    SysLog("TotemCreation: Resultado de CreateTerritoryTotemOnGround: " + result);
+    SysLog("TotemCreation: === FIM OnBossGuardianDeath ===");
+endfunction
+
+// Versão modificada de CreateTerritoryTotem que cria no chão
+function CreateTerritoryTotemOnGround(x, y, z, realm, elem)
+    SysLog("TotemCreation: === INICIANDO CreateTerritoryTotemOnGround ===");
+    SysLog("TotemCreation: Posição: " + x + "," + y + "," + z + " Realm: " + realm);
+    
+    if (!elem)
+        SysLog("TotemCreation: ERRO - Elemento do território é NULL!");
+        return 0;
+    endif
+    
+    SysLog("TotemCreation: Elemento válido. Tentando criar item no chão...");
+
+    // Criar totem no chão em vez de na mochila
+    var totem := CreateItemAtLocation(x, y, z, 0xA102, 1, realm);
+    if (!totem)
+        SysLog("TotemCreation: ERRO CRÍTICO - CreateItemAtLocation falhou!");
+        SysLog("TotemCreation: Parâmetros: objtype=0xA102, amount=1, x=" + x + ", y=" + y + ", z=" + z + ", realm=" + realm);
+        return 0;
+    endif
+    
+    SysLog("TotemCreation: SUCESSO! Totem criado no chão. Serial: " + totem.serial);
+    SysLog("TotemCreation: Posição do totem: " + totem.x + "," + totem.y + "," + totem.z);
+    
+    // Obter ID e Nome do elemento
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
+    var territory_name := GetElementProp(elem, "Name", "Território Sem Nome");
+
+    SysLog("TotemCreation: Territory ID: " + territory_id);
+    SysLog("TotemCreation: Territory Name: " + territory_name);
+
+    if (!territory_id)
+        SysLog("TotemCreation: AVISO - Territory ID é NULL! Usando território name como fallback.");
+        territory_id := territory_name; // Usar nome como fallback
+        if (!territory_id)
+            SysLog("TotemCreation: ERRO CRÍTICO - Territory Name também é NULL! Destruindo totem...");
+            DestroyItem(totem);
+            return 0;
+        endif
+    endif
+    
+    SysLog("TotemCreation: Configurando propriedades do totem...");
+    
+    // Configurar propriedades do totem (mesmas da função original)
+    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
+    SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
+    SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
+    SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
+    SetObjProperty(totem, "CreationDate", polcore().systime);
+    SetObjProperty(totem, "FromBossDefeat", 1); // Marcar que veio da morte do boss
+    
+    SysLog("TotemCreation: Propriedades configuradas com sucesso!");
+    SysLog("TotemCreation: Totem ID configurado: " + GetObjProperty(totem, TERRITORY_ID_PROP));
+    SysLog("TotemCreation: Totem Name configurado: " + GetObjProperty(totem, TERRITORY_NAME_PROP));
+    SysLog("TotemCreation: === TOTEM CRIADO COM SUCESSO! ===");
+    
+    return 1;
+endfunction
+
+// Função simples para calcular o centro de um retângulo
+function CalculateRectangleCenter(rect_str, realm)
+    SysLog("TotemCreation: === CALCULANDO CENTRO DO RETÂNGULO ===");
+    SysLog("TotemCreation: Rect string: " + rect_str);
+    
+    if (!rect_str || rect_str == "")
+        SysLog("TotemCreation: ERRO - Rect string é vazia ou NULL!");
+        return 0;
+    endif
+    
+    // Parse do formato "x1 y1 x2 y2" (exemplo: "5160 463 5175 473")
+    var coords := SplitWords(rect_str);
+    if (coords.size() < 4)
+        SysLog("TotemCreation: ERRO - Formato de rect inválido. Esperado 4 coordenadas, encontrado: " + coords.size());
+        return 0;
+    endif
+    
+    var x1 := CInt(coords[1]);
+    var y1 := CInt(coords[2]);
+    var x2 := CInt(coords[3]);
+    var y2 := CInt(coords[4]);
+    
+    SysLog("TotemCreation: Coordenadas parseadas: x1=" + x1 + ", y1=" + y1 + ", x2=" + x2 + ", y2=" + y2);
+    
+    // Calcular centro (igual ao código existente do rectangles.src)
+    var center_x := CInt((x1 + x2) / 2);
+    var center_y := CInt((y1 + y2) / 2);
+    var center_z := GetWorldHeight(center_x, center_y, realm);
+    
+    SysLog("TotemCreation: Centro final: " + center_x + "," + center_y + "," + center_z + " - " + realm);
+    
+    // Retornar struct com coordenadas
+    return struct{
+        "x" := center_x,
+        "y" := center_y, 
+        "z" := center_z,
+        "realm" := realm
+    };
 endfunction
