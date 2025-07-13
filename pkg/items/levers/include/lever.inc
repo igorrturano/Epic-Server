@@ -110,7 +110,6 @@ function CheckAllLevers(lever, lever_list, opts)
             return 0;
          endif
       else
-<<<<<<< HEAD
 	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
          if (GetObjProperty(lever, "status") == "off")
             var first_lever_serial := order[1];
@@ -129,8 +128,6 @@ function CheckAllLevers(lever, lever_list, opts)
                return 0;
             endif
          endif
-=======
->>>>>>> 8cf2738104c52d2a066bc1b516e5eaa7ddc31809
          // Verificar ordem específica
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
