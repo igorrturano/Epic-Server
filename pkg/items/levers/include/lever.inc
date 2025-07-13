@@ -114,7 +114,7 @@ function CheckAllLevers(lever, lever_list, opts)
          if (GetObjProperty(lever, "status") == "off")
             var first_lever_serial := order[1];
             if (lever.serial == first_lever_serial)
-               // Se a primeira alavanca da ordem foi desativada, resetar todas
+               // Se a primeira alavanca da ordem foi desativada, reseta todas
                foreach serial in order
                   var item := SystemFindObjectBySerial(serial);
                   if (GetObjProperty(item, "status") == "on")
