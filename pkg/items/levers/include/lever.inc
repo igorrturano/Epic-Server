@@ -110,6 +110,25 @@ function CheckAllLevers(lever, lever_list, opts)
             return 0;
          endif
       else
+	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         if (GetObjProperty(lever, "status") == "off")
+            var first_lever_serial := order[1];
+            if (lever.serial == first_lever_serial)
+               // Se a primeira alavanca da ordem foi desativada, reseta todas
+               foreach serial in order
+                  var item := SystemFindObjectBySerial(serial);
+                  if (GetObjProperty(item, "status") == "on")
+                     ChangeLeverStatus(serial);
+                  endif
+                  sleepms(2);
+               endforeach
+               return 1; // Permite que os efeitos sejam executados para reset
+            else
+               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
+               return 0;
+            endif
+         endif
+
          // Verificar ordem específica
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
