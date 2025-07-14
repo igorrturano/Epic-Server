@@ -464,22 +464,46 @@ function bindlevers(who, item)
    opts.linked_to := newarray;
    var input_list := array{};
    input_list.append(struct{ "title" := "Todas as alavancas devem ser acionadas?", "marked" := cint(opts.all_levers)+1, "radio" := array{"Não", "Sim"} });
-   input_list.append(struct{ "title" := "Precisam ordem para serem acionadas (random)?", "marked" := cint(opts.all_levers_order)+1, "radio" := array{"Não", "Sim"} });
+   input_list.append(struct{ "title" := "Precisam ordem para serem acionadas?", "marked" := _getOrderOption(opts.all_levers_order), "radio" := array{"Não", "Sim (ordem selecionada)", "Random"} });
    var output := QuestionsGump(who, input_list);
    if (!output)
       return;
    endif
 
    opts.all_levers := cint(output[1] == "Sim");
-   opts.all_levers_order := cint(output[2] == "Sim");
+  // Definir o tipo de ordem baseado na resposta
+   if (output[2] == "Não")
+      opts.all_levers_order := 0;
+   elseif (output[2] == "Sim (ordem selecionada)")
+      opts.all_levers_order := 1;
+   elseif (output[2] == "Random")
+      opts.all_levers_order := 2;
+   endif
 
    item.setLeverOpts(opts);
-   if (opts.all_levers_order)
+    // Definir ordem baseada na opção escolhida
+   if (opts.all_levers_order == 1)
+      // Ordem selecionada: usar a ordem que o player selecionou
+      var leverorder := array{item.serial} + opts.linked_to;
+      SetObjProperty(item, "leverorder", leverorder);
+   elseif (opts.all_levers_order == 2)
+      // Ordem random: usar SetRandomOrder
       SetRandomOrder(item);
    else
+      // Sem ordem específica
       EraseObjProperty(item, "leverorder");
    endif
    SendSysMessageEx(who,"As alavancas foram ligadas a esta alavancas");
+endfunction
+
+// Função auxiliar para determinar qual opção está marcada no gump
+function _getOrderOption(order_type)
+   case(order_type)
+      0: return 1; // "Não"
+      1: return 2; // "Sim (ordem selecionada)"
+      2: return 3; // "Random"
+      default: return 1;
+   endcase
 endfunction
 
 function unbindlevers(who, item)

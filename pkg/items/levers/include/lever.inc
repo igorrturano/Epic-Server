@@ -90,25 +90,65 @@ endfunction
 
 function CheckAllLevers(lever, lever_list, opts)
    ChangeLeverStatus(lever.serial);
-   if (opts.all_levers_order)
+   // Se há ordem específica (tanto selecionada quanto random)
+   if (opts.all_levers_order == 1 || opts.all_levers_order == 2)
       var order := GetObjProperty(opts.item_ref, "leverorder");
-      foreach serial in order
-         var item := SystemFindObjectBySerial(serial);
-         if (item.serial == lever.serial)
-            if (_serial_iter == order.size())
-               break;
+      if (!order)
+         // Se não há ordem definida, tratar como sem ordem
+         var all_levers := 0;
+         foreach item in (lever_list)
+            item := SystemFindObjectBySerial(item);
+            if (GetObjProperty(item, "status") == "on")
+               all_levers += 1;
             endif
+            sleepms(2);
+         endforeach
+
+         if (GetObjProperty(lever, "status") == "off" && all_levers == lever_list.size()-1)
+            return 1;
+         elseif (all_levers != lever_list.size())
             return 0;
+         endif
+      else
+	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         if (GetObjProperty(lever, "status") == "off")
+            var first_lever_serial := order[1];
+            if (lever.serial == first_lever_serial)
+               // Se a primeira alavanca da ordem foi desativada, reseta todas
+               foreach serial in order
+                  var item := SystemFindObjectBySerial(serial);
+                  if (GetObjProperty(item, "status") == "on")
+                     ChangeLeverStatus(serial);
+                  endif
+                  sleepms(2);
+               endforeach
+               return 1; // Permite que os efeitos sejam executados para reset
+            else
+               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
+               return 0;
+            endif
          endif
 
-         if (GetObjProperty(item, "status") != "on")
-            ChangeLeverStatus(lever.serial);
-            PrintText(lever, "*desativa*");
-            return 0;
-         endif
-         sleepms(2);
-      endforeach
+         // Verificar ordem específica
+         foreach serial in order
+            var item := SystemFindObjectBySerial(serial);
+            if (item.serial == lever.serial)
+               if (_serial_iter == order.size())
+                  break;
+               endif
+               return 0;
+            endif
+
+            if (GetObjProperty(item, "status") != "on")
+               ChangeLeverStatus(lever.serial);
+               PrintText(lever, "*desativa*");
+               return 0;
+            endif
+            sleepms(2);
+         endforeach
+      endif
    else
+      // Sem ordem específica - funcionalidade original
       var all_levers := 0;
       foreach item in (lever_list)
          item := SystemFindObjectBySerial(item);
@@ -506,5 +546,8 @@ endforeach
 			ApplyDamage( boss, 20000);
 			EraseObjProperty(item, "champ");
 	endif
-   SetRandomOrder(item);
+   // Resetar ordem se for random
+   if (opts.all_levers_order == 2)
+      SetRandomOrder(item);
+   endif
 endfunction
