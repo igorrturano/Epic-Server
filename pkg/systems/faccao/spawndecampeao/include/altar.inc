@@ -425,34 +425,3 @@ function CreateRedSkull(altar)
         endif
     endif
 endfunction
-
-function CreateTerritorialAltarWithArena(x, y, z, realm, champion_type, territory_name)
-    // Primeiro, construir o ambiente da arena
-    var build_result := BuildChampionEnvironment(x, y, z, realm);
-    if (!build_result)
-        return error{"errortext" := "Falha ao construir ambiente da arena"};
-    endif
-    
-    // Carregar configuração do champion
-    var altar_config := LoadSpawnConfig(champion_type);
-    if (altar_config.errortext)
-        return error{"errortext" := "Configuração não encontrada para: " + champion_type};
-    endif
-    
-    // Criar o altar na plataforma elevada (Z+5)
-    var altar := CreateItemAtLocation(x, y, z + 5, 0x1822, 1, realm);
-    if (!altar)
-        return error{"errortext" := "Falha ao criar altar"};
-    endif
-    
-    // Configurar propriedades do altar
-    SetObjProperty(altar, "ChampionConfig", altar_config);
-    
-    // Configurar como territorial
-    if (territory_name)
-        SetObjProperty(altar, "TerritoryName", territory_name);
-        SetObjProperty(altar, "IsTerritorChampion", 1);
-    endif
-    
-    return altar;
-endfunction

@@ -296,13 +296,15 @@ function StartEvent(altar, spawn_cfg)
         // NOVO: Limpa os fogos imediatamente após a morte do boss
         ClearBossAreaItems(altar);
         
-        // Cria o totem no altar
-        var drop_result := CreateChampionDrop(altar, altar.realm);
-        if (drop_result)
-            LogInfo("ChampSpawn", "Recompensa criada com sucesso - Totem serial: " + drop_result.serial);
-            PrintTextAbove(altar, "* Um Totem de Aquisição aparece! *");
+        // SISTEMA TERRITORIAL: Totem é criado automaticamente pelo DeathScript
+        // Não criar bag de recompensas - apenas boss territorial é suportado
+        var territory_name := GetObjProperty(altar, "TerritoryName");
+        if (territory_name)
+            LogInfo("ChampSpawn", "Boss territorial derrotado - Totem será criado pelo DeathScript");
+            PrintTextAbove(altar, "* Totem Territorial sendo criado... *");
         else
-            LogError("ChampSpawn", "FALHA ao criar a recompensa do champion!");
+            LogWarning("ChampSpawn", "AVISO: Boss não territorial detectado - sistema não suportado");
+            PrintTextAbove(altar, "* Sistema apenas suporta boss territorial *");
         endif
         
         // NOVO: Aguarda 30 segundos antes de limpar completamente o altar

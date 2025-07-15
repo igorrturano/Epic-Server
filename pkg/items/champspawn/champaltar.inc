@@ -39,17 +39,8 @@ function get_spawn(altar)
 
 endfunction
 
-
-function spawnChampion(altar)
-	var loc := getSpawnLocation(altar);
-  var cfg := GetObjProperty(altar, "config");
-  var creature := CreateBoss(cfg.boss, loc[1], loc[2], loc[3], altar.realm);
-  SetObjPRoperty(creature, "#championspawn", altar.serial); //deixa corpo se tiver essa prop
-  if (creature == error)
-    printtextabove(altar, " " + creature);
-  endif
-	SetObjProperty(altar, "champ", creature.serial);
-endfunction
+// FUNÇÃO REMOVIDA: spawnChampion foi consolidada no waves.inc
+// Use SpawnChampion(altar, boss_template) do waves.inc em vez desta função
 
 function get_subLevel(altar)
 	var redSkulls := CInt(GetObjProperty(altar, "lrskull"));

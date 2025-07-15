@@ -2,7 +2,7 @@ use uo;
 use util;
 use os;
 
-include ":spawndecampeao:include/altarutils";
+include ":faccao:spawndecampeao/include/waves";
 
 program spawn_champion_boss(who, text)
     if (!text)

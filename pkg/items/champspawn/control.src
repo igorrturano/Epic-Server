@@ -3,6 +3,8 @@ use os;
 use util;
 use cfgfile;
 
+include ":faccao:spawndecampeao/include/waves";
+
 const INAC_WAIT := 300;		//  5 mins to sleep when inactive
 const BIG_CHECK_WAIT:=5;	//  5 secs, checks for % of dead monsters  - ideal would be 1 here, but its a bit... heavy loop, so im using 5
 const TINY_WAIT := 10;		// 10 msec to sleep between each spawn
@@ -11,6 +13,7 @@ const LVLDOWNCHECK := 1800;	// checks for level down each 30 mins
 
 include "champaltar";
 include ":tn:boss";
+include ":faccao:spawndecampeao/include/waves";
 
 
 program control(altar)
@@ -43,7 +46,12 @@ program control(altar)
 			if(!champserial)		// Ok, champ didnt spawn yet, lets see how many creatures he killed and respawn
 				//printtextabove(altar, "sem champ serial");
 				if(GetObjProperty(altar, "#completed")) //se comppletou cria o champion
-					spawnChampion(altar);
+					// ATUALIZADO: Usar SpawnChampion do waves.inc
+					var config := GetObjProperty(altar, "config");
+					var boss := SpawnChampion(altar, config.boss);
+					if (boss)
+						SetObjProperty(altar, "champ", boss.serial);
+					endif
 					champserial := GetObjProperty(altar, "champ");
 					//printtextabove(altar, "completo, spawnando champ");
 				else //se nao completou faz o loop pra determinar o level
@@ -66,7 +74,12 @@ program control(altar)
 							nextLvlUp := 20;
 							nextLVLDownCheck:=ReadGameClock()+LVLDOWNCHECK;
 						else //caso contrario spawna o champion
-							spawnChampion(altar);
+							// ATUALIZADO: Usar SpawnChampion do waves.inc
+							var config := GetObjProperty(altar, "config");
+							var boss := SpawnChampion(altar, config.boss);
+							if (boss)
+								SetObjProperty(altar, "champ", boss.serial);
+							endif
 						endif
 					elseif (killPercent>nextLvlUp) //se passou de lvl cria white skull
 						createNextWhiteSkull(altar);
