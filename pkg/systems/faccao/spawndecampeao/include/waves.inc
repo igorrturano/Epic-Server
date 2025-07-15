@@ -233,16 +233,11 @@ function SpawnChampion(altar, boss_template)
             LogInfo("ChampSpawn", "Boss configurado como GUARDIÃO TERRITORIAL de: " + territory_name);
             LogInfo("ChampSpawn", "Morte será processada pelo DeathScript via POL");
             
-            // SOLUÇÃO CRÍTICA: Iniciar guardian_death_monitor como backup/alternativa
-            LogInfo("ChampSpawn", "*** INICIANDO GUARDIAN_DEATH_MONITOR ***");
+            // SOLUÇÃO CRÍTICA: Configurar DeathScript territorial
+            LogInfo("ChampSpawn", "*** CONFIGURANDO DEATHSCRIPT TERRITORIAL ***");
             creature.script := ":faccao:spawndecampeao:scripts/territorial_boss_death";
-            LogInfo("ChampSpawn", "DeathScript configurado: " + creature.script);
-            if (monitor_result.errortext)
-                LogInfo("ChampSpawn", "AVISO: Falha ao iniciar guardian_death_monitor: " + monitor_result.errortext);
-            else
-                LogInfo("ChampSpawn", "✓ Guardian_death_monitor iniciado com sucesso!");
-                LogInfo("ChampSpawn", "*** TOTEM TERRITORIAL SERÁ CRIADO AUTOMATICAMENTE AO MATAR O BOSS ***");
-            endif
+            LogInfo("ChampSpawn", "✓ DeathScript configurado: " + creature.script);
+            LogInfo("ChampSpawn", "*** TOTEM TERRITORIAL SERÁ CRIADO AUTOMATICAMENTE AO MATAR O BOSS ***");
         else
             // Boss normal - apenas configurar propriedade do altar
             SetObjProperty(creature, "#AltarSerial", altar.serial);

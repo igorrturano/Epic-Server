@@ -1278,6 +1278,52 @@ function AskChampionType(who)
     endcase
 endfunction
 
+// Implementação local simplificada da função LoadSpawnConfig
+function LoadSpawnConfig(spawn_type)
+    var cfg := ReadConfigFile(":spawndecampeao:config/settings");
+    if (!cfg)
+        return error;
+    endif
+    
+    var spawn_name;
+    case (Lower(spawn_type))
+        "cavernadosgoblins":
+            spawn_name := "CavernaDosGoblins";
+        "covildasaranhas":
+            spawn_name := "CovilDasAranhas";
+        default:
+            return error;
+    endcase
+    
+    var spawn_cfg := FindConfigElem(cfg, spawn_name);
+    if (!spawn_cfg)
+        return error;
+    endif
+    
+    var config := struct;
+    config.+name := GetConfigString(spawn_cfg, "Name");
+    config.+boss_template := GetConfigString(spawn_cfg, "BossTemplate");
+    config.+cooldown := GetConfigInt(spawn_cfg, "ActivationCooldown");
+    config.+player_radius := GetConfigInt(spawn_cfg, "PlayerCheckRadius");
+    
+    // Carregar waves
+    var waves := array{};
+    var i;
+    for (i := 1; i <= 4; i := i + 1)
+        var wave_mobs := GetConfigString(spawn_cfg, "Wave" + i + " Mobs");
+        var wave_amount := GetConfigInt(spawn_cfg, "Wave" + i + " Amount");
+        
+        if (wave_mobs && wave_amount)
+            var mob_list := SplitWords(wave_mobs);
+            waves.append(struct{"mobs" := mob_list, "amount" := wave_amount});
+        endif
+    endfor
+    
+    config.+waves := waves;
+    
+    return config;
+endfunction
+
 // NOVO: Função que cria o champion spawn automaticamente
 function CreateChampionForTerritory(center_x, center_y, center_z, realm, champion_type, territory_name, who)
     SendSysMessage(who, "Criando Champion Spawn automaticamente...");

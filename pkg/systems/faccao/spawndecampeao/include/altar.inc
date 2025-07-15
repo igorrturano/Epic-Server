@@ -160,56 +160,9 @@ function ClearBossAreaItems(altar)
     EraseObjProperty(altar, "boss_area_items");
 endfunction
 
-function CleanupOrphanedItems(altar)
-    var cleanup_radius := 25;
-    var items_removed := 0;
-    
-    var nearby_items := ListItemsNearLocation(altar.x, altar.y, altar.z, cleanup_radius, altar.realm);
-    
-    foreach item in nearby_items
-        var should_remove := 0;
-        
-        // Verifica se é uma caveira vermelha órfã
-        if (item.objtype == 0x1854 && item.color == 0x26)
-            should_remove := 1;
-        endif
-        
-        // Verifica se é uma vela branca órfã
-        if (item.objtype == 0x142C)
-            should_remove := 1;
-        endif
-        
-        // Verifica se é um fogo órfão
-        if (item.objtype == 0x6d70)
-            should_remove := 1;
-        endif
-        
-        if (should_remove)
-            DestroyItem(item);
-            items_removed := items_removed + 1;
-        endif
-    endforeach
-    
-    // Limpa propriedades órfãs do altar
-    EraseObjProperty(altar, "skulls");
-    EraseObjProperty(altar, "white_candles");
-    EraseObjProperty(altar, "boss_area_items");
-    EraseObjProperty(altar, "#current_level");
-    EraseObjProperty(altar, "#current_wave_kills");
-    
-    // Restaura cor original do altar
-    altar.color := 0;
-    
-    if (items_removed > 0)
-        LogInfo("ChampSpawn", "Limpeza concluída: " + items_removed + " itens órfãos removidos");
-        PrintTextAbove(altar, "* Energia residual dissipada (" + items_removed + " itens) *");
-        PlaySoundEffect(altar, 0x1F8);
-    endif
-endfunction
-
 function RestoreChampionState(altar)
     // Primeiro, limpa tudo para começar limpo
-    CleanupOrphanedItems(altar);
+    // CleanupOrphanedItems(altar); // Removida - usar versão do waves.inc se necessário
     
     // Verifica se há caveiras próximas que indiquem progresso anterior
     var nearby_items := ListItemsNearLocation(altar.x, altar.y, altar.z, 10, altar.realm);

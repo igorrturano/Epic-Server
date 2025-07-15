@@ -54,6 +54,23 @@ function LoadSpawnConfig(spawn_type)
     
     config.+waves := waves;
     
+    // VALIDAÇÃO: Verificar se o boss_template existe no npcdesc.cfg
+    if (config.boss_template)
+        var npc_cfg := ReadConfigFile(":epicai:npcdesc");
+        if (npc_cfg)
+            var boss_elem := FindConfigElem(npc_cfg, config.boss_template);
+            if (!boss_elem)
+                LogError("ChampSpawn", "ERRO: Template de boss não encontrado no npcdesc.cfg: " + config.boss_template);
+                LogError("ChampSpawn", "Verifique se o template '" + config.boss_template + "' existe em pkg/mobiles/epicAI/npcdesc.cfg");
+                return error;
+            else
+                LogInfo("ChampSpawn", "✓ Template de boss validado: " + config.boss_template);
+            endif
+        else
+            LogWarning("ChampSpawn", "Não foi possível carregar npcdesc.cfg para validar template: " + config.boss_template);
+        endif
+    endif
+    
     LogInfo("ChampSpawn", "Configuração carregada do settings.cfg - Spawn: " + spawn_name + 
            ", Boss: " + config.boss_template + ", Waves: " + len(waves));
     

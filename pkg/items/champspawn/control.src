@@ -96,7 +96,7 @@ program control(altar)
 					endif
 					if (!GetObjProperty(altar, "#completed")) //se nao ta completo spawnar os mobs
 						while(creatures.size()<=(50-get_subLevel(altar)) && altar)
-							var loc:= getSpawnLocation(altar);
+							var loc:= GetSpawnLocation(altar);
 							var overide := struct;
 							var cprops := dictionary;
 							cprops["championspawn"] := 1;

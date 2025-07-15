@@ -11,7 +11,6 @@
  * createNextRedSkull(altar)		creates the next red skull
  * destroyLastRedSkull(altar)		destroys the last red skull
  * wipeItemsArray(Items)		destroy all items from an Items serial array
- * getSpawnLocation(altar)		gets an random spawn location 20 tiles around the altar
  *
  */
 
@@ -230,12 +229,4 @@ function wipeItemsArray(Items)
 	endforeach
 
 	return;
-endfunction
-
-function getSpawnLocation(altar)
-	var x := altar.x + ((RandomIntMinMax(-10,10)+1));
-	var y := altar.y + ((RandomIntMinMax(-10,10)+1));
-    var z := GetMapInfo(x,y).z;
-
-	return {x, y, z};
 endfunction
