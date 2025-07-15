@@ -1,0 +1,25 @@
+use uo;
+use os;
+use polsys;
+
+include ":spawndecampeao:include/altarutils";
+
+// Script para limpar altar temporário após teste
+program cleanup_temp_altar(altar)
+    LogCritical("ChampSpawn", "*** CLEANUP_TEMP_ALTAR INICIADO ***");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    
+    // Aguardar 10 segundos para permitir teste
+    sleep(10);
+    
+    LogCritical("ChampSpawn", "*** LIMPANDO ALTAR TEMPORÁRIO ***");
+    
+    // Limpar todos os itens relacionados
+    CleanupOrphanedItems(altar);
+    
+    // Deletar o altar
+    LogCritical("ChampSpawn", "Deletando altar temporário: " + altar.serial);
+    DestroyItem(altar);
+    
+    LogCritical("ChampSpawn", "*** CLEANUP_TEMP_ALTAR FINALIZADO ***");
+endprogram

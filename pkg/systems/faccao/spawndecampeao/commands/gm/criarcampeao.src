@@ -2,51 +2,52 @@ use uo;
 use util;
 use os;
 
+include ":spawndecampeao:include/altarutils";
+
 program create_champion_spawn(who, text)
     if (!text)
-        SendSysMessage(who, "Uso: .criarcampeao <NomeDoSpawn>");
+        SendSysMessage(who, "Uso: .criarcampeao <NomeDoSpawn> [territory:<NomeDoTerritorio>]");
         SendSysMessage(who, "Opções: CavernaDosGoblins, CovilDasAranhas");
+        SendSysMessage(who, "Exemplo territorial: .criarcampeao CavernaDosGoblins territory:MeuTerritorio");
         return;
     endif
     
-    var altar_config := struct;
+    // NOVO: Detectar parâmetro territorial
+    var territory_name := "";
+    var spawn_type := text;
     
-    // Configurações dos spawns
-    case (Lower(text))
-        "cavernadosgoblins":
-            altar_config.+name               := "Caverna dos Goblins";
-            altar_config.+boss_template      := "orcbrute";
-            altar_config.+cooldown           := 3600;
-            altar_config.+player_radius      := 40; // Raio maior para a nova arena
-            altar_config.+waves              := array(
-                                                   struct{"mobs" := array("goblin", "goblin2"), "amount" := 30}, struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
-                                                   struct{"mobs" := array("goblin", "goblin2"), "amount" := 1}, struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
-                                                   struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
-                                                   struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
-                                                   struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
-                                                   struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
-                                                   struct{"mobs" := array("ettin", "troll"), "amount" := 1}, struct{"mobs" := array("ettin", "troll"), "amount" := 1},
-                                                   struct{"mobs" := array("ettin", "troll"), "amount" := 1}, struct{"mobs" := array("ettin", "troll"), "amount" := 1}
-                                               );
-        "covildasaranhas":
-            altar_config.+name               := "Covil das Aranhas";
-            altar_config.+boss_template      := "dreadspider";
-            altar_config.+cooldown           := 7200;
-            altar_config.+player_radius      := 40;
-            altar_config.+waves              := array(
-                                                   struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
-                                                   struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
-                                                   struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
-                                                   struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
-                                                   struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
-                                                   struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
-                                                   struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4},
-                                                   struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}
-                                               );
-        default:
-            SendSysMessage(who, "Erro: O tipo de spawn '" + text + "' não existe.");
-            return;
-    endcase
+    // Verificar se tem parâmetro territory:
+    if (find(text, "territory:", 1) > 0)
+        var parts := SplitWords(text);
+        spawn_type := parts[1]; // Primeiro parâmetro é o tipo
+        
+        // Procurar pelo parâmetro territory:
+        foreach part in parts
+            if (find(part, "territory:", 1) > 0)
+                // Extrair nome após "territory:" (posição 10 em diante)
+                var start_pos := find(part, ":", 1) + 1;
+                territory_name := part[start_pos, len(part)];
+                break;
+            endif
+        endforeach
+        
+        if (territory_name)
+            SendSysMessage(who, "MODO TERRITORIAL: Criando champion para território '" + territory_name + "'");
+        endif
+    endif
+    
+    // CENTRALIZADO: Carregar configurações do settings.cfg
+    var altar_config := LoadSpawnConfig(spawn_type);
+    if (altar_config.errortext)
+        SendSysMessage(who, "Erro: Não foi possível carregar configuração para '" + spawn_type + "'");
+        SendSysMessage(who, "Tipos válidos: cavernadosgoblins, covildasaranhas");
+        return;
+    endif
+    
+    // Override para player_radius se necessário (mantém compatibilidade)
+    if (!altar_config.player_radius || altar_config.player_radius < 60)
+        altar_config.player_radius := 60;
+    endif
     
     SendSysMessage(who, "Selecione o local para o CENTRO do altar e da construção.");
     var targ := TargetCoordinates(who);
@@ -71,6 +72,15 @@ program create_champion_spawn(who, text)
     endif
 
     SetObjProperty(altar, "ChampionConfig", altar_config);
+    
+    // NOVO: Configurar altar como territorial se especificado
+    if (territory_name)
+        SetObjProperty(altar, "TerritoryName", territory_name);
+        SetObjProperty(altar, "IsTerritorChampion", 1);
+        SendSysMessage(who, "Altar configurado como TERRITORIAL para: " + territory_name);
+        SendSysMessage(who, "Boss final criará totem territorial no altar!");
+    endif
+    
     SendSysMessage(who, "Altar de Campeão '" + altar_config.name + "' criado com sucesso!");
     SendSysMessage(who, "Ambiente construído com " + build_result + " itens!");
 endprogram

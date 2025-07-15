@@ -1,0 +1,332 @@
+// CONTROLADOR.SRC - Versão corrigida com limpeza dos fogos ao matar o boss
+use uo;
+use os;
+use polsys;
+
+include ":spawndecampeao:include/altarutils";
+include ":faccao:include/logging";
+
+program ChampionController(altar)
+  
+  // =================================================================
+// PASSO FINAL: TRAVA GLOBAL COM PID (MUTEX) PARA IMPEDIR DUPLICAÇÃO
+// =================================================================
+// Cria um nome de trava único para este altar específico.
+var lock_name := "ChampSpawn.Lock." + altar.serial;
+
+// Verifica se já existe uma trava para este altar.
+var existing_pid := GetGlobalProperty(lock_name);
+
+if (existing_pid)
+    // Uma trava existe. Vamos verificar se o processo ainda está rodando.
+    var process := GetProcess(CInt(existing_pid));
+    if (process)
+        // O processo original AINDA ESTÁ RODANDO. Isso significa que
+        // nós somos uma instância duplicada e devemos parar imediatamente.
+        LogCritical("ChampSpawn", "DUPLICAÇÃO ABORTADA: O processo " + existing_pid + " já está controlando o altar " + altar.serial);
+        return;
+    else
+        // O processo não existe mais (crashou?). A trava é velha ("stale").
+        // Vamos removê-la para que possamos nos tornar o novo controlador.
+        EraseGlobalProperty(lock_name);
+        LogWarning("ChampSpawn", "Trava global 'stale' removida para o altar " + altar.serial);
+    endif
+endif
+
+// Se chegamos aqui, ou não havia trava, ou removemos uma trava velha.
+// Agora, nós nos tornamos o controlador oficial.
+// Travamos o altar com o nosso próprio Process ID (PID).
+SetGlobalProperty(lock_name, polcore().pid);
+LogCritical("ChampSpawn", "TRAVA ADQUIRIDA: Processo " + polcore().pid + " assumiu o controle do altar " + altar.serial);
+// =================================================================
+
+  var spawn_cfg := GetObjProperty(altar, "ChampionConfig");
+    if (!spawn_cfg)
+        LogError("ChampSpawn", "Altar " + altar.serial + " não tem CProp 'ChampionConfig' - remova e crie novamente");
+        EraseObjProperty(altar, "#controller_running");
+        return;
+    endif
+    
+    LogCritical("ChampSpawn", "*** CONTROLADOR VALIDADO ***");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial + " - Evento: '" + spawn_cfg.name + "'");
+    LogCritical("ChampSpawn", "Iniciando evento Champion Spawn...");
+    LogCritical("ChampSpawn", "=================================");
+    
+    // NOVO: Verifica se há um evento em andamento após reinicialização
+    var was_active := CInt(GetObjProperty(altar, "#active"));
+    if (was_active)
+        LogWarning("ChampSpawn", "Altar " + altar.serial + " estava ativo antes da reinicialização - Limpando estado órfão");
+        CleanupOrphanedItems(altar);
+        EraseObjProperty(altar, "#active");
+        EraseObjProperty(altar, "#completed");
+    endif
+    
+    var player_radius := spawn_cfg.player_radius;
+    if (!player_radius)
+        player_radius := 60; // Aumentado de 25 para 60
+    endif
+    
+    // Se o raio configurado for muito pequeno, aumentar
+    if (player_radius < 50)
+        player_radius := 60; // Força raio mínimo de 60
+    endif
+    
+    while (altar)
+        if (!CInt(GetObjProperty(altar, "#active")))
+            var next_activation := GetObjProperty(altar, "#NextActivation");
+            if (TypeOf(next_activation) == "Error" || ReadGameClock() >= CInt(next_activation))
+                var players_nearby := CountPlayers(altar, player_radius);
+                if (players_nearby > 0)
+                    LogInfo("ChampSpawn", "Altar " + altar.serial + ": " + players_nearby + " jogador(es) detectado(s) - Iniciando evento '" + spawn_cfg.name + "'");
+                    StartEvent(altar, spawn_cfg);
+                endif
+            endif
+        endif
+        sleep(10); 
+    endwhile
+endprogram
+
+function StartEvent(altar, spawn_cfg)
+    LogCritical("ChampSpawn", "=== START EVENT CHAMADA ===");
+    LogCritical("ChampSpawn", "Altar Serial: " + altar.serial);
+    LogCritical("ChampSpawn", "Evento: " + spawn_cfg.name);
+    LogCritical("ChampSpawn", "Timestamp: " + ReadGameClock());
+    LogCritical("ChampSpawn", "============================");
+    
+    LogInfo("ChampSpawn", "StartEvent iniciado para altar " + altar.serial + " - Evento: " + spawn_cfg.name);
+    ActivateAltar(altar);
+    
+    var total_waves := spawn_cfg.waves.size();
+    LogInfo("ChampSpawn", "Evento " + spawn_cfg.name + " configurado com " + total_waves + " ondas");
+
+    if(total_waves < 1)
+        LogError("ChampSpawn", "Configuração inválida - nenhuma onda encontrada para o altar " + altar.serial);
+        DeactivateAltar(altar, spawn_cfg.cooldown);
+        return;
+    endif
+    
+    // NOVO: Verifica se há progresso anterior e restaura o estado
+    var restored_progress := RestoreChampionState(altar);
+    var starting_wave := 1;
+    
+    if (restored_progress > 0)
+        starting_wave := restored_progress + 1; // Continua da próxima onda
+        LogInfo("ChampSpawn", "Continuando do progresso restaurado - Iniciando onda " + starting_wave + "/" + total_waves);
+        
+        if (starting_wave > total_waves)
+            LogInfo("ChampSpawn", "Todas as ondas já foram concluídas - Indo direto para o boss!");
+            // Pula para o final (boss)
+            starting_wave := total_waves + 1;
+        endif
+    else
+        LogInfo("ChampSpawn", "Iniciando evento do zero - Onda 1/" + total_waves);
+    endif
+    
+    for wave_level := starting_wave to total_waves
+        LogCritical("ChampSpawn", "=== LOOP ONDA " + wave_level + " ===");
+        LogCritical("ChampSpawn", "Altar: " + altar.serial);
+        LogCritical("ChampSpawn", "Timestamp: " + ReadGameClock());
+        LogCritical("ChampSpawn", "==========================");
+        
+        SetObjProperty(altar, "#current_level", wave_level);
+        var wave_info := spawn_cfg.waves[wave_level];
+        var mobs_to_kill := wave_info.amount;
+        
+        LogCritical("ChampSpawn", "*** WAVE CONFIG ***");
+        LogCritical("ChampSpawn", "Wave: " + wave_level + "/" + total_waves);
+        LogCritical("ChampSpawn", "Mobs para matar: " + mobs_to_kill);
+        LogCritical("ChampSpawn", "******************");
+        
+        LogInfo("ChampSpawn", "Altar " + altar.serial + " - Iniciando Onda " + wave_level + "/" + total_waves + " (" + mobs_to_kill + " monstros) - TIMER: 10 minutos");
+
+        if(mobs_to_kill > 0)
+            // Spawna os monstros e guarda os serials
+            var spawned_serials := SpawnWaveWithTracking(altar, wave_info.mobs, mobs_to_kill);
+            
+            // Sistema UO Original: 10 minutos por onda + velas brancas de progresso
+            var wave_start_time := ReadGameClock();
+            var wave_timeout := 600; // 10 minutos
+            var killed_count := 0;
+            var last_progress := 0;
+            
+            while (killed_count < mobs_to_kill)
+                var alive_mobs := CountAliveMobs(spawned_serials);
+                killed_count := mobs_to_kill - alive_mobs;
+                
+                // Calcula progresso em porcentagem
+                var progress_percent := CInt((killed_count * 100.0) / mobs_to_kill);
+                var progress_level := CInt(progress_percent / 25); // NOVO: 0-4 (25% cada vela)
+                
+                // Cria velas brancas conforme o progresso
+                if (progress_level > last_progress)
+                    CreateWhiteCandle(altar, progress_level);
+                    last_progress := progress_level;
+                    LogInfo("ChampSpawn", "Progresso da onda " + wave_level + ": " + progress_percent + "% (" + killed_count + "/" + mobs_to_kill + ")");
+                endif
+                
+                // Verifica timeout de 10 minutos
+                var elapsed_time := ReadGameClock() - wave_start_time;
+                if (elapsed_time > wave_timeout)
+                    LogWarning("ChampSpawn", "TIMEOUT! Onda " + wave_level + " falhou (apenas " + progress_percent + "% concluído em 10 minutos)");
+                    
+                    // Sistema de punição do UO
+                    if (progress_percent < 30) // Falha miserável
+                        if (wave_level > 1)
+                            LogError("ChampSpawn", "Falha grave! Retrocedendo para onda " + (wave_level - 1));
+                            RemoveLastRedSkull(altar);
+                            wave_level := wave_level - 2; // -2 porque o for vai fazer +1
+                        else
+                            LogWarning("ChampSpawn", "Reiniciando onda 1");
+                            wave_level := 0; // Reinicia a onda 1
+                        endif
+                    else
+                        LogWarning("ChampSpawn", "Reiniciando onda " + wave_level);
+                        wave_level := wave_level - 1; // -1 porque o for vai fazer +1
+                    endif
+                    
+                    // Remove velas brancas e monstros restantes
+                    ClearWhiteCandles(altar);
+                    foreach serial in spawned_serials
+                        var mob := SystemFindObjectBySerial(serial);
+                        if (mob && !mob.dead)
+                            mob.Kill();
+                        endif
+                    endforeach
+                    
+                    break; // Sai do while
+                endif
+                
+                sleep(10); // Aumentado de 5 para 10 segundos
+                
+                // Sistema de tolerância para desconexões
+                if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
+                    var tolerance_result := WaitForPlayersWithTolerance(altar, "Evento Champion Spawn", 600);
+                    if (!tolerance_result)
+                        // Tolerância expirou - desativa altar
+                        LogWarning("ChampSpawn", "Altar " + altar.serial + " - Evento pausado após 10 minutos sem jogadores");
+                        
+                        // Limpa propriedades de proteção antes de desativar
+                        EraseObjProperty(altar, "#controller_running");
+                        EraseObjProperty(altar, "#controller_timestamp");
+                        LogCritical("ChampSpawn", "*** CONTROLADOR PAUSADO POR FALTA DE JOGADORES ***");
+                        LogCritical("ChampSpawn", "Propriedades de proteção removidas do altar " + altar.serial);
+                        
+                        DeactivateAltar(altar, spawn_cfg.cooldown);
+                        return;
+                    endif
+                endif
+            endwhile
+            
+            // Se completou a onda com sucesso
+            if (killed_count >= mobs_to_kill)
+                LogInfo("ChampSpawn", "Altar " + altar.serial + " - Onda " + wave_level + " concluída com sucesso!");
+                ClearWhiteCandles(altar);
+                CreateRedSkull(altar);
+            endif
+        endif
+    endfor
+
+    LogCritical("ChampSpawn", "=== ONDAS CONCLUÍDAS ===");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    LogCritical("ChampSpawn", "Timestamp: " + ReadGameClock());
+    LogCritical("ChampSpawn", "========================");
+    
+    LogInfo("ChampSpawn", "Altar " + altar.serial + " - Todas as ondas concluídas!");
+    
+    // NOVO: Verifica se já estamos na fase do boss (caso de restauração)
+    if (starting_wave > total_waves)
+        LogInfo("ChampSpawn", "Progresso restaurado indica que o boss deve ser invocado!");
+    endif
+    
+    LogCritical("ChampSpawn", "*** INICIANDO BOSS TIMER ***");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    LogCritical("ChampSpawn", "Timestamp: " + ReadGameClock());
+    LogCritical("ChampSpawn", "********************************");
+    
+    LogInfo("ChampSpawn", "Iniciando timer para o chefe...");
+    SetObjProperty(altar, "#completed", 1);
+    
+    // NOVO: Timer de 100 segundos antes do boss
+    LogCritical("ChampSpawn", "*** PRESTES A CHAMAR ShowBossTimer ***");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    LogCritical("ChampSpawn", "Timestamp PRE-CALL: " + ReadGameClock());
+    LogCritical("ChampSpawn", "CONTROLADOR ID: " + GetObjProperty(altar, "#controller_timestamp"));
+    LogCritical("ChampSpawn", "**************************************");
+    
+    var timer_result := ShowBossTimer(altar);
+    
+    LogCritical("ChampSpawn", "*** ShowBossTimer RETORNOU ***");
+    LogCritical("ChampSpawn", "Resultado: " + timer_result);
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    LogCritical("ChampSpawn", "Timestamp POST-CALL: " + ReadGameClock());
+    LogCritical("ChampSpawn", "CONTROLADOR ID: " + GetObjProperty(altar, "#controller_timestamp"));
+    LogCritical("ChampSpawn", "**********************************");
+    
+    if (!timer_result)
+        // Timer foi cancelado (sem jogadores)
+        LogWarning("ChampSpawn", "Evento cancelado durante o timer - desativando altar " + altar.serial);
+        DeactivateAltar(altar, spawn_cfg.cooldown);
+        return;
+    endif
+    
+    // Timer completou com sucesso, spawnar o boss
+    LogCritical("ChampSpawn", "*** PRESTES A SPAWNAR BOSS ***");
+    LogCritical("ChampSpawn", "Boss Template: " + spawn_cfg.boss_template);
+    LogCritical("ChampSpawn", "Altar Serial: " + altar.serial);
+    LogCritical("ChampSpawn", "Timestamp PRE-SPAWN: " + ReadGameClock());
+    
+    var boss := SpawnChampion(altar, spawn_cfg.boss_template);
+    
+    LogCritical("ChampSpawn", "*** SPAWN RESULT ***");
+    LogCritical("ChampSpawn", "Boss resultado: " + boss);
+    LogCritical("ChampSpawn", "Boss serial: " + (boss ? boss.serial : "NULL"));
+    LogCritical("ChampSpawn", "Boss error: " + (boss ? boss.errortext : "N/A"));
+    LogCritical("ChampSpawn", "******************");
+    
+    if (boss)
+        LogDebug("ChampSpawn", "Boss spawnado - Serial: " + boss.serial + " na posição " + boss.x + "," + boss.y);
+        
+        // Loop esperando o boss morrer (sem timeout - jogadores têm quanto tempo precisarem)
+        while(SystemFindObjectBySerial(boss.serial))
+            sleep(15);
+        endwhile
+        
+        LogInfo("ChampSpawn", "Boss " + boss.serial + " foi derrotado! Iniciando processo de limpeza...");
+        
+        // NOVO: Limpa os fogos imediatamente após a morte do boss
+        ClearBossAreaItems(altar);
+        
+        // Cria o totem no altar
+        var drop_result := CreateChampionDrop(altar, altar.realm);
+        if (drop_result)
+            LogInfo("ChampSpawn", "Recompensa criada com sucesso - Totem serial: " + drop_result.serial);
+            PrintTextAbove(altar, "* Um Totem de Aquisição aparece! *");
+        else
+            LogError("ChampSpawn", "FALHA ao criar a recompensa do champion!");
+        endif
+        
+        // NOVO: Aguarda 30 segundos antes de limpar completamente o altar
+        LogInfo("ChampSpawn", "Aguardando 30 segundos antes de limpar o altar...");
+        PrintTextAbove(altar, "* O altar será limpo em 30 segundos... *");
+        
+        for countdown := 30 to 1
+            if (countdown % 10 == 0 || countdown <= 10)
+                PrintTextAbove(altar, "* Limpeza em " + countdown + " segundos *");
+            endif
+            sleep(1);
+        endfor
+    else
+        LogError("ChampSpawn", "Boss não foi criado! Não haverá recompensa.");
+    endif
+
+    LogInfo("ChampSpawn", "Evento do altar " + altar.serial + " finalizado - Entrando em cooldown");
+    PrintTextAbove(altar, "O campeão foi derrotado! O altar adormece...");
+    
+    // Limpa TODAS as propriedades de proteção contra execução dupla
+    EraseObjProperty(altar, "#controller_running");
+    EraseObjProperty(altar, "#controller_timestamp");
+    LogCritical("ChampSpawn", "*** CONTROLADOR FINALIZADO ***");
+    LogCritical("ChampSpawn", "Propriedades de proteção removidas do altar " + altar.serial);
+    
+    DeactivateAltar(altar, spawn_cfg.cooldown);
+endfunction

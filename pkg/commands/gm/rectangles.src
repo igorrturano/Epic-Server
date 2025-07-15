@@ -1,7 +1,11 @@
 use uo;
 use os;
 use datafile;
+use util;
+use cfgfile;
 
+include ":datafile:datafile";
+include "include/say";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
@@ -9,11 +13,15 @@ include ":gumps:yesNo";
 include ":gumps:epicGumps";
 include ":faccao:include/faccao_constants";
 include ":epicspawn:epicBoss";
+include ":spawndecampeao:include/altarutils";
 
 
 
 
 program rectangle_creator(who, params)
+    // Suprimir warning sobre params não usado
+    params := params;
+    
     if (!who.cmdlevel)
         SendSysMessage(who, "Você não tem permissão para usar este comando.");
         return;
@@ -187,18 +195,41 @@ function SetupResourcesForTerritory(who, elem)
                     resources_str += new_selections[i];
                 endfor
                 
-               // Salvar no elemento
-SetElementProp(elem, "ResourceInterval", interval);
-SetElementProp(elem, "ResourceAmount", amount);
-SetElementProp(elem, "Resources", resources_str);
+                // Salvar no elemento
+                SetElementProp(elem, "ResourceInterval", interval);
+                SetElementProp(elem, "ResourceAmount", amount);
+                SetElementProp(elem, "Resources", resources_str);
 
-// Configurar próxima geração
-var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-SetElementProp(elem, "NextResourceTime", next_time);
+                // Configurar próxima geração
+                var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+                SetElementProp(elem, "NextResourceTime", next_time);
 
-// Notificar o ResourceController sobre a atualização
-var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-var territory_name := GetElementProp(elem, "Name", "");
+                // MÁQUINA DE ESTADOS: Verificar se é território com Champion Spawn
+                var has_champion := GetElementProp(elem, "HasChampionSpawn", 0);
+                SendSysMessage(who, "DEBUG: Verificando HasChampionSpawn = " + has_champion);
+                
+                if (has_champion)
+                    SendSysMessage(who, "Recursos configurados. Finalizando criação do Champion Spawn...");
+                    SendSysMessage(who, "DEBUG: Iniciando delegação para continuar_criacao...");
+                    
+                    // INICIAR SCRIPT CONTINUADOR EM VEZ DE CONTINUAR AQUI
+                    var script_result := start_script(":faccao:spawndecampeao/commands/gm/continuar_criacao", who);
+                    SendSysMessage(who, "DEBUG: Resultado start_script = " + script_result);
+                    
+                    if (script_result.errortext)
+                        SendSysMessage(who, "ERRO ao iniciar continuar_criacao: " + script_result.errortext);
+                    else
+                        SendSysMessage(who, "DEBUG: Script continuar_criacao iniciado com sucesso!");
+                        SendSysMessage(who, "Delegação para criação do Champion Spawn iniciada!");
+                    endif
+                    
+                    // Encerrar este script AQUI - o continuador fará o resto
+                    return 1;
+                endif
+
+                // Notificar o ResourceController sobre a atualização (apenas para territórios normais)
+                var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+                var territory_name := GetElementProp(elem, "Name", "");
 
 // Log ANTES de tentar obter o PID
 LogDebug("EventoTerritorio", "Tentando obter PID para notificar sobre atualização de recursos do território " + territory_name + " (" + territory_id + ")");
@@ -759,6 +790,12 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
         // Botão TESTE: Spawnar Boss
         GFAddButton(gump, btn_x+btn_spacing, btn_y, 2361, 2361, GF_CLOSE_BTN, 600);
         GFTextLine(gump, btn_x+btn_spacing+20, btn_y-4, 63, "TESTE: Spawnar Boss");
+        
+        btn_y += 25;
+        
+        // Botão TESTE 2: Spawnar Champion Boss
+        GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 700);
+        GFTextLine(gump, btn_x+20, btn_y-4, 68, "TESTE 2: Spawnar Champion Boss");
     endif
     
 
@@ -851,8 +888,10 @@ var input := GFSendGump(who, gump);
         
     elseif (button == 500) // Configurar Recursos
         SetupResourcesForTerritory(who, elem);
-    elseif (button == 600) // TESTE: Spawnar Boss
-        CreateSimpleChallenge(who, name);
+    // elseif (button == 600) // TESTE: Spawnar Boss
+    //     CreateSimpleChallenge(who, name); // DESABILITADO - Função não implementada
+    elseif (button == 700) // TESTE 2: Spawnar Champion Boss
+        SpawnChampionBossForTerritory(who, name);
     endif
 endfunction
 
@@ -936,7 +975,7 @@ endfunction
 
 // Função para mostrar gump de escolha do tipo de território
 function ShowTerritoryTypeSelection(who)
-    var gump := GFECreateGump("Escolha o tipo de território", 350, 200, array{BORDER_GOLDEN});
+    var gump := GFECreateGump("Escolha o tipo de território", 450, 280, array{BORDER_GOLDEN});
     
     var x := 30;
     var y := 70;
@@ -948,12 +987,18 @@ function ShowTerritoryTypeSelection(who)
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 100);
     GFTextLine(gump, x + 40, y - 4, 1153, "Território Customizado");
     GFTooltipText(gump, "Selecione manualmente as coordenadas do território. Este tipo NÃO expande.");
-    y += 50;
+    y += 40;
     
     // Opção 2: Território com tamanho padrão (expansível)
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 200);
     GFTextLine(gump, x + 40, y - 4, 1153, "Território Padrão (Expansível)");
     GFTooltipText(gump, "Selecione o ponto central. O território começará no Nível 1 e expandirá automaticamente.");
+    y += 40;
+    
+    // NOVO: Opção 3: Território com Champion Spawn
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 300);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Território com Champion Spawn");
+    GFTooltipText(gump, "Território com arena de ondas e boss final épico. Boss final dropará totem territorial.");
     
     var input := GFSendGump(who, gump);
     var button := input[0];
@@ -962,6 +1007,8 @@ function ShowTerritoryTypeSelection(who)
         CreateCustomTerritory(who);
     elseif (button == 200)
         CreateStandardTerritory(who);
+    elseif (button == 300)
+        CreateChampionTerritory(who);
     endif
 endfunction
 
@@ -1123,250 +1170,361 @@ function ShowChampionSpawnQuestion(who)
     endif
 endfunction
 
-function CreateSimpleChallenge(who, territory_name)
-    // TESTE: Spawnar um orc boss real para o território
-    who.Say("TESTE: Criando desafio de boss para " + territory_name);
-    
-    // Log inicial detalhado usando as mesmas funções do Champion Spawn
-    who.Say("DEBUG: === INICIANDO CRIAÇÃO DE BOSS ===");
-    who.Say("DEBUG: Território: " + territory_name);
-    who.Say("DEBUG: Player: " + who.name + " (Serial: " + who.serial + ")");
-    
-    // Usar coordenadas próximas ao player
-    var boss_x := who.x + 3;
-    var boss_y := who.y + 3;
-    var boss_z := who.z;
-    var boss_realm := who.realm;
-    
-    who.Say("DEBUG: Coordenadas: X=" + boss_x + " Y=" + boss_y + " Z=" + boss_z + " Realm=" + boss_realm);
-    
-    // Usar EXATAMENTE a mesma função que o Champion Spawn usa para criar NPCs
-    who.Say("DEBUG: === USANDO FUNÇÃO DO CHAMPION SPAWN ===");
-    who.Say("DEBUG: Chamando CreateNpcWithPrefix('orcbrute', ...)");
-    
-    // Simulando a mesma estrutura que GetSpawnLocation() retorna
-    var loc := array{boss_x, boss_y, boss_z};
-    var boss := CreateNpcWithPrefix("orcbrute", loc[1], loc[2], loc[3], boss_realm);
-    
-    if (boss && !boss.errortext)
-        who.Say("DEBUG: SUCESSO! Boss criado com CreateNpcWithPrefix");
-        who.Say("DEBUG: Boss Serial: " + boss.serial);
-        who.Say("DEBUG: Boss Name: " + boss.name);
-        who.Say("DEBUG: Boss Position: " + boss.x + "," + boss.y + "," + boss.z);
-        
-        // Usar exatamente os mesmos efeitos do Champion Spawn
-        who.Say("DEBUG: Aplicando efeitos do Champion Spawn...");
-        PlaySoundEffect(boss, 0x2F3);
-        
-        // Configurar como guardião territorial
-        boss.name := "Guardião de " + territory_name;
-        
-        // SALVAR O TERRITÓRIO NO BOSS para criar totem quando morrer
-        SetObjProperty(boss, "TerritoryName", territory_name);
-        SetObjProperty(boss, "IsGuardian", 1);
-        
-        // CONFIGURAR SCRIPT DE MORTE: Adicionar script que detecta morte automaticamente
-        var script_ref := start_script(":faccao:guardian_death_monitor", boss);
-        if (script_ref.errortext)
-            SysLog("TotemCreation: AVISO - Falha ao iniciar script de monitoramento: " + script_ref.errortext);
-        else
-            SysLog("TotemCreation: Script de monitoramento de morte iniciado para boss " + boss.serial);
-        endif
-        
-        who.Say("DEBUG: Nome definido: " + boss.name);
-        who.Say("DEBUG: Território salvo no boss: " + territory_name);
-        SysLog("TotemCreation: Boss " + boss.serial + " configurado como guardião do território: " + territory_name);
-        SysLog("TotemCreation: Propriedades salvas: IsGuardian=" + GetObjProperty(boss, "IsGuardian") + ", TerritoryName=" + GetObjProperty(boss, "TerritoryName"));
-        
-        who.Say("=== BOSS CRIADO COM SUCESSO! ===");
-        who.Say("Usando a MESMA função do Champion Spawn!");
-        
-        return boss;
-    else
-        who.Say("DEBUG: FALHA com CreateNpcWithPrefix");
-        who.Say("DEBUG: Tentando fallback com template 'dreadspider'...");
-        
-        boss := CreateNpcWithPrefix("dreadspider", loc[1], loc[2], loc[3], boss_realm);
-        
-        if (boss && !boss.errortext)
-            who.Say("DEBUG: SUCESSO com dreadspider!");
-            boss.name := "Guardião de " + territory_name;
-            
-            // SALVAR O TERRITÓRIO NO BOSS para criar totem quando morrer
-            SetObjProperty(boss, "TerritoryName", territory_name);
-            SetObjProperty(boss, "IsGuardian", 1);
-            
-            // CONFIGURAR SCRIPT DE MORTE: Adicionar script que detecta morte automaticamente
-            var script_ref := start_script(":faccao:guardian_death_monitor", boss);
-            if (script_ref.errortext)
-                SysLog("TotemCreation: AVISO - Falha ao iniciar script de monitoramento: " + script_ref.errortext);
-            else
-                SysLog("TotemCreation: Script de monitoramento de morte iniciado para boss " + boss.serial);
-            endif
-            
-            PlaySoundEffect(boss, 0x2F3);
-            return boss;
-        else
-            who.Say("ERROR: === FALHA CRÍTICA ===");
-            who.Say("ERROR: CreateNpcWithPrefix falhou com ambos templates");
-            who.Say("ERROR: Boss: " + (boss ? "criado com erro: " + boss.errortext : "null"));
-            return 0;
-        endif
-    endif
-endfunction
-
-// Função chamada quando um boss guardião morre
-function OnBossGuardianDeath(boss)
-    SysLog("TotemCreation: === INICIANDO OnBossGuardianDeath ===");
-    SysLog("TotemCreation: Boss Serial: " + boss.serial + ", Nome: " + boss.name);
-    SysLog("TotemCreation: Posição do boss: " + boss.x + "," + boss.y + "," + boss.z + " Realm: " + boss.realm);
-    
-    // Verificar se é um guardião territorial
-    var is_guardian := GetObjProperty(boss, "IsGuardian");
-    SysLog("TotemCreation: IsGuardian property: " + is_guardian);
-    if (!is_guardian)
-        SysLog("TotemCreation: Boss NÃO é um guardião. Encerrando.");
-        return; // Não é um guardião, não fazer nada
-    endif
-    
-    // Obter o nome do território que ele guardava
-    var territory_name := GetObjProperty(boss, "TerritoryName");
-    SysLog("TotemCreation: TerritoryName property: " + territory_name);
-    if (!territory_name)
-        SysLog("TotemCreation: ERRO - Boss é guardião mas NÃO tem território associado!");
-        return; // Sem território associado
-    endif
-    
-    SysLog("TotemCreation: Boss está guardando o território: " + territory_name);
-    
-    // Buscar o território no datafile
-    var rect_df := SafeOpenDataFile(":architect:areas", 1);
-    if (!rect_df)
-        SysLog("TotemCreation: ERRO - Não foi possível abrir o datafile :architect:areas");
+// NOVO: Função para criar território com Champion Spawn
+function CreateChampionTerritory(who)
+    // Primeiro, perguntar qual tipo de champion
+    var champion_type := AskChampionType(who);
+    if (!champion_type)
+        SendSysMessage(who, "Criação de território cancelada.");
         return;
     endif
     
-    SysLog("TotemCreation: Datafile aberto com sucesso. Procurando elemento: " + territory_name);
-    var elem := SafeFindElement(rect_df, territory_name);
-    if (!elem)
-        SysLog("TotemCreation: ERRO - Território '" + territory_name + "' NÃO encontrado no datafile!");
-        return; // Território não encontrado
+    SendSysMessage(who, "Champion selecionado: " + champion_type);
+    SendSysMessage(who, "Selecione o CENTRO da arena do Champion Spawn.");
+    
+    var center_point := TargetCoordinates(who);
+    if (!center_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+
+    var rect_name := RequestGump(who, "Digite um nome para este território com Champion:");
+    if (!rect_name) 
+        SendSysMessage(who, "Nome é obrigatório. Operação cancelada.");
+        return; 
+    endif
+
+    // Criar território no datafile primeiro
+    var rect_df := SafeOpenDataFile(":architect:areas", 1);
+    var elem := SafeFindElement(rect_df, rect_name, 1);
+    
+    // Calcular área do território baseada no champion (área maior)
+    var center_x := center_point.x;
+    var center_y := center_point.y;
+    var realm := center_point.realm;
+    
+    // Área maior para acomodar arena do champion
+    var territory_size := 50; // 50x50 para dar espaço para arena
+    var x1 := center_x - CInt(territory_size / 2);
+    var y1 := center_y - CInt(territory_size / 2);
+    var x2 := x1 + territory_size;
+    var y2 := y1 + territory_size;
+    var rect_str := $"{x1} {y1} {x2} {y2}";
+    
+    // Verificar sobreposição
+    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
+        SendSysMessage(who, "A área do território se sobrepõe a outro já existente. Operação cancelada.");
+        return;
     endif
     
-    SysLog("TotemCreation: Elemento do território encontrado! Calculando centro do território...");
+    // Salvar território
+    var territory_id := CreateTerritoryID();
+    SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    SetElementProp(elem, "Name", rect_name);
+    SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+    SetElementProp(elem, "IsExpandable", 0); // Champion territories não expandem
+    SetElementProp(elem, "HasChampionSpawn", 1); // Marcar como champion
+    SetElementProp(elem, "ChampionType", champion_type); // Tipo do champion
     
-    // Obter retângulo do território para calcular centro
-    var rect_str := GetElementProp(elem, "Rect", "");
-    SysLog("TotemCreation: Rect string: " + rect_str);
+    SendSysMessage(who, $"Território '{rect_name}' criado! Configurando recursos...");
+    SetupResourcesForTerritory(who, elem);
     
-    // Calcular centro do território
-    var center_coords := CalculateRectangleCenter(rect_str, boss.realm);
-    var result;
-    if (!center_coords)
-        SysLog("TotemCreation: ERRO - Não foi possível calcular centro. Usando posição do boss como fallback.");
-        result := CreateTerritoryTotemOnGround(boss.x, boss.y, boss.z, boss.realm, elem);
-    else
-        SysLog("TotemCreation: Centro calculado: " + center_coords.x + "," + center_coords.y + "," + center_coords.z);
-        result := CreateTerritoryTotemOnGround(center_coords.x, center_coords.y, center_coords.z, center_coords.realm, elem);
-    endif
-    SysLog("TotemCreation: Resultado de CreateTerritoryTotemOnGround: " + result);
-    SysLog("TotemCreation: === FIM OnBossGuardianDeath ===");
+    SendSysMessage(who, "Criando arena e altar do Champion Spawn...");
+    
+    // Chamar sistema de champion spawn
+    CreateChampionForTerritory(center_x, center_y, center_point.z, realm, champion_type, rect_name, who);
+    
+    SendSysMessage(who, $"Território com Champion Spawn '{rect_name}' criado com sucesso!");
+    SendSysMessage(who, "O boss final do champion dropará o totem territorial no altar!");
 endfunction
 
-// Versão modificada de CreateTerritoryTotem que cria no chão
-function CreateTerritoryTotemOnGround(x, y, z, realm, elem)
-    SysLog("TotemCreation: === INICIANDO CreateTerritoryTotemOnGround ===");
-    SysLog("TotemCreation: Posição: " + x + "," + y + "," + z + " Realm: " + realm);
+// NOVO: Gump para escolher tipo de champion
+function AskChampionType(who)
+    var gump := GFECreateGump("Escolher Champion Spawn", 500, 300, array{BORDER_GOLDEN});
     
-    if (!elem)
-        SysLog("TotemCreation: ERRO - Elemento do território é NULL!");
-        return 0;
-    endif
+    var x := 30;
+    var y := 70;
     
-    SysLog("TotemCreation: Elemento válido. Tentando criar item no chão...");
+    GFTextMid(gump, 15, y, 470, 53, "Qual Champion Spawn deseja para este território?");
+    y += 45;
+    
+    // Opção 1: Caverna dos Goblins
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Caverna dos Goblins");
+    GFTextLine(gump, x + 40, y + 16, 1109, "4 ondas • Boss: Goblin King • Cooldown: 1h");
+    y += 60;
+    
+    // Opção 2: Covil das Aranhas  
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, x + 40, y - 4, 1153, "Covil das Aranhas");
+    GFTextLine(gump, x + 40, y + 16, 1109, "4 ondas • Boss: Mega Spider • Cooldown: 2h");
+    y += 60;
+    
+    // Opção Cancelar
+    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, x + 40, y - 4, 38, "Cancelar");
+    
+    var input := GFSendGump(who, gump);
+    var button := CInt(input[0]);
+    
+    case (button)
+        1: return "CavernaDosGoblins";
+        2: return "CovilDasAranhas";
+        default: return "";
+    endcase
+endfunction
 
-    // Criar totem no chão em vez de na mochila
-    var totem := CreateItemAtLocation(x, y, z, 0xA102, 1, realm);
-    if (!totem)
-        SysLog("TotemCreation: ERRO CRÍTICO - CreateItemAtLocation falhou!");
-        SysLog("TotemCreation: Parâmetros: objtype=0xA102, amount=1, x=" + x + ", y=" + y + ", z=" + z + ", realm=" + realm);
-        return 0;
-    endif
+// NOVO: Função que cria o champion spawn automaticamente
+function CreateChampionForTerritory(center_x, center_y, center_z, realm, champion_type, territory_name, who)
+    SendSysMessage(who, "Criando Champion Spawn automaticamente...");
     
-    SysLog("TotemCreation: SUCESSO! Totem criado no chão. Serial: " + totem.serial);
-    SysLog("TotemCreation: Posição do totem: " + totem.x + "," + totem.y + "," + totem.z);
+    // Configurações dos spawns (replicando lógica do criarcampeao.src)
+    var altar_config := struct;
     
-    // Obter ID e Nome do elemento
-    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
-    var territory_name := GetElementProp(elem, "Name", "Território Sem Nome");
-
-    SysLog("TotemCreation: Territory ID: " + territory_id);
-    SysLog("TotemCreation: Territory Name: " + territory_name);
-
-    if (!territory_id)
-        SysLog("TotemCreation: AVISO - Territory ID é NULL! Usando território name como fallback.");
-        territory_id := territory_name; // Usar nome como fallback
-        if (!territory_id)
-            SysLog("TotemCreation: ERRO CRÍTICO - Territory Name também é NULL! Destruindo totem...");
-            DestroyItem(totem);
+    case (champion_type)
+        "CavernaDosGoblins":
+        "cavernadosgoblins":
+            altar_config.+name               := "Caverna dos Goblins";
+            altar_config.+boss_template      := "orcbrute";
+            altar_config.+cooldown           := 3600;
+            altar_config.+player_radius      := 60;
+            altar_config.+waves              := array(
+                                                   struct{"mobs" := array("goblin", "goblin2"), "amount" := 30}, struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
+                                                   struct{"mobs" := array("goblin", "goblin2"), "amount" := 1}, struct{"mobs" := array("goblin", "goblin2"), "amount" := 1},
+                                                   struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
+                                                   struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1}, struct{"mobs" := array("hobgoblin", "hobgoblin2"), "amount" := 1},
+                                                   struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
+                                                   struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1}, struct{"mobs" := array("orcbrute", "orcbrute"), "amount" := 1},
+                                                   struct{"mobs" := array("ettin", "troll"), "amount" := 1}, struct{"mobs" := array("ettin", "troll"), "amount" := 1},
+                                                   struct{"mobs" := array("ettin", "troll"), "amount" := 1}, struct{"mobs" := array("ettin", "troll"), "amount" := 1}
+                                               );
+        "CovilDasAranhas":
+        "covildasaranhas":
+            altar_config.+name               := "Covil das Aranhas";
+            altar_config.+boss_template      := "dreadspider";
+            altar_config.+cooldown           := 7200;
+            altar_config.+player_radius      := 60;
+            altar_config.+waves              := array(
+                                                   struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
+                                                   struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8}, struct{"mobs" := array("giantspider", "dreadspider"), "amount" := 8},
+                                                   struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
+                                                   struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6}, struct{"mobs" := array("terathanwarrior", "terathandrone"), "amount" := 6},
+                                                   struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
+                                                   struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5}, struct{"mobs" := array("terathanavenger", "terathanmatriarch"), "amount" := 5},
+                                                   struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4},
+                                                   struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}, struct{"mobs" := array("ophidianknight", "ophidianmage"), "amount" := 4}
+                                               );
+        default:
+            SendSysMessage(who, "ERRO: Tipo de champion inválido: " + champion_type);
             return 0;
-        endif
+    endcase
+    
+    SendSysMessage(who, "Construindo ambiente do champion spawn...");
+    
+    // Construir ambiente (replicando BuildChampionEnvironment)
+    var build_result := BuildChampionEnvironment(center_x, center_y, center_z, realm);
+    if (!build_result)
+        SendSysMessage(who, "ERRO: Falha ao construir ambiente do champion!");
+        return 0;
     endif
     
-    SysLog("TotemCreation: Configurando propriedades do totem...");
+    SendSysMessage(who, "Ambiente construído. Criando altar...");
     
-    // Configurar propriedades do totem (mesmas da função original)
-    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
-    SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
-    SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
-    SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
-    SetObjProperty(totem, "CreationDate", polcore().systime);
-    SetObjProperty(totem, "FromBossDefeat", 1); // Marcar que veio da morte do boss
+    // Criar altar no Z+5 (igual ao criarcampeao.src)
+    var altar := CreateItemAtLocation(center_x, center_y, center_z + 5, 0x1822, 1, realm);
+    if (!altar)
+        SendSysMessage(who, "ERRO: Falha ao criar altar!");
+        return 0;
+    endif
     
-    SysLog("TotemCreation: Propriedades configuradas com sucesso!");
-    SysLog("TotemCreation: Totem ID configurado: " + GetObjProperty(totem, TERRITORY_ID_PROP));
-    SysLog("TotemCreation: Totem Name configurado: " + GetObjProperty(totem, TERRITORY_NAME_PROP));
-    SysLog("TotemCreation: === TOTEM CRIADO COM SUCESSO! ===");
+    // Configurar altar
+    SetObjProperty(altar, "ChampionConfig", altar_config);
+    SetObjProperty(altar, "TerritoryName", territory_name);
+    SetObjProperty(altar, "IsTerritorChampion", 1);
+    
+    // O controlador será iniciado automaticamente pelo ControlScript do altar
+    SendSysMessage(who, "Champion Spawn Territorial criado com sucesso!");
+    SendSysMessage(who, "Altar: " + altar_config.name + " para território: " + territory_name);
+    SendSysMessage(who, "Boss final criará totem territorial!");
+    SendSysMessage(who, "O controlador será iniciado automaticamente pelo sistema!");
     
     return 1;
 endfunction
 
-// Função simples para calcular o centro de um retângulo
-function CalculateRectangleCenter(rect_str, realm)
-    SysLog("TotemCreation: === CALCULANDO CENTRO DO RETÂNGULO ===");
-    SysLog("TotemCreation: Rect string: " + rect_str);
-    
-    if (!rect_str || rect_str == "")
-        SysLog("TotemCreation: ERRO - Rect string é vazia ou NULL!");
+// Função para spawnar Champion Boss diretamente para um território
+function SpawnChampionBossForTerritory(who, territory_name)
+    if (!who || !territory_name)
+        SendSysMessage(who, "Erro: Parâmetros inválidos.");
         return 0;
     endif
     
-    // Parse do formato "x1 y1 x2 y2" (exemplo: "5160 463 5175 473")
-    var coords := SplitWords(rect_str);
-    if (coords.size() < 4)
-        SysLog("TotemCreation: ERRO - Formato de rect inválido. Esperado 4 coordenadas, encontrado: " + coords.size());
+    // Criar gump para seleção do tipo de boss
+    var gump := GFECreateGump("Spawnar Champion Boss", 400, 250, array{BORDER_GOLDEN});
+    var y := 60;
+    
+    GFTextMid(gump, 15, y, 370, 53, "Selecione o tipo de Champion Boss:");
+    y += 40;
+    
+    // Botão para Orc Brute
+    GFAddButton(gump, 50, y, 2361, 2361, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 70, y-4, 1153, "Orc Brute");
+    y += 30;
+    
+    // Botão para Dread Spider  
+    GFAddButton(gump, 50, y, 2361, 2361, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 70, y-4, 1153, "Dread Spider");
+    y += 40;
+    
+    // Botão cancelar
+    GFAddButton(gump, 50, y, 2361, 2361, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 70, y-4, 38, "Cancelar");
+    
+    var input := GFSendGump(who, gump);
+    var button := input[0];
+    
+    if (button == 0)
+        SendSysMessage(who, "Operação cancelada.");
         return 0;
     endif
     
-    var x1 := CInt(coords[1]);
-    var y1 := CInt(coords[2]);
-    var x2 := CInt(coords[3]);
-    var y2 := CInt(coords[4]);
+    var boss_type;
+    if (button == 1)
+        boss_type := "orcbrute";
+    elseif (button == 2)
+        boss_type := "dreadspider";
+    else
+        SendSysMessage(who, "Seleção inválida.");
+        return 0;
+    endif
     
-    SysLog("TotemCreation: Coordenadas parseadas: x1=" + x1 + ", y1=" + y1 + ", x2=" + x2 + ", y2=" + y2);
+    // IMPLEMENTAÇÃO CORRIGIDA: Usar o mesmo método do criarcampeao.src
+    SysLog("[RECTANGLES_SPAWN] ========== INICIANDO SPAWN DE CHAMPION BOSS ==========");
+    SysLog("[RECTANGLES_SPAWN] Boss Type: " + boss_type);
+    SysLog("[RECTANGLES_SPAWN] Territory: " + territory_name);
+    SysLog("[RECTANGLES_SPAWN] Player: " + who.name + " (Serial: " + who.serial + ")");
+    SysLog("[RECTANGLES_SPAWN] Position: " + who.x + ", " + who.y + ", " + who.z + ", Realm: " + who.realm);
     
-    // Calcular centro (igual ao código existente do rectangles.src)
-    var center_x := CInt((x1 + x2) / 2);
-    var center_y := CInt((y1 + y2) / 2);
-    var center_z := GetWorldHeight(center_x, center_y, realm);
+    SendSysMessage(who, "Spawnando Champion Boss " + boss_type + " para território: " + territory_name);
     
-    SysLog("TotemCreation: Centro final: " + center_x + "," + center_y + "," + center_z + " - " + realm);
+    // Validar template de boss (usar os templates territoriais específicos)
+    var boss_template;
+    if (boss_type == "orcbrute")
+        boss_template := "orcbrute_territorial";
+        SysLog("[RECTANGLES_SPAWN] Template validado: orcbrute_territorial (com DeathScript)");
+    elseif (boss_type == "dreadspider") 
+        boss_template := "dreadspider_territorial";
+        SysLog("[RECTANGLES_SPAWN] Template validado: dreadspider_territorial (com DeathScript)");
+    else
+        SysLog("[RECTANGLES_SPAWN] ✗ ERRO: Tipo de boss inválido: " + boss_type);
+        SendSysMessage(who, "✗ Tipo de boss inválido: " + boss_type);
+        return 0;
+    endif
     
-    // Retornar struct com coordenadas
-    return struct{
-        "x" := center_x,
-        "y" := center_y, 
-        "z" := center_z,
-        "realm" := realm
-    };
+    // Criar altar temporário para usar SpawnChampion (mesmo método do criarcampeao.src)
+    var spawn_x := who.x + 3;
+    var spawn_y := who.y + 3;
+    var spawn_z := who.z;
+    
+    SysLog("[RECTANGLES_SPAWN] Criando altar temporário...");
+    SysLog("[RECTANGLES_SPAWN] Posição do altar: " + spawn_x + ", " + spawn_y + ", " + (spawn_z + 10));
+    
+    var temp_altar := CreateItemAtLocation(spawn_x, spawn_y, spawn_z + 10, 0x1822, 1, who.realm);
+    if (!temp_altar)
+        SysLog("[RECTANGLES_SPAWN] ✗ ERRO: Falha ao criar altar temporário");
+        SendSysMessage(who, "✗ Erro ao criar altar temporário");
+        return 0;
+    endif
+    
+    SysLog("[RECTANGLES_SPAWN] ✓ Altar temporário criado: " + temp_altar.serial);
+    
+    // Configurar altar temporário
+    temp_altar.visible := 0;
+    temp_altar.movable := 0;
+    SetObjProperty(temp_altar, "IsTemporary", 1);
+    
+    // Configurar como territorial se especificado
+    if (territory_name && territory_name != "")
+        SetObjProperty(temp_altar, "TerritoryName", territory_name);
+        SetObjProperty(temp_altar, "IsTerritorChampion", 1);
+        SysLog("[RECTANGLES_SPAWN] Altar configurado como territorial para: " + territory_name);
+    endif
+    
+    // USAR SpawnChampion como no criarcampeao.src
+    SysLog("[RECTANGLES_SPAWN] Chamando SpawnChampion com template: " + boss_template);
+    var boss := SpawnChampion(temp_altar, boss_template);
+    
+    SysLog("[RECTANGLES_SPAWN] Resultado do SpawnChampion:");
+    if (!boss)
+        SysLog("[RECTANGLES_SPAWN] ✗ ERRO: boss é null/false");
+        SendSysMessage(who, "✗ Falha ao criar Champion Boss - SpawnChampion retornou null");
+        DestroyItem(temp_altar);
+        return 0;
+    endif
+    
+    if (boss.errortext)
+        SysLog("[RECTANGLES_SPAWN] ✗ ERRO: " + boss.errortext);
+        SendSysMessage(who, "✗ Erro no boss: " + boss.errortext);
+        DestroyItem(temp_altar);
+        return 0;
+    endif
+    
+    SysLog("[RECTANGLES_SPAWN] ✓ Boss criado com sucesso!");
+    SysLog("[RECTANGLES_SPAWN] Boss: " + boss.name + " (Serial: " + boss.serial + ")");
+    SysLog("[RECTANGLES_SPAWN] Posição inicial: " + boss.x + ", " + boss.y + ", " + boss.z);
+    
+    if (boss && !boss.errortext)
+        SysLog("[RECTANGLES_SPAWN] ✓ Boss criado com sucesso!");
+        SysLog("[RECTANGLES_SPAWN] Boss: " + boss.name + " (Serial: " + boss.serial + ")");
+        SysLog("[RECTANGLES_SPAWN] Posição inicial: " + boss.x + ", " + boss.y + ", " + boss.z);
+        
+        SysLog("[RECTANGLES_SPAWN] ========== VERIFICAÇÃO FINAL DAS PROPRIEDADES ==========");
+        var check_guardian := GetObjProperty(boss, "IsGuardian");
+        var check_champion := GetObjProperty(boss, "FromChampionSpawn");
+        var check_territory := GetObjProperty(boss, "TerritoryName");
+        var check_altar := GetObjProperty(boss, "ChampionAltar");
+        var check_script := boss.script;
+        
+        SysLog("[RECTANGLES_SPAWN] Verificação - IsGuardian: " + check_guardian);
+        SysLog("[RECTANGLES_SPAWN] Verificação - FromChampionSpawn: " + check_champion);
+        SysLog("[RECTANGLES_SPAWN] Verificação - TerritoryName: " + check_territory);
+        SysLog("[RECTANGLES_SPAWN] Verificação - ChampionAltar: " + check_altar);
+        SysLog("[RECTANGLES_SPAWN] Verificação - Script: " + check_script);
+        
+        // SOLUÇÃO CRÍTICA: Iniciar guardian_death_monitor para criar totem territorial
+        if (check_guardian && check_territory)
+            SysLog("[RECTANGLES_SPAWN] ========== INICIANDO GUARDIAN_DEATH_MONITOR ==========");
+            var monitor_result := start_script(":faccao:guardian_death_monitor", boss);
+            if (monitor_result.errortext)
+                SysLog("[RECTANGLES_SPAWN] ✗ AVISO: Falha ao iniciar guardian_death_monitor: " + monitor_result.errortext);
+                SendSysMessage(who, "Aviso: Monitor de morte não iniciado - totem pode não aparecer");
+            else
+                SysLog("[RECTANGLES_SPAWN] ✓ Guardian_death_monitor iniciado com sucesso!");
+                SendSysMessage(who, "✓ Monitor de morte ativo - totem aparecerá ao matar o boss!");
+            endif
+        endif
+        
+        SendSysMessage(who, "✓ Champion Boss '" + boss.name + "' criado com sucesso!");
+        SendSysMessage(who, "Território: " + territory_name);
+        SendSysMessage(who, "*** Este boss criará um totem territorial ao morrer! ***");
+        SysLog("[RECTANGLES_SPAWN] ========== SPAWN CONCLUÍDO COM SUCESSO ==========");
+        
+        // Limpar altar temporário (SpawnChampion já salva o serial no boss)
+        DestroyItem(temp_altar);
+        
+        return boss;
+    else
+        SysLog("[RECTANGLES_SPAWN] ✗ ERRO: Boss inválido após criação");
+        SendSysMessage(who, "✗ Falha ao criar Champion Boss");
+        if (boss && boss.errortext)
+            SysLog("[RECTANGLES_SPAWN] Erro detalhado: " + boss.errortext);
+            SendSysMessage(who, "Erro: " + boss.errortext);
+        endif
+        return 0;
+    endif
 endfunction
+
+// FUNÇÃO REMOVIDA: BuildChampionEnvironment 
+// A função foi migrada para ficar centralizada no altarutils.inc
+// para evitar duplicação e facilitar manutenção

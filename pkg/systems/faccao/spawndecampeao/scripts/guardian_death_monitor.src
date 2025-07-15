@@ -1,0 +1,93 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_constants";
+include ":spawndecampeao:include/altarutils";
+
+// Script que monitora a morte de um boss guardião
+program guardian_death_monitor(npc)
+    LogCritical("ChampSpawn", "*** GUARDIAN_DEATH_MONITOR INICIADO ***");
+    LogCritical("ChampSpawn", "NPC Serial: " + npc.serial);
+    LogCritical("ChampSpawn", "NPC Name: " + npc.name);
+    LogCritical("ChampSpawn", "NPC Template: " + npc.npctemplate);
+    LogCritical("ChampSpawn", "NPC Position: " + npc.x + "," + npc.y + "," + npc.z);
+    
+    // Verificar se é realmente um guardião
+    var is_guardian := GetObjProperty(npc, "IsGuardian");
+    LogCritical("ChampSpawn", "IsGuardian: " + is_guardian);
+    
+    if (!is_guardian)
+        LogCritical("ChampSpawn", "ERRO: NPC não é guardião - abortando monitor");
+        return;
+    endif
+    
+    var territory_name := GetObjProperty(npc, "TerritoryName");
+    var altar_serial := GetObjProperty(npc, "ChampionAltar");
+    
+    LogCritical("ChampSpawn", "Territory Name: " + territory_name);
+    LogCritical("ChampSpawn", "Altar Serial: " + altar_serial);
+    LogCritical("ChampSpawn", "*** MONITOR ATIVO - AGUARDANDO MORTE DO BOSS ***");
+    
+    // SALVAR POSIÇÃO INICIAL (enquanto NPC ainda está vivo)
+    var saved_x := npc.x;
+    var saved_y := npc.y;
+    var saved_z := npc.z;
+    var saved_realm := npc.realm;
+    
+    // Loop de monitoramento - verificar se o NPC ainda existe
+    LogCritical("ChampSpawn", "*** INICIANDO LOOP DE MONITORAMENTO ***");
+    LogCritical("ChampSpawn", "Boss HP atual: " + npc.hp + "/" + npc.maxhp);
+    LogCritical("ChampSpawn", "Boss está morto: " + npc.dead);
+    
+    var loop_count := 0;
+    while (npc && !npc.dead)
+        loop_count := loop_count + 1;
+        
+        // Log a cada 30 segundos (30 loops)
+        if (loop_count % 30 == 0)
+            LogCritical("ChampSpawn", "Boss ainda vivo - HP: " + npc.hp + "/" + npc.maxhp + " (Loop " + loop_count + ")");
+        endif
+        
+        // Atualizar posição continuamente (caso o NPC se mova)
+        if (npc.x && npc.y && npc.z)
+            saved_x := npc.x;
+            saved_y := npc.y;
+            saved_z := npc.z;
+            saved_realm := npc.realm;
+        endif
+        sleep(1); // Verificar a cada segundo
+    endwhile
+    
+    LogCritical("ChampSpawn", "*** BOSS MORREU - PROCESSANDO MORTE ***");
+    LogCritical("ChampSpawn", "Loops de monitoramento: " + loop_count);
+    LogCritical("ChampSpawn", "Posição da morte: " + saved_x + "," + saved_y + "," + saved_z);
+    LogCritical("ChampSpawn", "Realm da morte: " + saved_realm);
+    
+    // CRÍTICO: Remover qualquer loot que possa ter sido criado
+    LogCritical("ChampSpawn", "*** REMOVENDO LOOT DO BOSS TERRITORIAL ***");
+    var corpse := SystemFindObjectBySerial(npc.serial);
+    if (corpse)
+        var items_removed := 0;
+        foreach item in EnumerateItemsInContainer(corpse)
+            // Manter apenas itens corporais essenciais
+            if (item.objtype == 0x1CED || item.objtype == 0x1CEE)  // Hair, beard
+                continue;
+            endif
+            
+            LogCritical("ChampSpawn", "Removendo item: " + item.objtype + " (" + item.desc + ")");
+            DestroyItem(item);
+            items_removed := items_removed + 1;
+        endforeach
+        LogCritical("ChampSpawn", "Itens de loot removidos: " + items_removed);
+    endif
+    
+    // Aguardar um pouco para garantir que o NPC foi processado
+    sleep(2);
+    
+    // Chamar função de criação de totem com coordenadas salvas
+    LogCritical("ChampSpawn", "*** CRIANDO TOTEM TERRITORIAL ***");
+    CreateTotemOnBossDeath(territory_name, saved_x, saved_y, saved_z, saved_realm, altar_serial);
+endprogram

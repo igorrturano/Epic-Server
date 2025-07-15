@@ -1,0 +1,58 @@
+use uo;
+use os;
+use polsys;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_constants";
+include ":spawndecampeao:include/altarutils";
+
+// DeathScript especial para boss territorial - SEM LOOT
+program territorial_boss_death(corpse)
+    LogCritical("ChampSpawn", "*** TERRITORIAL_BOSS_DEATH INICIADO ***");
+    LogCritical("ChampSpawn", "Corpse Serial: " + corpse.serial);
+    LogCritical("ChampSpawn", "Corpse Name: " + corpse.name);
+    
+    // Verificar se é realmente um boss territorial
+    var is_guardian := GetObjProperty(corpse, "IsGuardian");
+    var territory_name := GetObjProperty(corpse, "TerritoryName");
+    var from_champion := GetObjProperty(corpse, "FromChampionSpawn");
+    
+    LogCritical("ChampSpawn", "IsGuardian: " + is_guardian);
+    LogCritical("ChampSpawn", "TerritoryName: " + territory_name);
+    LogCritical("ChampSpawn", "FromChampionSpawn: " + from_champion);
+    
+    if (!is_guardian || !territory_name || !from_champion)
+        LogCritical("ChampSpawn", "ERRO: Corpse não é de boss territorial válido - abortando");
+        return;
+    endif
+    
+    // CRÍTICO: Limpar TODO o loot do corpse (exceto itens especiais)
+    LogCritical("ChampSpawn", "*** REMOVENDO LOOT DO BOSS TERRITORIAL ***");
+    var items_removed := 0;
+    
+    foreach item in EnumerateItemsInContainer(corpse)
+        // Manter apenas itens corporais essenciais
+        if (item.objtype == 0x1CED || item.objtype == 0x1CEE)  // Hair, beard
+            continue;
+        endif
+        
+        LogCritical("ChampSpawn", "Removendo item: " + item.objtype + " (" + item.desc + ")");
+        DestroyItem(item);
+        items_removed := items_removed + 1;
+    endforeach
+    
+    LogCritical("ChampSpawn", "*** LOOT REMOVIDO ***");
+    LogCritical("ChampSpawn", "Itens removidos: " + items_removed);
+    LogCritical("ChampSpawn", "Boss territorial não deve ter loot - apenas totem territorial");
+    
+    // Criar totem territorial diretamente
+    var altar_serial := GetObjProperty(corpse, "ChampionAltar");
+    if (altar_serial)
+        LogCritical("ChampSpawn", "*** CRIANDO TOTEM TERRITORIAL DIRETAMENTE ***");
+        CreateTotemOnBossDeath(territory_name, corpse.x, corpse.y, corpse.z, corpse.realm, altar_serial);
+    else
+        LogCritical("ChampSpawn", "ERRO: Altar serial não encontrado - não foi possível criar totem");
+    endif
+    
+    LogCritical("ChampSpawn", "*** TERRITORIAL_BOSS_DEATH FINALIZADO ***");
+endprogram

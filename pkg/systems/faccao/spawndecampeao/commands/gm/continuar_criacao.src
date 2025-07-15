@@ -1,0 +1,100 @@
+// CONTINUAR_CRIACAO.SRC - Script finalizador para criação de Champion Spawn
+// Parte 2 da máquina de estados para evitar timeout de gump
+use uo;
+use util;
+use os;
+
+include ":spawndecampeao:include/altar";
+include ":spawndecampeao:include/config";
+include ":spawndecampeao:include/arena";
+include "include/say";
+
+program continuar_criacao_campeao(who)
+    SendSysMessage(who, "DEBUG: Script continuar_criacao INICIADO");
+    
+    // Lê os dados temporários que foram salvos no personagem
+    var temp_info := GetObjProperty(who, "#temp_champion_creation");
+    SendSysMessage(who, "DEBUG: temp_info = " + temp_info);
+    
+    if (!temp_info)
+        SendSysMessage(who, "ERRO: Não foi possível encontrar dados temporários");
+        return;
+    endif
+
+    // Apaga a propriedade temporária IMEDIATAMENTE para evitar execuções duplas
+    EraseObjProperty(who, "#temp_champion_creation");
+    SendSysMessage(who, "DEBUG: Dados temporários removidos");
+
+    // Extrai as informações salvas
+    var champion_type := temp_info.champion_type;
+    var territory_name := temp_info.territory_name;
+    var target_location := temp_info.target_location;
+    
+    SendSysMessage(who, "DEBUG: Champion = " + champion_type);
+    SendSysMessage(who, "DEBUG: Territory = " + territory_name);
+    SendSysMessage(who, "DEBUG: Location = " + target_location);
+
+    if (!champion_type || !territory_name)
+        SendSysMessage(who, "ERRO: Dados incompletos");
+        return;
+    endif
+
+    SendSysMessage(who, "Continuando criação... Invocando o sistema de Champion Spawn.");
+
+    // NOVA ABORDAGEM: Usa as funções centralizadas em vez de delegar para criarcampeao.src
+    var spawn_cfg := LoadSpawnConfig(champion_type);
+    if (!spawn_cfg)
+        SendSysMessage(who, "ERRO: Configuração não encontrada para o tipo '" + champion_type + "'");
+        return;
+    endif
+
+    // Se não temos localização definida, pede para o GM selecionar
+    var altar_location;
+    if (!target_location)
+        SendSysMessage(who, "Selecione onde criar o altar do Champion Spawn:");
+        altar_location := TargetCoordinates(who);
+        if (!altar_location)
+            SendSysMessage(who, "Localização cancelada.");
+            return;
+        endif
+    else
+        SendSysMessage(who, "DEBUG: Usando localização salva");
+        altar_location := target_location;
+    endif
+
+    SendSysMessage(who, "DEBUG: Criando arena em " + altar_location.x + "," + altar_location.y);
+    
+    // Cria o ambiente do Champion Spawn usando a função centralizada
+    var result := BuildChampionEnvironment(altar_location.x, altar_location.y, altar_location.z, altar_location.realm);
+    
+    SendSysMessage(who, "DEBUG: BuildChampionEnvironment retornou = " + result);
+    
+    // CORREÇÃO: Verificação do resultado (BuildChampionEnvironment retorna número de itens criados)
+    if (result > 0)
+        SendSysMessage(who, "Arena do Champion Spawn criada com sucesso! (" + result + " itens criados)");
+        
+        // Criar o altar na posição elevada (+5) como no código original
+        var altar := CreateItemAtLocation(altar_location.x, altar_location.y, altar_location.z + 5, 0x1822, 1, altar_location.realm);
+        if (altar)
+            // Configurar o altar com as informações corretas
+            var altar_config := LoadSpawnConfig(champion_type);
+            if (altar_config)
+                SetObjProperty(altar, "ChampionConfig", altar_config);
+                SetObjProperty(altar, "TerritoryName", territory_name);
+                SetObjProperty(altar, "IsTerritorChampion", 1);
+                
+                SendSysMessage(who, "Altar do Champion Spawn criado! Serial: " + altar.serial);
+                SendSysMessage(who, "Altar configurado como TERRITORIAL para: " + territory_name);
+                SendSysMessage(who, "Boss final criará totem territorial no altar!");
+                SendSysMessage(who, "Sistema completo e pronto para uso.");
+            else
+                SendSysMessage(who, "AVISO: Altar criado mas falha ao carregar configuração para: " + champion_type);
+            endif
+        else
+            SendSysMessage(who, "ERRO: Falha ao criar o altar do Champion Spawn.");
+        endif
+    else
+        SendSysMessage(who, "ERRO: Falha ao criar a arena do Champion Spawn.");
+    endif
+
+endprogram
