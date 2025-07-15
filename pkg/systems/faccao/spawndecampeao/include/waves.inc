@@ -235,7 +235,7 @@ function SpawnChampion(altar, boss_template)
             
             // SOLUÇÃO CRÍTICA: Configurar DeathScript territorial
             LogInfo("ChampSpawn", "*** CONFIGURANDO DEATHSCRIPT TERRITORIAL ***");
-            creature.script := ":faccao:spawndecampeao:scripts/territorial_boss_death";
+            creature.script := ":spawndecampeao:scripts/territorial_boss_death";
             LogInfo("ChampSpawn", "✓ DeathScript configurado: " + creature.script);
             LogInfo("ChampSpawn", "*** TOTEM TERRITORIAL SERÁ CRIADO AUTOMATICAMENTE AO MATAR O BOSS ***");
         else

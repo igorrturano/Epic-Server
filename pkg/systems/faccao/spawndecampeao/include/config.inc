@@ -1,78 +1,41 @@
-// CONFIG.INC - Funções de configuração do sistema Champion Spawn
-// Criado durante refatoração para separar responsabilidades
+// CONFIG_SIMPLE.INC - Versão simplificada para resolver problemas de configuração
+// Retorna configuração hard-coded para testes
 
-use uo;
-use os;
-use cfgfile;
-use util;
-
-include ":faccao:include/shared_functions";
-
-// FUNÇÃO CENTRALIZADA: Carrega configurações de spawn do settings.cfg
+// Função simplificada que retorna configuração hard-coded
 function LoadSpawnConfig(spawn_type)
-    var cfg := ReadConfigFile(":spawndecampeao:config/settings");
-    if (!cfg)
-        LogError("ChampSpawn", "Erro: Não foi possível carregar settings.cfg");
-        return error;
-    endif
-    
-    var spawn_name;
-    case (Lower(spawn_type))
-        "cavernadosgoblins":
-            spawn_name := "CavernaDosGoblins";
-        "covildasaranhas":
-            spawn_name := "CovilDasAranhas";
-        default:
-            LogError("ChampSpawn", "Tipo de spawn desconhecido: " + spawn_type);
-            return error;
-    endcase
-    
-    var spawn_cfg := FindConfigElem(cfg, spawn_name);
-    if (!spawn_cfg)
-        LogError("ChampSpawn", "Configuração não encontrada para: " + spawn_name);
-        return error;
-    endif
-    
     var config := struct;
-    config.+name := GetConfigString(spawn_cfg, "Name");
-    config.+boss_template := GetConfigString(spawn_cfg, "BossTemplate");
-    config.+cooldown := GetConfigInt(spawn_cfg, "ActivationCooldown");
-    config.+player_radius := GetConfigInt(spawn_cfg, "PlayerCheckRadius");
     
-    // Carregar waves
-    var waves := array{};
-    var i;
-    for (i := 1; i <= 4; i := i + 1)
-        var wave_mobs := GetConfigString(spawn_cfg, "Wave" + i + " Mobs");
-        var wave_amount := GetConfigInt(spawn_cfg, "Wave" + i + " Amount");
+    if (spawn_type == "cavernadosgoblins" || spawn_type == "CavernaDosGoblins")
+        config.+name := "Caverna dos Goblins";
+        config.+boss_template := "orcbrute_territorial";
+        config.+cooldown := 3600;
+        config.+player_radius := 60;
         
-        if (wave_mobs && wave_amount)
-            var mob_list := SplitWords(wave_mobs);
-            waves.append(struct{"mobs" := mob_list, "amount" := wave_amount});
-        endif
-    endfor
-    
-    config.+waves := waves;
-    
-    // VALIDAÇÃO: Verificar se o boss_template existe no npcdesc.cfg
-    if (config.boss_template)
-        var npc_cfg := ReadConfigFile(":epicai:npcdesc");
-        if (npc_cfg)
-            var boss_elem := FindConfigElem(npc_cfg, config.boss_template);
-            if (!boss_elem)
-                LogError("ChampSpawn", "ERRO: Template de boss não encontrado no npcdesc.cfg: " + config.boss_template);
-                LogError("ChampSpawn", "Verifique se o template '" + config.boss_template + "' existe em pkg/mobiles/epicAI/npcdesc.cfg");
-                return error;
-            else
-                LogInfo("ChampSpawn", "✓ Template de boss validado: " + config.boss_template);
-            endif
-        else
-            LogWarning("ChampSpawn", "Não foi possível carregar npcdesc.cfg para validar template: " + config.boss_template);
-        endif
+        // Criar waves manualmente
+        var waves := array{};
+        waves.append(struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 30});
+        waves.append(struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 20});
+        waves.append(struct{"mobs" := array{"orcbrute", "orcbrute"}, "amount" := 15});
+        waves.append(struct{"mobs" := array{"ettin", "troll"}, "amount" := 10});
+        config.+waves := waves;
+        
+    elseif (spawn_type == "covildasaranhas" || spawn_type == "CovilDasAranhas")
+        config.+name := "Covil das Aranhas";
+        config.+boss_template := "dreadspider_territorial";
+        config.+cooldown := 7200;
+        config.+player_radius := 60;
+        
+        // Criar waves manualmente
+        var waves := array{};
+        waves.append(struct{"mobs" := array{"giantspider", "dreadspider"}, "amount" := 8});
+        waves.append(struct{"mobs" := array{"terathanwarrior", "terathandrone"}, "amount" := 6});
+        waves.append(struct{"mobs" := array{"terathanavenger", "terathanmatriarch"}, "amount" := 5});
+        waves.append(struct{"mobs" := array{"ophidianknight", "ophidianmage"}, "amount" := 4});
+        config.+waves := waves;
+        
+    else
+        return error;
     endif
-    
-    LogInfo("ChampSpawn", "Configuração carregada do settings.cfg - Spawn: " + spawn_name + 
-           ", Boss: " + config.boss_template + ", Waves: " + len(waves));
     
     return config;
 endfunction

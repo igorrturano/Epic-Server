@@ -5,7 +5,6 @@ use polsys;
 
 include ":faccao:spawndecampeao/include/altar";
 include ":faccao:spawndecampeao/include/waves";
-include ":faccao:spawndecampeao/include/config";
 include ":faccao:spawndecampeao/include/arena";
 include ":faccao:include/logging";
 
@@ -39,9 +38,9 @@ endif
 // Se chegamos aqui, ou não havia trava, ou removemos uma trava velha.
 // Agora, nós nos tornamos o controlador oficial.
 // Travamos o altar com o nosso próprio Process ID (PID).
-SetGlobalProperty(lock_name, polcore().pid);
-LogCritical("ChampSpawn", "TRAVA ADQUIRIDA: Processo " + polcore().pid + " assumiu o controle do altar " + altar.serial);
-// =================================================================
+var my_pid := GetPid();
+SetGlobalProperty(lock_name, my_pid);
+LogCritical("ChampSpawn", "TRAVA ADQUIRIDA: Processo " + my_pid + " assumiu o controle do altar " + altar.serial);// =================================================================
 
   var spawn_cfg := GetObjProperty(altar, "ChampionConfig");
     if (!spawn_cfg)
