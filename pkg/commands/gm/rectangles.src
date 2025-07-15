@@ -1321,10 +1321,3 @@ function CreateChampionForTerritory(center_x, center_y, center_z, realm, champio
     return 1;
 endfunction
 
-// REMOVIDA: função SpawnChampionBossForTerritory duplicada
-// A lógica foi consolidada no comando spawnchampionboss.src
-// Use: .spawnchampionboss <tipo> territory:<nome>
-
-// FUNÇÃO REMOVIDA: BuildChampionEnvironment 
-// A função foi migrada para ficar centralizada no altarutils.inc
-// para evitar duplicação e facilitar manutenção

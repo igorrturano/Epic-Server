@@ -1,10 +1,119 @@
 use uo;
 use os;
 use polsys;
+use datafile;
 
 include ":faccao:include/shared_functions";
 include ":faccao:include/faccao_constants";
-include ":spawndecampeao:include/altarutils";
+
+// Função CreateTotemOnBossDeath implementada localmente
+function CreateTotemOnBossDeath(territory_name, x, y, z, realm, altar_serial)
+    LogCritical("ChampSpawn", "*** INICIANDO CreateTotemOnBossDeath ***");
+    LogCritical("ChampSpawn", "Territory: " + territory_name);
+    LogCritical("ChampSpawn", "Posição: " + x + "," + y + "," + z);
+    LogCritical("ChampSpawn", "Realm: " + realm);
+    LogCritical("ChampSpawn", "Altar Serial: " + altar_serial);
+    
+    if (!territory_name)
+        LogCritical("ChampSpawn", "ERRO: Territory name é null - abortando");
+        return;
+    endif
+    
+    // Buscar o território no datafile
+    LogCritical("ChampSpawn", "*** BUSCANDO TERRITÓRIO NO DATAFILE ***");
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogCritical("ChampSpawn", "ERRO: Não foi possível abrir datafile :architect:areas");
+        return;
+    endif
+    
+    var elem := FindDataElem(rect_df, territory_name);
+    if (!elem)
+        LogCritical("ChampSpawn", "ERRO: Território não encontrado: " + territory_name);
+        return;
+    endif
+    
+    LogCritical("ChampSpawn", "✓ Território encontrado no datafile: " + territory_name);
+    
+    // Criar totem no chão
+    LogCritical("ChampSpawn", "*** CRIANDO TOTEM TERRITORIAL ***");
+    var totem := CreateItemAtLocation(x, y, z, 0xA102, 1, realm);
+    if (!totem)
+        LogCritical("ChampSpawn", "ERRO: Falha ao criar totem territorial");
+        return;
+    endif
+    
+    LogCritical("ChampSpawn", "✓ TOTEM TERRITORIAL CRIADO!");
+    LogCritical("ChampSpawn", "Totem Serial: " + totem.serial);
+    LogCritical("ChampSpawn", "Totem Position: " + totem.x + "," + totem.y + "," + totem.z);
+    
+    // Configurar propriedades do totem
+    var territory_id := GetElementProp(elem, "TerritoryId");
+    var territory_display_name := GetElementProp(elem, "Name", territory_name);
+
+    if (!territory_id)
+        territory_id := territory_name;
+    endif
+    
+    LogCritical("ChampSpawn", "*** CONFIGURANDO PROPRIEDADES DO TOTEM ***");
+    LogCritical("ChampSpawn", "Territory ID: " + territory_id);
+    LogCritical("ChampSpawn", "Territory Display Name: " + territory_display_name);
+    
+    SetObjProperty(totem, "TerritoryId", territory_id);
+    SetObjProperty(totem, "TerritoryName", territory_display_name);
+    SetObjProperty(totem, "TerritoryRect", GetElementProp(elem, "Rect", ""));
+    SetObjProperty(totem, "TerritoryRealm", GetElementProp(elem, "Realm", ""));
+    SetObjProperty(totem, "CreationDate", polcore().systime);
+    SetObjProperty(totem, "FromBossDefeat", 1);
+    
+    LogCritical("ChampSpawn", "*** TOTEM CONFIGURADO COM SUCESSO ***");
+    
+    // Limpar altar após delay
+    if (altar_serial)
+        var altar := SystemFindObjectBySerial(CInt(altar_serial));
+        if (altar)
+            LogCritical("ChampSpawn", "*** INICIANDO LIMPEZA DO ALTAR ***");
+            // Aguardar 30 segundos antes da limpeza
+            sleep(30);
+            
+            // Limpar elementos do altar
+            var cleanup_radius := 25;
+            var items_removed := 0;
+            
+            var nearby_items := ListItemsNearLocation(altar.x, altar.y, altar.z, cleanup_radius, altar.realm);
+            
+            foreach item in nearby_items
+                var should_remove := 0;
+                
+                // Verifica se é uma caveira vermelha órfã
+                if (item.objtype == 0x1854 && item.color == 0x26)
+                    should_remove := 1;
+                endif
+                
+                // Verifica se é uma vela branca órfã
+                if (item.objtype == 0x142C)
+                    should_remove := 1;
+                endif
+                
+                // Verifica se é um fogo órfão
+                if (item.objtype == 0x6d70)
+                    should_remove := 1;
+                endif
+                
+                if (should_remove)
+                    DestroyItem(item);
+                    items_removed := items_removed + 1;
+                endif
+                
+                sleepms(2);
+            endforeach
+            
+            LogCritical("ChampSpawn", "*** LIMPEZA CONCLUÍDA: " + items_removed + " itens removidos ***");
+        endif
+    endif
+    
+    LogCritical("ChampSpawn", "*** CreateTotemOnBossDeath FINALIZADA ***");
+endfunction
 
 // DeathScript especial para boss territorial - SEM LOOT
 program territorial_boss_death(corpse)

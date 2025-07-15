@@ -3,7 +3,10 @@ use uo;
 use os;
 use polsys;
 
-include ":spawndecampeao:include/altarutils";
+include ":faccao:spawndecampeao/include/altar";
+include ":faccao:spawndecampeao/include/waves";
+include ":faccao:spawndecampeao/include/config";
+include ":faccao:spawndecampeao/include/arena";
 include ":faccao:include/logging";
 
 program ChampionController(altar)
