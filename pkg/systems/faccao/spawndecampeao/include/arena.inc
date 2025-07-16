@@ -85,41 +85,63 @@ endfunction
 // === FUNÇÕES DE LIMPEZA DA ARENA ===
 
 function CleanupArenaItems(center_x, center_y, center_z, realm)
-    // Remove todos os itens da arena em um raio de 15 tiles
     var items_removed := 0;
-    var nearby_items := ListItemsNearLocation(center_x, center_y, center_z, 15, realm);
-    
-    foreach item in nearby_items
-        var should_remove := 0;
+    var search_radius := 15;
+    var z_range := 30;
+
+    LogInfo("ChampSpawn_Cleanup", "Iniciando limpeza da arena em " + center_x + "," + center_y + "," + center_z + " (Raio: " + search_radius + ", Altura: +/-" + z_range + ")");
+
+    for z_offset := -z_range to z_range
+        var current_z := center_z + z_offset;
+        var nearby_items := ListItemsNearLocation(center_x, center_y, current_z, search_radius, realm);
         
-        // Lista de objtypes da arena que devem ser removidos
-        case (item.objtype)
-            0xC5:    // Estruturas externas
-            0xDB:    // Decorações
-            0x1ECB:  // Elementos decorativos
-            0x1781:  // Base da plataforma
-            0x49C:   // Centro da plataforma
-            0x51B:   // Piso elevado
-            0x78D:   // Bordas da plataforma
-            0x78C:
-            0x78B:
-            0x78A:
-            0x78F:
-            0x78E:
-            0x789:
-            0x790:
-            0x788:   // Piso central
-                should_remove := 1;
-        endcase
-        
-        if (should_remove)
-            DestroyItem(item);
-            items_removed += 1;
-        endif
-    endforeach
+        foreach item in nearby_items
+            var should_remove := 0;
+            
+            case (item.objtype)
+                0xC5:
+                0xDB:
+                0x1ECB:
+                0x1781:
+                0x1822:
+                0x49C:
+                0x51B:
+                0x78D:
+                0x78C:
+                0x78B:
+                0x78A:
+                0x78F:
+                0x78E:
+                0x789:
+                0x790:
+                0x788:
+                4295:
+                4296:
+                4298:
+                4299:
+                    should_remove := 1;
+            endcase
+            
+            if (should_remove)
+                // ==========================================================
+                // INÍCIO DA CORREÇÃO - REMOÇÃO DO TRY/CATCH
+                // ==========================================================
+                var result := DestroyItem(item);
+                if (result.errortext)
+                    LogWarning("ChampSpawn_Cleanup", "Falha ao destruir item da arena: " + item.desc + " (Serial: " + item.serial + ") - Erro: " + result.errortext);
+                else
+                    items_removed += 1;
+                endif
+                // ==========================================================
+                // FIM DA CORREÇÃO
+                // ==========================================================
+            endif
+        endforeach
+        sleepms(2);
+    endfor
     
     if (items_removed > 0)
-        LogInfo("ChampSpawn", "Limpeza da arena concluída: " + items_removed + " itens removidos");
+        LogInfo("ChampSpawn_Cleanup", "Limpeza da arena concluída: " + items_removed + " itens removidos.");
     endif
     
     return items_removed;

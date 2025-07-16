@@ -480,7 +480,7 @@ function ShowRectangles(who, rect_df)
     endforeach
     
     // MUDANÇA: Botão de criação agora leva para seleção de tipo
-    if (who.cmdlevel >= 1)
+   if (who.cmdlevel >= 1)
         GFAddButton(gump, width/2-70, height-40, 2361, 2361, GF_CLOSE_BTN, 300);
         GFTextLine(gump, width/2-50, height-44, 63, "Criar Novo Território");
     endif
@@ -495,11 +495,12 @@ function ShowRectangles(who, rect_df)
         
         DisplayRectangleDetails(who, elem);
     elseif (button == 999)
-        // Implementação de paginação para mostrar mais territórios
-        ShowRectanglesPage2(who, rect_df, 19); // Começa do 19º item
+        ShowRectanglesPage2(who, rect_df, 19);
     elseif (button == 300)
-        // MUDANÇA: Agora pergunta sobre Champion Spawn primeiro
-        ShowChampionSpawnQuestion(who);
+        // ==========================================================
+        // CORREÇÃO: Chamando o gump de seleção de tipo diretamente.
+        // ==========================================================
+        ShowTerritoryTypeSelection(who);
     endif
 endfunction
 

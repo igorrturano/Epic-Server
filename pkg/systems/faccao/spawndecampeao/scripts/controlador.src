@@ -89,6 +89,8 @@ LogCritical("ChampSpawn", "TRAVA ADQUIRIDA: Processo " + my_pid + " assumiu o co
 endprogram
 
 function StartEvent(altar, spawn_cfg)
+
+
     LogCritical("ChampSpawn", "=== START EVENT CHAMADA ===");
     LogCritical("ChampSpawn", "Altar Serial: " + altar.serial);
     LogCritical("ChampSpawn", "Evento: " + spawn_cfg.name);
@@ -252,7 +254,6 @@ function StartEvent(altar, spawn_cfg)
     LogCritical("ChampSpawn", "*** PRESTES A CHAMAR ShowBossTimer ***");
     LogCritical("ChampSpawn", "Altar: " + altar.serial);
     LogCritical("ChampSpawn", "Timestamp PRE-CALL: " + ReadGameClock());
-    LogCritical("ChampSpawn", "CONTROLADOR ID: " + GetObjProperty(altar, "#controller_timestamp"));
     LogCritical("ChampSpawn", "**************************************");
     
     var timer_result := ShowBossTimer(altar);
@@ -261,7 +262,6 @@ function StartEvent(altar, spawn_cfg)
     LogCritical("ChampSpawn", "Resultado: " + timer_result);
     LogCritical("ChampSpawn", "Altar: " + altar.serial);
     LogCritical("ChampSpawn", "Timestamp POST-CALL: " + ReadGameClock());
-    LogCritical("ChampSpawn", "CONTROLADOR ID: " + GetObjProperty(altar, "#controller_timestamp"));
     LogCritical("ChampSpawn", "**********************************");
     
     if (!timer_result)
@@ -280,37 +280,106 @@ function StartEvent(altar, spawn_cfg)
     var boss := SpawnChampion(altar, spawn_cfg.boss_template);
     
     LogCritical("ChampSpawn", "*** SPAWN RESULT ***");
-    LogCritical("ChampSpawn", "Boss resultado: " + boss);
-    LogCritical("ChampSpawn", "Boss serial: " + (boss ? boss.serial : "NULL"));
-    LogCritical("ChampSpawn", "Boss error: " + (boss ? boss.errortext : "N/A"));
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
+    LogCritical("ChampSpawn", "Boss Object Retornado: " + boss);
+    LogCritical("ChampSpawn", "Boss Serial: " + (boss ? boss.serial : "NULL"));
+    LogCritical("ChampSpawn", "Boss Erro: " + (boss.errortext ? boss.errortext : "Nenhum (Sucesso)"));
     LogCritical("ChampSpawn", "******************");
     
-    if (boss)
-        LogDebug("ChampSpawn", "Boss spawnado - Serial: " + boss.serial + " na posição " + boss.x + "," + boss.y);
+     if (boss)
+        LogInfo("ChampSpawn", "Boss spawnado. Serial " + boss.serial + " armazenado no altar. Iniciando monitoramento.");
         
-        // Loop esperando o boss morrer (sem timeout - jogadores têm quanto tempo precisarem)
-        while(SystemFindObjectBySerial(boss.serial))
-            sleep(15);
-        endwhile
-        
-        LogInfo("ChampSpawn", "Boss " + boss.serial + " foi derrotado! Iniciando processo de limpeza...");
-        
-        // NOVO: Limpa os fogos imediatamente após a morte do boss
-        ClearBossAreaItems(altar);
-        
-        // SISTEMA TERRITORIAL: Totem é criado automaticamente pelo DeathScript
-        // Não criar bag de recompensas - apenas boss territorial é suportado
-        var territory_name := GetObjProperty(altar, "TerritoryName");
-        if (territory_name)
-            LogInfo("ChampSpawn", "Boss territorial derrotado - Totem será criado pelo DeathScript");
-            PrintTextAbove(altar, "* Totem Territorial sendo criado... *");
+        var boss_is_defeated := 0;
+        var boss_serial := GetObjProperty(altar, "champ_serial");
+
+        if (!boss_serial)
+             LogError("ChampSpawn", "ERRO CRÍTICO: Boss foi criado, mas seu serial não foi encontrado no altar! Abortando monitoramento.");
         else
-            LogWarning("ChampSpawn", "AVISO: Boss não territorial detectado - sistema não suportado");
-            PrintTextAbove(altar, "* Sistema apenas suporta boss territorial *");
+            while (!boss_is_defeated)
+                var mob := SystemFindObjectBySerial(boss_serial);
+
+                if (!mob)
+                    // ==========================================================
+                    // INÍCIO DA LÓGICA DE FALLBACK
+                    // ==========================================================
+                    LogWarning("ChampSpawn", "RASTRO PERDIDO: O serial original do boss (" + boss_serial + ") não foi encontrado. Iniciando busca por cadáver órfão.");
+                    
+                    var found_corpse := 0;
+                    // Procura em uma área ampla ao redor do altar por itens.
+                   foreach item in ListItemsNearLocation(altar.x, altar.y, altar.z, 50, altar.realm)
+    // ==========================================================
+    // INÍCIO DOS LOGS DE DIAGNÓSTICO DO FALLBACK
+    // ==========================================================
+    
+    // Verificamos cada condição separadamente para depuração.
+    var has_template := GetObjProperty(item, "npctemplate");
+    var has_altar_prop := GetObjProperty(item, "ChampionAltar");
+
+    // Log para cada item na área, para vermos o que está sendo verificado.
+    LogDebug("FALLBACK_TRACE", "Verificando item " + item.serial + " (" + item.desc + ")");
+    LogDebug("FALLBACK_TRACE", "  -> Tem 'npctemplate'? " + (has_template ? "Sim ('" + has_template + "')" : "Não"));
+    LogDebug("FALLBACK_TRACE", "  -> Tem 'ChampionAltar'? " + (has_altar_prop ? "Sim (" + has_altar_prop + ")" : "Não"));
+
+    if (has_template && has_altar_prop)
+        // Se ambas as propriedades existem, verificamos se o altar é o nosso.
+        if (has_altar_prop == altar.serial)
+            // SUCESSO! Encontramos nosso cadáver.
+            LogCritical("ChampSpawn", "RASTRO REESTABELECIDO! Cadáver órfão encontrado (Serial: " + item.serial + "). Processando morte.");
+            TerritorialBossDeath(item);
+            found_corpse := 1;
+            break; // Sai do loop foreach, pois já encontramos o que queríamos.
+        else
+            // Log para o caso de encontrarmos um cadáver de outro altar (improvável, mas possível).
+            LogDebug("FALLBACK_TRACE", "  -> Item é um cadáver de champion, mas pertence a outro altar (" + has_altar_prop + "). Ignorando.");
         endif
+    endif
+
+    // ==========================================================
+    // FIM DOS LOGS DE DIAGNÓSTICO
+    // ==========================================================
+    sleepms(2);
+endforeach
+                    
+                    if (!found_corpse)
+                        LogError("ChampSpawn", "FALHA DE FALLBACK: Nenhum cadáver pertencente a este altar foi encontrado na área. Finalizando evento.");
+                    endif
+
+                    // Tendo encontrado o cadáver (ou não), o trabalho deste monitoramento acabou.
+                    boss_is_defeated := 1;
+                    continue; // Sai do loop while
+                    // ==========================================================
+                    // FIM DA LÓGICA DE FALLBACK
+                    // ==========================================================
+                endif
+
+                if (mob.dead)
+                    LogCritical("ChampSpawn", "*** MORTE DETECTADA (MÉTODO PADRÃO) ***");
+                    TerritorialBossDeath(mob);
+                    boss_is_defeated := 1;
+                endif
+                
+                sleep(5); 
+            endwhile
+        endif
+               //=========================================================================================
+        // FIM DA LÓGICA DE MONITORAMENTO
+        //=========================================================================================
         
-        // NOVO: Aguarda 30 segundos antes de limpar completamente o altar
-        LogInfo("ChampSpawn", "Aguardando 30 segundos antes de limpar o altar...");
+        LogInfo("ChampSpawn", "Loop de monitoramento encerrado. Iniciando processo de limpeza do altar...");
+        EraseObjProperty(altar, "champ_serial"); // Limpa a propriedade após o chefe ser derrotado.
+        
+        // Limpa os fogos da área do boss (isso já estava correto)
+        ClearBossAreaItems(altar);
+
+        // ==========================================================
+        // ADIÇÃO OPCIONAL: Limpar a arena física (paredes, etc.).
+        // Descomente a linha abaixo se quiser que a arena desapareça.
+        // ==========================================================
+        LogInfo("ChampSpawn", "Limpando o ambiente físico da arena...");
+        CleanupArenaItems(altar.x, altar.y, altar.z - 5, altar.realm); // Usamos Z-5 para pegar o centro no chão.
+        // ==========================================================
+        
+        LogInfo("ChampSpawn", "Iniciando contagem regressiva de 30 segundos para a limpeza final do altar.");
         PrintTextAbove(altar, "* O altar será limpo em 30 segundos... *");
         
         for countdown := 30 to 1
@@ -320,17 +389,21 @@ function StartEvent(altar, spawn_cfg)
             sleep(1);
         endfor
     else
-        LogError("ChampSpawn", "Boss não foi criado! Não haverá recompensa.");
+        LogError("ChampSpawn", "FALHA CRÍTICA: O Boss não foi criado! O evento será resetado.");
     endif
 
-    LogInfo("ChampSpawn", "Evento do altar " + altar.serial + " finalizado - Entrando em cooldown");
+    LogCritical("ChampSpawn", "=== EVENTO FINALIZADO ===");
+    LogCritical("ChampSpawn", "Altar: " + altar.serial);
     PrintTextAbove(altar, "O campeão foi derrotado! O altar adormece...");
     
-    // Limpa TODAS as propriedades de proteção contra execução dupla
+    // Limpa a trava de PID da Propriedade Global
+    var lock_name := "ChampSpawn.Lock." + altar.serial;
+    EraseGlobalProperty(lock_name);
+    
     EraseObjProperty(altar, "#controller_running");
     EraseObjProperty(altar, "#controller_timestamp");
     LogCritical("ChampSpawn", "*** CONTROLADOR FINALIZADO ***");
-    LogCritical("ChampSpawn", "Propriedades de proteção removidas do altar " + altar.serial);
+    LogCritical("ChampSpawn", "Propriedades de proteção e trava global removidas do altar " + altar.serial);
     
     DeactivateAltar(altar, spawn_cfg.cooldown);
 endfunction
