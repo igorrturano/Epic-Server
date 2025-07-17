@@ -88,6 +88,7 @@ function CreateTotemOnBossDeath(territory_name, x, y, z, realm, altar_serial)
     SetObjProperty(totem, "Rect", GetElementProp(elem, "Rect"));
     SetObjProperty(totem, "Realm", GetElementProp(elem, "Realm"));
     SetObjProperty(totem, "FromBossDefeat", 1);
+    SetObjProperty(totem, "ClaimByTimestamp", polcore().systime + 60); // 86400 segundos = 24 horas
     
     LogCritical("TBD_DEBUG", "Totem criado (Serial: " + totem.serial + ") com TerritoryID: '" + territory_id_real + "'");
 

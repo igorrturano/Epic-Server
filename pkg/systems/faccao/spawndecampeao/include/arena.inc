@@ -146,3 +146,69 @@ function CleanupArenaItems(center_x, center_y, center_z, realm)
     
     return items_removed;
 endfunction
+
+// Adicionar ao final de pkg/spawndecampeao/include/arena.inc
+
+/*
+ * RebuildChampionSpawn(territory_id)
+ *
+ * Purpose: Reconstrói a arena e o altar de um Champion Spawn em um território que voltou
+ *          ao estado selvagem ou cujo totem expirou.
+ * Parameters:
+ *   territory_id - O ID único do território onde o spawn será reconstruído.
+ * Return:
+ *   1 em caso de sucesso, 0 em caso de falha.
+ */
+function RebuildChampionSpawn(territory_id)
+    // 1. Encontrar as informações do território para obter a localização e o tipo de champion
+    var territory_elem := TM_FindTerritory(territory_id);
+    if (!territory_elem)
+        LogError("RebuildChampion", "Território " + territory_id + " não encontrado. Reconstrução abortada.");
+        return 0;
+    endif
+
+    // 2. Garantir que o território está marcado como Selvagem (segurança)
+    SetTerritoryFaction(territory_elem, DEFAULT_FACTION);
+
+    // 3. Obter as informações necessárias para a reconstrução
+    var champion_type := GetElementProp(territory_elem, "ChampionType");
+    var territory_name := GetElementProp(territory_elem, "Name");
+    var center_info := TM_GetTerritoryCenter(territory_id);
+
+    if (!champion_type || !territory_name || !center_info)
+        LogError("RebuildChampion", "Dados incompletos para reconstrução do território " + territory_id + ". Faltando ChampionType, Name ou Center.");
+        return 0;
+    endif
+    
+    // 4. Carregar a configuração do spawn
+    var altar_config := LoadSpawnConfig(champion_type);
+    if (altar_config.errortext)
+        LogError("RebuildChampion", "Configuração de spawn não encontrada para: " + champion_type + ". Reconstrução abortada.");
+        return 0;
+    endif
+
+    // 5. Limpar qualquer resquício da arena antiga (segurança extra) e construir a nova
+    LogInfo("RebuildChampion", "Limpando e construindo novo ambiente para " + territory_name);
+    CleanupArenaItems(center_info.x, center_info.y, center_info.z, center_info.realm);
+    var build_result := BuildChampionEnvironment(center_info.x, center_info.y, center_info.z, center_info.realm);
+    if (!build_result)
+        LogError("RebuildChampion", "Falha ao construir ambiente do champion para " + territory_name);
+        return 0;
+    endif
+    
+    // 6. Criar o novo altar na posição elevada
+    LogInfo("RebuildChampion", "Criando novo altar para " + territory_name);
+    var altar := CreateItemAtLocation(center_info.x, center_info.y, center_info.z + 5, 0x1822, 1, center_info.realm);
+    if (!altar)
+        LogError("RebuildChampion", "FALHA CRÍTICA: Falha ao criar o item do altar para " + territory_name);
+        return 0;
+    endif
+
+    // 7. Configurar o novo altar
+    SetObjProperty(altar, "ChampionConfig", altar_config);
+    SetObjProperty(altar, "TerritoryName", territory_name);
+    SetObjProperty(altar, "IsTerritorChampion", 1);
+
+    LogInfo("RebuildChampion", "Champion Spawn para o território '" + territory_name + "' foi reconstruído e está pronto para ser ativado.");
+    return 1;
+endfunction

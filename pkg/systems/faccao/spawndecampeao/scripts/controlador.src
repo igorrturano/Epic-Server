@@ -295,6 +295,11 @@ function StartEvent(altar, spawn_cfg)
         if (!boss_serial)
              LogError("ChampSpawn", "ERRO CRÍTICO: Boss foi criado, mas seu serial não foi encontrado no altar! Abortando monitoramento.");
         else
+
+
+            var boss_monitoring_start_time := ReadGameClock();
+            const BOSS_ABANDONED_TIMEOUT := 3600; // 1 HORA
+
             while (!boss_is_defeated)
                 var mob := SystemFindObjectBySerial(boss_serial);
 
@@ -352,13 +357,26 @@ endforeach
                     // ==========================================================
                 endif
 
-                if (mob.dead)
+                 if (mob.dead)
                     LogCritical("ChampSpawn", "*** MORTE DETECTADA (MÉTODO PADRÃO) ***");
                     TerritorialBossDeath(mob);
                     boss_is_defeated := 1;
                 endif
-                
-                sleep(5); 
+                if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
+                    var time_since_abandoned := ReadGameClock() - boss_monitoring_start_time;
+                    if (time_since_abandoned > BOSS_ABANDONED_TIMEOUT)
+                        LogWarning("ChampSpawn", "Boss foi abandonado por mais de " + (BOSS_ABANDONED_TIMEOUT / 60) + " minutos. Cancelando o evento.");
+                        if (mob && !mob.dead) DestroyItem(mob); endif
+                        boss_is_defeated := 1; // Força a saída do loop para limpeza
+                    endif
+                else
+                    // Reseta o timer de abandono se um jogador estiver presente
+                    boss_monitoring_start_time := ReadGameClock();
+                endif
+                // Se o boss não foi derrotado ou abandonado, o loop continua
+                if (!boss_is_defeated)
+                    sleep(5); 
+                endif
             endwhile
         endif
                //=========================================================================================

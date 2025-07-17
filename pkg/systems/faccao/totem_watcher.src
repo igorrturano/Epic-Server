@@ -1,0 +1,94 @@
+use uo;
+use os;
+use datafile;
+
+// Inclui os módulos necessários para as funções que vamos chamar
+include ":faccao:include/logging";
+include ":faccao:include/territory_management";
+include ":faccao:include/faccao_constants";
+include ":faccao:spawndecampeao/include/arena";   // Para BuildChampionEnvironment
+include ":faccao:spawndecampeao/include/config";   // Para LoadSpawnConfig
+include ":faccao:include/process_registry"; // Para garantir que só uma instância rode
+
+// =======================================
+// Constantes de Configuração do Vigilante
+// =======================================
+const WATCHER_LOOP_INTERVAL := 3600; // Verifica a cada 1 hora (3600 segundos)
+const TOTEM_OBJTYPE := 0xA102;
+const EXPIRATION_CPROP := "ClaimByTimestamp";
+
+program TotemWatcher()
+    // Garante que apenas uma instância deste script rode por vez
+    if (!RegisterProcess("TotemWatcher"))
+        LogWarning("TotemWatcher", "Uma instância do TotemWatcher já está em execução. Este processo será encerrado.");
+        return 0;
+    endif
+
+    LogInfo("TotemWatcher", ">>> Vigilante de Totens INICIADO (PID: " + GetPid() + ") <<<");
+
+    while (1)
+        UpdateProcessHeartbeat("TotemWatcher");
+        LogInfo("TotemWatcher", "Iniciando varredura por totens de aquisição expirados...");
+        
+        var totems_expirados := 0;
+        var current_time := polcore().systime;
+
+        // Varre todos os itens do mundo
+        foreach item in EnumerateItemsInContainer(0)
+            // Filtra rapidamente por objtype para otimizar
+            if (item.objtype == TOTEM_OBJTYPE)
+                var expiration_time := GetObjProperty(item, EXPIRATION_CPROP);
+                
+                // Verifica se é um totem com timer de expiração
+                if (expiration_time)
+                    if (current_time > CInt(expiration_time))
+                        LogWarning("TotemWatcher", "Totem Expirado encontrado! Serial: " + item.serial);
+                        
+                        // Processa o totem expirado
+                        ProcessExpiredTotem(item);
+                        totems_expirados += 1;
+                    endif
+                endif
+            endif
+            
+            // Pausa pequena para não sobrecarregar o processador
+            sleepms(1);
+        endforeach
+
+        LogInfo("TotemWatcher", "Varredura concluída. Totens expirados processados: " + totems_expirados);
+        
+        // Aguarda o próximo ciclo
+        sleep(WATCHER_LOOP_INTERVAL);
+    endwhile
+endprogram
+
+/*
+ * ProcessExpiredTotem(totem)
+ * 
+ * Purpose: Lida com um totem que expirou. Destrói o totem e inicia a reconstrução do Champion Spawn.
+ */
+function ProcessExpiredTotem(totem)
+    if (!totem) return; endif
+
+    // 1. Obter o ID do território a partir do totem antes de destruí-lo
+    var territory_id := GetObjProperty(totem, TERRITORY_ID_PROP);
+    if (!territory_id)
+        LogError("TotemWatcher", "Totem expirado " + totem.serial + " não possui a CProp 'TerritoryID'. Impossível reconstruir. Apenas destruindo o totem.");
+        DestroyItem(totem);
+        return;
+    endif
+
+    // 2. Destruir o totem
+    LogInfo("TotemWatcher", "Destruindo totem expirado " + totem.serial + " para o território " + territory_id);
+    DestroyItem(totem);
+
+    // 3. Chamar a função de reconstrução
+    LogInfo("TotemWatcher", "Iniciando reconstrução do Champion Spawn para o território " + territory_id);
+    var rebuild_success := RebuildChampionSpawn(territory_id);
+
+    if (rebuild_success)
+        LogInfo("TotemWatcher", "Reconstrução do Champion Spawn para " + territory_id + " concluída com sucesso.");
+    else
+        LogError("TotemWatcher", "FALHA ao reconstruir Champion Spawn para o território " + territory_id);
+    endif
+endfunction

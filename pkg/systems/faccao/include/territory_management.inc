@@ -2104,6 +2104,7 @@ function GetDimensionsForLevel(level)
     endcase
 endfunction
 
+// Em pkg/systems/faccao/include/territory_management.inc
 
 /*
  * TM_RevokeTerritory(territory_id, who := 0)
@@ -2111,6 +2112,7 @@ endfunction
  * Purpose: Revoga o controle de um território, retornando-o ao estado "Selvagem".
  *          Esta função centraliza a lógica de limpeza de objetos e a verificação
  *          de reset do reino caso este seja o último território.
+ *          AGORA, também agenda a reconstrução de Champion Spawns.
  * Parameters:
  *   territory_id - O ID do território a ser revogado.
  *   who - O jogador/GM que está executando a ação (para mensagens).
@@ -2139,6 +2141,30 @@ function TM_RevokeTerritory(territory_id, who := 0)
     
     // 3. Mudar a facção do território para "Selvagem" no datafile :architect:areas.
     TM_SetTerritoryFaction(territory_id, DEFAULT_FACTION);
+    
+    // ==============================================================
+    // INÍCIO DA ADIÇÃO - LÓGICA DE REGENERAÇÃO DE CHAMPION SPAWN
+    // ==============================================================
+    var territory_elem := TM_FindTerritory(territory_id);
+    if (territory_elem && GetElementProp(territory_elem, "HasChampionSpawn", 0) == 1)
+        LogInfo("upkeep_penalty", "Território revogado '" + territory_info.name + "' é um Champion Spawn. Agendando reconstrução em 24 horas.");
+        
+        // Criar um script "agendador" que espera e depois reconstrói.
+        // O start_script é perfeito para tarefas agendadas que não precisam de um loop contínuo.
+        var params := struct;
+        params.+territory_id := territory_id;
+        params.+delay_seconds := 86400; // 24 horas
+
+        var rebuild_script := start_script(":faccao:rebuild_champion_task", params);
+        if (rebuild_script.errortext)
+            LogError("TM_RevokeTerritory", "Falha ao iniciar rebuild_champion_task para " + territory_id + ". Erro: " + rebuild_script.errortext);
+        else
+            LogInfo("TM_RevokeTerritory", "Tarefa de reconstrução do Champion Spawn para " + territory_id + " agendada com sucesso.");
+        endif
+    endif
+    // ==============================================================
+    // FIM DA ADIÇÃO
+    // ==============================================================
     
     LogInfo("territorio", "Território '" + territory_info.name + "' (ID: " + territory_id + ") foi revogado da facção '" + old_faction_name + "'.");
     

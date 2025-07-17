@@ -1,0 +1,91 @@
+use uo;
+use os;
+use util;
+use datafile;
+
+// Inclui todos os módulos necessários para as funções que vamos chamar
+include ":faccao:include/logging";
+include ":faccao:include/territory_management";
+include ":faccao:include/faccao_constants";
+include ":faccao:spawndecampeao/include/arena";
+include ":faccao:spawndecampeao/include/config";
+
+program rebuild_champion_task(params)
+    // 1. Validar e extrair parâmetros
+    if (!params)
+        LogError("RebuildTask", "Script iniciado sem parâmetros. Abortando.");
+        return 0;
+    endif
+    
+    var territory_id := params.territory_id;
+    var delay := CInt(params.delay_seconds);
+
+    if (!territory_id || delay <= 0)
+        LogError("RebuildTask", "Parâmetros 'territory_id' ou 'delay_seconds' inválidos. Abortando.");
+        return 0;
+    endif
+
+    // 2. Aguardar o tempo agendado
+    LogInfo("RebuildTask", "Tarefa agendada. Aguardando " + delay + " segundos para reconstruir Champion Spawn do território: " + territory_id);
+    sleep(delay);
+    
+    // 3. Iniciar a reconstrução
+    LogInfo("RebuildTask", "Tempo de espera concluído. Reconstruindo Champion Spawn para o território: " + territory_id);
+    
+    // 4. Buscar as informações do território (pode ter mudado no datafile)
+    var territory_elem := TM_FindTerritory(territory_id);
+    if (!territory_elem)
+        LogError("RebuildTask", "Território " + territory_id + " não foi mais encontrado após o delay. Reconstrução abortada.");
+        return 0;
+    endif
+
+    // 5. Garantir que o território ainda é Selvagem (outra facção pode ter clamado)
+    var current_faction := GetTerritoryFaction(territory_elem);
+    if (current_faction != DEFAULT_FACTION)
+        LogInfo("RebuildTask", "Território " + territory_id + " já foi reivindicado por '" + current_faction + "'. Reconstrução cancelada.");
+        return 1; // Ação bem-sucedida, pois não há mais o que fazer.
+    endif
+
+    // 6. Obter as informações necessárias para a reconstrução
+    var champion_type := GetElementProp(territory_elem, "ChampionType");
+    var territory_name := GetElementProp(territory_elem, "Name");
+    var center_info := TM_GetTerritoryCenter(territory_id);
+
+    if (!champion_type || !territory_name || !center_info)
+        LogError("RebuildTask", "Dados incompletos para reconstrução do território " + territory_id + ". Faltando ChampionType, Name ou Center.");
+        return 0;
+    endif
+    
+    // 7. Carregar a configuração do spawn
+    var altar_config := LoadSpawnConfig(champion_type);
+    if (altar_config.errortext)
+        LogError("RebuildTask", "Configuração de spawn não encontrada para: " + champion_type + ". Reconstrução abortada.");
+        return 0;
+    endif
+
+    // 8. Construir a arena
+    LogInfo("RebuildTask", "Construindo ambiente para " + territory_name);
+    var build_result := BuildChampionEnvironment(center_info.x, center_info.y, center_info.z, center_info.realm);
+    if (!build_result)
+        LogError("RebuildTask", "Falha ao construir ambiente do champion para " + territory_name);
+        return 0;
+    endif
+    
+    // 9. Criar o novo altar
+    LogInfo("RebuildTask", "Criando novo altar para " + territory_name);
+    var altar := CreateItemAtLocation(center_info.x, center_info.y, center_info.z + 5, 0x1822, 1, center_info.realm);
+    if (!altar)
+        LogError("RebuildTask", "FALHA CRÍTICA: Falha ao criar o item do altar para " + territory_name);
+        // Tentar limpar a arena recém-criada para não deixar lixo
+        CleanupArenaItems(center_info.x, center_info.y, center_info.z, center_info.realm);
+        return 0;
+    endif
+
+    // 10. Configurar o novo altar
+    SetObjProperty(altar, "ChampionConfig", altar_config);
+    SetObjProperty(altar, "TerritoryName", territory_name);
+    SetObjProperty(altar, "IsTerritorChampion", 1);
+
+    LogInfo("RebuildTask", "SUCESSO: Champion Spawn para o território '" + territory_name + "' foi reconstruído e está pronto para ser ativado.");
+    return 1;
+endprogram

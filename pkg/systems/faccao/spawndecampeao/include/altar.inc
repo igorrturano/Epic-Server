@@ -18,8 +18,7 @@ function ShowBossTimer(altar)
     altar.color := 2709;
     
     PrintTextAbove(altar, "* Todas as ondas foram derrotadas! *");
-    PrintTextAbove(altar, "* O Campeão desperta em 100 segundos... *");
-    
+        
     var countdown := 100;
     while (countdown >= 1)
         if (countdown % 10 == 0 || countdown <= 10)
@@ -118,7 +117,7 @@ function CreateWhiteCandle(altar, progress_level)
         
         if (white_candle)
             white_candle.movable := 0;
-            PlaySoundEffect(white_candle, 0x47);
+            PlaySoundEffect(white_candle, 0x48);
             PlayStationaryEffect(white_candle.x, white_candle.y, white_candle.z, 0x3728, 5, 0x10, 0, white_candle.realm);
             
             white_candles.append(white_candle.serial);

@@ -6,7 +6,7 @@ use uo;
 include ":faccao:include/faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
-include ":faccao:include/process_registry"; // <<< CERTIFIQUE-SE QUE ESTA LINHA ESTÁ NO TOPO DO SEU start.src
+include ":faccao:include/process_registry";
 include ":faccao:include/territory_management";
 
 // Opcional: include ":faccao:include/permissions.inc"; 
@@ -27,15 +27,12 @@ else
     LogDebug("sistema", "Starting resource updates processor... ok.");
 endif
 
-
 var verify_script := start_script(":faccao:verify_faction_resources"); 
 if (verify_script.errortext)
     LogError("recursos", "Erro ao iniciar verificador de consistência: " + verify_script.errortext);
 else
     LogDebug("sistema", "Starting resources consistency verifier... ok.");
 endif
-// LogWarning("start_DEBUG", "ATENÇÃO: verify_faction_resources.src está DESATIVADO TEMPORARIAMENTE para teste de atualização de moedas."); // COMENTE OU REMOVA
-// ============================================================================
 
 // Iniciar o sistema de registro de guildas
 var guild_registry := start_script(":faccao:guild_registry");
@@ -44,6 +41,22 @@ if (guild_registry.errortext)
 else
     LogDebug("sistema", "Starting guild registry system... ok.");
 endif
+
+// ==============================================================
+// >>>>> INÍCIO DA ADIÇÃO <<<<<
+// ==============================================================
+
+// Iniciar o Vigilante de Totens Expirados
+var totem_watcher_script := start_script(":faccao:totem_watcher");
+if (totem_watcher_script.errortext)
+    LogError("sistema", "Erro ao iniciar o Vigilante de Totens: " + totem_watcher_script.errortext);
+else
+    LogInfo("sistema", "Iniciando Vigilante de Totens... ok.");
+endif
+
+// ==============================================================
+// >>>>> FIM DA ADIÇÃO <<<<<
+// ==============================================================
 
 function GetMinimumTerritoryInterval()
     var rect_df := SafeOpenDataFile(":architect:areas");
@@ -59,7 +72,7 @@ function GetMinimumTerritoryInterval()
         if (!elem)
             continue;
         endif
-          var faction := GetTerritoryFaction(elem);
+        var faction := GetTerritoryFaction(elem);
         
         if (faction && faction != DEFAULT_FACTION && faction != "")
             var territory_interval := CInt(GetElementProp(elem, "ResourceInterval", 60));
@@ -82,7 +95,6 @@ function GetMinimumTerritoryInterval()
     return CInt(min_interval / 2);
 endfunction
 
-// ===== ESTA É A ÚNICA VERSÃO DA FUNÇÃO QUE DEVE PERMANECER =====
 function start_resource_controller()
     var log_msg := ""; 
     var last_time := CInt(GetGlobalProperty("last_execution"));
@@ -139,10 +151,8 @@ function start_resource_controller()
         var wait_time := effective_interval - time_since_last;
         log_msg := "- DECISÃO: AGUARDAR. Próxima tentativa de execução do ResourceController em " + wait_time + " segundos (" + CInt(wait_time/60) + " minutos).";
         LogInfo("start_DEBUG", log_msg);
-        // LogDebug("recursos", log_msg); // Esta linha é um pouco redundante com a anterior
     endif
 endfunction
-// ===== FIM DA ÚNICA VERSÃO CORRETA DA FUNÇÃO =====
 
 // Iniciar o controlador de pagamento de caravanas
 var caravan_payment_script := start_script(":faccao:caravan_payment_control");
@@ -161,10 +171,3 @@ else
 endif
 
 start_resource_controller(); // Chamada para a função
-
-// var manager_script := start_script(ResourceControllerManager);
-// if (manager_script.errortext)
-//     LogError("sistema", "Erro ao iniciar ResourceController Manager: " + manager_script.errortext);
-// else
-//     LogInfo("sistema", "ResourceController Manager iniciado com sucesso.");
-// endif
