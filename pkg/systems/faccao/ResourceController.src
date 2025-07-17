@@ -575,19 +575,23 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         endif
     endif
 
-    if (!caravan_redirected_flag || !target_chest_for_delivery)
-        donation_chest := FindFactionChest(faction_name, territory_id_from_elem); // Baú LOCAL
+  if (!caravan_redirected_flag || !target_chest_for_delivery)
+        // <<< LOG ADICIONADO AQUI >>>
+        LogCritical("ResourceGen_DEBUG", "Buscando baú LOCAL para facção '" + faction_name + "' e território ID '" + territory_id_from_elem + "'");
+        donation_chest := FindFactionChest(faction_name, territory_id_from_elem); 
         if (donation_chest)
-             LogInfo("recursos_gen", "Usando baú LOCAL '" + donation_chest.serial + "' para território '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ").");
+             LogInfo("recursos_gen", "Usando baú LOCAL '" + donation_chest.serial + "' para território '" + territory_name_from_elem + "'.");
         endif
     else
-        donation_chest := target_chest_for_delivery; // Baú da CAPITAL
-        LogInfo("recursos_gen", "Usando baú da CAPITAL '" + donation_chest.serial + "' (Capital ID: " + active_caravans_global_prop[faction_name].capital_id + ") para recursos do território '" + territory_name_from_elem + "' (ID: " + territory_id_from_elem + ").");
+        // <<< LOG ADICIONADO AQUI >>>
+        LogCritical("ResourceGen_DEBUG", "Usando baú de CAPITAL (já encontrado) para facção '" + faction_name + "'");
+        donation_chest := target_chest_for_delivery;
+        LogInfo("recursos_gen", "Usando baú da CAPITAL '" + donation_chest.serial + "' para recursos do território '" + territory_name_from_elem + "'.");
     endif
 
     if (!donation_chest)
+        // O log de erro existente já é bom.
         LogError("recursos_gen", "Baú de doações (local ou capital) não encontrado ou inacessível para facção: '" + faction_name + "', território: '" + territory_name_from_elem + "'. Geração abortada.");
-        // Opcional: Tentar criar baú de emergência aqui, mas pode ser complexo se for para a capital.
         return 0;
     endif
 

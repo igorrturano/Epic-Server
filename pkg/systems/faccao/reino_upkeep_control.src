@@ -200,15 +200,16 @@ function CobrarUpkeepRobusto(guild, guild_name, cost_amount)
     endif
 
     // 3. Busca o baú da capital
-    LogInfo("UpkeepPayment_CHEST_SEARCH_v2", "Buscando baú na capital '" + capital_territory_name + "'");
+     LogCritical("UpkeepPayment_DEBUG", "Buscando baú na capital '" + capital_territory_name + "' (ID: " + capital_territory_id + ") para a facção '" + guild_name + "'");
     var faction_chest := FindFactionChest(guild_name, capital_territory_id);
 
     if (!faction_chest)
-        LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' não encontrado.");
+ LogError("UpkeepPayment_ERROR_v2", "Baú da capital '" + capital_territory_name + "' (ID: " + capital_territory_id + ") não foi encontrado pela função FindFactionChest.");
         return 0;
     endif
     
-    LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança: Serial " + faction_chest.serial);
+      LogInfo("UpkeepPayment_CHEST_v2", "Baú alvo para cobrança ENCONTRADO: Serial " + faction_chest.serial);
+
 
     // Lógica de Lock para evitar concorrência
     var lock_prop := "operation_lock"; 

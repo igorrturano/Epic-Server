@@ -14,6 +14,7 @@ include ":gumps:epicGumps";
 include ":faccao:include/faccao_constants";
 include ":epicspawn:epicBoss";
 include ":spawndecampeao:include/arena";
+include ":spawndecampeao:include/config";
 
 
 
@@ -37,28 +38,6 @@ program rectangle_creator(who, params)
     // Sempre abre o gump (params não é usado intencionalmente)
     ShowRectangles(who, rect_df);
 endprogram
-
-
-function AskTerritoryType(who)
-    var gump := GFECreateGump("Definir Tipo de Território", 450, 220, array{BORDER_GOLDEN});
-    var x := 30;
-    var y := 70;
-    
-    GFTextMid(gump, 15, y, 420, 53, "A área foi selecionada. Que tipo de território é este?");
-    y += 45;
-    
-    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, x + 40, y - 4, 1153, "Customizado (Tamanho Fixo)");
-    GFTooltipText(gump, "A área que você desenhou será o tamanho final. Este tipo não expandirá.");
-    y += 50;
-    
-    GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 2);
-    GFTextLine(gump, x + 40, y - 4, 1153, "Padrão (Expansível)");
-    GFTooltipText(gump, "A área que você desenhou será a 'zona de buffer' máxima. O território começará pequeno no centro e crescerá dentro dela.");
-    
-    var input := GFSendGump(who, gump);
-    return CInt(input[0]);
-endfunction
 
 
 function SetupResourcesForTerritory(who, elem)
@@ -788,15 +767,7 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
         GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 100);
         GFTextLine(gump, btn_x+20, btn_y-4, 38, "Deletar Território");
         
-        // Botão TESTE: Spawnar Boss
-        GFAddButton(gump, btn_x+btn_spacing, btn_y, 2361, 2361, GF_CLOSE_BTN, 600);
-        GFTextLine(gump, btn_x+btn_spacing+20, btn_y-4, 63, "TESTE: Spawnar Boss");
-        
-        btn_y += 25;
-        
-        // Botão TESTE 2: Spawnar Champion Boss
-        GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 700);
-        GFTextLine(gump, btn_x+20, btn_y-4, 68, "TESTE 2: Spawnar Champion Boss");
+
     endif
     
 
@@ -889,12 +860,7 @@ var input := GFSendGump(who, gump);
         
     elseif (button == 500) // Configurar Recursos
         SetupResourcesForTerritory(who, elem);
-    // elseif (button == 600) // TESTE: Spawnar Boss
-    //     CreateSimpleChallenge(who, name); // DESABILITADO - Função não implementada
-    elseif (button == 700) // TESTE 2: Spawnar Champion Boss
-        // CONSOLIDADO: Usar comando spawnchampionboss.src ao invés da função duplicada
-        SendSysMessage(who, "Use o comando: .spawnchampionboss <tipo> territory:" + name);
-        SendSysMessage(who, "Exemplo: .spawnchampionboss orcbrute territory:" + name);
+   
     endif
 endfunction
 
@@ -1143,35 +1109,6 @@ function CreateStandardTerritory(who)
 endfunction
 
 
-function ShowChampionSpawnQuestion(who)
-    var gump := GFECreateGump("Criar Território", 400, 180, array{BORDER_GOLDEN});
-    
-    var x := 30;
-    var y := 70;
-    
-    GFTextMid(gump, 15, y, 370, 53, "Você quer criar um território com Champion Spawn?");
-    y += 50;
-    
-    // Opção SIM
-    GFAddButton(gump, x + 50, y, 2361, 2361, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, x + 70, y - 4, 63, "SIM");
-    
-    // Opção NÃO
-    GFAddButton(gump, x + 200, y, 2361, 2361, GF_CLOSE_BTN, 2);
-    GFTextLine(gump, x + 220, y - 4, 38, "NÃO");
-    
-    var input := GFSendGump(who, gump);
-    var button := input[0];
-    
-    if (button == 1)
-        // SIM - Criar território com Champion Spawn
-        // TODO: Implementar sequência do Champion Spawn
-        SendSysMessage(who, "Função Champion Spawn ainda não implementada!");
-    elseif (button == 2)
-        // NÃO - Criar território normal
-        ShowTerritoryTypeSelection(who);
-    endif
-endfunction
 
 function CreateChampionTerritory(who)
     // Primeiro, perguntar qual tipo de champion
@@ -1276,143 +1213,3 @@ function AskChampionType(who)
     endcase
 endfunction
 
-// Implementação local simplificada da função LoadSpawnConfig
-function LoadSpawnConfig(spawn_type)
-    var cfg := ReadConfigFile(":spawndecampeao:config/settings");
-    if (!cfg)
-        return error;
-    endif
-    
-    var spawn_name;
-    case (Lower(spawn_type))
-        "cavernadosgoblins":
-            spawn_name := "CavernaDosGoblins";
-        "covildasaranhas":
-            spawn_name := "CovilDasAranhas";
-        default:
-            return error;
-    endcase
-    
-    var spawn_cfg := FindConfigElem(cfg, spawn_name);
-    if (!spawn_cfg)
-        return error;
-    endif
-    
-    var config := struct;
-    config.+name := GetConfigString(spawn_cfg, "Name");
-    config.+boss_template := GetConfigString(spawn_cfg, "BossTemplate");
-    config.+cooldown := GetConfigInt(spawn_cfg, "ActivationCooldown");
-    config.+player_radius := GetConfigInt(spawn_cfg, "PlayerCheckRadius");
-    
-    // Carregar waves
-    var waves := array{};
-    var i;
-    for (i := 1; i <= 4; i := i + 1)
-        var wave_mobs := GetConfigString(spawn_cfg, "Wave" + i + " Mobs");
-        var wave_amount := GetConfigInt(spawn_cfg, "Wave" + i + " Amount");
-        
-        if (wave_mobs && wave_amount)
-            var mob_list := SplitWords(wave_mobs);
-            waves.append(struct{"mobs" := mob_list, "amount" := wave_amount});
-        endif
-    endfor
-    
-    config.+waves := waves;
-    
-    return config;
-endfunction
-
-function CreateChampionForTerritory(center_x, center_y, center_z, realm, champion_type, territory_name, who)
-    SendSysMessage(who, "Criando Champion Spawn automaticamente...");
-    
-    var altar_config := struct;
-    
-    case (champion_type)
-        "CavernaDosGoblins":
-        "cavernadosgoblins":
-            altar_config.+name               := "Caverna dos Goblins";
-            altar_config.+boss_template      := "orcbrute_territorial"; // Boss territorial
-            altar_config.+cooldown           := 3600;
-            altar_config.+player_radius      := 60;
-            
-            // ================== AJUSTE PARA 16 ONDAS DE 1 MONSTRO ==================
-            altar_config.+waves              := array(
-                                                   struct{"mobs" := array("goblin"), "amount" := 1},      // Onda 1
-                                                   struct{"mobs" := array("goblin"), "amount" := 1},      // Onda 2
-                                                   struct{"mobs" := array("goblin"), "amount" := 1},      // Onda 3
-                                                   struct{"mobs" := array("goblin"), "amount" := 1},      // Onda 4
-                                                   struct{"mobs" := array("hobgoblin"), "amount" := 1},    // Onda 5
-                                                   struct{"mobs" := array("hobgoblin"), "amount" := 1},    // Onda 6
-                                                   struct{"mobs" := array("hobgoblin"), "amount" := 1},    // Onda 7
-                                                   struct{"mobs" := array("hobgoblin"), "amount" := 1},    // Onda 8
-                                                   struct{"mobs" := array("orcbrute"), "amount" := 1},     // Onda 9
-                                                   struct{"mobs" := array("orcbrute"), "amount" := 1},     // Onda 10
-                                                   struct{"mobs" := array("orcbrute"), "amount" := 1},     // Onda 11
-                                                   struct{"mobs" := array("orcbrute"), "amount" := 1},     // Onda 12
-                                                   struct{"mobs" := array("ettin"), "amount" := 1},        // Onda 13
-                                                   struct{"mobs" := array("troll"), "amount" := 1},        // Onda 14
-                                                   struct{"mobs" := array("ettin"), "amount" := 1},        // Onda 15
-                                                   struct{"mobs" := array("troll"), "amount" := 1}         // Onda 16
-                                               );
-            // ============================== FIM DO AJUSTE ==============================
-                                               
-        "CovilDasAranhas":
-        "covildasaranhas":
-            altar_config.+name               := "Covil das Aranhas";
-            altar_config.+boss_template      := "dreadspider_territorial"; // Boss territorial
-            altar_config.+cooldown           := 7200;
-            altar_config.+player_radius      := 60;
-            
-            // ================== AJUSTE PARA 16 ONDAS DE 1 MONSTRO ==================
-            altar_config.+waves              := array(
-                                                   struct{"mobs" := array("giantspider"), "amount" := 1},      // Onda 1
-                                                   struct{"mobs" := array("giantspider"), "amount" := 1},      // Onda 2
-                                                   struct{"mobs" := array("dreadspider"), "amount" := 1},      // Onda 3
-                                                   struct{"mobs" := array("dreadspider"), "amount" := 1},      // Onda 4
-                                                   struct{"mobs" := array("terathanwarrior"), "amount" := 1},   // Onda 5
-                                                   struct{"mobs" := array("terathanwarrior"), "amount" := 1},   // Onda 6
-                                                   struct{"mobs" := array("terathandrone"), "amount" := 1},     // Onda 7
-                                                   struct{"mobs" := array("terathandrone"), "amount" := 1},     // Onda 8
-                                                   struct{"mobs" := array("terathanavenger"), "amount" := 1},   // Onda 9
-                                                   struct{"mobs" := array("terathanavenger"), "amount" := 1},   // Onda 10
-                                                   struct{"mobs" := array("terathanmatriarch"), "amount" := 1}, // Onda 11
-                                                   struct{"mobs" := array("terathanmatriarch"), "amount" := 1}, // Onda 12
-                                                   struct{"mobs" := array("ophidianknight"), "amount" := 1},    // Onda 13
-                                                   struct{"mobs" := array("ophidianmage"), "amount" := 1},     // Onda 14
-                                                   struct{"mobs" := array("ophidianknight"), "amount" := 1},    // Onda 15
-                                                   struct{"mobs" := array("ophidianmage"), "amount" := 1}      // Onda 16
-                                               );
-            // ============================== FIM DO AJUSTE ==============================
-
-        default:
-            SendSysMessage(who, "ERRO: Tipo de champion inválido: " + champion_type);
-            return 0;
-    endcase
-    
-    SendSysMessage(who, "Construindo ambiente do champion spawn...");
-    
-    var build_result := BuildChampionEnvironment(center_x, center_y, center_z, realm);
-    if (!build_result)
-        SendSysMessage(who, "ERRO: Falha ao construir ambiente do champion!");
-        return 0;
-    endif
-    
-    SendSysMessage(who, "Ambiente construído. Criando altar...");
-    
-    var altar := CreateItemAtLocation(center_x, center_y, center_z + 5, 0x1822, 1, realm);
-    if (!altar)
-        SendSysMessage(who, "ERRO: Falha ao criar altar!");
-        return 0;
-    endif
-    
-    // Configurar altar
-    SetObjProperty(altar, "ChampionConfig", altar_config);
-    SetObjProperty(altar, "TerritoryName", territory_name);
-    SetObjProperty(altar, "IsTerritorChampion", 1);
-    
-    SendSysMessage(who, "Champion Spawn Territorial criado com sucesso!");
-    SendSysMessage(who, "Altar: " + altar_config.name + " para território: " + territory_name);
-    SendSysMessage(who, "O controlador será iniciado automaticamente pelo sistema!");
-    
-    return 1;
-endfunction

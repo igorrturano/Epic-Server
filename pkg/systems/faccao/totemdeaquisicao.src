@@ -332,172 +332,142 @@ function SelectKingdomBanner(who)
     return 0;
 endfunction
 
-function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_escolhida, estandarte_escolhido) // Adicionado parâmetro estandarte_escolhido
+// Em pkg/systems/faccao/totemdeaquisicao.src
+
+function CreateTerritoryMonument(who, elem, rect_name, territory_id, cultura_escolhida, estandarte_escolhido)
     LogDebug("faccao_monument", "CreateTerritoryMonument: Iniciando para Território '" + rect_name + "' (ID: " + territory_id + ")");
 
-    var rect := GetElementProp(elem, TERRITORY_RECT_PROP, ""); 
-    var realm_prop_mon := GetElementProp(elem, TERRITORY_REALM_PROP, ""); 
-    if (!realm_prop_mon) realm_prop_mon := "britannia"; endif 
-    
+    var rect := GetElementProp(elem, TERRITORY_RECT_PROP, "");
+    var realm_prop_mon := GetElementProp(elem, TERRITORY_REALM_PROP, "britannia");
     var coords := SplitWords(rect);
     
     if (!territory_id)
-        LogError("faccao_monument", "CreateTerritoryMonument: ID do território não fornecido ou inválido!");
-        territory_id := "TER_ORPHAN_" + CStr(polcore().systime); 
-        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+        LogError("faccao_monument", "CreateTerritoryMonument: ID do território não fornecido ou inválido! Abortando.");
+        return 0;
     endif
     
-    if (coords.size() >= 4)
-        var center_info := TM_GetTerritoryCenter(territory_id); 
-        if (!center_info)
-            LogError("faccao_monument", "CreateTerritoryMonument: Falha ao obter centro para território ID: " + territory_id);
-            SendSysMessage(who, "Erro crítico ao determinar o centro do território.");
-            return 0;
-        endif
-        var center_x := center_info.x;
-        var center_y := center_info.y;
-        var center_z := center_info.z;
-        // Usar realm_prop_mon que já foi obtido e verificado
-        
-        var player_faction_name_mon := GetPlayerFaction(who); 
-        if (!player_faction_name_mon) 
-            player_faction_name_mon := who.guild.GetProp(FACTION_PROP_NAME, who.guild.guildname); // Tenta constante ou guildname
-            if (!player_faction_name_mon) player_faction_name_mon := "Desconhecida"; endif
-        endif
-        
-        var seriais_df := SafeOpenDataFile(":faccao:seriais", 1); 
-        if (!seriais_df)
-            LogError("faccao_monument", "CreateTerritoryMonument: Falha crítica ao abrir/criar datafile :faccao:seriais");
-            SendSysMessage(who, "Erro de sistema ao registrar objetos do território.");
-            return 0;
-        endif        var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon); 
-        if (monument_obj)
-            LogDebug("faccao_monument", "Mural criado: " + monument_obj.serial);
-            SetObjProperty(monument_obj, TERRITORY_NAME_PROP, rect_name);
-            SetObjProperty(monument_obj, TERRITORY_ID_PROP, territory_id);
-            SetObjProperty(monument_obj, OBJ_FACTION_PROP, player_faction_name_mon);
-            SetObjProperty(monument_obj, "guild_id", who.guild.guildid); // Referência à guild
-            
-            var unique_id_mural := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MURAL, territory_id);
-            SetObjProperty(monument_obj, UNIQUE_ID_PROP, unique_id_mural);
-            
-            monument_obj.name := "Mural de Recrutamento [" + player_faction_name_mon + "] - " + territory_id;
-            SetObjProperty(monument_obj, "CreatedBy", who.serial);
-            SetObjProperty(monument_obj, "CreationDate", polcore().systime);
-            monument_obj.movable := 0;
-            monument_obj.usescript := ":faccao:faccao";            var donation_chest_obj := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm_prop_mon); 
-            if (donation_chest_obj)
-                LogDebug("faccao_monument", "Baú de doações criado: " + donation_chest_obj.serial);
-                var unique_id_bau_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_BAU, territory_id); 
-                SetObjProperty(donation_chest_obj, UNIQUE_ID_PROP, unique_id_bau_local);
-                
-                donation_chest_obj.name := "Baú de Doações [" + player_faction_name_mon + "] - " + territory_id;
-                SetObjProperty(donation_chest_obj, OBJ_FACTION_PROP, player_faction_name_mon);
-                SetObjProperty(donation_chest_obj, TERRITORY_ID_PROP, territory_id);
-                SetObjProperty(donation_chest_obj, CHEST_ID_PROP, player_faction_name_mon + "_" + territory_id);
-                SetObjProperty(donation_chest_obj, "guild_id", who.guild.guildid); // Referência à guild
-                donation_chest_obj.movable := 0;
-                
-                donation_chest_obj.usescript := ":faccao:baudoacao/use";
-                SetObjProperty(donation_chest_obj, "OnInsertScript", ":faccao:baudoacao/onInsert");
-                SetObjProperty(donation_chest_obj, "OnRemoveScript", ":faccao:baudoacao/onRemove");
-                SetObjProperty(donation_chest_obj, "CanInsertScript", ":faccao:baudoacao/canInsert");
-                SetObjProperty(donation_chest_obj, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");                var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon);                if (interface_item_obj)
-                    LogDebug("faccao_monument", "Mesa de gestão criada: " + interface_item_obj.serial);
-                    var unique_id_mesa_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA, territory_id); 
-                    SetObjProperty(interface_item_obj, UNIQUE_ID_PROP, unique_id_mesa_local);
-                    
-                    interface_item_obj.name := "Mesa de Gestão [" + player_faction_name_mon + "] - " + territory_id;                    SetObjProperty(interface_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
-                    SetObjProperty(interface_item_obj, TERRITORY_ID_PROP, territory_id);
-                    SetObjProperty(interface_item_obj, "guild_id", who.guild.guildid); // Referência à guild                    interface_item_obj.movable := 0;
-                    interface_item_obj.usescript := ":faccao:gestao_use";
-                    
-                    // Declarar variável da bandeira no escopo correto
-                    var bandeira_item_obj := 0;
-                    
-                    // Criar Bandeira do Reino apenas se o jogador comprou um estandarte
-                    if (estandarte_escolhido && estandarte_escolhido != 0)
-                        bandeira_item_obj := CreateItemAtLocation(center_x, center_y - 1, center_z, 0xfddf, 1, realm_prop_mon);
-                        if (bandeira_item_obj)
-                            LogDebug("faccao_monument", "Bandeira do reino criada: " + bandeira_item_obj.serial);
-                            
-                            // Definir o graphic escolhido pelo jogador
-                            bandeira_item_obj.graphic := estandarte_escolhido;                            bandeira_item_obj.name := "Estandarte de [" + player_faction_name_mon + "] - " + territory_id;
-                            SetObjProperty(bandeira_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
-                            SetObjProperty(bandeira_item_obj, TERRITORY_ID_PROP, territory_id);
-                            SetObjProperty(bandeira_item_obj, "guild_id", who.guild.guildid); // Referência à guild
-                            SetObjProperty(bandeira_item_obj, "estandarte_graphic", estandarte_escolhido);
-                            bandeira_item_obj.movable := 0;
-                            
-                            var unique_id_bandeira := TM_CreateUniqueItemID(player_faction_name_mon, "BANDEIRA", territory_id);
-                            SetObjProperty(bandeira_item_obj, UNIQUE_ID_PROP, unique_id_bandeira);
-                        else
-                            LogWarning("faccao_monument", "Falha ao criar bandeira do reino, mas território ainda é válido");
-                        endif
-                    else
-                        LogDebug("faccao_monument", "Estandarte não foi comprado, nenhuma bandeira criada");
-                    endif// Criar Mesa de Inscrição na posição especificada (X vermelho)
-                    var inscricao_item_obj := CreateItemAtLocation(center_x + 1, center_y + 1, center_z, 0xF8A8, 1, realm_prop_mon);
-                    if (inscricao_item_obj)
-                        LogDebug("faccao_monument", "Mesa de inscrição criada: " + inscricao_item_obj.serial);
-                        var unique_id_inscricao_local := TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA_INSCRICAO, territory_id);
-                        SetObjProperty(inscricao_item_obj, UNIQUE_ID_PROP, unique_id_inscricao_local);
-                          inscricao_item_obj.name := "Mesa de Inscrição [" + player_faction_name_mon + "] - " + territory_id;
-                        SetObjProperty(inscricao_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
-                        SetObjProperty(inscricao_item_obj, TERRITORY_ID_PROP, territory_id);
-                        SetObjProperty(inscricao_item_obj, "guild_id", who.guild.guildid); // Referência à guild
-                        inscricao_item_obj.movable := 0;
-                        inscricao_item_obj.usescript := ":faccao:mesainscricao";var object_serials_struct := struct; 
-                        object_serials_struct.+bau := donation_chest_obj.serial;
-                        object_serials_struct.+mesa := interface_item_obj.serial;
-                        object_serials_struct.+mesa_inscricao := inscricao_item_obj.serial;
-                        object_serials_struct.+mural := monument_obj.serial;
-                        if (bandeira_item_obj)
-                            object_serials_struct.+bandeira := bandeira_item_obj.serial;
-                        endif                        object_serials_struct.+faction := player_faction_name_mon;
-                        object_serials_struct.+coords := rect; 
-                        object_serials_struct.+realm := realm_prop_mon; // Usar realm_prop_mon
-                        object_serials_struct.+guild_id := who.guild.guildid; // Referência à guild
-                        object_serials_struct.+estandarte := estandarte_escolhido; // Armazenar estandarte escolhido
-                        
-                        TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
-                        
-                        SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
-                        SendSysMessage(who, "Mesa de inscrição disponível para novos membros da facção.");
-                        return monument_obj;
-                    else
-                        LogWarning("faccao_monument", "Falha ao criar mesa de inscrição, mas território ainda é válido");
-                        var object_serials_struct := struct; 
-                        object_serials_struct.+bau := donation_chest_obj.serial;
-                        object_serials_struct.+mesa := interface_item_obj.serial;                        object_serials_struct.+mural := monument_obj.serial;
-                        object_serials_struct.+faction := player_faction_name_mon;
-                        object_serials_struct.+coords := rect; 
-                        object_serials_struct.+realm := realm_prop_mon;
-                        object_serials_struct.+guild_id := who.guild.guildid; // Referência à guild
-                        
-                        TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
-                        
-                        SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
-                        SendSysMessage(who, "Aviso: Mesa de inscrição não pôde ser criada.");
-                        return monument_obj;
-                    endif                else
-                    SendSysMessage(who, "Falha ao criar a mesa de gestão. Por favor, notifique um GM.");
-                    DestroyItem(monument_obj); 
-                    DestroyItem(donation_chest_obj); 
-                endif
-            else
-                SendSysMessage(who, "Falha ao criar o baú de doações. Por favor, notifique um GM.");
-                DestroyItem(monument_obj); 
-            endif
+    if (coords.size() < 4)
+        LogError("faccao_monument", "CreateTerritoryMonument: Coordenadas inválidas para território ID: " + territory_id + ", Rect: " + rect);
+        return 0;
+    endif
+
+    var center_info := TM_GetTerritoryCenter(territory_id);
+    if (!center_info)
+        LogError("faccao_monument", "CreateTerritoryMonument: Falha ao obter centro para território ID: " + territory_id);
+        return 0;
+    endif
+    
+    var center_x := center_info.x;
+    var center_y := center_info.y;
+    var center_z := center_info.z;
+    
+    var player_faction_name_mon := GetPlayerFaction(who);
+    var object_serials_struct := struct; // Struct para registrar todos os seriais
+
+    // --- Criação do Mural ---
+    var monument_obj := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm_prop_mon);
+    if (monument_obj)
+        LogDebug("faccao_monument", "-> Mural de Recrutamento criado (Serial: " + monument_obj.serial + ")");
+        monument_obj.name := "Mural de Recrutamento [" + player_faction_name_mon + "] - " + territory_id;
+        monument_obj.movable := 0;
+        monument_obj.usescript := ":faccao:faccao";
+        SetObjProperty(monument_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+        // CORREÇÃO APLICADA: Garantir que a CProp padrão também use o ID único
+        SetObjProperty(monument_obj, "TerritoryID", territory_id);
+        SetObjProperty(monument_obj, "guild_id", who.guild.guildid);
+        SetObjProperty(monument_obj, UNIQUE_ID_PROP, TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MURAL, territory_id));
+        object_serials_struct.+mural := monument_obj.serial;
+    else
+        LogWarning("faccao_monument", "Falha ao criar o Mural de Recrutamento.");
+    endif
+
+    // --- Criação do Baú de Doações ---
+    var donation_chest_obj := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm_prop_mon);
+    if (donation_chest_obj)
+        LogDebug("faccao_monument", "-> Baú de Doações criado (Serial: " + donation_chest_obj.serial + ")");
+        donation_chest_obj.name := "Baú de Doações [" + player_faction_name_mon + "] - " + territory_id;
+        donation_chest_obj.movable := 0;
+        donation_chest_obj.usescript := ":faccao:baudoacao/use";
+        SetObjProperty(donation_chest_obj, "OnInsertScript", ":faccao:baudoacao/onInsert");
+        SetObjProperty(donation_chest_obj, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+        SetObjProperty(donation_chest_obj, "CanInsertScript", ":faccao:baudoacao/canInsert");
+        SetObjProperty(donation_chest_obj, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+        SetObjProperty(donation_chest_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+        // CORREÇÃO APLICADA: Garantir que a CProp padrão também use o ID único
+        SetObjProperty(donation_chest_obj, "TerritoryID", territory_id);
+        SetObjProperty(donation_chest_obj, "guild_id", who.guild.guildid);
+        SetObjProperty(donation_chest_obj, UNIQUE_ID_PROP, TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_BAU, territory_id));
+        object_serials_struct.+bau := donation_chest_obj.serial;
+    else
+        LogWarning("faccao_monument", "Falha ao criar o Baú de Doações.");
+    endif
+
+    // --- Criação da Mesa de Gestão ---
+    var interface_item_obj := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm_prop_mon);
+    if (interface_item_obj)
+        LogDebug("faccao_monument", "-> Mesa de Gestão criada (Serial: " + interface_item_obj.serial + ")");
+        interface_item_obj.name := "Mesa de Gestão [" + player_faction_name_mon + "] - " + territory_id;
+        interface_item_obj.movable := 0;
+        interface_item_obj.usescript := ":faccao:gestao_use";
+        SetObjProperty(interface_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+        // CORREÇÃO APLICADA: Garantir que a CProp padrão também use o ID único
+        SetObjProperty(interface_item_obj, "TerritoryID", territory_id);
+        SetObjProperty(interface_item_obj, "guild_id", who.guild.guildid);
+        SetObjProperty(interface_item_obj, UNIQUE_ID_PROP, TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA, territory_id));
+        object_serials_struct.+mesa := interface_item_obj.serial;
+    else
+        LogWarning("faccao_monument", "Falha ao criar a Mesa de Gestão.");
+    endif
+    
+    // --- Criação da Mesa de Inscrição ---
+    var inscricao_item_obj := CreateItemAtLocation(center_x + 1, center_y + 1, center_z, 0xF8A8, 1, realm_prop_mon);
+    if (inscricao_item_obj)
+        LogDebug("faccao_monument", "-> Mesa de Inscrição criada (Serial: " + inscricao_item_obj.serial + ")");
+        inscricao_item_obj.name := "Mesa de Inscrição [" + player_faction_name_mon + "]";
+        inscricao_item_obj.movable := 0;
+        inscricao_item_obj.usescript := ":faccao:mesainscricao";
+        SetObjProperty(inscricao_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+        // CORREÇÃO APLICADA: Garantir que a CProp padrão também use o ID único
+        SetObjProperty(inscricao_item_obj, "TerritoryID", territory_id);
+        SetObjProperty(inscricao_item_obj, "guild_id", who.guild.guildid);
+        SetObjProperty(inscricao_item_obj, UNIQUE_ID_PROP, TM_CreateUniqueItemID(player_faction_name_mon, ITEM_TYPE_MESA_INSCRICAO, territory_id));
+        object_serials_struct.+mesa_inscricao := inscricao_item_obj.serial;
+    else
+        LogWarning("faccao_monument", "Falha ao criar a Mesa de Inscrição.");
+    endif
+
+    // --- Criação da Bandeira/Estandarte (se escolhido) ---
+    if (estandarte_escolhido && estandarte_escolhido != 0)
+        var bandeira_item_obj := CreateItemAtLocation(center_x, center_y - 1, center_z, 0xfddf, 1, realm_prop_mon);
+        if (bandeira_item_obj)
+            LogDebug("faccao_monument", "-> Estandarte criado (Serial: " + bandeira_item_obj.serial + ")");
+            bandeira_item_obj.graphic := estandarte_escolhido;
+            bandeira_item_obj.name := "Estandarte de [" + player_faction_name_mon + "] - " + territory_id;
+            bandeira_item_obj.movable := 0;
+            SetObjProperty(bandeira_item_obj, OBJ_FACTION_PROP, player_faction_name_mon);
+            // CORREÇÃO APLICADA: Garantir que a CProp padrão também use o ID único
+            SetObjProperty(bandeira_item_obj, "TerritoryID", territory_id);
+            SetObjProperty(bandeira_item_obj, "guild_id", who.guild.guildid);
+            SetObjProperty(bandeira_item_obj, UNIQUE_ID_PROP, TM_CreateUniqueItemID(player_faction_name_mon, "BANDEIRA", territory_id));
+            object_serials_struct.+bandeira := bandeira_item_obj.serial;
+            object_serials_struct.+estandarte := estandarte_escolhido;
         else
-            SendSysMessage(who, "Falha ao criar o mural de recrutamento. Por favor, notifique um GM.");
+            LogWarning("faccao_monument", "Falha ao criar o estandarte do reino.");
         endif
     else
-        LogError("faccao_monument", "CreateTerritoryMonument: Coordenadas inválidas para território ID: " + territory_id + ", Rect: " + rect);
-        SendSysMessage(who, "Erro nas coordenadas do território ao criar monumento.");
+        LogDebug("faccao_monument", "Estandarte não foi comprado, nenhuma bandeira criada.");
     endif
+
+    // --- Registro Centralizado dos Seriais ---
+    object_serials_struct.+faction := player_faction_name_mon;
+    object_serials_struct.+coords := rect;
+    object_serials_struct.+realm := realm_prop_mon;
+    object_serials_struct.+guild_id := who.guild.guildid;
     
-    return 0;
+    TM_RegisterTerritoryObjects(territory_id, object_serials_struct);
+    
+    SendSysMessage(who, "Monumento de território criado com sucesso!");
+    return monument_obj;
 endfunction
 
 function ConfirmBannerPurchase(who)    var gump := GFECreateGump("Compra de Estandarte do Reino", 400, 300, array{});

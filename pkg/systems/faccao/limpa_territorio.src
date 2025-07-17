@@ -442,59 +442,57 @@ function VerificarObjeto(item, territorio_id, faction)
     LogDebug("territorio", "  - Serial: " + item.serial);
     LogDebug("territorio", "  - Nome: " + item.name);
     LogDebug("territorio", "  - Tipo: " + Hex(item.objtype));
-    LogDebug("territorio", "  - Realm: " + item.realm);
-    LogDebug("territorio", "  - Coordenadas: " + item.x + ", " + item.y + ", " + item.z);
     
-    // 1. Verificar pelo nome do objeto
-    var name_match_territorio := (item.name.find(territorio_id) != error);
-    var name_match_faction := (item.name.find(faction) != error);
+    // =======================================================
+    // == INÍCIO DA CORREÇÃO - LÓGICA DE VERIFICAÇÃO DUPLA ===
+    // =======================================================
+
+    // ESTRATÉGIA 1: Verificação primária e mais confiável pelas CProps
     
-    LogDebug("territorio", "Match por nome do território: " + name_match_territorio);
-    LogDebug("territorio", "Match por nome da facção: " + name_match_faction);
+    // 1a: Verificar a CProp "TerritoryID"
+    var item_territory_ref := GetObjProperty(item, "TerritoryID");
+    
+    // Se a CProp corresponde ao ID único, é um match definitivo.
+    if (territorio_id && item_territory_ref == territorio_id)
+        LogDebug("territorio", "Match encontrado (1a): CProp 'TerritoryID' corresponde ao ID único '" + territorio_id + "'.");
+        return 1;
+    endif
+    
+    // 1b: Se não deu match pelo ID, tentar pelo nome (formato antigo)
+    var territory_name := "";
+    var info := TM_GetTerritoryInfo(territorio_id); // Busca as informações do território pelo ID
+    if(info)
+        territory_name := info.name;
+    endif
+    
+    if (territory_name && item_territory_ref == territory_name)
+        LogDebug("territorio", "Match encontrado (1b): CProp 'TerritoryID' corresponde ao nome antigo '" + territory_name + "'.");
+        return 1;
+    endif
+
+    // 1c: Verificar a CProp de facção
+    var item_faction := GetObjectFaction(item);
+    if (item_faction && item_faction == faction)
+        // Se a facção bate, precisamos de uma segunda confirmação para evitar falsos positivos.
+        // Verificamos se o NOME do item contém o NOME do território.
+        if (territory_name && item.name.find(territory_name) != error)
+            LogDebug("territorio", "Match encontrado (1c): CProp 'faction' ('" + item_faction + "') e nome do item ('"+item.name+"') correspondem.");
+            return 1;
+        endif
+    endif
+
+    // ESTRATÉGIA 2: Fallback para verificação baseada no nome do item (menos confiável)
+    var name_match_territorio := (territorio_id && item.name.find(territorio_id) != error);
+    var name_match_faction := (faction && item.name.find(faction) != error);
     
     if (name_match_territorio || name_match_faction)
-        LogDebug("territorio", "Match encontrado pelo nome, retornando true");
+        LogDebug("territorio", "Match encontrado (2 - Fallback): Nome do item contém ID ou nome da facção. Nome do item: '"+item.name+"'");
         return 1;
     endif
-    
-    // 2. Verificar pelas propriedades
-    LogDebug("territorio", "Verificando propriedades do objeto");
-    
-    // Lista todas as propriedades para debug
-    LogDebug("territorio", "Todas as propriedades do objeto:");
-    var all_props := GetObjPropertyNames(item);
-    foreach prop_name in all_props
-        var prop_value := GetObjProperty(item, prop_name);
-        LogDebug("territorio", "  - " + prop_name + ": " + prop_value);
-    endforeach
-    
-    // Verificar território primeiro
-    var territorio_match := 0;
-    var territory_id_prop := GetObjProperty(item, TERRITORY_ID_PROP);
-    var territory_id_raw := GetObjProperty(item, "TerritoryID");
-    
-    LogDebug("territorio", "Propriedade " + TERRITORY_ID_PROP + ": " + territory_id_prop);
-    LogDebug("territorio", "Propriedade TerritoryID: " + territory_id_raw);
-    
-    if (territory_id_prop == territorio_id || territory_id_raw == territorio_id)
-        territorio_match := 1;
-        LogDebug("territorio", "Match encontrado por propriedade de território");    endif
-    
-    // Verificar facção
-    var faction_match := 0;
-    var item_faction := GetObjectFaction(item);
-    
-    LogDebug("territorio", "Facção do item: " + item_faction);
-    
-    if (item_faction == faction)
-        faction_match := 1;
-        LogDebug("territorio", "Match encontrado por propriedade de facção");
-    endif
-    
-    if (territorio_match || faction_match)
-        LogDebug("territorio", "Match encontrado por propriedade, retornando true");
-        return 1;
-    endif
+
+    // =======================================================
+    // === FIM DA CORREÇÃO ===================================
+    // =======================================================
     
     LogDebug("territorio", "Nenhum match encontrado, retornando false");
     return 0;

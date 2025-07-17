@@ -2037,144 +2037,99 @@ function ClassificarPorObjtype(objtype_param)
     return "desconhecido";
 endfunction
 
+// Em pkg/systems/faccao/include/shared_functions.inc
+
+// Em pkg/systems/faccao/include/shared_functions.inc
+
 function FindFactionChest(faction_name, territory_identifier := "", create_if_missing := 0)
+    // Validação inicial dos parâmetros de entrada
     if (!faction_name)
         LogError("recursos_FindChest", "FindFactionChest() chamado sem nome de facção");
         return 0;
-    endif // Adicionado ponto e vírgula
-    
+    endif
+
     LogDebug("recursos_FindChest", "Buscando baú para facção '" + faction_name + 
              (territory_identifier ? "', território/ID '" + territory_identifier + "'" : "'"));
     
-    var chest := 0;
     var territory_id := "";
-    
+    var territory_name := "";
+
+    // ETAPA 1: Obter ID e Nome a partir do identificador recebido
     if (territory_identifier)
-        if (territory_identifier.find("TER_") == 1)
-            territory_id := territory_identifier;
-            LogDebug("recursos_FindChest", "Identificador é um territory_id: " + territory_id);
+        var temp_info := TM_GetTerritoryInfo(territory_identifier);
+        if (temp_info)
+            territory_id := temp_info.id;
+            territory_name := temp_info.name;
+            LogDebug("recursos_FindChest", "Identificador resolvido para -> ID: '" + territory_id + "', Nome: '" + territory_name + "'");
         else
-            LogDebug("recursos_FindChest", "Identificador é um nome, buscando territory_id correspondente: '" + territory_identifier + "'");
-            territory_id := FindTerritoryIdByName(territory_identifier);
-            if (territory_id)
-                LogInfo("recursos_FindChest", "Territory_id encontrado para '" + territory_identifier + "': " + territory_id);
-            else
-                LogWarning("recursos_FindChest", "Não foi possível encontrar territory_id para nome: '" + territory_identifier + "'. A busca continuará sem ID específico de território.");
-            endif
+            LogWarning("recursos_FindChest", "Não foi possível resolver o identificador de território: " + territory_identifier);
         endif
-    endif
-    
-    if (territory_id)
-        var seriais_df_s1 := SafeOpenDataFile(":faccao:seriais"); 
-        if (seriais_df_s1)
-            var territory_elem_s1 := SafeFindElement(seriais_df_s1, territory_id);
-            if (territory_elem_s1)
-                LogDebug("recursos_FindChest", "Elemento do território '" + territory_id + "' encontrado no datafile de seriais (Estratégia 1).");
-                var elem_faction_s1 := GetTerritoryFaction(territory_elem_s1);
-                if (elem_faction_s1 == faction_name)
-                    var chest_serial_s1 := GetElementProp(territory_elem_s1, "bau");
-                    if (chest_serial_s1)
-                        chest := SystemFindObjectBySerial(CInt(chest_serial_s1)); 
-                        if (chest && IsValidContainer(chest) && GetObjectFaction(chest) == faction_name)
-                            LogDebug("recursos_FindChest", "Baú " + chest.serial + " encontrado e validado via datafile (novo formato) para território " + territory_id);
-                            return chest;
-                        else
-                            LogWarning("recursos_FindChest", "Serial " + chest_serial_s1 + " para baú do terr " + territory_id + " encontrado, mas objeto inválido, não encontrado no mundo ou facção do objeto não bate. Chest: " + (chest ? chest.serial : "NULL"));
-                            chest := 0; 
-                        endif
-                    endif
-                else
-                    LogDebug("recursos_FindChest", "Elemento de seriais para '" + territory_id + "' encontrado, mas facção no datafile de seriais ('" + elem_faction_s1 + "') não corresponde à facção buscada ('" + faction_name + "').");
-                endif
-            endif 
-            
-           var territorios_seriais_s2 := GetElementProp(seriais_df_s1, "territorios");
-            if (territorios_seriais_s2 && territorios_seriais_s2[territory_id]) 
-                var info_s2 := territorios_seriais_s2[territory_id];
-                if (info_s2.faction == faction_name && info_s2.bau)
-                    chest := SystemFindObjectBySerial(CInt(info_s2.bau)); 
-                    if (chest && IsValidContainer(chest))
-                        LogInfo("recursos_FindChest", "Baú " + chest.serial + " encontrado via datafile (formato legado) para terr " + territory_id + ". Migrando registro.");
-                        var territory_elem_migrate := SafeFindElement(seriais_df_s1, territory_id, DF_CREATE); 
-                        if (territory_elem_migrate)
-                            SetElementProp(territory_elem_migrate, "bau", info_s2.bau);
-                            SetElementProp(territory_elem_migrate, "faction", info_s2.faction);
-                            if (info_s2.mesa) SetElementProp(territory_elem_migrate, "mesa", info_s2.mesa); endif
-                            if (info_s2.mural) SetElementProp(territory_elem_migrate, "mural", info_s2.mural); endif
-                        endif
-                        return chest;
-                    else
-                        LogWarning("recursos_FindChest", "Serial " + info_s2.bau + " (legado) para baú do terr " + territory_id + " encontrado, mas objeto inválido ou não encontrado no mundo.");
-                        chest := 0; 
-                    endif
-                endif
-            endif 
-        endif 
-    endif 
-    
-    LogDebug("recursos_FindChest", "Estratégia 3: Buscando baús no mundo para facção '" + faction_name + "'" + (territory_id ? " e ID '" + territory_id + "'" : " (sem ID específico)"));
-    
-    foreach item_s3 in EnumerateItemsInContainer(0)
-        if (item_s3.objtype == 0xFF11) 
-            var item_faction_prop_s3 := GetObjectFaction(item_s3); 
-            if (item_faction_prop_s3 == faction_name)
-                if (territory_id)
-                    var item_territory_id_prop_s3 := GetObjProperty(item_s3, "territory_id");
-                    if (item_territory_id_prop_s3 == territory_id)
-                        LogInfo("recursos_FindChest", "Baú " + item_s3.serial + " da facção '" + faction_name + "' E território '" + territory_id + "' encontrado no mundo. Atualizando registro.");
-                        var seriais_df_s3_update := SafeOpenDataFile(":faccao:seriais", DF_CREATE);
-                        if (seriais_df_s3_update)
-                            var territory_elem_s3_update := SafeFindElement(seriais_df_s3_update, territory_id, DF_CREATE);
-                            if (territory_elem_s3_update)
-                                SetElementProp(territory_elem_s3_update, "bau", item_s3.serial);
-                                SetElementProp(territory_elem_s3_update, "faction", faction_name);
-                            endif
-                        endif
-                        return item_s3;
-                    endif 
-                else 
-                    LogInfo("recursos_FindChest", "Baú " + item_s3.serial + " da facção '" + faction_name + "' (sem ID de território específico) encontrado no mundo.");
-                    return item_s3;
-                endif 
-            endif 
-        endif 
-        SleepMS(1); 
-    endforeach;
-    
-    if (create_if_missing && !chest)
-        LogWarning("recursos_FindChest", "Criando baú de emergência para '" + faction_name + "'" + (territory_id ? " (associado ao Território ID: " + territory_id + ")" : " (sem associação específica de território)"));
-        chest := CreateEmergencyDonationChest(faction_name);
-        
-        if (chest && territory_id) 
-            SetObjProperty(chest, "territory_id", territory_id); 
-            SetObjProperty(chest, "emergency_for_territory", territory_id); 
-            var seriais_df_emerg := SafeOpenDataFile(":faccao:seriais", DF_CREATE);
-            if (seriais_df_emerg)
-                var territory_elem_emerg := SafeFindElement(seriais_df_emerg, territory_id, DF_CREATE);
-                if (territory_elem_emerg)
-                    SetElementProp(territory_elem_emerg, "bau", chest.serial);
-                    SetElementProp(territory_elem_emerg, "faction", faction_name); 
-                    LogInfo("recursos_FindChest", "Baú de emergência " + chest.serial + " registrado para território ID '" + territory_id + "'.");
-                else
-                    LogError("recursos_FindChest", "Falha ao encontrar/criar elemento para registrar baú de emergência para Território ID '" + territory_id + "'.");
-                endif
-            else
-                LogError("recursos_FindChest", "Falha ao abrir datafile de seriais para registrar baú de emergência.");
-            endif
-        elseif (chest && !territory_id)
-             LogInfo("recursos_FindChest", "Baú de emergência " + chest.serial + " criado para facção '" + faction_name + "' (sem ID de território específico).");
-        endif
-        return chest; 
-    endif 
-    
-    if (!chest)
-        LogError("recursos_FindChest", "Nenhum baú encontrado para facção: '" + faction_name + "'" + 
-                 (territory_identifier ? " (Território/ID original: '" + territory_identifier + "', ID processado: '" + territory_id + "')" : ""));
-    else
-        LogInfo("recursos_FindChest", "Baú final retornado (após todas as estratégias) para facção '" + faction_name + "': " + chest.serial);
     endif
 
-    return chest; 
+    // ETAPA 2: Tentar encontrar por seriais registrados (mais rápido)
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    if (seriais_df && territory_id) // Só faz sentido se tivermos um ID para procurar
+        var territory_elem := SafeFindElement(seriais_df, territory_id);
+        if (territory_elem)
+            LogDebug("recursos_FindChest", "Elemento do território '" + territory_id + "' encontrado no datafile de seriais (Estratégia 1).");
+            var elem_faction := GetTerritoryFaction(territory_elem);
+            if (elem_faction == faction_name)
+                var chest_serial := GetElementProp(territory_elem, "bau");
+                if (chest_serial)
+                    var chest := SystemFindObjectBySerial(CInt(chest_serial));
+                    if (chest && IsValidContainer(chest) && GetObjectFaction(chest) == faction_name)
+                        LogInfo("recursos_FindChest", "SUCESSO (S1): Baú " + chest.serial + " encontrado e validado via datafile para território " + territory_id);
+                        return chest;
+                    else
+                        LogWarning("recursos_FindChest", "Serial " + chest_serial + " para baú do terr " + territory_id + " encontrado, mas objeto inválido, não encontrado no mundo ou facção do objeto não bate.");
+                    endif
+                endif
+            endif
+        endif
+    endif
+
+    // ETAPA 3: Busca no mundo (Fallback com Lógica Dupla)
+    LogDebug("recursos_FindChest", "Estratégia de fallback: buscando baús no mundo...");
+    
+    foreach item in EnumerateItemsInContainer(0) // 0 = root
+        if (item.objtype == 0xFF11) // É um baú de doações
+            var item_faction := GetObjectFaction(item);
+            if (item_faction == faction_name)
+                var item_territory_ref := GetObjProperty(item, "TerritoryID");
+
+                // >>>>> AQUI ESTÁ A LÓGICA DUPLA "OU" <<<<<
+                var match_found := 0;
+                if (territory_id && item_territory_ref == territory_id)
+                    match_found := 1; // Match perfeito pelo ID único
+                elseif (territory_name && item_territory_ref == territory_name)
+                    match_found := 1; // Match pelo nome (formato antigo)
+                    
+                    // CORREÇÃO AUTOMÁTICA: Se encontramos pelo nome, atualizamos para o ID
+                    if (territory_id)
+                        LogWarning("FindFactionChest", "Corrigindo CProp TerritoryID no baú " + item.serial + ". Antigo: '" + item_territory_ref + "', Novo: '" + territory_id + "'.");
+                        SetObjProperty(item, "TerritoryID", territory_id);
+                    endif
+                endif
+                
+                if (match_found)
+                    LogInfo("recursos_FindChest", "SUCESSO: Baú " + item.serial + " encontrado e validado para facção '" + faction_name + "' e território '" + territory_identifier + "'.");
+                    return item;
+                endif
+            endif
+        endif
+        SleepMS(1);
+    endforeach
+    
+    // Se chegou até aqui, nenhuma das estratégias encontrou o baú.
+    LogError("recursos_FindChest", "FALHA FINAL: Nenhum baú encontrado para facção: '" + faction_name + "'" + 
+             (territory_identifier ? " (Território/ID original: '" + territory_identifier + "')" : ""));
+    
+    // Opcional: Lógica para criar baú de emergência, se create_if_missing for 1.
+    if (create_if_missing)
+        // return CreateEmergencyDonationChest(faction_name);
+    endif
+    
+    return 0; // Retorna 0 explicitamente se falhar
 endfunction
 
 // Função para criar um baú de emergência se nenhum for encontrado
