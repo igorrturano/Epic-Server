@@ -1,0 +1,43 @@
+use uo;
+use polsys;
+
+include ":faccao:spawndecampeao/include/waves"; 
+
+program BossDeathHandler(params)
+    var corpse := params[1];
+    if (!corpse) return 0; endif
+    
+    // ==========================================================
+    // >>>>> INÍCIO DA CORREÇÃO <<<<<
+    // ==========================================================
+    
+    // VERIFICAÇÃO CRUCIAL: Se o corpo tem a bandeira "IsBeingAbandoned",
+    // significa que a morte foi causada pelo sistema de abandono, e não
+    // por uma vitória dos jogadores.
+    if (GetObjProperty(corpse, "IsBeingAbandoned"))
+        LogCritical("BossDeathHandler", "Morte por ABANDONO detectada. Pulando criação de totem e notificação.");
+        // Não fazemos nada. Simplesmente encerramos o script.
+        return 1;
+    endif
+    
+    // ==========================================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ==========================================================
+    
+    // Se a bandeira não existe, o fluxo continua normalmente:
+    
+    // PASSO 1: Cria o totem.
+    TerritorialBossDeath(corpse);
+    
+    // PASSO 2: Encontra o altar e "levanta a bandeira" BossHasDied.
+    var altar_serial := GetObjProperty(corpse, "ChampionAltar");
+    if (altar_serial)
+        var altar := SystemFindObjectBySerial(CInt(altar_serial));
+        if (altar)
+            LogCritical("BossDeathHandler", "Levantando a bandeira 'BossHasDied' no altar " + altar.serial);
+            SetObjProperty(altar, "BossHasDied", 1);
+        endif
+    endif
+
+    return 1;
+endprogram

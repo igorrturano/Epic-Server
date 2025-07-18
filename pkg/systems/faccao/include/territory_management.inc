@@ -20,7 +20,7 @@ include ":faccao:include/guild_xp";
 /*
  * TM_FindTerritory(territory_id_or_name)
  *
- * Purpose: Localiza um território pelo ID ou nome
+ * Purpose: Localiza um território pelo ID ou nome (VERSÃO CORRIGIDA)
  * Parameters:
  *   territory_id_or_name - ID ou nome do território
  * Return:
@@ -38,25 +38,43 @@ function TM_FindTerritory(territory_id_or_name)
         return 0;
     endif
     
-    // 1. Tentar encontrar diretamente pelo nome (caso o ID seja o nome)
+    // ==========================================================
+    // INÍCIO DA CORREÇÃO
+    // ==========================================================
+    
+    // TENTATIVA 1: Busca direta pelo nome do elemento (a mais rápida)
     var elem := SafeFindElement(rect_df, territory_id_or_name);
     if (elem)
         return elem;
     endif
     
-    // 2. Procurar por ID em todos os elementos
+    // TENTATIVA 2: Iterar e buscar pela propriedade "Name" ou "TerritoryID"
+    // Esta é a parte que conserta o bug para a busca por nome.
     foreach elem_name in (rect_df.keys())
         elem := SafeFindElement(rect_df, elem_name);
         if (elem)
-            var id := GetElementProp(elem, TERRITORY_ID_PROP);
-            if (id == territory_id_or_name)
+            // Verifica se a propriedade "Name" corresponde
+            var prop_name := GetElementProp(elem, "Name");
+            if (prop_name == territory_id_or_name)
+                LogInfo("territorio", "TM_FindTerritory: Território '" + territory_id_or_name + "' encontrado via CProp 'Name'.");
+                return elem;
+            endif
+
+            // Mantém a verificação por "TerritoryID" para compatibilidade
+            var prop_id := GetElementProp(elem, TERRITORY_ID_PROP);
+            if (prop_id == territory_id_or_name)
+                LogInfo("territorio", "TM_FindTerritory: Território '" + territory_id_or_name + "' encontrado via CProp 'TerritoryID'.");
                 return elem;
             endif
         endif
         sleepms(2);
     endforeach
     
-    LogWarning("territorio", "Território não encontrado: " + territory_id_or_name);
+    // ==========================================================
+    // FIM DA CORREÇÃO
+    // ==========================================================
+    
+    LogWarning("territorio", "Território não encontrado em nenhuma das tentativas: " + territory_id_or_name);
     return 0;
 endfunction
 
@@ -2153,9 +2171,9 @@ function TM_RevokeTerritory(territory_id, who := 0)
         // O start_script é perfeito para tarefas agendadas que não precisam de um loop contínuo.
         var params := struct;
         params.+territory_id := territory_id;
-        params.+delay_seconds := 86400; // 24 horas
+        params.+delay_seconds := 60; // 24 horas
 
-        var rebuild_script := start_script(":faccao:rebuild_champion_task", params);
+var rebuild_script := start_script(":faccao:spawndecampeao/scripts/rebuild_champion_task", params);
         if (rebuild_script.errortext)
             LogError("TM_RevokeTerritory", "Falha ao iniciar rebuild_champion_task para " + territory_id + ". Erro: " + rebuild_script.errortext);
         else

@@ -61,9 +61,18 @@ program continuar_criacao_campeao(who)
     endif
     
     // Configurar o altar com a configuração carregada (que agora contém as ondas!)
-    SetObjProperty(altar, "ChampionConfig", altar_config);
-    SetObjProperty(altar, "TerritoryName", territory_name);
-    SetObjProperty(altar, "IsTerritorChampion", 1);
+var territory_elem := TM_FindTerritory(territory_name);
+if (!territory_elem)
+    SendSysMessage(who, "ERRO CRÍTICO: Não foi possível reencontrar o território '" + territory_name + "' no datafile. Abortando.");
+    DestroyItem(altar);
+    return;
+endif
+var territory_id := GetElementProp(territory_elem, "TerritoryID");
+
+SetObjProperty(altar, "ChampionConfig", altar_config);
+SetObjProperty(altar, "TerritoryName", territory_name);
+SetObjProperty(altar, "TerritoryID", territory_id); // <-- ADIÇÃO CRÍTICA
+SetObjProperty(altar, "IsTerritorChampion", 1);
     
     SendSysMessage(who, "Champion Spawn Territorial criado com sucesso!");
     SendSysMessage(who, "Altar '" + altar_config.name + "' criado para o território '" + territory_name + "'.");

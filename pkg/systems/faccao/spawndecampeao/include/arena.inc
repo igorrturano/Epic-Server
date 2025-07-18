@@ -104,6 +104,8 @@ function CleanupArenaItems(center_x, center_y, center_z, realm)
                 0x1ECB:
                 0x1781:
                 0x1822:
+                0x1854: 
+                0x142C: 
                 0x49C:
                 0x51B:
                 0x78D:

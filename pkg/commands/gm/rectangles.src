@@ -1190,13 +1190,13 @@ function AskChampionType(who)
     // Opção 1: Caverna dos Goblins
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 1);
     GFTextLine(gump, x + 40, y - 4, 1153, "Caverna dos Goblins");
-    GFTextLine(gump, x + 40, y + 16, 1109, "4 ondas • Boss: Goblin King • Cooldown: 1h");
+    GFTextLine(gump, x + 40, y + 16, 1109, "16 ondas • Boss: Goblin King");
     y += 60;
     
     // Opção 2: Covil das Aranhas  
     GFAddButton(gump, x + 20, y, 2361, 2361, GF_CLOSE_BTN, 2);
     GFTextLine(gump, x + 40, y - 4, 1153, "Covil das Aranhas");
-    GFTextLine(gump, x + 40, y + 16, 1109, "4 ondas • Boss: Mega Spider • Cooldown: 2h");
+    GFTextLine(gump, x + 40, y + 16, 1109, "16 ondas • Boss: Mega Spider");
     y += 60;
     
     // Opção Cancelar
@@ -1212,4 +1212,3 @@ function AskChampionType(who)
         default: return "";
     endcase
 endfunction
-

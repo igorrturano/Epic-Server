@@ -1,0 +1,58 @@
+// :faccao:spawndecampeao/scripts/monitor_boss.src
+// Este script monitora um único chefe de Champion Spawn após ele ser criado.
+
+use uo;
+use os;
+use polsys;
+
+include ":faccao:spawndecampeao/include/altar";
+include ":faccao:spawndecampeao/include/waves";
+include ":faccao:include/logging";
+
+program monitor_boss(params)
+    var altar := params.altar;
+    var boss := params.boss;
+    var spawn_cfg := params.spawn_cfg;
+    var boss_serial := boss.serial;
+
+    if (!altar || !boss || !spawn_cfg)
+        LogError("MonitorBoss", "Script iniciado com parâmetros inválidos. Encerrando.");
+        return 0;
+    endif
+
+    LogCritical("MonitorBoss", "MONITORAMENTO INICIADO para Boss " + boss_serial + " no Altar " + altar.serial);
+    const BOSS_ABANDONED_TIMEOUT := 300; // 5 minutos de tolerância para abandono
+
+    while (1)
+        var boss_obj := SystemFindObjectBySerial(boss_serial);
+
+        // CONDIÇÃO DE SAÍDA: Se o chefe não existe mais ou está morto, o trabalho do vigia acabou.
+        if (!boss_obj || boss_obj.dead)
+            LogCritical("MonitorBoss", "Boss " + boss_serial + " não existe mais ou está morto. Encerrando monitoramento.");
+            // A lógica de morte (DeathScript) cuidará do resto.
+            return 1;
+        endif
+
+        // LÓGICA DE ABANDONO
+        if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
+            var last_seen := CInt(GetObjProperty(altar, "#last_player_seen"));
+            if (!last_seen)
+                last_seen := ReadGameClock();
+                SetObjProperty(altar, "#last_player_seen", last_seen);
+            endif
+            
+            if ((ReadGameClock() - last_seen) > BOSS_ABANDONED_TIMEOUT)
+                LogCritical("MonitorBoss", "EVENTO: Boss ABANDONADO. Timeout de " + BOSS_ABANDONED_TIMEOUT + "s atingido.");
+                // Chama as funções de limpeza e abandono
+                KillAndVanish(boss_obj);
+                FinalCleanup(altar, spawn_cfg, "abandoned");
+                return 0; // Encerra o script
+            endif
+        else
+            // Jogadores estão perto, reseta o timer de abandono
+            EraseObjProperty(altar, "#last_player_seen");
+        endif
+        
+        sleep(10); // Verifica a cada 10 segundos
+    endwhile
+endprogram

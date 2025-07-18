@@ -1,0 +1,90 @@
+use uo;
+use os;
+use datafile;
+
+include ":faccao:include/logging";
+include ":faccao:include/process_registry";
+include ":faccao:include/datafile_helpers";
+include ":faccao:include/faccao_constants";
+include ":faccao:spawndecampeao/include/arena"; // Para RebuildChampionSpawn
+include ":faccao:include/territory_management";
+include ":faccao:spawndecampeao/include/config";
+
+
+const WATCHER_LOOP_INTERVAL := 60; // Verifica a cada minuto
+
+program TotemWatcher()
+    if (!RegisterProcess("TotemWatcher"))
+        LogWarning("TotemWatcher", "Uma instância do TotemWatcher já está em execução. Este processo será encerrado.");
+        return 0;
+    endif
+
+    LogInfo("TotemWatcher", ">>> Vigilante de Totens (v2.0 - Baseado em Registro) INICIADO <<<");
+
+    while (1)
+        UpdateProcessHeartbeat("TotemWatcher");
+        
+        var totems_expirados_processados := 0;
+        var current_time := polcore().systime;
+
+        var totem_registry_df := SafeOpenDataFile(":faccao:totem_registry");
+        if (totem_registry_df)
+            var totem_serials_a_verificar := totem_registry_df.keys();
+            if (totem_serials_a_verificar.size() > 0)
+                LogInfo("TotemWatcher", "Verificando " + totem_serials_a_verificar.size() + " totens registrados...");
+
+                foreach totem_serial_str in (totem_serials_a_verificar)
+                    var totem_elem := SafeFindElement(totem_registry_df, totem_serial_str);
+                    if (totem_elem)
+                        var expiration_time := GetElementProp(totem_elem, "expiration");
+                        
+                        if (current_time > CInt(expiration_time))
+                            LogWarning("TotemWatcher", "Registro de totem expirado encontrado! Serial: " + totem_serial_str + ". Processando...");
+                            ProcessExpiredTotemBySerial(CInt(totem_serial_str));
+                            totems_expirados_processados += 1;
+                        endif
+                    endif
+                    sleepms(5);
+                endforeach
+                
+                if (totems_expirados_processados > 0)
+                    LogInfo("TotemWatcher", "Varredura concluída. Processados como expirados: " + totems_expirados_processados);
+                endif
+            endif
+        endif
+        
+        sleep(WATCHER_LOOP_INTERVAL);
+    endwhile
+endprogram
+
+function ProcessExpiredTotemBySerial(totem_serial)
+    var totem := SystemFindObjectBySerial(totem_serial);
+    if (!totem)
+        LogWarning("TotemWatcher", "Totem " + totem_serial + " expirou, mas não foi encontrado no mundo. Apenas limpando o registro.");
+        DeleteDatafileEntry(":faccao:totem_registry", CStr(totem_serial));
+        return;
+    endif
+
+    var territory_id := GetObjProperty(totem, "TerritoryID");
+    if (!territory_id)
+        LogError("TotemWatcher", "Totem expirado " + totem.serial + " não possui 'TerritoryID'. Impossível reconstruir. Apenas destruindo o totem.");
+        DestroyItem(totem);
+        DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial));
+        return;
+    endif
+
+    LogInfo("TotemWatcher", "Destruindo totem expirado " + totem.serial + " para o território " + territory_id);
+    DestroyItem(totem);
+    
+    // IMPORTANTE: Remover do registro ANTES de tentar reconstruir
+    DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial));
+
+    LogInfo("TotemWatcher", "Iniciando reconstrução do Champion Spawn para o território " + territory_id);
+    var rebuild_success := RebuildChampionSpawn(territory_id);
+
+    if (rebuild_success)
+        LogInfo("TotemWatcher", "Reconstrução para " + territory_id + " concluída com sucesso.");
+    else
+        LogError("TotemWatcher", "FALHA ao reconstruir Champion Spawn para " + territory_id);
+    endif
+endfunction

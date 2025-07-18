@@ -49,134 +49,129 @@ function SpawnWaveWithTracking(altar, mob_templates_array, amount_to_spawn)
     return spawned_serials;
 endfunction
 
-function CreateTotemOnBossDeath(territory_name, x, y, z, realm, altar_serial)
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        LogCritical("TBD_DEBUG", "FALHA: Não foi possível abrir o datafile :architect:areas");
-        return;
-    endif
-    
-    // >>>>> INÍCIO DA CORREÇÃO <<<<<
-    // Encontra o elemento do território pelo NOME que recebemos do boss.
-    var elem := TM_FindTerritory(territory_name); 
-    if (!elem)
-        LogCritical("TBD_DEBUG", "FALHA: Não foi possível encontrar o elemento para o território '" + territory_name + "' no datafile.");
-        return;
-    endif
-    
-    // Pega o ID e o Nome corretos DIRETAMENTE do elemento do datafile.
-    var territory_id_real := GetElementProp(elem, TERRITORY_ID_PROP);
-    var territory_display_name := GetElementProp(elem, "Name");
+// Função CORRIGIDA - Substitua a versão antiga por esta
+// Função CORRIGIDA - Substitua a versão antiga por esta
+function CreateTotemOnBossDeath(territory_id, x, y, z, realm)
+    LogCritical("CreateTotem_LOG", "========================================================");
+    LogCritical("CreateTotem_LOG", "INICIANDO CreateTotemOnBossDeath (v2 COM REGISTRO)");
+    LogCritical("CreateTotem_LOG", "  -> Recebido Territory_ID: " + territory_id);
 
-    // Fallback: Se o território não tiver um ID único (muito antigo), usa o nome.
-    if (!territory_id_real)
-        territory_id_real := territory_name;
-        LogWarning("TBD_DEBUG", "Território '" + territory_name + "' não possui um ID único. Usando o nome como ID. Recomenda-se corrigir os dados.");
+    if (!territory_id)
+        LogError("CreateTotem_LOG", "FALHA CRÍTICA: Função chamada sem um territory_id. Abortando.");
+        return;
     endif
-    // >>>>> FIM DA CORREÇÃO <<<<<
-    
-    LogCritical("TBD_DEBUG", "Criando totem para o território '" + territory_display_name + "'...");
+
+    var elem := TM_FindTerritory(territory_id);
+    if (!elem)
+        LogError("CreateTotem_LOG", "FALHA: Não foi possível encontrar o elemento para o ID '" + territory_id + "'.");
+        return;
+    endif
+
+    var territory_name := GetElementProp(elem, "Name", territory_id);
     var totem := CreateItemAtLocation(x, y, z, 0xA102, 1, realm);
+
     if (!totem)
-        LogCritical("TBD_DEBUG", "FALHA CRÍTICA: CreateItemAtLocation falhou ao criar o totem.");
+        LogError("CreateTotem_LOG", "FALHA CRÍTICA: CreateItemAtLocation retornou nulo. O totem não foi criado.");
         return;
     endif
     
-    // Define as propriedades CORRETAS no totem, usando as variáveis que acabamos de buscar.
-    SetObjProperty(totem, "TerritoryID", territory_id_real); // <-- USA O ID REAL
-    SetObjProperty(totem, "Name", territory_display_name);
+    // Define um tempo de expiração de 1 hora (3600 segundos)
+    var expiration_timestamp := polcore().systime + 3600;
+
+    LogInfo("CreateTotem_LOG", "SUCESSO: Totem criado (Serial: " + totem.serial + "). Configurando CProps...");
+    SetObjProperty(totem, "TerritoryID", territory_id);
+    SetObjProperty(totem, "Name", territory_name);
     SetObjProperty(totem, "Rect", GetElementProp(elem, "Rect"));
     SetObjProperty(totem, "Realm", GetElementProp(elem, "Realm"));
     SetObjProperty(totem, "FromBossDefeat", 1);
-    SetObjProperty(totem, "ClaimByTimestamp", polcore().systime + 60); // 86400 segundos = 24 horas
-    
-    LogCritical("TBD_DEBUG", "Totem criado (Serial: " + totem.serial + ") com TerritoryID: '" + territory_id_real + "'");
+    SetObjProperty(totem, "ClaimByTimestamp", expiration_timestamp);
 
-    // Lógica para limpar o altar (velas e caveiras)
-    if (altar_serial)
-        var altar := SystemFindObjectBySerial(CInt(altar_serial));
-        if (altar)
-            sleep(1);
-            CleanupOrphanedItems(altar);
-            LogCritical("TBD_DEBUG", "Itens visuais do altar (caveiras, velas) foram limpos.");
+    // ==========================================================
+    // >>>>> INÍCIO DA ADIÇÃO: REGISTRAR O TOTEM NO VIGILANTE <<<<<
+    // ==========================================================
+    var totem_registry_df := SafeOpenDataFile(":faccao:totem_registry", DF_CREATE);
+    if (totem_registry_df)
+        var totem_elem := SafeFindElement(totem_registry_df, CStr(totem.serial), DF_CREATE);
+        if (totem_elem)
+            SetElementProp(totem_elem, "territory_id", territory_id);
+            SetElementProp(totem_elem, "expiration", expiration_timestamp);
+            LogInfo("TotemCreation", "Totem " + totem.serial + " registrado no vigilante para expirar em " + expiration_timestamp);
         endif
     endif
+    // ==========================================================
+    // >>>>> FIM DA ADIÇÃO <<<<<
+    // ==========================================================
+
+    LogCritical("CreateTotem_LOG", "FUNÇÃO CONCLUÍDA COM SUCESSO. O totem está no jogo e registrado.");
+    LogCritical("CreateTotem_LOG", "========================================================");
 endfunction
 
-function TerritorialBossDeath(corpse)
-    LogCritical("TBD_DEBUG", "----------------------------------------------------");
-    LogCritical("TBD_DEBUG", "Função TerritorialBossDeath INICIADA.");
-    LogCritical("TBD_DEBUG", "Analisando cadáver: " + corpse.desc + " (Serial: " + corpse.serial + ")");
+// Função CORRIGIDA - Substitua a versão antiga por esta
+function TerritorialBossDeath(corpse_or_mobile)
+    LogCritical("BossDeath_LOG", "========================================================");
+    LogCritical("BossDeath_LOG", "INICIANDO TerritorialBossDeath");
 
-    if (!corpse)
-        LogCritical("TBD_DEBUG", "FALHA GRAVE: O parâmetro 'corpse' é nulo ou inválido. Abortando.");
-        LogCritical("TBD_DEBUG", "----------------------------------------------------");
+    if (!corpse_or_mobile)
+        LogError("BossDeath_LOG", "FALHA CRÍTICA (PASSO 0): Parâmetro 'corpse_or_mobile' é nulo. Abortando.");
+        LogCritical("BossDeath_LOG", "==================== FUNÇÃO ENCERRADA (ERRO) ====================");
         return;
     endif
+    LogInfo("BossDeath_LOG", "  -> Objeto gatilho: Serial " + corpse_or_mobile.serial + " (Tipo: " + TypeOf(corpse_or_mobile) + ")");
 
-    var is_guardian := GetObjProperty(corpse, "IsGuardian");
-    var territory_name := GetObjProperty(corpse, "TerritoryName");
-    var from_champion := GetObjProperty(corpse, "FromChampionSpawn");
-    var altar_serial := GetObjProperty(corpse, "ChampionAltar");
+    LogInfo("BossDeath_LOG", "--> PASSO 1: Lendo CProp 'ChampionAltar' do objeto...");
+    var altar_serial := GetObjProperty(corpse_or_mobile, "ChampionAltar");
 
-    LogCritical("TBD_DEBUG", "Lendo propriedades do cadáver:");
-    LogCritical("TBD_DEBUG", "  -> IsGuardian: " + is_guardian);
-    LogCritical("TBD_DEBUG", "  -> TerritoryName: " + territory_name);
-    LogCritical("TBD_DEBUG", "  -> FromChampionSpawn: " + from_champion);
-    LogCritical("TBD_DEBUG", "  -> ChampionAltar: " + altar_serial);
-
-    if (!is_guardian || !territory_name || !from_champion || !altar_serial)
-        LogCritical("TBD_DEBUG", "FALHA NA VALIDAÇÃO: Propriedades obrigatórias faltando. Abortando.");
-        LogCritical("TBD_DEBUG", "----------------------------------------------------");
-        return; 
+    if (!altar_serial)
+        LogError("BossDeath_LOG", "    FALHA (PASSO 1): CProp 'ChampionAltar' não encontrada. Impossível continuar.");
+        LogCritical("BossDeath_LOG", "==================== FUNÇÃO ENCERRADA (ERRO) ====================");
+        return;
     endif
-    
-    LogCritical("TBD_DEBUG", "VALIDAÇÃO OK: Todas as propriedades necessárias foram encontradas.");
+    LogInfo("BossDeath_LOG", "    SUCESSO (PASSO 1): Serial do altar encontrado: " + altar_serial);
 
-    LogCritical("TBD_DEBUG", "Iniciando limpeza de loot do cadáver...");
-    var items_in_corpse := 0;
-    foreach item in EnumerateItemsInContainer(corpse)
-        items_in_corpse += 1;
-    endforeach
-    LogCritical("TBD_DEBUG", "Limpeza de loot concluída. " + items_in_corpse + " itens encontrados no total.");
+    LogInfo("BossDeath_LOG", "--> PASSO 2: Buscando o objeto do Altar no mundo...");
+    var altar := SystemFindObjectBySerial(CInt(altar_serial));
 
-    // ==========================================================
-    // INÍCIO DA LÓGICA CORRIGIDA: Spawnar totem no centro
-    // ==========================================================
-    
-    LogCritical("TBD_DEBUG", "Calculando local de spawn para o totem do território '" + territory_name + "'...");
-    
-    // A função TM_GetTerritoryCenter agora está disponível por causa do include no topo do arquivo.
-    var center_info := TM_GetTerritoryCenter(territory_name);
-    
+    if (!altar)
+        LogError("BossDeath_LOG", "    FALHA (PASSO 2): Objeto do Altar (Serial: " + altar_serial + ") não encontrado.");
+        LogCritical("BossDeath_LOG", "==================== FUNÇÃO ENCERRADA (ERRO) ====================");
+        return;
+    endif
+    LogInfo("BossDeath_LOG", "    SUCESSO (PASSO 2): Objeto do Altar encontrado.");
+
+    LogInfo("BossDeath_LOG", "--> PASSO 3: Lendo CProps 'TerritoryName' e 'TerritoryID' do Altar...");
+    var territory_name := GetObjProperty(altar, "TerritoryName");
+    var territory_id := GetObjProperty(altar, "TerritoryID");
+
+    if (!territory_name || !territory_id)
+        LogError("BossDeath_LOG", "    FALHA (PASSO 3): Altar " + altar.serial + " não possui 'TerritoryName' ou 'TerritoryID'.");
+        LogCritical("BossDeath_LOG", "==================== FUNÇÃO ENCERRADA (ERRO) ====================");
+        return;
+    endif
+    LogInfo("BossDeath_LOG", "    SUCESSO (PASSO 3): Nome='" + territory_name + "', ID='" + territory_id + "'.");
+
+    LogInfo("BossDeath_LOG", "--> PASSO 4: Determinando coordenadas para o totem...");
+    var center_info := TM_GetTerritoryCenter(territory_id);
     var spawn_x, spawn_y, spawn_z, spawn_realm;
 
     if (center_info)
-        LogCritical("TBD_DEBUG", "Centro do território encontrado. O totem aparecerá em: " + center_info.x + "," + center_info.y);
         spawn_x := center_info.x;
         spawn_y := center_info.y;
         spawn_z := center_info.z;
         spawn_realm := center_info.realm;
+        LogInfo("BossDeath_LOG", "    -> Usando centro do território: " + spawn_x + "," + spawn_y + "," + spawn_z);
     else
-        LogWarning("TBD_DEBUG", "Não foi possível determinar o centro do território. Usando a localização do cadáver como fallback.");
-        spawn_x := corpse.x;
-        spawn_y := corpse.y;
-        spawn_z := corpse.z;
-        spawn_realm := corpse.realm;
+        spawn_x := corpse_or_mobile.x;
+        spawn_y := corpse_or_mobile.y;
+        spawn_z := corpse_or_mobile.z;
+        spawn_realm := corpse_or_mobile.realm;
+        LogWarning("BossDeath_LOG", "    -> AVISO: Não foi possível obter o centro do território. Usando a localização do corpo como fallback: " + spawn_x + "," + spawn_y + "," + spawn_z);
     endif
 
-    LogCritical("TBD_DEBUG", "PRESTES A CHAMAR CreateTotemOnBossDeath().");
-    LogCritical("TBD_DEBUG", "Parâmetros: territory_name=" + territory_name + ", x=" + spawn_x + ", y=" + spawn_y + ", z=" + spawn_z + ", realm=" + spawn_realm + ", altar_serial=" + altar_serial);
-    
-    CreateTotemOnBossDeath(territory_name, spawn_x, spawn_y, spawn_z, spawn_realm, altar_serial);
+    LogInfo("BossDeath_LOG", "--> PASSO 5: Delegando a criação do totem para a função CreateTotemOnBossDeath...");
+    CreateTotemOnBossDeath(territory_id, spawn_x, spawn_y, spawn_z, spawn_realm);
 
-    // ==========================================================
-    // FIM DA LÓGICA CORRIGIDA
-    // ==========================================================
-
-    LogCritical("TBD_DEBUG", "RETORNOU da chamada CreateTotemOnBossDeath().");
-    LogCritical("TBD_DEBUG", "Função TerritorialBossDeath CONCLUÍDA.");
-    LogCritical("TBD_DEBUG", "----------------------------------------------------");
+    LogCritical("BossDeath_LOG", "FUNÇÃO CONCLUÍDA COM SUCESSO.");
+    LogCritical("BossDeath_LOG", "========================================================");
 endfunction
 
 function CountAliveMobs(serials_array)
@@ -331,52 +326,37 @@ function SpawnChampion(altar, boss_template)
     var loc := GetSpawnLocation(altar);
     var creature := CreateNpcWithPrefix(boss_template, loc[1], loc[2], loc[3], altar.realm);
     
-    if (creature && !creature.errortext)
-        PlaySoundEffect(creature, 0x2F3);
+    if (creature && !creature.errotext)
+        PlaySoundEffect(creature, 0x2F4);
         SetObjProperty(altar, "champ_serial", creature.serial);
         
-        LogInfo("ChampSpawn", "Boss criado - Serial: " + creature.serial + ", Template: " + boss_template + ", Local: " + creature.x + "," + creature.y + "," + creature.z);
+        LogCritical("SpawnChampion_LOG", "----------------------------------------------------");
+        LogCritical("SpawnChampion_LOG", "Boss criado - Serial: " + creature.serial + ", Template: " + boss_template);
         
-        // NOVO: Verificar se altar é territorial
+        // LER TODAS AS INFORMAÇÕES DO ALTAR
         var territory_name := GetObjProperty(altar, "TerritoryName");
-        LogInfo("ChampSpawn", "Verificando altar territorial - TerritoryName: " + territory_name);
+        var territory_id := GetObjProperty(altar, "TerritoryID");
         
-        if (territory_name)
-            // Boss territorial - DeathScript já está configurado no npcdesc.cfg
-            LogInfo("ChampSpawn", "*** BOSS TERRITORIAL DETECTADO ***");
-            LogInfo("ChampSpawn", "Template: " + boss_template + " (deve ter '_territorial' no nome)");
-            LogInfo("ChampSpawn", "DeathScript configurado via npcdesc.cfg, não via creature.script");
+        if (territory_name && territory_id)
+            LogCritical("SpawnChampion_LOG", "PASSO 1: Altar é territorial. Nome: '" + territory_name + "', ID: '" + territory_id + "'.");
             
-            // Configurar boss como guardião territorial
+            // Configura o boss como guardião territorial
             SetObjProperty(creature, "IsGuardian", 1);
             SetObjProperty(creature, "TerritoryName", territory_name);
+            SetObjProperty(creature, "TerritoryID", territory_id); // Passa o ID para o boss
             SetObjProperty(creature, "FromChampionSpawn", 1);
             SetObjProperty(creature, "ChampionAltar", altar.serial);
             
-            LogInfo("ChampSpawn", "*** BOSS CONFIGURADO COMO TERRITORIAL ***");
-            LogInfo("ChampSpawn", "Boss Serial: " + creature.serial);
-            LogInfo("ChampSpawn", "Territory: " + territory_name);
-            LogInfo("ChampSpawn", "Altar Serial: " + altar.serial);
-            LogInfo("ChampSpawn", "Props definidas: IsGuardian=1, TerritoryName=" + territory_name + ", FromChampionSpawn=1, ChampionAltar=" + altar.serial);
-            LogInfo("ChampSpawn", "IMPORTANTE: Boss usará DeathScript do npcdesc.cfg para criar totem territorial");
-            
-            LogInfo("ChampSpawn", "Boss configurado como GUARDIÃO TERRITORIAL de: " + territory_name);
-            LogInfo("ChampSpawn", "Morte será processada pelo DeathScript via POL");
-            
-// DeathScript territorial pode ser chamado diretamente via função utilitária
-            LogInfo("ChampSpawn", "*** DeathScript territorial será chamado via função utilitária, não via npcdesc.cfg ***");
+            LogCritical("SpawnChampion_LOG", "PASSO 2: Propriedades 'TerritoryName' e 'TerritoryID' definidas no boss " + creature.serial + ".");
         else
-            // Boss normal - apenas configurar propriedade do altar
+            // Boss normal
             SetObjProperty(creature, "#AltarSerial", altar.serial);
-            LogInfo("ChampSpawn", "Boss criado como champion NORMAL (não territorial)");
-            LogInfo("ChampSpawn", "Usando npcdeath.src do sistema POL para death handling");
+            LogCritical("SpawnChampion_LOG", "Boss criado como champion NORMAL (não territorial).");
         endif
-        
-     
         
         return creature;
     else
-        LogError("ChampSpawn", "Falha ao criar o CHEFE com template '" + boss_template + "' na localização " + loc[1] + "," + loc[2]);
+        LogError("ChampSpawn", "Falha ao criar o CHEFE com template '" + boss_template + "'.");
         return 0;
     endif
 endfunction

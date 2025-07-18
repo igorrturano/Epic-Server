@@ -19,7 +19,7 @@ function ShowBossTimer(altar)
     
     PrintTextAbove(altar, "* Todas as ondas foram derrotadas! *");
         
-    var countdown := 100;
+    var countdown := 00;
     while (countdown >= 1)
         if (countdown % 10 == 0 || countdown <= 10)
             if (countdown > 10)
@@ -36,7 +36,7 @@ function ShowBossTimer(altar)
         
         // Sistema de tolerância durante timer do boss
         if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
-            var tolerance_result := WaitForPlayersWithTolerance(altar, "Timer do Boss", 300);
+            var tolerance_result := WaitForPlayersWithTolerance(altar, "Timer do Boss", 60);
             if (!tolerance_result)
                 // Tolerância expirou - cancela timer
                 altar.color := 0;
@@ -49,7 +49,7 @@ function ShowBossTimer(altar)
     
     LogInfo("ChampSpawn", "Timer concluído - invocando o campeão!");
     PrintTextAbove(altar, "* O CAMPEÃO DESPERTA! *");
-    PlaySoundEffect(altar, 0x2F3);
+    PlaySoundEffect(altar, 4);
     PlayStationaryEffect(altar.x, altar.y, altar.z, 0x3728, 15, 0x10, 0, altar.realm);
     
     return 1;
@@ -66,29 +66,50 @@ function ActivateAltar(altar)
     return 1;
 endfunction
 
+// DeactivateAltar com limpeza SEGURA e ROBUSTA e SINTAXE CORRETA
 function DeactivateAltar(altar, cooldown)
+    LogInfo("ChampSpawn", "Desativando altar " + altar.serial);
+    
     EraseObjProperty(altar, "#active");
     EraseObjProperty(altar, "#completed");
     EraseObjProperty(altar, "#current_wave_kills");
     EraseObjProperty(altar, "#current_level");
+    EraseObjProperty(altar, "#last_player_seen");
 
-    var skulls := GetObjProperty(altar, "skulls");
-    if (TypeOf(skulls) == "Array")
-        foreach serial in skulls
-            var skull := SystemFindObjectBySerial(serial);
-            if (skull) 
-                DestroyItem(skull); 
-            endif
-        endforeach
-    endif
-    EraseObjProperty(altar, "skulls");
+    LogInfo("ChampSpawn", "Limpando itens visuais pertencentes ao altar " + altar.serial);
+    var items_destroyed := 0;
     
-    ClearWhiteCandles(altar);
+    // Procura em uma área ampla para garantir que pegamos tudo
+    foreach item in ListItemsNearLocation(altar.x, altar.y, altar.z, 20, altar.realm)
+        // VERIFICAÇÃO DE VÍNCULO: O item pertence a ESTE altar?
+        // ==========================================================
+        // INÍCIO DA CORREÇÃO DE SINTAXE
+        // ==========================================================
+        if (GetObjProperty(item, "AltarOwner") == altar.serial)
+            // O item é nosso. Verificamos se é uma caveira ou vela para destruir.
+            if (item.objtype == 0x1854 || item.objtype == 0x142C)
+                DestroyItem(item);
+                items_destroyed += 1;
+            endif
+        endif
+        // ==========================================================
+        // FIM DA CORREÇÃO DE SINTAXE
+        // ==========================================================
+        sleepms(2);
+    endforeach
+    
+    if (items_destroyed > 0)
+        LogInfo("ChampSpawn", items_destroyed + " caveiras/velas foram destruídas.");
+    endif
+    
+    // Apaga as CProps do altar por segurança
+    EraseObjProperty(altar, "skulls");
+    EraseObjProperty(altar, "white_candles");
+    
+    // A limpeza dos fogos do boss já tem sua própria função
     ClearBossAreaItems(altar);
     
-    // Restaura a cor original do altar
     altar.color := 0;
-    LogInfo("ChampSpawn", "Cor do altar " + altar.serial + " restaurada para original");
     
     if (!cooldown) 
         cooldown := 86400; 
@@ -117,13 +138,17 @@ function CreateWhiteCandle(altar, progress_level)
         
         if (white_candle)
             white_candle.movable := 0;
+            
+            // <-- ADIÇÃO CRÍTICA AQUI -->
+            SetObjProperty(white_candle, "AltarOwner", altar.serial);
+
             PlaySoundEffect(white_candle, 0x48);
             PlayStationaryEffect(white_candle.x, white_candle.y, white_candle.z, 0x3728, 5, 0x10, 0, white_candle.realm);
             
             white_candles.append(white_candle.serial);
             SetObjProperty(altar, "white_candles", white_candles);
             
-            LogInfo("ChampSpawn", "Vela branca " + progress_level + " criada");
+            LogInfo("ChampSpawn", "Vela branca " + progress_level + " criada para o altar " + altar.serial);
         endif
     endif
 endfunction
@@ -285,13 +310,51 @@ function GetRedSkullLocation(altar, index)
 endfunction
 
 function CountPlayers(altar, radius)
-    var players := 0;
+    var players_validos := 0;
+    LogDebug("CountPlayers", "Iniciando contagem de jogadores no raio " + radius + " ao redor do altar " + altar.serial);
+    
     foreach mob in ListMobilesNearLocation(altar.x, altar.y, altar.z, radius, altar.realm)
+        // Pula o loop se o mob for inválido
+        if (!mob) continue; endif
+        
+        var is_counted := 0;
+        var reason := "";
+        
+        // Critério 1: Tem que ser um jogador (ter uma conta)
         if (mob.acctname)
-            players += 1;
+            // Critério 2: Tem que estar vivo
+            if (!mob.dead)
+                // Critério 3: Não pode ser um membro da staff (GM, etc.)
+                if (mob.cmdlevel == 0)
+                    // Critério 4: Não pode estar invisível (GM observando)
+                    if (!mob.hidden)
+                        players_validos += 1;
+                        is_counted := 1;
+                    else
+                        reason := "ignorado (GM/staff invisível)";
+                    endif
+                else
+                    reason := "ignorado (é um membro da staff, cmdlevel > 0)";
+                endif
+            else
+                reason := "ignorado (está morto/fantasma)";
+            endif
+        else
+            // Não é um jogador, é um NPC/monstro
+            // Não precisamos logar isso para não poluir o console.
+            // A menos que você queira, então descomente a linha abaixo:
+            // reason := "ignorado (não é um jogador)";
         endif
+        
+        // Logar apenas se for um jogador, para facilitar a depuração
+        if (mob.acctname)
+            LogDebug("CountPlayers", "  -> Verificando: " + mob.name + " (Serial: " + mob.serial + ") - " + (is_counted ? "CONTADO" : reason));
+        endif
+        
     endforeach
-    return players;
+    
+    LogInfo("CountPlayers", "Contagem final: " + players_validos + " jogadores válidos encontrados.");
+    return players_validos;
 endfunction
 
 // === SISTEMA DE TOLERÂNCIA ===
@@ -365,15 +428,217 @@ function CreateRedSkull(altar)
         if(red_skull)
             red_skull.color := 0x26;
             red_skull.movable := 0;
+            
+            // <-- ADIÇÃO CRÍTICA AQUI -->
+            SetObjProperty(red_skull, "AltarOwner", altar.serial);
+            
             PlaySoundEffect(red_skull, 0x29);
             PlayStationaryEffect(red_skull.x, red_skull.y, red_skull.z, 0x3728, 7, 0x10, 0, red_skull.realm);
             
             skulls.append(red_skull.serial);
             SetObjProperty(altar, "skulls", skulls);
             
-            LogInfo("ChampSpawn", "Caveira " + level + " criada");
+            LogInfo("ChampSpawn", "Caveira " + level + " criada para o altar " + altar.serial);
         else
             LogError("ChampSpawn", "FALHA ao criar caveira " + level);
         endif
+    endif
+endfunction
+
+function FinalCleanup(altar, spawn_cfg, reason := "completed")
+    LogCritical("FinalCleanup", "==========================================================");
+    LogCritical("FinalCleanup", "FUNÇÃO INICIADA (Motivo: " + reason + ")");
+
+    // ===== BLOCO DE SEGURANÇA (A ÚNICA VERIFICAÇÃO NECESSÁRIA) =====
+    if (!altar || altar.errortext)
+        LogError("FinalCleanup", "ERRO FATAL: Altar inválido ou não inicializado. Abortando limpeza.");
+        return;
+    endif
+    // ===== FIM DO BLOCO DE SEGURANÇA =====
+
+    var altar_serial_para_log := altar.serial;
+    var territory_name := GetObjProperty(altar, "TerritoryName");
+
+    // ====================================================================
+    // LÓGICA DE ABANDONO/FALHA (Reconstrução Agendada)
+    // ====================================================================
+    if (reason == "abandoned" || reason == "failed" || reason == "timer_cancelled")
+        LogCritical("FinalCleanup", "Motivo '" + reason + "' detectado. Iniciando processo de RECONSTRUÇÃO TOTAL.");
+        
+        if (territory_name)
+            var territory_elem := TM_FindTerritory(territory_name); // Corrigido para usar a função de busca
+            if (territory_elem)
+                var territory_id := GetElementProp(territory_elem, "TerritoryID");
+                if (territory_id)
+                    // Definir território como Selvagem
+                    LogInfo("FinalCleanup", "--> PASSO A: Definindo território " + territory_id + " como Selvagem.");
+                    TM_SetTerritoryFaction(territory_id, DEFAULT_FACTION);
+
+                    // Agendar a reconstrução para daqui a 50 segundos
+                    LogInfo("FinalCleanup", "--> PASSO B: Agendando reconstrução com delay de 50 segundos.");
+                    var params := struct{ "territory_id" := territory_id, "delay_seconds" := 50 };
+                    start_script(":faccao:spawndecampeao/scripts/rebuild_champion_task", params);
+                endif
+            endif
+        endif
+        
+        // DEMOLIR a arena e o altar ATUAIS IMEDIATAMENTE
+        LogInfo("FinalCleanup", "--> PASSO C: Demolindo arena e altar atuais...");
+        var items_removed := CleanupArenaItems(altar.x, altar.y, altar.z, altar.realm);
+        LogInfo("FinalCleanup", "    " + items_removed + " itens da arena e altar foram removidos.");
+    
+    // ====================================================================
+    // LÓGICA DE VITÓRIA (Destruição Completa SEM Reconstrução Agendada)
+    // ====================================================================
+    elseif (reason == "completed")
+        LogCritical("FinalCleanup", "Motivo 'completed' (vitória) detectado. Iniciando processo de DEMOLIÇÃO FINAL.");
+        
+        // O totem já foi criado pela função TerritorialBossDeath.
+        // Nossa única tarefa aqui é demolir a arena e o altar para limpar o local.
+        LogInfo("FinalCleanup", "--> Demolindo arena e altar para finalizar o evento...");
+        var items_removed := CleanupArenaItems(altar.x, altar.y, altar.z, altar.realm);
+        LogInfo("FinalCleanup", "    " + items_removed + " itens da arena e altar foram removidos.");
+    
+    // ====================================================================
+    // CASO DE FALLBACK (Se um motivo desconhecido for passado)
+    // ====================================================================
+    else
+        LogWarning("FinalCleanup", "Motivo desconhecido '" + reason + "'. Executando limpeza padrão com cooldown.");
+        var cooldown_time := spawn_cfg.cooldown;
+        DeactivateAltar(altar, cooldown_time);
+    endif
+
+    LogInfo("FinalCleanup", "--> PASSO FINAL: Liberando a trava de PID do controlador");
+    var lock_name_final := "ChampSpawn.Lock." + altar_serial_para_log;
+    EraseGlobalProperty(lock_name_final);
+    
+    LogCritical("FinalCleanup", "Limpeza concluída. O script do controlador para o altar " + altar_serial_para_log + " será finalizado.");
+    LogCritical("FinalCleanup", "==========================================================");
+endfunction
+
+
+/*
+ * KillAndVanish(mobile)
+ * 
+ * Purpose: Remove um NPC do jogo de forma 100% segura, com logs detalhados
+ *          para cada etapa do processo.
+ */
+function KillAndVanish(mobile)
+    // ====================================================================
+    // LOG: INÍCIO DA FUNÇÃO E VALIDAÇÃO DE PARÂMETROS
+    // ====================================================================
+    LogCritical("KillAndVanish", "==========================================================");
+    LogCritical("KillAndVanish", "FUNÇÃO INICIADA");
+    
+    if (!mobile)
+        LogError("KillAndVanish", "ERRO FATAL: Parâmetro 'mobile' é nulo. Abortando.");
+        LogCritical("KillAndVanish", "==========================================================");
+        return 0;
+    endif
+    if (mobile.errortext)
+        LogError("KillAndVanish", "ERRO FATAL: Parâmetro 'mobile' é um erro: " + mobile.errortext + ". Abortando.");
+        LogCritical("KillAndVanish", "==========================================================");
+        return 0;
+    endif
+    if (mobile.dead)
+        LogWarning("KillAndVanish", "AVISO: Mobile já está morto. Ação não necessária. Abortando.");
+        LogCritical("KillAndVanish", "==========================================================");
+        return 0;
+    endif
+    
+    var mobile_serial := mobile.serial;
+    LogInfo("KillAndVanish", "Alvo válido: " + mobile.name + " (Serial: " + mobile_serial + ", HP: " + mobile.hp + ")");
+    LogInfo("KillAndVanish", "Alvo válido: " + mobile.name + " (Serial: " + mobile_serial + ")");
+
+    // ==========================================================
+    // >>>>> INÍCIO DA CORREÇÃO <<<<<
+    // ==========================================================
+    
+    // ANTES de matar, nós definimos uma "bandeira" no chefe
+    // para que o DeathScript saiba que isso é um abandono.
+    LogCritical("KillAndVanish", "Sinalizando chefe " + mobile.serial + " como ABANDONADO antes de chamar .kill()");
+    SetObjProperty(mobile, "IsBeingAbandoned", 1);
+    
+    // ==========================================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ============
+    // ====================================================================
+    // PASSO 1: MOVER O NPC PARA O LIMBO
+    // ====================================================================
+    LogInfo("KillAndVanish", "--> PASSO 1: Mover para o limbo (10,10,10)");
+    var move_result := MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm, MOVEOBJECT_FORCELOCATION);
+    if (move_result.errortext)
+        LogError("KillAndVanish", "    FALHA ao mover: " + move_result.errortext + ". O processo continuará mesmo assim.");
+    else
+        LogInfo("KillAndVanish", "    SUCESSO ao mover.");
+    endif
+
+    // ====================================================================
+    // PASSO 2: INICIAR O PROCESSO DE MORTE
+    // ====================================================================
+    LogInfo("KillAndVanish", "--> PASSO 2: Ordenar morte com a função de motor de jogo .kill()");
+    mobile.kill();
+    LogInfo("KillAndVanish", "    Comando .kill() executado. O processo de morte foi iniciado pelo motor do jogo.");
+
+    // ====================================================================
+    // PASSO 3: ESPERA ATIVA PELA TRANSFORMAÇÃO EM CORPO (ITEM)
+    // ====================================================================
+    LogInfo("KillAndVanish", "--> PASSO 3: Espera ativa pela transformação em corpo (item)");
+    var corpse := 0;
+    var attempts := 15; // Tentar por no máximo 3 segundos (15 * 200ms)
+    var i;
+    for (i := 1; i <= attempts; i := i + 1)
+        LogDebug("KillAndVanish", "    [Tentativa " + i + "/" + attempts + "]");
+        var obj_after_death := SystemFindObjectBySerial(mobile_serial);
+        
+        if (!obj_after_death)
+            LogInfo("KillAndVanish", "    VERIFICAÇÃO: Objeto não encontrado. Provavelmente já foi limpo pelo sistema. SUCESSO.");
+            corpse := 0; // Garante que não tentaremos destruir
+            break;
+        endif
+        
+        LogDebug("KillAndVanish", "    OBJETO ENCONTRADO: Serial=" + obj_after_death.serial + ", ObjType=" + Hex(obj_after_death.objtype) + ", Graphic=" + Hex(obj_after_death.graphic));
+        
+        if (obj_after_death.IsA(POLCLASS_ITEM))
+            LogInfo("KillAndVanish", "    VERIFICAÇÃO: Objeto é um ITEM. SUCESSO! É um corpo. Prosseguindo para a destruição.");
+            corpse := obj_after_death;
+            break;
+        else
+            LogDebug("KillAndVanish", "    VERIFICAÇÃO: Objeto ainda NÃO é um item (é um " + TypeOf(obj_after_death) + "). Esperando mais 200ms...");
+        endif
+        
+        sleepms(200);
+    endfor
+
+    // ====================================================================
+    // PASSO 4: DESTRUIR O CORPO, SE ENCONTRADO
+    // ====================================================================
+    if (corpse)
+        LogInfo("KillAndVanish", "--> PASSO 4: Destruir o corpo");
+        var destroy_result := DestroyItem(corpse);
+        if (destroy_result.errortext)
+            LogError("KillAndVanish", "    FALHA ao destruir: " + destroy_result.errortext);
+        else
+            LogInfo("KillAndVanish", "    SUCESSO ao destruir.");
+        endif
+    elseif (i > attempts)
+        LogError("KillAndVanish", "    FALHA: Loop de verificação terminou sem encontrar um corpo (item). O objeto pode ter ficado preso no estado 'morrendo'.");
+    endif
+
+    // ====================================================================
+    // PASSO 5: VERIFICAÇÃO FINAL
+    // ====================================================================
+    LogInfo("KillAndVanish", "--> PASSO 5: Verificação final no mundo");
+    var final_check := SystemFindObjectBySerial(mobile_serial);
+    if (!final_check)
+        LogInfo("KillAndVanish", "    SUCESSO: Objeto com serial " + mobile_serial + " não existe mais.");
+        LogCritical("KillAndVanish", "FUNÇÃO FINALIZADA - Resultado: SUCESSO");
+        LogCritical("KillAndVanish", "==========================================================");
+        return 1;
+    else
+        LogError("KillAndVanish", "    FALHA: Objeto com serial " + mobile_serial + " ainda existe.");
+        LogCritical("KillAndVanish", "FUNÇÃO FINALIZADA - Resultado: FALHA");
+        LogCritical("KillAndVanish", "==========================================================");
+        return 0;
     endif
 endfunction

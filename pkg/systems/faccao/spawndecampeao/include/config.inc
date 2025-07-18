@@ -22,24 +22,24 @@ function LoadSpawnConfig(spawn_type)
             config.+waves := array(
                 // Ondas 1-4
                 struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 30},
-                struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1},
-                struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1},
-                struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1},
+                struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1}
+                //struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1},
+                //struct{"mobs" := array{"goblin", "goblin2"}, "amount" := 1},
                 // Ondas 5-8
-                struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
-                struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
-                struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
-                struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
+                //struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
+                //struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
+                //struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
+               // struct{"mobs" := array{"hobgoblin", "hobgoblin2"}, "amount" := 1},
                 // Ondas 9-12
-                struct{"mobs" := array{"orcbrute"}, "amount" := 1},
-                struct{"mobs" := array{"orcbrute"}, "amount" := 1},
-                struct{"mobs" := array{"orcbrute"}, "amount" := 1},
-                struct{"mobs" := array{"orcbrute"}, "amount" := 1},
+              //  struct{"mobs" := array{"orcbrute"}, "amount" := 1},
+              //  struct{"mobs" := array{"orcbrute"}, "amount" := 1},
+               // struct{"mobs" := array{"orcbrute"}, "amount" := 1},
+               // struct{"mobs" := array{"orcbrute"}, "amount" := 1},
                 // Ondas 13-16
-                struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
-                struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
-                struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
-                struct{"mobs" := array{"ettin", "troll"}, "amount" := 1}
+               // struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
+               // struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
+               // struct{"mobs" := array{"ettin", "troll"}, "amount" := 1},
+               // struct{"mobs" := array{"ettin", "troll"}, "amount" := 1}
             );
         
         "covildasaranhas":

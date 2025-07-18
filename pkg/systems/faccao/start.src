@@ -47,7 +47,7 @@ endif
 // ==============================================================
 
 // Iniciar o Vigilante de Totens Expirados
-var totem_watcher_script := start_script(":faccao:totem_watcher");
+var totem_watcher_script := start_script(":faccao:spawndecampeao/scripts/totem_watcher");
 if (totem_watcher_script.errortext)
     LogError("sistema", "Erro ao iniciar o Vigilante de Totens: " + totem_watcher_script.errortext);
 else
