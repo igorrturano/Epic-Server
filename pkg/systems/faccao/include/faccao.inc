@@ -169,19 +169,35 @@ endfunction
  *   0 se ocorreu uma falha inesperada.
  */
 function RemFaccao(guild_obj)
-    // Etapa 1: Garantir que temos um objeto de guilda VÁLIDO para trabalhar.
-    if (!guild_obj || TypeOf(guild_obj) != "GuildRef")
-        guild_obj := FindGuild(guild_obj); // FindGuild lida com ID, nome ou erro.
+ // Etapa 1: Garantir que temos um objeto de guilda VÁLIDO para trabalhar.
+    // Primeiro, verificamos o tipo do parâmetro recebido.
+    var param_type := TypeOf(guild_obj);
+
+    // Se o parâmetro já for um erro ou nulo, paramos IMEDIATAMENTE.
+    if (!guild_obj || param_type == "Error")
+        LogError("RemFaccao_ABORT", "Função chamada com parâmetro inválido (Nulo ou Objeto de Erro). Deleção abortada para prevenir danos.");
+        if(param_type == "Error")
+            LogError("RemFaccao_ABORT", "  -> Erro recebido: " + guild_obj.errortext);
+        endif
+        return 0; // Retorna falha.
     endif
 
-    // Se mesmo após a tentativa de busca o objeto for inválido, a guilda não existe.
+    // Se não for um GuildRef, tentamos encontrá-lo. FindGuild lida com ID ou nome.
+    if (param_type != "GuildRef")
+        guild_obj := FindGuild(guild_obj);
+    endif
+
+    // Verificação final: Após a tentativa de busca, o objeto DEVE ser um GuildRef válido.
     if (!guild_obj || TypeOf(guild_obj) != "GuildRef") 
-        LogWarning("faccao", "RemFaccao: Tentativa de apagar uma guilda que já não existe ou é inválida. Operação ignorada.");
+        LogWarning("RemFaccao_IGNORE", "Tentativa de apagar uma guilda que já não existe ou é inválida (Parâmetro original: " + guild_obj + "). Operação ignorada.");
         return 1; // Retorna sucesso, pois o estado desejado (guilda não existe) foi alcançado.
     endif
 
-    // A partir daqui, temos certeza que guild_obj é um GuildRef válido.
-    
+    // ==========================================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ==========================================================
+
+
     // Etapa 2: Obter informações básicas para logs ANTES de apagar.
     var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: "Facção Desconhecida";
     var guild_id_log := guild_obj.guildid;

@@ -199,7 +199,6 @@ function ReinoGump(byref gump, item, who := 0)
     GFResizePic(gump, 38, 60, 40267, 400, 502);
     
     var titulo := mesa_faction ? "Gestão do Reino " + mesa_faction : "Gestão do Reino";
-    GFTextMid(gump, 490, 60, 263, 2100, titulo);
     
     if (guild)
         var xp_info := GetGuildXPInfo(guild);
@@ -230,10 +229,10 @@ function ReinoGump(byref gump, item, who := 0)
         // ==========================================================
         
         // Posição inicial do quadrado principal (subiu 40 pixels de 110 para 70)
-        GFResizePic(gump, 460, 70, 9350, 320, 225); // Altura aumentada para comportar as novas linhas
-        GFTextMid(gump, 460, 75, 320, 2100, "Progresso do Reino");
+        GFResizePic(gump, 460, 70, 9350, 320, 200); 
+        GFTextMid(gump, 460, 75, 320, 2100, titulo);
 
-        var y_reino := 95; // Posição inicial dos textos
+        var y_reino := 95;
         var x_label := 470;
         var x_value := 580;
 
@@ -261,7 +260,6 @@ function ReinoGump(byref gump, item, who := 0)
         GFTextLine(gump, x_value, y_reino, 1153, CStr(weekly_cost) + " cobre");
         y_reino += 20;
 
-        // --- POPULAÇÃO E MORAL NA MESMA LINHA ---
         var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
         var elem_name := NormalizarNomeElementoFaccao(mesa_faction);
         var populacao := "N/A";
@@ -278,15 +276,12 @@ function ReinoGump(byref gump, item, who := 0)
             endif
         endif
 
-        // Layout na mesma linha
         GFTextLine(gump, x_label, y_reino, 2100, "População:");
         GFTextLine(gump, x_label + 70, y_reino, 1153, populacao);
-        
         GFTextLine(gump, x_label + 150, y_reino, 2100, "Moral:");
         GFTextLine(gump, x_label + 200, y_reino, 1153, moral);
-        y_reino += 25; // Espaçamento após a linha dupla
+        y_reino += 25;
 
-        // Barra de progresso
         if (!xp_info.is_max_level)
             GFResizePic(gump, x_label, y_reino, 9200, 280, 20);         
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
@@ -301,14 +296,10 @@ function ReinoGump(byref gump, item, who := 0)
         
         var divida_acumulada := CInt(SafeGetGuildProperty(guild, "divida_upkeep", 0));
         if (divida_acumulada > 0)
-            var y_divida := y_reino + 30;
+            var y_divida := y_reino + 30; // Posição abaixo da barra de progresso
             GFTextLine(gump, x_label, y_divida, 38, "Dívida de UpKeep: " + divida_acumulada);
             GFAddButton(gump, x_label + 200, y_divida - 5, 2074, 2075, GF_CLOSE_BTN, 999);
         endif
-        
-        // ==========================================================
-        // >>>>> FIM DOS AJUSTES DE LAYOUT <<<<<
-        // ==========================================================
     endif
 
 var rect_df := SafeOpenDataFile(":architect:areas");
@@ -331,9 +322,9 @@ var rect_df := SafeOpenDataFile(":architect:areas");
         endforeach
         
         GFResizePic(gump, 460, 300, 9350, 320, 212);
-        GFTextLine(gump, 485, 305, 53, "Nome do Terreno");
-        GFTextLine(gump, 690, 305, 53, "Info");
-        GFTextLine(gump, 730, 305, 53, "Carav.");
+        GFTextLine(gump, 485, 310, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 310, 53, "Info");
+        GFTextLine(gump, 730, 310, 53, "Carav.");
         
         var y_terr := 330;
         var territorios_mostrados := 0;
