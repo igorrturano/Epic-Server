@@ -7,9 +7,8 @@ use cfgfile;
 include ":datafile:datafile";
 include "include/say";
 include ":gumps:gumps";
-include ":gumps:gumps_ex";
 include ":gumps:requestGump";
-include ":gumps:yesNo";
+include "include/string";
 include ":gumps:epicGumps";
 include ":faccao:include/faccao_constants";
 include ":epicspawn:epicBoss";
@@ -669,6 +668,28 @@ var is_capital := TM_IsTerritoryCapital(territory_id);
     endif
     GFTextLine(gump, x+110, y, control_color, faction);
     y += 25;
+    
+    // NOVO: Informações sobre Champion Spawn
+    var has_champion := GetElementProp(elem, "HasChampionSpawn", 0);
+    if (has_champion)
+        var champion_type := GetElementProp(elem, "ChampionType", "");
+        GFTextLine(gump, x, y, 2100, "Champion Spawn:");
+        var champion_color := 1153;
+        var champion_name := "";
+        
+        if (champion_type == "CavernaDosGoblins")
+            champion_name := "Caverna dos Goblins";
+            champion_color := 63; // Verde
+        elseif (champion_type == "CovilDasAranhas")
+            champion_name := "Covil das Aranhas";
+            champion_color := 38; // Vermelho
+        else
+            champion_name := champion_type;
+        endif
+        
+        GFTextLine(gump, x+110, y, champion_color, champion_name);
+        y += 25;
+    endif
     
     // Linha de separação
     GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
