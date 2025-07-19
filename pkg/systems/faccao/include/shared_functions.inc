@@ -2268,7 +2268,9 @@ function CreateEmptyResourceStruct()
         madeira := 0,
         pano := 0,
         pedras := 0,
-        joias := 0     
+        joias := 0,     
+        populacao := 0,
+        moral := 100 // Moral começa em 100%
     };
     return recursos;
 endfunction

@@ -1,3 +1,5 @@
+// :faccao:spawndecampeao/scripts/totem_watcher.src
+
 use uo;
 use os;
 use datafile;
@@ -26,6 +28,12 @@ program TotemWatcher()
         
         var totems_expirados_processados := 0;
         var current_time := polcore().systime;
+        
+        // ==========================================================
+        // LOG ADICIONADO AQUI
+        // ==========================================================
+        LogInfo("TotemLifecycle", "PASSO 3: TotemWatcher acordou. Tempo atual: " + current_time + ". Verificando registros...");
+        // ==========================================================
 
         var totem_registry_df := SafeOpenDataFile(":faccao:totem_registry");
         if (totem_registry_df)
@@ -38,11 +46,18 @@ program TotemWatcher()
                     if (totem_elem)
                         var expiration_time := GetElementProp(totem_elem, "expiration");
                         
-                        if (current_time > CInt(expiration_time))
-                            LogWarning("TotemWatcher", "Registro de totem expirado encontrado! Serial: " + totem_serial_str + ". Processando...");
-                            ProcessExpiredTotemBySerial(CInt(totem_serial_str));
-                            totems_expirados_processados += 1;
-                        endif
+                        // ==========================================================
+                        // LOG ADICIONADO AQUI
+                        // ==========================================================
+                        LogDebug("TotemLifecycle", "  -> Checando totem " + totem_serial_str + ". Expira em: " + expiration_time + ". É " + (current_time > CInt(expiration_time) ? "EXPIRADO" : "VÁLIDO") + ".");
+                        // ==========================================================
+                        
+ if (current_time > CInt(expiration_time))
+        LogWarning("TotemWatcher", "Registro de totem expirado encontrado! Serial: " + totem_serial_str + ". Processando...");
+        // Passamos o ELEMENTO do datafile, que agora contém o territory_id
+        ProcessExpiredTotemBySerial(CInt(totem_serial_str), totem_elem); 
+        totems_expirados_processados += 1;
+    endif
                     endif
                     sleepms(5);
                 endforeach
@@ -57,34 +72,44 @@ program TotemWatcher()
     endwhile
 endprogram
 
-function ProcessExpiredTotemBySerial(totem_serial)
-    var totem := SystemFindObjectBySerial(totem_serial);
-    if (!totem)
-        LogWarning("TotemWatcher", "Totem " + totem_serial + " expirou, mas não foi encontrado no mundo. Apenas limpando o registro.");
+function ProcessExpiredTotemBySerial(totem_serial, totem_registry_element)
+    LogCritical("TotemLifecycle", "PASSO 4: Totem " + totem_serial + " EXPIRADO! Iniciando processo de remoção e reconstrução.");
+
+    // PRIMEIRO, obtemos o ID do território a partir do registro do datafile.
+    // Esta é a informação mais importante.
+    var territory_id := GetElementProp(totem_registry_element, "territory_id");
+    if (!territory_id)
+        LogError("TotemWatcher", "Registro do totem " + totem_serial + " não possui 'territory_id'. Impossível reconstruir. Apenas limpando o registro.");
         DeleteDatafileEntry(":faccao:totem_registry", CStr(totem_serial));
         return;
     endif
 
-    var territory_id := GetObjProperty(totem, "TerritoryID");
-    if (!territory_id)
-        LogError("TotemWatcher", "Totem expirado " + totem.serial + " não possui 'TerritoryID'. Impossível reconstruir. Apenas destruindo o totem.");
-        DestroyItem(totem);
-        DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial));
-        return;
+    // SEGUNDO, tentamos encontrar e destruir o item do totem no mundo.
+    // Se ele não for encontrado, não é um problema, pois já temos o territory_id.
+    var totem_item := SystemFindObjectBySerial(totem_serial);
+    if (totem_item)
+        LogInfo("TotemWatcher", "Destruindo item do totem expirado " + totem_item.serial + " para o território " + territory_id);
+        DestroyItem(totem_item);
+        LogCritical("TotemLifecycle", "PASSO 5B: Item do totem " + totem_serial + " DESTRUÍDO do mundo.");
+    else
+        LogWarning("TotemWatcher", "Item do totem " + totem_serial + " expirou, mas não foi encontrado no mundo.");
+        LogCritical("TotemLifecycle", "PASSO 5A: Item do totem " + totem_serial + " não existe mais no mundo.");
     endif
 
-    LogInfo("TotemWatcher", "Destruindo totem expirado " + totem.serial + " para o território " + territory_id);
-    DestroyItem(totem);
-    
-    // IMPORTANTE: Remover do registro ANTES de tentar reconstruir
-    DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial));
+    // TERCEIRO, removemos o registro do datafile.
+    DeleteDatafileEntry(":faccao:totem_registry", CStr(totem_serial));
+    LogCritical("TotemLifecycle", "PASSO 6: Registro do totem " + totem_serial + " REMOVIDO do datafile.");
 
+    // QUARTO, iniciamos a reconstrução usando o territory_id que obtivemos do registro.
     LogInfo("TotemWatcher", "Iniciando reconstrução do Champion Spawn para o território " + territory_id);
+    LogCritical("TotemLifecycle", "PASSO 7: Chamando RebuildChampionSpawn para o território " + territory_id + "...");
     var rebuild_success := RebuildChampionSpawn(territory_id);
 
     if (rebuild_success)
         LogInfo("TotemWatcher", "Reconstrução para " + territory_id + " concluída com sucesso.");
+        LogCritical("TotemLifecycle", "PASSO 8: Reconstrução para " + territory_id + " CONCLUÍDA.");
     else
         LogError("TotemWatcher", "FALHA ao reconstruir Champion Spawn para " + territory_id);
+        LogCritical("TotemLifecycle", "PASSO 8: FALHA na reconstrução para " + territory_id + ".");
     endif
 endfunction

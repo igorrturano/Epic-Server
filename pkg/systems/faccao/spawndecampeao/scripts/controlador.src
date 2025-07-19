@@ -88,19 +88,32 @@ function StartEvent(altar, spawn_cfg)
     LogCritical("StartEvent", "==========================================================");
     LogCritical("StartEvent", "FUNÇÃO START EVENT INICIADA PARA O ALTAR " + altar.serial);
     
-    // PARTE 1: RESTAURAÇÃO DE ESTADO (se o servidor reiniciou no meio do evento)
-    var boss_serial_on_restart := GetObjProperty(altar, "champ_serial");
-    if (boss_serial_on_restart)
-        var boss_on_restart := SystemFindObjectBySerial(CInt(boss_serial_on_restart));
-        if (boss_on_restart && !boss_on_restart.dead)
-            LogCritical("StartEvent", "RECONEXÃO: Boss " + boss_serial_on_restart + " já existe. O sistema de DeathScript irá lidar com a morte dele.");
-            // Não precisamos mais do MonitorBoss, então apenas deixamos o evento continuar
-        else
-            EraseObjProperty(altar, "champ_serial");
-        endif
-    endif
+// PARTE 1: RESTAURAÇÃO DE ESTADO (se o servidor reiniciou no meio do evento)
+var boss_serial_on_restart := GetObjProperty(altar, "champ_serial");
+if (boss_serial_on_restart)
+    var boss_on_restart := SystemFindObjectBySerial(CInt(boss_serial_on_restart));
+    if (boss_on_restart && !boss_on_restart.dead)
+        // ==========================================================
+        // >>>>> CORREÇÃO APLICADA AQUI <<<<<
+        // ==========================================================
+        LogCritical("StartEvent", "RECONEXÃO: Boss " + boss_serial_on_restart + " sobreviveu ao reboot. Reiniciando monitoramento de abandono.");
+        
+        // Inicia um novo script vigia para o boss existente
+        var params := struct;
+        params.+altar := altar;
+        params.+boss := boss_on_restart;
+        params.+spawn_cfg := spawn_cfg;
+        start_script(":faccao:spawndecampeao/scripts/monitor_boss", params);
 
-    ActivateAltar(altar);
+        // O trabalho desta função acaba aqui para este altar. O vigia assume.
+        return; // IMPORTANTE: Encerra a função para não iniciar ondas em cima do boss.
+        // ==========================================================
+    else
+        EraseObjProperty(altar, "champ_serial");
+    endif
+endif
+
+    CS_ActivateAltar(altar);
     
     var total_waves := spawn_cfg.waves.size();
     if (total_waves < 1)

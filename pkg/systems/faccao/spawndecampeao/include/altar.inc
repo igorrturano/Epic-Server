@@ -55,7 +55,7 @@ function ShowBossTimer(altar)
     return 1;
 endfunction
 
-function ActivateAltar(altar)
+function CS_ActivateAltar(altar)
     SetObjProperty(altar, "#active", 1);
     
     // Limpa itens órfãos de reinicializações anteriores
@@ -67,7 +67,7 @@ function ActivateAltar(altar)
 endfunction
 
 // DeactivateAltar com limpeza SEGURA e ROBUSTA e SINTAXE CORRETA
-function DeactivateAltar(altar, cooldown)
+function CS_DeactivateAltar(altar, cooldown)
     LogInfo("ChampSpawn", "Desativando altar " + altar.serial);
     
     EraseObjProperty(altar, "#active");
@@ -275,7 +275,7 @@ function VerifyAllSkulls(altar, total_waves)
     LogInfo("ChampSpawn", "Verificação concluída - Total de caveiras: " + skulls.size());
 endfunction
 
-function GetRedSkullLocation(altar, index)
+function CS_GetRedSkullLocation(altar, index)
     var x, y;
     
     // Lógica para um quadrado 5x5 perfeito (16 caveiras)
@@ -421,7 +421,7 @@ function CreateRedSkull(altar)
     var skulls := (TypeOf(skulls_prop) == "Array") ? skulls_prop : array{};
 
     if (skulls.size() < level)
-        var location := GetRedSkullLocation(altar, level);
+        var location := CS_GetRedSkullLocation(altar, level);
         
         var red_skull := CreateItemAtLocation(location[1], location[2], location[3], 0x1854, 1, altar.realm);
         
@@ -505,7 +505,7 @@ function FinalCleanup(altar, spawn_cfg, reason := "completed")
     else
         LogWarning("FinalCleanup", "Motivo desconhecido '" + reason + "'. Executando limpeza padrão com cooldown.");
         var cooldown_time := spawn_cfg.cooldown;
-        DeactivateAltar(altar, cooldown_time);
+        CS_DeactivateAltar(altar, cooldown_time);
     endif
 
     LogInfo("FinalCleanup", "--> PASSO FINAL: Liberando a trava de PID do controlador");
@@ -641,4 +641,139 @@ function KillAndVanish(mobile)
         LogCritical("KillAndVanish", "==========================================================");
         return 0;
     endif
+endfunction
+
+
+
+
+function GetSpawnLocation(altar)
+    var spawn_radius := 15;
+    var min_dist := 3;
+    
+    // Primeiro, tenta encontrar posições válidas usando verificação mais inteligente
+    for attempt := 1 to 100
+        var angle := (RandomInt(628) / 100.0); // 0 a 2π radianos
+        var dist := min_dist + (RandomInt(spawn_radius - min_dist));
+        
+        var x_offset := CInt(dist * Sin(angle));
+        var y_offset := CInt(dist * Cos(angle));
+        
+        var x := altar.x + x_offset;
+        var y := altar.y + y_offset;
+        var z := altar.z - 5; // Altura do chão da arena
+        
+        // Verificação mais rápida e eficiente
+        if (IsValidSpawnLocationFast(x, y, z, altar.realm))
+            LogDebug("ChampSpawn", "Local de spawn encontrado em " + attempt + " tentativas: " + x + "," + y + "," + z);
+            return array{x, y, z};
+        endif
+        
+        sleepms(2);
+    endfor
+    
+    // Se não encontrou após 100 tentativas, usa grid sistemático
+    LogWarning("ChampSpawn", "Tentativas aleatórias falharam, usando busca em grid...");
+    
+    for radius := 3 to 20
+        for angle := 0 to 359
+            if (angle % 15 != 0)
+                continue;
+            endif
+            
+            var rad := angle * 0.0174533; // Converte para radianos
+            var x := altar.x + CInt(radius * Sin(rad));
+            var y := altar.y + CInt(radius * Cos(rad));
+            var z := altar.z - 5;
+            
+            if (IsValidSpawnLocationFast(x, y, z, altar.realm))
+                LogDebug("ChampSpawn", "Local encontrado via grid: " + x + "," + y + "," + z);
+                return array{x, y, z};
+            endif
+        endfor
+    endfor
+    
+    // Último recurso: posições fixas conhecidas como válidas
+    LogWarning("ChampSpawn", "Usando posição de fallback final...");
+    var fallback_positions := array{
+        array{altar.x + 10, altar.y, altar.z - 5},
+        array{altar.x - 10, altar.y, altar.z - 5},
+        array{altar.x, altar.y + 10, altar.z - 5},
+        array{altar.x, altar.y - 10, altar.z - 5},
+        array{altar.x + 8, altar.y + 8, altar.z - 5},
+        array{altar.x - 8, altar.y - 8, altar.z - 5}
+    };
+    
+    foreach pos in fallback_positions
+        if (IsValidSpawnLocationFast(pos[1], pos[2], pos[3], altar.realm))
+            LogDebug("ChampSpawn", "Usando fallback válido: " + pos[1] + "," + pos[2] + "," + pos[3]);
+            return pos;
+        endif
+    endforeach
+    
+    // Se absolutamente nada funcionou, força uma posição
+    LogCritical("ChampSpawn", "FORÇANDO posição de spawn - pode haver problemas!");
+    return array{altar.x + 15, altar.y + 15, altar.z - 5};
+endfunction
+
+function IsValidSpawnLocationFast(x, y, z, realm)
+    // Verificação básica de mapa primeiro (mais rápida)
+    var mapinfo := GetMapInfo(x, y);
+    if (!mapinfo)
+        return 0;
+    endif
+    
+    // Verifica se não é água (tiles de água comuns)
+    var landtile := mapinfo.landtile;
+    if (landtile >= 168 && landtile <= 171) // Água
+        return 0;
+    endif
+    if (landtile >= 310 && landtile <= 311) // Mais tipos de água
+        return 0;
+    endif
+    
+    // Verifica itens estáticos próximos (mais eficiente que ListItems)
+    var statics := ListStaticsAtLocation(x, y, z);
+    if (statics.size() > 0)
+        foreach static_item in statics
+            // Verifica se é um item que bloqueia movimento
+            if (static_item.z >= z && static_item.z <= z + 10)
+                return 0;
+            endif
+        endforeach
+    endif
+    
+    // Verificação rápida de NPCs próximos (raio menor)
+    var nearby_npcs := ListMobilesNearLocation(x, y, z, 1, realm);
+    if (nearby_npcs.size() > 0)
+        return 0;
+    endif
+    
+    return 1;
+endfunction
+
+function IsValidSpawnLocation(x, y, z, realm)
+    var mapinfo := GetMapInfo(x, y);
+    if (!mapinfo || mapinfo.landtile == error)
+        return 0;
+    endif
+    
+    if (mapinfo.landtile == 168 || mapinfo.landtile == 169)
+        return 0;
+    endif
+    
+    var nearby_npcs := ListMobilesNearLocation(x, y, z, 2, realm);
+    foreach npc in nearby_npcs
+        if (!npc.acctname)
+            return 0;
+        endif
+    endforeach
+    
+    var nearby_items := ListItemsNearLocation(x, y, z, 1, realm);
+    foreach item in nearby_items
+        if (!item.movable)
+            return 0;
+        endif
+    endforeach
+    
+    return 1;
 endfunction

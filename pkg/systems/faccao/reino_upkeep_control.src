@@ -122,6 +122,27 @@ endfunction
 function AplicarPenalidades(guild, pontos)
     var guild_name := SafeGetGuildName(guild);
     
+    // ==========================================================
+    // >>>>> ADIÇÃO DA PENALIDADE DE MORAL <<<<<
+    // ==========================================================
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    var elem_name := NormalizarNomeElementoFaccao(guild_name);
+    if (df && elem_name != error)
+        var elem := SafeFindElement(df, elem_name, 1);
+        var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+        
+        // Penalidade severa de moral por inadimplência
+        var moral_penalty := 25 * pontos;
+        recursos.moral := CInt(recursos.moral) - moral_penalty;
+        if (recursos.moral < 0) // Moral não pode ser negativa
+            recursos.moral := 0;
+        endif
+        
+        SetElementProp(elem, "recursos", recursos);
+        LogWarning("upkeep_penalty", guild_name + " perdeu " + moral_penalty + " de Moral por inadimplência. Moral atual: " + recursos.moral);
+    endif
+    // ==========================================================
+    
     // STRIKE 3 (ou mais): Perda de Território
     if (pontos >= 3)
         LogCritical("upkeep_penalty", "STRIKE 3: " + guild_name + " atingiu " + pontos + " pontos de inadimplência. PENALIDADE MÁXIMA ativada.");

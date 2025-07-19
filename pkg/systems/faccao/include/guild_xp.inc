@@ -442,7 +442,31 @@ function GuildLevelUp(guild, new_level, old_level, guild_culture := "")
     
     // Aplicar benefícios do novo nível
     ApplyGuildLevelBenefits(guild, new_level, guild_culture);
-    
+    // ==========================================================
+    // >>>>> ADIÇÃO DA LÓGICA DE POPULAÇÃO E MORAL <<<<<
+    // ==========================================================
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    var elem_name := NormalizarNomeElementoFaccao(guild_name);
+    if (df && elem_name != error)
+        var elem := SafeFindElement(df, elem_name, 1);
+        var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+        
+        // Bônus de população e moral por subir de nível
+        var populacao_bonus := 25 * new_level;
+        var moral_bonus := 10;
+        
+        recursos.populacao := CInt(recursos.populacao) + populacao_bonus;
+        recursos.moral := CInt(recursos.moral) + moral_bonus;
+        if (recursos.moral > 100) // Limita a moral a 100%
+            recursos.moral := 100;
+        endif
+        
+        SetElementProp(elem, "recursos", recursos);
+        LogInfo("guild_xp", guild_name + " ganhou +" + populacao_bonus + " de População e +" + moral_bonus + " de Moral por atingir o Nível " + new_level);
+    endif
+    // ==========================================================
+
+    LogInfo("guild_xp", "Verificando territórios da facção '" + guild_name + "' para expansão para o Nível " + new_level);
     LogInfo("guild_xp", "Guild " + guild_name + " subiu para " + level_name + " (Nível " + new_level + ")!");
     
     // ====================================================================

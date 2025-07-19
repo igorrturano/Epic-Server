@@ -225,10 +225,15 @@ function ReinoGump(byref gump, item, who := 0)
         LogCritical("CULTURA_DEBUG", "================================");
         // ======== FIM DEBUG CULTURA ========
         
-        GFResizePic(gump, 460, 110, 9350, 320, 185); 
-        GFTextMid(gump, 460, 115, 320, 2100, "Progresso do Reino");
+         // ==========================================================
+        // >>>>> ÁREA DO LAYOUT AJUSTADA <<<<<
+        // ==========================================================
+        
+        // Posição inicial do quadrado principal (subiu 40 pixels de 110 para 70)
+        GFResizePic(gump, 460, 70, 9350, 320, 225); // Altura aumentada para comportar as novas linhas
+        GFTextMid(gump, 460, 75, 320, 2100, "Progresso do Reino");
 
-        var y_reino := 135;
+        var y_reino := 95; // Posição inicial dos textos
         var x_label := 470;
         var x_value := 580;
 
@@ -237,9 +242,7 @@ function ReinoGump(byref gump, item, who := 0)
         y_reino += 20;
 
         if (xp_info.culture)
-            // ===== MUDANÇA CRÍTICA: USA A NOVA FUNÇÃO DE FORMATAÇÃO =====
             var cultura_display := FormatCultureForDisplay(xp_info.culture);
-            
             GFTextLine(gump, x_label, y_reino, 2100, "Cultura:");
             GFTextLine(gump, x_value, y_reino, 1153, cultura_display);
             y_reino += 20;
@@ -256,8 +259,34 @@ function ReinoGump(byref gump, item, who := 0)
         var weekly_cost := CalcularCustoUpkeep(guild, territories);
         GFTextLine(gump, x_label, y_reino, 2100, "Custo Semanal:");
         GFTextLine(gump, x_value, y_reino, 1153, CStr(weekly_cost) + " cobre");
-        y_reino += 25;
+        y_reino += 20;
 
+        // --- POPULAÇÃO E MORAL NA MESMA LINHA ---
+        var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+        var elem_name := NormalizarNomeElementoFaccao(mesa_faction);
+        var populacao := "N/A";
+        var moral := "N/A";
+
+        if(df && elem_name != error)
+            var elem := SafeFindElement(df, elem_name);
+            if (elem)
+                var recursos := GetElementProp(elem, "recursos", 0);
+                if (recursos)
+                    populacao := CStr(CInt(recursos.populacao));
+                    moral := CStr(CInt(recursos.moral)) + "%";
+                endif
+            endif
+        endif
+
+        // Layout na mesma linha
+        GFTextLine(gump, x_label, y_reino, 2100, "População:");
+        GFTextLine(gump, x_label + 70, y_reino, 1153, populacao);
+        
+        GFTextLine(gump, x_label + 150, y_reino, 2100, "Moral:");
+        GFTextLine(gump, x_label + 200, y_reino, 1153, moral);
+        y_reino += 25; // Espaçamento após a linha dupla
+
+        // Barra de progresso
         if (!xp_info.is_max_level)
             GFResizePic(gump, x_label, y_reino, 9200, 280, 20);         
             var progress_width := CInt((xp_info.progress_percentage * 280) / 100);
@@ -276,6 +305,10 @@ function ReinoGump(byref gump, item, who := 0)
             GFTextLine(gump, x_label, y_divida, 38, "Dívida de UpKeep: " + divida_acumulada);
             GFAddButton(gump, x_label + 200, y_divida - 5, 2074, 2075, GF_CLOSE_BTN, 999);
         endif
+        
+        // ==========================================================
+        // >>>>> FIM DOS AJUSTES DE LAYOUT <<<<<
+        // ==========================================================
     endif
 
 var rect_df := SafeOpenDataFile(":architect:areas");

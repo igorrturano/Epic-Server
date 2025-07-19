@@ -161,6 +161,19 @@ endfunction
  * Return:
  *   1 em caso de sucesso, 0 em caso de falha.
  */
+// :faccao:spawndecampeao/include/arena.inc (FUNÇÃO RebuildChampionSpawn CORRIGIDA)
+
+/*
+ * RebuildChampionSpawn(territory_id)
+ *
+ * Purpose: Reconstrói a arena e o altar de um Champion Spawn em um território.
+ *          VERSÃO CORRIGIDA: Agora lê as informações do território e as aplica
+ *          corretamente ao novo altar para garantir que ele continue sendo territorial.
+ * Parameters:
+ *   territory_id - O ID único do território onde o spawn será reconstruído.
+ * Return:
+ *   1 em caso de sucesso, 0 em caso de falha.
+ */
 function RebuildChampionSpawn(territory_id)
     // 1. Encontrar as informações do território para obter a localização e o tipo de champion
     var territory_elem := TM_FindTerritory(territory_id);
@@ -170,9 +183,13 @@ function RebuildChampionSpawn(territory_id)
     endif
 
     // 2. Garantir que o território está marcado como Selvagem (segurança)
-    SetTerritoryFaction(territory_elem, DEFAULT_FACTION);
+    TM_SetTerritoryFaction(territory_elem, DEFAULT_FACTION);
 
-    // 3. Obter as informações necessárias para a reconstrução
+    // ==========================================================
+    // >>>>> INÍCIO DA CORREÇÃO <<<<<
+    // ==========================================================
+
+    // 3. Obter as informações NECESSÁRIAS do elemento do território
     var champion_type := GetElementProp(territory_elem, "ChampionType");
     var territory_name := GetElementProp(territory_elem, "Name");
     var center_info := TM_GetTerritoryCenter(territory_id);
@@ -206,11 +223,16 @@ function RebuildChampionSpawn(territory_id)
         return 0;
     endif
 
-    // 7. Configurar o novo altar
+    // 7. Configurar o novo altar com TODAS as informações necessárias
     SetObjProperty(altar, "ChampionConfig", altar_config);
-    SetObjProperty(altar, "TerritoryName", territory_name);
-    SetObjProperty(altar, "IsTerritorChampion", 1);
+    SetObjProperty(altar, "IsTerritorChampion", 1); // Marca como territorial
+    SetObjProperty(altar, "TerritoryName", territory_name); // Copia o nome do território
+    SetObjProperty(altar, "TerritoryID", territory_id); // Copia o ID do território
 
+    // ==========================================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ==========================================================
+    
     LogInfo("RebuildChampion", "Champion Spawn para o território '" + territory_name + "' foi reconstruído e está pronto para ser ativado.");
     return 1;
 endfunction

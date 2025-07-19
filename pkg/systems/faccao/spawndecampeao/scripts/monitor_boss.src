@@ -1,5 +1,4 @@
-// :faccao:spawndecampeao/scripts/monitor_boss.src
-// Este script monitora um único chefe de Champion Spawn após ele ser criado.
+// :faccao:spawndecampeao/scripts/monitor_boss.src (VERSÃO COM LOGS PERIÓDICOS DE ABANDONO)
 
 use uo;
 use os;
@@ -23,36 +22,63 @@ program monitor_boss(params)
     LogCritical("MonitorBoss", "MONITORAMENTO INICIADO para Boss " + boss_serial + " no Altar " + altar.serial);
     const BOSS_ABANDONED_TIMEOUT := 300; // 5 minutos de tolerância para abandono
 
+    // ==========================================================
+    // >>>>> MUDANÇA APLICADA AQUI <<<<<
+    // ==========================================================
+    var last_log_time := 0; // Controla o tempo do último log de aviso
+    // ==========================================================
+
     while (1)
         var boss_obj := SystemFindObjectBySerial(boss_serial);
 
-        // CONDIÇÃO DE SAÍDA: Se o chefe não existe mais ou está morto, o trabalho do vigia acabou.
         if (!boss_obj || boss_obj.dead)
             LogCritical("MonitorBoss", "Boss " + boss_serial + " não existe mais ou está morto. Encerrando monitoramento.");
-            // A lógica de morte (DeathScript) cuidará do resto.
             return 1;
         endif
 
         // LÓGICA DE ABANDONO
         if (CountPlayers(altar, spawn_cfg.player_radius) == 0)
+            var current_time := ReadGameClock();
             var last_seen := CInt(GetObjProperty(altar, "#last_player_seen"));
+            
             if (!last_seen)
-                last_seen := ReadGameClock();
+                last_seen := current_time;
                 SetObjProperty(altar, "#last_player_seen", last_seen);
+                LogWarning("MonitorBoss", "Nenhum jogador na área. Timer de abandono de 5 minutos INICIADO para boss " + boss_serial);
+                last_log_time := current_time; // Inicia o contador de log
             endif
             
-            if ((ReadGameClock() - last_seen) > BOSS_ABANDONED_TIMEOUT)
+            var time_elapsed := current_time - last_seen;
+            
+            // ==========================================================
+            // >>>>> MUDANÇA APLICADA AQUI <<<<<
+            // ==========================================================
+            // Log a cada 60 segundos
+            if (current_time - last_log_time >= 60)
+                var minutes_remaining := CInt((BOSS_ABANDONED_TIMEOUT - time_elapsed) / 60);
+                if (minutes_remaining > 0)
+                    LogWarning("MonitorBoss", "Área do boss " + boss_serial + " vazia. Reset em aprox. " + minutes_remaining + " minuto(s)...");
+                else
+                    LogWarning("MonitorBoss", "Área do boss " + boss_serial + " vazia. Reset iminente...");
+                endif
+                last_log_time := current_time;
+            endif
+            // ==========================================================
+            
+            if (time_elapsed > BOSS_ABANDONED_TIMEOUT)
                 LogCritical("MonitorBoss", "EVENTO: Boss ABANDONADO. Timeout de " + BOSS_ABANDONED_TIMEOUT + "s atingido.");
-                // Chama as funções de limpeza e abandono
                 KillAndVanish(boss_obj);
                 FinalCleanup(altar, spawn_cfg, "abandoned");
-                return 0; // Encerra o script
+                return 0;
             endif
         else
             // Jogadores estão perto, reseta o timer de abandono
-            EraseObjProperty(altar, "#last_player_seen");
+            if (GetObjProperty(altar, "#last_player_seen"))
+                LogInfo("MonitorBoss", "Jogadores retornaram para a área do boss " + boss_serial + ". Timer de abandono cancelado.");
+                EraseObjProperty(altar, "#last_player_seen");
+            endif
         endif
         
-        sleep(10); // Verifica a cada 10 segundos
+        sleep(10);
     endwhile
 endprogram
