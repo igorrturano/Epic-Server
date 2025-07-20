@@ -511,8 +511,10 @@ function GetFormattedBossInfo(dungeon_elem, realm)
     var info := struct{
         "bosses" := array{},
         "truebosses" := array{},
+        "epicbosses" := array{},
         "boss_str" := "",
-        "trueboss_str" := ""
+        "trueboss_str" := "",
+        "epicboss_str" := ""
     };
     
     var rects := GetDungeonRects(dungeon_elem);
@@ -537,6 +539,7 @@ function GetFormattedBossInfo(dungeon_elem, realm)
             
             var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
             foreach item in items
+                // Tratamento para Spawn Point
                 if (item.name == "Spawn Point")
                     var unique_prop := GetObjProperty(item, "unique");
                     var unique_stat := GetObjProperty(item, "uniquestat");
@@ -607,6 +610,42 @@ function GetFormattedBossInfo(dungeon_elem, realm)
                         
                         info.bosses.append(boss_info);
                     endif
+                
+                // Tratamento para Epic Boss
+                elseif (item.name == "Epic! Boss Spawner")
+                    var bossStruct := GetObjProperty(item, "BossStruct");
+                    if (!bossStruct || bossStruct.errortext)
+                        continue;
+                    endif
+                    
+                    var epicboss_info := struct{
+                        "name" := bossStruct.name,
+                        "trueboss" := bossStruct.trueboss ? 1 : 0,
+                        "loot" := array{},
+                        "location" := struct{
+                            "x" := item.x,
+                            "y" := item.y,
+                            "z" := item.z
+                        }
+                    };
+                    
+                    if (bossStruct.loot && bossStruct.loot.size() > 0)
+                        foreach loot_item in (bossStruct.loot)
+                            if (loot_item.desc && loot_item.drop_chance)
+                                epicboss_info.loot.append(struct{
+                                    "name" := loot_item.desc,
+                                    "chance" := loot_item.drop_chance
+                                });
+                            endif
+                        endforeach
+                    endif
+                    
+                    // Se for trueboss, adiciona na lista de truebosses também
+                    if (bossStruct.trueboss)
+                        info.truebosses.append(epicboss_info);
+                    endif
+                    
+                    info.epicbosses.append(epicboss_info);
                 endif
                 sleepms(2);
             endforeach
@@ -614,6 +653,7 @@ function GetFormattedBossInfo(dungeon_elem, realm)
         sleepms(2);
     endforeach
     
+    // Gerar string para bosses normais
     if (info.bosses.size() > 0)
         info.boss_str := "Bosses(loot): ";
         foreach boss in (info.bosses)
@@ -632,6 +672,7 @@ function GetFormattedBossInfo(dungeon_elem, realm)
         info.boss_str := "Bosses(loot): Nenhum boss encontrado";
     endif
     
+    // Gerar string para truebosses
     if (info.truebosses.size() > 0)
         info.trueboss_str := "TrueBosses(loot): ";
         foreach boss in (info.truebosses)
@@ -648,6 +689,28 @@ function GetFormattedBossInfo(dungeon_elem, realm)
         endforeach
     else
         info.trueboss_str := "TrueBosses(loot): Nenhum trueboss encontrado";
+    endif
+    
+    // Gerar string para epicbosses
+    if (info.epicbosses.size() > 0)
+        info.epicboss_str := "EpicBosses(loot): ";
+        foreach boss in (info.epicbosses)
+            info.epicboss_str += boss.name;
+            if (boss.trueboss)
+                info.epicboss_str += " ✔️";
+            endif
+            if (boss.loot.size() > 0)
+                info.epicboss_str += "(";
+                foreach item in (boss.loot)
+                    info.epicboss_str += item.name + " " + item.chance + "%, ";
+                endforeach
+                info.epicboss_str := info.epicboss_str[1, len(info.epicboss_str)-2];
+                info.epicboss_str += ")";
+            endif
+            info.epicboss_str += " [X: " + boss.location.x + ", Y: " + boss.location.y + ", Z: " + boss.location.z + "]  ";
+        endforeach
+    else
+        info.epicboss_str := "EpicBosses(loot): Nenhum epicboss encontrado";
     endif
     
     return info;
@@ -1048,7 +1111,7 @@ function GetChestSpawnerInfo(dungeon_elem, realm)
             var y1 := CInt(coords[2]);
             var x2 := CInt(coords[3]);
             var y2 := CInt(coords[4]);
-            
+
             if (x1 > x2)
                 var temp := x1;
                 x1 := x2;
@@ -1059,40 +1122,46 @@ function GetChestSpawnerInfo(dungeon_elem, realm)
                 y1 := y2;
                 y2 := temp;
             endif
-            
+
             var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
             foreach item in items
                 if (GetObjProperty(item, "IsChestSpawner"))
                     var amount := CInt(GetObjProperty(item, "amount"));
                     if (!amount)
-                        amount := 1;
+                        amount := CInt(GetObjProperty(item, "epic_amount"));
                     endif
-                    
+
                     info.total := info.total + amount;
-                    
+
                     var loot_type := GetObjProperty(item, "class");
+					if (!loot_type)
+						loot_type := GetObjProperty(item, "epic_chest_type");
+					endif
                     if (loot_type)
                         info.types[loot_type] := CInt(info.types[loot_type]) + amount;
                     endif
-                    
-                    var level := CStr(GetObjProperty(item, "level"));
+
+                    var level := Cint(GetObjProperty(item, "level"));
+					if (!level)
+						level := Cint(GetObjProperty(item, "epic_level"));
+					endif
                     if (level)
                         info.levels[level] := CInt(info.levels[level]) + amount;
                     endif
-                endif
-                sleepms(2);
+					sleepms(2);
+				endif
             endforeach
         endif
         sleepms(2);
     endforeach
-    
+
     foreach type in (info.types.keys())
         if (info.types_str != "")
             info.types_str := info.types_str + ", ";
         endif
         info.types_str := info.types_str + type + "(" + info.types[type] + ")";
     endforeach
-    
+
     var level_keys := info.levels.keys();
     level_keys.sort();
     foreach level in (level_keys)
@@ -1101,7 +1170,7 @@ function GetChestSpawnerInfo(dungeon_elem, realm)
         endif
         info.levels_str := info.levels_str + level + "(" + info.levels[level] + ")";
     endforeach
-    
+
     return info;
 endfunction
 
