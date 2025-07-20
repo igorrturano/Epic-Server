@@ -13,12 +13,9 @@ program combatEventsControl(params)
     
     // Check if this is a boss
     if (!GetObjProperty(npc, "IsBoss"))
-        print("DEBUG: Not a boss, exiting CombatEventsControl for " + npc.name);
         return 0;
     endif
 
-    print("DEBUG: Combat Events controller started for " + npc.name);
-    
     // Initialize tracking for combat events
     SetupCombatEventTracking(npc);
     
@@ -46,11 +43,8 @@ function SetupCombatEventTracking(npc)
     var combat_events := GetObjProperty(npc, "CombatEvents");
     
     if (!combat_events || !combat_events.size())
-        print("DEBUG: No combat events found for " + npc.name);
         return;
     endif
-    
-    print("DEBUG: Found " + combat_events.size() + " combat events for " + npc.name);
     
     // Initialize last cast times for each event
     var last_cast_times := dictionary{};
@@ -60,7 +54,6 @@ function SetupCombatEventTracking(npc)
     
     // Store the last cast times
     SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
-    print("DEBUG: Combat event tracking initialized");
 endfunction
 
 /*
@@ -128,7 +121,6 @@ function ProcessCombatEvents(npc)
         endif
         
         // All conditions met, execute the event
-        print("DEBUG: Executing combat event: " + event.name);
         
         // Execute the event using the function from epicCombatEvents.inc
         if (ExecuteCombatEvent(npc, event, event_actions))
