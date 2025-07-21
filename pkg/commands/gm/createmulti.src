@@ -1,7 +1,3 @@
-/*
- * $Id: lkill.src 87 2006-05-23 19:04:43Z sroyalty $
- *
- */
 use uo;
 
 include ":attributes:attributes";
@@ -9,13 +5,37 @@ include "include/sounds";
 include ":fls_core:packets";
 
 program textcmd_Kill(who, text)
-	SendSysMessage(who, "Select a target to create multi.");
-	var targ := TargetMultiplacement(who, text);
-    var ship := CreateMultiAtLocation(targ.x, targ.y, targ.z, text, 0x0007, who.realm);
-    SendSysMessage(who, "multi: " + ship);
+    SendSysMessage(who, "Verificando se eh barco para tentar criar.");
+    var targ := TargetMultiplacement(who, text);
+    if(!targ)
+        SendSysMessage(who, "Nao eh barco.");
+    else
+        var ship := CreateMultiAtLocation(targ.x, targ.y, targ.z, text, 0x0007, who.realm);
+        SendSysMessage(who, "Multi (barco): " + ship);
+        return 1;
+    endif
 
-    if (!ship)
-        PrintTextAbovePrivate(who, "I can't place the multi there.", who);
+    var opt := SplitWords(text);
+    if(!opt)
+        return 0;
+    endif
+
+    SendSysMessage(who, "Escolha onde quer colocar o Multi.");
+    var dims := GetMultiDimensions(CInt(opt[1])); //Returns struct with coords of _relative_ distances from center. xmin and ymin are _negative_
+    if(!dims)
+        SendSysMessage(who, "Multi com tamanho invalido.");
+        return 0;
+    endif
+
+    var loc := TargetMultiPlacement( who, opt[1], 0, 0, dims.ymax);
+    if(!loc)
+        SendSysMessage(who, "Local invalido para o Multi.");
+        return 0;
+    endif
+
+    var multi := CreateMultiAtLocation( loc.x, loc.y - dims.ymax, loc.z, opt[1], 0, who.realm);
+    if (!multi)
+        PrintTextAbovePrivate(who, "Nao conseguiu colocar o multi" + CStr(CInt(Opt[1])) + ".", who);
         return 0;
     endif
     return 1;

@@ -64,7 +64,28 @@ program apagar_todos_territorios(who)
         
         sleepms(10);
     endforeach;
-    
+     SendSysMessage(who, "FASE 2: Validando estado final de todas as facções...");
+    LogInfo("territorio", "Iniciando varredura final para resetar reinos sem território.");
+
+    var reinos_resetados := 0;
+    var all_guilds := ListGuilds();
+
+    foreach guild in all_guilds
+        var guild_name := SafeGetGuildName(guild);
+        if (guild_name && guild_name != "Unknown Guild")
+            // Usamos GetFactionTerritoryCount que lê DIRETAMENTE de :architect:areas.
+            // Como o datafile está vazio, o resultado será 0 para todas as facções.
+            var territory_count := GetFactionTerritoryCount(guild_name);
+            
+            if (territory_count == 0)
+                // FORÇAMOS o reset do reino.
+                ResetKingdomLevelAndXP(guild);
+                reinos_resetados += 1;
+                LogWarning("territorio", "VALIDAÇÃO FINAL: Facção '" + guild_name + "' encontrada sem territórios. Nível e XP resetados.");
+            endif
+        endif
+        sleepms(20); // Pausa para não sobrecarregar
+    endforeach;
     // 5. LIMPEZA FINAL DOS DATAFILES DE SERIAIS E TRANSAÇÕES (VERSÃO CORRIGIDA)
     LogInfo("territorio", "Iniciando limpeza dos datafiles :faccao:seriais e :faccao:transacoes...");
 
@@ -97,15 +118,15 @@ program apagar_todos_territorios(who)
     endif
     
     // 6. MENSAGEM FINAL
-    SendSysMessage(who, "==================================================");
+     SendSysMessage(who, "==================================================");
     SendSysMessage(who, "LIMPEZA COMPLETA DE TERRITÓRIOS CONCLUÍDA!");
     SendSysMessage(who, "Territórios apagados: " + areas_apagadas);
     SendSysMessage(who, "Objetos de território destruídos: " + obj_destruidos);
-    SendSysMessage(who, "Referências em guildas limpas: " + guilds_limpas);
+    SendSysMessage(who, "Validação final resetou " + reinos_resetados + " reinos."); // <-- NOVA LINHA DE FEEDBACK
     SendSysMessage(who, "Datafiles de seriais e transações limpos.");
     SendSysMessage(who, "==================================================");
     
-    LogInfo("territorio", "[[LIMPEZA GERAL FINALIZADA]] por GM " + who.name + ". Áreas: " + areas_apagadas + ", Objetos: " + obj_destruidos);
+    LogInfo("territorio", "[[LIMPEZA GERAL FINALIZADA]] por GM " + who.name + ". Áreas: " + areas_apagadas + ", Reinos Resetados: " + reinos_resetados);
     
     return 1;
 endprogram

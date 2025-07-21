@@ -236,41 +236,62 @@ endfunction
 
 
 function UpdateTerritorySchedule(territory_id_to_update)
-    LogInfo("ResourceController_Schedule", "Tentando atualizar agenda para ID: " + territory_id_to_update);
+    LogInfo("ResourceController_Schedule", "Atualizando agendamento para ID: " + territory_id_to_update);
     
     var elem := TM_FindTerritory(territory_id_to_update); 
     if (elem)
         var friendly_name_for_log := GetElementProp(elem, "Name", territory_id_to_update); 
         var faction := GetTerritoryFaction(elem);
-        var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
         
+        // Se o território agora pertence a uma facção ativa...
         if (faction && faction != DEFAULT_FACTION)
-            var schedule_time_val := 0;
-            if (next_time_from_prop)
-                schedule_time_val := CInt(next_time_from_prop);
+            
+            // ==========================================================
+            // >>>>> INÍCIO DO REFINAMENTO <<<<<
+            // Substituímos a lógica antiga por esta.
+            // ==========================================================
+            
+            // 1. Lemos AMBOS os timers do território.
+            var next_rare_time := CInt(GetElementProp(elem, "NextResourceTime", 0));
+            var next_common_time := CInt(GetElementProp(elem, "NextCommonResourceTime", 0));
+            
+            // 2. Determinamos qual é o próximo evento real.
+            var next_event_time := 0;
+            if (next_rare_time > 0 && next_common_time > 0)
+                next_event_time := (next_rare_time < next_common_time) ? next_rare_time : next_common_time;
+            elseif (next_rare_time > 0)
+                next_event_time := next_rare_time;
+            elseif (next_common_time > 0)
+                next_event_time := next_common_time;
             endif
 
-            if (schedule_time_val > 0) 
-                LogInfo("ResourceController_Schedule", "Adicionando/Atualizando ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') na agenda. Próximo Check: " + schedule_time_val);
-                next_territory_checks[territory_id_to_update] := schedule_time_val;
+            // 3. Agendamos o território usando o próximo evento.
+            if (next_event_time > 0)
+                next_territory_checks[territory_id_to_update] := next_event_time;
+                LogInfo("ResourceController_Schedule", "Território '" + friendly_name_for_log + "' (re)agendado. Próximo tick em: " + next_event_time);
             else
-                var interval_minutes := GetValidatedResourceInterval(elem);
-                var calculated_next_time := polcore().systime + (interval_minutes * 60);
-                SetElementProp(elem, "NextResourceTime", calculated_next_time); 
-                next_territory_checks[territory_id_to_update] := calculated_next_time;
-                LogInfo("ResourceController_Schedule", "Configurando agendamento inicial para ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') para " + calculated_next_time + " (em " + interval_minutes + " min).");
+                LogWarning("ResourceController_Schedule", "Território '" + friendly_name_for_log + "' não tem timers de recurso configurados. Removendo da lista.");
+                if (next_territory_checks.exists(territory_id_to_update)) next_territory_checks.erase(territory_id_to_update); endif
             endif
+
+            // ==========================================================
+            // >>>>> FIM DO REFINAMENTO <<<<<
+            // ==========================================================
             return 1; 
+        
+        // Se o território agora é Selvagem ou não tem facção...
         else 
             if (next_territory_checks.exists(territory_id_to_update))
-                LogInfo("ResourceController_Schedule", "Removendo ID '" + territory_id_to_update + "' ('" + friendly_name_for_log + "') da agenda (Facção: " + (faction ? faction : "N/A") + " - não ativa para recursos).");
+                LogInfo("ResourceController_Schedule", "Removendo '" + friendly_name_for_log + "' da agenda (não pertence mais a uma facção ativa).");
                 next_territory_checks.erase(territory_id_to_update);
             endif
             return 0; 
         endif
+    
+    // Se o território não foi encontrado no datafile...
     else 
         if (next_territory_checks.exists(territory_id_to_update))
-            LogWarning("ResourceController_Schedule", "Território ID '" + territory_id_to_update + "' não encontrado via TM_FindTerritory. Removendo da agenda.");
+            LogWarning("ResourceController_Schedule", "Território ID '" + territory_id_to_update + "' não encontrado. Removendo da agenda.");
             next_territory_checks.erase(territory_id_to_update);
         endif
         return 0; 
@@ -305,57 +326,86 @@ endfunction
 
 
 function ProcessTerritory(territory_id_param, current_time) 
-    LogDebug("ProcessTerritory_DEBUG", "-- Iniciando ProcessTerritory para ID: " + territory_id_param + " (CurrentTime: " + current_time + ") --");
+    LogDebug("ProcessTerritory", "-- Iniciando ProcessTerritory para ID: " + territory_id_param + " (CurrentTime: " + current_time + ") --");
     
     if (!territory_id_param || TypeOf(territory_id_param) != "String")
-        LogError("ProcessTerritory_DEBUG", "territory_id_param é nulo ou inválido. Tipo: " + TypeOf(territory_id_param));
+        LogError("ProcessTerritory", "territory_id_param é nulo ou inválido. Abortando.");
         return 0;
     endif
 
     var elem := TM_FindTerritory(territory_id_param); 
     if (!elem)
-        LogWarning("ProcessTerritory_DEBUG", "Elemento para ID '" + territory_id_param + "' não encontrado via TM_FindTerritory. Removendo da agenda.");
-        if (next_territory_checks.exists(territory_id_param))
-            next_territory_checks.Erase(territory_id_param);
-        endif
+        LogWarning("ProcessTerritory", "Elemento para ID '" + territory_id_param + "' não encontrado. Removendo da agenda.");
+        if (next_territory_checks.exists(territory_id_param)) next_territory_checks.Erase(territory_id_param); endif
         return 1; 
     endif
 
     var territory_name_for_log := GetElementProp(elem, "Name", territory_id_param);
-    var next_time_val := CInt(GetElementProp(elem, "NextResourceTime"));
-
-    if (next_time_val > current_time)
-        LogDebug("ProcessTerritory_DEBUG", "Território '" + territory_name_for_log + "' (ID: "+territory_id_param+") ainda não está na hora (Next: " + next_time_val + ", Current: " + current_time + "). Reagendando para " + next_time_val + " se necessário.");
-        if (!next_territory_checks.exists(territory_id_param) || next_territory_checks[territory_id_param] != next_time_val)
-             next_territory_checks[territory_id_param] := next_time_val; 
-        endif
+    
+    // ==========================================================
+    // >>>>> INÍCIO DA INTEGRAÇÃO <<<<<
+    // ==========================================================
+    
+    var faction := GetTerritoryFaction(elem);
+    if (!faction || faction == DEFAULT_FACTION)
+        LogDebug("ProcessTerritory", "Território '" + territory_name_for_log + "' é Selvagem. Removendo da agenda.");
+        if (next_territory_checks.exists(territory_id_param)) next_territory_checks.Erase(territory_id_param); endif
         return 1;
     endif
 
-    var faction := GetTerritoryFaction(elem);
-    var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
-    var resources_string := GetElementProp(elem, "Resources");
-    var resources_array := ProcessResourceString(resources_string);
-    
-    var validade := VerificarValidadeDosDados(elem, faction, resources_array, resource_amount);
-    if (!validade.valido)
-        LogError("ProcessTerritory_DEBUG", "Dados inválidos para '" + territory_name_for_log + "' (ID: " + territory_id_param + "): " + validade.mensagem + ". Reagendando com penalidade.");
-        RescheduleTerritoryWithPenalty(territory_id_param, elem, current_time);
-        RegistrarFalhaDeCriacao(elem, faction, territory_name_for_log, resources_string);
-        return 0; 
+    // --- SEÇÃO 1: Processar Recursos RAROS ---
+    var next_rare_time := CInt(GetElementProp(elem, "NextResourceTime"));
+    if (current_time >= next_rare_time)
+        LogInfo("ResourceController", "Tick de recursos RAROS para: " + territory_name_for_log);
+
+        // Sua lógica de validação original, agora aplicada apenas aos recursos raros
+        var rare_amount := CInt(GetElementProp(elem, "ResourceAmount"));
+        var rare_resources_string := GetElementProp(elem, "Resources");
+        var rare_resources_array := ProcessResourceString(rare_resources_string);
+        
+        var validade_rara := VerificarValidadeDosDados(elem, faction, rare_resources_array, rare_amount);
+        if (!validade_rara.valido)
+            LogError("ProcessTerritory", "Dados de recursos RAROS inválidos para '" + territory_name_for_log + "': " + validade_rara.mensagem);
+            RegistrarFalhaDeCriacao(elem, faction, territory_name_for_log, rare_resources_string);
+        else
+            LogInfo("recursos", "Gerando recursos RAROS para território: '" + territory_name_for_log + "'");
+            GenerateResourcesForTerritory(elem, faction, rare_amount); 
+        endif
+        
+        // Reagendamento do tick raro
+        var rare_interval := GetValidatedResourceInterval(elem); // Sua função GetValidatedResourceInterval já existe e é usada aqui.
+        var new_next_rare_time := current_time + (rare_interval * 60);
+        SetElementProp(elem, "NextResourceTime", new_next_rare_time);
+        LogDebug("ProcessTerritory", "Próxima geração RARA para '" + territory_name_for_log + "' agendada.");
+    endif
+
+    // --- SEÇÃO 2: Processar Recursos COMUNS ---
+    var next_common_time := CInt(GetElementProp(elem, "NextCommonResourceTime"));
+    if (current_time >= next_common_time)
+        LogInfo("ResourceController", "Tick de recursos COMUNS para: " + territory_name_for_log);
+        
+        // A função GenerateCommonResources já tem suas próprias validações internas (amount > 0, etc)
+        GenerateCommonResources(elem, faction);
+
+        // Reagendamento do tick comum
+        var common_interval := CInt(GetElementProp(elem, "CommonResourceInterval", 120));
+        var new_next_common_time := current_time + (common_interval * 60);
+        SetElementProp(elem, "NextCommonResourceTime", new_next_common_time);
+        LogDebug("ProcessTerritory", "Próxima geração COMUM para '" + territory_name_for_log + "' agendada.");
     endif
     
-    LogInfo("recursos", "Gerando recursos para território: '" + territory_name_for_log + "' (ID: " + territory_id_param + ")");
-    var success_count := GenerateResourcesForTerritory(elem, faction, resource_amount); 
+    // --- Reagendamento Inteligente ---
+    var final_next_rare := CInt(GetElementProp(elem, "NextResourceTime"));
+    var final_next_common := CInt(GetElementProp(elem, "NextCommonResourceTime"));
     
-    var validated_interval := GetValidatedResourceInterval(elem);
-    var next_generation_schedule := current_time + (validated_interval * 60);
-    
-    SetElementProp(elem, "NextResourceTime", next_generation_schedule);
-    next_territory_checks[territory_id_param] := next_generation_schedule; 
-    LogDebug("ProcessTerritory_DEBUG", "Próxima geração para '" + territory_name_for_log + "' (ID: " + territory_id_param + ") agendada para " + next_generation_schedule + " (em " + (validated_interval * 60) + "s).");
+    next_territory_checks[territory_id_param] := (final_next_rare < final_next_common) ? final_next_rare : final_next_common;
+    LogDebug("ProcessTerritory", "Território '" + territory_name_for_log + "' reagendado para seu próximo tick em " + next_territory_checks[territory_id_param]);
 
-    return success_count; 
+    // ==========================================================
+    // >>>>> FIM DA INTEGRAÇÃO <<<<<
+    // ==========================================================
+
+    return 1; 
 endfunction
 
 // Adicionar função RescheduleTerritoryWithPenalty
@@ -503,18 +553,13 @@ endfunction
         endif
     endfunction
 
-// FUNÇÃO GenerateResourcesForTerritory (REIMPRESSA E ATUALIZADA)
 function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount)
     var log_entries := array{};
     var current_time := polcore().systime;
-    var faction_name := faction_name_param; // Usar uma variável local
+    var faction_name := faction_name_param;
 
-    if (!elem || !faction_name || resource_amount <= 0)
-        LogError("recursos_gen", "Parâmetros inválidos para GenerateResourcesForTerritory.");
-        return 0;
-    endif
+    if (!elem || !faction_name || resource_amount <= 0) return 0; endif
 
-    // CORREÇÃO: Declarar as variáveis do território ANTES de usá-las.
     var territory_name_from_elem := GetElementProp(elem, "Name", "Desconhecido_" + elem.name);
     var territory_id_from_elem := GetElementProp(elem, TERRITORY_ID_PROP, elem.name); 
 
@@ -537,6 +582,9 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
     endif
     LogDebug("recursos_gen", "Facção confirmada para geração: '" + faction_name + "'");
 
+donation_chest := FindFactionChest(faction_name, territory_id_from_elem);
+    if (!donation_chest) return 0; endif
+
     var resources_string_from_elem := GetElementProp(elem, "Resources");
     if (!resources_string_from_elem)
         LogError("recursos_gen", "Nenhum recurso configurado para o território '" + territory_name_from_elem + "'.");
@@ -549,6 +597,9 @@ function GenerateResourcesForTerritory(elem, faction_name_param, resource_amount
         LogError("recursos_gen", "Nenhum recurso válido encontrado após processamento para '" + territory_name_from_elem + "'.");
         return 0;
     endif
+
+
+
     LogDebug("recursos_gen", resources_array_parsed.size() + " tipos de recursos válidos identificados para '" + territory_name_from_elem + "'.");
 
     var target_chest_for_delivery := 0;
@@ -672,7 +723,7 @@ endif
         item_properties["territory_id"] := territory_id_from_elem; // ID do território de ORIGEM
 
         LogDebug("recursos_gen", "  Propriedades para criação: " + item_properties.keys());
-        var created_item_ref := SafeCreateItemInContainer_Refactored(donation_chest, objtype_to_create, resource_amount, item_properties);
+        var created_item_ref := SafeCreateItemInContainer_Refactored(donation_chest, objtype_to_create, resource_amount, item_properties, 0);
 
         if (created_item_ref && created_item_ref != error)
             items_created_successfully_count += 1;
@@ -1212,7 +1263,7 @@ function LoadAllTerritories()
     foreach element_name_key in all_elements_names
         var elem := SafeFindElement(rect_df, element_name_key);
         if (!elem)
-            LogWarning("ResourceController", "Elemento '" + element_name_key + "' não pôde ser encontrado via SafeFindElement durante o LoadAllTerritories, pulando.");
+            LogWarning("ResourceController", "Elemento '" + element_name_key + "' não pôde ser encontrado, pulando.");
             continue;
         endif
         
@@ -1221,31 +1272,50 @@ function LoadAllTerritories()
         var faction := GetTerritoryFaction(elem);
         var resources_str := GetElementProp(elem, "Resources");
         
-        LogDebug("ResourceController_Load", "Verificando Elemento: '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + "), Facção: " + (faction ? faction : "N/A") + ", Recursos: " + (resources_str ? resources_str : "N/A"));
+        LogDebug("ResourceController_Load", "Verificando Elemento: '" + friendly_name_for_log + "' (ID: " + territory_id_for_schedule + "), Facção: " + (faction ? faction : "N/A") + ", Recursos: " + (resources_str ? resources_str : "N/A"));
         
+        // Sua verificação original e correta.
         if (faction && faction != "" && faction != DEFAULT_FACTION && resources_str && resources_str != "")
-            LogInfo("ResourceController_Load", "Território VÁLIDO para agendamento: '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + "), Facção: " + faction);
+            LogInfo("ResourceController_Load", "Território VÁLIDO para agendamento: '" + friendly_name_for_log + "'");
             territories_loaded_count +=1;
 
-            var next_time_from_prop := GetElementProp(elem, "NextResourceTime");
-            var schedule_this_check_at := CInt(next_time_from_prop);
+            // ==========================================================
+            // >>>>> INÍCIO DO REFINAMENTO <<<<<
+            // Substituímos o bloco de agendamento antigo por este.
+            // ==========================================================
             
-            var interval_minutes := GetValidatedResourceInterval(elem); 
-            var calculated_next_ideal_check := current_time + (interval_minutes * 60);
+            // 1. Lemos AMBOS os timers do território.
+            var next_rare_time := CInt(GetElementProp(elem, "NextResourceTime", 0));
+            var next_common_time := CInt(GetElementProp(elem, "NextCommonResourceTime", 0));
 
-            if (schedule_this_check_at <= 0 || schedule_this_check_at <= current_time)
-                LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") será verificado AGORA. Próximo ciclo real em " + interval_minutes + " min.");
-                next_territory_checks[territory_id_for_schedule] := current_time;
-            elseif (schedule_this_check_at > (current_time + (1440 * 60 * 2)))
-                LogWarning("ResourceController_Load", "NextResourceTime para '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") está muito distante ("+schedule_this_check_at+"). Recalculando e corrigindo para " + interval_minutes + " min a partir de agora.");
-                next_territory_checks[territory_id_for_schedule] := calculated_next_ideal_check;
-                SetElementProp(elem, "NextResourceTime", calculated_next_ideal_check);
-            else
-                LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") corretamente agendado para " + schedule_this_check_at + " (em " + (schedule_this_check_at - current_time) + "s)");
-                next_territory_checks[territory_id_for_schedule] := schedule_this_check_at;
+            // 2. Determinamos qual é o próximo evento real.
+            var next_event_time := 0;
+            if (next_rare_time > 0 && next_common_time > 0)
+                next_event_time := (next_rare_time < next_common_time) ? next_rare_time : next_common_time;
+            elseif (next_rare_time > 0)
+                next_event_time := next_rare_time;
+            elseif (next_common_time > 0)
+                next_event_time := next_common_time;
             endif
+
+            // 3. Agendamos o território usando o próximo evento.
+            if (next_event_time > 0)
+                if (next_event_time <= current_time)
+                    next_territory_checks[territory_id_for_schedule] := current_time;
+                    LogDebug("ResourceController_Load", "--> Agendado para AGORA (tick já passou).");
+                else
+                    next_territory_checks[territory_id_for_schedule] := next_event_time;
+                    LogDebug("ResourceController_Load", "--> Agendado para " + next_event_time + " (em " + (next_event_time - current_time) + "s).");
+                endif
+            else
+                LogWarning("ResourceController_Load", "--> Território '" + friendly_name_for_log + "' não tem timers de recurso configurados. IGNORADO.");
+            endif
+            
+            // ==========================================================
+            // >>>>> FIM DO REFINAMENTO <<<<<
+            // ==========================================================
         else
-            LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' (ID Agendamento: " + territory_id_for_schedule + ") IGNORADO (sem facção válida ou recursos).");
+            LogDebug("ResourceController_Load", "Território '" + friendly_name_for_log + "' IGNORADO (sem facção válida ou recursos configurados).");
         endif
         
         sleepms(2);
@@ -1325,4 +1395,111 @@ function ProcessRetryQueue()
             g_retry_queue.erase(territory_id);
         endif
     endforeach
+endfunction
+
+
+// NOVA FUNÇÃO para gerar os recursos comuns (VERSÃO COM LOGS DETALHADOS)
+function GenerateCommonResources(elem, faction_name)
+    var territory_name := GetElementProp(elem, "Name", "Desconhecido");
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, elem.name);
+
+    LogInfo("GenerateCommon", "--------------------------------------------------");
+    LogInfo("GenerateCommon", "Iniciando geração de Recursos Comuns para '" + territory_name + "' (Facção: " + faction_name + ")");
+
+    // 1. Verificar a quantidade a ser gerada
+    var amount_per_type := CInt(GetElementProp(elem, "CommonResourceAmount", 0));
+    if (amount_per_type <= 0)
+        LogDebug("GenerateCommon", "--> Geração pulada. Motivo: Quantidade configurada é 0 ou menor.");
+        LogInfo("GenerateCommon", "--------------------------------------------------");
+        return 0;
+    endif
+    LogDebug("GenerateCommon", "--> Quantidade por tipo: " + amount_per_type);
+    
+    // 2. Verificar os níveis das construções para saber O QUE gerar
+    var building_levels := GetElementProp(elem, "BuildingLevels", struct{});
+    var common_resources_to_generate := dictionary{};
+    
+    // A produção só é ativada se o nível da construção for 1 ou maior.
+    // (Você pode mudar para >= 0 se quiser que gere mesmo sem construir nada)
+    if (CInt(building_levels.Serralheria) >= 0) common_resources_to_generate["Madeira"] := 1; endif
+    if (CInt(building_levels.Pedreira) >= 0) common_resources_to_generate["Pedra"] := 1; endif
+        if (CInt(building_levels.Fazenda) >= 0)
+        common_resources_to_generate["Peixe"] := 1;
+        common_resources_to_generate["Trigo"] := 1;
+    endif
+    if (CInt(building_levels.Curtume) >= 0) common_resources_to_generate["Couro"] := 1; endif
+    
+    if (common_resources_to_generate.size() == 0)
+        LogDebug("GenerateCommon", "--> Geração pulada. Motivo: Nenhuma construção de Nível 1 ou superior encontrada.");
+        LogInfo("GenerateCommon", "--------------------------------------------------");
+        return 0;
+    endif
+    var active_buildings_str := "";
+var keys := common_resources_to_generate.keys();
+for i := 1 to keys.size()
+    if (i > 1)
+        active_buildings_str += ", ";
+    endif
+    active_buildings_str += keys[i];
+endfor
+LogDebug("GenerateCommon", "--> Construções ativas: " + active_buildings_str);
+
+    // 3. Encontrar o baú de destino
+    var donation_chest := FindFactionChest(faction_name, territory_id);
+    if (!donation_chest)
+        LogError("GenerateCommon", "--> FALHA: Baú para recursos comuns não encontrado para o território '" + territory_id + "'. Geração abortada.");
+        LogInfo("GenerateCommon", "--------------------------------------------------");
+        return 0;
+    endif
+    LogDebug("GenerateCommon", "--> Baú de destino encontrado: Serial " + donation_chest.serial);
+ LogCritical("GenerateCommon_DEBUG", "Iniciando loop de geração. Ordem das chaves a serem processadas: " + CStr(common_resources_to_generate.keys()));
+    var success_count := 0;
+    
+    // 4. Loop de geração para cada categoria de recurso ativada
+    foreach resource_category in (common_resources_to_generate.keys())
+    LogCritical("GenerateCommon_DEBUG", "Processando categoria do loop: '" + resource_category + "'");
+        var objtype_to_create := 0;
+        case(resource_category)
+            "Madeira": objtype_to_create := 0x1BDD; // Log
+            "Pedra":   objtype_to_create := 0x5001; // Pedra  (SEU OBJTYPE CORRETO)
+            "Peixe":  objtype_to_create := 0x097B; // Fish Steak
+            "Trigo":  objtype_to_create := 0x1EBD; 
+            "Couro":   objtype_to_create := 0xee45; // Couro Curtido
+
+        endcase
+        
+        if (objtype_to_create > 0)
+    LogDebug("GenerateCommon", "  -> Gerando " + amount_per_type + "x " + resource_category + " (Objtype: 0x" + Hex(objtype_to_create) + ")");
+              var item_properties := dictionary{};
+               var CProp_Category := resource_category;
+                if (resource_category == "Peixe" || resource_category == "Trigo")
+        CProp_Category := "Comida";
+    endif
+    item_properties["IsKingdomDonation" + CProp_Category] := 1;
+            item_properties["GeneratedForTerritory"] := territory_name;
+    item_properties["GeneratedTime"] := polcore().systime;
+    item_properties["GeneratedByFaction"] := faction_name;
+    item_properties["CreatedByResourceController"] := 1;
+            
+    var created_item := SafeCreateItemInContainer_Refactored(donation_chest, objtype_to_create, amount_per_type, item_properties, 0);
+    
+    if (created_item && !created_item.errortext)
+        LogDebug("GenerateCommon", "     ... SUCESSO. Item: " + created_item.serial);
+        success_count += 1;
+    else
+        LogError("GenerateCommon", "     ... FALHA ao criar item da categoria " + resource_category);
+    endif
+    SleepMS(10);
+endif
+    
+    endforeach
+    
+    // 5. Atualizar o cache do baú
+    if (success_count > 0)
+        LogDebug("GenerateCommon", "--> Geração concluída. " + success_count + " tipo(s) de recurso(s) criado(s). Agendando atualização do cache do baú.");
+        UpdateResourceCache(donation_chest);
+    endif
+    
+    LogInfo("GenerateCommon", "--------------------------------------------------");
+    return success_count;
 endfunction

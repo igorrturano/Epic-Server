@@ -44,32 +44,32 @@ function LoadSpawnConfig(spawn_type)
         
         "covildasaranhas":
             config.+name := "Covil das Aranhas";
-            config.+boss_template := "dreadspider_territorial";
+            config.+boss_template := "dridertitan_territorial";
             config.+cooldown := 7200;
             config.+player_radius := 60;
             
             // Configuração de 16 ondas
             config.+waves := array(
                 // Ondas 1-4
-                struct{"mobs" := array{"giantspider", "dreadspider"}, "amount" := 8},
-                struct{"mobs" := array{"giantspider", "dreadspider"}, "amount" := 8},
-                struct{"mobs" := array{"giantspider", "dreadspider"}, "amount" := 8},
-                struct{"mobs" := array{"giantspider", "dreadspider"}, "amount" := 8},
+                struct{"mobs" := array{"giantrat", "spiderling", "rat", "minibesouro"}, "amount" := 3},
+                struct{"mobs" := array{"driderpoison", "dridersacerdotisa"}, "amount" := 2}
+                //struct{"mobs" := array{"giantrat", "spiderling", "rat", "minibesouro"}, "amount" := 3},
+                //struct{"mobs" := array{"giantrat", "spiderling", "rat", "minibesouro"}, "amount" := 3},
+                //struct{"mobs" := array{"giantrat", "spiderling", "rat", "minibesouro"}, "amount" := 3},
                 // Ondas 5-8
-                struct{"mobs" := array{"terathanwarrior", "terathandrone"}, "amount" := 6},
-                struct{"mobs" := array{"terathanwarrior", "terathandrone"}, "amount" := 6},
-                struct{"mobs" := array{"terathanwarrior", "terathandrone"}, "amount" := 6},
-                struct{"mobs" := array{"terathanwarrior", "terathandrone"}, "amount" := 6},
+               //struct{ "mobs" := array{"drider", "drider2", "drider3"} , "amount" := 3 },
+                //struct{ "mobs" := array{"drider", "drider2", "drider3"}, "amount" := 3 }, 
+                //struct{ "mobs" := array{"drider", "drider2", "drider3"}, "amount" := 3 }, 
+                //struct{ "mobs" := array{"drider", "drider2", "drider3"}, "amount" := 3 }, 
                 // Ondas 9-12
-                struct{"mobs" := array{"terathanavenger", "terathanmatriarch"}, "amount" := 5},
-                struct{"mobs" := array{"terathanavenger", "terathanmatriarch"}, "amount" := 5},
-                struct{"mobs" := array{"terathanavenger", "terathanmatriarch"}, "amount" := 5},
-                struct{"mobs" := array{"terathanavenger", "terathanmatriarch"}, "amount" := 5},
+                //struct{"mobs" := array{"drider3", "drider4"}, "amount" := 2 },
+                //struct{"mobs" := array{"drider3", "drider4"}, "amount" := 2 },
+                //struct{"mobs" := array{"drider3", "drider4"}, "amount" := 2 },
+                //struct{"mobs" := array{"drider3", "drider4"}, "amount" := 2 },
                 // Ondas 13-16
-                struct{"mobs" := array{"ophidianknight", "ophidianmage"}, "amount" := 4},
-                struct{"mobs" := array{"ophidianknight", "ophidianmage"}, "amount" := 4},
-                struct{"mobs" := array{"ophidianknight", "ophidianmage"}, "amount" := 4},
-                struct{"mobs" := array{"ophidianknight", "ophidianmage"}, "amount" := 4}
+                //struct{"mobs" := array{"dridermatriarca", "dridermage"}, "amount" := 2},
+                //struct{"mobs" := array{"dridermatriarca", "dridermage"}, "amount" := 2},
+                //struct{"mobs" := array{"driderpoison", "dridersacerdotisa"}, "amount" := 2},
             );
             
         default:

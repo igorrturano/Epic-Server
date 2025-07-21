@@ -251,7 +251,7 @@ function AddGuildXP(who, xp_amount)
     endif;
 
     // Verificação robusta de posse de território
-    LogCritical("AddGuildXP_DEBUG", "Verificando contagem de territórios para '" + guild_name + "' usando GetFactionTerritoryCount...");
+   LogCritical("AddGuildXP_DEBUG", "Verificando contagem de territórios para '" + guild_name + "' usando GetFactionTerritoryCount...");
     if (GetFactionTerritoryCount(guild_name) == 0)
         SendSysMessage(who, "Seu reino não ganhou XP porque não controla nenhum território.", 3, 38);
         LogCritical("AddGuildXP_DEBUG", "Tentativa de ganho de XP para '" + guild_name + "' ignorada (sem territórios, verificado via datafile).");

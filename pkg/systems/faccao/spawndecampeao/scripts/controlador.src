@@ -9,6 +9,10 @@ include ":faccao:spawndecampeao/include/arena";
 include ":faccao:include/logging";
 
 program ChampionController(altar)
+    // NOVO LOG: Início do script
+    LogCritical("Controller", "==========================================================");
+    LogCritical("Controller", "CONTROLADOR INICIADO para Altar " + altar.serial);
+
     // Lógica de trava com PID (Mutex) para impedir duplicação
     var lock_name := "ChampSpawn.Lock." + altar.serial;
     var existing_pid := GetGlobalProperty(lock_name);
@@ -24,14 +28,33 @@ program ChampionController(altar)
     endif
     var my_pid := GetPid();
     SetGlobalProperty(lock_name, my_pid);
-    LogCritical("ChampSpawn", "TRAVA ADQUIRIDA: Processo " + my_pid + " assumiu o controle do altar " + altar.serial);
+    LogInfo("Controller", "TRAVA ADQUIRIDA: Processo " + my_pid + " assumiu o controle do altar " + altar.serial);
 
-    // Validação da configuração do altar
-    var spawn_cfg := GetObjProperty(altar, "ChampionConfig");
+    // ==========================================================
+    // >>>>> BLOCO DE CORREÇÃO (LOOP DE ESPERA) <<<<<
+    // ==========================================================
+    // Validação da configuração do altar COM ESPERA e LOGS
+    var spawn_cfg;
+    var attempts := 0;
+    LogInfo("Controller", "Iniciando busca pela CProp 'ChampionConfig'...");
+    while (attempts < 5) // Tenta por 5 segundos
+        spawn_cfg := GetObjProperty(altar, "ChampionConfig");
+        if (spawn_cfg)
+            LogInfo("Controller", "SUCESSO! CProp 'ChampionConfig' encontrada na tentativa " + (attempts+1) + ".");
+            break; // Configuração encontrada, sair do loop!
+        endif
+        attempts += 1;
+        LogWarning("Controller", "Tentativa " + attempts + "/5... CProp não encontrada. Aguardando 1s.");
+        sleep(1); // Espera 1 segundo e tenta novamente
+    endwhile
+
+    // Verificação final após o loop de espera
     if (!spawn_cfg)
-        LogError("ChampSpawn", "Altar " + altar.serial + " não tem CProp 'ChampionConfig'.");
+        LogError("ChampSpawn", "Altar " + altar.serial + " não recebeu a CProp 'ChampionConfig' após 5 segundos. Encerrando controlador.");
+        EraseGlobalProperty(lock_name); // Libera a trava antes de sair
         return;
     endif
+    // ==========================================================
     
     LogCritical("ChampSpawn", "*** CONTROLADOR VALIDADO PARA O EVENTO: '" + spawn_cfg.name + "' ***");
     
@@ -49,35 +72,28 @@ program ChampionController(altar)
         player_radius := 60;
     endif
     
-    // Loop principal MODIFICADO
+    LogInfo("Controller", "Iniciando loop principal de monitoramento para Altar " + altar.serial);
     while (altar)
-        // Lógica para iniciar um novo evento (continua a mesma)
         if (!CInt(GetObjProperty(altar, "#active")))
             var next_activation := GetObjProperty(altar, "#NextActivation");
             if (!next_activation || ReadGameClock() >= CInt(next_activation))
                 if (CountPlayers(altar, player_radius) > 0)
+                    LogInfo("Controller", "Condições atendidas (jogadores presentes e cooldown finalizado). Chamando StartEvent().");
                     StartEvent(altar, spawn_cfg);
                 endif
             endif
         endif
         
-        // ==========================================================
-        // >>>>> INÍCIO DA CORREÇÃO FINAL <<<<<
-        // ==========================================================
-
-        // Em vez de esperar por um evento, verificamos a propriedade "bandeira".
         if (GetObjProperty(altar, "BossHasDied"))
             LogCritical("Controller", "Bandeira 'BossHasDied' detectada no altar. Iniciando limpeza final.");
-            EraseObjProperty(altar, "BossHasDied"); // Limpa a bandeira
+            EraseObjProperty(altar, "BossHasDied");
             FinalCleanup(altar, spawn_cfg, "completed");
-            return; // Encerra o script do controlador
+            EraseGlobalProperty(lock_name); // Libera a trava ao finalizar
+            LogCritical("Controller", "Limpeza finalizada. ENCERRANDO controlador para Altar " + altar.serial);
+            return;
         endif
-
-        // ==========================================================
-        // >>>>> FIM DA CORREÇÃO FINAL <<<<<
-        // ==========================================================
         
-        sleep(5); // Verifica a bandeira a cada 5 segundos
+        sleep(5);
     endwhile
 endprogram
 

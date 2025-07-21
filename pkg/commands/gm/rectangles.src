@@ -41,7 +41,7 @@ endprogram
 
 function SetupResourcesForTerritory(who, elem)
     // Lista de recursos disponíveis (sem repetições)
-    var resource_sets := array{
+    var selectable_resources := array{
         "ironore",
         "couroespesso",
         "cogumelo",
@@ -63,9 +63,9 @@ function SetupResourcesForTerritory(who, elem)
     
     // Remover duplicatas da lista de recursos
     var unique_resources := array{};
-    var resource_dict := dictionary{};
+   var resource_dict := dictionary{};
     
-    foreach resource in resource_sets
+    foreach resource in selectable_resources
         // Converter para lowercase para comparação insensível a caso
         var lower_res := Lower(resource);
         if (!resource_dict.exists(lower_res))
@@ -75,13 +75,13 @@ function SetupResourcesForTerritory(who, elem)
     endforeach
     
     // Usar os recursos únicos daqui em diante
-    resource_sets := unique_resources;
+    selectable_resources := unique_resources;
     
     // Recuperar valores atuais se existirem, usando os helpers para simplificar
-    var current_interval := GetElementProp(elem, "ResourceInterval", 1);
+    var current_interval := GetElementProp(elem, "ResourceInterval", 3);
     var current_amount := GetElementProp(elem, "ResourceAmount", 5);
     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-    
+    var selected_resources := array{};
     // Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
     var current_resources := array{};
     var resource_string := GetElementProp(elem, "Resources", "");
@@ -106,8 +106,7 @@ function SetupResourcesForTerritory(who, elem)
         endforeach
     endif
     
-    // Início do processo de seleção interativa
-    var selected_resources := array{};
+
     
     // Inicializar com recursos atuais, se houver
     foreach res in current_resources
@@ -117,7 +116,7 @@ function SetupResourcesForTerritory(who, elem)
     var done := 0;
     while (!done)
         // Criar gump com as opções atuais
-        var gump_data := CreateResourceGumpForTerritory(elem, resource_sets, selected_resources, current_interval, current_amount);
+        var gump_data := CreateResourceGumpForTerritory(elem, selectable_resources, selected_resources, current_interval, current_amount);
         var gump := gump_data.gump;
         var checkboxes := gump_data.checkboxes;
         
@@ -182,6 +181,14 @@ function SetupResourcesForTerritory(who, elem)
                 var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
                 SetElementProp(elem, "NextResourceTime", next_time);
 
+                var common_interval_default := 1; // Tick a cada 1 minuto
+                var common_amount_default := 3;   // Mas gera 3 unidades
+
+                // Simula que todo território já começa com construções básicas
+SetElementProp(elem, "BuildingLevels", struct{"Serralheria" := 1, "Pedreira" := 1, "Fazenda" := 1, "Curtume" := 1});
+                SetElementProp(elem, "CommonResourceInterval", common_interval_default);
+                SetElementProp(elem, "CommonResourceAmount", common_amount_default);
+                SetElementProp(elem, "NextCommonResourceTime", polcore().systime + (common_interval_default * 60));
                 // MÁQUINA DE ESTADOS: Verificar se é território com Champion Spawn
                 var has_champion := GetElementProp(elem, "HasChampionSpawn", 0);
                 SendSysMessage(who, "DEBUG: Verificando HasChampionSpawn = " + has_champion);
@@ -260,16 +267,15 @@ if (controller_pid_prop)
 else
     LogWarning("EventoTerritorio", "PID do ResourceController NÃO encontrado na GlobalProperty 'ResourceControllerPID'");
 endif
+// Notificar o ResourceController (sua lógica original)
+                var territory_id_notify := GetElementProp(elem, TERRITORY_ID_PROP, "");
+                // CORREÇÃO: Usamos a nova função de notificação simplificada.
+                TM_NotifyTerritoryChange(territory_id_notify, "resources_updated");
+                
+                SendSysMessage(who, "Recursos Raros configurados: " + resources_str);
+                SendSysMessage(who, "Recursos Comuns estão prontos (produção inicial: 0).");
 
-// Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
-if (territory_id)
-    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
-endif
-
-SendSysMessage(who, "Recursos configurados: " + resources_str);
-SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
-
-done := 1;
+                done := 1;
             endif
         endif
     endwhile
@@ -278,7 +284,7 @@ done := 1;
 endfunction
 
 // Função separada para criar o gump de recursos
-function CreateResourceGumpForTerritory(elem, resource_sets, selected_checkboxes, current_interval, current_amount)
+function CreateResourceGumpForTerritory(elem, selectable_resources, selected_checkboxes, current_interval, current_amount)
     // Dimensões e configurações do gump
     var width := 500;
     var height := 470;
@@ -318,7 +324,7 @@ function CreateResourceGumpForTerritory(elem, resource_sets, selected_checkboxes
     var base_y := y;
     
     // Adicionar recursos com checkboxes
-    foreach resource in resource_sets
+    foreach resource in selectable_resources
         // Verificar se o recurso está entre os selecionados
         var is_selected := 0;
         foreach selection in selected_checkboxes
@@ -1038,9 +1044,15 @@ function CreateCustomTerritory(who)
     var rect_name := RequestGump(who, "Digite um nome para este território customizado:");
     if (!rect_name) return; endif
     
-    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
-        SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente. Operação cancelada.");
-        return;
+   var overlapping_territory := TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, "");
+    if (overlapping_territory)
+        SendSysMessageEx(who, "SOBREPOSIÇÃO DETECTADA! Conflito com: " + overlapping_territory, SSM_FAIL);
+        PlaySoundEffect(who, 0x1F3); // Som de falha
+        
+        // Chama a nova função de feedback visual
+        HighlightOverlappingTerritories(who, array{x1, y1, x2, y2}, overlapping_territory);
+        
+        return; // Aborta a criação
     endif
     
     var elem := SafeFindElement(rect_df, rect_name, 1);
@@ -1130,69 +1142,74 @@ function CreateStandardTerritory(who)
 endfunction
 
 
-
 function CreateChampionTerritory(who)
-    // Primeiro, perguntar qual tipo de champion
     var champion_type := AskChampionType(who);
-    if (!champion_type)
-        SendSysMessage(who, "Criação de território cancelada.");
-        return;
-    endif
+    if (!champion_type) return; endif
     
-    SendSysMessage(who, "Champion selecionado: " + champion_type);
-    SendSysMessage(who, "Selecione o CENTRO da arena do Champion Spawn.");
-    
+    SendSysMessage(who, "Selecione o CENTRO do novo território Champion Spawn expansível.");
     var center_point := TargetCoordinates(who);
-    if (!center_point)
-        SendSysMessage(who, "Cancelado.");
-        return;
-    endif
+    if (!center_point) return; endif
 
-    var rect_name := RequestGump(who, "Digite um nome para este território com Champion:");
-    if (!rect_name) 
-        SendSysMessage(who, "Nome é obrigatório. Operação cancelada.");
-        return; 
-    endif
+    var rect_name := RequestGump(who, "Digite um nome para este território:");
+    if (!rect_name) return; endif
 
-    var creation_data := struct;
-    creation_data.+champion_type := champion_type;
-    creation_data.+territory_name := rect_name;
-    creation_data.+target_location := center_point;
-    
-    SetObjProperty(who, "#temp_champion_creation", creation_data);
-    SendSysMessage(who, "DEBUG: Dados temporários para '" + rect_name + "' salvos no personagem.");
-
-    // Criar território no datafile primeiro
+    // ==========================================================
+    // >>>>> INÍCIO DA MUDANÇA <<<<<
+    // ==========================================================
     var rect_df := SafeOpenDataFile(":architect:areas", 1);
-    var elem := SafeFindElement(rect_df, rect_name, 1);
-    
+
     var center_x := center_point.x;
     var center_y := center_point.y;
     var realm := center_point.realm;
     
-    var territory_size := 50;
-    var x1 := center_x - CInt(territory_size / 2);
-    var y1 := center_y - CInt(territory_size / 2);
-    var x2 := x1 + territory_size;
-    var y2 := y1 + territory_size;
-    var rect_str := $"{x1} {y1} {x2} {y2}";
+    // Calcular CurrentRect (Nível 1)
+    var dims_lvl1 := TERRITORY_DIMS_LEVEL_1;
+    var width_lvl1 := dims_lvl1[1];
+    var height_lvl1 := dims_lvl1[2];
+    var x1_lvl1 := center_x - CInt(width_lvl1 / 2);
+    var y1_lvl1 := center_y - CInt(height_lvl1 / 2);
+    var x2_lvl1 := x1_lvl1 + width_lvl1;
+    var y2_lvl1 := y1_lvl1 + height_lvl1;
+    var current_rect_str := $"{x1_lvl1} {y1_lvl1} {x2_lvl1} {y2_lvl1}";
     
-    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
-        SendSysMessage(who, "A área do território se sobrepõe a outro já existente. Operação cancelada.");
-        EraseObjProperty(who, "#temp_champion_creation");
+    // Calcular MaxRect (Nível 5) para verificação de overlap
+    var dims_lvl5 := TERRITORY_DIMS_LEVEL_5;
+    var width_lvl5 := dims_lvl5[1];
+    var height_lvl5 := dims_lvl5[2];
+    var x1_lvl5 := center_x - CInt(width_lvl5 / 2);
+    var y1_lvl5 := center_y - CInt(height_lvl5 / 2);
+    var x2_lvl5 := x1_lvl5 + width_lvl5;
+    var y2_lvl5 := y1_lvl5 + height_lvl5;
+    var max_rect_str := $"{x1_lvl5} {y1_lvl5} {x2_lvl5} {y2_lvl5}";
+
+    if (TM_CheckRectangleOverlap(rect_df, x1_lvl5, y1_lvl5, x2_lvl5, y2_lvl5, realm, ""))
+        SendSysMessage(who, "A área máxima de expansão deste território se sobrepõe a outro. Operação cancelada.");
         return;
     endif
     
-    // Salvar território
+    // Salvar informações do território
+    var elem := SafeFindElement(rect_df, rect_name, 1);
     var territory_id := CreateTerritoryID();
     SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     SetElementProp(elem, "Name", rect_name);
-    SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Rect", current_rect_str); // Salva o tamanho inicial
+    SetElementProp(elem, "MaxRect", max_rect_str);   // Salva o tamanho máximo
     SetElementProp(elem, "Realm", realm);
     SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
-    SetElementProp(elem, "IsExpandable", 0);
+    SetElementProp(elem, "IsExpandable", 1); // <-- MUDADO PARA 1
     SetElementProp(elem, "HasChampionSpawn", 1);
     SetElementProp(elem, "ChampionType", champion_type);
+
+    // ==========================================================
+    // >>>>> FIM DA MUDANÇA <<<<<
+    // ==========================================================
+    
+    // O resto da lógica para salvar dados temporários e chamar o continuador permanece.
+    var creation_data := struct;
+    creation_data.+champion_type := champion_type;
+    creation_data.+territory_name := rect_name;
+    creation_data.+target_location := center_point;
+    SetObjProperty(who, "#temp_champion_creation", creation_data);
     
     SendSysMessage(who, $"Território '{rect_name}' criado! Configurando recursos...");
     SetupResourcesForTerritory(who, elem);
@@ -1232,4 +1249,102 @@ function AskChampionType(who)
         2: return "CovilDasAranhas";
         default: return "";
     endcase
+endfunction
+
+
+function HighlightOverlappingTerritories(who, new_coords_array, existing_territory_name)
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df) return; endif
+
+    var existing_elem := TM_FindTerritory(existing_territory_name);
+    if (!existing_elem) return; endif
+    
+    var existing_rect_str := GetElementProp(existing_elem, "Rect");
+    var existing_coords := SplitWords(existing_rect_str);
+    var realm := who.realm; // Assumimos o realm do GM
+
+    // Mensagem informativa
+    SendSysMessageEx(who, "Área inválida (vermelho) sobrepõe " + existing_territory_name + " (amarelo).", SSM_FAIL);
+
+    // Destacar a área que o GM tentou criar em VERMELHO
+    CreateBorderForRectangle(who, new_coords_array[1], new_coords_array[2], new_coords_array[3], new_coords_array[4], realm, 38); // Cor 38 = Vermelho
+
+    // Destacar a área existente em AMARELO
+    CreateBorderForRectangle(who, CInt(existing_coords[1]), CInt(existing_coords[2]), CInt(existing_coords[3]), CInt(existing_coords[4]), realm, 53); // Cor 53 = Amarelo
+endfunction
+
+// Cópia/Adaptação da função do mapeador, agora aceitando uma cor.
+function CreateBorderForRectangle(who, x1, y1, x2, y2, realm, color := BORDER_HUE)
+    var border_items := array{};
+    var items_created := 0;
+    var x, y, border_item;
+    
+    var tile_step := 1;
+    for (x := x1; x <= x2; x := x + tile_step)
+        border_item := CreateBorderItem(x, y1, realm, who, BORDER_ITEM_TRANSVERSAL);
+        if (border_item)
+            border_item.color := color; // Define a cor
+            border_items.append(border_item);
+            items_created++;
+        endif
+    endfor
+    
+    for (x := x1; x <= x2; x := x + tile_step)
+        border_item := CreateBorderItem(x, y2, realm, who, BORDER_ITEM_TRANSVERSAL);
+        if (border_item)
+            border_item.color := color; // Define a cor
+            border_items.append(border_item);
+            items_created++;
+        endif
+    endfor
+    
+    for (y := y1 + tile_step; y < y2; y := y + tile_step)
+        border_item := CreateBorderItem(x1, y, realm, who, BORDER_ITEM_LATERAL);
+        if (border_item)
+            border_item.color := color; // Define a cor
+            border_items.append(border_item);
+            items_created++;
+        endif
+    endfor
+    
+    for (y := y1 + tile_step; y < y2; y := y + tile_step)
+        border_item := CreateBorderItem(x2, y, realm, who, BORDER_ITEM_LATERAL);
+        if (border_item)
+            border_item.color := color; // Define a cor
+            border_items.append(border_item);
+            items_created++;
+        endif
+    endfor
+    
+    if (border_items.size() > 0)
+        // Usamos um script diferente para a remoção, para não interferir com o mapeador original.
+        start_script(":faccao:commands/gm/remove_borders", {border_items, BORDER_DURATION});
+    endif
+    
+    return items_created;
+endfunction
+
+
+
+// =================================================================
+// >>>>> FUNÇÃO AUXILIAR QUE FALTAVA - ADICIONE ISTO <<<<<
+// =================================================================
+function CreateBorderItem(x, y, realm, who, item_type)
+    var player_z := who.z;
+    var terrain_z := GetWorldHeight(x, y, realm);
+    
+    // Tenta criar o item em várias altitudes para garantir visibilidade
+    var z_values := array{ terrain_z, player_z, terrain_z + 1, player_z + 1, terrain_z - 1, 0 };
+    
+    foreach z_val in z_values
+        var border_item := CreateItemAtLocation(x, y, z_val, item_type, 1, realm);
+        if (border_item)
+            border_item.movable := 0;
+            border_item.name := "Marcador de Conflito Territorial";
+            border_item.SetProp("ConflictBorder", 1); // Propriedade para identificação
+            return border_item;
+        endif
+    endforeach
+    
+    return 0; // Retorna 0 se não conseguiu criar
 endfunction

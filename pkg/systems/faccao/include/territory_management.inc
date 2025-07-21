@@ -379,8 +379,8 @@ function TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name :
         var rect1 := array{x1, y1, x2, y2};
         var rect2 := SplitWords(rect_str);
         
-        if (TM_DoRectanglesOverlap(rect1, rect2, realm, rect_realm))
-            return 1; // Há sobreposição
+       if (TM_DoRectanglesOverlap(rect1, rect2, realm, rect_realm))
+            return rect_name; // CORREÇÃO: Retorna o NOME do território conflitante
         endif
     endforeach
     
@@ -1413,7 +1413,10 @@ function TM_TransferTerritoryFaction(territory_id, new_faction, who := 0)
         if (who)
             SendSysMessage(who, "Território não encontrado");
         endif
-        LogError("territorio", "TM_TransferTerritoryFaction: Território não encontrado: " + territory_id);
+        
+         LogInfo("territorio", "Transferência: Chamando TM_DeleteTerritoryObjects para limpar " + old_faction);
+    TM_DeleteTerritoryObjects(territory_id, old_faction);
+    LogInfo("territorio", "Transferência: Limpeza de objetos antigos concluída.");
         return 0;
     endif
     

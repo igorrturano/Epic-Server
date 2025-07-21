@@ -1209,6 +1209,13 @@ function SafeCreateItemInContainer_Refactored(container, objtype, amount_to_crea
 
     if (amount_remaining_to_create > 0)
         LogDebug("SafeCreate_Refactored", $"Passo 2: Criando novo item com {amount_remaining_to_create} unidades.");
+        LogCritical("SafeCreate_DEBUG", "--------------------------------------------------");
+        LogCritical("SafeCreate_DEBUG", "CHAMANDO CreateItemInContainer com os seguintes parâmetros:");
+        LogCritical("SafeCreate_DEBUG", "  -> container: " + (container ? CStr(container.serial) + " (Tipo: " + TypeOf(container) + ")" : "NULL"));
+        LogCritical("SafeCreate_DEBUG", "  -> objtype: 0x" + Hex(CInt(objtype)) + " (Valor: " + CInt(objtype) + ", Tipo: " + TypeOf(objtype) + ")");
+        LogCritical("SafeCreate_DEBUG", "  -> amount_remaining_to_create: " + amount_remaining_to_create + " (Tipo: " + TypeOf(amount_remaining_to_create) + ")");
+        LogCritical("SafeCreate_DEBUG", "  -> creator_char: " + creator_char + " (Tipo: " + TypeOf(creator_char) + ")");
+        LogCritical("SafeCreate_DEBUG", "--------------------------------------------------");
         var new_item := CreateItemInContainer(container, objtype, amount_remaining_to_create, creator_char);
         
         if (new_item && new_item != error)
@@ -1221,6 +1228,7 @@ function SafeCreateItemInContainer_Refactored(container, objtype, amount_to_crea
             endif
             item_resultante := new_item; 
         else
+         LogCritical("SafeCreate_DEBUG", "CreateItemInContainer RETORNOU FALHA. Valor retornado: " + new_item + " (Tipo: " + TypeOf(new_item) + ")");
             LogError("SafeCreate_Refactored", $"FALHA ao criar novo item. Erro: {(new_item && new_item.errortext ? CStr(new_item.errortext) : "Desconhecido/NULL")}");
             if (!item_resultante) 
                 return error{"errortext" := "Falha total ao criar ou empilhar o item."};
@@ -1920,24 +1928,24 @@ function ClassificarPorNome(resource_name_input)
             "couro", "pele", "escama",
             "couroespesso", "couroescamoso", "couropolar", "courodraconiano", "escamasazuis",
             "couro espesso", "couro escamoso", "couro polar", "couro draconiano", "escamas azuis",
-            "osso demoniaco" // Se "osso demoniaco" é couro
+            "osso demoniaco", "courocurtido" // Se "osso demoniaco" é couro
         },
         RESOURCE_TYPE_MADEIRA := array{
         "madeira", "tora", "lenha", "carvao", "carvão", // Confirmado
         "madeirapinheiro", "madeirateixo", "toras",
-        "madeira de pinheiro", "madeira de teixo"
+        "madeira de pinheiro", "madeira de teixo", "log"
     },
         RESOURCE_TYPE_COMIDA := array{
-            "comida", "alimento", "cogumelo"
+            "comida", "alimento", "cogumelo", "CookedBird"
         },
         RESOURCE_TYPE_PANO := array{
             "pano", "tecido", "linho", "algodao", "algodão",
             "pelebranca", "pele branca" // Se "pele branca" é tecido
         },
         RESOURCE_TYPE_PEDRA := array{
-            "pedra", "rocha", "mineral", "vidro", "osso",
+            "pedra", "stone", "rocha", "mineral", "vidro", "osso",
             "glass", "ossogigante", "ossos", "ossocinza",
-            "osso gigante", "osso cinza"
+            "osso gigante", "osso cinza" 
             // Se "osso demoniaco" for pedra, mova para cá.
         },
         RESOURCE_TYPE_JOIAS := array{
@@ -1973,7 +1981,7 @@ function ClassificarPorObjtype(objtype_param)
     var objtype_map := dictionary{};
     
     // Metais
-    objtype_map[CInt(0x6300)] := RESOURCE_TYPE_METAL;     // Iron ore
+    objtype_map[CInt(0x6300)] := RESOURCE_TYPE_METAL;     // Iron ore (SEU ITEM COMUM)
     objtype_map[CInt(0x19B9)] := RESOURCE_TYPE_METAL;
     objtype_map[CInt(0x6993)] := RESOURCE_TYPE_METAL;     // Prata ingot
     objtype_map[CInt(0x6460)] := RESOURCE_TYPE_METAL;     // Frigutium ingot
@@ -1985,16 +1993,19 @@ function ClassificarPorObjtype(objtype_param)
     objtype_map[CInt(0xED20)] := RESOURCE_TYPE_COURO;     // Couro draconiano
     objtype_map[CInt(0xEF36)] := RESOURCE_TYPE_COURO;     // Escamas azuis
     objtype_map[CInt(0xEF29)] := RESOURCE_TYPE_COURO;     // Osso demoníaco
+    objtype_map[CInt(0xee45)] := RESOURCE_TYPE_COURO;     // courocurtido (SEU ITEM COMUM)
     
     // Madeira
     objtype_map[CInt(0xEE36)] := RESOURCE_TYPE_MADEIRA;   // Madeira de pinheiro
     objtype_map[CInt(0xEE3E)] := RESOURCE_TYPE_MADEIRA;   // Madeira de teixo
     objtype_map[CInt(0x1BDE)] := RESOURCE_TYPE_MADEIRA;   // Carvão
     objtype_map[CInt(0x1BD7)] := RESOURCE_TYPE_MADEIRA;
+    objtype_map[CInt(0x1BDD)] := RESOURCE_TYPE_MADEIRA;   // log (SEU ITEM COMUM)
     
     // Comida
     objtype_map[CInt(0xD16)]  := RESOURCE_TYPE_COMIDA;    // Cogumelo
-    objtype_map[CInt(0x097B)] := RESOURCE_TYPE_COMIDA;
+    objtype_map[CInt(0x097B)] := RESOURCE_TYPE_COMIDA;    // Fish Steak (SEU ITEM COMUM)
+    objtype_map[CInt(0x1EBD)] := RESOURCE_TYPE_COMIDA;    // Feixe de Trigo (wheatsheaf)
     
     // Moedas
     objtype_map[CInt(0xBA63)] := RESOURCE_TYPE_MOEDAS;
@@ -2007,8 +2018,7 @@ function ClassificarPorObjtype(objtype_param)
     objtype_map[CInt(0xEF32)] := RESOURCE_TYPE_PEDRA;     // Osso cinza
     objtype_map[CInt(0xEF3A)] := RESOURCE_TYPE_PEDRA;     // Osso gigante
     objtype_map[CInt(0x1BE3)] := RESOURCE_TYPE_PEDRA;     // Glass/Vidro
-    objtype_map[CInt(0x177A)] := RESOURCE_TYPE_PEDRA;
-    
+    objtype_map[CInt(0x5001)] := RESOURCE_TYPE_PEDRA;     // pedrapequena (SEU ITEM COMUM)   
     // Joias
     objtype_map[CInt(0xF13)]  := RESOURCE_TYPE_JOIAS;
     

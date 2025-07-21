@@ -171,7 +171,7 @@ endfunction
 function RemFaccao(guild_obj)
  // Etapa 1: Garantir que temos um objeto de guilda VÁLIDO para trabalhar.
     // Primeiro, verificamos o tipo do parâmetro recebido.
-    var param_type := TypeOf(guild_obj);
+     var param_type := TypeOf(guild_obj);
 
     // Se o parâmetro já for um erro ou nulo, paramos IMEDIATAMENTE.
     if (!guild_obj || param_type == "Error")
