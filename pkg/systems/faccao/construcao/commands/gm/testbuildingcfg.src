@@ -1,0 +1,94 @@
+// :textcmd:gm/testbuildingcfg.src (VERSÃO 2 - COM VALIDAÇÃO APRIMORADA)
+//
+// Comando de GM para testar a leitura do arquivo construcoes.cfg.
+// Uso: .testbuildingcfg <TipoConstrucao> <Nivel>
+// Exemplo: .testbuildingcfg Casa 1
+// Exemplo: .testbuildingcfg LoteDeFazenda 1
+
+use uo;
+use os;
+use util;
+
+// Inclui o cérebro do nosso sistema de construções e o sistema de logging
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/logging";
+
+program textcmd_testbuildingcfg(who, text)
+    var LOG_CATEGORY := "BuildingCFG_Test";
+    LogInfo(LOG_CATEGORY, "==================================================");
+    LogInfo(LOG_CATEGORY, "Comando .testbuildingcfg iniciado por: " + who.name);
+
+    if (!text)
+        SendSysMessage(who, "Uso: .testbuildingcfg <TipoConstrucao> <Nivel>");
+        LogWarning(LOG_CATEGORY, "Comando abortado: nenhum parâmetro fornecido.");
+        return;
+    endif
+    LogDebug(LOG_CATEGORY, "Parâmetros recebidos: '" + text + "'");
+
+    var parts := SplitWords(text);
+    if (parts.size() != 2)
+        SendSysMessage(who, "Erro de sintaxe. Uso correto: .testbuildingcfg <TipoConstrucao> <Nivel>");
+        SendSysMessage(who, "Exemplo: .testbuildingcfg Casa 1");
+        LogError(LOG_CATEGORY, "Erro de parsing: esperava 2 parâmetros, recebeu " + parts.size() + ".");
+        return;
+    endif
+
+    var building_type := parts[1];
+    var level := CInt(parts[2]);
+
+    if (level <= 0)
+        SendSysMessage(who, "Erro: O segundo parâmetro ('" + parts[2] + "') não é um número de nível válido.");
+        LogError(LOG_CATEGORY, "Erro de parsing: Nível inválido '" + parts[2] + "'.");
+        return;
+    endif
+
+    LogInfo(LOG_CATEGORY, "Parsing bem-sucedido. Tipo: '" + building_type + "', Nível: " + level);
+    SendSysMessage(who, "Testando a leitura para: " + building_type + " Nível " + level);
+
+    var details := FEUDO_GetBuildingLevelDetails(building_type, level);
+
+    if (details.errortext)
+        SendSysMessage(who, "ERRO: " + details.errortext);
+        LogError(LOG_CATEGORY, "FEUDO_GetBuildingLevelDetails retornou um erro: " + details.errortext);
+    else
+        LogInfo(LOG_CATEGORY, "SUCESSO! Detalhes da construção carregados. Imprimindo para o GM.");
+        SendSysMessage(who, "--- DETALHES DA CONSTRUÇÃO ---");
+
+        SendSysMessage(who, "Nome: " + details.Name);
+        LogDebug(LOG_CATEGORY, "  -> Nome: " + details.Name);
+
+        SendSysMessage(who, "Custo do Projeto: " + details.CustoProjetoCobre + " cobre");
+        LogDebug(LOG_CATEGORY, "  -> CustoProjetoCobre: " + details.CustoProjetoCobre);
+
+        SendSysMessage(who, "Tempo de Construção: " + details.TempoConstrucao + " segundos");
+        LogDebug(LOG_CATEGORY, "  -> TempoConstrucao: " + details.TempoConstrucao);
+        
+        SendSysMessage(who, "Pesquisa Requerida: " + details.PesquisaRequerida);
+        LogDebug(LOG_CATEGORY, "  -> PesquisaRequerida: " + details.PesquisaRequerida);
+        
+        SendSysMessage(who, "Materiais Necessários (" + details.Materiais.size() + "):");
+        LogDebug(LOG_CATEGORY, "  -> Materiais (" + details.Materiais.size() + "):");
+        if (details.Materiais.size() > 0)
+            foreach material in (details.Materiais.keys())
+                SendSysMessage(who, "  - " + material + ": " + details.Materiais[material]);
+                LogDebug(LOG_CATEGORY, "    - " + material + ": " + details.Materiais[material]);
+            endforeach
+        else
+            LogWarning(LOG_CATEGORY, "    - Nenhum material encontrado no CFG para este nível.");
+        endif
+
+        SendSysMessage(who, "Bônus (" + details.Bonus.size() + "):");
+        LogDebug(LOG_CATEGORY, "  -> Bônus (" + details.Bonus.size() + "):");
+        if (details.Bonus.size() > 0)
+            foreach bonus in (details.Bonus)
+                SendSysMessage(who, "  - " + bonus);
+                LogDebug(LOG_CATEGORY, "    - " + bonus);
+            endforeach
+        else
+            LogWarning(LOG_CATEGORY, "    - Nenhum bônus encontrado no CFG para este nível.");
+        endif
+    endif
+
+    LogInfo(LOG_CATEGORY, "Comando .testbuildingcfg finalizado.");
+    LogInfo(LOG_CATEGORY, "==================================================");
+endprogram

@@ -9,42 +9,41 @@ include ":faccao:include/datafile_helpers";
 include ":faccao:include/process_registry";
 include ":faccao:include/territory_management";
 
-// Opcional: include ":faccao:include/permissions.inc"; 
-
 // Inicia o controle de soldo
 var script := start_script(":faccao:soldocontrol");
 if (script.errortext)
     LogError("sistema", "Erro no script de controle de soldo: " + script.errortext);
 else
-    LogDebug("sistema", "Starting guild npc check script... ok.");
+    LogDebug("sistema", "Iniciando controle de soldo... ok.");
 endif
+sleep(1); // Pequena pausa entre inicializações
 
 // Iniciar o processador de atualizações de recursos
 var update_script := start_script(":faccao:process_recursos_updates");
 if (update_script.errortext)
     LogError("recursos", "Erro ao iniciar processador de atualizações: " + update_script.errortext);
 else
-    LogDebug("sistema", "Starting resource updates processor... ok.");
+    LogDebug("sistema", "Iniciando processador de atualizações de recursos... ok.");
 endif
+sleep(1);
 
+// Iniciar o verificador de consistência de recursos
 var verify_script := start_script(":faccao:verify_faction_resources"); 
 if (verify_script.errortext)
     LogError("recursos", "Erro ao iniciar verificador de consistência: " + verify_script.errortext);
 else
-    LogDebug("sistema", "Starting resources consistency verifier... ok.");
+    LogDebug("sistema", "Iniciando verificador de consistência... ok.");
 endif
+sleep(1);
 
 // Iniciar o sistema de registro de guildas
 var guild_registry := start_script(":faccao:guild_registry");
 if (guild_registry.errortext)
     LogError("sistema", "Erro ao iniciar o sistema de registro de guildas: " + guild_registry.errortext);
 else
-    LogDebug("sistema", "Starting guild registry system... ok.");
+    LogDebug("sistema", "Iniciando registro de guildas... ok.");
 endif
-
-// ==============================================================
-// >>>>> INÍCIO DA ADIÇÃO <<<<<
-// ==============================================================
+sleep(1);
 
 // Iniciar o Vigilante de Totens Expirados
 var totem_watcher_script := start_script(":faccao:spawndecampeao/scripts/totem_watcher");
@@ -53,12 +52,45 @@ if (totem_watcher_script.errortext)
 else
     LogInfo("sistema", "Iniciando Vigilante de Totens... ok.");
 endif
+sleep(1);
 
 // ==============================================================
-// >>>>> FIM DA ADIÇÃO <<<<<
+// >>>>> NOVO BLOCO ADICIONADO AQUI <<<<<
+// ==============================================================
+// Iniciar o Controlador de Construções de Feudo
+LogInfo("sistema", "Iniciando Controlador de Construções de Feudo...");
+var construction_script := start_script(":faccao:construcao/feudo_construction_controller");
+if (construction_script.errortext)
+    LogError("sistema", "Erro ao iniciar o Controlador de Construções: " + construction_script.errortext);
+else
+    LogDebug("sistema", "Controlador de Construções iniciado com sucesso.");
+endif
+sleep(1);
 // ==============================================================
 
+// Iniciar o controlador de pagamento de caravanas
+var caravan_payment_script := start_script(":faccao:caravan_payment_control");
+if (caravan_payment_script.errortext)
+    LogError("sistema", "Erro no script de controle de pagamento de caravanas: " + caravan_payment_script.errortext);
+else
+    LogDebug("sistema", "Iniciando controle de pagamento de caravanas... ok.");
+endif
+sleep(1);
+
+// Iniciar o controlador de upkeep do reino
+var upkeep_script := start_script(":faccao:reino_upkeep_control");
+if (upkeep_script.errortext)
+    LogError("sistema", "Erro no script de controle de upkeep do reino: " + upkeep_script.errortext);
+else
+    LogDebug("sistema", "Iniciando controle de upkeep do reino... ok.");
+endif
+sleep(5); // Uma pausa um pouco maior antes do ResourceController
+
+start_resource_controller(); // Chamada para a função que inicia o ResourceController
+
+// Funções auxiliares (sem alterações)
 function GetMinimumTerritoryInterval()
+    // ... código sem alterações ...
     var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return 3600; 
@@ -96,6 +128,7 @@ function GetMinimumTerritoryInterval()
 endfunction
 
 function start_resource_controller()
+    // ... código sem alterações ...
     var log_msg := ""; 
     var last_time := CInt(GetGlobalProperty("last_execution"));
     if (last_time == error)
@@ -153,23 +186,3 @@ function start_resource_controller()
         LogInfo("start_DEBUG", log_msg);
     endif
 endfunction
-
-// Iniciar o controlador de pagamento de caravanas
-sleep(5);
-var caravan_payment_script := start_script(":faccao:caravan_payment_control");
-if (caravan_payment_script.errortext)
-    LogError("sistema", "Erro no script de controle de pagamento de caravanas: " + caravan_payment_script.errortext);
-else
-    LogDebug("sistema", "Starting caravan payment control script... ok.");
-endif
-
-// Iniciar o controlador de upkeep do reino
-sleep(5);
-var upkeep_script := start_script(":faccao:reino_upkeep_control");
-if (upkeep_script.errortext)
-    LogError("sistema", "Erro no script de controle de upkeep do reino: " + upkeep_script.errortext);
-else
-    LogDebug("sistema", "Starting reino upkeep control script... ok.");
-endif
-sleep(5);
-start_resource_controller(); // Chamada para a função

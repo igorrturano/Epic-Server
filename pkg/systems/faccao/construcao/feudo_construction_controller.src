@@ -1,0 +1,106 @@
+// :faccao:construcao/feudo_construction_controller.src
+//
+// Controlador de background responsável por monitorar e finalizar
+// as construções de feudo cujos materiais já foram depositados.
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:include/process_registry";
+include ":faccao:include/logging";
+include ":faccao:construcao/include/feudo_buildings"; // Para a função de finalização
+
+// Intervalo de verificação em segundos. 60 segundos é um bom valor.
+const CONSTRUCTION_CHECK_INTERVAL := 60;
+
+program FeudoConstructionController()
+    // Garante que apenas uma instância deste controlador esteja rodando
+    if (!RegisterProcess("FeudoConstructionController"))
+        LogWarning("FeudoConstruction", "Uma instância do controlador já está ativa. Este processo será encerrado.");
+        return 0;
+    endif
+
+    LogInfo("FeudoConstruction", ">>> Controlador de Construções de Feudo INICIADO <<<");
+
+    while (1)
+        // Envia um "pulso" para o registro de processos, mostrando que está ativo.
+        UpdateProcessHeartbeat("FeudoConstructionController");
+        
+        LogDebug("FeudoConstruction", "Iniciando ciclo de verificação de construções em andamento...");
+        CheckOngoingConstructions();
+        
+        LogDebug("FeudoConstruction", "Ciclo concluído. Aguardando " + CONSTRUCTION_CHECK_INTERVAL + " segundos...");
+        sleep(CONSTRUCTION_CHECK_INTERVAL);
+    endwhile
+endprogram
+
+/*
+ * CheckOngoingConstructions()
+ *
+ * Itera por todas as guildas, verifica seus projetos em andamento,
+ * atualiza seus visuais e nomes, e finaliza aqueles cujo timer expirou.
+ */
+function CheckOngoingConstructions()
+    var current_time := polcore().systime;
+    var all_guilds := ListGuilds();
+
+    foreach guild in all_guilds
+        var construcoes_em_andamento := guild.GetProp("feudo_constructions");
+
+        if (!construcoes_em_andamento || TypeOf(construcoes_em_andamento) != "Dictionary")
+            continue;
+        endif
+
+        var guild_name := guild.GetProp("name") ?: guild.guildid;
+        var needs_update := 0;
+
+        foreach andaime_serial_str in (construcoes_em_andamento.keys())
+            var construction_data := construcoes_em_andamento[andaime_serial_str];
+            var andaime_principal := SystemFindObjectBySerial(CInt(andaime_serial_str));
+            
+            if (!andaime_principal)
+                // Andaime não existe mais no mundo, mas o timer está rodando.
+                LogWarning("FeudoConstruction", "Andaime " + andaime_serial_str + " não encontrado, mas ainda estava na lista de construções. Removendo da lista.");
+                construcoes_em_andamento.erase(andaime_serial_str);
+                needs_update := 1;
+                continue;
+            endif
+
+            // Apenas processa construções que JÁ TÊM um timer iniciado.
+            if (construction_data.complete_time)
+                
+                // --- INÍCIO DA LÓGICA DE ATUALIZAÇÃO DO NOME ---
+                var tempo_restante := CInt(construction_data.complete_time) - current_time;
+                if (tempo_restante > 0)
+                    var minutos := CInt(tempo_restante / 60);
+                    var segundos := tempo_restante % 60;
+                    var tempo_formatado := CStr(minutos) + "m " + CStr(segundos) + "s";
+                    
+                    // Atualiza o nome do item "cérebro" invisível.
+                    andaime_principal.name := "Construção em Andamento (" + tempo_formatado + ")";
+                endif
+                // --- FIM DA LÓGICA DE ATUALIZAÇÃO DO NOME ---
+
+                // ATUALIZAÇÃO VISUAL BASEADA NO TEMPO
+                FEUDO_UpdateBuildingVisuals(andaime_principal);
+
+                // VERIFICAÇÃO DE CONCLUSÃO
+                if (current_time >= CInt(construction_data.complete_time))
+                    LogInfo("FeudoConstruction", "Construção concluída para a guilda '" + guild_name + "'! Andaime Serial: " + andaime_serial_str);
+                    
+                    FEUDO_CompleteConstruction(andaime_principal);
+                    
+                    construcoes_em_andamento.erase(andaime_serial_str);
+                    needs_update := 1;
+                endif
+            endif
+        endforeach
+
+        if (needs_update)
+            guild.SetProp("feudo_constructions", construcoes_em_andamento);
+        endif
+
+        sleepms(50);
+    endforeach
+endfunction

@@ -1,0 +1,81 @@
+// :faccao:construcao/projeto_uso.src (VERSÃO DE DEPURAÇÃO ROBUSTA)
+
+use uo;
+use os;
+
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/logging"; // Adicionado para logs no console
+
+program use_projeto(who, projeto)
+    var LOG_CATEGORY := "ProjetoUso";
+    LogInfo(LOG_CATEGORY, "==================================================");
+    LogInfo(LOG_CATEGORY, "Script 'projeto_uso' iniciado por " + who.name + " no item " + projeto.serial);
+
+    if (!who.guild)
+        SendSysMessage(who, "Você precisa pertencer a um feudo para iniciar uma construção.");
+        return;
+    endif
+    
+    // --- ETAPA 1: LER E VALIDAR AS CPROPS DO PROJETO ---
+    LogDebug(LOG_CATEGORY, "Lendo CProps do item 'Projeto'...");
+    var building_type := GetObjProperty(projeto, "BuildingType");
+    var level := CInt(GetObjProperty(projeto, "BuildingLevel"));
+    
+    // Validação Crítica
+    if (!building_type || building_type.errortext || !level || level <= 0)
+        SendSysMessage(who, "ERRO: Este projeto de construção está corrompido ou incompleto.");
+        LogError(LOG_CATEGORY, "FALHA na leitura das CProps. BuildingType: " + building_type + ", Level: " + level);
+        return;
+    endif
+    LogInfo(LOG_CATEGORY, "CProps lidas com sucesso. Tipo: '" + building_type + "', Nível: " + level);
+    
+    // --- ETAPA 2: OBTER DETALHES DA CONSTRUÇÃO DO CFG ---
+    LogDebug(LOG_CATEGORY, "Chamando FEUDO_GetBuildingLevelDetails...");
+    var details := FEUDO_GetBuildingLevelDetails(building_type, level);
+
+    if (details.errortext)
+        SendSysMessage(who, "Erro no projeto: " + details.errortext);
+        LogError(LOG_CATEGORY, "FEUDO_GetBuildingLevelDetails retornou um erro: " + details.errortext);
+        return;
+    endif
+    LogInfo(LOG_CATEGORY, "Detalhes do CFG carregados com sucesso para: " + details.Name);
+
+    // --- ETAPA 3: TARGET E CRIAÇÃO DO ANDAIME ---
+    SendSysMessage(who, "Selecione o local para o centro do canteiro de obras.");
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        LogInfo(LOG_CATEGORY, "Ação cancelada pelo jogador (Target).");
+        return;
+    endif
+    LogDebug(LOG_CATEGORY, "Local selecionado: " + targ.x + "," + targ.y + "," + targ.z);
+
+    var andaime_principal := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xef04, 1, who.realm);
+    
+    if (andaime_principal)
+        LogInfo(LOG_CATEGORY, "Andaime 'cérebro' criado com sucesso (Serial: " + andaime_principal.serial + ")");
+        andaime_principal.name := "Cérebro do Canteiro de Obras: " + details.Name;
+        andaime_principal.invisible := 1;
+        
+        var materiais_status := dictionary{};
+        foreach material_nome in (details.Materiais.keys())
+            materiais_status[material_nome] := struct{"necessario" := details.Materiais[material_nome], "atual" := 0};
+        endforeach
+        
+        SetObjProperty(andaime_principal, "MateriaisStatus", materiais_status);
+        SetObjProperty(andaime_principal, "BuildingInfo", struct{"type" := building_type, "level" := level});
+        SetObjProperty(andaime_principal, "GuildOwner", who.guildid);
+        LogDebug(LOG_CATEGORY, "CProps do andaime configuradas.");
+
+        // Chamada para criar o visual inicial
+        LogDebug(LOG_CATEGORY, "Chamando FEUDO_UpdateBuildingVisuals para desenhar o Estágio 1...");
+        FEUDO_UpdateBuildingVisuals(andaime_principal);
+
+        DestroyItem(projeto);
+        SendSysMessage(who, "Canteiro de obras para '" + details.Name + "' iniciado!");
+        LogInfo(LOG_CATEGORY, "Processo concluído com sucesso.");
+    else
+        SendSysMessage(who, "Não foi possível criar o canteiro de obras neste local.");
+        LogError(LOG_CATEGORY, "FALHA CRÍTICA: CreateItemAtLocation para o andaime retornou nulo.");
+    endif
+    LogInfo(LOG_CATEGORY, "==================================================");
+endprogram

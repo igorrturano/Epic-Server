@@ -1,0 +1,69 @@
+// :faccao:construcao/commands/gm/feudocmd.src
+//
+// Suíte de comandos de GM para testar o sistema de construções de feudo.
+
+use uo;
+use os;
+use util;
+
+program textcmd_feudocmd(who, text)
+    if (!text)
+        SendSysMessage(who, "Uso: .feudocmd <comando> [args]");
+        SendSysMessage(who, "Comandos: projeto, recurso");
+        return;
+    endif
+
+    var parts := SplitWords(text);
+    var command := parts[1];
+    
+    case(command)
+        "projeto":
+            if (parts.size() != 3)
+                SendSysMessage(who, "Uso: .feudocmd projeto <BuildingType> <Level>");
+                return;
+            endif
+            
+            var building_type_str := parts[2];
+            var level_int := CInt(parts[3]);
+
+            var projeto := CreateItemInBackpack(who, 0xef03, 1); // Usando seu objtype
+            if (projeto)
+                projeto.name := "Projeto (Teste): " + building_type_str + " Nv." + level_int;
+                
+                // --- PONTO CRÍTICO DA VERIFICAÇÃO ---
+                // Estas duas linhas são as mais importantes.
+                SetObjProperty(projeto, "BuildingType", building_type_str);
+                SetObjProperty(projeto, "BuildingLevel", level_int);
+                
+                SendSysMessage(who, "Item 'Projeto' de teste criado em sua mochila.");
+                SendSysMessage(who, "CProp 'BuildingType' definida como: " + GetObjProperty(projeto, "BuildingType"));
+            else
+                SendSysMessage(who, "Falha ao criar o item do projeto.");
+            endif
+            break;
+
+        "recurso":
+            if (parts.size() != 3)
+                SendSysMessage(who, "Uso: .feudocmd recurso <Tipo> <Quantidade>");
+                return;
+            endif
+            
+            var resource_type := Lower(parts[2]);
+            var amount := CInt(parts[3]);
+            var objtype := 0;
+
+            case(resource_type)
+                "madeira": objtype := 0x1BDD; // Log
+                "pedra":   objtype := 0x1365; // Stone
+                "ferro":   objtype := 0x1BF2; // Iron Ingot
+            endcase
+
+            if (objtype)
+                CreateItemInBackpack(who, objtype, amount);
+                SendSysMessage(who, amount + " de " + resource_type + " criado em sua mochila.");
+            else
+                SendSysMessage(who, "Tipo de recurso desconhecido: " + resource_type);
+            endif
+            break;
+    endcase
+endprogram

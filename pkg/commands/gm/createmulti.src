@@ -1,42 +1,57 @@
 use uo;
+use os;
+
 
 include ":attributes:attributes";
 include "include/sounds";
 include ":fls_core:packets";
+program textcmd_CreateHouse(who, text)
 
-program textcmd_Kill(who, text)
-    SendSysMessage(who, "Verificando se eh barco para tentar criar.");
-    var targ := TargetMultiplacement(who, text);
-    if(!targ)
-        SendSysMessage(who, "Nao eh barco.");
-    else
-        var ship := CreateMultiAtLocation(targ.x, targ.y, targ.z, text, 0x0007, who.realm);
-        SendSysMessage(who, "Multi (barco): " + ship);
-        return 1;
-    endif
-
-    var opt := SplitWords(text);
-    if(!opt)
+    var opt := CInt(text);
+    if (!opt)
+        SendSysMessage(who, "Uso: .CreateHouse [objtype_da_casa]");
+        SendSysMessage(who, "Exemplo: .CreateHouse 0xc962");
         return 0;
     endif
 
-    SendSysMessage(who, "Escolha onde quer colocar o Multi.");
-    var dims := GetMultiDimensions(CInt(opt[1])); //Returns struct with coords of _relative_ distances from center. xmin and ymin are _negative_
-    if(!dims)
-        SendSysMessage(who, "Multi com tamanho invalido.");
+    SendSysMessage(who, "Escolha onde quer colocar a casa.");
+    var where := Target(who);
+    if (!where)
+        SendSysMessage(who, "Cancelado.");
         return 0;
     endif
+	
+    // Pega a altura Z do chão do reino ALT para garantir a posição correta
+	var mi_alt := GetMapInfo(where.x, where.y, "britannia_alt");
+	if (!mi_alt)
+		SendSysMessage(who, "Não foi possível obter informações do mapa para o reino 'britannia_alt'.", SSM_FAIL);
+		return 0;
+	endif
+	
+	var x := where.x;
+	var y := where.y;
+	var z := mi_alt.z;
+	
+    // Flags para ignorar todas as regras de posicionamento
+    const CIMULTI_IGNORE_ALL := 0x100; 
 
-    var loc := TargetMultiPlacement( who, opt[1], 0, 0, dims.ymax);
-    if(!loc)
-        SendSysMessage(who, "Local invalido para o Multi.");
+    SendSysMessage(who, "Tentando criar a casa " + Hex(opt) + " em " + x + "," + y + "," + z + " no reino 'britannia_alt'");
+    
+    // Cria o multi FORÇADAMENTE no reino ALT
+    var house := CreateMultiAtLocation(x, y, z, opt, CIMULTI_IGNORE_ALL, "britannia_alt");
+    
+    if (house.errortext)
+        SendSysMessage(who, "FALHA ao criar a casa. Erro do Core: " + house.errortext, SSM_FAIL);
         return 0;
     endif
+    
+    SendSysMessage(who, "Casa criada com sucesso! Serial: " + house.serial, SSM_INFO);
+    SendSysMessage(who, "Use '.go " + x + " " + y + " " + z + " britannia_alt' para visitar.");
 
-    var multi := CreateMultiAtLocation( loc.x, loc.y - dims.ymax, loc.z, opt[1], 0, who.realm);
-    if (!multi)
-        PrintTextAbovePrivate(who, "Nao conseguiu colocar o multi" + CStr(CInt(Opt[1])) + ".", who);
-        return 0;
-    endif
+    // Configurações básicas para a casa
+    SetObjProperty(house, "ownerserial", who.serial);
+    SetObjProperty(house, "owneracct", who.acctname);
+    house.decayat := 0;
+
     return 1;
 endprogram

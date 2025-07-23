@@ -1,0 +1,185 @@
+// :faccao/construcao/andaime_uso.src (VERSÃO DE TESTE COM BOTÕES, LOGS E INDENTAÇÃO CORRETA)
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":gumps:gumps";
+
+
+program use_andaime(who, andaime)
+    var LOG_CATEGORY := "AndaimeUso";
+    LogInfo(LOG_CATEGORY, "==================================================");
+    LogInfo(LOG_CATEGORY, "Script 'andaime_uso' iniciado por " + who.name + " no andaime " + andaime.serial);
+
+    var guild_owner_id := GetObjProperty(andaime, "GuildOwner");
+    if (who.guildid != guild_owner_id)
+        SendSysMessage(who, "Você não pode interagir com o canteiro de obras de outro feudo.");
+        LogWarning(LOG_CATEGORY, "Acesso negado. Guild do jogador (" + who.guildid + ") != Guild do andaime (" + guild_owner_id + ")");
+        return;
+    endif
+
+    // Loop para manter a Gump aberta até o jogador fechar
+    var continuar := 1;
+    while (continuar)
+        var build_info := GetObjProperty(andaime, "BuildingInfo");
+        var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
+        
+        if (!build_info || !materiais_status)
+            SendSysMessage(who, "Este canteiro de obras está corrompido.");
+            LogError(LOG_CATEGORY, "FALHA: Andaime " + andaime.serial + " está corrompido (sem BuildingInfo ou MateriaisStatus).");
+            return;
+        endif
+
+        // A construção com timer já começou?
+        if (GetObjProperty(andaime, "ConstructionTimer"))
+            var timer_info := GetObjProperty(andaime, "ConstructionTimer");
+            var tempo_restante := CInt(timer_info.complete_time) - polcore().systime;
+            if (tempo_restante < 0)
+                tempo_restante := 0;
+            endif
+            SendSysMessage(who, "A construção está em andamento. Tempo restante: " + CInt(tempo_restante / 60) + " minutos.");
+            return;
+        endif
+
+        var gump := GFCreateGump();
+        var num_materiais := materiais_status.keys().size();
+        var gump_height := 150 + (num_materiais * 30);
+
+        GFResizePic(gump, 0, 0, 9200, 450, gump_height);
+        GFTextMid(gump, 225, 20, 430, 53, build_info.type + " (Nível " + build_info.level + ")");
+
+        var y := 60;
+        GFTextLine(gump, 30, y, 1153, "Deposite os materiais necessários:");
+        y += 25;
+
+        var button_id := 100; // IDs dos botões começarão em 100
+        foreach material in (materiais_status.keys())
+            var status := materiais_status[material];
+            var text_color := (status.atual >= status.necessario) ? 68 : 38;
+            
+            GFTextLine(gump, 50, y, 1153, material + ":");
+            GFTextLine(gump, 200, y, text_color, CStr(status.atual) + " / " + CStr(status.necessario));
+
+            // Adiciona o botão de depósito
+            GFAddButton(gump, 350, y - 5, 4005, 4007, GF_CLOSE_BTN, button_id);
+            GFTextLine(gump, 375, y, 1153, "Adicionar");
+            
+            y += 25;
+            button_id += 1;
+        endforeach
+
+        LogDebug(LOG_CATEGORY, "Enviando Gump de progresso para " + who.name);
+        var input := GFSendGump(who, gump);
+        var clicked_button := input[0];
+        LogDebug(LOG_CATEGORY, "Jogador clicou no botão: " + clicked_button);
+
+        if (clicked_button == 0) // Jogador fechou a Gump
+            continuar := 0;
+        elseif (clicked_button >= 100)
+            var material_index := clicked_button - 100;
+            var material_keys := materiais_status.keys();
+            
+            if (material_index >= 0 && material_index < material_keys.size())
+                var material_selecionado := material_keys[material_index + 1]; // POL array 1-based
+                LogInfo(LOG_CATEGORY, "Jogador selecionou adicionar '" + material_selecionado + "'. Chamando AdicionarMaterialViaBotao.");
+                AdicionarMaterialViaBotao(who, andaime, material_selecionado);
+            else
+                LogWarning(LOG_CATEGORY, "Índice de botão inválido: " + clicked_button);
+            endif
+        endif
+    endwhile
+    LogInfo(LOG_CATEGORY, "Jogador fechou a Gump. Fim do script.");
+endprogram
+
+/*
+ * AdicionarMaterialViaBotao()
+ * Pede ao jogador para targetar o recurso e o deposita.
+ */
+function AdicionarMaterialViaBotao(who, andaime, material_tipo)
+    var LOG_CATEGORY := "AndaimeBotao";
+    LogInfo(LOG_CATEGORY, "---------------------------------");
+    LogInfo(LOG_CATEGORY, "Função iniciada para adicionar '" + material_tipo + "'.");
+
+    SendSysMessage(who, "Selecione a pilha de " + material_tipo + " que deseja depositar.");
+    var item := Target(who, TGTOPT_CHECK_LOS);
+
+    if (!item)
+        SendSysMessage(who, "Cancelado.");
+        LogDebug(LOG_CATEGORY, "Target cancelado pelo jogador.");
+        return;
+    endif
+    LogDebug(LOG_CATEGORY, "Jogador targetou item: " + item.desc + " (Serial: " + item.serial + ")");
+
+    var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
+    var item_categoria_raw := ClassificarRecurso(item);
+    var item_categoria := Lower(item_categoria_raw);
+    LogDebug(LOG_CATEGORY, "Item classificado como: '" + item_categoria_raw + "' -> '" + item_categoria + "'.");
+    
+    if (item_categoria != material_tipo)
+        SendSysMessage(who, "Isso não é " + material_tipo + ".");
+        LogError(LOG_CATEGORY, "FALHA: Material incorreto. Esperado: '" + material_tipo + "', Recebido: '" + item_categoria + "'.");
+        return;
+    endif
+
+    var necessario := materiais_status[item_categoria].necessario;
+    var atual := materiais_status[item_categoria].atual;
+    LogDebug(LOG_CATEGORY, "Progresso atual para '" + material_tipo + "': " + atual + "/" + necessario);
+    
+    if (atual >= necessario)
+        SendSysMessage(who, "A quantidade necessária de " + item_categoria_raw + " já foi depositada.");
+        LogWarning(LOG_CATEGORY, "Depósito bloqueado: material '" + material_tipo + "' já está completo.");
+        return;
+    endif
+
+    var falta := necessario - atual;
+    var quantidade_a_depositar := item.amount;
+
+    if (quantidade_a_depositar > falta)
+        var excesso := quantidade_a_depositar - falta;
+        SendSysMessage(who, "Você depositou " + falta + " de " + item_categoria_raw + ". O excesso (" + excesso + ") foi devolvido.");
+        SubtractAmount(item, falta);
+        quantidade_a_depositar := falta;
+        LogDebug(LOG_CATEGORY, "Depósito parcial: " + falta + " unidades. Excesso de " + excesso + " devolvido.");
+    else
+        DestroyItem(item);
+        LogDebug(LOG_CATEGORY, "Depósito total: " + quantidade_a_depositar + " unidades. Item destruído.");
+    endif
+    
+    materiais_status[item_categoria].atual += quantidade_a_depositar;
+    SetObjProperty(andaime, "MateriaisStatus", materiais_status);
+    LogInfo(LOG_CATEGORY, "CProp 'MateriaisStatus' atualizada. Novo progresso para '" + material_tipo + "': " + materiais_status[item_categoria].atual + "/" + necessario);
+    
+    var completo := 1;
+    foreach mat in (materiais_status.keys())
+        if (materiais_status[mat].atual < materiais_status[mat].necessario)
+            completo := 0;
+            break;
+        endif
+    endforeach
+    
+    LogDebug(LOG_CATEGORY, "Chamando FEUDO_UpdateBuildingVisuals...");
+    FEUDO_UpdateBuildingVisuals(andaime);
+    LogDebug(LOG_CATEGORY, "Atualização visual concluída.");
+
+    if (completo)
+        LogInfo(LOG_CATEGORY, "CONSTRUÇÃO COMPLETA! 100% dos materiais depositados. Iniciando timer final.");
+        var build_info := GetObjProperty(andaime, "BuildingInfo");
+        var guild_id := GetObjProperty(andaime, "GuildOwner");
+        var guild := FindGuild(guild_id);
+        var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+        
+        var construcoes := guild.GetProp("feudo_constructions") ?: dictionary{};
+        construcoes[CStr(andaime.serial)] := struct{"type" := build_info.type, "level" := build_info.level, "complete_time" := polcore().systime + details.TempoConstrucao};
+        guild.SetProp("feudo_constructions", construcoes);
+        
+        SetObjProperty(andaime, "ConstructionTimer", struct { "start_time" := polcore().systime, "duration" := details.TempoConstrucao });
+
+        andaime.name := "Construção em Andamento: " + details.Name;
+        PrintTextAbove(andaime, "Todos os materiais foram reunidos! A construção começou!");
+    endif
+    LogInfo(LOG_CATEGORY, "---------------------------------");
+endfunction

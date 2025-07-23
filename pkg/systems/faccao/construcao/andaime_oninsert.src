@@ -1,0 +1,110 @@
+// :faccao:construcao/andaime_oninsert.src
+//
+// Script acionado quando um item é inserido no canteiro de obras.
+// Valida o material, atualiza o progresso e, se concluído, inicia o timer.
+
+use uo;
+use os;
+use guilds;
+
+// Includes necessários para as funções que este script chama
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/shared_functions";
+
+program on_insert_andaime(who, andaime, item, movetype, inserttype, adding_item_stack, existing_stack)
+    // Parâmetros do sistema não utilizados
+    movetype := movetype;
+    inserttype := inserttype;
+    adding_item_stack := adding_item_stack;
+    existing_stack := existing_stack;
+
+    var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
+    if (!materiais_status)
+        SendSysMessage(who, "Este canteiro de obras está corrompido.");
+        MoveItemToContainer(item, who.backpack); // Devolve o item
+        return 0; // Impede a inserção
+    endif
+
+    var item_categoria_raw := ClassificarRecurso(item);
+    var item_categoria := Lower(item_categoria_raw); // NORMALIZA PARA MINÚSCULAS
+
+    // Verifica se a categoria do item (ex: "madeira") é uma das chaves necessárias
+    if (!materiais_status.exists(item_categoria))
+        SendSysMessage(who, "Este material (" + item_categoria_raw + ") não é necessário para esta construção.");
+        MoveItemToContainer(item, who.backpack);
+        return 0;
+    endif
+
+    var necessario := materiais_status[item_categoria].necessario;
+    var atual := materiais_status[item_categoria].atual;
+    
+    if (atual >= necessario)
+        SendSysMessage(who, "A quantidade necessária de " + item_categoria_raw + " já foi depositada.");
+        MoveItemToContainer(item, who.backpack);
+        return 0;
+    endif
+
+    var falta := necessario - atual;
+    var quantidade_a_depositar := item.amount;
+    var item_consumido := 0;
+
+    if (quantidade_a_depositar > falta)
+        // O jogador depositou mais do que o necessário.
+        var excesso := quantidade_a_depositar - falta;
+        SendSysMessage(who, "Você depositou " + falta + " de " + item_categoria_raw + ". O excesso (" + excesso + ") foi devolvido.");
+        
+        item.amount := excesso;
+        MoveItemToContainer(item, who.backpack);
+        quantidade_a_depositar := falta;
+    else
+        // O item será totalmente consumido.
+        DestroyItem(item);
+        item_consumido := 1;
+    endif
+    
+    // Atualiza o progresso na CProp do andaime
+    materiais_status[item_categoria].atual += quantidade_a_depositar;
+    SetObjProperty(andaime, "MateriaisStatus", materiais_status);
+    SendSysMessage(who, "Progresso: " + materiais_status[item_categoria].atual + " / " + necessario + " de " + item_categoria_raw);
+
+    // Verifica se a coleta de materiais foi concluída
+    var completo := 1;
+    foreach mat in (materiais_status.keys())
+        if (materiais_status[mat].atual < materiais_status[mat].necessario)
+            completo := 0;
+            break;
+        endif
+    endforeach
+
+    // Atualiza a aparência visual do canteiro de obras
+    FEUDO_UpdateBuildingVisuals(andaime);
+
+    if (completo)
+        // Se 100% dos materiais foram depositados, INICIA o timer final.
+        var build_info := GetObjProperty(andaime, "BuildingInfo");
+        var guild_id := GetObjProperty(andaime, "GuildOwner");
+        var guild := FindGuild(guild_id);
+        
+        var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+        
+        // Salva o timer na CProp da GUILDA para o controlador ler
+        var construcoes := guild.GetProp("feudo_constructions") ?: dictionary{};
+        construcoes[CStr(andaime.serial)] := struct {
+            "type"          := build_info.type,
+            "level"         := build_info.level,
+            "complete_time" := polcore().systime + details.TempoConstrucao
+        };
+        guild.SetProp("feudo_constructions", construcoes);
+        
+        // Também salva no andaime para a função de atualização visual
+        SetObjProperty(andaime, "ConstructionTimer", struct { "start_time" := polcore().systime, "duration" := details.TempoConstrucao });
+
+        andaime.name := "Construção em Andamento: " + details.Name;
+        PrintTextAbove(andaime, "Todos os materiais foram reunidos! A construção começou!");
+        SendViewContainer(who, andaime); // Fecha a janela do container
+    endif
+
+    // Se o item foi consumido (DestroyItem), retorna 1 para confirmar a "inserção".
+    // Se não foi (MoveItemToContainer), retorna 0 para cancelar.
+    return item_consumido;
+endprogram

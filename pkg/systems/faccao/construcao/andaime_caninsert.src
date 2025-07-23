@@ -1,0 +1,40 @@
+// :faccao:construcao/andaime_caninsert.src
+//
+// Script de gancho 'CanInsert' para o canteiro de obras.
+// Verifica se o item que está sendo inserido é um material válido para a construção.
+
+use uo;
+use os;
+
+include ":faccao:include/shared_functions"; // Para a função ClassificarRecurso
+
+program can_insert_andaime(mobile, container, movetype, inserttype, adding_item, existing_stack, amt_to_add)
+    // Parâmetros do sistema não utilizados
+    movetype := movetype;
+    inserttype := inserttype;
+    existing_stack := existing_stack;
+    amt_to_add := amt_to_add;
+    
+    var materiais_status := GetObjProperty(container, "MateriaisStatus");
+    if (!materiais_status)
+        SendSysMessage(mobile, "Este canteiro de obras está corrompido.");
+        return 0; // Bloqueia a inserção
+    endif
+
+    var item_categoria_raw := ClassificarRecurso(adding_item);
+    var item_categoria := Lower(item_categoria_raw);
+
+    // Verifica se a categoria do item (ex: "madeira") é uma das chaves necessárias
+    if (materiais_status.exists(item_categoria))
+        // Verifica se a quantidade necessária já foi atingida
+        if (materiais_status[item_categoria].atual >= materiais_status[item_categoria].necessario)
+            SendSysMessage(mobile, "A quantidade necessária de " + item_categoria_raw + " já foi depositada.");
+            return 0; // Bloqueia a inserção
+        else
+            return 1; // Permite a inserção
+        endif
+    else
+        SendSysMessage(mobile, "Este material (" + item_categoria_raw + ") não é necessário para esta construção.");
+        return 0; // Bloqueia a inserção
+    endif
+endprogram

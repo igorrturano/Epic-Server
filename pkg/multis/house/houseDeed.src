@@ -1,4 +1,3 @@
- 
 use cfgfile;
 use uo;
 use os;
@@ -6,140 +5,155 @@ use os;
 include ":keys:key";
 include "include/say";
 
-const UOBJECT_DOORS_START:=0x675;
-const UOBJECT_DOORS_END:=0x6f4;
-const UOBJECT_BRASS_SIGN:=0xbd2;
-const UOBJECT_WOOD_SIGN:=0xbd0;
-const UOBJECT_WOOD_SIGNTWO:=0xbd1;
-const UOBJECT_TENT_CHEST:=0xe43;
+const UOBJECT_DOORS_START := 0x675;
+const UOBJECT_DOORS_END := 0x6f4;
+const UOBJECT_BRASS_SIGN := 0xbd2;
+const UOBJECT_WOOD_SIGN := 0xbd0;
+const UOBJECT_WOOD_SIGNTWO := 0xbd1;
+const UOBJECT_TENT_CHEST := 0xe43;
+
+const CIMULTI_IGNORE_ALL := 0x100;
 
 program usehousedeed(character, deed)
-	if(!ReserveItem(deed))
+	SendSysMessage(character, "usehousedeed: Script iniciado.");
+
+	if (!ReserveItem(deed))
+		SendSysMessage(character, "usehousedeed: Falha ao reservar o item.", SSM_FAIL);
 		return;
 	endif
-	if(!Accessible(character, deed))
+	
+	if (!Accessible(character, deed))
+		SendSysMessage(character, "usehousedeed: Deed inacessível.", SSM_FAIL);
 		return;
 	endif
-  
-	if(deed.movable == 0)
+
+	if (deed.movable == 0)
 		SendSysMessageEx(character, "Voce nao pode usar isto.", SSM_FAIL);
 		return;
 	endif
 
-	if(DeedAlreadyBuiltFrom(deed))
+	if (DeedAlreadyBuiltFrom(deed))
 		SendSysMessageEx(character, "Esta casa ja foi feita.", SSM_FAIL);
 		DestroyItem(deed);
 	else
 		Buildhouse(character, deed);
- 	endif
-
+	endif
 endprogram
 
 function Buildhouse(character, deed)
-
-	if(!IsInContainer(character.backpack, deed))
+	if (!IsInContainer(character.backpack, deed))
 		SendSysMessageEx(character, "O item precisa estar na sua mochila.", SSM_FAIL);
 		return;
 	endif
-	if(!ReserveItem(deed))
+	
+	if (!ReserveItem(deed))
 		return;
 	endif
+
 	var housetype := GetHouseObjtype(deed);
-	Sendsysmessage(character," " + housetype);
- 	if(housetype == error)
-		SendSysMessageEx(character, "Este item nao funciona.", SSM_FAIL);
+	SendSysMessage(character, "Buildhouse: housetype é " + housetype + " (Hex: " + Hex(housetype) + ")");
+
+	if (!housetype)
+		SendSysMessageEx(character, "Este item nao funciona (housetype inválido).", SSM_FAIL);
 		return;
 	endif
+
 	var where := TargetMultiPlacement(character, housetype);
-	if(!where)
+	if (!where)
 		SendSysMessageEx(character, "Cancelado.", SSM_FAIL);
 		return;
-  	endif
+	endif
 
-	if (Distance(character,where) > 50)
+	SendSysMessage(character, "Buildhouse: Coordenadas escolhidas: " + where.x + "," + where.y + "," + where.z);
+
+	if (Distance(character, where) > 50)
 		SendSysMessageEx(character, "Voce esta muito distante.", SSM_FAIL);
 		return;
 	endif
 
-	set_critical(1);
-	var created:=CreatehouseKeysAndBuiltDeed(character, housetype, where, deed);
-	if(!created)
+	// set_critical(1); // Mantido comentado para depuração
+	var created := CreatehouseKeysAndBuiltDeed(character, housetype, where, deed);
+	
+	if (!created)
+		SendSysMessage(character, "Buildhouse: A função CreatehouseKeysAndBuiltDeed retornou uma falha.", SSM_FAIL);
 		return;
 	endif
+
 	var lock := GetObjProperty(deed, "numlockdowns");
-	var sec  := GetObjProperty(deed, "numsecure");
-	if(DestroyItem(deed))
+	var sec := GetObjProperty(deed, "numsecure");
+
+	if (DestroyItem(deed))
 		var lockid := AllocLockId();
-		SetObjProperty(created.builtdeed, "builtserial",  created.house.serial);
-		SetObjProperty(created.builtdeed, "new",          1);
-		SetObjProperty(created.builtdeed, "numlockdowns", lock);
-		SetObjProperty(created.builtdeed, "numsecure",    sec);
-		SetObjProperty(created.packkey,   "LockId",       lockid);
-		SetObjProperty(created.bankkey,   "lockid",       lockid);
-		SetObjProperty(created.house,     "numlockdowns", lock);
-		SetObjProperty(created.house,     "numsecure",    sec);
-		SetObjProperty(created.house,     "footage",      created.footage);
-		var logdoor, item, abc := 0, staticbanstrip, number_ := 0;
-		foreach item in(created.house.components)
-			if(((item.objtype >= UOBJECT_DOORS_START) &&(item.objtype <= UOBJECT_DOORS_END)) || item.objtype == UOBJECT_TENT_CHEST || item.objtype == 0x6ad)
+		SetObjProperty(created.packkey, "LockId", lockid);
+		SetObjProperty(created.house, "numlockdowns", lock);
+		SetObjProperty(created.house, "numsecure", sec);
+		
+		foreach item in (created.house.components)
+			if (((item.objtype >= UOBJECT_DOORS_START) && (item.objtype <= UOBJECT_DOORS_END)) || item.objtype == UOBJECT_TENT_CHEST || item.objtype == 0x6ad)
 				item.locked := 1;
 				SetObjProperty(item, "LockId", lockid);
 				SetObjProperty(item, "houseserial", created.house.serial);
-      			elseif((item.objtype == UOBJECT_BRASS_SIGN) || (item.objtype == UOBJECT_WOOD_SIGN) || (item.objtype == UOBJECT_WOOD_SIGNTWO))
-				SetObjProperty(item,"LockId",lockid);
+      		elseif ((item.objtype == UOBJECT_BRASS_SIGN) || (item.objtype == UOBJECT_WOOD_SIGN) || (item.objtype == UOBJECT_WOOD_SIGNTWO))
+				SetObjProperty(item, "LockId", lockid);
 				SetObjProperty(item, "houseserial", created.house.serial);
 				SetObjProperty(created.house, "signserial", item.serial);
 			endif
-    		endforeach
+    	endforeach
+		
+		SendSysMessage(character, "Buildhouse: Casa criada e configurada com sucesso!", SSM_INFO);
   	else
-    		DestroyItem(created.builtdeed);
-    		DestroyItem(created.packkey);
-    		DestroyItem(created.bankkey);
-    		foreach item in(created.house.components)
-      			DestroyItem(item);
-    		endforeach
-    		DestroyMulti(created.house);
+		SendSysMessage(character, "Buildhouse: Falha ao destruir o deed. Limpando a casa criada.", SSM_FAIL);
+    	DestroyItem(created.packkey);
+    	DestroyMulti(created.house);
   	endif
 endfunction
-
 function CreatehouseKeysAndBuiltDeed(character, housetype, where, deed)
+	var x := where.x, y := where.y; // Não precisamos do Z do cursor mais
 
-	var logdoor, x := where.x, y := where.y, z := where.z;
-  	var packkey := CreateItemInBackpack(character, 0x100E);
-  	if(!packkey)
-    		SendSysMessageEx(character, "Sua mochila esta cheia!", SSM_FAIL);
-    		return 0;
-  	endif
+	// A altura Z da casa deve ser a do terreno no reino ALT
+	var mi_alt := GetMapInfo(x, y, "britannia_alt");
+	var z := mi_alt.z; 
 
-	Sendsysmessage(character," " + housetype);
-	var house := CreateMultiAtLocation(x, y, z, housetype);
-    	if(!house)
-		PrintTextAbovePrivate(character, "I can't place the house there.", character);
-		DestroyItem(packkey);
-    		return;
-  	endif
+	var packkey := CreateItemInBackpack(character, 0x100E);
 	
-	SetObjProperty(house,"numlockdowns",GetObjProperty(deed,"numlockdowns"));
-	SetObjProperty(house,"numsecure",GetObjProperty(deed,"numsecure"));
-	SetObjProperty(house,"ownerserial",character.serial);
-	SetObjProperty(house,"owneracct",character.acctname);
+	if (!packkey)
+		SendSysMessageEx(character, "Sua mochila esta cheia!", SSM_FAIL);
+		return 0;
+	endif
+
+	// LOG com a nova informação de reino
+	SendSysMessage(character, "Createhouse: Tentando criar multi " + housetype + " em " + x + "," + y + "," + z + " no reino 'britannia_alt'");
+	
+	// CHAMADA MODIFICADA COM O PARÂMETRO 'REALM'
+	var house := CreateMultiAtLocation(x, y, z, housetype, CIMULTI_IGNORE_ALL, "britannia_alt");
+
+	if (house.errortext)
+		SendSysMessage(character, "CreateMultiAtLocation FALHOU. Erro do Core: " + house.errortext, SSM_FAIL);
+		DestroyItem(packkey);
+		return 0;
+	endif
+
+	SendSysMessage(character, "CreateMultiAtLocation SUCESSO. Serial da casa: " + house.serial, SSM_INFO);
+	
+	SetObjProperty(house, "numlockdowns", GetObjProperty(deed, "numlockdowns"));
+	SetObjProperty(house, "numsecure", GetObjProperty(deed, "numsecure"));
+	SetObjProperty(house, "ownerserial", character.serial);
+	SetObjProperty(house, "owneracct", character.acctname);
 	house.decayat := 0;
 
-	if(housetype==0x6bb8 || housetype==0x6070 || housetype==0x6072)
-		house.movable:=0;
-		house.visible:=1;
+	if (housetype == 0x6bb8 || housetype == 0x6070 || housetype == 0x6072)
+		house.movable := 0;
+		house.visible := 1;
 	endif
   
-	var result array;
-	result .+ packkey := packkey;
-	result .+ bankkey := 0;//bankkey;
-	result .+ builtdeed := 0; //builtdeed;
-	result .+ house := house;
+	var result := {};
+	result.packkey := packkey;
+	result.house   := house;
 	return result;
 endfunction
 
 function DeedAlreadyBuiltFrom(deed)
-	if(GetObjProperty(deed, "builtserial"))
+	if (GetObjProperty(deed, "builtserial"))
 		return 1;
 	else
 		return 0;
@@ -147,17 +161,22 @@ function DeedAlreadyBuiltFrom(deed)
 endfunction
 
 function GetHouseObjtype(deed)
-  var id := ReadConfigFile("itemdesc");
-  var elem := id[ deed.objtype ];
-  var ot := GetObjtypeByName(elem.HouseObjType);
-  return ot;
+	var id := ReadConfigFile("itemdesc");
+	var elem := id[deed.objtype];
+	
+	if (elem)
+		return GetObjtypeByName(elem.HouseObjType);
+	else
+		return 0;
+	endif
 endfunction
 
 function IsInContainer(container, item)
 	foreach thing in EnumerateItemsInContainer(container)
-		if(thing.serial == item.serial)
+		if (thing.serial == item.serial)
 			return 1;
 		endif
 	endforeach
+	
 	return 0;
 endfunction
