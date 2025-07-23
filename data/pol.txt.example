@@ -1,0 +1,55 @@
+# 
+#  Created by Version: 100.2.0 - Never Gonna Give You Up
+#  Mobiles: 1504
+#  Top-level Items: 6095
+# 
+
+System
+{
+        CoreVersion     100.2.0
+        CoreVersionString       100.2.0
+        CompileDateTime May 24 2025 15:24:40
+        LastItemSerialNumber    1325982767
+        LastCharSerialNumber    803473
+}
+
+GlobalProperties
+{
+        CProp   BodyDictionaryInitialized i1
+        CProp   BonusRP i0
+        CProp   CurrentActualDaySeconds i7200
+        CProp   CurrentActualNightSeconds i7200
+        CProp   GmsOnlines a0:
+        CProp   InnKeeper a0:
+        CProp   ShrinkDictionaryInitialized i1
+        CProp   chance_clima s33:65
+        CProp   current_year i245
+        CProp   daynightpid i16786543
+        CProp   daynumber i304
+        CProp   dia snoite
+        CProp   lightlevel i21
+        CProp   maxonline i42
+        CProp   moon_period i6
+        CProp   moonfase sDecrescens
+        CProp   near_player_saved i0
+}
+
+# Exemplo de configuração mínima para novo servidor:
+# System
+# {
+#         CoreVersion     100.2.0
+#         CoreVersionString       100.2.0
+#         CompileDateTime Jan 01 2025 00:00:00
+#         LastItemSerialNumber    1000000
+#         LastCharSerialNumber    100000
+# }
+# 
+# GlobalProperties
+# {
+#         CProp   BodyDictionaryInitialized i1
+#         CProp   ShrinkDictionaryInitialized i1
+#         CProp   current_year i245
+#         CProp   daynumber i1
+#         CProp   lightlevel i21
+#         CProp   maxonline i0
+# } 
