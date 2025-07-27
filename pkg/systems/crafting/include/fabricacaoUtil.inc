@@ -3,7 +3,7 @@
 use uo;
 use os;
 use basic;
-use Math;
+use math;
 use cfgfile;
 
 include "/include/math";

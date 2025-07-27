@@ -1,9 +1,4 @@
-# Dockerfile para servidor POL (Penultima Online)
-<<<<<<< HEAD
 FROM --platform=linux/amd64 ubuntu:latest
-=======
-FROM ubuntu:latest
->>>>>>> 53ce792e806ec0daae7e97f25b3637f9def08d26
 
 # Evitar prompts interativos durante a instalação
 ENV DEBIAN_FRONTEND=noninteractive
