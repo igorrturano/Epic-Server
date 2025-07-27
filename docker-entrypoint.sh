@@ -25,6 +25,7 @@ UO_DATA_PATH="/opt/uo-data"
 POL_UO_DATA_ROOT="/opt/uo-data"
 
 # Processar argumentos
+POL_COMMAND="/opt/pol/pol"
 while [[ $# -gt 0 ]]; do
     case $1 in
         --uo-data)
@@ -35,10 +36,14 @@ while [[ $# -gt 0 ]]; do
             show_help
             exit 0
             ;;
+        /opt/pol/pol)
+            # Default command, just store it
+            POL_COMMAND="$1"
+            shift
+            ;;
         *)
-            echo "Argumento desconhecido: $1"
-            show_help
-            exit 1
+            # Pass unknown arguments to POL
+            break
             ;;
     esac
 done
@@ -166,9 +171,28 @@ fi
 # Verificar se o executável POL existe
 if [ ! -f "/opt/pol/pol" ]; then
     echo "ERRO: Executável POL não encontrado!"
-    echo "Tentando compilar..."
+    exit 1
+else
+    echo "Executável POL encontrado!"
+    # Compilar scripts com flag -u (update)
+    echo "Compilando scripts com ecompile -u..."
     cd /opt/pol/scripts
-    ./ecompile -Af
+    ./ecompile -u || echo "AVISO: Falha na compilação de scripts, continuando com os existentes"
+    cd /opt/pol
+fi
+
+# Verificar e ajustar configuração do UO data path
+echo "Configurando caminho dos dados UO..."
+if [ -f "/opt/pol/pol.cfg" ]; then
+    # Criar symlink para que pol.cfg possa encontrar uo-data como caminho relativo
+    if [ ! -L "/opt/pol/uo-data" ]; then
+        ln -sf /opt/uo-data /opt/pol/uo-data
+        echo "Symlink criado: /opt/pol/uo-data -> /opt/uo-data"
+    fi
+    echo "pol.cfg encontrado, configuração UO data configurada corretamente"
+else
+    echo "ERRO: pol.cfg não encontrado!"
+    exit 1
 fi
 
 # Configurar permissões apenas para diretórios que não são volumes somente leitura
@@ -191,8 +215,11 @@ echo "=== Comandos Úteis ==="
 echo "Para acessar o console do servidor:"
 echo "  docker exec -it epic-pol-server /bin/bash"
 echo ""
-echo "Para executar comandos no console:"
-echo "  docker exec -it epic-pol-server /opt/pol/pol"
+echo "Para recompilar scripts:"
+echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol/scripts && ./ecompile -u'"
+echo ""
+echo "Para executar uoconvert (após atualizar uo-data):"
+echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol && ./uoconvert.sh'"
 echo ""
 echo "Para ver logs em tempo real:"
 echo "  docker logs -f epic-pol-server"
@@ -210,10 +237,27 @@ cleanup() {
 # Configurar trap para sinais
 trap cleanup SIGTERM SIGINT
 
-# Iniciar o servidor POL
-echo "Iniciando servidor POL..."
-echo "Pressione Ctrl+C para parar o servidor"
-echo ""
-
-# Executar o servidor POL
-exec /opt/pol/pol "$@" 
+# Check if we should start POL server automatically
+if [ "$1" = "start-pol" ]; then
+    echo "Iniciando servidor POL..."
+    echo "Pressione Ctrl+C para parar o servidor"
+    echo ""
+    shift
+    exec "$POL_COMMAND" "$@"
+else
+    echo "=== Container Epic POL pronto! ==="
+    echo ""
+    echo "Para iniciar o servidor POL:"
+    echo "  docker exec -it epic-pol-server /opt/pol/pol"
+    echo ""
+    echo "Para executar uoconvert:"
+    echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol && ./uoconvert.sh'"
+    echo ""
+    echo "Para recompilar scripts:"
+    echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol/scripts && ./ecompile -u'"
+    echo ""
+    echo "Container ficará rodando em background..."
+    
+    # Keep container running
+    tail -f /dev/null
+fi 
