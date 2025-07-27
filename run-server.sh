@@ -24,7 +24,7 @@ show_help() {
     echo "  stop-pol      - Stop POL server (keep container running)"
     echo "  pol-logs      - Show POL server logs"
     echo ""
-    echo "Development Tools:"
+    echo "Development Tools:" 
     echo "  uoconvert     - Run uoconvert to generate realm data"
     echo "  compile       - Compile scripts with ecompile -u"
     echo "  logs          - Show container logs"
@@ -50,27 +50,13 @@ build_image() {
 
 # Function to start the container (not the POL server itself)
 start_container() {
-    echo "🚀 Starting Epic POL Container..."
+    echo "🚀 Starting Epic POL Container (Development Mode)..."
     
-    # Stop existing container if running
-    docker stop epic-pol-server 2>/dev/null || true
-    docker rm epic-pol-server 2>/dev/null || true
+    # Use docker-compose for development volumes
+    docker-compose down 2>/dev/null || true
+    docker-compose up -d
     
-    # Start new container (without auto-starting POL)
-    docker run --platform linux/amd64 -d \
-        --name epic-pol-server \
-        -p 5003:5003 \
-        -p 5085:5085 \
-        -p 3008:3008 \
-        -p 5001:5001 \
-        -p 5002:5002 \
-        -v $(pwd)/uo-data:/opt/uo-data:ro \
-        -v epic-pol-realm:/opt/pol/realm \
-        -v epic-pol-data:/opt/pol/data \
-        -v epic-pol-logs:/opt/pol/logs \
-        epic-pol-server
-    
-    echo "✅ Container started!"
+    echo "✅ Container started with development volumes!"
     echo "📋 Container Status:"
     docker ps | grep epic-pol-server || echo "❌ Container not running"
     echo ""
@@ -78,6 +64,11 @@ start_container() {
     echo "  - Run uoconvert: $0 uoconvert"
     echo "  - Start POL server: $0 start-pol" 
     echo "  - Access shell: $0 shell"
+    echo ""
+    echo "💻 Development Mode Active:"
+    echo "  - Scripts sync in real-time: ./scripts ↔ container"
+    echo "  - Packages sync in real-time: ./pkg ↔ container"
+    echo "  - Configs sync in real-time: ./config ↔ container"
 }
 
 # Function to start POL server inside running container
