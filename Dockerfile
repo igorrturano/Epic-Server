@@ -1,4 +1,3 @@
-# Dockerfile para servidor POL (Penultima Online)
 FROM --platform=linux/amd64 ubuntu:latest
 
 # Evitar prompts interativos durante a instalação
