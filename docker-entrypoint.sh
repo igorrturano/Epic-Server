@@ -25,7 +25,10 @@ UO_DATA_PATH="/opt/uo-data"
 POL_UO_DATA_ROOT="/opt/uo-data"
 
 # Processar argumentos
+<<<<<<< HEAD
 POL_COMMAND="/opt/pol/pol"
+=======
+>>>>>>> 53ce792e806ec0daae7e97f25b3637f9def08d26
 while [[ $# -gt 0 ]]; do
     case $1 in
         --uo-data)
@@ -36,6 +39,7 @@ while [[ $# -gt 0 ]]; do
             show_help
             exit 0
             ;;
+<<<<<<< HEAD
         /opt/pol/pol)
             # Default command, just store it
             POL_COMMAND="$1"
@@ -44,6 +48,12 @@ while [[ $# -gt 0 ]]; do
         *)
             # Pass unknown arguments to POL
             break
+=======
+        *)
+            echo "Argumento desconhecido: $1"
+            show_help
+            exit 1
+>>>>>>> 53ce792e806ec0daae7e97f25b3637f9def08d26
             ;;
     esac
 done
@@ -215,11 +225,16 @@ echo "=== Comandos Úteis ==="
 echo "Para acessar o console do servidor:"
 echo "  docker exec -it epic-pol-server /bin/bash"
 echo ""
+<<<<<<< HEAD
 echo "Para recompilar scripts:"
 echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol/scripts && ./ecompile -u'"
 echo ""
 echo "Para executar uoconvert (após atualizar uo-data):"
 echo "  docker exec -it epic-pol-server bash -c 'cd /opt/pol && ./uoconvert.sh'"
+=======
+echo "Para executar comandos no console:"
+echo "  docker exec -it epic-pol-server /opt/pol/pol"
+>>>>>>> 53ce792e806ec0daae7e97f25b3637f9def08d26
 echo ""
 echo "Para ver logs em tempo real:"
 echo "  docker logs -f epic-pol-server"
@@ -237,6 +252,7 @@ cleanup() {
 # Configurar trap para sinais
 trap cleanup SIGTERM SIGINT
 
+<<<<<<< HEAD
 # Check if we should start POL server automatically
 if [ "$1" = "start-pol" ]; then
     echo "Iniciando servidor POL..."
@@ -261,3 +277,12 @@ else
     # Keep container running
     tail -f /dev/null
 fi 
+=======
+# Iniciar o servidor POL
+echo "Iniciando servidor POL..."
+echo "Pressione Ctrl+C para parar o servidor"
+echo ""
+
+# Executar o servidor POL
+exec /opt/pol/pol "$@" 
+>>>>>>> 53ce792e806ec0daae7e97f25b3637f9def08d26
