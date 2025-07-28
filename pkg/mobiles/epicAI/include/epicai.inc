@@ -90,7 +90,7 @@ endfunction
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
-    var race := GetObjProperty(mobile, "myrace");
+    var race := npc_elem.epicRace;
 
     if (has_colors)
         setupNPCColor(mobile, has_colors);
@@ -105,7 +105,9 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (isBoss)
         race := isBoss.race;
         makeRace(mobile, race);
-    else
+    elseif (race)
+        makeRace(mobile, race);
+    else 
         makeRace(mobile);
     endif
 

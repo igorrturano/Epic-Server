@@ -44,6 +44,25 @@ README.md
 *.dll
 *.so
 *.dylib
+*.a
+runecl
+#pol - Keep POL executable
+#uoconvert - Keep UO converter
+
+# Runtime files
+*.pid
+pol.pid
+
+# Data directories (mounted as volumes)
+#realm/ - Keep realm config files, but data will be in volume
+data/save/
+data/backup/
+uo-data/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
 
 # Arquivos de cache
 .cache/
