@@ -13,7 +13,8 @@ include ":faccao:include/logging";
 include ":faccao:include/safe_guild_utils";
 include ":faccao:include/datafile_helpers";
 include ":faccao:faccao_constants";
-
+include ":faccao:include/faccao";
+include ":faccao:construcao/include/feudo_buildings";
 // =======================================
 // Constantes do Sistema de XP de Guild
 // =======================================
@@ -834,50 +835,36 @@ function CapitalizeFirst(text)
 endfunction
 
 
+// NO ARQUIVO: pkg/faccao/include/guild_xp.inc
+
 /*
- * ResetKingdomLevelAndXP(guild_obj)
+ * ResetKingdomLevelAndXP(guild_obj) - VERSÃO 3.0 (DELEGAÇÃO FINAL)
  * 
- * Purpose: Reseta completamente o nível e o XP de uma facção que perdeu seu último território.
- *          Ao zerar o nível e o XP, a facção retorna a um estado "pré-nível 1",
- *          precisando acumular o XP necessário para atingir o Nível 1 novamente.
- *          Notifica os membros sobre a dissolução do status de Reino.
- * Parameters:
- *   guild_obj - A referência do objeto da guilda a ser resetada.
- * Return:
- *   1 para sucesso, 0 para falha.
+ * Purpose: Ao perder o último território, o reino é completamente dissolvido.
+ *          Esta função agora delega a tarefa de remoção completa para RemFaccao.
  */
 function ResetKingdomLevelAndXP(guild_obj)
     if (!guild_obj)
-        LogError("guild_xp", "ResetKingdomLevelAndXP chamado com objeto de guilda nulo.");
+        LogError("guild_xp_v3.0", "ResetKingdomLevelAndXP chamado com objeto de guilda nulo.");
         return 0;
     endif
 
     var guild_name := SafeGetGuildName(guild_obj);
-    LogInfo("guild_xp", "!!! RESET DE REINO !!! A facção '" + guild_name + "' perdeu seu último território. Nível e XP serão zerados.");
+    LogCritical("guild_xp_v3.0", "DISSOLUÇÃO DE REINO: '" + guild_name + "' perdeu seu último território.");
+    LogCritical("guild_xp_v3.0", "--> Delegando remoção completa para a função RemFaccao...");
 
-    // Zerar as propriedades de progresso.
-    // Setar GUILD_LEVEL_PROP para 0 efetivamente coloca a facção em um estado
-    // onde ela precisa alcançar o XP do Nível 1 para ser considerada ativa novamente.
-    SafeSetGuildProperty(guild_obj, GUILD_XP_PROP, 0);
-    SafeSetGuildProperty(guild_obj, GUILD_LEVEL_PROP, 0);
-
-    // Limpar o histórico de XP para um novo começo
-    SafeSetGuildProperty(guild_obj, GUILD_XP_HISTORY_PROP, array{});
-
-    // Notificar todos os membros online sobre a catástrofe
-    var message := "Seu Reino, " + guild_name + ", perdeu seu último território e foi dissolvido! Todo o progresso foi perdido. É hora de recomeçar do Nível 1!";
-    
+    // Notificar membros ANTES de iniciar a remoção
+    var message := "Seu Reino, " + guild_name + ", perdeu seu último território e será permanentemente dissolvido! Todo o progresso, posses e construções serão perdidos.";
     foreach member in (guild_obj.members)
         if (member.connected)
-            PlaySoundEffect(member, 0x1F3); // Som de falha
-            SendSysMessage(member, message, 3, 38); // Vermelho
+            PlaySoundEffect(member, 0x1F3);
+            SendSysMessage(member, message, 3, 38);
         endif
         sleepms(2);
     endforeach
-    
-    LogToFile("faccoes.log", "REINO DISSOLVIDO: " + guild_name + " (GuildID: " + guild_obj.guildid + ") perdeu seu último território. XP e Nível zerados.");
-    
-    return 1;
+
+    // A chamada crucial. RemFaccao agora fará todo o trabalho pesado.
+    return RemFaccao(guild_obj);
 endfunction
 
 // ===== FUNÇÕES DE SUPORTE PARA O SISTEMA DE UPKEEP =====

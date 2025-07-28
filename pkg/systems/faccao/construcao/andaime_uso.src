@@ -1,103 +1,192 @@
-// :faccao/construcao/andaime_uso.src (VERSÃO DE TESTE COM BOTÕES, LOGS E INDENTAÇÃO CORRETA)
 
 use uo;
 use os;
 use guilds;
 
+
+
 include ":faccao:construcao/include/feudo_buildings";
 include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include ":faccao:include/permissions";
+include ":gumps:yesNo";
+
+
+
+
+
+
 
 
 program use_andaime(who, andaime)
-    var LOG_CATEGORY := "AndaimeUso";
-    LogInfo(LOG_CATEGORY, "==================================================");
-    LogInfo(LOG_CATEGORY, "Script 'andaime_uso' iniciado por " + who.name + " no andaime " + andaime.serial);
+    var LOG_CATEGORY := "AndaimeUso_v2";
+    LogInfo(LOG_CATEGORY, "Gump v2 iniciado por " + who.name + " no andaime " + andaime.serial);
 
     var guild_owner_id := GetObjProperty(andaime, "GuildOwner");
     if (who.guildid != guild_owner_id)
         SendSysMessage(who, "Você não pode interagir com o canteiro de obras de outro feudo.");
-        LogWarning(LOG_CATEGORY, "Acesso negado. Guild do jogador (" + who.guildid + ") != Guild do andaime (" + guild_owner_id + ")");
         return;
     endif
 
-    // Loop para manter a Gump aberta até o jogador fechar
     var continuar := 1;
     while (continuar)
-        var build_info := GetObjProperty(andaime, "BuildingInfo");
-        var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
-        
-        if (!build_info || !materiais_status)
-            SendSysMessage(who, "Este canteiro de obras está corrompido.");
-            LogError(LOG_CATEGORY, "FALHA: Andaime " + andaime.serial + " está corrompido (sem BuildingInfo ou MateriaisStatus).");
-            return;
-        endif
-
-        // A construção com timer já começou?
-        if (GetObjProperty(andaime, "ConstructionTimer"))
-            var timer_info := GetObjProperty(andaime, "ConstructionTimer");
-            var tempo_restante := CInt(timer_info.complete_time) - polcore().systime;
-            if (tempo_restante < 0)
-                tempo_restante := 0;
-            endif
-            SendSysMessage(who, "A construção está em andamento. Tempo restante: " + CInt(tempo_restante / 60) + " minutos.");
-            return;
-        endif
-
-        var gump := GFCreateGump();
-        var num_materiais := materiais_status.keys().size();
-        var gump_height := 150 + (num_materiais * 30);
-
-        GFResizePic(gump, 0, 0, 9200, 450, gump_height);
-        GFTextMid(gump, 225, 20, 430, 53, build_info.type + " (Nível " + build_info.level + ")");
-
-        var y := 60;
-        GFTextLine(gump, 30, y, 1153, "Deposite os materiais necessários:");
-        y += 25;
-
-        var button_id := 100; // IDs dos botões começarão em 100
-        foreach material in (materiais_status.keys())
-            var status := materiais_status[material];
-            var text_color := (status.atual >= status.necessario) ? 68 : 38;
-            
-            GFTextLine(gump, 50, y, 1153, material + ":");
-            GFTextLine(gump, 200, y, text_color, CStr(status.atual) + " / " + CStr(status.necessario));
-
-            // Adiciona o botão de depósito
-            GFAddButton(gump, 350, y - 5, 4005, 4007, GF_CLOSE_BTN, button_id);
-            GFTextLine(gump, 375, y, 1153, "Adicionar");
-            
-            y += 25;
-            button_id += 1;
-        endforeach
-
-        LogDebug(LOG_CATEGORY, "Enviando Gump de progresso para " + who.name);
-        var input := GFSendGump(who, gump);
+        // A função ShowAndaimeGump agora cria e envia o Gump, retornando a ação do jogador
+        var input := ShowAndaimeGump(who, andaime);
         var clicked_button := input[0];
-        LogDebug(LOG_CATEGORY, "Jogador clicou no botão: " + clicked_button);
 
-        if (clicked_button == 0) // Jogador fechou a Gump
+        if (clicked_button == 0) // Fechar
             continuar := 0;
-        elseif (clicked_button >= 100)
+        elseif (clicked_button == 999) // Cancelar Construção
+            if (FEUDO_CancelConstruction(who, andaime))
+                continuar := 0; // Sai do loop se a construção foi cancelada
+            endif
+        elseif (clicked_button >= 100) // Adicionar Material
+            var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
             var material_index := clicked_button - 100;
             var material_keys := materiais_status.keys();
             
             if (material_index >= 0 && material_index < material_keys.size())
-                var material_selecionado := material_keys[material_index + 1]; // POL array 1-based
-                LogInfo(LOG_CATEGORY, "Jogador selecionou adicionar '" + material_selecionado + "'. Chamando AdicionarMaterialViaBotao.");
+                var material_selecionado := material_keys[material_index + 1];
                 AdicionarMaterialViaBotao(who, andaime, material_selecionado);
-            else
-                LogWarning(LOG_CATEGORY, "Índice de botão inválido: " + clicked_button);
+                // O loop continuará, recarregando o gump com os valores atualizados
             endif
         endif
     endwhile
-    LogInfo(LOG_CATEGORY, "Jogador fechou a Gump. Fim do script.");
 endprogram
 
 /*
+ * ShowAndaimeGump(who, andaime)
+ * Cria e exibe a nova interface de gerenciamento do canteiro de obras.
+ */
+function ShowAndaimeGump(who, andaime)
+    var build_info := GetObjProperty(andaime, "BuildingInfo");
+    var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+    
+    var gump := GFECreateGump("Canteiro de Obras: " + details.Name, 480, 450, array{BORDER_MARBLE});
+    var gump_height := 450; // Para uso no posicionamento do botão fechar
+
+    var y := 80;
+    var x := 30;
+
+    var timer_info := GetObjProperty(andaime, "ConstructionTimer");
+
+    // Lógica para exibir a fase correta (Construção ou Coleta de Materiais)
+    if (timer_info)
+        // --- FASE 2: CONSTRUÇÃO EM ANDAMENTO (TIMER ATIVO) ---
+        GFTextLine(gump, x, y, 1153, "Status: Construção em Andamento");
+        y += 30;
+        
+        // << CORREÇÃO DO BUG DO TEMPO >>
+        var tempo_total := CInt(timer_info.duration);
+        var tempo_passado := polcore().systime - CInt(timer_info.start_time);
+        var tempo_restante := tempo_total - tempo_passado;
+        if (tempo_restante < 0)
+            tempo_restante := 0;
+        endif
+
+        GFTextLine(gump, x + 20, y, 0, "Tempo Restante:");
+        GFTextLine(gump, x + 150, y, 68, FormatTimeRemaining(tempo_restante));
+        y += 30;
+        
+        // Barra de Progresso Visual
+        var progresso_percent := 0;
+        if (tempo_total > 0)
+            progresso_percent := CInt((tempo_passado * 100) / tempo_total);
+        endif
+        if (progresso_percent > 100)
+            progresso_percent := 100;
+        endif
+
+        GFTextLine(gump, x + 20, y, 0, "Progresso:");
+        y += 20;
+        GFResizePic(gump, x + 20, y, 9270, 400, 25); // Fundo da barra
+        
+        var progress_width := CInt(progresso_percent * 4); // 400px / 100% = 4px por %
+        if(progress_width > 0)
+            GFResizePic(gump, x + 20, y, 9260, progress_width, 25); // Barra de progresso
+        endif
+        GFTextMid(gump, x + 20, y + 2, 400, 2100, progresso_percent + "%");
+        y += 60;
+    else
+        // --- FASE 1: COLETA DE MATERIAIS ---
+        GFTextLine(gump, x, y, 1153, "Status: Aguardando Materiais");
+        y += 30;
+        
+        var materiais_status := GetObjProperty(andaime, "MateriaisStatus");
+        var button_id := 100;
+foreach material in (materiais_status.keys())
+        var status := materiais_status[material];
+        var text_color := (status.atual >= status.necessario) ? 68 : 38; // Verde se completo, Vermelho se incompleto
+        
+        // Apenas a variável 'material' é usada, que contém a string completa ("madeira", "pedra")
+        GFTextLine(gump, x + 20, y, 0, material + ":");
+        
+        GFTextLine(gump, x + 150, y, text_color, CStr(status.atual) + " / " + CStr(status.necessario));
+        
+        // Só mostra o botão "Adicionar" se ainda for necessário
+        if (status.atual < status.necessario)
+            GFAddButton(gump, x + 300, y - 2, 4005, 4007, GF_CLOSE_BTN, button_id);
+        endif
+        
+        y += 25;
+        button_id += 1;
+    endforeach
+        y += 30;
+    endif
+
+    // Ações do Líder
+    if (IsGuildLeader(who))
+        GFGumpPicTiled(gump, x, y, 420, 2, 9101); // Linha divisória
+        y += 20;
+        GFAddButton(gump, x + 130, y, 4017, 4019, GF_CLOSE_BTN, 999);
+        GFTextLine(gump, x + 160, y + 2, 38, "Cancelar Construção");
+    endif
+
+    GFAddButton(gump, 220, gump_height - 45, 247, 248, GF_CLOSE_BTN, 0); // Botão Fechar
+
+    return GFSendGump(who, gump);
+endfunction
+
+
+/*
+ * FormatTimeRemaining(seconds)
+ * Formata um total de segundos para um formato legível (Dias, Horas, Minutos).
+ */
+function FormatTimeRemaining(seconds)
+    if (seconds <= 0)
+        return "Concluído!";
+    endif
+	
+	var days := CInt(seconds / 86400);
+	var hours := CInt((seconds % 86400) / 3600);
+	var minutes := CInt((seconds % 3600) / 60);
+    var remaining_seconds := CInt(seconds % 60);
+	
+	var result := "";
+	
+	if (days > 0)
+		result += days + "d ";
+	endif
+    if (hours > 0)
+        result += hours + "h ";
+    endif
+    if (minutes > 0)
+        result += minutes + "m ";
+    endif
+    if (days == 0 && hours == 0) // Só mostra segundos se for menos de 1 hora
+        result += remaining_seconds + "s";
+    endif
+	
+	return result;
+endfunction
+
+
+/*
  * AdicionarMaterialViaBotao()
- * Pede ao jogador para targetar o recurso e o deposita.
+ * Função auxiliar que lida com a lógica de adicionar material.
  */
 function AdicionarMaterialViaBotao(who, andaime, material_tipo)
     var LOG_CATEGORY := "AndaimeBotao";

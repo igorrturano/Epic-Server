@@ -4,8 +4,8 @@ use util;
 use os;
 
 // Incluir os arquivos necessários para as funções
-include ":spawndecampeao:include/config";
-include ":spawndecampeao:include/arena";
+include ":faccao:spawndecampeao/include/config";
+include ":faccao:spawndecampeao/include/arena";
 
 program continuar_criacao_campeao(who)
     SendSysMessage(who, "DEBUG: Script continuar_criacao INICIADO");

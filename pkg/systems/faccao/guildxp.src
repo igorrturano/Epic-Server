@@ -13,6 +13,7 @@ include ":faccao:include/guild_xp";
 include ":faccao:include/safe_guild_utils";
 include ":faccao:include/permissions";
 include ":faccao:include/shared_functions";  // Para FormatNumber
+include ":faccao:include/faccao";
 
 program guild_xp_command(who)
     // Verificar se o jogador está em uma guild

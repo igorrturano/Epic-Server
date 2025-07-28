@@ -6,6 +6,7 @@
 use uo;
 use os;
 use guilds;
+use util;
 
 include ":faccao:include/process_registry";
 include ":faccao:include/logging";
@@ -35,11 +36,12 @@ program FeudoConstructionController()
     endwhile
 endprogram
 
+
 /*
- * CheckOngoingConstructions()
+ * CheckOngoingConstructions() - VERSÃO FINAL COM EFEITOS AVANÇADOS
  *
  * Itera por todas as guildas, verifica seus projetos em andamento,
- * atualiza seus visuais e nomes, e finaliza aqueles cujo timer expirou.
+ * toca efeitos, atualiza visuais/nomes, e finaliza os timers.
  */
 function CheckOngoingConstructions()
     var current_time := polcore().systime;
@@ -47,7 +49,6 @@ function CheckOngoingConstructions()
 
     foreach guild in all_guilds
         var construcoes_em_andamento := guild.GetProp("feudo_constructions");
-
         if (!construcoes_em_andamento || TypeOf(construcoes_em_andamento) != "Dictionary")
             continue;
         endif
@@ -60,37 +61,59 @@ function CheckOngoingConstructions()
             var andaime_principal := SystemFindObjectBySerial(CInt(andaime_serial_str));
             
             if (!andaime_principal)
-                // Andaime não existe mais no mundo, mas o timer está rodando.
-                LogWarning("FeudoConstruction", "Andaime " + andaime_serial_str + " não encontrado, mas ainda estava na lista de construções. Removendo da lista.");
+                LogWarning("FeudoConstruction", "Andaime " + andaime_serial_str + " não encontrado. Removendo da lista.");
                 construcoes_em_andamento.erase(andaime_serial_str);
                 needs_update := 1;
                 continue;
             endif
 
-            // Apenas processa construções que JÁ TÊM um timer iniciado.
             if (construction_data.complete_time)
                 
-                // --- INÍCIO DA LÓGICA DE ATUALIZAÇÃO DO NOME ---
+                // --- LÓGICA DE EFEITOS AVANÇADOS ---
+                var last_effect_time := CInt(GetObjProperty(andaime_principal, "LastEffectTime"));
+                if (current_time - last_effect_time >= 5) // Gatilho a cada 5 segundos
+                    var estagio_atual := GetStageNumber(andaime_principal);
+                    var som_a_tocar := 0;
+
+                    // Determina o som com base no estágio atual
+                    if (estagio_atual >= 7)       // Estágios 7 e 8 (acabamentos)
+                        som_a_tocar := 0x23E;
+                    elseif (estagio_atual >= 4)   // Estágios 4, 5 e 6 (estrutura)
+                        som_a_tocar := 0x140;
+                    else                          // Estágios 1, 2 e 3 (fundações)
+                        som_a_tocar := 0x13F;
+                    endif
+
+                    if (som_a_tocar)
+                        var i;
+                        for (i := 1; i <= 3; i := i + 1) // 3 repetições
+                            PlayRandomSmokeEffect(andaime_principal);
+                            PlaySoundEffect(andaime_principal, som_a_tocar);
+                            sleepms(300); 
+                        endfor
+                    endif
+                    SetObjProperty(andaime_principal, "LastEffectTime", current_time);
+                endif
+                // --- FIM DA LÓGICA DE EFEITOS ---
+                
+                // ATUALIZAÇÃO DO NOME (ETIQUETA)
                 var tempo_restante := CInt(construction_data.complete_time) - current_time;
                 if (tempo_restante > 0)
                     var minutos := CInt(tempo_restante / 60);
                     var segundos := tempo_restante % 60;
                     var tempo_formatado := CStr(minutos) + "m " + CStr(segundos) + "s";
-                    
-                    // Atualiza o nome do item "cérebro" invisível.
                     andaime_principal.name := "Construção em Andamento (" + tempo_formatado + ")";
+                else
+                    andaime_principal.name := "Construção Concluída!";
                 endif
-                // --- FIM DA LÓGICA DE ATUALIZAÇÃO DO NOME ---
-
-                // ATUALIZAÇÃO VISUAL BASEADA NO TEMPO
+                
+                // ATUALIZAÇÃO VISUAL DO ANDAIME
                 FEUDO_UpdateBuildingVisuals(andaime_principal);
 
-                // VERIFICAÇÃO DE CONCLUSÃO
+                // VERIFICAÇÃO DE CONCLUSÃO FINAL
                 if (current_time >= CInt(construction_data.complete_time))
-                    LogInfo("FeudoConstruction", "Construção concluída para a guilda '" + guild_name + "'! Andaime Serial: " + andaime_serial_str);
-                    
+                    LogInfo("FeudoConstruction", "Construção concluída para a guilda '" + guild_name + "'! Serial: " + andaime_serial_str);
                     FEUDO_CompleteConstruction(andaime_principal);
-                    
                     construcoes_em_andamento.erase(andaime_serial_str);
                     needs_update := 1;
                 endif

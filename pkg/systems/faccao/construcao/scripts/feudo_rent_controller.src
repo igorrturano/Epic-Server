@@ -1,0 +1,168 @@
+// :faccao:construcao:scripts:feudo_rent_controller.src (v2.1 - OTIMIZADO COM SINTAXE CORRETA)
+
+use uo;
+use os;
+use guilds;
+use polsys;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/process_registry";
+include ":faccao:include/faccao_constants";
+include ":faccao:construcao/include/feudo_buildings"; // Para FEUDO_GetOwnedConstructions
+
+const RENT_CHECK_INTERVAL := 60; // Verifica a cada 30 minutos
+const MOEDAS_COBRE     := 0xba63;
+program FeudoRentController()
+    if (!RegisterProcess("FeudoRentController"))
+        LogWarning("FeudoRent_Ctrl", "Uma instância do controlador de aluguel já está ativa.");
+        return 0;
+    endif
+
+    LogInfo("FeudoRent_Ctrl", ">>> Controlador de Aluguel de Feudo OTIMIZADO (v2.1) INICIADO <<<");
+
+    while (1)
+        UpdateProcessHeartbeat("FeudoRentController");
+        
+        LogDebug("FeudoRent_Ctrl", "Iniciando ciclo de verificação de aluguéis (Otimizado)...");
+        CheckAllRents_Optimized();
+        
+        sleep(RENT_CHECK_INTERVAL);
+    endwhile
+endprogram
+
+/*
+ * CheckAllRents_Optimized()
+ *
+ * Versão otimizada que não varre o mundo. Em vez disso, itera sobre as guildas
+ * e usa a CProp 'FeudoOwnedConstructions' para encontrar as placas de aluguel.
+ */
+function CheckAllRents_Optimized()
+    var current_time := POLCore().systime;
+    var guildas_verificadas := 0;
+    var contratos_pendentes := 0;
+
+    var all_guilds := ListGuilds();
+
+    foreach guild in all_guilds
+        guildas_verificadas += 1;
+        
+        var construcoes_da_guilda := FEUDO_GetOwnedConstructions(guild);
+        
+        if (construcoes_da_guilda.size() > 0)
+            LogDebug("FeudoRent_Ctrl", "Verificando " + construcoes_da_guilda.size() + " construções para a guilda '" + guild.name + "'");
+            
+            foreach placa in construcoes_da_guilda
+                var contrato := GetObjProperty(placa, "ContratoAluguel");
+                if (contrato && contrato.ProximoPagamento)
+                    contratos_pendentes += 1;
+                    if (current_time >= CInt(contrato.ProximoPagamento))
+                        LogWarning("FeudoRent_Ctrl", "    -> VENCIDO! Processando pagamento para placa " + placa.serial);
+                        ProcessRentPayment(placa, contrato);
+                    endif
+                endif
+                sleepms(10); // Pausa entre cada casa
+            endforeach
+        endif
+        sleepms(50); // Pausa entre cada guilda
+    endforeach
+    
+    LogInfo("FeudoRent_Ctrl", "Ciclo otimizado concluído. Guildas verificadas: " + guildas_verificadas + ". Contratos pendentes encontrados: " + contratos_pendentes);
+endfunction
+
+
+/*
+ * ProcessRentPayment(placa, byref contrato)
+ * Esta função permanece a mesma, mas é chamada de forma muito mais eficiente.
+ */
+function ProcessRentPayment(placa, byref contrato)
+    var LOG_CATEGORY := "FeudoRent_Payment";
+    LogInfo(LOG_CATEGORY, "--------------------------------------------------");
+    LogInfo(LOG_CATEGORY, "INICIANDO PROCESSAMENTO DE PAGAMENTO AUTOMÁTICO");
+
+    var inquilino_serial := CInt(contrato.InquilinoSerial);
+    var valor := CInt(contrato.ValorAluguel);
+    var guild_id := GetObjProperty(placa, "GuildOwner");
+
+    LogDebug(LOG_CATEGORY, "  -> Placa: " + placa.serial + " (" + placa.name + ")");
+    LogDebug(LOG_CATEGORY, "  -> Inquilino Serial: " + inquilino_serial);
+    LogDebug(LOG_CATEGORY, "  -> Valor: " + valor + " cobre");
+    LogDebug(LOG_CATEGORY, "  -> Guilda Proprietária ID: " + guild_id);
+
+    var inquilino := SystemFindObjectBySerial(inquilino_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var guild := FindGuild(guild_id);
+    
+    if (!guild || !inquilino)
+        LogWarning(LOG_CATEGORY, "FALHA: Guilda (" + guild_id + ") ou Inquilino (" + inquilino_serial + ") não encontrado. Contrato será removido.");
+        EraseObjProperty(placa, "ContratoAluguel");
+        return;
+    endif
+
+    var inquilino_nome := GetPlayerDisplayName(inquilino);
+    LogInfo(LOG_CATEGORY, "Processando pagamento para '" + inquilino_nome + "' na propriedade '" + placa.name + "'");
+
+    if (DebitarAluguelDoBanco_Robusto(inquilino, valor))
+        // --- SUCESSO NO PAGAMENTO ---
+        LogInfo(LOG_CATEGORY, "SUCESSO: Débito de " + valor + " moedas realizado do banco de " + inquilino_nome);
+        
+        var guild_name_seguro := SafeGetGuildName(guild);
+        var capital_id := guild.GetProp("capital_territory_id");
+        
+        if (capital_id && guild_name_seguro)
+            var capital_chest := FindFactionChest(guild_name_seguro, capital_id);
+            if (capital_chest)
+                var moedas_depositadas := CreateItemInContainer(capital_chest, MOEDAS_COBRE, valor);
+                if (moedas_depositadas)
+                    SetObjProperty(moedas_depositadas, "IsSystemDeposit", 1);
+                    LogInfo(LOG_CATEGORY, "SUCESSO: " + valor + " moedas depositadas no baú da capital (Serial: " + capital_chest.serial + ")");
+                endif
+            else
+                LogError(LOG_CATEGORY, "FALHA NO DEPÓSITO: Baú da capital não encontrado para a facção '" + guild_name_seguro + "'.");
+            endif
+        else
+             LogError(LOG_CATEGORY, "FALHA NO DEPÓSITO: Guilda '" + guild_name_seguro + "' não tem capital definida.");
+        endif
+        
+        contrato.ProximoPagamento := POLCore().systime + CInt(contrato.PeriodoSegundos);
+        contrato.PagamentosRegistrados.append(struct{"data" := POLCore().systime, "status" := "Pago Automaticamente"});
+        SetObjProperty(placa, "ContratoAluguel", contrato);
+        LogInfo(LOG_CATEGORY, "Contrato atualizado. Próximo pagamento em " + CInt(contrato.PeriodoSegundos) + " segundos.");
+
+        var lider := SystemFindObjectBySerial(guild.leader);
+        var msg_sucesso_lider := "O aluguel de '" + placa.name + "' foi pago por " + inquilino_nome + ".";
+        var msg_sucesso_inquilino := "O pagamento automático do seu aluguel de '" + placa.name + "' foi realizado com sucesso.";
+
+        if (lider && lider.connected) 
+            SendSysMessage(lider, msg_sucesso_lider, 3, 68); 
+        endif
+        var inquilino_online := SystemFindObjectBySerial(inquilino_serial);
+        if (inquilino_online) 
+            SendSysMessage(inquilino_online, msg_sucesso_inquilino, 3, 68); 
+        else 
+            SendOfflineMessage(inquilino_serial, msg_sucesso_inquilino); 
+        endif
+    else
+        // --- FALHA NO PAGAMENTO ---
+        LogWarning(LOG_CATEGORY, "FALHA NO PAGAMENTO AUTOMÁTICO para " + inquilino_nome + " (Valor: " + valor + ")");
+        
+        var lider := SystemFindObjectBySerial(guild.leader);
+        var msg_falha_lider := "AVISO: " + inquilino_nome + " não conseguiu pagar o aluguel de " + placa.name + " por falta de fundos.";
+        var msg_falha_inquilino := "AVISO URGENTE: Falha no pagamento automático do aluguel de " + placa.name + ". Você entrou em um período de carência de 3 dias para quitar o débito de " + valor + " moedas.";
+        
+        if (lider && lider.connected) 
+            SendSysMessage(lider, msg_falha_lider, 3, 38); 
+        endif
+        var inquilino_online := SystemFindObjectBySerial(inquilino_serial);
+        if (inquilino_online) 
+            SendSysMessage(inquilino_online, msg_falha_inquilino, 3, 38); 
+        else 
+            SendOfflineMessage(inquilino_serial, msg_falha_inquilino); 
+        endif
+        
+        contrato.ProximoPagamento := POLCore().systime + (3 * 86400); // 3 dias de carência
+        contrato.PagamentosRegistrados.append(struct{"data" := POLCore().systime, "status" := "Falhou"});
+        SetObjProperty(placa, "ContratoAluguel", contrato);
+        LogInfo(LOG_CATEGORY, "Contrato atualizado. Período de carência de 3 dias iniciado.");
+    endif
+    LogInfo(LOG_CATEGORY, "--------------------------------------------------");
+endfunction

@@ -1,3 +1,5 @@
+// :faccao:baudoacao/canInsert.src (VERSÃO 2.2 - FINAL SEM AVISOS)
+
 use uo;
 use cfgfile;
 use guilds;
@@ -10,6 +12,12 @@ include ":datafile:datafile";
 include ":faccao:include/permissions";
 
 program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
+    // Suprime os avisos de variáveis não utilizadas
+    movetype := movetype;
+    insert_type := insert_type;
+    existing_stack := existing_stack;
+    amt_to_add := amt_to_add;
+
     // Debug intensivo
     LogDebug("recursos", "canInsert sendo chamado para container: " + container.serial);
     
@@ -23,7 +31,9 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
     if (GetObjProperty(adding_item, "CreatedByResourceController"))
         LogDebug("recursos", "Item criado pelo ResourceController, permitindo inserção");
         return 1;
-    endif    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
+    endif
+    
+    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
     var can_insert := CanInsertItems(mobile, container);
     
     // Logging padronizado
@@ -36,20 +46,14 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
 
     // Verificar se o item é uma doação válida
     var donation_types := array{
-        "IsKingdomDonationComida",
-        "IsKingdomDonationMoedas",
-        "IsKingdomDonationCouro",
-        "IsKingdomDonationMetal",
-        "IsKingdomDonationMadeira",
-        "IsKingdomDonationPano",
-        "IsKingdomDonationPedra",
-        "IsKingdomDonationJoias"
+        "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro",
+        "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano",
+        "IsKingdomDonationPedra", "IsKingdomDonationJoias"
     };
 
     foreach donation_type in donation_types
         if (GetObjProperty(adding_item, donation_type))
             var resource_type := Lower(donation_type[18, len(donation_type)]);
-            var amount := adding_item.amount;
             
             if (resource_type == "moedas")
                 if (adding_item.objtype == 0xBA64 || adding_item.objtype == 0xBA65)
@@ -58,7 +62,8 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
                 endif
             endif
             
-            SendSysMessage(mobile, "Doação de " + resource_type + " aceita. Quantidade: " + amount);
+            // A mensagem de sucesso foi removida daqui para evitar duplicidade.
+            // O onInsert.src cuidará do feedback de sucesso.
             return 1;
         endif
     endforeach

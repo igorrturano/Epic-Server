@@ -1,0 +1,120 @@
+// :commands:gm:verificarbanco.src
+//
+// Comando de GM para listar todas as StorageAreas de um jogador,
+// o conteúdo de cada uma, e o valor total em moedas.
+// VERSÃO 2.2 - CORRIGIDO com funções 100% Core do POL e logs
+
+use uo;
+use os;
+use polsys;
+use storage;
+
+include ":containers:storageAreas";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":faccao:include/logging";
+
+program textcmd_verificarbanco(who, text)
+    const LOG_CATEGORY := "VerificarBanco";
+    LogInfo(LOG_CATEGORY, "==================================================");
+    LogInfo(LOG_CATEGORY, "Comando iniciado por: " + who.name);
+
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Apenas GMs podem usar este comando.");
+        LogWarning(LOG_CATEGORY, "Acesso negado para " + who.name + " (cmdlevel insuficiente).");
+        return 0;
+    endif
+
+    var target_player;
+    if (!text)
+        LogDebug(LOG_CATEGORY, "Nenhum texto fornecido. Solicitando target do jogador.");
+        SendSysMessage(who, "Selecione o jogador cujo banco você deseja verificar.");
+        target_player := Target(who, TGTOPT_NOCHECK_LOS);
+    else
+        LogDebug(LOG_CATEGORY, "Texto fornecido: '" + text + "'. Tentando encontrar jogador por Serial ou Nome.");
+        
+        // --- INÍCIO DA LÓGICA CORRIGIDA E ROBUSTA ---
+        var serial_num := CInt(text);
+        if (serial_num)
+            // Se o texto é um número, procuramos por serial (online ou offline)
+            LogDebug(LOG_CATEGORY, "Texto parece ser um Serial (" + serial_num + "). Buscando com SystemFindObjectBySerial.");
+            target_player := SystemFindObjectBySerial(serial_num, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        else
+            // Se não for um número, varremos os jogadores ONLINE pelo nome.
+            LogDebug(LOG_CATEGORY, "Texto não é um Serial. Buscando jogador ONLINE com nome: '" + text + "'");
+            foreach player in (EnumerateOnlineCharacters())
+                if (Lower(player.name) == Lower(text))
+                    target_player := player;
+                    break;
+                endif
+            endforeach
+        endif
+        // --- FIM DA LÓGICA CORRIGIDA E ROBUSTA ---
+    endif
+
+    if (!target_player || !target_player.serial)
+        SendSysMessage(who, "Jogador não encontrado. Se o jogador estiver offline, por favor, use o serial dele.");
+        LogError(LOG_CATEGORY, "FALHA: Jogador alvo não encontrado com o texto: '" + text + "'.");
+        return 0;
+    endif
+    
+    LogInfo(LOG_CATEGORY, "Jogador alvo encontrado: " + target_player.name + " (Serial: " + target_player.serial + ")");
+    SendSysMessage(who, "Verificando todas as áreas de armazenamento para " + target_player.name + "...");
+
+    var storage_areas := CP_GetStorageAreaNames();
+    if (!storage_areas || storage_areas.size() == 0)
+        SendSysMessage(who, "Nenhuma StorageArea encontrada no sistema.");
+        LogWarning(LOG_CATEGORY, "Nenhuma StorageArea definida no sistema. Verifique a configuração do pacote :containers:.");
+        return 0;
+    endif
+    
+    LogInfo(LOG_CATEGORY, "Encontradas " + storage_areas.size() + " StorageAreas no sistema para verificar.");
+    
+    var found_anything := 0;
+
+    foreach area_name in storage_areas
+        LogDebug(LOG_CATEGORY, "Verificando StorageArea: '" + area_name + "' para " + target_player.name);
+        
+        var bank_box := CP_GetStorageContainerForMobile(target_player, area_name, CP_NOCREATE);
+        
+        if (bank_box)
+            found_anything := 1;
+            LogInfo(LOG_CATEGORY, "--> ENCONTRADO container para " + target_player.name + " na StorageArea '" + area_name + "' (Serial: " + bank_box.serial + ")");
+            SendSysMessage(who, "--- StorageArea: [" + area_name + "] ---");
+            
+            var items_in_box := EnumerateItemsInContainer(bank_box);
+            var total_value_cobre := 0;
+
+            if (items_in_box.size() > 0)
+                LogDebug(LOG_CATEGORY, "    Encontrados " + items_in_box.size() + " itens dentro do container.");
+                foreach item in items_in_box
+                    SendSysMessage(who, "  -> " + item.amount + "x " + item.desc + " (ObjType: 0x" + Hex(item.objtype) + ")");
+                    
+                    case (item.objtype)
+                        0xBA63: total_value_cobre += item.amount;
+                        0xBA64: total_value_cobre += item.amount * 10;
+                        0xBA65: total_value_cobre += item.amount * 100;
+                        0xEED:  total_value_cobre += item.amount * 100;
+                    endcase
+                endforeach
+                LogInfo(LOG_CATEGORY, "    Valor total em moedas de cobre na StorageArea '" + area_name + "': " + total_value_cobre);
+                SendSysMessage(who, "  Valor total nesta área: " + total_value_cobre + " moedas de cobre.");
+            else
+                LogDebug(LOG_CATEGORY, "    O container está vazio.");
+                SendSysMessage(who, "  (Vazio)");
+            endif
+        else
+            LogDebug(LOG_CATEGORY, "Nenhum container encontrado para " + target_player.name + " na StorageArea '" + area_name + "'.");
+        endif
+        sleepms(10);
+    endforeach
+
+    if (!found_anything)
+        SendSysMessage(who, "Nenhum container de armazenamento encontrado para " + target_player.name + " em nenhuma StorageArea.");
+        LogWarning(LOG_CATEGORY, "Verificação completa, mas nenhum container de armazenamento foi associado a " + target_player.name);
+    endif
+
+    LogInfo(LOG_CATEGORY, "Comando finalizado para " + who.name);
+    LogInfo(LOG_CATEGORY, "==================================================");
+    return 1;
+endprogram

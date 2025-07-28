@@ -1,116 +1,121 @@
+// :faccao:baudoacao/onInsert.src (VERSÃO 2.1 - COMPLETA COM VERIFICAÇÃO DE DEPÓSITO)
+
 use uo;
 use os;
-// cfgfile, datafile, guilds podem ser removidos se não usados por includes
+use guilds;
 
-include "include/say"; // Para PrintText
-// include ":datafile:datafile"; // Não parece ser usado diretamente
-include ":faccao:include/shared_functions"; // Para MarcarRecursosModificados
-include ":faccao:include/faccao_constants"; // Para constantes de tipo de doação
-include ":faccao:include/logging"; // Para LogDebug, LogInfo, LogError
+include "include/say";
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_constants";
+include ":faccao:include/logging";
 
 program onInsert(character, container, movetype, inserttype, adding_item, existing_stack, amount_to_add)
 
-   // Log inicial - Verificações mais seguras para objetos potencialmente nulos
-   LogDebug("onInsert_DEBUG", "=== onInsert Triggered ===");
-   
-   if (container)
-      LogDebug("onInsert_DEBUG", "Container: " + container.serial);
-   else
-      LogDebug("onInsert_DEBUG", "Container: NULL");
-   endif
-   
-   if (adding_item)
-      LogDebug("onInsert_DEBUG", "Adding Item: " + adding_item.serial + " (Objtype: 0x" + Hex(adding_item.objtype) + ", Amount: " + adding_item.amount + ")");
-   else
-      LogDebug("onInsert_DEBUG", "Adding Item: NULL");
-   endif
-   
-   if (character)
-      LogDebug("onInsert_DEBUG", "Character: " + character.name);
-   else
-      LogDebug("onInsert_DEBUG", "Character: SYSTEM");
-   endif
+    // Log inicial - Verificações mais seguras para objetos potencialmente nulos
+    LogDebug("onInsert_DEBUG", "=== onInsert Triggered ===");
+    
+    if (container)
+        LogDebug("onInsert_DEBUG", "Container: " + container.serial);
+    else
+        LogDebug("onInsert_DEBUG", "Container: NULL");
+    endif
+    
+    if (adding_item)
+        LogDebug("onInsert_DEBUG", "Adding Item: " + adding_item.serial + " (Objtype: 0x" + Hex(adding_item.objtype) + ", Amount: " + adding_item.amount + ")");
+    else
+        LogDebug("onInsert_DEBUG", "Adding Item: NULL");
+    endif
+    
+    if (character)
+        LogDebug("onInsert_DEBUG", "Character: " + character.name);
+    else
+        LogDebug("onInsert_DEBUG", "Character: SYSTEM");
+    endif
 
-   // ==========================================
-   // CORREÇÃO CRÍTICA: Verificar se o item foi gerado pelo ResourceController
-   // OU se a inserção é feita pelo sistema (character inválido)
-   // ==========================================
-   var is_system_item := 0;
-   if (adding_item)
-      is_system_item := GetObjProperty(adding_item, "CreatedByResourceController");
-   endif
+    // ==========================================
+    // >>>>> INÍCIO DA CORREÇÃO <<<<<
+    // ==========================================
+    // Se o item tem a CProp "IsSystemDeposit", é um depósito automático (aluguel, etc.).
+    // O script não deve fazer nada e apenas permitir a inserção.
+    if (GetObjProperty(adding_item, "IsSystemDeposit"))
+        EraseObjProperty(adding_item, "IsSystemDeposit"); // Limpa a CProp
+        return 1; // Permite a inserção silenciosamente
+    endif
+    // ==========================================
+    // >>>>> FIM DA CORREÇÃO <<<<<
+    // ==========================================
 
-   if (!character || !character.isA(POLCLASS_MOBILE) || !character.serial || is_system_item)
-      var reason := "";
-      if (!character || !character.isA(POLCLASS_MOBILE) || !character.serial)
-         reason := "Inserção pelo sistema (character inválido)";
-      endif
-      if (is_system_item)
-         reason += (reason ? " E " : "") + "Item marcado como CreatedByResourceController";
-      endif
-      
-      LogInfo("onInsert_SYS", reason + ". Item: " + (adding_item ? adding_item.serial : "NULL") + ". Nenhuma ação de doação/cache por este script.");
-      // O ResourceController já chama UpdateResourceCache para o baú correto.
-      return 1; // Permite a inserção
-   endif // Fim do if (!character ... || is_system_item)
+    // CORREÇÃO CRÍTICA: Verificar se o item foi gerado pelo ResourceController
+    // OU se a inserção é feita pelo sistema (character inválido)
+    var is_system_item := 0;
+    if (adding_item)
+        is_system_item := GetObjProperty(adding_item, "CreatedByResourceController");
+    endif
 
-   // CASO 2: Inserção por jogador (e item não é do sistema)
-   LogDebug("onInsert_PLAYER", "Jogador " + character.name + " inserindo item: " + (adding_item ? adding_item.serial : "NULL_ITEM"));
+    if (!character || !character.isA(POLCLASS_MOBILE) || !character.serial || is_system_item)
+        var reason := "";
+        if (!character || !character.isA(POLCLASS_MOBILE) || !character.serial)
+            reason := "Inserção pelo sistema (character inválido)";
+        endif
+        if (is_system_item)
+            reason += (reason ? " E " : "") + "Item marcado como CreatedByResourceController";
+        endif
+        
+        LogInfo("onInsert_SYS", reason + ". Item: " + (adding_item ? adding_item.serial : "NULL") + ". Nenhuma ação de doação/cache por este script.");
+        return 1; // Permite a inserção
+    endif
 
-   var donation_types := array{
-      "IsKingdomDonationComida",
-      "IsKingdomDonationMoedas",
-      "IsKingdomDonationCouro",
-      "IsKingdomDonationMetal",
-      "IsKingdomDonationMadeira",
-      "IsKingdomDonationPano",
-      "IsKingdomDonationPedra",
-      "IsKingdomDonationJoias"
-   };
+    // CASO 2: Inserção por jogador (e item não é do sistema)
+    LogDebug("onInsert_PLAYER", "Jogador " + character.name + " inserindo item: " + (adding_item ? adding_item.serial : "NULL_ITEM"));
 
-   var is_donation_item_flag := 0; 
-   var donation_category_found_str := ""; 
+    var donation_types := array{
+        "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro",
+        "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano",
+        "IsKingdomDonationPedra", "IsKingdomDonationJoias"
+    };
 
-   if (adding_item)
-      foreach type_prop_name_loop in donation_types 
-         if (GetObjProperty(adding_item, type_prop_name_loop))
-            is_donation_item_flag := 1;
-            donation_category_found_str := Lower(type_prop_name_loop[18, len(type_prop_name_loop)]);
-            LogDebug("onInsert_PLAYER", "Item " + adding_item.serial + " identificado como doação de '" + donation_category_found_str + "'.");
-            break; 
-         endif
-      endforeach;
-   endif // Fim do if (adding_item)
+    var is_donation_item_flag := 0; 
+    var donation_category_found_str := ""; 
 
-   if (is_donation_item_flag)
-      if (container)
-         var result_mark := MarcarRecursosModificados(container);
-         if (result_mark == error)
-            SendSysMessageEx(character, "Erro ao processar a doação.", SSM_FAIL);
-            LogError("onInsert_ERROR", "Erro em MarcarRecursosModificados para container " + container.serial + " (jogador: " + character.name + ")");
-         else
-            SendSysMessageEx(character, "Doação de " + adding_item.amount + " " + donation_category_found_str + " registrada com sucesso.", SSM_INFO);
-         endif
-      else
-         SendSysMessageEx(character, "Erro: Baú de destino inválido para doação.", SSM_FAIL);
-         LogError("onInsert_ERROR", "Container nulo ao processar doação de " + character.name);
-      endif
-   endif // Fim do if (is_donation_item_flag)
+    if (adding_item)
+        foreach type_prop_name_loop in donation_types 
+            if (GetObjProperty(adding_item, type_prop_name_loop))
+                is_donation_item_flag := 1;
+                donation_category_found_str := Lower(type_prop_name_loop[18, len(type_prop_name_loop)]);
+                LogDebug("onInsert_PLAYER", "Item " + adding_item.serial + " identificado como doação de '" + donation_category_found_str + "'.");
+                break; 
+            endif
+        endforeach;
+    endif
 
+    if (is_donation_item_flag)
+        if (container)
+            var result_mark := MarcarRecursosModificados(container);
+            if (result_mark == error)
+                SendSysMessage(character, "Erro ao processar a doação.");
+                LogError("onInsert_ERROR", "Erro em MarcarRecursosModificados para container " + container.serial + " (jogador: " + character.name + ")");
+            else
+                SendSysMessage(character, "Doação de " + adding_item.amount + " " + donation_category_found_str + " registrada com sucesso.");
+            endif
+        else
+            SendSysMessage(character, "Erro: Baú de destino inválido para doação.");
+            LogError("onInsert_ERROR", "Container nulo ao processar doação de " + character.name);
+        endif
+    endif
 
-   // --- Lógica de Feedback Visual (para jogador) ---
-   if (!(character.concealed || character.hidden))
-      var added_desc_str := (adding_item && adding_item.desc ? adding_item.desc : "um item");
-      var cont_desc_str := (container && container.desc ? container.desc : "um container");
+    // --- Lógica de Feedback Visual (para jogador) ---
+    if (!(character.concealed || character.hidden))
+        var added_desc_str := (adding_item && adding_item.desc ? adding_item.desc : "um item");
+        var cont_desc_str := (container && container.desc ? container.desc : "um container");
 
-      if (CInt(inserttype) == 2 && existing_stack) // Empilhou
-         var stack_desc_str := (existing_stack.desc ? (CStr(existing_stack.amount) + " " + existing_stack.desc) : "uma pilha");
-         PrintText(character, "*Acrescentou " + amount_to_add + " " + added_desc_str + " a " + stack_desc_str + " em " + cont_desc_str + "*", 6);
-      else // Inseriu novo item (ou novo stack)
-         PrintText(character, "*Colocou " + added_desc_str + " em " + cont_desc_str + "*", 6);
-      endif
-   endif // Fim do if (!(character.concealed ...))
+        if (CInt(inserttype) == 2 && existing_stack) // Empilhou
+            var stack_desc_str := (existing_stack.desc ? (CStr(existing_stack.amount) + " " + existing_stack.desc) : "uma pilha");
+            PrintText(character, "*Acrescentou " + amount_to_add + " " + added_desc_str + " a " + stack_desc_str + " em " + cont_desc_str + "*", 6);
+        else // Inseriu novo item (ou novo stack)
+            PrintText(character, "*Colocou " + added_desc_str + " em " + cont_desc_str + "*", 6);
+        endif
+    endif
 
-   LogDebug("onInsert_DEBUG", "=== onInsert Finalizado para jogador " + character.name + ", item " + (adding_item ? adding_item.serial : "NULL") + " ===");
-   return 1; // Sempre retorna 1 se CanInsert permitiu
+    LogDebug("onInsert_DEBUG", "=== onInsert Finalizado para jogador " + character.name + ", item " + (adding_item ? adding_item.serial : "NULL") + " ===");
+    return 1; // Sempre retorna 1 se CanInsert permitiu
 endprogram

@@ -60,10 +60,15 @@ function CheckAllCaravanPayments_Fixed()
             continue;
         endif
 
+        // ==========================================================
+        // >>>>> INÍCIO DA CORREÇÃO <<<<<
+        // ==========================================================
+
         var contracts_from_prop := 0;
         var attempts := 0;
         const MAX_ATTEMPTS := 3;
 
+        // Bloco de retentativas para ler a CProp
         while (attempts < MAX_ATTEMPTS)
             attempts += 1;
             contracts_from_prop := guild_obj_loop.GetProp("caravan_contracts");
@@ -90,6 +95,7 @@ function CheckAllCaravanPayments_Fixed()
             factions_processed_this_cycle[faction_name_loop] := 1;
         endif
         
+        // **NOVO PASSO DE VALIDAÇÃO:** Limpa a lista de contratos de dados inválidos
         var valid_contracts_after_validation := ValidateCaravanContracts(guild_obj_loop, faction_name_loop, contracts_from_prop);
         if (!valid_contracts_after_validation || valid_contracts_after_validation.size() == 0)
             LogDebug("CaravanPaymentCtrl_Fixed", "Nenhum contrato válido encontrado para " + faction_name_loop + " após validação.");
@@ -100,6 +106,7 @@ function CheckAllCaravanPayments_Fixed()
         var updated_contracts_list := array{};
         var payments_processed_count := 0;
 
+        // Agora o loop itera sobre a lista JÁ VALIDADA
         foreach contract_to_process in valid_contracts_after_validation
             LogDebug("CaravanPaymentCtrl_Fixed", "Analisando contrato para Origem ID: " + contract_to_process.origin_territory_id + ", Facção: " + faction_name_loop);
             var payment_result_struct := ProcessCaravanPaymentSecure(guild_obj_loop, contract_to_process, faction_name_loop, current_time);
@@ -118,6 +125,7 @@ function CheckAllCaravanPayments_Fixed()
             SleepMS(50);
         endforeach;
 
+        // Salva a lista de contratos apenas se houveram mudanças
         if (updated_contracts_list.size() != valid_contracts_after_validation.size() || payments_processed_count > 0)
             LogInfo("CaravanPaymentCtrl_Fixed", "Salvando " + updated_contracts_list.size() + " contrato(s) de volta para CProp da facção " + faction_name_loop + ". (Pagamentos processados neste ciclo: " + payments_processed_count + ")");
             var set_prop_final_result := guild_obj_loop.SetProp("caravan_contracts", updated_contracts_list);
@@ -128,6 +136,9 @@ function CheckAllCaravanPayments_Fixed()
             LogDebug("CaravanPaymentCtrl_Fixed", "Nenhuma mudança nos contratos da facção " + faction_name_loop + " que necessite salvar a CProp.");
         endif
         SleepMS(100);
+        // ==========================================================
+        // >>>>> FIM DA CORREÇÃO <<<<<
+        // ==========================================================
     endforeach;
     LogInfo("CaravanPaymentCtrl_Fixed", "=== CICLO CORRIGIDO DE PAGAMENTOS FINALIZADO ===");
 endfunction
@@ -152,6 +163,13 @@ function DeactivateIndividualCaravan(guild_obj_param, origin_id_param, capital_i
     LogInfo("DeactivateCaravan", "Desativação notificada para Origem: " + origin_id_param);
 endfunction
 
+/*
+ * ValidateCaravanContracts(guild_obj, faction_name, byref contracts_array_from_prop_original)
+ *
+ * NOVA FUNÇÃO: Valida e limpa a lista de contratos de uma guilda.
+ * Remove entradas que não são structs ou que estão malformadas.
+ * Salva a lista limpa de volta na CProp se houverem mudanças.
+ */
 function ValidateCaravanContracts(guild_obj, faction_name, byref contracts_array_from_prop_original)
     var current_time_validation := polcore().systime;
     var contracts_to_evaluate := array{};
@@ -170,7 +188,7 @@ function ValidateCaravanContracts(guild_obj, faction_name, byref contracts_array
 
     var final_valid_contracts_list := array{};
     var has_list_changed_during_validation := 0; 
-    var grace_period_for_very_old := 86400 * 2;
+    var grace_period_for_very_old := 86400 * 2; // 2 dias
 
     foreach contract_being_validated in contracts_to_evaluate 
         var origin_id_val := "N/A";

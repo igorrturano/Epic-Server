@@ -16,7 +16,7 @@ if (script.errortext)
 else
     LogDebug("sistema", "Iniciando controle de soldo... ok.");
 endif
-sleep(1); // Pequena pausa entre inicializações
+sleep(1);
 
 // Iniciar o processador de atualizações de recursos
 var update_script := start_script(":faccao:process_recursos_updates");
@@ -54,9 +54,6 @@ else
 endif
 sleep(1);
 
-// ==============================================================
-// >>>>> NOVO BLOCO ADICIONADO AQUI <<<<<
-// ==============================================================
 // Iniciar o Controlador de Construções de Feudo
 LogInfo("sistema", "Iniciando Controlador de Construções de Feudo...");
 var construction_script := start_script(":faccao:construcao/feudo_construction_controller");
@@ -66,7 +63,16 @@ else
     LogDebug("sistema", "Controlador de Construções iniciado com sucesso.");
 endif
 sleep(1);
-// ==============================================================
+
+// Iniciar o Controlador de Aluguel de Feudo
+LogInfo("sistema", "Iniciando Controlador de Aluguel de Feudo...");
+var rent_script := start_script(":faccao:construcao/scripts/feudo_rent_controller");
+if (rent_script.errortext)
+    LogError("sistema", "Erro ao iniciar o Controlador de Aluguel: " + rent_script.errortext);
+else
+    LogDebug("sistema", "Controlador de Aluguel iniciado com sucesso.");
+endif
+sleep(1);
 
 // Iniciar o controlador de pagamento de caravanas
 var caravan_payment_script := start_script(":faccao:caravan_payment_control");
@@ -84,20 +90,17 @@ if (upkeep_script.errortext)
 else
     LogDebug("sistema", "Iniciando controle de upkeep do reino... ok.");
 endif
-sleep(5); // Uma pausa um pouco maior antes do ResourceController
+sleep(5);
 
-start_resource_controller(); // Chamada para a função que inicia o ResourceController
+start_resource_controller();
 
-// Funções auxiliares (sem alterações)
 function GetMinimumTerritoryInterval()
-    // ... código sem alterações ...
     var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return 3600; 
     endif
     
     var min_interval := 3600; 
-    var log_msg := ""; 
 
     foreach rect_name in (rect_df.keys())
         var elem := SafeFindElement(rect_df, rect_name);
@@ -117,8 +120,7 @@ function GetMinimumTerritoryInterval()
         sleepms(2);
     endforeach
     
-    log_msg := "Menor intervalo encontrado nos territórios: " + min_interval + " segundos (" + (min_interval/60) + " minutos)";
-    LogDebug("start_DEBUG", log_msg);
+    LogDebug("start_DEBUG", "Menor intervalo encontrado nos territórios: " + min_interval + " segundos.");
     
     if (min_interval < 60)
         min_interval := 60;
@@ -127,8 +129,10 @@ function GetMinimumTerritoryInterval()
     return CInt(min_interval / 2);
 endfunction
 
+// ==========================================================
+// >>>>> VERSÃO RESTAURADA COM LOGS DETALHADOS E INDENTAÇÃO CORRETA <<<<<
+// ==========================================================
 function start_resource_controller()
-    // ... código sem alterações ...
     var log_msg := ""; 
     var last_time := CInt(GetGlobalProperty("last_execution"));
     if (last_time == error)
@@ -177,7 +181,6 @@ function start_resource_controller()
         else
             log_msg := "- ResourceController.src INVOCADO com sucesso. PID do novo processo (se iniciado): " + (resource_script.pid ? resource_script.pid : "N/A - pode ter saído se duplicado");
             LogInfo("start_DEBUG", log_msg);
-            LogDebug("sistema", "Starting territory resource controller... ok.");
             SetGlobalProperty("last_execution", current_time);
         endif
     else

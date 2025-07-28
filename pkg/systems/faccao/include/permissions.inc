@@ -566,26 +566,34 @@ endfunction
  * Parameters: who - O jogador a verificar
  * Return: 1 se for líder, 0 caso contrário
  */
+/*
+ * IsGuildLeader(who) - VERSÃO ROBUSTA
+ *
+ * Verifica se o jogador é o líder de sua guilda, checando
+ * a propriedade nativa e a CProp de fallback.
+ */
 function IsGuildLeader(who)
-    if (!who)
+    if (!who || !who.guildid)
         return 0;
     endif
 
-    // Método 1: Verificar se tem uma guilda e se é o líder
-    var player_guild := who.guild;
-    if (player_guild)
-        if (player_guild.leader == who.serial)
-            return 1;
-        endif
+    var guild := who.guild;
+    if (!guild)
+        return 0; // Se o objeto da guilda for inválido
     endif
 
-    // Método 2: Verificar por cargo armazenado em propriedade
-    var player_rank := GetObjProperty(who, "guild_rank");
-    if (player_rank in {"Lider", "Leader"})
+    // Verificação Primária: Propriedade nativa 'leader' do objeto guilda.
+    // É a mais confiável. CInt() para evitar problemas com tipos.
+    if (CInt(guild.leader) == who.serial)
         return 1;
     endif
 
-    // Não é líder de guilda
+    // Verificação Secundária (Fallback): CProp 'leader'
+    // Útil se o sistema usa uma CProp para gerenciar líderes.
+    if (CInt(guild.GetProp("leader")) == who.serial)
+        return 1;
+    endif
+
     return 0;
 endfunction
 

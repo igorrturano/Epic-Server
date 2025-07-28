@@ -19,8 +19,12 @@ var LOG_CATEGORIES := dictionary{
     "permissao" := 3,
     "territorio" := 3,
     "bau" := 3,
-    "CompraMapeador" := 5, // [NOVO] Adicione esta linha para ver todos os logs desta categoria
-    "CompraFerramentas" := 5 // [NOVO] E esta para as ferramentas
+    "CompraMapeador" := 5, 
+    "CompraFerramentas" := 5,
+    "FeudoRent_Ctrl" := 3,
+    "FeudoRent_Payment" := 3,
+    "FeudoRent_Debit_Robusto" := 3,
+    "FeudoRent_Debit" := 3
 };
 
 function EnableLogging(enable := 1)

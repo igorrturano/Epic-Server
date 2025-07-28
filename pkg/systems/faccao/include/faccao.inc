@@ -7,6 +7,7 @@ include ":faccao:faccao_constants";
 include ":faccao:include/datafile_helpers"; // <--- ADD THIS LINE
 include "include/client";
 include ":faccao:include/territory_management"; // Dependência para funções de território
+include ":faccao:construcao/include/feudo_buildings";
 
 // ###########################################
 // #
@@ -168,42 +169,43 @@ endfunction
  *   1 se a guilda foi destruída com sucesso ou se já não existia.
  *   0 se ocorreu uma falha inesperada.
  */
+/*
+ * RemFaccao(guild_obj) - VERSÃO 3.1 (DELEÇÃO SINCRONIZADA E LIMPA)
+ * 
+ * Purpose: Realiza a remoção COMPLETA e SEGURA de uma facção e TODOS os seus ativos,
+ *          incluindo territórios, NPCs e construções de feudo.
+ */
 function RemFaccao(guild_obj)
- // Etapa 1: Garantir que temos um objeto de guilda VÁLIDO para trabalhar.
-    // Primeiro, verificamos o tipo do parâmetro recebido.
-     var param_type := TypeOf(guild_obj);
 
-    // Se o parâmetro já for um erro ou nulo, paramos IMEDIATAMENTE.
+    // ETAPA 1: Validação Robusta do Objeto Guilda
+    var param_type := TypeOf(guild_obj);
     if (!guild_obj || param_type == "Error")
-        LogError("RemFaccao_ABORT", "Função chamada com parâmetro inválido (Nulo ou Objeto de Erro). Deleção abortada para prevenir danos.");
+        LogError("RemFaccao_v3.1", "Chamada com parâmetro inválido. Abortando.");
         if(param_type == "Error")
-            LogError("RemFaccao_ABORT", "  -> Erro recebido: " + guild_obj.errortext);
+            LogError("RemFaccao_v3.1", "  -> Erro recebido: " + guild_obj.errortext);
         endif
-        return 0; // Retorna falha.
+        return 0;
     endif
 
-    // Se não for um GuildRef, tentamos encontrá-lo. FindGuild lida com ID ou nome.
     if (param_type != "GuildRef")
         guild_obj := FindGuild(guild_obj);
     endif
 
-    // Verificação final: Após a tentativa de busca, o objeto DEVE ser um GuildRef válido.
     if (!guild_obj || TypeOf(guild_obj) != "GuildRef") 
-        LogWarning("RemFaccao_IGNORE", "Tentativa de apagar uma guilda que já não existe ou é inválida (Parâmetro original: " + guild_obj + "). Operação ignorada.");
-        return 1; // Retorna sucesso, pois o estado desejado (guilda não existe) foi alcançado.
+        LogWarning("RemFaccao_v3.1", "Tentativa de apagar uma guilda que já não existe.");
+        return 1;
     endif
 
-    // ==========================================================
-    // >>>>> FIM DA CORREÇÃO <<<<<
-    // ==========================================================
 
-
-    // Etapa 2: Obter informações básicas para logs ANTES de apagar.
-    var guild_name := guild_obj.GetProp(FACTION_PROP_NAME) ?: guild_obj.guildname ?: "Facção Desconhecida";
+    // ETAPA 2: Obter informações para Logs
+    var guild_name := SafeGetGuildName(guild_obj);
     var guild_id_log := guild_obj.guildid;
-    LogToFile("faccoes.log", "REMFACCAO_START: Iniciando remoção da facção '" + guild_name + "' (ID: " + guild_id_log + ")");
+    LogCritical("RemFaccao_v3.1", "==========================================================");
+    LogCritical("RemFaccao_v3.1", "INICIANDO REMOÇÃO COMPLETA da facção '" + guild_name + "' (ID: " + guild_id_log + ")");
 
-    // Etapa 3: Limpar NPCs contratados.
+
+    // ETAPA 3: Limpar NPCs Contratados
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 3: Limpando NPCs contratados...");
     var npcs_active := guild_obj.GetProp("npcs_active");
     if (npcs_active && npcs_active.size() > 0)
         foreach npc_data in npcs_active
@@ -216,11 +218,13 @@ function RemFaccao(guild_obj)
             sleepms(2);
         endforeach
     endif
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 3 CONCLUÍDA.");
 
-    // Etapa 4: Liberar todos os territórios controlados.
+
+    // ETAPA 4: Liberar todos os territórios controlados
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 4: Liberando territórios controlados...");
     var territories := guild_obj.GetProp("territories");
     if (territories && TypeOf(territories) == "Array" && territories.size() > 0)
-        LogToFile("faccoes.log", "--> Limpando " + territories.size() + " territórios da facção '" + guild_name + "'");
         foreach territory_id in territories
             if (territory_id)
                 TM_DeleteTerritoryObjects(territory_id, guild_name);
@@ -229,8 +233,41 @@ function RemFaccao(guild_obj)
             sleepms(5);
         endforeach
     endif
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 4 CONCLUÍDA.");
+    
 
-    // Etapa 5: Remover todos os membros.
+    // ETAPA 5: Demolir todas as construções do feudo (USANDO A LISTA)
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 5: Lendo lista 'FeudoOwnedConstructions' para demolir construções...");
+    var construcoes_demolidas := 0;
+    var owned_constructions_seriais := guild_obj.GetProp("FeudoOwnedConstructions") ?: array{};
+
+    if (owned_constructions_seriais.size() > 0)
+        LogWarning("RemFaccao_v3.1", "    Encontradas " + owned_constructions_seriais.size() + " construções para demolir.");
+        
+        // Limpa a CProp da guilda ANTES de começar a demolir.
+        guild_obj.EraseProp("FeudoOwnedConstructions");
+        
+        foreach serial_str in owned_constructions_seriais
+            var serial := CInt(serial_str);
+            var placa_mestre := SystemFindObjectBySerial(serial);
+            if (placa_mestre)
+                DemolirConstrucao(placa_mestre);
+                construcoes_demolidas += 1;
+            else
+                LogWarning("RemFaccao_v3.1", "    Placa mestre com serial " + serial + " não encontrada no mundo.");
+            endif
+            LogInfo("RemFaccao_v3.1", "--> ETAPA 5 CONCLUÍDA. Total de construções que receberam ordem de demolição: " + construcoes_demolidas);
+        endforeach
+        
+        // PAUSA CRÍTICA: Dá tempo para o motor do jogo processar os DestroyItem()
+        LogInfo("RemFaccao_v3.1", "    Aguardando 2 segundos para a conclusão da demolição dos itens...");
+        sleep(2);
+    endif
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 5 CONCLUÍDA. Construções demolidas: " + construcoes_demolidas);
+
+
+    // ETAPA 6: Remover todos os membros
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 6: Removendo membros da guilda...");
     var members_copy := guild_obj.members;
     if (members_copy)
         foreach member in members_copy
@@ -242,8 +279,11 @@ function RemFaccao(guild_obj)
             sleepms(2);
         endforeach
     endif
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 6 CONCLUÍDA.");
 
-    // Etapa 6: Remover todas as relações de inimizade.
+
+    // ETAPA 7: Remover todas as relações de inimizade
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 7: Removendo relações de inimizade...");
     var enemy_guilds_copy := guild_obj.enemyguilds;
     if (enemy_guilds_copy)
         foreach enemy in enemy_guilds_copy
@@ -253,36 +293,34 @@ function RemFaccao(guild_obj)
             sleepms(2);
         endforeach
     endif
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 7 CONCLUÍDA.");
+
     
-    // Etapa 7: Limpar todas as CProps customizadas da própria guilda.
+    // ETAPA 8: Limpar todas as CProps customizadas da própria guilda
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 8: Limpando CProps da guilda...");
     var props_to_clean := array{
         "name", "leader", "npcs_active", "npcs", "report", "area", 
         "money", "uniforms", "link_to", "subguilds", "laws", "territories",
         "recursos", "recursos_timestamp", "culture", "caravan_contracts"
+        // A CProp "FeudoOwnedConstructions" já foi limpa na Etapa 5.
     };
     foreach prop in props_to_clean
         guild_obj.EraseProp(prop);
         sleepms(2);
     endforeach
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 8 CONCLUÍDA.");
 
-    // ====================================================================
-    // ETAPA 8: LIMPEZA COMPLETA DE DATAFILES INDEXADOS
-    // ====================================================================
+
+    // ETAPA 9: Limpeza de Datafiles indexados
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 9: Limpando datafiles indexados...");
     if (guild_name && guild_name != "Facção Desconhecida")
-        // 8.1: Limpar entrada de recursos
         var elem_name_recursos := NormalizarNomeElementoFaccao(guild_name); 
         if (elem_name_recursos != error)
-            if (DeleteDatafileEntry(KINGDOM_RESOURCE_DATAFILE, elem_name_recursos))
-                LogToFile("faccoes.log", "--> Entrada de RECURSOS removida para '" + guild_name + "'");
-            endif
+            DeleteDatafileEntry(KINGDOM_RESOURCE_DATAFILE, elem_name_recursos);
         endif
 
-        // 8.2: Limpar entrada de XP
-        if (DeleteDatafileEntry(":death:guild_xp_stats", guild_name))
-            LogToFile("faccoes.log", "--> Entrada de XP removida para '" + guild_name + "'");
-        endif
+        DeleteDatafileEntry(":death:guild_xp_stats", guild_name);
         
-        // 8.3: Limpar entrada do registro de guildas
         var registry_df := SafeOpenDataFile(":faccao:guild_registry", 1);
         if(registry_df)
             var elem_reg := SafeFindElement(registry_df, "guilds", 1);
@@ -291,24 +329,29 @@ function RemFaccao(guild_obj)
                 if(registry.exists(guild_name))
                     registry.erase(guild_name);
                     SetElementProp(elem_reg, "registry", registry);
-                    LogToFile("faccoes.log", "--> Entrada de REGISTRO removida para '" + guild_name + "'");
                 endif
             endif
         endif
     endif
-    // ====================================================================
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 9 CONCLUÍDA.");
 
-    // Etapa 9: Destruir o objeto da guilda.
+
+    // ETAPA 10: Destruir o objeto da guilda.
+    LogInfo("RemFaccao_v3.1", "--> ETAPA 10: Destruindo objeto da guilda...");
     var destruction_result := DestroyGuild(guild_obj);
    
     if (!destruction_result)
-        LogError("faccao", "FALHA ao destruir a guilda " + guild_name + " (ID: " + guild_id_log + ").");
+        LogError("RemFaccao_v3.1", "    FALHA ao destruir a guilda " + guild_name);
     else
-        LogToFile("faccoes.log", "REMFACCAO_END: Facção '" + guild_name + "' removida com sucesso.");
+        LogInfo("RemFaccao_v3.1", "    ...Guilda destruída com sucesso.");
     endif
-   
+    
+    LogCritical("RemFaccao_v3.1", "REMOÇÃO COMPLETA FINALIZADA para '" + guild_name + "'.");
+    LogCritical("RemFaccao_v3.1", "==========================================================");
+    
     return destruction_result;
 endfunction
+
 
 function AddMember(faccao, mobile)
    faccao.addMember(mobile);   var member_obj := struct{

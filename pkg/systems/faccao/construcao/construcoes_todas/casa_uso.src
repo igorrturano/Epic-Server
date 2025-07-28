@@ -1,0 +1,595 @@
+use uo;
+use os;
+use guilds;
+use polsys;
+
+include ":gumps:epicGumps";
+include ":gumps:yesNo";
+include ":gumps:gumps";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":keys:key";
+include ":faccao:include/shared_functions";
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/logging";
+include ":faccao:include/permissions";
+include ":faccao:include/safe_guild_utils";
+
+
+// ==========================================================
+// PROGRAMA PRINCIPAL (ROTEADOR DE PERMISSÕES)
+// ==========================================================
+const MOEDAS_COBRE     := 0xba63;
+
+program use_casa_placa(who, placa)
+    var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+    var contrato := GetObjProperty(placa, "ContratoAluguel");
+    
+    if (who.guildid == owner_guild_id && (IsGuildLeader(who) || who.cmdlevel >= 1))
+        ShowLeaderGump(who, placa);
+    elseif (contrato && CInt(contrato.InquilinoSerial) == who.serial)
+        ShowInquilinoGump(who, placa, contrato);
+    elseif (who.guildid == owner_guild_id)
+        ShowCidadaoGump(who, placa);
+    else
+        ShowForasteiroGump(who, placa);
+    endif
+endprogram
+
+
+
+// ==========================================================
+// GUMP 1: LÍDER / GM (A GUMP DE GESTÃO COMPLETA) - VERSÃO 4.0 (FOCADA)
+// ==========================================================
+
+function ShowLeaderGump(who, placa)
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+    var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+
+    var continuar := 1;
+    while (continuar)
+        var gump := GFECreateGump("Gestão de Propriedade: " + details.Name, 450, 420, array{BORDER_MARBLE});
+
+        var y := 80;
+        var x := 30;
+
+        // --- Seção de Status da Construção ---
+        GFTextLine(gump, x, y, 1153, "Status da Propriedade:");
+        y += 25;
+        GFTextLine(gump, x + 20, y, 0, "Nível: " + build_info.level);
+        y += 20;
+        GFTextLine(gump, x + 20, y, 0, "Bônus para o Feudo: " + details.Bonus[1]);
+        y += 20;
+        GFTextLine(gump, x + 20, y, 0, "Durabilidade: 100%");
+        y += 25;
+
+        // ==========================================================
+        // >>>>> NOVA SEÇÃO DE STATUS DE OCUPAÇÃO <<<<<
+        // ==========================================================
+        GFGumpPicTiled(gump, x, y, 390, 2, 9101); // Linha divisória
+        y += 10;
+        GFTextLine(gump, x, y, 1153, "Status de Ocupação:");
+        y += 25;
+
+        var contrato := GetObjProperty(placa, "ContratoAluguel");
+        if (contrato && contrato.InquilinoSerial)
+            var inquilino := SystemFindObjectBySerial(CInt(contrato.InquilinoSerial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+            var nome_exibicao := GetPlayerDisplayName(inquilino);
+            
+            GFTextLine(gump, x + 20, y, 0, "Inquilino: " + nome_exibicao);
+            y += 20;
+            GFTextLine(gump, x + 20, y, 0, "Aluguel: " + contrato.ValorAluguel + " cobre (" + contrato.PeriodoNome + ")");
+            y += 20;
+            
+            var tempo_restante := CInt(contrato.ProximoPagamento) - POLCore().systime;
+            GFTextLine(gump, x + 20, y, 0, "Próximo Pagamento:");
+            if (tempo_restante > 0)
+                var dias_restantes := CInt(tempo_restante / 86400);
+                GFTextLine(gump, x + 180, y, 68, "Em " + dias_restantes + " dias");
+            else
+                GFTextLine(gump, x + 180, y, 38, "ATRASADO");
+            endif
+        else
+            GFTextLine(gump, x + 20, y, 68, "Disponível para aluguel.");
+        endif
+        y += 30;
+        // ==========================================================
+        // >>>>> FIM DA NOVA SEÇÃO <<<<<
+        // ==========================================================
+
+        GFGumpPicTiled(gump, x, y, 390, 2, 9101); // Linha divisória
+        y += 10;
+        GFTextLine(gump, x, y, 1153, "Ações Disponíveis:");
+        y += 25;
+
+        // --- Seção de Ações ---
+        GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, x + 50, y, 0, "Evoluir Construção");
+        y += 30;
+
+        var texto_botao_aluguel := (contrato && contrato.InquilinoSerial) ? "Despejar Inquilino" : "Alugar Propriedade";
+        var gfx_botao_aluguel := (contrato && contrato.InquilinoSerial) ? 4017 : 4005;
+        var cor_texto_aluguel := (contrato && contrato.InquilinoSerial) ? 38 : 0;
+        GFAddButton(gump, x + 20, y, gfx_botao_aluguel, gfx_botao_aluguel + 2, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, x + 50, y, cor_texto_aluguel, texto_botao_aluguel);
+        y += 30;
+        
+        GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 99);
+        GFTextLine(gump, x + 50, y, 38, "Demolir Construção");
+        
+        var input := GFSendGump(who, gump);
+        var button := input[0];
+
+        case (button)
+            1: SendSysMessage(who, "Funcionalidade de upgrade ainda não implementada."); break;
+            2: GerenciarInquilino(who, placa); break;
+            99:
+                if (YesNo(who, "TEM CERTEZA? A demolição é irreversível."))
+                    DemolirConstrucao(placa);
+                    SendSysMessage(who, details.Name + " foi demolida com sucesso.");
+                    continuar := 0;
+                endif
+                break;
+            default: continuar := 0;
+        endcase
+    endwhile
+endfunction
+
+// ==========================================================
+// GUMP 2: INQUILINO - VERSÃO 2.0 (REDESENHADA)
+// ==========================================================
+
+function ShowInquilinoGump(who, placa, contrato)
+    var gump := GFCreateGump();
+    // Usando um fundo sólido e limpo
+    GFResizePic(gump, 0, 0, 9200, 450, 400); 
+    GFResizePic(gump, 15, 15, 9350, 420, 370); 
+    
+    GFTextMid(gump, 15, 25, 420, 2100, "Sua Propriedade: " + placa.name);
+    
+    var y := 80;
+    var x := 30;
+
+    GFGumpPicTiled(gump, x, y, 390, 2, 9101); // Linha divisória
+    y += 10;
+    GFTextLine(gump, x, y, 1153, "Detalhes do seu Contrato de Aluguel:");
+    y += 30;
+
+    // Seção de Informações
+    GFTextLine(gump, x + 20, y, 0, "Valor do Aluguel:");
+    GFTextLine(gump, x + 250, y, 68, contrato.ValorAluguel + " cobre");
+    y += 25;
+    GFTextLine(gump, x + 20, y, 0, "Regime de Pagamento:");
+    GFTextLine(gump, x + 250, y, 1153, contrato.PeriodoNome);
+    y += 25;
+    
+ GFTextLine(gump, x + 20, y, 0, "Próxima Cobrança:");
+    var tempo_restante := CInt(contrato.ProximoPagamento) - POLCore().systime;
+    
+    // Usa a nova função para formatar o tempo de forma inteligente
+    var tempo_formatado := FormatTimeRemaining(tempo_restante);
+    var cor_tempo := (tempo_restante > 0) ? 1153 : 38;
+
+    GFTextLine(gump, x + 250, y, cor_tempo, "Em " + tempo_formatado);
+
+    if (tempo_restante <= 0)
+        y += 20;
+        GFTextLine(gump, x + 20, y, 38, "(Período de carência de 3 dias ativo)");
+    endif
+    y += 40;
+
+    GFGumpPicTiled(gump, x, y, 390, 2, 9101); // Linha divisória
+    y += 10;
+    GFTextLine(gump, x, y, 1153, "Ações:");
+    y += 25;
+
+    // Seção de Ações
+    GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, x + 50, y, 0, "Pagar Aluguel Adiantado");
+    y += 35;
+
+    GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, x + 50, y, 0, "Ver Histórico de Pagamentos");
+    y += 35;
+    
+    GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 3);
+    GFTextLine(gump, x + 50, y, 38, "Rescindir Contrato (Entregar Casa)");
+
+    var input := GFSendGump(who, gump);
+    case(input[0])
+        1: 
+            PagarAluguelAdiantado(who, placa, contrato);
+            // Após a tentativa de pagamento, a gump precisa ser reaberta
+            // para mostrar o novo "Próximo Pagamento".
+            // Para isso, lemos o contrato novamente, pois ele foi modificado pela função.
+            var contrato_atualizado := GetObjProperty(placa, "ContratoAluguel");
+            if (contrato_atualizado)
+                ShowInquilinoGump(who, placa, contrato_atualizado);
+            endif
+           
+        2: 
+            SendSysMessage(who, "Funcionalidade de histórico de pagamentos ainda não implementada.");
+        3: 
+            if(YesNo(who, "Tem certeza que deseja entregar esta propriedade? Você perderá o acesso e sua chave será destruída."))
+                DespejarInquilino(who, placa, contrato);
+                SendSysMessage(who, "Você rescindiu seu contrato e entregou a propriedade.");
+            endif
+    endcase
+endfunction
+
+// ==========================================================
+// GUMP 3: CIDADÃO (MEMBRO DA GUILDA) - VERSÃO 2.0 (REDESENHADA)
+// ==========================================================
+
+function ShowCidadaoGump(who, placa)
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+    if (!build_info)
+        SendSysMessage(who, "Esta propriedade parece estar com dados corrompidos.");
+        return;
+    endif
+    
+    var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+    if (details.errortext)
+        SendSysMessage(who, "Erro ao carregar detalhes da propriedade.");
+        return;
+    endif
+
+    // Usando o mesmo estilo de fundo limpo
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 420, 300);
+    GFResizePic(gump, 15, 15, 9350, 390, 270);
+    
+    GFTextMid(gump, 15, 25, 390, 2100, "Propriedade do Feudo: " + placa.name);
+
+    var y := 80;
+    var x := 30;
+
+    GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+    y += 15;
+    GFTextLine(gump, x, y, 1153, "Esta é uma propriedade do nosso feudo.");
+    y += 30;
+
+    GFTextLine(gump, x + 20, y, 0, "Status:");
+    var contrato := GetObjProperty(placa, "ContratoAluguel");
+    if (contrato && contrato.InquilinoSerial)
+        var inquilino := SystemFindObjectBySerial(CInt(contrato.InquilinoSerial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+        GFTextLine(gump, x + 80, y, 1153, "Alugada para " + GetPlayerDisplayName(inquilino));
+    else
+        GFTextLine(gump, x + 80, y, 68, "Disponível para aluguel.");
+        y+=20;
+        GFTextLine(gump, x + 20, y, 0, "(Fale com o líder do feudo se tiver interesse)");
+    endif
+    y += 30;
+
+    GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+    y += 15;
+    GFTextLine(gump, x, y, 1153, "Bônus Contribuído ao Feudo:");
+    y += 25;
+
+    var bonus_list := details.Bonus;
+    foreach bonus_line in (bonus_list)
+        GFTextLine(gump, x + 20, y, 68, "• " + bonus_line);
+        y += 20;
+    endforeach
+
+    GFAddButton(gump, 190, 250, 247, 248, GF_CLOSE_BTN, 0); // Botão OK
+
+    GFSendGump(who, gump);
+endfunction
+
+// ==========================================================
+// GUMP 4: FORASTEIRO (NÃO MEMBRO)
+// ==========================================================
+
+function ShowForasteiroGump(who, placa)
+    var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+    var guild := FindGuild(owner_guild_id);
+    var guild_name := SafeGetGuildName(guild);
+    
+    if (guild_name == "Unknown Guild" || guild_name == "No Guild")
+        guild_name := "um feudo desconhecido";
+    endif
+
+    var gump := GFECreateGump("Propriedade Privada", 350, 200, array{BORDER_MARBLE});
+    
+    var y := 80;
+    GFTextLine(gump, 40, y, 1153, "Propriedade do Feudo de " + guild_name);
+    y += 25;
+
+    var contrato := GetObjProperty(placa, "ContratoAluguel");
+    if (contrato && contrato.InquilinoSerial)
+        GFTextLine(gump, 60, y, 0, "Status: Ocupada por um cidadão.");
+    else
+        GFTextLine(gump, 60, y, 0, "Status: Desocupada.");
+    endif
+    
+    GFSendGump(who, gump);
+endfunction
+
+
+/*
+ * GerenciarInquilino(who, placa) - VERSÃO 3.9 (SINTAXE FINAL CORRIGIDA)
+ */
+function GerenciarInquilino(who, placa)
+    var LOG_CATEGORY := "FeudoRent_Gump";
+    LogInfo(LOG_CATEGORY, "==========================================================");
+    LogInfo(LOG_CATEGORY, "GerenciarInquilino v3.9 iniciado por " + who.name + " para placa " + placa.serial);
+
+    var contrato := GetObjProperty(placa, "ContratoAluguel");
+
+    if (contrato && contrato.InquilinoSerial)
+        // --- LÓGICA DE DESPEJO ---
+        LogDebug(LOG_CATEGORY, "Placa já possui um inquilino. Iniciando fluxo de despejo.");
+        var inquilino := SystemFindObjectBySerial(CInt(contrato.InquilinoSerial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+        var nome_exibicao := GetPlayerDisplayName(inquilino);
+        
+        if (YesNo(who, "Esta casa está alugada para " + nome_exibicao + ". Deseja despejá-lo?"))
+            LogInfo(LOG_CATEGORY, who.name + " confirmou o despejo de " + nome_exibicao);
+            DespejarInquilino(who, placa, contrato);
+        else
+            LogInfo(LOG_CATEGORY, who.name + " cancelou o despejo.");
+        endif
+    else
+        // --- LÓGICA PARA INICIAR UM NOVO ALUGUEL ---
+        LogDebug(LOG_CATEGORY, "Placa está disponível. Iniciando fluxo de aluguel.");
+        
+        SendSysMessage(who, "Selecione o cidadão do seu feudo para quem deseja alugar esta casa.");
+        var novo_inquilino := Target(who, TGTOPT_CHECK_LOS);
+
+        if (!novo_inquilino || !novo_inquilino.isA(POLCLASS_MOBILE) || novo_inquilino.npctemplate || !novo_inquilino.connected)
+            SendSysMessage(who, "Alvo inválido ou cancelado. Você deve selecionar um jogador online.");
+            LogInfo(LOG_CATEGORY, "Aluguel cancelado durante o targeting.");
+            return;
+        endif
+        
+        var nome_exibicao_novo := GetPlayerDisplayName(novo_inquilino);
+        LogDebug(LOG_CATEGORY, "Alvo selecionado: " + nome_exibicao_novo + " (" + novo_inquilino.serial + ")");
+        
+        if(novo_inquilino.guildid != who.guildid)
+            SendSysMessage(who, "Você só pode alugar propriedades para membros do seu próprio feudo.");
+            return;
+        endif
+
+        var periodicidades := array{"Semanal", "Quinzenal", "Mensal", "Cancelar"};
+        var escolha_periodo := RadioGump(who, 400, 0, "Defina a periodicidade do aluguel para " + nome_exibicao_novo + ":", periodicidades, 0, 1);
+
+        var periodo_nome := "";
+        var periodo_em_segundos := 0;
+
+        LogDebug(LOG_CATEGORY, "Usando valores de período de aluguel hard-coded.");
+        if (escolha_periodo["Semanal"])
+            periodo_em_segundos := 100;
+            periodo_nome := "Semanal";
+        elseif (escolha_periodo["Quinzenal"])
+            periodo_em_segundos := 1296000;
+            periodo_nome := "Quinzenal";
+        elseif (escolha_periodo["Mensal"])
+            periodo_em_segundos := 2592000;
+            periodo_nome := "Mensal";
+        endif
+
+        if (periodo_em_segundos == 0)
+            SendSysMessage(who, "Operação cancelada.");
+            return;
+        endif
+        
+        LogDebug(LOG_CATEGORY, "Período selecionado: " + periodo_nome + " (" + periodo_em_segundos + " segundos).");
+        
+        var valor_aluguel := CInt(RequestGump(who, "Digite o valor do aluguel para " + nome_exibicao_novo + ":", 0, 1));
+        if (valor_aluguel <= 0)
+            SendSysMessage(who, "Valor inválido. Operação cancelada.");
+            return;
+        endif
+        LogDebug(LOG_CATEGORY, "Valor do aluguel definido: " + valor_aluguel);
+        
+        var nome_exibicao_lider := GetPlayerDisplayName(who);
+        var dados_convite_lider := GetObjProperty(who, "dados_convite");
+        var cargo_lider := "";
+        if (dados_convite_lider && dados_convite_lider.cargo_rp)
+            cargo_lider := ", " + dados_convite_lider.cargo_rp + ",";
+        endif
+        
+        var proposta_msg := nome_exibicao_lider + cargo_lider + " oferece o aluguel de '" + placa.name + "' para você por " + valor_aluguel + " cobre " + periodo_nome + ". Aceita?";
+        
+        SendSysMessage(novo_inquilino, "Você recebeu uma proposta de aluguel. Responda na janela que apareceu.");
+        
+        if (YesNo(novo_inquilino, proposta_msg))
+            SendSysMessage(who, nome_exibicao_novo + " aceitou os termos do aluguel!");
+            AlugarCasa(who, placa, novo_inquilino, valor_aluguel, periodo_em_segundos, periodo_nome);
+        else
+            SendSysMessage(who, nome_exibicao_novo + " recusou a proposta de aluguel.");
+            SendSysMessage(novo_inquilino, "Você recusou a proposta.");
+        endif
+    endif
+    
+    LogInfo(LOG_CATEGORY, "==========================================================");
+endfunction 
+
+/*
+ * Função para criar o contrato de aluguel e configurar a casa (v1.1 - usa segundos)
+ */
+function AlugarCasa(lider, placa, inquilino, valor, periodo_em_segundos, periodo_nome)
+    var nome_exibicao_inquilino := GetPlayerDisplayName(inquilino);
+
+    var chave := CreateItemInBackpack(inquilino, 0xEF05, 1);
+    if (!chave)
+        SendSysMessage(lider, "Não foi possível criar a chave na mochila de " + nome_exibicao_inquilino + ".");
+        return;
+    endif
+    
+    chave.name := "Chave para " + placa.name;
+    SetObjProperty(chave, "PlacaDaCasaSerial", placa.serial);
+    
+    var lock_id := AllocLockId();
+    chave.SetLockId(lock_id);
+
+     var pecas_seriais := GetObjProperty(placa, "BuildingPieces");
+    foreach serial in pecas_seriais
+        var peca := SystemFindObjectBySerial(serial);
+        if (peca && peca.IsDoor())
+            peca.SetLockId(lock_id);
+        endif
+    endforeach
+
+    var proximo_pagamento := POLCore().systime + periodo_em_segundos;
+    
+    var contrato := struct;
+    contrato.+InquilinoSerial := inquilino.serial;
+    contrato.+ValorAluguel := valor;
+    contrato.+PeriodoSegundos := periodo_em_segundos;
+    contrato.+PeriodoNome := periodo_nome;
+    contrato.+DataInicioAluguel := POLCore().systime;
+    contrato.+ProximoPagamento := proximo_pagamento;
+    contrato.+PagamentosRegistrados := array{};
+
+    SetObjProperty(placa, "ContratoAluguel", contrato);
+
+    var periodo_em_dias := CInt(periodo_em_segundos / 86400);
+
+    SendSysMessage(lider, "Casa alugada com sucesso para " + nome_exibicao_inquilino + ".");
+    SendSysMessage(inquilino, "Você recebeu a chave para '" + placa.name + "'! O primeiro pagamento será em " + periodo_em_dias + " dias.");
+endfunction
+/*
+ * Função para despejar um inquilino e limpar os dados
+ */
+function DespejarInquilino(lider, placa, contrato)
+    var inquilino_serial := CInt(contrato.InquilinoSerial);
+    var inquilino := SystemFindObjectBySerial(inquilino_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var nome_exibicao_inquilino := GetPlayerDisplayName(inquilino);
+
+    var inquilino_online := SystemFindObjectBySerial(inquilino_serial);
+    var mensagem_despejo := "Você foi despejado da propriedade '" + placa.name + "' pelo líder do seu feudo.";
+
+    if (inquilino_online)
+        var chave_destruida := 0;
+        foreach item in EnumerateItemsInContainer(inquilino_online.backpack)
+            if (GetObjProperty(item, "PlacaDaCasaSerial") == placa.serial)
+                DestroyItem(item);
+                SendSysMessage(inquilino_online, mensagem_despejo);
+                chave_destruida := 1;
+                break;
+            endif
+        endforeach
+    else
+        SendOfflineMessage(inquilino_serial, mensagem_despejo);
+    endif
+    
+    var pecas_seriais := GetObjProperty(placa, "BuildingPieces");
+    foreach serial in pecas_seriais
+        var peca := SystemFindObjectBySerial(serial);
+        if (peca && peca.IsDoor())
+            EraseObjProperty(peca, "LockId");
+        endif
+    endforeach
+    
+    EraseObjProperty(placa, "ContratoAluguel");
+
+    SendSysMessage(lider, nome_exibicao_inquilino + " foi despejado com sucesso.");
+endfunction
+
+
+/*
+ * PagarAluguelAdiantado(inquilino, placa, contrato) - VERSÃO 2.2 (COM MARCAÇÃO DE DEPÓSITO)
+ * Usa a função de débito robusta e marca as moedas para evitar mensagens de doação.
+ */
+function PagarAluguelAdiantado(inquilino, placa, byref contrato)
+    var LOG_CATEGORY := "FeudoRent_Payment";
+    var valor := CInt(contrato.ValorAluguel);
+    var nome_exibicao := GetPlayerDisplayName(inquilino);
+
+    LogInfo(LOG_CATEGORY, "Inquilino " + nome_exibicao + " iniciou pagamento adiantado de " + valor + " para a casa " + placa.name);
+
+    if (!YesNo(inquilino, "Deseja pagar " + valor + " moedas de cobre agora para adiantar seu aluguel?"))
+        SendSysMessage(inquilino, "Pagamento cancelado.");
+        return 0;
+    endif
+
+    var guild_id := GetObjProperty(placa, "GuildOwner");
+    var guild := FindGuild(guild_id);
+    if (!guild)
+        LogError(LOG_CATEGORY, "Falha crítica: Guilda " + guild_id + " não encontrada para o pagamento.");
+        SendSysMessage(inquilino, "Erro: A guilda dona desta propriedade não foi encontrada. Contate um GM.");
+        return 0;
+    endif
+
+    // Chama a função de débito robusta.
+    if (DebitarAluguelDoBanco_Robusto(inquilino, valor))
+        // Pagamento BEM-SUCEDIDO
+        var guild_name_seguro := SafeGetGuildName(guild);
+        var capital_id := guild.GetProp("capital_territory_id");
+        
+        if (capital_id && guild_name_seguro)
+            var capital_chest := FindFactionChest(guild_name_seguro, capital_id);
+            if (capital_chest)
+                // <<< INÍCIO DA CORREÇÃO >>>
+                var moedas_para_depositar := CreateItemInContainer(capital_chest, MOEDAS_COBRE, valor);
+                if (moedas_para_depositar)
+                    // Adiciona a "bandeira" para o onInsert.src ignorar
+                    SetObjProperty(moedas_para_depositar, "IsSystemDeposit", 1);
+                endif
+                // <<< FIM DA CORREÇÃO >>>
+            else
+                LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Baú da capital não encontrado para a facção '" + guild_name_seguro + "' (Capital ID: " + capital_id + ").");
+            endif
+        else
+             LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Guilda '" + guild_name_seguro + "' não tem capital definida.");
+        endif
+        
+        contrato.ProximoPagamento := CInt(contrato.ProximoPagamento) + CInt(contrato.PeriodoSegundos);
+        contrato.PagamentosRegistrados.append(struct{"data" := POLCore().systime, "status" := "Pago Adiantado"});
+        SetObjProperty(placa, "ContratoAluguel", contrato);
+
+        SendSysMessage(inquilino, "Pagamento realizado com sucesso! Sua próxima cobrança foi adiada.", 3, 68);
+
+        var lider := SystemFindObjectBySerial(guild.leader);
+        if (lider && lider.connected)
+            SendSysMessage(lider, inquilino.name + " realizou um pagamento adiantado do aluguel da propriedade '" + placa.name + "'.", 3, 68);
+        endif
+        
+        return 1;
+    else
+        // Pagamento FALHOU
+        SendSysMessage(inquilino, "Você não possui " + valor + " moedas de cobre em seu banco para realizar o pagamento.", 3, 38);
+        return 0;
+    endif
+endfunction
+
+
+/*
+ * FormatTimeRemaining(seconds)
+ * Formata um total de segundos para um formato legível (Dias, Horas, Minutos, Segundos).
+ */
+function FormatTimeRemaining(seconds)
+    if (seconds <= 0)
+        return "ATRASADO";
+    endif
+	
+	var days := CInt(seconds / 86400);
+	var hours := CInt((seconds % 86400) / 3600);
+	var minutes := CInt((seconds % 3600) / 60);
+    var remaining_seconds := CInt(seconds % 60);
+	
+	var result := "";
+	
+	if (days > 0)
+		result += days + "d ";
+	endif
+    if (hours > 0)
+        result += hours + "h ";
+    endif
+    if (minutes > 0)
+        result += minutes + "m ";
+    endif
+    
+    // Só mostra segundos se o tempo total for menor que 1 hora
+    if (days == 0 && hours == 0)
+        result += remaining_seconds + "s";
+    endif
+    
+    // Se por algum motivo o resultado ficar vazio (ex: menos de 1 segundo), exibe "Imediato"
+    if (result == "")
+        result := "Imediato";
+    endif
+	
+	return result;
+endfunction

@@ -1,81 +1,180 @@
-// :faccao:construcao/projeto_uso.src (VERSÃO DE DEPURAÇÃO ROBUSTA)
-
 use uo;
 use os;
 
 include ":faccao:construcao/include/feudo_buildings";
-include ":faccao:include/logging"; // Adicionado para logs no console
+include ":faccao:include/logging";
+include ":gumps:gumps";
+include ":faccao:include/territory_management";
+
+// :faccao:construcao/projeto_uso.src (VERSÃO FINAL COM TODAS AS VERIFICAÇÕES)
 
 program use_projeto(who, projeto)
     var LOG_CATEGORY := "ProjetoUso";
-    LogInfo(LOG_CATEGORY, "==================================================");
-    LogInfo(LOG_CATEGORY, "Script 'projeto_uso' iniciado por " + who.name + " no item " + projeto.serial);
+    LogInfo(LOG_CATEGORY, "Iniciado por " + who.name);
 
     if (!who.guild)
         SendSysMessage(who, "Você precisa pertencer a um feudo para iniciar uma construção.");
         return;
     endif
-    
-    // --- ETAPA 1: LER E VALIDAR AS CPROPS DO PROJETO ---
-    LogDebug(LOG_CATEGORY, "Lendo CProps do item 'Projeto'...");
+
+    var guild_name := who.guild.name;
     var building_type := GetObjProperty(projeto, "BuildingType");
     var level := CInt(GetObjProperty(projeto, "BuildingLevel"));
-    
-    // Validação Crítica
-    if (!building_type || building_type.errortext || !level || level <= 0)
-        SendSysMessage(who, "ERRO: Este projeto de construção está corrompido ou incompleto.");
-        LogError(LOG_CATEGORY, "FALHA na leitura das CProps. BuildingType: " + building_type + ", Level: " + level);
-        return;
-    endif
-    LogInfo(LOG_CATEGORY, "CProps lidas com sucesso. Tipo: '" + building_type + "', Nível: " + level);
-    
-    // --- ETAPA 2: OBTER DETALHES DA CONSTRUÇÃO DO CFG ---
-    LogDebug(LOG_CATEGORY, "Chamando FEUDO_GetBuildingLevelDetails...");
     var details := FEUDO_GetBuildingLevelDetails(building_type, level);
 
     if (details.errortext)
         SendSysMessage(who, "Erro no projeto: " + details.errortext);
-        LogError(LOG_CATEGORY, "FEUDO_GetBuildingLevelDetails retornou um erro: " + details.errortext);
         return;
     endif
-    LogInfo(LOG_CATEGORY, "Detalhes do CFG carregados com sucesso para: " + details.Name);
 
-    // --- ETAPA 3: TARGET E CRIAÇÃO DO ANDAIME ---
-    SendSysMessage(who, "Selecione o local para o centro do canteiro de obras.");
+    SendSysMessage(who, "Selecione o local para pré-visualizar a " + details.Name);
     var targ := TargetCoordinates(who);
     if (!targ)
-        LogInfo(LOG_CATEGORY, "Ação cancelada pelo jogador (Target).");
         return;
     endif
-    LogDebug(LOG_CATEGORY, "Local selecionado: " + targ.x + "," + targ.y + "," + targ.z);
 
-    var andaime_principal := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xef04, 1, who.realm);
-    
-    if (andaime_principal)
-        LogInfo(LOG_CATEGORY, "Andaime 'cérebro' criado com sucesso (Serial: " + andaime_principal.serial + ")");
-        andaime_principal.name := "Cérebro do Canteiro de Obras: " + details.Name;
-        andaime_principal.invisible := 1;
-        
-        var materiais_status := dictionary{};
-        foreach material_nome in (details.Materiais.keys())
-            materiais_status[material_nome] := struct{"necessario" := details.Materiais[material_nome], "atual" := 0};
+    // --- CRIAÇÃO E VERIFICAÇÃO DO BLUEPRINT FANTASMA ---
+    LogDebug(LOG_CATEGORY, "Criando e verificando blueprint fantasma...");
+    var blueprint_lines := details.Blueprint;
+    var ghost_pieces := array{};
+    var is_location_valid := 1;
+
+    if (blueprint_lines.size() > 0)
+        var faction_territories := TM_GetAllTerritories(guild_name);
+        if (faction_territories.size() == 0)
+            SendSysMessage(who, "Sua facção não controla nenhum território para construir.");
+            return;
+        endif
+
+        foreach piece_line in blueprint_lines
+            var parts := SplitWords(piece_line);
+            if (parts.size() >= 4)
+                var x_offset := CInt(parts[2]);
+                var y_offset := CInt(parts[3]);
+                
+                var piece_x := targ.x + x_offset;
+                var piece_y := targ.y + y_offset;
+
+                var is_piece_inside := 0;
+                foreach territory_id in faction_territories
+                    if (TM_IsPointInTerritory(piece_x, piece_y, 0, who.realm, territory_id))
+                        is_piece_inside := 1;
+                        break;
+                    endif
+                endforeach
+
+                if (!is_piece_inside)
+                    is_location_valid := 0;
+                    break;
+                endif
+
+                var graphic := CInt(parts[1]);
+                var z_offset := CInt(parts[4]);
+                var peca := CreateItemAtLocation(piece_x, piece_y, targ.z + z_offset, graphic, 1, who.realm);
+                if (peca)
+                    peca.movable := 0;
+                    peca.color := 0x481;
+                    SetObjProperty(peca, "IsGhostBlueprint", 1);
+                    ghost_pieces.append(peca.serial);
+                endif
+            endif
         endforeach
-        
-        SetObjProperty(andaime_principal, "MateriaisStatus", materiais_status);
-        SetObjProperty(andaime_principal, "BuildingInfo", struct{"type" := building_type, "level" := level});
-        SetObjProperty(andaime_principal, "GuildOwner", who.guildid);
-        LogDebug(LOG_CATEGORY, "CProps do andaime configuradas.");
-
-        // Chamada para criar o visual inicial
-        LogDebug(LOG_CATEGORY, "Chamando FEUDO_UpdateBuildingVisuals para desenhar o Estágio 1...");
-        FEUDO_UpdateBuildingVisuals(andaime_principal);
-
-        DestroyItem(projeto);
-        SendSysMessage(who, "Canteiro de obras para '" + details.Name + "' iniciado!");
-        LogInfo(LOG_CATEGORY, "Processo concluído com sucesso.");
-    else
-        SendSysMessage(who, "Não foi possível criar o canteiro de obras neste local.");
-        LogError(LOG_CATEGORY, "FALHA CRÍTICA: CreateItemAtLocation para o andaime retornou nulo.");
     endif
-    LogInfo(LOG_CATEGORY, "==================================================");
+
+    if (!is_location_valid)
+        SendSysMessage(who, "Você não pode construir aqui. Parte da estrutura estaria fora do território do seu feudo.");
+        LogWarning(LOG_CATEGORY, "Construção cancelada por " + who.name + ": fora do território.");
+        foreach serial in ghost_pieces
+            var peca := SystemFindObjectBySerial(serial);
+            if (peca) DestroyItem(peca); endif
+        endforeach
+        return;
+    endif
+
+       // --- VERIFICAÇÃO DE COLISÃO ROBUSTA (v3.4 - IGNORA OUTROS FANTASMAS) ---
+    var has_collision := 0;
+    LogDebug(LOG_CATEGORY, "Iniciando verificação de colisão v3.4 para " + ghost_pieces.size() + " peças fantasmas.");
+
+    foreach serial in ghost_pieces
+        var peca_fantasma := SystemFindObjectBySerial(serial);
+        if (peca_fantasma)
+            var items_no_local := ListItemsAtLocation(peca_fantasma.x, peca_fantasma.y, peca_fantasma.z, peca_fantasma.realm);
+            
+            foreach item_existente in items_no_local
+                // Ignora a própria peça fantasma que estamos verificando
+                if (item_existente.serial == peca_fantasma.serial)
+                    continue;
+                endif
+                
+                // ---> ADIÇÃO CRÍTICA AQUI <---
+                // Ignora qualquer outra peça que também seja parte deste blueprint fantasma
+                if (GetObjProperty(item_existente, "IsGhostBlueprint"))
+                    continue;
+                endif
+
+                // Lógica de filtragem para itens atravessáveis
+                var item_desc := GetItemDescriptor(item_existente.objtype);
+                if ( (item_desc.flags & 0x4) || (item_desc.flags & 0x400) || item_existente.movable )
+                    LogDebug(LOG_CATEGORY, "  -> Ignorando colisão com item não obstrutivo: " + item_existente.desc);
+                    continue;
+                endif
+
+                // Se chegou aqui, é um obstáculo real.
+                has_collision := 1;
+                SendSysMessage(who, "Não é possível construir aqui. O local está obstruído por: " + item_existente.desc);
+                LogWarning(LOG_CATEGORY, "COLISÃO DETECTADA (Item Sólido) com: " + item_existente.desc + " (Serial: " + item_existente.serial + ")");
+                break;
+            endforeach
+        endif
+        
+        if (has_collision)
+            break;
+        endif
+    endforeach
+
+    if (has_collision)
+        SendSysMessage(who, "Você não pode construir aqui, o local está obstruído por outra construção.");
+        LogInfo(LOG_CATEGORY, "Construção cancelada devido à colisão.");
+        foreach serial in ghost_pieces
+            var peca := SystemFindObjectBySerial(serial);
+            if (peca) DestroyItem(peca); endif
+        endforeach
+        return;
+    endif
+
+    // --- CONFIRMAÇÃO DO JOGADOR ---
+    if (YesNo(who, "Você deseja iniciar o canteiro de obras neste local?"))
+        LogInfo(LOG_CATEGORY, "Jogador confirmou. Limpando fantasma e iniciando andaime.");
+        
+        foreach serial in ghost_pieces
+            var peca := SystemFindObjectBySerial(serial);
+            if (peca) DestroyItem(peca); endif
+        endforeach
+
+        var andaime_principal := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xef04, 1, who.realm);
+        if (andaime_principal)
+            andaime_principal.name := "Cérebro do Canteiro de Obras: " + details.Name;
+            //andaime_principal.invisible := 1;
+            
+            var materiais_status := dictionary{};
+            foreach material_nome in (details.Materiais.keys())
+                materiais_status[material_nome] := struct{"necessario" := details.Materiais[material_nome], "atual" := 0};
+            endforeach
+            SetObjProperty(andaime_principal, "MateriaisStatus", materiais_status);
+            SetObjProperty(andaime_principal, "BuildingInfo", struct{"type" := building_type, "level" := level});
+            SetObjProperty(andaime_principal, "GuildOwner", who.guildid);
+
+            FEUDO_UpdateBuildingVisuals(andaime_principal);
+
+            DestroyItem(projeto);
+            SendSysMessage(who, "Construção confirmada! Agora deposite os materiais no canteiro de obras.");
+        endif
+    else
+        LogInfo(LOG_CATEGORY, "Jogador cancelou. Limpando blueprint fantasma.");
+        foreach serial in ghost_pieces
+            var peca := SystemFindObjectBySerial(serial);
+            if (peca) DestroyItem(peca); endif
+        endforeach
+        SendSysMessage(who, "Construção cancelada.");
+    endif
 endprogram

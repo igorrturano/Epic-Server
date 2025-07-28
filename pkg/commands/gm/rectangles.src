@@ -12,8 +12,8 @@ include "include/string";
 include ":gumps:epicGumps";
 include ":faccao:include/faccao_constants";
 include ":epicspawn:epicBoss";
-include ":spawndecampeao:include/arena";
-include ":spawndecampeao:include/config";
+include ":faccao:spawndecampeao/include/arena";
+include ":faccao:spawndecampeao/include/config";
 
 
 

@@ -39,18 +39,20 @@ program TotemDeAquisicao(who, totem)
         return 0;
     endif;
 
-    rect_name := territory_info_from_datafile.name; // Garante que estamos usando o nome atualizado
+    // Garante que estamos usando o nome atualizado do data-file
+    rect_name := territory_info_from_datafile.name;
     
     var guild := who.guild;
+    var player_faction_name := GetPlayerFaction(who);
+
     if (!guild)
         SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
         return 0;
     endif;
 
-     var expiration_time := GetObjProperty(totem, "ClaimByTimestamp");
+    var expiration_time := GetObjProperty(totem, "ClaimByTimestamp");
     if (expiration_time && polcore().systime > CInt(expiration_time))
         SendSysMessage(who, "Este totem expirou e não pode mais ser usado para reivindicar o território.");
-        // O TotemWatcher irá eventualmente destruir este item, mas podemos destruí-lo agora.
         DestroyItem(totem);
         return 0;
     endif;
@@ -72,12 +74,11 @@ program TotemDeAquisicao(who, totem)
         return 0;
     endif;
     
-    var player_faction_name := GetPlayerFaction(who); 
     if (!player_faction_name)
         player_faction_name := "Desconhecido";
     endif;
     
-    // --- LÓGICA DE CULTURA E ESTANDARTE CORRIGIDA ---
+    // --- LÓGICA DE CULTURA E ESTANDARTE ---
     
     // 1. CULTURA: Verifica e, se necessário, solicita a escolha.
     var cultura_final_reino := SafeGetGuildProperty(guild, "culture", "");
@@ -107,11 +108,12 @@ program TotemDeAquisicao(who, totem)
         endif;
     endif;
     
-    // --- FIM DA LÓGICA CORRIGIDA ---
+    // --- FIM DA LÓGICA ---
     
     TM_SetTerritoryFaction(territory_id, player_faction_name);
+    var territories_list := guild.GetProp("territories") ?: array{};
     
-    var territories_list := guild.GetProp("territories");
+    // Limpeza e validação da lista de territórios
     if (!territories_list || territories_list == error || TypeOf(territories_list) != "Array")
         territories_list := array{};
     endif;
@@ -124,6 +126,7 @@ program TotemDeAquisicao(who, totem)
     endforeach;
     territories_list := cleaned_territories_list;
 
+    // Adiciona o novo território se ele ainda não estiver na lista
     var territory_exists_in_list := 0; 
     foreach terr_check_loop_local in territories_list 
         if (terr_check_loop_local == territory_id) 
@@ -138,10 +141,24 @@ program TotemDeAquisicao(who, totem)
 
     guild.SetProp("territories", territories_list);
     
-    if (territories_list.size() == 1)
-        SendSysMessage(who, "Como este é o primeiro território do seu reino, '" + rect_name + "' foi automaticamente designada como sua capital!", 3, 53);
+    // --- LÓGICA DE DEFINIÇÃO DA CAPITAL (CORRIGIDA E UNIFICADA) ---
+    var current_capital_id := guild.GetProp("capital_territory_id");
+    
+    // A condição agora é: se a guilda NÃO tem uma capital VÁLIDA
+    // OU se este é o primeiro território a ser reivindicado.
+    if (!current_capital_id || territories_list.size() == 1)
+        if (territories_list.size() == 1)
+            SendSysMessage(who, "Como este é o primeiro território do seu reino, '" + rect_name + "' foi automaticamente designada como sua capital!", 3, 53);
+        else
+            SendSysMessage(who, "Seu feudo não possuía uma capital designada. O território '" + rect_name + "' foi definido como a nova capital padrão.", 3, 53);
+        endif
+
+        // Define este território como a nova capital em ambos os locais (guilda e datafile)
+        guild.SetProp("capital_territory_id", territory_id);
         TM_SetTerritoryAsCapital(territory_id, player_faction_name);
+        LogInfo("TotemAquisicao", "CProp 'capital_territory_id' definida como '" + territory_id + "' para a guilda '" + guild.name + "'.");
     endif;
+    // --- FIM DA LÓGICA DA CAPITAL ---
     
     CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, cultura_final_reino, estandarte_escolhido);
     
@@ -162,12 +179,12 @@ program TotemDeAquisicao(who, totem)
     TM_NotifyTerritoryChange(territory_id, "claimed", notify_data);
     
     var totem_registry_df := SafeOpenDataFile(":faccao:totem_registry");
-if (totem_registry_df)
-    // A função DeleteDatafileEntry já verifica se o elemento existe antes de apagar.
-    if (DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial)))
-        LogInfo("TotemClaim", "Totem " + totem.serial + " removido do registro após reivindicação bem-sucedida.");
-    endif
-endif
+    if (totem_registry_df)
+        // DeleteDatafileEntry já verifica se a chave existe
+        if (DeleteDatafileEntry(":faccao:totem_registry", CStr(totem.serial)))
+            LogInfo("TotemClaim", "Totem " + totem.serial + " removido do registro após reivindicação bem-sucedida.");
+        endif;
+    endif;
 
     DestroyItem(totem);
     

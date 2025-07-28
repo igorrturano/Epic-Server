@@ -1,0 +1,47 @@
+// :faccao:construcao/ghost_manager.src
+//
+// Gerencia a autodestruição de blueprints fantasmas temporários.
+
+use uo;
+use os;
+
+include ":faccao:include/logging";
+
+program manage_ghost_blueprint(params)
+    var LOG_CATEGORY := "GhostManager";
+    
+    var ghost_pieces_seriais := params.pecas_seriais;
+    var duration_seconds := CInt(params.duracao);
+    var andaime_serial := CInt(params.andaime_serial);
+
+    if (!ghost_pieces_seriais || duration_seconds <= 0)
+        LogError(LOG_CATEGORY, "Script iniciado com parâmetros inválidos.");
+        return;
+    endif
+
+    LogDebug(LOG_CATEGORY, "Gerenciador iniciado para " + ghost_pieces_seriais.size() + " peças. Duração: " + duration_seconds + "s.");
+    
+    // Aguarda o tempo de vida do fantasma
+    sleep(duration_seconds);
+
+    // Após o tempo, verifica se a construção foi confirmada.
+    // A confirmação é sinalizada pela existência de um andaime "real".
+    var andaime_real := SystemFindObjectBySerial(andaime_serial);
+    if (andaime_real && GetObjProperty(andaime_real, "ConstrucaoConfirmada"))
+        // A construção foi confirmada. O script não precisa fazer nada.
+        LogDebug(LOG_CATEGORY, "Construção " + andaime_serial + " foi confirmada. Encerrando sem limpar.");
+        return;
+    endif
+    
+    // Se a construção NÃO foi confirmada, destrói as peças fantasmas.
+    LogInfo(LOG_CATEGORY, "Construção " + andaime_serial + " não confirmada. Limpando " + ghost_pieces_seriais.size() + " peças fantasmas.");
+    
+    // --- CORREÇÃO DO NOME DA VARIÁVEL APLICADA AQUI ---
+    foreach serial in ghost_pieces_seriais
+        var peca := SystemFindObjectBySerial(serial);
+        if (peca)
+            DestroyItem(peca);
+        endif
+        sleepms(5);
+    endforeach
+endprogram

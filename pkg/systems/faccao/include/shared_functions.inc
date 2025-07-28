@@ -4003,3 +4003,43 @@ function GetFactionTerritoryCount(faction_name)
     LogCritical("GetFactionTerritoryCount_DEBUG", "Contagem finalizada para '" + faction_name + "'. Total: " + count + " territórios.");
     return count;
 endfunction
+
+
+
+/*
+ * SendOfflineMessage(player_serial, message_text)
+ *
+ * Salva uma mensagem para um jogador que será entregue no próximo login.
+ */
+function SendOfflineMessage(player_serial, message_text)
+    var offline_messages := GetGlobalProperty("OfflineMessages") ?: dictionary{};
+    
+    var player_key := CStr(player_serial);
+    var player_messages := offline_messages[player_key] ?: array{};
+    
+    player_messages.append(message_text);
+    offline_messages[player_key] := player_messages;
+    
+    SetGlobalProperty("OfflineMessages", offline_messages);
+    LogInfo("OfflineMessage", "Mensagem offline salva para o jogador serial: " + player_serial);
+endfunction
+
+
+/*
+ * GetPlayerDisplayName(player_object)
+ *
+ * Retorna o nome personalizado (apelido) de um jogador, se existir.
+ * Caso contrário, retorna o nome real do personagem.
+ */
+function GetPlayerDisplayName(player_object)
+    if (!player_object)
+        return "Desconhecido";
+    endif
+
+    var dados_convite := GetObjProperty(player_object, "dados_convite");
+    if (dados_convite && dados_convite.nome_personalizado)
+        return dados_convite.nome_personalizado;
+    else
+        return player_object.name;
+    endif
+endfunction

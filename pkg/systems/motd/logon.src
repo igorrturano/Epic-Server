@@ -4,7 +4,37 @@ use file;
 
 include ":datafile:datafile";
 
-program MOTD(who)
+program MOTD(who) // O nome do seu script é MOTD, mas a função é de logon
+
+    // ==========================================================
+    // BLOCO DE MENSAGENS OFFLINE (VERSÃO INDENTADA)
+    // ==========================================================
+    
+    // Pequena pausa para garantir que o cliente do jogador esteja pronto para receber mensagens.
+    sleep(2); 
+
+    var offline_messages := GetGlobalProperty("OfflineMessages");
+    if (offline_messages)
+        var player_key := CStr(who.serial);
+        if (offline_messages.exists(player_key))
+            // Encontramos mensagens para este jogador.
+            SendSysMessage(who, "--------------------------------------------------", 3, 38);
+            foreach message in (offline_messages[player_key])
+                // Envia a mensagem com destaque para chamar a atenção.
+                SendSysMessage(who, "[AVISO IMPORTANTE] " + message, 3, 38); // Fonte 3, Cor Vermelha
+                sleepms(500); // Pausa entre mensagens se houver mais de uma.
+            endforeach
+            SendSysMessage(who, "--------------------------------------------------", 3, 38);
+            
+            // Remove as mensagens da fila global após a entrega.
+            offline_messages.erase(player_key);
+            SetGlobalProperty("OfflineMessages", offline_messages);
+        endif
+    endif
+    // ==========================================================
+
+
+	// SEU CÓDIGO ORIGINAL DO MOTD (mantido intacto)
 	// var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
 	// var data_elem := DFFindElement(data_file, who.acctname);
 	
@@ -17,4 +47,5 @@ program MOTD(who)
 	// else
 	// 	Start_Script("motd", who);
 	// endif
+	
 endprogram

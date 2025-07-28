@@ -4,6 +4,8 @@ include ":commands:/include/r";
 include ":custompizza:/itemrp/include/lore_items";
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/gettersTTipUtils";
+include ":faccao:construcao/include/feudo_buildings";
+
 
 
 function PreencheNome(objeto,quem)
@@ -99,15 +101,54 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 endfunction
 
 function PreencheNomeItem(objeto)
-    if(!objeto.IsA(POLCLASS_ITEM)) return error{"errortext":="Object passed was not an POLCLASS_ITEM."}; endif
-    var nomeObjeto := "";
-    nomeObjeto := recuperaNomeItemMaterial(objeto);
-
-    if(IsLoreItem(objeto))
-        nomeObjeto := AdicionaLore(objeto,nomeObjeto);
+    if(!objeto.IsA(POLCLASS_ITEM))
+        return error{"errortext":="Object passed was not an POLCLASS_ITEM."};
     endif
     
+    var nomeObjeto := "";
+
+    // --- LÓGICA DO ROTEADOR ---
+    // Verifica se o item é um Canteiro de Obras pelo seu objtype
+    if (objeto.objtype == 0xef04) // Use o objtype do seu CanteiroDeObras
+        // Começa com o nome base do item
+        nomeObjeto := objeto.desc;
+        // Adiciona a string de status da construção
+        nomeObjeto += FEUDO_GetConstructionStatusString(objeto);
+    else
+        // Para todos os outros itens, usa a lógica antiga
+        nomeObjeto := recuperaNomeItemMaterial(objeto);
+        if (IsLoreItem(objeto))
+            nomeObjeto := AdicionaLore(objeto, nomeObjeto);
+        endif
+        nomeObjeto := AdicionaDescricaoQuebravel(objeto, nomeObjeto, 1);
+    endif
+    // --- FIM DA LÓGICA DO ROTEADOR ---
+    
     return nomeObjeto;
+endfunction
+
+
+function AdicionaDescricaoQuebravel(item, xDesc, apenasNome := 0)
+    var quebravel := GetObjProperty(item, "quebravel");
+    if (!quebravel)
+        return xDesc;
+    endif
+
+    if (apenasNome)
+        case (quebravel)
+            "gathering":
+                xDesc += "<br><BASEFONT COLOR=#FFD700>Parece quebrável";
+            "survival":
+                xDesc += "<br><BASEFONT COLOR=#FFD700>Parece cortável";
+        endcase
+        return xDesc;
+    endif
+
+    // Se não for apenasNome, a função DescricaoEstadoQuebravel seria chamada aqui,
+    // mas ela não está neste arquivo, então retornamos.
+    // xDesc += DescricaoEstadoQuebravel(item, quebravel);
+    
+    return xDesc;
 endfunction
 
 function recuperaNomeItemMaterial(objeto)
