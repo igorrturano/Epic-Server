@@ -489,8 +489,14 @@ endfunction
 
 
 /*
- * PagarAluguelAdiantado(inquilino, placa, contrato) - VERSÃO 2.2 (COM MARCAÇÃO DE DEPÓSITO)
- * Usa a função de débito robusta e marca as moedas para evitar mensagens de doação.
+ * PagarAluguelAdiantado(inquilino, placa, contrato) - VERSÃO 2.3 (COM MARCAÇÃO NO JOGADOR)
+ * Adiciona uma CProp temporária no jogador para que o canInsert permita o depósito do aluguel.
+ */
+/*
+ * PagarAluguelAdiantado(inquilino, placa, contrato) - VERSÃO 2.4 (CORREÇÃO DE MENSAGENS)
+ * Corrige o problema de mensagens de "doação inválida" ao criar as moedas
+ * em um local neutro (mochila do jogador), configurá-las, e só então movê-las
+ * para o baú da capital.
  */
 function PagarAluguelAdiantado(inquilino, placa, byref contrato)
     var LOG_CATEGORY := "FeudoRent_Payment";
@@ -512,27 +518,39 @@ function PagarAluguelAdiantado(inquilino, placa, byref contrato)
         return 0;
     endif
 
-    // Chama a função de débito robusta.
     if (DebitarAluguelDoBanco_Robusto(inquilino, valor))
-        // Pagamento BEM-SUCEDIDO
         var guild_name_seguro := SafeGetGuildName(guild);
         var capital_id := guild.GetProp("capital_territory_id");
         
         if (capital_id && guild_name_seguro)
             var capital_chest := FindFactionChest(guild_name_seguro, capital_id);
             if (capital_chest)
-                // <<< INÍCIO DA CORREÇÃO >>>
-                var moedas_para_depositar := CreateItemInContainer(capital_chest, MOEDAS_COBRE, valor);
-                if (moedas_para_depositar)
-                    // Adiciona a "bandeira" para o onInsert.src ignorar
-                    SetObjProperty(moedas_para_depositar, "IsSystemDeposit", 1);
+                // --- INÍCIO DA CORREÇÃO DE MENSAGENS DE DOAÇÃO ---
+                // 1. Cria as moedas na mochila do inquilino primeiro (local neutro).
+                var moedas_temporarias := CreateItemInBackpack(inquilino, MOEDAS_COBRE, valor);
+                if (moedas_temporarias)
+                    // 2. Pré-configura as CProps ANTES de mover para o baú da facção.
+                    SetObjProperty(moedas_temporarias, "IsSystemDeposit", 1);
+                    SetObjProperty(moedas_temporarias, "IsKingdomDonationMoedas", 1);
+                    
+                    // 3. Move o item já configurado para o baú da capital.
+                    // Isso acionará os hooks CanInsert/OnInsert com as CProps já setadas,
+                    // resultando em uma operação silenciosa e correta.
+                    var move_result := MoveItemToContainer(moedas_temporarias, capital_chest);
+                    if (!move_result)
+                        // Fallback MUITO importante: se a movimentação falhar, o dinheiro fica na mochila do jogador.
+                        LogError(LOG_CATEGORY, "FALHA CRÍTICA ao mover moedas do aluguel para o baú da capital. O dinheiro foi deixado na mochila do inquilino.");
+                        SendSysMessage(inquilino, "Ocorreu um erro ao depositar seu pagamento no cofre do feudo. O valor foi deixado em sua mochila. Por favor, contate o líder.");
+                    endif
+                else
+                    LogError(LOG_CATEGORY, "FALHA CRÍTICA: Não foi possível criar o item de moedas temporário na mochila do inquilino. O dinheiro foi debitado mas não entregue!");
                 endif
-                // <<< FIM DA CORREÇÃO >>>
+                // --- FIM DA CORREÇÃO ---
             else
-                LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Baú da capital não encontrado para a facção '" + guild_name_seguro + "' (Capital ID: " + capital_id + ").");
+                LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Baú da capital não encontrado.");
             endif
         else
-             LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Guilda '" + guild_name_seguro + "' não tem capital definida.");
+             LogError(LOG_CATEGORY, "SUCESSO NO DÉBITO, FALHA NO DEPÓSITO: Guilda sem capital definida.");
         endif
         
         contrato.ProximoPagamento := CInt(contrato.ProximoPagamento) + CInt(contrato.PeriodoSegundos);

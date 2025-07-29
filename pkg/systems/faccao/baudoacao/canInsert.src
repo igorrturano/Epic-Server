@@ -1,73 +1,40 @@
-// :faccao:baudoacao/canInsert.src (VERSÃO 2.2 - FINAL SEM AVISOS)
+// :faccao:baudoacao/canInsert.src (VERSÃO 2.4 - FINAL SILENCIOSA)
 
 use uo;
-use cfgfile;
 use guilds;
-use datafile;
 
-include "include/say";
 include ":faccao:include/shared_functions";
 include ":faccao:include/faccao_constants";
-include ":datafile:datafile";
 include ":faccao:include/permissions";
 
 program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
-    // Suprime os avisos de variáveis não utilizadas
-    movetype := movetype;
-    insert_type := insert_type;
-    existing_stack := existing_stack;
-    amt_to_add := amt_to_add;
+    // Silenciar avisos
+    movetype := movetype; insert_type := insert_type; existing_stack := existing_stack; amt_to_add := amt_to_add;
 
-    // Debug intensivo
-    LogDebug("recursos", "canInsert sendo chamado para container: " + container.serial);
-    
-    // Permitir itens do sistema (quando mobile é null ou não inicializado)
-    if (!mobile)
-        LogDebug("recursos", "Item sendo adicionado pelo sistema, permitindo");
+    // Permitir inserções do sistema
+    if (!mobile || GetObjProperty(adding_item, "CreatedByResourceController") || GetObjProperty(adding_item, "IsSystemDeposit"))
         return 1;
     endif
-    
-    // Verificar se tem nossa propriedade especial
-    if (GetObjProperty(adding_item, "CreatedByResourceController"))
-        LogDebug("recursos", "Item criado pelo ResourceController, permitindo inserção");
-        return 1;
-    endif
-    
-    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
-    var can_insert := CanInsertItems(mobile, container);
-    
-    // Logging padronizado
-    LogPermissionCheck(mobile, container, "INSERÇÃO", can_insert);
-    
-    if (!can_insert)
+
+    // Validar permissão do jogador
+    if (!CanInsertItems(mobile, container))
         SendSysMessage(mobile, "Você não tem permissão para inserir itens neste baú.");
         return 0;
     endif
 
-    // Verificar se o item é uma doação válida
-    var donation_types := array{
-        "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro",
-        "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano",
-        "IsKingdomDonationPedra", "IsKingdomDonationJoias"
-    };
-
+    // Validar tipo de doação
+    var donation_types := array{ "IsKingdomDonationComida", "IsKingdomDonationMoedas", "IsKingdomDonationCouro", "IsKingdomDonationMetal", "IsKingdomDonationMadeira", "IsKingdomDonationPano", "IsKingdomDonationPedra", "IsKingdomDonationJoias" };
     foreach donation_type in donation_types
         if (GetObjProperty(adding_item, donation_type))
-            var resource_type := Lower(donation_type[18, len(donation_type)]);
-            
-            if (resource_type == "moedas")
-                if (adding_item.objtype == 0xBA64 || adding_item.objtype == 0xBA65)
-                    SendSysMessageEx(mobile, "Por favor visite um cambista e troque suas moedas, aceitamos apenas moedas de cobre.", SSM_FAIL);
-                    return 0; // Impede a inserção do item
-                endif
+            if (donation_type == "IsKingdomDonationMoedas" && (adding_item.objtype == 0xBA64 || adding_item.objtype == 0xBA65))
+                SendSysMessage(mobile, "Por favor, troque suas moedas por cobre em um cambista antes de doar.");
+                return 0;
             endif
-            
-            // A mensagem de sucesso foi removida daqui para evitar duplicidade.
-            // O onInsert.src cuidará do feedback de sucesso.
-            return 1;
+            return 1; // Item válido
         endif
     endforeach
 
+    // Se chegou aqui, não é um item de doação válido
     SendSysMessage(mobile, "Isso não é uma doação válida para o baú.");
     return 0;
 endprogram

@@ -2644,12 +2644,10 @@ function SafeStackItems(container, objtype, amount_to_add_or_create, properties 
 endfunction
 
 /* 
- * FindExistingStackableItem_Enhanced(container, objtype, properties_to_match := 0)
+ * FindExistingStackableItem_Enhanced(container, objtype, properties_to_match := 0) - v2.2 (FINAL)
  *
  * Encontra um item existente no container que pode ser empilhado,
- * considerando objtype E compatibilidade de CProps críticas.
- * properties_to_match: Dicionário de CProps que o item existente DEVE ter para ser considerado um match.
- * Retorna: ItemRef ou 0.
+ * ignorando CProps que variam com o tempo, como 'GeneratedTime'.
  */
 function FindExistingStackableItem_Enhanced(container, objtype, properties_to_match := 0)
     LogDebug("FindStackable_Enhanced", $"Buscando em {container.serial} por ObjType 0x{Hex(objtype)}");
@@ -2662,36 +2660,26 @@ function FindExistingStackableItem_Enhanced(container, objtype, properties_to_ma
             LogDebug("FindStackable_Enhanced", $"  Candidato: {item_in_cont.serial}, Amount: {item_in_cont.amount}");
             
             var max_stack := GetMaxStackSize(objtype);
-            if (!max_stack) max_stack := 60000; endif
+            if (!max_stack) 
+                max_stack := 60000; 
+            endif
 
             if (item_in_cont.amount < max_stack)
-                // Verificar compatibilidade de CProps
-                var cprops_compatible := 1; // Assumir compatível até provar o contrário
+                var cprops_compatible := 1;
                 if (TypeOf(properties_to_match) == "Dictionary")
-                    // CProps que DEVEM ser iguais para empilhar.
-                    // Excluir CProps que mudam com o tempo (GeneratedTime) ou que são genéricas.
-                    var critical_cprops_for_stacking := dictionary{
-                        "GeneratedByFaction" := 1, // Exemplo
-                        "GeneratedForTerritory" := 1, // Exemplo
-                        "IsKingdomDonationMetal" := 1, // Se for específico para um tipo de doação
-                        "IsKingdomDonationComida" := 1
-                        // Adicionar outras CProps que definem a "unicidade" de um stack
-                    };
-                    // Não incluir "CreatedByResourceController" ou "GeneratedTime" na comparação para empilhamento,
-                    // pois "GeneratedTime" muda e "CreatedByResourceController" será igual para todos os itens do sistema.
-
                     foreach prop_name in (properties_to_match.keys())
-                        // Apenas verificar CProps que são consideradas críticas para a identidade do stack
-                        if (critical_cprops_for_stacking.exists(prop_name))
-                            var new_value := properties_to_match[prop_name];
-                            var existing_value := GetObjProperty(item_in_cont, prop_name);
+                        // Ignora a verificação de CProps que são timestamps ou mudam a cada geração.
+                        if (prop_name == "GeneratedTime")
+                            continue;
+                        endif
 
-                            // Tratar caso onde a CProp não existe no item existente como incompatível
-                            if (existing_value == error || existing_value != new_value)
-                                LogDebug("FindStackable_Enhanced", $"    Incompatibilidade de CProp '{prop_name}'. Existente: '{existing_value}', Novo: '{new_value}'.");
-                                cprops_compatible := 0;
-                                break;
-                            endif
+                        var new_value := properties_to_match[prop_name];
+                        var existing_value := GetObjProperty(item_in_cont, prop_name);
+
+                        if (existing_value == error || existing_value != new_value)
+                            LogDebug("FindStackable_Enhanced", $"    Incompatibilidade de CProp '{prop_name}'. Existente: '{existing_value}', Novo: '{new_value}'.");
+                            cprops_compatible := 0;
+                            break;
                         endif
                     endforeach
                 endif
@@ -2708,6 +2696,7 @@ function FindExistingStackableItem_Enhanced(container, objtype, properties_to_ma
         endif
         Sleepms(1);
     endforeach
+    
     LogDebug("FindStackable_Enhanced", "Nenhum item compatível encontrado.");
     return 0;
 endfunction

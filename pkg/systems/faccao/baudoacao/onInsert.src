@@ -1,4 +1,4 @@
-// :faccao:baudoacao/onInsert.src (VERSÃO 2.1 - COMPLETA COM VERIFICAÇÃO DE DEPÓSITO)
+// :faccao:baudoacao/onInsert.src (VERSÃO 2.4 - COMPLETA COM CORREÇÕES E SINTAXE POL)
 
 use uo;
 use os;
@@ -10,6 +10,10 @@ include ":faccao:include/faccao_constants";
 include ":faccao:include/logging";
 
 program onInsert(character, container, movetype, inserttype, adding_item, existing_stack, amount_to_add)
+    // Silenciar avisos de variáveis não utilizadas
+    // (Mantido para limpeza, opcional)
+    movetype := movetype; 
+    amount_to_add := amount_to_add;
 
     // Log inicial - Verificações mais seguras para objetos potencialmente nulos
     LogDebug("onInsert_DEBUG", "=== onInsert Triggered ===");
@@ -32,20 +36,13 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
         LogDebug("onInsert_DEBUG", "Character: SYSTEM");
     endif
 
-    // ==========================================
-    // >>>>> INÍCIO DA CORREÇÃO <<<<<
-    // ==========================================
     // Se o item tem a CProp "IsSystemDeposit", é um depósito automático (aluguel, etc.).
-    // O script não deve fazer nada e apenas permitir a inserção.
     if (GetObjProperty(adding_item, "IsSystemDeposit"))
         EraseObjProperty(adding_item, "IsSystemDeposit"); // Limpa a CProp
         return 1; // Permite a inserção silenciosamente
     endif
-    // ==========================================
-    // >>>>> FIM DA CORREÇÃO <<<<<
-    // ==========================================
 
-    // CORREÇÃO CRÍTICA: Verificar se o item foi gerado pelo ResourceController
+    // Verificar se o item foi gerado pelo ResourceController
     // OU se a inserção é feita pelo sistema (character inválido)
     var is_system_item := 0;
     if (adding_item)
@@ -62,10 +59,10 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
         endif
         
         LogInfo("onInsert_SYS", reason + ". Item: " + (adding_item ? adding_item.serial : "NULL") + ". Nenhuma ação de doação/cache por este script.");
-        return 1; // Permite a inserção
+        return 1;
     endif
 
-    // CASO 2: Inserção por jogador (e item não é do sistema)
+    // Se chegou até aqui, é uma doação manual de um jogador.
     LogDebug("onInsert_PLAYER", "Jogador " + character.name + " inserindo item: " + (adding_item ? adding_item.serial : "NULL_ITEM"));
 
     var donation_types := array{
@@ -85,7 +82,7 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
                 LogDebug("onInsert_PLAYER", "Item " + adding_item.serial + " identificado como doação de '" + donation_category_found_str + "'.");
                 break; 
             endif
-        endforeach;
+        endforeach
     endif
 
     if (is_donation_item_flag)
@@ -110,12 +107,12 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
 
         if (CInt(inserttype) == 2 && existing_stack) // Empilhou
             var stack_desc_str := (existing_stack.desc ? (CStr(existing_stack.amount) + " " + existing_stack.desc) : "uma pilha");
-            PrintText(character, "*Acrescentou " + amount_to_add + " " + added_desc_str + " a " + stack_desc_str + " em " + cont_desc_str + "*", 6);
+            PrintText(character, "*Acrescentou " + adding_item.amount + " " + added_desc_str + " a " + stack_desc_str + " em " + cont_desc_str + "*", 6);
         else // Inseriu novo item (ou novo stack)
             PrintText(character, "*Colocou " + added_desc_str + " em " + cont_desc_str + "*", 6);
         endif
     endif
 
     LogDebug("onInsert_DEBUG", "=== onInsert Finalizado para jogador " + character.name + ", item " + (adding_item ? adding_item.serial : "NULL") + " ===");
-    return 1; // Sempre retorna 1 se CanInsert permitiu
+    return 1;
 endprogram
