@@ -109,7 +109,8 @@ function ExecuteAfterEngage(byRef combatInfo)
 endfunction
 
 function CalculateCooldown(byRef combatInfo)
-	var cooldown := CInt(150); // TODO: fazer basaeado na skill do personagem
+	var weaponSkill := AP_GetSkill(combatInfo.attacker, combatInfo.attacker.weapon.attribute);
+	var cooldown := CInt(160) - (weaponSkill / 1); // TODO: Ajustar a fórmula de cooldown
 	return cooldown;
 endfunction
 
