@@ -240,7 +240,7 @@ endfunction
  */
 function DeveMarcarRecriarItem(itemAlvo)
 	return !GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
-	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG)
+	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG) //Coloco todo objeto como indispensavel para que itens destruidos antes do sistema entrar nao sejam descartados.
 	&& !itemAlvo.ISA(POLCLASS_CORPSE)
 	&& itemAlvo.ISA(POLCLASS_ITEM)
 	&& !IsDestroco(itemAlvo);
@@ -920,6 +920,7 @@ endfunction
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
 		var material := configRecursos[cfgselecao.material];
+
 		if(cfgselecao.durabTotal)
 			SetObjProperty(alvo,PROPNAME_DURABILIDADE_MAX,CInt(cfgselecao.durabTotal));
 			var atributos := MontaAtributosItem(alvo);
@@ -929,6 +930,8 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 			SetObjProperty(alvo,PROPNAME_RESITEM_MULT,CDbl(cfgselecao.mltRes));
 		endif
 		if(cfgselecao.material)
+			SetObjProperty(alvo,PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA,true);
+			alvo.color := material.Color;
 			SetObjProperty(alvo,PROPNAME_MATERIAL, Cint(cfgselecao.material));
 		endif
 		if(cfgselecao.isEmperrada)
@@ -941,10 +944,9 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 		endif
 		SetObjProperty(alvo,PROPNAME_DISPENSAVEL_FLAG,Cint(cfgselecao.isDispensavel));
 		SetObjProperty(alvo,PROPNAME_INDESTRUTIVEL,Cint(cfgselecao.isIndestrutivel));
-
-		alvo.color := material.Color;
+		
 		if(mostrarMensagem)
-			SendSysMessageEx(quem,"Configurações aplicadas.", SSM_INFO);
+			SendSysMessageEx(quem,"Configurações  aplicadas.", SSM_INFO);
 		endif
 	endif
 endfunction
