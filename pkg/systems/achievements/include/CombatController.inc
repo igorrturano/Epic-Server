@@ -46,7 +46,7 @@ function AchievementCombat_Advance_NPC(attacker, defender, combatInfo, key)
 	achiev.AddData(ACHIEVDATA_DAMAGE_DONE, combatInfo.damage);
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetKills()} - Hits: {achiev.GetHits()} - Damage: {achiev.GetDamage()}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
 
 	attacker.SetAchievementProgress(achiev);
 endfunction
