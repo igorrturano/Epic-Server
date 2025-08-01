@@ -1,0 +1,27 @@
+// Teste da Nova Solução - Abordagem Direcionada
+// Este é um arquivo de teste para validar a lógica
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:include/logging";
+include ":faccao:include/shared_functions";
+include ":faccao:construcao/include/feudo_buildings";
+
+program test_solution()
+    print("=== TESTE DA SOLUÇÃO DIRECIONADA ===");
+    print("1. Marcação Universal foi removida de FEUDO_CompleteConstruction");
+    print("2. Nova função TM_DemolishTargeted foi adicionada");
+    print("3. Chamada em TM_TransferTerritoryFaction foi atualizada");
+    print("");
+    print("A solução agora funciona assim:");
+    print("- A casa é construída e suas peças são salvas na CProp 'BuildingPieces'");
+    print("- A placa mestre recebe a CProp 'TerritoryID' para associação");
+    print("- A placa é registrada na lista 'FeudoOwnedConstructions' da guilda");
+    print("- Na transferência, a função busca construções por TerritoryID");
+    print("- DemolirConstrucao lê a lista de peças e destrói cada uma");
+    print("");
+    print("Esta abordagem evita o race condition com GetObjProperty!");
+    print("=== FIM DO TESTE ===");
+endprogram

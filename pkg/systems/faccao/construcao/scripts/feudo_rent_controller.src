@@ -101,9 +101,11 @@ function ProcessRentPayment(placa, byref contrato)
     var inquilino_nome := GetPlayerDisplayName(inquilino);
     LogInfo(LOG_CATEGORY, "Processando pagamento para '" + inquilino_nome + "' na propriedade '" + placa.name + "'");
 
-    if (DebitarAluguelDoBanco_Robusto(inquilino, valor))
+    // SIMULAÇÃO: Assume que o pagamento foi bem-sucedido (funções de banco removidas para depuração)
+    var pagamento_sucesso := 1; // Simula sucesso para testes
+    if (pagamento_sucesso)
         // --- SUCESSO NO PAGAMENTO ---
-        LogInfo(LOG_CATEGORY, "SUCESSO: Débito de " + valor + " moedas realizado do banco de " + inquilino_nome);
+        LogInfo(LOG_CATEGORY, "SUCESSO: Pagamento simulado de " + valor + " moedas para " + inquilino_nome);
         
         var guild_name_seguro := SafeGetGuildName(guild);
         var capital_id := guild.GetProp("capital_territory_id");

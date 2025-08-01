@@ -109,66 +109,6 @@ function EditFaccao(guild, props)
    return 1;
 endfunction
 
-
-/*
- * RemFaccao(guild_obj)
- * 
- * Purpose: Realiza a remoção COMPLETA e SEGURA de uma facção do sistema.
- *          Esta função é responsável apenas pela lógica de backend (apagar dados),
- *          NÃO envia mensagens para jogadores. A notificação deve ser feita
- *          pelo script que chama esta função.
- * 
- * Parameters:
- *   guild_obj: Objeto da guilda, ID da guilda (integer) ou nome da guilda (string).
- * 
- * Return:
- *   1 se a guilda foi destruída com sucesso.
- *   0 se a guilda não foi encontrada ou se a destruição falhou.
- */
-/*
- * RemFaccao(guild_obj)
- * 
- * Purpose: Realiza a remoção COMPLETA e SEGURA de uma facção do sistema.
- *          Esta função é responsável apenas pela lógica de backend (apagar dados),
- *          NÃO envia mensagens para jogadores. A notificação deve ser feita
- *          pelo script que chama esta função.
- * 
- * Parameters:
- *   guild_obj: Objeto da guilda, ID da guilda (integer) ou nome da guilda (string).
- * 
- * Return:
- *   1 se a guilda foi destruída com sucesso.
- *   0 se a guilda não foi encontrada ou se a destruição falhou.
- */
-// No arquivo pkg/systems/faccao/include/faccao.inc
-
-/*
- * RemFaccao(guild_obj)
- * 
- * Purpose: Realiza a remoção COMPLETA e SEGURA de uma facção do sistema.
- *          Esta versão é robusta contra chamadas múltiplas para a mesma guilda.
- * 
- * Parameters:
- *   guild_obj: Objeto da guilda, ID da guilda (integer) ou nome da guilda (string).
- * 
- * Return:
- *   1 se a guilda foi destruída com sucesso ou se já não existia.
- *   0 se a guilda não foi encontrada ou se a destruição falhou.
- */
-/*
- * RemFaccao(guild_obj)
- * 
- * Purpose: Realiza a remoção COMPLETA e SEGURA de uma facção do sistema.
- *          Esta versão é robusta contra chamadas múltiplas para a mesma guilda
- *          e limpa os datafiles mais críticos associados a ela.
- * 
- * Parameters:
- *   guild_obj: Objeto da guilda, ID da guilda (integer), nome da guilda (string) ou um objeto de erro.
- * 
- * Return:
- *   1 se a guilda foi destruída com sucesso ou se já não existia.
- *   0 se ocorreu uma falha inesperada.
- */
 /*
  * RemFaccao(guild_obj) - VERSÃO 3.1 (DELEÇÃO SINCRONIZADA E LIMPA)
  * 
@@ -256,7 +196,6 @@ function RemFaccao(guild_obj)
             else
                 LogWarning("RemFaccao_v3.1", "    Placa mestre com serial " + serial + " não encontrada no mundo.");
             endif
-            LogInfo("RemFaccao_v3.1", "--> ETAPA 5 CONCLUÍDA. Total de construções que receberam ordem de demolição: " + construcoes_demolidas);
         endforeach
         
         // PAUSA CRÍTICA: Dá tempo para o motor do jogo processar os DestroyItem()
@@ -351,7 +290,6 @@ function RemFaccao(guild_obj)
     
     return destruction_result;
 endfunction
-
 
 function AddMember(faccao, mobile)
    faccao.addMember(mobile);   var member_obj := struct{

@@ -2700,8 +2700,85 @@ function FindExistingStackableItem_Enhanced(container, objtype, properties_to_ma
     LogDebug("FindStackable_Enhanced", "Nenhum item compatível encontrado.");
     return 0;
 endfunction
+/*
+ * RecalculateFactionPopulation(guild_obj) - v2.0 (Loop For)
+ *
+ * Purpose: Recalcula a população total de uma facção com base em
+ *          todas as suas construções existentes e atualiza o datafile.
+ *          Usa um loop 'for' para maior robustez na iteração.
+ * Parameters:
+ *   guild_obj - O objeto da guilda a ser recalculado.
+ * Return:
+ *   1 se a atualização foi bem-sucedida, 0 caso contrário.
+ */
+function RecalculateFactionPopulation(guild_obj)
+    if (!guild_obj)
+        return 0;
+    endif
 
-// Arquivo: :faccao:include:faccao_resources.inc
+    var guild_name := SafeGetGuildName(guild_obj);
+    if (guild_name == "Unknown Guild" || guild_name == "No Guild")
+        return 0;
+    endif
+
+    var total_pop_bonus := 0;
+    var owned_constructions := FEUDO_GetOwnedConstructions(guild_obj);
+
+    // 1. Soma o bônus de população de todas as construções existentes.
+    // IMPORTANTE: Casas alugadas MANTÉM o bônus de população para a facção proprietária
+    foreach placa in owned_constructions
+        var build_info := GetObjProperty(placa, "BuildingInfo");
+        if (build_info)
+            var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+            if (!details.errortext)
+                
+                // --- INÍCIO DA NOVA ABORDAGEM (LOOP FOR) ---
+                var bonus_array := details.Bonus;
+                if (TypeOf(bonus_array) == "Array" && bonus_array.size() > 0)
+                    var i;
+                    for (i := 1; i <= bonus_array.size(); i := i + 1)
+                        var bonus_line := bonus_array[i];
+                        var parts := SplitWords(bonus_line);
+                        
+                        if (parts.size() >= 2)
+                            if (Lower(parts[1]) == "popcap")
+                                var pop_bonus := CInt(parts[2]);
+                                total_pop_bonus += pop_bonus;
+                                
+                                // Log para debug: mostra se a construção está alugada
+                                var contrato := GetObjProperty(placa, "ContratoAluguel");
+                                if (contrato)
+                                    LogDebug("PopulationRecalc", "Construção '" + placa.name + "' ALUGADA mas mantém bônus PopCap de " + pop_bonus + " para a facção");
+                                else
+                                    LogDebug("PopulationRecalc", "Construção '" + placa.name + "' não alugada, bônus PopCap: " + pop_bonus);
+                                endif
+                            endif
+                        endif
+                    endfor
+                endif
+                // --- FIM DA NOVA ABORDAGEM ---
+                
+            endif
+        endif
+    endforeach
+    
+    // 2. Atualiza o valor no datafile da facção.
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    var elem_name := NormalizarNomeElementoFaccao(guild_name);
+
+    if (df && elem_name != error)
+        var elem := SafeFindElement(df, elem_name, 1);
+        if (elem)
+            var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+            recursos.populacao := total_pop_bonus;
+            SetElementProp(elem, "recursos", recursos);
+            LogInfo("PopulationRecalc", "População da facção '" + guild_name + "' recalculada e definida para " + total_pop_bonus + ".");
+            return 1;
+        endif
+    endif
+
+    return 0;
+endfunction
 
 /*
  * TryIncreaseAmount_Refactored(item, amount_to_add)
@@ -2833,7 +2910,7 @@ function MergeItemProperties(item, properties)
                 LogError("MergeProps_DEBUG", "  -> FALHA ao definir " + prop_name + "!");
             endif
             sleepms(1);
-        endforeach;
+        endforeach
     endif
     
     // Se propriedades é outro item, copiar suas propriedades
@@ -2852,7 +2929,7 @@ function MergeItemProperties(item, properties)
                 LogError("MergeProps_DEBUG", "  -> FALHA ao copiar " + prop_name + "!");
             endif
             sleepms(1);
-        endforeach;
+        endforeach
     else
         LogWarning("MergeProps_DEBUG", "Tipo de propriedades não suportado: " + TypeOf(properties));
         return 0;
@@ -2862,6 +2939,7 @@ function MergeItemProperties(item, properties)
     return merged;
 endfunction
 
+// Função para aplicar propriedades a um item
 
 // Função para aplicar propriedades a um item
 function ApplyPropertiesToItem(item, properties)
@@ -2932,7 +3010,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
         foreach prop_name in prop_names
             old_properties[prop_name] := GetObjProperty(old_item, prop_name);
             sleepms(1);
-        endforeach;
+        endforeach
     endif
     
     LogDebug("ReplaceStack_DEBUG", "Propriedades capturadas: " + old_properties.size());
@@ -2950,7 +3028,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
                 foreach prop_name in (properties.keys())
                     SetObjProperty(old_item, prop_name, properties[prop_name]);
                     sleepms(1);
-                endforeach;
+                endforeach
             endif
             
             LogInfo("ReplaceStack_DEBUG", "Atualização simples bem-sucedida: " + old_item.serial + " agora com " + old_item.amount);
@@ -3001,7 +3079,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             SetObjProperty(new_item, prop_name, old_properties[prop_name]);
         endif
         sleepms(1);
-    endforeach;
+    endforeach
     
     // Adicionar novas propriedades
     if (properties)
@@ -3010,7 +3088,7 @@ function SafeReplaceStackWithNew(old_item, amount_to_add, properties := 0)
             foreach prop_name in (properties.keys())
                 SetObjProperty(new_item, prop_name, properties[prop_name]);
                 sleepms(1);
-            endforeach;
+            endforeach
         else
             LogWarning("ReplaceStack_DEBUG", "Propriedades fornecidas não são um Dictionary: " + TypeOf(properties));
         endif

@@ -12,7 +12,8 @@ use guilds;
 // Inclui para funções auxiliares que serão usadas no futuro
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
-include ":containers:storageAreas";
+include ":faccao:include/territory_management";
+include ":faccao:include/shared_functions";  // Para RecalculateFactionPopulation
 
 /*
  * FEUDO_GetBuildingCfg()
@@ -207,22 +208,23 @@ function GetStageNumber(andaime_principal)
         endif
     endif
 endfunction
-/*
- * FEUDO_CompleteConstruction(andaime_principal) - VERSÃO FINAL (PLACA GENÉRICA E RASTREAMENTO)
- *
- * Finaliza uma construção, substituindo o andaime pela estrutura completa
- * definida no 'Blueprint', promove a primeira placa encontrada a
- * "Controlador Mestre" e REGISTRA o serial desta placa na guilda dona.
- */
+
 function FEUDO_CompleteConstruction(andaime_principal)
+    LogInfo("FeudoComplete", "==========================================================");
+    LogInfo("FeudoComplete", "INICIANDO FEUDO_CompleteConstruction()");
+    
     // Etapa 1: Validação e obtenção de dados essenciais
     if (!andaime_principal)
         LogError("FeudoComplete", "Função chamada com andaime nulo. Abortando.");
         return 0;
     endif
+    LogInfo("FeudoComplete", ">>> ETAPA 1: Validação inicial - Andaime serial: " + andaime_principal.serial);
 
     var build_info := GetObjProperty(andaime_principal, "BuildingInfo");
     var guild_id := GetObjProperty(andaime_principal, "GuildOwner");
+    
+    LogDebug("FeudoComplete", "    -> BuildingInfo obtido: " + (build_info ? "SIM (Tipo: " + build_info.type + ", Nível: " + build_info.level + ")" : "NÃO"));
+    LogDebug("FeudoComplete", "    -> GuildOwner obtido: " + (guild_id ? "SIM (" + guild_id + ")" : "NÃO"));
     
     if (!build_info || !guild_id)
         LogError("FeudoComplete", "Andaime " + andaime_principal.serial + " não possui CProps 'BuildingInfo' ou 'GuildOwner'. Abortando.");
@@ -236,39 +238,57 @@ function FEUDO_CompleteConstruction(andaime_principal)
         DestroyItem(andaime_principal);
         return 0;
     endif
+    LogInfo("FeudoComplete", "    -> Guilda encontrada: " + guild.name + " (ID: " + guild_id + ")");
 
     var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
-    LogInfo("FeudoComplete", "Finalizando construção de '" + details.Name + "' para a guilda " + guild.name);
+    LogInfo("FeudoComplete", "    -> Detalhes carregados: '" + details.Name + "' para a guilda " + guild.name);
 
     // Etapa 2: Limpar todos os itens visuais do andaime
+    LogInfo("FeudoComplete", ">>> ETAPA 2: Limpeza de itens visuais do andaime");
     var pecas_seriais := GetObjProperty(andaime_principal, "PecasVisuais") ?: array{};
+    LogDebug("FeudoComplete", "    -> Peças visuais encontradas: " + pecas_seriais.size());
+    
     if (pecas_seriais.size() > 0)
-        LogDebug("FeudoComplete", "Removendo " + pecas_seriais.size() + " peças visuais do andaime...");
+        LogDebug("FeudoComplete", "    -> Removendo " + pecas_seriais.size() + " peças visuais do andaime...");
+        var removidas := 0;
         foreach serial in pecas_seriais
             var peca := SystemFindObjectBySerial(serial);
             if (peca)
                 DestroyItem(peca);
+                removidas := removidas + 1;
             endif
         endforeach
+        LogInfo("FeudoComplete", "    -> Peças visuais removidas: " + removidas + "/" + pecas_seriais.size());
+    else
+        LogDebug("FeudoComplete", "    -> Nenhuma peça visual para remover");
     endif
 
     // Etapa 3: Obter a posição e destruir o "cérebro" do andaime
+    LogInfo("FeudoComplete", ">>> ETAPA 3: Obtendo posição e destruindo andaime principal");
     var x := andaime_principal.x;
     var y := andaime_principal.y;
     var z := andaime_principal.z;
     var realm := andaime_principal.realm;
+    LogDebug("FeudoComplete", "    -> Posição salva: X=" + x + ", Y=" + y + ", Z=" + z + ", Realm=" + realm);
     DestroyItem(andaime_principal);
+    LogDebug("FeudoComplete", "    -> Andaime principal destruído");
 
-    // Etapa 4: Construir a partir do Blueprint e identificar a placa
+    // Etapa 4: Construir a partir do Blueprint
+    LogInfo("FeudoComplete", ">>> ETAPA 4: Construção a partir do Blueprint");
     var blueprint_lines := details.Blueprint;
     if (!blueprint_lines || blueprint_lines.size() == 0)
-        LogWarning("FeudoComplete", "Nenhum 'Blueprint' definido. Nenhum item físico será criado.");
+        LogWarning("FeudoComplete", "    -> AVISO: Nenhum 'Blueprint' definido. Nenhum item físico será criado.");
     else
-        LogInfo("FeudoComplete", "Construindo '" + details.Name + "' a partir de um blueprint com " + blueprint_lines.size() + " peças.");
+        LogInfo("FeudoComplete", "    -> Blueprint carregado com " + blueprint_lines.size() + " linhas");
+        LogInfo("FeudoComplete", "    -> Construindo '" + details.Name + "' a partir do blueprint...");
         
         var pecas_da_construcao := array{};
         var placas_validas_graphics := FEUDO_GetPlacaObjtypes();
         var placa_mestre_criada := 0;
+        var pecas_criadas := 0;
+        var placas_detectadas := 0;
+
+        LogDebug("FeudoComplete", "    -> Placas válidas carregadas: " + placas_validas_graphics.size() + " tipos");
 
         foreach piece_line in blueprint_lines
             var parts := SplitWords(piece_line);
@@ -279,65 +299,108 @@ function FEUDO_CompleteConstruction(andaime_principal)
                 var z_offset   := CInt(parts[4]);
                 var peca := 0;
 
+                LogDebug("FeudoComplete", "    -> Processando linha: " + piece_line);
+                LogDebug("FeudoComplete", "        Graphic: 0x" + Hex(graphic_from_cfg) + ", Offset: (" + x_offset + "," + y_offset + "," + z_offset + ")");
+
                 if (graphic_from_cfg in placas_validas_graphics && !placa_mestre_criada)
+                    placas_detectadas := placas_detectadas + 1;
+                    LogInfo("FeudoComplete", "        -> PLACA DETECTADA! Criando placa mestre (Graphic: 0x" + Hex(graphic_from_cfg) + ")");
                     peca := CreateItemAtLocation(x + x_offset, y + y_offset, z + z_offset, 0xEEF1, 1, realm);
                     if (peca)
                         peca.graphic := graphic_from_cfg;
                         placa_mestre_criada := peca;
+                        LogInfo("FeudoComplete", "        -> Placa mestre criada com sucesso! Serial: " + peca.serial);
+                    else
+                        LogError("FeudoComplete", "        -> FALHA ao criar placa mestre!");
                     endif
                 else
+                    if (graphic_from_cfg in placas_validas_graphics)
+                        placas_detectadas := placas_detectadas + 1;
+                        LogDebug("FeudoComplete", "        -> Placa detectada mas placa mestre já existe, criando como peça normal");
+                    endif
                     peca := CreateItemAtLocation(x + x_offset, y + y_offset, z + z_offset, graphic_from_cfg, 1, realm);
+                    if (peca)
+                        LogDebug("FeudoComplete", "        -> Peça normal criada: Serial " + peca.serial);
+                    else
+                        LogWarning("FeudoComplete", "        -> FALHA ao criar peça normal com graphic 0x" + Hex(graphic_from_cfg));
+                    endif
                 endif
 
                 if (peca)
                     peca.movable := 0;
                     SetObjProperty(peca, "GuildOwner", guild_id);
                     SetObjProperty(peca, "BuildingType", build_info.type);
-                    SetObjProperty(peca, "IsFeudoBuildingPiece", 1);
+                    
                     pecas_da_construcao.append(peca.serial);
+                    pecas_criadas := pecas_criadas + 1;
+                    LogDebug("FeudoComplete", "        -> CProps definidas e serial adicionado à lista");
                 endif
+            else
+                LogWarning("FeudoComplete", "    -> LINHA INVÁLIDA no blueprint (menos de 4 partes): " + piece_line);
             endif
             sleepms(5);
         endforeach
+        
+        LogInfo("FeudoComplete", "    -> Resumo da criação:");
+        LogInfo("FeudoComplete", "        - Linhas processadas: " + blueprint_lines.size());
+        LogInfo("FeudoComplete", "        - Placas detectadas: " + placas_detectadas);
+        LogInfo("FeudoComplete", "        - Peças criadas: " + pecas_criadas);
+        LogInfo("FeudoComplete", "        - Placa mestre criada: " + (placa_mestre_criada ? "SIM (Serial: " + placa_mestre_criada.serial + ")" : "NÃO"));
+        LogInfo("FeudoComplete", "        - Total de seriais na lista: " + pecas_da_construcao.size());
+        // ==========================================================
 
         if (placa_mestre_criada)
+            LogInfo("FeudoComplete", ">>> ETAPA 4.1: Configurando placa mestre");
             placa_mestre_criada.name := details.Name;
-            
-            var script_path := ":faccao:construcao/construcoes_todas/casa_uso";
-            LogDebug("FeudoComplete", "  -> Tentando atribuir script: '" + script_path + "'");
-            placa_mestre_criada.usescript := script_path;
-            
-            sleepms(10);
-            if (placa_mestre_criada.usescript == script_path)
-                LogInfo("FeudoComplete", "  -> SUCESSO: Script atribuído corretamente.");
-            else
-                LogError("FeudoComplete", "  -> FALHA: O script NÃO foi atribuído. Verifique o caminho e se o arquivo existe e compila.");
-            endif
+            placa_mestre_criada.usescript := ":faccao:construcao/construcoes_todas/casa_uso";
+            LogDebug("FeudoComplete", "    -> Nome definido: '" + details.Name + "'");
+            LogDebug("FeudoComplete", "    -> Script definido: ':faccao:construcao/construcoes_todas/casa_uso'");
             
             SetObjProperty(placa_mestre_criada, "BuildingInfo", build_info);
             SetObjProperty(placa_mestre_criada, "BuildingPieces", pecas_da_construcao);
             SetObjProperty(placa_mestre_criada, "IsFeudoBuildingController", 1);
-
-            // ====================================================================
-            // >>>>> INÍCIO DA ADIÇÃO CRÍTICA PARA RASTREAMENTO <<<<<
-            // ====================================================================
-            LogInfo("FeudoComplete", "--> Etapa 4.5: Registrando construção na lista de propriedades da guilda...");
-            var feudo_owned_constructions := guild.GetProp("FeudoOwnedConstructions") ?: array{};
+            LogDebug("FeudoComplete", "    -> CProps básicas definidas:");
+            LogDebug("FeudoComplete", "        - BuildingInfo: " + (build_info ? "OK" : "FALHA"));
+            LogDebug("FeudoComplete", "        - BuildingPieces: Array com " + pecas_da_construcao.size() + " itens");
+            LogDebug("FeudoComplete", "        - IsFeudoBuildingController: 1");
             
-            // Garantir que a CProp é um array antes de adicionar
+            LogInfo("FeudoComplete", ">>> ETAPA 4.2: Associando construção ao território...");
+            var territories_no_mundo := TM_GetAllTerritories();
+            LogDebug("FeudoComplete", "    -> Territórios disponíveis no mundo: " + (territories_no_mundo ? territories_no_mundo.size() : 0));
+            
+            var territorio_encontrado := 0;
+            foreach territory_id_loop in territories_no_mundo
+                LogDebug("FeudoComplete", "    -> Verificando território: " + territory_id_loop);
+                if (TM_IsPointInTerritory(placa_mestre_criada.x, placa_mestre_criada.y, 0, placa_mestre_criada.realm, territory_id_loop))
+                    SetObjProperty(placa_mestre_criada, "TerritoryID", territory_id_loop);
+                    LogInfo("FeudoComplete", "    -> SUCESSO: Construção " + placa_mestre_criada.serial + " associada ao Território ID: " + territory_id_loop);
+                    territorio_encontrado := 1;
+                    break;
+                else
+                    LogDebug("FeudoComplete", "        - Posição não está neste território");
+                endif
+            endforeach
+            
+            if (!territorio_encontrado)
+                LogWarning("FeudoComplete", "    -> AVISO: Construção não foi associada a nenhum território!");
+            endif
+           
+            LogInfo("FeudoComplete", ">>> ETAPA 4.3: Registrando construção na lista de propriedades da guilda...");
+            var feudo_owned_constructions := guild.GetProp("FeudoOwnedConstructions") ?: array{};
+            LogDebug("FeudoComplete", "    -> Lista atual de construções da guilda: " + feudo_owned_constructions.size() + " itens");
+            
             if (TypeOf(feudo_owned_constructions) != "Array")
-                 feudo_owned_constructions := array{};
+                LogWarning("FeudoComplete", "    -> AVISO: Lista não era um Array, recriando...");
+                feudo_owned_constructions := array{};
             endif
             
             feudo_owned_constructions.append(placa_mestre_criada.serial);
             guild.SetProp("FeudoOwnedConstructions", feudo_owned_constructions);
-            LogInfo("FeudoComplete", "    ...Construção " + placa_mestre_criada.serial + " registrada com sucesso. Total na lista: " + feudo_owned_constructions.size());
-            // ====================================================================
-            // >>>>> FIM DA ADIÇÃO <<<<<
-            // ====================================================================
+            LogInfo("FeudoComplete", "    -> SUCESSO: Construção " + placa_mestre_criada.serial + " registrada. Total na lista: " + feudo_owned_constructions.size());
 
         else
-            LogError("FeudoComplete", "AVISO: Nenhuma placa encontrada no blueprint! Criando um controlador mestre invisível como fallback.");
+            LogError("FeudoComplete", ">>> ETAPA 4.4: FALLBACK - Nenhuma placa encontrada no blueprint!");
+            LogWarning("FeudoComplete", "    -> Criando um controlador mestre invisível como fallback...");
             var mestre_fallback := CreateItemAtLocation(x, y, z, 0x31FA, 1, realm);
             if (mestre_fallback)
                 mestre_fallback.name := "Controlador Mestre: " + details.Name;
@@ -346,78 +409,80 @@ function FEUDO_CompleteConstruction(andaime_principal)
                 SetObjProperty(mestre_fallback, "GuildOwner", guild_id);
                 SetObjProperty(mestre_fallback, "BuildingInfo", build_info);
                 SetObjProperty(mestre_fallback, "BuildingPieces", pecas_da_construcao);
+                LogInfo("FeudoComplete", "    -> Controlador fallback criado: Serial " + mestre_fallback.serial);
                 
-                // Também registrar o fallback na lista da guilda
                 var feudo_owned_constructions := guild.GetProp("FeudoOwnedConstructions") ?: array{};
                 if (TypeOf(feudo_owned_constructions) != "Array") feudo_owned_constructions := array{}; endif
                 feudo_owned_constructions.append(mestre_fallback.serial);
                 guild.SetProp("FeudoOwnedConstructions", feudo_owned_constructions);
-                LogInfo("FeudoComplete", "    ...Controlador fallback " + mestre_fallback.serial + " registrado na lista da guilda.");
+                LogInfo("FeudoComplete", "    -> Controlador fallback " + mestre_fallback.serial + " registrado na lista da guilda. Total: " + feudo_owned_constructions.size());
+            else
+                LogError("FeudoComplete", "    -> FALHA CRÍTICA: Não foi possível criar nem mesmo o controlador fallback!");
             endif
         endif
     endif
 
     // Etapa 5: Registrar a construção como concluída na CProp da guilda (para bônus)
+    LogInfo("FeudoComplete", ">>> ETAPA 5: Registrando construção para ativação de bônus");
     var feudo_buildings := guild.GetProp("feudo_buildings") ?: dictionary{};
+    LogDebug("FeudoComplete", "    -> Estado atual do dicionário de construções: " + feudo_buildings.size() + " tipos");
+    
     feudo_buildings[build_info.type] := build_info.level;
     guild.SetProp("feudo_buildings", feudo_buildings);
-    LogInfo("FeudoComplete", "--> Etapa 5: Construção registrada para ativação de bônus.");
+    LogInfo("FeudoComplete", "    -> Construção '" + build_info.type + "' nível " + build_info.level + " registrada para bônus");
     
-    // ==========================================================
-    // >>>>> INÍCIO DA NOVA LÓGICA DE ATUALIZAÇÃO DE POPULAÇÃO <<<<<
-    // ==========================================================
-    LogInfo("FeudoComplete", "--> Etapa 5.5: Processando bônus de população...");
+    // Etapa 5.5: Processar bônus de população
+    LogInfo("FeudoComplete", ">>> ETAPA 5.5: Processando bônus de população...");
     var bonus_string_array := details.Bonus;
     var populacao_a_adicionar := 0;
+    LogDebug("FeudoComplete", "    -> Total de linhas de bônus a processar: " + (bonus_string_array ? bonus_string_array.size() : 0));
 
     foreach bonus_line in bonus_string_array
         var parts := SplitWords(bonus_line);
+        LogDebug("FeudoComplete", "    -> Processando linha de bônus: " + bonus_line);
         if (Lower(parts[1]) == "popcap" && parts.size() >= 2)
             populacao_a_adicionar := CInt(parts[2]);
-            LogDebug("FeudoComplete", "    Bônus 'PopCap' encontrado. Valor: " + populacao_a_adicionar);
+            LogInfo("FeudoComplete", "    -> Bônus 'PopCap' encontrado. Valor: " + populacao_a_adicionar);
             break;
+        else
+            LogDebug("FeudoComplete", "        - Não é um bônus PopCap, ignorando");
         endif
     endforeach
 
     if (populacao_a_adicionar > 0)
-        var guild_name := guild.GetProp("name");
-        var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
-        var elem_name := NormalizarNomeElementoFaccao(guild_name);
-
-        if (df && elem_name != error)
-            var elem := SafeFindElement(df, elem_name, 1);
-            if (elem)
-                var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
-                
-                var pop_antiga := CInt(recursos.populacao);
-                recursos.populacao := pop_antiga + populacao_a_adicionar;
-                
-                SetElementProp(elem, "recursos", recursos);
-                LogInfo("FeudoComplete", "    SUCESSO: População da facção '" + guild_name + "' atualizada de " + pop_antiga + " para " + recursos.populacao);
-            else
-                LogError("FeudoComplete", "    FALHA: Não foi possível encontrar/criar o elemento '" + elem_name + "' no datafile de recursos.");
-            endif
+        LogInfo("FeudoComplete", "    -> Bônus de população detectado: +" + populacao_a_adicionar);
+        LogInfo("FeudoComplete", "    -> Recalculando população total da facção usando RecalculateFactionPopulation...");
+        
+        // CORREÇÃO: Em vez de apenas somar, recalcula toda a população da facção
+        // Isso garante que a população seja calculada corretamente baseada em TODAS as construções
+        var recalc_success := RecalculateFactionPopulation(guild);
+        if (recalc_success)
+            LogInfo("FeudoComplete", "    -> SUCESSO: População da facção recalculada com base em todas as construções");
         else
-            LogError("FeudoComplete", "    FALHA: Não foi possível abrir o datafile de recursos ou normalizar o nome da facção '" + guild_name + "'.");
+            LogError("FeudoComplete", "    -> FALHA: Erro ao recalcular população da facção");
         endif
+    else
+        LogDebug("FeudoComplete", "    -> Nenhum bônus de população para aplicar");
     endif
-    // ==========================================================
-    // >>>>> FIM DA NOVA LÓGICA <<<<<
-    // ==========================================================
-    
     
     // Etapa 6: Notificar TODOS os membros online da guilda
+    LogInfo("FeudoComplete", ">>> ETAPA 6: Enviando notificação para membros da guilda");
     var guild_name := guild.GetProp("name") ?: guild.guildid;
     var message := "A construção de '" + details.Name + "' no feudo de " + guild_name + " foi concluída!";
-    LogInfo("FeudoComplete", "--> Etapa 6: Enviando notificação de conclusão para a guilda " + guild_name);
+    LogDebug("FeudoComplete", "    -> Mensagem preparada: '" + message + "'");
     
+    var membros_notificados := 0;
     foreach member in (guild.members)
         if (member.connected)
-            SendSysMessage(member, message, 3, 68); // Fonte 3, Cor Verde Claro
-            PlaySoundEffect(member, 0x0567); // Som de "sucesso/fanfarra"
+            SendSysMessage(member, message, 3, 68);
+            PlaySoundEffect(member, 0x0567);
+            membros_notificados := membros_notificados + 1;
         endif
     endforeach
+    LogInfo("FeudoComplete", "    -> Notificação enviada para " + membros_notificados + " membros online");
     
+    LogInfo("FeudoComplete", ">>> CONCLUSÃO: FEUDO_CompleteConstruction finalizada com SUCESSO!");
+    LogInfo("FeudoComplete", "==========================================================");
     return 1;
 endfunction
     
@@ -680,119 +745,4 @@ function FEUDO_GetOwnedConstructions(guild_obj)
     endforeach
     
     return owned_constructions;
-endfunction
-
-
-// Função de débito agora usa o realm como o nome da StorageArea (VERSÃO FINAL CORRIGIDA)
-// Função de débito agora SEMPRE busca na StorageArea "World Bank" (VERSÃO FINAL SIMPLIFICADA)
-function DebitarAluguelDoBanco(player, amount_due, realm_name)
-    // O parâmetro 'realm_name' agora é ignorado, mas mantido para compatibilidade com a chamada da função.
-    realm_name := realm_name;
-
-    var LOG_CATEGORY := "FeudoRent_Debit";
-    
-    // CORREÇÃO CRÍTICA: Força a busca na área de banco global.
-    var storage_area_name := "World Bank";
-
-    LogInfo(LOG_CATEGORY, "--> [MODO GLOBAL] Procurando banco para " + player.name + " na StorageArea alvo: '" + storage_area_name + "'");
-    
-    // Chama a função do sistema de storage com o nome correto da área
-    var bank_box := CP_GetStorageContainerForMobile(player, storage_area_name, CP_NOCREATE);
-	
-    if (!bank_box)
-        LogWarning(LOG_CATEGORY, "--> FALHA: Jogador " + player.name + " não possui um banco na StorageArea '" + storage_area_name + "'. Verifique se o jogador já usou um banqueiro.");
-        return 0; // Falha: não tem banco nesta área
-    endif
-
-    LogInfo(LOG_CATEGORY, "--> Banco de " + player.name + " encontrado na StorageArea '" + storage_area_name + "' (Container Serial: " + bank_box.serial + ").");
-    LogInfo(LOG_CATEGORY, "--> Tentando debitar " + amount_due + " de Cobre (0xBA63).");
-    
-    if (ConsumeSubstance(bank_box, 0xBA63, amount_due))
-        LogInfo(LOG_CATEGORY, "--> SUCESSO: Débito de " + amount_due + " moedas realizado.");
-        return 1;
-    else
-        LogWarning(LOG_CATEGORY, "--> FALHA: Jogador " + player.name + " não tem " + amount_due + " moedas de cobre em seu banco na StorageArea '" + storage_area_name + "'.");
-        return 0;
-    endif
-endfunction
-
-
-/*
- * DebitarAluguelDoBanco_Robusto(player, amount_due) - VERSÃO APENAS COBRE
- * 
- * Versão robusta que soma o valor total APENAS de moedas de cobre no banco
- * e debita de múltiplos stacks se necessário.
- */
-function DebitarAluguelDoBanco_Robusto(player, amount_due)
-    var LOG_CATEGORY := "FeudoRent_Debit_Robusto";
-    LogInfo(LOG_CATEGORY, "==========================================================");
-    LogInfo(LOG_CATEGORY, "INICIANDO COBRANÇA ROBUSTA (APENAS COBRE) para " + player.name + ". Valor: " + amount_due);
-
-    var storage_area_name := "World Bank";
-    var bank_box := CP_GetStorageContainerForMobile(player, storage_area_name, CP_NOCREATE);
-
-    if (!bank_box)
-        LogWarning(LOG_CATEGORY, "--> FALHA (Passo 1): Jogador " + player.name + " não possui banco na StorageArea '" + storage_area_name + "'.");
-        return 0;
-    endif
-    LogInfo(LOG_CATEGORY, "--> SUCESSO (Passo 1): Banco encontrado (Serial: " + bank_box.serial + ")");
-
-    // Passo 2: Calcular o valor total disponível APENAS em cobre
-    var total_disponivel_cobre := 0;
-    var pilhas_de_cobre := array{};
-
-    LogDebug(LOG_CATEGORY, "--> PASSO 2: Varrendo o conteúdo do banco para encontrar moedas de cobre (0xBA63)...");
-    foreach item in EnumerateItemsInContainer(bank_box)
-        if (item.objtype == 0xBA63)
-            total_disponivel_cobre += item.amount;
-            pilhas_de_cobre.append(item);
-            LogDebug(LOG_CATEGORY, "    -> Pilha de cobre encontrada: Serial " + item.serial + ", Quantidade: " + item.amount);
-        endif
-    endforeach
-    
-    if (pilhas_de_cobre.size() == 0)
-        LogWarning(LOG_CATEGORY, "    -> Nenhuma pilha de moedas de cobre (0xBA63) foi encontrada no banco.");
-    endif
-    LogInfo(LOG_CATEGORY, "--> SUCESSO (Passo 2): Total disponível no banco: " + total_disponivel_cobre + " moedas de cobre.");
-
-    // Passo 3: Verificar se há fundos suficientes
-    if (total_disponivel_cobre < amount_due)
-        LogWarning(LOG_CATEGORY, "--> FALHA (Passo 3): Fundos insuficientes. Disponível: " + total_disponivel_cobre + ", Necessário: " + amount_due);
-        return 0;
-    endif
-    LogInfo(LOG_CATEGORY, "--> SUCESSO (Passo 3): Fundos suficientes. Iniciando débito.");
-
-    // Passo 4: Debitar o valor
-    var valor_restante_a_debitar := amount_due;
-    Set_Critical(1);
-
-    LogDebug(LOG_CATEGORY, "--> PASSO 4: Iniciando débito de " + valor_restante_a_debitar + " moedas das pilhas encontradas.");
-    foreach moeda in pilhas_de_cobre
-        if (valor_restante_a_debitar <= 0)
-            break;
-        endif
-        
-        var a_remover := (moeda.amount > valor_restante_a_debitar) ? valor_restante_a_debitar : moeda.amount;
-        LogDebug(LOG_CATEGORY, "    -> Debitando " + a_remover + " da pilha " + moeda.serial + " (que tem " + moeda.amount + ").");
-        if (SubtractAmount(moeda, a_remover))
-            valor_restante_a_debitar -= a_remover;
-            LogDebug(LOG_CATEGORY, "    -> Sucesso. Resta debitar: " + valor_restante_a_debitar);
-        else
-            LogError(LOG_CATEGORY, "    -> FALHA ao usar SubtractAmount na pilha " + moeda.serial + ". Abortando débito.");
-            valor_restante_a_debitar := -1; // Sinaliza erro
-            break;
-        endif
-    endforeach
-    
-    Set_Critical(0);
-
-    if (valor_restante_a_debitar > 0)
-        LogError(LOG_CATEGORY, "--> FALHA (Passo 4): Erro de lógica no débito. Restou " + valor_restante_a_debitar + " a debitar. Estornando valor pago.");
-        CreateItemInContainer(bank_box, 0xBA63, amount_due - valor_restante_a_debitar);
-        return 0;
-    endif
-
-    LogInfo(LOG_CATEGORY, "--> SUCESSO (Passo 4): Débito de " + amount_due + " realizado com sucesso.");
-    LogInfo(LOG_CATEGORY, "==========================================================");
-    return 1;
 endfunction

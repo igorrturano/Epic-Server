@@ -1,0 +1,36 @@
+TESTE DA SOLUÇÃO - Mesa de Gestão Construções
+
+PROBLEMA IDENTIFICADO:
+- A função ConstrucoesGump() original só mostrava itens de compra
+- Não listava as construções existentes da facção
+- Usuário reportou: "nao esta aparecendo na mesa de gestao no gump reino"
+
+SOLUÇÃO IMPLEMENTADA:
+1. Modificada função ConstrucoesGump(byref gump, item_mesa_gestao):
+   - Adicionado parâmetro item_mesa_gestao
+   - Busca a facção da mesa: GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP)
+   - Encontra a guild: FindGuild(FindGuildByName(mesa_faction))
+   - Obtém construções: guild.GetProp("FeudoOwnedConstructions")
+   - Lista cada construção com detalhes e bônus
+
+2. Corrigida chamada da função em CreateKingdomManagementGump:
+   - Mudado de: ConstrucoesGump(gump);
+   - Para: ConstrucoesGump(gump, item);
+
+3. Adicionado include necessário:
+   - include ":faccao:construcao/include/feudo_buildings";
+
+FUNCIONALIDADE ADICIONADA:
+- Seção "Construções da Facção" mostra:
+  * Nome da construção (ex: "Casa Simples")
+  * Território associado (ex: "Território: ABC123") 
+  * Bônus fornecido (ex: "PopCap 8")
+  * Limitado a 4 construções por página
+  * Contador total de construções
+
+RESULTADO ESPERADO:
+- Mesa de gestão agora mostra as construções da facção
+- Casa construída aparece como "Casa Simples (Território: X) - Bônus: PopCap 8"
+- Interface mais informativa para líderes de facção
+
+STATUS: ✅ SOLUÇÃO IMPLEMENTADA
