@@ -8,6 +8,8 @@ class Achievement()
 	var xp;
 	var level;
 
+	var achievData; // Dictionary para armazenar informações
+
 	function Achievement(this, key)
 		this.type := ACHIEVEMENT;
 		this.key := key;
@@ -15,6 +17,8 @@ class Achievement()
 		this.name := CStr(key);
 		this.xp := 0;
 		this.level := 0;
+
+		this.achievData := dictionary{};
 	endfunction
 
 	function GetType(this)
@@ -37,6 +41,9 @@ class Achievement()
 		return this.level;
 	endfunction
 
+	function GetData(this, name)
+		return this.achievData[name];
+	endfunction
 
 	function _SetName(this, value)
 		this.name := value;
@@ -50,12 +57,21 @@ class Achievement()
 		this.level := value;
 	endfunction
 
+	function SetData(this, name, value)
+		this.achievData[name] := value;
+	endfunction
+
 	function AddXP(this, value)
 		this.xp += CInt(value);
 	endfunction
 	
 	function AddLevel(this, value)
 		this.level += CInt(value);
+	endfunction
+
+	function AddData(this, name, value)
+		if (!this.achievData[name]) this.SetData(name, 0); endif
+		this.achievData[name] += CInt(value);
 	endfunction
 
 	function Serialize(this)
@@ -65,7 +81,9 @@ class Achievement()
 
 			name := this.name,
 			xp := this.xp,
-			damage := this.damage
+			damage := this.damage,
+
+			achievData := this.achievData
 		};
 	endfunction
 
@@ -77,6 +95,8 @@ class Achievement()
 		this.name := data.name;
 		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
+
+		this.achievData := data.achievData ?: dictionary{};
 	endfunction
 
 	function toString(this)

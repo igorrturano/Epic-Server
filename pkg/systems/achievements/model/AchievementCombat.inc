@@ -14,32 +14,27 @@ enum ACHIEVDATA
 
 	ACHIEVDATA_CRITICAL_HITS := "criticalhits",
 	ACHIEVDATA_CRITICAL_DAMAGE := "criticaldamage",
-	ACHIEVDATA_CRITICAL_DAMAGE_MAX := "criticaldamage_max",
+	ACHIEVDATA_CRITICAL_DAMAGE_MAX := "criticaldamagemax",
 
-	ACHIEVDATA_MANA_SPENT := "manaspent"
+	ACHIEVDATA_HEALING_ONSELF := "healingonself",
+	ACHIEVDATA_HEALING_ONOTHERS := "healingonothers",
+	ACHIEVDATA_HEALING_MAX := "healingmax",
+	ACHIEVDATA_HEALING_TOTAL := "healingtotal",
+	
+	ACHIEVDATA_MANA_SPENT := "manaspent",
+	ACHIEVDATA_MANA_REGEN := "manaregen",
+	ACHIEVDATA_MANA_REGEN_MAX := "manaregenmax",
+	ACHIEVDATA_MANA_REGEN_TOTAL := "manaregentotal",
+
+	ACHIEVDATA_SPELLS_CASTS := "spellscasts",
+	ACHIEVDATA_SPELLS_MOSTCASTED := "spellscastsmostcasted",
+
 endenum
 
 class AchievementCombat(Achievement)
-	var achievData; // Array de dictionary para armazenar informações
-
 	function AchievementCombat(this, key)
 		Super(key);
 		this.type := ACHIEVEMENT_COMBAT;
-
-		this.achievData := array{};
-	endfunction
-
-	function GetData(this, name)
-		return this.achievData[name];
-	endfunction
-
-	function SetData(this, name, value)
-		this.achievData[name] := value;
-	endfunction
-
-	function AddData(this, name, value)
-		if (!this.achievData[name]) this.SetData(name, 0); endif
-		this.achievData[name] += CInt(value);
 	endfunction
 
 	function Serialize(this)
@@ -52,7 +47,6 @@ class AchievementCombat(Achievement)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
 
-		this.achievData := data.achievData ?: array{};
 	endfunction
 	
 	function toString(this)
