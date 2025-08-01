@@ -2,82 +2,48 @@ include ":achievements:model/Achievement";
 
 const ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT";
 
+enum ACHIEVDATA
+	ACHIEVDATA_HITS := "hits",
+	ACHIEVDATA_BLOCKED := "blocked",
+	ACHIEVDATA_KILLS := "kills",
+
+	ACHIEVDATA_DAMAGE_DONE := "damagedone",
+	ACHIEVDATA_DAMAGE_TAKEN := "damagetaken",
+	ACHIEVDATA_DAMAGE_MAX := "damagemax",
+	ACHIEVDATA_DAMAGE_MAX_TAKEN := "damagemaxtaken",
+
+	ACHIEVDATA_CRITICAL_HITS := "criticalhits",
+	ACHIEVDATA_CRITICAL_DAMAGE := "criticaldamage",
+	ACHIEVDATA_CRITICAL_DAMAGE_MAX := "criticaldamage_max",
+
+	ACHIEVDATA_MANA_SPENT := "manaspent"
+endenum
+
 class AchievementCombat(Achievement)
-	var hits;
-	var blocked;
-	var kills;
-	var damage;
-	var damageTaken;
-	var damageMax;
-	var damageMaxTaken;
-	var criticals;
-	var criticalDamage;
-	var criticalDamageMax;
-	var manaSpent;
+	var achievData; // Array de dictionary para armazenar informações
 
 	function AchievementCombat(this, key)
 		Super(key);
 		this.type := ACHIEVEMENT_COMBAT;
 
-		this.hits := 0;
-		this.blocked := 0;
-		this.kills := 0;
-		this.damage := 0;
-		this.damageTaken := 0;
-		this.damageMax := 0;
-		this.damageMaxTaken := 0;
-		this.criticals := 0;
-		this.criticalDamage := 0;
-		this.criticalDamageMax := 0;
-		this.manaSpent := 0;
+		this.achievData := array{};
 	endfunction
 
-	function getHits(this)
-		return this.hits;
+	function GetData(this, name)
+		return this.achievData[name];
 	endfunction
 
-	function getBlocked(this)
-		return this.blocked;
+	function SetData(this, name, value)
+		this.achievData[name] := value;
 	endfunction
 
-	function getKills(this)
-		return this.kills;
-	endfunction
-
-	function getDamage(this)
-		return this.damage;
-	endfunction
-
-	function getCriticals(this)
-		return this.criticals;
-	endfunction
-
-	function AddHits(this, value)
-		this.hits += CInt(value);
-	endfunction
-
-	function AddBlocked(this, value)
-		this.blocked += CInt(value);
-	endfunction
-
-	function AddKills(this, value)
-		this.kills += CInt(value);
-	endfunction
-
-	function AddDamage(this, value)
-		this.damage += CInt(value);
-	endfunction
-
-	function AddCriticals(this, value)
-		this.criticals += CInt(value);
+	function AddData(this, name, value)
+		if (!this.achievData[name]) this.SetData(name, 0); endif
+		this.achievData[name] += CInt(value);
 	endfunction
 
 	function Serialize(this)
 		var base_data := Achievement::Serialize(this);
-		base_data.+hits := this.hits;
-		base_data.+kills := this.kills;
-		base_data.+damage := this.damage;
-		base_data.+criticals := this.criticals;
 
 		return base_data;
 	endfunction
@@ -85,13 +51,11 @@ class AchievementCombat(Achievement)
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
-		this.hits := CInt(data.hits);
-		this.kills := CInt(data.kills);
-		this.damage := CInt(data.damage);
-		this.criticals := CInt(data.criticals);
+
+		this.achievData := data.achievData ?: array{};
 	endfunction
 	
 	function toString(this)
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage}, criticals={this.criticals})";
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, data={this.achievData})";
 	endfunction
 endclass

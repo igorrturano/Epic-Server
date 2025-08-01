@@ -1,8 +1,9 @@
 const ACHIEVEMENT := "ACHIEVEMENT";
 
 class Achievement()
-	var type;
-	var key;
+	var type; // Readonly
+	var key; // Readonly
+
 	var name;
 	var xp;
 	var level;
@@ -16,15 +17,19 @@ class Achievement()
 		this.level := 0;
 	endfunction
 
-	function GetName(this)
-		return this.name;
-	endfunction
-
 	function GetType(this)
 		return this.type;
 	endfunction
 
-	function GetXp(this)
+	function GetKey(this)
+		return this.key;
+	endfunction
+
+	function GetName(this)
+		return this.name;
+	endfunction
+
+	function GetXP(this)
 		return this.xp;
 	endfunction
 
@@ -32,11 +37,12 @@ class Achievement()
 		return this.level;
 	endfunction
 
+
 	function _SetName(this, value)
 		this.name := value;
 	endfunction
 
-	function SetXp(this, value)
+	function SetXP(this, value)
 		this.xp := value;
 	endfunction
 
@@ -54,8 +60,10 @@ class Achievement()
 
 	function Serialize(this)
 		return struct{
-			name := this.name,
 			type := this.type,
+			key := this.key,
+
+			name := this.name,
 			xp := this.xp,
 			damage := this.damage
 		};
@@ -63,8 +71,10 @@ class Achievement()
 
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
-		this.name := data.name;
 		this.type := data.type;
+		this.key := data.key;
+
+		this.name := data.name;
 		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
 	endfunction
