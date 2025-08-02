@@ -1,0 +1,66 @@
+use uo;
+use os;
+
+include ":keys:key";
+include ":tn:tngumps";
+
+program instalador_fechadura(who, item)
+    // Verificar se o item ainda existe e está na mochila do player
+    if (!item || item.container != who.backpack)
+        SendSysMessage(who, "O instalador de fechadura deve estar na sua mochila.");
+        return 0;
+    endif
+    
+    SendSysMessage(who, "Selecione a porta onde deseja instalar a fechadura.");
+    var porta := Target(who, TGTOPT_CHECK_LOS);
+    
+    if (!porta)
+        SendSysMessage(who, "Instalação cancelada.");
+        return 0;
+    endif
+    
+    // Verificar se é uma porta válida
+    if (!porta.isDoor())
+        SendSysMessage(who, "Isso não é uma porta.");
+        return 0;
+    endif
+    
+    // Verificar se a porta já tem fechadura
+    if (GetObjProperty(porta, "LockId"))
+        if (!YesNo(who, "Esta porta já possui fechadura. Deseja substituir?"))
+            SendSysMessage(who, "Instalação cancelada.");
+            return 0;
+        endif
+        SendSysMessage(who, "Removendo fechadura antiga...");
+    endif
+    
+    // Instalar a fechadura
+    var lockid := AllocLockId();
+    var chave := CreateItemInBackpack(who, "ironkey", 1);
+    
+    if (!chave)
+        SendSysMessage(who, "Não foi possível criar a chave. Verifique se há espaço na mochila.");
+        return 0;
+    endif
+    
+    // Configurar a fechadura na porta
+    SetObjProperty(porta, "LockId", lockid);
+    SetObjProperty(porta, "level", 1); // Nível básico de fechadura
+    SetObjProperty(porta, "instalador", who.serial);
+    SetObjProperty(porta, "data_instalacao", ReadGameClock());
+    
+    // Configurar a chave
+    SetObjProperty(chave, "LockId", lockid);
+    chave.name := "chave da porta";
+    
+    // Travar a porta
+    porta.locked := 1;
+    
+    // Consumir o instalador
+    SubtractAmount(item, 1);
+    
+    SendSysMessage(who, "Fechadura instalada com sucesso! A chave foi criada na sua mochila.");
+    SendSysMessage(who, "A porta agora está trancada. Use a chave para abrir.");
+    
+    return 1;
+endprogram

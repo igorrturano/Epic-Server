@@ -8,7 +8,7 @@ include ":gumps:yesNo";
 include ":gumps:gumps";
 include ":gumps:requestGump";
 include ":tn:tngumps";
-include ":keys:key";
+// include ":keys:key"; - Sistema de chaves agora é separado
 include ":faccao:include/shared_functions";
 include ":faccao:construcao/include/feudo_buildings";
 include ":faccao:include/logging";
@@ -114,6 +114,9 @@ function ShowLeaderGump(who, placa)
         GFTextLine(gump, x + 50, y, cor_texto_aluguel, texto_botao_aluguel);
         y += 30;
         
+        // Se há inquilino, adiciona opção de gestão de fechaduras foi removida
+        // O sistema de fechaduras agora é separado do aluguel
+        
         GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 99);
         GFTextLine(gump, x + 50, y, 38, "Demolir Construção");
         
@@ -192,6 +195,8 @@ function ShowInquilinoGump(who, placa, contrato)
     GFTextLine(gump, x + 50, y, 0, "Ver Histórico de Pagamentos");
     y += 35;
     
+    // Opção de fechadura removida - agora é sistema separado
+    
     GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 3);
     GFTextLine(gump, x + 50, y, 38, "Rescindir Contrato (Entregar Casa)");
 
@@ -210,7 +215,7 @@ function ShowInquilinoGump(who, placa, contrato)
         2: 
             SendSysMessage(who, "Funcionalidade de histórico de pagamentos ainda não implementada.");
         3: 
-            if(YesNo(who, "Tem certeza que deseja entregar esta propriedade? Você perderá o acesso e sua chave será destruída."))
+            if(YesNo(who, "Tem certeza que deseja entregar esta propriedade? Você perderá o acesso."))
                 DespejarInquilino(who, placa, contrato);
                 SendSysMessage(who, "Você rescindiu seu contrato e entregou a propriedade.");
             endif
@@ -406,31 +411,12 @@ function GerenciarInquilino(who, placa)
 endfunction 
 
 /*
- * Função para criar o contrato de aluguel e configurar a casa (v1.1 - usa segundos)
+ * Função para criar o contrato de aluguel e configurar a casa
  */
 function AlugarCasa(lider, placa, inquilino, valor, periodo_em_segundos, periodo_nome)
     var nome_exibicao_inquilino := GetPlayerDisplayName(inquilino);
 
-    var chave := CreateItemInBackpack(inquilino, 0xEF05, 1);
-    if (!chave)
-        SendSysMessage(lider, "Não foi possível criar a chave na mochila de " + nome_exibicao_inquilino + ".");
-        return;
-    endif
-    
-    chave.name := "Chave para " + placa.name;
-    SetObjProperty(chave, "PlacaDaCasaSerial", placa.serial);
-    
-    var lock_id := AllocLockId();
-    chave.SetLockId(lock_id);
-
-     var pecas_seriais := GetObjProperty(placa, "BuildingPieces");
-    foreach serial in pecas_seriais
-        var peca := SystemFindObjectBySerial(serial);
-        if (peca && peca.IsDoor())
-            peca.SetLockId(lock_id);
-        endif
-    endforeach
-
+    // Cria o contrato de aluguel
     var proximo_pagamento := POLCore().systime + periodo_em_segundos;
     
     var contrato := struct;
@@ -444,17 +430,17 @@ function AlugarCasa(lider, placa, inquilino, valor, periodo_em_segundos, periodo
 
     SetObjProperty(placa, "ContratoAluguel", contrato);
 
-
+    // Recalcula população da facção
     RecalculateFactionPopulation(lider.guild);
-
 
     var periodo_em_dias := CInt(periodo_em_segundos / 86400);
 
     SendSysMessage(lider, "Casa alugada com sucesso para " + nome_exibicao_inquilino + ".");
-    SendSysMessage(inquilino, "Você recebeu a chave para '" + placa.name + "'! O primeiro pagamento será em " + periodo_em_dias + " dias.");
+    SendSysMessage(inquilino, "Você alugou '" + placa.name + "'! O primeiro pagamento será em " + periodo_em_dias + " dias.");
+    SendSysMessage(inquilino, "Para acessar a casa, você precisará comprar e instalar fechaduras separadamente.");
 endfunction
 /*
- * Função para despejar um inquilino e limpar os dados
+ * Função para despejar um inquilino e limpar os dados do contrato
  */
 function DespejarInquilino(lider, placa, contrato)
     var inquilino_serial := CInt(contrato.InquilinoSerial);
@@ -464,35 +450,21 @@ function DespejarInquilino(lider, placa, contrato)
     var inquilino_online := SystemFindObjectBySerial(inquilino_serial);
     var mensagem_despejo := "Você foi despejado da propriedade '" + placa.name + "' pelo líder do seu feudo.";
 
+    // Notifica o inquilino
     if (inquilino_online)
-        var chave_destruida := 0;
-        foreach item in EnumerateItemsInContainer(inquilino_online.backpack)
-            if (GetObjProperty(item, "PlacaDaCasaSerial") == placa.serial)
-                DestroyItem(item);
-                SendSysMessage(inquilino_online, mensagem_despejo);
-                chave_destruida := 1;
-                break;
-            endif
-        endforeach
+        SendSysMessage(inquilino_online, mensagem_despejo);
     else
         SendOfflineMessage(inquilino_serial, mensagem_despejo);
     endif
     
-    var pecas_seriais := GetObjProperty(placa, "BuildingPieces");
-    foreach serial in pecas_seriais
-        var peca := SystemFindObjectBySerial(serial);
-        if (peca && peca.IsDoor())
-            EraseObjProperty(peca, "LockId");
-        endif
-    endforeach
-    
+    // Remove o contrato
     EraseObjProperty(placa, "ContratoAluguel");
 
-
+    // Recalcula população
     RecalculateFactionPopulation(lider.guild);
 
-
     SendSysMessage(lider, nome_exibicao_inquilino + " foi despejado com sucesso.");
+    SendSysMessage(lider, "Nota: As fechaduras das portas não foram alteradas. O inquilino pode ainda ter acesso.");
 endfunction
 
 
@@ -621,3 +593,15 @@ function FormatTimeRemaining(seconds)
 	
 	return result;
 endfunction
+
+/*
+ * TrocarFechaduraCasa(who, placa, contrato, tipo)
+ * 
+ * Função KISS para trocar a fechadura de uma casa alugada.
+ * Parâmetros:
+ * - who: jogador que está trocando (inquilino ou líder)
+ * - placa: placa da casa
+ * - contrato: contrato de aluguel
+ * - tipo: "inquilino" ou "lider"
+ */
+// Função removida - Sistema de fechaduras agora é separado
