@@ -47,16 +47,15 @@ endfunction
 
 function LoadAllAchievements(who)
 	var achievements := array{};
-	var propNames := array{};
+	// var propNames := array{};
 	var types := array{ ACHIEVEMENT_COMBAT };
 
 	foreach type in (types)
 		var DFController := DFTools(":achievements:" + type);
-		var propNamesType := DFController.GetElementPropNames(Hex(who.serial));
+		// var propNamesType := DFController.GetElementPropNames(Hex(who.serial));
+		var propNames := DFController.GetElementPropNames(Hex(who.serial));
 
-		if (propNamesType.size() > 0)
-			propNames.append(propNamesType);
-		else
+		if (propNames.size() < 1)
 			continue;
 		endif
 

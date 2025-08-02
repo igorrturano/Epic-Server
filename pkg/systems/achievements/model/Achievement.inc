@@ -65,8 +65,8 @@ class Achievement()
 		this.xp += CInt(value);
 	endfunction
 	
-	function AddLevel(this, value)
-		this.level += CInt(value);
+	function AddLevel(this)
+		this.level++;
 	endfunction
 
 	function AddData(this, name, value)
