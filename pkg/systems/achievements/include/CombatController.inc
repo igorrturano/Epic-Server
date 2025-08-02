@@ -22,6 +22,16 @@ function AchievementCombat_Advance(attacker, defender, combatInfo)
 	AchievementCombat_Advance_Weapon(attacker, defender, combatInfo);
 endfunction
 
+/**
+ * AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
+ *
+ * Avança o progresso de achievements de combate para o atacante, baseado no template do NPC defensor.
+ *
+ * Parameters
+ * attacker: Entidade que realizou o ataque (jogador ou NPC).
+ * defender: Entidade que foi atacada (jogador ou NPC).
+ * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
+ */
 function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	var achiev;
 	var key := defender.getNPCTemplate();
@@ -29,7 +39,7 @@ function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 
 	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, key) ?: AchievementCombat(key);
 
-	achiev.SetName(NPC_ParseTemplateName(key).template);
+	achiev._SetName(NPC_ParseTemplateName(key).template);
 
 	achiev := AchievementXPGain(achiev);
 
@@ -66,12 +76,12 @@ endfunction
 
 function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	var achiev;
-	var key := attacker.weapon.objtype;
+	var key := CStr(Hex(attacker.weapon.objtype));
 	if (!key) return; endif // Se não tem arma, não tem achievement de arma.
 
 	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, key) ?: AchievementCombat(key);
 
-	achiev.SetName(attacker.weapon.name);
+	achiev._SetName(attacker.weapon.desc);
 	
 	achiev := AchievementXPGain(achiev);
 
@@ -79,10 +89,11 @@ function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	achiev.AddData(ACHIEVDATA_HITS, combatInfo.hits);
 	achiev.AddData(ACHIEVDATA_DAMAGE_DONE, combatInfo.damage);
 
-
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
+
+	attacker.SetAchievementProgress(achiev);
 endfunction
 
 function AchievementXPGain(achiev)

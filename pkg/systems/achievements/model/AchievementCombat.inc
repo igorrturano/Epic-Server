@@ -46,7 +46,6 @@ class AchievementCombat(Achievement)
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
-
 	endfunction
 	
 	function toString(this)
