@@ -1,0 +1,37 @@
+include ":equipsys:include/wrapper/EquipWrapper";
+include ":equipsys:include/wrapper/EquipWeaponWrapper";
+include ":equipsys:include/wrapper/EquipArmorWrapper";
+
+program cmd_showequip(who, args)
+	var item, type;
+
+	if (!args)
+		item := target(who);
+	else
+		args := SplitWords(args);
+		type := args[1];
+		item := args[2];
+	endif
+
+	if (!type)
+		if (item.isA(POLCLASS_WEAPON))
+			item := EquipWeaponWrapper(item);
+		elseif (item.isA(POLCLASS_ARMOR))
+			item := EquipArmorWrapper(item);
+		else
+			SendSysMessage(who, "O item não é uma arma ou armadura.");
+			return;
+		endif
+	else
+		if (type == "weapon")
+			item := EquipWeaponWrapper(item);
+		elseif (type == "armor")
+			item := EquipArmorWrapper(item);
+		else
+			SendSysMessage(who, "Tipo inválido. Use 'weapon' ou 'armor'.");
+			return;
+		endif
+	endif
+
+	print(item.ToString());
+endprogram
