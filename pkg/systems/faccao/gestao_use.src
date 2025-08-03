@@ -39,6 +39,22 @@ const MENU_GUERRA := 6;
 // Sub-menus para Construções
 const MENU_SUB_CONSTRUCOES := 7;
 const MENU_SUB_FERRAMENTAS := 8;
+
+// Categorias de Construção
+const MENU_HABITACIONAIS := 201;
+const MENU_COLETA := 202;
+const MENU_DEFESA := 203;
+const MENU_PRODUCAO := 204;
+const MENU_ECONOMIA := 205;
+const MENU_GESTAO_CIDADE := 206;
+const MENU_CONHECIMENTO_MAGIA := 207;
+const MENU_LEGADO_CULTURAL := 208;
+
+// Construções Específicas
+const MENU_CASA_SIMPLES := 301;
+
+// Botões de Compra
+const BTN_COMPRAR_CASA_SIMPLES := 401;
 var button_states := array{0, 0, 0, 0, 0, 0};
 var sub_button_states := array{0, 0}; // Para sub-botões Construções e Ferramentas
 var current_main_menu := MENU_REINO; // Controla qual menu principal está ativo
@@ -72,8 +88,12 @@ function ShowKingdomManagementGump(who, item)
     current_main_menu := MENU_REINO;
     var continuar := 1;
     while(continuar)
+        // Criar um novo gump a cada iteração para garantir limpeza
         var gump := CreateKingdomManagementGump(who, cur_menu, item);
         var input := GFSendGump(who, gump);
+        
+        // Garantir que o gump anterior seja limpo da memória
+        gump := 0;
         
         if (!input || input[0] == 0)
             continuar := 0;
@@ -91,6 +111,9 @@ function ShowKingdomManagementGump(who, item)
         elseif (button_id == 102)
             ProcessarCompraInstaladorFechadura(who, item);
             cur_menu := MENU_CONSTRUCOES;
+        elseif (button_id == BTN_COMPRAR_CASA_SIMPLES)
+            ProcessarCompraCasaSimples(who, item);
+            cur_menu := MENU_CASA_SIMPLES;
         elseif (button_id == 999)
             var guild := FindGuild(FindGuildByName(GetObjProperty(item, OBJ_FACTION_PROP)));
             if (guild)
@@ -108,7 +131,8 @@ endfunction
 
 function CreateKingdomManagementGump(who, cur_menu, item)
     var gump := CriarLayoutBase();
-      case (cur_menu)
+    
+    case (cur_menu)
         MENU_REINO:
             ReinoGump(gump, item.serial, who); // Passando serial e who
         MENU_LEIS:
@@ -123,6 +147,24 @@ function CreateKingdomManagementGump(who, cur_menu, item)
             ConstrucoesGump(gump, item); // Passando item completo - agora dispatcher interno
         MENU_GUERRA:
             GuerraGump(gump);
+        MENU_HABITACIONAIS:
+            HabitacionaisGump(gump);
+        MENU_COLETA:
+            ColetaGump(gump);
+        MENU_DEFESA:
+            DefesaGump(gump);
+        MENU_PRODUCAO:
+            ProducaoGump(gump);
+        MENU_ECONOMIA:
+            EconomiaGump(gump);
+        MENU_GESTAO_CIDADE:
+            GestaoCidadeGump(gump);
+        MENU_CONHECIMENTO_MAGIA:
+            ConhecimentoMagiaGump(gump);
+        MENU_LEGADO_CULTURAL:
+            LegadoCulturalGump(gump);
+        MENU_CASA_SIMPLES:
+            CasaSimplesGump(gump);
         default:
             DoacoesGump(gump, item); // Passando item completo
     endcase
@@ -241,18 +283,42 @@ function AtualizarEstadoMenu(input)
         BOTAO_SUB_FERRAMENTAS:
             sub_button_states := array{0, 1};
             return MENU_SUB_FERRAMENTAS;
+        201: // Habitacionais
+            return MENU_HABITACIONAIS;
+        202: // Coleta
+            return MENU_COLETA;
+        203: // Defesa
+            return MENU_DEFESA;
+        204: // Produção
+            return MENU_PRODUCAO;
+        205: // Economia
+            return MENU_ECONOMIA;
+        206: // Gestão da Cidade
+            return MENU_GESTAO_CIDADE;
+        207: // Conhecimento e Magia
+            return MENU_CONHECIMENTO_MAGIA;
+        208: // Legado Cultural
+            return MENU_LEGADO_CULTURAL;
+        301: // Casa Simples
+            return MENU_CASA_SIMPLES;
         default: 
             return MENU_DOACOES;
     endcase
 endfunction
 
 function ReinoGump(byref gump, item_serial, who := 0)
+    // LIMPAR ÁREA ANTES DE RENDERIZAR - Previne sobreposição
+    GFResizePic(gump, 38, 60, 9200, 400, 502);
+    
     var item := SystemFindObjectBySerial(CInt(item_serial));
     if (!item)
         LogError("ReinoGump", "Objeto da mesa (Serial: " + item_serial + ") não foi encontrado. Gump não pode ser renderizado.");
         GFTextMid(gump, 460, 150, 320, 38, "Erro: A mesa de gestão foi movida ou destruída.");
         return; // Retorna para evitar mais erros
     endif
+    
+    // Agora renderizar o conteúdo do Reino
+    GFResizePic(gump, 38, 60, 40267, 400, 502);
     
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
     LogCritical("ReinoGump_DEBUG", "----------------- INICIANDO ReinoGump -----------------");
@@ -672,18 +738,28 @@ endfunction
 
 
 function LeisGump(byref gump)
+    // LIMPAR ÁREA ANTES DE RENDERIZAR - Previne sobreposição
+    GFResizePic(gump, 38, 60, 9200, 400, 502);
+    
     GFResizePic(gump, 38, 60, 40266, 400, 502);
     GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Leis");
     // TODO: Adicionar conteúdo relacionado às leis do reino
 endfunction
 
 function FaccoesGump(byref gump)
+    // LIMPAR ÁREA ANTES DE RENDERIZAR - Previne sobreposição
+    GFResizePic(gump, 38, 60, 9200, 400, 502);
+    
     GFResizePic(gump, 38, 60, 40264, 400, 502);
     GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Facções");
     // TODO: Adicionar conteúdo relacionado às facções
 endfunction
 
 function DoacoesGump(byref gump, item_mesa_gestao)
+    // LIMPAR ÁREA ANTES DE RENDERIZAR - Previne sobreposição
+    GFResizePic(gump, 38, 60, 9200, 400, 502);
+    
+    // Agora renderizar o conteúdo de Doações
     GFResizePic(gump, 38, 60, 40260, 400, 502);
 
     var faction_name_da_mesa := GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP);
@@ -768,23 +844,54 @@ endfunction
 
 
 function ConstrucoesGump(byref gump, item_mesa_gestao)
+    LogInfo("gestao_use_debug", "=== INICIANDO ConstrucoesGump ===");
+    LogInfo("gestao_use_debug", "sub_button_states[1]: " + sub_button_states[1]);
+    LogInfo("gestao_use_debug", "sub_button_states[2]: " + sub_button_states[2]);
+    
     // Determina qual sub-menu está ativo
     if (sub_button_states[1]) // Construções ativo
+        LogInfo("gestao_use_debug", "Chamando SubConstrucoesGump...");
         SubConstrucoesGump(gump, item_mesa_gestao);
     elseif (sub_button_states[2]) // Ferramentas ativo
+        LogInfo("gestao_use_debug", "Chamando SubFerramentasGump...");
         SubFerramentasGump(gump, item_mesa_gestao);
     else
+        LogInfo("gestao_use_debug", "Nenhum sub-botão ativo, definindo padrão e chamando SubConstrucoesGump...");
         // Por padrão, mostra Construções
         sub_button_states := array{1, 0};
         SubConstrucoesGump(gump, item_mesa_gestao);
     endif
+    
+    LogInfo("gestao_use_debug", "=== FIM ConstrucoesGump ===");
 endfunction
 
 function SubConstrucoesGump(byref gump, item_mesa_gestao)
+    LogInfo("gestao_use_debug", "=== INICIANDO SubConstrucoesGump ===");
+    
+    if (!gump)
+        LogError("gestao_use_debug", "ERRO: Gump é nulo na SubConstrucoesGump");
+        return 0;
+    endif
+    
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Adicionando quadrados...");
     // Adiciona grid de construções (igual ao grid de recursos)
     AdicionarQuadradosConstrucoes(gump);
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Layout após quadrados: " + gump.layout.size() + " elementos");
+    
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Adicionando ícones...");
     AdicionarIconesConstrucoes(gump);
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Layout após ícones: " + gump.layout.size() + " elementos");
+    
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Adicionando textos...");
     AdicionarTextosTiposConstrucoes(gump);
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Layout após textos: " + gump.layout.size() + " elementos");
+    
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Adicionando botões...");
+    var resultado_botoes := AdicionarBotoesConstrucoes(gump);
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Resultado dos botões: " + resultado_botoes);
+    LogInfo("gestao_use_debug", "SubConstrucoesGump: Layout final: " + gump.layout.size() + " elementos");
+    
+    LogInfo("gestao_use_debug", "=== FIM SubConstrucoesGump ===");
 endfunction
 
 function SubFerramentasGump(byref gump, item_mesa_gestao)
@@ -821,10 +928,191 @@ function SubFerramentasGump(byref gump, item_mesa_gestao)
 endfunction
 
 function GuerraGump(byref gump)
+    // LIMPAR ÁREA ANTES DE RENDERIZAR - Previne sobreposição
+    GFResizePic(gump, 38, 60, 9200, 400, 502);
+    
     GFResizePic(gump, 38, 60, 40268, 350, 450);
     GFTextMid(gump, 440, 60, 220, 2100, "Sistema de Guerra");
     // TODO: Adicionar conteúdo relacionado ao sistema de guerra
 endfunction
+
+// ========================================================================================
+// FUNÇÕES DAS CATEGORIAS DE CONSTRUÇÃO
+// ========================================================================================
+
+function HabitacionaisGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 100, 110, 53, "Casa Simples");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30491); // Ícone habitacional
+    
+    // Texto abaixo da imagem
+    GFTextLine(gump, 100, 300, 53, "Ver Projeto");
+    
+    // Botão ao lado do texto "Ver Projeto"
+    GFAddButton(gump, 185, 300, 4005, 4007, 1, MENU_CASA_SIMPLES);
+endfunction
+
+function ColetaGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 75, 110, 53, "Coleta");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30493); // Ícone coleta
+endfunction
+
+function DefesaGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 75, 110, 53, "Defesa");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30497); // Ícone defesa
+endfunction
+
+function ProducaoGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 70, 110, 53, "Produção");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30498); // Ícone produção
+endfunction
+
+function EconomiaGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 70, 110, 53, "Economia");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30495); // Ícone economia
+endfunction
+
+function GestaoCidadeGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 55, 110, 53, "Gestão da Cidade");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30492); // Ícone gestão da cidade
+endfunction
+
+function ConhecimentoMagiaGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 45, 110, 53, "Conhecimento e Magia");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30494); // Ícone conhecimento e magia
+endfunction
+
+function LegadoCulturalGump(byref gump)
+    // Moldura da categoria
+    GFResizePic(gump, 50, 100, 9350, 180, 190);
+    
+    // Título da categoria
+    GFTextLine(gump, 55, 110, 53, "Legado Cultural");
+    
+    // Ícone da categoria posicionado à esquerda
+    GFGumpPic(gump, 60, 140, 30496); // Ícone legado cultural
+endfunction
+
+function CasaSimplesGump(byref gump)
+    // Fundo principal usando o padrão do sistema - mais próximo da primeira imagem
+    GFResizePic(gump, 50, 100, 3000, 700, 450);
+    
+    // Título principal centralizado com fonte grande dourada
+    GFTextMid(gump, 50, 140, 260, 53, "Casa Simples");
+    
+    // Área da imagem da casa (lado esquerdo) com fundo cinza claro
+    GFResizePic(gump, 95, 175, 3000, 150, 150);
+    GFGumpPic(gump, 100, 180, 30491); // Ícone da casa centralizado
+    
+    // === SEÇÃO DE ATRIBUTOS (lado direito) ===
+    GFTextLine(gump, 265, 180, 53, "Atributos:");
+    
+    // Custo do Projeto
+    GFTextLine(gump, 265, 200, 53, "Custo do Projeto:");
+    GFTextLine(gump, 380, 200, 230, "200 Cobre");
+    
+    // Tempo de Construção  
+    GFTextLine(gump, 265, 220, 53, "Tempo de Construção:");
+    GFTextLine(gump, 400, 220, 230, "300 segundos");
+    
+    // Tamanho
+    GFTextLine(gump, 265, 240, 53, "Tamanho:");
+    GFTextLine(gump, 320, 240, 230, "6x5");
+    
+    // Benefício PopCap
+    GFTextLine(gump, 265, 260, 53, "Benefício:");
+    GFTextLine(gump, 325, 260, 230, "+8 de População");
+    
+    // Andar
+    GFTextLine(gump, 265, 280, 53, "Andar:");
+    GFTextLine(gump, 305, 280, 230, "1");
+    
+    // Cômodos
+    GFTextLine(gump, 265, 300, 53, "Cômodos:");
+    GFTextLine(gump, 320, 300, 230, "1");
+    
+    // === SEÇÃO DE RECURSOS NECESSÁRIOS ===
+    GFTextLine(gump, 95, 345, 230, "Recursos Necessários:");
+    
+    // Área de fundo para recursos
+    GFResizePic(gump, 95, 365, 9350, 150, 60);
+    
+    // Madeira
+    GFTextLine(gump, 100, 375, 53, "Madeira:");
+    GFTextLine(gump, 150, 375, 230, "500");
+    
+    // Pedra
+    GFTextLine(gump, 100, 395, 53, "Pedra:");
+    GFTextLine(gump, 140, 395, 230, "200");
+    
+    // === SEÇÃO DE MANUTENÇÃO ===
+    GFTextLine(gump, 270, 345, 230, "Manutenção (Upkeep):");
+    
+    // Área de fundo para manutenção
+    GFResizePic(gump, 270, 365, 9350, 150, 60);
+    
+    // Upkeep de Madeira
+    GFTextLine(gump, 275, 375, 53, "Madeira:");
+    GFTextLine(gump, 325, 375, 230, "15 por semana");
+    
+
+       // === SEÇÃO DE COMPRA ===
+    GFTextLine(gump, 440, 345, 230, "Comprar:");
+    
+    // Área de fundo para manutenção
+    GFResizePic(gump, 440, 365, 9350, 150, 60);
+    
+    // COmprar Casa
+    GFTextLine(gump, 445, 375, 53, "Custo:");
+    GFTextLine(gump, 485, 375, 230, "200 Cobres");
+    GFAddButton(gump, 480, 400, 247, 249, 1, BTN_COMPRAR_CASA_SIMPLES);
+
+    // Botão de voltar estilizado
+    GFAddButton(gump, 100, 500, 4014, 4016, 1, MENU_HABITACIONAIS);
+endfunction
+
+// ========================================================================================
 
 function CriarLayoutDoacoes(byref gump, recursos)
     if (!gump)
@@ -996,6 +1284,55 @@ function AdicionarTextosTiposConstrucoes(byref gump)
     foreach tipo in (tipos)
         GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
     endforeach
+endfunction
+
+function AdicionarBotoesConstrucoes(byref gump)
+    // Log de início da função
+    LogInfo("gestao_use_debug", "=== INICIANDO AdicionarBotoesConstrucoes ===");
+    
+    if (!gump)
+        LogError("gestao_use_debug", "ERRO: Gump é nulo na AdicionarBotoesConstrucoes");
+        return 0;
+    endif
+    
+    LogInfo("gestao_use_debug", "Gump válido recebido. Tipo: " + TypeOf(gump));
+    
+    var botoes := array{
+        // Primeira linha (4 itens) - ajustados: -4px X, +3px Y
+        struct{ "x" := 101, "y" := 298, "btn_id" := 201 },  // Habitacionais (105-4, 295+3)
+        struct{ "x" := 291, "y" := 298, "btn_id" := 202 },  // Coleta (295-4, 295+3)
+        struct{ "x" := 481, "y" := 298, "btn_id" := 203 },  // Defesa (485-4, 295+3)
+        struct{ "x" := 671, "y" := 298, "btn_id" := 204 },  // Produção (675-4, 295+3)
+        // Segunda linha (4 itens) - ajustados: -4px X, +3px Y
+        struct{ "x" := 101, "y" := 518, "btn_id" := 205 },  // Economia (105-4, 515+3)
+        struct{ "x" := 291, "y" := 518, "btn_id" := 206 },  // Gestão da Cidade (295-4, 515+3)
+        struct{ "x" := 481, "y" := 518, "btn_id" := 207 },  // Conhecimento e Magia (485-4, 515+3)
+        struct{ "x" := 671, "y" := 518, "btn_id" := 208 }   // Legado Cultural (675-4, 515+3)
+    };
+
+    LogInfo("gestao_use_debug", "Array de botões criado com " + botoes.size() + " botões");
+    
+    var contador_botoes := 0;
+    
+    foreach botao in (botoes)
+        contador_botoes++;
+        LogInfo("gestao_use_debug", "Processando botão " + contador_botoes + ": X=" + botao.x + ", Y=" + botao.y + ", ID=" + botao.btn_id);
+        
+        // Tentativa de adicionar o botão
+        var resultado := GFAddButton(gump, botao.x, botao.y, 4005, 4007, GF_CLOSE_BTN, botao.btn_id);
+        
+        if (resultado)
+            LogInfo("gestao_use_debug", "✓ Botão " + contador_botoes + " adicionado com sucesso. Resultado: " + resultado);
+        else
+            LogError("gestao_use_debug", "✗ FALHA ao adicionar botão " + contador_botoes + ". Resultado: " + resultado);
+        endif
+        
+        LogInfo("gestao_use_debug", "Layout atual do gump tem " + gump.layout.size() + " elementos");
+    endforeach
+    
+    LogInfo("gestao_use_debug", "=== FIM AdicionarBotoesConstrucoes: " + contador_botoes + " botões processados ===");
+    
+    return 1;
 endfunction
 
 
@@ -1975,6 +2312,74 @@ function ProcessarCompraFerramentas(who, item)
         // Configurar o nome do item
         ferramentas.name := "Ferramentas de Construção";
         SendSysMessage(who, "Ferramentas de Construção compradas com sucesso por " + FERRAMENTAS_CUSTO + " moedas de cobre!");
+    endif
+    
+    return 1;
+endfunction
+
+function ProcessarCompraCasaSimples(who, item)
+    var custo_casa := 200; // Custo da casa simples
+    
+    // Calcular moedas disponíveis na mochila
+    var moedas_disponiveis := 0;
+    var moedas_items := array{};
+    
+    foreach moeda in EnumerateItemsInContainer(who.backpack)
+        if (moeda.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += moeda.amount;
+            moedas_items.append(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar se tem moedas suficientes
+    if (moedas_disponiveis < custo_casa)
+        SendSysMessage(who, "Você precisa de " + custo_casa + " moedas de cobre para comprar o projeto da Casa Simples. Você tem apenas " + moedas_disponiveis + ".");
+        return 0;
+    endif
+    
+    // Consumir as moedas
+    var moedas_restantes := custo_casa;
+    foreach moeda in moedas_items
+        if (moedas_restantes <= 0)
+            break;
+        endif
+        
+        if (moeda.amount >= moedas_restantes)
+            // Esta pilha tem moedas suficientes
+            SubtractAmount(moeda, moedas_restantes);
+            moedas_restantes := 0;
+        else
+            // Consumir toda esta pilha
+            moedas_restantes -= moeda.amount;
+            DestroyItem(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Criar o projeto da casa na mochila do jogador
+    var projeto := CreateItemInBackpack(who, 0xef03, 1); // Mesmo objtype usado no feudocmd
+    if (!projeto)
+        // Tentar criar no chão se não couber na mochila
+        projeto := CreateItemAtLocation(who.x, who.y, who.z, 0xef03, 1, who.realm);
+        if (projeto)
+            // Configurar as propriedades do projeto
+            projeto.name := "Projeto: Casa Simples Nv.1";
+            SetObjProperty(projeto, "BuildingType", "casa");
+            SetObjProperty(projeto, "BuildingLevel", 1);
+            SendSysMessage(who, "Projeto da Casa Simples comprado com sucesso! O item foi colocado no chão pois sua mochila está cheia.");
+        else
+            SendSysMessage(who, "Erro ao criar o projeto da Casa Simples. Contacte a administração.");
+            // Devolver as moedas em caso de erro
+            CreateItemInBackpack(who, MOEDAS_COBRE, custo_casa);
+            return 0;
+        endif
+    else
+        // Configurar as propriedades do projeto
+        projeto.name := "Projeto: Casa Simples Nv.1";
+        SetObjProperty(projeto, "BuildingType", "casa");
+        SetObjProperty(projeto, "BuildingLevel", 1);
+        SendSysMessage(who, "Projeto da Casa Simples comprado com sucesso por " + custo_casa + " moedas de cobre!");
     endif
     
     return 1;
