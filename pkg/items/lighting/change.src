@@ -14,6 +14,7 @@ use cfgfile;
 include ":tn:cooldown";
 include "include/say";
 include ":destroyable:include/destroyItem";
+include ":propagacao:include/propagacao";
 
 program change(who, item )
   var cfg := ReadConfigFile(":*:itemdesc");
@@ -23,7 +24,24 @@ program change(who, item )
   endif
 
   if (who.warmode)
-      return ComportamentoWarMode(who, item);
+      SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
+	var targ := TargetCoordinates(who);
+
+	if ( !targ )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	PerformAction(who, 0x20); // Bow
+      var marcador := CriarMarcadorPropagacao(
+            targ.x,
+            targ.y,
+            targ.z,
+            targ.realm, 
+            NovaPropPropagacao(0,-1,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO));
+
+      Print("MARCADOR: " + marcador);
+      return 0;
   endif
 
   if (GetCooldown(who, "darkness") > 0)

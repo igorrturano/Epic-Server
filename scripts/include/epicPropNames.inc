@@ -27,6 +27,9 @@ const PROPNAME_SEL_AREA_COR_ORIGINAL := "corOriginalSelec";
 const PROPNAME_SEL_AREA_PID_SELECIONADOR := "pidSelecionador"; 
 const PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA := "isCorOrigAlterada"; 
 
+//SISTEMA DE PROPAGACAO
+const PROPNAME_PROP_PROPAGACAO := "propPropagacao"; 
+
 //CONTROLE DE GUMP
 
 const PROPNAME_POSICAO_GUMP := "posicaoGump";
