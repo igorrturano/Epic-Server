@@ -128,12 +128,14 @@ const BORDER_HUE := 39;
 const MAPEADOR_CUSTO := 500;
 const FERRAMENTAS_CUSTO := 500;
 const BANNER_CUSTO := 500;
+const INSTALADOR_FECHADURA_CUSTO := 300;
 
 // =======================================
 // OBJTYPES DE FERRAMENTAS
 // =======================================
 const MAPEADOR_OBJTYPE := 0x14F5;
 const FERRAMENTAS_OBJTYPE := 0xFA50;
+const INSTALADOR_FECHADURA_OBJTYPE := 0xFA4C;
 
 // =======================================
 // Constantes de Interface Gráfica (Gumps)
@@ -167,6 +169,10 @@ const BOTAO_FACCOES := 3;
 const BOTAO_DOACOES := 4;
 const BOTAO_CONSTRUCOES := 5;
 const BOTAO_GUERRA := 6;
+
+// Sub-botões para Construções
+const BOTAO_SUB_CONSTRUCOES := 7;
+const BOTAO_SUB_FERRAMENTAS := 8;
 
 // =======================================
 // Constantes de Tipos de Objetos (MAIÚSCULO)
