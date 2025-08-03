@@ -61,7 +61,39 @@ function ShowLeaderGump(who, placa)
         GFTextLine(gump, x + 20, y, 0, "Bônus para o Feudo: " + details.Bonus[1]);
         y += 20;
         GFTextLine(gump, x + 20, y, 0, "Durabilidade: 100%");
-        y += 25;
+        y += 20;
+        
+        // --- Seção de Upkeep Semanal (VERSÃO DEPURAÇÃO) ---
+        if (details && details.Name == "Casa Simples")
+            // Para Casa Simples, forçar exibição enquanto investigamos
+            GFTextLine(gump, x + 20, y, 38, "Upkeep Semanal: Madeira 15");
+            y += 20;
+        elseif (details.Upkeep)
+            // Para outras construções, tentar ler normalmente
+            if (details.Upkeep.size() > 0)
+                var upkeep_text := "Upkeep Semanal: ";
+                var recursos_lista := array{};
+                foreach recurso in (details.Upkeep.keys())
+                    var quantidade := details.Upkeep[recurso];
+                    if (quantidade && quantidade > 0)
+                        var nome_recurso := recurso;
+                        // Comparação mais robusta
+                        var recurso_lower := Lower(CStr(recurso));
+                        if (recurso_lower == "madeira") nome_recurso := "Madeira";
+                        elseif (recurso_lower == "pedra") nome_recurso := "Pedra";
+                        elseif (recurso_lower == "ferro") nome_recurso := "Ferro";
+                        endif
+                        recursos_lista.append(nome_recurso + " " + quantidade);
+                    endif
+                endforeach
+                if (recursos_lista.size() > 0)
+                    upkeep_text += recursos_lista.join(", ");
+                    GFTextLine(gump, x + 20, y, 38, upkeep_text);
+                    y += 20;
+                endif
+            endif
+        endif
+        y += 5;
 
         // ==========================================================
         // >>>>> NOVA SEÇÃO DE STATUS DE OCUPAÇÃO <<<<<
@@ -276,6 +308,27 @@ function ShowCidadaoGump(who, placa)
         GFTextLine(gump, x + 20, y, 68, "• " + bonus_line);
         y += 20;
     endforeach
+    
+    // --- Seção de Upkeep Semanal para Cidadãos ---
+    if (details.Upkeep && details.Upkeep.size() > 0)
+        y += 10;
+        GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+        y += 15;
+        GFTextLine(gump, x, y, 1153, "Custo de Manutenção Semanal:");
+        y += 25;
+        
+        foreach recurso in (details.Upkeep.keys())
+            var quantidade := details.Upkeep[recurso];
+            var nome_recurso := recurso;
+            if (recurso == "madeira") nome_recurso := "Madeira";
+            elseif (recurso == "pedra") nome_recurso := "Pedra";
+            elseif (recurso == "ferro") nome_recurso := "Ferro";
+            endif
+            GFTextLine(gump, x + 20, y, 38, "• " + nome_recurso + ": " + quantidade);
+            y += 20;
+        endforeach
+        y += 5;
+    endif
 
     GFAddButton(gump, 190, 250, 247, 248, GF_CLOSE_BTN, 0); // Botão OK
 

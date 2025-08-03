@@ -4017,7 +4017,7 @@ function GetTerritoryUpkeepCost(territory_elem, guild_level)
     return base_cost;
 endfunction
 
-function NotificarLider(guild, message_text)
+exported function NotificarLider(guild, message_text)
     if (!guild) return; endif
     
     var leader_serial := SafeGetGuildProperty(guild, "leader");

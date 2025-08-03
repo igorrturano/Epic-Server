@@ -30,7 +30,8 @@ var LOG_CATEGORIES := dictionary{
     "FeudoRent_Payment" := 3,
     "FeudoRent_Debit_Robusto" := 3,
     "FeudoRent_Debit" := 3,
-    "FeudoRent_KeyChange" := 4
+    "FeudoRent_KeyChange" := 4,
+    "FeudoUpkeep" := 5                  // NOVO: logs do sistema de upkeep de construções
 };
 
 function EnableLogging(enable := 1)

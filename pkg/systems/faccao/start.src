@@ -74,6 +74,16 @@ else
 endif
 sleep(1);
 
+// Iniciar o Controlador de Upkeep de Construções de Feudo
+LogInfo("sistema", "Iniciando Controlador de Upkeep de Construções...");
+var upkeep_construcoes_script := start_script(":faccao:construcao/scripts/feudo_upkeep_controller");
+if (upkeep_construcoes_script.errortext)
+    LogError("sistema", "Erro ao iniciar o Controlador de Upkeep de Construções: " + upkeep_construcoes_script.errortext);
+else
+    LogDebug("sistema", "Controlador de Upkeep de Construções iniciado com sucesso.");
+endif
+sleep(1);
+
 // Iniciar o controlador de pagamento de caravanas
 var caravan_payment_script := start_script(":faccao:caravan_payment_control");
 if (caravan_payment_script.errortext)

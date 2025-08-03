@@ -1,0 +1,591 @@
+// :faccao:construcao:scripts:feudo_upkeep_controller.src
+//
+// Controlador de upkeep de recursos para construções de feudo
+// Baseado no sistema de upkeep de moedas de cobre do reino_upkeep_control.src
+// Este sistema coleta semanalmente os recursos necessários para manter as construções ativas
+
+use uo;
+use os;
+use guilds;
+use polsys;
+
+include ":datafile:datafile";
+include ":faccao:include/process_registry";
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/faccao_constants";
+include ":faccao:construcao/include/feudo_buildings";
+
+// Intervalo de verificação em segundos (1 semana = 604800 segundos, mas para teste usamos um valor menor)
+const UPKEEP_CHECK_INTERVAL := 60; // 2 minutos para teste, depois pode ser 604800 para produção
+
+function GetResourceObjtypes()
+    // Mapeamento de nomes de recursos para objtypes corretos
+    var resource_map := dictionary{};
+    resource_map["madeira"] := 0x1BDD;  // Log (correto)
+    resource_map["pedra"]   := 0x5001;  // Pedra (correto)  
+    resource_map["ferro"]   := 0x6309;  // FerroTemperadoIngot (correto)
+    return resource_map;
+endfunction
+
+program FeudoUpkeepController()
+    LogInfo("FeudoUpkeep", "=== Controlador de Upkeep de Construções tentando iniciar (PID: " + GetPid() + ") ===");
+
+    if (!RegisterProcess("FeudoUpkeepController"))
+        LogWarning("FeudoUpkeep", "Outra instância do FeudoUpkeepController já está ativa. Este processo (PID: " + GetPid() + ") será encerrado.");
+        return 0;
+    endif
+
+    LogInfo("FeudoUpkeep", "Registro bem-sucedido. Este processo é agora o controlador oficial de upkeep de construções.");
+    
+    while(1)
+        UpdateProcessHeartbeat("FeudoUpkeepController");
+        
+        LogDebug("FeudoUpkeep", "Iniciando ciclo de verificação de upkeep de construções...");
+        ProcessarUpkeepConstrucoes();
+        
+        LogDebug("FeudoUpkeep", "Ciclo de upkeep de construções concluído, aguardando " + UPKEEP_CHECK_INTERVAL + " segundos...");
+        sleep(UPKEEP_CHECK_INTERVAL); 
+    endwhile;
+endprogram
+
+function ProcessarUpkeepConstrucoes()
+    LogInfo("FeudoUpkeep", "*** CICLO DE UPKEEP DE CONSTRUÇÕES INICIADO *** " + FormatTime(POLCore().systime, "%m/%d %H:%M:%S"));
+    
+    var all_guilds := ListGuilds();
+    LogCritical("FeudoUpkeep", "DEBUG: Total de guildas encontradas: " + all_guilds.size());
+    
+    var guildas_processadas := 0;
+    var construcoes_processadas := 0;
+    var pagamentos_bem_sucedidos := 0;
+    
+    foreach guild in all_guilds
+        if (!guild)
+            LogDebug("FeudoUpkeep", "DEBUG: Guilda nula encontrada, pulando...");
+            continue;
+        endif
+        
+        var guild_name := SafeGetGuildName(guild);
+        LogCritical("FeudoUpkeep", "DEBUG: Processando guilda: '" + guild_name + "'");
+        
+        if (!guild_name || guild_name == KINGDOM_FACTION || guild_name == "Unknown Guild")
+            LogDebug("FeudoUpkeep", "DEBUG: Guilda '" + guild_name + "' ignorada (reino ou inválida)");
+            continue;
+        endif
+        
+        guildas_processadas += 1;
+        LogInfo("FeudoUpkeep", "Processando guilda: " + guild_name);
+        
+        // Obter todas as construções da guilda
+        var construcoes_da_guilda := FEUDO_GetOwnedConstructions(guild);
+        LogCritical("FeudoUpkeep", "DEBUG: Guilda " + guild_name + " possui " + construcoes_da_guilda.size() + " construções");
+        
+        if (construcoes_da_guilda.size() == 0)
+            LogDebug("FeudoUpkeep", "  -> Nenhuma construção encontrada para " + guild_name);
+            continue;
+        endif
+        
+        LogInfo("FeudoUpkeep", "  -> " + guild_name + " possui " + construcoes_da_guilda.size() + " construções");
+        
+        // Calcular upkeep total de todas as construções
+        var upkeep_total := CalcularUpkeepTotalGuilda(guild, construcoes_da_guilda);
+        construcoes_processadas += construcoes_da_guilda.size();
+        
+        LogCritical("FeudoUpkeep", "DEBUG: Upkeep calculado para " + guild_name + " - recursos necessários: " + upkeep_total.size() + " tipos");
+        
+        if (upkeep_total.size() == 0)
+            LogDebug("FeudoUpkeep", "  -> Nenhum upkeep necessário para " + guild_name);
+            continue;
+        endif
+        
+        LogInfo("FeudoUpkeep", "  -> Upkeep semanal para " + guild_name + ": " + FormatUpkeepRequirements(upkeep_total));
+        
+        // Obter dívida acumulada anterior (se houver)
+        var divida_acumulada := ObterDividaAcumulada(guild_name);
+        var valor_total_devido := SomarRecursos(divida_acumulada, upkeep_total);
+        
+        if (divida_acumulada.size() > 0)
+            LogInfo("FeudoUpkeep", "  -> Dívida acumulada anterior: " + FormatUpkeepRequirements(divida_acumulada));
+        endif
+        LogInfo("FeudoUpkeep", "  -> TOTAL DEVIDO: " + FormatUpkeepRequirements(valor_total_devido));
+        
+        // Cobrar o upkeep do baú de doações da capital
+        LogCritical("FeudoUpkeep", "DEBUG: Tentando cobrar upkeep de " + guild_name + "...");
+        if (CobrarUpkeepRecursos(guild, guild_name, valor_total_devido))
+            pagamentos_bem_sucedidos += 1;
+            LogInfo("FeudoUpkeep", "  -> ✓ Upkeep pago com sucesso para " + guild_name);
+            LogInfo("FeudoUpkeep", "  -> Recursos debitados do baú de doações: " + FormatUpkeepRequirements(valor_total_devido));
+            
+            // Sucesso: Resetar contador de falhas E dívida acumulada
+            ResetarContadorFalhasUpkeep(guild_name);
+            ResetarDividaAcumulada(guild_name);
+            
+            // Notificar o líder sobre o pagamento
+            var mensagem := "O upkeep das construções foi cobrado automaticamente do baú de doações da capital. Recursos consumidos: " + FormatUpkeepRequirements(valor_total_devido);
+            if (divida_acumulada.size() > 0)
+                mensagem += " (incluindo dívidas acumuladas de semanas anteriores)";
+            endif
+            mensagem += ".";
+            NotificarLider(guild, mensagem);
+        else
+            LogWarning("FeudoUpkeep", "  -> ✗ Falha no pagamento do upkeep para " + guild_name);
+            LogWarning("FeudoUpkeep", "  -> Recursos necessários não encontrados no baú: " + FormatUpkeepRequirements(valor_total_devido));
+            
+            // Acumular a nova dívida (upkeep desta semana)
+            AcumularDivida(guild_name, upkeep_total);
+            
+            // Incrementar contador de falhas e aplicar penalidades se necessário
+            var falhas_consecutivas := IncrementarContadorFalhasUpkeep(guild_name);
+            AplicarPenalidadesPorFalhasUpkeep(guild, guild_name, falhas_consecutivas, valor_total_devido);
+        endif
+        
+        sleepms(100); // Pequena pausa entre guildas
+    endforeach
+    
+    LogInfo("FeudoUpkeep", "*** CICLO CONCLUÍDO ***");
+    LogInfo("FeudoUpkeep", "  - Guildas processadas: " + guildas_processadas);
+    LogInfo("FeudoUpkeep", "  - Construções verificadas: " + construcoes_processadas);
+    LogInfo("FeudoUpkeep", "  - Pagamentos bem-sucedidos: " + pagamentos_bem_sucedidos);
+endfunction
+
+function CalcularUpkeepTotalGuilda(guild, construcoes_da_guilda)
+    var upkeep_total := dictionary{};
+    
+    foreach placa in construcoes_da_guilda
+        var build_info := GetObjProperty(placa, "BuildingInfo");
+        if (!build_info)
+            LogWarning("FeudoUpkeep", "    -> Construção " + placa.serial + " sem BuildingInfo, ignorando");
+            continue;
+        endif
+        
+        var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+        if (details.errortext || !details.Upkeep)
+            LogDebug("FeudoUpkeep", "    -> Construção " + build_info.type + " não possui upkeep definido");
+            continue;
+        endif
+        
+        LogDebug("FeudoUpkeep", "    -> Processando upkeep de " + details.Name + ": " + FormatUpkeepRequirements(details.Upkeep));
+        
+        // Somar os recursos necessários
+        foreach recurso in (details.Upkeep.keys())
+            var quantidade := CInt(details.Upkeep[recurso]);
+            if (upkeep_total.exists(recurso))
+                upkeep_total[recurso] := upkeep_total[recurso] + quantidade;
+            else
+                upkeep_total[recurso] := quantidade;
+            endif
+        endforeach
+    endforeach
+    
+    return upkeep_total;
+endfunction
+
+function CobrarUpkeepRecursos(guild, guild_name, upkeep_requirements)
+    LogInfo("FeudoUpkeep", "Iniciando cobrança de recursos para " + guild_name);
+    
+    // Encontrar o território capital da facção
+    var capital_territory_id := "";
+    var territories_found := GetGuildTerritories(guild_name);
+    
+    foreach territory_info in territories_found
+        if (TM_IsTerritoryCapital(territory_info.id))
+            capital_territory_id := territory_info.id;
+            break;
+        endif
+    endforeach
+    
+    if (!capital_territory_id)
+        LogError("FeudoUpkeep", "Capital não encontrada para " + guild_name);
+        return 0;
+    endif
+    
+    // Encontrar o baú de doações da capital
+    var faction_chest := FindFactionChest(guild_name, capital_territory_id);
+    if (!faction_chest)
+        LogError("FeudoUpkeep", "Baú da capital não encontrado para " + guild_name + " (Territory: " + capital_territory_id + ")");
+        return 0;
+    endif
+    
+    LogInfo("FeudoUpkeep", "Baú encontrado: Serial " + faction_chest.serial);
+    
+    // Verificar se há lock no baú para evitar concorrência
+    var lock_prop := "operation_lock";
+    var lock_timeout := 30;
+    var current_time := POLCore().systime;
+    var existing_lock := GetObjProperty(faction_chest, lock_prop);
+    
+    if (existing_lock && (current_time - CInt(existing_lock.timestamp)) < lock_timeout)
+        LogWarning("FeudoUpkeep", "Baú " + faction_chest.serial + " está bloqueado. Cobrança adiada.");
+        return 0;
+    endif
+    
+    // Adquirir lock
+    SetObjProperty(faction_chest, lock_prop, struct{"operation" := "upkeep_payment_resources", "pid" := GetPid(), "timestamp" := current_time});
+    LogDebug("FeudoUpkeep", "Lock adquirido no baú " + faction_chest.serial);
+    
+    var payment_success := 1;
+    var recursos_debitados := dictionary{};
+    var resource_objtypes := GetResourceObjtypes();
+    
+    // Verificar se há recursos suficientes e debitar
+    foreach recurso in (upkeep_requirements.keys())
+        var quantidade_necessaria := CInt(upkeep_requirements[recurso]);
+        var objtype := resource_objtypes[recurso];
+        
+        if (!objtype)
+            LogError("FeudoUpkeep", "Tipo de recurso desconhecido: " + recurso);
+            payment_success := 0;
+            break;
+        endif
+        
+        var quantidade_debitada := DebitarRecursoDoContainer(faction_chest, objtype, quantidade_necessaria);
+        
+        if (quantidade_debitada < quantidade_necessaria)
+            LogWarning("FeudoUpkeep", "Recursos insuficientes para " + recurso + ": disponível " + quantidade_debitada + ", necessário " + quantidade_necessaria);
+            payment_success := 0;
+            // Estornar recursos já debitados
+            EstornarRecursos(faction_chest, recursos_debitados);
+            break;
+        else
+            recursos_debitados[recurso] := quantidade_debitada;
+            LogInfo("FeudoUpkeep", "Debitado " + quantidade_debitada + " " + recurso + " com sucesso");
+        endif
+    endforeach
+    
+    // Liberar lock
+    EraseObjProperty(faction_chest, lock_prop);
+    LogDebug("FeudoUpkeep", "Lock liberado no baú " + faction_chest.serial);
+    
+    if (payment_success)
+        // Marcar cache como sujo para forçar recálculo
+        SetObjProperty(faction_chest, "recursos_cache_dirty", 1);
+    endif
+    
+    return payment_success;
+endfunction
+
+function DebitarRecursoDoContainer(container, objtype, quantidade_necessaria)
+    var items_in_container := EnumerateItemsInContainer(container);
+    if (items_in_container == error)
+        LogError("FeudoUpkeep", "Falha ao enumerar itens no container " + container.serial);
+        return 0;
+    endif
+    
+    var quantidade_disponivel := 0;
+    var items_do_recurso := array{};
+    
+    // Contar quantidade disponível
+    foreach item in items_in_container
+        if (item && item.objtype == objtype)
+            quantidade_disponivel += CInt(item.amount);
+            items_do_recurso.append(item);
+        endif
+    endforeach
+    
+    if (quantidade_disponivel < quantidade_necessaria)
+        return 0; // Recursos insuficientes
+    endif
+    
+    // Debitar dos stacks
+    var quantidade_restante := quantidade_necessaria;
+    var quantidade_debitada := 0;
+    
+    foreach item in items_do_recurso
+        if (quantidade_restante <= 0)
+            break;
+        endif
+        
+        var amount_to_take := (CInt(item.amount) >= quantidade_restante) ? quantidade_restante : CInt(item.amount);
+        
+        if (SubtractAmount(item, amount_to_take))
+            quantidade_debitada += amount_to_take;
+            quantidade_restante -= amount_to_take;
+        else
+            LogError("FeudoUpkeep", "Falha ao debitar " + amount_to_take + " do item " + item.serial);
+            // Estornar o que foi debitado até agora
+            if (quantidade_debitada > 0)
+                CreateItemInContainer(container, objtype, quantidade_debitada);
+            endif
+            return 0;
+        endif
+    endforeach
+    
+    return quantidade_debitada;
+endfunction
+
+function EstornarRecursos(container, recursos_debitados)
+    LogWarning("FeudoUpkeep", "Iniciando estorno de recursos...");
+    var resource_objtypes := GetResourceObjtypes();
+    
+    foreach recurso in (recursos_debitados.keys())
+        var quantidade := CInt(recursos_debitados[recurso]);
+        var objtype := resource_objtypes[recurso];
+        
+        if (objtype && quantidade > 0)
+            var item_estornado := CreateItemInContainer(container, objtype, quantidade);
+            if (item_estornado)
+                LogInfo("FeudoUpkeep", "Estornado " + quantidade + " " + recurso + " para o container");
+            else
+                LogError("FeudoUpkeep", "FALHA ao estornar " + quantidade + " " + recurso);
+            endif
+        endif
+    endforeach
+endfunction
+
+function FormatUpkeepRequirements(upkeep_dict)
+    var formatted := "";
+    var first := 1;
+    
+    foreach recurso in (upkeep_dict.keys())
+        if (!first)
+            formatted += ", ";
+        endif
+        formatted += CStr(upkeep_dict[recurso]) + " " + recurso;
+        first := 0;
+    endforeach
+    
+    return formatted;
+endfunction
+
+// ========== FUNÇÕES PARA GERENCIAR DÍVIDA ACUMULADA ==========
+
+/*
+ * ObterDividaAcumulada(guild_name)
+ * 
+ * Obtém a dívida acumulada de uma guilda (versão simplificada)
+ */
+function ObterDividaAcumulada(guild_name)
+    var falhas_datafile := DFOpenDataFile(":faccao:construcao:upkeep_failures", DF_CREATE);
+    if (!falhas_datafile)
+        return dictionary{};
+    endif
+    
+    var falhas_elem := DFFindElement(falhas_datafile, guild_name);
+    if (!falhas_elem)
+        return dictionary{};
+    endif
+    
+    var divida := falhas_elem.GetProp("divida_acumulada");
+    if (!divida)
+        return dictionary{};
+    endif
+    
+    return divida;
+endfunction
+
+/*
+ * AcumularDivida(guild_name, novos_recursos)
+ * 
+ * Adiciona novos recursos à dívida acumulada de uma guilda (versão simplificada)
+ */
+function AcumularDivida(guild_name, novos_recursos)
+    LogInfo("FeudoUpkeep", "Acumulando dívida para " + guild_name + ": " + FormatUpkeepRequirements(novos_recursos));
+    
+    var falhas_datafile := DFOpenDataFile(":faccao:construcao:upkeep_failures", DF_CREATE);
+    if (!falhas_datafile)
+        return;
+    endif
+    
+    var falhas_elem := DFFindElement(falhas_datafile, guild_name, DF_CREATE);
+    if (!falhas_elem)
+        LogError("FeudoUpkeep", "Erro ao criar elemento de falhas para " + guild_name);
+        return;
+    endif
+    
+    // Obter dívida anterior
+    var divida_anterior := falhas_elem.GetProp("divida_acumulada");
+    if (!divida_anterior)
+        divida_anterior := dictionary{};
+    endif
+    
+    // Somar a nova dívida
+    var divida_total := SomarRecursos(divida_anterior, novos_recursos);
+    
+    // Salvar a dívida atualizada
+    falhas_elem.SetProp("divida_acumulada", divida_total);
+    falhas_elem.SetProp("ultima_acumulacao", POLCore().systime);
+    
+    LogInfo("FeudoUpkeep", "Nova dívida total para " + guild_name + ": " + FormatUpkeepRequirements(divida_total));
+endfunction
+
+/*
+ * ResetarDividaAcumulada(guild_name)
+ * 
+ * Remove toda a dívida acumulada de uma guilda (versão simplificada)
+ */
+function ResetarDividaAcumulada(guild_name)
+    LogInfo("FeudoUpkeep", "Resetando dívida acumulada para " + guild_name);
+    
+    var falhas_datafile := DFOpenDataFile(":faccao:construcao:upkeep_failures", DF_CREATE);
+    if (!falhas_datafile)
+        return;
+    endif
+    
+    var falhas_elem := DFFindElement(falhas_datafile, guild_name);
+    if (falhas_elem)
+        var divida_anterior := falhas_elem.GetProp("divida_acumulada");
+        if (divida_anterior && divida_anterior.size() > 0)
+            falhas_elem.SetProp("divida_acumulada", dictionary{});
+            falhas_elem.SetProp("ultimo_reset_divida", POLCore().systime);
+            LogInfo("FeudoUpkeep", "Dívida resetada para " + guild_name + " (anterior: " + FormatUpkeepRequirements(divida_anterior) + ")");
+        else
+            LogDebug("FeudoUpkeep", "Não havia dívida para resetar para " + guild_name);
+        endif
+    endif
+endfunction
+
+/*
+ * SomarRecursos(recursos1, recursos2)
+ * 
+ * Soma dois dictionaries de recursos (versão simplificada)
+ */
+function SomarRecursos(recursos1, recursos2)
+    var resultado := dictionary{};
+    
+    // Copiar recursos1 para o resultado
+    if (recursos1)
+        foreach recurso in (recursos1.keys())
+            resultado[recurso] := CInt(recursos1[recurso]);
+        endforeach
+    endif
+    
+    // Somar recursos2
+    if (recursos2)
+        foreach recurso in (recursos2.keys())
+            var quantidade := CInt(recursos2[recurso]);
+            if (resultado.exists(recurso))
+                resultado[recurso] := resultado[recurso] + quantidade;
+            else
+                resultado[recurso] := quantidade;
+            endif
+        endforeach
+    endif
+    
+    return resultado;
+endfunction
+
+function IncrementarContadorFalhasUpkeep(guild_name)
+    LogDebug("FeudoUpkeep", "IncrementarContadorFalhasUpkeep: Iniciando para " + guild_name);
+    
+    var falhas_datafile := DFOpenDataFile(":faccao:construcao:upkeep_failures", DF_CREATE);
+    if (!falhas_datafile)
+        LogError("FeudoUpkeep", "Erro ao abrir datafile de falhas para incremento");
+        return 1;
+    endif
+    
+    var falhas_elem := DFFindElement(falhas_datafile, guild_name, DF_CREATE);
+    if (!falhas_elem)
+        LogError("FeudoUpkeep", "Erro ao criar elemento de falhas para " + guild_name);
+        return 1;
+    endif
+    
+    var contador_atual := CInt(falhas_elem.GetProp("contador_falhas", 0));
+    var novo_contador := contador_atual + 1;
+    
+    LogDebug("FeudoUpkeep", "Contador atual: " + contador_atual + ", Novo contador: " + novo_contador);
+    
+    falhas_elem.SetProp("contador_falhas", novo_contador);
+    falhas_elem.SetProp("ultima_falha", POLCore().systime);
+    
+    LogInfo("FeudoUpkeep", "Falha de upkeep registrada para " + guild_name + " (" + novo_contador + "ª falha consecutiva)");
+    
+    return novo_contador;
+endfunction
+
+function ResetarContadorFalhasUpkeep(guild_name)
+    LogDebug("FeudoUpkeep", "ResetarContadorFalhasUpkeep: Iniciando para " + guild_name);
+    
+    var falhas_datafile := DFOpenDataFile(":faccao:construcao:upkeep_failures", DF_CREATE);
+    if (!falhas_datafile)
+        LogError("FeudoUpkeep", "Erro ao abrir datafile de falhas para reset");
+        return;
+    endif
+    
+    var falhas_elem := DFFindElement(falhas_datafile, guild_name);
+    if (falhas_elem)
+        var contador_anterior := CInt(falhas_elem.GetProp("contador_falhas", 0));
+        LogDebug("FeudoUpkeep", "Contador anterior para " + guild_name + ": " + contador_anterior);
+        
+        if (contador_anterior > 0)
+            falhas_elem.SetProp("contador_falhas", 0);
+            falhas_elem.SetProp("ultimo_reset", POLCore().systime);
+            LogInfo("FeudoUpkeep", "Resetando contador de falhas para " + guild_name + " (anteriormente: " + contador_anterior + " falhas)");
+            
+            // Verificar se foi resetado corretamente
+            var contador_verificacao := CInt(falhas_elem.GetProp("contador_falhas", 0));
+            LogDebug("FeudoUpkeep", "Verificação pós-reset: " + contador_verificacao);
+        else
+            LogDebug("FeudoUpkeep", "Contador já era zero para " + guild_name + ", não precisa resetar");
+        endif
+    else
+        LogDebug("FeudoUpkeep", "Elemento não encontrado para " + guild_name + ", nada para resetar");
+    endif
+endfunction
+
+function AplicarPenalidadesPorFalhasUpkeep(guild, guild_name, falhas_consecutivas, upkeep_total)
+    LogWarning("FeudoUpkeep", "Aplicando penalidades para " + guild_name + " - " + falhas_consecutivas + " falhas consecutivas");
+    
+    if (falhas_consecutivas == 1)
+        // Primeira falha: apenas aviso
+        NotificarLider(guild, "AVISO: Falha no pagamento do upkeep das construções! Recursos insuficientes no baú de doações da capital. Necessário: " + FormatUpkeepRequirements(upkeep_total) + ". (1ª falha)");
+        
+    elseif (falhas_consecutivas == 2)
+        // Segunda falha: aviso mais sério
+        NotificarLider(guild, "ALERTA CRÍTICO: Segunda falha consecutiva no pagamento do upkeep! Recursos necessários: " + FormatUpkeepRequirements(upkeep_total) + ". Na próxima falha, as construções perderão seus bônus! (2ª falha)");
+        
+    elseif (falhas_consecutivas >= 3)
+        // Terceira falha ou mais: desativar bônus das construções
+        LogCritical("FeudoUpkeep", "PENALIDADE APLICADA: Desativando bônus de construções para " + guild_name + " após " + falhas_consecutivas + " falhas consecutivas");
+        
+        var construcoes_penalizadas := DesativarBonusConstrucoes(guild_name);
+        
+        var mensagem_penalidade := "PENALIDADE APLICADA: Após " + falhas_consecutivas + " falhas consecutivas no pagamento do upkeep, todas as construções perderam seus bônus! ";
+        mensagem_penalidade += "Construções afetadas: " + construcoes_penalizadas + ". ";
+        mensagem_penalidade += "Para reativar os bônus, pague o upkeep em atraso: " + FormatUpkeepRequirements(upkeep_total) + ".";
+        
+        NotificarLider(guild, mensagem_penalidade);
+        
+        // Log detalhado da penalidade
+        LogCritical("FeudoUpkeep", "Penalidade detalhada para " + guild_name + ":");
+        LogCritical("FeudoUpkeep", "  - Falhas consecutivas: " + falhas_consecutivas);
+        LogCritical("FeudoUpkeep", "  - Construções penalizadas: " + construcoes_penalizadas);
+        LogCritical("FeudoUpkeep", "  - Upkeep em atraso: " + FormatUpkeepRequirements(upkeep_total));
+    endif
+endfunction
+
+function DesativarBonusConstrucoes(guild_name)
+    LogInfo("FeudoUpkeep", "Desativando bônus de construções para " + guild_name);
+    
+    var construcoes_afetadas := 0;
+    var guild := FindGuildByName(guild_name);
+    if (!guild)
+        LogError("FeudoUpkeep", "Guild não encontrada para desativar bônus: " + guild_name);
+        return 0;
+    endif
+    
+    // Obter todas as construções da guilda
+    var construcoes_da_guilda := FEUDO_GetOwnedConstructions(guild);
+    
+    foreach placa in construcoes_da_guilda
+        var build_info := GetObjProperty(placa, "BuildingInfo");
+        if (!build_info)
+            continue;
+        endif
+        
+        // Marcar a construção como sem bônus devido a falha de upkeep
+        var penalidade_info := struct{
+            "bonus_desativado" := 1,
+            "motivo" := "falha_upkeep",
+            "timestamp" := POLCore().systime,
+            "guild_name" := guild_name
+        };
+        
+        SetObjProperty(placa, "upkeep_penalidade", penalidade_info);
+        construcoes_afetadas += 1;
+        
+        LogDebug("FeudoUpkeep", "Bônus desativado para construção: " + build_info.type + " (serial: " + placa.serial + ")");
+    endforeach
+    
+    LogInfo("FeudoUpkeep", "Bônus desativado em " + construcoes_afetadas + " construções de " + guild_name);
+    return construcoes_afetadas;
+endfunction

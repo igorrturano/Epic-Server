@@ -33,7 +33,8 @@ function SafeOpenDataFile(datafile_name, create := 0)
     var critical_datafiles := array{
         KINGDOM_RESOURCE_DATAFILE,
         ":faccao:seriais",
-        ":faccao:guild_registry"
+        ":faccao:guild_registry",
+        ":faccao:construcao:upkeep_failures"
     };
     
     // Força a criação se o datafile estiver na lista crítica.
@@ -60,6 +61,48 @@ function SafeOpenDataFile(datafile_name, create := 0)
     endif
     
     return df;
+endfunction
+
+/*
+ * SafeCreateElement(datafile, elem_name)
+ * 
+ * Cria um elemento no datafile com tratamento de erro padronizado
+ * 
+ * Retorna o elemento ou 0 em caso de erro
+ */
+function SafeCreateElement(datafile, elem_name)
+    if (!datafile)
+        LogError("datafile", "Datafile inválido ao criar elemento: " + elem_name);
+        return 0;
+    endif
+    
+    var elem := datafile.CreateElement(elem_name);
+    if (elem == error)
+        LogError("datafile", "Falha ao criar elemento: " + elem_name + ", Erro: " + elem);
+        return 0;
+    endif
+    
+    LogDebug("datafile", "Elemento criado com sucesso: " + elem_name);
+    return elem;
+endfunction
+
+/*
+ * SafeCommitDataFile(datafile)
+ * 
+ * Salva/commita um datafile com tratamento de erro padronizado
+ * 
+ * Retorna 1 para sucesso, 0 para falha
+ */
+function SafeCommitDataFile(datafile)
+    if (!datafile)
+        LogError("datafile", "Datafile inválido ao tentar commit");
+        return 0;
+    endif
+    
+    // No POL, datafiles são automaticamente salvos quando modificados
+    // Esta função existe apenas para compatibilidade
+    LogDebug("datafile", "Datafile commitado (auto-save)");
+    return 1;
 endfunction
 
 /*

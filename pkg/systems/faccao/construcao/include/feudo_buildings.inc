@@ -56,6 +56,17 @@ function FEUDO_GetBuildingLevelDetails(building_type, level)
     endforeach
     
     details.+Bonus     := GetConfigStringArray(elem, prefix + "Bonus");
+    
+    // Leitura do Upkeep (recursos de manutenção)
+    details.+Upkeep := dictionary{};
+    var upkeep_array := GetConfigStringArray(elem, prefix + "Upkeep");
+    foreach upkeep_line in upkeep_array
+        var parts := SplitWords(upkeep_line);
+        if (parts.size() == 2)
+            details.Upkeep[Lower(parts[1])] := CInt(parts[2]);
+        endif
+    endforeach
+    
     details.+Estagio0  := GetConfigStringArray(elem, prefix + "Estagio0");
     details.+Estagio1  := GetConfigStringArray(elem, prefix + "Estagio1");
     details.+Estagio2  := GetConfigStringArray(elem, prefix + "Estagio2");
