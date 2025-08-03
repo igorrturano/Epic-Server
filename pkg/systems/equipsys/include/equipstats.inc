@@ -243,7 +243,7 @@ function addResistPhysicalBy(type, stats, armor)
 			break;
 
 		"SLOT":
-			resists := getResistPhysicalBySlot(armor);
+			resists := getResistPhysicalBySlotArmor(armor);
 			break;
 
 		"PROTECTION":
@@ -293,10 +293,10 @@ function getResistPhysicalByProtectionType(type)
 	endcase
 endfunction
 
-function getResistPhysicalBySlot(armor)
+function getResistPhysicalBySlotArmor(armor)
 	var resists := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		resists := getResistPhysicalBySlotString(armor.getSlot());
+		resists := getResistPhysicalBySlot(armor.getSlot());
 	endif
 
 	return dictionary{
@@ -306,7 +306,7 @@ function getResistPhysicalBySlot(armor)
 	};
 endfunction
 
-function getResistPhysicalBySlotString(slot)
+function getResistPhysicalBySlot(slot)
 	case(Upper(slot)) // {SlashResist, PiercingResist, BluntResist}
 			HEAD: return {2,2,2}; break;
 			NECK: return {1,1,1}; break;
@@ -438,55 +438,65 @@ function addPenalties(stats, armor)
 endfunction
 
 function addPenaltiesBy(type, stats, armor)
-	var penalties := dictionary{};
-	
+	var penalties;
+
 	case(Upper(type))
 		"SLOT":
-			penalties := getPenaltiesBySlot(armor);
+			penalties := getPenaltiesBySlotArmor(armor);
 			break;
 		"PROTECTION":
-			penalties := getPenaltiesByProtection(armor);
+			penalties := getPenaltiesByProtectionArmor(armor);
 			break;
 	endcase
 
-	stats.DexPen += CInt(penalties["DexPen"]);
-	stats.SneakPen += CInt(penalties["SneakPen"]);
-	stats.MAPen += CInt(penalties["MAPen"]);
-	stats.MageryPen += CInt(penalties["MageryPen"]);
-	stats.AwarenessPen += CInt(penalties["AwarenessPen"]);
+	stats.DexPen += CInt(penalties.DexPen);
+	stats.SneakPen += CInt(penalties.SneakPen);
+	stats.MAPen += CInt(penalties.MAPen);
+	stats.MageryPen += CInt(penalties.MageryPen);
+	stats.AwarenessPen += CInt(penalties.AwarenessPen);
 
 	return stats;
 endfunction
 
-function getPenaltiesBySlot(armor)
-	var penalties := array{};
+function getPenaltiesBySlotArmor(armor)
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-			HEAD: penalties := {1,0,0,1,0}; break;
-			NECK: penalties := {1,0,0,1,0}; break;
-			BODY: penalties := {4,0,0,12,0}; break;
-			ARMS: penalties := {2,0,2,6,0}; break;
-			HANDS: penalties := {1,0,4,3,0}; break;
-			LEGS: penalties := {2,0,0,6,0}; break;
-			FEET: penalties := {2,0,0,0,0}; break;
-			SHIELD: penalties := {0,1,10,5,0}; break;
-
-			default: penalties := {0,0,0,0,0}; break;
-		endcase
+		return getPenaltiesBySlot(armor.getSlot());
 	endif
 
-	return dictionary{
-		"DexPen" -> penalties[1],
-		"SneakPen" -> penalties[2],
-		"MAPen" -> penalties[3],
-		"MageryPen" -> penalties[4],
-		"AwarenessPen" -> penalties[5]
+	return getPenaltiesBySlot(0);
+endfunction
+
+function getPenaltiesBySlot(slot)
+	var penalties := array{};
+	case(Upper(slot))
+		HEAD: penalties := {1,0,0,1,0}; break;
+		NECK: penalties := {1,0,0,1,0}; break;
+		BODY: penalties := {4,0,0,12,0}; break;
+		ARMS: penalties := {2,0,2,6,0}; break;
+		HANDS: penalties := {1,0,4,3,0}; break;
+		LEGS: penalties := {2,0,0,6,0}; break;
+		FEET: penalties := {2,0,0,0,0}; break;
+		SHIELD: penalties := {0,1,10,5,0}; break;
+
+		default: penalties := {0,0,0,0,0}; break;
+	endcase
+
+	return struct{
+		DexPen := penalties[1],
+		SneakPen := penalties[2],
+		MAPen := penalties[3],
+		MageryPen := penalties[4],
+		AwarenessPen := penalties[5]
 	};
 endfunction
 
-function getPenaltiesByProtection(armor)
+function getPenaltiesByProtectionArmor(armor) // Feito assim para manter o padrão e garantir qualquer necessidade de avaliar critério do item (futuramente)
+	return getPenaltiesByProtection(armor.getType());
+endfunction
+
+function getPenaltiesByProtection(protection)
 	var penalties := array{};
-	case(Upper(armor.getType())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+	case(Upper(protection)) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 		//TIER 1
 		ARMOR_LOWLOW: penalties := {0,0,0,0,0}; break;
 		ARMOR_LOWMID: penalties := {0,0,0,0,0}; break;
@@ -512,12 +522,12 @@ function getPenaltiesByProtection(armor)
 		default: penalties := {0,0,0,0,0}; break;
 	endcase
 
-	return dictionary{
-		"DexPen" -> penalties[1],
-		"SneakPen" -> penalties[2],
-		"MAPen" -> penalties[3],
-		"MageryPen" -> penalties[4],
-		"AwarenessPen" -> penalties[5]
+	return struct{
+		DexPen := penalties[1],
+		SneakPen := penalties[2],
+		MAPen := penalties[3],
+		MageryPen := penalties[4],
+		AwarenessPen := penalties[5]
 	};
 endfunction
 
@@ -610,7 +620,7 @@ function getDurabilityByType(item)
 endfunction
 
 function getDurabilityBySlot(item)
-	return Max(getResistPhysicalBySlot(item));
+	return Max(getResistPhysicalBySlotArmor(item));
 endfunction
 
 function getDurabilityModByMaterial(item)
