@@ -1,15 +1,15 @@
 include "EquipWrapper";
 
 class EquipWeaponWrapper(EquipWrapper)
-	var _attribute;
-	var _tipoAtaque;
-	var _speed;
-	var _mainDamage;
-	var _offDamage;
-	var _criticalChance;
-	var _minRange;
-	var _maxRange;
-
+	var _attribute; // String
+	var _tipoAtaque; // String
+	var _speed; // Int
+	var _mainDamage; // Struct
+	var _offDamage; // Struct
+	var _criticalChance; // Int
+	var _minRange; // Int
+	var _maxRange; // Int
+	var _penalties; // Struct
 
 	function EquipWeaponWrapper(this, item)
 		var template, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
