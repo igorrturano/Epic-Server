@@ -1,13 +1,13 @@
 include "EquipWrapper";
 
-class EquipArmorWrapper(EquipWrapper)
+class EquipWrapperArmor(EquipWrapper)
 	var _coverage; // String
 	var _tipoProtecao; // String
 
 	var _physicalResists; // Struct
 	var _penalties; // Struct
-	
-	function EquipArmorWrapper(this, item)
+
+	function EquipWrapperArmor(this, item)
 		var template, itemAttr, coverage, tipoProtecao;
 		Super(item);
 

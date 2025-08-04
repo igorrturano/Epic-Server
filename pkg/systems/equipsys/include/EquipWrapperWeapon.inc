@@ -1,6 +1,6 @@
 include "EquipWrapper";
 
-class EquipWeaponWrapper(EquipWrapper)
+class EquipWrapperWeapon(EquipWrapper)
 	var _attribute; // String
 	var _tipoAtaque; // String
 	var _speed; // Int
@@ -11,7 +11,7 @@ class EquipWeaponWrapper(EquipWrapper)
 	var _maxRange; // Int
 	var _penalties; // Struct
 
-	function EquipWeaponWrapper(this, item)
+	function EquipWrapperWeapon(this, item)
 		var template, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
 		Super(item);
 		

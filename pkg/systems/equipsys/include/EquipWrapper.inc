@@ -1,7 +1,7 @@
 use uo;
 use cfgfile;
 
-include ":equipsys:equipstats";
+include ":equipsys:EquipSysController";
 
 class EquipWrapper()
 	var _name;
