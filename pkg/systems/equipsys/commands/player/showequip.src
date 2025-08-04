@@ -1,6 +1,5 @@
-include ":equipsys:EquipWrapper";
-include ":equipsys:EquipWrapperWeapon";
-include ":equipsys:EquipWrapperArmor";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":equipsys:ViewModel/EquipWrapperArmor";
 
 program cmd_showequip(who, args)
 	var item, type;

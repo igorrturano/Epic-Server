@@ -11,7 +11,7 @@ class EquipWrapper()
 	function EquipWrapper(this, item)
 		var template, name, desc, weight, maxHP, graphic;
 
-		if (item.isA(POLCLASS_EQUIPMENT))
+		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			template := item.getCfgElem();
 
 			this._name := template.name;
@@ -19,7 +19,8 @@ class EquipWrapper()
 			this._weight := item.weight;
 			this._maxHP := item.maxHP;
 			this._graphic := item.graphic;
-		else
+			
+		else // Caso seja apenas um template
 			template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
 
 			this._name := template.name;

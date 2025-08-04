@@ -13,29 +13,31 @@ class EquipWrapperWeapon(EquipWrapper)
 	var _penalties; // Struct
 
 	function EquipWrapperWeapon(this, item)
-		var template, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
+		var template, itemProp, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
 		Super(item);
 		
-		if (item.isA(POLCLASS_WEAPON))
+		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
 			template := item.getCfgElem();
+			itemProp := item.getAttrBase();
+
 			this._attribute := template.Attribute;
 			this._tipoAtaque := item.getType();
 			this._speed := template.EpicSpeed;
 			this._mainDamage := struct {
-				SlashDamage := item.getAttrBase().SlashMainDamage,
-				PiercingDamage := item.getAttrBase().PiercingMainDamage,
-				BluntDamage := item.getAttrBase().BluntMainDamage
+				SlashDamage := itemProp.SlashMainDamage,
+				PiercingDamage := itemProp.PiercingMainDamage,
+				BluntDamage := itemProp.BluntMainDamage
 			};
 			this._offDamage := struct {
-				SlashDamage := item.getAttrBase().SlashOffDamage,
-				PiercingDamage := item.getAttrBase().PiercingOffDamage,
-				BluntDamage := item.getAttrBase().BluntOffDamage
+				SlashDamage := itemProp.SlashOffDamage,
+				PiercingDamage := itemProp.PiercingOffDamage,
+				BluntDamage := itemProp.BluntOffDamage
 			};
 			this._criticalChance := template.EpicCriticalChance;
 			this._minRange := template.MinRange ?: 1;
 			this._maxRange := template.MaxRange ?: 1;
 
-		else
+		else // Caso seja apenas um template
 			template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
 			this._attribute := template.Attribute;
 			this._tipoAtaque := template.TipoAtaque;
