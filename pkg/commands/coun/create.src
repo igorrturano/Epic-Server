@@ -5,6 +5,8 @@ use polsys;
 include ":commands:cmdhelp";
 include ":commands:create";
 include ":gumps:gumps_ex";
+include "/include/gms";
+include "/include/epicPropNames";
 
 program create_textcmd( mobile, search_string )
 
@@ -123,6 +125,15 @@ function CreateItem( byref mobile, byref item_entry, byref amount )
 	endif
 
 	foreach obj in ( created )
+		
+		var isIndestrutivel := PegaPreferenciaGm(mobile,PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
+		var isIndispensavel := PegaPreferenciaGm(mobile,PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
+
+		if(!isIndispensavel || isIndestrutivel)
+			var objRef := SystemFindObjectBySerial(obj.Serial);
+			SetObjProperty(objRef,PROPNAME_INDESTRUTIVEL, isIndestrutivel);
+			SetObjProperty(objRef,PROPNAME_DISPENSAVEL_FLAG, !isIndispensavel);
+		endif
 		ITEM_ReportText( mobile, "Item serial: "+obj.Serial+", item name "+obj.Desc+" created by "+mobile.name+" ["+mobile.acctname+"]", ITEM_REPORT_SYSLOG );
 	endforeach
 endfunction
