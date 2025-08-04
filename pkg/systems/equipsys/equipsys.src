@@ -1,5 +1,5 @@
-include "include/equipstats";
-include "include/utils";
+include ":equipsys:Controller/EquipmentController";
+include ":equipsys:utils/consts";
 include ":debug:main";
 
 program EquipSys(params)

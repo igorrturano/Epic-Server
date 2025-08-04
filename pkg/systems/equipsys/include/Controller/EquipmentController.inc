@@ -14,9 +14,6 @@ include ":equipsys:Controller/WeaponController";
 
 include ":attributes:attributeConstants";
 
-/////////////
-// WEAPONS //
-/////////////
 /**
  * getWeaponStats(weapon)
  *
@@ -86,9 +83,6 @@ function addCombatAttributes(stats, weapon)
 	return stats;
 endfunction
 
-///////////
-// ARMOR //
-///////////
 function getArmorStats(armor)
 	var stats := struct{};
 
@@ -125,25 +119,25 @@ function addResistsPhysical(stats, armor)
 endfunction
 
 function addResistPhysicalBy(type, stats, armor)
-	var resists := dictionary{};
+	var resists := struct{};
 	
 	case(Upper(type))
 		"MATERIAL":
-			resists := getResistPhysicalByMaterial(armor);
+			resists := getResistPhysicalByMaterial(armor.getMaterialID());
 			break;
 
 		"SLOT":
-			resists := getResistPhysicalBySlotArmor(armor);
+			resists := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? getResistPhysicalBySlot(armor.getSlot()) : struct{};
 			break;
 
 		"PROTECTION":
-			resists := getResistPhysicalByProtectionArmor(armor);
+			resists := getResistPhysicalByProtection(armor.getType());
 			break;
 	endcase
 
-	stats.SlashResist += CInt(resists["SlashResist"]);
-	stats.PiercingResist += CInt(resists["PiercingResist"]);
-	stats.BluntResist += CInt(resists["BluntResist"]);
+	stats.SlashResist += CInt(resists.SlashResist);
+	stats.PiercingResist += CInt(resists.PiercingResist);
+	stats.BluntResist += CInt(resists.BluntResist);
 
 	return stats;
 endfunction
@@ -230,7 +224,7 @@ function addShieldMods(stats, shield)
 endfunction
 
 function addShieldModsBy(type, stats, shield)
-	var mods := dictionary{};
+	var mods := struct{};
 
 	case(Upper(type))
 		"PROTECTION":
@@ -258,7 +252,7 @@ function addDurability(stats, item)
 endfunction
 
 function getDurabilityBySlot(item)
-	return Max(getResistPhysicalBySlotArmor(item));
+	return Max(getResistPhysicalBySlot(item.getSlot()));
 endfunction
 
 function addWeight(stats, item)
