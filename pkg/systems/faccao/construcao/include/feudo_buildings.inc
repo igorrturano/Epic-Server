@@ -139,6 +139,14 @@ function FEUDO_UpdateBuildingVisuals(andaime_principal)
     var centro_z := andaime_principal.z;
     var realm := andaime_principal.realm;
 
+    // --- LÓGICA ESPECIAL: TORNAR CANTEIRO INVISÍVEL NO ESTÁGIO 0 ---
+    // Quando a construção começar (estágio 0), o CanteiroDeObras deve ficar invisível
+    if (estagio_atual_num >= 0)
+        LogDebug(LOG_CATEGORY, "  -> Tornando CanteiroDeObras invisível (estágio " + estagio_atual_num + ")...");
+        andaime_principal.invisible := 1;
+        andaime_principal.hidden := 1;
+    endif
+
     // --- LÓGICA CUMULATIVA ---
     // Itera de 0 até o estágio atual, criando as peças de TODOS os estágios alcançados.
     var i;
