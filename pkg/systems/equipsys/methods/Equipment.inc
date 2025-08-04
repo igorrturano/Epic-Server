@@ -1,4 +1,4 @@
-include ":equipsys:equipstats";
+include ":equipsys:EquipSysController";
 
 print("INSTALLING: Methods for Equipment -> Equipment System... OK!");
 
