@@ -1,4 +1,5 @@
 include "EquipWrapper";
+include ":equipsys:Controller/WeaponController";
 
 class EquipWrapperWeapon(EquipWrapper)
 	var _attribute; // String

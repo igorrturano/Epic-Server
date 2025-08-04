@@ -1,14 +1,12 @@
 use uo;
 use cfgfile;
 
-include ":equipsys:EquipSysController";
-
 class EquipWrapper()
-	var _name;
-	var _desc;
-	var _graphic;
-	var _weight;
-	var _maxHP;
+	var _name; // String
+	var _desc; // String
+	var _graphic; // Int
+	var _weight; // Int
+	var _maxHP; // Int
 
 	function EquipWrapper(this, item)
 		var template, name, desc, weight, maxHP, graphic;

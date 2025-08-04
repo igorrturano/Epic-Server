@@ -1,4 +1,5 @@
 include "EquipWrapper";
+include ":equipsys:Controller/ArmorController";
 
 class EquipWrapperArmor(EquipWrapper)
 	var _coverage; // String
