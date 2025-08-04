@@ -32,5 +32,5 @@ program cmd_showequip(who, args)
 		endif
 	endif
 
-	print(item.ToString());
+	SendSysMessage(who, item.ToString());
 endprogram
