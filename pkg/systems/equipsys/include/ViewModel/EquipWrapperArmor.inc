@@ -9,26 +9,26 @@ class EquipWrapperArmor(EquipWrapper)
 	var _penalties; // Struct
 
 	function EquipWrapperArmor(this, item)
-		var template, itemAttr, coverage, tipoProtecao;
+		var template, itemProp, coverage, tipoProtecao;
 		Super(item);
 
-		if (item.isA(POLCLASS_ARMOR))
+		if (item.isA(POLCLASS_ARMOR)) // Caso o itemRef exista
 			template := item.getCfgElem();
-			itemAttr := item.getAttrBase();
+			itemProp := item.getAttrBase();
 
 			this._coverage := template.coverage;
 			this._tipoProtecao := item.getType();
 			this._physicalResists := struct {
-				SlashResist := itemAttr.SlashResist,
-				PiercingResist := itemAttr.PiercingResist,
-				BluntResist := itemAttr.BluntResist
+				SlashResist := itemProp.SlashResist,
+				PiercingResist := itemProp.PiercingResist,
+				BluntResist := itemProp.BluntResist
 			};
 
-		else
+		else // Caso seja apenas um template
 			template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
 			this._coverage := template.coverage;
 			this._tipoProtecao := template.tipoProtecao;
-			var templateResists := getResistPhysicalByProtectionType(template.tipoProtecao);
+			var templateResists := getResistPhysicalByProtection(template.tipoProtecao);
 			this._physicalResists := struct {
 				SlashResist := templateResists[1] + getResistPhysicalBySlot(this.coverage)[1],
 				PiercingResist := templateResists[2] + getResistPhysicalBySlot(this.coverage)[2],
@@ -44,7 +44,6 @@ class EquipWrapperArmor(EquipWrapper)
 				MageryPen := penaltiesSlot.MageryPen + penaltiesProt.MageryPen,
 				AwarenessPen := penaltiesSlot.AwarenessPen + penaltiesProt.AwarenessPen
 			};
-
 		endif
 	endfunction
 

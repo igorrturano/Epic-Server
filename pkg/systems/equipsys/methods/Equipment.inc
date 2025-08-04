@@ -1,4 +1,4 @@
-include ":equipsys:EquipSysController";
+include ":equipsys:Controller/EquipmentController";
 
 print("INSTALLING: Methods for Equipment -> Equipment System... OK!");
 
@@ -46,10 +46,6 @@ endfunction
 exported function SetAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
 	if (item.isA(POLCLASS_WEAPON)) 
 		if (!prop) prop := getWeaponStats(item); endif
-		// var oldProp := item.getAttrBase();
-		// if (oldProp.AttackType) // Não modificar a postura, caso seja arma e já tenha
-		// 	prop.AttackType := oldProp.AttackType;
-		// endif
 	elseif (item.isA(POLCLASS_ARMOR))
 		if (!prop) prop := getArmorStats(item); endif
 	endif

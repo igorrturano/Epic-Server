@@ -5,7 +5,7 @@ include ":charactercreation:habilidades";
 include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
-include ":equipsys:include/equipstats";
+include ":equipsys:Controller/WeaponController";
 include ":destroyable:include/destroyItem";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
@@ -175,9 +175,9 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
 		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
 
-		atrib.+SlashOffDamage :=getDamageByTier(elemOffDamage[1]);
-		atrib.+PiercingOffDamage :=getDamageByTier(elemOffDamage[2]);
-		atrib.+BluntOffDamage :=getDamageByTier(elemOffDamage[3]);
+		atrib.+SlashOffDamage := getDamageByTier(elemOffDamage[1]);
+		atrib.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]);
+		atrib.+BluntOffDamage := getDamageByTier(elemOffDamage[3]);
 	endif
 
 	slashMD := atrib.SlashMainDamage;

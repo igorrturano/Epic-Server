@@ -1,4 +1,4 @@
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include ":attributes:attributeConstants";
 
 print("INSTALLING: Methods for Weapon -> Equipment System... OK!");

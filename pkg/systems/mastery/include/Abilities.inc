@@ -1,7 +1,7 @@
 use os;
 
 include ":debug:main";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include ":tn:cooldown";
 include ":attributes:attributes";
 

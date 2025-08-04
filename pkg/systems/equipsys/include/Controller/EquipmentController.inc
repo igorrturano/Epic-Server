@@ -137,7 +137,7 @@ function addResistPhysicalBy(type, stats, armor)
 			break;
 
 		"PROTECTION":
-			resists := getResistPhysicalByProtection(armor);
+			resists := getResistPhysicalByProtectionArmor(armor);
 			break;
 	endcase
 
@@ -234,34 +234,14 @@ function addShieldModsBy(type, stats, shield)
 
 	case(Upper(type))
 		"PROTECTION":
-			mods := getShieldModsByProtection(shield);
+			mods := getShieldModsByProtection(shield.getType());
 			break;
 	endcase
 
-	stats.ParryDelay += CInt(mods["ParryDelay"]);
-	stats.ParryBonus += CInt(mods["ParryBonus"]);
+	stats.ParryDelay += CInt(mods.ParryDelay);
+	stats.ParryBonus += CInt(mods.ParryBonus);
 
 	return stats;
-endfunction
-
-function getShieldModsByProtection(shield)
-	var mods := array{}; // {ParryDelay, ParryBonus}
-
-	// TODO: Rever esses valores com o Igor, comparando com o .cfg (tá muito irregular lá)
-	case(Upper(shield.getType()))
-		SHIELD_BUCKLER: mods := {-1,0}; break;
-		SHIELD_SMALL: mods := {4,8}; break;
-		SHIELD_MEDIUM: mods := {5,10}; break;
-		SHIELD_LARGE: mods := {6,12}; break;
-		SHIELD_TOWER: mods := {7,14}; break;
-
-		default: mods := {0,0}; break;
-	endcase
-
-	return dictionary{
-		"ParryDelay" -> mods[1],
-		"ParryBonus" -> mods[2]
-	};
 endfunction
 
 function addDurability(stats, item)
@@ -272,7 +252,7 @@ function addDurability(stats, item)
 		stats.MaxHP += getDurabilityBySlot(item) * 2;
 	endif
 
-	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
+	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item.getMaterialID());
 
 	return stats;
 endfunction
@@ -286,7 +266,7 @@ function addWeight(stats, item)
 
 	stats.Weight += getWeightByType(item);
 
-	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item));
+	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item.getMaterialID()));
 	if (item.weight == 1)
 		item.weight_multiplier_mod := stats.Weight;
 	endif
@@ -312,7 +292,7 @@ function getWeightByType(item)
 			// Poderia ter sido feito direto no weight. Deixar assim pra caso precise de algum MOD futuramente.
 			var armorAttr := item.getAttrBase();
 			var maxResist := Max(array{armorAttr.SlashResist, armorAttr.PiercingResist, armorAttr.BluntResist});
-			maxResist += CInt(getDurabilityBySlot(item));
+			maxResist += CInt(getDurabilityBySlot(item.getSlot()));
 			weight := maxResist;
 		endif
 	endif
