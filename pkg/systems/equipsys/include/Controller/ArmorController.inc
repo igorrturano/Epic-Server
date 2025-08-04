@@ -3,10 +3,6 @@ use math;
 
 include ":equipsys:utils/consts";
 
-function getResistPhysicalByProtectionArmor(armor)
-	return getResistPhysicalByProtection(armor.getType());
-endfunction
-
 function getResistPhysicalByProtection(tier)
 	var resists := array{};
 	
@@ -38,13 +34,13 @@ function getResistPhysicalByProtection(tier)
 	};
 endfunction
 
-function getResistPhysicalBySlotArmor(armor)
-	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		return getResistPhysicalBySlot(armor.getSlot());
-	endif
+// function getResistPhysicalBySlotArmor(armor)
+// 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+// 		return getResistPhysicalBySlot(armor.getSlot());
+// 	endif
 
-	return getResistPhysicalBySlot(0);
-endfunction
+// 	return getResistPhysicalBySlot(0);
+// endfunction
 
 function getResistPhysicalBySlot(slot)
 	var resists := array{};
@@ -66,10 +62,6 @@ function getResistPhysicalBySlot(slot)
 		PiercingResist := resists[2],
 		BluntResist := resists[3]
 	};
-endfunction
-
-function getResistPhysicalByMaterialArmor(armor)
-	return getResistPhysicalByMaterial(armor.getMaterialID());
 endfunction
 
 function getResistPhysicalByMaterial(ID)
@@ -231,17 +223,13 @@ function getDurabilityByType(item)
 				default: maxhp := 0; break;
 			endcase
 		else
-			var resists := getResistPhysicalByProtectionArmor(item);
+			var resists := getResistPhysicalByProtection(item.getType());
 			maxhp := Max(array{resists.SlashResist, resists.PiercingResist, resists.BluntResist});
 		endif
 	endif
 
 	return maxhp;
 endfunction
-
-// function getDurabilityModByMaterialArmor(item)
-// 	return getDurabilityModByMaterial(item.getMaterialID());
-// endfunction
 
 function getDurabilityModByMaterial(material)
 	var modifier := 0;
@@ -254,10 +242,6 @@ function getDurabilityModByMaterial(material)
 
 	return CDbl(modifier);
 endfunction
-
-// function getWeightModByMaterialArmor(item)
-// 	return getWeightModByMaterial(item.getMaterialID());
-// endfunction
 
 function getWeightModByMaterial(material)
 	var modifier := 0;
