@@ -93,10 +93,6 @@ function getArmorStats(armor)
 		stats := addShieldMods(stats, armor);
 	endif
 
-	// TODO: Função para setar HP na prop
-	// TODO: Função para setar PESO na prop
-	// TODO: Função para setar STRRequired na prop
-
 	stats := addDurability(stats, armor);
 	stats := addWeight(stats, armor);
 	stats := addSTRRequired(stats, armor);
@@ -127,7 +123,7 @@ function addResistPhysicalBy(type, stats, armor)
 			break;
 
 		"SLOT":
-			resists := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? getResistPhysicalBySlot(armor.getSlot()) : struct{};
+			resists := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? getResistPhysicalBySlot(armor.getSlot()) : getResistPhysicalBySlot(0);
 			break;
 
 		"PROTECTION":
@@ -141,8 +137,6 @@ function addResistPhysicalBy(type, stats, armor)
 
 	return stats;
 endfunction
-
-
 
 function addResistsElemental(stats, armor)
 	stats.+FireResist := 0;
@@ -186,10 +180,10 @@ function addPenaltiesBy(type, stats, armor)
 
 	case(Upper(type))
 		"SLOT":
-			penalties := getPenaltiesBySlotArmor(armor);
+			penalties := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? getPenaltiesBySlot(armor.getSlot) : getPenaltiesBySlot(0);
 			break;
 		"PROTECTION":
-			penalties := getPenaltiesByProtectionArmor(armor);
+			penalties := getPenaltiesByProtection(armor.getType());
 			break;
 	endcase
 
@@ -200,18 +194,6 @@ function addPenaltiesBy(type, stats, armor)
 	stats.AwarenessPen += CInt(penalties.AwarenessPen);
 
 	return stats;
-endfunction
-
-function getPenaltiesBySlotArmor(armor)
-	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		return getPenaltiesBySlot(armor.getSlot());
-	endif
-
-	return getPenaltiesBySlot(0);
-endfunction
-
-function getPenaltiesByProtectionArmor(armor) // Feito assim para manter o padrão e garantir qualquer necessidade de avaliar critério do item (futuramente)
-	return getPenaltiesByProtection(armor.getType());
 endfunction
 
 function addShieldMods(stats, shield)
