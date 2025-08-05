@@ -28,7 +28,7 @@ function FEUDO_GetBuildingCfg()
 endfunction
 
 /*
- * FEUDO_GetBuildingLevelDetails(building_type, level) - VERSÃO 3.1 (LEITURA ROBUSTA)
+ * FEUDO_GetBuildingLevelDetails(building_type, level) - VERSÃO 3.2 (SUPORTE A PREFIXOS)
  */
 function FEUDO_GetBuildingLevelDetails(building_type, level)
     var cfg := FEUDO_GetBuildingCfg();
@@ -39,7 +39,19 @@ function FEUDO_GetBuildingLevelDetails(building_type, level)
         return error{"errortext" := "Construção '" + building_type + "' não encontrada."};
     endif
 
-    var prefix := "Level" + level + "_";
+    // Determina o prefixo correto: primeiro tenta construção específica, depois genérico
+    var prefixed_prefix := building_type + "_Level" + level + "_";
+    var generic_prefix := "Level" + level + "_";
+    
+    // Testa qual prefixo existe verificando se Name está definido
+    var test_name := GetConfigString(elem, prefixed_prefix + "Name");
+    var prefix;
+    if (test_name && !test_name.errortext)
+        prefix := prefixed_prefix;  // Usa o prefixo específico da construção
+    else
+        prefix := generic_prefix;   // Usa o prefixo genérico
+    endif
+    
     var details := struct;
 
     details.+Name               := GetConfigString(elem, prefix + "Name");

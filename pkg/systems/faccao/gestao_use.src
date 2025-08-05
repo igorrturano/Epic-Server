@@ -52,9 +52,11 @@ const MENU_LEGADO_CULTURAL := 208;
 
 // Construções Específicas
 const MENU_CASA_SIMPLES := 301;
+const MENU_LOTE_FAZENDA := 302;
 
 // Botões de Compra
 const BTN_COMPRAR_CASA_SIMPLES := 401;
+const BTN_COMPRAR_LOTE_FAZENDA := 402;
 var button_states := array{0, 0, 0, 0, 0, 0};
 var sub_button_states := array{0, 0}; // Para sub-botões Construções e Ferramentas
 var current_main_menu := MENU_REINO; // Controla qual menu principal está ativo
@@ -114,6 +116,13 @@ function ShowKingdomManagementGump(who, item)
         elseif (button_id == BTN_COMPRAR_CASA_SIMPLES)
             ProcessarCompraCasaSimples(who, item);
             cur_menu := MENU_CASA_SIMPLES;
+        elseif (button_id == BTN_COMPRAR_LOTE_FAZENDA)
+            LogInfo("FeudoFazenda", "Botão de compra do Lote de Fazenda pressionado por: " + who.name);
+            ProcessarCompraLoteFazenda(who, item);
+            cur_menu := MENU_LOTE_FAZENDA;
+        elseif (button_id == BTN_COMPRAR_LOTE_FAZENDA)
+            ProcessarCompraLoteFazenda(who, item);
+            cur_menu := MENU_LOTE_FAZENDA;
         elseif (button_id == 999)
             var guild := FindGuild(FindGuildByName(GetObjProperty(item, OBJ_FACTION_PROP)));
             if (guild)
@@ -165,6 +174,8 @@ function CreateKingdomManagementGump(who, cur_menu, item)
             LegadoCulturalGump(gump);
         MENU_CASA_SIMPLES:
             CasaSimplesGump(gump);
+        MENU_LOTE_FAZENDA:
+            LoteFazendaGump(gump);
         default:
             DoacoesGump(gump, item); // Passando item completo
     endcase
@@ -301,6 +312,8 @@ function AtualizarEstadoMenu(input)
             return MENU_LEGADO_CULTURAL;
         301: // Casa Simples
             return MENU_CASA_SIMPLES;
+        302: // Lote de Fazenda
+            return MENU_LOTE_FAZENDA;
         default: 
             return MENU_DOACOES;
     endcase
@@ -941,6 +954,7 @@ endfunction
 // ========================================================================================
 
 function HabitacionaisGump(byref gump)
+    // === CASA SIMPLES ===
     // Moldura da categoria
     GFResizePic(gump, 50, 100, 9350, 180, 190);
     
@@ -958,14 +972,21 @@ function HabitacionaisGump(byref gump)
 endfunction
 
 function ColetaGump(byref gump)
+    // === LOTE DE FAZENDA ===
     // Moldura da categoria
     GFResizePic(gump, 50, 100, 9350, 180, 190);
     
     // Título da categoria
-    GFTextLine(gump, 75, 110, 53, "Coleta");
+    GFTextLine(gump, 75, 110, 53, "Lote de Fazenda");
     
     // Ícone da categoria posicionado à esquerda
-    GFGumpPic(gump, 60, 140, 30493); // Ícone coleta
+    GFGumpPic(gump, 60, 140, 7925); // Ícone de fazenda/espantalho
+    
+    // Texto abaixo da imagem
+    GFTextLine(gump, 100, 300, 53, "Ver Projeto");
+    
+    // Botão ao lado do texto "Ver Projeto"
+    GFAddButton(gump, 185, 300, 4005, 4007, 1, MENU_LOTE_FAZENDA);
 endfunction
 
 function DefesaGump(byref gump)
@@ -1110,6 +1131,83 @@ function CasaSimplesGump(byref gump)
 
     // Botão de voltar estilizado
     GFAddButton(gump, 100, 500, 4014, 4016, 1, MENU_HABITACIONAIS);
+endfunction
+
+function LoteFazendaGump(byref gump)
+    // Fundo principal usando o padrão do sistema
+    GFResizePic(gump, 50, 100, 3000, 700, 450);
+    
+    // Título principal centralizado com fonte grande dourada
+    GFTextMid(gump, 50, 140, 260, 53, "Lote de Fazenda");
+    
+    // Área da imagem da fazenda (lado esquerdo) com fundo cinza claro
+    GFResizePic(gump, 95, 175, 3000, 150, 150);
+    GFGumpPic(gump, 100, 180, 7925); // Ícone de fazenda/espantalho
+    
+    // === SEÇÃO DE ATRIBUTOS (lado direito) ===
+    GFTextLine(gump, 265, 180, 53, "Atributos:");
+    
+    // Custo do Projeto
+    GFTextLine(gump, 265, 200, 53, "Custo do Projeto:");
+    GFTextLine(gump, 380, 200, 230, "150 Cobre");
+    
+    // Tempo de Construção  
+    GFTextLine(gump, 265, 220, 53, "Tempo de Construção:");
+    GFTextLine(gump, 400, 220, 230, "240 segundos");
+    
+    // Tamanho
+    GFTextLine(gump, 265, 240, 53, "Tamanho:");
+    GFTextLine(gump, 320, 240, 230, "4x4");
+    
+    // Benefício Produção
+    GFTextLine(gump, 265, 260, 53, "Benefício:");
+    GFTextLine(gump, 325, 260, 230, "+100 Produção Comida");
+    
+    // Andar
+    GFTextLine(gump, 265, 280, 53, "Andar:");
+    GFTextLine(gump, 305, 280, 230, "Térreo");
+    
+    // Cômodos
+    GFTextLine(gump, 265, 300, 53, "Cômodos:");
+    GFTextLine(gump, 320, 300, 230, "0 (Externa)");
+    
+    // === SEÇÃO DE RECURSOS NECESSÁRIOS ===
+    GFTextLine(gump, 95, 345, 230, "Recursos Necessários:");
+    
+    // Área de fundo para recursos
+    GFResizePic(gump, 95, 365, 9350, 150, 60);
+    
+    // Madeira
+    GFTextLine(gump, 100, 375, 53, "Madeira:");
+    GFTextLine(gump, 150, 375, 230, "500");
+    
+    // Pedra
+    GFTextLine(gump, 100, 395, 53, "Pedra:");
+    GFTextLine(gump, 140, 395, 230, "100");
+    
+    // === SEÇÃO DE MANUTENÇÃO ===
+    GFTextLine(gump, 270, 345, 230, "Manutenção (Upkeep):");
+    
+    // Área de fundo para manutenção
+    GFResizePic(gump, 270, 365, 9350, 150, 60);
+    
+    // Upkeep de Madeira
+    GFTextLine(gump, 275, 375, 53, "Madeira:");
+    GFTextLine(gump, 325, 375, 230, "20 por semana");
+    
+    // === SEÇÃO DE COMPRA ===
+    GFTextLine(gump, 440, 345, 230, "Comprar:");
+    
+    // Área de fundo para compra
+    GFResizePic(gump, 440, 365, 9350, 150, 60);
+    
+    // Comprar Fazenda
+    GFTextLine(gump, 445, 375, 53, "Custo:");
+    GFTextLine(gump, 485, 375, 230, "150 Cobres");
+    GFAddButton(gump, 480, 400, 247, 249, 1, BTN_COMPRAR_LOTE_FAZENDA);
+
+    // Botão de voltar estilizado
+    GFAddButton(gump, 100, 500, 4014, 4016, 1, MENU_COLETA);
 endfunction
 
 // ========================================================================================
@@ -2382,6 +2480,96 @@ function ProcessarCompraCasaSimples(who, item)
         SendSysMessage(who, "Projeto da Casa Simples comprado com sucesso por " + custo_casa + " moedas de cobre!");
     endif
     
+    return 1;
+endfunction
+
+function ProcessarCompraLoteFazenda(who, item)
+    LogInfo("FeudoFazenda", "==================================================");
+    LogInfo("FeudoFazenda", "INÍCIO da compra do Lote de Fazenda por: " + who.name + " (Serial: " + who.serial + ")");
+    
+    var custo_fazenda := 150; // Custo do lote de fazenda (conforme configurado no arquivo)
+    LogDebug("FeudoFazenda", "Custo configurado: " + custo_fazenda + " moedas de cobre");
+    
+    // Calcular moedas disponíveis na mochila
+    LogInfo("FeudoFazenda", "ETAPA 1: Contando moedas na mochila");
+    var moedas_disponiveis := 0;
+    var moedas_items := array{};
+    
+    foreach moeda in EnumerateItemsInContainer(who.backpack)
+        if (moeda.objtype == MOEDAS_COBRE)
+            moedas_disponiveis += moeda.amount;
+            moedas_items.append(moeda);
+            LogDebug("FeudoFazenda", "  -> Encontrada pilha de " + moeda.amount + " moedas (Serial: " + moeda.serial + ")");
+        endif
+        sleepms(2);
+    endforeach
+    
+    LogInfo("FeudoFazenda", "Total de moedas encontradas: " + moedas_disponiveis);
+    
+    // Verificar se tem moedas suficientes
+    if (moedas_disponiveis < custo_fazenda)
+        LogError("FeudoFazenda", "FALHA: Moedas insuficientes. Necessário: " + custo_fazenda + ", Disponível: " + moedas_disponiveis);
+        SendSysMessage(who, "Você precisa de " + custo_fazenda + " moedas de cobre para comprar o projeto do Lote de Fazenda. Você tem apenas " + moedas_disponiveis + ".");
+        return 0;
+    endif
+    
+    LogInfo("FeudoFazenda", "ETAPA 2: Consumindo " + custo_fazenda + " moedas");
+    
+    // Consumir as moedas
+    var moedas_restantes := custo_fazenda;
+    foreach moeda in moedas_items
+        if (moedas_restantes <= 0)
+            break;
+        endif
+        
+        if (moeda.amount >= moedas_restantes)
+            // Esta pilha tem moedas suficientes
+            LogDebug("FeudoFazenda", "  -> Consumindo " + moedas_restantes + " moedas da pilha " + moeda.serial + " (tinha " + moeda.amount + ")");
+            SubtractAmount(moeda, moedas_restantes);
+            moedas_restantes := 0;
+        else
+            // Consumir toda esta pilha
+            LogDebug("FeudoFazenda", "  -> Consumindo toda a pilha " + moeda.serial + " (" + moeda.amount + " moedas)");
+            moedas_restantes -= moeda.amount;
+            DestroyItem(moeda);
+        endif
+        sleepms(2);
+    endforeach
+    
+    LogInfo("FeudoFazenda", "ETAPA 3: Criando projeto do Lote de Fazenda");
+    
+    // Criar o projeto da fazenda na mochila do jogador
+    var projeto := CreateItemInBackpack(who, 0xef03, 1); // Mesmo objtype usado para projetos
+    if (!projeto)
+        LogWarning("FeudoFazenda", "Mochila cheia, tentando criar no chão");
+        // Tentar criar no chão se não couber na mochila
+        projeto := CreateItemAtLocation(who.x, who.y, who.z, 0xef03, 1, who.realm);
+        if (projeto)
+            // Configurar as propriedades do projeto
+            projeto.name := "Projeto: Lote de Fazenda Nv.1";
+            SetObjProperty(projeto, "BuildingType", "lotedefazenda");
+            SetObjProperty(projeto, "BuildingLevel", 1);
+            LogInfo("FeudoFazenda", "SUCESSO: Projeto criado no chão (Serial: " + projeto.serial + ")");
+            SendSysMessage(who, "Projeto do Lote de Fazenda comprado com sucesso! O item foi colocado no chão pois sua mochila está cheia.");
+        else
+            LogError("FeudoFazenda", "FALHA CRÍTICA: Não conseguiu criar o projeto nem na mochila nem no chão");
+            SendSysMessage(who, "Erro ao criar o projeto do Lote de Fazenda. Contacte a administração.");
+            // Devolver as moedas em caso de erro
+            CreateItemInBackpack(who, MOEDAS_COBRE, custo_fazenda);
+            LogInfo("FeudoFazenda", "Moedas devolvidas devido ao erro");
+            return 0;
+        endif
+    else
+        // Configurar as propriedades do projeto
+        projeto.name := "Projeto: Lote de Fazenda Nv.1";
+        SetObjProperty(projeto, "BuildingType", "lotedefazenda");
+        SetObjProperty(projeto, "BuildingLevel", 1);
+        LogInfo("FeudoFazenda", "SUCESSO: Projeto criado na mochila (Serial: " + projeto.serial + ")");
+        LogDebug("FeudoFazenda", "Propriedades definidas: BuildingType=lotedefazenda, BuildingLevel=1");
+        SendSysMessage(who, "Projeto do Lote de Fazenda comprado com sucesso por " + custo_fazenda + " moedas de cobre!");
+    endif
+    
+    LogInfo("FeudoFazenda", "CONCLUÍDO: Compra do Lote de Fazenda finalizada com sucesso");
     return 1;
 endfunction
 

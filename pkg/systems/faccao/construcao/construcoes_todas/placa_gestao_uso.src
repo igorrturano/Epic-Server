@@ -1,0 +1,84 @@
+// :faccao:construcao/construcoes_todas/placa_gestao_uso.src
+//
+// Script genérico RENOVADO para a PlacaDeGestao (0xEEF1).
+// Usa o novo sistema de controlador centralizado.
+// Versão 2.0 - Agosto 2025
+
+use uo;
+use os;
+
+include ":faccao:include/logging";
+include ":faccao:construcao/include/placa_controller";
+
+program use_placa_gestao(who, placa)
+    var LOG_CATEGORY := "PlacaGestao";
+    LogCritical(LOG_CATEGORY, "=== PLACA DE GESTÃO RENOVADA INICIADA ===");
+    LogCritical(LOG_CATEGORY, "Player: " + who.name + " (" + who.serial + ")");
+    LogCritical(LOG_CATEGORY, "Placa: Serial " + placa.serial + ", ObjType: " + placa.objtype);
+    LogCritical(LOG_CATEGORY, "Coordenadas: " + placa.x + ", " + placa.y + ", " + placa.z);
+
+    // === VALIDAÇÃO BÁSICA ===
+    if (!who || !placa)
+        LogError(LOG_CATEGORY, "ERRO: Parâmetros inválidos!");
+        return;
+    endif
+
+    // === VERIFICAR BUILDINGINFO ===
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+    if (!build_info)
+        LogCritical(LOG_CATEGORY, "ERRO CRÍTICO: Placa " + placa.serial + " NÃO TEM BuildingInfo!");
+        SendSysMessage(who, "ERRO: Esta placa não possui dados de construção!");
+        return;
+    else
+        LogCritical(LOG_CATEGORY, "BuildingInfo encontrado: Tipo=" + build_info.type + ", Level=" + build_info.level);
+    endif
+
+    // === CHAMA O CONTROLADOR CENTRAL OU REDIRECIONA DIRETAMENTE ===
+    LogCritical(LOG_CATEGORY, "Chamando PLACA_ProcessUsage...");
+    
+    // SOLUÇÃO DEFINITIVA: Para casas, implementar lógica diretamente aqui
+    if (build_info.type == "casa")
+        LogCritical(LOG_CATEGORY, "CASA DETECTADA - Executando lógica diretamente...");
+        
+        // Replicar a lógica do casa_uso.src aqui
+        var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+        var contrato := GetObjProperty(placa, "ContratoAluguel");
+        
+        LogCritical(LOG_CATEGORY, "GuildOwner: " + owner_guild_id);
+        LogCritical(LOG_CATEGORY, "Player GuildID: " + who.guildid);
+        
+        if (who.guildid == owner_guild_id && (IsGuildLeader(who) || who.cmdlevel >= 1))
+            LogCritical(LOG_CATEGORY, "Player é líder - chamando casa_uso.src...");
+            // Agora chamamos o casa_uso.src que deve funcionar
+            start_script(":faccao:construcao/construcoes_todas/casa_uso", array{who, placa});
+        elseif (contrato && CInt(contrato.InquilinoSerial) == who.serial)
+            LogCritical(LOG_CATEGORY, "Player é inquilino");
+            SendSysMessage(who, "🏠 Casa alugada - funcionalidade de inquilino em desenvolvimento");
+        elseif (who.guildid == owner_guild_id)
+            LogCritical(LOG_CATEGORY, "Player é cidadão");
+            SendSysMessage(who, "🏠 Casa da nossa guilda");
+            SendSysMessage(who, "PopCap +8 para o feudo");
+        else
+            LogCritical(LOG_CATEGORY, "Player é forasteiro");
+            SendSysMessage(who, "🏠 Casa Simples");
+            SendSysMessage(who, "Uma residência básica.");
+        endif
+        
+        LogCritical(LOG_CATEGORY, "=== PLACA DE GESTÃO FINALIZADA (CASA PROCESSADA) ===");
+        return;
+    endif
+    
+    // Para outros tipos, usar o controlador normal
+    var result := PLACA_ProcessUsage(who, placa);
+    
+    if (!result)
+        LogCritical(LOG_CATEGORY, "CONTROLADOR CENTRAL RETORNOU FALHA para placa " + placa.serial);
+        LogCritical(LOG_CATEGORY, "Possíveis causas: BuildingInfo corrompido, tipo não reconhecido, módulo não encontrado");
+        SendSysMessage(who, "Erro ao processar a placa. Contate um administrador.");
+    else
+        LogCritical(LOG_CATEGORY, "CONTROLADOR CENTRAL PROCESSOU COM SUCESSO!");
+    endif
+
+    LogCritical(LOG_CATEGORY, "=== PLACA DE GESTÃO FINALIZADA ===");
+    LogDebug(LOG_CATEGORY, "Processamento da PlacaDeGestao concluído com resultado: " + result);
+endprogram

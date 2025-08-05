@@ -31,7 +31,11 @@ var LOG_CATEGORIES := dictionary{
     "FeudoRent_Debit_Robusto" := 3,
     "FeudoRent_Debit" := 3,
     "FeudoRent_KeyChange" := 4,
-    "FeudoUpkeep" := 5                  // NOVO: logs do sistema de upkeep de construções
+    "FeudoUpkeep" := 5,                 // NOVO: logs do sistema de upkeep de construções
+    "BuildingCFG_Test" := 5,            // NOVO: logs do teste de configuração
+    "FeudoFazenda" := 5,                // NOVO: logs específicos do sistema de fazenda
+    "FeudoVisuals" := 5,                // NOVO: logs dos visuais de construção
+    "FeudoComplete" := 5                // NOVO: logs de conclusão de construção
 };
 
 function EnableLogging(enable := 1)
@@ -72,7 +76,7 @@ function FactionLog(level, category, message)
     var formatted_message := "[" + timestamp + "] [" + level_text + "] [" + category + "] " + message;
     
     // FORÇAR OUTPUT PARA CONSOLE - usar SysLog que funciona no POL
-    if (category == "gestao_use_UNIFIED" || category == "recursos_FindChest" || category == "recursos" || category == "bau" || level <= LOG_WARNING)
+    if (category == "gestao_use_UNIFIED" || category == "recursos_FindChest" || category == "recursos" || category == "bau" || category == "BuildingCFG_Test" || category == "FeudoFazenda" || category == "FeudoVisuals" || category == "FeudoComplete" || level <= LOG_WARNING)
         // SysLog do POL
         SysLog("[FACCAO] " + formatted_message);
     endif
