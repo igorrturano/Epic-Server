@@ -36,6 +36,7 @@ endfunction
  * Function(params)
  *
  * Purpose
+ * Definição de atributos base de um equipamento.
  *
  * Parameters
  * params:
@@ -43,7 +44,7 @@ endfunction
  * Return value
  *
  */
-exported function SetAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
+exported function SetAttrBase(item, prop)
 	if (item.isA(POLCLASS_WEAPON)) 
 		if (!prop) prop := getWeaponStats(item); endif
 	elseif (item.isA(POLCLASS_ARMOR))
@@ -59,6 +60,7 @@ endfunction
  * Function(params)
  *
  * Purpose
+ * Definição de atributos excepcionais de um equipamento.
  *
  * Parameters
  * params:
@@ -66,7 +68,7 @@ endfunction
  * Return value
  *
  */
-exported function SetAttrExcep(item, prop) // SETA A PROP DE MODIFICADORES EXCEPCIONAL
+exported function SetAttrExcep(item, prop)
     if (prop) item.SetProp("atributos_excp", prop); endif
 
 	return prop;
