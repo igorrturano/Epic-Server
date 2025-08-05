@@ -34,14 +34,6 @@ function getResistPhysicalByProtection(tier)
 	};
 endfunction
 
-// function getResistPhysicalBySlotArmor(armor)
-// 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-// 		return getResistPhysicalBySlot(armor.getSlot());
-// 	endif
-
-// 	return getResistPhysicalBySlot(0);
-// endfunction
-
 function getResistPhysicalBySlot(slot)
 	var resists := array{};
 	
@@ -141,7 +133,7 @@ endfunction
 
 function getPenaltiesBySlot(slot)
 	var penalties := array{};
-	case(Upper(slot))
+	case(Upper(slot[1]))
 		HEAD: penalties := {1,0,0,1,0}; break;
 		NECK: penalties := {1,0,0,1,0}; break;
 		BODY: penalties := {4,0,0,12,0}; break;
