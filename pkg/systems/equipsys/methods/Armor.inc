@@ -1,3 +1,5 @@
+use cfgfile;
+
 print("INSTALLING: Methods for Armor -> Equipment System... OK!");
 
 /**
@@ -15,11 +17,9 @@ print("INSTALLING: Methods for Armor -> Equipment System... OK!");
 exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 	var elem := item.getCfgElem();
 
-	if (isShield(item))
-		return "Shield";
-	endif
+	if (isShield(item))	return "Shield"; endif
 
-	return elem.Coverage ? elem.Coverage : error{"errortext" := "The item have no Coverage!"};
+	return elem.Coverage ? GetConfigStringArray(elem, "Coverage") : error{"errortext" := "The item have no Coverage!"};
 endfunction
 
 /**
@@ -35,10 +35,10 @@ endfunction
  */
 exported function isShield(item)
     var tipoequip := item.getType();
-    var escudo := SplitWords(tipoequip); escudo := escudo[1];
-	escudo.Lower();
+    var escudo := SplitWords(tipoequip);
+	escudo := escudo[1];
 
-	return escudo == "escudo";
+	return escudo.Lower() == "escudo";
 endfunction
 
 /**
