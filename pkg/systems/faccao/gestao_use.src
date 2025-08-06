@@ -977,10 +977,10 @@ function ColetaGump(byref gump)
     GFResizePic(gump, 50, 100, 9350, 180, 190);
     
     // Título da categoria
-    GFTextLine(gump, 75, 110, 53, "Lote de Fazenda");
+    GFTextLine(gump, 90, 110, 53, "Lote de Fazenda");
     
     // Ícone da categoria posicionado à esquerda
-    GFGumpPic(gump, 60, 140, 7925); // Ícone de fazenda/espantalho
+    GFGumpPic(gump, 75, 140, 30490); // Ícone de fazenda/espantalho
     
     // Texto abaixo da imagem
     GFTextLine(gump, 100, 300, 53, "Ver Projeto");
@@ -1142,7 +1142,7 @@ function LoteFazendaGump(byref gump)
     
     // Área da imagem da fazenda (lado esquerdo) com fundo cinza claro
     GFResizePic(gump, 95, 175, 3000, 150, 150);
-    GFGumpPic(gump, 100, 180, 7925); // Ícone de fazenda/espantalho
+    GFGumpPic(gump, 120, 180, 30490); // Ícone de fazenda/espantalho
     
     // === SEÇÃO DE ATRIBUTOS (lado direito) ===
     GFTextLine(gump, 265, 180, 53, "Atributos:");
