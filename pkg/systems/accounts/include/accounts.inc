@@ -29,7 +29,7 @@ CONST ACCT_MAX_CHARACTERS	:= 6;
  * Returns an account object on success.
  *
  */
-function CreateNewAccount(username, password, cmdlevel:=0, expansion:="", email:="")
+function CreateNewAccount(username, password, cmdlevel:=0, expansion:="", email:="", language := "pt-BR")
 	var account := CreateAccount(username, password, 1);
 	if ( account.errortext )
 		return account;
@@ -44,7 +44,11 @@ function CreateNewAccount(username, password, cmdlevel:=0, expansion:="", email:
 	endif
 
 	if ( email )
-		account.SetProp("EMail", email);
+		account.SetProp("Email", email);
+	endif
+
+	if (language)
+		account.SetProp("original_language", language);
 	endif
 
 	ACCT_SetLastLogin(account);

@@ -90,7 +90,7 @@ endfunction
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
-    var race := GetObjProperty(mobile, "myrace");
+    var race := npc_elem.epicRace;
 
     if (has_colors)
         setupNPCColor(mobile, has_colors);
@@ -105,7 +105,9 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (isBoss)
         race := isBoss.race;
         makeRace(mobile, race);
-    else
+    elseif (race)
+        makeRace(mobile, race);
+    else 
         makeRace(mobile);
     endif
 
@@ -516,15 +518,30 @@ function SetupNPCEquip(who, npc_elem)
         foreach equipment in (boss.equipments)
             var objtype := CInt(equipment.objtype);
             if (objtype)
-                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, 1);
+                // Use amount if specified, otherwise default to 1
+                var amount := equipment.amount ? CInt(equipment.amount) : 1;
+                var item := CreateItemAtLocation(who.x, who.y, who.z, objtype, amount);
                 if (item)
+                    // Apply color if specified
+                    if (equipment.color && equipment.color != 0)
+                        item.color := CInt(equipment.color);
+                    endif
+                    
+                    // Apply all other properties that were captured
+                    if (equipment.properties && equipment.properties.size() > 0)
+                        foreach prop_name in (equipment.properties.keys())
+                            var prop_value := equipment.properties[prop_name];
+                            // Skip objtype, color, and amount as they're handled separately
+                            if (prop_name != "objtype" && prop_name != "color" && prop_name != "amount")
+                                SetObjProperty(item, prop_name, prop_value);
+                            endif
+                            sleepms(2);
+                        endforeach
+                    endif
+                    
                     // Try to equip the new item first
                     if (!EquipItem(who, item))
-                        // If equipping failed, find what layer this item wants to use
-                        // We can determine this by checking what layer it would occupy
-                        // by temporarily equipping it on a test mobile or checking item properties
-                        
-                        // First, let's try to find conflicting equipment by checking all equipped items
+                        // Find what layer this item wants to use
                         var equipped_items := ListEquippedItems(who);
                         var equipment_removed := 0;
                         
@@ -558,18 +575,23 @@ function SetupNPCEquip(who, npc_elem)
             sleepms(2);
         endforeach
     endif
+
+    // Apply boss colors to clothing AFTER all equipment is set up
+    if (boss && boss.color_ranges && boss.color_ranges.size() > 0)
+        ApplyBossColors(who, boss.color_ranges);
+    endif
     
   var montaria := Getobjproperty(who, "Montaria");
   if (boss.mount)
       // If the boss has a specific mount, use it
       montaria := boss.mount;
   endif
-  if (!montaria)
-  else
+  if (montaria)
 	var graphic := MP_GetMountGraphic(montaria);
 	var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
 	item.graphic := graphic;
 	Equipitem (who, item);
+    who.run_speed := 250;
   endif
 endfunction
 
@@ -722,6 +744,8 @@ function EquipNPCItemString(who, str, lastcolor)
     var lastc := 0;
     var colors := ReadConfigFile(":ghaia:config/colors");
     var vestiments := ReadConfigFile(":ghaia:config/cloths");
+    var epicBoss := GetObjProperty(who, "EpicBossStruct");
+    var bossColor := epicBoss.color_ranges;
     objname := params[1];
     if(CInt(objname))
         objname := CInt(objname);
@@ -878,28 +902,6 @@ function ChooseHighestOpponent(me, byref opponent, new_opponent := 0, force_chan
    if (GetCooldown(me, "#blockaggro"))
       return 0;
    endif
-
-   var highest_aggro := getHighestAggro(me);
-   if (highest_aggro && (!opponent || highest_aggro != opponent.serial))
-      highest_aggro := SystemFindObjectBySerial(highest_aggro);
-      opponent := highest_aggro;
-      SetOpponent(highest_aggro);
-      TurnToward(highest_aggro);
-      return 1;
-   endif
-endfunction
-
-function getHighestAggro(creature)
-   var aggros := creature.aggroProp();
-   var highest := array{0, -9999999};
-   foreach serial in (aggros.keys())
-      if (aggros[serial] >= highest[2])
-         highest := array{serial, aggros[serial]};
-      endif
-      sleepms(2);
-   endforeach
-
-   return highest[1];
 endfunction
 
 function TacticalReposition(opponent, chasing)
@@ -1146,6 +1148,10 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    if (GetObjProperty(defender, "noattack"))
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
         // Allow combat if defender initiated it
@@ -1153,6 +1159,29 @@ function CanFight(attacker, defender)
         // Otherwise prevent attacking during cooldown
         return 0;
     endif
+
+    var npc_elem := NPC_GetNPCConfig(me);
+	var category := GetConfigString(npc_elem, "Category");
+
+	if (category == "Aklats")
+		var pegadas := {0x1E03, 0x1E04, 0x1E05, 0x1E06}; 
+		var footsteps := array;
+
+		// Para cada tipo de pegada
+		foreach objtype in pegadas
+			foreach pegada in ListItemsNearLocationOfType(me.x, me.y, me.z, 10, objtype, me.realm)
+				footsteps.append(pegada);
+				//print("PEGADA ENCONTRADA: " + hex(pegada.objtype));
+				sleepms(2);
+			endforeach
+			sleepms(2);
+		endforeach
+			            
+		if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
+			return 1;
+		endif
+		return 0;			
+	endif
 
     // Grey NPCs (neutral alignment) should only fight back when attacked
     if (attacker.alignment == 0)
@@ -1371,10 +1400,15 @@ function HandleIdleState()
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
     
     // Return to spawn point if we have one
-    var spawn_point := SystemFindObjectBySerial(GetObjProperty(me, "spawnpoint"));
+    var spawn_serial := GetObjProperty(me, "spawnpoint");
+    var spawn_point := 0;
+    if (spawn_serial)
+        spawn_point := SystemFindObjectBySerial(spawn_serial);
+    endif
+
     var anchor := GetObjProperty(me, "anchor");
     var home_x, home_y;
-    
+
     if (spawn_point)
         home_x := spawn_point.x;
         home_y := spawn_point.y;
@@ -2224,4 +2258,172 @@ function SetupNPCAppearence(mobile)
     endif
     
     return 1;
+endfunction
+
+// New function to apply boss colors to clothing only
+function ApplyBossColors(mobile, color_ranges)    
+    if (!color_ranges || color_ranges.size() == 0)
+        return 0;
+    endif
+    
+    // Define clothing layers (not armor or weapons)
+    var clothing_layers := array{
+        LAYER_SHIRT,      // Shirt
+        LAYER_PANTS,      // Pants
+        LAYER_SHOES,      // Shoes
+        LAYER_ROBE,       // Robe
+        LAYER_CAPE,       // Cloak/Cape
+        LAYER_SKIRT,      // Skirt
+        LAYER_TUNIC       // Tunic/Sash
+    };
+    
+    // Define armor layers that we DON'T want to color
+    var armor_layers := array{
+        LAYER_HELM,       // Helmet
+        LAYER_GLOVES,     // Gloves
+        LAYER_CHEST,      // Chest armor
+        LAYER_ARMS,       // Arm armor
+        LAYER_LEGS        // Leg armor
+    };
+    
+    var items_colored := 0;
+    
+    // Apply color to clothing items that have color 0 (uncolored)
+    foreach layer in clothing_layers
+        var item := GetEquipmentByLayer(mobile, layer);
+        if (item)            
+            if (item.color == 0)
+                // Skip actual armor layers (not clothing that happens to be POLCLASS_ARMOR)
+                if (layer in armor_layers)
+                    continue;
+                endif
+                
+                // Get a random color from the selected ranges for each item
+                var selected_color := GetRandomColorFromRanges(color_ranges);
+                
+                item.color := selected_color;
+                item.truecolor := selected_color;
+                items_colored += 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+        
+    return 1;
+endfunction
+
+// Function to get a random color value from the selected color ranges
+function GetRandomColorFromRanges(color_ranges)
+    if (!color_ranges || color_ranges.size() == 0)
+        return 0; // Default color
+    endif
+    
+    // Pick a random color range
+    var selected_range := color_ranges[RandomInt(color_ranges.size()) + 1];
+    
+    // Return a color value based on the selected range (using the same logic as cor.src)
+    return GetColorValue(selected_range);
+endfunction
+
+// Copy the GetColorValue function from cor.src for consistency
+function GetColorValue(color)
+    case (color)
+        "Rosa":      return RandomIntMinMax(1201, 1254);
+        "Vermelho":  return RandomIntMinMax(1601, 1654);
+        "Azul":      return RandomIntMinMax(1301, 1354);
+        "Verde":     return RandomIntMinMax(1401, 1454);
+        "Amarelo":   return RandomIntMinMax(1701, 1754);
+        "Laranja":   return RandomIntMinMax(1501, 1554);
+        "Neutro":    return RandomIntMinMax(1801, 1908);
+        "Cinza":     return RandomInt({0, 946, 947});
+        AIGLANA:     return RandomColorFromRanges({
+                        RandomIntMinMax(1601, 1654),  // Vermelho
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        HAROLOTH:    return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomInt({0, 946, 947}),     // Cinza
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        LESTE:       return RandomColorFromRanges({
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        BJORSKA:     return RandomColorFromRanges({
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        ALURIEL:     return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        BADURAN:     return RandomColorFromRanges({
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1801, 1908),  // Neutro
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        GULTHRAK:    return RandomColorFromRanges({
+                        RandomIntMinMax(1201, 1254),  // Rosa
+                        RandomIntMinMax(1601, 1654),  // Vermelho
+                        RandomIntMinMax(1801, 1908),  // Neutro
+                        RandomInt({0, 946, 947})      // Cinza
+                     });
+        POLKINEA:    return RandomColorFromRanges({
+                        RandomIntMinMax(1501, 1554),  // Laranja
+                        RandomIntMinMax(1701, 1754),  // Amarelo
+                        RandomIntMinMax(1401, 1454),  // Verde
+                        RandomIntMinMax(1301, 1354),  // Azul
+                        RandomIntMinMax(1801, 1908)   // Neutro
+                     });
+        default:     return color; // In case color is already a numeric value
+    endcase
+endfunction
+
+function RandomColorFromRanges(colorRanges)
+    return colorRanges[RandomInt(colorRanges.size()) + 1];
+endfunction
+
+//FUNCÕES PARA AKLATS E PEGADAS PARA ACIONAR O ATAQUE
+// Função para verificar se 3 pegadas estão alinhadas (em linha reta)
+function CheckAlinhadas(footsteps)
+    if (footsteps.size() < 3)
+        return 0; // Não há pegadas suficientes
+    endif
+    
+    // Pega as 3 pegadas mais recentes (assumindo que são as últimas na lista)
+    var step1 := footsteps[footsteps.size() - 3];
+    var step2 := footsteps[footsteps.size() - 2];
+    var step3 := footsteps[footsteps.size() - 1];
+    
+    // Verifica se os 3 pontos estão alinhados
+    return ArePointsAligned(step1, step2, step3);
+endfunction
+
+// Função para verificar se 3 pontos estão em linha reta
+function ArePointsAligned(p1, p2, p3)
+    // Calcula os vetores entre os pontos
+    var dx1 := p2.x - p1.x;
+    var dy1 := p2.y - p1.y;
+    var dx2 := p3.x - p2.x;
+    var dy2 := p3.y - p2.y;
+    
+    // Se os vetores são proporcionais, os pontos estão alinhados
+    // Usando produto cruzado: se dx1*dy2 - dy1*dx2 == 0, então estão alinhados
+    var crossProduct := (dx1 * dy2) - (dy1 * dx2);
+    
+    // Considera alinhado se o produto cruzado for 0 (ou muito próximo de 0)
+    // Valor absoluto manual já que POL pode não ter abs()
+    if (crossProduct < 0)
+        crossProduct := -crossProduct;
+    endif
+    
+    return (crossProduct <= 1); // Tolerância de 1 para compensar arredondamentos
 endfunction

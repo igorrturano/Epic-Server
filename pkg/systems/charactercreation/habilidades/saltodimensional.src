@@ -11,10 +11,10 @@ program HitScript(who)
     who.concealed := 1;
     who.frozen := 1;
     PerformAction(who, ANIM_CAST_AREA);
-    sleep(2);
 
-    PlayStationaryEffect(who.x+2, who.y+1, who.z-13, 0x6CA5, 0, 35,0, who.realm);
+    PlayStationaryEffect(who.x, who.y, who.z, 0xD11B , 0, 35,0, who.realm);
 	PlaySoundEffect(who, 0x1f2);
+    sleep(2);
 
 	var targ := TargetCoordinates(who);
     // Jump a random direction from who.opponent, beteween 5 and 10 tiles away
@@ -81,11 +81,12 @@ program HitScript(who)
     	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm);
     endif
 
-    
+    PlayStationaryEffect(who.x, who.y, who.z, 0xD11B , 0, 35,0, who.realm);
+	PlaySoundEffect(who, 0x1f2);
     sleep(1);
     who.concealed := 0;
     who.frozen := 0;
-    PlayStationaryEffect(targ.x+2, targ.y+1, targ.z-13, 0x6CA5, 0, 35,0, who.realm);
+
 
 	return 1;
 endprogram

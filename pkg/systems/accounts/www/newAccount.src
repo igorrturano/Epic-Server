@@ -35,6 +35,7 @@ program HTTPScript()
 	var expansion := QueryParam("expansion");
 	var email := QueryParam("email");
 	var admin_pw := QueryParam("adminpw");
+	var language := QueryParam("language");
 	
 	if ( settings.AuxWebPassword )
 		if ( settings.AuxWebPassword != admin_pw )
@@ -43,7 +44,7 @@ program HTTPScript()
 		endif
 	endif
 
-	var result := CreateNewAccount(username, password, cmd_lvl, expansion, email);
+	var result := CreateNewAccount(username, password, cmd_lvl, expansion, email, language);
 	if ( result.errortext )
 		WriteHTMLRaw("Error: "+result.errortext);
 	else
