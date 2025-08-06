@@ -49,3 +49,20 @@ class AchievementCrafting(Achievement)
         return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, craftedNormal={this.craftedNormal}, craftedExceptional={this.craftedExceptional})";
     endfunction
 endclass
+
+// TODO: Itens craftados
+// TODO: Armas forjadas
+	//Pensar se faz de cada item também
+// TODO: Escudos forjados
+	//Pensar se faz de cada item também
+// TODO: Poções criadas
+// TODO: Equipamentos reparados
+
+enum ACHIEVDATA_CRAFTING
+	ACHIEVDATA_CRAFTED_NORMAL := "craftednormal",
+	ACHIEVDATA_CRAFTED_EXCEPTIONAL := "craftedexceptional",
+	ACHIEVDATA_FORGED_WEAPONS := "forgedweapons",
+	ACHIEVDATA_FORGED_SHIELDS := "forgedshields",
+	ACHIEVDATA_CREATED_POTIONS := "createdpotions",
+	ACHIEVDATA_REPAIRED_EQUIPMENT := "repairedequipment"
+endenum
