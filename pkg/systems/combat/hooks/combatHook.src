@@ -41,7 +41,7 @@ include "include/epicMageryUtils";
 include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 include ":fls_magery:spellSounds";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
