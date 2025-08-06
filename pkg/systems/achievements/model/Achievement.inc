@@ -1,5 +1,22 @@
 const ACHIEVEMENT := "ACHIEVEMENT";
-
+// OTHERS
+// TODO: Peixes pescados
+// TODO: Peixes pescados com isca
+// TODO: Quantas magias castadas 
+// TODO: Qual magia mais castada
+// TODO: Quanto recurso recolhido
+// TODO: Quantos corpos abertos
+// TODO: Quantos mobs rastreados
+// TODO: Quantos mobs descobertos com awareness
+// TODO: Quantos boss mortos
+// TODO: Qual tier mais alto voce ja matou/ajudou a matar
+// TODO: Top ganho de XP num dia
+// TODO: Quantas vezes ja se disfarçou
+// TODO: Quantos golpes acertados consecutivos sem errar em criaturas red
+// TODO: Quantos aliados voce ja curou
+// TODO: Quanto voce ja curou seus aliados
+// TODO: Quantas vezes utilizou suas habilidades
+// TODO: Qual habilidade mais utilizada
 class Achievement()
 	var type; // Readonly
 	var key; // Readonly
@@ -8,7 +25,7 @@ class Achievement()
 	var xp;
 	var level;
 
-	var achievData; // Dictionary para armazenar informações
+	var achievData := dictionary{}; // Dictionary para armazenar contador da informação passada como Key
 
 	function Achievement(this, key)
 		this.type := ACHIEVEMENT;
@@ -17,8 +34,6 @@ class Achievement()
 		this.name := CStr(key);
 		this.xp := 0;
 		this.level := 0;
-
-		this.achievData := dictionary{};
 	endfunction
 
 	function GetType(this)
@@ -100,6 +115,6 @@ class Achievement()
 	endfunction
 
 	function toString(this)
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level})";
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, achievData={this.achievData})";
 	endfunction
 endclass

@@ -4,7 +4,13 @@ const ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION";
 
 // TODO: Dungeons exploradas
 // TODO: Itens de lore encontrados
-// TODO: 
+// TODO: Quantos baús abertos
+// TODO: Quantas armadilhas desativadas
+// TODO: Quantos máximos passos em sneak consecutivo
+// TODO: Dungeons completadas
+// TODO: Bosses únicos derrotados
+// TODO: Áreas secretas descobertas
+// TODO: NPCs únicos encontrados
 
 class AchievementExploration(Achievement)
 	var locations;
