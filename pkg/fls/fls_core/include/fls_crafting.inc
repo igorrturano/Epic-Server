@@ -7,7 +7,7 @@
 use uo;
 use cfgfile;
 
-include "fls_objtypes";
+include "include/objtype";
 
 
 function CheckForPen(backpack, charges)
