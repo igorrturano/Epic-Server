@@ -33,7 +33,6 @@ include "include/say";
 
 const PROPTAG := "#debug_";
 
-
 /**
  * Enumeração DEBUGNAMES
  * 
@@ -74,17 +73,17 @@ endenum
  * Novos tipos de debug devem ser adicionados nesta lista, utilizando o enum correspondente
  * e especificando o nível de permissão adequado.
  */
-var listDebugs := array{
-    struct { name := DEBUG_ALL, "level" := 0 },
-    struct { name := DEBUG_CLIMA, "level" := 0 }, 
-    struct { name := DEBUG_DAMAGE, "level" := 0 },
-	struct { name := DEBUG_SMELTING, "level" := 0 },
-	struct { name := DEBUG_UP, "level" := 0 },
-	struct { name := DEBUG_EQUIP, "level" := 0 },
-    struct { name := DEBUG_HIT, "level" := 0 },
-	struct { name := DEBUG_HAB, "level" := 0 },
-	struct { name := DEBUG_MASTERY, "level" := 0 },
-	struct { name := DEBUG_ACHIEVEMENT, "level" := 0 }
+var listDebugs := dictionary {
+    DEBUG_ALL -> struct { name := DEBUG_ALL, "level" := 0 },
+    DEBUG_CLIMA -> struct { name := DEBUG_CLIMA, "level" := 0 },
+    DEBUG_DAMAGE -> struct { name := DEBUG_DAMAGE, "level" := 0 },
+	DEBUG_SMELTING -> struct { name := DEBUG_SMELTING, "level" := 0 },
+	DEBUG_UP -> struct { name := DEBUG_UP, "level" := 0 },
+	DEBUG_EQUIP -> struct { name := DEBUG_EQUIP, "level" := 0 },
+	DEBUG_HIT -> struct { name := DEBUG_HIT, "level" := 0 },
+	DEBUG_HAB -> struct { name := DEBUG_HAB, "level" := 0 },
+	DEBUG_MASTERY -> struct { name := DEBUG_MASTERY, "level" := 0 },
+	DEBUG_ACHIEVEMENT -> struct { name := DEBUG_ACHIEVEMENT, "level" := 0 }
 };
 
 /**
@@ -104,7 +103,7 @@ var listDebugs := array{
  */
 function DebugMsg(who, debugName, msg)
     if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-        SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
+        SendSysMessage(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
     endif
 endfunction
 
