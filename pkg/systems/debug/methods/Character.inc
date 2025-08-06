@@ -1,4 +1,4 @@
-include ":debug:main";
+include ":debug:Controller/DebugController";
 
 print("INSTALLING: Methods for Character -> Debug System... OK!");
 
