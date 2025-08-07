@@ -311,13 +311,13 @@ function Fazenda_ShowLeaderGump(who, placa)
         LogCritical("FAZENDA_DEBUG", "--- STEP 6.6: ADICIONANDO SEÇÃO DO GERENTE ---");
         // Posição da seção do gerente (mesmo local onde estava a imagem)
         var gerente_x := x + 280; // Posição X da seção do gerente
-        var gerente_y := y + 60;  // Posição Y da seção do gerente
+        var gerente_y := y + 30;  // Posição Y da seção do gerente
         var img_width := 100; // Largura da imagem
         var img_height := 100; // Altura da imagem
         
         // Título da seção
-        GFTextLine(gump, gerente_x, gerente_y + 30, 1153, "Gerente da Fazenda");
-        gerente_y += 50; // Move para baixo para o nome
+        GFTextLine(gump, gerente_x, gerente_y, 1153, "Fazendeiro Chefe");
+        gerente_y += 20; // Move para baixo para o nome
         
         if (gerente_serial)
             var gerente := SystemFindObjectBySerial(CInt(gerente_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
