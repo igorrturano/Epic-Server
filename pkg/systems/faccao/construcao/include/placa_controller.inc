@@ -236,12 +236,12 @@ function PLACA_LoadAndExecuteModule(module_name, who, placa, access_level)
     LogCritical(LOG_CATEGORY, "Verificando tipo de módulo: '" + Lower(module_name) + "'");
     case (Lower(module_name))
         "casa":
-            LogCritical(LOG_CATEGORY, "CASA detectada - chamando PLACA_ExecuteCasa");
-            return PLACA_ExecuteCasa(who, placa, access_level);
+            LogCritical(LOG_CATEGORY, "CASA detectada - chamando script casa_uso existente");
+            return start_script(":faccao:construcao/construcoes_todas/casa_uso", array{who, placa});
             
         "lotedefazenda":
-            LogCritical(LOG_CATEGORY, "FAZENDA detectada - chamando PLACA_ExecuteFazenda");
-            return PLACA_ExecuteFazenda(who, placa, access_level);
+            LogCritical(LOG_CATEGORY, "FAZENDA detectada - chamando script fazenda_uso existente");
+            return start_script(":faccao:construcao/construcoes_todas/fazenda_uso", array{who, placa});
             
         "casadolenhador":
             LogCritical(LOG_CATEGORY, "LENHADOR detectada - chamando PLACA_ExecuteLenhador");

@@ -201,6 +201,7 @@ endfunction
  */
 function GetStageNumber(andaime_principal)
     var timer_info := GetObjProperty(andaime_principal, "ConstructionTimer");
+    var build_info := GetObjProperty(andaime_principal, "BuildingInfo");
     
     if (!timer_info)
         // Se NÃO há timer, estamos na fase de coleta de materiais.
@@ -216,26 +217,41 @@ function GetStageNumber(andaime_principal)
         var tempo_passado := polcore().systime - CInt(timer_info.start_time);
         var progresso_tempo := CInt((tempo_passado * 100) / tempo_total);
         
-        // Mapeia a porcentagem de tempo para os seus 8 estágios
-        if (progresso_tempo >= 90)
-            return 8;
-        elseif (progresso_tempo >= 80)
-            return 7;
-        elseif (progresso_tempo >= 65)
-            return 6;
-        elseif (progresso_tempo >= 55)
-            return 5;
-        elseif (progresso_tempo >= 45)
-            return 4;
-        elseif (progresso_tempo >= 30)
-            return 3;
-        elseif (progresso_tempo >= 20)
-            return 2;
-        elseif (progresso_tempo >= 10)
-            return 1;
-        else // 0-9% do tempo
-            // Logo após o início do timer, ainda mostra o andaime inicial.
-            return 0; 
+        // Verifica se é fazenda (que tem apenas 5 estágios: 0,1,2,3,4)
+        if (build_info && build_info.type == "lotedefazenda")
+            if (progresso_tempo >= 100)
+                return 4;  // 100% -> Estágio 4
+            elseif (progresso_tempo >= 75)
+                return 3;  // 75% -> Estágio 3
+            elseif (progresso_tempo >= 50)
+                return 2;  // 50% -> Estágio 2
+            elseif (progresso_tempo >= 25)
+                return 1;  // 25% -> Estágio 1
+            else
+                return 0;  // 0-24% -> Estágio 0
+            endif
+        else
+            // Para Casa e outras construções (8 estágios)
+            if (progresso_tempo >= 90)
+                return 8;
+            elseif (progresso_tempo >= 80)
+                return 7;
+            elseif (progresso_tempo >= 65)
+                return 6;
+            elseif (progresso_tempo >= 55)
+                return 5;
+            elseif (progresso_tempo >= 45)
+                return 4;
+            elseif (progresso_tempo >= 30)
+                return 3;
+            elseif (progresso_tempo >= 20)
+                return 2;
+            elseif (progresso_tempo >= 10)
+                return 1;
+            else // 0-9% do tempo
+                // Logo após o início do timer, ainda mostra o andaime inicial.
+                return 0; 
+            endif
         endif
     endif
 endfunction
@@ -315,6 +331,13 @@ function FEUDO_CompleteConstruction(andaime_principal)
         
         var pecas_da_construcao := array{};
         var placas_validas_graphics := FEUDO_GetPlacaObjtypes();
+        LogCritical("FeudoComplete", "    -> *** DEBUG PLACAS VÁLIDAS CARREGADAS ***");
+        LogCritical("FeudoComplete", "        Total de placas: " + placas_validas_graphics.size());
+        foreach graphic in placas_validas_graphics
+            LogCritical("FeudoComplete", "        Placa válida: 0x" + Hex(graphic));
+        endforeach
+        LogCritical("FeudoComplete", "        Procurando por 0x1E34: " + (0x1E34 in placas_validas_graphics ? "ENCONTRADA" : "NÃO ENCONTRADA"));
+        
         var placa_mestre_criada := 0;
         var pecas_criadas := 0;
         var placas_detectadas := 0;
@@ -332,17 +355,31 @@ function FEUDO_CompleteConstruction(andaime_principal)
 
                 LogDebug("FeudoComplete", "    -> Processando linha: " + piece_line);
                 LogDebug("FeudoComplete", "        Graphic: 0x" + Hex(graphic_from_cfg) + ", Offset: (" + x_offset + "," + y_offset + "," + z_offset + ")");
+                
+                // LOG ESPECÍFICO PARA DEBUG DO 0x1E34
+                if (graphic_from_cfg == 0x1E34)
+                    LogCritical("FeudoComplete", "    -> *** ENCONTROU 0x1E34 NO BLUEPRINT! ***");
+                    LogCritical("FeudoComplete", "        -> Está nas placas válidas? " + (graphic_from_cfg in placas_validas_graphics ? "SIM" : "NÃO"));
+                    LogCritical("FeudoComplete", "        -> Placa mestre já foi criada? " + (placa_mestre_criada ? "SIM" : "NÃO"));
+                endif
 
                 if (graphic_from_cfg in placas_validas_graphics && !placa_mestre_criada)
                     placas_detectadas := placas_detectadas + 1;
-                    LogInfo("FeudoComplete", "        -> PLACA DETECTADA! Criando placa mestre (Graphic: 0x" + Hex(graphic_from_cfg) + ")");
+                    LogCritical("FeudoComplete", "        -> *** PLACA DETECTADA! Criando placa mestre ***");
+                    LogCritical("FeudoComplete", "            Graphic: 0x" + Hex(graphic_from_cfg));
+                    LogCritical("FeudoComplete", "            Posição: (" + (x + x_offset) + "," + (y + y_offset) + "," + (z + z_offset) + ")");
+                    LogCritical("FeudoComplete", "            Realm: " + realm.name);
+                    
                     peca := CreateItemAtLocation(x + x_offset, y + y_offset, z + z_offset, 0xEEF1, 1, realm);
+                    LogCritical("FeudoComplete", "            CreateItemAtLocation retornou: " + (peca ? peca.serial : "ERROR"));
+                    
                     if (peca)
                         peca.graphic := graphic_from_cfg;
+                        LogCritical("FeudoComplete", "            Graphic alterado para: 0x" + Hex(peca.graphic));
                         placa_mestre_criada := peca;
-                        LogInfo("FeudoComplete", "        -> Placa mestre criada com sucesso! Serial: " + peca.serial);
+                        LogCritical("FeudoComplete", "        -> *** PLACA MESTRE CRIADA COM SUCESSO! Serial: " + peca.serial + " ***");
                     else
-                        LogError("FeudoComplete", "        -> FALHA ao criar placa mestre!");
+                        LogCritical("FeudoComplete", "        -> *** FALHA CRÍTICA ao criar placa mestre! ***");
                     endif
                 else
                     if (graphic_from_cfg in placas_validas_graphics)
@@ -383,9 +420,23 @@ function FEUDO_CompleteConstruction(andaime_principal)
         if (placa_mestre_criada)
             LogInfo("FeudoComplete", ">>> ETAPA 4.1: Configurando placa mestre");
             placa_mestre_criada.name := details.Name;
-            placa_mestre_criada.usescript := ":faccao:construcao/construcoes_todas/casa_uso";
+            
+            // Definir script baseado no tipo de construção
+            LogCritical("FeudoComplete", "    -> *** DEBUG SCRIPT SELECTION ***");
+            LogCritical("FeudoComplete", "        build_info.type: '" + build_info.type + "'");
+            LogCritical("FeudoComplete", "        Comparando com 'lotedefazenda': " + (build_info.type == "lotedefazenda" ? "MATCH" : "NO MATCH"));
+            
+            var script_uso := ":faccao:construcao/construcoes_todas/casa_uso"; // padrão
+            if (build_info.type == "lotedefazenda")
+                script_uso := ":faccao:construcao/construcoes_todas/fazenda_uso";
+                LogCritical("FeudoComplete", "        -> FAZENDA DETECTADA! Script definido para fazenda_uso");
+            else
+                LogCritical("FeudoComplete", "        -> Não é fazenda, usando casa_uso");
+            endif
+            
+            placa_mestre_criada.usescript := script_uso;
             LogDebug("FeudoComplete", "    -> Nome definido: '" + details.Name + "'");
-            LogDebug("FeudoComplete", "    -> Script definido: ':faccao:construcao/construcoes_todas/casa_uso'");
+            LogDebug("FeudoComplete", "    -> Script definido: '" + script_uso + "'");
             
             SetObjProperty(placa_mestre_criada, "BuildingInfo", build_info);
             SetObjProperty(placa_mestre_criada, "BuildingPieces", pecas_da_construcao);
@@ -637,7 +688,8 @@ function FEUDO_GetPlacaObjtypes()
         0x72D0, 0x72D1, 0x72D2, 0x72D3, 0x72D4, 0x72D5, 0x72D6, 0x72D7, 0x72D8, 0x72D9, 0x72DA, 0x72DB, 
         0x72DC, 0x72DD, 0x72DE, 0x72DF, 0x72E0, 0x72E1,
         0xF109, 0xF10A, 0xF10B, 0xF10C, 0xF10D, 0xF10E, 0xF10F, 0xF110, 0xF111, 0xF112, 0xF113, 0xF114,
-        0xF115, 0xF116, 0xF117, 0xF118
+        0xF115, 0xF116, 0xF117, 0xF118,
+        0x1E34  // Placa específica da fazenda (EspantalhoDeGestao)
     };
 endfunction
 

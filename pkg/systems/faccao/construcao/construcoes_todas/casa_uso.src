@@ -48,7 +48,7 @@ function ShowLeaderGump(who, placa)
 
     var continuar := 1;
     while (continuar)
-        var gump := GFECreateGump("Gestão de Propriedade: " + details.Name, 450, 420, array{BORDER_MARBLE});
+        var gump := GFECreateGump("Gestão de Propriedade1111: " + details.Name, 450, 420, array{BORDER_MARBLE});
 
         var y := 80;
         var x := 30;
