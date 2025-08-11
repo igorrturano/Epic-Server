@@ -86,7 +86,7 @@ function Loot_CreateItem(container, line)
         for(i := 1; i <= parsed.amount; i := i + 1)
             var item := CreateItemInContainer(container, parsed.name);
             
-            SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
+            SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
 
             sleepms(2);
         endfor
@@ -102,7 +102,7 @@ function Loot_CreateStack(container, line)
 	
 	if ( Loot_ChanceCheck(parsed.chance) )
 		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
+        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
