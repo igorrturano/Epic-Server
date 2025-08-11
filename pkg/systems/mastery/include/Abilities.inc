@@ -1,6 +1,6 @@
 use os;
 
-include ":debug:main";
+include ":debug:Controller/DebugController";
 include ":equipsys:utils/consts";
 include ":tn:cooldown";
 include ":attributes:attributes";
