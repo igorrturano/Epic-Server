@@ -7,7 +7,6 @@ class DFTools()
 		this.filename := _filename;
 	endfunction
 
-	
 	/*
 	 * WriteValue(elem_name, prop_name, value)
 	 *
@@ -65,67 +64,20 @@ class DFTools()
 		return value;
 	endfunction
 
-	function DeleteElement(this, elem_name)
-		var file := DFOpenDataFile(this.filename, DF_CREATE);
-		var elem := DFFindElement(file, elem_name, DF_CREATE);
-
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this.filename}" }; endif
-		file.DeleteElement(elem_name);
-
-		return true;
-	endfunction
-
-	function DeleteProp(this, elem_name, prop_name)
-		var file := DFOpenDataFile(this.filename, DF_CREATE);
-		var elem := DFFindElement(file, elem_name, DF_CREATE);
-
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this.filename}" }; endif
-		elem.EraseProp(prop_name);
-
-		return true;
-	endfunction
-
-	/**
-	 * GetAllElements(this)
-	 *
-	 * Recupera todos os elementos presentes no arquivo de dados associado ao objeto.
-	 *
-	 * Parâmetros
-	 * this: Referência ao objeto que contém o atributo 'filename' com o caminho do arquivo de dados.
-	 *
-	 * Valor de retorno
-	 * Retorna uma lista com todas as chaves (elementos) encontradas no arquivo de dados.
-	 * Em caso de erro ao abrir o arquivo ou se nenhum elemento for encontrado, retorna um objeto de erro com a propriedade 'errortext'.
-	 */
-	function GetAllElements(this)
-		var elems;
-		var file := OpenDataFile(this.filename);
-		if (!file) return error{ errortext := $"Could not open data file {this.filename}" }; endif
-		elems := file.Keys();
-		if (!elems) return error{ errortext := $"No elements found in {this.filename}" }; endif
-
-		return elems;
-	endfunction
-
 	/**
 	 * GetElementPropNames(this, elem_key)
 	 *
-	 * Obtém os nomes das propriedades de um elemento específico em um arquivo de dados
+	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
 	 *
-	 * Parameters
-	 * this: Objeto contendo o nome do arquivo de dados (this.filename)
-	 * elem_key: Chave/identificador do elemento a ser pesquisado
+	 * Parameters:
+	 * this: The DFTools instance containing the filename of the data file.
+	 * elem_key: The key (name) of the element whose properties are to be retrieved.
 	 *
-	 * Return value
-	 * Array com os nomes das propriedades do elemento ou erro caso:
-	 * - O arquivo não possa ser aberto
-	 * - O elemento não seja encontrado
-	 * - O elemento não possua propriedades
+	 * Returns:
+	 * An array of property names for the specified element, or an error if the element is not found.
 	 */
 	function GetElementPropNames(this, elem_key)
-		var file := OpenDataFile(this.filename);
-		if (!file) return error{ errortext := $"Could not open data file {this.filename}" }; endif
-
+		var file := DFOpenDataFile(this.filename, DF_CREATE);
 		var elem := file.FindElement(elem_key);
 		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
 
@@ -135,6 +87,15 @@ class DFTools()
 		return props;
 	endfunction
 
+	/**
+	 * Erase(this)
+	 *
+	 * Apaga todos os dados do arquivo de dados associado a este objeto.
+	 *
+	 * Parameters
+	 * this: O objeto Datafile cuja propriedade 'filename' especifica o arquivo a ser apagado.
+	 *
+	 */
 	function Erase(this)
 		DFPurgeFile(this.filename);
 	endfunction
