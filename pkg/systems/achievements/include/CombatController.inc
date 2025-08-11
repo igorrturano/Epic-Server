@@ -2,7 +2,7 @@
 // Feito com struct pra evitar refatoramento e um monte de parametros.
 include ":achievements:model/Achievement";
 include ":achievements:model/AchievementCombat";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 include "include/NPCUtil";
 
 /**

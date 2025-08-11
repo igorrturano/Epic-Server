@@ -73,7 +73,7 @@ program wall_of_stone( parms )
 		endif
 
 		SetObjProperty(item, "SummonedField", caster.serial);
-		SetObjProperty(item, "PROPNAME_DISPENSAVEL_FLAG", 1);
+		SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG, true);
 		item.SetOwner(caster);
 		item.SetDuration(duration);
 		SleepMS(2);

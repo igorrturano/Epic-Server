@@ -67,4 +67,82 @@ cd epic-shard/
 
 Siga as instruções para assegurar que os arquivos sejam corretamente transferidos e atualizados no servidor.
 
+## Docker
+
+### Usando o Script Único
+
+```bash
+# Usar caminho padrão
+./scripts/run-pol.sh
+
+# Especificar caminho personalizado
+./scripts/run-pol.sh --uo-data /home/user/UO/Epic
+
+# Com reconstrução da imagem
+./scripts/run-pol.sh --uo-data /mnt/external/UO --build
+```
+
+### Usando Docker Diretamente
+
+```bash
+# Construir imagem
+docker build -t epic-pol-server .
+
+# Executar container
+docker run -d \
+  --name epic-pol-server \
+  -p 5003:5003 -p 5085:5085 -p 3008:3008 \
+  -v /home/user/UO/Epic:/tmp/uo-data:ro \
+  -v $(pwd)/realm:/opt/pol/realm \
+  -v $(pwd)/data:/opt/pol/data \
+  -v $(pwd)/logs:/opt/pol/logs \
+  epic-pol-server --uo-data /tmp/uo-data
+```
+
+## Comandos Básicos
+
+### Usando o Script Simplificado
+
+```bash
+# Iniciar servidor
+./scripts/run-pol.sh --uo-data /caminho/para/UO
+
+# Ver logs
+./scripts/run-pol.sh --logs
+
+# Acessar console
+./scripts/run-pol.sh --console
+
+# Parar servidor
+./scripts/run-pol.sh --stop
+
+# Reconstruir e iniciar
+./scripts/run-pol.sh --uo-data /caminho/para/UO --build
+
+# Mostrar ajuda
+./scripts/run-pol.sh --help
+```
+
+### Acessar o Console
+
+```bash
+# Via script
+./scripts/run-pol.sh --console
+
+# Via docker
+docker exec -it epic-pol-server /bin/bash
+
+# Executar comandos POL diretamente
+docker exec -it epic-pol-server /opt/pol/pol
+```
+
+## Volumes e Dados Persistentes
+
+O script configura os seguintes volumes:
+
+- `./realm:/opt/pol/realm` - Dados do reino
+- `./data:/opt/pol/data` - Dados do mundo
+- `./logs:/opt/pol/logs` - Logs do servidor
+- `${UO_DATA_PATH}:/tmp/uo-data:ro` - Dados UO (somente leitura)
+
 
