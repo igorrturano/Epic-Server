@@ -7,7 +7,7 @@ use cfgfile;
 include ":fls_core:fls_characters";
 include ":nature:nature";
 include ":death:death";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 
 program daynightsystem()
 	SetGlobalProperty("daynightpid", getpid());

@@ -1,7 +1,7 @@
 // O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
 // Foi feito com struct pra evitar refatoramento e um monte de parametros.
 include ":mastery:model/MasteryCombat";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 
 /**
  * MasteryCombat_Advance(attacker, combatInfo)
