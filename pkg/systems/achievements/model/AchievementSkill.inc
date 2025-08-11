@@ -1,9 +1,5 @@
 // COMBAT
-// TODO: Backstabs
-// TODO: Cura em si
-// TODO: Cura em outros
-// TODO: Cura máxima
-// TODO: Cura acumulada
+
 
 // EXPLORATION
 // TODO: Quantos baús abertos

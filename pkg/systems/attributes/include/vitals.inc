@@ -12,6 +12,7 @@
 
 use uo;
 use os;
+use vitals;
 use cfgfile;
 
 /* AP_GetVitalsCfgFile()
@@ -139,16 +140,16 @@ function HealHits(mobile, amount)
 endfunction
 
 function HealMana(mobile, amount)
-  AP_SetVital(mobile, MANA, cint(AP_GetVital(mobile, MANA)+amount));
-  if (AP_GetVital(mobile, MANA) >  AP_GetVitalMaximumValue(mobile, MANA))
-    AP_SetVital(mobile, MANA, AP_GetVitalMaximumValue(mobile, MANA));
+  AP_SetVital(mobile, "Mana", cint(AP_GetVital(mobile, "Mana")+amount));
+  if (AP_GetVital(mobile, "Mana") >  AP_GetVitalMaximumValue(mobile, "Mana"))
+    AP_SetVital(mobile, "Mana", AP_GetVitalMaximumValue(mobile, "Mana"));
   endif
 endfunction
 
 function HealStamina(mobile, amount)
-  AP_SetVital(mobile, STAMINA, cint(AP_GetVital(mobile, STAMINA)+amount));
-  if (AP_GetVital(mobile, STAMINA) >  AP_GetVitalMaximumValue(mobile, STAMINA))
-    AP_SetVital(mobile, STAMINA, AP_GetVitalMaximumValue(mobile, STAMINA));
+  AP_SetVital(mobile, "Stamina", cint(AP_GetVital(mobile, "Stamina")+amount));
+  if (AP_GetVital(mobile, "Stamina") >  AP_GetVitalMaximumValue(mobile, "Stamina"))
+    AP_SetVital(mobile, "Stamina", AP_GetVitalMaximumValue(mobile, "Stamina"));
   endif
 endfunction
 
@@ -202,14 +203,14 @@ endfunction
 function DamageMANA(mobile, points)
 
 	points := CDbl(points);
-	var cur_amount := AP_GetVital(mobile, MANA);
+	var cur_amount := AP_GetVital(mobile, "Mana");
 
 	// Se não houver mana suficiente, retornar falha (0) sem consumir mana
 	if ( points > cur_amount )
 		return 0;
 	else
 		cur_amount := cur_amount-points;
-		AP_SetVital(mobile, MANA, cur_amount);
+		AP_SetVital(mobile, "Mana", cur_amount);
 		return 1;  // Sucesso
 	endif
 
@@ -221,7 +222,7 @@ endfunction
 function DamageStamina(mobile, points)
 
 	points := CDbl(points);
-	var cur_amount := AP_GetVital(mobile, STAMINA);
+	var cur_amount := AP_GetVital(mobile, "Stamina");
 
 	if ( points > cur_amount )
 		cur_amount := 0;
@@ -229,7 +230,7 @@ function DamageStamina(mobile, points)
 		cur_amount := cur_amount-points;
 	endif
 
-	AP_SetVital(mobile, STAMINA, cur_amount);
+	AP_SetVital(mobile, "Stamina", cur_amount);
 	return 1;
 
 
