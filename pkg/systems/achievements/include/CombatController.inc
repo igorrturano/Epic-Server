@@ -50,7 +50,7 @@ function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(0)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> Level: {achiev.GetLevel()} - XP: {achiev.GetXP()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
 
-	attacker.SetAchievementProgress(achiev);
+	attacker.SetAchievementProgress(ACHIEVEMENT_COMBAT, achiev);
 endfunction
 
 function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
@@ -65,11 +65,11 @@ function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 	AchievementAdvance_Hits(achiev, combatInfo);
 	AchievementAdvance_Damage(achiev, combatInfo);
 
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({ACHIEVEMENT_COMBAT})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(0)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> Level: {achiev.GetLevel()} - XP: {achiev.GetXP()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
 
-	attacker.SetAchievementProgress(achiev);
+	attacker.SetAchievementProgress(ACHIEVEMENT_COMBAT, achiev);
 endfunction
 
 function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
@@ -86,11 +86,11 @@ function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	AchievementAdvance_Hits(achiev, combatInfo);
 	AchievementAdvance_Damage(achiev, combatInfo);
 
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({ACHIEVEMENT_COMBAT})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(0)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> Level: {achiev.GetLevel()} - XP: {achiev.GetXP()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
 
-	attacker.SetAchievementProgress(achiev);
+	attacker.SetAchievementProgress(ACHIEVEMENT_COMBAT, achiev);
 endfunction
 
 function AchievementAdvance_XP(byRef achiev, combatInfo)
