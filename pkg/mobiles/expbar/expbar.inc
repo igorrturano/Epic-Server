@@ -129,7 +129,7 @@ function AwardXPFromKill(killers, corpse)
    xp_gain := CInt(xp_gain / killers.size());
    foreach killer in killers
    	AddXP(killer, xp_gain);
-	MasteryCombat_Advance(killer, struct{ xp := xp_gain, kills := 1 });
+	MasteryCombat_Advance(killer, struct{ kills := 1 });
 	AchievementCombat_Advance(killer, corpse, struct{ xp := xp_gain, kills := 1 });
    endforeach
 

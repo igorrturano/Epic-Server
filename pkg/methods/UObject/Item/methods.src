@@ -43,6 +43,21 @@ exported function getMaterialName(item)
 	return getMaterialID(item) ? FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name : getMaterialID(item);
 endfunction
 
+/**
+ * getCfgElem(item)
+ *
+ * Obtém o elemento de configuração de um item a partir do arquivo itemdesc.cfg.
+ * Esta função busca e retorna as configurações específicas de um item baseado
+ * em seu tipo de objeto (objtype) no arquivo de configuração itemdesc.
+ * 
+ * @param item O objeto item do qual se deseja obter a configuração
+ * @return ConfigElem O elemento de configuração correspondente ao tipo do item,
+ * 					  ou null se não encontrado.
+ */
+exported function getCfgElem(item)
+	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
+endfunction
+
 exported function isSpiderEggSac(item)
 	if (item.objtype == 0x10D9) return 1; endif
 	return 0;
