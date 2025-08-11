@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 use cfgfile;
 
->>>>>>> 7e3033b804deacd6e79435ec4bce8b147800797e
 print("INSTALLING: Methods for Armor -> Equipment System... OK!");
 
 /**

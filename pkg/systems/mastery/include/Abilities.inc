@@ -1,12 +1,7 @@
 use os;
 
-<<<<<<< HEAD
-include ":debug:main";
-include ":equipsys:utils";
-=======
 include ":debug:Controller/DebugController";
 include ":equipsys:utils/consts";
->>>>>>> 7e3033b804deacd6e79435ec4bce8b147800797e
 include ":tn:cooldown";
 include ":attributes:attributes";
 
@@ -114,12 +109,8 @@ function ExecuteAfterEngage(byRef combatInfo)
 endfunction
 
 function CalculateCooldown(byRef combatInfo)
-<<<<<<< HEAD
-	var cooldown := CInt(150); // TODO: fazer basaeado na skill do personagem
-=======
 	var weaponSkill := AP_GetSkill(combatInfo.attacker, combatInfo.attacker.weapon.attribute);
 	var cooldown := CInt(160) - (weaponSkill / 1); // TODO: Ajustar a fórmula de cooldown
->>>>>>> 7e3033b804deacd6e79435ec4bce8b147800797e
 	return cooldown;
 endfunction
 

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-include ":equipsys:utils";
-=======
 include ":equipsys:utils/consts";
->>>>>>> 7e3033b804deacd6e79435ec4bce8b147800797e
 include ":attributes:attributeConstants";
 
 print("INSTALLING: Methods for Weapon -> Equipment System... OK!");
@@ -65,11 +61,7 @@ endfunction
  */
 exported function getOffDamageDice(weapon)
 	var prop := weapon.getAttrBase();
-<<<<<<< HEAD
 	
-=======
-
->>>>>>> 7e3033b804deacd6e79435ec4bce8b147800797e
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;
 	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
