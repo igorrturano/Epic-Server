@@ -25,7 +25,7 @@ class Achievement()
 	var xp;
 	var level;
 
-	var achievData := dictionary{}; // Dictionary para armazenar contador da informação passada como Key
+	var achievData := dictionary{}; // Dictionary para armazenar dados do achievement - Feito dessa forma pois cada achievement tem uma forma de verificar (Se atentar ao padrão)
 
 	function Achievement(this, key)
 		this.type := ACHIEVEMENT;
@@ -76,15 +76,15 @@ class Achievement()
 		this.achievData[name] := value;
 	endfunction
 
-	function AddXP(this, value)
+	function IncrementXP(this, value)
 		this.xp += CInt(value);
 	endfunction
-	
-	function AddLevel(this)
+
+	function IncrementLevel(this)
 		this.level++;
 	endfunction
 
-	function AddData(this, name, value)
+	function IncrementData(this, name, value)
 		if (!this.achievData[name]) this.SetData(name, 0); endif
 		this.achievData[name] += CInt(value);
 	endfunction
