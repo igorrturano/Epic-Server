@@ -60,7 +60,7 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         // Configurações do baú
         SetObjProperty(chest, "IsTreasureChest", 1);
         SetObjProperty(chest, "CreatedOn", ReadGameClock());
-        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, 1);
+        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, true);
         SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
         SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
         SetObjProperty(chest, "level", lvl);

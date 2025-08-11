@@ -18,6 +18,9 @@ include ":tn:boss";
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
 
+CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
+CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
+
 function ConstructGump(item)
    var opts := item.GetLeverOpts();
    var gump := GFCreateGump();
@@ -592,7 +595,7 @@ endfunction
 function efeitos(who, item)
    var opts := item.GetLeverOpts();
    
-   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Apagar"});
+   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Sons","Apagar"});
    foreach r in result
       if (r == "Tremor")
          opts.tremor := 1;
@@ -631,10 +634,24 @@ function efeitos(who, item)
          SetObjProperty(item,  "clima_cfg", clima_config);
          SendSysMessageEx(who, "O efeito area (clima) estah ativo", SSM_INFO);
          opts.efeitos := 1;
+	  elseif (r == "Sons")
+		var sons_op := RadioGump(who, 150, 200, "Opções de Sons", {"Som Inicial/Acionamento","Som Final/Efeito"});
+			if (sons_op == "Som Inicial/Acionamento")
+				var som1_request := RequestGump(who, "Escreva o id do som de acionamento (use .sfx <sfx/mid> id_sound para testar o som)");			
+				SetObjProperty(item, "som_inicial", som1_request);
+			elseif (sons_op == "Som Final/Efeito")
+				var som2_request := RequestGump(who, "Escreva o id do som de efeito/final (use <.sfx <sfx/mid> id_sound> para testar o som)");	
+				opts.somfim := 1;
+				SetObjProperty(item, "Som_fim", som2_request);
+			endif
+         SendSysMessageEx(who, "Os sons foram configurados!", SSM_INFO);
       elseif (r == "Apagar")
          EraseObjProperty(item, "clima_cfg");
          EraseObjProperty(item, "tremor_cfg");
          EraseObjProperty(item, "clima");
+		EraseObjProperty(item, "som_inicial");
+		EraseObjProperty(item, "Som_fim");
+		opts.-"somfim";
          opts.-"clima";
          opts.-"tremor";
          opts.efeitos := 0;
