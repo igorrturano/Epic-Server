@@ -1450,36 +1450,6 @@ function IsLeatherBoots (byref item)
 	return 0;
 endfunction
 
-function IsOneHandedWeapon (byref item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Two_Handed)
-			return 0;
-		else
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
-function IsTwoHandedWeapon (byref item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Two_Handed)
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
 function GetLayers()
 
 enum LAYERS

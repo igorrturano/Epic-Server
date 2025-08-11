@@ -107,7 +107,7 @@ program arremesso(params)
 		return 0;
     endif
 
-	if (IsThrowingWeapon(who.weapon))
+	if (who.weapon.IsThrowingWeapon())
 		AP_ConsumeVital(who, "Stamina", 10);
 	else
 		AP_ConsumeVital(who, "Stamina", 20);

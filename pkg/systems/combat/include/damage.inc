@@ -17,7 +17,7 @@ include ":combat:armorZones";
 include ":combat:combat";
 include ":combat:habilidades";
 include ":combat:weardown";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
 include ":crafting:/include/caracteristicasFabricacao";
 
@@ -758,34 +758,6 @@ function CanDestroyCraft(who)
     return 0;
 endfunction
 
-function IsTwoHandedWeapon(item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Two_Handed)
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
-function IsThrowingWeapon(item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Throwing)
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	var damage := rawdamage;
 
@@ -845,7 +817,7 @@ endfunction
 
 function CalcDamageStats(attacker, damage)
 	var stat;
-	var elem := getItemCfgElem(attacker.weapon);
+	var elem := attacker.weapon.getCfgElem();
 
 	SkillCheck(attacker, TACTICS, -1);
 	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);

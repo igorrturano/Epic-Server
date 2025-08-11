@@ -8,7 +8,6 @@ include ":combat:weardown";
 include ":destroyable:include/destroyItem";
 include "include/epicConstants";
 include "include/facings";
-include ":equipsys:utils";
 include ":traps:traps";
 
 program destroyitems(parms)

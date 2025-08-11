@@ -4,33 +4,36 @@ include ":achievements:model/AchievementCombat";
 include ":achievements:model/AchievementCrafting";
 include ":achievements:model/AchievementExploration";
 
-var DFController := DFTools(":achievements:achievements");
+// var DFController := DFTools(":achievements:achievements");
 
 function SaveAchievement(who, achievement)
-	return DFController.WriteValue(Hex(who.serial), achievement.GetName(), achievement.Serialize());
+	var DFController := DFTools(":achievements:" + achievement.GetType());
+
+	return DFController.WriteValue(Hex(who.serial), achievement.GetKey(), achievement.Serialize());
 endfunction
 
-function LoadAchievement(who, type, name)
-	var achievData := DFController.LoadValue(Hex(who.serial), name);
+function LoadAchievement(who, type, key)
+	var DFController := DFTools(":achievements:" + type);
+	var achievData := DFController.LoadValue(Hex(who.serial), key);
 	var achiev;
 
-	if (!achievData) return error{ errortext := $"Achievement data not found for {name} ({type})" }; endif
+	if (!achievData) return error{ errortext := $"Achievement data not found for {key} ({type})" }; endif
 
 	case (type)
 		ACHIEVEMENT:
-			achiev := Achievement(name);
+			achiev := Achievement(key);
 			break;
 
 		ACHIEVEMENT_COMBAT:
-			achiev := AchievementCombat(name);
+			achiev := AchievementCombat(key);
 			break;
 
 		ACHIEVEMENT_CRAFTING:
-			achiev := AchievementCrafting(name);
+			achiev := AchievementCrafting(key);
 			break;
 		
 		ACHIEVEMENT_EXPLORATION:
-			achiev := AchievementExploration(name);
+			achiev := AchievementExploration(key);
 			break;
 
 		default:
@@ -44,15 +47,28 @@ endfunction
 
 function LoadAllAchievements(who)
 	var achievements := array{};
-	var propNames := DFController.GetElementPropNames(Hex(who.serial));
+	// var propNames := array{};
+	var types := array{ ACHIEVEMENT_COMBAT };
 
-	if (!propNames) return error{ errortext := "No achievements found for this character." }; endif
-	foreach propName in (propNames)
-		var achievData := DFController.LoadValue(Hex(who.serial), propName);
-		var achievement := LoadAchievement(who, achievData.type, propName);
+	foreach type in (types)
+		var DFController := DFTools(":achievements:" + type);
+		// var propNamesType := DFController.GetElementPropNames(Hex(who.serial));
+		var propNames := DFController.GetElementPropNames(Hex(who.serial));
 
-		achievements.append(achievement);
+		if (propNames.size() < 1)
+			continue;
+		endif
+
+		foreach propName in (propNames)
+			var achievData := DFController.LoadValue(Hex(who.serial), propName);
+			var achievement := LoadAchievement(who, achievData.type, propName);
+
+			achievements.append(achievement);
+		endforeach;
+
 	endforeach;
+
+	if (achievements.size() == 0) return error{ errortext := "No achievements found for this character." }; endif
 
 	return achievements;
 endfunction
