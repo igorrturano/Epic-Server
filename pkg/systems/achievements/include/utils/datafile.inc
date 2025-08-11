@@ -4,12 +4,10 @@ include ":achievements:model/AchievementCombat";
 include ":achievements:model/AchievementCrafting";
 include ":achievements:model/AchievementExploration";
 
-// var DFController := DFTools(":achievements:achievements");
-
 function SaveAchievement(who, achievement)
 	var DFController := DFTools(":achievements:" + achievement.GetType());
 
-	return DFController.WriteValue(Hex(who.serial), achievement.GetKey(), achievement.Serialize());
+	return DFController.WriteValue(Hex(who.serial), achievement.GetCriteriaRef(), achievement.Serialize());
 endfunction
 
 function LoadAchievement(who, type, key)
@@ -21,19 +19,19 @@ function LoadAchievement(who, type, key)
 
 	case (type)
 		ACHIEVEMENT:
-			achiev := Achievement(key);
+			achiev := Achievement(who, key);
 			break;
 
 		ACHIEVEMENT_COMBAT:
-			achiev := AchievementCombat(key);
+			achiev := AchievementCombat(who, key);
 			break;
 
 		ACHIEVEMENT_CRAFTING:
-			achiev := AchievementCrafting(key);
+			// achiev := AchievementCrafting(who, key);
 			break;
 		
 		ACHIEVEMENT_EXPLORATION:
-			achiev := AchievementExploration(key);
+			// achiev := AchievementExploration(who, key);
 			break;
 
 		default:
@@ -47,12 +45,10 @@ endfunction
 
 function LoadAllAchievements(who)
 	var achievements := array{};
-	// var propNames := array{};
 	var types := array{ ACHIEVEMENT_COMBAT };
 
 	foreach type in (types)
 		var DFController := DFTools(":achievements:" + type);
-		// var propNamesType := DFController.GetElementPropNames(Hex(who.serial));
 		var propNames := DFController.GetElementPropNames(Hex(who.serial));
 
 		if (propNames.size() < 1)

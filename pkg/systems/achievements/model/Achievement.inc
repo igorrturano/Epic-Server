@@ -18,62 +18,56 @@ const ACHIEVEMENT := "ACHIEVEMENT";
 // TODO: Quantas vezes utilizou suas habilidades
 // TODO: Qual habilidade mais utilizada
 class Achievement()
-	var type; // Readonly
-	var key; // Readonly
+	var playerRef; // Readonly
+	var criteriaRef; // Readonly
+	var name; // Readonly
 
-	var name;
-	var xp;
 	var level;
+	var xp;
 
-	var achievData := dictionary{}; // Dictionary para armazenar dados do achievement - Feito dessa forma pois cada achievement tem uma forma de verificar (Se atentar ao padrão)
+	function Achievement(this, playerRef, criteriaRef, name := false, level := 0, xp := 0)
+		this.playerRef := playerRef;
+		this.criteriaRef := criteriaRef;
+		this.name := !name ? CStr(criteriaRef) : CStr(name);
 
-	function Achievement(this, key)
-		this.type := ACHIEVEMENT;
-		this.key := key;
-
-		this.name := CStr(key);
-		this.xp := 0;
-		this.level := 0;
+		this.level := CInt(level);
+		this.xp := CInt(xp);
 	endfunction
 
-	function GetType(this)
-		return this.type;
+	function GetData(this, key) endfunction
+	function GetDataKeys(this) endfunction
+	function SetData(this, key, value) endfunction
+
+	function GetPlayerRef(this)
+		return this.playerRef;
 	endfunction
 
-	function GetKey(this)
-		return this.key;
+	function GetCriteriaRef(this)
+		return this.criteriaRef;
 	endfunction
 
 	function GetName(this)
 		return this.name;
 	endfunction
 
-	function GetXP(this)
-		return this.xp;
-	endfunction
-
 	function GetLevel(this)
 		return this.level;
 	endfunction
 
-	function GetData(this, name)
-		return this.achievData[name];
+	function GetXP(this)
+		return this.xp;
 	endfunction
 
-	function _SetName(this, value)
+	function _SetName(this, value) // Feito com _ porque SetName é reservado ao compilador
 		this.name := value;
-	endfunction
-
-	function SetXP(this, value)
-		this.xp := value;
 	endfunction
 
 	function SetLevel(this, value)
 		this.level := value;
 	endfunction
 
-	function SetData(this, name, value)
-		this.achievData[name] := value;
+	function SetXP(this, value)
+		this.xp := value;
 	endfunction
 
 	function IncrementXP(this, value)
@@ -84,37 +78,30 @@ class Achievement()
 		this.level++;
 	endfunction
 
-	function IncrementData(this, name, value)
-		if (!this.achievData[name]) this.SetData(name, 0); endif
-		this.achievData[name] += CInt(value);
-	endfunction
+	function IncrementData(this, key, value) endfunction
 
 	function Serialize(this)
 		return struct{
-			type := this.type,
-			key := this.key,
-
+			playerRef := this.playerRef,
+			criteriaRef := this.criteriaRef,
 			name := this.name,
-			xp := this.xp,
-			level := this.level,
 
-			achievData := this.achievData
+			level := this.level,
+			xp := this.xp
 		};
 	endfunction
 
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
-		this.type := data.type;
-		this.key := data.key;
+		this.playerRef := data.playerRef;
+		this.criteriaRef := data.criteriaRef;
+		this.name := CStr(data.name);
 
-		this.name := data.name;
-		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
-
-		this.achievData := data.achievData;
+		this.xp := CInt(data.xp);
 	endfunction
 
 	function toString(this)
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, achievData={this.achievData})";
+		return $"Achievement para {this.name} (playerRef={this.playerRef}, criteriaRef={this.criteriaRef}, xp={this.xp}, level={this.level})";
 	endfunction
 endclass
