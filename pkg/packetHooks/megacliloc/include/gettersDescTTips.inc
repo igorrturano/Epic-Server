@@ -9,7 +9,7 @@ include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:Controller/WeaponController";
 include ":destroyable:include/destroyItem";
 include ":crafting:/include/fabricacaoUtil";
-
+include ":equipsys:Controller/EquipmentController";
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
