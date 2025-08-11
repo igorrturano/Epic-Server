@@ -12,6 +12,6 @@ exported function GetAllAchievementsProgress(who)
 	return LoadAllAchievements(who);
 endfunction
 
-exported function SetAchievementProgress(who, object)
-	return SaveAchievement(who, object);
+exported function SetAchievementProgress(who, type, object)
+	return SaveAchievement(who, type, object);
 endfunction

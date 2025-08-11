@@ -4,8 +4,8 @@ include ":achievements:model/AchievementCombat";
 include ":achievements:model/AchievementCrafting";
 include ":achievements:model/AchievementExploration";
 
-function SaveAchievement(who, achievement)
-	var DFController := DFTools(":achievements:" + achievement.GetType());
+function SaveAchievement(who, type, achievement)
+	var DFController := DFTools(":achievements:" + type);
 
 	return DFController.WriteValue(Hex(who.serial), achievement.GetCriteriaRef(), achievement.Serialize());
 endfunction
