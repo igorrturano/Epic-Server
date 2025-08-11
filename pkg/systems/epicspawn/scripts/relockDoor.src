@@ -6,11 +6,8 @@ program relockDoor(params)
     var delay := CInt(params[2]);
     
     if (!door)
-        print("TRACE: relockDoor - Invalid door object");
         return 0;
     endif
-    
-    print("TRACE: relockDoor - Will relock " + door.desc + " [" + door.serial + "] after " + delay + " seconds");
     
     // Wait for the specified delay
     sleep(delay);
@@ -18,12 +15,10 @@ program relockDoor(params)
     // Check if the door still exists before relocking
     door := SystemFindObjectBySerial(door.serial);
     if (!door)
-        print("TRACE: relockDoor - Door no longer exists, cannot relock");
         return 0;
     endif
     
     // Relock the door
-    print("TRACE: relockDoor - Relocking door " + door.desc + " [" + door.serial + "]");
     door.locked := 1;
     EraseObjProperty(door, "TempUnlocked");
     

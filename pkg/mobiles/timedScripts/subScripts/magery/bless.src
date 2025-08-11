@@ -8,9 +8,6 @@ include "include/epicMageryUtils";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	params := 0; // Not needed anymore.
-
-	params := 0; // Not needed anymore.
 	
 	if ( GetObjProperty(mobile, "#AgilityMod") )
 		// Condition is met if the mobile logs out and back in.

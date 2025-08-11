@@ -68,13 +68,10 @@ program epicBOSS(params)
     
     // Process user input until they close the gump
     while (input[0] != 0)
-        SendSysMessage(who, "DEBUG: input[0] = " + input[0]);
-        
         // Check if any navigation button was clicked
         var nav_button_clicked := 0;
         for i := 1 to 5
             if (input[i])
-                SendSysMessage(who, "DEBUG: Navigation button " + i + " was clicked");
                 nav_button_clicked := i;
             endif
         endfor
@@ -91,7 +88,6 @@ program epicBOSS(params)
         // Check if the Create Boss button was clicked
         if (input[0] == 100 || input[100])
             // Save form data before creating the boss
-            SendSysMessage(who, "DEBUG: Create Boss button was clicked");
             SendSysMessage(who, "Creating boss...");
             CreateBossFromGump(who, form_data, spawner); // Pass the spawner parameter
             break; // Exit after creating the boss
@@ -130,6 +126,8 @@ function InitializeFormData()
     form_data.special_ai := "";
     form_data.url := "";
     form_data.detailed_description := "";
+    form_data.amount := "1"; // Add amount field
+
     // Add default respawn time values
     form_data.min_respawn := "60";  // Default 60 minutes
     form_data.max_respawn := "120"; // Default 120 minutes
@@ -204,7 +202,7 @@ function InitializeFormData()
     form_data.classe := "";
     
     // Race and gender related fields
-    form_data.race := "Human";
+    form_data.race := HUMANO;
     form_data.gender := 0; // Default to male
     form_data.graphic := 400; // Default to human male
 endfunction
@@ -228,6 +226,11 @@ function ExtractPageData(input, page)
             var color := GFExtractData(input, 3);
             if (color != error && color != "")
                 form_data.color := color;
+            endif
+
+            var amount := GFExtractData(input, 44);
+            if (amount != error && amount != "")
+                form_data.amount := amount;
             endif
 
             // Add tier extraction (new)
@@ -408,12 +411,8 @@ endfunction
 
 // Function to update which menu is active based on button click
 function UpdateMenuState(input, who)
-    SendSysMessage(who, "DEBUG: UpdateMenuState input = " + input);
-    
     // Update the last clicked button
     last_clicked_button := input;
-    
-    SendSysMessage(who, "DEBUG: last_clicked_button = " + last_clicked_button);
     
     // Inform the user that their data is being saved
     case (input)
@@ -521,6 +520,10 @@ function ShowPage1(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 380, 1153, "Special AI:");
     GFTextEntry(gump, 200, 380, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
     
+    // Amount - Add this field
+    GFTextLine(gump, 50, 410, 1153, "Amount to Spawn:");
+    GFTextEntry(gump, 200, 410, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
+
     // Add a divider line for Respawn Time Configuration
     GFResizePic(gump, 650, 450, 3000, 2, 100);
     
@@ -1267,9 +1270,6 @@ function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
         ability_struct.+script_path := script_path;
     endif
     
-    // Debug message to verify the structure
-    SendSysMessage(who, "DEBUG: Adding ability: " + ability + " with script: " + ability_struct.script_path);
-    
     form_data.special.append(ability_struct);
     SendSysMessage(who, "Added " + ability + " to weapon special abilities.");
     
@@ -1413,9 +1413,6 @@ function DisplayArmorAbilityOptions(who, input, ability, byref form_data)
     else
         ability_struct.+script_path := script_path;
     endif
-    
-    // Add debug message
-    SendSysMessage(who, "DEBUG: Adding armor ability: " + ability + " with script: " + ability_struct.script_path);
     
     form_data.armorspecial.append(ability_struct);
     SendSysMessage(who, "Added " + ability + " to armor special abilities.");
@@ -1666,6 +1663,10 @@ function ShowPage5(who, title, gump_width, gump_height)
     // Add Mount
     GFAddButton(gump, 750, 460, 2103, 2104, 1, 95);
     GFTextLine(gump, 780, 460, 1153, "Escolher montaria");
+
+    // Add Colors
+    GFAddButton(gump, 750, 490, 2103, 2104, 1, 96);
+    GFTextLine(gump, 780, 490, 1153, "Escolher cores");
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -1727,6 +1728,9 @@ function ShowPage5(who, title, gump_width, gump_height)
         return ShowPage5(who, title, gump_width, gump_height);
     elseif (input[0] == 95) // Create Boss button
         HandleAddMount(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 96) // Add Colors
+        HandleAddColors(who, form_data);
         return ShowPage5(who, title, gump_width, gump_height);
     endif
 
@@ -1980,11 +1984,9 @@ function EditHairColor(who, byref form_data)
         ORC: 
             color_elem := color_cfg["Cabelo Orc"];
         POLSKI:
-            color_elem := color_cfg["Index"];
         HUMANO:
-            color_elem := color_cfg["Imperial"];
         default:
-            color_elem := color_cfg["Imperial"];
+            color_elem := color_cfg["Cabelo Imperial"];
     endcase
     
     // Get colors directly from the race-specific element
@@ -2197,7 +2199,7 @@ function EditBeardColor(who, byref form_data)
         return;
     endif
     
-    var hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+    var hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
 
     case (form_data.race)
         ANAO:
@@ -2209,11 +2211,9 @@ function EditBeardColor(who, byref form_data)
         ORC: 
             hair_elem := color_cfg["Cabelo Orc"];
         POLSKI:
-            hair_elem := color_cfg["Index"]; // Polski uses the Index colors
         HUMANO:
-            hair_elem := color_cfg["Imperial"];
         default:
-            hair_elem := color_cfg["Imperial"]; // Default to Imperial colors
+            hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
     endcase
 
     var colors := GetConfigStringArray(hair_elem, "Color");
@@ -2360,6 +2360,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Basic info
     boss.npctemplate := form_data.npctemplate;
     boss.name := form_data.name;
+    boss.amount := CInt(form_data.amount); // Add amount to boss structure
     boss.color := CInt(form_data.color);
     boss.description := form_data.description;
     boss.trueboss := form_data.trueboss;
@@ -2374,34 +2375,27 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Set race and gender if provided
     if (form_data.race)
         boss.race := form_data.race;
-        SendSysMessage(who, "Boss race set to " + form_data.race);
     endif
     
     if (form_data.gender != error)
         boss.gender := form_data.gender;
-        SendSysMessage(who, "Boss gender set to " + (form_data.gender == 1 ? "Female" : "Male"));
     endif
     
     if (form_data.graphic)
         boss.graphic := form_data.graphic;
-        SendSysMessage(who, "Boss graphic set to " + form_data.graphic);
     endif
 
     // Appearance data
     if (form_data.appearance)
         boss.appearance := form_data.appearance;
-        SendSysMessage(who, "DEBUG: Appearance data transferred to boss structure");
     endif
 
     // Add respawn time values to boss structure
     boss.min_respawn := CInt(form_data.min_respawn);
     boss.max_respawn := CInt(form_data.max_respawn);
 
-    SendSysMessage(who, "DEBUG: Checking form_data combat events");
     if (form_data.combatevents && form_data.combatevents.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.combatevents.size() + " combat events in form_data");
         foreach event in (form_data.combatevents)
-            SendSysMessage(who, "DEBUG: Processing combat event: " + event.name);
             
             // Create a clean event structure with only necessary properties
             var event_struct := struct{};
@@ -2416,26 +2410,17 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             
             // Copy all actions
             if (event.actions && event.actions.size() > 0)
-                SendSysMessage(who, "DEBUG: Event has " + event.actions.size() + " actions");
                 foreach action in (event.actions)
                     event_struct.actions.append(action);
                     event_struct.steps.append(action); // Copy to both arrays for compatibility
                 endforeach
-            else
-                SendSysMessage(who, "DEBUG: Event has no actions");
             endif
             
             boss.combatevents.append(event_struct);
-            SendSysMessage(who, "DEBUG: Added event to boss.combatevents");
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No combat events found in form_data");
     endif
-    SendSysMessage(who, "DEBUG: Checking form_data special abilities");
     if (form_data.special && form_data.special.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.special.size() + " special abilities in form_data");
         foreach ability in (form_data.special)
-            SendSysMessage(who, "DEBUG: form_data ability: " + ability.name + " with script: " + ability.script_path);
             
             // Copy the ability to the boss structure
             var ability_struct := struct{};
@@ -2443,15 +2428,10 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             ability_struct.+script_path := ability.script_path;
             boss.special.append(ability_struct);
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No special abilities found in form_data");
     endif
     
-    SendSysMessage(who, "DEBUG: Checking form_data armor special abilities");
     if (form_data.armorspecial && form_data.armorspecial.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.armorspecial.size() + " armor special abilities in form_data");
         foreach ability in (form_data.armorspecial)
-            SendSysMessage(who, "DEBUG: form_data armor ability: " + ability.name + " with script: " + ability.script_path);
             
             // Copy the ability to the boss structure
             var ability_struct := struct{};
@@ -2465,13 +2445,9 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
             
             boss.armorspecial.append(ability_struct);
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No armor special abilities found in form_data");
     endif
     
-    SendSysMessage(who, "DEBUG: Checking form_data timedscripts");
     if (form_data.timedscripts && form_data.timedscripts.size() > 0)
-        SendSysMessage(who, "DEBUG: Found " + form_data.timedscripts.size() + " timedscripts in form_data");
         
         // Initialize timedscripts array if needed
         if (!boss.timedscripts)
@@ -2688,12 +2664,16 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         boss.natural_traits := form_data.natural_traits;
     endif
 
+    // Save color ranges for boss equipment
+    if (form_data.color_ranges && form_data.color_ranges.size() > 0)
+        boss.color_ranges := form_data.color_ranges;
+    endif
+
     // Check if we're updating an existing spawner or creating a new one
     var spawner;
     if (existing_spawner)
         // Use the existing spawner
         spawner := existing_spawner;
-        SendSysMessage(who, "Using existing spawner: " + spawner.serial);
 
         // Check if there's a currently spawned boss linked to this spawner
         var child_serial := Cint(GetObjProperty(spawner, "ChildSerial"));
@@ -2723,15 +2703,22 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         
         // Move the spawner to the ground to ensure it's placed correctly
         MoveObjectToLocation(spawner, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
-        SendSysMessage(who, "Spawner created with serial: " + spawner.serial);
     endif
 
-    // Create a test boss to show the player
-    var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
-    if (npc == error)
-        SendSysMessage(who, "Error creating boss: " + npc.errortext);
-        return 0;
-    endif
+    var amount := boss.amount ? boss.amount : 1;
+
+    var npcs := array{};
+    var npc;
+
+    for i := 1 to amount
+        npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
+        if (npc == error)
+            SendSysMessage(who, "Error creating boss " + i + ": " + npc.errortext);
+            return 0;
+        endif
+        npcs.append(npc);
+        sleepms(100); // Small delay between spawns
+    endfor
 
     if (spawner && spawner.IsA(POLCLASS_ITEM))
         // Set the boss structure in the spawner
@@ -2742,25 +2729,24 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         SetObjProperty(spawner, "MinDelay", CInt(form_data.min_respawn));
         SetObjProperty(spawner, "MaxDelay", CInt(form_data.max_respawn));
         SetObjProperty(spawner, "Range", 5);      // 5 tiles
-        
-        // Link the test boss to the spawner
-        SetObjProperty(npc, "epicspawner", spawner.serial);
-        SetObjProperty(spawner, "ChildSerial", npc.serial);
-        SetObjProperty(spawner, "SpawnQueue", "Active");
         SetObjProperty(spawner, "SpawnerState", ACTIVE);
+        SetObjProperty(spawner, "SpawnQueue", "Active");
         
-        spawner.invisible := 1;
+        // Link ALL spawned bosses to the spawner
+        var child_serials := array{};
+        foreach boss_npc in npcs
+            SetObjProperty(boss_npc, "epicspawner", spawner.serial);
+            child_serials.append(boss_npc.serial);
+        endforeach
         
-        if (existing_spawner)
-            SendSysMessage(who, "Boss spawner updated successfully!");
+        // Store all child serials in the spawner
+        if (npcs.size() == 1)
+            SetObjProperty(spawner, "ChildSerial", npcs[1].serial); // Single boss compatibility
         else
-            SendSysMessage(who, "Boss created successfully with spawner!");
+            SetObjProperty(spawner, "ChildSerials", child_serials); // Multiple bosses
         endif
         
-        SendSysMessage(who, "The boss will respawn between " + Cstr(form_data.min_respawn) + " and " + Cstr(form_data.max_respawn) + " minutes after death.");
-        SendSysMessage(who, "Double-click the spawner (invisible at your feet) to configure.");
-    else
-        SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
+        spawner.invisible := 1;
     endif
     
     return 1;
@@ -3365,10 +3351,7 @@ function AddSingleEquipment(who, byref form_data)
             SendSysMessage(who, "Equipment " + targ.desc + " is already in the list.", color := 33);
         else
             // Add the equipment to the list
-            var equipment_entry := struct{
-                "objtype" := targ.objtype,
-                "name" := targ.desc
-            };
+            var equipment_entry := CreateEquipmentEntry(targ);
             
             form_data.equipments.append(equipment_entry);
             SendSysMessage(who, "Added equipment: " + targ.desc + " (ID: " + targ.objtype + ")", color := 66);
@@ -3412,10 +3395,8 @@ function AddEquipmentFromContainer(who, byref form_data)
         
         if (!already_exists)
             // Add the equipment to the list
-            var equipment_entry := struct{
-                "objtype" := item.objtype,
-                "name" := item.desc
-            };
+
+            var equipment_entry := CreateEquipmentEntry(item);
             
             form_data.equipments.append(equipment_entry);
             SendSysMessage(who, "Added: " + item.desc + " (ID: " + item.objtype + ")", color := 66);
@@ -3607,4 +3588,231 @@ function SelectMountFromList(who, byref form_data, page := 1)
     endcase
 
     return HandleAddMount(who, form_data);
+endfunction
+
+function HandleAddColors(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+    GFResizePic(gump, 15, 15, 9350, 570, 670);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Boss Color Selection");
+    
+    // Display current color selections
+    var y_pos := 60;
+    if (form_data.color_ranges && form_data.color_ranges.size() > 0)
+        GFTextLine(gump, 30, y_pos, 1153, "Selected Color Ranges:");
+        y_pos += 25;
+        
+        for i := 1 to form_data.color_ranges.size()
+            var color_range := form_data.color_ranges[i];
+            GFTextLine(gump, 50, y_pos, 66, "- " + color_range);
+            // Add delete button for each color range - use the actual index
+            GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 200 + i);
+            y_pos += 20;
+        endfor
+        
+        y_pos += 20;
+        
+        // Add clear all button if there are color ranges
+        if (form_data.color_ranges.size() > 0)
+            GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 150);
+            GFTextLine(gump, 60, y_pos, 33, "Clear All Colors");
+            y_pos += 30;
+        endif
+    else
+        GFTextLine(gump, 30, y_pos, 2100, "No color ranges selected yet");
+        y_pos += 50;
+    endif
+    
+    // Basic color categories
+    GFTextLine(gump, 30, y_pos, 1153, "Basic Colors:");
+    y_pos += 25;
+    
+    var basic_colors := array{
+        "Rosa", "Vermelho", "Azul", "Verde", 
+        "Amarelo", "Laranja", "Neutro", "Cinza"
+    };
+    
+    var colors_per_row := 4;
+    var col := 0;
+    var x_start := 30;
+    var x_spacing := 130;
+    
+    foreach color in basic_colors
+        var x_pos := x_start + (col * x_spacing);
+        
+        GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 100 + _color_iter);
+        GFTextLine(gump, x_pos + 30, y_pos, 1153, color);
+        
+        col += 1;
+        if (col >= colors_per_row)
+            col := 0;
+            y_pos += 30;
+        endif
+    endforeach
+    
+    // Move to next section
+    if (col > 0)
+        y_pos += 30;
+    endif
+    y_pos += 20;
+    
+    // Regional color themes - USING CONSTANTS
+    GFTextLine(gump, 30, y_pos, 1153, "Cultural Themes:");
+    y_pos += 25;
+    
+    var regional_colors := array{
+        AIGLANA, HAROLOTH, LESTE, BJORSKA,
+        ALURIEL, BADURAN, GULTHRAK, POLKINEA
+    };
+    
+    col := 0;
+    colors_per_row := 2; // Fewer per row since names are longer
+    x_spacing := 250;
+    
+    foreach region in regional_colors
+        var x_pos := x_start + (col * x_spacing);
+        
+        GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 120 + _region_iter);
+        GFTextLine(gump, x_pos + 30, y_pos, 1153, region);
+        
+        col += 1;
+        if (col >= colors_per_row)
+            col := 0;
+            y_pos += 30;
+        endif
+    endforeach
+    
+    // Done and Cancel buttons
+    y_pos := 620;
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+    
+    var input := GFSendGump(who, gump);
+    
+    // Initialize color_ranges if it doesn't exist
+    if (!form_data.color_ranges)
+        form_data.+color_ranges := array{};
+    endif
+    
+    case (input[0])
+        998: // Done
+            return 1;
+        999: // Cancel
+            return 0;
+        150: // Clear all colors
+            form_data.color_ranges := array{};
+            SendSysMessage(who, "All color ranges cleared.");
+            return HandleAddColors(who, form_data);
+        
+        // Basic colors (101-108)
+        101: // Rosa
+            AddColorRange(form_data, "Rosa");
+            return HandleAddColors(who, form_data);
+        102: // Vermelho
+            AddColorRange(form_data, "Vermelho");
+            return HandleAddColors(who, form_data);
+        103: // Azul
+            AddColorRange(form_data, "Azul");
+            return HandleAddColors(who, form_data);
+        104: // Verde
+            AddColorRange(form_data, "Verde");
+            return HandleAddColors(who, form_data);
+        105: // Amarelo
+            AddColorRange(form_data, "Amarelo");
+            return HandleAddColors(who, form_data);
+        106: // Laranja
+            AddColorRange(form_data, "Laranja");
+            return HandleAddColors(who, form_data);
+        107: // Neutro
+            AddColorRange(form_data, "Neutro");
+            return HandleAddColors(who, form_data);
+        108: // Cinza
+            AddColorRange(form_data, "Cinza");
+            return HandleAddColors(who, form_data);
+            
+        // Regional colors (121-128)
+        121: // AIGLANA
+            AddColorRange(form_data, AIGLANA);
+            return HandleAddColors(who, form_data);
+        122: // HAROLOTH
+            AddColorRange(form_data, HAROLOTH);
+            return HandleAddColors(who, form_data);
+        123: // LESTE
+            AddColorRange(form_data, LESTE);
+            return HandleAddColors(who, form_data);
+        124: // BJORSKA
+            AddColorRange(form_data, BJORSKA);
+            return HandleAddColors(who, form_data);
+        125: // ALURIEL
+            AddColorRange(form_data, ALURIEL);
+            return HandleAddColors(who, form_data);
+        126: // BADURAN
+            AddColorRange(form_data, BADURAN);
+            return HandleAddColors(who, form_data);
+        127: // GULTHRAK
+            AddColorRange(form_data, GULTHRAK);
+            return HandleAddColors(who, form_data);
+        128: // POLKINEA
+            AddColorRange(form_data, POLKINEA);
+            return HandleAddColors(who, form_data);
+        
+        default:
+            // Handle delete buttons for color ranges (200+)
+            if (input[0] >= 201 && input[0] <= 200 + form_data.color_ranges.size())
+                var index := input[0] - 200; // Convert to proper index (201 becomes 1, 202 becomes 2, etc.)
+                var removed_color := form_data.color_ranges[index];
+                form_data.color_ranges.erase(index);
+                SendSysMessage(who, "Removed color range: " + removed_color);
+                return HandleAddColors(who, form_data);
+            endif
+            break;
+    endcase
+    
+    return 0;
+endfunction
+
+// FIXED: Update this function to match the call signature
+function AddColorRange(byref form_data, color_name)
+    // Initialize color_ranges if it doesn't exist
+    if (!form_data.color_ranges)
+        form_data.+color_ranges := array{};
+    endif
+    
+    // Check if this color range is already added
+    foreach existing_range in (form_data.color_ranges)
+        if (existing_range == color_name)
+            return 0; // Already exists
+        endif
+    endforeach
+    
+    // Add the color name directly to the array
+    form_data.color_ranges.append(color_name);
+    
+    return 1;
+endfunction
+
+function CreateEquipmentEntry(item)
+    var equipment_entry := struct{
+        "objtype" := item.objtype,
+        "color" := item.color,
+        "name" := item.desc,
+        "properties" := struct{}
+    };
+    
+    // Get all object properties from the item
+    var all_props := GetObjPropertyNames(item);
+    if (all_props && all_props.size() > 0)
+        equipment_entry.+properties := struct{};
+        
+        foreach prop_name in all_props
+            var prop_value := GetObjProperty(item, prop_name);
+            if (prop_value != error)
+                equipment_entry.properties[prop_name] := prop_value;
+                sleepms(20);
+            endif
+        endforeach
+    endif
+
+    return equipment_entry;
 endfunction
