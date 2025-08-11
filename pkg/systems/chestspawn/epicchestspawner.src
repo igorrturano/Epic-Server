@@ -199,7 +199,7 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
                     SetObjProperty(new_chest, "IsEpicChest", 1);
                     SetObjProperty(new_chest, "level", level);
                     SetObjProperty(new_chest, "chest_type", chest_type);
-                    SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, 1);
+                    SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, true);
                     SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
                     new_chest.movable := 0;
                     new_chest.locked := 1;

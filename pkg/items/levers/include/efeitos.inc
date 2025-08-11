@@ -16,7 +16,8 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
 
     var chars := ListmobilesNearLocation(item.x, item.y, item.z, range, item.realm);
     foreach char in chars
-        PlaySoundEffect(char, 0x222);
+		sleepms(3);
+		PlaySoundEffect(char, 0x222);
         SendSysMessageEx(char, "O solo nas proximidades treme violentamente.", SSM_INFO);
         if (char.npctemplate == "Zombie")
             DamageFLS(char, 1000);
@@ -32,14 +33,14 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
             var pedra;
 
             for (pedra := 1; pedra <= (RandomInt(5) + 1); pedra := pedra + 1)
+				sleepms(3);
                 var tempx := char.x + RandomIntMinMax(-4, 4);
                 var tempy := char.y + RandomIntMinMax(-4, 4);
-
                 //SendSysMessageEx(who, "p2", SSM_INFO);
 
                 if (CheckLosAt(char, tempx, tempy, char.z) != 0 || !char.dead)
                     PlayMovingEffectXYZ(tempx, tempy, char.z + 60, tempx, tempy, char.z, 0x1773, 0x9, 0xA1);
-                    CreateItemAtLocation(tempx, tempy, char.z, 0xBD11);
+                    CreateItemAtLocation(tempx, tempy, char.z, 0xBD11, 1, char.realm);
                 endif
             endfor
         endif

@@ -21,6 +21,15 @@ const PROPNAME_DESTROCO := "isDestroco";
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
 const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
 
+
+//SISTEMA DE SELECAO EM AREA
+const PROPNAME_SEL_AREA_COR_ORIGINAL := "corOriginalSelec"; 
+const PROPNAME_SEL_AREA_PID_SELECIONADOR := "pidSelecionador"; 
+const PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA := "isCorOrigAlterada"; 
+
 //CONTROLE DE GUMP
 
 const PROPNAME_POSICAO_GUMP := "posicaoGump";
+
+//GMS
+const PROPNAME_PREFERENCIAS_GM := "preferenciasGm"; 
