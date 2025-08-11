@@ -96,7 +96,7 @@ class Achievement()
 
 			name := this.name,
 			xp := this.xp,
-			damage := this.damage,
+			level := this.level,
 
 			achievData := this.achievData
 		};
@@ -111,7 +111,7 @@ class Achievement()
 		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
 
-		this.achievData := data.achievData ?: dictionary{};
+		this.achievData := data.achievData;
 	endfunction
 
 	function toString(this)

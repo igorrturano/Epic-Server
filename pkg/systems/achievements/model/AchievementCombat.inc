@@ -2,28 +2,6 @@ include ":achievements:model/Achievement";
 
 const ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT";
 
-class AchievementCombat(Achievement)
-	function AchievementCombat(this, key)
-		Super(key);
-		this.type := ACHIEVEMENT_COMBAT;
-	endfunction
-
-	function Serialize(this)
-		var base_data := Achievement::Serialize(this);
-
-		return base_data;
-	endfunction
-	
-	function Deserialize(this, data)
-		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
-		Achievement::Deserialize(this, data);
-	endfunction
-	
-	function toString(this)
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, data={this.achievData})";
-	endfunction
-endclass
-
 enum ACHIEVDATA
 	ACHIEVDATA_HITS := "hits",
 	ACHIEVDATA_BLOCKED := "blocked",
@@ -50,4 +28,27 @@ enum ACHIEVDATA
 
 	ACHIEVDATA_SPELLS_CASTS := "spellscasts",
 	ACHIEVDATA_SPELLS_MOSTCASTED := "spellscastsmostcasted",
+
 endenum
+
+class AchievementCombat(Achievement)
+	function AchievementCombat(this, key)
+		Super(key);
+		this.type := ACHIEVEMENT_COMBAT;
+	endfunction
+
+	function Serialize(this)
+		var base_data := Achievement::Serialize(this);
+
+		return base_data;
+	endfunction
+	
+	function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
+		Achievement::Deserialize(this, data);
+	endfunction
+	
+	function toString(this)
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, data={this.achievData})";
+	endfunction
+endclass

@@ -1,6 +1,6 @@
 include "include/client";
 include "include/say";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include ":gumps:epicGumps";
 
 program cmd_golpe(who)

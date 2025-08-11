@@ -55,6 +55,10 @@ function ChangeLeverStatus(la, only_on_levers := 0)
       if(mid == 0)
          mid := fin;
       endif
+var som := Cint(GetObjProperty(obj, "som_inicial"));
+	if(som) //ADICIONADO SOM 1
+		snd := som;
+	endif
 
       sleepms(500);
       PlaySoundEffect( obj, snd);
@@ -236,6 +240,7 @@ function normalusage(who, item)
    endif
    var chars := ListmobilesNearLocation(item.x, item.y, item.z, 10, item.realm);
 	foreach char in chars
+		sleepms(2);
 		SendSysMessageEx(char, msg, SSM_INFO);
 	endforeach
 
@@ -261,6 +266,14 @@ function normalusage(who, item)
    	if (opts.graphicarraysitem)
 		changegraphici(item, opts);
 	endif
+	if(opts.somfim)//ADICIONADO PARA SIM 2 (FINAL)
+		var snd := Cint(GetObjProperty(item, "Som_fim"));
+		foreach char in chars
+			sleepms(2);
+			PlaySoundEffect( char, snd);
+		endforeach
+	endif
+
 	if (opts.spawn_boss)
 		if (status == "off")
 			spawnBoss(item, opts);

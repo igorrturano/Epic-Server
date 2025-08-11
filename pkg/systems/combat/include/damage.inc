@@ -17,7 +17,7 @@ include ":combat:armorZones";
 include ":combat:combat";
 include ":combat:habilidades";
 include ":combat:weardown";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
 include ":crafting:/include/caracteristicasFabricacao";
 
