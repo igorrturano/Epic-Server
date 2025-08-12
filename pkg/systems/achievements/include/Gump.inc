@@ -1,5 +1,5 @@
 include ":gumps:epicGumps";
-include ":achievements:model/AchievementCombat";
+include ":achievements:model/Achievement";
 
 const MAX_XP := 5000; // XP máximo para a barra de progresso
 
@@ -15,8 +15,8 @@ function ShowAchievementsGump(who)
 			name := achievement.getName(),
 			level := achievement.getLevel(),
 			xp := achievement.getXP(),
-			hits := achievement.getData(ACHIEVDATA_HITS),
-			damage := achievement.getData(ACHIEVDATA_DAMAGE_DONE),
+			hits := achievement.getData(ACHIEVEMENT_CRITERIA_HITS),
+			damage := achievement.getData(ACHIEVEMENT_CRITERIA_DAMAGEDONE),
 			"1000" := "",
 			"3000" := "",
 			"5000" := ""
