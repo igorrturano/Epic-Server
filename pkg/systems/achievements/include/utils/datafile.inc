@@ -6,39 +6,44 @@ include ":achievements:model/AchievementExploration";
 
 function SaveAchievement(who, type, achievement)
 	var DFController := DFTools(":achievements:" + type);
+	var elem := Hex(who.serial);
+	var key := achievement.GetRefObj();
+	var prop := DFController.LoadValue(elem, key);
+	prop[key] := achievement.Serialize();
 
-	return DFController.WriteValue(Hex(who.serial), achievement.GetCriteriaRef(), achievement.Serialize());
+	return DFController.WriteValue(elem, key, prop);
 endfunction
 
 function LoadAchievement(who, type, key)
 	var DFController := DFTools(":achievements:" + type);
-	var achievData := DFController.LoadValue(Hex(who.serial), key);
-	var achiev;
+	var prop := DFController.LoadValue(Hex(who.serial), key);
+	var achiev := prop[key];
 
-	if (!achievData) return error{ errortext := $"Achievement data not found for {key} ({type})" }; endif
+	if (!prop) return error{ errortext := $"Achievement data not found for {key} ({type})" }; endif
 
-	case (type)
-		ACHIEVEMENT:
-			achiev := Achievement(who, key);
-			break;
+	achiev := Achievement(who, achiev.criteria, achiev.refObj, achiev.refName, achiev.level, achiev.xp, achiev.value);
+	// case (type)
+	// 	ACHIEVEMENT:
+	// 		achiev := Achievement(who, key);
+	// 		break;
 
-		ACHIEVEMENT_COMBAT:
-			achiev := AchievementCombat(who, key);
-			break;
+	// 	ACHIEVEMENT_COMBAT:
+	// 		achiev := AchievementCombat(who, key);
+	// 		break;
 
-		ACHIEVEMENT_CRAFTING:
-			// achiev := AchievementCrafting(who, key);
-			break;
+	// 	ACHIEVEMENT_CRAFTING:
+	// 		// achiev := AchievementCrafting(who, key);
+	// 		break;
 		
-		ACHIEVEMENT_EXPLORATION:
-			// achiev := AchievementExploration(who, key);
-			break;
+	// 	ACHIEVEMENT_EXPLORATION:
+	// 		// achiev := AchievementExploration(who, key);
+	// 		break;
 
-		default:
-			return error{ errortext := $"Invalid achievement type: {type}"};
-	endcase
+	// 	default:
+	// 		return error{ errortext := $"Invalid achievement type: {type}"};
+	// endcase
 
-	achiev.Deserialize(achievData);
+	achiev.Deserialize(prop[key]);
 
 	return achiev;
 endfunction
