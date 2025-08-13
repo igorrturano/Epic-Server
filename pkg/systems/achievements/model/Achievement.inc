@@ -1,4 +1,4 @@
-enum ACHIEVEMENT_TAGS
+enum ACHIEVEMENT_TYPE
 	ACHIEVEMENT := "ACHIEVEMENT",
 	ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT",
 	ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION",
@@ -6,36 +6,30 @@ enum ACHIEVEMENT_TAGS
 endenum
 
 class Achievement()
-	var criteria;
-	var playerRef; // Readonly (FK)
-	var refObj; // Readonly (FK)
-	var refName;
+	var name; // { get; }
+	var ref; // { get; }
+	var refName; // { get; set; }
 
 	var level;
 	var xp;
 	var value;
 
-	function Achievement(this, criteria, playerRef, refObj, refName := "", level := 0, xp := 0, value := 0)
-		this.criteria := criteria;
-		this.playerRef := playerRef;
-		this.refObj := refObj;
-		this.refName := refName == "" ? CStr(refObj) : refName;
+	function Achievement(this, name, ref, refName := "", level := 0, xp := 0, value := 0)
+		this.name := name;
+		this.ref := ref;
+		this.refName := refName;
 
 		this.level := CInt(level);
 		this.xp := CInt(xp);
 		this.value := CInt(value);
 	endfunction
 
-	function GetCriteria(this)
-		return this.criteria;
+	function GetName(this)
+		return this.name;
 	endfunction
 
-	function GetPlayerRef(this)
-		return this.playerRef;
-	endfunction
-
-	function GetRefObj(this)
-		return this.refObj;
+	function GetRef(this)
+		return this.ref;
 	endfunction
 
 	function GetRefName(this)
@@ -80,76 +74,77 @@ class Achievement()
 
 	function Serialize(this)
 		return struct{
-			playerRef := this.playerRef,
-			criteriaRef := this.criteriaRef,
 			name := this.name,
+			ref := this.ref,
+			refName := this.refName,
 
 			level := this.level,
 			xp := this.xp,
-			criteria := this.criteria
+			value := this.value
 		};
 	endfunction
 
 	function Deserialize(this, data)
 		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
-		this.playerRef := data.playerRef;
-		this.criteriaRef := data.criteriaRef;
-		this.name := CStr(data.name);
 
+		this.name := data.name;
+		this.ref := data.ref;
+		this.refName := data.refName;
+		
 		this.level := CInt(data.level);
 		this.xp := CInt(data.xp);
-		this.criteria := data.criteria;
+		this.value := CInt(data.value);
 	endfunction
 
 	function toString(this)
-		return $"Achievement para {this.name} (playerRef={this.playerRef}, criteriaRef={this.criteriaRef}, xp={this.xp}, level={this.level}, criteria={this.criteria})";
+		return $"Achievement para {this.name} (xp={this.xp}, level={this.level}, value={this.value})";
 	endfunction
 endclass
 
-enum ACHIEVEMENT_CRITERIA_COMBAT
-	ACHIEVEMENT_CRITERIA_HITS := "hits",
-	ACHIEVEMENT_CRITERIA_BLOCKED := "blocked",
-	ACHIEVEMENT_CRITERIA_KILLS := "kills",
+enum ACHIEVEMENT_NAME_COMBAT
+	ACHIEVEMENT_NAME_HITS := "hits",
+	ACHIEVEMENT_NAME_BLOCKED := "blocked",
+	ACHIEVEMENT_NAME_KILLS := "kills",
 
-	ACHIEVEMENT_CRITERIA_DAMAGEDONE := "damagedone",
-	ACHIEVEMENT_CRITERIA_DAMAGETAKEN := "damagetaken",
-	ACHIEVEMENT_CRITERIA_DAMAGEMAX := "damagemax",
-	ACHIEVEMENT_CRITERIA_DAMAGEMAX_TAKEN := "damagemaxtaken",
+	ACHIEVEMENT_NAME_DAMAGE_DONE := "damage_done",
+	ACHIEVEMENT_NAME_DAMAGE_TAKEN := "damage_taken",
+	ACHIEVEMENT_NAME_DAMAGE_MAX := "damage_max",
+	ACHIEVEMENT_NAME_DAMAGE_MAX_TAKEN := "damage_max_taken",
 
-	ACHIEVEMENT_CRITERIA_CRITICALHITS := "criticalhits",
-	ACHIEVEMENT_CRITERIA_CRITICALDAMAGE := "criticaldamage",
-	ACHIEVEMENT_CRITERIA_CRITICALDAMAGEMAX := "criticaldamagemax",
+	ACHIEVEMENT_NAME_CRITICAL_HITS := "critical_hits",
+	ACHIEVEMENT_NAME_CRITICAL_DAMAGE := "critical_damage",
+	ACHIEVEMENT_NAME_CRITICAL_DAMAGE_MAX := "critical_damage_max",
 
-	ACHIEVEMENT_CRITERIA_HEALINGONSELF := "healingonself",
-	ACHIEVEMENT_CRITERIA_HEALINGONOTHERS := "healingonothers",
-	ACHIEVEMENT_CRITERIA_HEALINGMAX := "healingmax",
-	ACHIEVEMENT_CRITERIA_HEALINGTOTAL := "healingtotal",
+	ACHIEVEMENT_NAME_HEALING_ON_SELF := "healing_on_self",
+	ACHIEVEMENT_NAME_HEALING_ON_OTHERS := "healing_on_others",
+	ACHIEVEMENT_NAME_HEALING_MAX := "healing_max",
+	ACHIEVEMENT_NAME_HEALING_TOTAL := "healing_total",
 
-	ACHIEVEMENT_CRITERIA_MANASPENT := "manaspent",
-	ACHIEVEMENT_CRITERIA_MANAREGEN := "manaregen",
-	ACHIEVEMENT_CRITERIA_MANAREGENMAX := "manaregenmax",
-	ACHIEVEMENT_CRITERIA_MANAREGENTOTAL := "manaregentotal",
+	ACHIEVEMENT_NAME_MANA_SPENT := "mana_spent",
+	ACHIEVEMENT_NAME_MANA_REGEN := "mana_regen",
+	ACHIEVEMENT_NAME_MANA_REGEN_MAX := "mana_regen_max",
+	ACHIEVEMENT_NAME_MANA_REGEN_TOTAL := "mana_regen_total",
 
-	ACHIEVEMENT_CRITERIA_SPELLSCASTS := "spellscasts",
-	ACHIEVEMENT_CRITERIA_SPELLSMOSTCASTED := "spellscastsmostcasted",
+	ACHIEVEMENT_NAME_SPELLS_CASTS := "spells_casts",
+	ACHIEVEMENT_NAME_SPELLS_MOST_CASTED := "spells_casts_most_casted",
 endenum
 
-enum ACHIEVEMENT_CRITERIA_OTHERS
-	ACHIEVEMENT_CRITERIA_FISHCAUGHT := "fishcaught",
-	ACHIEVEMENT_CRITERIA_FISHCAUGHT_WITH_BAIT := "fishcaughtwithbait",
-	ACHIEVEMENT_CRITERIA_RESOURCES_COLLECTED := "resourcescollected",
-	ACHIEVEMENT_CRITERIA_CORPSES_LOOTED := "corpseslooted",
-	ACHIEVEMENT_CRITERIA_MOBS_TRACKED := "mobstracked",
-	ACHIEVEMENT_CRITERIA_MOBS_DETECTED_AWARENESS := "mobsdetectedawareness",
-	ACHIEVEMENT_CRITERIA_BOSSES_KILLED := "bosseskilled",
-	ACHIEVEMENT_CRITERIA_HIGHEST_TIER_TARGET_KILLED := "highesttiertargetkilled",
-	ACHIEVEMENT_CRITERIA_MAX_DAILY_XP_GAIN := "maxdailyxpgain",
-	ACHIEVEMENT_CRITERIA_TIMES_DISGUISED := "timesdisguised",
-	ACHIEVEMENT_CRITERIA_CONSECUTIVE_HITS_RED := "consecutivehitsred",
-	ACHIEVEMENT_CRITERIA_ALLIES_HEALED := "allieshealed",
-	ACHIEVEMENT_CRITERIA_ALLIES_HEALED_AMOUNT := "allieshealedamount",
-	ACHIEVEMENT_CRITERIA_ABILITIES_USED := "abilitiesused",
-	ACHIEVEMENT_CRITERIA_ABILITY_MOST_USED := "abilitymostused"
+enum ACHIEVEMENT_NAME_OTHERS
+	ACHIEVEMENT_NAME_FISH_CAUGHT := "fish_caught",
+	ACHIEVEMENT_NAME_FISH_CAUGHT_WITH_BAIT := "fish_caught_with_bait",
+	ACHIEVEMENT_NAME_RESOURCES_COLLECTED := "resources_collected",
+	ACHIEVEMENT_NAME_CORPSES_LOOTED := "corpses_looted",
+	ACHIEVEMENT_NAME_MOBS_TRACKED := "mobs_tracked",
+	ACHIEVEMENT_NAME_MOBS_DETECTED_AWARENESS := "mobs_detected_awareness",
+	ACHIEVEMENT_NAME_BOSSES_KILLED := "bosses_killed",
+	ACHIEVEMENT_NAME_HIGHEST_TIER_TARGET_KILLED := "highest_tier_target_killed",
+	ACHIEVEMENT_NAME_MAX_DAILY_XP_GAIN := "max_daily_xp_gain",
+	ACHIEVEMENT_NAME_TIMES_DISGUISED := "times_disguised",
+	ACHIEVEMENT_NAME_CONSECUTIVE_HITS_RED := "consecutive_hits_red",
+	ACHIEVEMENT_NAME_ALLIES_HEALED := "allies_healed",
+	ACHIEVEMENT_NAME_ALLIES_HEALED_AMOUNT := "allies_healed_amount",
+	ACHIEVEMENT_NAME_ABILITIES_USED := "abilities_used",
+	ACHIEVEMENT_NAME_ABILITY_MOST_USED := "ability_most_used"
 endenum
 
 // OTHERS

@@ -15,8 +15,8 @@ function ShowAchievementsGump(who)
 			name := achievement.getName(),
 			level := achievement.getLevel(),
 			xp := achievement.getXP(),
-			hits := achievement.getData(ACHIEVEMENT_CRITERIA_HITS),
-			damage := achievement.getData(ACHIEVEMENT_CRITERIA_DAMAGEDONE),
+			hits := achievement.getData(ACHIEVEMENT_NAME_HITS),
+			damage := achievement.getData(ACHIEVEMENT_NAME_DAMAGE_DONE),
 			"1000" := "",
 			"3000" := "",
 			"5000" := ""
