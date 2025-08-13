@@ -1,0 +1,28 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include "/include/epicPropNames";
+include ":propagacao:include/propagacao";
+
+program install()
+    print( "installing marcador propagação" );
+    return 1;
+endprogram
+
+exported function estimularMarcador(marcadorPropagacao, valorEstimulo, isPrioritario := false) //pass by reference here is ok too!
+    var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
+    var processoMarcador := GetProcess(propPropagacao.esteMarcadorPid); 
+    
+    if(processoMarcador)
+        if(isPrioritario)
+            processoMarcador.clear_event_queue();
+        endif
+        processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo});
+
+        return 0;
+
+    endif
+    return error { error_text := "Processo do marcador não foi encontrado."};
+endfunction

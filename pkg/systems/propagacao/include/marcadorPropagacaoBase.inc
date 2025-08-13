@@ -1,5 +1,5 @@
-include ":propagacao:include/propagacao";
 
+include ":propagacao:include/propagacao";
 
 class MarcadorPropagacaoBase()
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao)
@@ -30,27 +30,31 @@ class MarcadorPropagacaoBase()
 				if(deslocamentoX == 0 && deslocamentoY == 0) //pula se for a coordenada onde o marcador esta.
 					continue;
 				endif
-				var adjacenteX := this.esteItemMarcador.x + deslocamentoX;
-				var adjacenteY := this.esteItemMarcador.y + deslocamentoY;
-				var adjacenteZ := GetStandingHeight( adjacenteX,
-					adjacenteY,
-					this.esteItemMarcador.z,
-					this.esteItemMarcador.realm).z;
+				var adjacenteX := Cint(this.esteItemMarcador.x + deslocamentoX);
+				var adjacenteY := Cint(this.esteItemMarcador.y + deslocamentoY);
 
-
-				var chaveDicionario := CStr(adjacenteX) + CStr(adjacenteY) + CStr(adjacenteZ);
+				var chaveDicionario := CStr(adjacenteX) + CStr(adjacenteY) + CStr(this.esteItemMarcador.z);
 				var  marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
-					marcadorPropagacaoEncontrado := EncontraMarcadorPropagacao(cint(adjacenteX), cint(adjacenteY), cint(adjacenteZ), this.esteItemMarcador.realm);
+					marcadorPropagacaoEncontrado := EncontraMarcadorPropagacao(
+										adjacenteX, 
+										adjacenteY, 
+										this.esteItemMarcador.z, 
+										this.esteItemMarcador.realm, 
+										this.propPropagacao.tipoPropagacao);
 					if(DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado,this.propPropagacao.geracao,this.estado))
-						
+						var zMaisAdequada := this.EncontraAlturaMaisAdequada(
+															adjacenteX,
+															adjacenteY,
+															this.esteItemMarcador.z,
+															this.esteItemMarcador.realm);
 						//Print("*PROPAGACAO* Marcador de Propagação adjacente criado com chave: {} ".format(chaveDicionario));
 						marcadorPropagacaoEncontrado := CriaMarcadorPropagacaoAdjacente(
 																this.esteItemMarcador,
-																cint(adjacenteX), 
-																cint(adjacenteY), 
-																cint(adjacenteZ),
+																adjacenteX, 
+																adjacenteY, 
+																zMaisAdequada,
 																this.esteItemMarcador.realm, 
 																this.propPropagacao);
 					else
@@ -72,6 +76,54 @@ class MarcadorPropagacaoBase()
 		endfor
 	endfunction
 
+	function EncontraAlturaMaisAdequada(this,x,y,z, realm)
+
+		var zMaisProximo := z;
+		var menorDistancia := 4000;
+		var itens := ListItemsNearLocation( x, y, z, 0,realm);
+		var statics := ListStaticsNearLocation(x, y, z,0,0, realm );
+		var mapa := GetMapInfo(x,y,realm );
+
+		foreach item in itens
+			Sleepms(2);
+			this.ComparaAlturaMaisProxima( item,z, zMaisProximo,menorDistancia);
+		endforeach
+
+		foreach static in statics
+			Sleepms(2);
+			this.ComparaAlturaMaisProxima( static,z, zMaisProximo,menorDistancia);
+		endforeach
+		
+		var distancia := PegaAbsoluta(mapa.z,z);
+		if(menorDistancia > distancia)
+			zMaisProximo := mapa.z;
+		endif
+
+		return zMaisProximo == 4000 ? z: zMaisProximo;
+	endfunction
+
+	function ComparaAlturaMaisProxima(this,item, zAlvo, byref zMaisProximo, byref menorDistancia)
+		var tiles_cfg := ReadConfigFile( "::tiles" );
+		var graphic := item.graphic ? item.graphic : item.objtype;
+		var tileInfo := tiles_cfg[graphic];
+		var isSuperficie := tileInfo.MoveLand;
+		var itemHeight := tileInfo.Height;
+		var ztotal;
+
+		if(isSuperficie)
+			ztotal :=  item.z + itemHeight;
+		else
+			ztotal := item.z;
+		endif
+		Print(item.objtype + " ztotal -> " + ztotal + " - from z " +  item.z + " isSuperficie " + isSuperficie + " item.height " + itemHeight);
+
+		var distancia := PegaAbsoluta(item.z,zAlvo);
+		if(menorDistancia > distancia)
+			zMaisProximo := ztotal;
+			menorDistancia := distancia;
+		endif
+	endfunction
+
 	function DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado, geracao, estado)
 		//Print( " ZXXAAX --- " + marcadorPropagacaoEncontrado + " - " + geracao +" - " +estado +  " - " + ESTADO_PROPAGACAO_DORMENTE + " - " + ESTADO_PROPAGACAO_LATENTE);
 		return !marcadorPropagacaoEncontrado 
@@ -84,7 +136,7 @@ class MarcadorPropagacaoBase()
 	function Prospectar(this)
 		//Print("*PROPAGACAO* Marcador de Propagação: {}  ** Prospectando.".format(this.esteItemMarcador.serial));
 		return TileProspectado(
-			ListItemsAtLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, this.esteItemMarcador.realm),
+			ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm),
 			ListStaticsNearLocation(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,0,0, this.esteItemMarcador.realm ),
 			ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,LISTEX_FLAG_GHOST, this.esteItemMarcador.realm),
 			GetMapInfo( this.esteesteItemMarcadorMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.realm )
@@ -92,11 +144,16 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function IncrementaCiclosDesdeUltimoEstimulo(this)
-		this.ciclosDesdeUltimoEstimulo++;
+		if(this.estado == ESTADO_PROPAGACAO_DORMENTE)
+			this.ciclosDormente++;
+		else
+			this.ciclosDesdeUltimoEstimulo++;
+		endif
 	endfunction
 
 	function ZeraCiclosDesdeUltimoEstimuloPositivo(this)
 		this.ciclosDesdeUltimoEstimulo := 0;
+		this.ciclosDormente := 0;
 	endfunction
 
 	function IsMarcadorMorto(this)

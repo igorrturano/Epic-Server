@@ -10,6 +10,8 @@ program controladoraPropagacao(esteItemMarcador)
 
 	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO) ;
 
+	Set_Event_Queue_Size(12);
+
 	var marcadorOrigem := propPropagacao.marcadorOrigem;
 	propPropagacao.+esteMarcadorPid := GetPid();
 	SetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO,propPropagacao);
@@ -19,25 +21,28 @@ program controladoraPropagacao(esteItemMarcador)
 	params.marcador := esteItemMarcador;
 
 	//Print("params: " + params + " params.marcador - " + params.marcador);
-	var esteMarcador := MarcadorPropagacaoFabrica().Montar(params);
+	var esteObjetoMarcador := MarcadorPropagacaoFabrica().Montar(params);
 
-	esteMarcador.AtualizaComportamentoMarcador();
-	esteMarcador.MarcarAdjacentes();
+	esteObjetoMarcador.AtualizaComportamentoMarcador();
+	esteObjetoMarcador.MarcarAdjacentes();
 
 	while(esteItemMarcador)
 		Sleepms(300);
 		var event := Wait_For_Event(0);
 
-		if(event.id == PROPAGACAO_EV_ESTIMULO)
-			esteMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
+		if(event == PROPAGACAO_EV_TIMEOUT)
+			//Print( GetPid()+ " Timed Out!");
+		elseif(event.id == PROPAGACAO_EV_ESTIMULO)
+			//Print( GetPid()+ " Events_Waiting() - " + Events_Waiting());
+			esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
 		endif
 
-		if(!esteMarcador.isMarcadorMorto)
-			esteMarcador.EfetuarCiclo();
+		if(!esteObjetoMarcador.isMarcadorMorto)
+			esteObjetoMarcador.EfetuarCiclo();
 		else
 			DestroyItem(esteItemMarcador);
 		endif
 	endwhile
 
-	Print("*PROPAGACAO* controladora {} Finalizada.".format(GetPid()));
+	//Print("*PROPAGACAO* controladora {} Finalizada.".format(GetPid()));
 endprogram

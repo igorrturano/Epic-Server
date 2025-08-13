@@ -2,12 +2,14 @@ use uo;
 use os;
 use polsys;
 use cfgfile;
+use math;
 
 include "/include/epicPropNames";
 
 const MARCADOR_PROPAGACAO_OBJTYPE := 0xe13a;
 
 enum propagacaoEvents
+	PROPAGACAO_EV_TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
 	PROPAGACAO_EV_ESTIMULO,
 	PROPAGACAO_EV_RESFRIAMENTO,
 endenum
@@ -29,15 +31,16 @@ enum tipoCalculoEnergia
 	CALCULO_ENERGIA_LANDTILE, 
 endenum
 
-function EncontraMarcadorPropagacao(x,y, z, realm)
+function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem)
 	
-	var itemsEncontrados := ListItemsAtLocation( x, y, z, realm);
+	var itemsEncontrados := ListItemsNearLocationOfType( x, y, z,0, MARCADOR_PROPAGACAO_OBJTYPE, realm);
 
 	foreach itemEncontrado in itemsEncontrados
-		if(itemEncontrado.objtype == MARCADOR_PROPAGACAO_OBJTYPE)
+		Sleepms(2);
+		var propPropagacaoEncontrada := GetObjProperty(itemEncontrado,PROPNAME_PROP_PROPAGACAO);
+		if(propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem)
 			return itemEncontrado;
 		endif
-		Sleepms(2);
 	endforeach
 	return error{errortext := "Não encotrado."};
 endfunction
@@ -105,4 +108,8 @@ function IsLimiteGeracaoAlcancado( geracaoAtual)
 	else
 		return false;
 	endif
+endfunction
+
+function PegaAbsoluta(z, zAlvo)
+	return Abs(z - zAlvo);
 endfunction

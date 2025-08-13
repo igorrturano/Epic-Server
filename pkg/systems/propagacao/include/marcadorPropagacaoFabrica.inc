@@ -8,14 +8,14 @@ class MarcadorPropagacaoFabrica()
   endfunction
 
   function Montar( this, parametros)
-	Print("*PROPAGACAO* Iniciando Fabrica.");
+	//Print("*PROPAGACAO* Iniciando Fabrica.");
 	if(parametros.marcador)
 		var propPropagacao := GetObjProperty(parametros.marcador, PROPNAME_PROP_PROPAGACAO) ;
-		Print("*PROPAGACAO* propPropagacao --- " + propPropagacao);
+		//Print("*PROPAGACAO* propPropagacao --- " + propPropagacao);
 		if(propPropagacao)
 			case (propPropagacao.tipoPropagacao)
 				PROPAGACAO_TIPO_INCENDIO:
-					Print("*PROPAGACAO* Iniciando Marcador Tipo Incêndio Instânciado.");
+					//Print("*PROPAGACAO* Iniciando Marcador Tipo Incêndio Instânciado.");
 					return MarcadorPropagacaoIncendio(parametros.marcador, propPropagacao);
 			endcase
 		endif
