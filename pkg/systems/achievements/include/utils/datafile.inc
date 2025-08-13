@@ -1,75 +1,52 @@
 include ":datafile:DFTools";
 include ":achievements:model/Achievement";
-include ":achievements:model/AchievementCombat";
-include ":achievements:model/AchievementCrafting";
-include ":achievements:model/AchievementExploration";
 
-function SaveAchievement(who, type, achievement)
+function SaveAchievement(type, who, achievement)
 	var DFController := DFTools(":achievements:" + type);
 	var elem := Hex(who.serial);
-	var key := achievement.GetRefObj();
-	var prop := DFController.LoadValue(elem, key);
-	prop[key] := achievement.Serialize();
+	var key := CStr(achievement.GetRef());
+	var prop := DFController.LoadValue(elem, key) ?: dictionary{};
+
+	print (prop);
+
+	prop[achievement.GetName()] := achievement.Serialize();
 
 	return DFController.WriteValue(elem, key, prop);
 endfunction
 
-function LoadAchievement(who, type, key)
+function LoadAchievement(type, who, key, name)
 	var DFController := DFTools(":achievements:" + type);
 	var prop := DFController.LoadValue(Hex(who.serial), key);
-	var achiev := prop[key];
+	var achiev;
 
-	if (!prop) return error{ errortext := $"Achievement data not found for {key} ({type})" }; endif
-
-	achiev := Achievement(who, achiev.criteria, achiev.refObj, achiev.refName, achiev.level, achiev.xp, achiev.value);
-	// case (type)
-	// 	ACHIEVEMENT:
-	// 		achiev := Achievement(who, key);
-	// 		break;
-
-	// 	ACHIEVEMENT_COMBAT:
-	// 		achiev := AchievementCombat(who, key);
-	// 		break;
-
-	// 	ACHIEVEMENT_CRAFTING:
-	// 		// achiev := AchievementCrafting(who, key);
-	// 		break;
-		
-	// 	ACHIEVEMENT_EXPLORATION:
-	// 		// achiev := AchievementExploration(who, key);
-	// 		break;
-
-	// 	default:
-	// 		return error{ errortext := $"Invalid achievement type: {type}"};
-	// endcase
-
+	achiev := Achievement(name, key);
 	achiev.Deserialize(prop[key]);
 
 	return achiev;
 endfunction
 
 function LoadAllAchievements(who)
-	var achievements := array{};
-	var types := array{ ACHIEVEMENT_COMBAT };
+	// var achievements := array{};
+	// var types := array{ ACHIEVEMENT_COMBAT };
 
-	foreach type in (types)
-		var DFController := DFTools(":achievements:" + type);
-		var propNames := DFController.GetElementPropNames(Hex(who.serial));
+	// foreach type in (types)
+	// 	var DFController := DFTools(":achievements:" + type);
+	// 	var propNames := DFController.GetElementPropNames(Hex(who.serial));
 
-		if (propNames.size() < 1)
-			continue;
-		endif
+	// 	if (propNames.size() < 1)
+	// 		continue;
+	// 	endif
 
-		foreach propName in (propNames)
-			var achievData := DFController.LoadValue(Hex(who.serial), propName);
-			var achievement := LoadAchievement(who, achievData.type, propName);
+	// 	foreach propName in (propNames)
+	// 		var achievData := DFController.LoadValue(Hex(who.serial), propName);
+	// 		var achievement := LoadAchievement(who, achievData.type, propName);
 
-			achievements.append(achievement);
-		endforeach;
+	// 		achievements.append(achievement);
+	// 	endforeach;
 
-	endforeach;
+	// endforeach;
 
-	if (achievements.size() == 0) return error{ errortext := "No achievements found for this character." }; endif
+	// if (achievements.size() == 0) return error{ errortext := "No achievements found for this character." }; endif
 
-	return achievements;
+	// return achievements;
 endfunction
