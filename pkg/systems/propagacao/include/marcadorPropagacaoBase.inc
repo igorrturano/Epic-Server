@@ -1,4 +1,5 @@
 
+use util;
 include ":propagacao:include/propagacao";
 
 class MarcadorPropagacaoBase()
@@ -22,7 +23,6 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function MarcarAdjacentes(this)
-		//Print("*PROPAGACAO* Marcando adjacentes a {} ".format(this.esteItemMarcador.serial));
 		for deslocamentoX := -1 to 1
 			sleepms(2);
 			for deslocamentoY := -1 to 1
@@ -33,23 +33,25 @@ class MarcadorPropagacaoBase()
 				var adjacenteX := Cint(this.esteItemMarcador.x + deslocamentoX);
 				var adjacenteY := Cint(this.esteItemMarcador.y + deslocamentoY);
 
-				var chaveDicionario := CStr(adjacenteX) + CStr(adjacenteY) + CStr(this.esteItemMarcador.z);
+				var chaveDicionario := CStr(adjacenteX) + CStr(adjacenteY);
 				var  marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
+					Sleepms(RandomIntMinMax(25,120));//Marreta pra diminuir a condição de corrida nr 1. kkkk
 					marcadorPropagacaoEncontrado := EncontraMarcadorPropagacao(
 										adjacenteX, 
 										adjacenteY, 
 										this.esteItemMarcador.z, 
 										this.esteItemMarcador.realm, 
 										this.propPropagacao.tipoPropagacao);
-					if(DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado,this.propPropagacao.geracao,this.estado))
+					if(DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado,
+																this.propPropagacao.geracao,
+																this.estado))
 						var zMaisAdequada := this.EncontraAlturaMaisAdequada(
 															adjacenteX,
 															adjacenteY,
 															this.esteItemMarcador.z,
 															this.esteItemMarcador.realm);
-						//Print("*PROPAGACAO* Marcador de Propagação adjacente criado com chave: {} ".format(chaveDicionario));
 						marcadorPropagacaoEncontrado := CriaMarcadorPropagacaoAdjacente(
 																this.esteItemMarcador,
 																adjacenteX, 
@@ -58,18 +60,14 @@ class MarcadorPropagacaoBase()
 																this.esteItemMarcador.realm, 
 																this.propPropagacao);
 					else
-						//Print("*PROPAGACAO* Marcador de Propagação adjacente localizado ou não propagado com chave: {} ".format(chaveDicionario));
 					endif
 				else
-					//Print("*PROPAGACAO* Marcador já registrado na chave: {}".format(chaveDicionario));
 					continue;
 				endif
 				
 				if(marcadorPropagacaoEncontrado)
 					this.marcadoresAdjacentes.insert(chaveDicionario, marcadorPropagacaoEncontrado);
-					//Print("*PROPAGACAO* Marcador de Propagação adjacente criado com chave: {} - Serial: {} ".format(chaveDicionario, marcadorPropagacaoEncontrado.serial));
 				else
-					//Print("*PROPAGACAO* Marcador de Propagação adjacente não propagado na chave: {}".format(chaveDicionario));
 				endif
 				
 			endfor
@@ -115,7 +113,6 @@ class MarcadorPropagacaoBase()
 		else
 			ztotal := item.z;
 		endif
-		Print(item.objtype + " ztotal -> " + ztotal + " - from z " +  item.z + " isSuperficie " + isSuperficie + " item.height " + itemHeight);
 
 		var distancia := PegaAbsoluta(item.z,zAlvo);
 		if(menorDistancia > distancia)
@@ -125,7 +122,6 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado, geracao, estado)
-		//Print( " ZXXAAX --- " + marcadorPropagacaoEncontrado + " - " + geracao +" - " +estado +  " - " + ESTADO_PROPAGACAO_DORMENTE + " - " + ESTADO_PROPAGACAO_LATENTE);
 		return !marcadorPropagacaoEncontrado 
 				&& !IsLimiteGeracaoAlcancado(geracao) 
 				&& estado != ESTADO_PROPAGACAO_DORMENTE
@@ -134,7 +130,6 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function Prospectar(this)
-		//Print("*PROPAGACAO* Marcador de Propagação: {}  ** Prospectando.".format(this.esteItemMarcador.serial));
 		return TileProspectado(
 			ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm),
 			ListStaticsNearLocation(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,0,0, this.esteItemMarcador.realm ),

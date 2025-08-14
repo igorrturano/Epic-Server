@@ -15,7 +15,7 @@ enum propagacaoEvents
 endenum
 
 enum tipoPropagacao
-	PROPAGACAO_TIPO_INCENDIO,
+	PROPAGACAO_TIPO_INCENDIO := 1,
 endenum
 
 enum estadosMarcadorPropagacao
@@ -31,10 +31,31 @@ enum tipoCalculoEnergia
 	CALCULO_ENERGIA_LANDTILE, 
 endenum
 
+
+function InsereDanoCatalogo(byref refArray , estadoPropagacao, dadoDano)
+	if(refArray)
+		refArray.add(estadoPropagacao + " " + dadoDano);
+	else
+		return error {error_text := "é preciso um array inicializado como parâmetro"};
+	endif
+	return 1;
+endfunction
+
+function MontaCatalogoDano (arrayCatalogo)
+	var catalogo := dictionary;
+	foreach itemCatalogo in arrayCatalogo
+      Sleepms(2);
+      var estadoEDano := SplitWords(itemCatalogo);
+      catalogo.catalogoDano.insert(estadoEDano[1],estadoEDano[2]);
+    endforeach
+
+	return catalogo;
+endfunction
+
 function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem)
 	
 	var itemsEncontrados := ListItemsNearLocationOfType( x, y, z,0, MARCADOR_PROPAGACAO_OBJTYPE, realm);
-
+	//Print("*PROPAGACAO* itemsEncontrados: {} :".format(itemsEncontrados.size()));
 	foreach itemEncontrado in itemsEncontrados
 		Sleepms(2);
 		var propPropagacaoEncontrada := GetObjProperty(itemEncontrado,PROPNAME_PROP_PROPAGACAO);
@@ -70,7 +91,7 @@ endfunction
 
 function NovaPropPropagacao(
 						geracao := 0,
-						origem := -1,
+						origem := 0,
 						marcadorOrigem := -1,
 						tipoPropagacao := PROPAGACAO_TIPO_INCENDIO,
 						estadoInicial := ESTADO_PROPAGACAO_DORMENTE,
@@ -111,5 +132,5 @@ function IsLimiteGeracaoAlcancado( geracaoAtual)
 endfunction
 
 function PegaAbsoluta(z, zAlvo)
-	return Abs(z - zAlvo);
+	return Cint(Abs(z - zAlvo));
 endfunction

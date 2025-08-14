@@ -15,12 +15,10 @@ program controladoraPropagacao(esteItemMarcador)
 	var marcadorOrigem := propPropagacao.marcadorOrigem;
 	propPropagacao.+esteMarcadorPid := GetPid();
 	SetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO,propPropagacao);
-	//Print("*PROPAGACAO* Iniciando Marcador: {}  - controladora: {}".format(esteItemMarcador.serial, GetPid()));
 
 	var params := FabricaPropagacaoParametros();
 	params.marcador := esteItemMarcador;
 
-	//Print("params: " + params + " params.marcador - " + params.marcador);
 	var esteObjetoMarcador := MarcadorPropagacaoFabrica().Montar(params);
 
 	esteObjetoMarcador.AtualizaComportamentoMarcador();
@@ -31,9 +29,7 @@ program controladoraPropagacao(esteItemMarcador)
 		var event := Wait_For_Event(0);
 
 		if(event == PROPAGACAO_EV_TIMEOUT)
-			//Print( GetPid()+ " Timed Out!");
 		elseif(event.id == PROPAGACAO_EV_ESTIMULO)
-			//Print( GetPid()+ " Events_Waiting() - " + Events_Waiting());
 			esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
 		endif
 
@@ -44,5 +40,4 @@ program controladoraPropagacao(esteItemMarcador)
 		endif
 	endwhile
 
-	//Print("*PROPAGACAO* controladora {} Finalizada.".format(GetPid()));
 endprogram

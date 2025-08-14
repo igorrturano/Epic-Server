@@ -1,11 +1,15 @@
 use cfgfile;
+use uo;
 use Util;
 
 include ":propagacao:include/marcadorPropagacaoBase";
 include ":propagacao:include/propagacao";
 include "/include/epicPropNames";
+include "/include/epicConstants";
 include "include/client";
 include "/include/math";
+include ":destroyable:include/destroyItem";
+include ":combat:damage";
 
 class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   
@@ -23,56 +27,90 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.listaStaticosInflamaveis :=  GetConfigStringArray(propagacaoConfig["incendio"],"staticInflamavel");
     this.limiteEstimuloEstadoSuperior := this._CalculaLimiteEstimuloSuperior();
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
+    this.catalogoDano := propPropagacao.catalogoDano ? propPropagacao.catalogoDano : this.MontaCatalogoDano(GetConfigStringArray(propagacaoConfig["incendio"],"danoPorEstadoBase"));
+    
+  endfunction
+
+  function AtribuiCatalogoDano(this, arrayCatalogo)
+
+    this.catalogoDano := MontaCatalogoDano(arrayCatalogo);
+    
   endfunction
 
   function EfetuarCiclo(this)
     if(!this.isMarcadorMorto)
-     // Print("*PROPAGACAO* Iniciando Ciclo do marcador {} ".format(this.esteItemMarcador.serial));
       var tileProspectado := this.Prospectar();
       this.isAcumulando := false;
 
-      this._AvaliaIsAcumulando(tileProspectado);
+      this.ProcessaTile(tileProspectado);
 
-      //TODO verificar statics
       //TODO verificar chao
 
       if(this.isAcumulando && this.estado > ESTADO_PROPAGACAO_LATENTE)
-          //Print("*PROPAGACAO* Marcador {} Recebeu estimulo positivo.".format(this.esteItemMarcador.serial));
-          this.RecebeEstimulo(this.estado, this.estado);
+          this.RecebeEstimulo(this.estado);
       else
-          //Print("*PROPAGACAO* Marcador {} Recebeu estimulo negativo.".format(this.esteItemMarcador.serial));
           var valorEstimulo := -this.estado;
           if(this.ciclosDesdeUltimoEstimulo > 0)
             valorEstimulo -= this.ciclosDesdeUltimoEstimulo;
           endif 
-          this.RecebeEstimulo(valorEstimulo, this.estado);
+          this.RecebeEstimulo(valorEstimulo);
           this.IncrementaCiclosDesdeUltimoEstimulo();
       endif
 
-      //Print("**** estado atual " + this.estado);
       if(this.DevePropagar())
-         //Print("*PROPAGACAO* Marcador {} tentando propagar.".format(this.esteItemMarcador.serial));
         this.Propagar();
         this.EnviaEstimulo(this.estado);
       endif
     endif
   endfunction
 
-  function _AvaliaIsAcumulando(this, TileProspectado)
+  function ProcessaTile(this, tileProspectado)
+
+    var quem := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var danoDado := this.catalogoDano[cstr(this.estado)]; 
+    var rolagemDano := RandomDiceRoll(danoDado);
+
     foreach item in (tileProspectado.PegaItensEncontrados())
       Sleepms(2);
-      var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
-      if(material.inflamavel)
-        if(this.fatorMudancaEstado < material.inflamavel)
-          this.fatorMudancaEstado := material.inflamavel;
-        endif
-        this.isAcumulando := true;
+      if(item.isMarcadorTipo(PROPAGACAO_TIPO_INCENDIO) && item.serial != this.esteItemMarcador.serial)
+        DestroyItem(item); // Marreta contra condição de corrida nr 2;
+        continue;
+      endif
+
+      this.isAcumulando := this._AvaliaInflamabilidade(item);
+      if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
+        DanificaItem(quem,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
+      endif
+      
+    endforeach
+
+    foreach mobile in (tileProspectado.PegaMobilesEncontrados())
+      Sleepms(2);
+      if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
+        DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
       endif
     endforeach
 
+    this._AvaliaInflamabilidadeEstatico();
+    this._AvaliaInflamabilidadeTerreno();
+
+  endfunction
+
+  function _AvaliaInflamabilidade(this, item)
+    var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
+    if(material.inflamavel)
+      if(this.fatorMudancaEstado < material.inflamavel)
+        this.fatorMudancaEstado := material.inflamavel;
+      endif
+      return true;
+    endif
+    return false;
+  endfunction
+
+  //TODO Issaqui tá uma merda, refatorar no futuro - ass: Deiro.. o próprio criador.
+  function _AvaliaInflamabilidadeEstatico(this, tileProspectado)
     if(!this.isAcumulando)
       var combustivelRestante := this.combustiveis["estaticos"];
-      //Print("combustivelRestante  " + combustivelRestante);
       if(combustivelRestante > 0)
         combustivelRestante -= this.estado;
         this.combustiveis.insert("estaticos",combustivelRestante);
@@ -85,17 +123,23 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
           if(!this.isEstaticoConsumido)
             foreach estatico in (tileProspectado.PegaEstaticosEncontrados())
               Sleepms(2);
-             
-              var isAoAlcance :=  this.esteItemMarcador.z + 5 >= estatico.z && this.esteItemMarcador.z - 5 <= estatico.z;
-              //Print("this.esteItemMarcador.serial - " + this.esteItemMarcador.serial + " z - " + this.esteItemMarcador.z + " --- " + estatico.objtype  + " z - " + estatico.z);
+              var zAbsoluto := PegaAbsoluta(this.esteItemMarcador.z, estatico.z);
+              var isAoAlcance :=  zAbsoluto <= 19;
               if(isAoAlcance)
-                if(cstr(estatico.objtype) in (this.listaStaticosInflamaveis))
-                   //Print("estatico " + estatico.objtype);
-                  this.combustiveis.insert("estaticos",100);
-                  this.isAcumulando := true;
-                  this.fatorMudancaEstado := 1; //TODO dar um jeito de cada static dar um diferente.
-                  break;
-                endif
+                foreach staticoInflamavel in (this.listaStaticosInflamaveis)
+                  Sleepms(2);
+                    var splited := SplitWords(staticoInflamavel);
+                    var objtypeInflamavel := splited[1];
+                    var combustivelInflamavel := splited[2];
+                    var fatorInflamavel := splited[3];
+
+                    if(cstr(estatico.objtype) == objtypeInflamavel)
+                      this.combustiveis.insert("estaticos",cint(combustivelInflamavel));
+                      this.isAcumulando := true;
+                      this.fatorMudancaEstado := cint(fatorInflamavel); //TODO dar um jeito de cada static dar um diferente.
+                      break;
+                    endif
+                endforeach
               endif
             endforeach
           endif
@@ -103,7 +147,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         endif
       endif
     endif
+  endfunction
 
+  function _AvaliaInflamabilidadeTerreno(this)
+    //TODO DO!
   endfunction
 
   function OnRecebeEstimulo(this,valor)
@@ -115,7 +162,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     if(valor <= 0)
       if(this.ciclosDormente >= cint(this.ciclosDormenteLimite) && this.estado == ESTADO_PROPAGACAO_DORMENTE)
         this.isMarcadorMorto := true;
-         //Print("*PROPAGACAO* Marcador {} Morreu após ficar muitos ciclos Dormente.".format(this.esteItemMarcador.serial));
       endif
       if(valor == 0)
         return 1;
@@ -132,7 +178,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
     
     this.medidorEstimulo += (this._DeveInverterEstimulo(valor,isRemetenteAcumulando) ?  valor * -1 : valor);
-    //Print("*PROPAGACAO* Marcador {} mudou seu medidor de estimulo para {}.".format(this.esteItemMarcador.serial, this.medidorEstimulo));
     this.AtualizaEstado();
   endfunction
 
@@ -148,12 +193,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function EnviaEstimulo(this, valor)
-    //Print("*PROPAGACAO* Marcador {} Enviou estimulo.".format(this.esteItemMarcador.serial));
     foreach adjacente in (this.marcadoresAdjacentes)
       Sleepms(2);
       var propAdjacente := GetObjProperty(adjacente, PROPNAME_PROP_PROPAGACAO);
       var pidAdjacente := GetProcess(propAdjacente.esteMarcadorPid);
-      //Print("*PROPAGACAO* Marcador {} Enviou {} estimulo para o processo {}.".format(this.esteItemMarcador.serial, valor ,pidAdjacente));
 
       if(pidAdjacente)
         pidAdjacente.SendEvent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valor, isAcumulando := this.isAcumulando, estado := this.estado});
@@ -166,38 +209,38 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.limiteEstimuloEstadoSuperior := _CalculaLimiteEstimuloSuperior(this);
     this.limiteEstimuloEstadoInferior := _CalculaLimiteEstimuloInferior(this);
 
-    if(GetObjProperty(this.esteItemMarcador,"DEBUG"))
-      Print(" --- this.estimuloLimite: {} - this.medidorEstimulo: {} - limiteEstimuloEstadoInferior: {} ".format(this.estimuloLimite,this.medidorEstimulo, this.limiteEstimuloEstadoInferior));
-    endif
 
     if(this._isMedidorAcimaLimiteEstado())
       var valorAvanco := this._ObtemQuantidadeAvancoEstado();
 
       if(this._DeveAvancarEstado(valorAvanco))
+
         var novoValorEstado := this.estado + valorAvanco;
         var isMaximo := novoValorEstado > ESTADO_PROPAGACAO_INTENSO;
         this.estado := isMaximo ? ESTADO_PROPAGACAO_INTENSO : novoValorEstado;
+
         if(!isMaximo)
           this.AtualizaComportamentoMarcador();
         endif
-        //Print("*PROPAGACAO* Marcador {} Subiu de Estado e agora é {}.".format(this.esteItemMarcador.serial, this.estado));
+
         this.medidorEstimulo := isMaximo ? this.limiteEstimuloEstadoSuperior : 0;
       else
         this.medidorEstimulo := this.limiteEstimuloEstadoSuperior;
       endif
     elseif(this._isMedidorAbaixoLimiteEstado())
+
       var valorRegresso := this._ObtemQuantidadeRegressaoEstado();
-      if(GetObjProperty(this.esteItemMarcador,"DEBUG"))
-        Print(" --- this.valorRegresso: {} - this.medidorEstimulo: {} - limiteEstimuloEstadoInferior: {} ".format(this.valorRegresso,this.medidorEstimulo, this.limiteEstimuloEstadoInferior));
-      endif
-      //Print("*PROPAGACAO* Marcador  estado agora é {}".format( this.estado));
+
       if(this._DeveRegredirEstado(valorRegresso))
+
         var novoValorEstado := this.estado - valorRegresso;
         var isMinimo := novoValorEstado < ESTADO_PROPAGACAO_DORMENTE;
         this.estado := isMinimo ? ESTADO_PROPAGACAO_DORMENTE : novoValorEstado;
+
         if(!isMinimo)
           this.AtualizaComportamentoMarcador();
         endif
+
         this.medidorEstimulo := isMinimo ? this.limiteEstimuloEstadoInferior : 0;
       else
         this.medidorEstimulo := this.limiteEstimuloEstadoInferior;
