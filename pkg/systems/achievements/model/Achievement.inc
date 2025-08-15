@@ -97,7 +97,7 @@ class Achievement()
 	endfunction
 
 	function toString(this)
-		return $"Achievement para {this.name} (xp={this.xp}, level={this.level}, value={this.value})";
+		return $"Achievement para {this.name} (ref={this.ref}, refName={this.refName}, xp={this.xp}, level={this.level}, value={this.value})";
 	endfunction
 endclass
 

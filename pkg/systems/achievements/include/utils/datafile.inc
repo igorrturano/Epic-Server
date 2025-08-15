@@ -7,8 +7,6 @@ function SaveAchievement(type, who, achievement)
 	var key := CStr(achievement.GetRef());
 	var prop := DFController.LoadValue(elem, key) ?: dictionary{};
 
-	print (prop);
-
 	prop[achievement.GetName()] := achievement.Serialize();
 
 	return DFController.WriteValue(elem, key, prop);
@@ -20,12 +18,12 @@ function LoadAchievement(type, who, key, name)
 	var achiev;
 
 	achiev := Achievement(name, key);
-	achiev.Deserialize(prop[key]);
+	achiev.Deserialize(prop[name]);
 
 	return achiev;
 endfunction
 
-function LoadAllAchievements(who)
+function LoadListAchievement(who)
 	// var achievements := array{};
 	// var types := array{ ACHIEVEMENT_COMBAT };
 
