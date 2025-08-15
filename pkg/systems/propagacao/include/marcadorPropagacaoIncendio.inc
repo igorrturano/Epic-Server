@@ -128,48 +128,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     return false;
   endfunction
 
-  //TODO Issaqui tá uma merda, refatorar no futuro - ass: Deiro.. o próprio criador.
-  function _AvaliaInflamabilidadeEstatico(this, tileProspectado)
-    if(!this.isAcumulando)
-      var combustivelRestante := this.combustiveis["estaticos"];
-      if(combustivelRestante > 0)
-        combustivelRestante -= this.estado;
-        this.combustiveis.insert("estaticos",combustivelRestante);
-        this.isAcumulando := true;
-      else
-        if(combustivelRestante <= 0 && TypeOfInt(combustivelRestante) != OT_UNINIT)
-          this.isEstaticoConsumido := true;
-          this.isAcumulando := false;
-        else
-          if(!this.isEstaticoConsumido)
-            foreach estatico in (tileProspectado.PegaEstaticosEncontrados())
-              Sleepms(2);
-              var zAbsoluto := PegaAbsoluta(this.esteItemMarcador.z, estatico.z);
-              var isAoAlcance :=  zAbsoluto <= 19;
-              if(isAoAlcance)
-                foreach staticoInflamavel in (this.listaStaticosInflamaveis)
-                  Sleepms(2);
-                    var splited := SplitWords(staticoInflamavel);
-                    var objtypeInflamavel := splited[1];
-                    var combustivelInflamavel := splited[2];
-                    var fatorInflamavel := splited[3];
-
-                    if(cstr(estatico.objtype) == objtypeInflamavel)
-                      this.combustiveis.insert("estaticos",cint(combustivelInflamavel));
-                      this.isAcumulando := true;
-                      this.fatorMudancaEstado := cint(fatorInflamavel);
-                      break;
-                    endif
-                endforeach
-              endif
-            endforeach
-          endif
-          this.isAcumulando := false;
-        endif
-      endif
-    endif
-  endfunction
-
   function OnRecebeEstimulo(this,valor)
 
     if(valor > 0)
