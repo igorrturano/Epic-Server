@@ -19,14 +19,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
-    this.isSoloConsumido := false;
-    this.isEstaticoConsumido := false;
     this.combustiveis := array{CombustivelEstaticos(),CombustivelTerreno()};
     this.estimuloLimite := propagacaoConfig["incendio"].estimuloLimite;
     this.ciclosDormenteLimite := propagacaoConfig["incendio"].ciclosDormenteLimite;
     this.ciclosDormente := 0;
-    this.listaStaticosInflamaveis :=  GetConfigStringArray(propagacaoConfig["incendio"],"staticInflamavel");
-    this.listaTerrenosInflamaveis :=  GetConfigStringArray(propagacaoConfig["incendio"],"terrenoInflamavel");
     this.limiteEstimuloEstadoSuperior := this._CalculaLimiteEstimuloSuperior();
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
     this.catalogoDano := propPropagacao.catalogoDano ? propPropagacao.catalogoDano : this.AtribuiCatalogoDano(GetConfigStringArray(propagacaoConfig["incendio"],"danoPorEstadoBase"));
@@ -119,7 +115,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _AvaliaInflamabilidade(this, item)
     var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
-    if(material.inflamavel)
+    var isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
+    if(material.inflamavel && !isIndestrutivel)
       if(this.fatorMudancaEstado < material.inflamavel)
         this.fatorMudancaEstado := material.inflamavel;
       endif
