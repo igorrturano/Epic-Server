@@ -96,7 +96,9 @@ function NovaPropPropagacao(
 						tipoPropagacao := PROPAGACAO_TIPO_INCENDIO,
 						estadoInicial := ESTADO_PROPAGACAO_DORMENTE,
 						marcadorOrigemPid := 0, 
-						esteMarcadorPid := 0
+						esteMarcadorPid := 0,
+						catalogoDano := 0,
+						efeitosPersonalizados := 0
 						)
 
 	var prop := struct{
@@ -104,7 +106,9 @@ function NovaPropPropagacao(
 				origem := origem,
 				marcadorOrigem := marcadorOrigem,
 				tipoPropagacao := tipoPropagacao, 
-				estadoInicial := estadoInicial
+				estadoInicial := estadoInicial,
+				catalogoDano := catalogoDano,
+				efeitosPersonalizados := efeitosPersonalizados
 			};
 
 	if( esteMarcadorPid)

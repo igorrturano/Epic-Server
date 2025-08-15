@@ -5,7 +5,6 @@ include ":propagacao:include/propagacao";
 class MarcadorPropagacaoBase()
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao)
 		this.esteItemMarcador := esteItemMarcador;
-		this.propPropagacao := propPropagacao;
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
 		this.ciclosDesdeUltimoEstimulo := 0;
@@ -18,9 +17,6 @@ class MarcadorPropagacaoBase()
   	//@abstract void EfetuarCiclo()
   	//@abstract void RecebeEstimulo( valor )
   	//@abstract void EnviaEstimulo( valor )
-
-	function Iniciar()
-	endfunction
 
 	function MarcarAdjacentes(this)
 		for deslocamentoX := -1 to 1
@@ -43,9 +39,9 @@ class MarcadorPropagacaoBase()
 										adjacenteY, 
 										this.esteItemMarcador.z, 
 										this.esteItemMarcador.realm, 
-										this.propPropagacao.tipoPropagacao);
+										this.PegaPropPropagacao().tipoPropagacao);
 					if(DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado,
-																this.propPropagacao.geracao,
+																this.PegaPropPropagacao().geracao,
 																this.estado))
 						var zMaisAdequada := this.EncontraAlturaMaisAdequada(
 															adjacenteX,
@@ -58,7 +54,7 @@ class MarcadorPropagacaoBase()
 																adjacenteY, 
 																zMaisAdequada,
 																this.esteItemMarcador.realm, 
-																this.propPropagacao);
+																this.PegaPropPropagacao());
 					else
 					endif
 				else
@@ -153,6 +149,10 @@ class MarcadorPropagacaoBase()
 
 	function IsMarcadorMorto(this)
 		return this.isMarcadorMorto;
+	endfunction
+
+	function PegaPropPropagacao(this)
+		return GetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO);
 	endfunction
 
 endclass

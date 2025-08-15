@@ -18,6 +18,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     super(esteItemMarcador,propPropagacao);
 
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+    this.mobileOrigemIncendio := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
     this.combustiveis := array{CombustivelEstaticos(),CombustivelTerreno()};
     this.estimuloLimite := propagacaoConfig["incendio"].estimuloLimite;
@@ -39,8 +40,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
       this.ProcessaTile(tileProspectado);
 
-      //TODO verificar chao
-
       if(this.isAcumulando && this.estado > ESTADO_PROPAGACAO_LATENTE)
           this.RecebeEstimulo(this.estado);
       else
@@ -61,7 +60,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function ProcessaTile(this, tileProspectado)
 
-    var mobileOrigemIncendio := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
     var danoDado := this.catalogoDano[cstr(this.estado)]; 
     var rolagemDano := RandomDiceRoll(danoDado);
 
@@ -77,7 +75,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
       this.isAcumulando := this._AvaliaInflamabilidade(item);
       if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
-        DanificaItem(mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
+        DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
       endif
       
     endforeach
@@ -221,52 +219,53 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function AtualizaComportamentoMarcador(this)
-    var corTEste := this.estado * 13;
     case(this.estado)
       ESTADO_PROPAGACAO_DORMENTE:
-        this.esteItemMarcador.graphic := 0x19AB;
-        this.esteItemMarcador.invisible := 1;
-        this.esteItemMarcador.color := 900;
+        this.AtualizaComportamento(0x19AB, 900);
         break;
       ESTADO_PROPAGACAO_LATENTE:
-        this.esteItemMarcador.graphic := 0x0DE9;
-        this.esteItemMarcador.invisible := 0;
-        //PlayObjectCenteredEffectEx(this.esteItemMarcador,0x377A,1,255,1359);
+        this.AtualizaComportamento(0x0DE9, 0);
         break;
       ESTADO_PROPAGACAO_PRINCIPIO:
-        this.esteItemMarcador.graphic := 0x19AB;
-        this.esteItemMarcador.color := 0;
-        this.esteItemMarcador.invisible := 0;
-        PlaySoundEffect( this.esteItemMarcador,SFX_1DE);
-        PlayObjectCenteredEffectEx(this.esteItemMarcador,0x3728,1,10);
-        var random := RandomIntMinMax(1,8);
-        if(random < 2)
-          CreateItemAtLocation(this.esteItemMarcador.x,this.esteItemMarcador.y, this.esteItemMarcador.z,0x3CFF,1,this.esteItemMarcador.realm);
-        endif
+        this.AtualizaComportamento(0x19AB, 0,0,SFX_1DE,0x3728,0x3CFF);
         break;
       ESTADO_PROPAGACAO_REGULAR:
-        this.esteItemMarcador.graphic := 0xB007;
-        this.esteItemMarcador.color := 0;
-        this.esteItemMarcador.invisible := 0;
-        PlaySoundEffect( this.esteItemMarcador,SFX_1DE);
-        PlayObjectCenteredEffectEx(this.esteItemMarcador,0x3728,1,10);
-        var random := RandomIntMinMax(1,8);
-        if(random < 2)
-          CreateItemAtLocation(this.esteItemMarcador.x,this.esteItemMarcador.y, this.esteItemMarcador.z,0x3CFF,1,this.esteItemMarcador.realm);
-        endif
+        this.AtualizaComportamento(0xB007, 0,0,SFX_1DE,0x3728,10,0x3CFF);
         break;
       ESTADO_PROPAGACAO_INTENSO:
-        this.esteItemMarcador.graphic := 0x6E26 ;
-        this.esteItemMarcador.color := 0;
-        this.esteItemMarcador.invisible := 0;
-        PlaySoundEffect( this.esteItemMarcador,SFX_1DE);
-        PlayObjectCenteredEffectEx(this.esteItemMarcador,0xB46F,1,100);
-        var random := RandomIntMinMax(1,8);
-        if(random < 2)
-          CreateItemAtLocation(this.esteItemMarcador.x,this.esteItemMarcador.y, this.esteItemMarcador.z,0x3CFF,1,this.esteItemMarcador.realm);
-        endif
+        this.AtualizaComportamento(0x6E26, 0,0,SFX_1DE,0x3728,100,0x3CFF);
         break;
     endcase
+  endfunction
+
+  function AtualizaComportamento(this, graphic, cor :=0, isInvisibel := 1, sfx := 0,efx := 0, duracao := 10, effectItemObjtype := 0, chanceRandom := 2 , minRandom := 1, maxRandom := 8)
+    
+    var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados;
+    this.esteItemMarcador.graphic := efeitosPersonalizados.graphic ? efeitosPersonalizados.graphic : graphic;
+    this.esteItemMarcador.color :=  efeitosPersonalizados.cor ? efeitosPersonalizados.cor : cor ;
+    this.esteItemMarcador.invisible := efeitosPersonalizados.isInvisibel ? efeitosPersonalizados.isInvisibel : isInvisibel;
+    if(sfx)
+      PlaySoundEffect( this.esteItemMarcador,efeitosPersonalizados.sfx ? efeitosPersonalizados.sfx : sfx);
+    endif
+
+    if(efx)
+      PlayObjectCenteredEffectEx(
+          this.esteItemMarcador,
+          efeitosPersonalizados.efx ? efeitosPersonalizados.efx : efx,
+          1, 
+          efeitosPersonalizados.duracao ? efeitosPersonalizados.duracao : duracao );
+    endif
+
+    var itemObjtype := efeitosPersonalizados.effectItemObjtype ? efeitosPersonalizados.effectItemObjtype : effectItemObjtype;
+    
+    if(itemObjtype)
+      var min := efeitosPersonalizados.minRandom ? efeitosPersonalizados.minRandom : minRandom;
+      var max := efeitosPersonalizados.maxRandom ? efeitosPersonalizados.maxRandom : maxRandom;
+      var random := RandomIntMinMax(min,max);
+      if(random < chanceRandom)
+        CreateItemAtLocation(this.esteItemMarcador.x,this.esteItemMarcador.y, this.esteItemMarcador.z,itemObjtype,1,this.esteItemMarcador.realm);
+      endif
+    endif
   endfunction
 
   function _DeveAvancarEstado(this, valorAvanco)
@@ -318,7 +317,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     return retorno;
   endfunction
 
-    function _ObtemQuantidadeRegressaoEstado(this)
+  function _ObtemQuantidadeRegressaoEstado(this)
     var limiteInferiorExtrapolado := cint(this.medidorEstimulo) / (cint(this.limiteEstimuloEstadoInferior) * -1);
     var isLimiteInferiorExtrapolado := limiteInferiorExtrapolado < -1;
     var retorno;

@@ -12,7 +12,7 @@ class CombustivelIncendio()
     this.fatorInflamavel := fatorInflamavel;
   endfunction
 
-  //@abstract void ProcuraCombustivel(ItemRef itemMarcador,TileProspectado tileProspectado)
+  //@abstract bool ProcuraCombustivel(ItemRef itemMarcador,TileProspectado tileProspectado)
 
   function ConsomeCombustivel(this, valor)
     this.combustivel -= valor;
