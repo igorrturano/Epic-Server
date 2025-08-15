@@ -219,28 +219,28 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function AtualizaComportamentoMarcador(this)
+    var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados[this.estado];
     case(this.estado)
       ESTADO_PROPAGACAO_DORMENTE:
-        this.AtualizaComportamento(0x19AB, 900);
+        this.AtualizaComportamento(efeitosPersonalizados,0x19AB, 900);
         break;
       ESTADO_PROPAGACAO_LATENTE:
-        this.AtualizaComportamento(0x0DE9, 0);
+        this.AtualizaComportamento(efeitosPersonalizados,0x0DE9, 0);
         break;
       ESTADO_PROPAGACAO_PRINCIPIO:
-        this.AtualizaComportamento(0x19AB, 0,0,SFX_1DE,0x3728,0x3CFF);
+        this.AtualizaComportamento(efeitosPersonalizados,0x19AB, 0,0,SFX_1DE,0x3728,0x3CFF);
         break;
       ESTADO_PROPAGACAO_REGULAR:
-        this.AtualizaComportamento(0xB007, 0,0,SFX_1DE,0x3728,10,0x3CFF);
+        this.AtualizaComportamento(efeitosPersonalizados,0xB007, 0,0,SFX_1DE,0x3728,10,0x3CFF);
         break;
       ESTADO_PROPAGACAO_INTENSO:
-        this.AtualizaComportamento(0x6E26, 0,0,SFX_1DE,0x3728,100,0x3CFF);
+        this.AtualizaComportamento(efeitosPersonalizados,0x6E26, 0,0,SFX_1DE,0x3728,100,0xB46F);
         break;
     endcase
   endfunction
 
-  function AtualizaComportamento(this, graphic, cor :=0, isInvisibel := 1, sfx := 0,efx := 0, duracao := 10, effectItemObjtype := 0, chanceRandom := 2 , minRandom := 1, maxRandom := 8)
-    
-    var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados;
+  function AtualizaComportamento(this,efeitosPersonalizados, graphic, cor :=0, isInvisibel := 1, sfx := 0,efx := 0, duracao := 10, effectItemObjtype := 0, chanceRandom := 2 , minRandom := 1, maxRandom := 8)
+     
     this.esteItemMarcador.graphic := efeitosPersonalizados.graphic ? efeitosPersonalizados.graphic : graphic;
     this.esteItemMarcador.color :=  efeitosPersonalizados.cor ? efeitosPersonalizados.cor : cor ;
     this.esteItemMarcador.invisible := efeitosPersonalizados.isInvisibel ? efeitosPersonalizados.isInvisibel : isInvisibel;
@@ -256,8 +256,12 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
           efeitosPersonalizados.duracao ? efeitosPersonalizados.duracao : duracao );
     endif
 
-    var itemObjtype := efeitosPersonalizados.effectItemObjtype ? efeitosPersonalizados.effectItemObjtype : effectItemObjtype;
+    var itemObjtype;
     
+    if(efeitosPersonalizados.effectItemObjtype != -1)
+      itemObjtype := efeitosPersonalizados.effectItemObjtype ? efeitosPersonalizados.effectItemObjtype : effectItemObjtype;
+    endif
+
     if(itemObjtype)
       var min := efeitosPersonalizados.minRandom ? efeitosPersonalizados.minRandom : minRandom;
       var max := efeitosPersonalizados.maxRandom ? efeitosPersonalizados.maxRandom : maxRandom;
