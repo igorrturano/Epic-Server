@@ -16,6 +16,8 @@ include "include/NPCUtil";
  * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
  */
 function AchievementCombat_Advance(attacker, defender, combatInfo)
+	if (attacker.npctemplate) return; endif // Só player ganha Achievement!!! NPC metido!!!
+
 	AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo);
 	AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo);
 
@@ -34,47 +36,65 @@ endfunction
  */
 function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	var achiev;
-	var key := defender.getNPCTemplate();
+	var key := defender.npctemplate;
 	if (!key) // Se não tem template, não é um npc válido.
-		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Defensor não é um NPC válido (sem template). Ignorando avanço de achievement.");
+		DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para TEMPLATE.");
 		return;
 	endif
 
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
+
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, defender.GetParsedTemplate());
 endfunction
 
 function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 	var achiev;
-	var key := defender.GetCategory() ?: NPC_GetNPCConfig(defender.getNPCTemplate()).Category;
+	var key := defender.GetCategory() ?: NPC_GetNPCConfig(defender.npctemplate).Category;
 	if (!key) // Se ainda não tem categoria, não é um npc válido.
-		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Defensor não é um NPC válido (sem template). Ignorando avanço de achievement.");
+		DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para CATEGORIA.");
 		return;
 	endif
 
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
 
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, key);
 endfunction
 
 function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	var achiev;
 	var key := CStr(Hex(attacker.weapon.objtype));
-	if (!key || attacker.npctemplate)
+	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH. E
 		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Arma empunhada não é uma arma válida. Ignorando avanço de achievement.");
 		return;
-	endif // Se não tem arma, não tem achievement de arma.
+	endif
 
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
+
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, attacker.weapon.desc);
 endfunction
 
 function AchievementAdvance(type, who, key, name, value)
 	value := CInt(value);
-	print ($"Avançando achievement {name} ({key}) com valor {value}.");
 	if (value < 1) return; endif
 
 	var achiev := who.GetAchievement(type, who, key, name);
 
 	achiev.IncrementValue(value);
 
-	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Progressão de achievement para {achiev.GetName()} ({type}): {value}");
+	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Ganho de achievement para {achiev.GetName()} ({type}): {value}");
+	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Progresso de achievement para {achiev.GetName()}: {achiev.ToString()}");
 
+	who.SetAchievement(type, who, achiev);
+endfunction
+
+function AchievementSetRefName(type, who, key, name, refName)
+	var achiev := who.GetAchievement(type, who, key, name);
+	achiev.SetRefName(refName);
 	who.SetAchievement(type, who, achiev);
 endfunction

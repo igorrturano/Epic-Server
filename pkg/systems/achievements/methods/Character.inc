@@ -8,8 +8,8 @@ exported function GetAchievement(who, type, elem, key, name)
 	return LoadAchievement(type, elem, key, name);
 endfunction
 
-exported function GetAllAchievements(who)
-	return LoadAllAchievements(who);
+exported function GetListAchievement(who)
+	return LoadListAchievement(who);
 endfunction
 
 exported function SetAchievement(who, type, elem, achievement)
