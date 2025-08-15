@@ -46,6 +46,8 @@ function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
 
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, defender.GetParsedTemplate());
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, defender.GetParsedTemplate());
 	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, defender.GetParsedTemplate());
 endfunction
 
@@ -61,6 +63,8 @@ function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
 
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, key);
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, key);
 	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, key);
 endfunction
 
@@ -76,6 +80,9 @@ function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
 	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
 
+	// TODO: Pensar em uma solução melhor para atualizar o nome junto com o avanço do achievement
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, attacker.weapon.desc);
+	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, attacker.weapon.desc);
 	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, attacker.weapon.desc);
 endfunction
 
