@@ -5,7 +5,7 @@ const MAX_XP := 5000; // XP máximo para a barra de progresso
 
 function ShowAchievementsGump(who)
 	var gump := GFECreateGump("Progresso de Conquistas", 680, 400);
-	var achievements := who.GetAllAchievementsProgress();
+	var achievements := who.GetListAchievement();
 
 	var tabela := array{};
 	foreach achievement in (achievements)

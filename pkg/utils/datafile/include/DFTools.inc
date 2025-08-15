@@ -65,7 +65,7 @@ class DFTools()
 	endfunction
 
 	/**
-	 * GetElementPropNames(this, elem_key)
+	 * GetElementKeys(this, elem_key)
 	 *
 	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
 	 *
@@ -76,7 +76,7 @@ class DFTools()
 	 * Returns:
 	 * An array of property names for the specified element, or an error if the element is not found.
 	 */
-	function GetElementPropNames(this, elem_key)
+	function GetElementKeys(this, elem_key)
 		var file := DFOpenDataFile(this.filename, DF_CREATE);
 		var elem := file.FindElement(elem_key);
 		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
