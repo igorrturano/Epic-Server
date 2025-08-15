@@ -46,7 +46,7 @@ function MontaCatalogoDano (arrayCatalogo)
 	foreach itemCatalogo in arrayCatalogo
       Sleepms(2);
       var estadoEDano := SplitWords(itemCatalogo);
-      catalogo.catalogoDano.insert(estadoEDano[1],estadoEDano[2]);
+      catalogo.insert(estadoEDano[1],estadoEDano[2]);
     endforeach
 
 	return catalogo;

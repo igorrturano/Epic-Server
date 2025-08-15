@@ -133,8 +133,8 @@ class MarcadorPropagacaoBase()
 		return TileProspectado(
 			ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm),
 			ListStaticsNearLocation(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,0,0, this.esteItemMarcador.realm ),
-			ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,LISTEX_FLAG_GHOST, this.esteItemMarcador.realm),
-			GetMapInfo( this.esteesteItemMarcadorMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.realm )
+			ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.esteItemMarcador.realm),
+			GetMapInfo( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.realm )
 		);
 	endfunction
 
@@ -158,11 +158,11 @@ class MarcadorPropagacaoBase()
 endclass
 
 class TileProspectado()
-	function TileProspectado( this, itensEncontrados, estaticosEncontrados, mobilesEncontrados, chaoInfo)
+	function TileProspectado( this, itensEncontrados, estaticosEncontrados, mobilesEncontrados, terrenoInfo)
 		this.itensEncontrados := itensEncontrados;
 		this.estaticosEncontrados := estaticosEncontrados;
 		this.mobilesEncontrados := mobilesEncontrados;
-		this.chaoInfo := chaoInfo;
+		this.terrenoInfo := terrenoInfo;
 	endfunction
 
 	function PegaItensEncontrados(this)
@@ -177,8 +177,8 @@ class TileProspectado()
 		return this.mobilesEncontrados;
 	endfunction
 
-	function PegaChaoInfo(this)
-		return this.chaoInfo;
+	function PegaTerrenoInfo(this)
+		return this.terrenoInfo;
 	endfunction
 
 	function AtribuiItensEncontrados(this, itensEncontrados)
@@ -193,8 +193,8 @@ class TileProspectado()
 		this.mobilesEncontrados := mobilesEncontrados;
 	endfunction
 
-	function AtribuiChaoInfo(this, chaoInfo)
-		this.chaoInfo := chaoInfo;
+	function AtribuiTerrenoInfo(this, terrenoInfo)
+		this.terrenoInfo := terrenoInfo;
 	endfunction
 
 endclass

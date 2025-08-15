@@ -4,6 +4,7 @@ use Util;
 
 include ":propagacao:include/marcadorPropagacaoBase";
 include ":propagacao:include/propagacao";
+include ":propagacao:include/combustivelIncendio";
 include "/include/epicPropNames";
 include "/include/epicConstants";
 include "include/client";
@@ -20,21 +21,19 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
     this.isSoloConsumido := false;
     this.isEstaticoConsumido := false;
-    this.combustiveis := dictionary{};
+    this.combustiveis := array{CombustivelEstaticos(),CombustivelTerreno()};
     this.estimuloLimite := propagacaoConfig["incendio"].estimuloLimite;
     this.ciclosDormenteLimite := propagacaoConfig["incendio"].ciclosDormenteLimite;
     this.ciclosDormente := 0;
     this.listaStaticosInflamaveis :=  GetConfigStringArray(propagacaoConfig["incendio"],"staticInflamavel");
+    this.listaTerrenosInflamaveis :=  GetConfigStringArray(propagacaoConfig["incendio"],"terrenoInflamavel");
     this.limiteEstimuloEstadoSuperior := this._CalculaLimiteEstimuloSuperior();
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
-    this.catalogoDano := propPropagacao.catalogoDano ? propPropagacao.catalogoDano : this.MontaCatalogoDano(GetConfigStringArray(propagacaoConfig["incendio"],"danoPorEstadoBase"));
-    
+    this.catalogoDano := propPropagacao.catalogoDano ? propPropagacao.catalogoDano : this.AtribuiCatalogoDano(GetConfigStringArray(propagacaoConfig["incendio"],"danoPorEstadoBase"));
   endfunction
 
   function AtribuiCatalogoDano(this, arrayCatalogo)
-
-    this.catalogoDano := MontaCatalogoDano(arrayCatalogo);
-    
+     return MontaCatalogoDano(arrayCatalogo);
   endfunction
 
   function EfetuarCiclo(this)
@@ -66,12 +65,15 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function ProcessaTile(this, tileProspectado)
 
-    var quem := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var mobileOrigemIncendio := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
     var danoDado := this.catalogoDano[cstr(this.estado)]; 
     var rolagemDano := RandomDiceRoll(danoDado);
 
     foreach item in (tileProspectado.PegaItensEncontrados())
       Sleepms(2);
+
+      if( item.serial == this.esteItemMarcador.serial) continue; endif
+
       if(item.isMarcadorTipo(PROPAGACAO_TIPO_INCENDIO) && item.serial != this.esteItemMarcador.serial)
         DestroyItem(item); // Marreta contra condição de corrida nr 2;
         continue;
@@ -79,7 +81,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
       this.isAcumulando := this._AvaliaInflamabilidade(item);
       if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
-        DanificaItem(quem,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
+        DanificaItem(mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
       endif
       
     endforeach
@@ -90,10 +92,29 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
       endif
     endforeach
+    if(!this.isAcumulando)
+      this._VerificaCombustivel(TileProspectado);
+    endif
 
-    this._AvaliaInflamabilidadeEstatico();
-    this._AvaliaInflamabilidadeTerreno();
+  endfunction
 
+  function _VerificaCombustivel(this,tileProspectado)
+      foreach tipoCombustivel in (this.combustiveis)
+        Sleepms(2);
+        
+        if(tipoCombustivel.TemCombustivel())
+          tipoCombustivel.ConsomeCombustivel(this.estado);
+          this.isAcumulando := true;
+        else
+          this.isAcumulando := tipoCombustivel.ProcuraCombustivel(this.esteItemMarcador,tileProspectado);
+        endif
+        if(this.isAcumulando)
+          if(this.fatorMudancaEstado != tipoCombustivel.fatorInflamavel)
+            this.fatorMudancaEstado := tipoCombustivel.fatorInflamavel;
+          endif
+          break;
+        endif
+      endforeach
   endfunction
 
   function _AvaliaInflamabilidade(this, item)
@@ -136,7 +157,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
                     if(cstr(estatico.objtype) == objtypeInflamavel)
                       this.combustiveis.insert("estaticos",cint(combustivelInflamavel));
                       this.isAcumulando := true;
-                      this.fatorMudancaEstado := cint(fatorInflamavel); //TODO dar um jeito de cada static dar um diferente.
+                      this.fatorMudancaEstado := cint(fatorInflamavel);
                       break;
                     endif
                 endforeach
@@ -147,10 +168,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         endif
       endif
     endif
-  endfunction
-
-  function _AvaliaInflamabilidadeTerreno(this)
-    //TODO DO!
   endfunction
 
   function OnRecebeEstimulo(this,valor)
