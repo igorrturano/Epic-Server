@@ -6,6 +6,10 @@ include ":destroyable:include/destroyItemPersist";
 include ":destroyable:include/destroyItem";
 include "/include/epicPropNames";
 
+const GUMP_LARGURA := 800;
+const GUMP_ALTURA := 600;
+const TEMPO_DIA := 86400;
+
 function EnviaConfigDesGump(quem)
 	var chaves := GetConfigStringKeys(configRecursos);
 	var visaoMateriais := array;
