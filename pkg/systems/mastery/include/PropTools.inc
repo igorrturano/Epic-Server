@@ -2,9 +2,9 @@ include ":mastery:model/MasteryCombat";
 
 function LoadMastery(who, key)
 	var mastery, data;
-	var prop := getMasteryProp(who);
+	var prop := who.GetMasteryProp();
+	if (!prop) return error{ errortext := "No mastery data found for this character." }; endif
 	data := prop[key];
-
 	if (!data) return error{ errortext := $"Mastery not found for key: {key}" }; endif
 
 	case (data.type)
@@ -21,12 +21,8 @@ function LoadMastery(who, key)
 	return mastery;
 endfunction
 
-function getMasteryProp(who)
-	return who.GetProp("Masteries") ?: dictionary{};
-endfunction
-
 function SaveMastery(who, mastery)
-	var prop := getMasteryProp(who);
+	var prop := who.GetMasteryProp() ?: dictionary{};
 	var data := mastery.Serialize();
 	var key := mastery.GetKey();
 
