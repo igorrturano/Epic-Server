@@ -7,28 +7,45 @@ include "/include/epicPropNames";
 include ":propagacao:include/propagacao";
 
 program install()
-    print( "installing marcador propagação" );
     return 1;
 endprogram
 
-exported function estimularMarcador(marcadorPropagacao, valorEstimulo, isPrioritario := false) 
-    var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
-    var processoMarcador := GetProcess(propPropagacao.esteMarcadorPid); 
+exported function Estimular(marcadorPropagacao, valorEstimulo, isPrioritario := false) 
     
+    var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
     if(processoMarcador)
         if(isPrioritario)
             processoMarcador.clear_event_queue();
         endif
-        processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo});
-
-        return 0;
+        
+        return processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo, isAcumulando := true});
 
     endif
     return error { error_text := "Processo do marcador não foi encontrado."};
 endfunction
 
-exported function isMarcadorTipo(marcadorPropagacao, tipo) 
+exported function IsMarcadorTipo(marcadorPropagacao, tipo) 
     var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
     
     return propPropagacao.tipoPropagacao == tipo;
+endfunction
+
+exported function Reacender(marcadorPropagacao, valorEstimulo := 0) 
+    var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
+    if(processoMarcador)
+        processoMarcador.clear_event_queue();
+        Print("Cheguei???");
+        Set_Critical( true);
+        processoMarcador.sendevent(struct{id := PROPAGACAO_EV_COMBUSTIVEL});
+        if(valorEstimulo)
+            processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo, isAcumulando := true});
+        endif
+        Set_Critical( false);
+    endif
+
+    return error { error_text := "Processo do marcador não foi encontrado."};
+    
+    
 endfunction

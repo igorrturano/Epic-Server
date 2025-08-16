@@ -15,7 +15,7 @@ program controladoraFumaca(nuvemFumaca)
 		var deslocamentoZ := 10 * sinal; 
 
 		MoveObjectToLocation(nuvemFumaca,nuvemFumaca.x,nuvemFumaca.y,nuvemFumaca.z + deslocamentoZ,nuvemFumaca.realm, MOVEOBJECT_FORCELOCATION + MOVEITEM_IGNOREMOVABLE);
-		if(cint(propagacaoConfig["sistema"].tempoFumaca)  <= loops)
+		if(cint(propagacaoConfig["incendio"].tempoFumaca)  <= loops)
 			DestroyItem(nuvemFumaca);
 		endif
 

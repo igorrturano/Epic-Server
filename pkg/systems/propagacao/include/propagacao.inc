@@ -11,11 +11,18 @@ const MARCADOR_PROPAGACAO_OBJTYPE := 0xe13a;
 enum propagacaoEvents
 	PROPAGACAO_EV_TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
 	PROPAGACAO_EV_ESTIMULO,
+	PROPAGACAO_EV_COMBUSTIVEL,
 	PROPAGACAO_EV_RESFRIAMENTO,
 endenum
 
 enum tipoPropagacao
 	PROPAGACAO_TIPO_INCENDIO := 1,
+endenum
+
+enum tipoCombustiveis
+	PROPAGACAO_COMBUSTIVEL_TERRENO := "terrenoInflamavel",
+	PROPAGACAO_COMBUSTIVEL_ESTATICOS := "staticInflamavel",
+	PROPAGACAO_COMBUSTIVEL_MAGICO := "magico",
 endenum
 
 enum estadosMarcadorPropagacao
@@ -31,19 +38,11 @@ enum tipoCalculoEnergia
 	CALCULO_ENERGIA_LANDTILE, 
 endenum
 
-
-function InsereDanoCatalogo(byref refArray , estadoPropagacao, dadoDano)
-	if(refArray)
-		refArray.add(estadoPropagacao + " " + dadoDano);
-	else
-		return error {error_text := "é preciso um array inicializado como parâmetro"};
-	endif
-	return 1;
-endfunction
-
-function MontaCatalogoDano (arrayCatalogo)
+function MontaCatalogoDano()
+	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+	var base := GetConfigStringArray(propagacaoConfig["incendio"],"danoPorEstadoBase");
 	var catalogo := dictionary;
-	foreach itemCatalogo in arrayCatalogo
+	foreach itemCatalogo in base
       Sleepms(2);
       var estadoEDano := SplitWords(itemCatalogo);
       catalogo.insert(estadoEDano[1],estadoEDano[2]);
@@ -52,14 +51,15 @@ function MontaCatalogoDano (arrayCatalogo)
 	return catalogo;
 endfunction
 
-function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem)
+function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem, alturaMaxima := 19)
 	
 	var itemsEncontrados := ListItemsNearLocationOfType( x, y, z,0, MARCADOR_PROPAGACAO_OBJTYPE, realm);
 	//Print("*PROPAGACAO* itemsEncontrados: {} :".format(itemsEncontrados.size()));
 	foreach itemEncontrado in itemsEncontrados
 		Sleepms(2);
 		var propPropagacaoEncontrada := GetObjProperty(itemEncontrado,PROPNAME_PROP_PROPAGACAO);
-		if(propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem)
+		var isAoAlcance:= PegaAbsoluta(z,itemEncontrado.z) <= alturaMaxima;
+		if(propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem && isAoAlcance)
 			return itemEncontrado;
 		endif
 	endforeach
@@ -81,12 +81,25 @@ function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propProp
 endfunction
 
 function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao)
-	var marcadorDescriptor := GetItemDescriptor(MARCADOR_PROPAGACAO_OBJTYPE);
-	marcadorDescriptor.CProps.insert(PROPNAME_PROP_PROPAGACAO,propPropagacao);
-	marcadorDescriptor.CProps.insert(PROPNAME_INDESTRUTIVEL,true);
+	var marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,PROPAGACAO_TIPO_INCENDIO,5);
+	if(!marcadorExistente)
+		var marcadorDescriptor := GetItemDescriptor(MARCADOR_PROPAGACAO_OBJTYPE);
+		marcadorDescriptor.CProps.insert(PROPNAME_PROP_PROPAGACAO,propPropagacao);
+		marcadorDescriptor.CProps.insert(PROPNAME_INDESTRUTIVEL,true);
 
-	var marcador := CreateItemAtLocation(x,y,z,marcadorDescriptor,1,realm);
-	return marcador;
+		var marcador := CreateItemAtLocation(x,y,z,marcadorDescriptor,1,realm);
+		return marcador;
+	else 
+		ConfiguraExistente(marcadorExistente, propPropagacao);
+		return marcadorExistente;
+	endif
+endfunction
+
+function ConfiguraExistente(marcadorExistente, novaProp)
+	var velhaProp := GetObjProperty(marcadorExistente, PROPNAME_PROP_PROPAGACAO);
+	novaProp.esteItemMarcador.serial := velhaProp.esteItemMarcador.serial;
+	novaProp.esteMarcadorPid := velhaProp.esteMarcadorPid;
+	SetObjProperty(marcadorExistente,PROPNAME_PROP_PROPAGACAO,novaProp);
 endfunction
 
 function NovaPropPropagacao(
@@ -98,7 +111,8 @@ function NovaPropPropagacao(
 						marcadorOrigemPid := 0, 
 						esteMarcadorPid := 0,
 						catalogoDano := 0,
-						efeitosPersonalizados := 0
+						efeitosPersonalizados := 0,
+						combustivelMagico := 0
 						)
 
 	var prop := struct{
@@ -108,7 +122,8 @@ function NovaPropPropagacao(
 				tipoPropagacao := tipoPropagacao, 
 				estadoInicial := estadoInicial,
 				catalogoDano := catalogoDano,
-				efeitosPersonalizados := efeitosPersonalizados
+				efeitosPersonalizados := efeitosPersonalizados,
+				combustivelMagico := combustivelMagico
 			};
 
 	if( esteMarcadorPid)
@@ -137,4 +152,44 @@ endfunction
 
 function PegaAbsoluta(z, zAlvo)
 	return Cint(Abs(z - zAlvo));
+endfunction
+
+function NovoEfeitoPersonalizado( byref dictEfeito, 
+										estado,
+										graphic, 
+										cor :=0, 
+										isInvisibel := 1, 
+										sfx := 0,
+										efx := -1, 
+										duracao := 10,
+										effectItemObjtype := 0, 
+										chanceRandom := 2,
+										minRandom := 1, 
+										maxRandom := 8)
+	if(dictEfeito)
+		dictEfeito.insert(cstr(estado), struct {
+											graphic := graphic, 
+											cor := cor, 
+											isInvisibel := isInvisibel, 
+											sfx := sfx,
+											efx := efx, 
+											duracao := duracao, 
+											effectItemObjtype := effectItemObjtype, 
+											chanceRandom := chanceRandom,
+											minRandom := minRandom,
+											maxRandom := maxRandom});
+		return 1;
+	else
+		return error{ error_text := "É necessário um dicionario como referência"}; 
+	endif
+
+endfunction
+
+function NovoStructCombustivelMagico(combustivel,fator)
+	return struct {combustivel := combustivel, fator := fator};
+endfunction
+
+function PegaProcessoMarcador(marcadorPropagacao)
+	var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
+    return GetProcess(cint(propPropagacao.esteMarcadorPid)); 
 endfunction

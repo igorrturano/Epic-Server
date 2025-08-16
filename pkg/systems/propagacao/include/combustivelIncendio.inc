@@ -35,26 +35,41 @@ class CombustivelIncendio()
 
   function ExtraiInfoTile(this, tile)
      var splited := SplitWords(tile);
-      
-     return struct {objtype := splited[1], combustivel := splited[2], fator := splited[3]};
+     
+     return struct {
+                  objtype := splited[1], 
+                  combustivel := this.PegaTier(splited[2]), 
+                  fator := this.PegaTier(splited[3])
+                };
   endfunction
 
-  function EncheCombustivel(this,objtypeItemInflamavel, infoTile)
+  function PegaTier(this, valor)
+    var valorConfig := GetConfigInt( this.propagacaoConfig["incendio"], valor );
+
+    return valorConfig ? valorConfig : valor;
+  endfunction
+
+
+  function EncheCombustivelTile(this,objtypeItemInflamavel, infoTile)
     
     if(cstr(objtypeItemInflamavel) == infoTile.objtype)
-      this.combustivel := cint(infoTile.combustivel);
-      this.fatorInflamavel := cint(infoTile.fator);
+      this.EncheCombustivel(infoTile.combustivel,infoTile.fator);
       return true;
     else
       return false;
     endif
   endfunction
 
+   function EncheCombustivel(this,combustivel, fator)
+    this.combustivel := cint(combustivel);
+    this.fatorInflamavel := cint(fator);;
+  endfunction
+
 endclass
 
 class CombustivelEstaticos( CombustivelIncendio )
   function CombustivelEstaticos(this)
-    super(0,"staticInflamavel",0);
+    super(0,PROPAGACAO_COMBUSTIVEL_ESTATICOS,0);
   endfunction
 
   function ProcuraCombustivel(this,itemMarcador, tileProspectado)
@@ -62,11 +77,11 @@ class CombustivelEstaticos( CombustivelIncendio )
       foreach estatico in (tileProspectado.PegaEstaticosEncontrados())
         Sleepms(2);
         var zAbsoluto := PegaAbsoluta(itemMarcador.z, estatico.z);
-        var isAoAlcance :=  zAbsoluto <= 19;
+        var isAoAlcance :=  zAbsoluto <= 5;
         if(isAoAlcance)
           foreach staticoInflamavel in (this.listaInflamaveis)
             Sleepms(2);
-            if(this.EncheCombustivel(estatico.objtype,this.ExtraiInfoTile(staticoInflamavel)))
+            if(this.EncheCombustivelTile(estatico.objtype,this.ExtraiInfoTile(staticoInflamavel)))
               return true;
             endif
           endforeach
@@ -79,7 +94,7 @@ endclass
 
 class CombustivelTerreno( CombustivelIncendio )
   function CombustivelTerreno(this)
-    super(0,"terrenoInflamavel",0);
+    super(0,PROPAGACAO_COMBUSTIVEL_TERRENO,0);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
@@ -91,10 +106,28 @@ class CombustivelTerreno( CombustivelIncendio )
       
       foreach terrenoInflamavel in (this.listaInflamaveis)
         Sleepms(2);
-        if(this.EncheCombustivel(infoTerreno.landtile,this.ExtraiInfoTile(terrenoInflamavel)))
+        if(this.EncheCombustivelTile(infoTerreno.landtile,this.ExtraiInfoTile(terrenoInflamavel)))
           return true;
         endif
       endforeach
+    endif
+    return false;
+  endfunction
+
+endclass
+
+class CombustivelMagico( CombustivelIncendio )
+  function CombustivelMagico(this)
+    super(0,PROPAGACAO_COMBUSTIVEL_MAGICO,0);
+  endfunction
+
+  function ProcuraCombustivel(this, itemMarcador , tileProspectado)
+    if(!this.isExaurido)
+      var magico := GetObjProperty(itemMarcador,"propPropagacao").combustivelMagico;
+      if(magico)
+        this.EncheCombustivel( magico.combustivel,magico.fator ? magico.fator : 1);
+        return this.TemCombustivel();
+      endif
     endif
     return false;
   endfunction
