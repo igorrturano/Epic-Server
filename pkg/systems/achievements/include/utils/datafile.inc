@@ -46,10 +46,6 @@ function LoadListAchievement(who)
 		endforeach;
 	endforeach;
 
-	foreach achiev in (achievements)
-		print("achiev.ToString()->"+achiev.ToString());
-	endforeach;
-
 	if (achievements.size() == 0) return error{ errortext := "No achievements found for this player." }; endif
 
 	return achievements;
