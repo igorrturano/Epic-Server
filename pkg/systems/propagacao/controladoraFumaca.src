@@ -3,6 +3,7 @@ use cfgfile;
 use uo;
 use Math;
 
+//FIZ SAPORRA NA PREGUIÇA, REFAZER!!!! ass: Deiro
 program controladoraFumaca(nuvemFumaca)
 	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 	var graphics := array{0x3CFF,0x3D00,0x3D01};

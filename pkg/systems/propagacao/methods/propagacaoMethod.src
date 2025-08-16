@@ -31,7 +31,7 @@ exported function IsMarcadorTipo(marcadorPropagacao, tipo)
     return propPropagacao.tipoPropagacao == tipo;
 endfunction
 
-exported function Reacender(marcadorPropagacao, valorEstimulo := 0) 
+exported function Abastecer(marcadorPropagacao, valorEstimulo := 0) 
     var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
 
     if(processoMarcador)

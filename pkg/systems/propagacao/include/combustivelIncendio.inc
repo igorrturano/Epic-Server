@@ -62,7 +62,7 @@ class CombustivelIncendio()
 
    function EncheCombustivel(this,combustivel, fator)
     this.combustivel := cint(combustivel);
-    this.fatorInflamavel := cint(fator);;
+    this.fatorInflamavel := cint(fator ? fator : 1);
   endfunction
 
 endclass
@@ -82,7 +82,7 @@ class CombustivelEstaticos( CombustivelIncendio )
           foreach staticoInflamavel in (this.listaInflamaveis)
             Sleepms(2);
             if(this.EncheCombustivelTile(estatico.objtype,this.ExtraiInfoTile(staticoInflamavel)))
-              return true;
+              return this.TemCombustivel();
             endif
           endforeach
         endif
@@ -107,7 +107,7 @@ class CombustivelTerreno( CombustivelIncendio )
       foreach terrenoInflamavel in (this.listaInflamaveis)
         Sleepms(2);
         if(this.EncheCombustivelTile(infoTerreno.landtile,this.ExtraiInfoTile(terrenoInflamavel)))
-          return true;
+          return this.TemCombustivel();
         endif
       endforeach
     endif

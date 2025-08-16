@@ -1,6 +1,6 @@
 include ":propagacao:include/propagacao";
 
-enum GRAPHICS_FIREWALL
+enum graphicsFirewall
 	GRAFICO_FIREWALL_OESTE_LESTE := 0x398C,
 	GRAFICO_FIREWALL_NORTE_SUL := 0x3996,
 endenum
@@ -27,5 +27,5 @@ function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador)
 										NovoStructCombustivelMagico(combustivel,fatorInflamavel));
 
 	var muralha := CriarMarcadorPropagacao(x,y,z,realm,propPropagacao);
-	muralha.Reacender(500);
+	muralha.Abastecer(500);
 endfunction

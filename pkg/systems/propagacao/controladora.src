@@ -37,7 +37,6 @@ program controladoraPropagacao(esteItemMarcador)
 			esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
 		elseif(event.id == PROPAGACAO_EV_COMBUSTIVEL)
 			esteObjetoMarcador.InjetaCombustivel();
-			Print("Injetado");
 		endif
 
 		if(!esteObjetoMarcador.isMarcadorMorto)

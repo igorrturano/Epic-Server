@@ -11,7 +11,7 @@ class MarcadorPropagacaoBase()
 		this.isMarcadorMorto := false;
 		this.isAcumulando := false;
 		this.fatorMudancaEstado := 1; //divede o medidor de estimulo. limite
-		this.medidorEstimulo := 0; // exemplo vai de -50 a + 50 
+		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50 
 	endfunction
 
   	//@abstract void EfetuarCiclo()
@@ -30,7 +30,7 @@ class MarcadorPropagacaoBase()
 				var adjacenteY := Cint(this.esteItemMarcador.y + deslocamentoY);
 
 				var chaveDicionario := CStr(adjacenteX) + CStr(adjacenteY);
-				var  marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
+				var marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
 					Sleepms(RandomIntMinMax(25,120));//Marreta pra diminuir a condição de corrida nr 1. kkkk
@@ -40,9 +40,11 @@ class MarcadorPropagacaoBase()
 										this.esteItemMarcador.z, 
 										this.esteItemMarcador.realm, 
 										this.PegaPropPropagacao().tipoPropagacao);
-					if(DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado,
-																this.PegaPropPropagacao().geracao,
-																this.estado))
+					if(DeveCriarMarcadorPropagacaoAdjacente(
+															marcadorPropagacaoEncontrado,
+															this.PegaPropPropagacao().geracao,
+															this.estado
+														))
 						var zMaisAdequada := this.EncontraAlturaMaisAdequada(
 															adjacenteX,
 															adjacenteY,

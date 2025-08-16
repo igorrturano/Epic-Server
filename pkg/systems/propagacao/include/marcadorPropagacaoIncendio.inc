@@ -12,10 +12,6 @@ include "/include/math";
 include ":destroyable:include/destroyItem";
 include ":combat:damage";
 
-function onAvaliaAlturaIncendio(tileAvaliado)
-
-endfunction
-
 class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   
   function MarcadorPropagacaoIncendio(this, esteItemMarcador, propPropagacao)
@@ -24,7 +20,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
     this.mobileOrigemIncendio := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
-    this.combustiveis := dictionary{"estaticos" -> CombustivelEstaticos(), "terreno" -> CombustivelTerreno(), "magico" -> CombustivelMagico()};
+    this.combustiveis := dictionary{
+                            PROPAGACAO_COMBUSTIVEL_ESTATICOS -> CombustivelEstaticos(), 
+                            PROPAGACAO_COMBUSTIVEL_TERRENO -> CombustivelTerreno(), 
+                            PROPAGACAO_COMBUSTIVEL_MAGICO -> CombustivelMagico()
+                          };
     this.estimuloLimite := propagacaoConfig["incendio"].estimuloLimite;
     this.ciclosDormenteLimite := propagacaoConfig["incendio"].ciclosDormenteLimite;
     this.ciclosDormente := 0;
@@ -80,7 +80,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
         DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
       endif
-      
     endforeach
 
     foreach mobile in (tileProspectado.PegaMobilesEncontrados())
@@ -90,7 +89,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       endif
     endforeach
     if(!this.isAcumulando)
-      this._VerificaCombustivel(TileProspectado);
+      this._VerificaCombustivel(TileProspectado); //No caso de itens, o combustivel é a propria vida do item, como explorado acima.
     endif
 
   endfunction
@@ -114,8 +113,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       endforeach
   endfunction
 
-  function InjetaCombustivel(this, tipo)
-    this.combustiveis.insere(tipo,CombustivelMagico());
+  function InjetaCombustivel(this)
+    this.combustiveis.insere(PROPAGACAO_COMBUSTIVEL_MAGICO,CombustivelMagico());
     this.mobileOrigemIncendio := SystemFindObjectBySerial( this.PegaPropPropagacao().origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
   endfunction
 
