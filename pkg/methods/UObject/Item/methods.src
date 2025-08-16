@@ -1,6 +1,7 @@
 use cfgfile;
 use uo;
 use datafile;
+use math;
 
 include ":gumps:epicGumps";
 
