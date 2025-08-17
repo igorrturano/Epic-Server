@@ -11,6 +11,7 @@ class Gump()
 	var _height;
 
 	var _options;
+	var _customization;
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
@@ -20,6 +21,7 @@ class Gump()
 		this._height := height;
 
 		this._options := options.size() < 1 ? array{BORDER_GOLDEN} : options;
+		this._customization := array{};
 	endfunction
 
 	function GetParent(this)
@@ -76,6 +78,10 @@ class Gump()
 		this._options.append(option);
 	endfunction
 
+	function AddCustom(this, customFunction)
+		this._customization.append(customFunction);
+	endfunction
+
 	function RemoveOption(this, option)
 		if (!(option in this._options)) return error { errortext := "Option not found!" }; endif
 
@@ -86,8 +92,15 @@ class Gump()
 		return "Gump: { Title: " + this._title + ", Width: " + CStr(this._width) + ", Height: " + CStr(this._height) + ", Options: " + CStr(this._options) + " }";
 	endfunction
 
+	function Create(this)
+		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
+	endfunction
+	
 	function Show(this)
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
+		foreach custom in (this._customization)
+			custom(this._gump);
+		endforeach
 		this._pid := GetPid();
 
 		return GFSendGump(this._parent, this._gump);
@@ -95,9 +108,5 @@ class Gump()
 
 	function Close(this)
 		return GFCloseGump(this._parent, this._pid);
-	endfunction
-
-	function Update(this)
-		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 	endfunction
 endclass
