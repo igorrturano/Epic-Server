@@ -18,6 +18,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function MarcadorPropagacaoIncendio(this, esteItemMarcador, propPropagacao)
     super(esteItemMarcador,propPropagacao); 
 
+    esteItemMarcador.usescript := ":propagacao:dblClickMarcadorIncendio";
+
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
     this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(propPropagacao.origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
@@ -135,9 +137,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _AvaliaInflamabilidade(this, item)
+
     var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
     material := material ? material : this.resourceConfig[item.objtype];
     var isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
+
     if(material.inflamavel && !isIndestrutivel)
       if(this.fatorMudancaEstado < material.inflamavel)
         this.fatorMudancaEstado := material.inflamavel;
@@ -218,7 +222,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         this.estado := isMaximo ? ESTADO_PROPAGACAO_INTENSO : novoValorEstado;
 
         if(!isMaximo || valorAvanco > 1)
-          this.AtualizaComportamentoMarcador();
+          this.OnAtualizaEstado();
         endif
 
         this.medidorEstimulo := isMaximo ? this.limiteEstimuloEstadoSuperior : 0;
@@ -236,7 +240,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         this.estado := isMinimo ? ESTADO_PROPAGACAO_DORMENTE : novoValorEstado;
        
         if(!isMinimo || valorRegresso < 1)
-          this.AtualizaComportamentoMarcador();
+           this.OnAtualizaEstado();
         endif
 
         this.medidorEstimulo := isMinimo ? this.limiteEstimuloEstadoInferior : 0;
@@ -244,6 +248,13 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         this.medidorEstimulo := this.limiteEstimuloEstadoInferior;
       endif
     endif
+  endfunction
+
+  function OnAtualizaEstado(this)
+    this.AtualizaComportamentoMarcador();
+    var prop := this.PegaPropPropagacao();
+    prop.lerEstadoAtual := this.estado;
+    SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
   endfunction
 
   function AtualizaComportamentoMarcador(this)

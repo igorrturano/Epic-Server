@@ -1,0 +1,28 @@
+use uo;
+use util;
+use polsys;
+
+
+include ":propagacao:include/propagacao";
+include "include/say";
+include "include/client";
+include "include/facings";
+
+program my_example_usescript(quem, item)
+    var tentativas := 0;
+    if(item.IsMarcadorTipo(PROPAGACAO_TIPO_INCENDIO))
+        while(cint(item.LerEstado()) > ESTADO_PROPAGACAO_DORMENTE  && !quem.isdead && Distance(quem, item) <= 1)
+            if(tentativas % 8 == 0)
+                TurnObjectToward( quem, item.x,item.y);
+                PrintTextAbove(quem, "*Tentando apagar incêndio*");
+                PerformAction(quem, ANIM_BOW);
+                PlaySoundEffect(quem, SFX_12A);
+            endif
+            item.Estimular(PROPAGACAO_RESFRIAMENTO_BASICO,true);
+            
+            Sleepms(300);
+            ++tentativas;
+        endwhile
+        SendSysMessageEx(quem, "Você parou de tentar apagar o incêndio.",SSM_INFO);
+    endif
+endprogram

@@ -157,7 +157,8 @@ function NovaPropPropagacao(
 				catalogoDano := catalogoDano,
 				efeitosPersonalizados := efeitosPersonalizados,
 				combustivelMagico := combustivelMagico,
-				isMarcadorCoberto := isMarcadorCoberto
+				isMarcadorCoberto := isMarcadorCoberto,
+				lerEstadoAtual := estadoInicial
 			};
 
 	if( esteMarcadorPid)
