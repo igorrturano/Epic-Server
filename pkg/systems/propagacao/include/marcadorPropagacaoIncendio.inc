@@ -18,7 +18,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     super(esteItemMarcador,propPropagacao); 
 
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
-    this.mobileOrigemIncendio := SystemFindObjectBySerial( this.propPropagacao.origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(propPropagacao.origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
     this.combustiveis := dictionary{
                             PROPAGACAO_COMBUSTIVEL_ESTATICOS -> CombustivelEstaticos(), 
@@ -115,7 +115,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function InjetaCombustivel(this)
     this.combustiveis.insere(PROPAGACAO_COMBUSTIVEL_MAGICO,CombustivelMagico());
-    this.mobileOrigemIncendio := SystemFindObjectBySerial( this.PegaPropPropagacao().origem, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(this.PegaPropPropagacao().origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
   endfunction
 
   function _AvaliaInflamabilidade(this, item)
@@ -214,10 +214,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
       if(this._DeveRegredirEstado(valorRegresso))
 
-        var novoValorEstado := this.estado - valorRegresso;
+        var novoValorEstado := this.estado + valorRegresso;
         var isMinimo := novoValorEstado < ESTADO_PROPAGACAO_DORMENTE;
         this.estado := isMinimo ? ESTADO_PROPAGACAO_DORMENTE : novoValorEstado;
-
+       
         if(!isMinimo || valorRegresso < 1)
           this.AtualizaComportamentoMarcador();
         endif
@@ -355,7 +355,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     if(isLimiteInferiorExtrapolado)
         retorno := cInt(limiteInferiorExtrapolado);
     else
-         retorno := 1;
+         retorno := -1;
     endif
 
     return retorno;
