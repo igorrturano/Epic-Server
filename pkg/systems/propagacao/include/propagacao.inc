@@ -19,6 +19,12 @@ enum tipoPropagacao
 	PROPAGACAO_TIPO_INCENDIO := 1,
 endenum
 
+enum resfriamentos
+	PROPAGACAO_RESFRIAMENTO_BASICO := 10,
+	PROPAGACAO_RESFRIAMENTO_RAZOAVEL := 55,
+	PROPAGACAO_RESFRIAMENTO_INTENSO := 300,
+endenum
+
 enum tipoCombustiveis
 	PROPAGACAO_COMBUSTIVEL_TERRENO := "terrenoInflamavel",
 	PROPAGACAO_COMBUSTIVEL_ESTATICOS := "staticInflamavel",

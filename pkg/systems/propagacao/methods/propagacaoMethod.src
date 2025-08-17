@@ -36,7 +36,6 @@ exported function Abastecer(marcadorPropagacao, valorEstimulo := 0)
 
     if(processoMarcador)
         processoMarcador.clear_event_queue();
-        Print("Cheguei???");
         Set_Critical( true);
         processoMarcador.sendevent(struct{id := PROPAGACAO_EV_COMBUSTIVEL});
         if(valorEstimulo)

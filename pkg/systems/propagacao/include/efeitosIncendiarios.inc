@@ -5,13 +5,14 @@ enum graphicsFirewall
 	GRAFICO_FIREWALL_NORTE_SUL := 0x3996,
 endenum
 
-function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador)
+function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador, fatorInflamavel := 5)
 
 	var catalogoDano := MontaCatalogoDano();
 	var dict := dictionary;
-	var fatorInflamavel := 5;
-
-	catalogoDano.insert(cstr(ESTADO_PROPAGACAO_INTENSO),dadoDano);
+	
+	if(dadoDano)
+		catalogoDano.insert(cstr(ESTADO_PROPAGACAO_INTENSO),dadoDano);
+	endif
 	NovoEfeitoPersonalizado(dict,ESTADO_PROPAGACAO_INTENSO,direcao,0,0,0x1DE,0,0,-1);
 
 	var propPropagacao := NovaPropPropagacao(
