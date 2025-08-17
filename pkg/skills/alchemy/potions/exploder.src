@@ -9,6 +9,7 @@ include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include ":alchemy:alchemy";
 include ":destroyable:include/destroyItem";
+include ":propagacao:include/efeitosIncendiarios";
 
 
 program exploder(parms)
@@ -69,14 +70,15 @@ function FlameEffect(who, potion, lvl, bonus)
 	var dice := Cstr("2d"+lvl*2+"+"+bonus/2);
 	var coords := GetCoordsInSquare(potion.x, potion.y, lvl);
 	foreach coord in coords;
-		var field := CreateItemAtLocation(coord.x, coord.y, potion.z, "FireField_NS", 1, who.realm);
-		field.SetOwner(who);
-		if (checklineofsight(field, potion))
-			field.SetDuration(10);
-			SetObjProperty(field, "DamageDice", dice);
-		else
-			DestroyItem(field);
-		endif
+		var field := CriaMuralhaFogo(
+									coord.x, 
+									coord.y, 
+									potion.z,
+									who.realm,
+									GRAFICO_FIREWALL_NORTE_SUL,
+									dice, 
+									120, 
+									who);
 		sleepms(5);
 	endforeach
 
