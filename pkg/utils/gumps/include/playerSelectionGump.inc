@@ -3,6 +3,7 @@ use os;
 use util;
 
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 /*
  * SelectCharacter( mobile, cmdlevel:=0 )
