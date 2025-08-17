@@ -11,6 +11,7 @@ include "include/client";
 include "/include/math";
 include ":destroyable:include/destroyItem";
 include ":combat:damage";
+include ":nature:include/nature";
 
 class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   
@@ -135,6 +136,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _AvaliaInflamabilidade(this, item)
     var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
+    material := material ? material : this.resourceConfig[item.objtype];
     var isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
     if(material.inflamavel && !isIndestrutivel)
       if(this.fatorMudancaEstado < material.inflamavel)
@@ -335,10 +337,17 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _CalculaLimiteEstimuloSuperior(this)
-    var limiteEstimuloEstadoSuperior := Round(cint(this.estimuloLimite) / cint(this.fatorMudancaEstado));
-    limiteEstimuloEstadoSuperior := limiteEstimuloEstadoSuperior <= 0 ? 1 : limiteEstimuloEstadoSuperior;
 
+    var limiteEstimuloEstadoSuperior := Round(cint(this.estimuloLimite * this._CalcuraInfluenciaTemperatura())  / cint(this.fatorMudancaEstado));
+    limiteEstimuloEstadoSuperior := limiteEstimuloEstadoSuperior <= 0 ? 1 : limiteEstimuloEstadoSuperior;
     return Cint(limiteEstimuloEstadoSuperior);
+  endfunction
+
+  function _CalcuraInfluenciaTemperatura(this)
+    var temperaturaRegion := getTemperature(this.esteItemMarcador) + PROPAGACAO_TEMPERATURA_BASE;
+    var sinal := (temperaturaRegion >= 0) ? 1 : -1;
+    var porcentagem := Abs(temperaturaRegion) * 0.4 / 100;
+    return (1 - sinal * porcentagem);
   endfunction
 
   function _CalculaLimiteEstimuloInferior(this)

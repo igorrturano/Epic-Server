@@ -7,6 +7,7 @@ enum tiposProspeccao
 	PROPAGACAO_PROSPECCAO_CICLO,
 endenum
 
+const PROPAGACAO_TEMPERATURA_BASE := 20;
 class MarcadorPropagacaoBase()
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao)
 		
