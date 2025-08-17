@@ -1,5 +1,6 @@
 use uo;
 use datafile;
+use math;
 
 include ":tn:cooldown";
 include ":gumps:epicGumps";

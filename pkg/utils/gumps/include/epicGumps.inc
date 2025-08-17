@@ -9,14 +9,9 @@ use basic;
 //include "include/client";
 // include "gumps";
 include "gumps_ex";
-include ":destroyable:include/destroyItem";
 
 const ALTURA_LINHA := 20;
 const QUALTIDADE_COLUNAS := 12;
-
-const GUMP_LARGURA := 800;
-const GUMP_ALTURA := 600;
-const TEMPO_DIA := 86400;
 
 enum GUMP_PARAMS
 	HIDE_TITLE, HIDE_PAGE, HIDE_BORDER,

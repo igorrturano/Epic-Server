@@ -4,6 +4,7 @@ use util;
 
 include ":gumps:gumps";
 include ":gumps:epicGumps";
+include "include/say";
 
 program epicchest(who)
 
