@@ -88,10 +88,25 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
       endif
     endforeach
+    
     if(!this.isAcumulando)
       this._VerificaCombustivel(TileProspectado); //No caso de itens, o combustivel é a propria vida do item, como explorado acima.
+      this._VerificaClima();
     endif
 
+  endfunction
+
+  function _VerificaClima(this)
+    var clima := GetGlobalProperty("weather");
+    var chuvaLeve := 0;
+    
+    if(!this.isMarcadorCoberto)
+        if(cint(clima) == chuvaLeve && this.estado <= ESTADO_PROPAGACAO_PRINCIPIO)
+          this.isAcumulando := false;
+        elseif(cint(clima) > chuvaLeve )
+          this.isAcumulando := false;
+        endif
+    endif
   endfunction
 
   function _VerificaCombustivel(this,tileProspectado)

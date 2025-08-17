@@ -57,6 +57,13 @@ function MontaCatalogoDano()
 	return catalogo;
 endfunction
 
+function BuscaConfiguracaoTiles(item)
+	var tiles_cfg := ReadConfigFile( "::tiles" );
+	var graphic := item.graphic ? item.graphic : item.objtype;
+
+	return tiles_cfg[graphic];
+endfunction
+
 function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem, alturaMaxima := 19)
 	
 	var itemsEncontrados := ListItemsNearLocationOfType( x, y, z,0, MARCADOR_PROPAGACAO_OBJTYPE, realm);
@@ -65,11 +72,17 @@ function EncontraMarcadorPropagacao(x,y, z, realm, tipoPropagacaoOrigem, alturaM
 		Sleepms(2);
 		var propPropagacaoEncontrada := GetObjProperty(itemEncontrado,PROPNAME_PROP_PROPAGACAO);
 		var isAoAlcance:= PegaAbsoluta(z,itemEncontrado.z) <= alturaMaxima;
-		if(propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem && isAoAlcance)
+		if(IsMarcadorPropagacaoValido(itemEncontrado,z,alturaMaxima,tipoPropagacaoOrigem))
 			return itemEncontrado;
 		endif
 	endforeach
 	return error{errortext := "Não encotrado."};
+endfunction
+
+function IsMarcadorPropagacaoValido(marcador, z, alturaMaxima,tipoPropagacaoOrigem)
+	var propPropagacaoEncontrada := GetObjProperty(marcador,PROPNAME_PROP_PROPAGACAO);
+	var isAoAlcance:= PegaAbsoluta(z,marcador.z) <= alturaMaxima;
+	return propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem && isAoAlcance;
 endfunction
 
 function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propPropagacao, estadoInicial := ESTADO_PROPAGACAO_DORMENTE)
@@ -79,15 +92,26 @@ function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propProp
 								esteItemMarcador.serial,
 								propPropagacao.tipoPropagacao,
 								estadoInicial,
-								propPropagacao.esteMarcadorPid
+								propPropagacao.esteMarcadorPid,
+								0,
+								0,
+								0,
+								0,
+								propPropagacao.isMarcadorCoberto
 							);
 
-	return CriarMarcadorPropagacao(x,y,z,realm,structPropagacao);
+	return CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, true);
 	
 endfunction
 
-function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao)
-	var marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,PROPAGACAO_TIPO_INCENDIO,5);
+function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao, isAdjacente := false)
+	
+	var marcadorExistente;
+
+	if(!isAdjacente)
+		marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,PROPAGACAO_TIPO_INCENDIO,5);
+	endif
+	
 	if(!marcadorExistente)
 		var marcadorDescriptor := GetItemDescriptor(MARCADOR_PROPAGACAO_OBJTYPE);
 		marcadorDescriptor.CProps.insert(PROPNAME_PROP_PROPAGACAO,propPropagacao);
@@ -103,8 +127,10 @@ endfunction
 
 function ConfiguraExistente(marcadorExistente, novaProp)
 	var velhaProp := GetObjProperty(marcadorExistente, PROPNAME_PROP_PROPAGACAO);
-	novaProp.esteItemMarcador.serial := velhaProp.esteItemMarcador.serial;
-	novaProp.esteMarcadorPid := velhaProp.esteMarcadorPid;
+	if(velhaProp)
+		novaProp.esteItemMarcador.serial := velhaProp.esteItemMarcador.serial;
+		novaProp.esteMarcadorPid := velhaProp.esteMarcadorPid;
+	endif
 	SetObjProperty(marcadorExistente,PROPNAME_PROP_PROPAGACAO,novaProp);
 endfunction
 
@@ -118,7 +144,8 @@ function NovaPropPropagacao(
 						esteMarcadorPid := 0,
 						catalogoDano := 0,
 						efeitosPersonalizados := 0,
-						combustivelMagico := 0
+						combustivelMagico := 0,
+						isMarcadorCoberto := 0
 						)
 
 	var prop := struct{
@@ -129,7 +156,8 @@ function NovaPropPropagacao(
 				estadoInicial := estadoInicial,
 				catalogoDano := catalogoDano,
 				efeitosPersonalizados := efeitosPersonalizados,
-				combustivelMagico := combustivelMagico
+				combustivelMagico := combustivelMagico,
+				isMarcadorCoberto := isMarcadorCoberto
 			};
 
 	if( esteMarcadorPid)

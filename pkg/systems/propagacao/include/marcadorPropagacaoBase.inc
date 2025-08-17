@@ -2,8 +2,27 @@
 use util;
 include ":propagacao:include/propagacao";
 
+enum tiposProspeccao
+	PROPAGACAO_PROSPECCAO_INICIAL,
+	PROPAGACAO_PROSPECCAO_CICLO,
+endenum
+
 class MarcadorPropagacaoBase()
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao)
+		
+		if(propPropagacao.geracao == 0)
+			
+			var posicaoAvaliada := this.AvaliarPosicao(
+												esteItemMarcador.x,
+												esteItemMarcador.y,
+												esteItemMarcador.z,
+												esteItemMarcador.realm, 
+												propPropagacao.tipoPropagacao);
+
+			this.isMarcadorCoberto := posicaoAvaliada.temTeto;
+		else
+			this.isMarcadorCoberto := propPropagacao.isMarcadorCoberto;
+		endif
 		this.esteItemMarcador := esteItemMarcador;
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
@@ -34,30 +53,31 @@ class MarcadorPropagacaoBase()
 				
 				if(!marcadorPropagacaoEncontrado)
 					Sleepms(RandomIntMinMax(25,120));//Marreta pra diminuir a condição de corrida nr 1. kkkk
-					marcadorPropagacaoEncontrado := EncontraMarcadorPropagacao(
-										adjacenteX, 
-										adjacenteY, 
-										this.esteItemMarcador.z, 
-										this.esteItemMarcador.realm, 
-										this.PegaPropPropagacao().tipoPropagacao);
+					var posicaoAvaliada := this.AvaliarPosicao(
+													adjacenteX, 
+													adjacenteY, 
+													this.esteItemMarcador.z, 
+													this.esteItemMarcador.realm,
+													this.PegaPropPropagacao().tipoPropagacao
+												);
+					marcadorPropagacaoEncontrado := posicaoAvaliada.marcadorEncontrado;
+
 					if(DeveCriarMarcadorPropagacaoAdjacente(
 															marcadorPropagacaoEncontrado,
 															this.PegaPropPropagacao().geracao,
 															this.estado
 														))
-						var zMaisAdequada := this.EncontraAlturaMaisAdequada(
-															adjacenteX,
-															adjacenteY,
-															this.esteItemMarcador.z,
-															this.esteItemMarcador.realm);
+
+						var propPropagacao := this.PegaPropPropagacao();
+						propPropagacao.isMarcadorCoberto := posicaoAvaliada.temTeto;
+						
 						marcadorPropagacaoEncontrado := CriaMarcadorPropagacaoAdjacente(
 																this.esteItemMarcador,
 																adjacenteX, 
 																adjacenteY, 
-																zMaisAdequada,
+																posicaoAvaliada.zMaisProximo,
 																this.esteItemMarcador.realm, 
-																this.PegaPropPropagacao());
-					else
+																propPropagacao);
 					endif
 				else
 					continue;
@@ -65,43 +85,67 @@ class MarcadorPropagacaoBase()
 				
 				if(marcadorPropagacaoEncontrado)
 					this.marcadoresAdjacentes.insert(chaveDicionario, marcadorPropagacaoEncontrado);
-				else
 				endif
 				
 			endfor
 		endfor
 	endfunction
 
-	function EncontraAlturaMaisAdequada(this,x,y,z, realm)
-
-		var zMaisProximo := z;
+	function AvaliarPosicao(this,x, y, z, realm, tipoPropagacao)
+		
+		var posicaoAvaliada := struct {zMaisProximo := z, temTeto := false, marcadorEncontrado := 0};
 		var menorDistancia := 4000;
-		var itens := ListItemsNearLocation( x, y, z, 0,realm);
-		var statics := ListStaticsNearLocation(x, y, z,0,0, realm );
-		var mapa := GetMapInfo(x,y,realm );
+		var alturaMaxima := 19;
+		var tileProspectado := TileProspectado(
+									ListItemsNearLocation( x, y, LIST_IGNORE_Z , 0,realm),
+									ListStaticsNearLocation(x, y, LIST_IGNORE_Z ,0,0,realm ),
+									0,
+									GetMapInfo( x, y, realm )
+								);
+		
+		var mapa := tileProspectado.PegaTerrenoInfo();
 
-		foreach item in itens
+		foreach item in (tileProspectado.PegaItensEncontrados())
 			Sleepms(2);
-			this.ComparaAlturaMaisProxima( item,z, zMaisProximo,menorDistancia);
+			if(IsMarcadorPropagacaoValido(item,z,alturaMaxima,tipoPropagacao))
+				posicaoAvaliada.marcadorEncontrado := item;
+			endif
+			this.ComparaAlturaMaisProxima( item,z, posicaoAvaliada.zMaisProximo,menorDistancia);
+
+			var tilesInfo := BuscaConfiguracaoTiles(item);
+			if(!posicaoAvaliada.temTeto)
+				posicaoAvaliada.temTeto := this._IsMarcadorCoberto(z,item,tilesInfo,alturaMaxima);
+			endif
 		endforeach
 
-		foreach static in statics
+		foreach static in (tileProspectado.PegaEstaticosEncontrados())
 			Sleepms(2);
-			this.ComparaAlturaMaisProxima( static,z, zMaisProximo,menorDistancia);
+			this.ComparaAlturaMaisProxima( static,z, posicaoAvaliada.zMaisProximo,menorDistancia);
+
+			var tilesInfo := BuscaConfiguracaoTiles(static);
+			if(!posicaoAvaliada.temTeto)
+				posicaoAvaliada.temTeto := this._IsMarcadorCoberto(z,static,tilesInfo,alturaMaxima);
+			endif
 		endforeach
 		
 		var distancia := PegaAbsoluta(mapa.z,z);
 		if(menorDistancia > distancia)
-			zMaisProximo := mapa.z;
+			posicaoAvaliada.zMaisProximo := mapa.z;
+			if(!posicaoAvaliada.temTeto)
+				posicaoAvaliada.temTeto := mapa.z > z && mapa.z > z + alturaMaxima;
+			endif
 		endif
 
-		return zMaisProximo == 4000 ? z: zMaisProximo;
+		return posicaoAvaliada;
+	endfunction
+
+	function _IsMarcadorCoberto(this, alturaMarcador, item, tilesInfo, alturaAndar)
+		return item.z > alturaAndar + alturaMarcador && (tilesInfo.MoveLand || tilesInfo.BlockSight || tilesInfo.Blocking);
 	endfunction
 
 	function ComparaAlturaMaisProxima(this,item, zAlvo, byref zMaisProximo, byref menorDistancia)
-		var tiles_cfg := ReadConfigFile( "::tiles" );
-		var graphic := item.graphic ? item.graphic : item.objtype;
-		var tileInfo := tiles_cfg[graphic];
+		
+		var tileInfo := BuscaConfiguracaoTiles(item); 
 		var isSuperficie := tileInfo.MoveLand;
 		var itemHeight := tileInfo.Height;
 		var ztotal;
@@ -128,6 +172,7 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function Prospectar(this)
+
 		return TileProspectado(
 			ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm),
 			ListStaticsNearLocation(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,0,0, this.esteItemMarcador.realm ),
