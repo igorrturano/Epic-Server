@@ -7,7 +7,7 @@ use os;
 use basic;
 
 //include "include/client";
-include "gumps";
+// include "gumps";
 include "gumps_ex";
 include ":destroyable:include/destroyItem";
 
