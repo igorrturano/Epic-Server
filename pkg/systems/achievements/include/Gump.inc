@@ -1,4 +1,7 @@
 include ":gumps:epicGumps";
+include ":achievements:model/AchievementCombat";
+
+const MAX_XP := 5000; // XP máximo para a barra de progresso
 
 function ShowAchievementsGump(who)
 	var gump := GFECreateGump("Progresso de Conquistas", 680, 400);
@@ -9,11 +12,11 @@ function ShowAchievementsGump(who)
 		if (!achievement) continue; endif // Skip if no data available
 		
 		tabela.append(struct{
-			name := achievement.name,
-			level := achievement.level,
-			xp := achievement.xp,
-			hits := achievement.hits,
-			damage := achievement.damage,
+			name := achievement.getName(),
+			level := achievement.getLevel(),
+			xp := achievement.getXP(),
+			hits := achievement.getData(ACHIEVDATA_HITS),
+			damage := achievement.getData(ACHIEVDATA_DAMAGE_DONE),
 			"1000" := "",
 			"3000" := "",
 			"5000" := ""
@@ -46,7 +49,11 @@ function PositionXPBar(byRef gump, achievements)
 endfunction
 
 function CalcFilledXPBar(xp)
-	xp := CDbl(xp); // POL BUGAAAAAAAAAAAAAAAADO
+	xp := CInt(xp); // POL BUGAAAAAAAAAAAAAAAADO
+
+	if (xp > MAX_XP)
+		xp := MAX_XP; // Limita o XP máximo para 5000
+	endif
 	var width := (xp / 1000) * 80;
 
 	// A partir de 1000 começa a completar a barra com 2000
