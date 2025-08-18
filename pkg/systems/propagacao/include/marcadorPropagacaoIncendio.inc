@@ -34,6 +34,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.limiteEstimuloEstadoSuperior := this._CalculaLimiteEstimuloSuperior();
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
     this.catalogoDanoBase := MontaCatalogoDano();
+    this.aceleradorContraLatente := cint(propagacaoConfig["incendio"].contraLatente);
   endfunction
 
   function TocaSFXCaracteristico(this)
@@ -45,6 +46,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
   endfunction
 
+  function Iniciar(this)
+    this.AtualizaComportamentoMarcador();
+    this.MarcarAdjacentes();
+  endfunction
 
   function EfetuarCiclo(this)
     if(!this.isMarcadorMorto)
@@ -57,8 +62,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
           this.RecebeEstimulo(this.estado);
       else
           var valorEstimulo := -this.estado;
-          if(this.ciclosDesdeUltimoEstimulo > 0)
-            valorEstimulo -= this.ciclosDesdeUltimoEstimulo;
+          if(this.ciclosDesdeUltimoEstimulo > 0 && this.estado == ESTADO_PROPAGACAO_LATENTE)
+            valorEstimulo -= this.ciclosDesdeUltimoEstimulo * this.aceleradorContraLatente;
           endif 
           this.RecebeEstimulo(valorEstimulo);
           this.IncrementaCiclosDesdeUltimoEstimulo();
@@ -126,18 +131,22 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         Sleepms(2);
         
         if(tipoCombustivel.TemCombustivel())
-          tipoCombustivel.ConsomeCombustivel(this.estado);
-          this.isAcumulando := true;
-        else
-          this.isAcumulando := tipoCombustivel.ProcuraCombustivel(this.esteItemMarcador,tileProspectado);
-        endif
-        if(this.isAcumulando)
-          if(this.fatorMudancaEstado != tipoCombustivel.fatorInflamavel)
-            this.fatorMudancaEstado := tipoCombustivel.fatorInflamavel;
-          endif
+          this._ConsomeCombustivel(tipoCombustivel);
           break;
+        else
+          var temCombustivel := tipoCombustivel.ProcuraCombustivel(this.esteItemMarcador,tileProspectado);
+          if(temCombustivel)
+            this._ConsomeCombustivel(tipoCombustivel);
+            break;
+          endif
         endif
       endforeach
+  endfunction
+
+  function _ConsomeCombustivel(this, tipoCombustivel)
+    this.fatorMudancaEstado := tipoCombustivel.fatorInflamavel;
+    tipoCombustivel.ConsomeCombustivel(this.estado);
+    this.isAcumulando := true;
   endfunction
 
   function InjetaCombustivel(this)
@@ -222,10 +231,9 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function AtualizaEstado(this);
     this.limiteEstimuloEstadoSuperior := _CalculaLimiteEstimuloSuperior(this);
     this.limiteEstimuloEstadoInferior := _CalculaLimiteEstimuloInferior(this);
-
     if(this._isMedidorAcimaLimiteEstado())
       var valorAvanco := this._ObtemQuantidadeAvancoEstado();
-
+    
       if(this._DeveAvancarEstado(valorAvanco))
 
         var novoValorEstado := this.estado + valorAvanco;
@@ -371,10 +379,13 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _CalculaLimiteEstimuloInferior(this)
+
+    var calculo := -this.estimuloLimite / this.fatorMudancaEstado;
+
     if(this.estado <= ESTADO_PROPAGACAO_LATENTE)
-      return Cint(-this.estimuloLimite / 2);
+      return Cint(calculo / 2);
     endif
-      return Cint(-this.estimuloLimite);
+      return Cint(calculo);
   endfunction
 
   function _ObtemQuantidadeAvancoEstado(this)

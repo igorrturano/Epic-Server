@@ -34,10 +34,6 @@ program change(who, item )
 			return 0;
 		endif
 
-		if(!CheckLosAt(who,targ.x,targ.y,targ.z))
-			SendSysMessageEX(who,"Você não exerga este ponto.",SSM_FAIL);
-			return 0;
-		endif
 
 		if(CoordinateDistance(who.x,who.y,targ.x,targ.y) > 1)
 			SendSysMessageEX(who,"Você sestá muito distante.",SSM_FAIL);
@@ -48,6 +44,16 @@ program change(who, item )
 		if(targ.item)
 			var materialChave := GetObjProperty(targ.item,PROPNAME_MATERIAL);
 			materialConfig := PegaMaterialConfig(materialChave);
+
+                  if(!CheckLineOfSight(who,item))
+                        SendSysMessageEX(who,"Você não exerga este item.",SSM_FAIL);
+                        return 0;
+                  endif
+            else
+                  if(!CheckLosAt(who,targ.x,targ.y,targ.z))
+                        SendSysMessageEX(who,"Você não exerga este ponto.",SSM_FAIL);
+                        return 0;
+                  endif
 		endif
 
 		var momentoInicial := ReadGameClock();
@@ -65,7 +71,7 @@ program change(who, item )
 			endif
 			
 			var limiteTempo; 
-			case (materialConfig.inflamabilidade)
+			case (materialConfig.inflamavel)
 				0: limiteTempo := 4; break;
 				1: limiteTempo := 4; break;
 				2: limiteTempo := 3; break;
@@ -77,8 +83,9 @@ program change(who, item )
 						limiteTempo := 4;
 					endif
 			endcase
-
+                  
 			if(tempoDecorrido >= limiteTempo)
+                        Print("limite tempo: " + limiteTempo);
 				var marcador := CriarMarcadorPropagacao(
 										targ.x,
 										targ.y,

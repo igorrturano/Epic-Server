@@ -26,8 +26,7 @@ program controladoraPropagacao(esteItemMarcador)
 
 	var esteObjetoMarcador := MarcadorPropagacaoFabrica().Montar(params);
 
-	esteObjetoMarcador.AtualizaComportamentoMarcador();
-	esteObjetoMarcador.MarcarAdjacentes();
+	esteObjetoMarcador.Iniciar();
 
 	while(esteItemMarcador)
 		Sleepms(300);
