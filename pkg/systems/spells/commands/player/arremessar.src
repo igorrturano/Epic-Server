@@ -109,7 +109,7 @@ program arremesso(params)
 		return 0;
 	endif
 
-	if(!CheckLosAt(who, alvo.x, alvo.y, alvo.z))
+	if(tipoAlvo == ARREMESSO_TIPO_TERRENO && !CheckLosAt(who, alvo.x, alvo.y, alvo.z))
 		SendSysMessageEx(who, "Voce nao consegue ver o alvo.", SSM_FAIL);
 		return 0;
 	endif
@@ -222,6 +222,9 @@ program arremesso(params)
 				DamageFLS(targ, dmg, DMG_PHYSICAL, who);
 				PlaySoundEffect(alvo, 0x521);
 				PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+				if(alvo.isSpiderEggSac())
+					var pid := Start_Script(":lighting:onArremessado", array{who , targ});
+				endif
 			return 1;
 			endif
 		else

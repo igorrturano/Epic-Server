@@ -62,11 +62,10 @@ function ComportamentoWarMode(quem, itemFonte)
 		return 0;
 	endif
 
-	if (targ.objtype == 0x10D9) // Spider Egg
-		PerformAction(quem, 0x20); // Bow
-        BurnEgg(targ);
-        return 1;
-    endif
+	if ( !targ.item )
+		SendSysMessage(quem, "Você não pode destruir isso.");
+		return 0;
+	endif
 
 	start_script (":tn:destroyitems", {quem, targ.item, itemFonte});
 endfunction
@@ -86,7 +85,7 @@ endfunction
  *
  */
 function EnviaEventoDanoItem(quem,item,atributosEvento)
-	var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
+	//var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
 
 	var evParams := array;
 	evParams.append(quem);
@@ -631,8 +630,10 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	endif
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
-	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
-	EnviaEventoDanoItem(quemDanificou,item,atributosItem);
+	if(!IsDestroco(item))
+		PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
+		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
+	endif
 
 	if(durabilidadeRestante <= 0)
 		Destruir(quemDanificou,item,fonteDano);
@@ -692,13 +693,9 @@ endfunction
  */
 function DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance,gfx:=0,ignoreSerial := 0,gfxHue := 0)
 	var itens:= ListItemsNearLocation(x,y,z,alcance,realm);
-	var fireTypes:= array{"Bola de Fogo.", "Chuva de Meteoros.", "Hit Script [Fogo]", "Campo Flamejante."};
 	foreach item in itens
 		if(CheckLosBetween(x,y,z,item.x,item.y,item.z,realm) && item.serial != ignoreSerial)
 			DanificaItem(quem,item,dano,gfx,gfxHue);
-			if (item.isSpiderEggSac() && (dano.desc in fireTypes)) 
-				BurnEgg(item);
-			endif
 		endif
 		Sleepms(3);
 	endforeach
@@ -977,26 +974,4 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 			SendSysMessageEx(quem,"Configurações  aplicadas.", SSM_INFO);
 		endif
 	endif
-endfunction
-
-function BurnEgg(egg)
-    if (egg.objtype != 0x10D9)
-        return 0;
-    endif
-
-    // Create fire effect
-    var fire := CreateItemAtLocation(egg.x, egg.y, egg.z, "FireField_NS", 1, egg.realm);
-    fire.SetDuration(3);
-    
-    // Play death sounds
-    PlaySoundEffect(egg, 402);
-    
-    // Create destroyed egg remains
-    var burnedEgg := CreateItemAtLocation(egg.x, egg.y, egg.z, "DestroyedEgg", 1, egg.realm);
-	burnedEgg.color := 912;
-
-    // Destroy original egg
-	sleep(1);
-    DestroyItem(egg);
-	return 1;
 endfunction

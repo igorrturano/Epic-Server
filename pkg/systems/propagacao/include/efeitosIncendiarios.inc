@@ -30,3 +30,13 @@ function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador,
 	var muralha := CriarMarcadorPropagacao(x,y,z,realm,propPropagacao);
 	muralha.Abastecer(500);
 endfunction
+
+function CriaFagulhaIncendiaria(quem, alvo)
+	var marcador := CriarMarcadorPropagacao(
+										alvo.x,
+										alvo.y,
+										alvo.z,
+										alvo.realm, 
+										NovaPropPropagacao(0,quem.serial,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO)
+										);
+endfunction

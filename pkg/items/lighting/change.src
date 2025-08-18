@@ -17,6 +17,7 @@ include ":destroyable:include/destroyItem";
 include ":propagacao:include/propagacao";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
+include ":propagacao:include/efeitosIncendiarios";
 
 program change(who, item )
 	var cfg := ReadConfigFile(":*:itemdesc");
@@ -85,14 +86,7 @@ program change(who, item )
 			endcase
                   
 			if(tempoDecorrido >= limiteTempo)
-                        Print("limite tempo: " + limiteTempo);
-				var marcador := CriarMarcadorPropagacao(
-										targ.x,
-										targ.y,
-										targ.z,
-										targ.realm, 
-										NovaPropPropagacao(0,who.serial,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO)
-										);
+				var marcador := CriaFagulhaIncendiaria(who, targ.item);
 				
 				if( who.hidden)
 					who.hidden := 0;
