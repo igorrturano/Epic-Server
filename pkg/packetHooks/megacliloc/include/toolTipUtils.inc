@@ -1,7 +1,7 @@
 use uo;
 use cfgfile;
 
-include ":equipsys:include/utils";
+include ":equipsys:utils/consts";
 
 enum TT_CLASSE_PARAM
 	DESCONHECIDO := 1,
