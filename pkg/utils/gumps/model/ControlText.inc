@@ -38,3 +38,19 @@ class ControlText(Control)
 			+ ")";
 	endfunction
 endclass
+
+enum class GUMP_TEXT
+	COLOR_DEFAULT := 1,
+
+	COLOR_BLACK := 1,
+	COLOR_RED := 38,
+	COLOR_GREEN := 68,
+	COLOR_BLUE := 90,
+	COLOR_MAUVE := 30,
+	COLOR_LAVENDER := 20,
+	COLOR_BROWN := 46,
+	COLOR_YELLOW := 53,
+
+	COLOR_ERROR := 38,
+	COLOR_ALERT := 53
+endenum

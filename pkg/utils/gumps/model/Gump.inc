@@ -170,19 +170,3 @@ class Gump()
 		return GFCloseGump(this._parent, this._pid);
 	endfunction
 endclass
-
-enum TEXT_COLOR
-	TEXT_COLOR_DEFAULT := 1,
-
-	TEXT_COLOR_BLACK := 1,
-	TEXT_COLOR_RED := 38,
-	TEXT_COLOR_GREEN := 68,
-	TEXT_COLOR_BLUE := 90,
-	TEXT_COLOR_MAUVE := 30,
-	TEXT_COLOR_LAVENDER := 20,
-	TEXT_COLOR_BROWN := 46,
-	TEXT_COLOR_YELLOW := 53,
-
-	TEXT_COLOR_ERROR := TEXT_COLOR_RED,
-	TEXT_COLOR_ALERT := TEXT_COLOR_YELLOW
-endenum
