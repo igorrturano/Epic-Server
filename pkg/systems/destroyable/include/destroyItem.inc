@@ -11,7 +11,7 @@ include "/include/epicPropNames";
 include ":traps:traps";
 //include "include/packets";
 include ":architect:architect";
-include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/fabricacaoUtil";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -174,11 +174,13 @@ function Destruir(quem,itemAlvo,fonteDano)
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
 	if(!IsDestroco(itemAlvo))
 		var itemAlvoDesc := itemAlvo.desc;
-		if(envelopeDeed.isDeed)
-			CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
-			itemAlvoDesc += "[Deed]";
-		else
-			CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+		if(DeveCriarDestroco(itemAlvo))
+			if(envelopeDeed.isDeed)
+				CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
+				itemAlvoDesc += "[Deed]";
+			else
+				CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+			endif
 		endif
 		var descFonteDano := fonteDano.desc;
 		if(!descFonteDano)
@@ -393,14 +395,14 @@ endfunction
  *
  * Parameters
  * itemAlvo:	   		item que terá sua resistência calculada.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real.
  *
  * Return value
  *   resistência total do item.
  *
  */
-function PegaResistenciaItem(itemAlvo)
+function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
-	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
@@ -409,7 +411,9 @@ function PegaResistenciaItem(itemAlvo)
 	endif
 	if(materialId)
 		resFinal := resFinal + resistenciaFabricacao;
+		resFinal := isInflamavel && fonteDano.tipo == "Fire"? 0 : resFinal;
 	endif
+
 	return resFinal;
 endfunction
 
@@ -444,7 +448,8 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 		danoCru := fonteDano;
 	endif
 
-	var danoRecebido := danoCru - atributosItem.resistencia;
+	var danoBonusCalor := atributosItem.inflamabilidade ? 1 + (atributosItem.inflamabilidade / 2) : 0;
+	var danoRecebido := cint(danoCru * danoBonusCalor - atributosItem.resistencia);
 	danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 	danoCalculado.+isEficaz := danoRecebido > 0;
 	return danoCalculado;
@@ -532,6 +537,7 @@ endfunction
  *
  * Parameters
  * item: item a ser avaliado.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real. Parametro opcional.
  *
  * Return value
  *   retorna um struct com:
@@ -541,9 +547,14 @@ endfunction
  *		.+isIndestrutivel // Se o item é considerádo indestrutivel ou não.
  *
  */
-function MontaAtributosItem(item)
+function MontaAtributosItem(item, fonteDano := 0)
+
+	var materialId := GetObjProperty(item,PROPNAME_MATERIAL);
+	var config := PegaMaterialConfig(materialId);
+
 	var itemAtrib := struct;
-		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item));
+		itemAtrib.+inflamabilidade := config.inflamavel;
+		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item, fonteDano,materialId,itemAtrib.inflamabilidade));
 		itemAtrib.+durabTotal := cInt(PegaDurabilidadeTotal(item));
 		itemAtrib.+isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
 
@@ -572,7 +583,7 @@ endfunction
  * Parameters
  * quemDanificou: O ator que danificou o item.
  * item: O item que foi danificado
- * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc> e <dano> ou um valor real.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real.
  * gfx: o efeito especial que será disparado no item danificado.
  * gfxHue: a cor do efeito especial..
  *
@@ -588,7 +599,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 		return struct;
 	endif
 
-	var atributosItem := MontaAtributosItem(item);
+	var atributosItem := MontaAtributosItem(item, fonteDano);
 	var danoCalculado := CalculaDanoRecebido(fonteDano,atributosItem);
 	
 	if(item.IsA(POLCLASS_CORPSE) && GetObjProperty(item,"account")) // Corpo de jogador.
@@ -613,7 +624,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 		endif
 	endif
 
-	if(!IsDestroco(item))
+	if(DeveCriarDestroco(item))
 		if(RandomInt(100) <= configDestruiveis[ELEM_CFG_DEST].criaDestrocoChance)
 			CriaDestrocos(item,1,3,false);
 		endif
@@ -638,6 +649,23 @@ endfunction
 
 function IsDestroco(item)
 	return GetObjProperty(item,PROPNAME_DESTROCO);
+endfunction
+
+/* 
+ * DanificaObjetosProximos(item)
+ *
+ * Purpose
+ *	Avaliar se há necessidade de criar destroço do item danificado.
+ * 
+ * Parameters
+ * item: o item que foi danificado
+ *
+ * Return value
+ *   true se deve os destroços devem ser criados
+ */
+
+function DeveCriarDestroco(item)
+	return !IsDestroco(item) && item.weight > 5;
 endfunction
 
 /* 

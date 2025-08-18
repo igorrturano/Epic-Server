@@ -15,6 +15,8 @@ include ":tn:cooldown";
 include "include/say";
 include ":destroyable:include/destroyItem";
 include ":propagacao:include/propagacao";
+include ":crafting:/include/fabricacaoUtil";
+include "include/epicValidAction";
 
 program change(who, item )
   var cfg := ReadConfigFile(":*:itemdesc");
@@ -23,26 +25,76 @@ program change(who, item )
     return;
   endif
 
-  if (who.warmode)
-      SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
-	var targ := TargetCoordinates(who);
+  	if (who.warmode)
+		SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
+		var targ := TargetCoordinates(who);
 
-	if ( !targ )
-		SendSysMessage(who, "Cancelado.");
+		if ( !targ )
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+
+		if(!CheckLosAt(who,targ.x,targ.y,targ.z))
+			SendSysMessageEX(who,"Você não exerga este ponto.",SSM_FAIL);
+			return 0;
+		endif
+
+		if(CoordinateDistance(who.x,who.y,targ.x,targ.y) > 1)
+			SendSysMessageEX(who,"Vocêestá muito distante.",SSM_FAIL);
+			return 0;
+		endif
+
+		var materialConfig;
+		if(targ.item)
+			var materialChave := GetObjProperty(targ.item,PROPNAME_MATERIAL);
+			materialConfig := PegaMaterialConfig(materialChave);
+		endif
+
+		var momentoInicial := ReadGameClock();
+		var posicaoInicial := struct {x := who.x , y := who.y, z := who.z, realm := who.realm};
+		while(true)
+			if(CheckHasMoved(who,posicaoInicial) || !CheckIsAlive(who) || !CheckIsFree(who))
+				SendSysMessageEX(who,"Você parou de tentar iniciar um incêndio.",SSM_FAIL);
+				break;
+			endif
+			var tempoDecorrido := ReadGameClock() - momentoInicial;
+			var deveCriarMarcadorIncendio := false;
+			if(tempoDecorrido % 2 == 0)
+				PerformAction(who, 0x20); // Bow
+				PrintTextAbove(who,"*Tentando iniciar um incêndio*");
+			endif
+			
+			var limiteTempo; 
+			case (materialConfig.inflamabilidade)
+				1: limiteTempo := 8; break;
+				2: limiteTempo := 6; break;
+				3: limiteTempo := 4; break;
+				4: limiteTempo := 2; break;
+				5: limiteTempo := 1; break;
+				default:
+					limiteTempo := 11;
+			endcase
+
+			if(tempoDecorrido >= limiteTempo)
+				var marcador := CriarMarcadorPropagacao(
+										targ.x,
+										targ.y,
+										targ.z,
+										targ.realm, 
+										NovaPropPropagacao(0,who.serial,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO)
+										);
+				
+				if( who.hidden)
+					who.hidden := 0;
+					SendSysMessage(who, "Você foi revelado!");
+				endif
+				break;
+			endif
+			sleep(1);
+		endwhile
+
 		return 0;
-	endif
-
-	PerformAction(who, 0x20); // Bow
-      var marcador := CriarMarcadorPropagacao(
-            targ.x,
-            targ.y,
-            targ.z,
-            targ.realm, 
-            NovaPropPropagacao(0,-1,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO));
-
-      Print("MARCADOR: " + marcador);
-      return 0;
-  endif
+	endif     
 
   if (GetCooldown(who, "darkness") > 0)
     SendSysMessage(who, "Você está envolto em sombras!", SSM_FAIL);

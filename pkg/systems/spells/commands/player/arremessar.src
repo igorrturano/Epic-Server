@@ -16,6 +16,12 @@ include ":combat:combat";
 include ":combat:damage";
 include ":charactercreation:resists";
 
+enum arrremesso
+	ARREMESSO_TIPO_ITEM,
+	ARREMESSO_TIPO_MOBILE,
+	ARREMESSO_TIPO_TERRENO
+endenum
+
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
@@ -74,7 +80,19 @@ program arremesso(params)
 	endif
 
 	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
-    var alvo := Target(who);
+    var alvo := TargetCoordinates(who);
+	var tipoAlvo := 0;
+
+	if(alvo.item)
+		tipoAlvo := ARREMESSO_TIPO_ITEM;
+		alvo := alvo.item;
+	elseif(alvo.mobile)
+		tipoAlvo := ARREMESSO_TIPO_MOBILE;
+		alvo := alvo.mobile;
+	else
+		tipoAlvo := ARREMESSO_TIPO_TERRENO;
+		alvo := struct { x := alvo.x, y := alvo.y, z := alvo.z, realm := alvo.realm};
+	endif
 	
 	if (alvo == who)
 		SendSysMessageEx(who, "Seu instinto de sobrevivencia nao permite.", SSM_FAIL);
@@ -107,11 +125,13 @@ program arremesso(params)
 		return 0;
     endif
 
+	//Não entendi essa parte então não mexi. Ass: Deiro.
 	if (who.weapon.IsThrowingWeapon())
 		AP_ConsumeVital(who, "Stamina", 10);
 	else
 		AP_ConsumeVital(who, "Stamina", 20);
 	endif
+	//
 
 	var to_miss_chance := 50;
     if (alvo.isA(POLCLASS_MOBILE))
@@ -188,21 +208,26 @@ program arremesso(params)
 	else
 		if (alvo)
 			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
-			PrintText(who, "*Arremessa " + targ.name + " em " + alvo.name +"*");
+			PrintText(who, "*Arremessa " + targ.name + " em " + (tipoAlvo != ARREMESSO_TIPO_TERRENO ? alvo.name : "direção a um ponto") +"*");
 			PlaySoundEffect(who, 0x51C);
 		endif	
-
-		if (to_hit_chance < to_miss_chance) // Errou!
-			PrintTextAbove(who, "*Errou!*");
-	 		return 0;
+		if(tipoAlvo != ARREMESSO_TIPO_TERRENO)
+			if (to_hit_chance < to_miss_chance ) // Errou!
+				PrintTextAbove(who, "*Errou!*");
+				return 0;
+			else
+				PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+				PlaySoundEffect(alvo, 0x136);
+				DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
+				DamageFLS(targ, dmg, DMG_PHYSICAL, who);
+				PlaySoundEffect(alvo, 0x521);
+				PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+			return 1;
+			endif
 		else
-			PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
-			PlaySoundEffect(alvo, 0x136);
-            DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
-            DamageFLS(targ, dmg, DMG_PHYSICAL, who);
-            PlaySoundEffect(alvo, 0x521);
-            PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
-		return 1;
+			if(targ.objtype == 0x0a12 || targ.objtype == 0x0f64)
+				var pid := Start_Script(":lighting:onArremessado", array{who , targ});
+			endif
 		endif
 	endif	
 
