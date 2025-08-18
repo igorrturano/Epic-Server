@@ -36,6 +36,15 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.catalogoDanoBase := MontaCatalogoDano();
   endfunction
 
+  function TocaSFXCaracteristico(this)
+    if(this.estado >= ESTADO_PROPAGACAO_PRINCIPIO)
+      var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados[cstr(this.estado)];
+      if(efeitosPersonalizados.sfx != -1)
+        PlaySoundEffect( this.esteItemMarcador,efeitosPersonalizados.sfx ? efeitosPersonalizados.sfx : SFX_1DE);
+      endif
+    endif
+  endfunction
+
 
   function EfetuarCiclo(this)
     if(!this.isMarcadorMorto)
@@ -139,7 +148,9 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function _AvaliaInflamabilidade(this, item)
 
     var material :=  this.resourceConfig[GetObjProperty(item, PROPNAME_MATERIAL)];
-    material := material ? material : this.resourceConfig[item.objtype];
+    //TODO [futuro] Ver se não seria melhor tranformar os recursos como logs e minerio bruto em resources no ResourceList tbm.
+    //Pra poder remover esse catalogoPraTabua daqui.
+    material := material ? material : this.resourceConfig[CATALOGO_LOG_PRA_TABUA[Lower(HEX(item.objtype))]];
     var isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
 
     if(material.inflamavel && !isIndestrutivel)
@@ -276,25 +287,23 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         this.AtualizaComportamento(efeitosPersonalizados,brasas, 0);
         break;
       ESTADO_PROPAGACAO_PRINCIPIO:
-        this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 0,0,SFX_1DE,efeitoFumacinha,objtypeNuvemFumaca);
+        this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 0,0,efeitoFumacinha,objtypeNuvemFumaca);
         break;
       ESTADO_PROPAGACAO_REGULAR:
-        this.AtualizaComportamento(efeitosPersonalizados,fogoMedio, 0,0,SFX_1DE,efeitoFumacinha,10,objtypeNuvemFumaca);
+        this.AtualizaComportamento(efeitosPersonalizados,fogoMedio, 0,0,efeitoFumacinha,10,objtypeNuvemFumaca);
         break;
       ESTADO_PROPAGACAO_INTENSO:
-        this.AtualizaComportamento(efeitosPersonalizados,fogoIntenso, 0,0,SFX_1DE,efeitoFogo,100,objtypeNuvemFumaca);
+        this.AtualizaComportamento(efeitosPersonalizados,fogoIntenso, 0,0,efeitoFogo,100,objtypeNuvemFumaca);
         break;
     endcase
   endfunction
 
-  function AtualizaComportamento(this,efeitosPersonalizados, graphic, cor :=0, isInvisibel := 1, sfx := -1,efx := -1, duracao := 10, effectItemObjtype := -1, chanceRandom := 2 , minRandom := 1, maxRandom := 8)
+  function AtualizaComportamento(this,efeitosPersonalizados, graphic, cor :=0, isInvisibel := 1,efx := -1, duracao := 10, effectItemObjtype := -1, chanceRandom := 2 , minRandom := 1, maxRandom := 8)
      
     this.esteItemMarcador.graphic := efeitosPersonalizados.graphic ? efeitosPersonalizados.graphic : graphic;
     this.esteItemMarcador.color :=  efeitosPersonalizados.cor ? efeitosPersonalizados.cor : cor ;
     this.esteItemMarcador.invisible := efeitosPersonalizados.isInvisibel ? efeitosPersonalizados.isInvisibel : isInvisibel;
-    if(efeitosPersonalizados.sfx != -1)
-      PlaySoundEffect( this.esteItemMarcador,efeitosPersonalizados.sfx ? efeitosPersonalizados.sfx : sfx);
-    endif
+    this.TocaSFXCaracteristico();
 
     if(efeitosPersonalizados.efx != -1)
       PlayObjectCenteredEffectEx(

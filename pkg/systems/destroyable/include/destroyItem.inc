@@ -448,7 +448,7 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 		danoCru := fonteDano;
 	endif
 
-	var danoBonusCalor := atributosItem.inflamabilidade ? 1 + (atributosItem.inflamabilidade / 2) : 0;
+	var danoBonusCalor := atributosItem.inflamabilidade ? 1 + (atributosItem.inflamabilidade / 2) : 1;
 	var danoRecebido := cint(danoCru * danoBonusCalor - atributosItem.resistencia);
 	danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 	danoCalculado.+isEficaz := danoRecebido > 0;

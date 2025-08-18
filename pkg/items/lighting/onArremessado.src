@@ -9,7 +9,7 @@ program onArremessado(params)
 
 	while(item)
 		if(item.graphic == 0x0a12 && !item.container)
-			sleep(2);
+			sleep(4);
 			
 			var propPropagacao := NovaPropPropagacao(0,quem.serial,-1,PROPAGACAO_TIPO_INCENDIO, ESTADO_PROPAGACAO_PRINCIPIO);
 			CriarMarcadorPropagacao(item.x,item.y,item.z,item.realm,propPropagacao);

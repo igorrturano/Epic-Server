@@ -19,7 +19,6 @@ const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel";
 const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
 const PROPNAME_DESTROCO := "isDestroco"; 
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
-const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
 
 
 //SISTEMA DE SELECAO EM AREA

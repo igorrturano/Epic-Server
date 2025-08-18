@@ -19,13 +19,13 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
 program change(who, item )
-  var cfg := ReadConfigFile(":*:itemdesc");
-  var elem := FindConfigElem(cfg, item.objtype);
-  if(elem.staff > who.cmdlevel)
-    return;
-  endif
-
-  	if (who.warmode)
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, item.objtype);
+	if(elem.staff > who.cmdlevel)
+	return;
+	endif
+  	
+	if (who.warmode && GetEquipmentByLayer( who, LAYER_HAND2 ) == item && item.graphic == 0x0a12 )
 		SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
 		var targ := TargetCoordinates(who);
 
@@ -40,7 +40,7 @@ program change(who, item )
 		endif
 
 		if(CoordinateDistance(who.x,who.y,targ.x,targ.y) > 1)
-			SendSysMessageEX(who,"Vocêestá muito distante.",SSM_FAIL);
+			SendSysMessageEX(who,"Você sestá muito distante.",SSM_FAIL);
 			return 0;
 		endif
 
@@ -66,13 +66,16 @@ program change(who, item )
 			
 			var limiteTempo; 
 			case (materialConfig.inflamabilidade)
-				1: limiteTempo := 8; break;
-				2: limiteTempo := 6; break;
-				3: limiteTempo := 4; break;
-				4: limiteTempo := 2; break;
-				5: limiteTempo := 1; break;
+				0: limiteTempo := 4; break;
+				1: limiteTempo := 4; break;
+				2: limiteTempo := 3; break;
+				3: limiteTempo := 2; break;
 				default:
-					limiteTempo := 11;
+					if(limiteTempo > 3)
+						limiteTempo := 1;
+					else
+						limiteTempo := 4;
+					endif
 			endcase
 
 			if(tempoDecorrido >= limiteTempo)

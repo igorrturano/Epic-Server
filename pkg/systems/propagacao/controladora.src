@@ -9,7 +9,7 @@ include ":propagacao:include/marcadorPropagacaoFabrica";
 program controladoraPropagacao(esteItemMarcador)
 
 	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO) ;
-
+	var momentoInicial := ReadGameClock();
 	Set_Event_Queue_Size(12);
 
 	var marcadorOrigem := propPropagacao.marcadorOrigem;
@@ -33,6 +33,10 @@ program controladoraPropagacao(esteItemMarcador)
 		Sleepms(300);
 		var event := Wait_For_Event(0);
 
+		if(ReadGameClock() - momentoInicial >= 2)
+			esteObjetoMarcador.TocaSFXCaracteristico();
+		endif
+		
 		if(event.id == PROPAGACAO_EV_ESTIMULO)
 			esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
 		elseif(event.id == PROPAGACAO_EV_COMBUSTIVEL)
