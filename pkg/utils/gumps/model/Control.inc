@@ -1,21 +1,22 @@
 class Control()
-	var _id;
+	var _gumpId;
 	var _type;
 	var _name;
-	var _value;
 
-	var _design;
+	var _x;
+	var _y;
 
-	function Control(this, type, name, value, design)
-		this._id := 0;
+	function Control(this, type, name, x, y, gumpId := 0)
+		this._gumpId := gumpId;
 		this._type := type;
 		this._name := name;
-		this._value := value;
-		this._design := design;
+
+		this._x := x;
+		this._y := y;
 	endfunction
 
-	function GetId(this)
-		return this._id;
+	function GetGumpId(this)
+		return this._gumpId;
 	endfunction
 
 	function GetType(this)
@@ -26,16 +27,16 @@ class Control()
 		return this._name;
 	endfunction
 
-	function GetValue(this)
-		return this._value;
+	function GetX(this)
+		return this._x;
 	endfunction
 
-	function GetDesign(this)
-		return this._design;
+	function GetY(this)
+		return this._y;
 	endfunction
 
-	function SetId(this, id)
-		this._id := id;
+	function SetGumpId(this, gumpId)
+		this._gumpId := gumpId;
 	endfunction
 
 	function SetType(this, type)
@@ -46,21 +47,27 @@ class Control()
 		this._name := name;
 	endfunction
 
-	function SetValue(this, value)
-		this._value := value;
+	function SetX(this, x)
+		this._x := x;
 	endfunction
 
-	function SetDesign(this, design)
-		this._design := design;
+	function SetY(this, y)
+		this._y := y;
 	endfunction
 
 	function ToString(this)
-		return $"Control(id={this._id}, type={this._type}, name={this._name}, value={this._value}, design={this._design})";
+		return "Control(name=" + this._GetName()
+			+ ", gumpId=" + this.GetGumpId()
+			+ ", type=" + this.GetType()
+			+ ", x=" + this.GetX()
+			+ ", y=" + this.GetY()
+			+ ")";
 	endfunction
 endclass
 
-enum GUMP_CONTROL_TYPE
+enum GUMP_CONTROL
 	GUMP_CONTROL_TEXT := "text",
+	GUMP_CONTROL_TEXTCROPPED := "textcropped",
 	GUMP_CONTROL_TOOLTIP := "tooltip",
 
 	GUMP_CONTROL_BUTTON := "button",
