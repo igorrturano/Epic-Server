@@ -92,35 +92,23 @@ class Gump()
 		this._customization.append(customFunction);
 	endfunction
 
-	// function AddControl(this, type, name, value, design)
 	function AddControl(this, control)
 		var id := 1;
+		
 		case (control.GetType())
 			GUMP_CONTROL_TEXT: id := this._controls[GUMP_CONTROL_TEXT].size() + id; break;
 			GUMP_CONTROL_TOOLTIP: id := this._controls[GUMP_CONTROL_TOOLTIP].size() + id + 1000; break;
 
 			GUMP_CONTROL_IMAGE: id := this._controls[GUMP_CONTROL_IMAGE].size() + id + 2000; break;
 
-			GUMP_CONTROL_BUTTON: id := this._layoutElements[GUMP_CONTROL_BUTTON].size() + id + 3000; break;
+			GUMP_CONTROL_BUTTON: id := this._controls[GUMP_CONTROL_BUTTON].size() + id + 3000; break;
 			GUMP_CONTROL_CHECKBOX: id := this._controls[GUMP_CONTROL_CHECKBOX].size() + id + 4000; break;
 			GUMP_CONTROL_RADIOBUTTON: id := this._controls[GUMP_CONTROL_RADIOBUTTON].size() + id + 5000; break;
 		endcase
+		print ("id->" + id);
 
-		control.SetId(id);
-		print(control.ToString());
-
-		var controlS := struct{
-			id := id,
-			type := control.GetType(),
-			name := control._GetName(),
-			value := control.GetValue(),
-
-			color := control.GetDesign().color,
-			x := control.GetDesign().x,
-			y := control.GetDesign().y,
-			width := control.GetDesign().width,
-			height := control.GetDesign().height
-		};
+		control.SetGumpId(id);
+		print("added control->" + control.ToString());
 
 		this._controls[control.GetType()].append(control);
 	endfunction
@@ -143,8 +131,12 @@ class Gump()
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 
 		foreach text in (this._controls[GUMP_CONTROL_TEXT])
-			GFTextCrop(this._gump, text.GetDesign().x, text.GetDesign().y, text.GetDesign().width, text.GetDesign().height, text.GetDesign().color, text.GetValue());
+			GFTextLine(this._gump, text.GetX(), text.GetY(), text.GetColor(), text.GetValue());
 			// this.AddLayout(GUMP_LAYOUT_TEXT, text.name, text.value, text.x, text.y);
+		endforeach
+
+		foreach button in (this._controls[GUMP_CONTROL_BUTTON])
+			GFAddButton(this._gump, button.GetX(), button.GetY(), button.GetImage(), button.GetPressedImage(), GF_CLOSE_BTN, button.GetGumpId());
 		endforeach
 
 		foreach custom in (this._customization)
@@ -153,20 +145,22 @@ class Gump()
 		this._pid := GetPid();
 
 		var gumpResult := GFSendGump(this._parent, this._gump);
-		if (gumpResult < 1000)
-			return this._controls[GUMP_CONTROL_TEXT][gumpResult];
-		elseif (gumpResult < 2000)
-			return this._controls[GUMP_CONTROL_TOOLTIP][gumpResult-1000];
-		elseif (gumpResult < 3000)
-			return this._controls[GUMP_CONTROL_IMAGE][gumpResult-2000];
-		elseif (gumpResult < 4000)
-			return this._controls[GUMP_CONTROL_BUTTON][gumpResult-3000];
-		elseif (gumpResult < 5000)
-			return this._controls[GUMP_CONTROL_CHECKBOX][gumpResult-4000];
-		elseif (gumpResult < 6000)
-			return this._controls[GUMP_CONTROL_RADIOBUTTON][gumpResult-5000];
+		print("Gump sent, result: " + gumpResult[0]);
+		if (gumpResult[0] < 1000)
+			return this._controls[GUMP_CONTROL_TEXT][gumpResult[0]];
+		elseif (gumpResult[0] < 2000)
+			return this._controls[GUMP_CONTROL_TOOLTIP][gumpResult[0]-1000];
+		elseif (gumpResult[0] < 3000)
+			return this._controls[GUMP_CONTROL_IMAGE][gumpResult[0]-2000];
+		elseif (gumpResult[0] < 4000)
+			print("EventHandled -> " + this._controls[GUMP_CONTROL_BUTTON][gumpResult[0]-3000].ToString());
+			return this._controls[GUMP_CONTROL_BUTTON][gumpResult[0]-3000];
+		elseif (gumpResult[0] < 5000)
+			return this._controls[GUMP_CONTROL_CHECKBOX][gumpResult[0]-4000];
+		elseif (gumpResult[0] < 6000)
+			return this._controls[GUMP_CONTROL_RADIOBUTTON][gumpResult[0]-5000];
 		else
-			return gumpResult;
+			return gumpResult[0];
 		endif
 
 		// return GFSendGump(this._parent, this._gump);
