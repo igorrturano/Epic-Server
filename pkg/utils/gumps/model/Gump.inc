@@ -25,12 +25,12 @@ class Gump()
 		this._options := options.size() < 1 ? array{BORDER_GOLDEN} : options;
 		this._customization := array{};
 		this._controls := dictionary{
-			GUMP_CONTROL_TEXT -> array{},
-			GUMP_CONTROL_TOOLTIP -> array{},
-			GUMP_CONTROL_IMAGE -> array{},
-			GUMP_CONTROL_BUTTON -> array{},
-			GUMP_CONTROL_CHECKBOX -> array{},
-			GUMP_CONTROL_RADIOBUTTON -> array{}
+			GUMP_CONTROL::TEXT -> array{},
+			GUMP_CONTROL::TOOLTIP -> array{},
+			GUMP_CONTROL::IMAGE -> array{},
+			GUMP_CONTROL::BUTTON -> array{},
+			GUMP_CONTROL::CHECKBOX -> array{},
+			GUMP_CONTROL::RADIOBUTTON -> array{}
 		};
 	endfunction
 
@@ -96,48 +96,40 @@ class Gump()
 		var id := 1;
 		
 		case (control.GetType())
-			GUMP_CONTROL_TEXT: id := this._controls[GUMP_CONTROL_TEXT].size() + id; break;
-			GUMP_CONTROL_TOOLTIP: id := this._controls[GUMP_CONTROL_TOOLTIP].size() + id + 1000; break;
+			GUMP_CONTROL::TEXT: id := this._controls[GUMP_CONTROL::TEXT].size() + id; break;
+			GUMP_CONTROL::TOOLTIP: id := this._controls[GUMP_CONTROL::TOOLTIP].size() + id + 1000; break;
 
-			GUMP_CONTROL_IMAGE: id := this._controls[GUMP_CONTROL_IMAGE].size() + id + 2000; break;
+			GUMP_CONTROL::IMAGE: id := this._controls[GUMP_CONTROL::IMAGE].size() + id + 2000; break;
 
-			GUMP_CONTROL_BUTTON: id := this._controls[GUMP_CONTROL_BUTTON].size() + id + 3000; break;
-			GUMP_CONTROL_CHECKBOX: id := this._controls[GUMP_CONTROL_CHECKBOX].size() + id + 4000; break;
-			GUMP_CONTROL_RADIOBUTTON: id := this._controls[GUMP_CONTROL_RADIOBUTTON].size() + id + 5000; break;
+			GUMP_CONTROL::BUTTON: id := this._controls[GUMP_CONTROL::BUTTON].size() + id + 3000; break;
+			GUMP_CONTROL::CHECKBOX: id := this._controls[GUMP_CONTROL::CHECKBOX].size() + id + 4000; break;
+			GUMP_CONTROL::RADIOBUTTON: id := this._controls[GUMP_CONTROL::RADIOBUTTON].size() + id + 5000; break;
 		endcase
-		print ("id->" + id);
 
 		control.SetGumpId(id);
-		print("added control->" + control.ToString());
 
 		this._controls[control.GetType()].append(control);
-	endfunction
-
-	function RemoveOption(this, option)
-		if (!(option in this._options)) return error { errortext := "Option not found!" }; endif
-
-		this._options.erase(this._options.findIndex(@(v) { return v == option; }));
 	endfunction
 
 	function ToString(this)
 		return "Gump: { Title: " + this._title + ", Width: " + CStr(this._width) + ", Height: " + CStr(this._height) + ", Options: " + CStr(this._options) + " }";
 	endfunction
 
-	function Create(this)
-		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
+	function CreateControls(byref dialog, dict)
+		foreach control in (dict)
+			control.SelfCreate(dialog);
+		endforeach
 	endfunction
-	
+
 	function Show(this)
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 
-		foreach text in (this._controls[GUMP_CONTROL_TEXT])
-			GFTextLine(this._gump, text.GetX(), text.GetY(), text.GetColor(), text.GetValue());
-			// this.AddLayout(GUMP_LAYOUT_TEXT, text.name, text.value, text.x, text.y);
-		endforeach
-
-		foreach button in (this._controls[GUMP_CONTROL_BUTTON])
-			GFAddButton(this._gump, button.GetX(), button.GetY(), button.GetImage(), button.GetPressedImage(), GF_CLOSE_BTN, button.GetGumpId());
-		endforeach
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::TEXT]);
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::TOOLTIP]);
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::IMAGE]);
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::BUTTON]);
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::CHECKBOX]);
+		CreateControls(this._gump, this._controls[GUMP_CONTROL::RADIOBUTTON]);
 
 		foreach custom in (this._customization)
 			custom(this._gump);
@@ -145,25 +137,30 @@ class Gump()
 		this._pid := GetPid();
 
 		var gumpResult := GFSendGump(this._parent, this._gump);
+		var eventHandled;
 		print("Gump sent, result: " + gumpResult[0]);
-		if (gumpResult[0] < 1000)
-			return this._controls[GUMP_CONTROL_TEXT][gumpResult[0]];
+
+		if (gumpResult[0] == 0)
+			eventHandled := "CLOSED";
+		elseif (gumpResult[0] < 1000)
+			eventHandled := this._controls[GUMP_CONTROL::TEXT][gumpResult[0]];
 		elseif (gumpResult[0] < 2000)
-			return this._controls[GUMP_CONTROL_TOOLTIP][gumpResult[0]-1000];
+			eventHandled := this._controls[GUMP_CONTROL::TOOLTIP][gumpResult[0]-1000];
 		elseif (gumpResult[0] < 3000)
-			return this._controls[GUMP_CONTROL_IMAGE][gumpResult[0]-2000];
+			eventHandled := this._controls[GUMP_CONTROL::IMAGE][gumpResult[0]-2000];
 		elseif (gumpResult[0] < 4000)
-			print("EventHandled -> " + this._controls[GUMP_CONTROL_BUTTON][gumpResult[0]-3000].ToString());
-			return this._controls[GUMP_CONTROL_BUTTON][gumpResult[0]-3000];
+			eventHandled := this._controls[GUMP_CONTROL::BUTTON][gumpResult[0]-3000];
 		elseif (gumpResult[0] < 5000)
-			return this._controls[GUMP_CONTROL_CHECKBOX][gumpResult[0]-4000];
+			eventHandled := this._controls[GUMP_CONTROL::CHECKBOX][gumpResult[0]-4000];
 		elseif (gumpResult[0] < 6000)
-			return this._controls[GUMP_CONTROL_RADIOBUTTON][gumpResult[0]-5000];
+			eventHandled := this._controls[GUMP_CONTROL::RADIOBUTTON][gumpResult[0]-5000];
 		else
-			return gumpResult[0];
+			eventHandled := error { errortext := "Unknown control type!" };
 		endif
 
-		// return GFSendGump(this._parent, this._gump);
+		print("EventHandled -> " + eventHandled);
+		print("EventHandled -> " + eventHandled.ToString());
+		return eventHandled;
 	endfunction
 
 	function Close(this)

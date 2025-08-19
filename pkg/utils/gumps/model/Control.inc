@@ -1,3 +1,5 @@
+include ":gumps:epicGumps";
+
 class Control()
 	var _gumpId;
 	var _type;
@@ -55,6 +57,8 @@ class Control()
 		this._y := y;
 	endfunction
 
+	function SelfCreate(this, gump) endfunction
+
 	function ToString(this)
 		return "Control(name=" + this._GetName()
 			+ ", gumpId=" + this.GetGumpId()
@@ -65,13 +69,13 @@ class Control()
 	endfunction
 endclass
 
-enum GUMP_CONTROL
-	GUMP_CONTROL_TEXT := "text",
-	GUMP_CONTROL_TEXTCROPPED := "textcropped",
-	GUMP_CONTROL_TOOLTIP := "tooltip",
+enum class GUMP_CONTROL
+	TEXT := "text",
+	TEXTCROPPED := "textcropped",
+	TOOLTIP := "tooltip",
 
-	GUMP_CONTROL_BUTTON := "button",
-	GUMP_CONTROL_IMAGE := "image",
-	GUMP_CONTROL_RADIOBUTTON := "radiobutton",
-	GUMP_CONTROL_CHECKBOX := "checkbox"
+	BUTTON := "button",
+	IMAGE := "image",
+	RADIOBUTTON := "radiobutton",
+	CHECKBOX := "checkbox"
 endenum

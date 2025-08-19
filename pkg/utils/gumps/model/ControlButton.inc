@@ -3,13 +3,15 @@ include "Control";
 class ControlButton(Control)
 	var _image; // Imagem do botão
 	var _pressedImage; // Imagem do botão quando pressionado
+	var _buttonType;
 
 	var _action; // Passar função lambda a ser executada no clique
 
-	function ControlButton(this, name, x, y, image, pressedImage, action, gumpId := 0)
-		Super(GUMP_CONTROL_BUTTON, name, x, y, gumpId);
+	function ControlButton(this, name, x, y, image, pressedImage, buttonType, action := 0, gumpId := 0)
+		Super(GUMP_CONTROL::BUTTON, name, x, y, gumpId);
 		this._image := image;
 		this._pressedImage := pressedImage;
+		this._buttonType := buttonType;
 
 		this._action := action;
 	endfunction
@@ -20,6 +22,10 @@ class ControlButton(Control)
 
 	function GetPressedImage(this)
 		return this._pressedImage;
+	endfunction
+
+	function GetButtonType(this)
+		return this._buttonType;
 	endfunction
 
 	function GetAction(this)
@@ -34,8 +40,16 @@ class ControlButton(Control)
 		this._pressedImage := pressedImage;
 	endfunction
 
+	function SetButtonType(this, buttonType)
+		this._buttonType := buttonType;
+	endfunction
+
 	function SetAction(this, action)
 		this._action := action;
+	endfunction
+
+	function SelfCreate(this, byref gump)
+		GFAddButton(gump, this.GetX(), this.GetY(), this.GetImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
 	endfunction
 
 	function ToString(this)
@@ -51,7 +65,7 @@ class ControlButton(Control)
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_BUTTON_IMG
+enum class GUMP_CONTROL_BUTTON_IMAGE
 	CLOSE_UNPRESSED := 2103,
 	CLOSE_PRESSED := 2104
 endenum
