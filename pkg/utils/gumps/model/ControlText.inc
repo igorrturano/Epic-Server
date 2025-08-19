@@ -5,7 +5,7 @@ class ControlText(Control)
 	var _value;
 
 	function ControlText(this, name, x, y, value, color := 0, gumpId := 0)
-		Super(GUMP_CONTROL_TEXT, name, x, y, gumpId);
+		Super(GUMP_CONTROL::TEXT, name, x, y, gumpId);
 		
 		this._color := color;
 		this._value := value;
@@ -27,6 +27,10 @@ class ControlText(Control)
 		this._value := value;
 	endfunction
 
+	function SelfCreate(this, byref gump)
+		GFTextLine(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+	endfunction
+
 	function ToString(this)
 		return "ControlText(name=" + this._GetName()
 			+ ", gumpId=" + this.GetGumpId()
@@ -39,18 +43,18 @@ class ControlText(Control)
 	endfunction
 endclass
 
-enum class GUMP_TEXT
-	COLOR_DEFAULT := 1,
+enum GUMP_TEXT_COLOR
+	GUMP_TEXT_COLOR_DEFAULT := 1,
 
-	COLOR_BLACK := 1,
-	COLOR_RED := 38,
-	COLOR_GREEN := 68,
-	COLOR_BLUE := 90,
-	COLOR_MAUVE := 30,
-	COLOR_LAVENDER := 20,
-	COLOR_BROWN := 46,
-	COLOR_YELLOW := 53,
+	GUMP_TEXT_COLOR_BLACK := 1,
+	GUMP_TEXT_COLOR_RED := 38,
+	GUMP_TEXT_COLOR_GREEN := 68,
+	GUMP_TEXT_COLOR_BLUE := 90,
+	GUMP_TEXT_COLOR_MAUVE := 30,
+	GUMP_TEXT_COLOR_LAVENDER := 20,
+	GUMP_TEXT_COLOR_BROWN := 46,
+	GUMP_TEXT_COLOR_YELLOW := 53,
 
-	COLOR_ERROR := 38,
-	COLOR_ALERT := 53
+	GUMP_TEXT_COLOR_ERROR := 38,
+	GUMP_TEXT_COLOR_ALERT := 53
 endenum
