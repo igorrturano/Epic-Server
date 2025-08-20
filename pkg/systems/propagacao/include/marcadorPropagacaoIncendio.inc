@@ -35,11 +35,12 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
     this.catalogoDanoBase := MontaCatalogoDano();
     this.aceleradorContraLatente := cint(propagacaoConfig["incendio"].contraLatente);
+    this.tileProspectado := this.Prospectar();
   endfunction
 
   function EfetuarCiclo(this)
     if(!this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
-      var tileProspectado := this.Prospectar();
+      var tileProspectado := this.Prospectar(this.tileProspectado);
       this.isAcumulando := false;
 
       if(this.IsEstadoControle(CONTROLE_PROPAGACAO::ATIVO))
@@ -56,6 +57,9 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function Iniciar(this)
     this.OnAtualizaEstado();
     this.MarcarAdjacentes();
+    if(!this.tileProspectado)
+      this.tileProspectado := this.Prospectar();
+    endif
   endfunction
 
   function _EfetuarCicloAtivo(this,tileProspectado)
