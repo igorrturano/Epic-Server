@@ -29,10 +29,6 @@ class CombustivelIncendio()
     this.isExaurido := true;
   endfunction
 
-  function ConfiguraCombustivel(this, valor)
-    this.combustivel := valor;
-  endfunction
-
   function ExtraiInfoTile(this, tile)
      var splited := SplitWords(tile);
      
@@ -69,7 +65,7 @@ endclass
 
 class CombustivelEstaticos( CombustivelIncendio )
   function CombustivelEstaticos(this)
-    super(0,PROPAGACAO_COMBUSTIVEL_ESTATICOS,0);
+    super(0,COMBUSTIVEIS::ESTATICOS,0);
   endfunction
 
   function ProcuraCombustivel(this,itemMarcador, tileProspectado)
@@ -94,7 +90,7 @@ endclass
 
 class CombustivelTerreno( CombustivelIncendio )
   function CombustivelTerreno(this)
-    super(0,PROPAGACAO_COMBUSTIVEL_TERRENO,0);
+    super(0,COMBUSTIVEIS::TERRENO,0);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
@@ -118,12 +114,15 @@ endclass
 
 class CombustivelMagico( CombustivelIncendio )
   function CombustivelMagico(this)
-    super(0,PROPAGACAO_COMBUSTIVEL_MAGICO,0);
+    super(0,COMBUSTIVEIS::MAGICO,0);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
     if(!this.isExaurido)
       var magico := GetObjProperty(itemMarcador,"propPropagacao").combustivelMagico;
+      if(magico && magico != 0 && TypeOfInt(magico) != OT_STRUCT)
+        Print("Atenção: Parâmetro combustivel deve ser um struct.");
+      endif
       if(magico)
         this.EncheCombustivel( magico.combustivel,magico.fator ? magico.fator : 1);
         return this.TemCombustivel();

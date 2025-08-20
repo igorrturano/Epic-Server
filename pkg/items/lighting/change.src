@@ -86,7 +86,8 @@ program change(who, item )
 			endcase
                   
 			if(tempoDecorrido >= limiteTempo)
-				var marcador := CriaFagulhaIncendiaria(who, targ.item);
+                        targ ? targ.item : targ;
+				var marcador := CriaFagulhaIncendiaria(who, targ);
 				
 				if( who.hidden)
 					who.hidden := 0;

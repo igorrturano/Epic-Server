@@ -10,6 +10,8 @@ program controladoraPropagacao(esteItemMarcador)
 
 	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO) ;
 	var momentoInicial := ReadGameClock();
+	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+
 	Set_Event_Queue_Size(12);
 
 	var marcadorOrigem := propPropagacao.marcadorOrigem;
@@ -23,26 +25,42 @@ program controladoraPropagacao(esteItemMarcador)
 
 	var params := FabricaPropagacaoParametros();
 	params.marcador := esteItemMarcador;
+	params.momentoNascimento := momentoInicial;
 
 	var esteObjetoMarcador := MarcadorPropagacaoFabrica().Montar(params);
 
 	esteObjetoMarcador.Iniciar();
 
 	while(esteItemMarcador)
-		Sleepms(300);
-		var event := Wait_For_Event(0);
 
-		if(ReadGameClock() - momentoInicial >= 2)
-			esteObjetoMarcador.TocaSFXCaracteristico();
+		var event;
+		if(esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::DORMENTE))
+			Sleepms(esteObjetoMarcador.descansoControleDormente);
+			
+			var descanso := (esteObjetoMarcador.descansoControleDormente * propagacaoConfig["sistema"].multiplicadorDescansoDormente / 1000);
+			event := Wait_For_Event(
+							esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE)
+							? cint(descanso)
+							: 0
+						);
+		else
+			Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo));// descanso minimo
+			event := Wait_For_Event(0);
 		endif
 		
-		if(event.id == PROPAGACAO_EV_ESTIMULO)
+		if(event == EV_PROPAGACAO::TIMEOUT)
+			if(!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
+				esteObjetoMarcador.AtribuiEstadoControle(CONTROLE_PROPAGACAO::DORMENTE);
+			endif
+		elseif(event.id == EV_PROPAGACAO::ESTIMULO)
 			esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
-		elseif(event.id == PROPAGACAO_EV_COMBUSTIVEL)
-			esteObjetoMarcador.InjetaCombustivel();
+		elseif(event.id == EV_PROPAGACAO::COMBUSTIVEL)
+			esteObjetoMarcador.InjetaCombustivel(event.deveResetarEstado);
+		elseif(event.id == EV_PROPAGACAO::PISAO)
+			esteObjetoMarcador.AtribuiEstadoControle(CONTROLE_PROPAGACAO::ATIVO);
 		endif
 
-		if(!esteObjetoMarcador.isMarcadorMorto)
+		if(!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
 			esteObjetoMarcador.EfetuarCiclo();
 		else
 			DestroyItem(esteItemMarcador);

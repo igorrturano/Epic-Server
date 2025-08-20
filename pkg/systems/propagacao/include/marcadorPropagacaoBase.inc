@@ -2,15 +2,11 @@
 use util;
 include ":propagacao:include/propagacao";
 
-enum tiposProspeccao
-	PROPAGACAO_PROSPECCAO_INICIAL,
-	PROPAGACAO_PROSPECCAO_CICLO,
-endenum
-
 const PROPAGACAO_TEMPERATURA_BASE := 20;
+
 class MarcadorPropagacaoBase()
-	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao)
-		
+	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento)
+		var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 		if(propPropagacao.geracao == 0)
 			
 			var posicaoAvaliada := this.AvaliarPosicao(
@@ -28,10 +24,12 @@ class MarcadorPropagacaoBase()
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
 		this.ciclosDesdeUltimoEstimulo := 0;
-		this.isMarcadorMorto := false;
 		this.isAcumulando := false;
+		this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
 		this.fatorMudancaEstado := 1; //divede o medidor de estimulo. limite
 		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50 
+		this.descansoControleDormente := cint(propagacaoConfig["sistema"].descansoMinimo) * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
+		this.momentoNascimento := momentoNascimento;
 	endfunction
 
   	//@abstract void EfetuarCiclo()
@@ -167,8 +165,8 @@ class MarcadorPropagacaoBase()
 	function DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado, geracao, estado)
 		return !marcadorPropagacaoEncontrado 
 				&& !IsLimiteGeracaoAlcancado(geracao) 
-				&& estado != ESTADO_PROPAGACAO_DORMENTE
-				&& estado != ESTADO_PROPAGACAO_LATENTE;
+				&& estado != ESTADO_PROPAGACAO::DORMENTE
+				&& estado != ESTADO_PROPAGACAO::LATENTE;
 		
 	endfunction
 
@@ -183,11 +181,10 @@ class MarcadorPropagacaoBase()
 	endfunction
 
 	function IncrementaCiclosDesdeUltimoEstimulo(this)
-		if(this.estado == ESTADO_PROPAGACAO_DORMENTE)
+		if(this.estado == ESTADO_PROPAGACAO::DORMENTE)
 			this.ciclosDormente++;
-		else
-			this.ciclosDesdeUltimoEstimulo++;
 		endif
+		this.ciclosDesdeUltimoEstimulo++;
 	endfunction
 
 	function ZeraCiclosDesdeUltimoEstimuloPositivo(this)
@@ -195,13 +192,21 @@ class MarcadorPropagacaoBase()
 		this.ciclosDormente := 0;
 	endfunction
 
-	function IsMarcadorMorto(this)
-		return this.isMarcadorMorto;
+	function IsEstadoControle(this, estadoControle)
+		return this.estadoControle == estadoControle;
+	endfunction
+
+	function IsEstadoMarcador(this, estado)
+		return this.estado == estado;
 	endfunction
 
 	function PegaPropPropagacao(this)
 		return GetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO);
 	endfunction
+
+	function AtribuiEstadoControle(this, estadoControle)
+		this.estadoControle :=  estadoControle;
+	endfunction 
 
 endclass
 

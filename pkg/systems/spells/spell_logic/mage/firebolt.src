@@ -23,12 +23,12 @@ program cast_firebolt(params)
 
 	SendSysMessage(caster, "Selecione o alvo.");
     if (!targ.IsA(POLCLASS_MOBILE))
-        if(targ.isSpiderEggSac()) 
-            CriaFagulhaIncendiaria(caster, targ);
-            return 1;
+
+        var isDisparo := TentaCriarFagulhaIncendiaria(caster,targ);
+        if(!isDisparo)
+            SendSysMessage(caster, "Alvo invalido  ou fora de visão.");
+            return 0;
         endif
-        SendSysMessage(caster, "Alvo invalido.");
-        return 0;
     endif
 
     if (!targ)

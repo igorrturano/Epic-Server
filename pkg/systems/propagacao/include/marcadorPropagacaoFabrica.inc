@@ -12,8 +12,8 @@ class MarcadorPropagacaoFabrica()
 		var propPropagacao := GetObjProperty(parametros.marcador, PROPNAME_PROP_PROPAGACAO) ;
 		if(propPropagacao)
 			case (propPropagacao.tipoPropagacao)
-				PROPAGACAO_TIPO_INCENDIO:
-					return MarcadorPropagacaoIncendio(parametros.marcador, propPropagacao);
+				PROPAGACAO_TIPO::INCENDIO:
+					return MarcadorPropagacaoIncendio(parametros.marcador, propPropagacao, parametros.momentoNascimento);
 			endcase
 		endif
 			return error{errortext := "O marcador informado não foi configurado."};
@@ -26,5 +26,6 @@ endclass
 class FabricaPropagacaoParametros()
 	function FabricaPropagacaoParametros(this)
 		this.marcador := 0;
+		this.momentoNascimento := 0;
   	endfunction
 endclass

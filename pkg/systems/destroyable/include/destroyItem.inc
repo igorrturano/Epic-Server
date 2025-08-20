@@ -185,6 +185,9 @@ function Destruir(quem,itemAlvo,fonteDano)
 		if(!descFonteDano)
 			descFonteDano := "Desconhecido";
 		endif
+		if(TypeOfInt(itemAlvo.x) == OT_UNINIT || TypeOfInt(itemAlvo.x) == OT_ERROR)
+			Print("O que diabo é isso que destrui? " + itemAlvo.desc + " " + fonteDano);
+		endif
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 		DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 	endif

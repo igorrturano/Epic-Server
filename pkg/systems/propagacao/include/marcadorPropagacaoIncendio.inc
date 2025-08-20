@@ -1,6 +1,6 @@
 use cfgfile;
 use uo;
-use Util;
+use util;
 
 include ":propagacao:include/marcadorPropagacaoBase";
 include ":propagacao:include/propagacao";
@@ -15,8 +15,8 @@ include ":nature:include/nature";
 
 class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   
-  function MarcadorPropagacaoIncendio(this, esteItemMarcador, propPropagacao)
-    super(esteItemMarcador,propPropagacao); 
+  function MarcadorPropagacaoIncendio(this, esteItemMarcador, propPropagacao, momentoNascimento)
+    super(esteItemMarcador,propPropagacao, momentoNascimento); 
 
     esteItemMarcador.usescript := ":propagacao:dblClickMarcadorIncendio";
 
@@ -24,9 +24,9 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(propPropagacao.origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
     this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
     this.combustiveis := dictionary{
-                            PROPAGACAO_COMBUSTIVEL_ESTATICOS -> CombustivelEstaticos(), 
-                            PROPAGACAO_COMBUSTIVEL_TERRENO -> CombustivelTerreno(), 
-                            PROPAGACAO_COMBUSTIVEL_MAGICO -> CombustivelMagico()
+                            COMBUSTIVEIS::ESTATICOS -> CombustivelEstaticos(), 
+                            COMBUSTIVEIS::TERRENO -> CombustivelTerreno(), 
+                            COMBUSTIVEIS::MAGICO -> CombustivelMagico()
                           };
     this.estimuloLimite := propagacaoConfig["incendio"].estimuloLimite;
     this.ciclosDormenteLimite := propagacaoConfig["incendio"].ciclosDormenteLimite;
@@ -37,88 +37,113 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.aceleradorContraLatente := cint(propagacaoConfig["incendio"].contraLatente);
   endfunction
 
-  function TocaSFXCaracteristico(this)
-    if(this.estado >= ESTADO_PROPAGACAO_PRINCIPIO)
-      var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados[cstr(this.estado)];
-      if(efeitosPersonalizados.sfx != -1)
-        PlaySoundEffect( this.esteItemMarcador,efeitosPersonalizados.sfx ? efeitosPersonalizados.sfx : SFX_1DE);
+  function EfetuarCiclo(this)
+    if(!this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
+      var tileProspectado := this.Prospectar();
+      this.isAcumulando := false;
+
+      if(this.IsEstadoControle(CONTROLE_PROPAGACAO::ATIVO))
+        var isAlvoEncontrado := this._EfetuarCicloAtivo(tileProspectado);
+        if(!isAlvoEncontrado)
+          this.estadoControle := CONTROLE_PROPAGACAO::DORMENTE;
+        endif
+      else
+        this._EfetuarCicloDormente(tileProspectado);
       endif
     endif
   endfunction
 
   function Iniciar(this)
-    this.AtualizaComportamentoMarcador();
+    this.OnAtualizaEstado();
     this.MarcarAdjacentes();
   endfunction
 
-  function EfetuarCiclo(this)
-    if(!this.isMarcadorMorto)
-      var tileProspectado := this.Prospectar();
-      this.isAcumulando := false;
+  function _EfetuarCicloAtivo(this,tileProspectado)
+    var isAlvoEncontrado := this.ProcessaAlvos(tileProspectado);
 
-      this.ProcessaTile(tileProspectado);
+    if(this.momentoNascimento % this.descansoControleDormente == 0)
+      this._ExecutaRotinaPropagacao(tileProspectado);
+    endif
 
-      if(this.isAcumulando && this.estado > ESTADO_PROPAGACAO_LATENTE)
-          this.RecebeEstimulo(this.estado);
-      else
-          var valorEstimulo := -this.estado;
-          if(this.ciclosDesdeUltimoEstimulo > 0 && this.estado == ESTADO_PROPAGACAO_LATENTE)
-            valorEstimulo -= this.ciclosDesdeUltimoEstimulo * this.aceleradorContraLatente;
-          endif 
-          this.RecebeEstimulo(valorEstimulo);
-          this.IncrementaCiclosDesdeUltimoEstimulo();
-      endif
+    return isAlvoEncontrado;
+  endfunction
 
-      if(this.DevePropagar())
-        this.Propagar();
-        this.EnviaEstimulo(this.estado);
-      endif
+  function _EfetuarCicloDormente(this, tileProspectado)
+    this._ProcessaAlvos(tileProspectado);
+    this._ExecutaRotinaPropagacao(tileProspectado);
+  endfunction
+
+  function _ExecutaRotinaPropagacao(this, tileProspectado)
+    if(!this.isAcumulando)
+      this._ProcessaCombustivel(tileProspectado);
+    endif
+    this._ProcessaClima();
+    this._ProcessaEstimulos();
+    this.TocaSFXCaracteristico();
+  endfunction
+
+  function _ProcessaEstimulos(this)
+    
+    this._ProcessaAutoEstimulo();
+
+    if(this.DevePropagar())
+      this.Propagar();
+      this.EnviaEstimulo(this.estado);
     endif
   endfunction
 
-  function ProcessaTile(this, tileProspectado)
+  function _ProcessaAutoEstimulo(this)
+    if(this.isAcumulando && this.estado > ESTADO_PROPAGACAO::LATENTE)
+        this.RecebeEstimulo(this.estado);
+    else
+        var valorEstimulo := -this.estado;
+        if(this.ciclosDesdeUltimoEstimulo > 0 && this.estado == ESTADO_PROPAGACAO::LATENTE && !this.isAcumulando)
+          valorEstimulo -= this.ciclosDesdeUltimoEstimulo * this.aceleradorContraLatente;
+        endif 
+        this.RecebeEstimulo(valorEstimulo);
+        this.IncrementaCiclosDesdeUltimoEstimulo();
+    endif
+  endfunction
 
+  function _ProcessaAlvos(this, tileProspectado)
     var danoDado := this.PegaCatalogoDano()[cstr(this.estado)]; 
     var rolagemDano := RandomDiceRoll(danoDado);
-
+    var isAlvoEncontrado := false;
     foreach item in (tileProspectado.PegaItensEncontrados())
       Sleepms(2);
 
       if( item.serial == this.esteItemMarcador.serial) continue; endif
 
-      if(item.IsMarcadorTipo(PROPAGACAO_TIPO_INCENDIO) 
+      if(item.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO) 
         && item.serial != this.esteItemMarcador.serial 
-        && this.estado > ESTADO_PROPAGACAO_DORMENTE)
+        && this.estado > ESTADO_PROPAGACAO::DORMENTE)
         DestroyItem(item); // Marreta contra condição de corrida nr 2;
         continue;
       endif
 
       this.isAcumulando := this._AvaliaInflamabilidade(item);
-      if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
+      if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
+        isAlvoEncontrado := true;
         DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
       endif
     endforeach
 
     foreach mobile in (tileProspectado.PegaMobilesEncontrados())
       Sleepms(2);
-      if(this.estado > ESTADO_PROPAGACAO_DORMENTE)
+      if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
+        isAlvoEncontrado := true;
         DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
       endif
     endforeach
-    
-    if(!this.isAcumulando)
-      this._VerificaCombustivel(TileProspectado); //No caso de itens, o combustivel é a propria vida do item, como explorado acima.
-      this._VerificaClima();
-    endif
 
+    return isAlvoEncontrado;
   endfunction
 
-  function _VerificaClima(this)
+  function _ProcessaClima(this)
     var clima := GetGlobalProperty("weather");
     var chuvaLeve := 0;
-    
     if(!this.isMarcadorCoberto)
-        if(cint(clima) == chuvaLeve && this.estado <= ESTADO_PROPAGACAO_PRINCIPIO)
+        if(cint(clima) == chuvaLeve && this.estado <= ESTADO_PROPAGACAO::PRINCIPIO)
           this.isAcumulando := false;
         elseif(cint(clima) > chuvaLeve )
           this.isAcumulando := false;
@@ -126,21 +151,24 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
   endfunction
 
-  function _VerificaCombustivel(this,tileProspectado)
+  function _ProcessaCombustivel(this,tileProspectado)
       foreach tipoCombustivel in (this.combustiveis)
         Sleepms(2);
         
         if(tipoCombustivel.TemCombustivel())
           this._ConsomeCombustivel(tipoCombustivel);
+          return 1;
           break;
         else
           var temCombustivel := tipoCombustivel.ProcuraCombustivel(this.esteItemMarcador,tileProspectado);
           if(temCombustivel)
             this._ConsomeCombustivel(tipoCombustivel);
-            break;
+            return 1;
           endif
         endif
       endforeach
+
+      return 0;
   endfunction
 
   function _ConsomeCombustivel(this, tipoCombustivel)
@@ -149,8 +177,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.isAcumulando := true;
   endfunction
 
-  function InjetaCombustivel(this)
-    this.combustiveis.insere(PROPAGACAO_COMBUSTIVEL_MAGICO,CombustivelMagico());
+  function InjetaCombustivel(this, deveResetarEstado)
+    this.combustiveis.insert(COMBUSTIVEIS::MAGICO,CombustivelMagico());
+    if(deveResetarEstado)
+      this.AtribuiEstado(this.PegaPropPropagacao().estadoInicial);
+    endif
     this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(this.PegaPropPropagacao().origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
   endfunction
 
@@ -178,8 +209,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
 
     if(valor <= 0)
-      if(this.ciclosDormente >= cint(this.ciclosDormenteLimite) && this.estado == ESTADO_PROPAGACAO_DORMENTE)
-        this.isMarcadorMorto := true;
+      if(this.ciclosDormente >= cint(this.ciclosDormenteLimite) && this.estado == ESTADO_PROPAGACAO::DORMENTE)
+        this.estadoControle := CONTROLE_PROPAGACAO::MORTO;
       endif
       if(valor == 0)
         return 1;
@@ -201,10 +232,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _DeveInverterEstimulo(this, valorEstimulo, isRemetenteAcumulando)
-    if(isRemetenteAcumulando && !this.isAcumulando && this.estado > ESTADO_PROPAGACAO_LATENTE && valorEstimulo > 0)
+    if(isRemetenteAcumulando && !this.isAcumulando && this.estado > ESTADO_PROPAGACAO::LATENTE && valorEstimulo > 0)
       return true;
     elseif(!isRemetenteAcumulando && !this.isAcumulando && valorEstimulo > 0)
-      if(this.estado > ESTADO_PROPAGACAO_LATENTE)
+      if(this.estado > ESTADO_PROPAGACAO::LATENTE)
         return true;
       endif
     endif
@@ -213,13 +244,13 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function EnviaEstimulo(this, valor)
     foreach adjacente in (this.marcadoresAdjacentes)
-      Sleepms(2);
+      Sleepms(RandomIntMinMax(20, 80));
       var propAdjacente := GetObjProperty(adjacente, PROPNAME_PROP_PROPAGACAO);
       var pidAdjacente := GetProcess(propAdjacente.esteMarcadorPid);
 
       if(pidAdjacente)
         pidAdjacente.SendEvent(struct{
-                      id := PROPAGACAO_EV_ESTIMULO, 
+                      id := EV_PROPAGACAO::ESTIMULO, 
                       valor := valor, 
                       isAcumulando := this.isAcumulando, 
                       estado := this.estado});
@@ -228,23 +259,43 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endforeach
   endfunction
 
+  function AtribuiEstado(this, valor)
+    var valorAntigo := this.estado;
+    var isMaximo := valor > ESTADO_PROPAGACAO::INTENSO;
+    var isMinimo := valor < ESTADO_PROPAGACAO::DORMENTE;
+
+    if(valor > ESTADO_PROPAGACAO::INTENSO)
+      valor :=  ESTADO_PROPAGACAO::INTENSO;
+    else
+      if( valor < ESTADO_PROPAGACAO::DORMENTE)
+        valor := ESTADO_PROPAGACAO::DORMENTE;
+      endif
+    endif
+
+    this.estado := valor;
+    if(valor  != valorAntigo)
+      this.OnAtualizaEstado();
+      var prop := this.PegaPropPropagacao();
+      prop.lerEstadoAtual := this.estado;
+      SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
+      return 1;
+    endif
+    return 0;
+  endfunction
+
   function AtualizaEstado(this);
     this.limiteEstimuloEstadoSuperior := _CalculaLimiteEstimuloSuperior(this);
     this.limiteEstimuloEstadoInferior := _CalculaLimiteEstimuloInferior(this);
-    if(this._isMedidorAcimaLimiteEstado())
+
+    if(this._isMedidorAcimaLimiteEstado())  
       var valorAvanco := this._ObtemQuantidadeAvancoEstado();
     
       if(this._DeveAvancarEstado(valorAvanco))
 
         var novoValorEstado := this.estado + valorAvanco;
-        var isMaximo := novoValorEstado > ESTADO_PROPAGACAO_INTENSO;
-        this.estado := isMaximo ? ESTADO_PROPAGACAO_INTENSO : novoValorEstado;
+        var isEstadoMudado := AtribuiEstado(this, novoValorEstado);
 
-        if(!isMaximo || valorAvanco > 1)
-          this.OnAtualizaEstado();
-        endif
-
-        this.medidorEstimulo := isMaximo ? this.limiteEstimuloEstadoSuperior : 0;
+        this.medidorEstimulo := 0;
       else
         this.medidorEstimulo := this.limiteEstimuloEstadoSuperior;
       endif
@@ -255,25 +306,17 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this._DeveRegredirEstado(valorRegresso))
 
         var novoValorEstado := this.estado + valorRegresso;
-        var isMinimo := novoValorEstado < ESTADO_PROPAGACAO_DORMENTE;
-        this.estado := isMinimo ? ESTADO_PROPAGACAO_DORMENTE : novoValorEstado;
-       
-        if(!isMinimo || valorRegresso < 1)
-           this.OnAtualizaEstado();
-        endif
+        var isEstadoMudado := AtribuiEstado(this, novoValorEstado);
 
-        this.medidorEstimulo := isMinimo ? this.limiteEstimuloEstadoInferior : 0;
+        this.medidorEstimulo := 0;
       else
         this.medidorEstimulo := this.limiteEstimuloEstadoInferior;
       endif
     endif
   endfunction
-
+  
   function OnAtualizaEstado(this)
     this.AtualizaComportamentoMarcador();
-    var prop := this.PegaPropPropagacao();
-    prop.lerEstadoAtual := this.estado;
-    SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
   endfunction
 
   function AtualizaComportamentoMarcador(this)
@@ -288,19 +331,19 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     var fogoIntenso := 0x6E26;
 
     case(this.estado)
-      ESTADO_PROPAGACAO_DORMENTE:
+      ESTADO_PROPAGACAO::DORMENTE:
         this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 900);
         break;
-      ESTADO_PROPAGACAO_LATENTE:
+      ESTADO_PROPAGACAO::LATENTE:
         this.AtualizaComportamento(efeitosPersonalizados,brasas, 0);
         break;
-      ESTADO_PROPAGACAO_PRINCIPIO:
+      ESTADO_PROPAGACAO::PRINCIPIO:
         this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 0,0,efeitoFumacinha,objtypeNuvemFumaca);
         break;
-      ESTADO_PROPAGACAO_REGULAR:
+      ESTADO_PROPAGACAO::REGULAR:
         this.AtualizaComportamento(efeitosPersonalizados,fogoMedio, 0,0,efeitoFumacinha,10,objtypeNuvemFumaca);
         break;
-      ESTADO_PROPAGACAO_INTENSO:
+      ESTADO_PROPAGACAO::INTENSO:
         this.AtualizaComportamento(efeitosPersonalizados,fogoIntenso, 0,0,efeitoFogo,100,objtypeNuvemFumaca);
         break;
     endcase
@@ -345,7 +388,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _DeveAvancarEstado(this, valorAvanco)
     var resultadoAvanco := this.estado + valorAvanco;
-    if(resultadoAvanco > ESTADO_PROPAGACAO_LATENTE)
+    if(resultadoAvanco > ESTADO_PROPAGACAO::LATENTE)
       return  this.isAcumulando;
     else
       return true;
@@ -382,7 +425,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
     var calculo := -this.estimuloLimite / this.fatorMudancaEstado;
 
-    if(this.estado <= ESTADO_PROPAGACAO_LATENTE)
+    if(this.estado <= ESTADO_PROPAGACAO::LATENTE)
       return Cint(calculo / 2);
     endif
       return Cint(calculo);
@@ -422,8 +465,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function DevePropagar(this)
     return 
-        this.estado > ESTADO_PROPAGACAO_LATENTE
-        && !this.IsMarcadorMorto;
+        this.estado > ESTADO_PROPAGACAO::LATENTE
+        && !this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO);
   endfunction
 
   function Propagar(this)
@@ -437,6 +480,15 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     else
       return this.catalogoDanoBase;
     endif 
+  endfunction
+  
+  function TocaSFXCaracteristico(this)
+    if(this.estado >= ESTADO_PROPAGACAO::PRINCIPIO)
+      var efeitosPersonalizados := this.PegaPropPropagacao().efeitosPersonalizados[cstr(this.estado)];
+      if(efeitosPersonalizados.sfx != -1)
+        PlaySoundEffect( this.esteItemMarcador,efeitosPersonalizados.sfx ? efeitosPersonalizados.sfx : SFX_1DE);
+      endif
+    endif
   endfunction
 
 endclass

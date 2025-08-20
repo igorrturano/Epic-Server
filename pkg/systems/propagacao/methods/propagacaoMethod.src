@@ -19,8 +19,20 @@ exported function Estimular(marcadorPropagacao, valorEstimulo, isPrioritario := 
             processoMarcador.clear_event_queue();
         endif
         
-        return processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo, isAcumulando := true});
+        return processoMarcador.sendevent(struct{id := EV_PROPAGACAO::ESTIMULO, valor := valorEstimulo, isAcumulando := true});
 
+    endif
+    return error { error_text := "Processo do marcador não foi encontrado."};
+endfunction
+
+exported function AtivaEventoPisado(marcadorPropagacao) 
+    
+    var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
+    if(processoMarcador)
+        processoMarcador.clear_event_queue();
+        
+        return processoMarcador.sendevent(struct{id := EV_PROPAGACAO::PISAO});
     endif
     return error { error_text := "Processo do marcador não foi encontrado."};
 endfunction
@@ -35,17 +47,12 @@ exported function LerEstado(marcadorPropagacao)
     return propPropagacao.lerEstadoAtual;
 endfunction
 
-exported function Abastecer(marcadorPropagacao, valorEstimulo := 0) 
+exported function Abastecer(marcadorPropagacao, deveResetarEstado := false) 
     var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
 
     if(processoMarcador)
         processoMarcador.clear_event_queue();
-        Set_Critical( true);
-        processoMarcador.sendevent(struct{id := PROPAGACAO_EV_COMBUSTIVEL});
-        if(valorEstimulo)
-            processoMarcador.sendevent(struct{id := PROPAGACAO_EV_ESTIMULO, valor := valorEstimulo, isAcumulando := true});
-        endif
-        Set_Critical( false);
+        processoMarcador.sendevent(struct{id := EV_PROPAGACAO::COMBUSTIVEL, deveResetarEstado := deveResetarEstado});
     endif
 
     return error { error_text := "Processo do marcador não foi encontrado."};

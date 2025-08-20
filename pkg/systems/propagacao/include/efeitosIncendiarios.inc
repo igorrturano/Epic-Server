@@ -1,4 +1,5 @@
 include ":propagacao:include/propagacao";
+include ":crafting:include/fabricacaoUtil";
 
 enum graphicsFirewall
 	GRAFICO_FIREWALL_OESTE_LESTE := 0x398C,
@@ -11,16 +12,16 @@ function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador,
 	var dict := dictionary;
 	
 	if(dadoDano)
-		catalogoDano.insert(cstr(ESTADO_PROPAGACAO_INTENSO),dadoDano);
+		catalogoDano.insert(cstr(ESTADO_PROPAGACAO::INTENSO),dadoDano);
 	endif
-	NovoEfeitoPersonalizado(dict,ESTADO_PROPAGACAO_INTENSO,direcao,0,0,0x1DE,0,0,-1);
+	NovoEfeitoPersonalizado(dict,ESTADO_PROPAGACAO::INTENSO,direcao,0,0,0x1DE,0,0,-1);
 
 	var propPropagacao := NovaPropPropagacao(
 										0,
 										conjurador.serial,
 										-1,
-										PROPAGACAO_TIPO_INCENDIO,
-										ESTADO_PROPAGACAO_INTENSO,
+										PROPAGACAO_TIPO::INCENDIO,
+										ESTADO_PROPAGACAO::INTENSO,
 										0,
 										0,
 										catalogoDano,
@@ -28,7 +29,7 @@ function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador,
 										NovoStructCombustivelMagico(combustivel,fatorInflamavel));
 
 	var muralha := CriarMarcadorPropagacao(x,y,z,realm,propPropagacao);
-	muralha.Abastecer(500);
+	muralha.Abastecer(true);
 endfunction
 
 function CriaFagulhaIncendiaria(quem, alvo)
@@ -37,6 +38,29 @@ function CriaFagulhaIncendiaria(quem, alvo)
 										alvo.y,
 										alvo.z,
 										alvo.realm, 
-										NovaPropPropagacao(0,quem.serial,-1,PROPAGACAO_TIPO_INCENDIO,ESTADO_PROPAGACAO_PRINCIPIO)
+										NovaPropPropagacao(
+												0,
+												quem.serial,
+												-1,
+												PROPAGACAO_TIPO::INCENDIO,
+												ESTADO_PROPAGACAO::PRINCIPIO,
+												0,
+												0,
+												0,
+												0,
+												0
+												)
 										);
+endfunction
+
+function TentaCriarFagulhaIncendiaria(quem, alvo)
+	if(!CheckLineOfSight(quem, alvo) || !alvo.isA(POLCLASS_ITEM))
+		return 0;
+	endif
+
+	var materialConfig := PegaMaterialConfig(GetObjProperty(alvo,PROPNAME_MATERIAL));
+	if(materialConfig.inflamavel >= 3) 
+		CriaFagulhaIncendiaria(quem, alvo);
+		return 1;
+	endif
 endfunction

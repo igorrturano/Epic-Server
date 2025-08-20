@@ -10,11 +10,13 @@ program onPisarIncendio(quem, item, lastx, lasty, lastz, lastrealm)
 	lastz == 0;
 	lastrealm == 0;
 
+	item.AtivaEventoPisado();
 	var propPropagacao := GetObjProperty(item,PROPNAME_PROP_PROPAGACAO);
 	if(propPropagacao)
 		var estado := propPropagacao.lerEstadoAtual;
 
-		if(estado > ESTADO_PROPAGACAO_DORMENTE)
+		if(estado > ESTADO_PROPAGACAO::DORMENTE)
+			Print("Estado ! " + estado + " Catalogo " + propPropagacao.catalogoDano[cstr(estado)]);
 			var danoDado := propPropagacao.catalogoDano[cstr(estado)]; 
    			var rolagemDano := RandomDiceRoll(danoDado);
 

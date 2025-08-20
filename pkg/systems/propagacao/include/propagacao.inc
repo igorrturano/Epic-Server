@@ -8,35 +8,43 @@ include "/include/epicPropNames";
 
 const MARCADOR_PROPAGACAO_OBJTYPE := 0xe13a;
 
-enum propagacaoEvents
-	PROPAGACAO_EV_TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
-	PROPAGACAO_EV_ESTIMULO,
-	PROPAGACAO_EV_COMBUSTIVEL,
-	PROPAGACAO_EV_RESFRIAMENTO,
+enum class EV_PROPAGACAO
+	TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
+	ESTIMULO,
+	COMBUSTIVEL,
+	RESFRIAMENTO,
+	PISAO,
 endenum
 
-enum tipoPropagacao
-	PROPAGACAO_TIPO_INCENDIO := 1,
+enum class PROPAGACAO_TIPO
+	INCENDIO := 1,
 endenum
 
-enum resfriamentos
-	PROPAGACAO_RESFRIAMENTO_BASICO := -10,
-	PROPAGACAO_RESFRIAMENTO_RAZOAVEL := -155,
-	PROPAGACAO_RESFRIAMENTO_INTENSO := -300,
+enum class RESFRIAMENTOS
+	BASICO := -10,
+	RAZOAVEL := -55,
+	INTENSO := -120,
 endenum
 
-enum tipoCombustiveis
-	PROPAGACAO_COMBUSTIVEL_TERRENO := "terrenoInflamavel",
-	PROPAGACAO_COMBUSTIVEL_ESTATICOS := "staticInflamavel",
-	PROPAGACAO_COMBUSTIVEL_MAGICO := "magico",
+enum class COMBUSTIVEIS
+	TERRENO := "terrenoInflamavel",
+	ESTATICOS := "staticInflamavel",
+	MAGICO := "magico",
 endenum
 
-enum estadosMarcadorPropagacao
-	ESTADO_PROPAGACAO_DORMENTE, //Só aguarda estimulo.
-	ESTADO_PROPAGACAO_LATENTE, //Danifica, mas não propaga
-	ESTADO_PROPAGACAO_PRINCIPIO, //Danifica e propaga
-	ESTADO_PROPAGACAO_REGULAR, //Danifica + e propaga
-	ESTADO_PROPAGACAO_INTENSO //Danifica ++ e propaga
+enum class ESTADO_PROPAGACAO
+	DORMENTE, //Só aguarda estimulo.
+	LATENTE, //Danifica, mas não propaga
+	PRINCIPIO, //Danifica e propaga
+	REGULAR, //Danifica + e propaga
+	INTENSO //Danifica ++ e propaga
+endenum
+
+
+enum class CONTROLE_PROPAGACAO
+	ATIVO,
+	DORMENTE,
+	MORTO
 endenum
 
 enum tipoCalculoEnergia
@@ -85,7 +93,7 @@ function IsMarcadorPropagacaoValido(marcador, z, alturaMaxima,tipoPropagacaoOrig
 	return propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem && isAoAlcance;
 endfunction
 
-function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propPropagacao, estadoInicial := ESTADO_PROPAGACAO_DORMENTE)
+function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propPropagacao, estadoInicial := ESTADO_PROPAGACAO::DORMENTE)
 	var structPropagacao := NovaPropPropagacao(
 								cint(propPropagacao.geracao) + 1,
 								propPropagacao.origem,
@@ -109,7 +117,7 @@ function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao, isAdjacente := fals
 	var marcadorExistente;
 
 	if(!isAdjacente)
-		marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,PROPAGACAO_TIPO_INCENDIO,5);
+		marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,propPropagacao.tipoPropagacao,5);
 	endif
 	
 	if(!marcadorExistente)
@@ -132,14 +140,15 @@ function ConfiguraExistente(marcadorExistente, novaProp)
 		novaProp.esteMarcadorPid := velhaProp.esteMarcadorPid;
 	endif
 	SetObjProperty(marcadorExistente,PROPNAME_PROP_PROPAGACAO,novaProp);
+	marcadorExistente.Abastecer(true);
 endfunction
 
 function NovaPropPropagacao(
 						geracao := 0,
 						origem := 0,
 						marcadorOrigem := -1,
-						tipoPropagacao := PROPAGACAO_TIPO_INCENDIO,
-						estadoInicial := ESTADO_PROPAGACAO_DORMENTE,
+						tipoPropagacao := PROPAGACAO_TIPO::INCENDIO,
+						estadoInicial := ESTADO_PROPAGACAO::DORMENTE,
 						marcadorOrigemPid := 0, 
 						esteMarcadorPid := 0,
 						catalogoDano := 0,
@@ -154,7 +163,7 @@ function NovaPropPropagacao(
 				marcadorOrigem := marcadorOrigem,
 				tipoPropagacao := tipoPropagacao, 
 				estadoInicial := estadoInicial,
-				catalogoDano := catalogoDano,
+				catalogoDano := catalogoDano ? catalogoDano : MontaCatalogoDano(),
 				efeitosPersonalizados := efeitosPersonalizados,
 				combustivelMagico := combustivelMagico,
 				isMarcadorCoberto := isMarcadorCoberto,

@@ -190,12 +190,12 @@ function SplashObject(who, bucket, targ)
 		if ((targ.objtype >= 14732) && (targ.objtype <= 14746))
 			PrintTextAbove(targ, "*O fogo apaga*");
 			DestroyItem(targ);
-		elseif(targ.IsMarcadorTipo(PROPAGACAO_TIPO_INCENDIO))
+		elseif(targ.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
 			var marcadoresIncendio := ListItemsNearLocationOfType(targ.x,targ.y,targ.z,1,MARCADOR_PROPAGACAO_OBJTYPE,targ.realm);
 
 			foreach marcador in marcadoresIncendio
 				Sleepms(2);
-				marcador.Estimular(PROPAGACAO_RESFRIAMENTO_RAZOAVEL, true);
+				marcador.Estimular(RESFRIAMENTOS::RAZOAVEL, true);
 			endforeach
 		elseif (targ.objtype == 3555)
 			PrintTextAbove(targ, "*A fogueira apaga");
