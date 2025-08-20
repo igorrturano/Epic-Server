@@ -7,7 +7,7 @@ class ControlTextBox(Control)
 	var _value;
 	var _maxLength;
 
-	function ControlTextBox(this, name, x, y, width, height, textColor := 0, value := 0, maxLength := 0, gumpId := 0)
+	function ControlTextBox(this, name, x, y, width, height := 0, textColor := 0, value := 0, maxLength := 0, gumpId := 0)
 		Super(GUMP_CONTROL::TEXTBOX, name, x, y, gumpId);
 		this._width := width;
 		this._height := height;
@@ -57,7 +57,7 @@ class ControlTextBox(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFEAddTextBox(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
+		GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetHeight(), this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
 	endfunction
 
 	function ToString(this)

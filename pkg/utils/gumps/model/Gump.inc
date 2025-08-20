@@ -34,7 +34,8 @@ class Gump()
 			GUMP_CONTROL::IMAGETILED -> array{},
 			GUMP_CONTROL::BUTTON -> array{},
 			GUMP_CONTROL::CHECKBOX -> array{},
-			GUMP_CONTROL::RADIOBUTTON -> array{}
+			GUMP_CONTROL::RADIOBUTTON -> array{},
+			GUMP_CONTROL::TEXTBOX -> array{}
 		};
 
 	endfunction
@@ -118,6 +119,8 @@ class Gump()
 			id := GUMP_ID_REFERENCE::CHECKBOX + id + this._controls[GUMP_CONTROL::CHECKBOX].size();
 		elseif (control.GetType() == GUMP_CONTROL::RADIOBUTTON)
 			id := GUMP_ID_REFERENCE::RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
+		elseif (control.GetType() == GUMP_CONTROL::TEXTBOX)
+			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
 		endif
 
 		control.SetGumpId(id);
@@ -179,6 +182,8 @@ class Gump()
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);
 		elseif (gumpResult[0] < GUMP_ID_REFERENCE::RADIOBUTTON + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::RADIOBUTTON][gumpResult[0]-GUMP_ID_REFERENCE::RADIOBUTTON]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXTBOX + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTBOX][gumpResult[0]-GUMP_ID_REFERENCE::TEXTBOX]);
 		else
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
 		endif
@@ -205,5 +210,6 @@ enum class GUMP_ID_REFERENCE
 	IMAGETILED := 5000,
 	BUTTON := 6000,
 	CHECKBOX := 7000,
-	RADIOBUTTON := 8000
+	RADIOBUTTON := 8000,
+	TEXTBOX := 9000
 endenum
