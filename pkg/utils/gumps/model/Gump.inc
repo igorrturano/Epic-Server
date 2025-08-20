@@ -1,7 +1,7 @@
 include ":gumps:epicGumps";
 include ":gumps:autoClose";
-include ":gumps:model/Control";
-include ":gumps:model/EventHandler";
+include ":gumps:model/Control/Control";
+include ":gumps:model/Event/EventHandler";
 
 class Gump()
 	var _parent;
