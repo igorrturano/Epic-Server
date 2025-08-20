@@ -79,5 +79,7 @@ enum class GUMP_CONTROL
 
 	BUTTON := "button",
 	RADIOBUTTON := "radiobutton",
-	CHECKBOX := "checkbox"
+	CHECKBOX := "checkbox",
+
+	TEXTBOX := "textbox"
 endenum
