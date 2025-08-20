@@ -6,7 +6,7 @@ class ControlImageGumpTiled(ControlImageGump)
 
 	function ControlImageGumpTiled(this, name, x, y, width, height, imageId, color := 0, gumpId := 0)
 		Super(name, x, y, imageId, color, gumpId);
-		this._type := GUMP_CONTROL::IMAGEGUMP;
+		this._type := GUMP_CONTROL::IMAGEGUMPTILED;
 		this._width := width;
 		this._height := height;
 	endfunction
@@ -29,5 +29,17 @@ class ControlImageGumpTiled(ControlImageGump)
 
 	function SelfCreate(this, byRef gump)
 		GFGumpPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+	endfunction
+
+	function ToString(this)
+		return "ControlImageGumpTiled(name=" + this._GetName()
+			+ ", x=" + this.GetX()
+			+ ", y=" + this.GetY()
+			+ ", width=" + this.GetWidth()
+			+ ", height=" + this.GetHeight()
+			+ ", imageId=" + this.GetImageId()
+			+ ", color=" + this.GetColor()
+			+ ", gumpId=" + this.GetGumpId()
+			+ ")";
 	endfunction
 endclass
