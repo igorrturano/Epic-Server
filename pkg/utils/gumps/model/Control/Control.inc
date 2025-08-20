@@ -57,7 +57,7 @@ class Control()
 		this._y := y;
 	endfunction
 
-	function SelfCreate(this, gump) endfunction
+	function SelfCreate(this, byRef gump) endfunction
 
 	function ToString(this)
 		return "Control(name=" + this._GetName()

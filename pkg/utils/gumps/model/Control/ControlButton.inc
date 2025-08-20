@@ -48,7 +48,7 @@ class ControlButton(Control)
 		this._action := action;
 	endfunction
 
-	function SelfCreate(this, byref gump)
+	function SelfCreate(this, byRef gump)
 		GFAddButton(gump, this.GetX(), this.GetY(), this.GetImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
 	endfunction
 

@@ -27,7 +27,7 @@ class ControlText(Control)
 		this._value := value;
 	endfunction
 
-	function SelfCreate(this, byref gump)
+	function SelfCreate(this, byRef gump)
 		GFTextLine(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
 	endfunction
 
