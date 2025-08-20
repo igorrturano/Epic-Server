@@ -191,11 +191,6 @@ function GFEAddTextBox(byref gump, x, y, width, height := 16, text_color := 53, 
 	return val;
 endfunction
 
-function GFEAdd(byref gump)
-
-endfunction
-
-
 /* 
  * CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)
  *
