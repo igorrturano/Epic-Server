@@ -28,7 +28,7 @@ class ControlTextCropped(ControlText)
 		this._height := height;
 	endfunction
 
-	function SelfCreate(this, byref gump)
+	function SelfCreate(this, byRef gump)
 		GFTextCrop(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
 	endfunction
 
