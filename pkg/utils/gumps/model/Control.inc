@@ -72,10 +72,11 @@ endclass
 enum class GUMP_CONTROL
 	TEXT := "text",
 	TEXTCROPPED := "textcropped",
+	IMAGEGUMP := "imagegump",
+	IMAGETILE := "imagetile",
 	TOOLTIP := "tooltip",
 
 	BUTTON := "button",
-	IMAGE := "image",
 	RADIOBUTTON := "radiobutton",
 	CHECKBOX := "checkbox"
 endenum
