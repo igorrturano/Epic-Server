@@ -73,7 +73,8 @@ enum class GUMP_CONTROL
 	TEXT := "text",
 	TEXTCROPPED := "textcropped",
 	IMAGEGUMP := "imagegump",
-	IMAGETILE := "imagetile",
+	IMAGEGUMPTILED := "imagegumptiled",
+	IMAGETILED := "imagetiled",
 	TOOLTIP := "tooltip",
 
 	BUTTON := "button",

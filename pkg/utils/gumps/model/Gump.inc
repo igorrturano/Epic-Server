@@ -30,7 +30,8 @@ class Gump()
 			GUMP_CONTROL::TEXTCROPPED -> array{},
 			GUMP_CONTROL::TOOLTIP -> array{},
 			GUMP_CONTROL::IMAGEGUMP -> array{},
-			GUMP_CONTROL::IMAGETILE -> array{},
+			GUMP_CONTROL::IMAGEGUMPTILED -> array{},
+			GUMP_CONTROL::IMAGETILED -> array{},
 			GUMP_CONTROL::BUTTON -> array{},
 			GUMP_CONTROL::CHECKBOX -> array{},
 			GUMP_CONTROL::RADIOBUTTON -> array{}
@@ -100,21 +101,23 @@ class Gump()
 		var id := 1;
 		
 		if (control.GetType() == GUMP_CONTROL::TEXT)
-			id := GUMP_ID_REFERENCE_TEXT + id + this._controls[GUMP_CONTROL::TEXT].size();
+			id := GUMP_ID_REFERENCE::TEXT + id + this._controls[GUMP_CONTROL::TEXT].size();
 		elseif (control.GetType() == GUMP_CONTROL::TEXTCROPPED)
-			id := GUMP_ID_REFERENCE_TEXTCROPPED + id + this._controls[GUMP_CONTROL::TEXTCROPPED].size();
+			id := GUMP_ID_REFERENCE::TEXTCROPPED + id + this._controls[GUMP_CONTROL::TEXTCROPPED].size();
 		elseif (control.GetType() == GUMP_CONTROL::TOOLTIP)
-			id := GUMP_ID_REFERENCE_TOOLTIP + id + this._controls[GUMP_CONTROL::TOOLTIP].size();
+			id := GUMP_ID_REFERENCE::TOOLTIP + id + this._controls[GUMP_CONTROL::TOOLTIP].size();
 		elseif (control.GetType() == GUMP_CONTROL::IMAGEGUMP)
-			id := GUMP_ID_REFERENCE_IMAGEGUMP + id + this._controls[GUMP_CONTROL::IMAGEGUMP].size();
-		elseif (control.GetType() == GUMP_CONTROL::IMAGETILE)
-			id := GUMP_ID_REFERENCE_IMAGETILE + id + this._controls[GUMP_CONTROL::IMAGETILE].size();
+			id := GUMP_ID_REFERENCE::IMAGEGUMP + id + this._controls[GUMP_CONTROL::IMAGEGUMP].size();
+		elseif (control.GetType() == GUMP_CONTROL::IMAGEGUMPTILED)
+			id := GUMP_ID_REFERENCE::IMAGEGUMPTILED + id + this._controls[GUMP_CONTROL::IMAGEGUMPTILED].size();
+		elseif (control.GetType() == GUMP_CONTROL::IMAGETILED)
+			id := GUMP_ID_REFERENCE::IMAGETILED + id + this._controls[GUMP_CONTROL::IMAGETILED].size();
 		elseif (control.GetType() == GUMP_CONTROL::BUTTON)
-			id := GUMP_ID_REFERENCE_BUTTON + id + this._controls[GUMP_CONTROL::BUTTON].size();
+			id := GUMP_ID_REFERENCE::BUTTON + id + this._controls[GUMP_CONTROL::BUTTON].size();
 		elseif (control.GetType() == GUMP_CONTROL::CHECKBOX)
-			id := GUMP_ID_REFERENCE_CHECKBOX + id + this._controls[GUMP_CONTROL::CHECKBOX].size();
+			id := GUMP_ID_REFERENCE::CHECKBOX + id + this._controls[GUMP_CONTROL::CHECKBOX].size();
 		elseif (control.GetType() == GUMP_CONTROL::RADIOBUTTON)
-			id := GUMP_ID_REFERENCE_RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
+			id := GUMP_ID_REFERENCE::RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
 		endif
 
 		control.SetGumpId(id);
@@ -142,7 +145,6 @@ class Gump()
 	function Show(this)
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 
-		
 		foreach controlGroup in (this._controls)
 			CreateControls(this._gump, controlGroup);
 		endforeach
@@ -159,22 +161,24 @@ class Gump()
 
 		if (gumpResult[0] == 0)
 			eventHandled := EventHandler("CLOSED GUMP");
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_TEXT + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][gumpResult[0]]-GUMP_ID_REFERENCE_TEXT);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_TEXTCROPPED + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTCROPPED][gumpResult[0]-GUMP_ID_REFERENCE_TEXTCROPPED]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_TOOLTIP + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TOOLTIP][gumpResult[0]-GUMP_ID_REFERENCE_TOOLTIP]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_IMAGEGUMP + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMP][gumpResult[0]-GUMP_ID_REFERENCE_IMAGEGUMP]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_IMAGETILE + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILE][gumpResult[0]-GUMP_ID_REFERENCE_IMAGETILE]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_BUTTON + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][gumpResult[0]-GUMP_ID_REFERENCE_BUTTON]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_CHECKBOX + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][gumpResult[0]-GUMP_ID_REFERENCE_CHECKBOX]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE_RADIOBUTTON + GUMP_ID_REFERENCE_LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::RADIOBUTTON][gumpResult[0]-GUMP_ID_REFERENCE_RADIOBUTTON]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTCROPPED][gumpResult[0]-GUMP_ID_REFERENCE::TEXTCROPPED]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TOOLTIP + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TOOLTIP][gumpResult[0]-GUMP_ID_REFERENCE::TOOLTIP]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMP + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMP][gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMP]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMPTILED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMPTILED][gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMPTILED]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGETILED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILED][gumpResult[0]-GUMP_ID_REFERENCE::IMAGETILED]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::BUTTON + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][gumpResult[0]-GUMP_ID_REFERENCE::BUTTON]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::CHECKBOX + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);
+		elseif (gumpResult[0] < GUMP_ID_REFERENCE::RADIOBUTTON + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::RADIOBUTTON][gumpResult[0]-GUMP_ID_REFERENCE::RADIOBUTTON]);
 		else
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
 		endif
@@ -190,15 +194,16 @@ class Gump()
 	endfunction
 endclass
 
-enum GUMP_ID_REFERENCE
-	GUMP_ID_REFERENCE_LIMIT := 1000,
+enum class GUMP_ID_REFERENCE
+	LIMIT := 1000,
 	
-	GUMP_ID_REFERENCE_TEXT := 0,
-	GUMP_ID_REFERENCE_TEXTCROPPED := 1000,
-	GUMP_ID_REFERENCE_TOOLTIP := 2000,
-	GUMP_ID_REFERENCE_IMAGEGUMP := 3000,
-	GUMP_ID_REFERENCE_IMAGETILE := 4000,
-	GUMP_ID_REFERENCE_BUTTON := 5000,
-	GUMP_ID_REFERENCE_CHECKBOX := 6000,
-	GUMP_ID_REFERENCE_RADIOBUTTON := 7000
+	TEXT := 0,
+	TEXTCROPPED := 1000,
+	TOOLTIP := 2000,
+	IMAGEGUMP := 3000,
+	IMAGEGUMPTILED := 4000,
+	IMAGETILED := 5000,
+	BUTTON := 6000,
+	CHECKBOX := 7000,
+	RADIOBUTTON := 8000
 endenum
