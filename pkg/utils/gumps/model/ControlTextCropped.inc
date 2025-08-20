@@ -30,7 +30,6 @@ class ControlTextCropped(ControlText)
 
 	function SelfCreate(this, byref gump)
 		GFTextCrop(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
-		
 	endfunction
 
 	function ToString(this)
