@@ -57,7 +57,7 @@ class ControlTextBox(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
+		this._value := GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
 	endfunction
 
 	function ToString(this)
