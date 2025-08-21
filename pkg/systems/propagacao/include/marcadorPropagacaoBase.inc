@@ -32,9 +32,16 @@ class MarcadorPropagacaoBase()
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 
-  	//@abstract void EfetuarCiclo()
-  	//@abstract void RecebeEstimulo( valor )
-  	//@abstract void EnviaEstimulo( valor )
+	//@abstract 
+	function EfetuarCiclo() endfunction
+  	//@abstract 
+	function RecebeEstimulo( valorEstimulo , isAcumulando ) endfunction
+  	//@abstract 
+	function EnviaEstimulo(valorEstimulo) endfunction
+  	//@abstract 
+	function InjetaCombustivel(deveResetarEstado) endfunction
+
+	
 
 	function MarcarAdjacentes(this)
 		for deslocamentoX := -1 to 1
