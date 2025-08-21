@@ -5,8 +5,8 @@ class ImageTiled(Control)
 	var _width;
 	var _height;
 
-	function ImageTiled(this, name, x, y, width, height, imageId, gumpId := 0)
-		Super(GUMP_CONTROL::IMAGETILED, name, x, y, gumpId);
+	function ImageTiled(this, name, x, y, width, height, imageId)
+		Super(GUMP_CONTROL::IMAGETILED, name, x, y);
 		this._imageId := imageId;
 		this._width := width;
 		this._height := height;
@@ -38,6 +38,7 @@ class ImageTiled(Control)
 
 	function SelfCreate(this, byRef gump)
 		GFPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

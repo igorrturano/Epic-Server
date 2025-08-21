@@ -8,9 +8,9 @@ include ":gumpDesigner:Control/ImageGumpTiled";
 include ":gumpDesigner:Control/ImageTiled";
 include ":gumpDesigner:Control/TextBox";
 include ":gumpDesigner:Control/Tooltip";
+include ":gumpDesigner:Control/CheckBox";
+include ":gumpDesigner:Control/RadioButton";
 include ":achievements:model/AchievementCombat";
-
-const MAX_XP := 5000; // XP máximo para a barra de progresso
 
 function ShowAchievementsGump(who)
 	var gump := Gump(who, "Progresso de Conquistas", 680, 400);
@@ -26,8 +26,7 @@ function ShowAchievementsGump(who)
 	var button3 := Button("Button3", 30, 130, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_UNPRESSED, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_PRESSED, GF_CLOSE_BTN);
 
 	var imageGump1 := ImageGump("ImageGump1", 30, 200, 0x775f);
-	var tooltipText1 := TooltipText("TooltipText1", "Testando Tooltip: Isso aqui é uma imagem!!!");
-	imageGump1.SetTooltip(tooltipText1);
+	imageGump1.SetTooltip(TooltipText("TooltipText1", "Testando Tooltip: Isso aqui é uma imagem!!!"));
 
 	var imageGumpTiled1 := ImageGumpTiled("ImageGumpTiled1", 100, 200, 100, 100, 0x775f);
 	var imageTiled1 := ImageTiled("ImageTiled2", 400, 200, 100, 100, 0x775f);
@@ -35,18 +34,23 @@ function ShowAchievementsGump(who)
 	var text4 := Text("Label4", 45, 150, "Digite seu nome aqui: ", GUMP_TEXT_COLOR::COLOR_RED);
 	var textBox1 := TextBox("TextBox1", 180, 150, 200, 1, GUMP_TEXT_COLOR::COLOR_YELLOW);
 
+	var checkBox1 := CheckBox("CheckBox1", 45, 180, GUMP_CONTROL_CHECKBOX_IMAGE::DEFAULT_UNCHECKED, GUMP_CONTROL_CHECKBOX_IMAGE::DEFAULT_CHECKED);
+
+	var radioButton1 := RadioButton("RadioButton1", 45, 210, GUMP_CONTROL_RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, GUMP_CONTROL_RADIOBUTTON_IMAGE::DEFAULT_PRESSED);
+
 	gump.AddControl(text1);
 	gump.AddControl(text2);
 	gump.AddControl(text3);
 	gump.AddControl(button1);
 	gump.AddControl(button2);
 	gump.AddControl(button3);
-	gump.AddControl(imageGump1);
-	gump.AddControl(imageGump2);
+	// gump.AddControl(imageGump1);
 	// gump.AddControl(imageGumpTiled1);
 	// gump.AddControl(imageTiled1);
 	gump.AddControl(text4);
 	gump.AddControl(textBox1);
+	gump.AddControl(checkBox1);
+	gump.AddControl(radioButton1);
 
 	gump.Show();
 
