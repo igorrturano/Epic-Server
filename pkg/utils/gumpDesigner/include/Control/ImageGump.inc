@@ -7,8 +7,8 @@ class ImageGump(Control)
 	var _color;
 	var _isResizable;
 
-	function ImageGump(this, name, x, y, imageId, width := 0, height := 0, color := 0, gumpId := 0)
-		Super(GUMP_CONTROL::IMAGEGUMP, name, x, y, gumpId);
+	function ImageGump(this, name, x, y, imageId, width := 0, height := 0, color := 0)
+		Super(GUMP_CONTROL::IMAGEGUMP, name, x, y);
 		this._imageId := imageId;
 		this._width := width;
 		this._height := height;

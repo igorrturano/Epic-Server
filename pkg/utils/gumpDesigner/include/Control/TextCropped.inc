@@ -4,8 +4,8 @@ class TextCropped(Text)
 	var _width;
 	var _height;
 
-	function TextCropped(this, name, x, y, width, height, value, color := 0, gumpId := 0)
-		Super(name, x, y, value, color, gumpId);
+	function TextCropped(this, name, x, y, width, height, value, color := 0)
+		Super(name, x, y, value, color);
 		this._type := GUMP_CONTROL::TEXTCROPPED;
 		
 		this._width := width;
@@ -30,6 +30,7 @@ class TextCropped(Text)
 
 	function SelfCreate(this, byRef gump)
 		GFTextCrop(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

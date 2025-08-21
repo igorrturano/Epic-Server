@@ -4,8 +4,8 @@ class Text(Control)
 	var _color;
 	var _value;
 
-	function Text(this, name, x, y, value, color := 0, gumpId := 0)
-		Super(GUMP_CONTROL::TEXT, name, x, y, gumpId);
+	function Text(this, name, x, y, value, color := 0)
+		Super(GUMP_CONTROL::TEXT, name, x, y);
 		
 		this._color := color;
 		this._value := value;
@@ -29,6 +29,7 @@ class Text(Control)
 
 	function SelfCreate(this, byRef gump)
 		GFTextLine(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

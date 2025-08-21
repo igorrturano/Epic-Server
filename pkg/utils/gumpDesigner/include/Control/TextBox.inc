@@ -7,8 +7,8 @@ class TextBox(Control)
 	var _value;
 	var _maxLength;
 
-	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0, gumpId := 0)
-		Super(GUMP_CONTROL::TEXTBOX, name, x, y, gumpId);
+	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0)
+		Super(GUMP_CONTROL::TEXTBOX, name, x, y);
 		this._width := width;
 		this._lines := lines < 1 ? 1 : lines;
 		this._textColor := textColor;
@@ -58,6 +58,7 @@ class TextBox(Control)
 
 	function SelfCreate(this, byRef gump)
 		this._value := GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

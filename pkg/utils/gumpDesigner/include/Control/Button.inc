@@ -1,23 +1,23 @@
 include "Control";
 
 class Button(Control)
-	var _image; // Imagem do botão
+	var _unpressedImage; // Imagem do botão
 	var _pressedImage; // Imagem do botão quando pressionado
 	var _buttonType;
 
 	var _action; // Passar função lambda a ser executada no clique
 
-	function Button(this, name, x, y, image, pressedImage, buttonType, action := 0, gumpId := 0)
-		Super(GUMP_CONTROL::BUTTON, name, x, y, gumpId);
-		this._image := image;
+	function Button(this, name, x, y, unpressedImage, pressedImage, buttonType, action := 0)
+		Super(GUMP_CONTROL::BUTTON, name, x, y);
+		this._unpressedImage := unpressedImage;
 		this._pressedImage := pressedImage;
 		this._buttonType := buttonType;
 
 		this._action := action;
 	endfunction
 
-	function GetImage(this)
-		return this._image;
+	function GetUnpressedImage(this)
+		return this._unpressedImage;
 	endfunction
 
 	function GetPressedImage(this)
@@ -49,7 +49,7 @@ class Button(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFAddButton(gump, this.GetX(), this.GetY(), this.GetImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
+		GFAddButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
 	endfunction
 
 	function ToString(this)
@@ -58,7 +58,7 @@ class Button(Control)
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
-			+ ", image=" + this.GetImage()
+			+ ", unpressedImage=" + this.GetUnpressedImage()
 			+ ", pressedImage=" + this.GetPressedImage()
 			+ ", action=" + this.GetAction()
 			+ ")";
