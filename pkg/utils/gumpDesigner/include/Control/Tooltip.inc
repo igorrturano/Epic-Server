@@ -1,4 +1,4 @@
 include "Control";
 
-class ControlTooltip(Control)
+class Tooltip(Control)
 endclass

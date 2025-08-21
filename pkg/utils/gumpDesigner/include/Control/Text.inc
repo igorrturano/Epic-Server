@@ -1,10 +1,10 @@
 include "Control";
 
-class ControlText(Control)
+class Text(Control)
 	var _color;
 	var _value;
 
-	function ControlText(this, name, x, y, value, color := 0, gumpId := 0)
+	function Text(this, name, x, y, value, color := 0, gumpId := 0)
 		Super(GUMP_CONTROL::TEXT, name, x, y, gumpId);
 		
 		this._color := color;
@@ -32,7 +32,7 @@ class ControlText(Control)
 	endfunction
 
 	function ToString(this)
-		return "ControlText(name=" + this._GetName()
+		return "Text(name=" + this._GetName()
 			+ ", gumpId=" + this.GetGumpId()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
