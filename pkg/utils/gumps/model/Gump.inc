@@ -94,11 +94,11 @@ class Gump()
 		this._options.append(option);
 	endfunction
 
-	function AddCustom(this, customFunction)
+	function AddCustomization(this, customFunction)
 		this._customization.append(customFunction);
 	endfunction
 
-	function AddControl(this, control)
+	function AddControl(this, byRef control)
 		var id := 1;
 		
 		if (control.GetType() == GUMP_CONTROL::TEXT)
@@ -160,7 +160,6 @@ class Gump()
 
 		var gumpResult := GFSendGump(this._parent, this._gump);
 		var eventHandled;
-		print("Gump sent, result: " + gumpResult[0]);
 
 		if (gumpResult[0] == 0)
 			eventHandled := EventHandler("CLOSED GUMP");
@@ -186,6 +185,12 @@ class Gump()
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTBOX][gumpResult[0]-GUMP_ID_REFERENCE::TEXTBOX]);
 		else
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
+		endif
+
+		if (this._controls[GUMP_CONTROL::TEXTBOX].size() > 0)
+			foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
+				control.SetValue(GFExtractData(gumpResult, control.GetGumpId()));
+			endforeach
 		endif
 
 		print("EventHandled -> " + eventHandled);
