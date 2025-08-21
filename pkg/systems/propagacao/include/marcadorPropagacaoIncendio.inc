@@ -81,11 +81,12 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _ExecutaRotinaPropagacao(this, tileProspectado)
+    Sleepms(40); 
     if(!this.isAcumulando)
       this._ProcessaCombustivel(tileProspectado);
     endif
     this._ProcessaClima();
-    
+    Sleepms(40);
     this._ProcessaEstimulos();
     this.TocaSFXCaracteristico();
   endfunction
@@ -328,6 +329,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
   
   function OnAtualizaEstado(this)
+    Sleepms(40);
     this.AtualizaComportamentoMarcador();
   endfunction
 
