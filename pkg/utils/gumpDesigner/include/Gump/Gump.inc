@@ -1,12 +1,13 @@
 include ":gumps:epicGumps";
 include ":gumps:autoClose";
-include ":gumps:model/Control/Control";
-include ":gumps:model/Event/EventHandler";
+include ":gumpDesigner:Control/Control";
+include ":gumpDesigner:Event/EventHandler";
 
 class Gump()
 	var _parent;
 	var _pid;
 	var _gump;
+	var _gumpResult;
 	
 	var _title;
 	var _width;
@@ -50,6 +51,10 @@ class Gump()
 
 	function GetGump(this)
 		return this._gump;
+	endfunction
+
+	function GetGumpResult(this)
+		return this._gumpResult;
 	endfunction
 
 	function GetTitle(this)
@@ -139,13 +144,21 @@ class Gump()
 			+ ")";
 	endfunction
 
-	function CreateControls(byref dialog, dict)
-		foreach control in (dict)
+	function CreateControls(byref dialog, controlGroup)
+		foreach control in (controlGroup)
 			control.SelfCreate(dialog);
 		endforeach
 	endfunction
 
+	function UpdateInputValues(this)
+		foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
+			control.SetValue(GFExtractData(this._gumpResult, control.GetGumpId()));
+		endforeach
+	endfunction
+
 	function Show(this)
+		var eventHandled, gumpResult;
+		
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 
 		foreach controlGroup in (this._controls)
@@ -157,41 +170,41 @@ class Gump()
 		endforeach
 
 		this._pid := GetPid();
+		this._gumpResult := GFSendGump(this._parent, this._gump);
 
-		var gumpResult := GFSendGump(this._parent, this._gump);
-		var eventHandled;
-
-		if (gumpResult[0] == 0)
+		if (this._gumpResult[0] == 0)
 			eventHandled := EventHandler("CLOSED GUMP");
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTCROPPED][gumpResult[0]-GUMP_ID_REFERENCE::TEXTCROPPED]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TOOLTIP + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TOOLTIP][gumpResult[0]-GUMP_ID_REFERENCE::TOOLTIP]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMP + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMP][gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMP]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMPTILED + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMPTILED][gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMPTILED]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::IMAGETILED + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILED][gumpResult[0]-GUMP_ID_REFERENCE::IMAGETILED]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::BUTTON + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][gumpResult[0]-GUMP_ID_REFERENCE::BUTTON]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::CHECKBOX + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::RADIOBUTTON + GUMP_ID_REFERENCE::LIMIT)
-			eventHandled := EventHandler(this._controls[GUMP_CONTROL::RADIOBUTTON][gumpResult[0]-GUMP_ID_REFERENCE::RADIOBUTTON]);
-		elseif (gumpResult[0] < GUMP_ID_REFERENCE::TEXTBOX + GUMP_ID_REFERENCE::LIMIT)
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][this._gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTCROPPED][this._gumpResult[0]-GUMP_ID_REFERENCE::TEXTCROPPED]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TOOLTIP + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TOOLTIP][this._gumpResult[0]-GUMP_ID_REFERENCE::TOOLTIP]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMP + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMP][this._gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMP]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::IMAGEGUMPTILED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGEGUMPTILED][this._gumpResult[0]-GUMP_ID_REFERENCE::IMAGEGUMPTILED]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::IMAGETILED + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILED][this._gumpResult[0]-GUMP_ID_REFERENCE::IMAGETILED]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::BUTTON + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][this._gumpResult[0]-GUMP_ID_REFERENCE::BUTTON]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::CHECKBOX + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][this._gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::RADIOBUTTON + GUMP_ID_REFERENCE::LIMIT)
+			eventHandled := EventHandler(this._controls[GUMP_CONTROL::RADIOBUTTON][this._gumpResult[0]-GUMP_ID_REFERENCE::RADIOBUTTON]);
+		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTBOX + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTBOX][gumpResult[0]-GUMP_ID_REFERENCE::TEXTBOX]);
 		else
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
 		endif
 
-		if (this._controls[GUMP_CONTROL::TEXTBOX].size() > 0)
-			foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
-				control.SetValue(GFExtractData(gumpResult, control.GetGumpId()));
-			endforeach
-		endif
+		UpdateInputValues(this);
+
+		// if (this._controls[GUMP_CONTROL::TEXTBOX].size() > 0)
+		// 	foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
+		// 		control.SetValue(GFExtractData(gumpResult, control.GetGumpId()));
+		// 	endforeach
+		// endif
 
 		print("EventHandled -> " + eventHandled);
 		print("EventHandled -> " + eventHandled.ToString());

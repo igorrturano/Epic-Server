@@ -1,12 +1,13 @@
-include "ControlImageGump";
+include "Text";
 
-class ControlImageGumpTiled(ControlImageGump)
+class ControlTextCropped(ControlText)
 	var _width;
 	var _height;
 
-	function ControlImageGumpTiled(this, name, x, y, width, height, imageId, color := 0, gumpId := 0)
-		Super(name, x, y, imageId, color, gumpId);
-		this._type := GUMP_CONTROL::IMAGEGUMPTILED;
+	function ControlTextCropped(this, name, x, y, width, height, value, color := 0, gumpId := 0)
+		Super(name, x, y, value, color, gumpId);
+		this._type := GUMP_CONTROL::TEXTCROPPED;
+		
 		this._width := width;
 		this._height := height;
 	endfunction
@@ -28,18 +29,19 @@ class ControlImageGumpTiled(ControlImageGump)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFGumpPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+		GFTextCrop(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
 	endfunction
 
 	function ToString(this)
-		return "ControlImageGumpTiled(name=" + this._GetName()
+		return "ControlText(name=" + this._GetName()
+			+ ", gumpId=" + this.GetGumpId()
+			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
 			+ ", height=" + this.GetHeight()
-			+ ", imageId=" + this.GetImageId()
-			+ ", color=" + this.GetColor()
-			+ ", gumpId=" + this.GetGumpId()
+			+ ", color=" + this._color
+			+ ", value=" + this._value
 			+ ")";
 	endfunction
 endclass
