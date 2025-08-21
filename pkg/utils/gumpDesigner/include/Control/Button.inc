@@ -1,13 +1,13 @@
 include "Control";
 
-class ControlButton(Control)
+class Button(Control)
 	var _image; // Imagem do botão
 	var _pressedImage; // Imagem do botão quando pressionado
 	var _buttonType;
 
 	var _action; // Passar função lambda a ser executada no clique
 
-	function ControlButton(this, name, x, y, image, pressedImage, buttonType, action := 0, gumpId := 0)
+	function Button(this, name, x, y, image, pressedImage, buttonType, action := 0, gumpId := 0)
 		Super(GUMP_CONTROL::BUTTON, name, x, y, gumpId);
 		this._image := image;
 		this._pressedImage := pressedImage;
@@ -53,7 +53,7 @@ class ControlButton(Control)
 	endfunction
 
 	function ToString(this)
-		return "ControlButton(name=" + this._GetName()
+		return "Button(name=" + this._GetName()
 			+ ", gumpId=" + this.GetGumpId()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()

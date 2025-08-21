@@ -1,11 +1,11 @@
 include "Control";
 
-class ControlImageTiled(Control)
+class ImageTiled(Control)
 	var _imageId;
 	var _width;
 	var _height;
 
-	function ControlImageTiled(this, name, x, y, width, height, imageId, gumpId := 0)
+	function ImageTiled(this, name, x, y, width, height, imageId, gumpId := 0)
 		Super(GUMP_CONTROL::IMAGETILED, name, x, y, gumpId);
 		this._imageId := imageId;
 		this._width := width;
@@ -41,7 +41,7 @@ class ControlImageTiled(Control)
 	endfunction
 
 	function ToString(this)
-		return "ControlImageTiled(name=" + this._GetName()
+		return "ImageTiled(name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()

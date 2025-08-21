@@ -1,4 +1,4 @@
 include "Control";
 
-class ControlCheckBox(Control)
+class CheckBox(Control)
 endclass

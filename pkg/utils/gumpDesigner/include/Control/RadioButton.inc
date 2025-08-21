@@ -1,4 +1,4 @@
 include "Control";
 
-class ControlRadioButton(Control)
+class RadioButton(Control)
 endclass

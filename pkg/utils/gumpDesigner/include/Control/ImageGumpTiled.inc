@@ -1,10 +1,10 @@
 include "ImageGump";
 
-class ControlImageGumpTiled(ControlImageGump)
+class ImageGumpTiled(ImageGump)
 	var _width;
 	var _height;
 
-	function ControlImageGumpTiled(this, name, x, y, width, height, imageId, color := 0, gumpId := 0)
+	function ImageGumpTiled(this, name, x, y, width, height, imageId, color := 0, gumpId := 0)
 		Super(name, x, y, imageId, color, gumpId);
 		this._type := GUMP_CONTROL::IMAGEGUMPTILED;
 		this._width := width;
@@ -32,7 +32,7 @@ class ControlImageGumpTiled(ControlImageGump)
 	endfunction
 
 	function ToString(this)
-		return "ControlImageGumpTiled(name=" + this._GetName()
+		return "ImageGumpTiled(name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()

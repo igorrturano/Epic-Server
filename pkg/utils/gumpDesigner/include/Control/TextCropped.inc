@@ -1,10 +1,10 @@
 include "Text";
 
-class ControlTextCropped(ControlText)
+class TextCropped(Text)
 	var _width;
 	var _height;
 
-	function ControlTextCropped(this, name, x, y, width, height, value, color := 0, gumpId := 0)
+	function TextCropped(this, name, x, y, width, height, value, color := 0, gumpId := 0)
 		Super(name, x, y, value, color, gumpId);
 		this._type := GUMP_CONTROL::TEXTCROPPED;
 		
@@ -33,7 +33,7 @@ class ControlTextCropped(ControlText)
 	endfunction
 
 	function ToString(this)
-		return "ControlText(name=" + this._GetName()
+		return "TextCropped(name=" + this._GetName()
 			+ ", gumpId=" + this.GetGumpId()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()

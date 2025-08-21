@@ -1,13 +1,13 @@
 include "Control";
 
-class ControlTextBox(Control)
+class TextBox(Control)
 	var _width;
 	var _lines;
 	var _textColor;
 	var _value;
 	var _maxLength;
 
-	function ControlTextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0, gumpId := 0)
+	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0, gumpId := 0)
 		Super(GUMP_CONTROL::TEXTBOX, name, x, y, gumpId);
 		this._width := width;
 		this._lines := lines < 1 ? 1 : lines;
@@ -61,7 +61,7 @@ class ControlTextBox(Control)
 	endfunction
 
 	function ToString(this)
-		return "ControlTextBox(name=" + this._GetName()
+		return "TextBox(name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
