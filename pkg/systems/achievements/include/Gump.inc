@@ -1,8 +1,12 @@
 include ":gumps:epicGumps";
-include ":gumps:model/Gump";
-include ":gumps:model/Control/ControlText";
-include ":gumps:model/Control/ControlTextCropped";
-include ":gumps:model/Control/ControlButton";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/TextCropped";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/ImageGump";
+include ":gumpDesigner:Control/ImageGumpTiled";
+include ":gumpDesigner:Control/ImageTiled";
+include ":gumpDesigner:Control/TextBox";
 include ":achievements:model/AchievementCombat";
 
 const MAX_XP := 5000; // XP máximo para a barra de progresso
@@ -20,12 +24,26 @@ function ShowAchievementsGump(who)
 	var text3 := ControlTextCropped("Label3", 45, 125, 300, 800, hist, GUMP_TEXT_COLOR::COLOR_BLUE);
 	var button3 := ControlButton("Button3", 30, 130, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_UNPRESSED, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_PRESSED, GF_CLOSE_BTN);
 
+	var imageGump1 := ControlImageGump("ImageGump1", 30, 200, 0x775f);
+	var imageGumpTiled1 := ControlImageGumpTiled("ImageGumpTiled1", 100, 200, 100, 100, 0x775f);
+	var imageTiled1 := ControlImageTiled("ImageTiled2", 400, 200, 100, 100, 0x775f);
+
+	var text4 := ControlText("Label4", 45, 150, "Digite seu nome aqui: ", GUMP_TEXT_COLOR::COLOR_RED);
+	var textBox1 := ControlTextBox("TextBox1", 180, 150, 200, 1, GUMP_TEXT_COLOR::COLOR_YELLOW);
+
 	gump.AddControl(text1);
 	gump.AddControl(text2);
 	gump.AddControl(text3);
 	gump.AddControl(button1);
 	gump.AddControl(button2);
 	gump.AddControl(button3);
+	gump.AddControl(imageGump1);
+	gump.AddControl(imageGumpTiled1);
+	gump.AddControl(imageTiled1);
+	gump.AddControl(text4);
+	gump.AddControl(textBox1);
 
 	gump.Show();
+
+	print(textBox1.ToString());
 endfunction
