@@ -53,14 +53,14 @@ class Button(Control)
 	endfunction
 
 	function ToString(this)
-		return "Button(name=" + this._GetName()
-			+ ", gumpId=" + this.GetGumpId()
+		return "Button(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
-			+ ", image=" + this._image
-			+ ", pressedImage=" + this._pressedImage
-			+ ", action=" + this._action
+			+ ", image=" + this.GetImage()
+			+ ", pressedImage=" + this.GetPressedImage()
+			+ ", action=" + this.GetAction()
 			+ ")";
 	endfunction
 endclass
