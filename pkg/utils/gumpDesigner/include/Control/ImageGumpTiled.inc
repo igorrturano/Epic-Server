@@ -32,14 +32,14 @@ class ImageGumpTiled(ImageGump)
 	endfunction
 
 	function ToString(this)
-		return "ImageGumpTiled(name=" + this._GetName()
+		return "ImageGump(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
+			+ ", imageId=" + this.GetImageId()
 			+ ", width=" + this.GetWidth()
 			+ ", height=" + this.GetHeight()
-			+ ", imageId=" + this.GetImageId()
 			+ ", color=" + this.GetColor()
-			+ ", gumpId=" + this.GetGumpId()
 			+ ")";
 	endfunction
 endclass

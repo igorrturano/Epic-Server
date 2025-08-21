@@ -41,13 +41,13 @@ class ImageTiled(Control)
 	endfunction
 
 	function ToString(this)
-		return "ImageTiled(name=" + this._GetName()
+		return "ImageTiled(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
 			+ ", height=" + this.GetHeight()
 			+ ", imageId=" + this.GetImageId()
-			+ ", gumpId=" + this.GetGumpId()
 			+ ")";
 	endfunction
 endclass

@@ -33,15 +33,15 @@ class TextCropped(Text)
 	endfunction
 
 	function ToString(this)
-		return "TextCropped(name=" + this._GetName()
-			+ ", gumpId=" + this.GetGumpId()
+		return "TextCropped(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
 			+ ", height=" + this.GetHeight()
-			+ ", color=" + this._color
-			+ ", value=" + this._value
+			+ ", color=" + this.GetColor()
+			+ ", value=" + this.GetValue()
 			+ ")";
 	endfunction
 endclass

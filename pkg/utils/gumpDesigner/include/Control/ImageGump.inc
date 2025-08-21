@@ -47,12 +47,14 @@ class ImageGump(Control)
 	endfunction
 
 	function ToString(this)
-		return "ImageGump(name=" + this._GetName()
+		return "ImageGump(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", imageId=" + this.GetImageId()
+			+ ", width=" + this.GetWidth()
+			+ ", height=" + this.GetHeight()
 			+ ", color=" + this.GetColor()
-			+ ", gumpId=" + this.GetGumpId()
 			+ ")";
 	endfunction
 endclass

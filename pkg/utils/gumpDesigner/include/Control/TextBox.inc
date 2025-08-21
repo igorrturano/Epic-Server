@@ -61,7 +61,8 @@ class TextBox(Control)
 	endfunction
 
 	function ToString(this)
-		return "TextBox(name=" + this._GetName()
+		return "TextBox(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
@@ -69,7 +70,6 @@ class TextBox(Control)
 			+ ", textColor=" + this.GetTextColor()
 			+ ", value=" + this.GetValue()
 			+ ", maxLength=" + this.GetMaxLength()
-			+ ", gumpId=" + this.GetGumpId()
 			+ ")";
 	endfunction
 endclass

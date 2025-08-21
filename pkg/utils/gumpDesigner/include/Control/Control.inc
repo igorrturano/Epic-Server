@@ -74,7 +74,6 @@ class Control()
 
 	function ToString(this)
 		return "Control(gumpId=" + this.GetGumpId()
-			+ ", type=" + this.GetType()
 			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()

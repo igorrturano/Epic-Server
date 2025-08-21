@@ -32,13 +32,13 @@ class Text(Control)
 	endfunction
 
 	function ToString(this)
-		return "Text(name=" + this._GetName()
-			+ ", gumpId=" + this.GetGumpId()
+		return "Text(gumpId=" + this.GetGumpId()
+			+ ", name=" + this._GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
-			+ ", color=" + this._color
-			+ ", value=" + this._value
+			+ ", color=" + this.GetColor()
+			+ ", value=" + this.GetValue()
 			+ ")";
 	endfunction
 endclass
