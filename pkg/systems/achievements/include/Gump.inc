@@ -7,8 +7,7 @@ include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/ImageGumpTiled";
 include ":gumpDesigner:Control/ImageTiled";
 include ":gumpDesigner:Control/TextBox";
-include ":gumpDesigner:Control/TooltipText";
-include ":gumpDesigner:Control/TooltipItem";
+include ":gumpDesigner:Control/Tooltip";
 include ":achievements:model/AchievementCombat";
 
 const MAX_XP := 5000; // XP máximo para a barra de progresso
@@ -29,10 +28,6 @@ function ShowAchievementsGump(who)
 	var imageGump1 := ImageGump("ImageGump1", 30, 200, 0x775f);
 	var tooltipText1 := TooltipText("TooltipText1", "Testando Tooltip: Isso aqui é uma imagem!!!");
 	imageGump1.SetTooltip(tooltipText1);
-
-	var imageGump2 := ImageGump("ImageGump2", 100, 200, 0x775f);
-	var tooltipItem1 := TooltipItem("TooltipItem1", 0xc68c);
-	imageGump2.SetTooltip(tooltipItem1);
 
 	var imageGumpTiled1 := ImageGumpTiled("ImageGumpTiled1", 100, 200, 100, 100, 0x775f);
 	var imageTiled1 := ImageTiled("ImageTiled2", 400, 200, 100, 100, 0x775f);
