@@ -9,7 +9,7 @@ include ":propagacao:include/marcadorPropagacaoFabrica";
 program controladoraPropagacao(esteItemMarcador)
 
 	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO) ;
-	var momentoInicial := ReadGameClock();
+	var momentoInicial := ReadMillisecondClock();
 	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 
 	Set_Event_Queue_Size(12);

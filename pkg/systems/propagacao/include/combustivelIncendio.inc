@@ -3,10 +3,10 @@
 include ":propagacao:include/propagacao";
 
 class CombustivelIncendio()
-  function CombustivelIncendio(this, combustivel, tipo, fatorInflamavel)
+  function CombustivelIncendio(this, combustivel, tipo, fatorInflamavel, inflamaveisConfig)
     this.propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
     this.tipo := tipo;
-    this.listaInflamaveis := GetConfigStringArray(this.propagacaoConfig["incendio"],tipo);
+    this.inflamaveisConfig := inflamaveisConfig;
     this.combustivel := combustivel;
     this.isExaurido := false;
     this.fatorInflamavel := fatorInflamavel;
@@ -30,13 +30,15 @@ class CombustivelIncendio()
   endfunction
 
   function ExtraiInfoTile(this, tile)
-     var splited := SplitWords(tile);
-     
-     return struct {
-                  objtype := splited[1], 
-                  combustivel := this.PegaTier(splited[2]), 
-                  fator := this.PegaTier(splited[3])
-                };
+      if(tile)
+        var splited := SplitWords(tile);
+        return struct {
+                      combustivel := this.PegaTier(splited[1]), 
+                      fator := this.PegaTier(splited[2])
+                    };
+      else
+       return 0;
+      endif
   endfunction
 
   function PegaTier(this, valor)
@@ -46,9 +48,9 @@ class CombustivelIncendio()
   endfunction
 
 
-  function EncheCombustivelTile(this,objtypeItemInflamavel, infoTile)
+  function EncheCombustivelTile(this,infoTile)
     
-    if(cstr(objtypeItemInflamavel) == infoTile.objtype)
+    if(infoTile)
       this.EncheCombustivel(infoTile.combustivel,infoTile.fator);
       return true;
     else
@@ -65,7 +67,8 @@ endclass
 
 class CombustivelEstaticos( CombustivelIncendio )
   function CombustivelEstaticos(this)
-    super(0,COMBUSTIVEIS::ESTATICOS,0);
+    var config := ReadConfigFile("config/estaticosInflamaveis");
+    super(0,COMBUSTIVEIS::ESTATICOS,0,config["geral"]);
   endfunction
 
   function ProcuraCombustivel(this,itemMarcador, tileProspectado)
@@ -75,12 +78,9 @@ class CombustivelEstaticos( CombustivelIncendio )
         var zAbsoluto := PegaAbsoluta(itemMarcador.z, estatico.z);
         var isAoAlcance :=  zAbsoluto <= 5;
         if(isAoAlcance)
-          foreach staticoInflamavel in (this.listaInflamaveis)
-            Sleepms(2);
-            if(this.EncheCombustivelTile(estatico.objtype,this.ExtraiInfoTile(staticoInflamavel)))
-              return this.TemCombustivel();
-            endif
-          endforeach
+          if(this.EncheCombustivelTile(this.ExtraiInfoTile(this.inflamaveisConfig[cstr(estatico.objtype)])))
+            return this.TemCombustivel();
+          endif
         endif
       endforeach
     endif
@@ -90,7 +90,8 @@ endclass
 
 class CombustivelTerreno( CombustivelIncendio )
   function CombustivelTerreno(this)
-    super(0,COMBUSTIVEIS::TERRENO,0);
+    var config := ReadConfigFile("config/terrenosInflamaveis");
+    super(0,COMBUSTIVEIS::TERRENO,0,config["geral"]);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
@@ -100,12 +101,10 @@ class CombustivelTerreno( CombustivelIncendio )
         return false;
       endif
       
-      foreach terrenoInflamavel in (this.listaInflamaveis)
-        Sleepms(2);
-        if(this.EncheCombustivelTile(infoTerreno.landtile,this.ExtraiInfoTile(terrenoInflamavel)))
-          return this.TemCombustivel();
-        endif
-      endforeach
+      if(this.EncheCombustivelTile(this.ExtraiInfoTile(this.inflamaveisConfig[cstr(infoTerreno.landtile)])))
+        return this.TemCombustivel();
+      endif
+      return false;
     endif
     return false;
   endfunction
@@ -114,14 +113,14 @@ endclass
 
 class CombustivelMagico( CombustivelIncendio )
   function CombustivelMagico(this)
-    super(0,COMBUSTIVEIS::MAGICO,0);
+    super(0,COMBUSTIVEIS::MAGICO,0, 0);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
+    tileProspectado == 0;
     if(!this.isExaurido)
       var magico := GetObjProperty(itemMarcador,"propPropagacao").combustivelMagico;
       if(magico && magico != 0 && TypeOfInt(magico) != OT_STRUCT)
-        Print("Atenção: Parâmetro combustivel deve ser um struct.");
       endif
       if(magico)
         this.EncheCombustivel( magico.combustivel,magico.fator ? magico.fator : 1);

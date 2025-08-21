@@ -63,9 +63,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _EfetuarCicloAtivo(this,tileProspectado)
-    var isAlvoEncontrado := this.ProcessaAlvos(tileProspectado);
-
-    if(this.momentoNascimento % this.descansoControleDormente == 0)
+    var isAlvoEncontrado := this._ProcessaAlvos(tileProspectado);
+    if(ReadMillisecondClock() - this.momentoNascimento % this.descansoControleDormente == 0)
       this._ExecutaRotinaPropagacao(tileProspectado);
     endif
 
@@ -73,7 +72,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _EfetuarCicloDormente(this, tileProspectado)
-    this._ProcessaAlvos(tileProspectado);
+    var isAlvoEncontrado := this._ProcessaAlvos(tileProspectado);
+
+    if(isAlvoEncontrado)
+      this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
+    endif
     this._ExecutaRotinaPropagacao(tileProspectado);
   endfunction
 
@@ -82,6 +85,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       this._ProcessaCombustivel(tileProspectado);
     endif
     this._ProcessaClima();
+    
     this._ProcessaEstimulos();
     this.TocaSFXCaracteristico();
   endfunction
@@ -115,6 +119,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     var isAlvoEncontrado := false;
     foreach item in (tileProspectado.PegaItensEncontrados())
       Sleepms(2);
+      if(!item) continue; endif//Estanhamente tá vindo um unintialized as vezes. maluquice
 
       if( item.serial == this.esteItemMarcador.serial) continue; endif
 
@@ -125,20 +130,22 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         continue;
       endif
 
-      this.isAcumulando := this._AvaliaInflamabilidade(item);
+      this.isAcumulando := this.isAcumulando ? this.isAcumulando : this._AvaliaInflamabilidade(item);
+      isAlvoEncontrado := true;
+
       if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
-        isAlvoEncontrado := true;
         DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
       endif
     endforeach
 
-    foreach mobile in (tileProspectado.PegaMobilesEncontrados())
-      Sleepms(2);
-      if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
+    if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
+      foreach mobile in (tileProspectado.PegaMobilesEncontrados())
+        Sleepms(2);
+        if(!mobile) continue; endif//Estanhamente tá vindo um unintialized as vezes. maluquice
         isAlvoEncontrado := true;
         DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
-      endif
-    endforeach
+      endforeach
+    endif
 
     return isAlvoEncontrado;
   endfunction
@@ -276,8 +283,9 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       endif
     endif
 
-    this.estado := valor;
+    this.estado := cint(valor);
     if(valor  != valorAntigo)
+      //Print("marcador {} saiu de {} para {} - enquanto estava acumulando {} ".format(this.esteItemMarcador.serial,valorAntigo,this.estado, this.isAcumulando) );
       this.OnAtualizaEstado();
       var prop := this.PegaPropPropagacao();
       prop.lerEstadoAtual := this.estado;
@@ -339,7 +347,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 900);
         break;
       ESTADO_PROPAGACAO::LATENTE:
-        this.AtualizaComportamento(efeitosPersonalizados,brasas, 0);
+        this.AtualizaComportamento(efeitosPersonalizados,brasas, 0, 0);
         break;
       ESTADO_PROPAGACAO::PRINCIPIO:
         this.AtualizaComportamento(efeitosPersonalizados,fogoPequeno, 0,0,efeitoFumacinha,objtypeNuvemFumaca);

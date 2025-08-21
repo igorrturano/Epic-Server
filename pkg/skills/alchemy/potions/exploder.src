@@ -69,18 +69,29 @@ function FlameEffect(who, potion, lvl, bonus)
 
 	var dice := Cstr("2d"+lvl*2+"+"+bonus/2);
 	var coords := GetCoordsInSquare(potion.x, potion.y, lvl);
+	var combustivel := lvl * 500;
+
 	foreach coord in coords;
-		var field := CriaMuralhaFogo(
-									coord.x, 
-									coord.y, 
-									potion.z,
-									who.realm,
-									GRAFICO_FIREWALL_NORTE_SUL,
-									dice, 
-									120, 
-									who);
+		var standingHeight := GetStandingHeight(coord.x,coord.y,potion.z,potion.realm);
+		if(CheckLosBetween(potion.x,potion.y,potion.z,coord.x,coord.y,standingHeight.z,potion.realm))
+			var alcool := CreateItemAtLocation(coord.x, 
+										coord.y, 
+										standingHeight.z,
+										0xC875,
+										1,
+										potion.realm);
+			
+			SetObjProperty(alcool,PROPNAME_DURABILIDADE_MAX,combustivel);
+			SetObjProperty(alcool,PROPNAME_DURABILIDADE,combustivel);
+			alcool.decayat := ReadGameClock() + 180;
+		endif
 		sleepms(5);
 	endforeach
+
+	var field := CriaFagulhaIncendiaria(
+								who,
+								potion
+								);
 
 	foreach critter in (ListMobilesNearLocation( potion.x, potion.y, potion.z, lvl, potion.realm ));
 		if (CheckLineOfSight(potion, critter))
