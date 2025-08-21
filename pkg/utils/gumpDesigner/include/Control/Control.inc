@@ -4,6 +4,7 @@ class Control()
 	var _gumpId;
 	var _type;
 	var _name;
+	var _tooltip;
 
 	var _x;
 	var _y;
@@ -29,6 +30,10 @@ class Control()
 		return this._name;
 	endfunction
 
+	function GetTooltip(this)
+		return this._tooltip;
+	endfunction
+
 	function GetX(this)
 		return this._x;
 	endfunction
@@ -49,6 +54,10 @@ class Control()
 		this._name := name;
 	endfunction
 
+	function SetTooltip(this, tooltip)
+		this._tooltip := tooltip;
+	endfunction
+
 	function SetX(this, x)
 		this._x := x;
 	endfunction
@@ -57,14 +66,19 @@ class Control()
 		this._y := y;
 	endfunction
 
-	function SelfCreate(this, byRef gump) endfunction
+	function SelfCreate(this, byRef gump)
+		if (this.GetTooltip())
+			this._tooltip.SelfCreate(gump);
+		endif
+	endfunction
 
 	function ToString(this)
-		return "Control(name=" + this._GetName()
-			+ ", gumpId=" + this.GetGumpId()
+		return "Control(gumpId=" + this.GetGumpId()
 			+ ", type=" + this.GetType()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
+			+ ", tooltip=" + this.GetTooltip() ? "true" : "false"
 			+ ")";
 	endfunction
 endclass

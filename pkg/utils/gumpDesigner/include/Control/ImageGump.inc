@@ -42,6 +42,8 @@ class ImageGump(Control)
 		else
 			GFResizePic(gump, this.GetX(), this.GetY(), this.GetImageId(), this.GetWidth(), this.GetHeight());
 		endif
+
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

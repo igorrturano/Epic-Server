@@ -7,6 +7,8 @@ include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/ImageGumpTiled";
 include ":gumpDesigner:Control/ImageTiled";
 include ":gumpDesigner:Control/TextBox";
+include ":gumpDesigner:Control/TooltipText";
+include ":gumpDesigner:Control/TooltipItem";
 include ":achievements:model/AchievementCombat";
 
 const MAX_XP := 5000; // XP máximo para a barra de progresso
@@ -25,6 +27,13 @@ function ShowAchievementsGump(who)
 	var button3 := Button("Button3", 30, 130, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_UNPRESSED, GUMP_CONTROL_BUTTON_IMAGE::CLOSE_PRESSED, GF_CLOSE_BTN);
 
 	var imageGump1 := ImageGump("ImageGump1", 30, 200, 0x775f);
+	var tooltipText1 := TooltipText("TooltipText1", "Testando Tooltip: Isso aqui é uma imagem!!!");
+	imageGump1.SetTooltip(tooltipText1);
+
+	var imageGump2 := ImageGump("ImageGump2", 100, 200, 0x775f);
+	var tooltipItem1 := TooltipItem("TooltipItem1", 0xc68c);
+	imageGump2.SetTooltip(tooltipItem1);
+
 	var imageGumpTiled1 := ImageGumpTiled("ImageGumpTiled1", 100, 200, 100, 100, 0x775f);
 	var imageTiled1 := ImageTiled("ImageTiled2", 400, 200, 100, 100, 0x775f);
 
@@ -38,8 +47,9 @@ function ShowAchievementsGump(who)
 	gump.AddControl(button2);
 	gump.AddControl(button3);
 	gump.AddControl(imageGump1);
-	gump.AddControl(imageGumpTiled1);
-	gump.AddControl(imageTiled1);
+	gump.AddControl(imageGump2);
+	// gump.AddControl(imageGumpTiled1);
+	// gump.AddControl(imageTiled1);
 	gump.AddControl(text4);
 	gump.AddControl(textBox1);
 
