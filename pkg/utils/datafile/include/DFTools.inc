@@ -65,6 +65,7 @@ class DFTools()
 	endfunction
 
 	/**
+<<<<<<< HEAD
 	 * RemoveElement(this, elem_name)
 	 *
 	 * Remove um elemento de um arquivo de dados.
@@ -75,6 +76,18 @@ class DFTools()
 	 *
 	 * Return value
 	 * Retorna true se o elemento for removido com sucesso, ou um objeto de erro caso o elemento não seja encontrado.
+=======
+	 * GetElementPropNames(this, elem_key)
+	 *
+	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
+	 *
+	 * Parameters:
+	 * this: The DFTools instance containing the filename of the data file.
+	 * elem_key: The key (name) of the element whose properties are to be retrieved.
+	 *
+	 * Returns:
+	 * An array of property names for the specified element, or an error if the element is not found.
+>>>>>>> 1704c02946d1652b83c8c6c9490627a724ff9d71
 	 */
 	function GetElementPropNames(this, elem_key)
 		var file := DFOpenDataFile(this.filename, DF_CREATE);

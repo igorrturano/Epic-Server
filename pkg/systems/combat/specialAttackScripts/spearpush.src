@@ -2,7 +2,7 @@ use util;
 use vitals;
 
 include "include/client";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 
 program SpearPush(combatInfo)
 	var attacker := combatInfo.attacker;

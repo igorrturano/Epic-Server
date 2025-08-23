@@ -1,7 +1,12 @@
 use os;
 
+<<<<<<< HEAD
 include ":debug:main";
 include ":equipsys:utils";
+=======
+include ":debug:Controller/DebugController";
+include ":equipsys:utils/consts";
+>>>>>>> 1704c02946d1652b83c8c6c9490627a724ff9d71
 include ":tn:cooldown";
 include ":attributes:attributes";
 

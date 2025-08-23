@@ -28,7 +28,12 @@ program SpellScript(params)
     endif
 
     handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
-    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 2, 2, 2740);
+    // PlayObjectCenteredEffectEx(targ, EPIC_FX_HIPNOSYS, 255, 60);
+    // PlayObjectCenteredEffect(targ, EPIC_FX_HIPNOSYS, 150, 50);
+
+    var fx := CreateItemAtLocation( targ.x, targ.y, targ.z+10, EPIC_FX_HIPNOSYS, 1, targ.realm );
+    sleepms(2000);
+    DestroyItem(fx);
 
     SetObjProperty(targ, "charmed_by", who.serial);
     SetCooldown(targ, "charmed", duration);

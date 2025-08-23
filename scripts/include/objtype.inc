@@ -243,16 +243,17 @@ const UOBJ_SHAFT	                := 0x1bd4;
 ////////////////////////////////////////////////
 
 const UOBJ_LOG                         := 0x1bdd;
+Const UOBJ_DEFAULT_LOG	      			:= 0x1bdd;
 const UOBJ_YEW_LOG                      := 0x16351;
 const UOBJ_ASH_LOG                      := 0x16352;
-const UOBJ_CYPRESS_LOG                  := 0x16353;
-const UOBJ_OAK_LOG                      := 0x16354;
-const UOBJ_WALNUT_LOG                   := 0x16358;
+const UOBJ_CYPRESS_LOG                  := 0xee3a;
+const UOBJ_OAK_LOG                      := 0xee37;
+const UOBJ_WALNUT_LOG                   := 0xee38;
 const UOBJ_CEDAR_LOG                    := 0x16359;
 const UOBJ_MAPLE_LOG                    := 0x16361;
-const UOBJ_PINE_LOG                     := 0x16364;
+const UOBJ_PINE_LOG                     := 0xee36;
 const UOBJ_GOSSAMER_LOG                 := 0x16365;
-const UOBJ_WILLOW_LOG                   := 0x16363;
+const UOBJ_WILLOW_LOG                   := 0xee39;
 const UOBJ_BANANA_LOG                   := 0x16362;
 const UOBJ_SPIDER_LOG                   := 0x16366;
 const UOBJ_JUNIPER_LOG                  := 0x16367;
@@ -453,6 +454,20 @@ const UOBJ_BONE_HELM		        := 0x1451;
 const UOBJ_BONE_LEGS		        := 0x1452;
 
 
+///////////////////
+//  Masks
+///////////////////
+
+Const UOBJ_ORC_MASK			:= 0x141B;
+Const UOBJ_ORC_MASK2		:= 0x141C;
+Const UOBJ_BEAR_MASK		:= 0x1545;
+Const UOBJ_BEAR_MASK2		:= 0x1546;
+Const UOBJ_DEER_MASK		:= 0x1547;
+Const UOBJ_DEER_MASK2		:= 0x1548;
+Const UOBJ_TRIBAL_MASK		:= 0x1549;
+Const UOBJ_TRIBAL_MASK2		:= 0x154A;
+Const UOBJ_TRIBAL_MASK3		:= 0x154B;
+Const UOBJ_TRIBAL_MASK4		:= 0x154C;
 
 
 ///////////
@@ -469,7 +484,8 @@ const UOBJ_BASCINET			:= 0x140c;
 const UOBJ_BASCINET2		        := 0x140d;
 const UOBJ_NOSEHELM			:= 0x140e;
 const UOBJ_NOSEHELM2		        := 0x140f;
-
+Const UOBJ_ORCHELM			:= 0x1F0B;
+Const UOBJ_ORCHELM2			:= 0x1F0C;
 
 
 
@@ -599,3 +615,11 @@ const EXTOBJ_TILLERMAN       := 0x1F010;
 const EXTOBJ_PORT_PLANK      := 0x1F011;
 const EXTOBJ_STARBOARD_PLANK := 0x1F012;
 const EXTOBJ_HOLD            := 0x1F013;
+
+
+///FLS
+const FLS_SFX_SKILL_LUMBERJACK          :=  0x013f;
+
+
+const UOBJ_SOULFORGE_START := 0xB203;
+const UOBJ_SOULFORGE_END := 0xB20A;

@@ -4,6 +4,8 @@ use util; // Adiciona RandomInt
 use polsys;
 use datafile;
 
+include ":datafile:datafile";
+
 const SEALED_BOOKS_DATAFILE := ":sysbook:sealedbooks";
 
 // Constante para verificar se é um livro

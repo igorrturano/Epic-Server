@@ -9,20 +9,14 @@ use basic;
 //include "include/client";
 include "gumps";
 include "gumps_ex";
-include ":destroyable:include/destroyItemPersist";
-include ":destroyable:include/destroyItem";
 
 const ALTURA_LINHA := 20;
 const QUALTIDADE_COLUNAS := 12;
 
-const GUMP_LARGURA := 800;
-const GUMP_ALTURA := 600;
-const TEMPO_DIA := 86400;
-
 enum GUMP_PARAMS
 	HIDE_TITLE, HIDE_PAGE, HIDE_BORDER,
 	BORDER_GOLDEN, BORDER_BLUE, BORDER_MARBLE,
-	NO_CLOSABLE
+	NO_CLOSABLE, NO_MOVABLE
 endenum
 
 enum OPCOES_TABELA
@@ -37,6 +31,7 @@ enum OPCOES_TABELA
 	CHECKBOX_APERTADO := "checkBoxApertadoId",
 	CHECKBOX_SOLTO := "checkBoxSoltoId",
 	RECUO_EIXO_X_BOTAO := "recuoExidoXBtn", // recua o botao no eixo x caso a centralização não tenha funcionado.
+	RECUO_EIXO_Y_BOTAO := "recuoExidoXBtn", // recua o botao no eixo y caso a centralização não tenha funcionado.
 	MOSTRAR_FUNDO := "isMostrarFundo", // customiza se deve mostrar o background da tabela.
 	MAX_PAGINAS := "numeroMaxPaginas" // Numero máximo de páginas na sua versão páginada.
 endenum
@@ -71,7 +66,12 @@ function GFECreateGump(title, width, height, params := array{})
 	else
 		GFClosable(gump, 1);
 	endif
-    GFDisposable(gump, 1);
+
+	if (NO_MOVABLE in params)
+		GFMovable(gump, 0);
+	else
+		GFMovable(gump, 1);
+	endif
 
 	if (!(HIDE_BORDER in params))
 		var border;
@@ -257,7 +257,8 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 		var opt_botao_solto := DeterminaOpcaoTabela(opcoesTabela,BOTAO_SOLTO,2510);
 		var opt_checkbox_apertado := DeterminaOpcaoTabela(opcoesTabela,CHECKBOX_APERTADO,2511);
 		var opt_checkbox_solto := DeterminaOpcaoTabela(opcoesTabela,CHECKBOX_SOLTO,2510);
-		var opt_recuo_eixox_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_X_BOTAO,5);
+		var opt_recuo_eixox_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_X_BOTAO,-5);
+		var opt_recuo_eixoy_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_Y_BOTAO,0);
 		var opt_is_mostrar_fundo := DeterminaOpcaoTabela(opcoesTabela,MOSTRAR_FUNDO,true);
 
 		var exemplo := dados[1];
@@ -330,13 +331,13 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 
 		if(opcoesTabela[TITULO_TABELA])
 			if(opt_is_mostrar_fundo)
-				GFResizePic(gump, x, y,opt_gumpic_fundo, larguraTotal, ALTURA_LINHA);
+				GFResizePic(gump, cInt(x), cInt(y),opt_gumpic_fundo, larguraTotal, ALTURA_LINHA);
 			endif
 
 			GFHTMLArea( 
 			gump,
-			x + CentralizaEixoX(larguraTotal,opcoesTabela[TITULO_TABELA]),
-			y,
+			cInt(x + CentralizaEixoX(larguraTotal,opcoesTabela[TITULO_TABELA])),
+			cInt(y),
 			larguraTotal,
 			ALTURA_LINHA,
 			"<{}size={} color={}>{}</{}>".format(
@@ -356,47 +357,50 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 				coluna.+largura := largura; 
 			endif
 			if(opt_is_mostrar_fundo)
-				GFResizePic(gump, x + larguraUtilizada, y,opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
+				GFResizePic(gump, cInt(x + larguraUtilizada), cInt(y),opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
 			endif
 
-			GFTextLine(gump, x + larguraUtilizada + CentralizaEixoX(larguraGrid,coluna.titulo,coluna.largura), y, opt_cor_titulo_coluna, coluna.titulo);
+			GFTextLine(gump,cInt( x + larguraUtilizada + CentralizaEixoX(larguraGrid,coluna.titulo,coluna.largura)),cInt( y), opt_cor_titulo_coluna, coluna.titulo);
 			larguraUtilizada := larguraUtilizada + larguraGrid * coluna.largura;
 			Sleepms(2);
 		endforeach
 
-		//tabela em si
+		//aqui começa a tabela em si
+		y += ALTURA_LINHA;
 		var indice := paginaTabela * opt_qtd_limite_linha + 1;
-		var indiceLinha := 1;
+		var indiceLinha := 0;
 
 		for linha := indice to  indice + (opt_qtd_limite_linha - 1 )
 			if(linha > dados.size())
 				break;
 			endif
 			larguraUtilizada := 0;
+			var quantidadeBotoesColuna := 0;
 			foreach coluna in colunas
 				if(opt_is_mostrar_fundo)
-					GFResizePic(gump, x + larguraUtilizada, y + ALTURA_LINHA * indiceLinha, opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
+					GFResizePic(gump,cInt( x + larguraUtilizada),cInt( y + ALTURA_LINHA * indiceLinha), opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
 				endif
-				
 				var valorCelula :=  dados[linha][coluna.chaveReal];
-				var valorBotao := valorCelula.valor ? valorCelula.valor: indiceLinha + indiceBtnInicial;
+				var valorBotao := valorCelula.valor ? valorCelula.valor: indice + indiceLinha + indiceBtnInicial + quantidadeBotoesColuna;
 				if(valorCelula.isColunaBotao)
 					GFAddButton( gump,
-								x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) - opt_recuo_eixox_btn, 
-								y + ALTURA_LINHA * indiceLinha, opt_botao_solto, opt_botao_apertado, 
+								cInt(x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) + opt_recuo_eixox_btn), 
+								cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), opt_botao_solto, opt_botao_apertado, 
 								GF_CLOSE_BTN, 
 								valorBotao);
+					quantidadeBotoesColuna += 1;
 
 				elseif(valorCelula.isColunaCheckBox)
 					GFCheckBox( gump,
-							x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) - opt_recuo_eixox_btn, 
-							y + ALTURA_LINHA * indiceLinha, 
+							cInt(x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) + opt_recuo_eixox_btn), 
+							cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), 
 							opt_checkbox_solto, 
 							opt_checkbox_apertado,
-							valorCelula.valor ? true:false,
+							valorCelula.valor,
 							valorBotao);
+					quantidadeBotoesColuna += 1;
 				else
-					GFTextLine(gump, x + larguraUtilizada + 5, y + ALTURA_LINHA * indiceLinha,opt_cor_dado, valorCelula);
+					GFTextLine(gump, cInt(x + larguraUtilizada + 5), cInt(y + ALTURA_LINHA * indiceLinha),opt_cor_dado, valorCelula);
 				endif;
 				larguraUtilizada := larguraUtilizada + larguraGrid * coluna.largura;
 				Sleepms(2);
@@ -405,7 +409,6 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 			Sleepms(2);
 		endfor
 	endif
-
 	return gump;
 endfunction;
 
@@ -458,20 +461,25 @@ function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela :
 	var opt_qtd_limite_linha :=  DeterminaOpcaoTabela(opcoesTabela,QTD_LINHA_LIMITE,20);
 
 	var pagina;
-	var algo := CDbl(dados.size()) / opt_qtd_limite_linha;
-	for( pagina := 0; (pagina + 1) - algo < 1; pagina := pagina + 1)
+	var qtdPaginas := CDbl(dados.size()) / opt_qtd_limite_linha;
+	for( pagina := 0; (pagina + 1) - qtdPaginas < 1; pagina := pagina + 1)
 		if(pagina + 1 > opt_max_pagina)
 			break;
 		endif
 		GFPage( gump, pagina + 1);
 		gump := CriaTabelaGump(x,y,larguraTotal,dados,gump,pagina,opcoesTabela,opcoesColunas,indiceBtnInicial);
-
+		
 		//Controle de Paginação.
-		if(!pagina == 0)
-			GFAddButton( gump, x + larguraTotal / 2 - 40, y + (opt_qtd_limite_linha + 3) * ALTURA_LINHA, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
+		var linhaAdicional := 2;
+		if(opcoesTabela[TITULO_TABELA])
+			linhaAdicional :=  3;
 		endif
-		if((pagina + 2) - algo < 1)
-			GFAddButton( gump, x + larguraTotal / 2  + 40, y + (opt_qtd_limite_linha + 3) * ALTURA_LINHA, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
+
+		if(!pagina == 0)
+			GFAddButton( gump, (x + larguraTotal) / 2 - 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
+		endif
+		if((pagina + 2) - qtdPaginas < 1)
+			GFAddButton( gump, (x + larguraTotal) / 2  + 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
 		endif
 	endfor
 
@@ -497,9 +505,9 @@ endfunction
  */
 function CentralizaEixoX(larguraGrid,conteudo,gridsUtilizadas := 1)
 	if(TypeOf(conteudo) == "String")
-		return (larguraGrid * gridsUtilizadas / 2) - (Len(conteudo) * 3);
+		return CInt((larguraGrid * gridsUtilizadas / 2) - (Len(conteudo) * 3));
 	else
-		return (larguraGrid * gridsUtilizadas / 2);
+		return CInt((larguraGrid * gridsUtilizadas / 2));
 	endif
 endfunction
 
@@ -508,3 +516,6 @@ function DeterminaOpcaoTabela(opcoesTabela,opcao,padrao)
 	return opcoesTabela[opcao]? opcoesTabela[opcao]:padrao;
 endfunction
 
+function EnviaGumpPosicao( quem, pid, gumpApelido)
+	return Start_Script( ":gumps:scripts/posicao/posicaoGump", array{quem, pid, gumpApelido} );
+endfunction

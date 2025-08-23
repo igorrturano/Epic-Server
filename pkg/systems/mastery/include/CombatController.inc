@@ -1,7 +1,15 @@
 // O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
 // Foi feito com struct pra evitar refatoramento e um monte de parametros.
 include ":mastery:model/MasteryCombat";
-include ":debug:main";
+include ":debug:Controller/DebugController";
+
+const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
+
+// TODO: Criar 3 níveis que progridem reduzindo o cooldown de ativação da habilidade
+	// Cooldown de 150s.
+	// Reduz -30s por nível.
+// TODO: Definir critérios de progressão de maestria para cada nível.
+
 
 const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
 

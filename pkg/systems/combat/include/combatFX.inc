@@ -11,7 +11,7 @@ use cfgfile;
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 
 enum WEAPONFX
 	WEAPON_FX_SOUND, WEAPON_FX_ANIM
