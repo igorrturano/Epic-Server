@@ -1,0 +1,29 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":medicine:anatomy";
+
+program TimedScript_disease(params)
+	var mobile := params[1];
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+	var falhou := diseases_system.falhou_cura;
+			
+		if(!falhou)
+			
+			UpdateDiseaseProperty(mobile, "end_disease", 1);
+			TS_LowerDuration(mobile, "diseaseeffect", -1);
+			
+			var corpo_peste_id := diseases_system.serial_peste_corpse;
+			var corpo_peste := SystemFindObjectBySerial(corpo_peste_id);
+			MoveObjectToLocation(corpo_peste, 1, 1, 1, MOVEITEM_IGNOREMOVABLE);
+			DestroyItem(corpo_peste);
+			return 1;
+		endif
+
+		UpdateDiseaseProperty(mobile, "falhou_cura", 0);
+       
+	return 1;
+endprogram
