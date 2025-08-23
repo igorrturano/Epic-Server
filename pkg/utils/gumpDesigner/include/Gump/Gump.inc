@@ -154,6 +154,14 @@ class Gump()
 		foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
 			control.SetValue(GFExtractData(this._gumpResult, control.GetGumpId()));
 		endforeach
+
+		foreach control in (this._controls[GUMP_CONTROL::CHECKBOX])
+			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
+		endforeach
+
+		foreach control in (this._controls[GUMP_CONTROL::RADIOBUTTON])
+			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
+		endforeach
 	endfunction
 
 	function Show(this)
@@ -199,12 +207,6 @@ class Gump()
 		endif
 
 		UpdateInputValues(this);
-
-		// if (this._controls[GUMP_CONTROL::TEXTBOX].size() > 0)
-		// 	foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
-		// 		control.SetValue(GFExtractData(gumpResult, control.GetGumpId()));
-		// 	endforeach
-		// endif
 
 		print("EventHandled -> " + eventHandled);
 		print("EventHandled -> " + eventHandled.ToString());
