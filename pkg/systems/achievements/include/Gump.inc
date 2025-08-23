@@ -52,7 +52,10 @@ function ShowAchievementsGump(who)
 	gump.AddControl(checkBox1);
 	gump.AddControl(radioButton1);
 
+	print (radioButton1.ToString());
+
 	gump.Show();
 
 	print(textBox1.ToString());
+	print (radioButton1.ToString());
 endfunction

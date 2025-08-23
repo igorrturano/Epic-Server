@@ -91,6 +91,7 @@ enum class GUMP_CONTROL
 	TOOLTIP := "tooltip",
 
 	BUTTON := "button",
+	RADIOGROUP := "radiogroup",
 	RADIOBUTTON := "radiobutton",
 	CHECKBOX := "checkbox",
 
