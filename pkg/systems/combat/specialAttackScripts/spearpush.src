@@ -15,7 +15,7 @@ program SpearPush(combatInfo)
 	
 	return false;
 endprogram
-
+ 
 function PushTarget(attacker, defender)
 	var facing := GetFacing(attacker.x, attacker.y, defender.x, defender.y);
 	
