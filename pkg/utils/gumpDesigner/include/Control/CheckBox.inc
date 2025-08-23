@@ -3,9 +3,9 @@ include "Control";
 class CheckBox(Control)
 	var _uncheckedImage := 0x0;
 	var _checkedImage := 0x0;
-	var _value := GUMP_CONTROL_CHECKBOX_VALUE::UNCHECKED;
+	var _value := CHECKBOX_VALUE::UNCHECKED;
 
-	function CheckBox(this, name, x, y, uncheckedImage, checkedImage, value := GUMP_CONTROL_CHECKBOX_VALUE::UNCHECKED)
+	function CheckBox(this, name, x, y, uncheckedImage, checkedImage, value := CHECKBOX_VALUE::UNCHECKED)
 		Super(GUMP_CONTROL::CHECKBOX, name, x, y);
 		this._uncheckedImage := uncheckedImage;
 		this._checkedImage := checkedImage;
@@ -53,12 +53,12 @@ class CheckBox(Control)
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_CHECKBOX_VALUE
+enum class CHECKBOX_VALUE
 	UNCHECKED,
 	CHECKED
 endenum
 
-enum class GUMP_CONTROL_CHECKBOX_IMAGE
+enum class CHECKBOX_IMAGE
 	DEFAULT_UNCHECKED := 2362,
 	DEFAULT_CHECKED := 2360
 endenum
