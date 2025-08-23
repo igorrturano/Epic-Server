@@ -3,13 +3,13 @@ include "Control";
 class RadioButton(Control)
 	var _unpressedImage;
 	var _pressedImage;
-	var _status;
+	var _value;
 
-	function RadioButton(this, name, x, y, unpressedImage, pressedImage, status := GUMP_CONTROL_RADIOBUTTON_STATUS::UNPRESSED)
+	function RadioButton(this, name, x, y, unpressedImage, pressedImage, value := GUMP_CONTROL_RADIOBUTTON_VALUE::UNPRESSED)
 		Super(GUMP_CONTROL::RADIOBUTTON, name, x, y);
 		this._unpressedImage := unpressedImage;
 		this._pressedImage := pressedImage;
-		this._status := status;
+		this._value := value;
 	endfunction
 
 	function GetUnpressedImage(this)
@@ -20,8 +20,8 @@ class RadioButton(Control)
 		return this._pressedImage;
 	endfunction
 
-	function GetStatus(this)
-		return this._status;
+	function GetValue(this)
+		return this._value;
 	endfunction
 
 	function SetUnpressedImage(this, unpressedImage)
@@ -32,28 +32,28 @@ class RadioButton(Control)
 		this._pressedImage := pressedImage;
 	endfunction
 
-	function SetStatus(this, status)
-		this._status := status;
+	function SetValue(this, value)
+		this._value := value;
 	endfunction
 
 	function ToString(this)
 		return "RadioButton(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", unpressedImage=" + CStr(this.GetUnpressedImage())
 			+ ", pressedImage=" + CStr(this.GetPressedImage())
-			+ ", status=" + CStr(this.GetStatus())
+			+ ", value=" + CStr(this.GetValue())
 			+ ")";
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFRadioButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetStatus(), this.GetGumpId());
+		GFRadioButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_RADIOBUTTON_STATUS
+enum class GUMP_CONTROL_RADIOBUTTON_VALUE
 	UNPRESSED,
 	PRESSED
 endenum

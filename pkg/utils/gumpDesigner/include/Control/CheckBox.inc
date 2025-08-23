@@ -3,13 +3,13 @@ include "Control";
 class CheckBox(Control)
 	var _uncheckedImage;
 	var _checkedImage;
-	var _status;
+	var _value;
 
-	function CheckBox(this, name, x, y, uncheckedImage, checkedImage, status := GUMP_CONTROL_CHECKBOX_STATUS::UNCHECKED)
+	function CheckBox(this, name, x, y, uncheckedImage, checkedImage, value := GUMP_CONTROL_CHECKBOX_VALUE::UNCHECKED)
 		Super(GUMP_CONTROL::CHECKBOX, name, x, y);
 		this._uncheckedImage := uncheckedImage;
 		this._checkedImage := checkedImage;
-		this._status := status;
+		this._value := value;
 	endfunction
 
 	function GetUncheckedImage(this)
@@ -20,8 +20,8 @@ class CheckBox(Control)
 		return this._checkedImage;
 	endfunction
 
-	function GetStatus(this)
-		return this._status;
+	function GetValue(this)
+		return this._value;
 	endfunction
 
 	function SetUncheckedImage(this, uncheckedImage)
@@ -32,28 +32,28 @@ class CheckBox(Control)
 		this._checkedImage := checkedImage;
 	endfunction
 
-	function SetStatus(this, status)
-		this._status := status;
+	function SetValue(this, value)
+		this._value := value;
 	endfunction
 
 	function ToString(this)
 		return "CheckBox(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
+			+ ", name=" + this._GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", uncheckedImage=" + CStr(this.GetUncheckedImage())
 			+ ", checkedImage=" + CStr(this.GetCheckedImage())
-			+ ", status=" + CStr(this.GetStatus())
+			+ ", value=" + CStr(this.GetValue())
 			+ ")";
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFCheckBox(gump, this.GetX(), this.GetY(), this.GetUncheckedImage(), this.GetCheckedImage(), this.GetStatus(), this.GetGumpId());
+		GFCheckBox(gump, this.GetX(), this.GetY(), this.GetUncheckedImage(), this.GetCheckedImage(), this.GetValue(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_CHECKBOX_STATUS
+enum class GUMP_CONTROL_CHECKBOX_VALUE
 	UNCHECKED,
 	CHECKED
 endenum
