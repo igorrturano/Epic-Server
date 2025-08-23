@@ -1,11 +1,9 @@
 include ":gumps:epicGumps";
-include ":achievements:model/AchievementCombat";
-
-const MAX_XP := 5000; // XP máximo para a barra de progresso
+include ":achievements:model/Achievement";
 
 function ShowAchievementsGump(who)
 	var gump := GFECreateGump("Progresso de Conquistas", 680, 400);
-	var achievements := who.GetAllAchievementsProgress();
+	var achievements := who.GetListAchievement();
 
 	var tabela := array{};
 	foreach achievement in (achievements)
@@ -15,8 +13,8 @@ function ShowAchievementsGump(who)
 			name := achievement.getName(),
 			level := achievement.getLevel(),
 			xp := achievement.getXP(),
-			hits := achievement.getData(ACHIEVDATA_HITS),
-			damage := achievement.getData(ACHIEVDATA_DAMAGE_DONE),
+			hits := achievement.getData(ACHIEVEMENT_NAME_HITS),
+			damage := achievement.getData(ACHIEVEMENT_NAME_DAMAGE_DONE),
 			"1000" := "",
 			"3000" := "",
 			"5000" := ""

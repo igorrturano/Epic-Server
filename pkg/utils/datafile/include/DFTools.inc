@@ -65,18 +65,6 @@ class DFTools()
 	endfunction
 
 	/**
-<<<<<<< HEAD
-	 * RemoveElement(this, elem_name)
-	 *
-	 * Remove um elemento de um arquivo de dados.
-	 *
-	 * Parameters
-	 * this: Objeto que contém o nome do arquivo de dados
-	 * elem_name: Nome do elemento a ser removido
-	 *
-	 * Return value
-	 * Retorna true se o elemento for removido com sucesso, ou um objeto de erro caso o elemento não seja encontrado.
-=======
 	 * GetElementPropNames(this, elem_key)
 	 *
 	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
@@ -87,9 +75,8 @@ class DFTools()
 	 *
 	 * Returns:
 	 * An array of property names for the specified element, or an error if the element is not found.
->>>>>>> 1704c02946d1652b83c8c6c9490627a724ff9d71
 	 */
-	function GetElementPropNames(this, elem_key)
+	function GetElementKeys(this, elem_key)
 		var file := DFOpenDataFile(this.filename, DF_CREATE);
 		var elem := file.FindElement(elem_key);
 		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
