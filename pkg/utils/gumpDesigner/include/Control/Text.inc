@@ -1,8 +1,8 @@
 include "Control";
 
 class Text(Control)
-	var _color;
-	var _value;
+	var _color := 0;
+	var _value := "";
 
 	function Text(this, name, x, y, value, color := 0)
 		Super(GUMP_CONTROL::TEXT, name, x, y);

@@ -1,11 +1,10 @@
 include "Control";
 
 class ImageGump(Control)
-	var _imageId;
-	var _width;
-	var _height;
-	var _color;
-	var _isResizable;
+	var _imageId := 0x0;
+	var _width := 0;
+	var _height := 0;
+	var _color := 0;
 
 	function ImageGump(this, name, x, y, imageId, width := 0, height := 0, color := 0)
 		Super(GUMP_CONTROL::IMAGEGUMP, name, x, y);

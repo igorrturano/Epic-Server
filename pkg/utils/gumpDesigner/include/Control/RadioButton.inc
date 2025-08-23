@@ -1,11 +1,11 @@
 include "Control";
 
 class RadioButton(Control)
-	var _unpressedImage;
-	var _pressedImage;
-	var _value;
+	var _unpressedImage := 0x0;
+	var _pressedImage := 0x0;
+	var _value := RADIOBUTTON_VALUE::UNPRESSED;
 
-	function RadioButton(this, name, x, y, unpressedImage, pressedImage, value := GUMP_CONTROL_RADIOBUTTON_VALUE::UNPRESSED)
+	function RadioButton(this, name, x, y, unpressedImage, pressedImage, value := RADIOBUTTON_VALUE::UNPRESSED)
 		Super(GUMP_CONTROL::RADIOBUTTON, name, x, y);
 		this._unpressedImage := unpressedImage;
 		this._pressedImage := pressedImage;
@@ -53,12 +53,12 @@ class RadioButton(Control)
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_RADIOBUTTON_VALUE
+enum class RADIOBUTTON_VALUE
 	UNPRESSED,
 	PRESSED
 endenum
 
-enum class GUMP_CONTROL_RADIOBUTTON_IMAGE
+enum class RADIOBUTTON_IMAGE
 	DEFAULT_UNPRESSED := 2362,
 	DEFAULT_PRESSED := 2360
 endenum

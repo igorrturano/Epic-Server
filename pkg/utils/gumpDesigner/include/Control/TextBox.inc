@@ -1,11 +1,11 @@
 include "Control";
 
 class TextBox(Control)
-	var _width;
-	var _lines;
-	var _textColor;
-	var _value;
-	var _maxLength;
+	var _width := 0;
+	var _lines := 0;
+	var _textColor := 0;
+	var _value := "";
+	var _maxLength := 0;
 
 	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0)
 		Super(GUMP_CONTROL::TEXTBOX, name, x, y);
