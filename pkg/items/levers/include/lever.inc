@@ -189,6 +189,14 @@ function normalusage(who, item)
       return;
    endif
 
+   // Verificar se a alavanca requer entrega de itens
+   var requires_items := GetObjProperty(item, "requires_item_delivery");
+   if (requires_items && status == "off")
+      if (!CheckItemDelivery(who, item))
+         return; // Entrega falhou ou foi cancelada
+      endif
+   endif
+
    if (status == "off")
       PrintTextAbove(who, "*Ativa*");
    else
@@ -484,6 +492,130 @@ function lightswitch(item, opts)
    EraseObjProperty(item, "#inuse");
 endfunction
 
+function CheckItemDelivery(who, item)
+   var required_items := GetObjProperty(item, "required_items");
+   if (!required_items || !required_items.size())
+      return 0; // Não tem itens configurados
+   endif
+   
+   // MUDANÇA 1: Verificar se tem todos os itens ANTES de iniciar o processo
+   var missing_items := array{};
+   foreach req_item in required_items
+      var found_amount := 0;
+      foreach backpack_item in EnumerateItemsInContainer(who.backpack)
+         if (backpack_item.objtype == req_item.objtype)
+            found_amount += backpack_item.amount;
+         endif
+         sleepms(2);
+      endforeach
+      
+      if (found_amount < req_item.amount)
+         missing_items.append("" + req_item.amount + "x " + req_item.desc + " (você tem " + found_amount + ")");
+      endif
+   endforeach
+   
+   // Se faltam itens, para aqui
+   if (missing_items.size() > 0)
+      SendSysMessageEx(who, "Você não possui todos os itens necessários:", SSM_FAIL);
+      foreach missing in missing_items
+         SendSysMessage(who, "- " + missing);
+         sleepms(2);
+      endforeach
+      return 0;
+   endif
+   
+   var selected_items := array{}; // MUDANÇA 2: Guarda itens selecionados SEM consumir
+   var required_copy := array{};
+   
+   // Criar uma cópia dos itens necessários para controle
+   foreach req_item in required_items
+      required_copy.append(struct{
+         "objtype" := req_item.objtype,
+         "amount" := req_item.amount,
+         "desc" := req_item.desc,
+         "delivered" := 0
+      });
+   endforeach
+   
+   var continue_delivery := 1;
+   while (continue_delivery)
+      SendSysMessage(who, "Selecione um item para entregar ou ESC para cancelar:");
+      var target_item := Target(who);
+      
+      if (!target_item)
+         SendSysMessage(who, "Entrega cancelada.");
+         return 0;
+      endif
+      
+      if (target_item.container != who.backpack)
+         SendSysMessage(who, "O item deve estar no seu inventário.");
+         continue;
+      endif
+      
+      // Verificar se o item é um dos necessários
+      var item_found := 0;
+      foreach req_item in required_copy
+         if (req_item.objtype == target_item.objtype && req_item.delivered < req_item.amount)
+            var amount_needed := req_item.amount - req_item.delivered;
+            var amount_to_take := target_item.amount;
+            
+            if (amount_to_take > amount_needed)
+               amount_to_take := amount_needed;
+            endif
+            
+            // Verificar se o jogador tem quantidade suficiente
+            if (target_item.amount >= amount_to_take)
+               // MUDANÇA 3: NÃO consome ainda, apenas guarda para consumir depois
+               selected_items.append(struct{
+                  "item" := target_item,
+                  "amount" := amount_to_take
+               });
+               
+               req_item.delivered += amount_to_take;
+               SendSysMessage(who, "Selecionou " + amount_to_take + "x " + target_item.desc);
+               item_found := 1;
+               break;
+            else
+               SendSysMessage(who, "Quantidade insuficiente.");
+               item_found := 1;
+               break;
+            endif
+         endif
+      endforeach
+      
+      if (!item_found)
+         SendSysMessageEx(who, "Este item não parece funcionar aqui", SSM_FAIL);
+         continue;
+      endif
+      
+      // Verificar se todos os itens foram selecionados
+      var all_selected := 1;
+      foreach req_item in required_copy
+         if (req_item.delivered < req_item.amount)
+            all_selected := 0;
+            SendSysMessage(who, "Ainda falta: " + (req_item.amount - req_item.delivered) + "x de determinado item");
+         endif
+      endforeach
+      
+      if (all_selected)
+         // MUDANÇA 4: Confirma ANTES de consumir
+         var confirm := YesNo(who, "Confirma a entrega de todos os itens selecionados?");
+         if (confirm)
+            // Só agora consome os itens
+            foreach selected in selected_items
+               SubtractAmount(selected.item, selected.amount);
+            endforeach
+            SendSysMessage(who, "Todos os itens foram usados com sucesso!");
+            return 1;
+         else
+            SendSysMessage(who, "Entrega cancelada.");
+            return 0;
+         endif
+      endif
+   endwhile
+   
+   return 0; // Não deveria chegar aqui
+endfunction
 
 function reset(item, force_reset := 0)
    var opts := item.GetLeverOpts();
