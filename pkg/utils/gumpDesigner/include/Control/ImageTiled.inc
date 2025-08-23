@@ -1,9 +1,9 @@
 include "Control";
 
 class ImageTiled(Control)
-	var _imageId;
-	var _width;
-	var _height;
+	var _imageId := 0x0;
+	var _width := 0;
+	var _height := 0;
 
 	function ImageTiled(this, name, x, y, width, height, imageId)
 		Super(GUMP_CONTROL::IMAGETILED, name, x, y);

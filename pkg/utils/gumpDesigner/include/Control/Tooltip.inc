@@ -1,7 +1,7 @@
 include "Control";
 
 class TooltipText(Control)
-	var _text;
+	var _text := "";
 
 	function TooltipText(this, name, text)
 		Super(GUMP_CONTROL::TOOLTIP, name, 0, 0);

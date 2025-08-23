@@ -1,8 +1,8 @@
 include "ImageGump";
 
 class ImageGumpTiled(ImageGump)
-	var _width;
-	var _height;
+	var _width := 0;
+	var _height := 0;
 
 	function ImageGumpTiled(this, name, x, y, width, height, imageId, color := 0)
 		Super(name, x, y, imageId, color);

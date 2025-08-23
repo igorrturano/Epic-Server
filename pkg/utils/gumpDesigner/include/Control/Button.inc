@@ -1,19 +1,17 @@
 include "Control";
 
 class Button(Control)
-	var _unpressedImage; // Imagem do botão
-	var _pressedImage; // Imagem do botão quando pressionado
-	var _buttonType;
+	var _unpressedImage := 0x0;
+	var _pressedImage := 0x0;
+	var _buttonType := BUTTON_TYPE::CLOSE;
 
-	var _action; // Passar função lambda a ser executada no clique
+	var _action := array{}; // Função lambda a ser executada no clique
 
-	function Button(this, name, x, y, unpressedImage, pressedImage, buttonType, action := 0)
+	function Button(this, name, x, y, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED, buttonType := BUTTON_TYPE::CLOSE)
 		Super(GUMP_CONTROL::BUTTON, name, x, y);
 		this._unpressedImage := unpressedImage;
 		this._pressedImage := pressedImage;
 		this._buttonType := buttonType;
-
-		this._action := action;
 	endfunction
 
 	function GetUnpressedImage(this)
@@ -44,8 +42,8 @@ class Button(Control)
 		this._buttonType := buttonType;
 	endfunction
 
-	function SetAction(this, action)
-		this._action := action;
+	function AddAction(this, action)
+		this._action.append(action);
 	endfunction
 
 	function SelfCreate(this, byRef gump)
@@ -65,7 +63,13 @@ class Button(Control)
 	endfunction
 endclass
 
-enum class GUMP_CONTROL_BUTTON_IMAGE
+enum class BUTTON_TYPE
+	PAGE := GF_PAGE_BTN,
+	CLOSE := GF_CLOSE_BTN,
+	DUMMY := GF_DUMMY_BTN
+endenum
+
+enum class BUTTON_IMAGE
 	CLOSE_UNPRESSED := 2103,
 	CLOSE_PRESSED := 2104
 endenum

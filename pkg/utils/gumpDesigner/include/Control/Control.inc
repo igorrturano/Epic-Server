@@ -1,13 +1,13 @@
 include ":gumps:epicGumps";
 
 class Control()
-	var _gumpId;
-	var _type;
-	var _name;
-	var _tooltip;
+	var _gumpId := GUMP_CONTROL::NONE;
+	var _type := "";
+	var _name := "";
+	var _tooltip := "";
 
-	var _x;
-	var _y;
+	var _x := 0;
+	var _y := 0;
 
 	function Control(this, type, name, x, y, gumpId := 0)
 		this._gumpId := gumpId;
@@ -83,6 +83,8 @@ class Control()
 endclass
 
 enum class GUMP_CONTROL
+	NONE := "none",
+
 	TEXT := "text",
 	TEXTCROPPED := "textcropped",
 	IMAGEGUMP := "imagegump",

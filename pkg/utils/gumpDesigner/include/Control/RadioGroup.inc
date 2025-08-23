@@ -1,12 +1,11 @@
 include "Control";
 
 class RadioGroup(Control)
-	var _groupId;
-	var _buttons;
+	var _groupId := 0;
+	var _buttons := array{};
 
 	function RadioGroup(this, name, x, y)
 		Super(GUMP_CONTROL::RADIOGROUP, name, x, y);
-		this._buttons := array{};
 	endfunction
 
 	function GetGroupId(this)
