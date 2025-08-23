@@ -10,15 +10,6 @@ const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode 
 	// Reduz -30s por nível.
 // TODO: Definir critérios de progressão de maestria para cada nível.
 
-
-const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
-
-// TODO: Criar 3 níveis que progridem reduzindo o cooldown de ativação da habilidade
-	// Cooldown de 150s.
-	// Reduz -30s por nível.
-// TODO: Definir critérios de progressão de maestria para cada nível.
-
-
 /**
  * MasteryCombat_Advance(attacker, combatInfo)
  *
