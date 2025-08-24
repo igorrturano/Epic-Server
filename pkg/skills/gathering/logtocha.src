@@ -1,5 +1,8 @@
 use uo;
 
+include ":crafting:/include/fabricacaoUtil";
+include "/include/epicPropNames";
+
 const LITTORCH_OBJTYPE := 0x0a12;
 
 program turnLogIntoTorch(who, item)
@@ -58,8 +61,18 @@ endfunction
 
 function logToTorch(who, item)
 	var newitem;
+	var itemObjtype := item.objtype;
 	if(SubtractAmount(item, 1))
 		newitem := CreateItemInBackpack(who, LITTORCH_OBJTYPE);
+		var materialHex := CATALOGO_LOG_PRA_TABUA[LOWER(Hex(itemObjtype))];
+		var configMaterial := PegaMaterialConfig(materialHex);
+		
+		if(configMaterial)
+			SetObjProperty(newitem,PROPNAME_MATERIAL,materialHex);
+			newitem.color := configMaterial.color;
+		endif
+		SetObjProperty(newitem,PROPNAME_DISPENSAVEL_FLAG,1);
+
 		if(newitem)
 			SendSysMessage(who, "Voce guardou o item na sua mochila");
 		else
