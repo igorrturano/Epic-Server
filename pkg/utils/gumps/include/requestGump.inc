@@ -12,6 +12,7 @@ use uo;
 use os;
 
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 CONST CANCEL_BTN_OFF	:= 0x0;
 CONST CANCEL_BTN_ON	:= 0x1;

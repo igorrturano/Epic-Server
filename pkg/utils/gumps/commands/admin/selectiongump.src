@@ -1,6 +1,7 @@
 use uo;
 
 include ":gumps:gumps";
+include ":gumps:selectionGump";
 
 unload_scripts("selectiongump");
 

@@ -10,6 +10,7 @@ include ":accounts:settings";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:gumpPrompt";
+include ":gumps:selectionGump";
 
 const CANCEL_BTN	:= 0xC00;
 //const OKAY_BTN		:= 0xC01;
