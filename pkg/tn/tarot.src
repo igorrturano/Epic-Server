@@ -1,8 +1,10 @@
-use uo;
-use os;
-use basic;
+// use uo;
+// use os;
+// use basic;
+use util;
 
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 include "include/say";
 
 var tarotDeck := array{

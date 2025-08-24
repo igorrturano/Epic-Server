@@ -123,6 +123,7 @@
 use uo;
 use os;
 use basic;
+use cfgfile;
 
 // Constants (for GF[Get|Set]NextIndex)
 /////////////////////////////////////////////////////////////////

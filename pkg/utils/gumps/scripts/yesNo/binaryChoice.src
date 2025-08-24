@@ -30,7 +30,8 @@
 use uo;
 use os;
 
-include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:autoClose";
 
 program BinaryChoice( params )
 
