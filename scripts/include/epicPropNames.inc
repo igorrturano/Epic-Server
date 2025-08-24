@@ -19,13 +19,15 @@ const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel";
 const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
 const PROPNAME_DESTROCO := "isDestroco"; 
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
-const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
 
 
 //SISTEMA DE SELECAO EM AREA
 const PROPNAME_SEL_AREA_COR_ORIGINAL := "corOriginalSelec"; 
 const PROPNAME_SEL_AREA_PID_SELECIONADOR := "pidSelecionador"; 
 const PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA := "isCorOrigAlterada"; 
+
+//SISTEMA DE PROPAGACAO
+const PROPNAME_PROP_PROPAGACAO := "propPropagacao"; 
 
 //CONTROLE DE GUMP
 

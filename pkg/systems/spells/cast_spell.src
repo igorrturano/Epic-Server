@@ -26,6 +26,7 @@ program SpellStarter(params)
     var spellinfo := params[2]; // spellinfo
     var scroll := params[3]; // item que usou pra castar o spell (scroll, book, varinha ou nada)
     var targ := params[4];
+    Set_Priority(50);
     if (!initializeSpellCasting(mobile, spellinfo, scroll))
         return 0;
     endif

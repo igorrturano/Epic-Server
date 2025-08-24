@@ -33,7 +33,7 @@ endprogram
 function StartHatching(egg)
     SetObjProperty(egg, "#hatching", 1);
     
-    var countdown := 5;
+    var countdown := 7;
     PrintTextAbove(egg, "O ovo pulsa com a sua presenca... ");
     while (countdown > 0)
         PrintTextAbove(egg, Cstr(countdown));

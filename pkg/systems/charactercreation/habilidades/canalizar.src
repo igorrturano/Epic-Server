@@ -3,6 +3,7 @@ use os;
 //use cfg;
 //Falta adicionar os cristais
  
+include ":gumps:requestGump";
 include "include/say";
 include ":tn:tngumps";
 include ":combat:damage";

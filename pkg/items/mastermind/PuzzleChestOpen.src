@@ -1,14 +1,11 @@
 use uo;
 use util;
 
-include "include/client";
-//include "include/others";
-include "include/arrays";
 include ":gumps:gumps";
 include ":gumps:yesNo";
+include ":gumps:requestGump";
 include "include/say";
 include ":tn:cooldown";
-
 include ":mastermind:mastermind";
 
 program PuzzleChestOpen(who,container)

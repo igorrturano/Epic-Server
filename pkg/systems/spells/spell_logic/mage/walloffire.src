@@ -9,6 +9,7 @@ include ":attributes:attributes";
 include "include/say";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":propagacao:include/efeitosIncendiarios";
 
 program wall_of_fire( parms )
   	var caster := parms[1];
@@ -38,19 +39,20 @@ program wall_of_fire( parms )
         return 0;
     endif
 
-	var objtype;
+	var graphicDirecao;
 	var direction := GetDirectionByFacing(caster);
 	case ( direction )
-		FIELD_SHAPE_HORIZONTAL: objtype := "FireFieldEW"; break;
-		FIELD_SHAPE_VERTICAL: objtype := "FireFieldNS"; break;
+		FIELD_SHAPE_HORIZONTAL: graphicDirecao := GRAFICO_FIREWALL_OESTE_LESTE; break;
+		FIELD_SHAPE_VERTICAL: graphicDirecao := GRAFICO_FIREWALL_NORTE_SUL; break;
 	endcase
 
-	var duration := CInt(3 + AP_GetSkill(caster, ARCANA) * 0.4);
+	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+	var combustivel := CInt(propagacaoConfig["incendio"].combustivelBaseMagias + AP_GetSkill(caster, ARCANA) * 0.4);
 	var area_size := CInt(AP_GetSkill(caster, ARCANA) / 10);
 
 	//Bonus de especialização
     if(Temhabilidade(caster, "Evocator"))
-        duration := duration * 1.2;
+        combustivel := combustivel * 1.2;
         area_size := area_size * 1.2;
     endif
 
@@ -66,19 +68,11 @@ program wall_of_fire( parms )
 		if ( CheckLosAt(caster, coord.x, coord.y, cast_on_z ) )
 			continue; // Only create a field piece if the caster has line of sight.
 		endif
-		var item := CreateItemAtLocation(coord.x, coord.y, cast_on_z.z, objtype, 1, caster.realm);
-		if ( item.errortext )
-			SendSysMessage(caster, "Error - "+item.errortext);
-			continue;
-		endif
 
 		var dmg := epicSpellDamageRoll(caster, spell_circle);
 		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
-		SetObjProperty(item, "SummonedField", caster.serial);
-        SetObjProperty(item, "DamageDice", Cstr(dmg));
-		item.SetOwner(caster);
-		item.SetDuration(duration);
+		CriaMuralhaFogo(coord.x, coord.y, cast_on_z.z,caster.realm,graphicDirecao, Cstr(dmg),combustivel,caster);
 		SleepMS(2);
 	endforeach
 
