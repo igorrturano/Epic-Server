@@ -269,7 +269,20 @@ function normalusage(who, item)
       moveObjects(item, opts);
    endif
    if (opts.teleport_to)
-      teleporter(who, item, opts);
+      if (status == "off")
+	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
+		if (tp_all != 0)
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
+				sleepms(2);
+				if(!mobile.acctname)
+					break;
+				endif
+				teleporter(mobile, item, opts);
+			endforeach
+		else
+			teleporter(who, item, opts);
+		endif
+		endif
    endif
    	if (opts.graphicarraysitem)
 		changegraphici(item, opts);
@@ -673,12 +686,6 @@ function reset(item, force_reset := 0)
    if (opts.doorstatus)
       changedoorstatuses(item, opts);
    endif
-   if (opts.moveitems)
-      moveObjects(item, opts);
-   endif
-//   	if (opts.spawn_boss)
-	//	spawnBoss(item, opts);
-	//endif
 	if (opts.graphicarraysitem)
 		  var serial;
   foreach serial in  (opts.graphicarraysitem)
@@ -686,6 +693,9 @@ function reset(item, force_reset := 0)
          serial.graphic := GetObjProperty(serial, "originalgraphic");
 endforeach
 	endif
+   if (opts.moveitems)
+      moveObjects(item, opts);
+   endif
 	if (opts.spawn_boss)
 		  var boss :=  SystemFindObjectBySerial( GetObjProperty(item, "champ") );
 			ApplyDamage( boss, 20000);

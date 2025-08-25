@@ -410,7 +410,7 @@ endfunction
 function linkteleport(who, item)
    var opts := item.GetLeverOpts();
 
-   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado", "Deixe em branco para apagar o teleport\nFormato: x y z realm");
+   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado. Formato: x y z realm", "Deixe em branco para apagar o teleport");
        loc := splitwords(loc);
       if(loc [1] == error || loc[2] == error || loc[3] == error)
          EraseObjProperty(item, "x_tp");
@@ -427,6 +427,10 @@ function linkteleport(who, item)
          if (!realm)
             SetObjProperty(item, "realm_tp", who.realm); // If no realm specified, use current realm
          endif
+		 var tp_all := RequestGump(who, "Se quiser que teleport todos em uma área digite o tamanho do range, caso contrário deixe em branco");
+			if (tp_all != 0)
+				SetObjProperty(item, "teleport_all", tp_all);
+			endif
       opts.teleport_to := 1;
       SendSysMessageEx(who,"O teleporte foi adicionado a alavanca");
       endif
