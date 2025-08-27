@@ -9,6 +9,7 @@ use polsys;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":gumps:selectionGump";
 
 const REALM_TEXT	:= 0xA001;
 const X_TEXT		:= 0xA002;

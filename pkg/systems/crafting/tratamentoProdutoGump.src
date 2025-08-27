@@ -1,6 +1,7 @@
 include "/include/epicPropNames";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/posicaoGump";
+include ":gumps:autoClose";
 include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/tratamentoProduto";

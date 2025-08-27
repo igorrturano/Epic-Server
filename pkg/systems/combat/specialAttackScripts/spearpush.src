@@ -1,72 +1,24 @@
-use uo;
-use os;
 use util;
+use vitals;
 
-include ":attributes:attributes";
-include ":combat:combat";
-include ":damage:damage";
 include "include/client";
+include ":debug:Controller/DebugController";
 
-program SpearPush(params)
-	var attacker := params[1];
-	var defender := params[2];
-	var weapon := params[3];
-	var damage := params[5];
+program SpearPush(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
 	
-	// Check if target can be pushed
-	if (!CanPush(attacker, defender))
-		return 0;
-	endif
+	PushTarget(attacker, defender);
+
+	DebugMsg(attacker, DEBUG_MASTERY, $"Executou Maestria SpearPush em {defender.name}");
+	SendSysMessage(attacker, "Seu impulso permite um segundo golpe!", 3, 89);
 	
-	// Roll chance to push
-	var pushChance := CalcPushChance(attacker, defender);
-	
-	if (RandomInt(100) <= pushChance)
-		// Successful push
-		if (PushTarget(attacker, defender))
-			// If pushed, roll another attack
-			PerformExtraAttack(attacker, defender, weapon, damage);
-			return 1;
-		endif
-	endif
-	
-	return 0;
+	return false;
 endprogram
-
-function CalcPushChance(attacker, defender)
-	// Base chance
-	var chance := 20;
-	
-	// Strength difference bonus
-	var strDiff := AP_GetStat(attacker, STRENGTH) - AP_GetStat(defender, STRENGTH);
-	chance += CInt(strDiff / 5);
-	
-	// Skill bonus
-	var skill := AP_GetSkill(attacker, attacker.weapon.attribute);
-	chance += CInt(skill / 10);
-	
-	// Limit chance between 5% and 75%
-	chance := Min(75, Max(5, chance));
-	
-	return chance;
-endfunction
-
-function CanPush(attacker, defender)
-	if (defender.dead)
-		return 0;
-	endif
-	
-	if (defender.cmdlevel || defender.frozen)
-		return 0;
-	endif
-	
-	return 1;
-endfunction
 
 function PushTarget(attacker, defender)
 	var facing := GetFacing(attacker.x, attacker.y, defender.x, defender.y);
 	
-	// Calculate new position
 	var newx := defender.x, newy := defender.y;
 	case (facing)
 		0: newy -= 1; break;
@@ -79,32 +31,20 @@ function PushTarget(attacker, defender)
 		7: newx -= 1; newy -= 1; break;
 	endcase
 	
+	SendSysMessage(attacker, "Você empurrou seu oponente!", 3, 89);
+	PrintTextAbove(attacker, $"*Empurra {defender.name}*", COLOR_BLUE);
+	PrintTextAbove(defender, $"*Empurrado por {attacker.name}*", COLOR_RED);
+	attacker.attack_once(defender);
+
 	if (CheckLOSAt(defender, newx, newy, defender.z))
 		MoveObjectToLocation(defender, newx, newy, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 		
-		PlayMovingEffect(attacker, defender, 0x36E4, 10, 0, 0);
-		PlaySoundEffect(defender, 0x213);
-		
-		SendSysMessage(attacker, "Você empurrou seu oponente!", 3, 89);
-		SendSysMessage(defender, "Você foi empurrado!", 3, 33);
-		
-		return 1;
+		return true;
+	else // Se bateu em algo toma dano extra
+		ApplyRawDamage(defender, RandomDiceRoll("1d4"));
+		PlaySoundEffect(defender, 0x136);
+		PrintTextAbove(defender, "*Bate em algo*", COLOR_RED);
 	endif
 	
-	return 0;
-endfunction
-
-function PerformExtraAttack(attacker, defender, weapon, basedamage)
-	if (defender.dead)
-		return;
-	endif
-	
-	// Second attack with 70% of original damage
-	var damage := CInt(basedamage * 0.7);
-	
-	ApplyRawDamage(defender, damage);
-	
-	PlayHitSounds(attacker, defender);
-	
-	SendSysMessage(attacker, "Seu impulso permite um segundo golpe!", 3, 89);
+	return false;
 endfunction

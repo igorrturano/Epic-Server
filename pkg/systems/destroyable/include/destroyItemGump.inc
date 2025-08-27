@@ -1,8 +1,14 @@
 include ":gumps:/include/gumps";
 include ":gumps:/include/epicGumps";
+include "/include/gms";
 include ":gumps:/include/gumps_ex";
 include ":destroyable:include/destroyItemPersist";
 include ":destroyable:include/destroyItem";
+include "/include/epicPropNames";
+
+const GUMP_LARGURA := 800;
+const GUMP_ALTURA := 600;
+const TEMPO_DIA := 86400;
 
 function EnviaConfigDesGump(quem)
 	var chaves := GetConfigStringKeys(configRecursos);
@@ -33,6 +39,8 @@ function EnviaConfigDesGump(quem)
 	var radioImportancia;
 	var configSelecionada := struct;
 	var materialElem;
+	var isPadraoCreateIndestrutivel := PegaPreferenciaGm(quem, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
+	var isPadraoCreateIndispensavel := PegaPreferenciaGm(quem, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
 
 	while(valor[0])
 		var margenEsquerdaLabels := 25;
@@ -74,6 +82,20 @@ function EnviaConfigDesGump(quem)
 
 		GFPage(gump,0);
 		GFAddButton(gump,margenEsquerdaLabels,margenHorizontalFinal,2453,2454,GF_CLOSE_BTN,6);
+		if(isPadraoCreateIndestrutivel)
+			GFAddButton(gump,margenEsquerdaLabels + 80,margenHorizontalFinal ,11400,11402,GF_CLOSE_BTN,9);
+			GFTooltipText( gump, "Liga/Desliga a preferência de Criação automática de  Objetos Indestrutiveis por gms. [Ligado]");
+		else
+			GFAddButton(gump,margenEsquerdaLabels + 80,margenHorizontalFinal ,11410,11412,GF_CLOSE_BTN,9);
+			GFTooltipText( gump, "Liga/Desliga a preferência de Criação automática de Objetos Indestrutiveis por gms. [Desligado]");
+		endif
+		if(isPadraoCreateIndispensavel)
+			GFAddButton(gump,margenEsquerdaLabels + 100,margenHorizontalFinal ,11400,11402,GF_CLOSE_BTN,10);
+			GFTooltipText( gump, "Liga/Desliga a preferência de Criação automática de Objetos Indispensaveis por gms. [Ligado]");
+		else
+			GFAddButton(gump,margenEsquerdaLabels + 100,margenHorizontalFinal ,11410,11412,GF_CLOSE_BTN,10);
+			GFTooltipText( gump, "Liga/Desliga a preferência de Criação automática de Objetos Indispensaveis por gms. [Desligado]");
+		endif
 		GFAddButton(gump,margenEsquerdaLabels + 250,margenHorizontalFinal ,22300,22302,GF_CLOSE_BTN,7);
 		GFTooltipText( gump, "Alvo por cadeia de objetos unicos.");
 		GFAddButton(gump,margenEsquerdaLabels + 300,margenHorizontalFinal ,22306,22308,GF_CLOSE_BTN,8);
@@ -82,12 +104,22 @@ function EnviaConfigDesGump(quem)
 		valor := GFSendGump(quem,gump);
 
 		var tipoAlvo := 0; 
-		if(valor[6])
+		if(valor[6] || valor[0] == 1)
 			break;
 		elseif(valor[7])
 			tipoAlvo := "cadeiaUnica";
 		elseif(valor[8])
 			tipoAlvo := "retanguloSelecao";
+		elseif(valor[9])
+			isPadraoCreateIndestrutivel := !isPadraoCreateIndestrutivel;
+			AtualizaPreferenciaGm(quem,PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO,  isPadraoCreateIndestrutivel);
+			SendSysMessageEX(quem, "Preferência alterada com sucesso.", SSM_INFO);
+		elseif(valor[10])
+			isPadraoCreateIndispensavel := !isPadraoCreateIndispensavel;
+			AtualizaPreferenciaGm(quem,PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO,  isPadraoCreateIndispensavel);
+			SendSysMessageEX(quem, "Preferência alterada com sucesso.", SSM_INFO);
+		else
+			materialElem := valor[0];
 		endif
 
 		if(tipoAlvo)
@@ -102,8 +134,6 @@ function EnviaConfigDesGump(quem)
 			endif
 			break;
 		endif
-
-		materialElem := valor[0];
 		Sleepms(2);
 	endwhile
 	return configSelecionada;

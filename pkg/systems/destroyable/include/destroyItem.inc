@@ -11,7 +11,7 @@ include "/include/epicPropNames";
 include ":traps:traps";
 //include "include/packets";
 include ":architect:architect";
-include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/fabricacaoUtil";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -62,11 +62,10 @@ function ComportamentoWarMode(quem, itemFonte)
 		return 0;
 	endif
 
-	if (targ.objtype == 0x10D9) // Spider Egg
-		PerformAction(quem, 0x20); // Bow
-        BurnEgg(targ);
-        return 1;
-    endif
+	if ( !targ.item )
+		SendSysMessage(quem, "Você não pode destruir isso.");
+		return 0;
+	endif
 
 	start_script (":tn:destroyitems", {quem, targ.item, itemFonte});
 endfunction
@@ -86,7 +85,7 @@ endfunction
  *
  */
 function EnviaEventoDanoItem(quem,item,atributosEvento)
-	var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
+	//var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
 
 	var evParams := array;
 	evParams.append(quem);
@@ -174,15 +173,20 @@ function Destruir(quem,itemAlvo,fonteDano)
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
 	if(!IsDestroco(itemAlvo))
 		var itemAlvoDesc := itemAlvo.desc;
-		if(envelopeDeed.isDeed)
-			CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
-			itemAlvoDesc += "[Deed]";
-		else
-			CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+		if(DeveCriarDestroco(itemAlvo))
+			if(envelopeDeed.isDeed)
+				CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
+				itemAlvoDesc += "[Deed]";
+			else
+				CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+			endif
 		endif
 		var descFonteDano := fonteDano.desc;
 		if(!descFonteDano)
 			descFonteDano := "Desconhecido";
+		endif
+		if(TypeOfInt(itemAlvo.x) == OT_UNINIT || TypeOfInt(itemAlvo.x) == OT_ERROR)
+			Print("O que diabo é isso que destrui? " + itemAlvo.desc + " " + fonteDano);
 		endif
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 		DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
@@ -240,7 +244,7 @@ endfunction
  */
 function DeveMarcarRecriarItem(itemAlvo)
 	return !GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
-	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG)
+	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG) //Coloco todo objeto como indispensavel para que itens destruidos antes do sistema entrar nao sejam descartados.
 	&& !itemAlvo.ISA(POLCLASS_CORPSE)
 	&& itemAlvo.ISA(POLCLASS_ITEM)
 	&& !IsDestroco(itemAlvo);
@@ -393,14 +397,14 @@ endfunction
  *
  * Parameters
  * itemAlvo:	   		item que terá sua resistência calculada.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real.
  *
  * Return value
  *   resistência total do item.
  *
  */
-function PegaResistenciaItem(itemAlvo)
+function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
-	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
@@ -409,7 +413,9 @@ function PegaResistenciaItem(itemAlvo)
 	endif
 	if(materialId)
 		resFinal := resFinal + resistenciaFabricacao;
+		resFinal := isInflamavel && fonteDano.tipo == "Fire"? 0 : resFinal;
 	endif
+
 	return resFinal;
 endfunction
 
@@ -444,7 +450,8 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 		danoCru := fonteDano;
 	endif
 
-	var danoRecebido := danoCru - atributosItem.resistencia;
+	var danoBonusCalor := atributosItem.inflamabilidade ? 1 + (atributosItem.inflamabilidade / 2) : 1;
+	var danoRecebido := cint(danoCru * danoBonusCalor - atributosItem.resistencia);
 	danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 	danoCalculado.+isEficaz := danoRecebido > 0;
 	return danoCalculado;
@@ -532,6 +539,7 @@ endfunction
  *
  * Parameters
  * item: item a ser avaliado.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real. Parametro opcional.
  *
  * Return value
  *   retorna um struct com:
@@ -541,9 +549,14 @@ endfunction
  *		.+isIndestrutivel // Se o item é considerádo indestrutivel ou não.
  *
  */
-function MontaAtributosItem(item)
+function MontaAtributosItem(item, fonteDano := 0)
+
+	var materialId := GetObjProperty(item,PROPNAME_MATERIAL);
+	var config := PegaMaterialConfig(materialId);
+
 	var itemAtrib := struct;
-		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item));
+		itemAtrib.+inflamabilidade := config.inflamavel;
+		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item, fonteDano,materialId,itemAtrib.inflamabilidade));
 		itemAtrib.+durabTotal := cInt(PegaDurabilidadeTotal(item));
 		itemAtrib.+isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
 
@@ -572,7 +585,7 @@ endfunction
  * Parameters
  * quemDanificou: O ator que danificou o item.
  * item: O item que foi danificado
- * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc> e <dano> ou um valor real.
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc>, <dano> e <tipo> ou um valor real.
  * gfx: o efeito especial que será disparado no item danificado.
  * gfxHue: a cor do efeito especial..
  *
@@ -588,7 +601,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 		return struct;
 	endif
 
-	var atributosItem := MontaAtributosItem(item);
+	var atributosItem := MontaAtributosItem(item, fonteDano);
 	var danoCalculado := CalculaDanoRecebido(fonteDano,atributosItem);
 	
 	if(item.IsA(POLCLASS_CORPSE) && GetObjProperty(item,"account")) // Corpo de jogador.
@@ -613,15 +626,17 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 		endif
 	endif
 
-	if(!IsDestroco(item))
+	if(DeveCriarDestroco(item))
 		if(RandomInt(100) <= configDestruiveis[ELEM_CFG_DEST].criaDestrocoChance)
 			CriaDestrocos(item,1,3,false);
 		endif
 	endif
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
-	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
-	EnviaEventoDanoItem(quemDanificou,item,atributosItem);
+	if(!IsDestroco(item))
+		PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
+		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
+	endif
 
 	if(durabilidadeRestante <= 0)
 		Destruir(quemDanificou,item,fonteDano);
@@ -638,6 +653,23 @@ endfunction
 
 function IsDestroco(item)
 	return GetObjProperty(item,PROPNAME_DESTROCO);
+endfunction
+
+/* 
+ * DanificaObjetosProximos(item)
+ *
+ * Purpose
+ *	Avaliar se há necessidade de criar destroço do item danificado.
+ * 
+ * Parameters
+ * item: o item que foi danificado
+ *
+ * Return value
+ *   true se deve os destroços devem ser criados
+ */
+
+function DeveCriarDestroco(item)
+	return !IsDestroco(item) && item.weight > 5;
 endfunction
 
 /* 
@@ -664,13 +696,9 @@ endfunction
  */
 function DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance,gfx:=0,ignoreSerial := 0,gfxHue := 0)
 	var itens:= ListItemsNearLocation(x,y,z,alcance,realm);
-	var fireTypes:= array{"Bola de Fogo.", "Chuva de Meteoros.", "Hit Script [Fogo]", "Campo Flamejante."};
 	foreach item in itens
 		if(CheckLosBetween(x,y,z,item.x,item.y,item.z,realm) && item.serial != ignoreSerial)
 			DanificaItem(quem,item,dano,gfx,gfxHue);
-			if (item.isSpiderEggSac() && (dano.desc in fireTypes)) 
-				BurnEgg(item);
-			endif
 		endif
 		Sleepms(3);
 	endforeach
@@ -920,6 +948,7 @@ endfunction
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
 		var material := configRecursos[cfgselecao.material];
+
 		if(cfgselecao.durabTotal)
 			SetObjProperty(alvo,PROPNAME_DURABILIDADE_MAX,CInt(cfgselecao.durabTotal));
 			var atributos := MontaAtributosItem(alvo);
@@ -929,6 +958,8 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 			SetObjProperty(alvo,PROPNAME_RESITEM_MULT,CDbl(cfgselecao.mltRes));
 		endif
 		if(cfgselecao.material)
+			SetObjProperty(alvo,PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA,true);
+			alvo.color := material.Color;
 			SetObjProperty(alvo,PROPNAME_MATERIAL, Cint(cfgselecao.material));
 		endif
 		if(cfgselecao.isEmperrada)
@@ -941,32 +972,9 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 		endif
 		SetObjProperty(alvo,PROPNAME_DISPENSAVEL_FLAG,Cint(cfgselecao.isDispensavel));
 		SetObjProperty(alvo,PROPNAME_INDESTRUTIVEL,Cint(cfgselecao.isIndestrutivel));
-
-		alvo.color := material.Color;
+		
 		if(mostrarMensagem)
-			SendSysMessageEx(quem,"Configurações aplicadas.", SSM_INFO);
+			SendSysMessageEx(quem,"Configurações  aplicadas.", SSM_INFO);
 		endif
 	endif
-endfunction
-
-function BurnEgg(egg)
-    if (egg.objtype != 0x10D9)
-        return 0;
-    endif
-
-    // Create fire effect
-    var fire := CreateItemAtLocation(egg.x, egg.y, egg.z, "FireField_NS", 1, egg.realm);
-    fire.SetDuration(3);
-    
-    // Play death sounds
-    PlaySoundEffect(egg, 402);
-    
-    // Create destroyed egg remains
-    var burnedEgg := CreateItemAtLocation(egg.x, egg.y, egg.z, "DestroyedEgg", 1, egg.realm);
-	burnedEgg.color := 912;
-
-    // Destroy original egg
-	sleep(1);
-    DestroyItem(egg);
-	return 1;
 endfunction

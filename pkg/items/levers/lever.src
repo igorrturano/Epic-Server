@@ -18,6 +18,9 @@ include ":tn:boss";
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
 
+CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
+CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
+
 function ConstructGump(item)
    var opts := item.GetLeverOpts();
    var gump := GFCreateGump();
@@ -69,19 +72,51 @@ function ConstructGump(item)
    GFTextLine(gump, 45, y, _ifElse(opts.linked_to || opts.is_linked, 520, 500), "Unlink alavancas");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 6);
    y += 20;
-   GFTextLine(gump, 45, y, _ifElse(opts.walkon, 520, 500), "Ativar ao andar por cima");
-   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 7);
    
+   // Nova opção agrupada: Modo de ativação
+   var activation_active := (opts.walkon || GetObjProperty(item, "requires_item_delivery"));
+   GFTextLine(gump, 45, y, _ifElse(activation_active, 520, 500), "Modo de ativação");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_PAGE_BTN, 5);
    y += 20;
+   
    GFTextLine(gump, 45, y, _ifElse(opts.spawn_boss, 520, 500), "Spawn Boss");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 55);
+
+   // Ordem de ativação se tiver graphic e moveitems
+   if (opts.graphicarraysitem && opts.moveitems)
+      //y += 25; // Espaço extra
+      GFTextLine(gump, 335, y, 900, "Qual acionar primeiro?");
+      var y_order := y;
+	  y_order += 20;
+      
+      // Pega a sequência atual (padrão é 1 = move primeiro)
+      var current_sequence := GetObjProperty(item, "sequence");
+      if (!current_sequence)
+         current_sequence := 1;
+      endif
+      
+      // Cria grupo de radio buttons
+      GFSetRadioGroup(gump, 1);
+      
+      // Opção 1: Mover primeiro
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 2), 106);
+      GFTextLine(gump, 335, y_order, 900, "Mover objetos primeiro");
+      
+      y_order += 18;
+      
+      // Opção 2: Gráfico primeiro  
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 1), 107);
+      GFTextLine(gump, 335, y_order, 900, "Mudar gráfico primeiro");
+        GFAddButton(gump, 357, y_order+20, 239, 240, 1, 105);
+      //y += 25; // Espaço após as opções
+   endif
 
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.efeitos, 520, 500), "Efeito em area");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 56);
 
    y += 20;
-  GFTextLine(gump, 45, y, _ifElse(opts.changegraphicitem, 520, 500), "Mudar graphic de certo item");
+   GFTextLine(gump, 45, y, _ifElse(opts.changegraphicitem, 520, 500), "Mudar graphic de certo item");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 98);
 
    y += 20;
@@ -106,6 +141,7 @@ function ConstructGump(item)
    GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
 
    GFPage(gump, 3);
+   
    GFPage(gump, 4);
    GFTextLine(gump, 145, 50, 900, "Escolha a armadilha da alavanca");
 
@@ -120,6 +156,24 @@ function ConstructGump(item)
    GFAddButton(gump, 345, 270, 210, 211, GF_CLOSE_BTN, 18);
    GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
 
+   // Nova página 5: Modo de ativação
+   GFPage(gump, 5);
+   GFTextLine(gump, 145, 50, 900, "Modo de Ativação");
+   
+   var y_activation := 80;
+   GFTextLine(gump, 45, y_activation, _ifElse(opts.walkon, 520, 500), "Ativar ao andar por cima");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 7);
+   
+   y_activation += 25;
+   GFTextLine(gump, 45, y_activation, _ifElse(GetObjProperty(item, "requires_item_delivery"), 520, 500), "Ativar por entrega de itens");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 103);
+   
+   y_activation += 25;
+   GFTextLine(gump, 45, y_activation, 500, "Remover todos os modos");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 104);
+   
+   GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
+
    return gump;
 endfunction
 
@@ -127,11 +181,10 @@ program lever(who, item)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
 
 	var cfg := GetObjProperty(item,"configboss");
-		sendsysmessage(who, ""+cfg);
 		if  (cfg == error)
-		cfg := struct;
-		cfg.+boss := struct;
-	endif
+			cfg := struct;
+			cfg.+boss := struct;
+		endif
 	
    _resolveParams(who, item);
    if ( !ReserveItem(item) || GetObjProperty(item, "#inuse") == 1 )
@@ -192,12 +245,41 @@ program lever(who, item)
          100: setHiding(who, item);
          101: setMoveObject(who, item);
          102: setOpenDoor(who, item);
+		 103: ConfigureRequiredItems(who, item);
+		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 105: 	  foreach key in (res.keys) sleepms(2);
+   case (key)
+      106: // Mover primeiro
+         SetObjProperty(item, "sequence", 2);
+         SendSysMessage(who, "Configurado para mover objetos primeiro.");
+      107: // Gráfico primeiro
+         SetObjProperty(item, "sequence", 1);
+         SendSysMessage(who, "Configurado para mudar gráfico primeiro.");
+   endcase
+endforeach
       endcase
       return;
    endif
 
    normalusage(who, item);
 endprogram
+
+function RemoveActivationModes(who, item)
+   var opts := item.GetLeverOpts();
+   
+   // Remove modo walk-on
+   if (opts.walkon)
+      opts.-"walkon";
+      item.graphic := 0x108c; // Volta ao gráfico padrão da alavanca
+   endif
+   
+   // Remove modo de entrega de itens
+   EraseObjProperty(item, "required_items");
+   EraseObjProperty(item, "requires_item_delivery");
+   
+   item.setLeverOpts(opts);
+   SendSysMessageEx(who, "Todos os modos de ativação foram removidos.", SSM_INFO);
+endfunction
 
 function setMoveObject(who, item)
    var opts := item.GetLeverOpts();
@@ -367,7 +449,7 @@ endfunction
 function linkteleport(who, item)
    var opts := item.GetLeverOpts();
 
-   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado", "Deixe em branco para apagar o teleport\nFormato: x y z realm");
+   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado. Formato: x y z realm", "Deixe em branco para apagar o teleport");
        loc := splitwords(loc);
       if(loc [1] == error || loc[2] == error || loc[3] == error)
          EraseObjProperty(item, "x_tp");
@@ -384,6 +466,10 @@ function linkteleport(who, item)
          if (!realm)
             SetObjProperty(item, "realm_tp", who.realm); // If no realm specified, use current realm
          endif
+		 var tp_all := RequestGump(who, "Se quiser que teleport todos em uma área digite o tamanho do range, caso contrário deixe em branco");
+			if (tp_all != 0)
+				SetObjProperty(item, "teleport_all", tp_all);
+			endif
       opts.teleport_to := 1;
       SendSysMessageEx(who,"O teleporte foi adicionado a alavanca");
       endif
@@ -445,7 +531,8 @@ function bindlevers(who, item)
    var trg;
    var newarray := array{};
    while(1)
-      trg := Target(who);
+      sleepms(2);
+	  trg := Target(who);
       if(!trg)
          break;
       elseif (trg.objtype != 0x108c)
@@ -592,8 +679,9 @@ endfunction
 function efeitos(who, item)
    var opts := item.GetLeverOpts();
    
-   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Apagar"});
+   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Sons","Apagar"});
    foreach r in result
+	  sleepms(2);
       if (r == "Tremor")
          opts.tremor := 1;
          var loc := RequestGump(who, "*TREMOR* Escreva na seguinte ordem: o dano base, o dano aleatório, o diff para teste de resitência e o range", "(Os valores abaixo são os padrões)", "15 85 60 10");
@@ -631,10 +719,24 @@ function efeitos(who, item)
          SetObjProperty(item,  "clima_cfg", clima_config);
          SendSysMessageEx(who, "O efeito area (clima) estah ativo", SSM_INFO);
          opts.efeitos := 1;
+	  elseif (r == "Sons")
+		var sons_op := RadioGump(who, 150, 200, "Opções de Sons", {"Som Inicial/Acionamento","Som Final/Efeito"});
+			if (sons_op == "Som Inicial/Acionamento")
+				var som1_request := RequestGump(who, "Escreva o id do som de acionamento (use .sfx <sfx/mid> id_sound para testar o som)");			
+				SetObjProperty(item, "som_inicial", som1_request);
+			elseif (sons_op == "Som Final/Efeito")
+				var som2_request := RequestGump(who, "Escreva o id do som de efeito/final (use <.sfx <sfx/mid> id_sound> para testar o som)");	
+				opts.somfim := 1;
+				SetObjProperty(item, "Som_fim", som2_request);
+			endif
+         SendSysMessageEx(who, "Os sons foram configurados!", SSM_INFO);
       elseif (r == "Apagar")
          EraseObjProperty(item, "clima_cfg");
          EraseObjProperty(item, "tremor_cfg");
          EraseObjProperty(item, "clima");
+		EraseObjProperty(item, "som_inicial");
+		EraseObjProperty(item, "Som_fim");
+		opts.-"somfim";
          opts.-"clima";
          opts.-"tremor";
          opts.efeitos := 0;
@@ -643,4 +745,44 @@ function efeitos(who, item)
    endforeach
    
    item.setLeverOpts(opts);
+endfunction
+
+function ConfigureRequiredItems(who, item)
+   var opts := item.GetLeverOpts();
+   
+   var choice := RadioGump(who, 200, 250, "Configurar Entrega de Itens", {"Configurar itens necessários", "Remover configuração"});
+   
+   if (choice == "Configurar itens necessários")
+      var required_items := array{};
+      SendSysMessage(who, "Configure os itens necessários para ativar a alavanca.");
+      SendSysMessage(who, "Escolha os itens que devem ser entregues. ESC para terminar.");
+      
+      var target_item := Target(who);
+      while (target_item)
+         sleepms(2);
+		 var amount := CInt(RequestGump(who, "Quantidade necessária deste item:", "1", "", 1));
+         if (amount > 0)
+            required_items.append(struct{
+               "objtype" := target_item.objtype,
+               "amount" := amount,
+               "desc" := target_item.desc
+            });
+            SendSysMessage(who, "Adicionado: " + amount + "x " + target_item.desc);
+         endif
+         target_item := Target(who);
+      endwhile
+      
+      if (required_items.size() > 0)
+         SetObjProperty(item, "required_items", required_items);
+         SetObjProperty(item, "requires_item_delivery", 1);
+         SendSysMessageEx(who, "Configuração salva. A alavanca agora requer entrega de " + required_items.size() + " tipos de itens.", SSM_INFO);
+      else
+         SendSysMessageEx(who, "Configuração cancelada.", SSM_FAIL);
+      endif
+      
+   elseif (choice == "Remover configuração")
+      EraseObjProperty(item, "required_items");
+      EraseObjProperty(item, "requires_item_delivery");
+      SendSysMessageEx(who, "Configuração de entrega de itens removida.", SSM_INFO);
+   endif
 endfunction
