@@ -37,16 +37,17 @@
 use uo;
 use os;
 use basic;
+use cfgfile;
 
-include ":gumps:autoClose";
-include ":gumps:gumpPrompt";
-include ":gumps:gumps_ex";
-include ":gumps:htmlGump";
-include ":gumps:playerSelectionGump";
-include ":gumps:requestGump";
-include ":gumps:selectionGump";
-include ":gumps:textConsts";
-include ":gumps:yesNo";
+// // include ":gumps:autoClose";
+// include ":gumps:gumpPrompt";
+// // include ":gumps:gumps_ex";
+// include ":gumps:htmlGump";
+// include ":gumps:playerSelectionGump";
+// include ":gumps:requestGump";
+// include ":gumps:selectionGump";
+// include ":gumps:textConsts";
+// include ":gumps:yesNo";
 
 
 CONST DEFAULT_BACKGROUND := 0x13BE;

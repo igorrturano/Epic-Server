@@ -90,7 +90,7 @@ endfunction
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
-    var race := GetObjProperty(mobile, "myrace");
+    var race := npc_elem.epicRace;
 
     if (has_colors)
         setupNPCColor(mobile, has_colors);
@@ -105,7 +105,9 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (isBoss)
         race := isBoss.race;
         makeRace(mobile, race);
-    else
+    elseif (race)
+        makeRace(mobile, race);
+    else 
         makeRace(mobile);
     endif
 
@@ -1162,6 +1164,17 @@ function CanFight(attacker, defender)
 	var category := GetConfigString(npc_elem, "Category");
 
 	if (category == "Aklats")
+		var debug := GetObjProperty(me, "#taunt_opponent");
+		
+		if (me.opponent)
+			return 1;
+		endif
+		var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
+		var opponent_d := SystemFindObjectBySerial(opponent_serial);
+		if (debug)
+			PrintTextAbove(me, "*Alertado pelo som!*");
+			return 1;
+		else
 		var pegadas := {0x1E03, 0x1E04, 0x1E05, 0x1E06}; 
 		var footsteps := array;
 
@@ -1169,7 +1182,7 @@ function CanFight(attacker, defender)
 		foreach objtype in pegadas
 			foreach pegada in ListItemsNearLocationOfType(me.x, me.y, me.z, 10, objtype, me.realm)
 				footsteps.append(pegada);
-				//print("PEGADA ENCONTRADA: " + hex(pegada.objtype));
+				PrintTextAbove(me, "*Alertado pelas vibrações!*");
 				sleepms(2);
 			endforeach
 			sleepms(2);
@@ -1179,6 +1192,7 @@ function CanFight(attacker, defender)
 			return 1;
 		endif
 		return 0;			
+endif
 	endif
 
     // Grey NPCs (neutral alignment) should only fight back when attacked

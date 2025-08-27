@@ -1,9 +1,10 @@
 use uo;
 use datafile;
+use math;
 
 include ":tn:cooldown";
 include ":gumps:epicGumps";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 
 program Install()
 	print("INSTALLING: Methods for Character... OK!");

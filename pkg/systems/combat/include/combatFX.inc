@@ -5,10 +5,13 @@
  *
  */
 
+use util;
+use cfgfile;
+
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 
 enum WEAPONFX
 	WEAPON_FX_SOUND, WEAPON_FX_ANIM
@@ -160,7 +163,8 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 endfunction
 
 function PlayHitSounds(attacker, defender)
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	// var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	var wpn_a_elem2 := attacker.weapon.getCfgElem();
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
 	var attack_sound;

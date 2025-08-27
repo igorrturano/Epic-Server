@@ -12,7 +12,7 @@ function CheckCanWork(who, startingHealth := 0, initialPosStruct := 0)
 		CheckIsInPeace(who) &&
 		CheckIsFree(who) &&
 		CheckIsHealthy(who, startingHealth) &&
-		CheckHasMoved(who, initialPosStruct);
+		!CheckHasMoved(who, initialPosStruct);
 endFunction
 
 function CheckIsAlive(who)
@@ -58,7 +58,7 @@ endFunction
 function CheckHasMoved(who, initialPosStruct)
 	if(initialPosStruct.x != who.x || initialPosStruct.y != who.y|| initialPosStruct.z != who.z || initialPosStruct.realm != who.realm )
 		SendSysMessageEx(who,"Você se moveu.",SSM_FAIL);
-		return false;
+		return true;
 	endif
-	return true;
+	return false;
 endFunction
