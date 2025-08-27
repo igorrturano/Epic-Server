@@ -265,28 +265,24 @@ function normalusage(who, item)
    if (opts.doorstatus)
       changedoorstatuses(item, opts);
    endif
-   if (opts.moveitems)
-      moveObjects(item, opts);
-   endif
-   if (opts.teleport_to)
-      if (status == "off")
-	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
-		if (tp_all != 0)
-			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
-				sleepms(2);
-				if(!mobile.acctname)
-					break;
-				endif
-				teleporter(mobile, item, opts);
-			endforeach
-		else
-			teleporter(who, item, opts);
+   
+   var sequence_gr_mov_items := Cint(GetObjProperty(item, "sequence"));
+	if (sequence_gr_mov_items == 2)
+		if (opts.moveitems)
+			moveObjects(item, opts);
 		endif
+		if (opts.graphicarraysitem)
+			changegraphici(item, opts);
 		endif
-   endif
-   	if (opts.graphicarraysitem)
-		changegraphici(item, opts);
+	else
+		if (opts.graphicarraysitem)
+			changegraphici(item, opts);
+		endif
+		if (opts.moveitems)
+			moveObjects(item, opts);
+		endif
 	endif
+   
 	if(opts.somfim)//ADICIONADO PARA SIM 2 (FINAL)
 		var snd := Cint(GetObjProperty(item, "Som_fim"));
 		foreach char in chars
@@ -314,6 +310,22 @@ function normalusage(who, item)
 			EfeitosTremor(item,danobase,danoale,dif,range);
 		endif
 	endif
+   if (opts.teleport_to)
+      if (status == "off")
+	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
+		if (tp_all != 0)
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
+				sleepms(2);
+				if(!mobile.acctname)
+					break;
+				endif
+				teleporter(mobile, item, opts);
+			endforeach
+		else
+			teleporter(who, item, opts);
+		endif
+		endif
+   endif
    if (opts.clima) //SEMPRE deixar essa opção para ativar por último, ela é mais longa
 		if (status == "off")
 			var config_clima := GetObjProperty(item, "clima_cfg");
