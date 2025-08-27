@@ -1,0 +1,26 @@
+use uo;
+use util;
+include "/include/epicPropNames";
+include ":propagacao:include/propagacao";
+include ":combat:damage";
+
+program onPisarIncendio(quem, item, lastx, lasty, lastz, lastrealm)
+	lastx == 0;
+	lasty == 0;
+	lastz == 0;
+	lastrealm == 0;
+
+	item.AtivaEventoPisado();
+	var propPropagacao := GetObjProperty(item,PROPNAME_PROP_PROPAGACAO);
+	if(propPropagacao)
+		var estado := propPropagacao.lerEstadoAtual;
+
+		if(estado > ESTADO_PROPAGACAO::DORMENTE)
+			Print("Estado ! " + estado + " Catalogo " + propPropagacao.catalogoDano[cstr(estado)]);
+			var danoDado := propPropagacao.catalogoDano[cstr(estado)]; 
+   			var rolagemDano := RandomDiceRoll(danoDado);
+
+			DamageFLS(quem, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
+		endif
+	endif
+endprogram

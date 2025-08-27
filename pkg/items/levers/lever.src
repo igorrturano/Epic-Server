@@ -82,6 +82,35 @@ function ConstructGump(item)
    GFTextLine(gump, 45, y, _ifElse(opts.spawn_boss, 520, 500), "Spawn Boss");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 55);
 
+   // Ordem de ativação se tiver graphic e moveitems
+   if (opts.graphicarraysitem && opts.moveitems)
+      //y += 25; // Espaço extra
+      GFTextLine(gump, 335, y, 900, "Qual acionar primeiro?");
+      var y_order := y;
+	  y_order += 20;
+      
+      // Pega a sequência atual (padrão é 1 = move primeiro)
+      var current_sequence := GetObjProperty(item, "sequence");
+      if (!current_sequence)
+         current_sequence := 1;
+      endif
+      
+      // Cria grupo de radio buttons
+      GFSetRadioGroup(gump, 1);
+      
+      // Opção 1: Mover primeiro
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 2), 106);
+      GFTextLine(gump, 335, y_order, 900, "Mover objetos primeiro");
+      
+      y_order += 18;
+      
+      // Opção 2: Gráfico primeiro  
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 1), 107);
+      GFTextLine(gump, 335, y_order, 900, "Mudar gráfico primeiro");
+        GFAddButton(gump, 357, y_order+20, 239, 240, 1, 105);
+      //y += 25; // Espaço após as opções
+   endif
+
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.efeitos, 520, 500), "Efeito em area");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 56);
@@ -218,6 +247,16 @@ program lever(who, item)
          102: setOpenDoor(who, item);
 		 103: ConfigureRequiredItems(who, item);
 		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 105: 	  foreach key in (res.keys) sleepms(2);
+   case (key)
+      106: // Mover primeiro
+         SetObjProperty(item, "sequence", 2);
+         SendSysMessage(who, "Configurado para mover objetos primeiro.");
+      107: // Gráfico primeiro
+         SetObjProperty(item, "sequence", 1);
+         SendSysMessage(who, "Configurado para mudar gráfico primeiro.");
+   endcase
+endforeach
       endcase
       return;
    endif
@@ -410,7 +449,7 @@ endfunction
 function linkteleport(who, item)
    var opts := item.GetLeverOpts();
 
-   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado", "Deixe em branco para apagar o teleport\nFormato: x y z realm");
+   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado. Formato: x y z realm", "Deixe em branco para apagar o teleport");
        loc := splitwords(loc);
       if(loc [1] == error || loc[2] == error || loc[3] == error)
          EraseObjProperty(item, "x_tp");
@@ -427,6 +466,10 @@ function linkteleport(who, item)
          if (!realm)
             SetObjProperty(item, "realm_tp", who.realm); // If no realm specified, use current realm
          endif
+		 var tp_all := RequestGump(who, "Se quiser que teleport todos em uma área digite o tamanho do range, caso contrário deixe em branco");
+			if (tp_all != 0)
+				SetObjProperty(item, "teleport_all", tp_all);
+			endif
       opts.teleport_to := 1;
       SendSysMessageEx(who,"O teleporte foi adicionado a alavanca");
       endif

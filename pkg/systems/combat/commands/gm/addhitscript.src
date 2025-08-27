@@ -8,6 +8,7 @@ use cfgfile;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":gumps:selectionGump";
 
 const SELECT_START	:= 0xA00;
 //const OKAY_BTN		:= 0x1;

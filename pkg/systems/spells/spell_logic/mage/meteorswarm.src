@@ -36,7 +36,7 @@ program spell_meteorSwarm( parms )
 
     var dmg := epicSpellDamageRoll(caster, spell_circle);
     dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
-    DanificaObjetosProximos(caster,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg, desc := "Chuva de Meteoros." },5,0x6CCE);
+    DanificaObjetosProximos(caster,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg, desc := "Chuva de Meteoros.", tipo := DMG_FIRE},5,0x6CCE);
 
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
     foreach mobile in allMobiles

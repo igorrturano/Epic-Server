@@ -48,14 +48,30 @@ endprogram
 
 function CriaItemMarcado(infoItem)
 	var copy;
-	if(infoItem.template != error)
-		copy := CreateItemAtLocationFromTemplate(infoItem.x, infoItem.y, infoItem.z, infoItem.realm, infoItem.template);
-	else
-		copy := CreateItemAtLocation(infoItem.x, infoItem.y, infoItem.z,infoItem.objtype, infoItem.amount,infoItem.realm);
+
+	if(!IsItemJaCriado(infoItem))
+		if(infoItem.template != error)
+			copy := CreateItemAtLocationFromTemplate(infoItem.x, infoItem.y, infoItem.z, infoItem.realm, infoItem.template);
+		else
+			copy := CreateItemAtLocation(infoItem.x, infoItem.y, infoItem.z,infoItem.objtype, infoItem.amount,infoItem.realm);
+		endif
+		copy.movable := infoItem.movable;
+		var atributos := MontaAtributosItem(copy);
+		copy.hp := atributos.durabTotal;
 	endif
-	copy.movable := infoItem.movable;
-	var atributos := MontaAtributosItem(copy);
-	copy.hp := atributos.durabTotal;
 	RemoveItemMarcado(infoItem.serial);
 	return copy;
+endfunction
+
+function IsItemJaCriado(infoItem)
+	var itensEncontrados := ListItemsAtLocation(infoItem.x, infoItem.y, infoItem.z, infoItem.realm);
+	foreach itemEncontrado in itensEncontrados
+		Sleepms(2);
+		var serialOriginal := GetObjProperty(itemEncontrado,PROPNAME_CHAVE_ORIGINAL);
+		if(cstr(serialOriginal) == cstr(infoItem.serial))
+			return true;
+		endif
+	endforeach
+
+	return false;
 endfunction
