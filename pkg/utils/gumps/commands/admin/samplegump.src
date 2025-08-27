@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 program GumpTest(who)
 	var temp := "";

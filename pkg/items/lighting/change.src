@@ -14,17 +14,92 @@ use cfgfile;
 include ":tn:cooldown";
 include "include/say";
 include ":destroyable:include/destroyItem";
+include ":propagacao:include/propagacao";
+include ":crafting:/include/fabricacaoUtil";
+include "include/epicValidAction";
+include ":propagacao:include/efeitosIncendiarios";
 
 program change(who, item )
-  var cfg := ReadConfigFile(":*:itemdesc");
-  var elem := FindConfigElem(cfg, item.objtype);
-  if(elem.staff > who.cmdlevel)
-    return;
-  endif
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, item.objtype);
+	if(elem.staff > who.cmdlevel)
+	return;
+	endif
+  	
+	if (who.warmode && GetEquipmentByLayer( who, LAYER_HAND2 ) == item && item.graphic == 0x0a12 )
+		SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
+		var targ := TargetCoordinates(who);
 
-  if (who.warmode)
-      return ComportamentoWarMode(who, item);
-  endif
+		if ( !targ )
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+
+
+		if(CoordinateDistance(who.x,who.y,targ.x,targ.y) > 1)
+			SendSysMessageEX(who,"Você sestá muito distante.",SSM_FAIL);
+			return 0;
+		endif
+
+		var materialConfig;
+		if(targ.item)
+			var materialChave := GetObjProperty(targ.item,PROPNAME_MATERIAL);
+			materialConfig := PegaMaterialConfig(materialChave);
+
+                  if(!CheckLineOfSight(who,item))
+                        SendSysMessageEX(who,"Você não exerga este item.",SSM_FAIL);
+                        return 0;
+                  endif
+            else
+                  if(!CheckLosAt(who,targ.x,targ.y,targ.z))
+                        SendSysMessageEX(who,"Você não exerga este ponto.",SSM_FAIL);
+                        return 0;
+                  endif
+		endif
+
+		var momentoInicial := ReadGameClock();
+		var posicaoInicial := struct {x := who.x , y := who.y, z := who.z, realm := who.realm};
+		while(true)
+			if(CheckHasMoved(who,posicaoInicial) || !CheckIsAlive(who) || !CheckIsFree(who))
+				SendSysMessageEX(who,"Você parou de tentar iniciar um incêndio.",SSM_FAIL);
+				break;
+			endif
+			var tempoDecorrido := ReadGameClock() - momentoInicial;
+			var deveCriarMarcadorIncendio := false;
+			if(tempoDecorrido % 2 == 0)
+				PerformAction(who, 0x20); // Bow
+				PrintTextAbove(who,"*Tentando iniciar um incêndio*");
+			endif
+			
+			var limiteTempo; 
+			case (materialConfig.inflamavel)
+				0: limiteTempo := 4; break;
+				1: limiteTempo := 4; break;
+				2: limiteTempo := 3; break;
+				3: limiteTempo := 2; break;
+				default:
+					if(limiteTempo > 3)
+						limiteTempo := 1;
+					else
+						limiteTempo := 4;
+					endif
+			endcase
+                  
+			if(tempoDecorrido >= limiteTempo)
+                        targ ? targ.item : targ;
+				var marcador := CriaFagulhaIncendiaria(who, targ);
+				
+				if( who.hidden)
+					who.hidden := 0;
+					SendSysMessage(who, "Você foi revelado!");
+				endif
+				break;
+			endif
+			sleep(1);
+		endwhile
+
+		return 0;
+	endif     
 
   if (GetCooldown(who, "darkness") > 0)
     SendSysMessage(who, "Você está envolto em sombras!", SSM_FAIL);

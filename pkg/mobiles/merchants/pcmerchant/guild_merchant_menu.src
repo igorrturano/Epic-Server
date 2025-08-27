@@ -15,6 +15,7 @@ include ":gumps:requestGump";
 include "include/string";
 include ":gumps:gumps";
 include ":gumps:gumpPrompt";
+include ":gumps:htmlGump";
 include ":merchants:merchant";
 include ":merchants:item_template";
 include	":merchants:crafthelp";

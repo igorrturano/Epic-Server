@@ -11,6 +11,7 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:gumpPrompt";
 include ":gumps:requestGump";
+include ":gumps:selectionGump";
 include ":gumps:yesNo";
 include ":tn:tngumps";
 include "include/say";

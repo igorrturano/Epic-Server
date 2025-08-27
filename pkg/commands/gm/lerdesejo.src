@@ -2,6 +2,7 @@
 use uo;
 use os;
 use datafile;
+use util;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
