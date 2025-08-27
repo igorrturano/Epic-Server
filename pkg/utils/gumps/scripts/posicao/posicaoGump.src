@@ -1,9 +1,9 @@
 //Author: Deiro || Rafael Santos
 
 include ":gumps:gumps";
-include ":gumps:/include/epicGumps";
-include ":crafting:gumps/fabricacaoGumps";
-include ":gumps:/include/posicaoGump";
+include ":gumps:epicGumps";
+include ":gumps:posicaoGump";
+include ":gumps:autoClose";
 
 program PosicaoGump(parametros)
 	var quem			:= parametros[1];

@@ -1,6 +1,6 @@
 //Author: Deiro || Rafael Santos
 
-use Math;
+use math;
 
 include "/include/epicConstants";
 include "/include/epicPropNames";

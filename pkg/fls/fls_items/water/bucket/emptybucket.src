@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":water:buckets";
+include ":propagacao:include/propagacao";
 
 const SOUND_POUR1	:= 0x241;
 const SOUND_POUR2	:= 0x26;
@@ -189,6 +190,13 @@ function SplashObject(who, bucket, targ)
 		if ((targ.objtype >= 14732) && (targ.objtype <= 14746))
 			PrintTextAbove(targ, "*O fogo apaga*");
 			DestroyItem(targ);
+		elseif(targ.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
+			var marcadoresIncendio := ListItemsNearLocationOfType(targ.x,targ.y,targ.z,1,MARCADOR_PROPAGACAO_OBJTYPE,targ.realm);
+
+			foreach marcador in marcadoresIncendio
+				Sleepms(2);
+				marcador.Estimular(RESFRIAMENTOS::RAZOAVEL, true);
+			endforeach
 		elseif (targ.objtype == 3555)
 			PrintTextAbove(targ, "*A fogueira apaga");
 			DestroyItem(targ);
