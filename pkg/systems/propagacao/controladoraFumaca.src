@@ -1,7 +1,7 @@
 use os;
 use cfgfile;
 use uo;
-use Math;
+use math;
 
 //FIZ SAPORRA NA PREGUIÇA, REFAZER!!!! ass: Deiro
 program controladoraFumaca(nuvemFumaca)
