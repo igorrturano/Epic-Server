@@ -7,13 +7,13 @@ use os;
 use basic;
 
 //include "include/client";
-include "gumps";
+// include "gumps";
 include "gumps_ex";
 
 const ALTURA_LINHA := 20;
 const QUALTIDADE_COLUNAS := 12;
 
-enum GUMP_PARAMS
+enum GUMP_OPTIONS
 	HIDE_TITLE, HIDE_PAGE, HIDE_BORDER,
 	BORDER_GOLDEN, BORDER_BLUE, BORDER_MARBLE,
 	NO_CLOSABLE, NO_MOVABLE
@@ -51,33 +51,32 @@ endenum
  * title: O gump que será adicionado a moldura
  * width: Largura
  * height: Altura
- * background: Imagem de fundo (caso queira alterar)
  * params: Array com demais parâmetros (usando as consts acima) para modificar a forma como o gump é criado, se terá barra para título, scroll, etc.
  *
  * Return gump
  * 
  */
-function GFECreateGump(title, width, height, params := array{})
+function GFECreateGump(title, width, height, options := array{})
 	var gump := GFCreateGump(0, 0, width, height);
 	var x, y;
 	
-	if (NO_CLOSABLE in params)
+	if (NO_CLOSABLE in options)
 		GFClosable(gump, 0);
 	else
 		GFClosable(gump, 1);
 	endif
 
-	if (NO_MOVABLE in params)
+	if (NO_MOVABLE in options)
 		GFMovable(gump, 0);
 	else
 		GFMovable(gump, 1);
 	endif
 
-	if (!(HIDE_BORDER in params))
+	if (!(HIDE_BORDER in options))
 		var border;
-		if (BORDER_BLUE in params)
+		if (BORDER_BLUE in options)
 			border := BORDER_BLUE;
-		elseif (BORDER_MARBLE in params)
+		elseif (BORDER_MARBLE in options)
 			border := BORDER_MARBLE;
 		else 
 			border := BORDER_GOLDEN;
@@ -87,13 +86,13 @@ function GFECreateGump(title, width, height, params := array{})
 
 	x := 20;
 	y := 27;
-	if (!(HIDE_TITLE in params))
+	if (!(HIDE_TITLE in options))
 		GFResizePic(gump, x, y, 9350, width - 27, 35);
 		GFESetTitle(gump, width/2, title, 53);
 		y += 40;
 	endif
 
-	if (!(HIDE_PAGE in params))
+	if (!(HIDE_PAGE in options))
 		GFResizePic(gump, x, y, 9350, width - 27, height - y - 8);
 	endif
 
@@ -186,16 +185,11 @@ function GFESetBackground(byref gump, width, height, imgID)
 	GFGumpPicTiled(gump, 10, 10, width, height, imgID);
 endfunction
 
-function GFEAddTextBox(byref gump, x, y, width, height := 16, text_color := COLOR_YELLOW, default_text := 0, id := 0, maxlenght := 0)
+function GFEAddTextBox(byref gump, x, y, width, height := 16, text_color := 53, default_text := 0, id := 0, maxlenght := 0)
 	GFResizePic(gump, x, y, GFGetCfgConst("BackGrounds", "GOLDTRIM"), width + 10, height + 15);
 	var val := GFTextEntry(gump, x + 6, y + 6, width, height, text_color, default_text, id, maxlenght);
 	return val;
 endfunction
-
-function GFEAdd(byref gump)
-
-endfunction
-
 
 /* 
  * CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)

@@ -11,6 +11,7 @@ include ":combat:damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
+include ":propagacao:include/efeitosIncendiarios";
 
 program cast_firebolt(params)
     var caster := params[1];
@@ -22,12 +23,12 @@ program cast_firebolt(params)
 
 	SendSysMessage(caster, "Selecione o alvo.");
     if (!targ.IsA(POLCLASS_MOBILE))
-        if(targ.isSpiderEggSac()) 
-            BurnEgg(targ);
-            return 1;
+
+        var isDisparo := TentaCriarFagulhaIncendiaria(caster,targ);
+        if(!isDisparo)
+            SendSysMessage(caster, "Alvo invalido  ou fora de visão.");
+            return 0;
         endif
-        SendSysMessage(caster, "Alvo invalido.");
-        return 0;
     endif
 
     if (!targ)

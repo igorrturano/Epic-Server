@@ -35,6 +35,7 @@ program FillBucket(who, hook)
 	
 	PlaySoundEffect(hook, SPLASH_SOUND);
 	PlayStationaryEffect(well.x, well.y, well.z+1, 13613, 10, 10, 1);
+	ReleaseItem(bucket);
 	bucket := bucket.FillBucket(FRESH_WATER_BUCKET);
 	sleepms(800);
 	if ( !bucket )

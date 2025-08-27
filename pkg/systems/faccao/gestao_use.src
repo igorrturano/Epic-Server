@@ -7,6 +7,7 @@ use guilds;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:htmlGump";
+include ":gumps:yesNo";
 include ":faccao:faccao";
 include ":datafile:datafile";
 include "include/say";
