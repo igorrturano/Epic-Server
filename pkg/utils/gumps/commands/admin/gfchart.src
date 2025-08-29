@@ -10,11 +10,9 @@
 // Created: 05-Apr-2000
 // Updated: 24-Apr-2000
 //
-use uo;
-use basic;
 
-//include ":gumps:old-gumps";
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 
 // Gump constants

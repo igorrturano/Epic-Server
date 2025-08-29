@@ -1,21 +1,22 @@
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
+include ":attributes:attributeConstants";
 
 print("INSTALLING: Methods for Weapon -> Equipment System... OK!");
 
 /**
- * getMainDamageDice(item)
+ * getMainDamageDice(weapon)
  *
  * Purpose
  * Buscar o dado do maindamage favorito da arma.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return value
  *
  */
-exported function getMainDamageDice(item)
-	var prop := item.getAttrBase();
+exported function getMainDamageDice(weapon)
+	var prop := weapon.getAttrBase();
 
 	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
 		return prop.SlashMainDamage;
@@ -47,20 +48,20 @@ exported function getMainDamageMax(weapon)
 endfunction
 
 /**
- * getOffDamageDice(item)
+ * getOffDamageDice(weapon)
  *
  * Purpose
  * Buscar o dado do offdamage favorito da arma.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return value
  *
  */
-exported function getOffDamageDice(item)
-	var prop := item.getAttrBase();
-	
+exported function getOffDamageDice(weapon)
+	var prop := weapon.getAttrBase();
+
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;
 	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
@@ -91,105 +92,116 @@ exported function getOffDamageMax(weapon)
 endfunction
 
 /**
- * getType(item)
+ * getType(weapon)
  *
  * Purpose
  * Buscar o Tipo de Ataque (Postura) favorito da arma.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return value
  *
  */
-exported function getType(item)
-	var elem := getItemCfgElem(item);
-	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
+exported function getType(weapon)
+	var elem := weapon.getCfgElem();
+	return elem.TipoAtaque ?: error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
 /**
- * isDualWield(item)
+ * isDualWield(weapon)
  *
  * Purpose
  * Verifica se a arma é DualWield.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return 1/0
  *
  */
-exported function isDualWield(item)
-	var elem := getItemCfgElem(item);
-
+exported function isDualWield(weapon)
+	var elem := weapon.getCfgElem();
 	return Upper(elem.Attribute) == Upper(DUALWIELD);
 endfunction
 
 /**
- * isRanged(item)
+ * isRanged(weapon)
  *
  * Purpose
  * Verifica se a arma é Ranged.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return 1/0
  *
  */
-exported function isRanged(item)
-	var elem := getItemCfgElem(item);
-
+exported function isRanged(weapon)
+	var elem := weapon.getCfgElem();
 	return Upper(elem.Attribute) == Upper(RANGED);
 endfunction
 
 /**
- * isBow(item)
+ * isBow(weapon)
  *
  * Purpose
  * Verifica se a arma é Arco.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return 1/0
  *
  */
-exported function isBow(item)
-	var elem := getItemCfgElem(item);
+exported function isBow(weapon)
+	var elem := weapon.getCfgElem();
 	return elem.ProjectileType == 0xf3f;
 endfunction
 
 /**
- * isCrossBow(item)
+ * isCrossBow(weapon)
  *
  * Purpose
  * Verifica se a arma é Crossbow.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return 1/0
  *
  */
-exported function isCrossBow(item)
-	var elem := getItemCfgElem(item);
+exported function isCrossBow(weapon)
+	var elem := weapon.getCfgElem();
 	return elem.ProjectileType == 0x1bfb;
 endfunction
 
 /**
- * isThrowable(item)
+ * isThrowable(weapon)
  *
  * Purpose
  * Verifica se a arma é Arremessável.
  *
  * Parameters
- * item: itemRef a ser verificado.
+ * weapon: itemRef a ser verificado.
  *
  * Return 1/0
  *
  */
-exported function isThrowable(item)
-	var elem := getItemCfgElem(item);
+exported function isThrowable(weapon)
+	var elem := weapon.getCfgElem();
 	return elem.Throwable != error;
+endfunction
+
+/**
+ * IsTwoHandedWeapon(weapon)
+ *
+ * Verifica se uma arma é de duas mãos.
+ *
+ * @param weapon O item da arma ou referência para verificação
+ * @return 1 se a arma for de duas mãos, 0 caso contrário
+ */
+exported function isTwoHanded(weapon)
+	weapon := weapon.getCfgElem();
+	return Upper(weapon.Attribute) == Upper(TWOHANDED);
 endfunction

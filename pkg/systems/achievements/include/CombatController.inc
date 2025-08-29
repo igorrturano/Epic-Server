@@ -2,7 +2,7 @@
 // Feito com struct pra evitar refatoramento e um monte de parametros.
 include ":achievements:model/Achievement";
 include ":achievements:model/AchievementCombat";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 include "include/NPCUtil";
 
 /**
@@ -16,26 +16,104 @@ include "include/NPCUtil";
  * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
  */
 function AchievementCombat_Advance(attacker, defender, combatInfo)
+	AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo);
+	AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo);
+
+	AchievementCombat_Advance_Weapon(attacker, defender, combatInfo);
+endfunction
+
+/**
+ * AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
+ *
+ * Avança o progresso de achievements de combate para o atacante, baseado no template do NPC defensor.
+ *
+ * Parameters
+ * attacker: Entidade que realizou o ataque (jogador ou NPC).
+ * defender: Entidade que foi atacada (jogador ou NPC).
+ * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
+ */
+function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	var achiev;
-	var achievName := defender.GetCategory() ?: NPC_GetNPCConfig(defender.getNPCTemplate()).Category;
+	var key := defender.getNPCTemplate();
+	if (!key) return; endif // Se não tem template, não é um npc válido.
 
-	// Se ainda não tem categoria, não é um npc válido.
-	if (!achievName) return; endif
+	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, key) ?: AchievementCombat(key);
 
-	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, achievName) ?: AchievementCombat(achievName);
+	achiev._SetName(NPC_ParseTemplateName(key).template);
 
-	achiev.AddXP(combatInfo.xp);
-	achiev.AddKills(combatInfo.kills);
-	achiev.AddHits(combatInfo.hits);
-	achiev.AddDamage(combatInfo.damage);
+	achiev := AchievementXPGain(achiev);
+
+	achiev.AddData(ACHIEVDATA_KILLS, combatInfo.kills);
+	achiev.AddData(ACHIEVDATA_HITS, combatInfo.hits);
+	achiev.AddData(ACHIEVDATA_DAMAGE_DONE, combatInfo.damage);
+
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (acumulado) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetKills()} - Hits: {achiev.GetHits()} - Damage: {achiev.GetDamage()}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
 
 	attacker.SetAchievementProgress(achiev);
 endfunction
 
-function AchievementCheckLevel()
+function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
+	var achiev;
+	var key := defender.GetCategory() ?: NPC_GetNPCConfig(defender.getNPCTemplate()).Category;
+	if (!key) return; endif // Se ainda não tem categoria, não é um npc válido.
+
+	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, key) ?: AchievementCombat(key);
+
+	achiev := AchievementXPGain(achiev);
+
+	achiev.AddData(ACHIEVDATA_KILLS, combatInfo.kills);
+	achiev.AddData(ACHIEVDATA_HITS, combatInfo.hits);
+	achiev.AddData(ACHIEVDATA_DAMAGE_DONE, combatInfo.damage);
+
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
+
+	attacker.SetAchievementProgress(achiev);
+endfunction
+
+function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
+	var achiev;
+	var key := CStr(Hex(attacker.weapon.objtype));
+	if (!key) return; endif // Se não tem arma, não tem achievement de arma.
+
+	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, key) ?: AchievementCombat(key);
+
+	achiev._SetName(attacker.weapon.desc);
+	
+	achiev := AchievementXPGain(achiev);
+
+	achiev.AddData(ACHIEVDATA_KILLS, combatInfo.kills);
+	achiev.AddData(ACHIEVDATA_HITS, combatInfo.hits);
+	achiev.AddData(ACHIEVDATA_DAMAGE_DONE, combatInfo.damage);
+
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (progresso atual) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetData(ACHIEVDATA_KILLS)} - Hits: {achiev.GetData(ACHIEVDATA_HITS)} - Damage: {achiev.GetData(ACHIEVDATA_DAMAGE_DONE)}");
+
+	attacker.SetAchievementProgress(achiev);
+endfunction
+
+function AchievementXPGain(achiev)
+	// TODO: Implementar lógica de ganho de XP para achievements de combate.
+	achiev.AddXP(AchievementXPCalc(achiev));
+
+	if (AchievementAdvanceLevel())
+		achiev.AddLevel();
+	endif
+
+	return achiev;
+endfunction
+
+function AchievementXPCalc(achiev)
+	// TODO: Implementar lógica de cálculo de XP para achievements de combate.
 	return 0;
+endfunction
+
+function AchievementAdvanceLevel()
+	// TODO: Implementar lógica de avanço de nível de achievement.
+	return false;
 endfunction
 

@@ -1,19 +1,11 @@
-use uo;
 use os;
-use math;
 
+include ":debug:Controller/DebugController";
 include ":combat:combatFX";
 
-
-// TODO: Fazer um único .src para essa habilidades de armas
-	// TODO: Criar um enum (ou ver se já existe em algum lugar) para categorizar quais armas são de quais efeito/habilidades
-program special_attack_garen(params)
-	var attacker	:= params[1];
-	var defender	:= params[2];
-
-	print("GAREN!");
-	defender := Target(attacker);
-
+program SpecialAttack_DownwardCut(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
 	var moveTo_x := attacker.x;
 	var moveTo_y := attacker.y;
 
@@ -40,11 +32,12 @@ program special_attack_garen(params)
 		SleepMS(100);
 	endwhile
 
-	// Desce os 5 tiles que pulou
+	// Desce os tiles que pulou
 	PlayAttackAnimation(attacker);
 	MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 	
 	attacker.facing(GetFacing(attacker.x, attacker.y, defender.x, defender.y)); // Vira o char para o alvo
+	attacker.attack_once(defender);
 
 	return 1;
 endprogram

@@ -90,7 +90,7 @@ endfunction
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
-    var race := GetObjProperty(mobile, "myrace");
+    var race := npc_elem.epicRace;
 
     if (has_colors)
         setupNPCColor(mobile, has_colors);
@@ -105,7 +105,9 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (isBoss)
         race := isBoss.race;
         makeRace(mobile, race);
-    else
+    elseif (race)
+        makeRace(mobile, race);
+    else 
         makeRace(mobile);
     endif
 
@@ -576,11 +578,7 @@ function SetupNPCEquip(who, npc_elem)
 
     // Apply boss colors to clothing AFTER all equipment is set up
     if (boss && boss.color_ranges && boss.color_ranges.size() > 0)
-        print("DEBUG: Applying boss colors. Color ranges: " + boss.color_ranges.size());
         ApplyBossColors(who, boss.color_ranges);
-    else
-        print("DEBUG: No boss colors to apply. Boss: " + (boss ? "exists" : "null") + 
-            ", Color ranges: " + (boss.color_ranges ? boss.color_ranges.size() : "null"));
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
@@ -904,28 +902,6 @@ function ChooseHighestOpponent(me, byref opponent, new_opponent := 0, force_chan
    if (GetCooldown(me, "#blockaggro"))
       return 0;
    endif
-
-   var highest_aggro := getHighestAggro(me);
-   if (highest_aggro && (!opponent || highest_aggro != opponent.serial))
-      highest_aggro := SystemFindObjectBySerial(highest_aggro);
-      opponent := highest_aggro;
-      SetOpponent(highest_aggro);
-      TurnToward(highest_aggro);
-      return 1;
-   endif
-endfunction
-
-function getHighestAggro(creature)
-   var aggros := creature.aggroProp();
-   var highest := array{0, -9999999};
-   foreach serial in (aggros.keys())
-      if (aggros[serial] >= highest[2])
-         highest := array{serial, aggros[serial]};
-      endif
-      sleepms(2);
-   endforeach
-
-   return highest[1];
 endfunction
 
 function TacticalReposition(opponent, chasing)
@@ -1172,6 +1148,10 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    if (GetObjProperty(defender, "noattack"))
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
         // Allow combat if defender initiated it
@@ -1179,6 +1159,41 @@ function CanFight(attacker, defender)
         // Otherwise prevent attacking during cooldown
         return 0;
     endif
+
+    var npc_elem := NPC_GetNPCConfig(me);
+	var category := GetConfigString(npc_elem, "Category");
+
+	if (category == "Aklats")
+		var debug := GetObjProperty(me, "#taunt_opponent");
+		
+		if (me.opponent)
+			return 1;
+		endif
+		var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
+		var opponent_d := SystemFindObjectBySerial(opponent_serial);
+		if (debug)
+			PrintTextAbove(me, "*Alertado pelo som!*");
+			return 1;
+		else
+		var pegadas := {0x1E03, 0x1E04, 0x1E05, 0x1E06}; 
+		var footsteps := array;
+
+		// Para cada tipo de pegada
+		foreach objtype in pegadas
+			foreach pegada in ListItemsNearLocationOfType(me.x, me.y, me.z, 10, objtype, me.realm)
+				footsteps.append(pegada);
+				PrintTextAbove(me, "*Alertado pelas vibrações!*");
+				sleepms(2);
+			endforeach
+			sleepms(2);
+		endforeach
+			            
+		if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
+			return 1;
+		endif
+		return 0;			
+endif
+	endif
 
     // Grey NPCs (neutral alignment) should only fight back when attacked
     if (attacker.alignment == 0)
@@ -1397,10 +1412,15 @@ function HandleIdleState()
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
     
     // Return to spawn point if we have one
-    var spawn_point := SystemFindObjectBySerial(GetObjProperty(me, "spawnpoint"));
+    var spawn_serial := GetObjProperty(me, "spawnpoint");
+    var spawn_point := 0;
+    if (spawn_serial)
+        spawn_point := SystemFindObjectBySerial(spawn_serial);
+    endif
+
     var anchor := GetObjProperty(me, "anchor");
     var home_x, home_y;
-    
+
     if (spawn_point)
         home_x := spawn_point.x;
         home_y := spawn_point.y;
@@ -2381,4 +2401,41 @@ endfunction
 
 function RandomColorFromRanges(colorRanges)
     return colorRanges[RandomInt(colorRanges.size()) + 1];
+endfunction
+
+//FUNCÕES PARA AKLATS E PEGADAS PARA ACIONAR O ATAQUE
+// Função para verificar se 3 pegadas estão alinhadas (em linha reta)
+function CheckAlinhadas(footsteps)
+    if (footsteps.size() < 3)
+        return 0; // Não há pegadas suficientes
+    endif
+    
+    // Pega as 3 pegadas mais recentes (assumindo que são as últimas na lista)
+    var step1 := footsteps[footsteps.size() - 3];
+    var step2 := footsteps[footsteps.size() - 2];
+    var step3 := footsteps[footsteps.size() - 1];
+    
+    // Verifica se os 3 pontos estão alinhados
+    return ArePointsAligned(step1, step2, step3);
+endfunction
+
+// Função para verificar se 3 pontos estão em linha reta
+function ArePointsAligned(p1, p2, p3)
+    // Calcula os vetores entre os pontos
+    var dx1 := p2.x - p1.x;
+    var dy1 := p2.y - p1.y;
+    var dx2 := p3.x - p2.x;
+    var dy2 := p3.y - p2.y;
+    
+    // Se os vetores são proporcionais, os pontos estão alinhados
+    // Usando produto cruzado: se dx1*dy2 - dy1*dx2 == 0, então estão alinhados
+    var crossProduct := (dx1 * dy2) - (dy1 * dx2);
+    
+    // Considera alinhado se o produto cruzado for 0 (ou muito próximo de 0)
+    // Valor absoluto manual já que POL pode não ter abs()
+    if (crossProduct < 0)
+        crossProduct := -crossProduct;
+    endif
+    
+    return (crossProduct <= 1); // Tolerância de 1 para compensar arredondamentos
 endfunction

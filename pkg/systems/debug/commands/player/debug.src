@@ -21,32 +21,27 @@
  */
 use uo;
 
-include ":debug:main";
-include "include/say";
+include ":debug:Controller/DebugController";
 
 program CMD_debug(who, debugName)
 	debugName.Lower();
 	
     if (!debugName || Lower(debugName) == "list")
-		SendSysMessage(who, "Lista de debugs disponíveis: ");
-		foreach debug in listDebugs
-			SendSysMessage(who, $"Tag: {debug.name} - PLevel: {debug.level}");
+		SendSysMessageEx(who, "Lista de debugs disponíveis: ");
+		foreach debug in (listDebugs)
+			SendSysMessageEx(who, $"Tag: {_debug_iter} - PLevel: {debug.level}");
 		endforeach
 		return;
 	endif
 	
-	foreach debug in listDebugs
-        if (Lower(debugName) == Lower(debug.name))
-            if (who.cmdlevel >= debug.level)
-                who.setDebugProp(debugName);
-                return;
-            else
-                SendSysMessageEx(who, $"DEBUG {debugName}:  Nível insuficiente.");
-				return;
-            endif
-        endif
-    endforeach
-
-    SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.");
-	SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list");
+	if (!listDebugs[Lower(debugName)])
+		SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.", SSM_FAIL);
+		SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list", SSM_FAIL);
+	else
+		if (who.cmdlevel >= listDebugs[Lower(debugName)].level)
+			who.setDebugProp(debugName);
+		else
+			SendSysMessageEx(who, $"DEBUG {debugName}: Nível insuficiente.", SSM_FAIL);
+		endif
+	endif
 endprogram

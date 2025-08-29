@@ -34,7 +34,7 @@ function AnimalBrain()
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
-                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))

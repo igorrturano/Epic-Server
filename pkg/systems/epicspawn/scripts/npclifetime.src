@@ -29,9 +29,7 @@ program npclifetime(params)
         print("ERROR: NpcLifetime - Parameter is not an NPC");
         return 0;
     endif
-    
-    print("DEBUG: NpcLifetime - Started for " + npc.name + " with lifetime " + lifetime + " seconds");
-    
+       
     // Check if NPC already has an existing lifetime script running
     var existing_script := GetObjProperty(npc, "lifetime_script");
     if (existing_script)
@@ -39,7 +37,6 @@ program npclifetime(params)
         var script_pid := GetProcess(CInt(existing_script));
         if (script_pid)
             script_pid.kill();
-            print("DEBUG: NpcLifetime - Killed existing lifetime script");
         endif
     endif
     
@@ -53,7 +50,6 @@ program npclifetime(params)
     // Wait for the lifetime to expire
     while (npc && !npc.dead)
         if (ReadGameClock() >= expire_time)
-            print("DEBUG: NpcLifetime - Lifetime expired for " + npc.name);
                 SetObjProperty(npc, "allowdeath", 1);
                 SetObjProperty(npc, "GuardKill", 1);	
                 ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
@@ -64,6 +60,5 @@ program npclifetime(params)
         sleep(5);
     endwhile
     
-    print("DEBUG: NpcLifetime - Script ended for " + (npc ? npc.name : "unknown NPC"));
     return 1;
 endprogram

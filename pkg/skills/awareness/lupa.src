@@ -7,6 +7,8 @@ include "include/client";
 include "include/say";
 include ":gumps:gumps_ex";
 include ":gumps:gumps";
+include ":gumps:selectionGump";
+include ":gumps:requestGump";
 include "include/utils";
 include ":attributes:attributes";
 include ":coords:coords";
@@ -14,6 +16,7 @@ include ":timedscripts:timedScripts";
 include ":brainAI:include/npcInit";
 include ":dyes:include/dyes";
 
+//ADICIONAR PÁGINA PARA RESULTADOS DE AUTOPSIA
 program ShowInvestigationMenu(character, magnifyingGlass)
    // Verificar se o item já foi transformado em relatório
    if (magnifyingGlass.graphic == 0x46AE)
@@ -36,10 +39,9 @@ program ShowInvestigationMenu(character, magnifyingGlass)
     GFClosable(gump, 1);
     GFGumpPic(gump, 243, 6, 1596);
     GFGumpPic(gump, 243, 148, 295);
-    //GFGumpPic(gump, 243, 290, 1598);
     GFGumpPic(gump, 243, 432, 294);
     
-    GFGumpPic(gump, 475, 55, 293);
+    GFGumpPic(gump, 475, 55, 7777);
     var caseName := magnifyingGlass.GetProp("CaseName");
 
     // Detalhes do Caso
@@ -111,67 +113,45 @@ elseif (crimeType == "homicidio")
 GFTextLine(gump, 370, 175, 2108, "Diligências:");
 
 // Posição inicial para as imagens
-var img_x := 443;
-var img_y := 155;
-var img_spacing := 45; // Espaçamento entre as imagens
+var img_x := 505;
+var img_y := 82;
 
 // Vamos usar cores com transparência
-// 0 = sem transparência (diligência realizada)
+// 0 = sem transparência (diligência realizada) 40034
 // 1001 = com 50% de transparência (diligência pendente)
 var diligences_allowed := GetObjProperty(magnifyingGlass, "DiscoveredEvidenceTypes");  
-
+GFGumpPic(gump, 545, 0, 40034, 1001);
 // Interrogatório - Gump ID 2286
-if (crimeType != "homicidio")
-if (GetObjProperty(magnifyingGlass, "RealizarInqueritoVitima") == 1)
-    GFGumpPic(gump, img_x, img_y, 2286, 0); // Sem transparência
-else
-    GFGumpPic(gump, img_x, img_y, 2286, 1001); // Com transparência
-endif
-GFTextLine(gump, img_x, img_y + 35, 2100, "Inter.");
-img_x += img_spacing;
-endif
-
-// Pegadas - Gump ID 2292
-if ("dedução" in diligences_allowed)
-if (GetObjProperty(magnifyingGlass, "Deduzir Realizado") == 1)
-    GFGumpPic(gump, img_x, img_y, 2292, 0); // Sem transparência
-else
-    GFGumpPic(gump, img_x, img_y, 2292, 1001); // Com transparência
-endif
-GFTextLine(gump, img_x, img_y + 35, 2100, "Deduç.");
-img_x += img_spacing;
-endif
-
-// Pegadas - Gump ID 2248
-if ("pegadas" in diligences_allowed)
-if (GetObjProperty(magnifyingGlass, "Pegada Analisada") == 1)
-    GFGumpPic(gump, img_x, img_y, 2248, 0); // Sem transparência
-else
-    GFGumpPic(gump, img_x, img_y, 2248, 1001); // Com transparência
-endif
-GFTextLine(gump, img_x, img_y + 35, 2100, "Pegad.");
-img_x += img_spacing;
-endif
-
-// Testemunha - Gump ID 2249
-if ("testemunha" in diligences_allowed)
-if (GetObjProperty(magnifyingGlass, "Depoimento Coletado") == 1)
-    GFGumpPic(gump, img_x, img_y, 2249, 0); // Sem transparência
-else
-    GFGumpPic(gump, img_x, img_y, 2249, 1001); // Com transparência
-endif
-GFTextLine(gump, img_x, img_y + 35, 2100, "Testem.");
-img_x += img_spacing;
-endif
-
-// Autópsia - Gump ID 2243
 if (crimeType == "homicidio")
-if (GetObjProperty(magnifyingGlass, "autopsia"))
-    GFGumpPic(gump, img_x, img_y, 2243, 0); // Sem transparência
+	if (GetObjProperty(magnifyingGlass, "autopsia"))
+		GFGumpPic(gump, img_x, img_y, 6440, 0); // Sem transparência
+	else
+		GFGumpPic(gump, img_x, img_y+28, 6439, 0);
+	endif
 else
-    GFGumpPic(gump, img_x, img_y, 2243, 1001); // Com transparência
+	if (GetObjProperty(magnifyingGlass, "RealizarInqueritoVitima") == 1)
+		GFGumpPic(gump, img_x, img_y+28, 6440, 0); // Sem transparência
+	else
+		GFGumpPic(gump, img_x, img_y+28, 6439, 0);
+	endif
 endif
-GFTextLine(gump, img_x, img_y + 35, 2100, "Aut");
+
+if (GetObjProperty(magnifyingGlass, "Depoimento Coletado") == 1)
+	GFGumpPic(gump, img_x, img_y+55, 6440, 0); // Sem transparência
+else
+	GFGumpPic(gump, img_x, img_y+55, 6439, 0);
+endif
+
+if (GetObjProperty(magnifyingGlass, "Pegada Analisada") == 1)
+	GFGumpPic(gump, img_x, img_y+83, 6440, 0); // Sem transparência
+else
+	GFGumpPic(gump, img_x, img_y+83, 6439, 0);
+endif
+
+if (GetObjProperty(magnifyingGlass, "InvestigarAreaCrime_Realizado") == 1)
+	GFGumpPic(gump, img_x, img_y+110, 6440, 0); // Sem transparência
+else
+	GFGumpPic(gump, img_x, img_y+110, 6439, 0);
 endif
 
 	// Dados do Suspeito
@@ -235,7 +215,8 @@ print("Tamanho das anotações: " + len(anotacoes));
     elseif (input[0] == 2)
         ArquivarCaso(character, magnifyingGlass);
     elseif (input[0] == 4)
-		var weapon := magnifyingGlass.GetProp("weaponSerial");
+		var autopsy := GetObjProperty(magnifyingGlass, "autopsy_results");
+		var weapon := autopsy["serial_weapon"];
 		CompareMurderWeapons(character, weapon, magnifyingGlass);
 	elseif (input[0] == 5)
 		start_script(":awareness:evidence", {character, victimSerial, areaX, areaY, areaZ, arearealm, "Colher Depoimento", crimeType, magnifyingGlass.serial});
@@ -376,6 +357,7 @@ function ArquivarCaso(character, magnifyingGlass)
 endfunction
 
 function CompareMurderWeapons(character, murder_weapon, magnifyingGlass)
+  print("o seril_weapon eh "+murder_weapon);
   EraseObjProperty(character, "IsMeditating");
   EraseObjProperty(character, "HealTimer");
   SendSysMessage(character,"Selecione a arma que você quer comparar com a evidência");

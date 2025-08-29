@@ -12,6 +12,7 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":mechanicalapitude:lockpick_minigame";
 include ":keys:key";
+include ":traps:include/traps";
 include "include/string";
 
 program skill_lockpicking(me, lockpick)
