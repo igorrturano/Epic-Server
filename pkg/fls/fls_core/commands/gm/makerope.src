@@ -8,6 +8,7 @@ use polsys;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":gumps:selectionGump";
 
 CONST A_REALM_TXT	:= 0xB001;
 CONST A_XCOORD_TXT	:= 0xB002;
