@@ -66,8 +66,15 @@ program vendoropt(who)
 	opt.append(0);
 	endif
 
+var curandeiro; 
+if (targ.npctemplate == ":merchants:curandeiro")
+    curandeiro := 1;
+endif
 
-	var result := CheckBoxGump(who, 300, 235, "Opcoes do Vendor", {"Secreto", "Kit Artifice", "Sem Limite Minimo de 10", "Apenas GM vende", "Apenas Um Player Vende", "Alterar Mensagens de Compra", "Cofre", "Taxa", "Faccao"}, opt);
+var opcoes := {"Secreto", "Kit Artifice", "Sem Limite Minimo de 10", "Apenas GM vende", "Apenas Um Player Vende", "Alterar Mensagens de Compra", "Cofre", "Taxa", "Faccao"};
+if (curandeiro == 1) opcoes.append("Custo por Sintoma"); endif
+
+var result := CheckBoxGump(who, 300, 275, "Opcoes do Vendor", opcoes, opt);
 
 	EraseObjProperty(targ, "secret");
 	EraseObjProperty(targ, "onlyartifice");
@@ -113,8 +120,10 @@ program vendoropt(who)
 		elseif ( r == "faccao")
 			var faccao := RequestGump(who, "Insira a faccao deste npc");
 			SetObjProperty(targ, "faccao", faccao);
-			endif
-
+		elseif ( r == "Custo por Sintoma")
+			var custo := cint(RequestGump(who, "Insira o custo por sintoma [somente numeros inteiros]"));
+			SetObjProperty(targ, "custo", custo);
+		endif
 	endforeach
 
 endprogram
