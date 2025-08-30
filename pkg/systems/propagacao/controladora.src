@@ -4,7 +4,7 @@ use polsys;
 
 include "include/client";
 include "/include/epicPropNames";
-include ":propagacao:include/marcadorPropagacaoFabrica";
+include ":propagacao:include/marcadores/marcadorPropagacaoFabrica";
 
 program controladoraPropagacao(esteItemMarcador)
 
@@ -37,7 +37,12 @@ program controladoraPropagacao(esteItemMarcador)
 		if(esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::DORMENTE))
 			Sleepms(esteObjetoMarcador.descansoControleDormente);
 			
-			var descanso := (esteObjetoMarcador.descansoControleDormente * propagacaoConfig["sistema"].multiplicadorDescansoDormente / 1000);
+			var descanso := (
+							esteObjetoMarcador.descansoControleDormente 
+							* propagacaoConfig["sistema"].multiplicadorDescansoDormente 
+							/ 1000
+						);
+
 			event := Wait_For_Event(
 							esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE)
 							? cint(descanso)

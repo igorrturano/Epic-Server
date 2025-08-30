@@ -1,6 +1,6 @@
 use uo;
 
-include ":propagacao:include/marcadorPropagacaoIncendio";
+include ":propagacao:include/marcadores/impl/marcadorPropagacaoIncendio";
 include "/include/epicPropNames";
 
 class MarcadorPropagacaoFabrica()

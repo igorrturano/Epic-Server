@@ -5,52 +5,7 @@ use cfgfile;
 use math;
 
 include "/include/epicPropNames";
-
-const MARCADOR_PROPAGACAO_OBJTYPE := 0xe13a;
-
-enum class EV_PROPAGACAO
-	TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
-	ESTIMULO,
-	COMBUSTIVEL,
-	RESFRIAMENTO,
-	PISAO,
-endenum
-
-enum class PROPAGACAO_TIPO
-	INCENDIO := 1,
-endenum
-
-enum class RESFRIAMENTOS
-	BASICO := -10,
-	RAZOAVEL := -55,
-	INTENSO := -120,
-endenum
-
-enum class COMBUSTIVEIS
-	TERRENO := "terrenoInflamavel",
-	ESTATICOS := "staticInflamavel",
-	MAGICO := "magico",
-endenum
-
-enum class ESTADO_PROPAGACAO
-	DORMENTE, //Só aguarda estimulo.
-	LATENTE, //Danifica, mas não propaga
-	PRINCIPIO, //Danifica e propaga
-	REGULAR, //Danifica + e propaga
-	INTENSO //Danifica ++ e propaga
-endenum
-
-
-enum class CONTROLE_PROPAGACAO
-	ATIVO,
-	DORMENTE,
-	MORTO
-endenum
-
-enum tipoCalculoEnergia
-	CALCULO_ENERGIA_GRAPHIC, 
-	CALCULO_ENERGIA_LANDTILE, 
-endenum
+include ":propagacao:/include/util/propagacaoConstants";
 
 function MontaCatalogoDano()
 	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
@@ -153,7 +108,7 @@ function NovaPropPropagacao(
 						esteMarcadorPid := 0,
 						catalogoDano := 0,
 						efeitosPersonalizados := 0,
-						combustivelMagico := 0,
+						combustivelExterno := 0,
 						isMarcadorCoberto := 0
 						)
 
@@ -165,7 +120,7 @@ function NovaPropPropagacao(
 				estadoInicial := estadoInicial,
 				catalogoDano := catalogoDano ? catalogoDano : MontaCatalogoDano(),
 				efeitosPersonalizados := efeitosPersonalizados,
-				combustivelMagico := combustivelMagico,
+				combustivelExterno := combustivelExterno,
 				isMarcadorCoberto := isMarcadorCoberto,
 				lerEstadoAtual := estadoInicial
 			};

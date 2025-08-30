@@ -2,8 +2,6 @@
 use util;
 include ":propagacao:include/propagacao";
 
-const PROPAGACAO_TEMPERATURA_BASE := 20;
-
 class MarcadorPropagacaoBase()
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento)
 		var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
@@ -32,6 +30,8 @@ class MarcadorPropagacaoBase()
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 
+	//@abstract 
+	function Iniciar() endfunction
 	//@abstract 
 	function EfetuarCiclo() endfunction
   	//@abstract 

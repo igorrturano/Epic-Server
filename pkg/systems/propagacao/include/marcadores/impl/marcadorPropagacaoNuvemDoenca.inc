@@ -479,7 +479,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function DevePropagar(this)
     return 
-        this.estado > ESTADO_PROPAGACAO::LATENTE
+        this.estado > ESTADO_PROPAGACAO::DORMENTE
         && !this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO);
   endfunction
 
