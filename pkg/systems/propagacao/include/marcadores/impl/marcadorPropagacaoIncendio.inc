@@ -491,7 +491,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function PegaCatalogoDano(this)
-    var catalogoDano := this.PegaPropPropagacao().catalogoDano;
+    var catalogoDano := this.PegaPropPropagacao().marcadorProps.catalogoDano;
     if(catalogoDano)
       return catalogoDano;
     else

@@ -10,9 +10,7 @@ class CombustivelMagico( CombustivelIncendio )
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
     tileProspectado == 0;
     if(!this.isExaurido)
-      var magico := GetObjProperty(itemMarcador,"propPropagacao").combustivelMagico;
-      if(magico && magico != 0 && TypeOfInt(magico) != OT_STRUCT)
-      endif
+      var magico := GetObjProperty(itemMarcador,"propPropagacao").combustivelExterno;
       if(magico)
         this.EncheCombustivel( magico.combustivel,magico.fator ? magico.fator : 1);
         return this.TemCombustivel();

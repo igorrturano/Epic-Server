@@ -41,8 +41,6 @@ class MarcadorPropagacaoBase()
   	//@abstract 
 	function InjetaCombustivel(deveResetarEstado) endfunction
 
-	
-
 	function MarcarAdjacentes(this)
 		for deslocamentoX := -1 to 1
 			sleepms(2);

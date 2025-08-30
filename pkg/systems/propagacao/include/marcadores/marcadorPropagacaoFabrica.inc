@@ -9,16 +9,18 @@ class MarcadorPropagacaoFabrica()
 
   function Montar( this, parametros)
 	if(parametros.marcador)
-		var propPropagacao := GetObjProperty(parametros.marcador, PROPNAME_PROP_PROPAGACAO) ;
+		var propPropagacao := GetObjProperty(parametros.marcador, PROPNAME_PROP_PROPAGACAO);
 		if(propPropagacao)
 			case (propPropagacao.tipoPropagacao)
 				PROPAGACAO_TIPO::INCENDIO:
 					return MarcadorPropagacaoIncendio(parametros.marcador, propPropagacao, parametros.momentoNascimento);
+				default:
+					break;
 			endcase
 		endif
-			return error{errortext := "O marcador informado não foi configurado."};
+		return error{errortext := "* ERRO * O marcador informado não foi configurado."};
 	else
-		return error{errortext := "O marcador de propagação é obrigatório."};
+		return error{errortext := "* ERRO * O marcador de propagação é obrigatório."};
 	endif
   endfunction
 endclass
