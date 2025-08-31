@@ -168,7 +168,7 @@ if [ ! -f "/opt/pol/pol" ]; then
     echo "ERRO: Executável POL não encontrado!"
     echo "Tentando compilar..."
     cd /opt/pol/scripts
-    ./ecompile -Af
+    ./ecompile -u
 fi
 
 # Configurar permissões apenas para diretórios que não são volumes somente leitura
