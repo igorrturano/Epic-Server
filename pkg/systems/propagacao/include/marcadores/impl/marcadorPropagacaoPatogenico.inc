@@ -71,9 +71,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase)
     if(this.ciclos >= this.duracaoCiclos)
       if(this._IsUltimaGeracao())
         this._AtualizaEstado(ESTADO_PROPAGACAO::DORMENTE);
-        this._EnviaEstimulo(-1);
         this.isAcumulando := false;
-        Print("Enviando estimulo negativo! " + this.esteItemMarcador.serial);
       endif
     endif
 
