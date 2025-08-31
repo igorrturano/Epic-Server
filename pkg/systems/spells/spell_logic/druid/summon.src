@@ -36,11 +36,6 @@ program summontotem(params)
 		return;
 	endif
 
-	if (GetMaxSummons(who) < GetNumSummons(who) + petcost )
-		SendSysMessageEx(who, "Voce tem " + GetNumSummons(who) + " invocacoes sob seu comando e o maximo sao : " + GetMaxSummons(who)  + "  . "  , SSM_FAIL);
-		return;
-	endif
-
 	var espirito := summon(template, targ, who);
 	if (!espirito)
         SendSysMessageEx(who, "Você falhou em invocar a criatura.", SSM_FAIL);
@@ -50,6 +45,11 @@ program summontotem(params)
 	var petcost := 1; // Default pet cost
 	if (Cint(espirito.getTier())) 
 		petcost := Cint(espirito.getTier());
+	endif
+
+	if (GetMaxSummons(who) < GetNumSummons(who) + petcost )
+		SendSysMessageEx(who, "Voce tem " + GetNumSummons(who) + " invocacoes sob seu comando e o maximo sao : " + GetMaxSummons(who)  + "  . "  , SSM_FAIL);
+		return;
 	endif
 
 	var slot;
