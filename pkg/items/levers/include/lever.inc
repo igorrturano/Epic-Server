@@ -314,10 +314,8 @@ function normalusage(who, item)
       if (status == "off")
 	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
 		if (tp_all != 0)
-			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
-				PrintText(item, "ENTROU NO FOREACH");
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all, item.realm)
 				if(!mobile.acctname)
-					PrintText(item, "NAO ACHOU O ACCOUNT");
 					continue;
 				endif
 				teleporter(mobile, item, opts);
