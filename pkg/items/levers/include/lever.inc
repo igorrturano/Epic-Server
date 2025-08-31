@@ -349,6 +349,25 @@ if (opts.teleport_to)
         PrintText(item, "=== FIM DEBUG ===");
     endif
 endif
+
+   if (opts.teleport_to)
+      if (status == "off")
+	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
+		if (tp_all != 0)
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
+				PrintText(item, "ENTROU NO FOREACH");
+				if(!mobile.acctname)
+					PrintText(item, "NAO ACHOU O ACCOUNT");
+					continue;
+				endif
+				teleporter(mobile, item, opts);
+				sleepms(2);
+			endforeach
+		else
+			teleporter(who, item, opts);
+		endif
+	  endif
+   endif
    if (opts.clima) //SEMPRE deixar essa opção para ativar por último, ela é mais longa
 		if (status == "off")
 			var config_clima := GetObjProperty(item, "clima_cfg");
