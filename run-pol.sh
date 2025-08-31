@@ -38,6 +38,7 @@ show_help() {
     echo "  --logs            Mostrar logs em tempo real"
     echo "  --console         Acessar console do servidor"
     echo "  --stop            Parar o servidor"
+    echo "  --clean           Forçar limpeza de containers existentes"
     echo "  --help            Mostrar esta ajuda"
     echo ""
     echo "Exemplos:"
@@ -53,6 +54,7 @@ BUILD_IMAGE=false
 SHOW_LOGS=false
 ACCESS_CONSOLE=false
 STOP_SERVER=false
+FORCE_CLEAN=false
 CONTAINER_NAME="epic-pol-server"
 
 # Processar argumentos
@@ -78,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             STOP_SERVER=true
             shift
             ;;
+        --clean)
+            FORCE_CLEAN=true
+            shift
+            ;;
         --help)
             show_help
             exit 0
@@ -99,12 +105,24 @@ fi
 # Função para parar servidor
 stop_server() {
     print_info "Parando servidor POL..."
-    if docker ps -q -f name="$CONTAINER_NAME" | grep -q .; then
-        docker stop "$CONTAINER_NAME"
-        docker rm "$CONTAINER_NAME"
-        print_success "Servidor parado"
+    if docker ps -a -q -f name="$CONTAINER_NAME" | grep -q .; then
+        docker stop "$CONTAINER_NAME" 2>/dev/null || true
+        docker rm "$CONTAINER_NAME" 2>/dev/null || true
+        print_success "Servidor parado e container removido"
     else
-        print_warning "Container não está rodando"
+        print_warning "Container não existe"
+    fi
+}
+
+# Função para limpeza forçada
+force_clean() {
+    print_info "Limpando containers existentes..."
+    if docker ps -a -q -f name="$CONTAINER_NAME" | grep -q .; then
+        docker stop "$CONTAINER_NAME" 2>/dev/null || true
+        docker rm "$CONTAINER_NAME" 2>/dev/null || true
+        print_success "Container removido"
+    else
+        print_info "Nenhum container para remover"
     fi
 }
 
@@ -133,6 +151,14 @@ access_console() {
 # Função para construir imagem
 build_image() {
     print_info "Construindo imagem Docker..."
+    
+    # Limpar containers órfãos com o mesmo nome
+    if docker ps -a -q -f name="$CONTAINER_NAME" | grep -q .; then
+        print_info "Limpando container existente antes da construção..."
+        docker stop "$CONTAINER_NAME" 2>/dev/null || true
+        docker rm "$CONTAINER_NAME" 2>/dev/null || true
+    fi
+    
     if docker build -t epic-pol-server .; then
         print_success "Imagem construída com sucesso"
     else
@@ -163,11 +189,12 @@ start_server() {
     # Criar diretórios necessários
     mkdir -p realm data logs
     
-    # Parar container se já estiver rodando
-    if docker ps -q -f name="$CONTAINER_NAME" | grep -q .; then
-        print_info "Parando container existente..."
-        docker stop "$CONTAINER_NAME"
-        docker rm "$CONTAINER_NAME"
+    # Parar e remover container se já existir (rodando ou não)
+    if docker ps -a -q -f name="$CONTAINER_NAME" | grep -q .; then
+        print_info "Removendo container existente..."
+        docker stop "$CONTAINER_NAME" 2>/dev/null || true
+        docker rm "$CONTAINER_NAME" 2>/dev/null || true
+        print_success "Container removido"
     fi
     
     # Construir imagem se necessário
@@ -221,7 +248,9 @@ start_server() {
 }
 
 # Executar ações baseadas nos argumentos
-if [ "$STOP_SERVER" = true ]; then
+if [ "$FORCE_CLEAN" = true ]; then
+    force_clean
+elif [ "$STOP_SERVER" = true ]; then
     stop_server
 elif [ "$SHOW_LOGS" = true ]; then
     show_logs
