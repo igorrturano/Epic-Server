@@ -468,7 +468,7 @@ function linkteleport(who, item)
          endif
 		 var tp_all := RequestGump(who, "Se quiser que teleport todos em uma área digite o tamanho do range, caso contrário deixe em branco");
 			if (tp_all != 0)
-				SetObjProperty(item, "teleport_all", tp_all);
+				SetObjProperty(item, "teleport_all", Cint(tp_all));
 			endif
       opts.teleport_to := 1;
       SendSysMessageEx(who,"O teleporte foi adicionado a alavanca");
