@@ -339,11 +339,6 @@ elseif ( text["todos andem"])
           return;
         endif
 
-		var cfg := ReadConfigFile(":*:npcdesc");
-		var npctemplate := me.npctemplate;
-		npctemplate := npctemplate[10, len(npctemplate)-9];
-		cfg := cfg[npctemplate];
-
 		if (GetObjProperty(me, "summon") == 1)
 			SendSysMessage(owner, "Outros nao podem controlar criaturas invocadas por voce.");
 			return;
@@ -355,8 +350,8 @@ elseif ( text["todos andem"])
 		endif
 
 		var targ := target(ev.source);
-		if (cfg.TameDifficulty >= 61)
-			if ( AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < cfg.TameDifficulty )
+		if (Cint(me.getTameDifficulty()) >= 61)
+			if ( AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < Cint(me.getTameDifficulty()))
 				SendSysMessage(owner, "A criatura nao aceita o alvo como novo dono.");
 				return;
 			endif
@@ -887,7 +882,7 @@ if(GetObjProperty(me, "summoned") == 1)
 endif
 
 var npccfgfile := ReadConfigFile(":*:npcdesc");
-var orneriness := npccfgfile[me.npctemplate].PetSlot;
+var orneriness := me.getTier();
 	if (!orneriness)
 		orneriness := 1;
 	endif
