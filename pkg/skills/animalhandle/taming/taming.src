@@ -190,10 +190,7 @@ function taming(who)
 		return 0;
 	endif
 
-	cfg := 0;
-
 	SetObjProperty(who, "#tamewait", ReadGameClock()+5);
-
 
 	while( TameLoop(who, targ, info) )
 			SetObjProperty(who, "#tamewait", ReadGameClock()+5);

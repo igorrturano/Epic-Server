@@ -41,20 +41,11 @@ program textcmd_acalmar(who)
 		SendSysMessageEx(who, "Você está longe demais.");
 		return 0;
 	endif
-	var tameDifficulty := targ.getTameDifficulty();
 
-	if( !taxonomy)
-			SendSysMessage(who, "Esse não pode ser um alvo válido.");
-			return 0;
-	endif
-
-	unloadConfigFile(":*:npcdesc");
-
-	var category := lower(getnpccategory( creature_template ));
-	var valid_categories := { "animal", "evilanimal", "giantanimal", "mount", "snow", "desert", "underdark" };
-	var index := valid_categories.findIndex(category);
-	if ( index == 0 )
-		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+	var tameDifficulty := creature.getTameDifficulty();
+	var isAnimal := creature.isAnimalBrain();
+	if (!isAnimal)
+		SendSysMessage(who, "Esse não pode ser um alvo válido.");
 		return 0;
 	endif
 
