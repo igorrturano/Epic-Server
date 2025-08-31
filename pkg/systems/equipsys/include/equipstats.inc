@@ -44,7 +44,7 @@ function getWeaponStats(weapon)
 endfunction
 
 function addDamagePhysical(stats, weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
 
@@ -91,7 +91,7 @@ function getDamageElemental(DMGTYPE, weapon)
 endfunction
 
 function addCombatAttributes(stats, weapon)
-	var elem := getItemCfgElem(weapon);
+	var elem := weapon.getCfgElem();
 
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
