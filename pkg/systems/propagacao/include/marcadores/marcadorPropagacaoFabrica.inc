@@ -1,6 +1,7 @@
 use uo;
 
 include ":propagacao:include/marcadores/impl/marcadorPropagacaoIncendio";
+include ":propagacao:include/marcadores/impl/marcadorPropagacaoPatogenico";
 include "/include/epicPropNames";
 
 class MarcadorPropagacaoFabrica()
@@ -14,6 +15,8 @@ class MarcadorPropagacaoFabrica()
 			case (propPropagacao.tipoPropagacao)
 				PROPAGACAO_TIPO::INCENDIO:
 					return MarcadorPropagacaoIncendio(parametros.marcador, propPropagacao, parametros.momentoNascimento);
+				PROPAGACAO_TIPO::PATOGENICO:
+					return MarcadorPropagacaoPatogenico(parametros.marcador, propPropagacao, parametros.momentoNascimento);
 				default:
 					break;
 			endcase

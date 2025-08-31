@@ -11,6 +11,7 @@ endenum
 
 enum class PROPAGACAO_TIPO
 	INCENDIO := 1,
+	PATOGENICO := 2,
 endenum
 
 enum class RESFRIAMENTOS

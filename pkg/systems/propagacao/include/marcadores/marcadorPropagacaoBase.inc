@@ -18,6 +18,7 @@ class MarcadorPropagacaoBase()
 		else
 			this.isMarcadorCoberto := propPropagacao.isMarcadorCoberto;
 		endif
+		this.geracao := propPropagacao.geracao;
 		this.esteItemMarcador := esteItemMarcador;
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
@@ -68,7 +69,7 @@ class MarcadorPropagacaoBase()
 
 					if(DeveCriarMarcadorPropagacaoAdjacente(
 															marcadorPropagacaoEncontrado,
-															this.PegaPropPropagacao().geracao,
+															this.geracao,
 															this.estado
 														))
 

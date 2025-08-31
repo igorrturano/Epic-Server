@@ -185,11 +185,10 @@ function Destruir(quem,itemAlvo,fonteDano)
 		if(!descFonteDano)
 			descFonteDano := "Desconhecido";
 		endif
-		if(TypeOfInt(itemAlvo.x) == OT_UNINIT || TypeOfInt(itemAlvo.x) == OT_ERROR)
-			Print("O que diabo é isso que destrui? " + itemAlvo.desc + " " + fonteDano);
+		if(TypeOfInt(itemAlvo.x) != OT_UNINIT || TypeOfInt(itemAlvo.x) != OT_ERROR)//TODO tem um unintialized vindo de algum lugar, essa é uma solução provisória.
+			InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
+			DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 		endif
-		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
-		DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 	endif
 
 	if(!envelopeDeed.isDeed)
@@ -247,7 +246,8 @@ function DeveMarcarRecriarItem(itemAlvo)
 	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG) //Coloco todo objeto como indispensavel para que itens destruidos antes do sistema entrar nao sejam descartados.
 	&& !itemAlvo.ISA(POLCLASS_CORPSE)
 	&& itemAlvo.ISA(POLCLASS_ITEM)
-	&& !IsDestroco(itemAlvo);
+	&& !IsDestroco(itemAlvo)
+	&& TypeOfInt(itemAlvo.x) != OT_UNINIT;// TODO solução temporarária. tem um unintialized vindo de algum lugar
 endfunction
 
 /*

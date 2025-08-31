@@ -58,6 +58,7 @@ function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propProp
 	structPropagacao.+marcadorOrigemPid := propPropagacaoOrigem.marcadorOrigemPid;
 	structPropagacao.+estadoInicial := estadoInicial;
 	structPropagacao.+isMarcadorCoberto := propPropagacaoOrigem.isMarcadorCoberto;
+	structPropagacao.+geracaoMaxima := propPropagacaoOrigem.geracaoMaxima;
 
 	return CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, true);
 	
@@ -99,6 +100,7 @@ function MapeiaPropPropagacao(structRecebido)
 	structPropagacao.combustivelExterno := structRecebido.combustivelExterno ? structRecebido.combustivelExterno : structPropagacao.combustivelExterno;
 	structPropagacao.isMarcadorCoberto := structRecebido.isMarcadorCoberto ? structRecebido.isMarcadorCoberto : structPropagacao.isMarcadorCoberto;
 	structPropagacao.lerEstadoAtual := structRecebido.lerEstadoAtual ? structRecebido.lerEstadoAtual : structPropagacao.lerEstadoAtual;
+	structPropagacao.geracaoMaxima := structRecebido.geracaoMaxima ? structRecebido.geracaoMaxima : structPropagacao.geracaoMaxima;
 
 	return structPropagacao;
 endfunction
@@ -127,7 +129,8 @@ function NovaPropPropagacao()
 				efeitosPersonalizados := dictionary,
 				combustivelExterno := 0,
 				isMarcadorCoberto := 0,
-				lerEstadoAtual := ESTADO_PROPAGACAO::DORMENTE
+				lerEstadoAtual := ESTADO_PROPAGACAO::DORMENTE,
+				geracaoMaxima := 0
 			};
 	return prop;
 endfunction

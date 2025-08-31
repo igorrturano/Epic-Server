@@ -50,6 +50,7 @@ program controladoraPropagacao(esteItemMarcador)
 								: 0
 							);
 			else
+				Print("Ciclo Ativo invocado");
 				Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo));// descanso minimo
 				event := Wait_For_Event(0);
 			endif
@@ -67,6 +68,7 @@ program controladoraPropagacao(esteItemMarcador)
 			endif
 
 			if(!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
+
 				esteObjetoMarcador.EfetuarCiclo();
 			else
 				DestroyItem(esteItemMarcador);
