@@ -54,7 +54,7 @@ program herd(who)
             "worker":   chk := 1;
             "employed": chk := 1;
         endcase
-    if((chk == 1) or (!cfg.TameDifficulty))
+    if((chk == 1) or (!npc.getTameDifficulty()))
         SendSysMessageEx(who, "Esta criatura nao pode ser pastoreada!", SSM_FAIL);
         return;
     endif
@@ -103,7 +103,7 @@ program herd(who)
 			return;
 		endif
 	else
-		if ( SkillCheck(who, HANDLEANIMAL, CInt(cfg.TameDifficulty)) > 0 )
+		if ( SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0 )
 			if (GetObjProperty(npc,"owner") && (who.cmdlevel < 1) )
 				SendSysMessageEx(who, "Este animal nao pode ser pastoreado", SSM_FAIL);
                 return;
@@ -176,8 +176,8 @@ function Engravidar (who, location_mobile, npc, partos, female_template)
 var npctemplate := npc.npctemplate;
 npctemplate := npctemplate[10, len(npctemplate)-9];
 cfg := cfg[npctemplate];
-var skill_check := (SkillCheck(who, HANDLEANIMAL, CInt(cfg.TameDifficulty)) > 0) ;
-var skill_check2 := (SkillCheck(who, HANDLEANIMAL, CInt(cfg.TameDifficulty+10)) > 0) ;
+var skill_check := (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0) ;
+var skill_check2 := (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty()+10)) > 0) ;
 var gemer := CInt(cfg.damagedsound); // para identificar o som de sequiçu do 1target (macho)
 var cows := array(":brainai:cow", ":brainai:cow2");
 	if (!partos) 
