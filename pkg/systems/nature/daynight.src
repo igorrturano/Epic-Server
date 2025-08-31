@@ -7,7 +7,7 @@ use cfgfile;
 include ":fls_core:fls_characters";
 include ":nature:nature";
 include ":death:death";
-include ":commands:debugsystem";
+include ":debug:Controller/DebugController";
 
 program daynightsystem()
 	SetGlobalProperty("daynightpid", getpid());
@@ -69,7 +69,6 @@ program daynightsystem()
 		SetGlobalProperty("halfdaytime", ReadGameClock());
 		SetGlobalProperty("dia", "dia");
 		darkness := GeTMoonLightMod();
-		print("Day/Night Transition: Set to " + GetGlobalProperty("dia") + " at timestamp " + ReadGameClock());
 
 		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
 		for (i:=darkness;i>=0;i:=i-1)
@@ -86,7 +85,6 @@ program daynightsystem()
 		broadcast("O sol esta se pondo.");
 		SetGlobalProperty("halfdaytime", ReadGameClock());
 		SetGlobalProperty("dia", "noite");
-		print("Day/Night Transition: Set to " + GetGlobalProperty("dia") + " at timestamp " + ReadGameClock());
 
 		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, Superficie e etc)
 		for (i:=0;i<=darkness;i:=i+1)

@@ -260,8 +260,8 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
     endif
 
-    if (boss.class)
-        SetObjProperty(npc, "subclass", boss.class);
+    if (boss.classe)
+        SetObjProperty(npc, "subclass", boss.classe);
     endif
     
     if (boss.preferred_target)

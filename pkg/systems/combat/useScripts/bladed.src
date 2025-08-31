@@ -5,8 +5,7 @@ use util;
 
 include ":gathering:lumberJack";
 include ":survival:fishingFunctions";
-include ":fls_core:fls_objtypes";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":attributes:attributes";
 include "include/client";
 include "include/say";
@@ -85,7 +84,7 @@ function CarveItems(who, tool, item)
                     SendSysMessage(who, "O alvo esta distante.");
                     return 0;
                 else
-                    return start_script(":tn:destroyitems", {who, item, tool}); //Script para quebrar itens quebraveis.
+                    return start_script(":tn:destroyitems", {who, item, tool}); //Script para quebrar itens quebraveis. //OBSOLETO
                 endif
             default:
                 if(((item.objtype >= UOBJ_FISH_START) && (item.objtype <= UOBJ_FISH_END)) || ((item.objtype >= UOBJ_SFISH_START) && (item.objtype <= UOBJ_SFISH_END))|| item.objtype==0x9987) //item cortado é peixe ou peixe pequeno

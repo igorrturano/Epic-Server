@@ -1,4 +1,5 @@
-include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:autoClose";
 
 program autoCloseGumpOnMovedDistance(params)
 	var mobile			:= params[1];

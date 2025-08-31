@@ -70,7 +70,7 @@ function HumanoidBrain()
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
-                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
@@ -79,8 +79,8 @@ function HumanoidBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.source))
-                        HandleHumanoidCombatEvent(ev.source, is_ranged);
+                    if (CanFight(me, ev.opponent))
+                        HandleHumanoidCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     if (me.isShaman()   )

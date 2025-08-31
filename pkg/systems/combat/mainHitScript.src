@@ -9,6 +9,9 @@ use cfgfile;
 include ":combat:settings";
 include ":combat:damage";
 include ":charactercreation:resists";
+include ":mastery:CombatController";
+include ":achievements:CombatController";
+include ":crafting:/include/caracteristicasFabricacao";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -74,6 +77,9 @@ program MainHitScript(params)
 	EpicApplyDamageBase(attacker, defender, weapon, armor, basedamage, dmgType);
 	// Aplica cada dano elemental da arma, caso haja
 	EpicApplyDamageElemental(attacker, defender, weapon, armor, elementalDamages);
+	
+	MasteryCombat_Advance(attacker, struct{ hits := 1, damage := basedamage });
+	AchievementCombat_Advance(attacker, defender, struct{ hits := 1, damage := basedamage });
 
 	return 1;
 endprogram
@@ -603,8 +609,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 		endif
 	endif
 
-
-	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
+	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0 || GetCooldown(defender, "balance_restored"))
 		SendSysMessageEx(defender, "Você não leva o critico");
 		return;
 	endif
@@ -821,6 +826,8 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	var parryBonus := 0;
 	var shield := defender.shield;
 	var shieldAttr := shield.getAttrBase();
+	var fabricacaoApararBonus := PegaValorFabricacao(shield,CARACTERISTICA_FABRICACAO_BONUSAPARAR);
+	var fabricacaoApararAtraso := PegaValorFabricacao(shield,CARACTERISTICA_FABRICACAO_ATRASOAPARAR);
 
 	var blocker;
 	//Verifica se o defensor está sob efeito da a hab esudo do martir
@@ -859,6 +866,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	parryBonus := CInt(
 		CInt(shieldAttr.ParryBonus) + // Parry Bônus Básico do escudo
 		CInt(GetObjProperty(shield, "parrybonus")) + // Parry Bônus Extra do escudo
+		Cint(fabricacaoApararBonus) + // Parry Bônus Extra da Fabricação do escudo
 		CInt(GetObjProperty(defender, "parrybonus")) // Parry Bônus Extra do defensor
 	);
 
@@ -880,6 +888,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	var parryDelay := CInt(
 		-(CInt(shieldAttr.ParryDelay)) + // Parry Delay Básico do escudo
 		-(CInt(GetObjProperty(shield, "parrydelay_mod"))) + // Parry Delay Extra do escudo
+		-(Cint(fabricacaoApararAtraso)) + // // Parry Delay Extra da fabricação do escudo
 		-(CInt(skill/20)) + // Parry Delay Bônus de acordo com a skill
 		8 // Fator de balanceamento
 	);
@@ -1148,7 +1157,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	var weapon_scripts := array;
 	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_critic := GetObjProperty(attacker, "Critic");
-	var pet_txt := Cstr(GetConfigStringArray( taming_cfg[pet_critic], "Text" ));
+	var pet_txt := GetConfigStringArray( taming_cfg[pet_critic], "Text" );
 	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
 	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
 	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
@@ -1161,18 +1170,23 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	elseif (pet_instinto == 1 || pet_selvagem == 1)
 		weapon_scripts :=  GetConfigStringArray( taming_cfg[pet_critic], "CriticalHitScripts" );
 		sleepms(5);
-		printtextabove(attacker, ""+pet_txt);
+		printtextabove(attacker, ""+pet_txt[1]);
 	else
 		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
 	endif
 	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
 
-	var can_crit := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
+	var criticoFabricacao := CInt(PegaValorFabricacao(attacker.weapon, CARACTERISTICA_FABRICACAO_CRITICO));
+	var reducaoCriticoFabricacao := CInt(PegaValorFabricacao(attacker.weapon, CARACTERISTICA_FABRICACAO_REDUCAOCRITICO));
+	var can_crit := criticoFabricacao > 0 || attacker.npctemplate || weapon == FIST;
 	if (weapon_scripts.size() > 0 && can_crit)
-		var critdelay := ReadGameClock()+180;
+		var multiplicador := 7;
+		reducaoCriticoFabricacao := reducaoCriticoFabricacao == OT_LONG? reducaoCriticoFabricacao: 0;
+		multiplicador -= (criticoFabricacao - reducaoCriticoFabricacao);
+		var critdelay := RandomIntMinMax(15 * multiplicador,130  + (15 * multiplicador));
 		if (!GetObjProperty(weapon, "polida"))
 			SendSysMessageEx(attacker, "Sua arma está embotada!", SSM_FAIL);
-			critdelay := ReadGameClock()+240;
+			critdelay := ReadGameClock()+RandomIntMinMax(240,450);
 		endif
 		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
 		SetObjProperty(attacker, "critdelay", ReadGameClock()+critdelay);

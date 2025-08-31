@@ -54,17 +54,17 @@ function MonsterBrain()
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
-                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
-                            EraseObjProperty(me, "#taunt_opponent");
                             HandleMonsterCombatEvent(opponent, is_ranged);
+                            EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.source))
-                        HandleMonsterCombatEvent(ev.source, is_ranged);
+                    if (CanFight(me, ev.opponent))
+                        HandleMonsterCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);

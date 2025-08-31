@@ -5,6 +5,7 @@ use datafile;
 
 include ":gumps:gumps";
 include ":gumps:epicGumps";
+include "include/arrays";
 
 program epicspawners(who)
     DisplaySpawnersGump(who);

@@ -6,6 +6,7 @@
 
 // include "combat";
 include "habilidades";
+include ":crafting:/include/caracteristicasFabricacao";
 
 function CalculateHitChance(attacker, defender)
 	var skill_a;
@@ -66,7 +67,7 @@ function CalculateHitChance(attacker, defender)
 
 	var hit_chance := 50.0 + ((skill_a - skill_d) / 1.5);
 
-	hit_chance += CDbl( GetObjProperty(attacker, "hitbonus") ) + attacker.hitchance_mod - defender.evasionchance_mod;
+	hit_chance += attacker.hitchance_mod - defender.evasionchance_mod;
 	hit_chance += CInt( GetObjProperty(attacker, "#attackbonus" ));
 
 
@@ -76,6 +77,10 @@ function CalculateHitChance(attacker, defender)
 
     if (getcooldown(attacker, "blinded") > 0)
 		hit_chance -= 20;
+	endif
+
+	if (GetCooldown(defender, "exposed") > 0)
+		hit_chance += 10; // Defender is exposed, easier to hit
 	endif
 
 	if (TemHabilidade(attacker, "Postura Ofensiva"))
@@ -124,11 +129,12 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 5;
 	endif
 
-	var balanced_weapon := CInt(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"]);
-	if (balanced_weapon)
-		hit_chance += balanced_weapon;
+	var bonusFabricacao := Cint(PegaValorFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_PRECISAO));
+	bonusFabricacao := bonusFabricacao * 3;
+	hit_chance += bonusFabricacao;
 
-		DebugMsg(attacker, DEBUG_HIT, "Arma Balanceada: " + CInt(balanced_weapon));
+	if(bonusFabricacao != 0)
+		DebugMsg(attacker, DEBUG_HIT, "Bonus Fabricacao: " + bonusFabricacao);
 	endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
@@ -352,6 +358,15 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 	if (metamorfose)
 		return;
 	endif
+
+	// Check for true darkness from Shadow Dominion
+    if (GetCooldown(defender, "true_darkness") > 0)
+        if (attacker_race != DROW)
+            hit_chance -= 30; // Heavy penalty for attacking someone in true darkness
+            SendSysMessageEx(attacker, "Você luta contra as trevas sagradas!", SSM_FAIL);
+        endif
+        return; // True darkness overrides normal darkness checks
+    endif
 
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))

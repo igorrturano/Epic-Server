@@ -26,6 +26,7 @@ program SpellStarter(params)
     var spellinfo := params[2]; // spellinfo
     var scroll := params[3]; // item que usou pra castar o spell (scroll, book, varinha ou nada)
     var targ := params[4];
+    Set_Priority(50);
     if (!initializeSpellCasting(mobile, spellinfo, scroll))
         return 0;
     endif
@@ -156,6 +157,11 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
     if (GetObjProperty(mobile, "#free_cast"))
         return 1;
     endif
+
+    if (GetCooldown(mobile, "divine_manifestation") > 0)
+        return 1;
+    endif
+
     // TODO: Decidir se vou consumir mana dos humanoids 
     if (!mobile.npctemplate)
         if (TemHabilidade(mobile, "Determinacao Arcana"))
@@ -274,6 +280,8 @@ function performSpellCycles(mobile, spellinfo, orig_hp)
     if (GetObjProperty(mobile, "#free_cast"))
         cycles := 1;
         EraseObjProperty(mobile, "#free_cast");
+    elseif (GetCooldown(mobile, "divine_manifestation") > 0)
+        cycles := 1;
     endif
 
     while (cycles)

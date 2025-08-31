@@ -3,7 +3,7 @@ use os;
 use cfgfile;
 use util;
 
-include ":itemutils:objtype";
+include "include/objtype";
 include ":itemutils:canAccess";
 include ":attributes:attributeConstants";
 include ":attributes:skills";
@@ -12,6 +12,7 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":mechanicalapitude:lockpick_minigame";
 include ":keys:key";
+include ":traps:include/traps";
 include "include/string";
 
 program skill_lockpicking(me, lockpick)

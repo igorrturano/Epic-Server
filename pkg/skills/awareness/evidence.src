@@ -7,6 +7,7 @@ include "include/client";
 include "include/say";
 include ":gumps:gumps_ex";
 include ":gumps:gumps";
+include ":gumps:selectionGump";
 include "include/utils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
@@ -578,7 +579,7 @@ return replacement;
 
 endfunction
 
-function murder_weapon (character, victimSerial, magnifyingGlass)
+function murder_weapon (character, victimSerial, magnifyingGlass)//RETIRAR
     var pts := CInt(GetAttribute(character, MEDICINE) / 10) + 20;
     var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES); 
     var lastDamage := GetObjProperty(victim, "LastDamage");
@@ -612,7 +613,7 @@ function murder_weapon (character, victimSerial, magnifyingGlass)
             weapon_name := "Arma desconhecida";
         endif
 
-        SetObjProperty(magnifyingGlass, "weaponSerial", weapon_serial);
+        SetObjProperty(magnifyingGlass, "weaponSerial", weapon_serial);//NAO EXISTE MAIS VIROU SERIAL_WEAPON
         SetObjProperty(magnifyingGlass, "weaponName", weapon_name);
 
         SendSysMessageEx(character, "A arma utilizada parece ser: " + weapon_name, SSM_INFO);

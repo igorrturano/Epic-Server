@@ -9,8 +9,12 @@ program control_spiderEgg(egg)
     var ev;
     while(egg)
         // Check for nearby players
+        if (ReadGameClock() > Cint(egg.decayAt))
+            destroyItem(egg);
+        endif
+
         var hasPlayer := 0;
-        foreach mobile in ListMobilesNearLocation(egg.x, egg.y, egg.z, 2)
+        foreach mobile in ListMobilesNearLocation(egg.x, egg.y, egg.z, 2, egg.realm)
             if (!mobile.npctemplate && !mobile.concealed && !mobile.hidden)
                 hasPlayer := 1;
                 break;
@@ -29,7 +33,7 @@ endprogram
 function StartHatching(egg)
     SetObjProperty(egg, "#hatching", 1);
     
-    var countdown := 5;
+    var countdown := 7;
     PrintTextAbove(egg, "O ovo pulsa com a sua presenca... ");
     while (countdown > 0)
         PrintTextAbove(egg, Cstr(countdown));
