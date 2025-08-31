@@ -310,24 +310,47 @@ function normalusage(who, item)
 			EfeitosTremor(item,danobase,danoale,dif,range);
 		endif
 	endif
-   if (opts.teleport_to)
-      if (status == "off")
-	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
-		if (tp_all != 0)
-			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
-				PrintText(item, "ENTROU NO FOREACH");
-				if(!mobile.acctname)
-					PrintText(item, "NAO ACHOU O ACCOUNT");
-					continue;
-				endif
-				teleporter(mobile, item, opts);
-				sleepms(2);
-			endforeach
-		else
-			teleporter(who, item, opts);
-		endif
-	  endif
-   endif
+	
+if (opts.teleport_to)
+    if (status == "off")
+        PrintText(item, "=== INICIO DEBUG ===");
+        
+        var tp_all_raw := GetObjProperty(item, "teleport_all");
+        PrintText(item, "tp_all raw: " + tp_all_raw);
+        
+        var tp_all := Cint(tp_all_raw);
+        PrintText(item, "tp_all convertido: " + tp_all);
+        
+        if (tp_all != 0)
+            PrintText(item, "Entrando no tp_all, range: " + tp_all);
+            
+            var mobiles_list := ListMobilesNearLocation(item.x, item.y, item.z, tp_all);
+            PrintText(item, "Total de mobiles: " + mobiles_list.size());
+            
+            foreach mobile in mobiles_list
+                PrintText(item, "=== MOBILE DEBUG ===");
+                PrintText(item, "Nome: " + mobile.name);
+                PrintText(item, "Account: " + mobile.acctname);
+                PrintText(item, "Account valido: " + (mobile.acctname != error));
+                
+                if(!mobile.acctname)
+                    PrintText(item, "ACCOUNT INVALIDO, PULANDO");
+                    continue;
+                endif
+                
+                PrintText(item, "TELEPORTANDO: " + mobile.name);
+                teleporter(mobile, item, opts);
+                sleepms(2);
+            endforeach
+        else
+            PrintText(item, "tp_all = 0, teleportando só o usuário");
+            teleporter(who, item, opts);
+        endif
+        
+        PrintText(item, "=== FIM DEBUG ===");
+    endif
+endif
+
    if (opts.clima) //SEMPRE deixar essa opção para ativar por último, ela é mais longa
 		if (status == "off")
 			var config_clima := GetObjProperty(item, "clima_cfg");
