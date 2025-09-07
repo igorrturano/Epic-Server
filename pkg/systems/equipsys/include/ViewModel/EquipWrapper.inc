@@ -2,16 +2,18 @@ use uo;
 use cfgfile;
 
 class EquipWrapper()
-	var _name; // String
-	var _desc; // String
-	var _graphic; // Int
-	var _weight; // Int
-	var _maxHP; // Int
+	var _item := 0;
+	var _name := "";
+	var _desc := "";
+	var _graphic := 0;
+	var _weight := 0;
+	var _maxHP := 0;
 
 	function EquipWrapper(this, item)
 		var template, name, desc, weight, maxHP, graphic;
 
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
+			this._item := item;
 			template := item.getCfgElem();
 
 			this._name := template.name;
@@ -50,7 +52,6 @@ class EquipWrapper()
 	function GetMaxHP(this)
 		return this._maxHP;
 	endfunction
-
 
 	function ToString(this)
 		return $"Equipment:
