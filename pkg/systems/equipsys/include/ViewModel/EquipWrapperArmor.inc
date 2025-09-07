@@ -121,11 +121,11 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 	function ToString(this)
 		return $"Armor {EquipWrapper::ToString(this)},
-		Coverage: {this.GetCoverage()}, Protection Type: {this.GetTipoProtecao()}
-		SlashResist: {this._physicalResists.SlashResist},
-		PiercingResist: {this._physicalResists.PiercingResist},
-		BluntResist: {this._physicalResists.BluntResist}
-		
+		Coverage: {this._coverage}, Protection Type: {this._tipoProtecao},
+		SlashResist: {this._physicalResists.SlashResist} ({this._physicalResistsTier.SlashResist}),
+		PiercingResist: {this._physicalResists.PiercingResist} ({this._physicalResistsTier.PiercingResist}),
+		BluntResist: {this._physicalResists.BluntResist} ({this._physicalResistsTier.BluntResist})
+
 		DexPen: {this._penalties.DexPen},
 		SneakPen: {this._penalties.SneakPen},
 		MAPen: {this._penalties.MAPen},
