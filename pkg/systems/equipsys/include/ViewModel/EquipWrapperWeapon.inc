@@ -13,8 +13,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _maxRange := 0;
 	var _penalties := struct {};
 
-	function EquipWrapperWeapon(this, item)
-		// var template, itemProp, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
+	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
 		
 		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
@@ -87,18 +86,15 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	endfunction
 
 	function Update(this)
-		Super::Update(this);
+		EquipWrapper::Update(this);
 
-		this._item.name := this._name;
-		this._item.desc := this._desc;
-		this._item.graphic := this._graphic;
-		this._item.weight := this._weight;
-		this._item.maxHP := this._maxHP;
+
+		this._item.setAttrBase(this._prop);
 	endfunction
 
 	function ToString(this)
 		return $"Weapon {EquipWrapper::ToString(this)},
-		Attribute: {this.getAttribute()}, Attack Type: {this.getTipoAtaque()},
+		Attribute: {this.GetAttribute()}, Attack Type: {this.GetTipoAtaque()},
 		MainDamage: {this.GetMainDamage().SlashDamage}/{this.GetMainDamage().PiercingDamage}/{this.GetMainDamage().BluntDamage},
 		OffDamage: {this.GetOffDamage().SlashDamage}/{this.GetOffDamage().PiercingDamage}/{this.GetOffDamage().BluntDamage},
 		Speed: {this.GetSpeed()}, Critical Chance: {this.GetCriticalChance()}%,

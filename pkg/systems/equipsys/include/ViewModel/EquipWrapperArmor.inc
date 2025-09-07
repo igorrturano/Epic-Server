@@ -10,7 +10,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _elementalResists := struct{};
 	var _penalties := struct{};
 
-	function EquipWrapperArmor(this, item)
+	function EquipWrapperArmor(this, byRef item)
 		Super(item);
 
 		if (item.isA(POLCLASS_ARMOR)) // Caso o itemRef exista
@@ -90,27 +90,26 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 	function Update(this)
 		EquipWrapper::Update(this);
-		var itemPropBase := this._item.getAttrBase();
 
-		itemPropBase.tipoProtecao := this._tipoProtecao;
+		this._prop.tipoProtecao := this._tipoProtecao;
 		
 		// Resists
-		itemPropBase.SlashResist := this._physicalResists.SlashResist;
-		itemPropBase.PiercingResist := this._physicalResists.PiercingResist;
-		itemPropBase.BluntResist := this._physicalResists.BluntResist;
-		itemPropBase.FireResist := this._elementalResists.FireResist;
-		itemPropBase.ColdResist := this._elementalResists.ColdResist;
-		itemPropBase.EnergyResist := this._elementalResists.EnergyResist;
-		itemPropBase.PoisonResist := this._elementalResists.PoisonResist;
-		
-		// Penalties
-		itemPropBase.DexPen := this._penalties.DexPen;
-		itemPropBase.SneakPen := this._penalties.SneakPen;
-		itemPropBase.MAPen := this._penalties.MAPen;
-		itemPropBase.MageryPen := this._penalties.MageryPen;
-		itemPropBase.AwarenessPen := this._penalties.AwarenessPen;
+		this._prop.SlashResist := this._physicalResists.SlashResist;
+		this._prop.PiercingResist := this._physicalResists.PiercingResist;
+		this._prop.BluntResist := this._physicalResists.BluntResist;
+		this._prop.FireResist := this._elementalResists.FireResist;
+		this._prop.ColdResist := this._elementalResists.ColdResist;
+		this._prop.EnergyResist := this._elementalResists.EnergyResist;
+		this._prop.PoisonResist := this._elementalResists.PoisonResist;
 
-		this._item.setAttrBase(itemPropBase);
+		// Penalties
+		this._prop.DexPen := this._penalties.DexPen;
+		this._prop.SneakPen := this._penalties.SneakPen;
+		this._prop.MAPen := this._penalties.MAPen;
+		this._prop.MageryPen := this._penalties.MageryPen;
+		this._prop.AwarenessPen := this._penalties.AwarenessPen;
+
+		this._item.setAttrBase(this._prop);
 	endfunction
 
 	function ToString(this)
