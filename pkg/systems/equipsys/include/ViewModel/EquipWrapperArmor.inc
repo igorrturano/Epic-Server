@@ -2,12 +2,12 @@ include "EquipWrapper";
 include ":equipsys:Controller/ArmorController";
 
 class EquipWrapperArmor(EquipWrapper)
-	var _coverage; // Array de Strings
-	var _tipoProtecao; // String
+	var _coverage := array{};
+	var _tipoProtecao := "";
 
-	var _physicalResists; // Struct
-	var _elementalResists; // Struct
-	var _penalties; // Struct
+	var _physicalResists := struct{};
+	var _elementalResists := struct{};
+	var _penalties := struct{};
 
 	function EquipWrapperArmor(this, item)
 		var template, itemPropBase, coverage, tipoProtecao;
@@ -18,7 +18,6 @@ class EquipWrapperArmor(EquipWrapper)
 			itemPropBase := item.getAttrBase();
 
 			this._coverage := GetConfigStringArray(template, "Coverage");
-			print("Coverage: " + this._coverage);
 			this._tipoProtecao := item.getType();
 			this._physicalResists := struct {
 				SlashResist := itemPropBase.SlashResist,
@@ -70,15 +69,15 @@ class EquipWrapperArmor(EquipWrapper)
 		return this._coverage ?: error{"errortext" := "The item have no Coverage!"};
 	endfunction
 
-	function getPhysicalResists(this)
+	function GetPhysicalResists(this)
 		return this._physicalResists ?: error{"errortext" := "The item have no Physical Resists!"};
 	endfunction
 
-	function getElementalResists(this)
+	function GetElementalResists(this)
 		return this._elementalResists ?: error{"errortext" := "The item have no Elemental Resists!"};
 	endfunction
 
-	function getPenalties(this)
+	function GetPenalties(this)
 		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
 	endfunction
 

@@ -2,15 +2,15 @@ include "EquipWrapper";
 include ":equipsys:Controller/WeaponController";
 
 class EquipWrapperWeapon(EquipWrapper)
-	var _attribute; // String
-	var _tipoAtaque; // String
-	var _speed; // Int
-	var _mainDamage; // Struct
-	var _offDamage; // Struct
-	var _criticalChance; // Int
-	var _minRange; // Int
-	var _maxRange; // Int
-	var _penalties; // Struct
+	var _attribute := "";
+	var _tipoAtaque := "";
+	var _speed := 0;
+	var _mainDamage := struct{};
+	var _offDamage := struct{};
+	var _criticalChance := 0;
+	var _minRange := 0;
+	var _maxRange := 0;
+	var _penalties := struct {};
 
 	function EquipWrapperWeapon(this, item)
 		var template, itemProp, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
@@ -58,11 +58,11 @@ class EquipWrapperWeapon(EquipWrapper)
 		endif
 	endfunction
 
-	function getAttribute(this)
+	function GetAttribute(this)
 		return this._attribute;
 	endfunction
 
-	function getTipoAtaque(this)
+	function GetTipoAtaque(this)
 		return this._tipoAtaque;
 	endfunction
 
