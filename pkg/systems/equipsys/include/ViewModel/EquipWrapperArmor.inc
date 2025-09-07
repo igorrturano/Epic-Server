@@ -1,7 +1,8 @@
 include "EquipWrapper";
+include "IEquipWrapperArmor";
 include ":equipsys:Controller/ArmorController";
 
-class EquipWrapperArmor(EquipWrapper)
+class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
@@ -10,42 +11,37 @@ class EquipWrapperArmor(EquipWrapper)
 	var _penalties := struct{};
 
 	function EquipWrapperArmor(this, item)
-		var template, itemPropBase, coverage, tipoProtecao;
 		Super(item);
 
 		if (item.isA(POLCLASS_ARMOR)) // Caso o itemRef exista
-			template := item.getCfgElem();
-			itemPropBase := item.getAttrBase();
-
-			this._coverage := GetConfigStringArray(template, "Coverage");
+			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := item.getType();
 			this._physicalResists := struct {
-				SlashResist := itemPropBase.SlashResist,
-				PiercingResist := itemPropBase.PiercingResist,
-				BluntResist := itemPropBase.BluntResist
+				SlashResist := this._prop.SlashResist,
+				PiercingResist := this._prop.PiercingResist,
+				BluntResist := this._prop.BluntResist
 			};
 			this._elementalResists := struct {
-				FireResist := itemPropBase.FireResist,
-				ColdResist := itemPropBase.ColdResist,
-				EnergyResist := itemPropBase.EnergyResist,
-				PoisonResist := itemPropBase.PoisonResist
+				FireResist := this._prop.FireResist,
+				ColdResist := this._prop.ColdResist,
+				EnergyResist := this._prop.EnergyResist,
+				PoisonResist := this._prop.PoisonResist
 			};
 
 		else // Caso seja apenas um template
-			template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
-			this._coverage := GetConfigStringArray(template, "Coverage");
-			this._tipoProtecao := template.tipoProtecao;
-			var templateResists := getResistPhysicalByProtection(template.tipoProtecao);
+			this._coverage := GetConfigStringArray(this._template, "Coverage");
+			this._tipoProtecao := this._template.tipoProtecao;
+			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
 			this._physicalResists := struct {
 				SlashResist := templateResists[1] + getResistPhysicalBySlot(this.coverage)[1],
 				PiercingResist := templateResists[2] + getResistPhysicalBySlot(this.coverage)[2],
 				BluntResist := templateResists[3] + getResistPhysicalBySlot(this.coverage)[3]
 			};
 			this._elementalResists := struct {
-				FireResist := template.FireResist,
-				ColdResist := template.ColdResist,
-				EnergyResist := template.EnergyResist,
-				PoisonResist := template.PoisonResist
+				FireResist := this._template.FireResist,
+				ColdResist := this._template.ColdResist,
+				EnergyResist := this._template.EnergyResist,
+				PoisonResist := this._template.PoisonResist
 			};
 
 			var penaltiesSlot := getPenaltiesBySlot(this.coverage);
@@ -59,7 +55,6 @@ class EquipWrapperArmor(EquipWrapper)
 			};
 		endif
 	endfunction
-
 	
 	function GetTipoProtecao(this)
 		return this._tipoProtecao ?: error{"errortext" := "The item have no Protection Type!"};
@@ -79,6 +74,43 @@ class EquipWrapperArmor(EquipWrapper)
 
 	function GetPenalties(this)
 		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
+	endfunction
+
+	function SetPhysicalResists(this, resists)
+		this._physicalResists := resists;
+	endfunction
+
+	function SetElementalResists(this, resists)
+		this._elementalResists := resists;
+	endfunction
+
+	function SetPenalties(this, penalties)
+		this._penalties := penalties;
+	endfunction
+
+	function Update(this)
+		EquipWrapper::Update(this);
+		var itemPropBase := this._item.getAttrBase();
+
+		itemPropBase.tipoProtecao := this._tipoProtecao;
+		
+		// Resists
+		itemPropBase.SlashResist := this._physicalResists.SlashResist;
+		itemPropBase.PiercingResist := this._physicalResists.PiercingResist;
+		itemPropBase.BluntResist := this._physicalResists.BluntResist;
+		itemPropBase.FireResist := this._elementalResists.FireResist;
+		itemPropBase.ColdResist := this._elementalResists.ColdResist;
+		itemPropBase.EnergyResist := this._elementalResists.EnergyResist;
+		itemPropBase.PoisonResist := this._elementalResists.PoisonResist;
+		
+		// Penalties
+		itemPropBase.DexPen := this._penalties.DexPen;
+		itemPropBase.SneakPen := this._penalties.SneakPen;
+		itemPropBase.MAPen := this._penalties.MAPen;
+		itemPropBase.MageryPen := this._penalties.MageryPen;
+		itemPropBase.AwarenessPen := this._penalties.AwarenessPen;
+
+		this._item.setAttrBase(itemPropBase);
 	endfunction
 
 	function ToString(this)
