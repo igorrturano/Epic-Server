@@ -18,6 +18,9 @@ include ":tn:boss";
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
 
+CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
+CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
+
 function ConstructGump(item)
    var opts := item.GetLeverOpts();
    var gump := GFCreateGump();
@@ -464,22 +467,46 @@ function bindlevers(who, item)
    opts.linked_to := newarray;
    var input_list := array{};
    input_list.append(struct{ "title" := "Todas as alavancas devem ser acionadas?", "marked" := cint(opts.all_levers)+1, "radio" := array{"Não", "Sim"} });
-   input_list.append(struct{ "title" := "Precisam ordem para serem acionadas (random)?", "marked" := cint(opts.all_levers_order)+1, "radio" := array{"Não", "Sim"} });
+   input_list.append(struct{ "title" := "Precisam ordem para serem acionadas?", "marked" := _getOrderOption(opts.all_levers_order), "radio" := array{"Não", "Sim (ordem selecionada)", "Random"} });
    var output := QuestionsGump(who, input_list);
    if (!output)
       return;
    endif
 
    opts.all_levers := cint(output[1] == "Sim");
-   opts.all_levers_order := cint(output[2] == "Sim");
+  // Definir o tipo de ordem baseado na resposta
+   if (output[2] == "Não")
+      opts.all_levers_order := 0;
+   elseif (output[2] == "Sim (ordem selecionada)")
+      opts.all_levers_order := 1;
+   elseif (output[2] == "Random")
+      opts.all_levers_order := 2;
+   endif
 
    item.setLeverOpts(opts);
-   if (opts.all_levers_order)
+    // Definir ordem baseada na opção escolhida
+   if (opts.all_levers_order == 1)
+      // Ordem selecionada: usar a ordem que o player selecionou
+      var leverorder := array{item.serial} + opts.linked_to;
+      SetObjProperty(item, "leverorder", leverorder);
+   elseif (opts.all_levers_order == 2)
+      // Ordem random: usar SetRandomOrder
       SetRandomOrder(item);
    else
+      // Sem ordem específica
       EraseObjProperty(item, "leverorder");
    endif
    SendSysMessageEx(who,"As alavancas foram ligadas a esta alavancas");
+endfunction
+
+// Função auxiliar para determinar qual opção está marcada no gump
+function _getOrderOption(order_type)
+   case(order_type)
+      0: return 1; // "Não"
+      1: return 2; // "Sim (ordem selecionada)"
+      2: return 3; // "Random"
+      default: return 1;
+   endcase
 endfunction
 
 function unbindlevers(who, item)
@@ -568,7 +595,7 @@ endfunction
 function efeitos(who, item)
    var opts := item.GetLeverOpts();
    
-   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Apagar"});
+   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Sons","Apagar"});
    foreach r in result
       if (r == "Tremor")
          opts.tremor := 1;
@@ -607,10 +634,24 @@ function efeitos(who, item)
          SetObjProperty(item,  "clima_cfg", clima_config);
          SendSysMessageEx(who, "O efeito area (clima) estah ativo", SSM_INFO);
          opts.efeitos := 1;
+	  elseif (r == "Sons")
+		var sons_op := RadioGump(who, 150, 200, "Opções de Sons", {"Som Inicial/Acionamento","Som Final/Efeito"});
+			if (sons_op == "Som Inicial/Acionamento")
+				var som1_request := RequestGump(who, "Escreva o id do som de acionamento (use .sfx <sfx/mid> id_sound para testar o som)");			
+				SetObjProperty(item, "som_inicial", som1_request);
+			elseif (sons_op == "Som Final/Efeito")
+				var som2_request := RequestGump(who, "Escreva o id do som de efeito/final (use <.sfx <sfx/mid> id_sound> para testar o som)");	
+				opts.somfim := 1;
+				SetObjProperty(item, "Som_fim", som2_request);
+			endif
+         SendSysMessageEx(who, "Os sons foram configurados!", SSM_INFO);
       elseif (r == "Apagar")
          EraseObjProperty(item, "clima_cfg");
          EraseObjProperty(item, "tremor_cfg");
          EraseObjProperty(item, "clima");
+		EraseObjProperty(item, "som_inicial");
+		EraseObjProperty(item, "Som_fim");
+		opts.-"somfim";
          opts.-"clima";
          opts.-"tremor";
          opts.efeitos := 0;

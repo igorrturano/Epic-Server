@@ -1,6 +1,6 @@
 include ":equipsys:Controller/EquipmentController";
 include ":equipsys:utils/consts";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 
 program EquipSys(params)
 	var who := params[1];

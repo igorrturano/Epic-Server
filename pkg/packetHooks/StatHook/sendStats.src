@@ -53,6 +53,9 @@ exported function HandleSendStats( character, byref packet )
 	var url;
 
 	url := GetObjProperty(source, "url");
+	if (!url || url.errortext)
+		url := ""; // Set to empty string if property doesn't exist or has an error
+	endif
 
 	if (source.IsA(POLCLASS_MOBILE))
 		//PREENCHE NOME DO MOBILE
@@ -84,7 +87,10 @@ exported function HandleSendStats( character, byref packet )
 				endif
 			endif
 			if (character.cmdlevel > 1) //Staff consegue ver mais
-				Object_Name := Object_Name + " [" + GetObjProperty(source, "nome_inicial") + "]";
+				var nome_inicial := GetObjProperty(source, "nome_inicial");
+				if (nome_inicial && !nome_inicial.errortext)
+					Object_Name := Object_Name + " [" + nome_inicial + "]";
+				endif
 			endif
 			packet.SetString(NAME_ID, Object_Name, 1);
 		endif

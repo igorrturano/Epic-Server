@@ -4,6 +4,7 @@ include ":merchants:item_template";
 include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
+include ":megacliloc:/include/gettersTTipUtils";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -1511,37 +1512,6 @@ endfunction
 // 	*/
 
 // endfunction
-
-function GetDmgStringDesc(elem, item)
-	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.Damage);
-	if (dmg_mod>0)
-		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
-	elseif (dmg_mod<0)
-		resultado := resultado + " (" + CSTR(dmg_mod) +")";
-	endif
-	return resultado;
-	/*
-	var avgdmg := cint(elem.MinDam + elem.MaxDam)/2;
-
-	if(avgdmg >= 20)
-		return "Letal";
-	elseif(avgdmg >= 18)
-		return "Muito";
-	elseif(avgdmg >= 16)
-		return "Bom";
-	elseif(avgdmg >= 14)
-		return "Mediano";
-	elseif(avgdmg >= 12)
-		return "Pouco";
-	elseif(avgdmg >= 10)
-		return "Pouquissimo ";
-	else
-		return "Inofensivo";
-	endif
-	*/
-
-endfunction
 
 function getQualityTemplate(num)
 	var rank;

@@ -4,7 +4,7 @@ use util;
 
 include ":itemutils:fields";
 include ":attributes:attributes";
-include ":itemutils:objtype";
+include "include/objtype";
 
 
 program spell_poisonField( parms )

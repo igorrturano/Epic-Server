@@ -58,7 +58,7 @@ use os;
 use util;
 
 include ":tn:characters";
-include ":debug:main";
+include ":debug:Controller/DebugController";
 include ":attributes:skills";
 
 /*

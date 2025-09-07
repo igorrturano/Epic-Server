@@ -1,5 +1,6 @@
 use uo;
 use util;
+use math;
 
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
@@ -100,4 +101,30 @@ function ChooseWings(who)
     endif
     
     return 0;
+endfunction
+
+function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo := 100)
+
+	var gaussianas := array; 
+	var total := 0;
+	foreach x in valoresEixoX
+		var gaussiana := CalcularGaussiana(x,pico,declinio,eixoYMaximo);
+		total += gaussiana;
+		gaussianas.append(gaussiana);
+		Sleepms(2);
+	endforeach
+
+	var normalizados := array;
+	//normaliza os valores para que a somatória dos valores de y ao longo do eixo x, não ultrapasse o maximo de y.
+	foreach gaussiana in gaussianas
+		normalizados.append(Floor((gaussiana/total) * eixoYMaximo)); 
+		Sleepms(2);
+	endforeach;
+	
+	return normalizados;
+
+endfunction
+
+function CalcularGaussiana(x,pico,declinio,eixoYMaximo)
+	return eixoYMaximo * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
 endfunction

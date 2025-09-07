@@ -6,7 +6,7 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include "include/tileEffects";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":timedScripts:timedScripts";
 
 program SpellScript(params)
