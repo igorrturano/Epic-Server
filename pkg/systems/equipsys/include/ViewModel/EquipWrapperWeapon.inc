@@ -1,7 +1,8 @@
 include "EquipWrapper";
+include "IEquipWrapperWeapon";
 include ":equipsys:Controller/WeaponController";
 
-class EquipWrapperWeapon(EquipWrapper)
+class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _tipoAtaque := "";
 	var _speed := 0;
@@ -13,48 +14,43 @@ class EquipWrapperWeapon(EquipWrapper)
 	var _penalties := struct {};
 
 	function EquipWrapperWeapon(this, item)
-		var template, itemProp, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
+		// var template, itemProp, attribute, tipoAtaque, speed, mainDamage, offDamage, criticalChance, minRange, maxRange;
 		Super(item);
 		
 		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
-			template := item.getCfgElem();
-			itemProp := item.getAttrBase();
-
-			this._attribute := template.Attribute;
+			this._attribute := this._template.Attribute;
 			this._tipoAtaque := item.getType();
-			this._speed := template.EpicSpeed;
+			this._speed := this._template.EpicSpeed;
 			this._mainDamage := struct {
-				SlashDamage := itemProp.SlashMainDamage,
-				PiercingDamage := itemProp.PiercingMainDamage,
-				BluntDamage := itemProp.BluntMainDamage
+				SlashDamage := this._prop.SlashMainDamage,
+				PiercingDamage := this._prop.PiercingMainDamage,
+				BluntDamage := this._prop.BluntMainDamage
 			};
 			this._offDamage := struct {
-				SlashDamage := itemProp.SlashOffDamage,
-				PiercingDamage := itemProp.PiercingOffDamage,
-				BluntDamage := itemProp.BluntOffDamage
+				SlashDamage := this._prop.SlashOffDamage,
+				PiercingDamage := this._prop.PiercingOffDamage,
+				BluntDamage := this._prop.BluntOffDamage
 			};
-			this._criticalChance := template.EpicCriticalChance;
-			this._minRange := template.MinRange ?: 1;
-			this._maxRange := template.MaxRange ?: 1;
-
+			this._criticalChance := this._template.EpicCriticalChance;
+			this._minRange := this._template.MinRange ?: 1;
+			this._maxRange := this._template.MaxRange ?: 1;
 		else // Caso seja apenas um template
-			template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
-			this._attribute := template.Attribute;
-			this._tipoAtaque := template.TipoAtaque;
-			this._speed := template.EpicSpeed;
+			this._attribute := this._template.Attribute;
+			this._tipoAtaque := this._template.TipoAtaque;
+			this._speed := this._template.EpicSpeed;
 			this._mainDamage := struct {
-				SlashDamage := getDamageByTier(SplitWords(template.EpicMainDamage)[1]) ?: 0,
-				PiercingDamage := getDamageByTier(SplitWords(template.EpicMainDamage)[2]) ?: 0,
-				BluntDamage := getDamageByTier(SplitWords(template.EpicMainDamage)[3]) ?: 0
+				SlashDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[1]) ?: 0,
+				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[2]) ?: 0,
+				BluntDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[3]) ?: 0
 			};
 			this._offDamage := struct {
-				SlashDamage := getDamageByTier(SplitWords(template.EpicOffDamage)[1]) ?: 0,
-				PiercingDamage := getDamageByTier(SplitWords(template.EpicOffDamage)[2]) ?: 0,
-				BluntDamage := getDamageByTier(SplitWords(template.EpicOffDamage)[3]) ?: 0
+				SlashDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[1]) ?: 0,
+				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[2]) ?: 0,
+				BluntDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[3]) ?: 0
 			};
-			this._criticalChance := template.EpicCriticalChance;
-			this._minRange := template.MinRange ?: 1;
-			this._maxRange := template.MaxRange ?: 1;
+			this._criticalChance := this._template.EpicCriticalChance;
+			this._minRange := this._template.MinRange ?: 1;
+			this._maxRange := this._template.MaxRange ?: 1;
 		endif
 	endfunction
 
@@ -90,6 +86,15 @@ class EquipWrapperWeapon(EquipWrapper)
 		return this._maxRange;
 	endfunction
 
+	function Update(this)
+		Super::Update(this);
+
+		this._item.name := this._name;
+		this._item.desc := this._desc;
+		this._item.graphic := this._graphic;
+		this._item.weight := this._weight;
+		this._item.maxHP := this._maxHP;
+	endfunction
 
 	function ToString(this)
 		return $"Weapon {EquipWrapper::ToString(this)},
