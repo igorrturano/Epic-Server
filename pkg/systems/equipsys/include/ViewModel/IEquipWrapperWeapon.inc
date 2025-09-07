@@ -9,11 +9,9 @@ class IEquipWrapperWeapon()
 	uninit function GetMaxRange(this);
 
 	uninit function SetSpeed(this, speed);
-	uninit function SetMainDamage(this, mainDamage);
-	uninit function SetOffDamage(this, offDamage);
+	uninit function SetMainDamage(this, slash, piercing, blunt);
+	uninit function SetOffDamage(this, slash, piercing, blunt);
 	uninit function SetCriticalChance(this, criticalChance);
-	uninit function SetMinRange(this, minRange);
-	uninit function SetMaxRange(this, maxRange);
 
 	uninit function Update(this);
 endclass
