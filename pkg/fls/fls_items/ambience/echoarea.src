@@ -11,7 +11,6 @@ program echoarea(rune)
     endif
 
     RegisterForSpeechEvents(rune, range);
-    Print("Echo area ativada - Range: " + range);
     
     while (1)
         var ev := Wait_For_Event(1);

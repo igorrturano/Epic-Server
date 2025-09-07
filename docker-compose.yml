@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  epic-pol-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: epic-pol-server
+    hostname: epic-pol
+    ports:
+      - "5003:5003"  # UO Client 7.0.60
+      - "5085:5085"  # UO Client 7.0.85
+      - "3008:3008"  # Web Server
+      - "5001:5001"  # Debug
+      - "5002:5002"  # Debug DAP
+    volumes:
+      # Mount your UO data directory here
+      # Replace /path/to/your/uo/data with the actual path to your UO data
+      - ./uo-data:/opt/uo-data:ro
+      # Persistent data directories
+      - pol-realm:/opt/pol/realm
+      - pol-data:/opt/pol/data
+      - pol-logs:/opt/pol/logs
+      # Development volumes (for real-time code changes)
+      - ./scripts:/opt/pol/scripts
+      - ./pkg:/opt/pol/pkg
+      - ./config:/opt/pol/config
+    environment:
+      - POL_UO_DATA_ROOT=/opt/uo-data
+    restart: unless-stopped
+    networks:
+      - pol-network
+    # Add health check
+    healthcheck:
+      test: ["CMD", "pgrep", "pol"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Optional MySQL database for POL
+  pol-mysql:
+    image: mysql:8.0
+    container_name: epic-pol-mysql
+    hostname: pol-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: polserver_root
+      MYSQL_DATABASE: polserver
+      MYSQL_USER: poluser
+      MYSQL_PASSWORD: polserver_pass
+    volumes:
+      - pol-mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    networks:
+      - pol-network
+    profiles:
+      - mysql
+
+volumes:
+  pol-realm:
+    driver: local
+  pol-data:
+    driver: local
+  pol-logs:
+    driver: local
+  pol-mysql-data:
+    driver: local
+
+networks:
+  pol-network:
+    driver: bridge

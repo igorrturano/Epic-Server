@@ -46,8 +46,9 @@ endfunction
 
 function MontaObjCfgArmaArmadura(objeto,xDesc := "")
 	var retorno := struct;
+
 	retorno.+cfg := ReadConfigFile(":*:itemdesc");
-	retorno.+elem := FindConfigElem(retorno.cfg, objeto.objtype);
+	retorno.+elem := TypeOfInt(objeto) != OT_CONFIGELEMREF ? FindConfigElem(retorno.cfg, objeto.objtype) : objeto;
 	retorno.+desc := xDesc;
 	return retorno;
 endfunction
