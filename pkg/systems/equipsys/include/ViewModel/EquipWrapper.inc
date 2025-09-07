@@ -14,7 +14,7 @@ class EquipWrapper(IEquipWrapper)
 	var _weight := 0;
 	var _maxHP := 0;
 
-	function EquipWrapper(this, item)
+	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
 			this._item := item;
