@@ -20,7 +20,7 @@ class EquipWrapper(IEquipWrapper)
 			this._item := item;
 			this._prop := item.getAttrBase();
 
-			this._name := this._template.name;
+			this._name := item.name;
 			this._desc := item.desc;
 			this._weight := item.weight;
 			this._maxHP := item.maxHP;
@@ -72,31 +72,33 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function _SetName(this, name)
+		if (this._item == error) return this._item; endif
 		this._name := name;
-		if (this._item) this._item.name := name; endif
 	endfunction
 
 	function SetDesc(this, desc)
+		if (this._item == error) return this._item; endif
 		this._desc := desc;
-		if (this._item) this._item.desc := desc; endif
 	endfunction
 
 	function SetGraphic(this, graphic)
+		if (this._item == error) return this._item; endif
 		this._graphic := graphic;
-		if (this._item) this._item.graphic := graphic; endif
 	endfunction
 
 	function SetWeight(this, weight)
+		if (this._item == error) return this._item; endif
 		this._weight := weight;
-		if (this._item) this._item.weight := weight; endif
 	endfunction
 
 	function SetMaxHP(this, maxHP)
+		if (this._item == error) return this._item; endif
 		this._maxHP := maxHP;
-		if (this._item) this._item.maxHP := maxHP; endif
 	endfunction
 
 	function Update(this)
+		if (this._item == error) return this._item; endif
+
 		this._item.name := this._name;
 		this._item.desc := this._desc;
 		this._item.graphic := this._graphic;

@@ -6,7 +6,9 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
+	var _physicalResistsTier := struct{};
 	var _physicalResists := struct{};
+	var _elementalResistsTier := struct{};
 	var _elementalResists := struct{};
 	var _penalties := struct{};
 
@@ -32,19 +34,20 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.tipoProtecao;
 			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
-			this._physicalResists := struct {
-				SlashResist := templateResists[1] + getResistPhysicalBySlot(this.coverage)[1],
-				PiercingResist := templateResists[2] + getResistPhysicalBySlot(this.coverage)[2],
-				BluntResist := templateResists[3] + getResistPhysicalBySlot(this.coverage)[3]
+			var slotResists := getResistPhysicalBySlot(this._coverage);
+			this._physicalResistsTier := struct {
+				SlashResist := templateResists[1] + slotResists[1],
+				PiercingResist := templateResists[2] + slotResists[2],
+				BluntResist := templateResists[3] + slotResists[3]
 			};
-			this._elementalResists := struct {
+			this._elementalResistsTier := struct {
 				FireResist := this._template.FireResist,
 				ColdResist := this._template.ColdResist,
 				EnergyResist := this._template.EnergyResist,
 				PoisonResist := this._template.PoisonResist
 			};
 
-			var penaltiesSlot := getPenaltiesBySlot(this.coverage);
+			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
 			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
 			this._penalties := struct {
 				DexPen := penaltiesSlot.DexPen + penaltiesProt.DexPen,
@@ -77,18 +80,22 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	endfunction
 
 	function SetPhysicalResists(this, resists)
+		if (this._item == error) return this._item; endif
 		this._physicalResists := resists;
 	endfunction
 
 	function SetElementalResists(this, resists)
+		if (this._item == error) return this._item; endif
 		this._elementalResists := resists;
 	endfunction
 
 	function SetPenalties(this, penalties)
+		if (this._item == error) return this._item; endif
 		this._penalties := penalties;
 	endfunction
 
 	function Update(this)
+		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
 
 		this._prop.tipoProtecao := this._tipoProtecao;

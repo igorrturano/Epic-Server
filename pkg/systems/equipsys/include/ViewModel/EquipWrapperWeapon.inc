@@ -5,13 +5,17 @@ include ":equipsys:Controller/WeaponController";
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _tipoAtaque := "";
+	var _speedTier := "";
 	var _speed := 0;
+	var _mainDamageTier := struct{};
+	var _offDamageTier := struct{};
 	var _mainDamage := struct{};
 	var _offDamage := struct{};
+	var _criticalChanceTier := "";
 	var _criticalChance := 0;
 	var _minRange := 0;
 	var _maxRange := 0;
-	var _penalties := struct {};
+	var _penalties := struct{};
 
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
@@ -19,7 +23,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
 			this._attribute := this._template.Attribute;
 			this._tipoAtaque := item.getType();
-			this._speed := this._template.EpicSpeed;
+			this._speedTier := this._template.EpicSpeed;
+			this._speed := this._prop.AttackSpeed;
 			this._mainDamage := struct {
 				SlashDamage := this._prop.SlashMainDamage,
 				PiercingDamage := this._prop.PiercingMainDamage,
@@ -30,13 +35,15 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 				PiercingDamage := this._prop.PiercingOffDamage,
 				BluntDamage := this._prop.BluntOffDamage
 			};
-			this._criticalChance := this._template.EpicCriticalChance;
+			this._criticalChanceTier := this._template.EpicCriticalChance;
+			this._criticalChance := this._prop.CriticalChance;
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
 		else // Caso seja apenas um template
 			this._attribute := this._template.Attribute;
 			this._tipoAtaque := this._template.TipoAtaque;
-			this._speed := this._template.EpicSpeed;
+			this._speedTier := this._template.EpicSpeed;
+			this._speed := getSpeedByTier(this._speedTier);
 			this._mainDamage := struct {
 				SlashDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[1]) ?: 0,
 				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[2]) ?: 0,
@@ -47,7 +54,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[2]) ?: 0,
 				BluntDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[3]) ?: 0
 			};
-			this._criticalChance := this._template.EpicCriticalChance;
+			this._criticalChanceTier := this._template.EpicCriticalChance;
+			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
 		endif
@@ -61,10 +69,22 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._tipoAtaque;
 	endfunction
 
-	function GetSpeed(this)
-		return getSpeedByTier(this._speed);
+	function GetSpeedTier(this)
+		return this._speedTier;
 	endfunction
 
+	function GetSpeed(this)
+		return this._speed;
+	endfunction
+
+	function GetMainDamageTier(this)
+		return this._mainDamageTier;
+	endfunction
+
+	function GetOffDamageTier(this)
+		return this._offDamageTier;
+	endfunction
+	
 	function GetMainDamage(this)
 		return this._mainDamage;
 	endfunction
@@ -73,8 +93,12 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._offDamage;
 	endfunction
 
+	function GetCriticalChanceTier(this)
+		return this._criticalChanceTier;
+	endfunction
+
 	function GetCriticalChance(this)
-		return getCriticalChanceByTier(this._criticalChance);
+		return this._criticalChance;
 	endfunction
 
 	function GetMinRange(this)
@@ -86,9 +110,11 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	endfunction
 
 	function Update(this)
+		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
 
-
+		this._item.speed_mod := CInt(this._speed) - this._item.speed;
+		
 		this._item.setAttrBase(this._prop);
 	endfunction
 
