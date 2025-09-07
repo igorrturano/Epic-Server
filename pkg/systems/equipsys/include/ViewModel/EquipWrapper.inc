@@ -108,10 +108,10 @@ class EquipWrapper(IEquipWrapper)
 
 	function ToString(this)
 		return $"Equipment:
-		Name: {this.GetName()},
-		Description: {this.GetDesc()},
-		Graphic: {this.GetGraphic()} ({Hex(this.GetGraphic())}),
-		Weight: {this.GetWeight()},
-		MaxHP: {this.GetMaxHP()}";
+		Name: {this._name},
+		Description: {this._desc},
+		Graphic: {this._graphic} ({Hex(this._graphic)}),
+		Weight: {this._weight},
+		MaxHP: {this._maxHP}";
 	endfunction
 endclass

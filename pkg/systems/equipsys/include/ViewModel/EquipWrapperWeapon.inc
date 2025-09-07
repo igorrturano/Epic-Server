@@ -109,6 +109,34 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._maxRange;
 	endfunction
 
+	function SetSpeed(this, speed)
+		if (this._item == error) return this._item; endif
+		this._item.speed_mod := CInt(speed) - this._item.speed;
+	endfunction
+
+	function SetMainDamage(this, slash, piercing, blunt)
+		if (this._item == error) return this._item; endif
+		this._mainDamage := struct {
+			SlashDamage := slash,
+			PiercingDamage := piercing,
+			BluntDamage := blunt
+		};
+	endfunction
+
+	function SetOffDamage(this, slash, piercing, blunt)
+		if (this._item == error) return this._item; endif
+		this._offDamage := struct {
+			SlashDamage := slash,
+			PiercingDamage := piercing,
+			BluntDamage := blunt
+		};
+	endfunction
+
+	function SetCriticalChance(this, criticalChance)
+		if (this._item == error) return this._item; endif
+		this._criticalChance := criticalChance;
+	endfunction
+
 	function Update(this)
 		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
@@ -120,10 +148,10 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function ToString(this)
 		return $"Weapon {EquipWrapper::ToString(this)},
-		Attribute: {this.GetAttribute()}, Attack Type: {this.GetTipoAtaque()},
-		MainDamage: {this.GetMainDamage().SlashDamage}/{this.GetMainDamage().PiercingDamage}/{this.GetMainDamage().BluntDamage},
-		OffDamage: {this.GetOffDamage().SlashDamage}/{this.GetOffDamage().PiercingDamage}/{this.GetOffDamage().BluntDamage},
-		Speed: {this.GetSpeed()}, Critical Chance: {this.GetCriticalChance()}%,
-		Range: {this.GetMinRange()}-{this.GetMaxRange()}";
+		Attribute: {this._attribute}, Attack Type: {this._tipoAtaque},
+		MainDamage: {this._mainDamage.SlashDamage} ({this._mainDamageTier})/{this._mainDamage.PiercingDamage} ({this._mainDamageTier})/{this._mainDamage.BluntDamage} ({this._mainDamageTier}),
+		OffDamage: {this._offDamage.SlashDamage} ({this._offDamageTier})/{this._offDamage.PiercingDamage} ({this._offDamageTier})/{this._offDamage.BluntDamage} ({this._offDamageTier}),
+		Speed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier}),
+		Range: {this._minRange}-{this._maxRange}";
 	endfunction
 endclass
