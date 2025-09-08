@@ -95,7 +95,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-
+	EraseObjProperty(me, "#taunt_opponent");
     // Evita spam de falas
     if (GetCooldown(me, "combat_speech") > 0)
         return;
