@@ -1102,18 +1102,17 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
-    if (isAlly(invasor))
+  if (isAlly(invasor))
         return 0;
     endif
 
-    if (invasor.hidden || invasor.concealed)
+    if (invasor.hidden || invasor.concealed || GetObjProperty(invasor, "noattack") )
         return 0;
     endif
 
     if (GetCooldown(me, "alert_allies"))
         return 0;
     endif
-    
     foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
@@ -1163,38 +1162,19 @@ function CanFight(attacker, defender)
     var npc_elem := NPC_GetNPCConfig(me);
 	var category := GetConfigString(npc_elem, "Category");
 
-	if (category == "Aklats")
-		var debug := GetObjProperty(me, "#taunt_opponent");
-		
-		if (me.opponent)
-			return 1;
-		endif
-		var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
-		var opponent_d := SystemFindObjectBySerial(opponent_serial);
-		if (debug)
-			PrintTextAbove(me, "*Alertado pelo som!*");
-			return 1;
-		else
-		var pegadas := {0x1E03, 0x1E04, 0x1E05, 0x1E06}; 
-		var footsteps := array;
-
-		// Para cada tipo de pegada
-		foreach objtype in pegadas
-			foreach pegada in ListItemsNearLocationOfType(me.x, me.y, me.z, 10, objtype, me.realm)
-				footsteps.append(pegada);
-				PrintTextAbove(me, "*Alertado pelas vibrações!*");
-				sleepms(2);
-			endforeach
-			sleepms(2);
-		endforeach
-			            
-		if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
-			return 1;
-		endif
-		return 0;			
-endif
-	endif
-
+   if (category == "Aklats")
+        // Usa função dedicada para detectar ameaças
+        var aklat_threat_detected := DetectAklatsThreats(me);
+        
+        // Se não detectou ameaça, não pode atacar
+        if (!aklat_threat_detected)
+            return 0;
+        endif
+        
+        // Se detectou ameaça, continua com as verificações normais
+        // (não retorna 1 imediatamente para permitir outras checagens)
+    endif
+	
     // Grey NPCs (neutral alignment) should only fight back when attacked
     if (attacker.alignment == 0)
         // Only allow combat if the defender is already attacking this NPC
@@ -2401,6 +2381,41 @@ endfunction
 
 function RandomColorFromRanges(colorRanges)
     return colorRanges[RandomInt(colorRanges.size()) + 1];
+endfunction
+
+// Função específica para detecção dos Aklats
+function DetectAklatsThreats(npc)
+    // Verifica se já tem oponente ativo
+    if (npc.opponent)
+        return 1;
+    endif
+    
+    // Verifica se foi alertado por som (taunt_opponent)
+    var taunt_opponent := GetObjProperty(npc, "#taunt_opponent");
+    if (taunt_opponent)
+        PrintTextAbove(npc, "*Alertado pelo som!*");
+        return 1;
+    endif
+    
+    // Detecção de pegadas alinhadas
+    var pegadas := {0x1E03, 0x1E04, 0x1E05, 0x1E06}; 
+    var footsteps := array;
+    
+    // Coleta todas as pegadas na área
+    foreach objtype in pegadas
+        foreach pegada in ListItemsNearLocationOfType(npc.x, npc.y, npc.z, 10, objtype, npc.realm)
+            footsteps.append(pegada);
+        endforeach
+        sleepms(2);
+    endforeach
+    
+    // Verifica se há pegadas suficientes e alinhadas
+    if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
+        PrintTextAbove(npc, "*Alertado pelas vibrações!*");
+        return 1;
+    endif
+    
+    return 0;
 endfunction
 
 //FUNCÕES PARA AKLATS E PEGADAS PARA ACIONAR O ATAQUE
