@@ -18,5 +18,13 @@ class IWeaponDamage()
 	uninit function GetPoisonDamage(this);
 	uninit function GetEnergyDamage(this);
 
+	uninit function SetSlashDamage(this, value);
+	uninit function SetPiercingDamage(this, value);
+	uninit function SetBluntDamage(this, value);
+	uninit function SetFireDamage(this, value);
+	uninit function SetColdDamage(this, value);
+	uninit function SetPoisonDamage(this, value);
+	uninit function SetEnergyDamage(this, value);
+
 	uninit function ToString(this);
 endclass
