@@ -47,6 +47,34 @@ class WeaponDamage(IWeaponDamage)
 		return this._energy;
 	endfunction
 
+	function SetSlashDamage(this, value)
+		this._slash := value;
+	endfunction
+
+	function SetPiercingDamage(this, value)
+		this._piercing := value;
+	endfunction
+
+	function SetBluntDamage(this, value)
+		this._blunt := value;
+	endfunction
+
+	function SetFireDamage(this, value)
+		this._fire := value;
+	endfunction
+
+	function SetColdDamage(this, value)
+		this._cold := value;
+	endfunction
+
+	function SetPoisonDamage(this, value)
+		this._poison := value;
+	endfunction
+
+	function SetEnergyDamage(this, value)
+		this._energy := value;
+	endfunction
+
 	function ToString(this)
 		return $"Weapon Damage: Slash={this._slash}, Piercing={this._piercing}, Blunt={this._blunt}, Fire={this._fire}, Cold={this._cold}, Poison={this._poison}, Energy={this._energy}";
 	endfunction

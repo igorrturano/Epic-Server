@@ -1,18 +1,31 @@
+include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
+include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
 include ":equipsys:Controller/EquipmentController";
 include ":equipsys:utils/consts";
 include ":debug:Controller/DebugController";
 
-program EquipSys(params)
+program equipsys(params)
 	var who := params[1];
 	var item := params[2];
 
+	// if (item.IsA(POLCLASS_ARMOR))
+	// 	setArmorStats(item);
+	// 	debugArmor(who, item);
+	// elseif (item.IsA(POLCLASS_WEAPON))
+	// 	setWeaponStats(item);
+	// 	debugWeapon(who, item);
+	// endif
+
+	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
-		setArmorStats(item);
+		equip := EquipWrapperArmor(item);
 		debugArmor(who, item);
 	elseif (item.IsA(POLCLASS_WEAPON))
-		setWeaponStats(item);
+		equip := EquipWrapperWeapon(item);
 		debugWeapon(who, item);
 	endif
+
+	equip.Update();
 endprogram
 
 /**

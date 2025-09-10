@@ -142,3 +142,33 @@ class Damage(IDamage)
 		return $"Damage: Slash={this._slash}, Piercing={this._piercing}, Blunt={this._blunt}, Fire={this._fire}, Cold={this._cold}, Poison={this._poison}, Energy={this._energy}";
 	endfunction
 endclass
+
+enum class DAMAGETIER
+	DAMAGE_NONE := "DAMAGE_NONE",
+
+	ONEHANDED_LOW := "ONEHANDED_LOW",
+	ONEHANDED_MID := "ONEHANDED_MID",
+	ONEHANDED_HIGH := "ONEHANDED_HIGH",
+
+	TWOHANDED_LOW := "TWOHANDED_LOW",
+	TWOHANDED_MID := "TWOHANDED_MID",
+	TWOHANDED_HIGH := "TWOHANDED_HIGH",
+
+	BOW_LOW := "BOW_LOW",
+	BOW_MID := "BOW_MID",
+	BOW_HIGH := "BOW_HIGH",
+
+	CROSSBOW_LOW := "CROSSBOW_LOW",
+	CROSSBOW_MID := "CROSSBOW_MID",
+	CROSSBOW_HIGH := "CROSSBOW_HIGH",
+
+	THROWING_LOW := "THROWING_LOW",
+	THROWING_MID := "THROWING_MID",
+	THROWING_HIGH := "THROWING_HIGH"
+endenum
+
+enum class DAMAGETYPE
+	SLASHDAMAGE := "Cortante",
+	PIERCINGDAMAGE := "Perfurante",
+	BLUNTDAMAGE := "Contusivo"
+endenum

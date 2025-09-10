@@ -2,14 +2,16 @@ include "EquipWrapper";
 include "IEquipWrapperArmor";
 include ":equipsys:Controller/ArmorController";
 
+include ":combat:Model/ArmorResist";
+
 class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
-	var _physicalResistsTier := struct{};
-	var _physicalResists := struct{};
-	var _elementalResistsTier := struct{};
-	var _elementalResists := struct{};
+	var _resistsTier := ArmorResist();
+	var _resists := ArmorResist();
+	var _resistsModTier := ArmorResist();
+	var _resistsMod := ArmorResist();
 	var _penalties := struct{};
 
 	function EquipWrapperArmor(this, byRef item)
@@ -18,34 +20,42 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		if (item.isA(POLCLASS_ARMOR)) // Caso o itemRef exista
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := item.getType();
-			this._physicalResists := struct {
-				SlashResist := this._prop.SlashResist,
-				PiercingResist := this._prop.PiercingResist,
-				BluntResist := this._prop.BluntResist
-			};
-			this._elementalResists := struct {
-				FireResist := this._prop.FireResist,
-				ColdResist := this._prop.ColdResist,
-				EnergyResist := this._prop.EnergyResist,
-				PoisonResist := this._prop.PoisonResist
-			};
+			this._resistsTier := ArmorResist(
+				SplitWords(this._template.EpicPhysicalResists)[1],
+				SplitWords(this._template.EpicPhysicalResists)[2],
+				SplitWords(this._template.EpicPhysicalResists)[3],
+				SplitWords(this._template.EpicElementalResists)[1],
+				SplitWords(this._template.EpicElementalResists)[2],
+				SplitWords(this._template.EpicElementalResists)[3],
+				SplitWords(this._template.EpicElementalResists)[4]
+			);
+			this._resists := ArmorResist(
+				this._prop.SlashResist,
+				this._prop.PiercingResist,
+				this._prop.BluntResist,
+
+				this._prop.FireResist,
+				this._prop.ColdResist,
+				this._prop.PoisonResist,
+				this._prop.EnergyResist
+			);
 
 		else // Caso seja apenas um template
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.tipoProtecao;
 			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
 			var slotResists := getResistPhysicalBySlot(this._coverage);
-			this._physicalResistsTier := struct {
-				SlashResist := templateResists[1] + slotResists[1],
-				PiercingResist := templateResists[2] + slotResists[2],
-				BluntResist := templateResists[3] + slotResists[3]
-			};
-			this._elementalResistsTier := struct {
-				FireResist := this._template.FireResist,
-				ColdResist := this._template.ColdResist,
-				EnergyResist := this._template.EnergyResist,
-				PoisonResist := this._template.PoisonResist
-			};
+			this._resists := ArmorResist(
+				templateResists.SlashResist + slotResists.SlashResist,
+				templateResists.PiercingResist + slotResists.PiercingResist,
+				templateResists.BluntResist + slotResists.BluntResist,
+
+				this._template.FireResist,
+				this._template.ColdResist,
+				this._template.PoisonResist,
+				this._template.EnergyResist
+			);
+			
 
 			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
 			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);

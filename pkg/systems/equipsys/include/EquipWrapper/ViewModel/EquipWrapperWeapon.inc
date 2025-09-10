@@ -2,17 +2,21 @@ include "EquipWrapper";
 include "IEquipWrapperWeapon";
 include ":equipsys:Controller/WeaponController";
 
+include ":combat:Model/WeaponDamage";
+
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _tipoAtaque := "";
 	var _speedTier := "";
 	var _speed := 0;
-	var _mainDamageTier := struct{};
-	var _offDamageTier := struct{};
-	var _mainDamage := struct{};
-	var _offDamage := struct{};
+	var _mainDamageTier := WeaponDamage();
+	var _offDamageTier := WeaponDamage();
+	var _mainDamage := WeaponDamage();
+	var _offDamage := WeaponDamage();
+	var _damageMod := WeaponDamage();
 	var _criticalChanceTier := "";
 	var _criticalChance := 0;
+	var _criticalChanceMod := 0;
 	var _minRange := 0;
 	var _maxRange := 0;
 	var _penalties := struct{};
@@ -25,18 +29,29 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 			this._tipoAtaque := item.getType();
 			this._speedTier := this._template.EpicSpeed;
 			this._speed := this._prop.AttackSpeed;
-			this._mainDamage := struct {
-				SlashDamage := this._prop.SlashMainDamage,
-				PiercingDamage := this._prop.PiercingMainDamage,
-				BluntDamage := this._prop.BluntMainDamage
-			};
-			this._offDamage := struct {
-				SlashDamage := this._prop.SlashOffDamage,
-				PiercingDamage := this._prop.PiercingOffDamage,
-				BluntDamage := this._prop.BluntOffDamage
-			};
+			this._mainDamageTier := WeaponDamage(
+				SplitWords(this._template.EpicMainDamage)[1],
+				SplitWords(this._template.EpicMainDamage)[2],
+				SplitWords(this._template.EpicMainDamage)[3]
+			);
+			this._offDamageTier := WeaponDamage(
+				SplitWords(this._template.EpicOffDamage)[1],
+				SplitWords(this._template.EpicOffDamage)[2],
+				SplitWords(this._template.EpicOffDamage)[3]
+			);
+			this._mainDamage := WeaponDamage(
+				this._prop.SlashMainDamage,
+				this._prop.PiercingMainDamage,
+				this._prop.BluntMainDamage
+			);
+			this._offDamage := WeaponDamage(
+				this._prop.SlashOffDamage,
+				this._prop.PiercingOffDamage,
+				this._prop.BluntOffDamage
+			);
 			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChance := this._prop.CriticalChance;
+			this._criticalChanceMod := this._prop.CriticalChanceMod;
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
 		else // Caso seja apenas um template
@@ -44,16 +59,26 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 			this._tipoAtaque := this._template.TipoAtaque;
 			this._speedTier := this._template.EpicSpeed;
 			this._speed := getSpeedByTier(this._speedTier);
-			this._mainDamage := struct {
-				SlashDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[1]) ?: 0,
-				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[2]) ?: 0,
-				BluntDamage := getDamageByTier(SplitWords(this._template.EpicMainDamage)[3]) ?: 0
-			};
-			this._offDamage := struct {
-				SlashDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[1]) ?: 0,
-				PiercingDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[2]) ?: 0,
-				BluntDamage := getDamageByTier(SplitWords(this._template.EpicOffDamage)[3]) ?: 0
-			};
+			this._mainDamageTier := WeaponDamage(
+				SplitWords(this._template.EpicMainDamage)[1],
+				SplitWords(this._template.EpicMainDamage)[2],
+				SplitWords(this._template.EpicMainDamage)[3]
+			);
+			this._offDamageTier := WeaponDamage(
+				SplitWords(this._template.EpicOffDamage)[1],
+				SplitWords(this._template.EpicOffDamage)[2],
+				SplitWords(this._template.EpicOffDamage)[3]
+			);
+			this._mainDamage := WeaponDamage(
+				getDamageByTier(SplitWords(this._template.EpicMainDamage)[1]) ?: 0,
+				getDamageByTier(SplitWords(this._template.EpicMainDamage)[2]) ?: 0,
+				getDamageByTier(SplitWords(this._template.EpicMainDamage)[3]) ?: 0
+			);
+			this._offDamage := WeaponDamage(
+				getDamageByTier(SplitWords(this._template.EpicOffDamage)[1]) ?: 0,
+				getDamageByTier(SplitWords(this._template.EpicOffDamage)[2]) ?: 0,
+				getDamageByTier(SplitWords(this._template.EpicOffDamage)[3]) ?: 0
+			);
 			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 			this._minRange := this._template.MinRange ?: 1;
@@ -116,20 +141,16 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function SetMainDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
-		this._mainDamage := struct {
-			SlashDamage := slash,
-			PiercingDamage := piercing,
-			BluntDamage := blunt
-		};
+		this._mainDamage.SetSlashDamage(slash);
+		this._mainDamage.SetPiercingDamage(piercing);
+		this._mainDamage.SetBluntDamage(blunt);
 	endfunction
 
 	function SetOffDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
-		this._offDamage := struct {
-			SlashDamage := slash,
-			PiercingDamage := piercing,
-			BluntDamage := blunt
-		};
+		this._offDamage.SetSlashDamage(slash);
+		this._offDamage.SetPiercingDamage(piercing);
+		this._offDamage.SetBluntDamage(blunt);
 	endfunction
 
 	function SetCriticalChance(this, criticalChance)

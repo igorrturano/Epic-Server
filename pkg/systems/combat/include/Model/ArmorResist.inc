@@ -53,3 +53,23 @@ class ArmorResist(IArmorResist)
 		return "Slash: " + this._slash + ", Piercing: " + this._piercing + ", Blunt: " + this._blunt + ", Fire: " + this._fire + ", Cold: " + this._cold + ", Poison: " + this._poison + ", Energy: " + this._energy;
 	endfunction
 endclass
+
+enum class PROTECTIONTYPE
+	ARMOR_LOWLOW := "ARMADURA LEVE FRACA",
+	ARMOR_LOWMID := "ARMADURA LEVE MEDIA",
+	ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
+
+	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA",
+	ARMOR_MIDMID := "ARMADURA MEDIA MEDIA",
+	ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
+
+	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA",
+	ARMOR_HIGHMID := "ARMADURA PESADA MEDIA",
+	ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
+
+	SHIELD_BUCKLER := "ESCUDO BROQUEL",
+	SHIELD_SMALL := "ESCUDO PEQUENO",
+	SHIELD_MEDIUM := "ESCUDO MEDIO",
+	SHIELD_LARGE := "ESCUDO GRANDE",
+	SHIELD_TOWER := "ESCUDO TORRE"
+endenum
