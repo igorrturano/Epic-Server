@@ -1,5 +1,5 @@
 class IDamage()
-	uninit function Damage(this,
+	uninit function IDamage(this,
 		default slash,
 		default piercing,
 		default blunt,

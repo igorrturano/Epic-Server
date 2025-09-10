@@ -26,6 +26,8 @@ program equipsys(params)
 	endif
 
 	equip.Update();
+	print (equip.ToString());
+	SendSysMessage(who, equip.ToString());
 endprogram
 
 /**
