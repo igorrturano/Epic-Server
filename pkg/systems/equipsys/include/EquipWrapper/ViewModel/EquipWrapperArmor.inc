@@ -3,32 +3,23 @@ include "IEquipWrapperArmor";
 include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
+include ":combat:Model/CombatPenalty";
 
 class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
-	var _resistsTier := ArmorResist();
 	var _resists := ArmorResist();
-	var _resistsModTier := ArmorResist();
 	var _resistsMod := ArmorResist();
-	var _penalties := struct{};
+	var _penalties := array{}; // Array of CombatPenalty
 
 	function EquipWrapperArmor(this, byRef item)
 		Super(item);
 
+		this._coverage := GetConfigStringArray(this._template, "Coverage");
+
 		if (item.isA(POLCLASS_ARMOR)) // Caso o itemRef exista
-			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := item.getType();
-			this._resistsTier := ArmorResist(
-				SplitWords(this._template.EpicPhysicalResists)[1],
-				SplitWords(this._template.EpicPhysicalResists)[2],
-				SplitWords(this._template.EpicPhysicalResists)[3],
-				SplitWords(this._template.EpicElementalResists)[1],
-				SplitWords(this._template.EpicElementalResists)[2],
-				SplitWords(this._template.EpicElementalResists)[3],
-				SplitWords(this._template.EpicElementalResists)[4]
-			);
 			this._resists := ArmorResist(
 				this._prop.SlashResist,
 				this._prop.PiercingResist,
@@ -41,7 +32,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			);
 
 		else // Caso seja apenas um template
-			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.tipoProtecao;
 			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
 			var slotResists := getResistPhysicalBySlot(this._coverage);
@@ -55,18 +45,15 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 				this._template.PoisonResist,
 				this._template.EnergyResist
 			);
-			
-
-			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
-			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
-			this._penalties := struct {
-				DexPen := penaltiesSlot.DexPen + penaltiesProt.DexPen,
-				SneakPen := penaltiesSlot.SneakPen + penaltiesProt.SneakPen,
-				MAPen := penaltiesSlot.MAPen + penaltiesProt.MAPen,
-				MageryPen := penaltiesSlot.MageryPen + penaltiesProt.MageryPen,
-				AwarenessPen := penaltiesSlot.AwarenessPen + penaltiesProt.AwarenessPen
-			};
 		endif
+
+		var penaltiesSlot := getPenaltiesBySlot(this._coverage);
+		var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
+		this._penalties.append(CombatPenalty(DEXTERITY, penaltiesSlot.DexPen + penaltiesProt.DexPen));
+		this._penalties.append(CombatPenalty(SNEAK, penaltiesSlot.SneakPen + penaltiesProt.SneakPen));
+		this._penalties.append(CombatPenalty(MECHANICS, penaltiesSlot.MAPen + penaltiesProt.MAPen));
+		this._penalties.append(CombatPenalty(MAGERY, penaltiesSlot.MageryPen + penaltiesProt.MageryPen));
+		this._penalties.append(CombatPenalty(AWARENESS, penaltiesSlot.AwarenessPen + penaltiesProt.AwarenessPen));
 	endfunction
 	
 	function GetTipoProtecao(this)
@@ -77,26 +64,26 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		return this._coverage ?: error{"errortext" := "The item have no Coverage!"};
 	endfunction
 
-	function GetPhysicalResists(this)
-		return this._physicalResists ?: error{"errortext" := "The item have no Physical Resists!"};
+	function GetResists(this)
+		return this._resists ?: error{"errortext" := "The item have no Resists!"};
 	endfunction
 
-	function GetElementalResists(this)
-		return this._elementalResists ?: error{"errortext" := "The item have no Elemental Resists!"};
+	function GetResistsMod(this)
+		return this._resistsMod ?: error{"errortext" := "The item have no Resists Modifier!"};
 	endfunction
 
 	function GetPenalties(this)
 		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
 	endfunction
 
-	function SetPhysicalResists(this, resists)
+	function SetResists(this, resists)
 		if (this._item == error) return this._item; endif
-		this._physicalResists := resists;
+		this._resists := resists;
 	endfunction
 
-	function SetElementalResists(this, resists)
+	function SetResistsMod(this, resists)
 		if (this._item == error) return this._item; endif
-		this._elementalResists := resists;
+		this._resistsMod := resists;
 	endfunction
 
 	function SetPenalties(this, penalties)
@@ -111,35 +98,48 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._prop.tipoProtecao := this._tipoProtecao;
 		
 		// Resists
-		this._prop.SlashResist := this._physicalResists.SlashResist;
-		this._prop.PiercingResist := this._physicalResists.PiercingResist;
-		this._prop.BluntResist := this._physicalResists.BluntResist;
-		this._prop.FireResist := this._elementalResists.FireResist;
-		this._prop.ColdResist := this._elementalResists.ColdResist;
-		this._prop.EnergyResist := this._elementalResists.EnergyResist;
-		this._prop.PoisonResist := this._elementalResists.PoisonResist;
+		this._prop.SlashResist := this._resists.GetSlashResist();
+		this._prop.PiercingResist := this._resists.GetPiercingResist();
+		this._prop.BluntResist := this._resists.GetBluntResist();
+		this._prop.FireResist := this._resists.GetFireResist();
+		this._prop.ColdResist := this._resists.GetColdResist();
+		this._prop.EnergyResist := this._resists.GetEnergyResist();
+		this._prop.PoisonResist := this._resists.GetPoisonResist();
 
 		// Penalties
-		this._prop.DexPen := this._penalties.DexPen;
-		this._prop.SneakPen := this._penalties.SneakPen;
-		this._prop.MAPen := this._penalties.MAPen;
-		this._prop.MageryPen := this._penalties.MageryPen;
-		this._prop.AwarenessPen := this._penalties.AwarenessPen;
+		foreach penalty in (this._penalties)
+			print("foreach->"+penalty.ToString());
+			this._prop[penalty.GetAttribute()] := penalty.GetValue();
+		endforeach
 
 		this._item.setAttrBase(this._prop);
 	endfunction
 
 	function ToString(this)
-		return $"Armor {EquipWrapper::ToString(this)},
+		var str := "";
+		str += $"Armor {EquipWrapper::ToString(this)},
 		Coverage: {this._coverage}, Protection Type: {this._tipoProtecao},
-		SlashResist: {this._physicalResists.SlashResist} ({this._physicalResistsTier.SlashResist}),
-		PiercingResist: {this._physicalResists.PiercingResist} ({this._physicalResistsTier.PiercingResist}),
-		BluntResist: {this._physicalResists.BluntResist} ({this._physicalResistsTier.BluntResist})
+		SlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()}),
+		PiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()}),
+		BluntResist: {this._resists.GetBluntResist()} (+{this._resistsMod.GetBluntResist()})";
 
-		DexPen: {this._penalties.DexPen},
-		SneakPen: {this._penalties.SneakPen},
-		MAPen: {this._penalties.MAPen},
-		MageryPen: {this._penalties.MageryPen},
-		AwarenessPen: {this._penalties.AwarenessPen}";
+		foreach penalty in (this._penalties)
+			str += $",
+			{penalty.GetAttribute()}: {penalty.GetValue()}";
+		endforeach
+
+		return str;
+
+		// return $"Armor {EquipWrapper::ToString(this)},
+		// Coverage: {this._coverage}, Protection Type: {this._tipoProtecao},
+		// SlashResist: {this._physicalResists.SlashResist} ({this._physicalResistsTier.SlashResist}),
+		// PiercingResist: {this._physicalResists.PiercingResist} ({this._physicalResistsTier.PiercingResist}),
+		// BluntResist: {this._physicalResists.BluntResist} ({this._physicalResistsTier.BluntResist})
+		
+		// DexPen: {this._penalties.DexPen},
+		// SneakPen: {this._penalties.SneakPen},
+		// MAPen: {this._penalties.MAPen},
+		// MageryPen: {this._penalties.MageryPen},
+		// AwarenessPen: {this._penalties.AwarenessPen}";
 	endfunction
 endclass
