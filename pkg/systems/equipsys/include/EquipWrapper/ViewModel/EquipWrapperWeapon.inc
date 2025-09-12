@@ -27,21 +27,26 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
 		
-		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
-			this._attribute := this._template.Attribute;
-			this._tipoAtaque := this._template.TipoAtaque ?: error{"errortext" := "The item have no Attack Type!"};
-			this._speedTier := this._template.EpicSpeed;
+		this._attribute := this._template.Attribute;
+		this._tipoAtaque := this._template.TipoAtaque;
+		this._speedTier := this._template.EpicSpeed;
+		this._minRange := this._template.MinRange ?: 1;
+		this._maxRange := this._template.MaxRange ?: 1;
+		this._criticalChanceTier := this._template.EpicCriticalChance;
+
+		this._mainDamageTier := !this._template.EpicMainDamage ? WeaponDamage() : WeaponDamage(
+			SplitWords(this._template.EpicMainDamage)[1],
+			SplitWords(this._template.EpicMainDamage)[2],
+			SplitWords(this._template.EpicMainDamage)[3]
+		);
+		this._offDamageTier := !this._template.EpicOffDamage ? WeaponDamage() : WeaponDamage(
+			SplitWords(this._template.EpicOffDamage)[1],
+			SplitWords(this._template.EpicOffDamage)[2],
+			SplitWords(this._template.EpicOffDamage)[3]
+		);
+
+		if (this._prop) // Caso o itemRef exista
 			this._speed := this._prop.AttackSpeed;
-			this._mainDamageTier := WeaponDamage(
-				SplitWords(this._template.EpicMainDamage)[1],
-				SplitWords(this._template.EpicMainDamage)[2],
-				SplitWords(this._template.EpicMainDamage)[3]
-			);
-			this._offDamageTier := WeaponDamage(
-				SplitWords(this._template.EpicOffDamage)[1],
-				SplitWords(this._template.EpicOffDamage)[2],
-				SplitWords(this._template.EpicOffDamage)[3]
-			);
 			this._mainDamage := WeaponDamage(
 				this._prop.SlashMainDamage,
 				this._prop.PiercingMainDamage,
@@ -52,43 +57,26 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 				this._prop.PiercingOffDamage,
 				this._prop.BluntOffDamage
 			);
-			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChance := this._prop.CriticalChance;
 			this._criticalChanceMod := this._prop.CriticalChanceMod;
-			this._weight := this._GetWeight();
-			this._strRequired := this._GetSTRRequired();
-			this._minRange := this._template.MinRange ?: 1;
-			this._maxRange := this._template.MaxRange ?: 1;
-		else // Caso seja apenas um template
-			this._attribute := this._template.Attribute;
-			this._tipoAtaque := this._template.TipoAtaque;
-			this._speedTier := this._template.EpicSpeed;
+		else // Caso não tenha prop ou seja um item não existente (template)
 			this._speed := getSpeedByTier(this._speedTier);
-			this._mainDamageTier := WeaponDamage(
-				SplitWords(this._template.EpicMainDamage)[1],
-				SplitWords(this._template.EpicMainDamage)[2],
-				SplitWords(this._template.EpicMainDamage)[3]
-			);
-			this._offDamageTier := WeaponDamage(
-				SplitWords(this._template.EpicOffDamage)[1],
-				SplitWords(this._template.EpicOffDamage)[2],
-				SplitWords(this._template.EpicOffDamage)[3]
-			);
 			this._mainDamage := WeaponDamage(
-				getDamageByTier(SplitWords(this._template.EpicMainDamage)[1]) ?: 0,
-				getDamageByTier(SplitWords(this._template.EpicMainDamage)[2]) ?: 0,
-				getDamageByTier(SplitWords(this._template.EpicMainDamage)[3]) ?: 0
+				getDamageByTier(this._mainDamageTier.GetSlashDamage()),
+				getDamageByTier(this._mainDamageTier.GetPiercingDamage()),
+				getDamageByTier(this._mainDamageTier.GetBluntDamage())
 			);
 			this._offDamage := WeaponDamage(
-				getDamageByTier(SplitWords(this._template.EpicOffDamage)[1]) ?: 0,
-				getDamageByTier(SplitWords(this._template.EpicOffDamage)[2]) ?: 0,
-				getDamageByTier(SplitWords(this._template.EpicOffDamage)[3]) ?: 0
+				getDamageByTier(this._offDamageTier.GetSlashDamage()),
+				getDamageByTier(this._offDamageTier.GetPiercingDamage()),
+				getDamageByTier(this._offDamageTier.GetBluntDamage())
 			);
-			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
-			this._minRange := this._template.MinRange ?: 1;
-			this._maxRange := this._template.MaxRange ?: 1;
+			this._criticalChanceMod := 0;
 		endif
+
+		this._weight := this._GetWeight();
+		this._strRequired := this._GetSTRRequired();
 	endfunction
 
 	function GetAttribute(this)
@@ -198,13 +186,21 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	// Private functions
 	function _GetWeight(this)
-		var maxMainDamage := Max(array{this._mainDamage.GetSlashDamage(), this._mainDamage.GetPiercingDamage(), this._mainDamage.GetBluntDamage()});
-		var maxOffDamage := Max(array{this._offDamage.GetSlashDamage(), this._offDamage.GetPiercingDamage(), this._offDamage.GetBluntDamage()});
+		var maxMainDamage := Max(array{
+			CInt(SplitWords(this._mainDamage.GetSlashDamage(), "d")[2]),
+			CInt(SplitWords(this._mainDamage.GetPiercingDamage(), "d")[2]),
+			CInt(SplitWords(this._mainDamage.GetBluntDamage(), "d")[2])
+		});
+		var maxOffDamage := Max(array{
+			CInt(SplitWords(this._offDamage.GetSlashDamage(), "d")[2]),
+			CInt(SplitWords(this._offDamage.GetPiercingDamage(), "d")[2]),
+			CInt(SplitWords(this._offDamage.GetBluntDamage(), "d")[2])
+		});
 
-		this._weight := CInt(maxMainDamage + maxOffDamage) ?: 0;
+		return CInt(maxMainDamage) + CInt(maxOffDamage);
 	endfunction
 
 	function _GetSTRRequired(this)
-		this._strRequired := CInt(this._weight * 7.5) ?: 0;
+		return CInt(this._weight * 7.5);
 	endfunction
 endclass

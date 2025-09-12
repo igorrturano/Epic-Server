@@ -39,7 +39,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 				AWARENESS -> CombatPenalty(AWARENESS, this._prop.Penalties[AWARENESS])
 			};
 
-		else // Caso seja apenas um template
+		else // Caso não tenha prop ou seja um item não existente (template)
 			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
 			var slotResists := getResistPhysicalBySlot(this._coverage);
 			this._resists := ArmorResist(
