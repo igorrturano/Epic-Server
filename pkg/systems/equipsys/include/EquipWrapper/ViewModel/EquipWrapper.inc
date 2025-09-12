@@ -14,13 +14,13 @@ class EquipWrapper(IEquipWrapper)
 	var _graphic := 0;
 	var _weight := 0;
 	var _maxHP := 0;
+	var _material := "";
 
 	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
 			this._item := item;
 			this._prop := item.GetProp(PROPNAME) ?: error{"errortext" := "This item has no attributes Property!"};
-
 			
 			if (this._prop)
 				this._name := this._prop.Name;
