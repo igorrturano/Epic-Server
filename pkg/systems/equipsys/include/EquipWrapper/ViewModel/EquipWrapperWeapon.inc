@@ -1,3 +1,5 @@
+use math;
+
 include "EquipWrapper";
 include "IEquipWrapperWeapon";
 include ":equipsys:Controller/WeaponController";
@@ -17,6 +19,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _criticalChanceTier := "";
 	var _criticalChance := 0;
 	var _criticalChanceMod := 0;
+	var _strRequired := 0;
 	var _minRange := 0;
 	var _maxRange := 0;
 	var _penalties := struct{};
@@ -26,7 +29,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		
 		if (item.isA(POLCLASS_WEAPON)) // Caso o itemRef exista
 			this._attribute := this._template.Attribute;
-			this._tipoAtaque := item.getType();
+			this._tipoAtaque := this._template.TipoAtaque ?: error{"errortext" := "The item have no Attack Type!"};
 			this._speedTier := this._template.EpicSpeed;
 			this._speed := this._prop.AttackSpeed;
 			this._mainDamageTier := WeaponDamage(
@@ -52,6 +55,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChance := this._prop.CriticalChance;
 			this._criticalChanceMod := this._prop.CriticalChanceMod;
+			this._weight := this._GetWeight();
+			this._strRequired := this._GetSTRRequired();
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
 		else // Caso seja apenas um template
@@ -134,9 +139,9 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._maxRange;
 	endfunction
 
-	function SetSpeed(this, speed)
+	function SetSpeed(this, value)
 		if (this._item == error) return this._item; endif
-		this._item.speed_mod := CInt(speed) - this._item.speed;
+		this._speed := value;
 	endfunction
 
 	function SetMainDamage(this, slash, piercing, blunt)
@@ -153,26 +158,53 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._offDamage.SetBluntDamage(blunt);
 	endfunction
 
-	function SetCriticalChance(this, criticalChance)
+	function SetCriticalChance(this, value)
 		if (this._item == error) return this._item; endif
-		this._criticalChance := criticalChance;
+		this._criticalChance := value;
 	endfunction
 
 	function Update(this)
 		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
 
+		this._prop.+Attribute := this._attribute;
+		this._prop.+TipoAtaque := this._tipoAtaque;
+		this._prop.+SlashMainDamage := this._mainDamage.GetSlashDamage();
+		this._prop.+PiercingMainDamage := this._mainDamage.GetPiercingDamage();
+		this._prop.+BluntMainDamage := this._mainDamage.GetBluntDamage();
+		this._prop.+SlashOffDamage := this._offDamage.GetSlashDamage();
+		this._prop.+PiercingOffDamage := this._offDamage.GetPiercingDamage();
+		this._prop.+BluntOffDamage := this._offDamage.GetBluntDamage();
+		this._prop.+CriticalChance := this._criticalChance;
+		this._prop.+CriticalChanceMod := this._criticalChanceMod;
+		this._prop.+STRRequired := this._strRequired;
+		this._prop.+AttackSpeed := this._speed;
+		this._prop.+MinRange := this._minRange;
+		this._prop.+MaxRange := this._maxRange;
+
 		this._item.speed_mod := CInt(this._speed) - this._item.speed;
 		
-		this._item.setAttrBase(this._prop);
+		this._item.SetProp(PROPNAME, this._prop);
 	endfunction
 
 	function ToString(this)
 		return $"Weapon {EquipWrapper::ToString(this)},
 		Attribute: {this._attribute}, Attack Type: {this._tipoAtaque},
-		MainDamage: {this._mainDamage.SlashDamage} ({this._mainDamageTier})/{this._mainDamage.PiercingDamage} ({this._mainDamageTier})/{this._mainDamage.BluntDamage} ({this._mainDamageTier}),
-		OffDamage: {this._offDamage.SlashDamage} ({this._offDamageTier})/{this._offDamage.PiercingDamage} ({this._offDamageTier})/{this._offDamage.BluntDamage} ({this._offDamageTier}),
+		MainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()}),
+		OffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()}),
 		Speed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier}),
 		Range: {this._minRange}-{this._maxRange}";
+	endfunction
+
+	// Private functions
+	function _GetWeight(this)
+		var maxMainDamage := Max(array{this._mainDamage.GetSlashDamage(), this._mainDamage.GetPiercingDamage(), this._mainDamage.GetBluntDamage()});
+		var maxOffDamage := Max(array{this._offDamage.GetSlashDamage(), this._offDamage.GetPiercingDamage(), this._offDamage.GetBluntDamage()});
+
+		this._weight := CInt(maxMainDamage + maxOffDamage) ?: 0;
+	endfunction
+
+	function _GetSTRRequired(this)
+		this._strRequired := CInt(this._weight * 7.5) ?: 0;
 	endfunction
 endclass

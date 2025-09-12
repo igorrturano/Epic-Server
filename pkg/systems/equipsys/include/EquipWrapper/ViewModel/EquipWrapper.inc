@@ -3,13 +3,14 @@ use cfgfile;
 
 include "IEquipWrapper";
 
+const PROPNAME := "atributos";
+
 class EquipWrapper(IEquipWrapper)
 	var _template;
 	var _item;
 	var _prop;
 
 	var _name := "";
-	var _desc := "";
 	var _graphic := 0;
 	var _weight := 0;
 	var _maxHP := 0;
@@ -18,13 +19,20 @@ class EquipWrapper(IEquipWrapper)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
 			this._item := item;
-			this._prop := item.getAttrBase();
+			this._prop := item.GetProp(PROPNAME) ?: error{"errortext" := "This item has no attributes Property!"};
 
-			this._name := item.name;
-			this._desc := item.desc;
-			this._weight := item.weight;
-			this._maxHP := item.maxHP;
-			this._graphic := item.graphic;
+			
+			if (this._prop)
+				this._name := this._prop.Name;
+				this._weight := this._prop.Weight;
+				this._maxHP := this._prop.MaxHP;
+				this._graphic := this._prop.Graphic;
+			else
+				this._name := item.name;
+				this._weight := item.weight;
+				this._maxHP := item.maxHP;
+				this._graphic := item.graphic;
+			endif
 			
 		else // Caso seja apenas um template
 			this._template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
@@ -99,8 +107,13 @@ class EquipWrapper(IEquipWrapper)
 	function Update(this)
 		if (this._item == error) return this._item; endif
 
-		this._item.name := this._name;
-		this._item.desc := this._desc;
+		this._prop := struct{};
+		this._prop.+Name := this._name;
+		this._prop.+Graphic := this._graphic;
+		this._prop.+Weight := this._weight;
+		this._prop.+MaxHP := this._maxHP;
+
+		SetName(this._item, this._name);
 		this._item.graphic := this._graphic;
 		this._item.weight := this._weight;
 		this._item.maxHP := this._maxHP;
@@ -109,7 +122,6 @@ class EquipWrapper(IEquipWrapper)
 	function ToString(this)
 		return $"Equipment:
 		Name: {this._name},
-		Description: {this._desc},
 		Graphic: {this._graphic} ({Hex(this._graphic)}),
 		Weight: {this._weight},
 		MaxHP: {this._maxHP}";
