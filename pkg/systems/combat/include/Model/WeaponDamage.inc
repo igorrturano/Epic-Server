@@ -1,5 +1,7 @@
 include "IWeaponDamage";
 
+include ":equipsys:utils/consts";
+
 class WeaponDamage(IWeaponDamage)
 	var _slash := ""; // Dice string format, e.g., "1d6+2"
 	var _piercing := ""; // Dice string format, e.g., "1d6+2"
@@ -9,7 +11,7 @@ class WeaponDamage(IWeaponDamage)
 	var _poison := ""; // Dice string format, e.g., "1d6+2"
 	var _energy := ""; // Dice string format, e.g., "1d6+2"
 
-	function WeaponDamage(this, slash := "", piercing := "", blunt := "", fire := "", cold := "", poison := "", energy := "")
+	function WeaponDamage(this, slash := DAMAGE_NONE, piercing := DAMAGE_NONE, blunt := DAMAGE_NONE, fire := DAMAGE_NONE, cold := DAMAGE_NONE, poison := DAMAGE_NONE, energy := DAMAGE_NONE)
 		this._slash := slash;
 		this._piercing := piercing;
 		this._blunt := blunt;
