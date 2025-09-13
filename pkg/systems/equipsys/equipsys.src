@@ -29,40 +29,40 @@ program equipsys(params)
 	SendSysMessage(who, equip.ToString());
 endprogram
 
-/**
- * setWeaponStats(weapon)
- *
- * Purpose
- * Define os valores na arma, setando as devidas props e os atributos no item.
- *
- * Parameters
- * weapon: ItemRef da arma.
- *
- */
-function setWeaponStats(weapon)
-	var stats := getWeaponStats(weapon);
-	weapon.setAttrBase(stats);
+// /**
+//  * setWeaponStats(weapon)
+//  *
+//  * Purpose
+//  * Define os valores na arma, setando as devidas props e os atributos no item.
+//  *
+//  * Parameters
+//  * weapon: ItemRef da arma.
+//  *
+//  */
+// function setWeaponStats(weapon)
+// 	var stats := getWeaponStats(weapon);
+// 	weapon.setAttrBase(stats);
 
-	// Setar a partir daqui, direto no item, o que não vai em CProp
-	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
-endfunction
+// 	// Setar a partir daqui, direto no item, o que não vai em CProp
+// 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
+// endfunction
 
-/**
- * setArmorStats(armor)
- *
- * Purpose
- * Define os valores na armadura, setando as devidas props e os atributos no item.
- *
- * Parameters
- * weapon: ItemRef da armadura.
- *
- */
-function setArmorStats(armor)
-	var stats := getArmorStats(armor);
-	armor.setAttrBase(stats);
+// /**
+//  * setArmorStats(armor)
+//  *
+//  * Purpose
+//  * Define os valores na armadura, setando as devidas props e os atributos no item.
+//  *
+//  * Parameters
+//  * weapon: ItemRef da armadura.
+//  *
+//  */
+// function setArmorStats(armor)
+// 	var stats := getArmorStats(armor);
+// 	armor.setAttrBase(stats);
 
-	// Setar a partir daqui, direto no item, o que não vai em CProp
-endfunction
+// 	// Setar a partir daqui, direto no item, o que não vai em CProp
+// endfunction
 
 function debugWeapon(who, equip)
 	// var materialName := item.getMaterialName() ? item.getMaterialName() : "Nenhum";
