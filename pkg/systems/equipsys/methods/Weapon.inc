@@ -61,7 +61,7 @@ endfunction
  */
 exported function getOffDamageDice(weapon)
 	var prop := weapon.getAttrBase();
-	
+
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;
 	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
