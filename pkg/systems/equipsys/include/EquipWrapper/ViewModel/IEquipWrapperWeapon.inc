@@ -1,6 +1,6 @@
 class IEquipWrapperWeapon()
 	uninit function GetAttribute(this);
-	uninit function GetTipoAtaque(this);
+	uninit function GetAttackType(this);
 	uninit function GetSpeed(this);
 	uninit function GetMainDamage(this);
 	uninit function GetOffDamage(this);

@@ -8,7 +8,7 @@ include ":combat:Model/WeaponDamage";
 
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
-	var _tipoAtaque := "";
+	var _attackType := "";
 	var _speedTier := "";
 	var _speed := 0;
 	var _mainDamageTier := WeaponDamage();
@@ -28,7 +28,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		Super(item);
 		
 		this._attribute := this._template.Attribute;
-		this._tipoAtaque := this._template.TipoAtaque;
+		this._attackType := this._template.TipoAtaque;
 		this._speedTier := this._template.EpicSpeed;
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
@@ -83,8 +83,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._attribute;
 	endfunction
 
-	function GetTipoAtaque(this)
-		return this._tipoAtaque;
+	function GetAttackType(this)
+		return this._attackType;
 	endfunction
 
 	function GetSpeedTier(this)
@@ -156,7 +156,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		EquipWrapper::Update(this);
 
 		this._prop.+Attribute := this._attribute;
-		this._prop.+TipoAtaque := this._tipoAtaque;
+		this._prop.+AttackType := this._attackType;
 		this._prop.+SlashMainDamage := this._mainDamage.GetSlashDamage();
 		this._prop.+PiercingMainDamage := this._mainDamage.GetPiercingDamage();
 		this._prop.+BluntMainDamage := this._mainDamage.GetBluntDamage();
@@ -177,7 +177,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function ToString(this)
 		return $"Weapon {EquipWrapper::ToString(this)},
-		Attribute: {this._attribute}, Attack Type: {this._tipoAtaque},
+		Attribute: {this._attribute}, Attack Type: {this._attackType},
 		MainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()}),
 		OffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()}),
 		Speed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier}),
