@@ -47,7 +47,7 @@ class ImageGump(Control)
 
 	function ToString(this)
 		return "ImageGump(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", imageId=" + this.GetImageId()
