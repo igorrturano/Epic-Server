@@ -41,13 +41,9 @@ function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 		return;
 	endif
 
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
-
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, defender.GetParsedTemplate());
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, defender.GetParsedTemplate());
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, defender.GetParsedTemplate());
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::KILLS, combatInfo.kills, defender.GetParsedTemplate());
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::HITS, combatInfo.hits, defender.GetParsedTemplate());
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::DAMAGE_DONE, combatInfo.damage, defender.GetParsedTemplate());
 endfunction
 
 function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
@@ -58,34 +54,25 @@ function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 		return;
 	endif
 
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
-
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, key);
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, key);
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, key);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::KILLS, combatInfo.kills, key);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::HITS, combatInfo.hits, key);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::DAMAGE_DONE, combatInfo.damage, key);
 endfunction
 
 function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	var achiev;
 	var key := CStr(Hex(attacker.weapon.objtype));
-	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH. E
+	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH.
 		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Arma empunhada não é uma arma válida. Ignorando avanço de achievement.");
 		return;
 	endif
 
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, combatInfo.kills);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, combatInfo.hits);
-	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, combatInfo.damage);
-
-	// TODO: Pensar em uma solução melhor para atualizar o nome junto com o avanço do achievement
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_KILLS, attacker.weapon.desc);
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_HITS, attacker.weapon.desc);
-	AchievementSetRefName(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_NAME_DAMAGE_DONE, attacker.weapon.desc);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::KILLS, combatInfo.kills, attacker.weapon.desc);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::HITS, combatInfo.hits, attacker.weapon.desc);
+	AchievementAdvance(ACHIEVEMENT_COMBAT, attacker, key, ACHIEVEMENT_COMBAT_CATEGORY::DAMAGE_DONE, combatInfo.damage, attacker.weapon.desc);
 endfunction
 
-function AchievementAdvance(type, who, key, name, value)
+function AchievementAdvance(type, who, key, name, value, refName := false)
 	value := CInt(value);
 	if (value < 1) return; endif
 
@@ -93,14 +80,10 @@ function AchievementAdvance(type, who, key, name, value)
 
 	achiev.IncrementValue(value);
 
+	if (refName) achiev.SetRefName(refName); endif
+
 	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Ganho de achievement para {achiev.GetName()} ({type}): {value}");
-	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Progresso de achievement para {achiev.GetName()}: {achiev.ToString()}");
+	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Progresso atual de {achiev.GetName()}: {achiev.ToString()}");
 
-	who.SetAchievement(type, who, achiev);
-endfunction
-
-function AchievementSetRefName(type, who, key, name, refName)
-	var achiev := who.GetAchievement(type, who, key, name);
-	achiev.SetRefName(refName);
 	who.SetAchievement(type, who, achiev);
 endfunction
