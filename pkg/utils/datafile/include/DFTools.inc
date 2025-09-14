@@ -65,7 +65,7 @@ class DFTools()
 	endfunction
 
 	/**
-	 * GetElementPropNames(this, elem_key)
+	 * GetElementKeys(this, elem_key)
 	 *
 	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
 	 *

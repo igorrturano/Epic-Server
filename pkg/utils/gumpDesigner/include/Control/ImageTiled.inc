@@ -43,7 +43,7 @@ class ImageTiled(Control)
 
 	function ToString(this)
 		return "ImageTiled(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()
