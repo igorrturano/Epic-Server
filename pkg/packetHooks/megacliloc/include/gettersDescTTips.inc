@@ -9,7 +9,7 @@ include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:Controller/WeaponController";
 include ":destroyable:include/destroyItem";
 include ":crafting:/include/fabricacaoUtil";
-include ":equipsys:Controller/EquipmentController";
+include ":equipsys:Controller/ArmorController";
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
@@ -310,7 +310,7 @@ function PegaDescResistArmadura(objeto,cfg,atributosArmadura, xDesc := "")
 	if(atributosArmadura)
 		atrib := atributosArmadura;
 	else
-		atrib := getArmorStats(cfg.elem); //Foi a marreta que eu encontrei 
+		// atrib := getArmorStats(cfg.elem); // Vai bugar após o EqupiSys v3.0 - É intencional, pra poder rastrear os outros bugs.... (Desculpa Deiro... HUAuhahuahu)
 	endif
 
 	var bluntRes,slashRes,pircRes :=0;

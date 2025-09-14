@@ -1,4 +1,4 @@
-include ":equipsys:Controller/EquipmentController";
+include ":equipsys:Controller/ArmorController";
 
 print("INSTALLING: Methods for Equipment -> Equipment System... OK!");
 
@@ -45,12 +45,6 @@ endfunction
  *
  */
 exported function SetAttrBase(item, prop)
-	if (item.isA(POLCLASS_WEAPON)) 
-		if (!prop) prop := getWeaponStats(item); endif
-	elseif (item.isA(POLCLASS_ARMOR))
-		if (!prop) prop := getArmorStats(item); endif
-	endif
-
 	if (prop) item.SetProp("atributos", prop); endif
 
 	return prop;
