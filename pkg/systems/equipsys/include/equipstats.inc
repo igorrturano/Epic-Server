@@ -6,7 +6,7 @@ use os;
 use cfgfile;
 use math;
 
-include "utils";
+include "utils/consts";
 include ":attributes:attributeConstants";
 
 /////////////

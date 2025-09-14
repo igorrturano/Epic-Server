@@ -2,6 +2,8 @@ use uo;
 use math;
 
 include ":equipsys:utils/consts";
+include ":combat:Model/ArmorResist";
+include ":combat:Model/CombatPenalty";
 
 function getResistPhysicalByProtection(tier)
 	var resists := array{};
@@ -27,17 +29,13 @@ function getResistPhysicalByProtection(tier)
 		default: resists := {0,0,0}; break;
 	endcase
 
-	return struct{
-		SlashResist := resists[1],
-		PiercingResist := resists[2],
-		BluntResist := resists[3]
-	};
+	return ArmorResist(resists[1], resists[2], resists[3]);
 endfunction
 
 function getResistPhysicalBySlot(slot)
 	var resists := array{};
 	
-	case(Upper(slot)) // {SlashResist, PiercingResist, BluntResist}
+	case(Upper(slot[1])) // {SlashResist, PiercingResist, BluntResist}
 			HEAD: resists := {2,2,2}; break;
 			NECK: resists := {1,1,1}; break;
 			BODY: resists := {4,4,4}; break;
@@ -49,11 +47,7 @@ function getResistPhysicalBySlot(slot)
 			default: resists := {0,0,0}; break;
 		endcase
 
-	return struct{
-		SlashResist := resists[1],
-		PiercingResist := resists[2],
-		BluntResist := resists[3]
-	};
+	return ArmorResist(resists[1], resists[2], resists[3]);
 endfunction
 
 function getResistPhysicalByMaterial(ID)
@@ -124,11 +118,7 @@ function getResistPhysicalByMaterial(ID)
 		default: resists := {0,0,0}; break;
 	endcase
 
-	return struct{
-		SlashResist := resists[1],
-		PiercingResist := resists[2],
-		BluntResist := resists[3]
-	};
+	return ArmorResist(resists[1], resists[2], resists[3]);
 endfunction
 
 function getPenaltiesBySlot(slot)
@@ -146,12 +136,12 @@ function getPenaltiesBySlot(slot)
 		default: penalties := {0,0,0,0,0}; break;
 	endcase
 
-	return struct{
-		DexPen := penalties[1],
-		SneakPen := penalties[2],
-		MAPen := penalties[3],
-		MageryPen := penalties[4],
-		AwarenessPen := penalties[5]
+	return dictionary{
+		DEXTERITY -> CombatPenalty(DEXTERITY, penalties[1]),
+		SNEAK -> CombatPenalty(SNEAK, penalties[2]),
+		MECHANICS -> CombatPenalty(MECHANICS, penalties[3]),
+		MAGERY -> CombatPenalty(MAGERY, penalties[4]),
+		AWARENESS -> CombatPenalty(AWARENESS, penalties[5])
 	};
 endfunction
 
@@ -183,12 +173,12 @@ function getPenaltiesByProtection(protection)
 		default: penalties := {0,0,0,0,0}; break;
 	endcase
 
-	return struct{
-		DexPen := penalties[1],
-		SneakPen := penalties[2],
-		MAPen := penalties[3],
-		MageryPen := penalties[4],
-		AwarenessPen := penalties[5]
+	return dictionary{
+		DEXTERITY -> CombatPenalty(DEXTERITY, penalties[1]),
+		SNEAK -> CombatPenalty(SNEAK, penalties[2]),
+		MECHANICS -> CombatPenalty(MECHANICS, penalties[3]),
+		MAGERY -> CombatPenalty(MAGERY, penalties[4]),
+		AWARENESS -> CombatPenalty(AWARENESS, penalties[5])
 	};
 endfunction
 

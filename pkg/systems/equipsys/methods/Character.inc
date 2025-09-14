@@ -1,4 +1,4 @@
-include ":equipsys:utils";
+include ":equipsys:utils/consts";
 include ":combat:armorZones";
 
 print("INSTALLING: Methods for Character -> Equipment System... OK!");

@@ -93,7 +93,7 @@ function GetPointsInRadius(mid_x, mid_y, radius)
 	return point_list;
 endfunction
 
-function PushBack(who, dist, delay, invert := 0)
+function PushBack(who, dist, delay := 0, invert := 0)
    var mod := GetModByFacing(who.facing);
 	var x := mod[1];
 	var y := mod[2];
