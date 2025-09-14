@@ -38,7 +38,7 @@ class RadioButton(Control)
 
 	function ToString(this)
 		return "RadioButton(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", unpressedImage=" + CStr(this.GetUnpressedImage())

@@ -12,6 +12,7 @@ include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
+include ":propagacao:include/efeitosIncendiarios";
 
 program spell_fireball(params)
     var caster := params[1];
@@ -19,6 +20,7 @@ program spell_fireball(params)
 	var spell := params[3];
 	var spell_circle := spell.Circle;
 	var spell_school := spell.School;
+	//var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 
 	params := 0; // No longer needed
 
@@ -49,10 +51,15 @@ program spell_fireball(params)
 			continue;
 		endif
 		
-		var field := CreateItemAtLocation(coord.x, coord.y, caster.z, "FireField_NS", 1, caster.realm);
-		field.SetOwner(caster);
-		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
-		field.SetDuration(0);
+		var field := CriaMuralhaFogo(
+									coord.x, 
+									coord.y, 
+									caster.z,
+									caster.realm,
+									GRAFICO_FIREWALL_NORTE_SUL,
+									0, 
+									20, 
+									caster);
 		sleepms(105);
 	endforeach
 
@@ -73,13 +80,28 @@ program spell_fireball(params)
 		endcase
 		var field;
 		if ( RandomInt(2) )
-			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldNS", 1, caster.realm);
+			CriaMuralhaFogo(
+									coord.x, 
+									coord.y, 
+									caster.z,
+									caster.realm,
+									GRAFICO_FIREWALL_NORTE_SUL,
+									0, 
+									10, 
+									caster,
+									10);
 		else
-			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldEW", 1, caster.realm);
+			CriaMuralhaFogo(
+									coord.x, 
+									coord.y, 
+									caster.z,
+									caster.realm,
+									GRAFICO_FIREWALL_OESTE_LESTE,
+									0, 
+									10, 
+									caster,
+									10);
 		endif
-		field.SetOwner(caster);
-		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
-		field.SetDuration(1);
 		sleepms(5);
 	endforeach
 

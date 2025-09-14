@@ -2,9 +2,9 @@ include ":gumps:epicGumps";
 
 class Control()
 	var _gumpId := GUMP_CONTROL::NONE;
-	var _type := "";
+	var _type := ""; // enum GUMP_CONTROL
 	var _name := "";
-	var _tooltip := "";
+	var _tooltip; // Tooltip (Control)
 
 	var _x := 0;
 	var _y := 0;
@@ -26,7 +26,7 @@ class Control()
 		return this._type;
 	endfunction
 
-	function _GetName(this)
+	function GetName(this)
 		return this._name;
 	endfunction
 
@@ -74,7 +74,7 @@ class Control()
 
 	function ToString(this)
 		return "Control(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", tooltip=" + this.GetTooltip() ? "true" : "false"
@@ -97,5 +97,7 @@ enum class GUMP_CONTROL
 	RADIOBUTTON := "radiobutton",
 	CHECKBOX := "checkbox",
 
-	TEXTBOX := "textbox"
+	TEXTBOX := "textbox",
+
+	CONTAINER := "container"
 endenum

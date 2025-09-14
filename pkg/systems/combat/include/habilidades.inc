@@ -3,7 +3,7 @@
  * habilidades.inc
  *
  * Created: 12/05/2025 13:15PM
- * Updated: 12/05/2025 13:15PM
+ * Updated: 13/09/2025 05:15PM
  *
  * Responsável por:
  * Gerenciar a aplicar os cálculos das habilidades de combate.
@@ -20,6 +20,7 @@
 include "damage";
 include "hitchance";
 include "mainHitScript";
+include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum HAB_TAGS
@@ -401,7 +402,7 @@ function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo := s
 			EraseObjProperty(attacker.weapon, "backstab");
 			EraseObjProperty(attacker, "#nextcritical");
 			if (!CheckHab_SempreAlerta(attacker, defender, attackInfo))
-				ataqueFurtivo(attacker, defender);
+				CheckHab_AtaqueFurtivo(attacker, defender);
 			endif
 		endif
 	endif

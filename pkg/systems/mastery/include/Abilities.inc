@@ -50,7 +50,7 @@ function ExecuteBeforeEngage(byRef combatInfo)
 	var weaponCfg := weapon.getCfgElem();
 
 	if (weapon.objtype in compatibleWeapons.montante)
-		Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+		Run_Script(":combat:specialAttackScripts/downwardcut", combatInfo);
 	endif
 	if (!weapon.isRanged())
 		if (Upper(weaponCfg.Type) == Upper(SWORD))
@@ -121,62 +121,62 @@ function CalculateEffectTime(attacker)
 endfunction
 
 function ExecuteMasteryAbility_DownwardCut(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/DownwardCut", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/downwardcut", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Whirlwind(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/Whirlwind", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/whirlwind", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Cutthroat(byRef combatInfo)
 	if (AP_GetVital(combatInfo.defender, "Hits") < (AP_GetVitalMaximumValue(combatInfo.defender, "Hits") * 0.05))
-		return Run_Script(":combat:specialAttackScripts/Cutthroat", combatInfo);
+		return Run_Script(":combat:specialAttackScripts/cutthroat", combatInfo);
 	endif
 endfunction
 
 function ExecuteMasteryAbility_CounterAttack(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/CounterAttack", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/counterattack", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Cleave(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/Cleave", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/cleave", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_KneeBreaker(byRef combatInfo)
 	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Run_Script(":combat:specialAttackScripts/KneeBreaker", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/kneebreaker", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_BoneBreaker(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/BoneBreaker", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/bonebreaker", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_SpearPush(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/SpearPush", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/spearpush", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Knockdown(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/Knockdown", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/knockdown", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_SwordBlock(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/SwordBlock", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/swordblock", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
-	return Start_Script(":combat:specialAttackScripts/DoubleShot", combatInfo);
+	return Start_Script(":combat:specialAttackScripts/doubleshot", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Lame(byRef combatInfo)
 	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Run_Script(":combat:specialAttackScripts/Lame", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/lame", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Pillum(byRef combatInfo)
 	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Start_Script(":combat:specialAttackScripts/Pillum", combatInfo);
+	return Start_Script(":combat:specialAttackScripts/pillum", combatInfo);
 endfunction
 
 function ExecuteMasteryAbility_Charge(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/Charge", combatInfo);
+	return Run_Script(":combat:specialAttackScripts/charge", combatInfo);
 endfunction

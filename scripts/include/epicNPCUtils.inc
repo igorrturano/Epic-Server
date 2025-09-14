@@ -1,7 +1,7 @@
 use util;
 
 include ":attributes:attributes";
-include ":equipsys:Controller/EquipmentController";
+include ":equipsys:Controller/WeaponController";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
