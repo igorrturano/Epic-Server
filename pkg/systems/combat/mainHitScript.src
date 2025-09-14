@@ -1110,45 +1110,44 @@ function disarmOpponent(attacker, defender)
 	endif
 endfunction
 
-// TODO: Migrar para habilidades.inc -> CheckHab_AtaqueFurtivo()
-function ataqueFurtivo(attacker, defender)
-	var weapon := attacker.weapon;
-	var weaponBow := 0;
-	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
+// function ataqueFurtivo(attacker, defender)
+// 	var weapon := attacker.weapon;
+// 	var weaponBow := 0;
+// 	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
 
-	if (attacker.npctemplate)
-		var npc_elem := NPC_GetNPCConfig(attacker);
-		sneak_dmg := Cint(attacker.getTier() * 15);
-		if (sneak_dmg < 15)
-			sneak_dmg := 15;
-		endif
-	endif
+// 	if (attacker.npctemplate)
+// 		var npc_elem := NPC_GetNPCConfig(attacker);
+// 		sneak_dmg := Cint(attacker.getTier() * 15);
+// 		if (sneak_dmg < 15)
+// 			sneak_dmg := 15;
+// 		endif
+// 	endif
 
-	if (lower(weapon.attribute) == "rangedcombat")
-		weaponBow := 1;
-	endif
+// 	if (lower(weapon.attribute) == "rangedcombat")
+// 		weaponBow := 1;
+// 	endif
 
-	if ( IsBehind(defender, attacker.x, attacker.y) )
-		if ( !CanBackStab(attacker, weapon) )
-			return;
-		else
-			sleepms(100);
-			if ( weaponBow)
-				if (!AmmoCheck(attacker, defender))
-					return 1;
-				endif
-			else
-				PerformAction(attacker, 0x000a );
-			endif
-        endif
-    endif
+// 	if ( IsBehind(defender, attacker.x, attacker.y) )
+// 		if ( !CanBackStab(attacker, weapon) )
+// 			return;
+// 		else
+// 			sleepms(100);
+// 			if ( weaponBow)
+// 				if (!AmmoCheck(attacker, defender))
+// 					return 1;
+// 				endif
+// 			else
+// 				PerformAction(attacker, 0x000a );
+// 			endif
+//         endif
+//     endif
 
-	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
-    PlaySoundEffect(defender, 0X510);
-    MakeBleed(defender);
-    RevokePrivilege(attacker, "hiddenattack");
-    attacker.disable("hiddenattack");
-endfunction
+// 	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
+//     PlaySoundEffect(defender, 0X510);
+//     MakeBleed(defender);
+//     RevokePrivilege(attacker, "hiddenattack");
+//     attacker.disable("hiddenattack");
+// endfunction
 
 function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdamage)
 	if (getObjProperty(attacker, "critdelay") > ReadGameClock())
