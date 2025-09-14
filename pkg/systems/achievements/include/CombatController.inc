@@ -62,7 +62,7 @@ endfunction
 function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	var achiev;
 	var key := CStr(Hex(attacker.weapon.objtype));
-	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH. E
+	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH.
 		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Arma empunhada não é uma arma válida. Ignorando avanço de achievement.");
 		return;
 	endif

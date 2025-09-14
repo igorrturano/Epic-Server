@@ -1,10 +1,10 @@
 include "Control";
 
 class Text(Control)
-	var _color := 0;
+	var _color := GUMP_TEXT_COLOR::COLOR_DEFAULT;
 	var _value := "";
 
-	function Text(this, name, x, y, value, color := 0)
+	function Text(this, name, x, y, value, color := GUMP_TEXT_COLOR::COLOR_DEFAULT)
 		Super(GUMP_CONTROL::TEXT, name, x, y);
 		
 		this._color := color;
@@ -34,7 +34,7 @@ class Text(Control)
 
 	function ToString(this)
 		return "Text(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()

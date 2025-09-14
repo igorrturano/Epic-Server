@@ -1,21 +1,22 @@
+include "IGump";
 include ":gumps:epicGumps";
 include ":gumps:autoClose";
 include ":gumpDesigner:Control/Control";
 include ":gumpDesigner:Event/EventHandler";
 
-class Gump()
+class Gump(IGump)
 	var _parent;
 	var _pid;
 	var _gump;
 	var _gumpResult;
 	
-	var _title;
-	var _width;
-	var _height;
+	var _title := "";
+	var _width := 0;
+	var _height := 0;
 
-	var _options;
-	var _customization;
-	var _controls;
+	var _options := array{}; // Array de opções (enum GUMP_OPTION)
+	var _customization := array{}; // Array de funções lambda
+	var _controls := dictionary{}; // Dictionary de Controls
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
@@ -26,18 +27,7 @@ class Gump()
 
 		this._options := options.size() < 1 ? array{BORDER_GOLDEN} : options;
 		this._customization := array{};
-		this._controls := dictionary{
-			GUMP_CONTROL::TEXT -> array{},
-			GUMP_CONTROL::TEXTCROPPED -> array{},
-			GUMP_CONTROL::TOOLTIP -> array{},
-			GUMP_CONTROL::IMAGEGUMP -> array{},
-			GUMP_CONTROL::IMAGEGUMPTILED -> array{},
-			GUMP_CONTROL::IMAGETILED -> array{},
-			GUMP_CONTROL::BUTTON -> array{},
-			GUMP_CONTROL::CHECKBOX -> array{},
-			GUMP_CONTROL::RADIOBUTTON -> array{},
-			GUMP_CONTROL::TEXTBOX -> array{}
-		};
+		this._controls := dictionary{};
 
 	endfunction
 
@@ -99,12 +89,14 @@ class Gump()
 		this._options.append(option);
 	endfunction
 
-	function AddCustomization(this, customFunction)
+	function AddCustomization(this, byRef customFunction)
 		this._customization.append(customFunction);
 	endfunction
 
 	function AddControl(this, byRef control)
 		var id := 1;
+
+		if (!this._controls[control.GetType()])	this._controls[control.GetType()] := array{}; endif
 		
 		if (control.GetType() == GUMP_CONTROL::TEXT)
 			id := GUMP_ID_REFERENCE::TEXT + id + this._controls[GUMP_CONTROL::TEXT].size();
@@ -144,38 +136,13 @@ class Gump()
 			+ ")";
 	endfunction
 
-	function CreateControls(byref dialog, controlGroup)
-		foreach control in (controlGroup)
-			control.SelfCreate(dialog);
-		endforeach
-	endfunction
-
-	function UpdateInputValues(this)
-		foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
-			control.SetValue(GFExtractData(this._gumpResult, control.GetGumpId()));
-		endforeach
-
-		foreach control in (this._controls[GUMP_CONTROL::CHECKBOX])
-			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
-		endforeach
-
-		foreach control in (this._controls[GUMP_CONTROL::RADIOBUTTON])
-			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
-		endforeach
-	endfunction
-
 	function Show(this)
 		var eventHandled, gumpResult;
 		
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 
-		foreach controlGroup in (this._controls)
-			CreateControls(this._gump, controlGroup);
-		endforeach
-
-		foreach custom in (this._customization)
-			custom(this._gump);
-		endforeach
+		this._CreateControls();
+		this._CreateCustoms();
 
 		this._pid := GetPid();
 		this._gumpResult := GFSendGump(this._parent, this._gump);
@@ -206,16 +173,42 @@ class Gump()
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
 		endif
 
-		UpdateInputValues(this);
+		_UpdateInputValues(this);
 
-		print("EventHandled -> " + eventHandled);
-		print("EventHandled -> " + eventHandled.ToString());
-		print("EventHandled -> " + eventHandled.GetEvent().ToString());
 		return eventHandled;
 	endfunction
 
 	function Close(this)
 		return GFCloseGump(this._parent, this._pid);
+	endfunction
+
+	// Private functions
+	function _CreateControls(this)
+		foreach controlGroup in (this._controls)
+			foreach control in (controlGroup)
+				control.SelfCreate(this._gump);
+			endforeach
+		endforeach
+	endfunction
+
+	function _CreateCustoms(this)
+		foreach custom in (this._customization)
+			custom(this._gump);
+		endforeach
+	endfunction
+
+	function _UpdateInputValues(this)
+		foreach control in (this._controls[GUMP_CONTROL::TEXTBOX])
+			control.SetValue(GFExtractData(this._gumpResult, control.GetGumpId()));
+		endforeach
+
+		foreach control in (this._controls[GUMP_CONTROL::CHECKBOX])
+			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
+		endforeach
+
+		foreach control in (this._controls[GUMP_CONTROL::RADIOBUTTON])
+			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
+		endforeach
 	endfunction
 endclass
 

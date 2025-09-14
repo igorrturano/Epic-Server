@@ -52,7 +52,7 @@ class Button(Control)
 
 	function ToString(this)
 		return "Button(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
@@ -71,5 +71,8 @@ endenum
 
 enum class BUTTON_IMAGE
 	CLOSE_UNPRESSED := 2103,
-	CLOSE_PRESSED := 2104
+	CLOSE_PRESSED := 2104,
+
+	MODERN_UNPRESSED := 0x4C4E,
+	MODERN_PRESSED := 0x4C4F,
 endenum
