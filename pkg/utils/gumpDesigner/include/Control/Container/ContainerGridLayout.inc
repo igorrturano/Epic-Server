@@ -3,7 +3,7 @@ include "Container";
 class ContainerGridLayout(Container)
 	var _maxRows := 1;
 	var _maxColumns := 1;
-	var _row := array{}; // Array de Array de Container
+	var _row := array{}; // Array de Array de Container - o de dentro é a coluna, o de fora é a linha.
 
 	function ContainerGridLayout(this, name, x, y, width, height, maxRows, maxColumns)
 		Super(name, x, y, width, height);
