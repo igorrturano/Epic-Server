@@ -35,7 +35,7 @@ class TextCropped(Text)
 
 	function ToString(this)
 		return "TextCropped(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
