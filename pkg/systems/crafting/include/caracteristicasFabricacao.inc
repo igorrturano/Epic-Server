@@ -1,5 +1,5 @@
 use uo;
-use cfgFile;
+use cfgfile;
 include "/include/epicPropNames";
 
 enum COMPONENTES_CARACTERISTICA
