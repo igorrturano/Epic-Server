@@ -6,13 +6,13 @@ enum ACHIEVEMENT_TYPE
 endenum
 
 class Achievement()
-	var name; // { get; }
-	var ref; // { get; }
-	var refName; // { get; set; }
+	var name := ""; // { get; }
+	var ref := ""; // { get; }
+	var refName := ""; // { get; set; }
 
-	var level;
-	var xp;
-	var value;
+	var level := 0; // { get; set; }
+	var xp := 0; // { get; set; }
+	var value := 0; // { get; set; }
 
 	function Achievement(this, name, ref, refName := "", level := 0, xp := 0, value := 0)
 		this.name := name;
@@ -101,50 +101,50 @@ class Achievement()
 	endfunction
 endclass
 
-enum ACHIEVEMENT_NAME_COMBAT
-	ACHIEVEMENT_NAME_HITS := "hits",
-	ACHIEVEMENT_NAME_BLOCKED := "blocked",
-	ACHIEVEMENT_NAME_KILLS := "kills",
+enum class ACHIEVEMENT_COMBAT_CATEGORY
+	HITS := "hits",
+	BLOCKED := "blocked",
+	KILLS := "kills",
 
-	ACHIEVEMENT_NAME_DAMAGE_DONE := "damage_done",
-	ACHIEVEMENT_NAME_DAMAGE_TAKEN := "damage_taken",
-	ACHIEVEMENT_NAME_DAMAGE_MAX := "damage_max",
-	ACHIEVEMENT_NAME_DAMAGE_MAX_TAKEN := "damage_max_taken",
+	DAMAGE_DONE := "damage_done",
+	DAMAGE_TAKEN := "damage_taken",
+	DAMAGE_MAX := "damage_max",
+	DAMAGE_MAX_TAKEN := "damage_max_taken",
 
-	ACHIEVEMENT_NAME_CRITICAL_HITS := "critical_hits",
-	ACHIEVEMENT_NAME_CRITICAL_DAMAGE := "critical_damage",
-	ACHIEVEMENT_NAME_CRITICAL_DAMAGE_MAX := "critical_damage_max",
+	CRITICAL_HITS := "critical_hits",
+	CRITICAL_DAMAGE := "critical_damage",
+	CRITICAL_DAMAGE_MAX := "critical_damage_max",
 
-	ACHIEVEMENT_NAME_HEALING_ON_SELF := "healing_on_self",
-	ACHIEVEMENT_NAME_HEALING_ON_OTHERS := "healing_on_others",
-	ACHIEVEMENT_NAME_HEALING_MAX := "healing_max",
-	ACHIEVEMENT_NAME_HEALING_TOTAL := "healing_total",
+	HEALING_ON_SELF := "healing_on_self",
+	HEALING_ON_OTHERS := "healing_on_others",
+	HEALING_MAX := "healing_max",
+	HEALING_TOTAL := "healing_total",
 
-	ACHIEVEMENT_NAME_MANA_SPENT := "mana_spent",
-	ACHIEVEMENT_NAME_MANA_REGEN := "mana_regen",
-	ACHIEVEMENT_NAME_MANA_REGEN_MAX := "mana_regen_max",
-	ACHIEVEMENT_NAME_MANA_REGEN_TOTAL := "mana_regen_total",
+	MANA_SPENT := "mana_spent",
+	MANA_REGEN := "mana_regen",
+	MANA_REGEN_MAX := "mana_regen_max",
+	MANA_REGEN_TOTAL := "mana_regen_total",
 
-	ACHIEVEMENT_NAME_SPELLS_CASTS := "spells_casts",
-	ACHIEVEMENT_NAME_SPELLS_MOST_CASTED := "spells_casts_most_casted",
+	SPELLS_CASTS := "spells_casts",
+	SPELLS_MOST_CASTED := "spells_casts_most_casted",
 endenum
 
-enum ACHIEVEMENT_NAME_OTHERS
-	ACHIEVEMENT_NAME_FISH_CAUGHT := "fish_caught",
-	ACHIEVEMENT_NAME_FISH_CAUGHT_WITH_BAIT := "fish_caught_with_bait",
-	ACHIEVEMENT_NAME_RESOURCES_COLLECTED := "resources_collected",
-	ACHIEVEMENT_NAME_CORPSES_LOOTED := "corpses_looted",
-	ACHIEVEMENT_NAME_MOBS_TRACKED := "mobs_tracked",
-	ACHIEVEMENT_NAME_MOBS_DETECTED_AWARENESS := "mobs_detected_awareness",
-	ACHIEVEMENT_NAME_BOSSES_KILLED := "bosses_killed",
-	ACHIEVEMENT_NAME_HIGHEST_TIER_TARGET_KILLED := "highest_tier_target_killed",
-	ACHIEVEMENT_NAME_MAX_DAILY_XP_GAIN := "max_daily_xp_gain",
-	ACHIEVEMENT_NAME_TIMES_DISGUISED := "times_disguised",
-	ACHIEVEMENT_NAME_CONSECUTIVE_HITS_RED := "consecutive_hits_red",
-	ACHIEVEMENT_NAME_ALLIES_HEALED := "allies_healed",
-	ACHIEVEMENT_NAME_ALLIES_HEALED_AMOUNT := "allies_healed_amount",
-	ACHIEVEMENT_NAME_ABILITIES_USED := "abilities_used",
-	ACHIEVEMENT_NAME_ABILITY_MOST_USED := "ability_most_used"
+enum class ACHIEVEMENT_NAME_OTHERS
+	FISH_CAUGHT := "fish_caught",
+	FISH_CAUGHT_WITH_BAIT := "fish_caught_with_bait",
+	RESOURCES_COLLECTED := "resources_collected",
+	CORPSES_LOOTED := "corpses_looted",
+	MOBS_TRACKED := "mobs_tracked",
+	MOBS_DETECTED_AWARENESS := "mobs_detected_awareness",
+	BOSSES_KILLED := "bosses_killed",
+	HIGHEST_TIER_TARGET_KILLED := "highest_tier_target_killed",
+	MAX_DAILY_XP_GAIN := "max_daily_xp_gain",
+	TIMES_DISGUISED := "times_disguised",
+	CONSECUTIVE_HITS_RED := "consecutive_hits_red",
+	ALLIES_HEALED := "allies_healed",
+	ALLIES_HEALED_AMOUNT := "allies_healed_amount",
+	ABILITIES_USED := "abilities_used",
+	ABILITY_MOST_USED := "ability_most_used"
 endenum
 
 // OTHERS
