@@ -4,8 +4,8 @@ class TextCropped(Text)
 	var _width := 0;
 	var _height := 0;
 
-	function TextCropped(this, name, x, y, width, height, value, color := 0)
-		Super(name, x, y, value, color);
+	function TextCropped(this, name, x, y, width, height, value, align := TEXT_ALIGN::ALIGN_LEFT, color := TEXT_COLOR::COLOR_DEFAULT)
+		Super(name, x, y, value, align, color);
 		this._type := GUMP_CONTROL::TEXTCROPPED;
 		
 		this._width := width;

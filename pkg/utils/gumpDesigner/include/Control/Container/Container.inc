@@ -1,29 +1,33 @@
 include ":gumpDesigner:Control/Control";
 
 class Container(Control)
-	var _parent; // Gump
+	var _name := "";
 
-	var _x;
-	var _y;
-	var _width;
-	var _height;
+	var _x := 0;
+	var _y := 0;
+	var _width := 0;
+	var _height := 0;
 
-	var _controls;
+	var _isVisible := false;
 
-	function Container(this, parent, x, y, width, height)
-		Super(GUMP_CONTROL::CONTAINER, "Container", x, y);
+	var _controls := array{}; // Array de Controls
+
+	function Container(this, name, x, y, width, height)
+		Super(GUMP_CONTROL::CONTAINER, name, x, y);
 		
-		this._parent := parent;
+		this._name := name;
 		this._x := x;
 		this._y := y;
 		this._width := width;
 		this._height := height;
 
+		this._isVisible := false;
+
 		this._controls := array{};
 	endfunction
 
-	function GetParent(this)
-		return this._parent;
+	function GetName(this)
+		return this._name;
 	endfunction
 	
 	function GetX(this)
@@ -46,8 +50,8 @@ class Container(Control)
 		return this._controls;
 	endfunction
 
-	function SetParent(this, parent)
-		this._parent := parent;
+	function _SetName(this, name)
+		this._name := name;
 	endfunction
 
 	function SetX(this, x)
@@ -65,15 +69,21 @@ class Container(Control)
 	function SetHeight(this, height)
 		this._height := height;
 	endfunction
+
+	function SetVisible(this, isVisible)
+		this._isVisible := isVisible;
+	endfunction
 	
 	function AddControl(this, byRef control)
 		this._controls.append(control);
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		print("Creating controls in Container...");
+		if (this._isVisible)
+			GFGumpPicTiled(gump, this._x, this._y, this._width, this._height, 0x5B8);
+		endif
+
 		foreach control in (this._controls)
-			print("Creating control in Container: " + control.ToString());
 			control.SetX(control.GetX() + this._x);
 			control.SetY(control.GetY() + this._y);
 			control.SelfCreate(gump);
@@ -81,7 +91,7 @@ class Container(Control)
 	endfunction
 
 	function ToString(this)
-	return "Container (parent=" + this.GetParent().GetName()
+	return "Container (name=" + this.GetName()
 			+ ", x=" + CStr(this.GetX())
 			+ ", y=" + CStr(this.GetY())
 			+ ", width=" + CStr(this.GetWidth())
