@@ -314,17 +314,17 @@ function normalusage(who, item)
       if (status == "off")
 	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
 		if (tp_all != 0)
-			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all)
-				sleepms(2);
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all, item.realm)
 				if(!mobile.acctname)
-					break;
+					continue;
 				endif
 				teleporter(mobile, item, opts);
+				sleepms(2);
 			endforeach
 		else
 			teleporter(who, item, opts);
 		endif
-		endif
+	  endif
    endif
    if (opts.clima) //SEMPRE deixar essa opção para ativar por último, ela é mais longa
 		if (status == "off")

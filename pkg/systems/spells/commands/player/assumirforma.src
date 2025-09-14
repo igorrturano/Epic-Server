@@ -404,7 +404,7 @@ endfunction
 
 function CanTransform( who, form )
   var skill := AP_GetSkill( who, MAGERY );
-  var difficulty := form.TameDifficulty;
+  var difficulty := form.Wrestling;
   if ( SkillCheck( who, MAGERY, difficulty * 1.2 + 15 ) <= 0 )
     return 0;
   endif
