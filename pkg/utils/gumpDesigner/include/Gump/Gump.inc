@@ -28,7 +28,6 @@ class Gump(IGump)
 		this._options := options.size() < 1 ? array{BORDER_GOLDEN} : options;
 		this._customization := array{};
 		this._controls := dictionary{};
-
 	endfunction
 
 	function GetParent(this)
@@ -173,7 +172,7 @@ class Gump(IGump)
 			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
 		endif
 
-		_UpdateInputValues(this);
+		this._UpdateInputValues();
 
 		return eventHandled;
 	endfunction
