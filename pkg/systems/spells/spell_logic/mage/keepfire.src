@@ -9,26 +9,26 @@ include "include/tileEffects";
 include "include/objtype";
 include ":timedScripts:timedScripts";
 
-program SpellScript( params )
-  var who := params[1];
-  var targ := params[2];
-  params := 0; // No longer needed
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
 
-  SendSysMessageEx( who, "Escolha a fogueira.", SSM_REQUEST );
-  if ( !targ )
-	return;
-  endif
+	SendSysMessageEx(who, "Escolha a fogueira.", SSM_REQUEST);
+	if (!targ)
+		return;
+	endif
 
-  if ( targ.graphic != UOBJ_CAMPFIRE )
-	SendSysMessageEx( who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL );
-	return;
-  endif
+	if (targ.graphic != UOBJ_CAMPFIRE)
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
 
-  SetObjProperty( targ, "encantado", 1 );
+	SetObjProperty(targ, "encantado", 1);
 
-  PlaySoundEffect( targ, SFX_SPELL_STRENGTH );
-  PlayStationaryEffect( targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2 );
-  PrintText( targ, "A fogueira queima mais intensamente." );
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PrintText(targ, "A fogueira queima mais intensamente.");
 
-  return 1;
+	return 1;
 endprogram

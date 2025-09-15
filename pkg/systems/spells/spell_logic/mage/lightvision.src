@@ -9,26 +9,26 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 
-program SpellScript( params )
-  var who := params[1];
-  var info := params[2];
-  params := 0; // No longer needed
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
 
-  handleSilentMagic( who, who, SFX_BLESS );
-  PlayObjectCenteredEffect( who, GFX_BLUE_SPARKLES, 10, 10 );
+	handleSilentMagic(who, who, SFX_BLESS);
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
 
-  SendSysMessageEx( who, "Voce passa a enxergar melhor de dia", SSM_INFO );
+	SendSysMessageEx(who, "Voce passa a enxergar melhor de dia", SSM_INFO);
 
-  var magiclore_skill := AP_GetSkill( who, ARCANA );
-  var duration := CInt( magiclore_skill * 5 );
+	var magiclore_skill := AP_GetSkill(who, ARCANA);
+	var duration := CInt(magiclore_skill * 5);
 
-  // Bonus de especialização
-  if ( Temhabilidade( who, "Valdruk" ) )
-	duration := Cint( duration * 1.2 );
-  endif
+	// Bonus de especialização
+	if (Temhabilidade(who, "Valdruk"))
+		duration := Cint(duration * 1.2);
+	endif
 
-  who.setlightlevel( 15, duration );
-  SetCooldown( who, "lightvision", duration );
+	who.setlightlevel(15, duration);
+	SetCooldown(who, "lightvision", duration);
 
-  return 1;
+	return 1;
 endprogram

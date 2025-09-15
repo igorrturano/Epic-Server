@@ -2,16 +2,16 @@ use uo;
 
 include "include/say";
 
-program mdestroy( who )
+program mdestroy(who)
 
-  var targ := Target( who );
-  SendSysMessageEx( who, "Escolh os itens, aperte Esc para cancelar.", SSM_INFO );
+	var targ := Target(who);
+	SendSysMessageEx(who, "Escolh os itens, aperte Esc para cancelar.", SSM_INFO);
 
-  while ( targ )
-	DestroyItem( targ );
-	targ := target( who );
-  endwhile
+	while (targ)
+		DestroyItem(targ);
+		targ := target(who);
+	endwhile
 
-  SendSysMessageEx( who, "Cancelado.", SSM_FAIL );
+	SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 
 endprogram

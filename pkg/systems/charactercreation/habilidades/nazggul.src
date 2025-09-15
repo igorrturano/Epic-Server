@@ -7,12 +7,12 @@ include ":combat:damage";
 include "include/say";
 include ":tn:cooldown";
 
-program doubleattack( who )
+program doubleattack(who)
 
-  if ( IsRaging( who ) )
-	SendSysMessageEx( who, "Adar Kor Doom.", SSM_INFO );
-	SetCooldown( who, "furiamortal", 60 );
-  else
-	SendSysMessageEx( who, "Você precisa dar mais sangue para o Deserto", SSM_INFO );
-  endif
+	if (IsRaging(who))
+		SendSysMessageEx(who, "Adar Kor Doom.", SSM_INFO);
+		SetCooldown(who, "furiamortal", 60);
+	else
+		SendSysMessageEx(who, "Você precisa dar mais sangue para o Deserto", SSM_INFO);
+	endif
 endprogram

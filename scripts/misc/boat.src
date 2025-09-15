@@ -8,7 +8,7 @@
  * The boat control script has been moved into the 'boat' package
  * which can be found in /pkg/systems/boat/
  *
- */
+*/
 use uo;
 use os;
 

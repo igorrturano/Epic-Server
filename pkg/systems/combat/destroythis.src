@@ -2,6 +2,6 @@ use uo;
 use os;
 include "include/say";
 
-program destroythis( item )
-  DestroyItem( item );
+program destroythis(item)
+	DestroyItem(item);
 endprogram

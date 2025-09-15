@@ -4,9 +4,9 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  SendSysMessageEx( attacker, "Voce se mantem atento." );
-  SetObjPRoperty( attacker, "#maolivre", 1 );
+	SendSysMessageEx(attacker, "Voce se mantem atento.");
+	SetObjPRoperty(attacker, "#maolivre", 1);
 
 endprogram

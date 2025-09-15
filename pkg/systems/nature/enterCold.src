@@ -5,6 +5,6 @@ use vitals;
 include ":charactercreation:resists";
 include ":combat:damage";
 
-program neve( who, regioname )
-  start_script( ":nature:coldeffect", { who } );
+program neve(who, regioname)
+	start_script(":nature:coldeffect", { who });
 endprogram

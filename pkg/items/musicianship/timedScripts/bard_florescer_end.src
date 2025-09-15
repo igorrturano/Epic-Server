@@ -2,6 +2,6 @@ use uo;
 use os;
 include ":musicianship:bardmusic";
 
-program TimedScript_bard_emudecer_end( params )
-  return 1;
+program TimedScript_bard_emudecer_end(params)
+	return 1;
 endprogram

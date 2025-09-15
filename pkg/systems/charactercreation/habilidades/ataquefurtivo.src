@@ -17,23 +17,23 @@ include ":combat:combat";
 include "include/packets";
 include "include/epicCombatUtils";
 
-program backstab( who )
-  if ( !CanBackStab( who, who.weapon ) )
-	return;
-  endif
-  if ( !isAssassinWeapon( who ) )
-	SendSysMessageEx( who, "Voce nao pode usar esta arma para ataque furtivo", SSM_FAIL );
-	return;
-  endif
-  SetObjProperty( who, "backstab", 1 );
-  SetObjProperty( who.weapon, "backstab", 1 );
-  if ( who.hidden )
-	SetObjProperty( who, "#attackbonus", 100 );
-	if ( TemHabilidade( who, "Instinto Assassino" ) )
-	  SetObjProperty( who, "#nextcritical", 1 );
+program backstab(who)
+	if (!CanBackStab(who, who.weapon))
+		return;
 	endif
-  endif
-  GrantPrivilege( who, "hiddenattack" );
-  who.enable( "hiddenattack" );
-  SendSysMessageEx( who, "Voce está preparado para um ataque furtivo", SSM_INFO );
+	if (!isAssassinWeapon(who))
+		SendSysMessageEx(who, "Voce nao pode usar esta arma para ataque furtivo", SSM_FAIL);
+		return;
+	endif
+	SetObjProperty(who, "backstab", 1);
+	SetObjProperty(who.weapon, "backstab", 1);
+	if (who.hidden)
+		SetObjProperty(who, "#attackbonus", 100);
+		if (TemHabilidade(who, "Instinto Assassino"))
+			SetObjProperty(who, "#nextcritical", 1);
+		endif
+	endif
+	GrantPrivilege(who, "hiddenattack");
+	who.enable("hiddenattack");
+	SendSysMessageEx(who, "Voce está preparado para um ataque furtivo", SSM_INFO);
 endprogram

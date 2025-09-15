@@ -2,10 +2,10 @@ use uo;
 use os;
 use vitals;
 
-program removecold( who, textarea )
-  EraseObjProperty( who, "neve" );
-  EraseObjProperty( who, "teste_de_frio" );
-  EraseObjProperty( who, "stammod" );
-  EraseObjProperty( who, "penalidadetaiga" );
-  RecalcVitals( who );
+program removecold(who, textarea)
+	EraseObjProperty(who, "neve");
+	EraseObjProperty(who, "teste_de_frio");
+	EraseObjProperty(who, "stammod");
+	EraseObjProperty(who, "penalidadetaiga");
+	RecalcVitals(who);
 endprogram

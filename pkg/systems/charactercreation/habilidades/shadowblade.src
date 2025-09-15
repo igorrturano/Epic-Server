@@ -11,7 +11,6 @@ program VacuoDeMana(attacker)
 	SetCooldown(attacker, "vacuodemana", 60);
 
 endprogram */
-
 use uo;
 
 include ":fls_core:packets";
@@ -23,24 +22,24 @@ include ":timedScripts:timedScripts";
 include ":attributes:vitals";
 include ":charactercreation:resists";
 
-program vacuodemana( params )
-  var attacker := params[1];
-  var defender := params[2];
-  var weapon := params[3];
-  var armor := params[4];
-  var basedamage := params[5];
-  var rawdamage := params[6];
+program vacuodemana(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
 
-  var mlore := Cint( AP_GetSkill( attacker, ARCANA ) );
+	var mlore := Cint(AP_GetSkill(attacker, ARCANA));
 
-  DamageFLS( defender, Cint( mlore / 2 ), DMG_FORCED, attacker );
-  PlaySoundEffect( defender, 0X51d );
-  MakeBleed( defender );
-  sleep( 1 );
+	DamageFLS(defender, Cint(mlore / 2), DMG_FORCED, attacker);
+	PlaySoundEffect(defender, 0X51d);
+	MakeBleed(defender);
+	sleep(1);
 
-  PlayObjectCenteredEffectHuefx( defender, 0x54b3, 10, 20, 1254, 1 );
-  PlaySoundEffect( defender, 0x1FB );
+	PlayObjectCenteredEffectHuefx(defender, 0x54b3, 10, 20, 1254, 1);
+	PlaySoundEffect(defender, 0x1FB);
 
-  SetCooldown( defender, "silence", Cint( mlore / 5 ) );
-  return 1;
+	SetCooldown(defender, "silence", Cint(mlore / 5));
+	return 1;
 endprogram

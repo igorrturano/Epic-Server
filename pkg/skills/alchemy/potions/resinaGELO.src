@@ -12,48 +12,48 @@ include ":combat:damage";
 include "include/epicCombatUtils";
 include "include/epicMageryUtils";
 
-program resinaFOGO( who, resina )
-  var targ;
-  SendSysMessageEx( who, "Escolha sua arma:", SSM_REQUEST );
-  targ := Target( who );
+program resinaFOGO(who, resina)
+	var targ;
+	SendSysMessageEx(who, "Escolha sua arma:", SSM_REQUEST);
+	targ := Target(who);
 
-  if ( !targ )
-	SendSysMessageEx( who, "Cancelado", SSM_FAIL );
-	return;
-  endif
-
-  if ( isWoodWeapon( who ) )
-	SendSysMessageEx( who, "Arma de madeiras não podem ser encantadas por elementos.", SSM_FAIL );
-	return;
-  endif
-
-  var time := 180;
-
-  if ( targ.isA( POLCLASS_WEAPON ) )
-
-	if ( checkForElementalWeapons( who, targ ) )
-	  return 0;
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
 	endif
 
-	var dmg := struct;
-	dmg.+type := DMG_COLD;
-	dmg.+serial := who.serial;
-	dmg.+endtime := readgameclock() + time;
-	dmg.+bonus := AP_GetSkill( who, ALCHEMY ) / 400.0;
-	if ( dmg.bonus <= 0.1 )
-	  dmg.bonus := 0.1;
+	if (isWoodWeapon(who))
+		SendSysMessageEx(who, "Arma de madeiras não podem ser encantadas por elementos.", SSM_FAIL);
+		return;
 	endif
 
-	SetObjProperty( targ, "#elementalweapon", dmg );
+	var time := 180;
 
-	start_script( ":spells:elementalweapon", { targ, time, DMG_COLD } );
-	PlaySoundEffect( targ, SFX_BLESS );
-	SendSysMessageEx( who, "A arma ficou coberta de gelo.", SSM_INFO );
-	DestroyItem( resina );
-	CreateItemInBackpack( who, 0x0f0e, 1 );
-	return 1;
-  endif
+	if (targ.isA(POLCLASS_WEAPON))
 
-  SendSysMessageEx( who, "Alvo invalido.", SSM_INFO );
+		if (checkForElementalWeapons(who, targ))
+			return 0;
+		endif
+
+		var dmg := struct;
+		dmg.+type := DMG_COLD;
+		dmg.+serial := who.serial;
+		dmg.+endtime := readgameclock() + time;
+		dmg.+bonus := AP_GetSkill(who, ALCHEMY) / 400.0;
+		if (dmg.bonus <= 0.1)
+			dmg.bonus := 0.1;
+		endif
+
+		SetObjProperty(targ, "#elementalweapon", dmg);
+
+		start_script(":spells:elementalweapon", { targ, time, DMG_COLD });
+		PlaySoundEffect(targ, SFX_BLESS);
+		SendSysMessageEx(who, "A arma ficou coberta de gelo.", SSM_INFO);
+		DestroyItem(resina);
+		CreateItemInBackpack(who, 0x0f0e, 1);
+		return 1;
+	endif
+
+	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
 
 endprogram

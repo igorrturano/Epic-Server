@@ -3,18 +3,18 @@ include ":timedScripts:timedScripts";
 include "include/dungeons";
 include ":attributes:attributes";
 
-program SpellScript( params )
-  var who := params[1];
-  if ( !InDarkness( who ) )
-	SendSysMessage( who, "Voce precisa estar na escuridao para usar essa habilidade." );
-	return 0;
-  endif
+program SpellScript(params)
+	var who := params[1];
+	if (!InDarkness(who))
+		SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
+		return 0;
+	endif
 
-  var duration := cint( AP_GetSkill( who, ARCANA ) / 2.5 );
-  if ( TemHabilidade( who, "Valdruk" ) )
-	duration := Cint( duration * 1.5 );
-  endif
+	var duration := cint(AP_GetSkill(who, ARCANA) / 2.5);
+	if (TemHabilidade(who, "Valdruk"))
+		duration := Cint(duration * 1.5);
+	endif
 
-  Setcooldown( who, "shadowdancer_blur", duration );
-  TS_StartTimer( who, "spectralform", duration );
+	Setcooldown(who, "shadowdancer_blur", duration);
+	TS_StartTimer(who, "spectralform", duration);
 endprogram

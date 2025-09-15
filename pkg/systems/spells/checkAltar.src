@@ -1,5 +1,5 @@
 use uo;
 
-program checkAltar( altar )
+program checkAltar(altar)
 
 endprogram

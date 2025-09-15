@@ -3,9 +3,9 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_EndClumsy( params )
-  var mobile := params[1];
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
 
-  EraseObjProperty( mobile, "#fantasma" );
-  return 1;
+	EraseObjProperty(mobile, "#fantasma");
+	return 1;
 endprogram

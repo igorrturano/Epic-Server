@@ -5,9 +5,9 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  SendSysMessageEx( attacker, "Voce parece inspirado para o combate!", SSM_INFO );
-  SetCooldown( attacker, "posturadecombate", 60 );
+	SendSysMessageEx(attacker, "Voce parece inspirado para o combate!", SSM_INFO);
+	SetCooldown(attacker, "posturadecombate", 60);
 
 endprogram

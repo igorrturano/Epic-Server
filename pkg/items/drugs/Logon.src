@@ -1,8 +1,8 @@
 
 use os;
 
-program vicio_logon( who )
+program vicio_logon(who)
 
-  start_script( "Vicio", who );
+	start_script("Vicio", who);
 
 endprogram

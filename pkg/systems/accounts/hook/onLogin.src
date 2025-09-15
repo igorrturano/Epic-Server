@@ -8,8 +8,7 @@
  *   Bugs: There shouldn't be any, but you never really know. So if a bug does come up
  *   please send me an email or post on the forum where you got this(polserver.com)
  *
- */
-
+*/
 use uo;
 use os;
 use polsys;
@@ -22,32 +21,32 @@ const OFFSET_ACCOUNT_PASS := 0x1F;
 const INFO_LEN := 30;
 
 enum THEFT_LEVELS
-  ACCT_NOT_EXIST := 0,
-  ACCT_LOGIN_OKAY := 1,
-  ACCT_LOGIN_FAIL := 2,
-  ACCT_LOGIN_HACK := 3
+	ACCT_NOT_EXIST := 0,
+	ACCT_LOGIN_OKAY := 1,
+	ACCT_LOGIN_FAIL := 2,
+	ACCT_LOGIN_HACK := 3
 endenum
 
 program Install()
-  Print( "INSTALLING: Auto Account/Theft Prevention PH..." );
-  return 1;
+	Print("INSTALLING: Auto Account/Theft Prevention PH...");
+	return 1;
 endprogram
 
-exported function LoginHook( who, byref packet )
-  who := who; // Avoid compiler warnings.
+exported function LoginHook(who, byref packet)
+	who := who; // Avoid compiler warnings.
 
-  var username := Packet.GetString( OFFSET_ACCOUNT_NAME, INFO_LEN );
-  var password := Packet.GetString( OFFSET_ACCOUNT_PASS, INFO_LEN );
+	var username := Packet.GetString(OFFSET_ACCOUNT_NAME, INFO_LEN);
+	var password := Packet.GetString(OFFSET_ACCOUNT_PASS, INFO_LEN);
 
-  if ( !username )
-	SysLog( "Account/GetString Error: " + username.errortext );
-	return 0;
-  elseif ( !password )
-	SysLog( "Password/GetString Error: " + password.errortext );
-	return 0;
-  endif
+	if (!username)
+		SysLog("Account/GetString Error: " + username.errortext);
+		return 0;
+	elseif (!password)
+		SysLog("Password/GetString Error: " + password.errortext);
+		return 0;
+	endif
 
-  /* var theft_level := AcctHackChecks(username, password);
+	/* var theft_level := AcctHackChecks(username, password);
 	case ( theft_level )
 		ACCT_NOT_EXIST:	 // Account doesn't yet exist.
 			break;
@@ -62,31 +61,31 @@ exported function LoginHook( who, byref packet )
 			break;
 	endcase
 */
-  var settings := ACCT_GetSettingsCfgElem( "Settings" );
-  if ( !settings.AllowAutoAccounts )
-	// Automatic account creation is disabled.
+	var settings := ACCT_GetSettingsCfgElem("Settings");
+	if (!settings.AllowAutoAccounts)
+		// Automatic account creation is disabled.
+		return 0;
+	endif
+
+	var account := CreateNewAccount(username, password, 0, settings.DefaultExpansion);
+	// In theory this should only return an error saying "Invalid parameter type".
+	// Should never return "Account already exists" because we already looked for the
+	// account and let pol handle it. And when it does return "Invalid parameter type"
+	// we don't have to worry, pol will do the right job for us and just say that account
+	// does not exist.
+	if (account.errortext)
+		SysLog("CreateAccount() Error: " + account.errortext);
+		return 0;
+	endif
+
+	SysLog("AutoAccount Created: " + username);
+
 	return 0;
-  endif
-
-  var account := CreateNewAccount( username, password, 0, settings.DefaultExpansion );
-  // In theory this should only return an error saying "Invalid parameter type".
-  // Should never return "Account already exists" because we already looked for the
-  // account and let pol handle it. And when it does return "Invalid parameter type"
-  // we don't have to worry, pol will do the right job for us and just say that account
-  // does not exist.
-  if ( account.errortext )
-	SysLog( "CreateAccount() Error: " + account.errortext );
-	return 0;
-  endif
-
-  SysLog( "AutoAccount Created: " + username );
-
-  return 0;
 
 endfunction
 
-function AcctHackChecks( username, password )
-  /*
+function AcctHackChecks(username, password)
+	/*
 	 * This is just a little password protection, so someone doesn't go around
 	 * trying to steal peoples accounts trying 100's of passwords. It doesn't
 	 * really stop someone, but it slows them down a lot and may lead them off
@@ -96,39 +95,38 @@ function AcctHackChecks( username, password )
 	 * forum.
 	 *
 */
+	/* [Password Protection] */
+	var account := FindAccount(username);
+	if (!account)
+		// Account doesn't even exist.
+		return ACCT_NOT_EXIST;
+	elseif (!account.CheckPassword(password))
+		var failed_login := account.GetProp("#FailedLogin");
+		// First attempt at failing the password check.
+		if (!failed_login)
+			account.SetProp("#FailedLogin", { 1, polcore().systime });
+			return ACCT_LOGIN_FAIL; // Let pol tell the user it's an incorrect password.
+		else
+			if (failed_login[1] >= 5 && (failed_login[2] >> polcore().systime))
+				// Incorrect password for the 5th time.
+				// Leave the user hanging at login for the next 10 minutes.
+				account.SetProp("#FailedLogin", { failed_login[1] + 1, polcore().systime + 600 });
+				return ACCT_LOGIN_HACK; // Leave user hanging.
 
-  /* [Password Protection] */
-  var account := FindAccount( username );
-  if ( !account )
-	// Account doesn't even exist.
-	return ACCT_NOT_EXIST;
-  elseif ( !account.CheckPassword( password ) )
-	var failed_login := account.GetProp( "#FailedLogin" );
-	// First attempt at failing the password check.
-	if ( !failed_login )
-	  account.SetProp( "#FailedLogin", { 1, polcore().systime } );
-	  return ACCT_LOGIN_FAIL; // Let pol tell the user it's an incorrect password.
+			elseif (failed_login[1] >= 5 && (failed_login[2] << polcore().systime))
+				// User attempted to login with the wrong password after 10 minutes.
+				// Reset user's wait time.
+				account.EraseProp("#FailedLogin");
+				return ACCT_LOGIN_FAIL; // Let pol tell the user it's an incorrect password.
+
+			elseif (failed_login[1] << 5)
+				// Let pol tell user it's an incorrect password.
+				account.SetProp("#FailedLogin", { failed_login[1] + 1, polcore().systime + 10 });
+				return ACCT_LOGIN_FAIL;
+			endif
+		endif
 	else
-	  if ( failed_login[1] >= 5 && ( failed_login[2] >> polcore().systime ) )
-		// Incorrect password for the 5th time.
-		// Leave the user hanging at login for the next 10 minutes.
-		account.SetProp( "#FailedLogin", { failed_login[1] + 1, polcore().systime + 600 } );
-		return ACCT_LOGIN_HACK; // Leave user hanging.
-
-	  elseif ( failed_login[1] >= 5 && ( failed_login[2] << polcore().systime ) )
-		// User attempted to login with the wrong password after 10 minutes.
-		// Reset user's wait time.
-		account.EraseProp( "#FailedLogin" );
-		return ACCT_LOGIN_FAIL; // Let pol tell the user it's an incorrect password.
-
-	  elseif ( failed_login[1] << 5 )
-		// Let pol tell user it's an incorrect password.
-		account.SetProp( "#FailedLogin", { failed_login[1] + 1, polcore().systime + 10 } );
-		return ACCT_LOGIN_FAIL;
-	  endif
+		// Passed password check, let user login.
+		return ACCT_LOGIN_OKAY;
 	endif
-  else
-	// Passed password check, let user login.
-	return ACCT_LOGIN_OKAY;
-  endif
 endfunction

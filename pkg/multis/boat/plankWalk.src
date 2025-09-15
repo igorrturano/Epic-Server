@@ -30,8 +30,7 @@ const DIR_NW := 0x07; // Northwest.
  *        18  9 10
  *        19 20 21
  *
- */
-
+*/
 var searchoffset := array{ array{ -2, 0 }, //  1
 						
 						   array{ -2, -1 },
@@ -98,8 +97,8 @@ var searchoffset := array{ array{ -2, 0 }, //  1
 						
 						   array{ -4, +5 } };
 
-program plankwalk( who, plank, lastx, lasty, lastz )
-  /* if (!KP_HasKeyForLock(who.backpack, plank))
+program plankwalk(who, plank, lastx, lasty, lastz)
+	/* if (!KP_HasKeyForLock(who.backpack, plank))
         if (plank.locked)
             var sh := GetStandingHeight( lastx, lasty, lastz );
             if (!sh || !sh.multi || sh.multi.serial != plank.multi.serial)
@@ -108,86 +107,85 @@ program plankwalk( who, plank, lastx, lasty, lastz )
             endif
         endif
     endif */
-
-  if ( ListMobilesNearLocation( plank.x, plank.y, plank.z, 0 ).size() > 1 )
-	MoveObjectToLocation( who, lastx, lasty, lastz, plank.realm, MOVEOBJECT_FORCELOCATION );
-	return;
-  endif
-
-  var xidx, yidx, xmul, ymul;
-
-  case ( plank.graphic )
-	GID_PLANK_EXTENDED_FACING_WEST:
-	  if ( !( who.facing in array{ DIR_W, DIR_NW, DIR_SW } ) )
+	if (ListMobilesNearLocation(plank.x, plank.y, plank.z, 0).size() > 1)
+		MoveObjectToLocation(who, lastx, lasty, lastz, plank.realm, MOVEOBJECT_FORCELOCATION);
 		return;
-	  endif
-	  xidx := 1;
-	  yidx := 2;
-	  xmul := 1;
-	  ymul := 1;
-
-	GID_PLANK_EXTENDED_FACING_EAST:
-	  if ( !( who.facing in array{ DIR_E, DIR_NE, DIR_SE } ) )
-		return;
-	  endif
-	  xidx := 1;
-	  yidx := 2;
-	  xmul := -1; // flip across x-axis
-	  ymul := 1;
-
-	GID_PLANK_EXTENDED_FACING_NORTH:
-	  if ( !( who.facing in array{ DIR_N, DIR_NE, DIR_NW } ) )
-		return;
-	  endif
-	  xidx := 2;
-	  yidx := 1;
-	  xmul := 1;
-	  ymul := +1;
-
-	GID_PLANK_EXTENDED_FACING_SOUTH:
-	  if ( !( who.facing in array{ DIR_S, DIR_SE, DIR_SW } ) )
-		return;
-	  endif
-	  xidx := 2;
-	  yidx := 1;
-	  xmul := 1;
-	  ymul := -1; // flip across y-axis
-	default: return;
-  endcase
-  if ( CanMove( who, searchoffset[1][xidx] * xmul / 2, searchoffset[1][yidx] * ymul / 2 ) )
-	return; // doesn't need our help!
-  endif
-
-  foreach offset in searchoffset
-	if ( TryMove( who, offset[xidx] * xmul, offset[yidx] * ymul ) )
-	  return;
 	endif
-  endforeach
+
+	var xidx, yidx, xmul, ymul;
+
+	case (plank.graphic)
+		GID_PLANK_EXTENDED_FACING_WEST:
+			if (!(who.facing in array{ DIR_W, DIR_NW, DIR_SW }))
+				return;
+			endif
+			xidx := 1;
+			yidx := 2;
+			xmul := 1;
+			ymul := 1;
+
+		GID_PLANK_EXTENDED_FACING_EAST:
+			if (!(who.facing in array{ DIR_E, DIR_NE, DIR_SE }))
+				return;
+			endif
+			xidx := 1;
+			yidx := 2;
+			xmul := -1; // flip across x-axis
+			ymul := 1;
+
+		GID_PLANK_EXTENDED_FACING_NORTH:
+			if (!(who.facing in array{ DIR_N, DIR_NE, DIR_NW }))
+				return;
+			endif
+			xidx := 2;
+			yidx := 1;
+			xmul := 1;
+			ymul := +1;
+
+		GID_PLANK_EXTENDED_FACING_SOUTH:
+			if (!(who.facing in array{ DIR_S, DIR_SE, DIR_SW }))
+				return;
+			endif
+			xidx := 2;
+			yidx := 1;
+			xmul := 1;
+			ymul := -1; // flip across y-axis
+		default: return;
+	endcase
+	if (CanMove(who, searchoffset[1][xidx] * xmul / 2, searchoffset[1][yidx] * ymul / 2))
+		return; // doesn't need our help!
+	endif
+
+	foreach offset in searchoffset
+		if (TryMove(who, offset[xidx] * xmul, offset[yidx] * ymul))
+			return;
+		endif
+	endforeach
 endprogram
 
-function TryMove( who, dx, dy )
-  var res := 0;
-  set_critical( 1 );
+function TryMove(who, dx, dy)
+	var res := 0;
+	set_critical(1);
 
-  var tryx := who.x + dx;
-  var tryy := who.y + dy;
-  var h := GetStandingHeight( tryx, tryy, who.z );
-  if ( h && ( not h.multi ) ) // CHECKME should check line of sight?
-	MoveObjectToLocation( who, tryx, tryy, h.z, who.realm );
-	res := 1;
-  endif
+	var tryx := who.x + dx;
+	var tryy := who.y + dy;
+	var h := GetStandingHeight(tryx, tryy, who.z);
+	if (h && (not h.multi)) // CHECKME should check line of sight?
+		MoveObjectToLocation(who, tryx, tryy, h.z, who.realm);
+		res := 1;
+	endif
 
-  set_critical( 0 );
-  return res;
+	set_critical(0);
+	return res;
 endfunction
 
-function CanMove( who, dx, dy )
-  var tryx := who.x + dx;
-  var tryy := who.y + dy;
-  var h := GetStandingHeight( tryx, tryy, who.z );
-  if ( h )
-	return 1;
-  else
-	return 0;
-  endif
+function CanMove(who, dx, dy)
+	var tryx := who.x + dx;
+	var tryy := who.y + dy;
+	var h := GetStandingHeight(tryx, tryy, who.z);
+	if (h)
+		return 1;
+	else
+		return 0;
+	endif
 endfunction

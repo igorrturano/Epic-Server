@@ -41,40 +41,40 @@ var anim_list := array{ "0 Walk (UnArmed)",
 						"33 Salut",
 						"34 Eat" };
 
-program action( who, number )
-  if ( !number )
-	var gump := GFCreateGump();
+program action(who, number)
+	if (!number)
+		var gump := GFCreateGump();
 
-	GFResizePic( gump, 0, 0, GFCfgConst( "Defaults", "BackGround" ), 500, 470 );
-	GFResizePic( gump, 15, 15, GFCfgConst( "Defaults", "ForeGround" ), 470, 440 );
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 500, 470);
+		GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 470, 440);
 
-	var x_pos := 25;
-	var y_pos := 25;
-	foreach anim in ( anim_list )
-	  GFAddButton( gump, x_pos, y_pos + 3, 2117, 2118, GF_CLOSE_BTN, _anim_iter );
-	  GFTextLine( gump, x_pos + 20, y_pos, 2100, anim );
-	  y_pos := y_pos + 20;
+		var x_pos := 25;
+		var y_pos := 25;
+		foreach anim in (anim_list)
+			GFAddButton(gump, x_pos, y_pos + 3, 2117, 2118, GF_CLOSE_BTN, _anim_iter);
+			GFTextLine(gump, x_pos + 20, y_pos, 2100, anim);
+			y_pos := y_pos + 20;
 
-	  if ( _anim_iter % 21 == 0 )
-		y_pos := 25;
-		x_pos := x_pos + 250;
-	  endif
-	endforeach
+			if (_anim_iter % 21 == 0)
+				y_pos := 25;
+				x_pos := x_pos + 250;
+			endif
+		endforeach
 
-	number := GFSendGump( who, gump );
-	number := number[0];
+		number := GFSendGump(who, gump);
+		number := number[0];
 
-	if ( !number )
-	  SendSysMessage( who, "Cancelled" );
-	  return 0;
+		if (!number)
+			SendSysMessage(who, "Cancelled");
+			return 0;
+		endif
+
+		SendSysMessage(who, "Anim Name:" + anim_list[number]);
+		number := number - 1; // Remember, arrays have no 0 index.
+		SendSysMessage(who, "Anim Numb:" + Hex(number));
 	endif
 
-	SendSysMessage( who, "Anim Name:" + anim_list[number] );
-	number := number - 1; // Remember, arrays have no 0 index.
-	SendSysMessage( who, "Anim Numb:" + Hex( number ) );
-  endif
+	PerformAction(who, Cint(number));
 
-  PerformAction( who, Cint( number ) );
-
-  return 1;
+	return 1;
 endprogram

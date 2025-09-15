@@ -5,33 +5,33 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:combat";
 
-program manobra( params )
-  var attacker := params[1];
-  var defender := params[2];
+program manobra(params)
+	var attacker := params[1];
+	var defender := params[2];
 
-  var festa := attacker.party;
+	var festa := attacker.party;
 
-  if ( !festa )
-	SendSysMessageEx( attacker, "Voce nao tem aliados!", SSM_FAIL );
-	return;
-  endif
-
-  PrintText( attacker, "*ordena os aliados*" );
-
-  var testes := array;
-
-  foreach member in ( festa.members )
-	if ( member.serial != attacker.serial )
-	  if ( Distance( attacker, member ) < 8 )
-		testes.append( member );
-	  endif
+	if (!festa)
+		SendSysMessageEx(attacker, "Voce nao tem aliados!", SSM_FAIL);
+		return;
 	endif
-  endforeach
 
-  var selected := testes[RandomInt( testes.size() + 1 )];
+	PrintText(attacker, "*ordena os aliados*");
 
-  SetObjProperty( selected, "#CriticalChance", 100 );
-  sleep( 5 );
-  EraseObjProperty( selected, "CriticalChance" );
+	var testes := array;
+
+	foreach member in (festa.members)
+		if (member.serial != attacker.serial)
+			if (Distance(attacker, member) < 8)
+				testes.append(member);
+			endif
+		endif
+	endforeach
+
+	var selected := testes[RandomInt(testes.size() + 1)];
+
+	SetObjProperty(selected, "#CriticalChance", 100);
+	sleep(5);
+	EraseObjProperty(selected, "CriticalChance");
 
 endprogram

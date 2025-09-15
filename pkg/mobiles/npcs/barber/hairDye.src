@@ -580,45 +580,44 @@ var layout := { "page 0",
 var data := { "Hair Color Selection Menu", "Brown", "Chestnut", "Auburn", "Blue", "Green", "Red", "Light",
 			  "Blonde", "Black", "Beige", "Golden", "Dk Brown", "Dye my hair this color!" };
 
-program haircolor( who, item )
-  ReserveItem( item );
+program haircolor(who, item)
+	ReserveItem(item);
 
-  var res := SendDialogGump( who, layout, data );
-  var haircolor := 0;
+	var res := SendDialogGump(who, layout, data);
+	var haircolor := 0;
 
-  foreach key in ( res.keys )
-	if ( key > 1 )
-	  haircolor := key;
+	foreach key in (res.keys)
+		if (key > 1)
+			haircolor := key;
+		endif
+	endforeach
+
+	var thehaircolor;
+
+	if (((haircolor > 1600) and (haircolor < 1654)) or ((haircolor > 1500) and (haircolor < 1533)) or
+	 ((haircolor > 1600) and (haircolor < 1654)) or ((haircolor > 1300) and (haircolor < 1333)) or
+	 ((haircolor > 1400) and (haircolor < 1433)) or ((haircolor > 1200) and (haircolor < 1225)) or
+	 ((haircolor > 2400) and (haircolor < 2430)) or ((haircolor > 2212) and (haircolor < 2219)) or
+	 ((haircolor > 1101) and (haircolor < 1149)))
+		thehaircolor := haircolor;
+	else
+		SendSysMessage(who, "Cancelled.");
+		ReleaseItem(item);
+		return;
 	endif
-  endforeach
 
-  var thehaircolor;
+	if ((thehaircolor == 0) or (thehaircolor == 1))
+		SendSysMessage(who, "Cancelled.");
+		ReleaseItem(item);
+		return;
+	endif
 
-  if ( ( ( haircolor > 1600 ) and ( haircolor < 1654 ) ) or ( ( haircolor > 1500 ) and
-	   ( haircolor < 1533 ) ) or ( ( haircolor > 1600 ) and ( haircolor < 1654 ) ) or
-	   ( ( haircolor > 1300 ) and ( haircolor < 1333 ) ) or ( ( haircolor > 1400 ) and
-	   ( haircolor < 1433 ) ) or ( ( haircolor > 1200 ) and ( haircolor < 1225 ) ) or
-	   ( ( haircolor > 2400 ) and ( haircolor < 2430 ) ) or ( ( haircolor > 2212 ) and
-	   ( haircolor < 2219 ) ) or ( ( haircolor > 1101 ) and ( haircolor < 1149 ) ) )
-	thehaircolor := haircolor;
-  else
-	SendSysMessage( who, "Cancelled." );
-	ReleaseItem( item );
-	return;
-  endif
+	var oldhair := GetEquipmentByLayer(who, LAYER_HAIR);
 
-  if ( ( thehaircolor == 0 ) or ( thehaircolor == 1 ) )
-	SendSysMessage( who, "Cancelled." );
-	ReleaseItem( item );
-	return;
-  endif
+	oldhair.color := thehaircolor;
 
-  var oldhair := GetEquipmentByLayer( who, LAYER_HAIR );
+	oldhair := GetEquipmentByLayer(who, LAYER_BEARD);
+	oldhair.color := thehaircolor;
 
-  oldhair.color := thehaircolor;
-
-  oldhair := GetEquipmentByLayer( who, LAYER_BEARD );
-  oldhair.color := thehaircolor;
-
-  DestroyItem( item );
+	DestroyItem(item);
 endprogram
