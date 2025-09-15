@@ -17,7 +17,7 @@ program tirodesfocado(who)
 		who.warmode := 0;
 	endif
 
-	var cfg:=ReadConfigFile(":combat:itemdesc");
+	var cfg := ReadConfigFile(":combat:itemdesc");
 	var elem := FindConfigElem(cfg, who.weapon.objtype);
 
 	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
@@ -34,59 +34,60 @@ program tirodesfocado(who)
 		return 1;
 	endif
 
-	var aljavas := array{0x791c, 0x2fb7};
+	var aljavas := array{ 0x791c, 0x2fb7 };
 	var aljava := GetEquipmentByLayer(who, 0x14);
 
-		if (aljava.objtype in aljavas)
-			aljava := GetEquipmentByLayer(who, 0x14);
-		else
-			aljava := GetEquipmentByLayer(who, 0xc);
-		endif
+	if (aljava.objtype in aljavas)
+		aljava := GetEquipmentByLayer(who, 0x14);
+	else
+		aljava := GetEquipmentByLayer(who, 0xc);
+	endif
 	var ammo := GetObjProperty(who.weapon, "ammo");
 	if (!ammo)
 		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
 		return 1;
-    endif
+	endif
 
-    var in_aljava := 0;
-    foreach arrow in (EnumerateItemsInContainer(aljava))
+	var in_aljava := 0;
+	foreach arrow in (EnumerateItemsInContainer(aljava))
 		if (arrow.serial == ammo)
 			in_aljava := 1;
-        endif
-    endforeach
-    if (in_aljava == 0)
-        return 1;
-    endif
+		endif
+	endforeach
+	if (in_aljava == 0)
+		return 1;
+	endif
 
-    if ( SubtractAmount( ammo, 1 ) == error)
+	if (SubtractAmount(ammo, 1) == error)
 		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
 		return 1;
 	endif
 
 	PlaySoundEffect(who, 0x235);
 	Performaction(who, elem.Anim);
-	PlayMovingEffectXYZ( who.x, who.y, who.z+3, targ.x, targ.y, targ.z, elem.ProjectileAnim, 10, 10, 0, who.realm);
+	PlayMovingEffectXYZ(who.x, who.y, who.z + 3, targ.x, targ.y, targ.z, elem.ProjectileAnim, 10, 10,
+						 0, who.realm);
 	sleepms(35);
-	PlayMovingEffectXYZ( who.x, who.y, who.z+3, targ.x, targ.y, targ.z, 0x377A, 6, 10, 0, who.realm);
+	PlayMovingEffectXYZ(who.x, who.y, who.z + 3, targ.x, targ.y, targ.z, 0x377A, 6, 10, 0, who.realm);
 
 	var distancia := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
 
-	//calculo damage
+	// calculo damage
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(who);
 	var basedamage := CalculateRawDamage(who, who.weapon);
 
-	//lista inimigos e aplica dano
+	// lista inimigos e aplica dano
 	var alreadydamaged := array{};
 	foreach pontos in distancia
 		var mobiles := ListMobilesNearLocation(pontos.x, pontos.y, who.z, 1, who.realm);
 		var validTargets := array{};
-		
+
 		// Use the utility function to get only valid targets (excluding pets and party members)
 		foreach mobile in mobiles
 			if (!(mobile.serial in alreadydamaged))
 				var isValidTarget := 1;
-				
+
 				// Skip self
 				if (mobile == who)
 					isValidTarget := 0;
@@ -94,33 +95,35 @@ program tirodesfocado(who)
 				elseif (who.party && mobile in who.party.members)
 					isValidTarget := 0;
 				// Skip own pets
-				elseif (GetObjProperty(mobile, "owner") == who.serial || CStr(GetObjProperty(mobile, "owner")) == CStr(who.serial))
+				elseif (GetObjProperty(mobile, "owner") == who.serial ||
+			CStr(GetObjProperty(mobile, "owner")) == CStr(who.serial))
 					isValidTarget := 0;
 				// Skip party members' pets
 				elseif (who.party)
 					foreach member in (who.party.members)
-						if (GetObjProperty(mobile, "owner") == member.serial || CStr(GetObjProperty(mobile, "owner")) == CStr(member.serial))
+						if (GetObjProperty(mobile, "owner") == member.serial ||
+		  CStr(GetObjProperty(mobile, "owner")) == CStr(member.serial))
 							isValidTarget := 0;
 							break;
 						endif
 					endforeach
 				endif
-				
+
 				if (isValidTarget)
 					validTargets.append(mobile);
 					alreadydamaged.Append(mobile.serial);
 				endif
 			endif
 		endforeach
-		
+
 		foreach mobile in validTargets
 			var total := cint(CalculateTotalDamage(mobile, basedamage, who, dmgList));
-			DamageFLS(mobile, total*2, DMG_FORCED, who);
+			DamageFLS(mobile, total * 2, DMG_FORCED, who);
 			sleepms(20);
 		endforeach
 		sleepms(20);
 	endforeach
 
 	who.warmode := 1;
-	CreateItemAtLocation( targ.x, targ.y, targ.z, GetObjType( ammo ), 1, who.realm);
+	CreateItemAtLocation(targ.x, targ.y, targ.z, GetObjType(ammo), 1, who.realm);
 endprogram

@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -14,8 +14,8 @@ program TimedScript_Clumsy(params)
 
 	params := 0; // Not needed anymore.
 	sleepms(50);
-	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=attacker};
+	var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := attacker };
 	SendEvent(mobile, event);
-	
+
 	return 1;
 endprogram

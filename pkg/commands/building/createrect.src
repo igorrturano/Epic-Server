@@ -6,7 +6,7 @@ include ":gumps:requestGump";
 program textcmd_Create(who, params)
 	var objtype, zheight, range;
 	range := 0;
-	if ( !params )
+	if (!params)
 		objtype := RequestGump(who, "Item objtype/name to create");
 		zheight := RequestGump(who, "Z height", "", who.z);
 	else
@@ -16,37 +16,37 @@ program textcmd_Create(who, params)
 		range := cint(params[3]);
 	endif
 
-	if ( GetObjTypeByName(objtype) )
+	if (GetObjTypeByName(objtype))
 		objtype := CInt(GetObjTypeByName(objtype));
 	else
 		objtype := CInt(objtype);
 	endif
 	zheight := CInt(zheight);
 
-	if ( !objtype )
+	if (!objtype)
 		SendSysMessage(who, "Syntax: .createrect <objtype> (zheight) (graphic range)");
 		return 0;
-	elseif ( !zheight )
+	elseif (!zheight)
 		zheight := 0;
 	endif
 
-	SendSysMessage( who, "Target the top-left corner" );
+	SendSysMessage(who, "Target the top-left corner");
 	var topleft := TargetCoordinates(who);
-	if ( !topleft )
+	if (!topleft)
 		return 0;
 	endif
-	SendSysMessage( who, "Target the bottom-left corner" );
+	SendSysMessage(who, "Target the bottom-left corner");
 	var botright := TargetCoordinates(who);
-	if ( !botright )
+	if (!botright)
 		return 0;
 	endif
 
-	if ( topleft.x <= botright.x and topleft.y <= botright.y )
+	if (topleft.x <= botright.x and topleft.y <= botright.y)
 		var x, y;
-		for( x := topleft.x; x <= botright.x; x := x + 1 )
-			for( y := topleft.y; y <= botright.y; y := y + 1 )
+		for (x := topleft.x; x <= botright.x; x := x + 1)
+			for (y := topleft.y; y <= botright.y; y := y + 1)
 				var r := RandomInt(range);
-				var item := CreateItemAtLocation(x, y, zheight, (objtype+r), 1, who.realm);
+				var item := CreateItemAtLocation(x, y, zheight, (objtype + r), 1, who.realm);
 				item.decayat := 0;
 				SleepMS(2);
 			endfor

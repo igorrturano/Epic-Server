@@ -1,8 +1,7 @@
 /*
  * $Id: makeTele.src 664 2005-10-27 03:36:13Z muaddiblsd $
  *
- */
-
+*/
 use uo;
 use polsys;
 
@@ -10,16 +9,16 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:selectionGump";
 
-CONST A_REALM_TXT	:= 0xB001;
-CONST A_XCOORD_TXT	:= 0xB002;
-CONST A_YCOORD_TXT	:= 0xB003;
-CONST A_ZCOORD_TXT	:= 0xB004;
-CONST B_REALM_TXT	:= 0xB005;
-CONST B_XCOORD_TXT	:= 0xB006;
-CONST B_YCOORD_TXT	:= 0xB007;
-CONST B_ZCOORD_TXT	:= 0xB008;
-const CANCEL_BTN	:= 0xE000;
-//CONST OKAY_BTN		:= 0xE001;
+const A_REALM_TXT := 0xB001;
+const A_XCOORD_TXT := 0xB002;
+const A_YCOORD_TXT := 0xB003;
+const A_ZCOORD_TXT := 0xB004;
+const B_REALM_TXT := 0xB005;
+const B_XCOORD_TXT := 0xB006;
+const B_YCOORD_TXT := 0xB007;
+const B_ZCOORD_TXT := 0xB008;
+const CANCEL_BTN := 0xE000;
+// CONST OKAY_BTN		:= 0xE001;
 
 program command_MakeTele(who)
 	var gump := GFCreateGump();
@@ -31,7 +30,7 @@ program command_MakeTele(who)
 	GFResizePic(gump, 10, 55, GFCfgConst("Defaults", "ForeGround"), 430, 90);
 	GFTextLine(gump, 20, 60, 2100, "Rope one will be placed where you are standing.");
 	GFTextLine(gump, 20, 80, 2100, "Rope two will be placed where tele one leads to.");
-//	GFTextLine(gump, 20, 100, 2100, "If there is no tele two, then its a one way teleporter.");
+	// 	GFTextLine(gump, 20, 100, 2100, "If there is no tele two, then its a one way teleporter.");
 	GFTextLine(gump, 20, 120, 2100, "Make sure you have 'SeeInvisItems' on to see the tiles.");
 
 	GFResizePic(gump, 10, 150, GFCfgConst("Defaults", "ForeGround"), 430, 300);
@@ -68,21 +67,20 @@ program command_MakeTele(who)
 	GFTextEntry(gump, 130, 414, 80, 25, 2100, who.z, B_ZCOORD_TXT);
 
 	var input := GFSendGump(who, gump);
-	if ( input[OKAY_BTN] )
+	if (input[OKAY_BTN])
 		var dest_a, dest_b;
-		dest_a := struct{"realm", "x", "y", "z"};
-		dest_b := struct{"realm", "x", "y", "z"};
+		dest_a := struct{ "realm", "x", "y", "z" };
+		dest_b := struct{ "realm", "x", "y", "z" };
 
 		dest_a.realm := GFExtractData(input, A_REALM_TXT);
 		dest_a.x := CInt(GFExtractData(input, A_XCOORD_TXT));
 		dest_a.y := CInt(GFExtractData(input, A_YCOORD_TXT));
 		dest_a.z := CInt(GFExtractData(input, A_ZCOORD_TXT));
 
-/*		if ( !CreateTeleTile(who, who.realm, who.x, who.y, who.z, dest_a) )
+		/* if ( !CreateTeleTile(who, who.realm, who.x, who.y, who.z, dest_a) )
 			SendSysMessage(who, "Nao criou essa porra no who.x, who.y, who.z.");
 			return 0;
-		endif*/
-
+		endif */
 		dest_b.realm := GFExtractData(input, B_REALM_TXT);
 		dest_b.x := CInt(GFExtractData(input, B_XCOORD_TXT));
 		dest_b.y := CInt(GFExtractData(input, B_YCOORD_TXT));
@@ -90,8 +88,8 @@ program command_MakeTele(who)
 
 		CreateTeleTile(who, dest_b.realm, dest_b.x, dest_b.y, dest_b.z, dest_a);
 
-		if ( dest_b.realm && dest_b.x && dest_b.y )
-			if ( !CreateTeleTile(who, dest_a.realm, dest_a.x, dest_a.y, dest_a.z, dest_b) )
+		if (dest_b.realm && dest_b.x && dest_b.y)
+			if (!CreateTeleTile(who, dest_a.realm, dest_a.x, dest_a.y, dest_a.z, dest_b))
 				SendSysMessage(who, "Nao criou essa porra no destino.");
 				return 0;
 			else
@@ -110,28 +108,28 @@ endprogram
 function CreateTeleTile(who, make_realm, make_x, make_y, make_z, byref dest)
 	var realm_info := Realms();
 	realm_info := realm_info[dest.realm];
-	if ( !realm_info )
-		SendSysMessage(who, "Error - Teleporter set to have an invalid realm name '"+dest.realm+"'");
+	if (!realm_info)
+		SendSysMessage(who, "Error - Teleporter set to have an invalid realm name '" + dest.realm + "'");
 		return 0;
-	elseif ( dest.x <= 0 )
+	elseif (dest.x <= 0)
 		SendSysMessage(who, "Error - Teleporter set to have an invalid X coordinate. ' <= 0 '");
 		return 0;
-	elseif ( dest.y <= 0 )
+	elseif (dest.y <= 0)
 		SendSysMessage(who, "Error - Teleporter set to have an invalid Y coordinate. ' <= 0 '");
 		return 0;
-	elseif ( dest.x > realm_info.width )
-		SendSysMessage(who, "Error - Teleporter X coordinate exceeds width for realm '"+dest.realm+"'");
+	elseif (dest.x > realm_info.width)
+		SendSysMessage(who, "Error - Teleporter X coordinate exceeds width for realm '" + dest.realm + "'");
 		return 0;
-	elseif ( dest.y > realm_info.height )
-		SendSysMessage(who, "Error - Teleporter Y coordinate exceeds height for realm '"+dest.realm+"'");
+	elseif (dest.y > realm_info.height)
+		SendSysMessage(who, "Error - Teleporter Y coordinate exceeds height for realm '" + dest.realm + "'");
 		return 0;
-	elseif ( !dest.z )
+	elseif (!dest.z)
 		dest.z := GetWorldHeight(dest.x, dest.y);
 	endif
 
 	var tile := CreateItemAtLocation(make_x, make_y, make_z, 0xfc0, 1, make_realm);
-	if ( tile.errortext )
-		SendSysMessage(who, "Error - Unable to create 'telepad' ->"+tile.errortext);
+	if (tile.errortext)
+		SendSysMessage(who, "Error - Unable to create 'telepad' ->" + tile.errortext);
 		return 0;
 	endif
 

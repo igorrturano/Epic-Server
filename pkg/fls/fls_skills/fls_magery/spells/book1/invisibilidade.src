@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -21,7 +20,7 @@ program SpellScript(params)
 	PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
 
 	who.hidden := 1;
-	who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
+	who.stealthsteps := CINT(AP_GetSkill(who, MAGERY) / 10);
 
 	SendSysMessage(who, "Voce esta invisivel.");
 

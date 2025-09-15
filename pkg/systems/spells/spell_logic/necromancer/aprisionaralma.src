@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -20,14 +20,17 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (targ.npctemplate == ":brainai:lich"|| targ.npctemplate == ":brainai:demiliche"|| targ.npctemplate == ":brainai:dracolich" || targ.npctemplate == ":brainai:Daemon" || targ.npctemplate == ":brainai:bonedaemon"|| targ.npctemplate == ":brainai:SucubusSuperior" || targ.npctemplate == ":brainai:ArcaneDaemon"|| targ.npctemplate == "ChaosDaemon"|| targ.npctemplate == ":brainai:pitfiend" || targ.npctemplate == ":brainai:Moloch") 
+	if (targ.npctemplate == ":brainai:lich" || targ.npctemplate == ":brainai:demiliche" ||
+	 targ.npctemplate == ":brainai:dracolich" || targ.npctemplate == ":brainai:Daemon" ||
+	 targ.npctemplate == ":brainai:bonedaemon" || targ.npctemplate == ":brainai:SucubusSuperior" ||
+	 targ.npctemplate == ":brainai:ArcaneDaemon" || targ.npctemplate == "ChaosDaemon" ||
+	 targ.npctemplate == ":brainai:pitfiend" || targ.npctemplate == ":brainai:Moloch")
 		SetObjProperty(targ, "soulstone", 1);
 		handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 
 		SendSysMessageEx(who, "Voce aprisionara a alma do alvo.", SSM_INFO);
 		Corromper(who, 88, targ);
 	endif
-	
-	return 1;
-endprogram 
 
+	return 1;
+endprogram

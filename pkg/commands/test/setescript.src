@@ -1,7 +1,6 @@
 use uo;
 
-
-program textcmd_setusescript( who, text )
+program textcmd_setusescript(who, text)
 
 	SendSysMessage(who, "Select target.");
 	var targ := Target(who);
@@ -13,5 +12,4 @@ program textcmd_setusescript( who, text )
 
 	targ.equipscript := text;
 
-   
 endprogram

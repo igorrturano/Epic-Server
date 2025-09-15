@@ -8,19 +8,19 @@ include "include/say";
 program EquipTest(mobile, item, start_up)
 	var retval := 0;
 
-	if ( start_up )
+	if (start_up)
 		// POL is starting up, yes the mobile can equip it
 		retval := 1;
-	elseif ( mobile.npctemplate )
+	elseif (mobile.npctemplate)
 		// NPCs can wear anything
 		retval := 1;
-	elseif ( mobile.cmdlevel )
+	elseif (mobile.cmdlevel)
 		// CmdLevel > 0 can equip anything.
 		retval := 1;
-	elseif ( item.isa(POLCLASS_CONTAINER) )
+	elseif (item.isa(POLCLASS_CONTAINER))
 		// Makes backpacks always equippable.
 		retval := 1;
-	elseif ( (mobile.frozen) || (mobile.paralyzed) )
+	elseif ((mobile.frozen) || (mobile.paralyzed))
 		// Frozen players cant equip stuff
 		SendSysMessage(mobile, "You are unable to move in order to equip that.");
 		return 0;
@@ -28,9 +28,9 @@ program EquipTest(mobile, item, start_up)
 		retval := 1;
 	endif
 
-	if ( item.graphic IN array{9920, 9930} )
+	if (item.graphic IN array{ 9920, 9930 })
 		var mounted := GetEquipmentByLayer(mobile, 0x19);
-		if ( !mounted )
+		if (!mounted)
 			SendSysMessage(mobile, "Voce nao pode equipar essa arma desmontado.");
 			return 0;
 		endif
@@ -44,15 +44,15 @@ program EquipTest(mobile, item, start_up)
 	if (mobile.hidden)
 		var zones := CS_GetArmorZone(item);
 		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
-			SendSysMessage(mobile, "Voce apareceu ao colocar "+item.desc+".");
+			SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
 			mobile.hidden := 0;
 			PrintText(mobile, "*aparece*");
 		endif
 	endif
 
-	if ( retval )
+	if (retval)
 		SetObjProperty(item, "#EquippedOn", mobile.serial);
-		//SetEquipmentMods(mobile, item);
+		// SetEquipmentMods(mobile, item);
 		if (coverFace(item) && !mobile.npctemplate)
 			if (!GetObjProperty(mobile, "realname") && !GetObjProperty(mobile, "realrace"))
 				SetObjProperty(mobile, "realname", mobile.name);
@@ -72,7 +72,7 @@ program EquipTest(mobile, item, start_up)
 		endif
 	else
 		// Unable to equip but no reaso was given above.
-		SendSysMessage(mobile, "Unable to equip ->"+item.desc);
+		SendSysMessage(mobile, "Unable to equip ->" + item.desc);
 	endif
 
 	return retval;

@@ -18,18 +18,18 @@ program HitScript(params)
 	var creature_who := NPC_ParseTemplateName(attacker.npctemplate).template;
 	var urro_sound := GetConfigInt(npccfgfile[creature_who], "UrroSound"); // identifca o som de urro do npcdesc
 
-	var lvl := Cint(AP_GetStat(attacker, STRENGTH)/23);
+	var lvl := Cint(AP_GetStat(attacker, STRENGTH) / 23);
 	if (lvl < 1)
 		lvl := 1;
 	endif
 
-	if (!CheckResist(defender, VONTADE, RESIST_MEDIUM, -CInt(AP_GetStat(attacker, STRENGTH)/20)))
+	if (!CheckResist(defender, VONTADE, RESIST_MEDIUM, -CInt(AP_GetStat(attacker, STRENGTH) / 20)))
 		TS_StartTimer(defender, "dmgreduction", Cint(AP_GetStat(attacker, STRENGTH)), lvl, attacker, 1);
-			PlaySoundEffect(attacker, urro_sound);
+		PlaySoundEffect(attacker, urro_sound);
 		printText(defender, "*Apavorado*");
-		//SendSysMessageEx(who, "O alvo esta apavorado.", SSM_INFO);3
+	// SendSysMessageEx(who, "O alvo esta apavorado.", SSM_INFO);3
 	else
-			PlaySoundEffect(attacker, urro_sound);
+		PlaySoundEffect(attacker, urro_sound);
 		printText(defender, "*O alvo resiste e ignora o rugido*");
 		return 1;
 	endif

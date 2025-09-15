@@ -1,11 +1,10 @@
 
-
 use uo;
 
 program equiporcmask(character, item)
 
 	var raca := GetObjProperty(character, "raca");
-	if ( cstr(raca) == "orc")
+	if (cstr(raca) == "orc")
 		SendSysMessage(character, "Voce e um orc. Mantenha sua orcmask equipada.");
 		item.color := character.color;
 		return 1;

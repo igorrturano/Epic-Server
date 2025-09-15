@@ -13,11 +13,11 @@ use os;
 
 include ":spawnsystem:commonTasks";
 
-program command_RestartSpawner( who )
+program command_RestartSpawner(who)
 
-        SS_RestartSpawner();
+	SS_RestartSpawner();
 
-	SendSysMessage( who, "Done." );
+	SendSysMessage(who, "Done.");
 
 	return 1;
 endprogram

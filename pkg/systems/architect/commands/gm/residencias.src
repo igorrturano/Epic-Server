@@ -15,18 +15,18 @@ program ConfigArchitect(who)
 
 	var y := 65;
 	GFTextLine(gump, 35, y, 1153, "Adicionar Nova");
-	GFAddButton(gump, 20, y+2, 2117, 2118, 1, 100);
+	GFAddButton(gump, 20, y + 2, 2117, 2118, 1, 100);
 
 	var areasdf := opendatafile(":architect:areas");
 	if (areasdf == error)
-		areasdf :=  createdatafile(":architect:areas");
+		areasdf := createdatafile(":architect:areas");
 	endif
 
 	var i := 1;
 	foreach area in (areasdf.keys())
-		y := y+ 15;
-		GFTextLine(gump, 35, y, 1153, ""+area);
-		GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
+		y := y + 15;
+		GFTextLine(gump, 35, y, 1153, "" + area);
+		GFAddButton(gump, 20, y + 2, 2117, 2118, 1, 400 + i);
 		i := i + 1;
 	endforeach
 
@@ -35,26 +35,26 @@ program ConfigArchitect(who)
 
 	if (input == 100)
 
-		var  nome := RequestGump(who, "Escolha o nome da area");
-		var rect :=  RequestGump(who, "Qual o rect da area (x1 y1 x2 y2 realm)?");
+		var nome := RequestGump(who, "Escolha o nome da area");
+		var rect := RequestGump(who, "Qual o rect da area (x1 y1 x2 y2 realm)?");
 		SendSysMessage(who, "Atencao!!! x1 e y1 tem que ser menor que x2 e y2");
 		SendSysMessage(who, "O jogador deve seguir essas regras para conseguir construir.");
 
-		var area := areasdf.createelement(""+nome);
+		var area := areasdf.createelement("" + nome);
 		area.setprop("Name", nome);
 		area.setprop("Rect", AutoSetRealm(who, rect));
 
-	elseif(input >= 400)
+	elseif (input >= 400)
 
-		var index :=  input - 400;
-		var  elem := areasdf.FindElement(areasdf.keys()[index]);
+		var index := input - 400;
+		var elem := areasdf.FindElement(areasdf.keys()[index]);
 
 		var gump2 := GFCreateGump(220, 300);
-		GFResizePic(gump2, 0,  0, 3600, 220, 200);
+		GFResizePic(gump2, 0, 0, 3600, 220, 200);
 
-		GFTextLine(gump2, 45, 15, 2100, "Name: "+elem.getprop("Name"));
-		GFTextLine(gump2, 45, 70, 2100, "Rect: "+elem.getprop("Rect"));
-		GFTextLine(gump2, 45,  85, 2100, "Deletar  Area ");
+		GFTextLine(gump2, 45, 15, 2100, "Name: " + elem.getprop("Name"));
+		GFTextLine(gump2, 45, 70, 2100, "Rect: " + elem.getprop("Rect"));
+		GFTextLine(gump2, 45, 85, 2100, "Deletar  Area ");
 		GFAddButton(gump2, 20, 87, 2117, 2118, 1, 100);
 		GFTextLine(gump2, 45, 100, 2100, "Editar Area ");
 		GFAddButton(gump2, 20, 102, 2117, 2118, 1, 200);
@@ -66,8 +66,8 @@ program ConfigArchitect(who)
 			areasdf.deleteelement(areasdf.keys()[index]);
 			SendSysMessage(who, "Area deletada.");
 		elseif (input2 == 200)
-			var  nome := RequestGump(who, "Escolha o nome da area", "",elem.getprop("Name"));
-			var rect :=  RequestGump(who, "Qual o rect da area (x1 y1 x2 y2 realm)?","", elem.getprop("Rect"));
+			var nome := RequestGump(who, "Escolha o nome da area", "", elem.getprop("Name"));
+			var rect := RequestGump(who, "Qual o rect da area (x1 y1 x2 y2 realm)?", "", elem.getprop("Rect"));
 			SendSysMessage(who, "Atencao!!! x1 e y1 tem que ser menor que x2 e y2");
 			SendSysMessage(who, "O jogador deve seguir essas regras para conseguir construir.");
 
@@ -75,19 +75,18 @@ program ConfigArchitect(who)
 			elem.setprop("Rect", AutoSetRealm(who, rect));
 		endif
 
-
 	endif
 
 endprogram
 
 function AutoSetRealm(who, rect)
 
-  var rec := SplitWords(rect);
-  var realm := rec[5];
-  if(!realm || realm == "" || realm.errortext)
-	rec.append(who.realm);
-	return " ".join(rec);
-  endif
-  return rect;
+	var rec := SplitWords(rect);
+	var realm := rec[5];
+	if (!realm || realm == "" || realm.errortext)
+		rec.append(who.realm);
+		return " ".join(rec);
+	endif
+	return rect;
 
 endfunction

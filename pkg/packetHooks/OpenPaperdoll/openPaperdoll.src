@@ -1,6 +1,6 @@
 /* $Id: sendStats.src 1054 2007-04-28 13:30:16Z tekproxy $
  *
- */
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  name:    Send Stats Packet Hook
@@ -32,37 +32,37 @@ include "include/client";
 include ":combat:damage";
 
 program sendStats()
-	Print( "INSTALLING: Outgoing Paperdoll PH..." );
+	Print("INSTALLING: Outgoing Paperdoll PH...");
 	return 1;
 endprogram
 
 const PLAYER_ID := 1;
 const TEXT_ID := 5;
 
-exported function HandleOpenPaperdoll( character, byref packet )
+exported function HandleOpenPaperdoll(character, byref packet)
 	var serial := packet.GetInt32(PLAYER_ID);
 	var source := SystemFindObjectBySerial(serial);
 	var Object_Name;
 	if (source.IsA(POLCLASS_MOBILE))
-		//PREENCHE NOME DO MOBILE
+		// PREENCHE NOME DO MOBILE
 		Object_Name := source.name;
 
-		//Cor do nome dos NPC conforme skill de combate
+		// Cor do nome dos NPC conforme skill de combate
 		if (!source.npctemplate)
-			//Caso em que tá desconhecido
-			if(GetObjProperty(source, "realname"))
+			// Caso em que tá desconhecido
+			if (GetObjProperty(source, "realname"))
 				Object_Name := "Incognito";
 			else
-				//Verifica se o char já foi reconhecido por who
+				// Verifica se o char já foi reconhecido por who
 				var conhecidos := dictionary;
-				if(GetObjProperty(character, "conhecidos"))
-					var ID := Cstr(source.serial); //Salva o serial do personagem
-					if(GetObjProperty(source, "disfarce"))
-						ID := Cstr(GetObjProperty(source, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+				if (GetObjProperty(character, "conhecidos"))
+					var ID := Cstr(source.serial); // Salva o serial do personagem
+					if (GetObjProperty(source, "disfarce"))
+						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
 					endif
 
-					conhecidos := GetObjProperty(character, "conhecidos"); //Lista de pessoas conhecidadas
-					if(conhecidos.Exists(ID))
+					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
+					if (conhecidos.Exists(ID))
 						Object_Name := conhecidos[ID];
 					else
 						Object_Name := source.name;
@@ -71,10 +71,10 @@ exported function HandleOpenPaperdoll( character, byref packet )
 					Object_Name := source.name;
 				endif
 			endif
-			packet.SetString(TEXT_ID, Object_Name,1);
+			packet.SetString(TEXT_ID, Object_Name, 1);
 		endif
 	endif
-/*
+	/*
 	var serial := packet.GetInt32(PLAYER_ID);
 	var source := SystemFindObjectBySerial(serial);
 	SendSysMessage(character, source.name);

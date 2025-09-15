@@ -1,9 +1,7 @@
 /* $Id: methods.src 373 2006-06-17 18:27:33Z austinheilman $
  *
- */
-
+*/
 use uo;
-
 
 program Install()
 	return 1;
@@ -16,7 +14,7 @@ endfunction
 exported function SetDuration(field, seconds)
 	seconds := CInt(seconds);
 
-	return SetObjProperty(field, "Duration", ReadGameClock()+seconds);
+	return SetObjProperty(field, "Duration", ReadGameClock() + seconds);
 endfunction
 
 exported function GetDuration(field)
@@ -27,15 +25,15 @@ endfunction
 
 exported function IsExpired(field)
 	var duration := GetDuration(field);
-	if ( !duration )
+	if (!duration)
 		return 0;
 	endif
 
-	return ( duration < ReadGameClock() );
+	return (duration < ReadGameClock());
 endfunction
 
 exported function SetOwner(field, serial)
-	if ( serial.IsA(POLCLASS_UOBJECT) )
+	if (serial.IsA(POLCLASS_UOBJECT))
 		serial := serial.serial;
 	endif
 
@@ -44,7 +42,7 @@ endfunction
 
 exported function GetOwner(field)
 	var owner := CInt(GetObjProperty(field, "Owner"));
-	if ( owner )
+	if (owner)
 		owner := SystemFindObjectBySerial(owner);
 	endif
 

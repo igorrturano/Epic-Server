@@ -2,7 +2,7 @@
  *
  * Purpose
  *
- */
+*/
 use uo;
 
 include "include/client";
@@ -10,15 +10,14 @@ include "include/sounds";
 
 program command_Tele(who)
 	var targ := TargetCoordinates(who);
-	if ( !targ )
+	if (!targ)
 		SendSysMessage(who, "Cancelled.");
 		return 0;
 	endif
-	
+
 	PlaySoundEffectPrivate(who, SFX_TELEPORT, who);
 	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
 	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
-	
+
 	return 1;
 endprogram
-

@@ -9,6 +9,6 @@ program textcmd_darken(who)
 		return;
 	endif
 
-	victim.setlightlevel( 30, 6000 );
+	victim.setlightlevel(30, 6000);
 
 endprogram
