@@ -15,7 +15,7 @@ program core_onDelete(who)
 	var create_time := who.createdat;
 	var age := polcore().systime - create_time;
 
-	if ( who.cmdlevel )
+	if (who.cmdlevel)
 		var tamedpets := Getobjproperty(who, "TamedPets");
 		foreach pet in tamedpets
 			SetObjProperty(pet, "GuardKill", 1);
@@ -23,9 +23,9 @@ program core_onDelete(who)
 		endforeach
 
 		return 1;
-	elseif ( age >= SECONDS_IN_WEEK )
-		SysLog("Account ["+who.acctname+"] deleting character "+who.name+" ("+who.serial+")");
-		
+	elseif (age >= SECONDS_IN_WEEK)
+		SysLog("Account [" + who.acctname + "] deleting character " + who.name + " (" + who.serial + ")");
+
 		var tamedpets := Getobjproperty(who, "TamedPets");
 		foreach pet in tamedpets
 			SetObjProperty(pet, "GuardKill", 1);

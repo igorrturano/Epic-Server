@@ -9,26 +9,26 @@ use util;
 
 include ":timedScripts:timedScripts";
 
-program controlScript(field)
-	SetObjProperty(field, "#PID", GetPid());
+program controlScript( field )
+  SetObjProperty( field, "#PID", GetPid() );
 
-	var creator := field.GetOwner();
-	if ( creator.IsA(POLCLASS_MOBILE) )
-		SetScriptController(creator);
+  var creator := field.GetOwner();
+  if ( creator.IsA( POLCLASS_MOBILE ) )
+	SetScriptController( creator );
+  endif
+
+  // Kludge to keep this script from running before cprops are set
+  SleepMS( 500 );
+
+  var poison_level := CInt( GetObjProperty( field, "PoisonLevel" ) );
+  if ( !poison_level )
+	poison_level := RandomInt( 5 ) + 1;
+  endif
+
+  while ( field )
+	if ( field.IsExpired() )
+	  DestroyItem( field );
+	  return 1;
 	endif
-
-	// Kludge to keep this script from running before cprops are set
-	SleepMS(500);
-
-	var poison_level := CInt(GetObjProperty(field, "PoisonLevel"));
-	if ( !poison_level )
-		poison_level := RandomInt(5)+1;
-	endif
-
-	while ( field )
-		if ( field.IsExpired() )
-			DestroyItem(field);
-			return 1;
-		endif
-	endwhile
+  endwhile
 endprogram

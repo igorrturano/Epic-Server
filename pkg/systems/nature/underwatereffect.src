@@ -5,54 +5,54 @@ include ":tn:cooldown";
 include ":attributes:attributes";
 include "include/say";
 
-program underwater(params)
-    var who := params[1];
-    var underwaterMessageSent := 0; // Flag to track if the underwater message was sent
+program underwater( params )
+  var who := params[1];
+  var underwaterMessageSent := 0; // Flag to track if the underwater message was sent
 
-    // Main loop to check the player's position and apply effects
-    while (1)
-        var z := who.z; 
-        var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
-        
-        var is_on_water_tile := 0;
+  // Main loop to check the player's position and apply effects
+  while ( 1 )
+	var z := who.z;
+	var statics := ListStaticsAtLocation( who.x, who.y, LIST_IGNORE_Z, 0, who.realm );
 
-        // Check if player is on water tiles (0x16BA to 0x16CF)
-        foreach static in statics
-            if (Cint(static.objtype) >= 5818 && Cint(static.objtype) <= 5839)
-                is_on_water_tile := 1;
-                break;
-            endif
-        endforeach
+	var is_on_water_tile := 0;
 
-        // If the player is below -80z, apply stamina/health effects
-        if (is_on_water_tile && z <= -20)
-            if (GetCooldown(who, "can_breath") > 0)
-                return;
-            endif
+	// Check if player is on water tiles (0x16BA to 0x16CF)
+	foreach static in statics
+	  if ( Cint( static.objtype ) >= 5818 && Cint( static.objtype ) <= 5839 )
+		is_on_water_tile := 1;
+		break;
+	  endif
+	endforeach
 
-            if (GetObjProperty(who, "underwater"))
-                if (!underwaterMessageSent)
-                    SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-                    underwaterMessageSent := 1;
-                endif
+	// If the player is below -80z, apply stamina/health effects
+	if ( is_on_water_tile && z <= -20 )
+	  if ( GetCooldown( who, "can_breath" ) > 0 )
+		return;
+	  endif
 
-                if (!AP_ConsumeVital(who, "Stamina", 10))
-                    AP_ConsumeVital(who, "Hits", 10);
-                endif
-            else
-                SetObjProperty(who, "underwater", 1);
-                SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-                underwaterMessageSent := 1;
-            endif
-        else
-            if (GetObjProperty(who, "underwater"))
-                EraseObjProperty(who, "underwater");
-                SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
-                underwaterMessageSent := 0; // Reset the flag when the player leaves underwater
-                // break;
-            endif
-        endif
+	  if ( GetObjProperty( who, "underwater" ) )
+		if ( !underwaterMessageSent )
+		  SendSysMessageEx( who, "Você não consegue respirar!", SSM_FAIL );
+		  underwaterMessageSent := 1;
+		endif
 
-        sleepms(2000);
-    endwhile
+		if ( !AP_ConsumeVital( who, "Stamina", 10 ) )
+		  AP_ConsumeVital( who, "Hits", 10 );
+		endif
+	  else
+		SetObjProperty( who, "underwater", 1 );
+		SendSysMessageEx( who, "Você não consegue respirar!", SSM_FAIL );
+		underwaterMessageSent := 1;
+	  endif
+	else
+	  if ( GetObjProperty( who, "underwater" ) )
+		EraseObjProperty( who, "underwater" );
+		SendSysMessageEx( who, "Você consegue respirar novamente!", SSM_INFO );
+		underwaterMessageSent := 0; // Reset the flag when the player leaves underwater
+	  // break;
+	  endif
+	endif
+
+	sleepms( 2000 );
+  endwhile
 endprogram

@@ -19,19 +19,19 @@ program LogOff(who)
 	return 1;
 endprogram
 
-Function IsGm(who)
-	If (who.cmdlevel >= 1)
+function IsGm(who)
+	if (who.cmdlevel >= 1)
 		var GmsOnlines := GetGlobalProperty("GmsOnlines");
 		if (GmsOnlines)
 			var i;
-			for(i:=1; i<=GmsOnlines.Size(); i:=i+1)
+			for (i := 1; i <= GmsOnlines.Size(); i := i + 1)
 				if (GmsOnlines[i] == who.serial)
 					GmsOnlines.erase(i);
 				endif
 				sleepms(10);
 			endfor
 		endif
-		
+
 		if (GmsOnlines)
 			SetGlobalProperty("GmsOnlines", GmsOnlines);
 		else

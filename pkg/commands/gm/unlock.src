@@ -3,14 +3,13 @@
  */
 use uo;
 
+program command_unlock( who )
+  SendSysMessage( who, "What do you wish to unlock?" );
 
-program command_unlock(who)
-    SendSysMessage(who, "What do you wish to unlock?");
+  var what := Target( who, TGTOPT_NOCHECK_LOS );
+  if ( what )
+	what.locked := 0;
+  endif
 
-	var what := Target(who, TGTOPT_NOCHECK_LOS);
-	if (what)
-		what.locked := 0;
-	endif
-
-	return;
+  return;
 endprogram

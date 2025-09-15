@@ -1,26 +1,26 @@
 use uo;
 
 program speechHook()
-  Print("SystemHook: Hooking Shownames.");
+  Print( "SystemHook: Hooking Shownames." );
   return 1;
 endprogram
 
 const ITEM_ID := 3;
 const TEXT_TYPE := 9;
-const NAME := 14; //posição do Name de quem fala
+const NAME := 14; // posição do Name de quem fala
 const SYS_MSG := 0x06;
 
-//Show names of incoming mobiles
-exported function handeSendSpeech(who, byref packet)
+// Show names of incoming mobiles
+exported function handeSendSpeech( who, byref packet )
 
-	if(packet.GetInt8(TEXT_TYPE) == SYS_MSG)
-		var obj := SystemFindObjectBySerial(packet.GetInt32(ITEM_ID));
-    		If(obj.IsA(POLCLASS_MOBILE)) // Se for um mobile, não exibe o nome
-			return 1;
-		endif
+  if ( packet.GetInt8( TEXT_TYPE ) == SYS_MSG )
+	var obj := SystemFindObjectBySerial( packet.GetInt32( ITEM_ID ) );
+	if ( obj.IsA( POLCLASS_MOBILE ) ) // Se for um mobile, não exibe o nome
+	  return 1;
 	endif
+  endif
 
-	/*
+/*
 	var type := packet.GetInt8(TEXT_TYPE);
 
 	var serial := packet.GetInt32(ITEM_ID);
@@ -63,5 +63,5 @@ exported function handeSendSpeech(who, byref packet)
 	SendSysMessage(source,"msg "+ packet.GetUnicodeString(44,length_of_text));
 
 	return 0;
-	*/
+*/
 endfunction

@@ -2,22 +2,21 @@ use uo;
 
 include ":timedscripts:timedScripts";
 
-program reset(who)
+program reset( who )
 
-	sendsysmessage(who, "Escolha o alvo.");
-	var targ := Target(who);
+  sendsysmessage( who, "Escolha o alvo." );
+  var targ := Target( who );
 
-	if (!targ || targ.npctemplate)
-		SendSysMessage(who, "Alvo invalido.");
-		return;
-	endif
+  if ( !targ || targ.npctemplate )
+	SendSysMessage( who, "Alvo invalido." );
+	return;
+  endif
 
-	var list := TS_GetCooldownList(targ);
+  var list := TS_GetCooldownList( targ );
 
-	foreach key in (list.keys())
-		SendSysMessage(who, " " + key + " resetado." );
-		TS_LowerDuration(targ, key, 10000, 1);
-	endforeach
-	
+  foreach key in ( list.keys() )
+	SendSysMessage( who, " " + key + " resetado." );
+	TS_LowerDuration( targ, key, 10000, 1 );
+  endforeach
 
-endprogram 
+endprogram

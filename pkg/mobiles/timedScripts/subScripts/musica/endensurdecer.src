@@ -3,10 +3,10 @@ use os;
 
 include ":attributes:attributes";
 
-program cureScript(params)
-	var mobile := params[1];
-	
-	mobile.squelched := 0;
-	
-	return 1;
+program cureScript( params )
+  var mobile := params[1];
+
+  mobile.squelched := 0;
+
+  return 1;
 endprogram

@@ -2,8 +2,8 @@ use uo;
 use os;
 use vitals;
 
-program removediseasearea(who, textarea)
-    EraseObjProperty(who, "diseaseArea");
-    EraseObjProperty(who, "teste_de_doenca");
-	//RecalcVitals(who);
+program removediseasearea( who, textarea )
+  EraseObjProperty( who, "diseaseArea" );
+  EraseObjProperty( who, "teste_de_doenca" );
+// RecalcVitals(who);
 endprogram

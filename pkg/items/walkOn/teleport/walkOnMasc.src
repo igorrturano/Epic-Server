@@ -9,26 +9,26 @@ use polsys;
 include ":fls_core:fls_characters";
 include ":taming:taming";
 
-program walkOn(mobile, tile)
-	if ( JustTeleported(mobile) )
-		return 0;
+program walkOn( mobile, tile )
+  if ( JustTeleported( mobile ) )
+	return 0;
+  endif
+  if ( GetObjProperty( mobile, "faccao" ) == "Mascaras Cinzentas" )
+	var pets := ListPetsNear( mobile, 4 );
+	var hostiles := ListHostiles( mobile, 4 );
+
+	SetObjProperty( mobile, "#Teleported", ReadMillisecondClock() );
+	var result := tile.SendToDestination( mobile );
+	if ( result.errortext )
+	  SendSysMessage( mobile, "Error teleporting ->" + result.errortext );
 	endif
-	if (GetObjProperty(mobile, "faccao") == "Mascaras Cinzentas")
-		var pets := ListPetsNear(mobile, 4);
-		var hostiles := ListHostiles(mobile, 4);
 
-		SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
-		var result := tile.SendToDestination(mobile);
-		if ( result.errortext )
-			SendSysMessage(mobile, "Error teleporting ->"+result.errortext);
-		endif
+	foreach pet in pets
+	  SetObjProperty( pet, "#Teleported", ReadMillisecondClock() );
+	  tile.SendToDestination( pet );
+	endforeach
 
-		foreach pet in pets
-			SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
-			tile.SendToDestination(pet);
-		endforeach
-
-	/*	if (hostiles[1])
+	/* if (hostiles[1])
 			foreach x in hostiles
 				if (!x.acctname)
 					SetObjProperty(x, "#Teleported", ReadMillisecondClock());
@@ -36,26 +36,26 @@ program walkOn(mobile, tile)
 				endif
 				sleepms(10);
 			endforeach
-		endif*/
+		endif */
 
-		if (HaveReverseVision(mobile))
-			if (mobile.cmdlevel > 1)
-				SendsysMessage(mobile, "GM: Ajustando infravisao.");
-			endif
-			ReverseLight(mobile);
-		endif
+	if ( HaveReverseVision( mobile ) )
+	  if ( mobile.cmdlevel > 1 )
+		SendsysMessage( mobile, "GM: Ajustando infravisao." );
+	  endif
+	  ReverseLight( mobile );
 	endif
-	destroyIllyraOutsideDungeons(mobile);
-	return 1;
+  endif
+  destroyIllyraOutsideDungeons( mobile );
+  return 1;
 endprogram
 
-function JustTeleported(mobile)
-	var tele_time := CInt(GetObjProperty(mobile, "#Teleported"));
-	if ( tele_time > ReadMillisecondClock()-500 )
-		// Mobile just teleported. Too soon to teleport again.
-		return 1;
-	else
-		// Safe to teleport the mobile
-		return 0;
-	endif
+function JustTeleported( mobile )
+  var tele_time := CInt( GetObjProperty( mobile, "#Teleported" ) );
+  if ( tele_time > ReadMillisecondClock() - 500 )
+	// Mobile just teleported. Too soon to teleport again.
+	return 1;
+  else
+	// Safe to teleport the mobile
+	return 0;
+  endif
 endfunction

@@ -5,14 +5,14 @@ use uo;
 use util;
 use cfgfile;
 
-program OnCreate(snow)
-	var snow_cfg := ReadConfigFile(":snow:config/settings");
-	var graphic_elem := snow_cfg["Graphics"];
-	var graphics := GetConfigStringArray(graphic_elem, "Graphic");
+program OnCreate( snow )
+  var snow_cfg := ReadConfigFile( ":snow:config/settings" );
+  var graphic_elem := snow_cfg["Graphics"];
+  var graphics := GetConfigStringArray( graphic_elem, "Graphic" );
 
-	if ( graphics.size() > 0 )
-		snow.graphic := CInt(graphics[RandomInt(graphics.size())+1]);
-	endif
+  if ( graphics.size() > 0 )
+	snow.graphic := CInt( graphics[RandomInt( graphics.size() ) + 1] );
+  endif
 
-	return 1;
+  return 1;
 endprogram

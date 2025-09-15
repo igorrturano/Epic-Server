@@ -1,4 +1,4 @@
-//--> control <--
+// --> control <--
 //
 // CTRL_REG.SRC
 //
@@ -17,17 +17,17 @@ use uo;
 
 program ctrl_reg()
 
-	// Userfriendly name of package (string)
-	// Version number (string)
-	// Does it have a command interface? 0=No/1=Yes (integer)
-	// Unqualified script-name of interface (string)
+  // Userfriendly name of package (string)
+  // Version number (string)
+  // Does it have a command interface? 0=No/1=Yes (integer)
+  // Unqualified script-name of interface (string)
 
-	var zLink := {};
-	zLink.+sName := "Decorations";
-	zLink.+sVer := "1.0";
-	zLink.+bCtrl := 0;
-	zLink.+sScript := "";
+  var zLink := {};
+  zLink.+sName := "Decorations";
+  zLink.+sVer := "1.0";
+  zLink.+bCtrl := 0;
+  zLink.+sScript := "";
 
-	return zLink;
+  return zLink;
 
 endprogram

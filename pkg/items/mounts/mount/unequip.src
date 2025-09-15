@@ -6,12 +6,12 @@ use uo;
 include ":attributes:attributes";
 include ":brainAI:include/npcUtil";
 
-program UnequipScript(mobile, item, start_up)
+program UnequipScript( mobile, item, start_up )
 
-	start_up := start_up;
-	item := item;
-	mobile := mobile;
+  start_up := start_up;
+  item := item;
+  mobile := mobile;
 
-	return 1;
+  return 1;
 
 endprogram

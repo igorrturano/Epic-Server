@@ -11,19 +11,20 @@ use uo;
 use os;
 use file;
 
-program textcmd_CmdToggle(who)
-	LogToFile(":fls_core:cmdtoggle.log", who.name+ " ("+ who.acctname+ ") usou cmdtoggle ", LOG_DATETIME);
-	if ( who.cmdlevel )
-		SetObjProperty(who, "cmdlevel", who.cmdlevel);
-		who.cmdlevel := 0;
-		EraseObjProperty(who, "noattack");
-		SendSysMessage(who, "Gm: Off");
-	else
-		who.cmdlevel := CInt(GetObjProperty(who, "cmdlevel"));
-		EraseObjProperty(who, "cmdlevel");
-		SetObjProperty(who, "noattack", 1);
-		SendSysMessage(who, "Gm: On");
-	endif
+program textcmd_CmdToggle( who )
+  LogToFile( ":fls_core:cmdtoggle.log", who.name + " (" + who.acctname + ") usou cmdtoggle ",
+			 LOG_DATETIME );
+  if ( who.cmdlevel )
+	SetObjProperty( who, "cmdlevel", who.cmdlevel );
+	who.cmdlevel := 0;
+	EraseObjProperty( who, "noattack" );
+	SendSysMessage( who, "Gm: Off" );
+  else
+	who.cmdlevel := CInt( GetObjProperty( who, "cmdlevel" ) );
+	EraseObjProperty( who, "cmdlevel" );
+	SetObjProperty( who, "noattack", 1 );
+	SendSysMessage( who, "Gm: On" );
+  endif
 
-	return 1;
+  return 1;
 endprogram

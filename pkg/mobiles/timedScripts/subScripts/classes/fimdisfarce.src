@@ -2,11 +2,11 @@ use uo;
 
 include ":disguise:disguise";
 
-program TimedScript_EndClumsy(params)
-	var mobile := params[1];
-	
-	//printtextabove(mobile, "FIM DO DISFARCE");
-	removeDisguise(mobile);
+program TimedScript_EndClumsy( params )
+  var mobile := params[1];
 
-	return 1;
-endprogram 
+  // printtextabove(mobile, "FIM DO DISFARCE");
+  removeDisguise( mobile );
+
+  return 1;
+endprogram

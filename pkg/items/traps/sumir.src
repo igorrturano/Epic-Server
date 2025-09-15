@@ -9,11 +9,11 @@ include ":combat:damage";
 include ":charactercreation:resists";
 include ":taming:taming";
 
-program subir(item)
+program subir( item )
 
-	SetObjProperty(item, "cooldown", 1);
-	sleep(60);
-	EraseObjProperty(item, "cooldown");
-	item.invisible := 1;
-		
+  SetObjProperty( item, "cooldown", 1 );
+  sleep( 60 );
+  EraseObjProperty( item, "cooldown" );
+  item.invisible := 1;
+
 endprogram

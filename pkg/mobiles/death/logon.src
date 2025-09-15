@@ -2,6 +2,6 @@ use uo;
 
 include ":death:death";
 
-/*program dpChecking(player)
+/* program dpChecking(player)
 	RegenerateDeathPoints(player);
-endprogram*/
+endprogram */

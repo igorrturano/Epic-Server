@@ -5,9 +5,8 @@
 
 use uo;
 
+program textcmd_Destroy( who )
+  SendSysMessage( who, "What do you want to destroy?" );
 
-program textcmd_Destroy(who)
-	SendSysMessage(who, "What do you want to destroy?");
-	
-	DestroyItem(target(who));
+  DestroyItem( target( who ) );
 endprogram

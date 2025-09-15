@@ -3,14 +3,14 @@ use os;
 
 include ":attributes:attributes";
 
-program cureScript(params)
-	var who := params[1];
-	
-	SendSysMessage(who, "Os efeitos da lentidao passaram.");
-	
-	var info := GetObjProperty(who, "#Slowness");
-	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
-	who.paralyzed := 0;
-	
-	EraseObjProperty(who, "#Slowness");
+program cureScript( params )
+  var who := params[1];
+
+  SendSysMessage( who, "Os efeitos da lentidao passaram." );
+
+  var info := GetObjProperty( who, "#Slowness" );
+  AP_ModifyStatMod( who, DEXTERITY, info.dexmod );
+  who.paralyzed := 0;
+
+  EraseObjProperty( who, "#Slowness" );
 endprogram

@@ -3,9 +3,8 @@ use uo;
 include "include/say";
 include ":timedScripts:timedScripts";
 
+program backstab( who )
 
-program backstab(who)
+  SetObjPRoperty( who, "#alvomovel", 1 );
 
-	SetObjPRoperty(who, "#alvomovel", 1);
-
-endprogram  
+endprogram

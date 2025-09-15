@@ -2,12 +2,12 @@ use os;
 use uo;
 
 program textcmd_sayabove( who, text )
-    SendSysMessage( who, "Say above all" );
+  SendSysMessage( who, "Say above all" );
 
-    foreach mob in (ListMobilesNearLocation( who.x, who.y, who.z, 8, who.realm ))
-        if (mob != who)
-            PrintTextAbove( mob, text );
-        endif
-    endforeach
+  foreach mob in ( ListMobilesNearLocation( who.x, who.y, who.z, 8, who.realm ) )
+	if ( mob != who )
+	  PrintTextAbove( mob, text );
+	endif
+  endforeach
 
 endprogram

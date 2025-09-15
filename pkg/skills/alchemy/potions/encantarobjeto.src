@@ -11,31 +11,31 @@ program drink_blue( who, potion )
   EraseObjProperty( who, "HealTimer" );
 
   if ( !Accessible( who, potion ) )
-    return;
+	return;
   endif
 
   if ( potion.movable == 0 )
-    SendSysMessage( who, "Voce nao pode usar isto." );
-    return;
+	SendSysMessage( who, "Voce nao pode usar isto." );
+	return;
   endif
 
   SendSysMessageEx( who, "Qual item deseja encantar?", SSM_REQUEST );
   var use_on := Target( who );
 
   if ( !use_on )
-    SendSysMessage( who, "Cancelado" );
-    return 0;
+	SendSysMessage( who, "Cancelado" );
+	return 0;
   endif
 
-  if ( !use_on.isA( POLCLASS_WEAPON ) && !use_on.isA( POLCLASS_ARMOR ))
-    SendSysMessageEx( who, "Isto não pode ser banhado por essa poção.", SSM_FAIL );
-    return;
+  if ( !use_on.isA( POLCLASS_WEAPON ) && !use_on.isA( POLCLASS_ARMOR ) )
+	SendSysMessageEx( who, "Isto não pode ser banhado por essa poção.", SSM_FAIL );
+	return;
   endif
 
-  var bonus := Cint( GetObjProperty(potion, "crafterskill" ) );
-	bonus := bonus * 0.05;
+  var bonus := Cint( GetObjProperty( potion, "crafterskill" ) );
+  bonus := bonus * 0.05;
 
-  empty_bottle(who, potion, 1, 0);
+  empty_bottle( who, potion, 1, 0 );
 
   SendSysMessageEx( who, "Você encantou o objeto.", SSM_INFO );
   PlayStationaryEffect( who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2 );

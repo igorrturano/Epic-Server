@@ -21,8 +21,8 @@ var spawn_count := 0;
 
 program use_spawnpoint( who, spawnpoint )
   if ( who.cmdlevel < 2 )
-    SendSysMessage( who, "Você não tem permissão para usar isso." );
-    return;
+	SendSysMessage( who, "Você não tem permissão para usar isso." );
+	return;
   endif
 
   var gump := GFECreateGump( "", GUMP_WIDTH, GUMP_HEIGHT, array{ HIDE_BORDER } );
@@ -40,32 +40,32 @@ program use_spawnpoint( who, spawnpoint )
   var uniquestat := GetObjProperty( spawnpoint, "uniquestat" );
 
   if ( !uniquestat )
-    uniquestat := struct;
+	uniquestat := struct;
   endif
 
   // Add labels, load saved templates and input fields for templates
   var x_label := 30, x_field := 100, y := 80, spacing := 40, i;
   for ( i := 1; i <= 3; i += 1 )
-    var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) ) ? GetObjProperty(
-                                    spawnpoint, Cstr( "Template" + i ) ) : "";
-    var amount := GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ) ? GetObjProperty(
-                                  spawnpoint, Cstr( "Amount" + i ) ) : "";
-    var tier := GetObjProperty( spawnpoint, Cstr( "Tier" + i ) ) ? GetObjProperty(
-                                spawnpoint, Cstr( "Tier" + i ) ) : "";
-    var name := GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) ? GetObjProperty(
-                                spawnpoint, Cstr( "Name" + i ) ) : "";
-    GFTextLine( gump, x_label, y, 2100, "Nome:" );
-    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, 100 + (i * 4) );
+	var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) ) ?
+								 GetObjProperty( spawnpoint, Cstr( "Template" + i ) ) : "";
+	var amount := GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ) ?
+							   GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ) : "";
+	var tier := GetObjProperty( spawnpoint, Cstr( "Tier" + i ) ) ?
+							 GetObjProperty( spawnpoint, Cstr( "Tier" + i ) ) : "";
+	var name := GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) ?
+							 GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) : "";
+	GFTextLine( gump, x_label, y, 2100, "Nome:" );
+	GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, 100 + ( i * 4 ) );
 
-    GFTextLine( gump, x_field + 160, y, 2100, "Quantidade:" );
-    GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, amount, 101 + (i * 4) );
+	GFTextLine( gump, x_field + 160, y, 2100, "Quantidade:" );
+	GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, amount, 101 + ( i * 4 ) );
 
-    GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
-    GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, 102 + (i * 4) );
+	GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
+	GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, 102 + ( i * 4 ) );
 
-    GFTextLine( gump, x_label, y + 40, 2100, "Template:" );
-    GFEAddTextBox( gump, x_field, y + 40, 400, 20, COLOR_YELLOW, template, 103 + (i * 4) );
-    y += spacing + 40;
+	GFTextLine( gump, x_label, y + 40, 2100, "Template:" );
+	GFEAddTextBox( gump, x_field, y + 40, 400, 20, COLOR_YELLOW, template, 103 + ( i * 4 ) );
+	y += spacing + 40;
   endfor
 
   // Add range label and input field
@@ -102,52 +102,50 @@ endprogram
 
 function CreateNpcFromSpawnPoint( who, spawnpoint, i )
   var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) );
-  var amount := Cint(GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ));
+  var amount := Cint( GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ) );
   var count := 0;
-  for(count := 1; count <= amount; count += 1)
-    var npc := CreateNpc( template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm );
-    SetObjProperty( spawnpoint, "Spawn" + i, template );
-    SetupCustomProps( spawnpoint, npc, i );
-    if ( !npc )
-      SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc +" - Error -> " + npc.errortext );
-    else
-      SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
+  for ( count := 1; count <= amount; count += 1 )
+	var npc := CreateNpc( template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm );
+	SetObjProperty( spawnpoint, "Spawn" + i, template );
+	SetupCustomProps( spawnpoint, npc, i );
+	if ( !npc )
+	  SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc + " - Error -> " + npc.errortext );
+	else
+	  SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
 
-      SetObjProperty(npc, "GuardKill", 1);	
-      SetObjProperty(npc, "NoCorpse", 1);
-      ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
+	  SetObjProperty( npc, "GuardKill", 1 );
+	  SetObjProperty( npc, "NoCorpse", 1 );
+	  ApplyRawDamage( npc, CInt( AP_GetVitalMaximumValue( npc, "Hits" ) ) );
 
-      spawn_count += 1;
-    endif
+	  spawn_count += 1;
+	endif
   endfor
 endfunction
 
 function SetupCustomProps( spawnpoint, npc, counter )
-  var prop_tier := GetObjProperty( spawnpoint, Cstr("Tier" + counter) );
+  var prop_tier := GetObjProperty( spawnpoint, Cstr( "Tier" + counter ) );
   var tier := prop_tier ? prop_tier : npc.getTier() || "0";
   customizeNpc( npc, tier );
   var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
   if ( name && name != "" )
-    SetName( npc, name );
+	SetName( npc, name );
   endif
 endfunction
 
 function CreateNpc( template, x, y, z, props, realm )
   var result;
 
-  var paths := array{ ":epicAI:" + template,
-                      ":brainAI:" + template,
-                      ":merchants:" + template };
+  var paths := array{ ":epicAI:" + template, ":brainAI:" + template, ":merchants:" + template };
 
   if ( SplitWords( template )[1] != ":" )
-    foreach path in paths
-      result := CreateNpcFromTemplate( Trim(path), x, y, z, props, realm );
-      if ( result )
-        return result;
-      endif
-    endforeach
+	foreach path in paths
+	  result := CreateNpcFromTemplate( Trim( path ), x, y, z, props, realm );
+	  if ( result )
+		return result;
+	  endif
+	endforeach
   else
-    result := CreateNpcFromTemplate( Trim(template), x, y, z, props, realm );
+	result := CreateNpcFromTemplate( Trim( template ), x, y, z, props, realm );
   endif
 
   return result;
@@ -155,95 +153,72 @@ endfunction
 
 function InputsHandler( inputs, who, spawnpoint, uniquestat )
   if ( inputs[100] == 1 ) // Is OK button?
-    var i;
-    if ( inputs[17] == 1 ) // Is boss?
-      SetObjProperty( spawnpoint, "unique", 1 );
-      CreateBossStructGump( who, uniquestat );
-    else
-      SetObjProperty( spawnpoint, "unique", 0 );
-    endif
+	var i;
+	if ( inputs[17] == 1 ) // Is boss?
+	  SetObjProperty( spawnpoint, "unique", 1 );
+	  CreateBossStructGump( who, uniquestat );
+	else
+	  SetObjProperty( spawnpoint, "unique", 0 );
+	endif
 
-    for ( i := 1; i <= 3; i += 1 )
-      var name := inputs[100 + (i * 4)] ? SplitWords(inputs[100 + (i * 4)], ":")[2] : "";
-      var amount := inputs[101 + (i * 4)] ? SplitWords(inputs[101 + (i * 4)], ":")[2] : "0";
-      var tier := inputs[102 + (i * 4)] ? SplitWords(inputs[102 + (i * 4)], ":")[2] : "0";
-      var template := inputs[103 + (i * 4)] ? SplitWords(inputs[103 + (i * 4)], ":")[2] : "";
+	for ( i := 1; i <= 3; i += 1 )
+	  var name := inputs[100 + ( i * 4 )] ? SplitWords( inputs[100 + ( i * 4 )], ":" )[2] : "";
+	  var amount := inputs[101 + ( i * 4 )] ? SplitWords( inputs[101 + ( i * 4 )], ":" )[2] : "0";
+	  var tier := inputs[102 + ( i * 4 )] ? SplitWords( inputs[102 + ( i * 4 )], ":" )[2] : "0";
+	  var template := inputs[103 + ( i * 4 )] ? SplitWords( inputs[103 + ( i * 4 )], ":" )[2] : "";
 
-      if ( name != "" && template != "" )
-        SetObjProperty( spawnpoint, "Name" + i, Trim(name) );
-        SetObjProperty( spawnpoint, "Amount" + i, Trim(amount) );
-        SetObjProperty( spawnpoint, "Tier" + i, Trim(tier) );
-        SetObjProperty( spawnpoint, "Template" + i, Trim(template) );
-        CreateNpcFromSpawnPoint( who, spawnpoint, i );
-      else
-        SysLog("Erro: Nome ou Template ausente para o índice " + i);
-      endif
-    endfor
+	  if ( name != "" && template != "" )
+		SetObjProperty( spawnpoint, "Name" + i, Trim( name ) );
+		SetObjProperty( spawnpoint, "Amount" + i, Trim( amount ) );
+		SetObjProperty( spawnpoint, "Tier" + i, Trim( tier ) );
+		SetObjProperty( spawnpoint, "Template" + i, Trim( template ) );
+		CreateNpcFromSpawnPoint( who, spawnpoint, i );
+	  else
+		SysLog( "Erro: Nome ou Template ausente para o índice " + i );
+	  endif
+	endfor
 
-    SetObjProperty( spawnpoint, "Range", Trim(SplitWords(inputs[13], ":")[2]) );
-    SetObjProperty( spawnpoint, "MinDelay", Trim(SplitWords(inputs[14], ":")[2]) );
-    SetObjProperty( spawnpoint, "MaxDelay", Trim(SplitWords(inputs[15], ":")[2]) );
-    
-    // Fix for checkbox values - explicitly check if they're checked
-    SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] ? 1 : 0 );
-    if (inputs[17] == error)
-      // Keep the existing value if there was an error
-    else
-      SetObjProperty( spawnpoint, "unique", inputs[17] ? 1 : 0 );
-    endif
-    
-    SetObjProperty( spawnpoint, "ResetMe", 1 );
-    SetObjProperty( spawnpoint, "SpawnCount", (spawn_count) );
-    SetObjProperty( spawnpoint, "uniquestat", uniquestat );
+	SetObjProperty( spawnpoint, "Range", Trim( SplitWords( inputs[13], ":" )[2] ) );
+	SetObjProperty( spawnpoint, "MinDelay", Trim( SplitWords( inputs[14], ":" )[2] ) );
+	SetObjProperty( spawnpoint, "MaxDelay", Trim( SplitWords( inputs[15], ":" )[2] ) );
 
-    SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
+	// Fix for checkbox values - explicitly check if they're checked
+	SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] ? 1 : 0 );
+	if ( inputs[17] == error )
+	// Keep the existing value if there was an error
+	else
+	  SetObjProperty( spawnpoint, "unique", inputs[17] ? 1 : 0 );
+	endif
+
+	SetObjProperty( spawnpoint, "ResetMe", 1 );
+	SetObjProperty( spawnpoint, "SpawnCount", ( spawn_count ) );
+	SetObjProperty( spawnpoint, "uniquestat", uniquestat );
+
+	SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif
 endfunction
 
 function AdicionarMoldura( byref gump )
-  var molduras := array{ struct{ x := 0,
-                                 y := 0,
-                                 width := 25,
-                                 height := 25,
-                                 gump := 39925 },
-                         struct{ x := GUMP_WIDTH - 25,
-                                 y := 0,
-                                 width := 35,
-                                 height := 25,
-                                 gump := 39927 },
-                         struct{ x := 25,
-                                 y := 0,
-                                 width := GUMP_WIDTH - 41,
-                                 height := 25,
-                                 gump := 39926 },
-                         struct{ x := 25,
-                                 y := GUMP_HEIGHT - 25,
-                                 width := GUMP_WIDTH - 25,
-                                 height := 35,
-                                 gump := 39932 },
-                         struct{ x := 0,
-                                 y := 25,
-                                 width := 10,
-                                 height := GUMP_HEIGHT - 50,
-                                 gump := 39928 },
-                         struct{ x := GUMP_WIDTH - 25,
-                                 y := 25,
-                                 width := 35,
-                                 height := GUMP_HEIGHT - 50,
-                                 gump := 39930 },
-                         struct{ x := GUMP_WIDTH - 25,
-                                 y := GUMP_HEIGHT - 25,
-                                 width := 35,
-                                 height := 35,
-                                 gump := 39933 },
-                         struct{ x := 0,
-                                 y := GUMP_HEIGHT - 25,
-                                 width := 35,
-                                 height := 35,
-                                 gump := 39931 }
-                         };
+  var molduras := array{ struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+					
+					     struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+					
+					     struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+					
+					     struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25,
+							     height := 35, gump := 39932 },
+					
+					     struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+					
+					     struct{ x := GUMP_WIDTH - 25, y := 25, width := 35,
+							     height := GUMP_HEIGHT - 50, gump := 39930 },
+					
+					     struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25,
+							     width := 35, height := 35, gump := 39933 },
+					
+					     struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 } };
 
   foreach moldura in molduras
-    GFGumpPicTiled( gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump );
+	GFGumpPicTiled( gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump );
   endforeach
 endfunction

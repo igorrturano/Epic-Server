@@ -4,8 +4,8 @@ use os;
 include ":attributes:attributes";
 include ":musicianship:bardmusic";
 
-program cureScript(params)
-	var item := params[1];
-	destroyitem( item );
-	return 1;
+program cureScript( params )
+  var item := params[1];
+  destroyitem( item );
+  return 1;
 endprogram
