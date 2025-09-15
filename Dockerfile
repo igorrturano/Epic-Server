@@ -42,7 +42,7 @@ COPY . /opt/pol/
 RUN chown -R pol:pol /opt/pol
 
 # Compilar o POL
-RUN cd /opt/pol/scripts && ./ecompile -Af
+RUN cd /opt/pol/scripts && ./ecompile -u && ./ecompile -Fi
 
 # Criar diretório para dados UO (será montado como volume)
 RUN mkdir -p /opt/uo-data && chown pol:pol /opt/uo-data
