@@ -6,20 +6,20 @@ include "include/say";
 include ":tn:tngumps";
 include ":combat:damage";
 
-program manobra( who )
-  MakeBleed( who );
+program manobra(who)
+	MakeBleed(who);
 
-  var mana := AP_GetVital( who, MANA );
-  var maxmana := AP_GetVitalMaximumValue( who, MANA );
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
 
-  var bonus := AP_GetSkill( who, ARCANA ) * 2;
-  mana := mana + bonus;
+	var bonus := AP_GetSkill(who, ARCANA) * 2;
+	mana := mana + bonus;
 
-  AP_SetVital( who, MANA, mana );
+	AP_SetVital(who, MANA, mana);
 
-  var dmg := AP_GetVital( who, HITS ) - GetHP( who );
-  DamageFLS( who, dmg );
+	var dmg := AP_GetVital(who, HITS) - GetHP(who);
+	DamageFLS(who, dmg);
 
-  RecalcVitals( who );
+	RecalcVitals(who);
 
 endprogram

@@ -4,18 +4,18 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  var mobilidade := GetObjProperty( attacker, "#mobilidade" );
+	var mobilidade := GetObjProperty(attacker, "#mobilidade");
 
-  if ( !mobilidade )
+	if (!mobilidade)
 
-	SendSysMessageEx( attacker, "Voce se concentra nas esquivas!", SSM_INFO );
-	SetObjPRoperty( attacker, "#mobilidade", 1 );
+		SendSysMessageEx(attacker, "Voce se concentra nas esquivas!", SSM_INFO);
+		SetObjPRoperty(attacker, "#mobilidade", 1);
 
-  else
-	SendSysMessageEx( attacker, "Voce desativou essa habilidade.", SSM_INFO );
-	EraseObjProperty( attacker, "#mobilidade" );
-  endif
+	else
+		SendSysMessageEx(attacker, "Voce desativou essa habilidade.", SSM_INFO);
+		EraseObjProperty(attacker, "#mobilidade");
+	endif
 
 endprogram

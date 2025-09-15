@@ -10,27 +10,27 @@ include ":attributes:attributes";
 include ":blood:blood";
 include "include/epicMageryUtils";
 
-program SpellScript( params )
-  var who := params[1];
-  params := 0; // No longer needed
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
 
-  MakeBleed( who );
+	MakeBleed(who);
 
-  // 	ApplyRawDamage( who, 10, 0, DAMAGE_SHOW );
-  ApplyRawDamage( who, 10 );
-  var mana := AP_GetVital( who, MANA );
-  var maxmana := AP_GetVitalMaximumValue( who, MANA );
+	// 	ApplyRawDamage( who, 10, 0, DAMAGE_SHOW );
+	ApplyRawDamage(who, 10);
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
 
-  var bonus := 10 + 10 * AP_GetSkill( who, ARCANA ) / 100; // da de +10 a +20 de mana
-  mana := mana + bonus;
+	var bonus := 10 + 10 * AP_GetSkill(who, ARCANA) / 100; // da de +10 a +20 de mana
+	mana := mana + bonus;
 
-  if ( mana > maxmana )
-	mana := maxmana;
-  endif
-  AP_SetVital( who, MANA, mana );
+	if (mana > maxmana)
+		mana := maxmana;
+	endif
+	AP_SetVital(who, MANA, mana);
 
-  handleSilentMagic( who, who, 385 );
-  SendSysMessageEx( who, "Voce converteu sua energia vital em mana", SSM_INFO );
+	handleSilentMagic(who, who, 385);
+	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
 
-  return 1;
+	return 1;
 endprogram

@@ -1,6 +1,6 @@
 /* $Id: control.src 1391 2006-05-13 10:25:34Z austin $
  *
- */
+*/
 use uo;
 use os;
 
@@ -30,25 +30,25 @@ const COMMANDS_BTN := 0xA00006;
 const ITEMDESC_BTN := 0xA00007;
 
 // Easier to use the datafile as a global.
-var pkg_info := DFOpenDataFile( ":control:packages", DF_CREATE );
-var pkg_gumps := DFOpenDataFile( ":control:gumps", DF_CREATE );
+var pkg_info := DFOpenDataFile(":control:packages", DF_CREATE);
+var pkg_gumps := DFOpenDataFile(":control:gumps", DF_CREATE);
 
-program textcmd_ICPSystem( who, pkg_name )
-  while ( who.connected )
-	if ( pkg_name )
-	  var input := ICP_PackagePanels( who, pkg_name );
-	  if ( !input )
-		break;
-	  endif
-	endif
+program textcmd_ICPSystem(who, pkg_name)
+	while (who.connected)
+		if (pkg_name)
+			var input := ICP_PackagePanels(who, pkg_name);
+			if (!input)
+				break;
+			endif
+		endif
 
-	// Show a list of all packages
-	pkg_name := ICP_PackageIndex( who );
-	if ( !pkg_name )
-	  break;
-	endif
-  endwhile
-  SendSysMessage( who, "Done" );
+		// Show a list of all packages
+		pkg_name := ICP_PackageIndex(who);
+		if (!pkg_name)
+			break;
+		endif
+	endwhile
+	SendSysMessage(who, "Done");
 
-  return 1;
+	return 1;
 endprogram

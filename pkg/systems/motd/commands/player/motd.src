@@ -3,7 +3,7 @@ use os;
 
 include ":datafile:datafile";
 
-program MOTD( who, text )
+program MOTD(who, text)
 // if ( text )
 // 	text := lower(text);
 // 	var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);

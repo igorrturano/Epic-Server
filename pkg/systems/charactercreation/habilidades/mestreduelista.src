@@ -5,10 +5,10 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  SendSysMessageEx( attacker, "*Trabalho de pes*" );
-  var duration := Cint( Ap_GetSkill( attacker, TACTICS ) / 5 );
-  SetCooldown( attacker, "mestreduelista", duration );
+	SendSysMessageEx(attacker, "*Trabalho de pes*");
+	var duration := Cint(Ap_GetSkill(attacker, TACTICS) / 5);
+	SetCooldown(attacker, "mestreduelista", duration);
 
 endprogram

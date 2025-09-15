@@ -12,49 +12,49 @@ include "include/sounds";
 include "include/facings";
 include ":alchemy:alchemy";
 
-program formula90( who, pocao )
+program formula90(who, pocao)
 
-  var cfg := ReadConfigFile( ":combat:itemdesc" );
-  var cfg2 := ReadConfigFile( ":metalworking:blacksmithy" );
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var cfg2 := ReadConfigFile(":metalworking:blacksmithy");
 
-  SendSysMessageEx( who, "Qual item deseja transmutar?", SSM_REQUEST );
-  var targ := Target( who );
-  var elem := FindConfigElem( cfg2, targ.objtype );
+	SendSysMessageEx(who, "Qual item deseja transmutar?", SSM_REQUEST);
+	var targ := Target(who);
+	var elem := FindConfigElem(cfg2, targ.objtype);
 
-  if ( !targ )
-	SendSysMessage( who, "Cancelado" );
-	return 0;
-  endif
-
-  if ( targ in EnumerateItemsInContainer( who.backpack ) )
-	SendSysMessageEx( who, "Voce nao pode transmutar objetos em sua bolsa", SSM_FAIL );
-	return 0;
-  endif
-
-  if ( targ.isA( POLCLASS_WEAPON ) || targ.isA( POLCLASS_ARMOR ) )
-
-	var skill := ( getobjProperty( pocao, "crafterskill" ) * 0.6 );
-	var item := Getobjproperty( targ, "material" );
-	if ( !getobjproperty( targ, "material" ) )
-	  item := 0x6309;
+	if (!targ)
+		SendSysMessage(who, "Cancelado");
+		return 0;
 	endif
-	var materials := GetConfigStringDictionary( elem, "materials" );
-	var metal := cdbl( materials.metal );
-	var amt := cint( metal * skill / 100 );
 
-	CreateItemAtLocation( targ.x, targ.y, targ.z, item, amt, targ.realm );
+	if (targ in EnumerateItemsInContainer(who.backpack))
+		SendSysMessageEx(who, "Voce nao pode transmutar objetos em sua bolsa", SSM_FAIL);
+		return 0;
+	endif
 
-	Destroyitem( pocao );
-	var book := createiteminbackpack( who, "emptybottle" );
-	playsoundeffect( who, 0x1EB );
-	var brilho := CreateItemAtLocation( targ.x, targ.y, ( targ.z - 2 ), 0x375A, 1, targ.realm );
-	sleepms( 2000 );
-	Destroyitem( brilho );
-	destroyitem( targ );
+	if (targ.isA(POLCLASS_WEAPON) || targ.isA(POLCLASS_ARMOR))
 
-  else
-	SendSysMessage( who, "Voce pode transmutar apenas armas e armaduras de metal" );
-	return 0;
-  endif
+		var skill := (getobjProperty(pocao, "crafterskill") * 0.6);
+		var item := Getobjproperty(targ, "material");
+		if (!getobjproperty(targ, "material"))
+			item := 0x6309;
+		endif
+		var materials := GetConfigStringDictionary(elem, "materials");
+		var metal := cdbl(materials.metal);
+		var amt := cint(metal * skill / 100);
+
+		CreateItemAtLocation(targ.x, targ.y, targ.z, item, amt, targ.realm);
+
+		Destroyitem(pocao);
+		var book := createiteminbackpack(who, "emptybottle");
+		playsoundeffect(who, 0x1EB);
+		var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 2), 0x375A, 1, targ.realm);
+		sleepms(2000);
+		Destroyitem(brilho);
+		destroyitem(targ);
+
+	else
+		SendSysMessage(who, "Voce pode transmutar apenas armas e armaduras de metal");
+		return 0;
+	endif
 
 endprogram

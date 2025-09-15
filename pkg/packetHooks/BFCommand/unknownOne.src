@@ -1,6 +1,6 @@
 /* $Id: unknownOne.src 878 2005-11-03 08:08:29Z muaddiblsd $
  *
- */
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  name:    0xBF Hook: Unknown 0xF Subcommand
@@ -13,14 +13,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 program unknownOne()
-  return 1;
+	return 1;
 endprogram
 
-exported function HandleUnknownOne( character, byref packet )
-  // These 2 lines are used to fix unused var reports during compile.
-  character := character;
-  packet := packet;
+exported function HandleUnknownOne(character, byref packet)
+	// These 2 lines are used to fix unused var reports during compile.
+	character := character;
+	packet := packet;
 
-  // No need for core to see this packet, block it.
-  return 1;
+	// No need for core to see this packet, block it.
+	return 1;
 endfunction

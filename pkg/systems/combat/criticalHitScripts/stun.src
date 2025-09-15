@@ -11,39 +11,39 @@ include "include/say";
 include ":attributes:vitals";
 include "include/utils";
 
-program HitScript( params )
-  var attacker := params[1];
-  var defender := params[2];
-  var weapon := params[3];
-  var armor := params[4];
-  var basedamage := params[5];
-  var rawdamage := params[6];
-  params := 0; // Not needed anymore.
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
+	params := 0; // Not needed anymore.
 
-  var dmg := rawdamage;
-  if ( dmg < 5 )
-	dmg := 5;
-  endif
+	var dmg := rawdamage;
+	if (dmg < 5)
+		dmg := 5;
+	endif
 
-  var pet_instinto := Cstr( Getobjproperty( attacker, "Critic" ) );
-  // print("instinto eh "+pet_instinto);
-  if ( pet_instinto == "Bote" )
-	printText( attacker, "*Bote*" );
-	TS_StartTimer( defender, "paralysis", 5 );
-  elseif ( pet_instinto == "Teia" )
-	PlayMovingEffect( attacker, defender, 0x10DD, 10, 1 );
-	printText( defender, "*A teia emaranha o alvo*" );
-	TS_StartTimer( defender, "paralysis", 5 );
-  elseif ( pet_instinto == "Coice" )
-	attacker.facing := attacker.facing + 2;
-	printText( attacker, "*Coice*" );
-	PushBack( defender, 3 );
-	AP_ConsumeVital( defender, STAMINA, dmg );
-  else
-	TS_StartTimer( defender, "paralysis", 5 );
-  endif
+	var pet_instinto := Cstr(Getobjproperty(attacker, "Critic"));
+	// print("instinto eh "+pet_instinto);
+	if (pet_instinto == "Bote")
+		printText(attacker, "*Bote*");
+		TS_StartTimer(defender, "paralysis", 5);
+	elseif (pet_instinto == "Teia")
+		PlayMovingEffect(attacker, defender, 0x10DD, 10, 1);
+		printText(defender, "*A teia emaranha o alvo*");
+		TS_StartTimer(defender, "paralysis", 5);
+	elseif (pet_instinto == "Coice")
+		attacker.facing := attacker.facing + 2;
+		printText(attacker, "*Coice*");
+		PushBack(defender, 3);
+		AP_ConsumeVital(defender, STAMINA, dmg);
+	else
+		TS_StartTimer(defender, "paralysis", 5);
+	endif
 
-  return 1;
+	return 1;
 endprogram
 
 // function PushBack(who, dist)

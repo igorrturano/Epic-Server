@@ -6,32 +6,32 @@ include ":combat:damage";
 include ":spells:tnmagery";
 include "include/encantarObjeto";
 
-program SpellScript( params )
-  var who := params[1];
-  var use_on := params[2];
-  params := 0; // No longer needed
+program SpellScript(params)
+	var who := params[1];
+	var use_on := params[2];
+	params := 0; // No longer needed
 
-  SendSysMessageEx( who, "Qual item deseja encantar?", SSM_REQUEST );
+	SendSysMessageEx(who, "Qual item deseja encantar?", SSM_REQUEST);
 
-  if ( !use_on )
-	return;
-  endif
+	if (!use_on)
+		return;
+	endif
 
-  if ( !use_on.isA( POLCLASS_WEAPON ) && !use_on.isA( POLCLASS_ARMOR ) )
-	SendSysMessageEx( who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL );
-	return;
-  endif
+	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
+		SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
 
-  // Bonus
-  var bonus := Cint( AP_GetSkill( who, ARCANA ) );
+	// Bonus
+	var bonus := Cint(AP_GetSkill(who, ARCANA));
 
-  if ( temHabilidade( who, "Domínio Vital" ) )
-	bonus := CInt( bonus * 0.07 ); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7
-  else
-	bonus := CInt( bonus * 0.05 ); // Max = 5
-  endif
+	if (temHabilidade(who, "Domínio Vital"))
+		bonus := CInt(bonus * 0.07); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7
+	else
+		bonus := CInt(bonus * 0.05); // Max = 5
+	endif
 
-  setBonus( who, use_on, bonus );
+	setBonus(who, use_on, bonus);
 
-  return 1;
+	return 1;
 endprogram

@@ -5,17 +5,17 @@ include "include/say";
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy( params )
-  var mobile := params[1];
-  var attacker := params[2];
-  params := 0; // Not needed anymore.
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
 
-  if ( GetObjProperty( mobile, "#finta" ) )
-	return 0;
-  endif
+	if (GetObjProperty(mobile, "#finta"))
+		return 0;
+	endif
 
-  SetObjProperty( mobile, "#finta", 20 );
-  mobile.hitchance_mod := mobile.hitchance_mod - 20;
+	SetObjProperty(mobile, "#finta", 20);
+	mobile.hitchance_mod := mobile.hitchance_mod - 20;
 
-  return 1;
+	return 1;
 endprogram

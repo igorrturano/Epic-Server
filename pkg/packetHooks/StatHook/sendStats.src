@@ -1,6 +1,6 @@
 /* $Id: sendStats.src 1054 2007-04-28 13:30:16Z tekproxy $
  *
- */
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  name:    Send Stats Packet Hook
@@ -33,8 +33,8 @@ include ":combat:damage";
 include ":charactercreation:resists";
 
 program sendStats()
-  Print( "INSTALLING: Outgoing Status PH..." );
-  return 1;
+	Print("INSTALLING: Outgoing Status PH...");
+	return 1;
 endprogram
 
 const BIT_MASK := 0x00000003;
@@ -46,195 +46,195 @@ var STATLOCK := 0;
 const PLAYER_ID := 3;
 const NAME_ID := 7;
 
-exported function HandleSendStats( character, byref packet )
-  var serial := packet.GetInt32( PLAYER_ID );
-  var source := SystemFindObjectBySerial( serial );
-  var Object_Name;
-  var url;
+exported function HandleSendStats(character, byref packet)
+	var serial := packet.GetInt32(PLAYER_ID);
+	var source := SystemFindObjectBySerial(serial);
+	var Object_Name;
+	var url;
 
-  url := GetObjProperty( source, "url" );
-  if ( !url || url.errortext )
-	url := ""; // Set to empty string if property doesn't exist or has an error
-  endif
-
-  if ( source.IsA( POLCLASS_MOBILE ) )
-	// PREENCHE NOME DO MOBILE
-	Object_Name := source.name;
-
-	// Cor do nome dos NPC conforme skill de combate
-	if ( !source.npctemplate )
-	  // Caso em que tá desconhecido
-	  if ( GetObjProperty( source, "realname" ) )
-		Object_Name := "Incognito";
-	  else
-		// Verifica se o char já foi reconhecido por who
-		var conhecidos := dictionary;
-		if ( GetObjProperty( character, "conhecidos" ) )
-		  var ID := Cstr( source.serial ); // Salva o serial do personagem
-		  if ( GetObjProperty( source, "disfarce" ) )
-			ID := Cstr( GetObjProperty( source, "FakeID" ) ); // Substitui o serial pelo falso quando o personagem observado está disfarçado
-		  endif
-
-		  conhecidos := GetObjProperty( character, "conhecidos" ); // Lista de pessoas conhecidadas
-		  if ( conhecidos.Exists( ID ) )
-			Object_Name := conhecidos[ID];
-		  else
-			Object_Name := source.name;
-		  endif
-		else
-		  Object_Name := source.name;
-		endif
-	  endif
-	  if ( character.cmdlevel > 1 ) // Staff consegue ver mais
-		var nome_inicial := GetObjProperty( source, "nome_inicial" );
-		if ( nome_inicial && !nome_inicial.errortext )
-		  Object_Name := Object_Name + " [" + nome_inicial + "]";
-		endif
-	  endif
-	  packet.SetString( NAME_ID, Object_Name, 1 );
+	url := GetObjProperty(source, "url");
+	if (!url || url.errortext)
+		url := ""; // Set to empty string if property doesn't exist or has an error
 	endif
 
-	// Envia a url do portrait junto com o status
-	packet.SetString( 121, url, 1 );
+	if (source.IsA(POLCLASS_MOBILE))
+		// PREENCHE NOME DO MOBILE
+		Object_Name := source.name;
 
-  // Process extended stats
-  // HandleExtended(source, packet);
-  endif
+		// Cor do nome dos NPC conforme skill de combate
+		if (!source.npctemplate)
+			// Caso em que tá desconhecido
+			if (GetObjProperty(source, "realname"))
+				Object_Name := "Incognito";
+			else
+				// Verifica se o char já foi reconhecido por who
+				var conhecidos := dictionary;
+				if (GetObjProperty(character, "conhecidos"))
+					var ID := Cstr(source.serial); // Salva o serial do personagem
+					if (GetObjProperty(source, "disfarce"))
+						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
+					endif
 
-  return 0;
+					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
+					if (conhecidos.Exists(ID))
+						Object_Name := conhecidos[ID];
+					else
+						Object_Name := source.name;
+					endif
+				else
+					Object_Name := source.name;
+				endif
+			endif
+			if (character.cmdlevel > 1) // Staff consegue ver mais
+				var nome_inicial := GetObjProperty(source, "nome_inicial");
+				if (nome_inicial && !nome_inicial.errortext)
+					Object_Name := Object_Name + " [" + nome_inicial + "]";
+				endif
+			endif
+			packet.SetString(NAME_ID, Object_Name, 1);
+		endif
+
+		// Envia a url do portrait junto com o status
+		packet.SetString(121, url, 1);
+
+	// Process extended stats
+	// HandleExtended(source, packet);
+	endif
+
+	return 0;
 endfunction
 
-function HandleExtended( character, byref packet )
-  // Increase packet size for the extended info
-  packet.SetSize( packet.GetSize() + 66 ); // Increase size to accommodate all stats
+function HandleExtended(character, byref packet)
+	// Increase packet size for the extended info
+	packet.SetSize(packet.GetSize() + 66); // Increase size to accommodate all stats
 
-  // Set packet mode to 6 (UOKR Extended Info) for most complete data
-  packet.SetInt8( 42, 6 );
+	// Set packet mode to 6 (UOKR Extended Info) for most complete data
+	packet.SetInt8(42, 6);
 
-  // Get pet data
-  var petcnt := GetNumPets( character );
-  if ( !petcnt )
-	petcnt := 0;
-  endif
-
-  var petmax := GetMaxPets( character );
-  if ( !petmax )
-	petmax := 1;
-  endif
-
-  // Set statcap
-  if ( STATCAP <= 255 )
-	packet.SetInt8( 67, STATCAP );
-  else
-	packet.SetInt16( 66, STATCAP );
-  endif
-
-  // Sets their current pet count in packet
-  packet.SetInt8( 68, petcnt );
-  // Sets their current pet max count based on taming in packet
-  packet.SetInt8( 69, petmax );
-
-  // Set resistances
-  // Get defense from getMobileDefenses function
-  var defense := character.getMobileDefenses();
-  // Physical resistance
-  packet.SetInt16( 70, CInt( defense ) );
-  // Fire resistance
-  packet.SetInt16( 72, CInt( character.resist_fire ) );
-  // Cold resistance
-  packet.SetInt16( 74, CInt( character.resist_cold ) );
-  // Poison resistance
-  packet.SetInt16( 76, CInt( character.resist_poison ) );
-  // Energy resistance
-  packet.SetInt16( 78, CInt( character.resist_energy ) );
-
-  // Get custom properties for Fortitude, Reflexos, and Vontade using GetResist
-  var fortitude := GetResist( character, FORTITUDE );
-  if ( !fortitude )
-	fortitude := 0;
-  endif
-
-  var reflexos := GetResist( character, REFLEXOS );
-  if ( !reflexos )
-	reflexos := 0;
-  endif
-
-  var vontade := GetResist( character, VONTADE );
-  if ( !vontade )
-	vontade := 0;
-  endif
-
-  // Get DPs (Death Points)
-  var dps_current := AP_GetVital( character, "DP" );
-  var dps_max := AP_GetVitalMaximumValue( character, "DP" );
-
-  // Get Hunger (Fome) - Max is 5
-  var hunger := GetObjProperty( character, "hunger" );
-  if ( !hunger )
-	hunger := 0;
-  endif
-
-  // Get Vicio
-  var vicio := GetObjProperty( character, "vicio" );
-  if ( !vicio )
-	vicio := 0;
-  endif
-
-  // Get custom damage types
-  var resist_slash := GetObjProperty( character, "resist_slash" );
-  if ( !resist_slash )
-	resist_slash := 0;
-  endif
-
-  var resist_pierce := GetObjProperty( character, "resist_pierce" );
-  if ( !resist_pierce )
-	resist_pierce := 0;
-  endif
-
-  var resist_blunt := GetObjProperty( character, "resist_blunt" );
-  if ( !resist_blunt )
-	resist_blunt := 0;
-  endif
-
-  // Set damage min/max
-  var min_dmg := 0, max_dmg := 0;
-  if ( character.weapon )
-	var atrib := GetObjProperty( character.weapon, "atributos" );
-	if ( atrib )
-	  // Sum up all damage types for the weapon
-	  min_dmg := CInt( atrib.SlashMainDamage + atrib.PiercingMainDamage + atrib.BluntMainDamage );
-	  max_dmg := min_dmg + 5; // Approximate max damage
+	// Get pet data
+	var petcnt := GetNumPets(character);
+	if (!petcnt)
+		petcnt := 0;
 	endif
-  endif
 
-  packet.SetInt16( 80, min_dmg );
-  packet.SetInt16( 82, max_dmg );
+	var petmax := GetMaxPets(character);
+	if (!petmax)
+		petmax := 1;
+	endif
 
-  // Tithing points (repurposed for DPs)
-  packet.SetInt32( 84, dps_current );
+	// Set statcap
+	if (STATCAP <= 255)
+		packet.SetInt8(67, STATCAP);
+	else
+		packet.SetInt16(66, STATCAP);
+	endif
 
-  // Use Flag 6 extended properties for custom stats
-  // We'll map our custom stats to these properties
-  // Fortitude -> Hit Chance Increase
-  packet.SetInt16( 88, fortitude );
-  // Reflexos -> Swing Speed Increase
-  packet.SetInt16( 90, reflexos );
-  // Vontade -> Damage Chance Increase
-  packet.SetInt16( 92, vontade );
-  // Hunger -> Lower Reagent Cost (max 5)
-  packet.SetInt16( 94, hunger );
-  // Vicio -> Hit Points Regeneration
-  packet.SetInt16( 96, vicio );
-  // DP Max -> Stamina Regeneration
-  packet.SetInt16( 98, dps_max );
+	// Sets their current pet count in packet
+	packet.SetInt8(68, petcnt);
+	// Sets their current pet max count based on taming in packet
+	packet.SetInt8(69, petmax);
 
-  // Map custom damage resistances to other properties
-  // Slash -> Mana Regeneration
-  packet.SetInt16( 100, resist_slash );
-  // Pierce -> Reflect Physical Damage
-  packet.SetInt16( 102, resist_pierce );
-  // Blunt -> Enhance Potions
-  packet.SetInt16( 104, resist_blunt );
+	// Set resistances
+	// Get defense from getMobileDefenses function
+	var defense := character.getMobileDefenses();
+	// Physical resistance
+	packet.SetInt16(70, CInt(defense));
+	// Fire resistance
+	packet.SetInt16(72, CInt(character.resist_fire));
+	// Cold resistance
+	packet.SetInt16(74, CInt(character.resist_cold));
+	// Poison resistance
+	packet.SetInt16(76, CInt(character.resist_poison));
+	// Energy resistance
+	packet.SetInt16(78, CInt(character.resist_energy));
 
-  return 1;
+	// Get custom properties for Fortitude, Reflexos, and Vontade using GetResist
+	var fortitude := GetResist(character, FORTITUDE);
+	if (!fortitude)
+		fortitude := 0;
+	endif
+
+	var reflexos := GetResist(character, REFLEXOS);
+	if (!reflexos)
+		reflexos := 0;
+	endif
+
+	var vontade := GetResist(character, VONTADE);
+	if (!vontade)
+		vontade := 0;
+	endif
+
+	// Get DPs (Death Points)
+	var dps_current := AP_GetVital(character, "DP");
+	var dps_max := AP_GetVitalMaximumValue(character, "DP");
+
+	// Get Hunger (Fome) - Max is 5
+	var hunger := GetObjProperty(character, "hunger");
+	if (!hunger)
+		hunger := 0;
+	endif
+
+	// Get Vicio
+	var vicio := GetObjProperty(character, "vicio");
+	if (!vicio)
+		vicio := 0;
+	endif
+
+	// Get custom damage types
+	var resist_slash := GetObjProperty(character, "resist_slash");
+	if (!resist_slash)
+		resist_slash := 0;
+	endif
+
+	var resist_pierce := GetObjProperty(character, "resist_pierce");
+	if (!resist_pierce)
+		resist_pierce := 0;
+	endif
+
+	var resist_blunt := GetObjProperty(character, "resist_blunt");
+	if (!resist_blunt)
+		resist_blunt := 0;
+	endif
+
+	// Set damage min/max
+	var min_dmg := 0, max_dmg := 0;
+	if (character.weapon)
+		var atrib := GetObjProperty(character.weapon, "atributos");
+		if (atrib)
+			// Sum up all damage types for the weapon
+			min_dmg := CInt(atrib.SlashMainDamage + atrib.PiercingMainDamage + atrib.BluntMainDamage);
+			max_dmg := min_dmg + 5; // Approximate max damage
+		endif
+	endif
+
+	packet.SetInt16(80, min_dmg);
+	packet.SetInt16(82, max_dmg);
+
+	// Tithing points (repurposed for DPs)
+	packet.SetInt32(84, dps_current);
+
+	// Use Flag 6 extended properties for custom stats
+	// We'll map our custom stats to these properties
+	// Fortitude -> Hit Chance Increase
+	packet.SetInt16(88, fortitude);
+	// Reflexos -> Swing Speed Increase
+	packet.SetInt16(90, reflexos);
+	// Vontade -> Damage Chance Increase
+	packet.SetInt16(92, vontade);
+	// Hunger -> Lower Reagent Cost (max 5)
+	packet.SetInt16(94, hunger);
+	// Vicio -> Hit Points Regeneration
+	packet.SetInt16(96, vicio);
+	// DP Max -> Stamina Regeneration
+	packet.SetInt16(98, dps_max);
+
+	// Map custom damage resistances to other properties
+	// Slash -> Mana Regeneration
+	packet.SetInt16(100, resist_slash);
+	// Pierce -> Reflect Physical Damage
+	packet.SetInt16(102, resist_pierce);
+	// Blunt -> Enhance Potions
+	packet.SetInt16(104, resist_blunt);
+
+	return 1;
 endfunction

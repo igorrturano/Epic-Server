@@ -1,5 +1,5 @@
 include "expbar";
 
-program start_xpbar( who )
-  UpdateXPBar( who );
+program start_xpbar(who)
+	UpdateXPBar(who);
 endprogram

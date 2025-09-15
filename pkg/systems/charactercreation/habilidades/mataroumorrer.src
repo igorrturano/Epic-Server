@@ -6,14 +6,14 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack( who )
+program doubleattack(who)
 
-  if ( isBloodied( who ) )
-	SendSysMessageEx( who, "Mate ou morra!", SSM_INFO );
-	SetObjProperty( who, "#mataroumorrer", 3 );
-  else
-	SendSysMessageEx( who, "Voce so pode usar essa habilidade quando estiver gravemente ferido.",
-				   SSM_FAIL );
-  endif
+	if (isBloodied(who))
+		SendSysMessageEx(who, "Mate ou morra!", SSM_INFO);
+		SetObjProperty(who, "#mataroumorrer", 3);
+	else
+		SendSysMessageEx(who, "Voce so pode usar essa habilidade quando estiver gravemente ferido.",
+				   SSM_FAIL);
+	endif
 
 endprogram

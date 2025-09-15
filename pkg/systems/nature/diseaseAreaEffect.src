@@ -9,78 +9,78 @@ include ":tn:cooldown";
 include ":fls_core:packets";
 include ":nature:nature";
 
-program DiseaseAreEffect( params )
-  var who := params[1];
-  var regioname := params[2];
-  var sounds := { 560, 561, 562 };
+program DiseaseAreEffect(params)
+	var who := params[1];
+	var regioname := params[2];
+	var sounds := { 560, 561, 562 };
 
-  SendSysMessage( who, "INICIOU" );
-  checkMarker( who, regioname );
-  SetObjProperty( who, "diseaseArea", 1 );
-  detach();
+	SendSysMessage(who, "INICIOU");
+	checkMarker(who, regioname);
+	SetObjProperty(who, "diseaseArea", 1);
+	detach();
 
-  if ( GetObjProperty( who, "teste_de_doenca" ) == error )
-	while ( 1 )
-	  checkMarker( who, regioname );
-	  SetObjProperty( who, "teste_de_doenca", 1 );
-	  sleep( 300 ); // 5 minutos entre testes
+	if (GetObjProperty(who, "teste_de_doenca") == error)
+		while (1)
+			checkMarker(who, regioname);
+			SetObjProperty(who, "teste_de_doenca", 1);
+			sleep(300); // 5 minutos entre testes
 
-	  if ( GetObjProperty( who, "diseaseArea" ) == error )
-		EraseObjProperty( who, "teste_de_doenca" );
-		return;
-	  endif
+			if (GetObjProperty(who, "diseaseArea") == error)
+				EraseObjProperty(who, "teste_de_doenca");
+				return;
+			endif
 
-	  // Teste de resistência de fortitude
-	  var dif := RESIST_ALMOST_IMPOSSIBLE;
-	  var resistcheck := CheckResist( who, FORTITUDE, dif );
+			// Teste de resistência de fortitude
+			var dif := RESIST_ALMOST_IMPOSSIBLE;
+			var resistcheck := CheckResist(who, FORTITUDE, dif);
 
-	  if ( resistcheck )
-		SendSysMessageEx( who, "Voce resiste aos efeitos da doenca.", SSM_INFO );
-	  else
-		SendSysMessageEx( who, "Voce nao resiste aos efeitos da doenca.", SSM_FAIL );
-		TS_StartTimer( who, "disease", 65000, RandomInt( 4 ) + 1 );
-	  endif
+			if (resistcheck)
+				SendSysMessageEx(who, "Voce resiste aos efeitos da doenca.", SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce nao resiste aos efeitos da doenca.", SSM_FAIL);
+				TS_StartTimer(who, "disease", 65000, RandomInt(4) + 1);
+			endif
 
-	endwhile
-  endif
+		endwhile
+	endif
 endprogram
 
-function checkMarker( who, regioname )
-  // Detecta em qual região o player está
-  var cfg := ReadConfigFile( "::regions/regions" );
-  var region := FindConfigElem( cfg, regioname );
-  var rect := GetConfigString( region, "Range" );
-  SendSysMessage( who, "regiao " + regioname + " rect " + rect );
-  // Se o player está em uma região Disease, enumera os itens apenas nesta região
-  var coords := SplitWords( rect );
-  var x1 := CInt( coords[1] );
-  var y1 := CInt( coords[2] );
-  var x2 := CInt( coords[3] );
-  var y2 := CInt( coords[4] );
+function checkMarker(who, regioname)
+	// Detecta em qual região o player está
+	var cfg := ReadConfigFile("::regions/regions");
+	var region := FindConfigElem(cfg, regioname);
+	var rect := GetConfigString(region, "Range");
+	SendSysMessage(who, "regiao " + regioname + " rect " + rect);
+	// Se o player está em uma região Disease, enumera os itens apenas nesta região
+	var coords := SplitWords(rect);
+	var x1 := CInt(coords[1]);
+	var y1 := CInt(coords[2]);
+	var x2 := CInt(coords[3]);
+	var y2 := CInt(coords[4]);
 
-  // Calcula o centro e o range máximo da região
-  var center_x := ( x1 + x2 ) / 2;
-  var center_y := ( y1 + y2 ) / 2;
-  var range_x := abs( x2 - x1 ) / 2;
-  var range_y := abs( y2 - y1 ) / 2;
-  var max_range := range_x;
-  if ( range_y > range_x )
-	max_range := range_y;
-  endif
-  SendSysMessage( who, "max_range " + max_range );
-  // Procura por itens do tipo 0x3c (switches) na região
-  var items_in_area := ListItemsNearLocationOfType( center_x, center_y, LIST_IGNORE_Z, max_range,
-													0xd1b8, who.realm );
-
-  foreach item in items_in_area
-	sleepms( 2 );
-	var switch_prop := GetObjProperty( item, "graphic" );
-	if ( switch_prop == 0x9F4F )
-	  // Se switch == 1, retorna 0 e sai do script
-	  SendSysMessage( who, "Ele tá ligado, sai!" );
-	  return 0;
+	// Calcula o centro e o range máximo da região
+	var center_x := (x1 + x2) / 2;
+	var center_y := (y1 + y2) / 2;
+	var range_x := abs(x2 - x1) / 2;
+	var range_y := abs(y2 - y1) / 2;
+	var max_range := range_x;
+	if (range_y > range_x)
+		max_range := range_y;
 	endif
-  endforeach
+	SendSysMessage(who, "max_range " + max_range);
+	// Procura por itens do tipo 0x3c (switches) na região
+	var items_in_area := ListItemsNearLocationOfType(center_x, center_y, LIST_IGNORE_Z, max_range,
+												  0xd1b8, who.realm);
 
-  return 1;
+	foreach item in items_in_area
+		sleepms(2);
+		var switch_prop := GetObjProperty(item, "graphic");
+		if (switch_prop == 0x9F4F)
+			// Se switch == 1, retorna 0 e sai do script
+			SendSysMessage(who, "Ele tá ligado, sai!");
+			return 0;
+		endif
+	endforeach
+
+	return 1;
 endfunction

@@ -7,9 +7,9 @@ include "include/sysEvent";
 include "include/client";
 include ":combat:damage";
 
-program manobra( attacker )
-  // SendSysMessageEx(attacker, "Use seu vigor como sua vida.", SSM_INFO);
+program manobra(attacker)
+	// SendSysMessageEx(attacker, "Use seu vigor como sua vida.", SSM_INFO);
 
-  // SetCooldown(attacker, "vigordabatalha", cint(AP_GetSkill(attacker, TACTICS)));
-  HealFLS( attacker, Cint( AP_GetVitalMaximumValue( attacker, STAMINA ) ) );
+	// SetCooldown(attacker, "vigordabatalha", cint(AP_GetSkill(attacker, TACTICS)));
+	HealFLS(attacker, Cint(AP_GetVitalMaximumValue(attacker, STAMINA)));
 endprogram

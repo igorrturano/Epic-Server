@@ -10,99 +10,99 @@ include "include/epicConstants";
 include "include/facings";
 include ":traps:traps";
 
-program destroyitems( parms )
+program destroyitems(parms)
 
-  var quem := parms[1];
-  var itemAlvo := parms[2];
-  var fonteDano := parms[3];
-  var consumoStamina := 0;
+	var quem := parms[1];
+	var itemAlvo := parms[2];
+	var fonteDano := parms[3];
+	var consumoStamina := 0;
 
-  while ( true )
-	Attach( quem );
-	if ( !isPossivelDestruir( quem, itemAlvo, fonteDano, consumoStamina ) )
-	  break;
-	endif
-	TentaDestruir( quem, itemAlvo, fonteDano, consumoStamina );
+	while (true)
+		Attach(quem);
+		if (!isPossivelDestruir(quem, itemAlvo, fonteDano, consumoStamina))
+			break;
+		endif
+		TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina);
 
-	Sleep( 2 );
-  endwhile
+		Sleep(2);
+	endwhile
 
 endprogram
 
-function isPossivelDestruir( quem, itemAlvo, fonteDano, byref consumoStamina )
-  if ( !itemAlvo || itemAlvo.invisible || !quem.warmode )
-	return false;
-  endif
-
-  if ( itemAlvo.IsA( POLCLASS_CORPSE ) && GetObjProperty( itemAlvo, "account" ) )
-	SendSysMessageEx( quem, "Você não pode destruir um corpo de jogador.", SSM_FAIL );
-	return false;
-  endif
-
-  if ( !itemAlvo.ISA( POLCLASS_ITEM ) || GetObjProperty( itemAlvo, PROPNAME_INDESTRUTIVEL ) )
-	SendSysMessageEx( quem, "Você não pode destruir isso.", SSM_FAIL );
-	return false;
-  endif
-  if ( itemAlvo.container )
-	SendSysMessageEx( quem, "Não é possivel destruir um item dentro de um container.", SSM_FAIL );
-	return false;
-  endif
-
-  if ( fonteDano.ISA( POLCLASS_WEAPON ) )
-	if ( quem.weapon != fonteDano )
-	  SendSysMessageEx( quem, "Você deve estar com a arma em mãos.", SSM_FAIL );
-	  return false;
+function isPossivelDestruir(quem, itemAlvo, fonteDano, byref consumoStamina)
+	if (!itemAlvo || itemAlvo.invisible || !quem.warmode)
+		return false;
 	endif
 
-	CalculaConsumoStamina( fonteDano, consumoStamina );
-	if ( AP_GetVital( quem, "Stamina" ) < consumoStamina )
-	  SendSysMessageEx( quem, "Você está muito cansado para continuar.", SSM_FAIL );
-	  return false;
+	if (itemAlvo.IsA(POLCLASS_CORPSE) && GetObjProperty(itemAlvo, "account"))
+		SendSysMessageEx(quem, "Você não pode destruir um corpo de jogador.", SSM_FAIL);
+		return false;
 	endif
-  else
-  // Fonte de dano mágica?
-  endif
 
-  if ( Distance( quem, itemAlvo ) > 1 )
-	SendSysMessageEx( quem, "Você está muito distante do alvo.", SSM_FAIL );
-	return false;
-  endif
-  return true;
+	if (!itemAlvo.ISA(POLCLASS_ITEM) || GetObjProperty(itemAlvo, PROPNAME_INDESTRUTIVEL))
+		SendSysMessageEx(quem, "Você não pode destruir isso.", SSM_FAIL);
+		return false;
+	endif
+	if (itemAlvo.container)
+		SendSysMessageEx(quem, "Não é possivel destruir um item dentro de um container.", SSM_FAIL);
+		return false;
+	endif
+
+	if (fonteDano.ISA(POLCLASS_WEAPON))
+		if (quem.weapon != fonteDano)
+			SendSysMessageEx(quem, "Você deve estar com a arma em mãos.", SSM_FAIL);
+			return false;
+		endif
+
+		CalculaConsumoStamina(fonteDano, consumoStamina);
+		if (AP_GetVital(quem, "Stamina") < consumoStamina)
+			SendSysMessageEx(quem, "Você está muito cansado para continuar.", SSM_FAIL);
+			return false;
+		endif
+	else
+	// Fonte de dano mágica?
+	endif
+
+	if (Distance(quem, itemAlvo) > 1)
+		SendSysMessageEx(quem, "Você está muito distante do alvo.", SSM_FAIL);
+		return false;
+	endif
+	return true;
 
 endfunction
 
-function TentaDestruir( quem, itemAlvo, fonteDano, consumoStamina )
-  if ( fonteDano.ISA( POLCLASS_WEAPON ) )
+function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
+	if (fonteDano.ISA(POLCLASS_WEAPON))
 
-	if ( quem.concealed || quem.invisible )
-	  SendSysMessageEx( quem, "Você foi revelado.", SSM_FAIL );
-	  quem.concealed := 0;
-	  quem.invisible := 0;
+		if (quem.concealed || quem.invisible)
+			SendSysMessageEx(quem, "Você foi revelado.", SSM_FAIL);
+			quem.concealed := 0;
+			quem.invisible := 0;
+		endif
+
+		if (!IsFacing(quem, itemAlvo.x, itemAlvo.y))
+			TurnObjectToward(quem, itemAlvo.x, itemAlvo.y);
+		endif
+
+		RodaEfeitosAnim(quem, fonteDano, itemAlvo);
+		ConsumeVital(quem, STAMINA, consumoStamina * 100);
+		WearDownWeapon(quem, fonteDano, 3);
+
+		var danoCalculado := DanificaItem(quem, itemAlvo, fonteDano);
+		if (!danoCalculado.isEficaz)
+			PrintTextAbove(itemAlvo, "*golpe ineficaz*");
+		endif
 	endif
-
-	if ( !IsFacing( quem, itemAlvo.x, itemAlvo.y ) )
-	  TurnObjectToward( quem, itemAlvo.x, itemAlvo.y );
-	endif
-
-	RodaEfeitosAnim( quem, fonteDano, itemAlvo );
-	ConsumeVital( quem, STAMINA, consumoStamina * 100 );
-	WearDownWeapon( quem, fonteDano, 3 );
-
-	var danoCalculado := DanificaItem( quem, itemAlvo, fonteDano );
-	if ( !danoCalculado.isEficaz )
-	  PrintTextAbove( itemAlvo, "*golpe ineficaz*" );
-	endif
-  endif
 endfunction
 
-function RodaEfeitosAnim( quem, arma, alvo )
-  PlayAttackAnimation( quem );
-  sleepms( 600 );
-  var somAtaque := getWeaponFX( WEAPON_FX_SOUND, arma );
-  PlaySoundEffect( quem, somAtaque );
-  PlayObjectCenteredEffect( alvo, FX_SMOKE, 2, 4 );
+function RodaEfeitosAnim(quem, arma, alvo)
+	PlayAttackAnimation(quem);
+	sleepms(600);
+	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
+	PlaySoundEffect(quem, somAtaque);
+	PlayObjectCenteredEffect(alvo, FX_SMOKE, 2, 4);
 endfunction
 
-function CalculaConsumoStamina( fonteDano, byref consumoStamina )
-  consumoStamina := CInt( fonteDano.weight * 1.5 );
+function CalculaConsumoStamina(fonteDano, byref consumoStamina)
+	consumoStamina := CInt(fonteDano.weight * 1.5);
 endfunction

@@ -6,7 +6,6 @@
 5- quando o npc vende o dinheiro vai pro seu id (uma prop) e 10% vai pro npc  OK
 6- player comuns (sem tag)so podem comprar e nao vende OK
 */
-
 use uo;
 use os;
 
@@ -53,62 +52,60 @@ const MAX_ITEM_PAG := 19;
 
 // var item_cfg := ReadConfigFile(":*:itemdesc");
 
-program MerchantMenu( params )
-  var npc := params[1];
-  var player := params[2];
-  // 	var cur_menu := MENU_INTRO;
-  // 	var gump := MENU_INTRO;
-  // 	var input := MENU_INTRO;
-  var escondido := player.hidden;
-  var listaprodutos := dictionary;
-  var dicindex := " ";
-  var pagina := 1;
+program MerchantMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	// 	var cur_menu := MENU_INTRO;
+	// 	var gump := MENU_INTRO;
+	// 	var input := MENU_INTRO;
+	var escondido := player.hidden;
+	var listaprodutos := dictionary;
+	var dicindex := " ";
+	var pagina := 1;
 
-  if ( escondido )
-	player.hidden := 0;
-	SendSysMessageEx( player, "Voce se revelou ao mercador.", SSM_FAIL );
-  endif
-
-  PrintText( npc, "Meu custo para barba e cabelo sao 100 moedas de cobre." );
-  var moedas := target( player );
-  if ( moedas.objtype == 47715 )
-	if ( moedas.amount >= 100 )
-	  if ( !SubtractAmount( moedas, 100 ) )
-		PrintText( npc, "Voce nao tem moedas necessarias." );
-	  endif
-	else
-	  PrintTextAbove( npc, "Voce nao tem moedas necessarias." );
-	  return;
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou ao mercador.", SSM_FAIL);
 	endif
-  else
-	return;
-  endif
 
-  Destroyitem( GetEquipmentByLayer( player, LAYER_HAIR ) );
-  DestroyItem( GetEquipmentByLayer( player, LAYER_BEARD ) );
-  var chardata := GetObjProperty( player, "chardata" );
-  var disfarce := struct;
-  disfarce.+barba := "";
-  disfarce.+cabelo := "";
-  disfarce.+corcabelo := 1109;
-  disfarce.+corbarba := 1109;
+	PrintText(npc, "Meu custo para barba e cabelo sao 100 moedas de cobre.");
+	var moedas := target(player);
+	if (moedas.objtype == 47715)
+		if (moedas.amount >= 100)
+			if (!SubtractAmount(moedas, 100))
+				PrintText(npc, "Voce nao tem moedas necessarias.");
+			endif
+		else
+			PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+			return;
+		endif
+	else
+		return;
+	endif
 
-  escolherCabelo( player, disfarce, "Qualquer" );
-  escolheCorCabelo( player, disfarce, 0, "Qualquer", 1 );
-  if ( chardata.raca != "Elfo" )
-	escolherBarba( player, disfarce );
-  endif
-  var newbarba := CreateItemAtLocation( player.x, player.y, player.z, disfarce.barba, 1,
-										player.realm );
-  newbarba.color := disfarce.corcabelo;
+	Destroyitem(GetEquipmentByLayer(player, LAYER_HAIR));
+	DestroyItem(GetEquipmentByLayer(player, LAYER_BEARD));
+	var chardata := GetObjProperty(player, "chardata");
+	var disfarce := struct;
+	disfarce.+barba := "";
+	disfarce.+cabelo := "";
+	disfarce.+corcabelo := 1109;
+	disfarce.+corbarba := 1109;
 
-  var newhair := CreateItemAtLocation( player.x, player.y, player.z, disfarce.cabelo, 1,
-									   player.realm );
-  newhair.color := disfarce.corcabelo;
+	escolherCabelo(player, disfarce, "Qualquer");
+	escolheCorCabelo(player, disfarce, 0, "Qualquer", 1);
+	if (chardata.raca != "Elfo")
+		escolherBarba(player, disfarce);
+	endif
+	var newbarba := CreateItemAtLocation(player.x, player.y, player.z, disfarce.barba, 1, player.realm);
+	newbarba.color := disfarce.corcabelo;
 
-  EquipItem( player, newbarba );
-  EquipItem( player, newhair );
+	var newhair := CreateItemAtLocation(player.x, player.y, player.z, disfarce.cabelo, 1, player.realm);
+	newhair.color := disfarce.corcabelo;
 
-  SendSysMessageEx( player, "Voce trocou seu cabelo e cor.", SSM_INFO );
-  return 1;
+	EquipItem(player, newbarba);
+	EquipItem(player, newhair);
+
+	SendSysMessageEx(player, "Voce trocou seu cabelo e cor.", SSM_INFO);
+	return 1;
 endprogram

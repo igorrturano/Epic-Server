@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -14,13 +13,13 @@ include "include/sounds";
 include ":combat:damage";
 include ":timedScripts:timedScripts";
 
-program SpellScript( who )
+program SpellScript(who)
 
-  if ( TS_GetCooldown( who, "habilidade dois" ) )
-	return SendSysMessageEX( who, "Habilidade em Cooldown!", SSM_FAIL );
-  endif
+	if (TS_GetCooldown(who, "habilidade dois"))
+		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
+	endif
 
-  Start_Script( ":survival:survival", who );
+	Start_Script(":survival:survival", who);
 
 // var who := params[1];
 // params := 0; // No longer needed
