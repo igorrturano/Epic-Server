@@ -4,7 +4,7 @@
  * This script allows an alternate behavior other than the default 'open paperdoll' behavior.
  * Useful for things like dismounting.
  *
- */
+*/
 use uo;
 use os;
 
