@@ -3,7 +3,7 @@
  * Purpose
  * This script allows code to run when the player logs in after having recently logged off.
  *
-*/
+ */
 use uo;
 use os;
 

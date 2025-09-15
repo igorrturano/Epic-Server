@@ -1,6 +1,6 @@
 /* $Id: online.src 1390 2006-05-13 10:16:45Z austin $
  *
-*/
+ */
 use uo;
 use os;
 
