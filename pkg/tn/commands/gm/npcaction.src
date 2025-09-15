@@ -3,18 +3,18 @@ include ":tn:actions_sounds_tools";
 
 program setaction( who, text )
 
-	SendSysMessage(who, "Escolha o npc que deseja ativar a acao.");
+  SendSysMessage( who, "Escolha o npc que deseja ativar a acao." );
 
-	var npc :=  Target(who);
+  var npc := Target( who );
 
-	if (!npc)
-		SendSysMessage(who, "Cancelado.");
-		return;
-	endif
+  if ( !npc )
+	SendSysMessage( who, "Cancelado." );
+	return;
+  endif
 
-	var resultado := GetAction(npc, text);
+  var resultado := GetAction( npc, text );
 
-	performaction(npc, resultado[1], resultado[2], resultado[3], resultado[4] , resultado[5], resultado[6]);
-
+  performaction( npc, resultado[1], resultado[2], resultado[3], resultado[4], resultado[5],
+				 resultado[6] );
 
 endprogram

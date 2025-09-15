@@ -37,13 +37,13 @@ include ":spells:summon";
 
 program transformwildshape( who, formname )
   if ( formname == "" )
-    ListWildShapes( who );
-    return;
+	ListWildShapes( who );
+	return;
   endif
 
   var selected_form := ValidateTransformation( who, formname );
   if ( !selected_form )
-    return;
+	return;
   endif
 
   HandleWildShapeUnequip( who );
@@ -84,14 +84,14 @@ function PerformTransformation( who, form )
 
   // Adjust player's name using SetName function
   if ( GetObjProperty( who, "charname" ) == error )
-    SetObjProperty( who, "charname", who.name );
+	SetObjProperty( who, "charname", who.name );
   endif
 
   // Handle squelch based on abilities
   if ( TemHabilidade( who, "Elo Natural" ) )
-    who.squelch( 0 );
+	who.squelch( 0 );
   else
-    who.squelch( -1 );
+	who.squelch( -1 );
   endif
 
   // Unfreeze player after transformation
@@ -99,14 +99,13 @@ function PerformTransformation( who, form )
   PlayObjectCenteredEffect( who, 0x549B, 5, 50 );
 endfunction
 
-
 function HandleWildShapeUnequip( who )
   UnequipAllWild( who );
   if ( TemHabilidade( who, "Elo Natural" ) )
-    UnequipArmorWild( who );
-    UnequipWeaponsWild( who );
+	UnequipArmorWild( who );
+	UnequipWeaponsWild( who );
   else
-    UnequipAllWild( who );
+	UnequipAllWild( who );
   endif
 endfunction
 
@@ -114,7 +113,7 @@ function UnequipAllWild( who )
   var equips := EnumeratePhysicalItems( who );
 
   foreach equip in equips
-    MoveItemToContainer( equip, who.backpack );
+	MoveItemToContainer( equip, who.backpack );
   endforeach
 endfunction
 
@@ -122,9 +121,9 @@ function UnequipArmorWild( who )
   var equips := EnumeratePhysicalItems( who );
 
   foreach equip in equips
-    if ( ( equip.isa( POLCLASS_ARMOR ) ) && equip.resist_physical > 0 )
-      MoveItemToContainer( equip, who.backpack );
-    endif
+	if ( ( equip.isa( POLCLASS_ARMOR ) ) && equip.resist_physical > 0 )
+	  MoveItemToContainer( equip, who.backpack );
+	endif
   endforeach
 endfunction
 
@@ -132,9 +131,9 @@ function UnequipWeaponsWild( who )
   var equips := EnumeratePhysicalItems( who );
 
   foreach equip in equips
-    if ( equip.isa( POLCLASS_WEAPON ) )
-      MoveItemToContainer( equip, who.backpack );
-    endif
+	if ( equip.isa( POLCLASS_WEAPON ) )
+	  MoveItemToContainer( equip, who.backpack );
+	endif
   endforeach
 endfunction
 
@@ -156,76 +155,74 @@ function ApplyAttributeModifiers( who, form, duration )
   // SendSysMessageEx( who, "Form Intelligence: " + form.intelligence, SSM_INFO );
 
   if ( TemHabilidade( who, "Treinamento Druídico" ) )
-    skill_a_calc := CINT( skill_a_calc * 1.2 );
-    skill_d_calc := CINT( skill_d_calc * 1.2 );
-    hitsmod_calc := CINT( hitsmod_calc * 1.2 );
-    resistmod_calc := CINT( resistmod_calc * 1.2 );
+	skill_a_calc := CINT( skill_a_calc * 1.2 );
+	skill_d_calc := CINT( skill_d_calc * 1.2 );
+	hitsmod_calc := CINT( hitsmod_calc * 1.2 );
+	resistmod_calc := CINT( resistmod_calc * 1.2 );
   endif
 
   var bonusMagicLore := 0;
   bonusMagicLore := CINT( AP_GetSkill( who, THEOLOGY ) / 10 );
   if ( TemHabilidade( who, "Instinto de Sobrevivência" ) )
-    skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
-    skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
-    hitsmod_calc := CINT( hitsmod_calc + bonusMagicLore );
-    resistmod_calc := CINT( resistmod_calc + bonusMagicLore );
+	skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
+	skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
+	hitsmod_calc := CINT( hitsmod_calc + bonusMagicLore );
+	resistmod_calc := CINT( resistmod_calc + bonusMagicLore );
   endif
 
   /////////// START SPECIAL BEHAVIOURS (TODO: modularize it into a separate function)
 
   // creature with high vitality but slow motion
   if ( form.strength / form.dexterity >= 10 )
-    hitsmod_calc := CINT( hitsmod_calc + form.strength );
-    SendSysMessageEx( who, "Você se sente lento!", SSM_INFO );
-    TS_StartTimer( who, "lentidao", CINT( duration ) );
+	hitsmod_calc := CINT( hitsmod_calc + form.strength );
+	SendSysMessageEx( who, "Você se sente lento!", SSM_INFO );
+	TS_StartTimer( who, "lentidao", CINT( duration ) );
   endif
 
   // small creatures with low stats but high agility
   if ( form.dexterity / form.strength >= 2 )
-    hitsmod_calc := 0;
-    resistmod_calc := 0;
-    SendSysMessageEx( who, "Você se sente mais veloz!", SSM_INFO );
-    TS_StartTimer( who, "velocidade", 30 );
+	hitsmod_calc := 0;
+	resistmod_calc := 0;
+	SendSysMessageEx( who, "Você se sente mais veloz!", SSM_INFO );
+	TS_StartTimer( who, "velocidade", 30 );
   endif
 
   // high int creatures
   if ( form.intelligence >= 65 )
-    SendSysMessageEx( who, "Você sente sua mente expandindo!", SSM_INFO );
-    manamod_calc := CINT( form.intelligence / 5 );
+	SendSysMessageEx( who, "Você sente sua mente expandindo!", SSM_INFO );
+	manamod_calc := CINT( form.intelligence / 5 );
   endif
 
   // high dex creatures
   if ( form.dexterity >= 100 )
-    SendSysMessageEx( who, "Você se sente mais sagaz!", SSM_INFO );
-    stammod_calc := CINT( form.dexterity / 10 );
+	SendSysMessageEx( who, "Você se sente mais sagaz!", SSM_INFO );
+	stammod_calc := CINT( form.dexterity / 10 );
   endif
 
   // fullmoon strength (copied from polymorph)
   var moon_fase := GetGlobalProperty( "moonfase" );
   if ( moon_fase == "Idus" )
-    SetObjProperty( who, "polymorphbonus_moon", bonusMagicLore );
-    skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
-    skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
-    hitsmod_calc := CINT( hitsmod_calc + bonusMagicLore );
+	SetObjProperty( who, "polymorphbonus_moon", bonusMagicLore );
+	skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
+	skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
+	hitsmod_calc := CINT( hitsmod_calc + bonusMagicLore );
   endif
   // nomoon, nowildshape
   if ( moon_fase == "Kalendae" )
-    SendSysMessageEx( who, "Você não consegue manter sua transformação em lua nova!",
-                      SSM_INFO );
-    TS_StartTimer( who, "metamorfosedruida", 5 );
+	SendSysMessageEx( who, "Você não consegue manter sua transformação em lua nova!", SSM_INFO );
+	TS_StartTimer( who, "metamorfosedruida", 5 );
   endif
 
   // horse speed but debuffs and fast duration
   var reducedDuration := 0;
   if ( Lower( form.name ) == "cavalo manso" || Lower( form.name ) == "cavalo selvagem" )
-    SendSysMessageEx( who, "Você se transforma em um cavalo e sente-se mais rápido!",
-                      SSM_INFO );
-    skill_a_calc := CINT( skill_a_calc - bonusMagicLore );
-    skill_d_calc := CINT( skill_d_calc - bonusMagicLore );
-    hitsmod_calc := CINT( hitsmod_calc - bonusMagicLore );
-    reducedDuration := CINT( duration / 2 );
-    TS_StartTimer( who, "metamorfosedruida", reducedDuration );
-    SendPacket( who, "BF0006002601" ); // Enable speed boost packet
+	SendSysMessageEx( who, "Você se transforma em um cavalo e sente-se mais rápido!", SSM_INFO );
+	skill_a_calc := CINT( skill_a_calc - bonusMagicLore );
+	skill_d_calc := CINT( skill_d_calc - bonusMagicLore );
+	hitsmod_calc := CINT( hitsmod_calc - bonusMagicLore );
+	reducedDuration := CINT( duration / 2 );
+	TS_StartTimer( who, "metamorfosedruida", reducedDuration );
+	SendPacket( who, "BF0006002601" ); // Enable speed boost packet
   endif
 
   /////////// END SPECIAL BEHAVIOURS
@@ -237,16 +234,16 @@ function ApplyAttributeModifiers( who, form, duration )
 
   // Handle cases where property doesn't exist
   if ( current_hitsmod == error )
-    current_hitsmod := 0;
+	current_hitsmod := 0;
   endif
   if ( current_manamod == error )
-    current_manamod := 0;
+	current_manamod := 0;
   endif
   if ( current_stammod == error )
-    current_stammod := 0;
+	current_stammod := 0;
   endif
   if ( current_resistmod == error )
-    current_resistmod := 0;
+	current_resistmod := 0;
   endif
 
   SetObjProperty( who, "skill_a", skill_a_calc );
@@ -297,17 +294,17 @@ function CalculateDiceDamage( strength )
   var strengthCheck := CINT( strength );
 
   if ( strengthCheck < 10 )
-    dicedmg_calc := 0; // very low strength
+	dicedmg_calc := 0; // very low strength
   elseif ( strengthCheck >= 10 && strength <= 50 )
-    dicedmg_calc := "1d4"; // Weak
+	dicedmg_calc := "1d4"; // Weak
   elseif ( strengthCheck > 50 && strength <= 100 )
-    dicedmg_calc := "1d6"; // Moderate
+	dicedmg_calc := "1d6"; // Moderate
   elseif ( strengthCheck > 100 && strength <= 150 )
-    dicedmg_calc := "1d8"; // Strong
+	dicedmg_calc := "1d8"; // Strong
   elseif ( strengthCheck > 150 && strength <= 200 )
-    dicedmg_calc := "1d10"; // Very strong
+	dicedmg_calc := "1d10"; // Very strong
   elseif ( strengthCheck > 200 )
-    dicedmg_calc := "1d12"; // Extremely strong
+	dicedmg_calc := "1d12"; // Extremely strong
   endif
 
   return dicedmg_calc;
@@ -316,7 +313,7 @@ endfunction
 function CalculateTransformationDuration( who )
   var duration := 60 + 540 * AP_GetSkill( who, THEOLOGY ) / 100;
   if ( TemHabilidade( who, "Treinamento Druídico" ) )
-    duration := duration * 2;
+	duration := duration * 2;
   endif
   // Print for debugging
   // SendSysMessageEx( who, "Duração da transformação: " + duration + " segundos", SSM_INFO );
@@ -327,17 +324,16 @@ function ListWildShapes( who )
   var wildshape_forms := GetObjProperty( who, "wildshape_forms" );
 
   if ( wildshape_forms == error || wildshape_forms.size() == 0 )
-    SendSysMessageEx( who, "Voce nao tem formas selvagens disponiveis.", SSM_FAIL );
-    return;
+	SendSysMessageEx( who, "Voce nao tem formas selvagens disponiveis.", SSM_FAIL );
+	return;
   endif
 
-  SendSysMessageEx( who, "Os espiritos da floresta revelam as formas que voce dominou:",
-                    SSM_INFO );
+  SendSysMessageEx( who, "Os espiritos da floresta revelam as formas que voce dominou:", SSM_INFO );
 
   var index := 1;
   foreach form in wildshape_forms
-    SendSysMessageEx( who, index + ". " + form.name, SSM_INFO );
-    index := index + 1;
+	SendSysMessageEx( who, index + ". " + form.name, SSM_INFO );
+	index := index + 1;
   endforeach
 endfunction
 
@@ -352,32 +348,31 @@ function ValidateTransformation( who, formname )
   var wildshape_forms := GetWildshapeForms( who );
   var selected_form := FindFormByName( wildshape_forms, formname );
 
-  if (who.npctemplate)
-    return selected_form;
+  if ( who.npctemplate )
+	return selected_form;
   endif
 
   if ( IsPlayerInTransformation( who ) )
-    SendSysMessageEx( who, "Você já está sob a forma de outra criatura. Primeiro, volte à sua forma normal.",
-                      SSM_FAIL );
-    return 0;
+	SendSysMessageEx( who, "Você já está sob a forma de outra criatura. Primeiro, volte à sua forma normal.",
+				   SSM_FAIL );
+	return 0;
   endif
 
   if ( !wildshape_forms )
-    SendSysMessageEx( who, "Você ainda não aprendeu nenhuma forma selvagem.", SSM_FAIL );
-    return 0;
+	SendSysMessageEx( who, "Você ainda não aprendeu nenhuma forma selvagem.", SSM_FAIL );
+	return 0;
   endif
 
   if ( !selected_form )
-    SendSysMessageEx( who, "A forma " + formname + " não foi encontrada entre as suas formas.",
-                      SSM_FAIL );
-    return 0;
+	SendSysMessageEx( who, "A forma " + formname + " não foi encontrada entre as suas formas.",
+				   SSM_FAIL );
+	return 0;
   endif
 
   if ( !CanTransform( who, selected_form ) )
-    SendSysMessageEx( who, "Você falhou em assumir a forma de " + formname + ".",
-                      SSM_FAIL );
-    FailTransformation( who );
-    return 0;
+	SendSysMessageEx( who, "Você falhou em assumir a forma de " + formname + ".", SSM_FAIL );
+	FailTransformation( who );
+	return 0;
   endif
 
   return selected_form; // Return the selected form if validation passes
@@ -389,15 +384,14 @@ endfunction
 
 function GetWildshapeForms( who )
   var wildshape_forms := GetObjProperty( who, "wildshape_forms" );
-  return ( wildshape_forms != error && wildshape_forms.size() > 0 ) ? wildshape_forms :
-           0;
+  return ( wildshape_forms != error && wildshape_forms.size() > 0 ) ? wildshape_forms : 0;
 endfunction
 
 function FindFormByName( wildshape_forms, formname )
   foreach form in wildshape_forms
-    if ( Lower( form.name ) == Lower( formname ) )
-      return form;
-    endif
+	if ( Lower( form.name ) == Lower( formname ) )
+	  return form;
+	endif
   endforeach
   return 0;
 endfunction
@@ -406,12 +400,12 @@ function CanTransform( who, form )
   var skill := AP_GetSkill( who, MAGERY );
   var difficulty := form.Wrestling;
   if ( SkillCheck( who, MAGERY, difficulty * 1.2 + 15 ) <= 0 )
-    return 0;
+	return 0;
   endif
 
   var manaCost := difficulty / 2;
   if ( !AP_ConsumeVital( who, MANA, manaCost ) )
-    return 0;
+	return 0;
   endif
 
   return 1;

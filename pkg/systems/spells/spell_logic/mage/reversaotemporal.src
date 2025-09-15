@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -13,21 +13,17 @@ include "include/tileEffects";
 include "include/say";
 include "include/facings";
 
-program SpellScript(params)
+program SpellScript( params )
 
-	var who := params[1];
-	var info := params[2];
-	params := 0; // No longer needed
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
 
+  PlaySoundEffect( who, SFX_SPELL_TELEKINESIS );
+  SendSysMessageEx( who, "O tempo se distorce proximo de voce.", SSM_INFO );
+  var time := AP_GetSkill( who, ARCANA ) / 5;
+  TS_StartTimer( who, "dmgreturn", time );
 
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
-	SendSysMessageEx(who, "O tempo se distorce proximo de voce.", SSM_INFO);
-	var time := AP_GetSkill(who, ARCANA)/5;
-	TS_StartTimer(who, "dmgreturn", time);
-
-	return 1;
+  return 1;
 
 endprogram
-
-
- 

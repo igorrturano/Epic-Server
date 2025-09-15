@@ -3,14 +3,11 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_EndClumsy(params)
-	var mobile := params[1];
+program TimedScript_EndClumsy( params )
+  var mobile := params[1];
 
-	RevokePrivilege(mobile, "invul");
-	mobile.disable("invul");	
+  RevokePrivilege( mobile, "invul" );
+  mobile.disable( "invul" );
 
-
-	return 1;
+  return 1;
 endprogram
-   
- 

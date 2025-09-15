@@ -10,7 +10,7 @@ include ":combat:damage";
 include "include/epicCombatUtils";
 include "include/client";
 
-program tironojoelho(who, tool)
-    EquipItem(who, tool);
-    SendSysMessageEx(who, "Você equipa sua arma!", SSM_INFO);
-endprogram 
+program tironojoelho( who, tool )
+  EquipItem( who, tool );
+  SendSysMessageEx( who, "Você equipa sua arma!", SSM_INFO );
+endprogram

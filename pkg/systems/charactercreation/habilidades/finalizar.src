@@ -6,9 +6,9 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack(who)
+program doubleattack( who )
 
-	SendSysMessageEx(who, "Finalize a luta!", SSM_INFO);
-	SetObjProperty(who, "#finalizar", 1);
-	
+  SendSysMessageEx( who, "Finalize a luta!", SSM_INFO );
+  SetObjProperty( who, "#finalizar", 1 );
+
 endprogram

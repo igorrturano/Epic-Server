@@ -3,13 +3,12 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_EndClumsy(params)
-	var mobile := params[1];
-	
-	var points := CInt(GetObjProperty(mobile, "#evasao"));	
-	mobile.evasionchance_mod := mobile.evasionchance_mod - points;
+program TimedScript_EndClumsy( params )
+  var mobile := params[1];
 
-	EraseObjProperty(mobile, "#evasao");
-	return 1;
+  var points := CInt( GetObjProperty( mobile, "#evasao" ) );
+  mobile.evasionchance_mod := mobile.evasionchance_mod - points;
+
+  EraseObjProperty( mobile, "#evasao" );
+  return 1;
 endprogram
-   

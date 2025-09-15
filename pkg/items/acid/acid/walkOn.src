@@ -6,22 +6,22 @@ use vitals;
 
 include ":acid:acid";
 
-program acid_WalkOn(mobile, acid)
-	if( TypeOf(mobile) == "Array" )
-		acid := mobile[2];
-		mobile := mobile[1];
-	endif
-	if ( mobile.concealed )
-		return 0;
-	elseif ( mobile.dead )
-		return 0;
-	elseif ( isAcidImune(mobile) )
-		return 0;
-	endif
+program acid_WalkOn( mobile, acid )
+  if ( TypeOf( mobile ) == "Array" )
+	acid := mobile[2];
+	mobile := mobile[1];
+  endif
+  if ( mobile.concealed )
+	return 0;
+  elseif ( mobile.dead )
+	return 0;
+  elseif ( isAcidImune( mobile ) )
+	return 0;
+  endif
 
-	SendSysMessage(mobile, "*Voce pisou em acido!*");
-	if( !DealAcidDamage(acid, mobile, acid) )
-		DealAcidDamage(acid, mobile, acid, "5d2");
-	endif
-	return 1;
+  SendSysMessage( mobile, "*Voce pisou em acido!*" );
+  if ( !DealAcidDamage( acid, mobile, acid ) )
+	DealAcidDamage( acid, mobile, acid, "5d2" );
+  endif
+  return 1;
 endprogram

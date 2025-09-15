@@ -14,24 +14,24 @@ include "include/sounds";
 include ":combat:damage";
 include ":timedScripts:timedScripts";
 
-program SpellScript(who)
+program SpellScript( who )
 
-    if (TS_GetCooldown(who, "habilidade um") && who.hidden == 0)
-		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
-	endif
+  if ( TS_GetCooldown( who, "habilidade um" ) && who.hidden == 0 )
+	return SendSysMessageEX( who, "Habilidade em Cooldown!", SSM_FAIL );
+  endif
 
-	Start_Script(":sneak:sneak", who);
+  Start_Script( ":sneak:sneak", who );
 
-	// var who := params[1];
-	// params := 0; // No longer needed
+// var who := params[1];
+// params := 0; // No longer needed
 
-	// PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
+// PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
 
-	// who.hidden := 1;
-	// who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
+// who.hidden := 1;
+// who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
 
-	// SendSysMessage(who, "Voce se camufla no ambiente.");
+// SendSysMessage(who, "Voce se camufla no ambiente.");
 
-	// return 1;
+// return 1;
 
 endprogram

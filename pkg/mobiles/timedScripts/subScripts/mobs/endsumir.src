@@ -3,10 +3,10 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
 
-	mobile.concealed := 0;
+  mobile.concealed := 0;
 
-	return 1;
+  return 1;
 endprogram

@@ -3,9 +3,9 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
 
-Printtextabove(mobile, "O animal nao te segue mais");
-	return 1;
+  Printtextabove( mobile, "O animal nao te segue mais" );
+  return 1;
 endprogram

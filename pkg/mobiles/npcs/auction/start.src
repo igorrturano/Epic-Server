@@ -1,4 +1,4 @@
 use uo;
 use os;
 
-start_script( ":auction:auctionlist");	
+start_script( ":auction:auctionlist" );

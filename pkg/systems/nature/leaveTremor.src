@@ -1,5 +1,5 @@
 use uo;
 
-program sairterremoto(who, textarea)
-	EraseObjProperty(who, "areaInstavel");
+program sairterremoto( who, textarea )
+  EraseObjProperty( who, "areaInstavel" );
 endprogram

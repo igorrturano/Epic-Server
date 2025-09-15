@@ -1,10 +1,10 @@
 
-program control(skull)
+program control( skull )
 
-	if (skull.color == 982)
-		skull.color := 0;
-	endif
+  if ( skull.color == 982 )
+	skull.color := 0;
+  endif
 
-	return 1;
+  return 1;
 
 endprogram

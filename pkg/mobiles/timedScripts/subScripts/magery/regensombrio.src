@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -8,24 +8,23 @@ include ":combat:damage";
 
 use vitals;
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
-	var attacker := params[2];
-	var level := params[3];
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
+  var attacker := params[2];
+  var level := params[3];
 
-	
-	var points := level;
-	var i := 0;
-		
-	//if (GetObjProperty(mobile, "coMod") != error)
-	//	return;
-	//endif
-	
-	while(i < 10)
-		HealFLS(attacker, points);
-		i := i+1;
-		sleep(2);
-	endwhile
-	
-	return 1;
+  var points := level;
+  var i := 0;
+
+  // if (GetObjProperty(mobile, "coMod") != error)
+  // 	return;
+  // endif
+
+  while ( i < 10 )
+	HealFLS( attacker, points );
+	i := i + 1;
+	sleep( 2 );
+  endwhile
+
+  return 1;
 endprogram
