@@ -76,7 +76,7 @@ function AchievementAdvance(type, who, key, name, value, refName := false)
 	value := CInt(value);
 	if (value < 1) return; endif
 
-	var achiev := who.GetAchievement(type, who, key, name);
+	var achiev := who.GetAchievement(type, key, name);
 
 	achiev.IncrementValue(value);
 
