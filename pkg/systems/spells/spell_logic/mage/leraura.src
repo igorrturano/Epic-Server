@@ -1,4 +1,4 @@
-     use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -25,30 +25,27 @@ program SpellScript(params)
 		return;
 	endif
 
-
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
-
 
 	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
 	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
-	if ( !ficharp_elem )
+	if (!ficharp_elem)
 		return 0;
 	endif
 	var comportamento := ficharp_elem.GetProp("Comportamento");
 	var objetivos := ficharp_elem.GetProp("Objetivos");
 
-
 	var texto := "";
-	texto := texto+"Comportamento<br>";
+	texto := texto + "Comportamento<br>";
 	var i;
-	for (i := 1 ; i <= 6 ; i := i + 1)
-		texto := texto+comportamento[i]+"<br>";
+	for (i := 1; i <= 6; i := i + 1)
+		texto := texto + comportamento[i] + "<br>";
 	endfor
-//	texto := texto+"<br><br>Objetivos<br>";
-//	for (i := 1 ; i <= 3 ; i := i + 1)
-//		texto := texto+objetivos[i]+"<br>";
-//	endfor
-	var e := SendHTMLGump(who, "Aura de "+targ.name, texto);
-//	SendSysMEssage(who, " " + e );
+	// 	texto := texto+"<br><br>Objetivos<br>";
+	// 	for (i := 1 ; i <= 3 ; i := i + 1)
+	// 		texto := texto+objetivos[i]+"<br>";
+	// 	endfor
+	var e := SendHTMLGump(who, "Aura de " + targ.name, texto);
+	// 	SendSysMEssage(who, " " + e );
 	return 1;
 endprogram

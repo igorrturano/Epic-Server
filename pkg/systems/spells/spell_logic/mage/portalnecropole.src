@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 use vitals;
 
@@ -26,34 +26,35 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlayStationaryEffect( targ.x, targ.y, targ.z, who.realm, 6899, 1, 30, 2555 );
-  	sleepms(2800);
-	var gate1 := CreateItemAtLocation( targ.x, targ.y, targ.z, "BlackMoonGate", 1, who.realm );
+	PlayStationaryEffect(targ.x, targ.y, targ.z, who.realm, 6899, 1, 30, 2555);
+	sleepms(2800);
+	var gate1 := CreateItemAtLocation(targ.x, targ.y, targ.z, "BlackMoonGate", 1, who.realm);
 	gate1.color := 2555;
-  	gate1.movable := 0;
-	gate1.SetDestination( 1083, 1183, 27, REALM_BRITANNIA);
+	gate1.movable := 0;
+	gate1.SetDestination(1083, 1183, 27, REALM_BRITANNIA);
 
 	var items := CreateRandomItems(targ.x, targ.y, who.realm);
 
-  	Detach();
-  	sleep(30);
+	Detach();
+	sleep(30);
 	DestroyItem(gate1);
 	foreach item in items
 		DestroyItem(item);
 	endforeach
 
 	return 1;
-endprogram     
+endprogram
 
 function CreateRandomItems(x, y, realm)
 
-	var items := { 6921, 6922, 6923,  6924, 6925, 6926, 6940 };
+	var items := { 6921, 6922, 6923, 6924, 6925, 6926, 6940 };
 	var coords := GetCoordsInSquare(x, y, 3);
 	var ret := array;
-	
+
 	foreach coord in coords
-		if (randomint(10)< 5)
-			var bone := CreateItemAtLocation(coord.x, coord.y, GetWorldHeight(coord.x, coord.y, realm), items[RandomInt(items.size())+1] ,1, realm  );
+		if (randomint(10) < 5)
+			var bone := CreateItemAtLocation(coord.x, coord.y, GetWorldHeight(coord.x, coord.y, realm),
+											  items[RandomInt(items.size()) + 1], 1, realm);
 			bone.movable := 0;
 			ret.append(bone);
 		endif

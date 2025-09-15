@@ -1,4 +1,4 @@
- 
+
 use uo;
 
 include ":fls_core:packets";
@@ -9,22 +9,20 @@ include "include/say";
 include ":timedScripts:timedScripts";
 
 program doubleattack(params)
-	var attacker	:= params[1];
-	var defender	:= params[2];
-	var weapon	:= params[3];
-	var armor	:= params[4];
-	var basedamage	:= params[5];
-	var rawdamage	:= params[6];
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	
-	
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
-	
+
 	PrintText(attacker, "*ricochetear ataque*");
 
-	var hostiles := ListHostiles( attacker, 4, LH_FLAG_LOS );
+	var hostiles := ListHostiles(attacker, 4, LH_FLAG_LOS);
 	var targets := array;
 
 	foreach hostile in hostiles
@@ -33,7 +31,7 @@ program doubleattack(params)
 		endif
 	endforeach
 
-	var targ := hostiles[RandomInt(targets.size())+1 ];
+	var targ := hostiles[RandomInt(targets.size()) + 1];
 	printtext(targ, "*Ricocheteado*");
 
 	var dmgList := dictionary;
@@ -43,6 +41,4 @@ program doubleattack(params)
 	MostraDano(attacker, targ, total);
 	MakeBleed(targ);
 
-
-endprogram 
- 
+endprogram

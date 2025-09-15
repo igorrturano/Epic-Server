@@ -12,20 +12,20 @@ include ":commands:/include/r";
 program reconhecer(who, param)
 	var conhecidos := dictionary;
 
-	if(GetObjProperty(who, "conhecidos"))
-		conhecidos := GetObjProperty(who, "conhecidos"); //Lista de pessoas conhecidadas
+	if (GetObjProperty(who, "conhecidos"))
+		conhecidos := GetObjProperty(who, "conhecidos"); // Lista de pessoas conhecidadas
 	endif
 
 	var targ := Target(who);
-	if(GetObjProperty(targ, "realname"))
+	if (GetObjProperty(targ, "realname"))
 		SendSysMessageEx(who, "Precisar ver o rosto pra reconhecer.", SSM_FAIL);
 		return 0;
 	endif
 
 	var ID := VerificaDisfarce(targ);
 
-	if(targ.IsA(POLCLASS_MOBILE))
-		if(targ.npctemplate)
+	if (targ.IsA(POLCLASS_MOBILE))
+		if (targ.npctemplate)
 			SendSysMessageEx(who, "Nao é um alvo valido.", SSM_FAIL);
 		elseif (param)
 			conhecidos[ID] := Cstr(param);

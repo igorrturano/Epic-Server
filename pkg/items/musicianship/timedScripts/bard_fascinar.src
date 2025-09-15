@@ -10,6 +10,6 @@ program TimedScript_bard_fascinar(params)
 	alvo.paralyzed := 1;
 	SetObjProperty(alvo, "#Bard_fascinar", modificador);
 	Set_Critical(0);
-	PrintTextAbove(alvo, "Fascinado(a)",BARD_FONT,BARD_FONT_COLOR_NEUTRA);
+	PrintTextAbove(alvo, "Fascinado(a)", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 	return 1;
 endprogram

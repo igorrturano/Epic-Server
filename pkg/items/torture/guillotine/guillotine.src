@@ -14,13 +14,13 @@ program UseGuillotine(who, guillotine)
 		SendSysMessage(who, "Muito Longe.");
 		return;
 	endif
-	
-	if ( !GetObjProperty(guillotine, "direction") )
+
+	if (!GetObjProperty(guillotine, "direction"))
 		SetObjProperty(guillotine, "direction", "MoveDown");
 	endif
-	
+
 	var direction := GetObjProperty(guillotine, "direction");
-	
+
 	if (direction["Up"])
 		MoveUp(guillotine);
 	else
@@ -34,7 +34,7 @@ program UseGuillotine(who, guillotine)
 		var corpse := GetObjProperty(who, "corpse_serial");
 		corpse := SystemFindObjectBySerial(corpse);
 		var head := CreateItemAtLocation(corpse.x, corpse.y, corpse.z, "head", 1);
-		MoveObjectToLocation(head, corpse.x, corpse.y, corpse.z+3, corpse.realm, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(head, corpse.x, corpse.y, corpse.z + 3, corpse.realm, MOVEOBJECT_FORCELOCATION);
 	endif
 
 endprogram
@@ -42,9 +42,9 @@ endprogram
 function MoveUp(guillotine)
 	var config := NewGraphic(guillotine);
 	guillotine.graphic := GetConfigInt(config, "MoveUp");
-	
+
 	PlaySoundEffect(guillotine, SOUND_MOVEUP);
-	
+
 	config := NewGraphic(guillotine);
 	if (!GetConfigInt(config, "MoveUp"))
 		SetObjProperty(guillotine, "direction", "MoveDown");
@@ -64,10 +64,11 @@ endfunction
 
 function NewGraphic(guillotine)
 	var guillotine_cfg := ReadConfigFile(":torture:config/guillotine");
-	if ( guillotine_cfg.errortext )
-		PrintTextAbove(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"+guillotine_cfg.errortext);
+	if (guillotine_cfg.errortext)
+		PrintTextAbove(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"
+						+ guillotine_cfg.errortext);
 		return guillotine.graphic;
 	endif
-	
+
 	return guillotine_cfg[guillotine.graphic];
 endfunction

@@ -1,13 +1,11 @@
 /*
  * $Id: moverect.src 128 2006-05-27 17:36:42Z austinheilman $
  *
- */
-
+*/
 use uo;
 use os;
 
-
-program textcmd_MoveRect( who, params )
+program textcmd_MoveRect(who, params)
 	var x_diff, y_diff, z_diff, objtype;
 
 	params := SplitWords(params);
@@ -16,16 +14,16 @@ program textcmd_MoveRect( who, params )
 	z_diff := FindIntArg(params, "z");
 	objtype := FindIntArg(params, "objtype=");
 
-	SendSysMessage( who, "Target the top-left corner" );
-	var topleft := TargetCoordinates( who );
-	if ( !topleft )
+	SendSysMessage(who, "Target the top-left corner");
+	var topleft := TargetCoordinates(who);
+	if (!topleft)
 		SendSysMessage(who, "Cancelled.");
 		return 0;
 	endif
 
-	SendSysMessage( who, "Target the bottom-left corner" );
-	var botright := TargetCoordinates( who );
-	if ( !botright )
+	SendSysMessage(who, "Target the bottom-left corner");
+	var botright := TargetCoordinates(who);
+	if (!botright)
 		SendSysMessage(who, "Cancelled.");
 		return 0;
 	endif
@@ -39,9 +37,11 @@ program textcmd_MoveRect( who, params )
 		highz := botright.z;
 	endif
 
-	foreach item in ListObjectsInBox(topleft.x, topleft.y, lowz, botright.x, botright.y, highz, who.realm)
-		if ( objtype == 0 || item.objtype == objtype )
-			MoveObjectToLocation(item, (item.x+x_diff), (item.y+y_diff), (item.z+z_diff), item.realm, MOVEOBJECT_FORCELOCATION);
+	foreach item in ListObjectsInBox(topleft.x, topleft.y, lowz, botright.x, botright.y, highz,
+								  who.realm)
+		if (objtype == 0 || item.objtype == objtype)
+			MoveObjectToLocation(item, (item.x + x_diff), (item.y + y_diff), (item.z + z_diff), item.realm,
+								  MOVEOBJECT_FORCELOCATION);
 		endif
 		SleepMS(2);
 	endforeach
@@ -54,7 +54,7 @@ function FindIntArg(params, prefix)
 	var pfxlen := Len(prefix);
 
 	foreach param in params
-		if ( Lower(param[1,pfxlen]) == Lower(prefix) )
+		if (Lower(param[1, pfxlen]) == Lower(prefix))
 			param[prefix] := "";
 			return CInt(param);
 		endif

@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
-
+*/
 use uo;
 
 include ":worldsaver:saver";
@@ -9,9 +8,9 @@ include ":gumps:requestGump";
 
 program textcmd_shutDown(who, time)
 
-	if ( !time )
+	if (!time)
 		time := RequestGump(who, "Number of minutes for shutdown timer.", "", 5, CANCEL_BTN_ON);
-		if ( !time )
+		if (!time)
 			SendSysMessage(who, "Cancelled.");
 			return 0;
 		endif

@@ -1,7 +1,7 @@
 
 function Boss1Fight(opponent, alerted := 0)
 
-	if(opponent.serial == me.serial)
+	if (opponent.serial == me.serial)
 		SetWarMode(0);
 		opponent := 0;
 		return;
@@ -16,15 +16,15 @@ function Boss1Fight(opponent, alerted := 0)
 	var ev;
 	var waittime := 0;
 
-	var speech := GetConfigStringArray( npccfgfile[mytemplate], "InitCombatSpeech" );
+	var speech := GetConfigStringArray(npccfgfile[mytemplate], "InitCombatSpeech");
 	if (speech.size() > 0)
-		if (RandomInt(100)  < 30) //sempre 30% de chance de falar
-			Say(speech[RandomInt(speech.size()+1)]);
+		if (RandomInt(100) < 30) // sempre 30% de chance de falar
+			Say(speech[RandomInt(speech.size() + 1)]);
 		endif
 	endif
 
 	var dist;
-	while( me )
+	while (me)
 
 		if (me.dead)
 			break;
@@ -37,7 +37,7 @@ function Boss1Fight(opponent, alerted := 0)
 		if (opponent.dead)
 			var temnego := 0;
 			foreach npc in ListMobilesInLineOfSight(me, areasize + 2)
-				if( CanFight(me, npc, align) )
+				if (CanFight(me, npc, align))
 					temnego := 1;
 					break;
 				endif
@@ -63,12 +63,13 @@ function Boss1Fight(opponent, alerted := 0)
 		endif
 
 		dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
-		if ( dist > 20)
-			if ( isBloodied(opponent) && TemHabilidade(opponent, "Baixo Limiar de Furia") )
-				LogToFile(":fls_core:berserker.log", opponent.name+" ("+opponent.acctname+") peidou pra "+me.name+" em "+opponent.x+" "+opponent.y, LOG_DATETIME);
+		if (dist > 20)
+			if (isBloodied(opponent) && TemHabilidade(opponent, "Baixo Limiar de Furia"))
+				LogToFile(":fls_core:berserker.log", opponent.name + " (" + opponent.acctname + ") peidou pra "
+						   + me.name + " em " + opponent.x + " " + opponent.y, LOG_DATETIME);
 				foreach x in EnumerateOnlineCharacters()
 					if (x.cmdlevel > 0)
-						SendSysMessageEx(x, opponent.name+" BERSERKER PEIDAO!", SSM_REQUEST);
+						SendSysMessageEx(x, opponent.name + " BERSERKER PEIDAO!", SSM_REQUEST);
 					endif
 				endforeach
 			endif
@@ -81,36 +82,36 @@ function Boss1Fight(opponent, alerted := 0)
 		endif
 
 		if (!GetCooldown(me, "flamewave"))
-			MoveObjectToLocation(me,  4862, 883, 0, me.realm);
-			me.facing:= 4;
+			MoveObjectToLocation(me, 4862, 883, 0, me.realm);
+			me.facing := 4;
 			sleep(4);
 
 			var x := 4855;
-			for (x := 4857; x <= 4866;  x := x+1)
+			for (x := 4857; x <= 4866; x := x + 1)
 				var fire := CreateITemAtLocation(x, 888, 0, me.realm);
 				fire.SetDuration(10);
 				sleepms(100);
 			endfor
 
 			var y := 879;
-			for (y := 879; 7 <= 888;  y := y+1)
+			for (y := 879; 7 <= 888; y := y + 1)
 				var fire := CreateITemAtLocation(4866, y, 0, me.realm);
 				fire.SetDuration(10);
 				sleepms(100);
 			endfor
 
 			var y := 879;
-			for (y := 879; 7 <= 888;  y := y+1)
+			for (y := 879; 7 <= 888; y := y + 1)
 				var fire := CreateITemAtLocation(4857, y, 0, me.realm);
 				fire.SetDuration(10);
 				sleepms(100);
 			endfor
 
-			SetCooldown(me,  "flamewave", 60);
+			SetCooldown(me, "flamewave", 60);
 
 		endif
 
-		if(!CloseDistance(opponent))
+		if (!CloseDistance(opponent))
 			loops := loops + 1;
 			waittime := 0;
 		else
@@ -122,30 +123,31 @@ function Boss1Fight(opponent, alerted := 0)
 
 		ev := wait_for_event(waittime);
 
-		if(ev.type != SYSEVENT_SPEECH)
+		if (ev.type != SYSEVENT_SPEECH)
 			case (ev.type)
 				SYSEVENT_DAMAGED:
 
-			//se ele receber dano de alguem mais proximo que o oponente ou se receber dano de alguem e o oponente nao estiver acessivel
-				if( /*(CoordinateDistance(me.x, me.y, ev.source.x, ev.source.y) < CoordinateDistance(me.x, me.y, opponent.x, opponent.y)) ||*/ (!CheckLineOfSight(me, opponent)) || (!opponent))
-					if ( (opponent) && RandomInt(4) == 0 ) //se ainda existir o oponente so tem 25% de chance de mudar de alvo
-						if (ev.source)
-							opponent := ev.source;
-							SetOpponent(opponent);
-							TurnToward(opponent);
-						endif
-					elseif ( (!opponent) || (!CheckLineOfSight(me, opponent))) //mas se nao tiver mais o oponent entao 100% de chance de mudar de alvo
-						if (ev.source)
-							opponent := ev.source;
-							SetOpponent(opponent);
-							TurnToward(opponent);
+					// se ele receber dano de alguem mais proximo que o oponente ou se receber dano de alguem e o oponente nao estiver acessivel
+					if (/* (CoordinateDistance(me.x, me.y, ev.source.x, ev.source.y) < CoordinateDistance(me.x, me.y, opponent.x, opponent.y)) || */
+		 (!CheckLineOfSight(me, opponent)) || (!opponent))
+						if ((opponent) && RandomInt(4) == 0) // se ainda existir o oponente so tem 25% de chance de mudar de alvo
+							if (ev.source)
+								opponent := ev.source;
+								SetOpponent(opponent);
+								TurnToward(opponent);
+							endif
+						elseif ((!opponent) || (!CheckLineOfSight(me, opponent))) // mas se nao tiver mais o oponent entao 100% de chance de mudar de alvo
+							if (ev.source)
+								opponent := ev.source;
+								SetOpponent(opponent);
+								TurnToward(opponent);
+							endif
 						endif
 					endif
-				endif
 
 				SYSEVENT_ENGAGED:
-					if(ev.source)
-						if(RandomInt(6) == 1)
+					if (ev.source)
+						if (RandomInt(6) == 1)
 							opponent := ev.source;
 							SetOpponent(opponent);
 							TurnToward(opponent);
@@ -153,7 +155,7 @@ function Boss1Fight(opponent, alerted := 0)
 					endif
 
 				EVID_TAUNT:
-					if(ev.source)
+					if (ev.source)
 						opponent := ev.source;
 						SetOpponent(opponent);
 						TurnToward(opponent);

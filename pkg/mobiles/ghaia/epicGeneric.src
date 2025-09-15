@@ -1,9 +1,9 @@
-//program KillPlayers()
+// program KillPlayers()
 //    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
-//	set_critical(1);
-//	InitializeNPC(me);
-//	set_critical(0);
-//	SetWarMode(0);
+// 	set_critical(1);
+// 	InitializeNPC(me);
+// 	set_critical(0);
+// 	SetWarMode(0);
 
 //    var hasPlayerNearMe := 0;
 //    var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
@@ -20,14 +20,13 @@
 //            epicGenericBrain();
 //        endif
 //        hasPlayerNearMe := 0;
-//	    var ev := wait_for_event(86400);
+// 	    var ev := wait_for_event(86400);
 //        if (ev.source.acctname)
 //            hasPlayerNearMe := 1;
 //        endif
 //    endwhile
-//endprogram
+// endprogram
 
-//function epicGenericBrain();
+// function epicGenericBrain();
 
-
-//endfunction
+// endfunction

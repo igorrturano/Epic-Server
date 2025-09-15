@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -10,10 +10,8 @@ program TimedScript_Clumsy(params)
 	var level := params[3];
 	params := 0; // Not needed anymore.
 
-	
 	EraseObjProperty(who, "#martir");
 	EraseObjProperty(who, "martirseril");
-	
+
 	return 1;
 endprogram
-   

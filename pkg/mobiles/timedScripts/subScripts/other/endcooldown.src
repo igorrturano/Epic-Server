@@ -10,6 +10,6 @@ program cureScript(params)
 	var prop := GetObjProperty(who, "prop");
 
 	SendSysMessageEx(who, "Voce pode usar a habilidade " + prop + " novamente!", SSM_INFO);
-	EraseObjProperty(who, "#Cooldown"+prop);
+	EraseObjProperty(who, "#Cooldown" + prop);
 	return 1;
-endprogram   
+endprogram

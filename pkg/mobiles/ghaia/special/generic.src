@@ -17,43 +17,42 @@ program loko(params)
 		return;
 	endif
 
-	if (event.onlybloodied) 
-		if ( !IsBloodied(who) )
+	if (event.onlybloodied)
+		if (!IsBloodied(who))
 			return;
 		endif
 	endif
 
-	//check distancia
+	// check distancia
 	if (event.dist > 0)
 		if (CoordinateDistance(who.x, who.y, who.opponent.x, who.opponent.y) > event.dist)
 			return;
 		endif
 	endif
 
-	//checa cooldown
-	if ( TS_GetCooldown(who, "event.name") != error)
+	// checa cooldown
+	if (TS_GetCooldown(who, "event.name") != error)
 		return;
 	endif
 
-	TS_StartCooldown(who, "event.name", event.cd); 
-	//executa os states
+	TS_StartCooldown(who, "event.name", event.cd);
+	// executa os states
 	foreach state in (event.steps)
 
 		if (state.type == "Move")
-			var sleepdelay := 275 - who.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+			var sleepdelay := 275 - who.run_speed; // (CInt(GetDexterity(me)) * 1.5);
 
 			if (sleepdelay < 0)
 				sleepdelay := 0;
 			endif
 
-
-    			while (CoordinateDistance( who.x, who.y, state.x, state.y ))
-   				RunTowardLocation( state.x, state.y );
+			while (CoordinateDistance(who.x, who.y, state.x, state.y))
+				RunTowardLocation(state.x, state.y);
 				sleepms(sleepdelay);
-            			if (CoordinateDistance( who.x, who.y, state.x, state.y ) <= 1 )
+				if (CoordinateDistance(who.x, who.y, state.x, state.y) <= 1)
 					break;
 				endif
-    			endwhile
+			endwhile
 
 		elseif (state.type == "Teleport")
 			if (state.target == "Self")
@@ -78,7 +77,7 @@ program loko(params)
 			foreach t in targ
 				TS_StartTimer(t, state.timername, state.timerduration, state.level);
 			endforeach
-		elseif (state.type == "Perform Action" )
+		elseif (state.type == "Perform Action")
 			var targ := array;
 			if (state.target == "Self")
 				targ.append(who);
@@ -107,9 +106,9 @@ program loko(params)
 		elseif (state.type == "Delay")
 			Sleep(state.delay);
 		elseif (state.type == "Heal")
-			  HealFLS(who, state.healamt);
-			    RecalcVitals(who);
-		elseif ( state.type == "Graphic Effect")
+			HealFLS(who, state.healamt);
+			RecalcVitals(who);
+		elseif (state.type == "Graphic Effect")
 			var targ := array;
 			if (state.target == "Self")
 				targ.append(who);
@@ -129,7 +128,7 @@ program loko(params)
 					if (state.direction == "Mob->Player")
 						PlayMovingEffect(who, t, state.fxid, state.speed, state.loop);
 					else
-						PlayMovingEffect(t, who, state.fxid, state.speed, state.loop); 
+						PlayMovingEffect(t, who, state.fxid, state.speed, state.loop);
 					endif
 				endif
 			endforeach
@@ -152,30 +151,29 @@ program loko(params)
 					elseif (vital == "Mana")
 						AP_ConsumeVital(t, MANA, state.dmg);
 					endif
-				endforeach	
+				endforeach
 			endforeach
 		elseif (state.type == "Summon Npcs") // NPC FALAR ALGO
-	           	var amt := 0;
+			var amt := 0;
 			while (amt < state.amount)
-                		var npc := CreateNpcFromTemplate( cstr(state.npctemplate), Cint(state.x) + RandomInt(2 * state.range) - state.range, Cint(state.y) + RandomInt(2 * state.range) - state.range, Cint(state.z));
-                		if (npc != error)
-                  			amt := amt + 1;
-                		endif
-              			sleepms(2);
-            		endwhile
+				var npc := CreateNpcFromTemplate(cstr(state.npctemplate),
+												  Cint(state.x) + RandomInt(2 * state.range) - state.range,
+												  Cint(state.y) + RandomInt(2 * state.range) - state.range, Cint(state.z));
+				if (npc != error)
+					amt := amt + 1;
+				endif
+				sleepms(2);
+			endwhile
 
 		endif
 		sleepms(500);
 	endforeach
 
-
 endprogram
-
 
 function GetAllOpponents(who)
 
 	var a := ListHostiles(who);
 	return a;
-
 
 endfunction

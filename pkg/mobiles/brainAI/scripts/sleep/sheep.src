@@ -5,24 +5,24 @@ include ":brainAI:npcNerves";
 include ":brainAI:npcCommands";
 
 program BrainNerve(params)
-	var npc		:= params[1];
-	var nerve_name	:= params[2];
-	//var settings	:= params[3];
-	//var scripts	:= params[4];
+	var npc := params[1];
+	var nerve_name := params[2];
+	// var settings	:= params[3];
+	// var scripts	:= params[4];
 	params := 0; // Not needed anymore.
-	
+
 	// Shut down appropriate nerves.
 	foreach nerve in (LoadNerves(npc))
-		if ( nerve.flags & NF_CONTINUE_ON_SLEEP )
+		if (nerve.flags & NF_CONTINUE_ON_SLEEP)
 			continue;
-		elseif ( _nerve_iter != nerve_name )
+		elseif (_nerve_iter != nerve_name)
 			StopNerve(npc, _nerve_iter);
 		endif
 		sleepms(2);
 	endforeach
-	
-	while ( npc )
-		if ( GetObjProperty(npc, "Next") && ReadGameClock() > GetObjProperty(npc, "Next") )
+
+	while (npc)
+		if (GetObjProperty(npc, "Next") && ReadGameClock() > GetObjProperty(npc, "Next"))
 			npc.graphic := 0xCF;
 			EraseObjProperty(npc, "Next");
 		endif

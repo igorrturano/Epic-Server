@@ -5,36 +5,36 @@ use cfgfile;
 include ":alchemy:alchemy";
 include ":timedScripts:timedScripts";
 
-program drink_blue (who, potion)
+program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
-	if(!Accessible(who, potion))
+	if (!Accessible(who, potion))
 		return;
 	endif
-	if(potion.movable == 0)
+	if (potion.movable == 0)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
 
-	if(!checkifcandrink(who, "int"))
+	if (!checkifcandrink(who, "int"))
 		return;
 	endif
 
 	var vicio := (AP_getvital(who, "Vicioint"));
-	if (vicio <30)
-		vicio:= 30;
+	if (vicio < 30)
+		vicio := 30;
 	endif
-	vicio := vicio/100;
-	var bonus := GetObjProperty (potion, "bonus");
+	vicio := vicio / 100;
+	var bonus := GetObjProperty(potion, "bonus");
 	var tier := getObjProperty(potion, "tier");
 	var stat := AP_GetTrueStat(who, INTELLIGENCE);
-	if (temHabilidade(who, "Impulso Metabolico"));
-	tier := (tier + 2);
+	if (temHabilidade(who, "Impulso Metabolico"))
+		tier := (tier + 2);
 	endif
 	var buff := 0.05 * tier;
-	buff := (stat*buff+bonus)*vicio;
+	buff := (stat * buff + bonus) * vicio;
 
-	TS_StartTimer(who, "intelligence", (180*tier), buff);
+	TS_StartTimer(who, "intelligence", (180 * tier), buff);
 	empty_bottle(who, potion);
-	VicioInt(who,potion);
+	VicioInt(who, potion);
 endprogram

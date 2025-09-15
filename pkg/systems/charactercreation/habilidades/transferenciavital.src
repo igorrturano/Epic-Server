@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -9,7 +9,7 @@ include ":timedScripts:timedScripts";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 program manobra(mobile)
-	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);	
+	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
 	var who := Target(mobile);
 	if (mobile.npctemplate)
 		who := mobile;
@@ -45,9 +45,9 @@ program manobra(mobile)
 		return;
 	endif
 
-	while  (time < 10)
+	while (time < 10)
 
-		if ( (mobile.x != oldx) || (mobile.y != oldy))
+		if ((mobile.x != oldx) || (mobile.y != oldy))
 			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
 			break;
 		endif
@@ -57,15 +57,15 @@ program manobra(mobile)
 			break;
 		endif
 
-		if(targ.dead)
+		if (targ.dead)
 			break;
 		endif
 
-		//ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
-		ApplyRawDamage( targ, amt );
-		HealDamage( who, amt);
+		// ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
+		ApplyRawDamage(targ, amt);
+		HealDamage(who, amt);
 
-		if(targ.dead)
+		if (targ.dead)
 			break;
 		endif
 

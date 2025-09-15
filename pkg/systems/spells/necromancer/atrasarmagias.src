@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -14,11 +14,12 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	TS_StartTimer(who, "atrasarmagias", cint(AP_GetSkill(who, ARCANA)) / 2, AP_GetSkill(who, ARCANA)*20, who, 0); //20 min
-    handleSilentMagic(who, who, 385);
+	TS_StartTimer(who, "atrasarmagias", cint(AP_GetSkill(who, ARCANA)) / 2,
+			   AP_GetSkill(who, ARCANA) * 20, who, 0); // 20 min
+	handleSilentMagic(who, who, 385);
 
-    SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
+	SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
 	Corromper(who, 17, targ);
-	
+
 	return 1;
-endprogram 
+endprogram

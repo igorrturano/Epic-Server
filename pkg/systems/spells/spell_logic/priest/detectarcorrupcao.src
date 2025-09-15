@@ -1,4 +1,4 @@
-     use uo;
+use uo;
 use os;
 use vitals;
 
@@ -24,14 +24,14 @@ program SpellScript(params)
 		return;
 	endif
 
-	if ( IsBloodied(targ))
+	if (IsBloodied(targ))
 		SendSysMessageEx(who, "O alvo esta muito ferido.", SSM_FAIL);
 		return 1;
 	endif
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
-	
+
 	var corrupcao := Cint(GetObjProperty(targ, "corruption"));
 
 	if (corrupcao >= 10000)
@@ -42,8 +42,8 @@ program SpellScript(params)
 		SendSysMessageEx(who, "A corrupcao de " + targ.name + " esta muito alta.", SSM_FAIL);
 	else
 		SendSysMessageEx(who, "A corrupcao de " + targ.name + " e muito baixa ou inexistente.", SSM_FAIL);
-	endif 
-	SendSysMessageEx(who, "O alvo tem " + cint(GetObjProperty(targ, "corruption")) + " pontos de corrupcao." );
-	
+	endif
+	SendSysMessageEx(who, "O alvo tem " + cint(GetObjProperty(targ, "corruption")) + " pontos de corrupcao.");
+
 	return 1;
-endprogram 
+endprogram

@@ -11,24 +11,24 @@ include ":debug:Controller/DebugController";
 
 program daynightsystem()
 	SetGlobalProperty("daynightpid", getpid());
-    var config := readconfigfile(":nature:config/daynight"); // Moved up for clarity
-    var settings := config["settings"]; // Use 'settings' to avoid conflict with 'config' var name if it's an element
+	var config := readconfigfile(":nature:config/daynight"); // Moved up for clarity
+	var settings := config["settings"]; // Use 'settings' to avoid conflict with 'config' var name if it's an element
 
 	var darkness := cint(settings.darkness);
 	var transspeed := cint(settings.transspeed);
-	
+
 	var i;
-	while(1)
-        var base_day_period_seconds := CInt(settings.daylength) * 60;
-        var base_full_cycle_seconds := base_day_period_seconds * 2; // A full 24-game-hour cycle based on config
+	while (1)
+		var base_day_period_seconds := CInt(settings.daylength) * 60;
+		var base_full_cycle_seconds := base_day_period_seconds * 2; // A full 24-game-hour cycle based on config
 		var nightlength;
 
-		SeasonRotate();  //muda o dia do ano e estação
-		MoonFase();      // muda a fase da lua
+		SeasonRotate(); // muda o dia do ano e estação
+		MoonFase(); // muda a fase da lua
 		// Temperature();   //mmuda a temperatura local
 
 		var season := getSeason();
-        var durationDayMod := 1.0; // Initialize as float for precision
+		var durationDayMod := 1.0; // Initialize as float for precision
 		var date := getCurrentDate();
 
 		DebugMsgEvent(DEBUG_CLIMA, "Dia do ano: " + date.dayYear);
@@ -42,7 +42,7 @@ program daynightsystem()
 			durationDayMod -= 0.3;
 		endif
 
-		if (season == SUMMER) //Checa se é solstício de verão ou inverno
+		if (season == SUMMER) // Checa se é solstício de verão ou inverno
 			DebugMsgEvent(DEBUG_CLIMA, "Estacao: SUMMER");
 			DebugMsgEvent(DEBUG_CLIMA, "Eh Solsticio de: SUMMER");
 			durationDayMod += 0.2;
@@ -52,14 +52,18 @@ program daynightsystem()
 			durationDayMod -= 0.2;
 		endif
 
-        var actual_day_period_seconds := CInt(base_day_period_seconds * durationDayMod);
-        var actual_night_period_seconds := CInt(base_full_cycle_seconds - actual_day_period_seconds);
+		var actual_day_period_seconds := CInt(base_day_period_seconds * durationDayMod);
+		var actual_night_period_seconds := CInt(base_full_cycle_seconds - actual_day_period_seconds);
 
-		if (actual_day_period_seconds < 60) actual_day_period_seconds := 60; endif// Minimum 1 minute
-        if (actual_night_period_seconds < 60) actual_night_period_seconds := 60; endif
+		if (actual_day_period_seconds < 60)
+			actual_day_period_seconds := 60;
+		endif // Minimum 1 minute
+		if (actual_night_period_seconds < 60)
+			actual_night_period_seconds := 60;
+		endif
 
 		SetGlobalProperty("CurrentActualDaySeconds", actual_day_period_seconds);
-        SetGlobalProperty("CurrentActualNightSeconds", actual_night_period_seconds);
+		SetGlobalProperty("CurrentActualNightSeconds", actual_night_period_seconds);
 
 		DebugMsgEvent(DEBUG_CLIMA, "Duracao do dia: " + actual_day_period_seconds / 60 + "min");
 		DebugMsgEvent(DEBUG_CLIMA, "Duracao da noite: " + actual_night_period_seconds / 60 + "min");
@@ -70,8 +74,8 @@ program daynightsystem()
 		SetGlobalProperty("dia", "dia");
 		darkness := GeTMoonLightMod();
 
-		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
-		for (i:=darkness;i>=0;i:=i-1)
+		// Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
+		for (i := darkness; i >= 0; i := i - 1)
 			// setregionlightlevel("Umbraeterna", i);
 			setregionlightlevel("Superficie", i);
 			setglobalproperty("lightlevel", i);
@@ -80,14 +84,14 @@ program daynightsystem()
 		endfor
 		setregionlightlevel("Umbraeterna", 28);
 
-        sleep(actual_day_period_seconds);
-  
+		sleep(actual_day_period_seconds);
+
 		broadcast("O sol esta se pondo.");
 		SetGlobalProperty("halfdaytime", ReadGameClock());
 		SetGlobalProperty("dia", "noite");
 
-		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, Superficie e etc)
-		for (i:=0;i<=darkness;i:=i+1)
+		// Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, Superficie e etc)
+		for (i := 0; i <= darkness; i := i + 1)
 			// setregionlightlevel("Umbraeterna", i);
 			setregionlightlevel("Superficie", i);
 			setglobalproperty("lightlevel", i);
@@ -95,9 +99,8 @@ program daynightsystem()
 			sleepms(transspeed);
 		endfor
 		setregionlightlevel("Umbraeterna", 28);
-        sleep(actual_night_period_seconds);
-		
+		sleep(actual_night_period_seconds);
+
 		advanceDay();
 	endwhile
 endprogram
-

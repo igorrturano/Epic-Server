@@ -23,10 +23,10 @@ program SpellScript(params)
 	if (savegame == error)
 		savegame := struct;
 	else
-		var  del  :=  YesNo(who, "Deseja cancelar esta magia?");
+		var del := YesNo(who, "Deseja cancelar esta magia?");
 		if (del)
 			EraseObjProperty(who, "savegame");
-			SendSysMessageEx(who, "A magia foi cancelada",  SSM_INFO);
+			SendSysMessageEx(who, "A magia foi cancelada", SSM_INFO);
 			return;
 		endif
 		savegame := struct;
@@ -36,19 +36,16 @@ program SpellScript(params)
 	savegame.+y := who.y;
 	savegame.+z := who.z;
 	savegame.+realm := who.realm;
-	savegame.+hits := AP_GetVital(who,HITS);
-	savegame.+stamina := AP_GetVital(who,  STAMINA);
+	savegame.+hits := AP_GetVital(who, HITS);
+	savegame.+stamina := AP_GetVital(who, STAMINA);
 	savegame.+mana := AP_GetVital(who, MANA);
 
-	SetObjProperty(who,"savegame", savegame);
+	SetObjProperty(who, "savegame", savegame);
 
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
 
 	SendSysMessageEx(who, "O estado foi salvo.", SSM_INFO);
 
 	return 1;
 
 endprogram
-
-
-

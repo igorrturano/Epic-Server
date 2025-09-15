@@ -1,5 +1,5 @@
-  
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -21,7 +21,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var shots := Cint(AP_GetSkill(who, ARCANA)/25);
+	var shots := Cint(AP_GetSkill(who, ARCANA) / 25);
 	if (shots < 1)
 		shots := 1;
 	endif
@@ -46,10 +46,9 @@ program SpellScript(params)
 		endif
 	endif
 
-        PlaySoundEffect(targ, SFX_BLESS);
+	PlaySoundEffect(targ, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce encantou a arma.", SSM_INFO);
 
-	
 	return 1;
-endprogram    
+endprogram

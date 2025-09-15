@@ -2,10 +2,10 @@ use uo;
 use os;
 use cfgfile;
 
-var GROWTH_UNIT		:= GetObjTypeByName("GrowthUnit");
+var GROWTH_UNIT := GetObjTypeByName("GrowthUnit");
 
-const BOW_ANIM		:= 0x20;
-const PLANT_SOUND	:= 0x50;
+const BOW_ANIM := 0x20;
+const PLANT_SOUND := 0x50;
 include ":attributes:skillCheck";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
@@ -16,7 +16,7 @@ program PlantSeed(who, seed)
 
 	var canplant := 0;
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 0, who.realm)
-		if ( item.objtype == 0x31F4 ) //dirtpatch
+		if (item.objtype == 0x31F4) // dirtpatch
 			canplant := 1;
 		endif
 		sleepms(2);
@@ -28,7 +28,7 @@ program PlantSeed(who, seed)
 	endif
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 0, who.realm)
-		if ( item.IsPlant() )
+		if (item.IsPlant())
 			SendSysMessage(who, "Ja existe uma planta crescendo aqui.");
 			return;
 		endif
@@ -44,16 +44,16 @@ program PlantSeed(who, seed)
 	var award_diff := cfg.PlantDifficulty;
 	var difficulty := award_diff;
 
-	if(TemHabilidade(who,"Agricultor Talentoso"))
-		difficulty := difficulty-20;
+	if (TemHabilidade(who, "Agricultor Talentoso"))
+		difficulty := difficulty - 20;
 	endif
 
-	if ( SkillCheck(who, Domestic_Work, difficulty, award_diff) > 0 )
-		var grower := CreateItemAtLocation(who.x, who.y, who.z+1, GROWTH_UNIT, 1, who.realm);
+	if (SkillCheck(who, Domestic_Work, difficulty, award_diff) > 0)
+		var grower := CreateItemAtLocation(who.x, who.y, who.z + 1, GROWTH_UNIT, 1, who.realm);
 		grower.SetGrowerType(seed.objtype);
 		SendSysMessage(who, "Voce plantou a semente.");
 		grower.SetWaterAmount(100);
-		if(TemHabilidade(who,"Dedo Verde"))
+		if (TemHabilidade(who, "Dedo Verde"))
 			grower.SetGrowStep(5);
 		else
 			grower.SetGrowStep(0);
@@ -63,17 +63,17 @@ program PlantSeed(who, seed)
 		if (TemHabilidade(who, "Agricultor Experiente"))
 			maxAmt := maxAmt*2;
 		endif
-		*/
-		grower.SetMaxProduceAmount( maxAmt );
+*/
+		grower.SetMaxProduceAmount(maxAmt);
 
-		if ( who.cmdlevel >= 1 )
+		if (who.cmdlevel >= 1)
 			if (!YesNo(who, "(GM) Deseja que esta planta precise ser regada?", "Sim.", "Nao."))
 				SendSysMessage(who, "Esta planta nao precisa de agua.");
 				SetObjProperty(grower, "gmplant", 1);
 			endif
 		endif
 
-		if (seed.objtype == 0x701E) //se for flor
+		if (seed.objtype == 0x701E) // se for flor
 			var flower := selectflower(who);
 			setobjproperty(grower, "flower", flower);
 		endif
@@ -111,7 +111,7 @@ function selectflower(who)
 	GFTilePic(gump, 220, 390, 3214);
 	GFTilePic(gump, 220, 440, 9036);
 
-	GFAddButton(gump, 30, 100,  2103, 2104, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 30, 100, 2103, 2104, GF_CLOSE_BTN, 1);
 	GFAddButton(gump, 30, 150, 2103, 2104, GF_CLOSE_BTN, 2);
 	GFAddButton(gump, 30, 200, 2103, 2104, GF_CLOSE_BTN, 3);
 	GFAddButton(gump, 30, 250, 2103, 2104, GF_CLOSE_BTN, 4);
@@ -121,7 +121,7 @@ function selectflower(who)
 	GFAddButton(gump, 30, 450, 2103, 2104, GF_CLOSE_BTN, 8);
 	GFAddButton(gump, 30, 500, 2103, 2104, GF_CLOSE_BTN, 9);
 
-	GFAddButton(gump, 210, 100,  2103, 2104, GF_CLOSE_BTN, 10);
+	GFAddButton(gump, 210, 100, 2103, 2104, GF_CLOSE_BTN, 10);
 	GFAddButton(gump, 210, 150, 2103, 2104, GF_CLOSE_BTN, 11);
 	GFAddButton(gump, 210, 200, 2103, 2104, GF_CLOSE_BTN, 12);
 	GFAddButton(gump, 210, 250, 2103, 2104, GF_CLOSE_BTN, 13);
@@ -139,9 +139,9 @@ function selectflower(who)
 		return 3263;
 	elseif (input == 3)
 		return 3264;
-	elseif (input == 4 )
+	elseif (input == 4)
 		return 3265;
-	elseif  (input == 5)
+	elseif (input == 5)
 		return 3203;
 	elseif (input == 6)
 		return 3204;
@@ -170,6 +170,5 @@ function selectflower(who)
 	else
 		return 0;
 	endif
-
 
 endfunction

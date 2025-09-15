@@ -16,7 +16,6 @@ include ":crafting:craftingUtil";
 
 program use_TinkerTool(who, tool)
 
-	FabricaItensComplexos(who,"Tinkering");
+	FabricaItensComplexos(who, "Tinkering");
 
 endprogram
-

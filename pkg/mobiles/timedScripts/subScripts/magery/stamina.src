@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -13,16 +13,16 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	params := 0; // Not needed anymore.
-	
-	if ( GetObjProperty(mobile, "#stammod") )
+
+	if (GetObjProperty(mobile, "#stammod"))
 		// Condition is met if the mobile logs out and back in.
 		// Prevents mod from being applied twice.
 		return 0;
 	endif
-	var stam := AP_GetVital( mobile, STAMINA );
+	var stam := AP_GetVital(mobile, STAMINA);
 	SetObjProperty(mobile, "#stammod", CInt(GetObjProperty(mobile, "#stammod")) + 13);
-	Sleep (2);
-	AP_SetVital( mobile, STAMINA, stam + 13);
+	Sleep(2);
+	AP_SetVital(mobile, STAMINA, stam + 13);
 
 	return 1;
 endprogram

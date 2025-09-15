@@ -1,8 +1,7 @@
 /*
  * $Id: makeset.src 129 2006-05-27 18:08:54Z austinheilman $
  *
- */
-
+*/
 use uo;
 use os;
 use cfgfile;
@@ -13,18 +12,18 @@ include ":gumps:gumps_ex";
 program textcmd_MakeSet(who, set_name)
 	var config := ReadConfigFile("::noncore/sets");
 
-	if ( !set_name )
+	if (!set_name)
 		set_name := SetNamesGump(who, config);
-		if ( !set_name )
+		if (!set_name)
 			SendSysMessage(who, "Cancelled.");
 			return 0;
 		endif
-	elseif ( !config[set_name] )
-		SendSysMessage(who, "Could not find set name "+set_name);
+	elseif (!config[set_name])
+		SendSysMessage(who, "Could not find set name " + set_name);
 		return 0;
 	endif
 
-	SendSysMessage(who, "Target where you want to place "+set_name);
+	SendSysMessage(who, "Target where you want to place " + set_name);
 	var targ := TargetCoordinates(who);
 
 	foreach line in GetConfigStringArray(config[set_name], "item")
@@ -32,14 +31,14 @@ program textcmd_MakeSet(who, set_name)
 		var objtype := CInt(line[1]), graphic := CInt(line[2]), color := CInt(line[3]);
 		var x := CInt(line[4]), y := CInt(line[5]), z := CInt(line[6]);
 
-		var item := CreateItemAtLocation(targ.x+x, targ.y+y, targ.z+z, objtype, 1, who.realm);
+		var item := CreateItemAtLocation(targ.x + x, targ.y + y, targ.z + z, objtype, 1, who.realm);
 		item.color := color;
 		item.graphic := graphic;
 		item.movable := 0;
-		if ( !item )
-			SendSysMessage(who, "Error creating line! "+item.errortext);
+		if (!item)
+			SendSysMessage(who, "Error creating line! " + item.errortext);
 		else
-			//SendSysMessage(who, "Created "+item.desc+" at "+item.x+" "+item.y+" "+item.z);
+		// SendSysMessage(who, "Created "+item.desc+" at "+item.x+" "+item.y+" "+item.z);
 		endif
 
 		SleepMS(2);
@@ -60,20 +59,20 @@ function SetNamesGump(byref who, byref config)
 	var y_pos := 25;
 	var page_num := 1;
 	var counter := 1;
-	foreach elem_name in ( elem_names )
-		GFAddButton(gump, 20, y_pos+5, 2103, 2104, GF_CLOSE_BTN, _elem_name_iter);
+	foreach elem_name in (elem_names)
+		GFAddButton(gump, 20, y_pos + 5, 2103, 2104, GF_CLOSE_BTN, _elem_name_iter);
 		GFTextLine(gump, 40, y_pos, 2100, elem_name);
 
-		y_pos := y_pos+25;
-		counter := counter+1;
+		y_pos := y_pos + 25;
+		counter := counter + 1;
 
-		if ( counter > 16 )
+		if (counter > 16)
 			y_pos := 25;
 			counter := 1;
-			GFAddButton(gump, 210, 410, 2648, 2649, GF_PAGE_BTN, page_num+1);
-			page_num := page_num+1;
+			GFAddButton(gump, 210, 410, 2648, 2649, GF_PAGE_BTN, page_num + 1);
+			page_num := page_num + 1;
 			GFPage(gump, page_num);
-			GFAddButton(gump, 210, 20, 2650, 2651, GF_PAGE_BTN, page_num-1);
+			GFAddButton(gump, 210, 20, 2650, 2651, GF_PAGE_BTN, page_num - 1);
 		endif
 
 		SleepMS(2);
@@ -81,10 +80,10 @@ function SetNamesGump(byref who, byref config)
 
 	var input := GFSendGump(who, gump);
 	input := input[0];
-	if ( !input )
+	if (!input)
 		return 0;
 	endif
 
-	SendSysMessage(who, "->"+elem_names[input]);
+	SendSysMessage(who, "->" + elem_names[input]);
 	return elem_names[input];
 endfunction

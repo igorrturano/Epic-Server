@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -10,21 +10,21 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var level := params[3];
 	var teste := GetObjProperty(mobile, "#StrengthMod");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(level > teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (level > teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(mobile, "#StrengthMod", level);
-			AP_ModifyStatMod(mobile, STRENGTH, (level-teste));
+			AP_ModifyStatMod(mobile, STRENGTH, (level - teste));
 			Set_Critical(0);
 			return 1;
 		else
 			return 0;
 		endif
-	else	
+	else
 
-	SetObjProperty(mobile, "#StrengthMod", level);
-	AP_ModifyStatMod(mobile, STRENGTH, level);
-	
-	return 1;
+		SetObjProperty(mobile, "#StrengthMod", level);
+		AP_ModifyStatMod(mobile, STRENGTH, level);
+
+		return 1;
 	endif
 endprogram

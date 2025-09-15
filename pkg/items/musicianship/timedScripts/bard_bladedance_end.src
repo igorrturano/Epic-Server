@@ -14,10 +14,10 @@ program TimedScript_bard_bladedance(params)
 	endif
 
 	PrintTextAbove(laminaAnimada, "*A espada para de dancar*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
-	MoveObjectToLocation(espadaBase, laminaAnimada.x, laminaAnimada.y, laminaAnimada.z+1, realm, MOVEITEM_IGNOREMOVABLE|MOVEOBJECT_FORCELOCATION);
-	sleepms (200);
+	MoveObjectToLocation(espadaBase, laminaAnimada.x, laminaAnimada.y, laminaAnimada.z + 1, realm,
+					  MOVEITEM_IGNOREMOVABLE | MOVEOBJECT_FORCELOCATION);
+	sleepms(200);
 	SetObjProperty(laminaAnimada, "GuardKill", 1);
-	ApplyRawDamage(laminaAnimada, CInt(AP_GetVitalMaximumValue(laminaAnimada, "Hits")+20));
+	ApplyRawDamage(laminaAnimada, CInt(AP_GetVitalMaximumValue(laminaAnimada, "Hits") + 20));
 	return 1;
 endprogram
-

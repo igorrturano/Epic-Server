@@ -90,8 +90,6 @@
 // 		"Próximo" // 14
 // 		};
 
-
-
 // 	var ret := SendDialogGump( who, gflayout, gfdata );
 // 	if (1 in ret.keys)
 // 		chardata.+raca := "Humano";
@@ -116,7 +114,7 @@
 // 		chardata.+povo := "Anao";
 //         if (who.graphic == 400)
 //             who.graphic := 1828;
-//         else 
+//         else
 //             who.graphic := 1829;
 //         endif
 //     elseif (11 in ret.keys)
@@ -127,7 +125,7 @@
 // 		chardata.+povo := "Orc";
 //         if (who.graphic == 400)
 //             who.graphic := 1832;
-//         else 
+//         else
 //             who.graphic := 1833;
 //         endif
 // 	endif
@@ -139,7 +137,6 @@
 //     endif
 
 // endfunction
-
 
 // function VantagemRacial(who, byref chardata)
 
@@ -299,7 +296,6 @@
 // 		"text 180 500 2105 6",
 // 		"Radio 150 497 9726 9729 0 4"
 
-
 // 		};
 
 // var gfdata := array{
@@ -311,8 +307,6 @@
 // 		"Caminho da Sabedoria",
 // 		"Caminho da Trabalhador"
 // 		};
-
-
 
 // 	var ret := SendDialogGump( who, gflayout, gfdata );
 // 	if (1 in ret.keys)
@@ -396,14 +390,12 @@
 
 // // endfunction
 
-
 // function GumpSkills(who, byref chardata, byref skillspoints)
 // 	var cfg;
 // 	var elem;
 
 // 	cfg := ReadConfigFile(":charactercreation:config/classes");
 // 	elem := FindConfigElem(cfg, cstr(chardata.classe) );
-
 
 // 	var primarias    := GetConfigStringArray(elem, "P");
 // 	var secundarias  := GetConfigStringArray(elem, "S");
@@ -434,7 +426,6 @@
 
 // 		"page 1",
 // 		"text 150 160 2103 2"
-
 
 // 		};
 
@@ -585,8 +576,6 @@
 // 		return 1;
 // 	endif
 
-
-
 // endfunction
 
 // function SkillPrice(input, primarias, secundarias, terciarias, quaternarias)
@@ -641,7 +630,6 @@
 // 		endif
 // 	endforeach
 
-
 // 	kitgump(who, chardata, selectedkit, kits);
 
 // endfunction
@@ -670,11 +658,8 @@
 // 		"Text  420 580 2103 1",
 // 		"Button 470 580 9903 9905 1 2 99",
 
-
-
 // 		"page 1",
 // 		"text 150 160 2103 2"
-
 
 // 		};
 
@@ -735,7 +720,6 @@
 // 		kitgump(who, chardata, ret.keys[2], kits);
 // 	endif
 
-
 // endfunction
 
 // function ItemPicker(who, byref chardata)
@@ -775,8 +759,6 @@
 // 		"Button 320 185 2437 2438 0 3 99",
 // 		"Button 410 185 2437 2438 0 4 99",
 // 		"Button 460 185 2437 2438 0 5 99"
-
-
 
 // 		};
 
@@ -839,7 +821,6 @@
 
 // 		var ret := SendDialogGump( who, gflayout, gfdata );
 // 		var input := ret.keys[2];
-
 
 // 		if (input > 100 )
 // 			var index := input - 100;
@@ -918,7 +899,6 @@
 // 		"Button 180 245 2437 2438 1 2 5",
 // 		"Button 180 284 2437 2438 1 2 6"
 
-
 // 		};
 
 // var gfdata := array{
@@ -932,7 +912,6 @@
 // 		" " + chardata.dex,
 // 		" " + chardata.int
 // 		};
-
 
 // 		var ret := SendDialogGump( who, gflayout, gfdata );
 // 		var input := ret.keys[2];
@@ -1062,7 +1041,6 @@
 // 		sleepms(10);
 // 	endforeach
 
-
 // 	var chardata := struct;
 // 	chardata.+Skills := dictionary;
 // 	chardata.+Credits := 100;
@@ -1070,7 +1048,6 @@
 // 	chardata.+str := 40;
 // 	chardata.+dex := 40;
 // 	chardata.+int := 40;
-
 
 // 	//TODOS OS GUMPS:
 // 	RaceGump(who, chardata);
@@ -1367,7 +1344,7 @@
 // 					spellinfo.id := 10;
 // 					SetObjProperty(p1, "spellinfo", spellinfo);
 // 					ganheispell := 1;
-//                 endif            
+//                 endif
 //             endif
 // 		endif
 // 	endif

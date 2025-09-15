@@ -34,7 +34,8 @@ program pet(who)
 			return 1;
 		endif
 	else
-		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal.", SSM_REQUEST);
+		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal.",
+				   SSM_REQUEST);
 		var targ := target(who);
 		if (!targ)
 			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
@@ -43,7 +44,7 @@ program pet(who)
 		endif
 
 		var tamed := GetObjProperty(who, "TamedPets");
-		if ( targ.serial in tamed )
+		if (targ.serial in tamed)
 			SetPetMods(targ);
 			PrintText(targ, "*a natureza escolhe esta criatura*");
 			SendSysMessageEx(who, "Voce escolheu seu companheiro animal.", SSM_INFO);
@@ -55,6 +56,5 @@ program pet(who)
 		endif
 
 	endif
-
 
 endprogram
