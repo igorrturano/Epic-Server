@@ -5,7 +5,7 @@ use datafile;
 
 include ":commands:possess";
 
-program textcmd_unpossess( me, freeze )
+program textcmd_unpossess(me, freeze)
 	if (freeze)
 		freeze := 1;
 	else

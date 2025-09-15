@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -14,13 +14,13 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	var bonus :=  cint(AP_GetSkill(who,ARCANA)*6);
+	var bonus := cint(AP_GetSkill(who, ARCANA) * 6);
 	var duration := ReadGameClock() + bonus;
-	SetObjProperty(who, "#satisfacaosadica", duration );
+	SetObjProperty(who, "#satisfacaosadica", duration);
 
 	handleSilentMagic(who, who, 385);
 	SendSysMessageEx(who, "Cada morte e um presente.", SSM_INFO);
 	Corromper(who, 20, 0);
 
 	return 1;
-endprogram 
+endprogram

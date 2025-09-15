@@ -9,4 +9,3 @@ program TimedScript_EndClumsy(params)
 	EraseObjProperty(mobile, "#fantasma");
 	return 1;
 endprogram
-   

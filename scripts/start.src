@@ -6,14 +6,14 @@ include ":containers:storageAreas";
 
 program world_start_up()
 
-	foreach name in ( CP_ListStorageAreas() )
-		CP_GetStorageArea( name, CP_CREATE );
-		Print( "Initializing "+name+" Area." );
+	foreach name in (CP_ListStorageAreas())
+		CP_GetStorageArea(name, CP_CREATE);
+		Print("Initializing " + name + " Area.");
 	endforeach
-	Start_Script( "storageWipe" );
-	Print( "Wiping merchant storage" );
+	Start_Script("storageWipe");
+	Print("Wiping merchant storage");
 
-	Print( "Initializing teleporters" );
+	Print("Initializing teleporters");
 	CreateTeleporters();
 
 	return 1;

@@ -5,7 +5,7 @@
  * like unmounting players off their mount, allowing ghosts to report their murderer,
  * Auto-Resurrect choices, etc.
  *
- */
+*/
 use uo;
 use os;
 use util;
@@ -24,12 +24,12 @@ program core_chrDeath(params)
 	var corpse := params[1];
 	var ghost := params[2];
 
-	if (GetObjProperty(ghost, "lastpossessedserial") && GetObjProperty(ghost, "npchero")==error)
+	if (GetObjProperty(ghost, "lastpossessedserial") && GetObjProperty(ghost, "npchero") == error)
 		var oldnpc := SystemFindObjectBySerial(GetObjProperty(ghost, "lastpossessedserial"));
 		if (oldnpc)
 			ghost.concealed := 1;
 			WakeUp(ghost, corpse);
-			unpossess (ghost);
+			unpossess(ghost);
 			ApplyRawDamage(oldnpc, 9999);
 			return 1;
 		endif
@@ -43,12 +43,12 @@ program core_chrDeath(params)
 		endif
 	endif
 
-	SetObjProperty(corpse, "url", GetObjProperty(corpse, "old_url"));//Ajuste no portrait
+	SetObjProperty(corpse, "url", GetObjProperty(corpse, "old_url")); // Ajuste no portrait
 
 	var corpse_name := corpse.desc;
 	corpse_name["A corpse of"] := "corpo de";
-	if ( GetObjProperty(corpse, "realname") )
-		//corpse_name["Desconhecido"] := GetObjProperty(corpse, "realname"); //pro corpo ficar com o nome do cara quando deita incognito
+	if (GetObjProperty(corpse, "realname"))
+		// corpse_name["Desconhecido"] := GetObjProperty(corpse, "realname"); //pro corpo ficar com o nome do cara quando deita incognito
 		SetName(ghost, GetObjProperty(corpse, "realname"));
 		EraseObjProperty(corpse, "realname");
 	endif
@@ -63,33 +63,32 @@ program core_chrDeath(params)
 
 	CheckForAutoRes(ghost, corpse);
 
-	MoveObjectToLocation( ghost, 4216, 1849, 1);
+	MoveObjectToLocation(ghost, 4216, 1849, 1);
 	Start_Script("deathscripts/players", params);
-
 
 	return 1;
 endprogram
 
 function CheckForAutoRes(who, corpse)
 	var auto_res := CInt(GetObjProperty(who, "AutoRes"));
-	if ( auto_res )
+	if (auto_res)
 		Resurrect(who);
 		AP_RefreshVitals(who);
 
-		if ( !who.backpack )
+		if (!who.backpack)
 			return 1;
 		endif
 
 		foreach item in (EnumerateItemsInContainer(corpse))
-			if ( item.container == corpse )
-				if ( !EquipItem(who, item) )
+			if (item.container == corpse)
+				if (!EquipItem(who, item))
 					MoveItemToContainer(item, who.backpack);
 				endif
 			endif
 		endforeach
 
-		if ( auto_res != -1 ) // -1 means infinite uses
-			auto_res := auto_res-1;
+		if (auto_res != -1) // -1 means infinite uses
+			auto_res := auto_res - 1;
 			SetObjProperty(who, "AutoRes", auto_res);
 		endif
 		return 1;
@@ -99,21 +98,23 @@ endfunction
 
 function WakeUp(ghost, corpse)
 	var serialC := ghost.serial;
-	//Aqui ele tenta mover o fantasma para revier, ele vai tentar 10 vezes
+	// Aqui ele tenta mover o fantasma para revier, ele vai tentar 10 vezes
 	var tentativas := 1;
-    for(tentativas := 1; tentativas <= 11; tentativas := tentativas + 1)
-        var result := MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
-        if (result) //Caso de sucesso, sai do for e continua a vida, ou morte
-            break;
-        else
-            if(tentativas == 11) //Caso esteja na 11 tentativa, ele vai mover o corpo para o lugar dos mortos e reviver o char la mesmo
-                MoveObjectToLocation(corpse, 4216, 1849, 1);
-                MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
-                break;
-            endif
-        endif
-        MoveObjectToLocation(corpse, corpse.x + tentativas, corpse.y + tentativas, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
-    endfor
+	for (tentativas := 1; tentativas <= 11; tentativas := tentativas + 1)
+		var result := MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm,
+											MOVEOBJECT_FORCELOCATION);
+		if (result) // Caso de sucesso, sai do for e continua a vida, ou morte
+			break;
+		else
+			if (tentativas == 11) // Caso esteja na 11 tentativa, ele vai mover o corpo para o lugar dos mortos e reviver o char la mesmo
+				MoveObjectToLocation(corpse, 4216, 1849, 1);
+				MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
+				break;
+			endif
+		endif
+		MoveObjectToLocation(corpse, corpse.x + tentativas, corpse.y + tentativas, corpse.z, corpse.realm,
+					   MOVEOBJECT_FORCELOCATION);
+	endfor
 
 	Resurrect(ghost);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
@@ -123,8 +124,8 @@ function WakeUp(ghost, corpse)
 		if (item.container == corpse)
 			MoveObjectToLocation(item, ghost.x, ghost.y, ghost.z, ghost.realm);
 			MoveItemToContainer(item, ghost.backpack);
-			if ( CInt(GetObjProperty(item, "#EquippedOn")) == serialC )
-				if ( !EquipItem(ghost, item) )
+			if (CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
+				if (!EquipItem(ghost, item))
 					EraseObjProperty(item, "#EquippedOn");
 				endif
 			endif

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -25,17 +25,17 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
-	
+
 	var hitregen := AP_GetVitalRegenRate(targ, "Hits");
 	SetObjProperty(targ, "#OldHitRegen", hitregen);
 	var number := hitregen * -1;
 	AP_SetVitalRegenRateMod(targ, "Hits", number);
 
 	SetObjProperty(targ, "CannotHeal", 1);
-	TS_StartTimer(targ, "mantogrinwald", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 5, 1, who, 0); //20 min
+	TS_StartTimer(targ, "mantogrinwald", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 5, 1, who, 0); // 20 min
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "O corpo do alvo nao podera se regenerar durante o efeito.", SSM_INFO);
 	SendSysMessageEx(targ, "Você sente sua pele repuxar e ressecar se tornando sem vida.", SSM_INFO);
-	
+
 	return 1;
-endprogram 
+endprogram

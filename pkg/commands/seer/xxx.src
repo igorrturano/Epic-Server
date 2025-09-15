@@ -7,14 +7,14 @@ include ":gumps:yesNo";
 program teleto(who, param)
 	var tree;
 	while (!who.warmode)
-		tree := CreateItematLocation(who.x,who.y,who.z,3286, who.realm);
-		CreateItematLocation(tree.x,tree.y,tree.z,3287, who.realm);
+		tree := CreateItematLocation(who.x, who.y, who.z, 3286, who.realm);
+		CreateItematLocation(tree.x, tree.y, tree.z, 3287, who.realm);
 		sleep(1);
 	endwhile
 	SendSysMessage(who, "Stop");
-//	var process := GetProcess(CInt(param));
-//	SendSysMessage(who, "Processo: "+process+" Num: "+param);
-//	process.kill();
+// 	var process := GetProcess(CInt(param));
+// 	SendSysMessage(who, "Processo: "+process+" Num: "+param);
+// 	process.kill();
 /*
 	SendSysMessage(who, "Comando inicio.");
 	var ips, acc, acct, found;

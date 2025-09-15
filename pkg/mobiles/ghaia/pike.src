@@ -6,7 +6,7 @@ include ":ghaia:genericspecial";
 include ":ghaia:ghaiaspecial";
 include ":ghaia:ghaiaspecial";
 
-var npccfgfile := ReadConfigFile( ":*:npcdesc" );
+var npccfgfile := ReadConfigFile(":*:npcdesc");
 var me := self();
 var idlesnd1;
 var idlesnd2;
@@ -26,57 +26,56 @@ program KillPlayers()
 	propallies := dictionary;
 
 	InitializeNPC(me);
-	SetWarMode( 0 );
+	SetWarMode(0);
 	ev := os::wait_for_event(0);
 	wanders := 60;
 	EnableMainEvents();
 
-    	while(me)
-
-
+	while (me)
 
 		look_around();
 		wander();
 		PlayIdleSound();
 
-		wanders := wanders +1;
-		if(wanders >=30)
+		wanders := wanders + 1;
+		if (wanders >= 30)
 			wanders := 0;
-			//mystate := SLEEPING;
+			// mystate := SLEEPING;
 			look_around();
 			ev := sleepmode();
 		else
 			ev := os::wait_for_event(10);
 		endif
 
-		//SLEEPING:
-			//ev := sleepmode();
+		// SLEEPING:
+		// ev := sleepmode();
 
-		//FIGHTING:
-		//	Fight(ev.source);
-	//	endcase
+		// FIGHTING:
+		// 	Fight(ev.source);
+		// 	endcase
 
-		if(ev)
-			case(ev.type)
+		if (ev)
+			case (ev.type)
 				SYSEVENT_ENTEREDAREA:
-					if (CheckLineOfSight( me, ev.source ))
-						if(CanFight(me, ev.source, align)) //verifica se eh inimigo
+					if (CheckLineOfSight(me, ev.source))
+						if (CanFight(me, ev.source, align)) // verifica se eh inimigo
 							wanders := 0;
 							Fight(ev.source);
 						endif
 					endif
-				SYSEVENT_ENGAGED:	wanders := 0; Fight(ev.source);
-				SYSEVENT_DAMAGED:	wanders := 0; Fight(ev.source);
-				EVID_ALERT_ALLIES:	wanders := 0; Fight(ev.opponent, 1);
-				EVID_HERDING:		herd(ev);
+				SYSEVENT_ENGAGED:  wanders := 0; Fight(ev.source);
+				SYSEVENT_DAMAGED:  wanders := 0; Fight(ev.source);
+				EVID_ALERT_ALLIES: wanders := 0; Fight(ev.opponent, 1);
+				EVID_HERDING:      herd(ev);
 				EVID_TAUNT:
-							if(ev.source)
-								wanders := 0; Fight(ev.opponent);
-							endif
+					if (ev.source)
+						wanders := 0;
+						Fight(ev.opponent);
+					endif
 				EVID_FLEE:
-							if (ev.source)
-								flee(ev.source);
-							endif
+					if (ev.source)
+						flee(ev.source);
+					endif
 
 			endcase
 		endif
@@ -95,20 +94,20 @@ function CloseDistance(opponent)
 
 	var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
 
-	if (me.z > opponent.z +18) //checa se esta em cima de alguma torre
-		if (!CheckLineofSight(me, opponent)) //IA para torres: Verifica se tem visão do oponente
-			if (RandomInt(4) == 0 ) //se não tiver visão, tem 25% de mudar de alvo
+	if (me.z > opponent.z + 18) // checa se esta em cima de alguma torre
+		if (!CheckLineofSight(me, opponent)) // IA para torres: Verifica se tem visão do oponente
+			if (RandomInt(4) == 0) // se não tiver visão, tem 25% de mudar de alvo
 				ChooseAnotherOpponent(me);
 			endif
 		endif
-		return 0; //se estiver em cima de torres, não se move do lugar
+		return 0; // se estiver em cima de torres, não se move do lugar
 	endif
 
-	if (dist <= 1 )
+	if (dist <= 1)
 		RunAwayFrom(opponent);
 		sleepms(sleepdelay);
 	elseif (dist > 2)
-		RunToward( opponent );
+		RunToward(opponent);
 		sleepms(sleepdelay);
 	else
 		return 1;
@@ -120,10 +119,10 @@ endfunction
 
 function ChooseAnotherOpponent(me)
 
-	var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm );
-	if  (otherTarget.size() > 0)
+	var otherTarget := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm);
+	if (otherTarget.size() > 0)
 		foreach mob in otherTarget
-			if(CanFight(me, mob, align)) //verifica se eh inimigo
+			if (CanFight(me, mob, align)) // verifica se eh inimigo
 				Fight(mob);
 			endif
 		endforeach
@@ -133,10 +132,10 @@ function ChooseAnotherOpponent(me)
 endfunction
 
 function look_around()
-  foreach npc in ListMobilesInLineOfSight(me, areasize)
-    if( CanFight(me, npc, align) )
-         Fight(npc);
-    endif
-    sleepms(2);
-  endforeach
+	foreach npc in ListMobilesInLineOfSight(me, areasize)
+		if (CanFight(me, npc, align))
+			Fight(npc);
+		endif
+		sleepms(2);
+	endforeach
 endfunction

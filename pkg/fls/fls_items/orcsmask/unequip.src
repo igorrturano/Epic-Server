@@ -4,7 +4,6 @@ use cfgfile;
 
 include ":attributes:attributes";
 
-
 program unequipweapon(who, item)
 	set_critical(1);
 

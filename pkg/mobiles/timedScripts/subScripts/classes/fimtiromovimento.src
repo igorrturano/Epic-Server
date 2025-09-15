@@ -7,9 +7,8 @@ program TimedScript_EndClumsy(params)
 	var mobile := params[1];
 
 	RevokePrivilege(mobile, "firewhilemoving");
-	mobile.disable("firewhilemoving");	
+	mobile.disable("firewhilemoving");
 	SendSysMessageEX(mobile, "Voce nao pode mais atirar em movimento", SSM_INFO);
 
 	return 1;
 endprogram
-   

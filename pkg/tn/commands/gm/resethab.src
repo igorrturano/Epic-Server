@@ -15,9 +15,9 @@ program reset(who)
 	endif
 
 	var gump := GFCreateGump();
-        GFDisposable(gump, 0);
+	GFDisposable(gump, 0);
 	var sizey := GetGumpSizeY(habs);
-	GFResizePic(gump, 0, 25, 3600, 250, sizey+70);	
+	GFResizePic(gump, 0, 25, 3600, 250, sizey + 70);
 	GFResizePic(gump, 15, 40, 0x13BE, 220, sizey + 40);
 	GFTextLine(gump, 60, 50, 1153, "Resetar Habilidades");
 
@@ -26,7 +26,7 @@ program reset(who)
 	foreach hab in habs
 		GFRadioButton(gump, 30, y, 210, 211, 0, i);
 		GFTextLine(gump, 50, y, 1153, hab);
-		var requisitos := retornaRequisitos( hab);
+		var requisitos := retornaRequisitos(hab);
 		foreach req in requisitos
 			y := y + 20;
 			GFTextLine(gump, 70, y, SSM_REQUEST, req);
@@ -35,8 +35,8 @@ program reset(who)
 		i := i + 1;
 	endforeach
 
-  	GFAddButton(gump, 250-70, sizey+20, 4502, 4502, 1, 999 );
-	GFTextLine(gump, 250-110, sizey+30, 1153, "Pronto");
+	GFAddButton(gump, 250 - 70, sizey + 20, 4502, 4502, 1, 999);
+	GFTextLine(gump, 250 - 110, sizey + 30, 1153, "Pronto");
 
 	var input := GFSendGump(who, gump);
 
@@ -45,29 +45,30 @@ program reset(who)
 		var remover := array;
 		foreach key in (input.keys)
 			if (habs[habs.keys()[key]])
-				remover.append(habs[habs.keys()[key]]);// <-
+				remover.append(habs[habs.keys()[key]]); // <-
 			endif
 		endforeach
 
-		//Sendsysmessage(who, "input: " + input.keys);
-		//Sendsysmessage(who, "habs: " + habs);
-		//Sendsysmessage(who, "Voce quer remover: " + remover);
+		// Sendsysmessage(who, "input: " + input.keys);
+		// Sendsysmessage(who, "habs: " + habs);
+		// Sendsysmessage(who, "Voce quer remover: " + remover);
 
 		var habfinal := array;
 		foreach key in (habs.keys())
-			if (! (habs[key] in remover))
+			if (!(habs[key] in remover))
 				habfinal.append(habs[key]);
 			endif
 		endforeach
 
-		//sendsysmessage(who, "hab final " + habfinal);
+		// sendsysmessage(who, "hab final " + habfinal);
 
-		//verifica agora se as habs removidas nao sao dep pras q ficam
+		// verifica agora se as habs removidas nao sao dep pras q ficam
 		foreach hab in habfinal
-			var requisitos := retornaRequisitos( hab);
+			var requisitos := retornaRequisitos(hab);
 			foreach req in requisitos
-				if ( !(req in habfinal))
-					SendSysMessageEx(who, "Voce nao pode remover a habilidade " + remover[1] + " porque e pre requisito para " + hab, SSM_FAIL);
+				if (!(req in habfinal))
+					SendSysMessageEx(who, "Voce nao pode remover a habilidade " + remover[1]
+									  + " porque e pre requisito para " + hab, SSM_FAIL);
 					return;
 				endif
 			endforeach
@@ -77,8 +78,9 @@ program reset(who)
 		var classe := GetObjProperty(who, "classe");
 		resethab := resethab + 1;
 		var lvlhab := cint(NivelHabilidade(remover[1], classe));
-		var custo := (1000 + lvlhab * 100) * resethab; 
-		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para desaprender esta habilidade.", SSM_REQUEST);
+		var custo := (1000 + lvlhab * 100) * resethab;
+		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para desaprender esta habilidade.",
+				   SSM_REQUEST);
 		var targ := Target(who);
 		if (!targ)
 			SendSysMessage(who, "Cancelado.", SSM_FAIL);
@@ -88,7 +90,7 @@ program reset(who)
 			if (targ.amount < custo)
 				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
 				return;
-			endif				
+			endif
 			if (!SubtractAmount(targ, custo))
 				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
 				return;
@@ -101,32 +103,31 @@ program reset(who)
 		endif
 		SetObjProperty(who, "resethab", resethab);
 
-
-		//var classe := GetObjProperty(who, "classe");
+		// var classe := GetObjProperty(who, "classe");
 		foreach dep in remover
 			var nvl := cint(NivelHabilidade(dep, classe));
-			//sendsysmessage(who, " " + nvl);
-			var e := habs.erase( cint(nvl) );
-			//sendsysmessage(who, "erro " + e);
-			//sendsysmessage(who, "buy antes " + buy[nvl]);
-			buy[cint(nvl)] := 1; 
-			//sendsysmessage(who, "buy depois " + buy[nvl]);
+			// sendsysmessage(who, " " + nvl);
+			var e := habs.erase(cint(nvl));
+			// sendsysmessage(who, "erro " + e);
+			// sendsysmessage(who, "buy antes " + buy[nvl]);
+			buy[cint(nvl)] := 1;
+		// sendsysmessage(who, "buy depois " + buy[nvl]);
 		endforeach
 
 		SetObjProperty(who, "myhabs", habs);
 		SetObjProperty(who, "buyhab", buy);
 		SendSysMessage(who, "Suas habilidades foram atualizadas.", SSM_INFO);
-		//Sendsysmessage(who, "habs final: " + habs);
+	// Sendsysmessage(who, "habs final: " + habs);
 
 	endif
 
-endprogram 
+endprogram
 
-function GetGumpSizeY( habs)
+function GetGumpSizeY(habs)
 
 	var y := 100;
 	foreach hab in habs
-		var requisitos := retornaRequisitos( hab);
+		var requisitos := retornaRequisitos(hab);
 		foreach req in requisitos
 			y := y + 20;
 		endforeach

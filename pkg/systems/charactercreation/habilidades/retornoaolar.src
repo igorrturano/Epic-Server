@@ -5,7 +5,8 @@ include "include/say";
 
 program versatil(who)
 
-	SendSysMessageEx(who, "Escolha um item na sua mochila, em 2 minutos ele voltara para voce.", SSM_REQUEST);
+	SendSysMessageEx(who, "Escolha um item na sua mochila, em 2 minutos ele voltara para voce.",
+				  SSM_REQUEST);
 
 	var targ := Target(who);
 	if (!targ)
@@ -27,4 +28,4 @@ program versatil(who)
 	SendSysMessageEx(who, "Item retornou.", SSM_INFO);
 	MoveItemToContainer(targ, who.backpack);
 
-endprogram 
+endprogram

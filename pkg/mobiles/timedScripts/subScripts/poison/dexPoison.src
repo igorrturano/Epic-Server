@@ -8,16 +8,16 @@ program poisonScript(params)
 	var attacker := params[2];
 	var level := (-1) * params[3];
 	if (temHabilidade(attacker, "Veneno Puro"))
-		level := level*0.4;
+		level := level * 0.4;
 	else
-		level := level*0.3;
+		level := level * 0.3;
 	endif
 	var teste := GetObjProperty(mobile, "#DexPoisonMod");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(level < teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (level < teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(mobile, "#DexPoisonMod", level);
-			AP_ModifyStatMod(mobile, DEXTERITY, (level-teste));
+			AP_ModifyStatMod(mobile, DEXTERITY, (level - teste));
 			Set_Critical(0);
 			return 1;
 		else
@@ -25,10 +25,9 @@ program poisonScript(params)
 		endif
 	else
 
-	SetObjProperty(mobile, "#DexPoisonMod", level);
-	AP_ModifyStatMod(mobile, DEXTERITY, level);
-	
-	return 1;
+		SetObjProperty(mobile, "#DexPoisonMod", level);
+		AP_ModifyStatMod(mobile, DEXTERITY, level);
+
+		return 1;
 	endif
 endprogram
-

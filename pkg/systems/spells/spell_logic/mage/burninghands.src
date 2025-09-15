@@ -20,95 +20,95 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var caster := params[1];
 	var info := params[2];
-    var spellinfo := params[3];
-    var spell_circle := spellinfo.Circle;
-    var spell_school := spellinfo.School;
-    var range := cint(AP_GetSkill(caster, ARCANA)/20);
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
+	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
 
-    SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
-    var targ := TargetCoordinates(caster);
-    if (!targ)
-        SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
-        return 0;
-    endif
+	SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
+	var targ := TargetCoordinates(caster);
+	if (!targ)
+		SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+		return 0;
+	endif
 
-    SendSysMessageEx(caster, "Uma fina camada de chamas brota das pontas dos seus dedos estendidos.", SSM_INFO);
-    
-     // Use TurnObjectToward para virar o caster na direção do alvo.
-    TurnObjectToward(caster, targ.x, targ.y);
-    sleepms(300);
+	SendSysMessageEx(caster, "Uma fina camada de chamas brota das pontas dos seus dedos estendidos.",
+				  SSM_INFO);
 
-    var effect_id := 0x6d70; // ID do efeito que você quer jogar
-    var lines_count := range; // Número de linhas que você quer criar
-    var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
-    var effect_duration := 30; // Duração do efeito
+	// Use TurnObjectToward para virar o caster na direção do alvo.
+	TurnObjectToward(caster, targ.x, targ.y);
+	sleepms(300);
 
-    PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
+	var effect_id := 0x6d70; // ID do efeito que você quer jogar
+	var lines_count := range; // Número de linhas que você quer criar
+	var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
+	var effect_duration := 30; // Duração do efeito
 
-    var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
-    foreach mob in mobs
-        if (InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
-            if (mob == caster)
-                continue;
-            endif
+	PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
 
-            var damage := epicSpellDamageRoll(caster, spell_circle);
-            damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
+	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+	foreach mob in mobs
+		if (InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
+			if (mob == caster)
+				continue;
+			endif
 
-            PlaySoundEffect( mob, SFX_226 );
-            sleepms(100);
-            PlaySoundEffect( mob, SFX_227 );
-            sleepms(100);
-            PlaySoundEffect( mob, SFX_228 );
-            sleepms(100);
-            SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
-            DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
-            sleepms(100);         
-        endif
-    endforeach
+			var damage := epicSpellDamageRoll(caster, spell_circle);
+			damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
+
+			PlaySoundEffect(mob, SFX_226);
+			sleepms(100);
+			PlaySoundEffect(mob, SFX_227);
+			sleepms(100);
+			PlaySoundEffect(mob, SFX_228);
+			sleepms(100);
+			SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+			DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
+			sleepms(100);
+		endif
+	endforeach
 endprogram
 
 function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
-    var facing := caster.facing;
-    var start_x := caster.x;
-    var start_y := caster.y;
+	var facing := caster.facing;
+	var start_x := caster.x;
+	var start_y := caster.y;
 
-    for line := 0 to lines_count
-        var width := line * 2 + 1;
-        for i := -line to line
-            var pos_x, pos_y;
-            case (facing)
-                0: // North
-                    pos_x := start_x + i;
-                    pos_y := start_y - line;
-                1: // Northeast
-                    pos_x := start_x + line;
-                    pos_y := start_y - line + i;
-                2: // East
-                    pos_x := start_x + line;
-                    pos_y := start_y + i;
-                3: // Southeast
-                    pos_x := start_x + line;
-                    pos_y := start_y + line - i;
-                4: // South
-                    pos_x := start_x + i;
-                    pos_y := start_y + line;
-                5: // Southwest
-                    pos_x := start_x - line;
-                    pos_y := start_y + line - i;
-                6: // West
-                    pos_x := start_x - line;
-                    pos_y := start_y + i;
-                7: // Northwest
-                    pos_x := start_x - line;
-                    pos_y := start_y - line + i;
-            endcase
+	for line := 0 to lines_count
+		var width := line * 2 + 1;
+		for i := -line to line
+			var pos_x, pos_y;
+			case (facing)
+				0: // North
+					pos_x := start_x + i;
+					pos_y := start_y - line;
+				1: // Northeast
+					pos_x := start_x + line;
+					pos_y := start_y - line + i;
+				2: // East
+					pos_x := start_x + line;
+					pos_y := start_y + i;
+				3: // Southeast
+					pos_x := start_x + line;
+					pos_y := start_y + line - i;
+				4: // South
+					pos_x := start_x + i;
+					pos_y := start_y + line;
+				5: // Southwest
+					pos_x := start_x - line;
+					pos_y := start_y + line - i;
+				6: // West
+					pos_x := start_x - line;
+					pos_y := start_y + i;
+				7: // Northwest
+					pos_x := start_x - line;
+					pos_y := start_y - line + i;
+			endcase
 
-            if (pos_x != start_x || pos_y != start_y) // Don't place effect on caster
-                PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
-            endif
-        endfor
-        sleepms(50);
-    endfor
+			if (pos_x != start_x || pos_y != start_y) // Don't place effect on caster
+				PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
+			endif
+		endfor
+		sleepms(50);
+	endfor
 endfunction
-

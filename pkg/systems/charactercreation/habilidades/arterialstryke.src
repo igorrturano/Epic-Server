@@ -8,17 +8,17 @@ include ":combat:damage";
 include "include/say";
 
 program doubleattack(params)
-	var who	:= params[1];
+	var who := params[1];
 	detach();
-	
+
 	var i := 0;
 	var lastx := who.x;
 	var lasty := who.y;
 
-	while ( i < 30)
+	while (i < 30)
 
-		if ( (who.x != lastx) || (who.y != lasty) )
-			var dmg := 5 * (CoordinateDistance(who.x, who.y, lastx, lasty) +1);
+		if ((who.x != lastx) || (who.y != lasty))
+			var dmg := 5 * (CoordinateDistance(who.x, who.y, lastx, lasty) + 1);
 			ApplyRawDamage(who, dmg);
 			MakeBleed(who);
 			lastx := who.x;
@@ -31,4 +31,4 @@ program doubleattack(params)
 
 	SendSysMessageEx(who, "Seus sangramentos pararam.", SSM_INFO);
 
-endprogram   
+endprogram

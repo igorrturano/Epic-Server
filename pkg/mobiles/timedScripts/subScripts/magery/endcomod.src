@@ -11,7 +11,7 @@ program TimedScript_Clumsy(params)
 		EraseObjProperty(mobile, "coMod");
 		mobile.resist_cold_mod := mobile.resist_cold_mod - mod;
 	endif
-//	SetObjProperty(mobile, "ColdResistMod", cint(GetObjProperty(mobile, "ColdResistMod") - mod) );
+	// 	SetObjProperty(mobile, "ColdResistMod", cint(GetObjProperty(mobile, "ColdResistMod") - mod) );
 
 	return 1;
 endprogram

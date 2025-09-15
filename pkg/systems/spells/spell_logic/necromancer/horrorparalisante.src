@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -38,12 +38,12 @@ program SpellScript(params)
 		handleSilentMagic(who);
 
 		who.frozen := 0;
-	return;
+		return;
 	endif
 
-	while  (time < 10)
-		
-		if ( (who.x != oldx) || (who.y != oldy))
+	while (time < 10)
+
+		if ((who.x != oldx) || (who.y != oldy))
 			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
 			break;
 		endif
@@ -53,7 +53,7 @@ program SpellScript(params)
 			break;
 		endif
 
-		if(targ.dead)
+		if (targ.dead)
 			break;
 		endif
 		PerformAction(who, 17);

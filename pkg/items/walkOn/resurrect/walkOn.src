@@ -8,7 +8,7 @@ program walkon(mobile, tile)
 	// Used to fix unused var report by ecompile: tile;
 	tile := tile;
 
-	if( mobile.dead )
+	if (mobile.dead)
 		Resurrect(mobile);
 	else
 		SendSysMessage(mobile, "You are at peace...");
