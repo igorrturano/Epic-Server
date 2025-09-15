@@ -15,9 +15,8 @@ endfunction
 function LoadAchievement(type, who, key, name)
 	var DFController := DFTools(":achievements:" + type);
 	var prop := DFController.LoadValue(Hex(who.serial), key);
-	var achiev;
+	var achiev := Achievement(name, key);
 
-	achiev := Achievement(name, key);
 	achiev.Deserialize(prop[name]);
 
 	return achiev;
