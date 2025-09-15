@@ -8,15 +8,15 @@ include ":attributes:attributes";
 include "include/sounds";
 include ":fls_core:packets";
 
-program textcmd_Kill(who, text)
-	SendSysMessage(who, "Select a target to create multi.");
-	var targ := TargetMultiplacement(who, text);
-    var ship := CreateMultiAtLocation(targ.x, targ.y, targ.z, text, 0x0007, who.realm);
-    SendSysMessage(who, "multi: " + ship);
+program textcmd_Kill( who, text )
+  SendSysMessage( who, "Select a target to create multi." );
+  var targ := TargetMultiplacement( who, text );
+  var ship := CreateMultiAtLocation( targ.x, targ.y, targ.z, text, 0x0007, who.realm );
+  SendSysMessage( who, "multi: " + ship );
 
-    if (!ship)
-        PrintTextAbovePrivate(who, "I can't place the multi there.", who);
-        return 0;
-    endif
-    return 1;
+  if ( !ship )
+	PrintTextAbovePrivate( who, "I can't place the multi there.", who );
+	return 0;
+  endif
+  return 1;
 endprogram

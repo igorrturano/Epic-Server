@@ -7,9 +7,9 @@ include ":combat:damage";
 include "include/say";
 include ":tn:cooldown";
 
-program doubleattack(who)
+program doubleattack( who )
 
-	SendSysMessageEx(who, "Seu próximo ataque causará dano extra.", SSM_INFO);
-	SetCooldown(who, "marcadacaca", 10);
+  SendSysMessageEx( who, "Seu próximo ataque causará dano extra.", SSM_INFO );
+  SetCooldown( who, "marcadacaca", 10 );
 
 endprogram

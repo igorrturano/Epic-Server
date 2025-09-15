@@ -10,10 +10,10 @@ include "include/client";
 include ":timedscripts:timedScripts";
 include ":attributes:attributes";
 
-program TimedScript_Alcohol(params)
-	var mobile := params[1];
-	var level := params[3];
+program TimedScript_Alcohol( params )
+  var mobile := params[1];
+  var level := params[3];
 
-	SetObjProperty(mobile, "capmod", 0);
-	RecalcVitals(mobile);
+  SetObjProperty( mobile, "capmod", 0 );
+  RecalcVitals( mobile );
 endprogram

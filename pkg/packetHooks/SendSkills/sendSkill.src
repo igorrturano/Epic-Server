@@ -7,9 +7,9 @@ endprogram
 
 exported function HandleSendSkillSent( who, byref packet )
   who := who;
-  var tipo := packet.GetInt8(TYPE);
-  if(!tipo)
-    return 0;
+  var tipo := packet.GetInt8( TYPE );
+  if ( !tipo )
+	return 0;
   endif
   return 1;
 endfunction

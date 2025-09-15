@@ -14,56 +14,56 @@ include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
 include ":propagacao:include/efeitosIncendiarios";
 
-program cast_firebolt(params)
-    var caster := params[1];
-	var targ := params[2];
-	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
-	var spell_school := spellinfo.School;
-	params := 0; // No longer needed
+program cast_firebolt( params )
+  var caster := params[1];
+  var targ := params[2];
+  var spellinfo := params[3];
+  var spell_circle := spellinfo.Circle;
+  var spell_school := spellinfo.School;
+  params := 0; // No longer needed
 
-	SendSysMessage(caster, "Selecione o alvo.");
-	if ( !targ.IsA(POLCLASS_MOBILE) )
-		var isDisparo := TentaCriarFagulhaIncendiaria(caster,targ);
-        if(!isDisparo)
-            SendSysMessage(caster, "Alvo invalido ou fora de visão.");
-            return 0;
-        endif
+  SendSysMessage( caster, "Selecione o alvo." );
+  if ( !targ.IsA( POLCLASS_MOBILE ) )
+	var isDisparo := TentaCriarFagulhaIncendiaria( caster, targ );
+	if ( !isDisparo )
+	  SendSysMessage( caster, "Alvo invalido ou fora de visão." );
+	  return 0;
 	endif
+  endif
 
-    if (!targ)
-		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
-		return 0;
-	endif
+  if ( !targ )
+	SendSysMessageEx( caster, "Cancelado", SSM_FAIL );
+	return 0;
+  endif
 
-	var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
-	var dist := Distance(caster, targ);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+  var mlore := cint( AP_GetSkill( caster, ARCANA ) / 20 );
+  var dist := Distance( caster, targ );
+  var dist_allowed := distanceAllowedForSpells( caster, mlore, spell_school );
 
-    if (dist > dist_allowed)
-        SendSysMessage(caster, "O alvo esta muito distante");
-        return 0;
-    endif
+  if ( dist > dist_allowed )
+	SendSysMessage( caster, "O alvo esta muito distante" );
+	return 0;
+  endif
 
-    LaunchProjectile(caster, targ, spell_circle, spell_school);
+  LaunchProjectile( caster, targ, spell_circle, spell_school );
 endprogram
 
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
-    PlaySoundEffect(caster, SFX_MAGIC_ARROW);
-    PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
-    var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+function LaunchProjectile( caster, targ, spell_circle, spell_school )
+  PlaySoundEffect( caster, SFX_MAGIC_ARROW );
+  PlayMovingEffectXYZHued( caster, targ, FX_MAGIC_ARROW, 10, 1643, 0 );
+  var dmg := epicSpellDamageRoll( caster, spell_circle );
+  dmg := bonusSpellDamageForSpecialists( caster, dmg, spell_school );
 
-    DamageFLS(targ, cint(dmg), DMG_FIRE, caster, "firebolt");
-	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
-	var bonus := epicWisdomPathBonus(caster);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
-		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+  DamageFLS( targ, cint( dmg ), DMG_FIRE, caster, "firebolt" );
+  var diff := handleSpellResistDiffForSpecialists( caster, spell_school );
+  var bonus := epicWisdomPathBonus( caster );
+  if ( CheckResist( targ, VONTADE, diff, -bonus ) )
+	SendSysMessageEx( caster, "O alvo resistiu a magia.", SSM_FAIL );
+	SendSysMessageEx( targ, "Voce resistiu a magia.", SSM_INFO );
 
-		return 1;
-	endif
+	return 1;
+  endif
 
-    PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 3, 4);
-    TS_Starttimer(targ, "queimar", CINT(AP_GetSkill(caster, ARCANA)/10));
+  PlayObjectCenteredEffect( targ, GFX_RED_SPARKLES, 3, 4 );
+  TS_Starttimer( targ, "queimar", CINT( AP_GetSkill( caster, ARCANA ) / 10 ) );
 endfunction

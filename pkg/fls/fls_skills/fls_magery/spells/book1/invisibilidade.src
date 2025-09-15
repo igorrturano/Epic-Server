@@ -13,18 +13,18 @@ include "include/client";
 include "include/sounds";
 include ":combat:damage";
 
-program SpellScript(params)
+program SpellScript( params )
 
-	var who := params[1];
-	params := 0; // No longer needed
+  var who := params[1];
+  params := 0; // No longer needed
 
-	PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
+  PlaySoundEffect( who, SFX_SPELL_INVISIBILITY );
 
-	who.hidden := 1;
-	who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
+  who.hidden := 1;
+  who.stealthsteps := CINT( AP_GetSkill( who, MAGERY ) / 10 );
 
-	SendSysMessage(who, "Voce esta invisivel.");
+  SendSysMessage( who, "Voce esta invisivel." );
 
-	return 1;
+  return 1;
 
 endprogram

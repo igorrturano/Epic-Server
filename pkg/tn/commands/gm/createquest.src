@@ -81,21 +81,20 @@ ok - menu de quest no paperdoll
 
 */
 
-program createquest(who)
+program createquest( who )
 
-	var questdata := OpenDataFile( ":tn:questdata" );
-	if (questdata == error)
-		questdata := CreateDataFile( ":tn:questdata", DF_KEYTYPE_STRING );
-	endif
+  var questdata := OpenDataFile( ":tn:questdata" );
+  if ( questdata == error )
+	questdata := CreateDataFile( ":tn:questdata", DF_KEYTYPE_STRING );
+  endif
 
-	var questinfo := struct;
-	createqueststructGump(who, questinfo);
-	var elem := questdata.CreateElement(questinfo.nome);
-	var ret := elem.SetProp("questinfo", questinfo);
-	return;
+  var questinfo := struct;
+  createqueststructGump( who, questinfo );
+  var elem := questdata.CreateElement( questinfo.nome );
+  var ret := elem.SetProp( "questinfo", questinfo );
+  return;
 
-
-/*	elseif ( questinfo.type == "Levar item para local X" ) //TODO terminar
+/* elseif ( questinfo.type == "Levar item para local X" ) //TODO terminar
 		var loc := RequestGump(who, "Digite o x y z onde sera o destino do item:", "", "", 1);
 		loc := splitwords(loc);
 		questinfo.+itemx :=  loc[1];
@@ -115,6 +114,6 @@ program createquest(who)
 		var elem := questdata.CreateElement(questinfo.nome);
 		var ret := elem.SetProp("questinfo", questinfo);
 		SendSysMessage(who, "Quest salvada com sucesso.");
-	endif*/
+	endif */
 
 endprogram

@@ -4,9 +4,9 @@
 use uo;
 use os;
 
-program LogOff(mobile)
+program LogOff( mobile )
 
-        EraseObjProperty( mobile, "#AuthCodeGiven" );
-        
-	return 1;
+  EraseObjProperty( mobile, "#AuthCodeGiven" );
+
+  return 1;
 endprogram

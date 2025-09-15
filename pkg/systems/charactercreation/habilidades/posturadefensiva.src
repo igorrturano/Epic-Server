@@ -7,11 +7,11 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack(who)
+program doubleattack( who )
 
-	SendSysMessageEx(who, "Voce esta em postura defensiva.", SSM_INFO);
-	SetObjProperty(who, "#tempparrybonus", 100);
-	//setObjProperty(who, "#attackfail", 1);
-	SetCooldown(who, "parrydelay", 0);
-	
+  SendSysMessageEx( who, "Voce esta em postura defensiva.", SSM_INFO );
+  SetObjProperty( who, "#tempparrybonus", 100 );
+  // setObjProperty(who, "#attackfail", 1);
+  SetCooldown( who, "parrydelay", 0 );
+
 endprogram

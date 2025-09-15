@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -11,49 +11,49 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
 
-program SpellScript(params)
-	var who := params[1];
-	var targ := params[2];
-	var spell := params[3];
-	var spell_school := spell.School;
-	params := 0; // No longer needed
+program SpellScript( params )
+  var who := params[1];
+  var targ := params[2];
+  var spell := params[3];
+  var spell_school := spell.School;
+  params := 0; // No longer needed
 
-	if (!targ.isa(POLCLASS_MOBILE))
-		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
-		return;
-	endif
+  if ( !targ.isa( POLCLASS_MOBILE ) )
+	SendSysMessageEx( who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL );
+	return;
+  endif
 
-    if (targ == who)
-        SendSysMessageEx(who, "Precisa de dois para um pacto ser feito", SSM_FAIL);
-		return;
-    endif
-    
-	if (GetObjProperty(who, "pactodesepultura"))
-		SendSysMessageEx(who, "Voce ja esta em um pacto de sepultura", SSM_FAIL);
-		return;
-	endif
+  if ( targ == who )
+	SendSysMessageEx( who, "Precisa de dois para um pacto ser feito", SSM_FAIL );
+	return;
+  endif
 
-	PlayMovingEffectEx( who, targ, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
-	PlayMovingEffectEx( targ, who, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
+  if ( GetObjProperty( who, "pactodesepultura" ) )
+	SendSysMessageEx( who, "Voce ja esta em um pacto de sepultura", SSM_FAIL );
+	return;
+  endif
 
-	handleSilentMagic(who, who, 384);
+  PlayMovingEffectEx( who, targ, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
+  PlayMovingEffectEx( targ, who, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
 
-	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	var bonus := epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
-		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-		return;
-	endif
+  handleSilentMagic( who, who, 384 );
 
-	var necrovital := AP_GetVitalMaximumValue(who, "Hits");
+  var diff := handleSpellResistDiffForSpecialists( who, spell_school );
+  var bonus := epicWisdomPathBonus( who );
+  if ( CheckResist( targ, VONTADE, diff, -bonus ) )
+	SendSysMessageEx( who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL );
+	SendSysMessageEx( targ, "Voce resistiu a magia.", SSM_INFO );
+	return;
+  endif
 
-	SetObjProperty(who, "pactodesepulturadmg", necrovital);
-	SetObjProperty(who, "pactodesepultura", targ.serial);
+  var necrovital := AP_GetVitalMaximumValue( who, "Hits" );
 
-	SendSysMessageEx(who, "Voce e " + targ.name + " estao em um pacto de sepultura", SSM_INFO);
-	SendSysMessageEx(targ, "Voce e " + who.name + " estao em um pacto de sepultura", SSM_INFO);
-	Corromper(who, 15, targ);
+  SetObjProperty( who, "pactodesepulturadmg", necrovital );
+  SetObjProperty( who, "pactodesepultura", targ.serial );
 
-	return 1;
+  SendSysMessageEx( who, "Voce e " + targ.name + " estao em um pacto de sepultura", SSM_INFO );
+  SendSysMessageEx( targ, "Voce e " + who.name + " estao em um pacto de sepultura", SSM_INFO );
+  Corromper( who, 15, targ );
+
+  return 1;
 endprogram

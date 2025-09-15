@@ -45,25 +45,25 @@ include ":commands:include/goText";
 include ":commands:include/goGumps";
 include ":commands:include/goTemplate";
 
-CONST ADD_NEW_PUBLIC      := 0x20001;
-CONST ADD_NEW_PRIVATE     := 0x20002;
-CONST COPY_PUBLIC_ITEM    := 0x20003;
-CONST COPY_PRIVATE_ITEM   := 0x20004;
-CONST EDIT_PUBLIC_ITEM    := 0x20005;
-CONST EDIT_PRIVATE_ITEM   := 0x20006;
-CONST UPDATE_BUTTON       := 0x20007;
-CONST DELETE_BUTTON       := 0x20008;
-CONST SHOW_PUBLIC_INDEX   := 0x20009;
-CONST SHOW_PRIVATE_INDEX  := 0x2000A;
+const ADD_NEW_PUBLIC := 0x20001;
+const ADD_NEW_PRIVATE := 0x20002;
+const COPY_PUBLIC_ITEM := 0x20003;
+const COPY_PRIVATE_ITEM := 0x20004;
+const EDIT_PUBLIC_ITEM := 0x20005;
+const EDIT_PRIVATE_ITEM := 0x20006;
+const UPDATE_BUTTON := 0x20007;
+const DELETE_BUTTON := 0x20008;
+const SHOW_PUBLIC_INDEX := 0x20009;
+const SHOW_PRIVATE_INDEX := 0x2000A;
 
-CONST BUILD_FROM_OLD      := 0x1;
+const BUILD_FROM_OLD := 0x1;
 
-var go_Reserved_Words := array("refresh", "xyz");
-var go_data_gumps := DFOpenDataFile(":commands:GoGumps", DF_CREATE);
-var go_data_file  := DFOpenDataFile(":commands:GoFile", DF_CREATE);
-var go_elem       := DFFindElement(go_data_file, "GoList", DF_CREATE);
-var go_prop_base  := go_elem.GetProp("base_Distro");
-var go_keys_base  := go_prop_base.keys();
+var go_Reserved_Words := array( "refresh", "xyz" );
+var go_data_gumps := DFOpenDataFile( ":commands:GoGumps", DF_CREATE );
+var go_data_file := DFOpenDataFile( ":commands:GoFile", DF_CREATE );
+var go_elem := DFFindElement( go_data_file, "GoList", DF_CREATE );
+var go_prop_base := go_elem.GetProp( "base_Distro" );
+var go_keys_base := go_prop_base.keys();
 var go_prop;
 var go_keys;
 var num_keys;
@@ -76,24 +76,24 @@ var zg_pos;
 
 program command_go( who, text )
 
-	Go_CheckInit(who);
+  Go_CheckInit( who );
 
-	// See if there is an element in the DataFile that matches their
-	// account name.
+  // See if there is an element in the DataFile that matches their
+  // account name.
+  go_prop := go_elem.GetProp( who.acctname );
+
+  // If there is no Element in the DataFile that matches their account name
+  // let's create it now.
+  if ( !go_prop )
+	var temp := dictionary;
+	go_elem.SetProp( who.acctname, temp );
 	go_prop := go_elem.GetProp( who.acctname );
+  endif
 
-	// If there is no Element in the DataFile that matches their account name
-	// let's create it now.
-	if ( !go_prop )
-		var temp := dictionary;
-		go_elem.SetProp(who.acctname, temp);
-		go_prop  := go_elem.GetProp(who.acctname);
-	endif
+  go_keys := go_prop.keys();
 
-	go_keys  := go_prop.keys();
-
-	if( Go_Parse_Text(who, text) )
-		return 0;
-	endif
+  if ( Go_Parse_Text( who, text ) )
+	return 0;
+  endif
 
 endprogram

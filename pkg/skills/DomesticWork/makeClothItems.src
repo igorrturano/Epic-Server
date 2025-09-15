@@ -1,13 +1,10 @@
 use cfgfile;
 use util;
 
-
 include ":crafting:fabricaComplexos";
 
+program use_SmithTool( who, tool )
 
-program use_SmithTool(who, tool)
-
-	FabricaItensComplexos(who, "Tailoring");
+  FabricaItensComplexos( who, "Tailoring" );
 
 endprogram
-

@@ -10,46 +10,46 @@ include ":combat:damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 
-program SpellScript(params)
-	var who := params[1];
-	var targ := params[2];
-    var spellinfo := params[3];
-    var spell_circle := spellinfo.Circle;
-    var spell_school := spellinfo.School;
+program SpellScript( params )
+  var who := params[1];
+  var targ := params[2];
+  var spellinfo := params[3];
+  var spell_circle := spellinfo.Circle;
+  var spell_school := spellinfo.School;
 
-	SendSysMessage(who, "Selecione o alvo.");
-	if ( !targ.IsA(POLCLASS_MOBILE) )
-		SendSysMessage(who, "Alvo inválido.");
-		return 0;
-	endif
+  SendSysMessage( who, "Selecione o alvo." );
+  if ( !targ.IsA( POLCLASS_MOBILE ) )
+	SendSysMessage( who, "Alvo inválido." );
+	return 0;
+  endif
 
-    if (!targ)
-		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
-		return 0;
-	endif
-    var mlore := cint(AP_GetSkill(who, ARCANA)/25);
-    mlore := mlore < 1? 1: mlore; //garante ao menos 1.
+  if ( !targ )
+	SendSysMessageEx( who, "Cancelado", SSM_FAIL );
+	return 0;
+  endif
+  var mlore := cint( AP_GetSkill( who, ARCANA ) / 25 );
+  mlore := mlore < 1 ? 1 : mlore; // garante ao menos 1.
 
-    if (TemHabilidade(who, "Evocator"))
-        mlore := mlore + 1;
-    endif
-    var dist := Distance(who, targ);
-    var dist_allowed := distanceAllowedForSpells(who, mlore, spell_school);
+  if ( TemHabilidade( who, "Evocator" ) )
+	mlore := mlore + 1;
+  endif
+  var dist := Distance( who, targ );
+  var dist_allowed := distanceAllowedForSpells( who, mlore, spell_school );
 
-    if (dist > dist_allowed)
-        SendSysMessage(who, "O alvo esta muito distante");
-        return 0;
-    endif
-	SendSysMessageEx(who, "Mísseis mágicos saem de sua mão", SSM_INFO);
-	var i := 1;
-    For (i := 1; i <= mlore; i += 1)
-        PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
-        PlaySoundEffect(who, SFX_AGILITY2);
-        var dmg := epicSpellDamageRoll(who, spell_circle);
-        var total_dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
+  if ( dist > dist_allowed )
+	SendSysMessage( who, "O alvo esta muito distante" );
+	return 0;
+  endif
+  SendSysMessageEx( who, "Mísseis mágicos saem de sua mão", SSM_INFO );
+  var i := 1;
+  for ( i := 1; i <= mlore; i += 1 )
+	PlayMovingEffectEx( who, targ, 0x5426, 10, 20, 2290, 2 );
+	PlaySoundEffect( who, SFX_AGILITY2 );
+	var dmg := epicSpellDamageRoll( who, spell_circle );
+	var total_dmg := bonusSpellDamageForSpecialists( who, dmg, spell_school );
 
-        DamageFLS(targ, total_dmg, DMG_FORCED, who, "magicmissile");
-        SleepMS(500);
-    EndFor
-	return 1;
+	DamageFLS( targ, total_dmg, DMG_FORCED, who, "magicmissile" );
+	SleepMS( 500 );
+  endfor
+  return 1;
 endprogram

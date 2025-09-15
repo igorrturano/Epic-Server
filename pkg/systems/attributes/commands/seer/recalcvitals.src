@@ -7,20 +7,20 @@ use uo;
 
 include ":attributes:attributes";
 
-program textcmd_RefreshVitals(who, text)
-	var targ;
-	if ( text == "me" )
-		targ := who;
-	else
-		SendSysMessage(who, "Select a mobile.");
-		targ := Target(who);
-		if ( !targ.IsA(POLCLASS_MOBILE) )
-			SendSysMessage(who, "Cancelled.");
-			return 0;
-		endif
+program textcmd_RefreshVitals( who, text )
+  var targ;
+  if ( text == "me" )
+	targ := who;
+  else
+	SendSysMessage( who, "Select a mobile." );
+	targ := Target( who );
+	if ( !targ.IsA( POLCLASS_MOBILE ) )
+	  SendSysMessage( who, "Cancelled." );
+	  return 0;
 	endif
-	
-	RecalcVitals(targ);
-	
-	SendSysMessage(who, "Done.");
+  endif
+
+  RecalcVitals( targ );
+
+  SendSysMessage( who, "Done." );
 endprogram

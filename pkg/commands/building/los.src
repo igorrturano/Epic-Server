@@ -5,17 +5,17 @@
 
 use uo;
 
-Program textcmd_LineOfSight(who)
-	var targ := target(who);
+program textcmd_LineOfSight( who )
+  var targ := target( who );
 
-	if ( !targ )
-		SendSysMessage(who, "Cancelled");
-		return 0;
-	elseif ( CheckLineOfSight(who, targ) )
-		SendSysMessage(who, "You have LOS to that.");
-		return 1;
-	else
-		SendSysMessage(who, "You dont have LOS to that.");
-		return 0;
-	endif
+  if ( !targ )
+	SendSysMessage( who, "Cancelled" );
+	return 0;
+  elseif ( CheckLineOfSight( who, targ ) )
+	SendSysMessage( who, "You have LOS to that." );
+	return 1;
+  else
+	SendSysMessage( who, "You dont have LOS to that." );
+	return 0;
+  endif
 endprogram

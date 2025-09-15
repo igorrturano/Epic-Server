@@ -7,8 +7,8 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack(who)
+program doubleattack( who )
 
-	SendSysMessageEx(who, "Voce vai comecar bem.", SSM_INFO);
-	SetObjProperty(who, "#bomcomeco", 1);
+  SendSysMessageEx( who, "Voce vai comecar bem.", SSM_INFO );
+  SetObjProperty( who, "#bomcomeco", 1 );
 endprogram

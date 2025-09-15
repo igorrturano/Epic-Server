@@ -5,12 +5,10 @@ use cfgfile;
 use polsys;
 use util;
 
-
 include ":crafting:fabricaComplexos";
 
-program use_carptool(who, tool)
+program use_carptool( who, tool )
 
-	FabricaItensComplexos(who,"Carpentry");
+  FabricaItensComplexos( who, "Carpentry" );
 
 endprogram
-

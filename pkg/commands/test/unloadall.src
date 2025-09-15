@@ -5,8 +5,8 @@
 use os;
 use uo;
 
-program textcmd_UnloadAll(who)
-	SendSysMessage(who, "Number of scripts unloaded: "+Unload_Scripts(""));
+program textcmd_UnloadAll( who )
+  SendSysMessage( who, "Number of scripts unloaded: " + Unload_Scripts( "" ) );
 
-	return 1;
+  return 1;
 endprogram

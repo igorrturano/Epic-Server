@@ -1,14 +1,13 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":tn:cooldown";
 include "include/say";
 
-program manobra(attacker)
+program manobra( attacker )
 
-	SendSysMessageEx(attacker, "Faca um extrato.", SSM_INFO);
+  SendSysMessageEx( attacker, "Faca um extrato.", SSM_INFO );
 
-	SetObjProperty(attacker, "extratoinstantaneo", 1);
+  SetObjProperty( attacker, "extratoinstantaneo", 1 );
 
-endprogram  
-
+endprogram

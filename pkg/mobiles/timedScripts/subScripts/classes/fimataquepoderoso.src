@@ -3,17 +3,16 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_EndClumsy(params)
-	var mobile := params[1];
-	
-	var points := CInt(GetObjProperty(mobile, "#ataquepoderoso"));	
-	mobile.hitchance_mod := mobile.hitchance_mod + points;
+program TimedScript_EndClumsy( params )
+  var mobile := params[1];
 
-	var dmgbonus := GetObjProperty(mobile, "#dmgbonus");
-	SetObjProperty(mobile, "#dmgbonus", dmgbonus - 0.4);
+  var points := CInt( GetObjProperty( mobile, "#ataquepoderoso" ) );
+  mobile.hitchance_mod := mobile.hitchance_mod + points;
 
-	EraseObjProperty(mobile, "#ataquepoderoso");
-	
-	return 1;
+  var dmgbonus := GetObjProperty( mobile, "#dmgbonus" );
+  SetObjProperty( mobile, "#dmgbonus", dmgbonus - 0.4 );
+
+  EraseObjProperty( mobile, "#ataquepoderoso" );
+
+  return 1;
 endprogram
-  

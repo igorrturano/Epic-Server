@@ -5,12 +5,12 @@ use uo;
 
 include ":attributes:skills";
 
-program command_bcast(who)
+program command_bcast( who )
 
-	var tgt := Target(who);
+  var tgt := Target( who );
 
-	SendSysMessage(who, "Total Cap: "+AP_CheckSkillsTotal(tgt));
+  SendSysMessage( who, "Total Cap: " + AP_CheckSkillsTotal( tgt ) );
 
-	return 1;
+  return 1;
 
 endprogram

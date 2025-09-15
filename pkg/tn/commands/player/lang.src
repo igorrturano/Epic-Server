@@ -3,8 +3,8 @@
 // include ":attributes:attributes";
 include "include/say";
 
-program lingua(who)
-	SendSysMessageEX(who, "Utilize o comando .lingua para escolher um idioma.", SSM_INFO);
+program lingua( who )
+  SendSysMessageEX( who, "Utilize o comando .lingua para escolher um idioma.", SSM_INFO );
 // 	var qt := cint((AP_GetTrueStat(who, INTELLIGENCE)-60)/10);
 // 	var linguas := GetObjProperty(who, "linguas");
 // 	var qt_atual := linguas.size();

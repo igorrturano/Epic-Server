@@ -6,10 +6,10 @@ include ":attributes:attributes";
 include "include/say";
 include ":food:include/hunger";
 
-program fome(who)
-	var msg, msgcolor;
-   	var fome := CInt(AP_GetVital(who, "Hunger") / 60);
-   	/*var msg;
+program fome( who )
+  var msg, msgcolor;
+  var fome := CInt( AP_GetVital( who, "Hunger" ) / 60 );
+  /* var msg;
 
    	case (fome)
 	5 : msg := "Voce esta faminto.";
@@ -18,10 +18,10 @@ program fome(who)
 	2 : msg := "Voce esta cheio.";
 	1 : msg := "Voce esta muito cheio.";
 	0 : msg := "Voce esta muito bem alimentado.";
-   	endcase*/
-	
-	msg := MSGFome(fome);
-	msgcolor := MSGFomeColor(fome);
-   	SendSysMessageEx(who, "" + msg, msgcolor);
+   	endcase */
+
+  msg := MSGFome( fome );
+  msgcolor := MSGFomeColor( fome );
+  SendSysMessageEx( who, "" + msg, msgcolor );
 
 endprogram
