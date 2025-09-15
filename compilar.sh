@@ -1,3 +1,3 @@
 #!/bin/bash
 cd scripts
-./ecompile -u && ./ecompile -Fi
+./ecompile -Fi && ./ecompile -u
