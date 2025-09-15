@@ -1,6 +1,6 @@
 /* $Id: candelete.src 114 2006-05-27 13:41:07Z austinheilman $
  *
-*/
+ */
 use uo;
 use os;
 
