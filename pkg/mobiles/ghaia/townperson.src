@@ -12,7 +12,7 @@ include ":tn:tngumps";
 include ":spells:tnmagery";
 include ":timedScripts:timedScripts";
 
-var npccfgfile := ReadConfigFile( ":*:npcdesc" );
+var npccfgfile := ReadConfigFile(":*:npcdesc");
 var me := self();
 var areasize;
 
@@ -21,57 +21,57 @@ var areasize;
 
 program ghaghaia()
 
-  EnableEvents( SYSEVENT_SPEECH, 5 );
-  // EnableEvents( SYSEVENT_ENTEREDAREA + SYSEVENT_LEFTAREA, 2 );
+	EnableEvents(SYSEVENT_SPEECH, 5);
+	// EnableEvents( SYSEVENT_ENTEREDAREA + SYSEVENT_LEFTAREA, 2 );
 
-  SetWarMode( 0 );
-  // set_priority(10);
-  var ev;
-  var next_wander := ReadGameClock() + 10;
+	SetWarMode(0);
+	// set_priority(10);
+	var ev;
+	var next_wander := ReadGameClock() + 10;
 
-  while ( me )
-	ev := os::wait_for_event( 5 );
-	// printtextabove(me, "event " + ev);
-	case ( ev.type )
-	  SYSEVENT_SPEECH:
-		var text := lower( ev.text );
-		// printtextabove(me, " " + text);
-		if ( text["rumor"] || text["aventura"] || text["aventuras"] || text["rumores"] )
-		  // mostra apenas as quests que nao estao executando
-		  var myquests := GetObjProperty( me, "quests" );
-		  var running := TS_GetCooldownList( me );
-		  // printtextabove(me, "myquests: " + myquests + " running: " + running);
-		  if ( myquests != error && cint( myquests.size() ) > 0 &&
-		 ( cint( myquests.size() ) > cint( running.keys().size() ) ) )
-			// printtextabove(me, " " +  cint(myquests.size()) + " " +  cint(running.keys().size()) );
-			var avaliable := array;
-			var names := array;
-			foreach q in ( running.keys() )
-			  names.append( running[q].name );
-			endforeach
-			foreach q in myquests
-			  if ( !( q in names ) )
-				avaliable.append( q );
-			  endif
-			endforeach
-			var result := Start_Script( ":tn:questmenu", { ( ev.source ), me, avaliable } );
-			if ( !result )
-			  printtextabove( me, "Erro: " + result );
-			endif
-		  else
-			var resp := RandomInt( 5 ) + 1;
-			case ( resp )
-			  1: Say( "Nao sei de nenhum rumor!" );
-			  2: Say( "Nao sei de nenhuma aventura." );
-			  3: Say( "Nao acontece nada de novo por aqui." );
-			  4: Say( "As coisas andam muito calmas por estas paragens." );
-			  5: Say( "Nao ouvi falar de nenhuma aventura." );
-			endcase
-		  endif
-		endif
+	while (me)
+		ev := os::wait_for_event(5);
+		// printtextabove(me, "event " + ev);
+		case (ev.type)
+			SYSEVENT_SPEECH:
+				var text := lower(ev.text);
+				// printtextabove(me, " " + text);
+				if (text["rumor"] || text["aventura"] || text["aventuras"] || text["rumores"])
+					// mostra apenas as quests que nao estao executando
+					var myquests := GetObjProperty(me, "quests");
+					var running := TS_GetCooldownList(me);
+					// printtextabove(me, "myquests: " + myquests + " running: " + running);
+					if (myquests != error && cint(myquests.size()) > 0 &&
+		 (cint(myquests.size()) > cint(running.keys().size())))
+						// printtextabove(me, " " +  cint(myquests.size()) + " " +  cint(running.keys().size()) );
+						var avaliable := array;
+						var names := array;
+						foreach q in (running.keys())
+							names.append(running[q].name);
+						endforeach
+						foreach q in myquests
+							if (!(q in names))
+								avaliable.append(q);
+							endif
+						endforeach
+						var result := Start_Script(":tn:questmenu", { (ev.source), me, avaliable });
+						if (!result)
+							printtextabove(me, "Erro: " + result);
+						endif
+					else
+						var resp := RandomInt(5) + 1;
+						case (resp)
+							1: Say("Nao sei de nenhum rumor!");
+							2: Say("Nao sei de nenhuma aventura.");
+							3: Say("Nao acontece nada de novo por aqui.");
+							4: Say("As coisas andam muito calmas por estas paragens.");
+							5: Say("Nao ouvi falar de nenhuma aventura.");
+						endcase
+					endif
+				endif
 
-	endcase
-  /* nao precisa mais desse codigo, agora mostra sempre todas as quests e ela eh inicializada quando alguem escolhe
+		endcase
+	/* nao precisa mais desse codigo, agora mostra sempre todas as quests e ela eh inicializada quando alguem escolhe
 	 if (ReadGameClock() >= next_wander)
       //wander();
       //printtextabove(me, "wander");
@@ -105,30 +105,30 @@ program ghaghaia()
       endif
       next_wander := ReadGameClock() + 10;
     endif */
-  endwhile
+	endwhile
 endprogram
 
-function SetupNewQuest( me )
+function SetupNewQuest(me)
 
-  var quests := GetObjProperty( me, "quests" );
-  if ( !quests )
-	return;
-  endif
-  var selected := quests[RandomInt( quests.size() ) + 1];
-  if ( selected != error )
-	var lol := SetObjProperty( self(), "runningquest", selected );
-	// printtextabove(me, "iniciara " + selected);
-	var script := Start_Script( ":tn:startquest", selected );
-	if ( script == error )
-	  PrintTextAbove( me, "Erro " + script );
+	var quests := GetObjProperty(me, "quests");
+	if (!quests)
+		return;
 	endif
+	var selected := quests[RandomInt(quests.size()) + 1];
+	if (selected != error)
+		var lol := SetObjProperty(self(), "runningquest", selected);
+		// printtextabove(me, "iniciara " + selected);
+		var script := Start_Script(":tn:startquest", selected);
+		if (script == error)
+			PrintTextAbove(me, "Erro " + script);
+		endif
 
-	// printtextabove(me, "iniciou " + selected);
-	EraseObjProperty( self(), "nextQuest" );
-  endif
+		// printtextabove(me, "iniciou " + selected);
+		EraseObjProperty(self(), "nextQuest");
+	endif
 
 endfunction
 
 function look_around()
-  return 0;
+	return 0;
 endfunction

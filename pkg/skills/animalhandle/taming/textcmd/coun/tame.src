@@ -2,22 +2,22 @@ use uo;
 use cfgfile;
 use os;
 
-program Tame( who )
-  var targ := target( who );
+program Tame(who)
+	var targ := target(who);
 
-  if ( targ.IsA( POLCLASS_NPC ) )
-	targ.SetMaster( who );
+	if (targ.IsA(POLCLASS_NPC))
+		targ.SetMaster(who);
 
-	SetObjProperty( targ, "owner", who.serial );
-	SetObjProperty( targ, "name", targ.name );
+		SetObjProperty(targ, "owner", who.serial);
+		SetObjProperty(targ, "name", targ.name);
 
-	if ( !GetObjProperty( targ, "script" ) )
-	  SetObjproperty( targ, "script", targ.script );
+		if (!GetObjProperty(targ, "script"))
+			SetObjproperty(targ, "script", targ.script);
+		endif
+
+		targ.script := ":ghaia:tamed";
+		RestartScript(targ);
+
+		Run_Script_To_Completion(":death:npcdeath", { targ });
 	endif
-
-	targ.script := ":ghaia:tamed";
-	RestartScript( targ );
-
-	Run_Script_To_Completion( ":death:npcdeath", { targ } );
-  endif
 endprogram

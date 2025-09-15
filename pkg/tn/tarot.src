@@ -88,81 +88,81 @@ var tarotDeck := array{ // Arcanos Maiores
 	  "Rainha de Paus",
 	  "Rei de Paus" };
 
-program TarotUO( who, item )
-  if ( item.objtype == 0x12AC )
-	LeituraTaro( who, item, 0x12AA, 0x12A6, 0x12A7 );
-  elseif ( item.objtype == 0x12AB )
-	LeituraTaro( who, item, 0x12A9, 0x12A5, 0x12A8 );
-  endif
+program TarotUO(who, item)
+	if (item.objtype == 0x12AC)
+		LeituraTaro(who, item, 0x12AA, 0x12A6, 0x12A7);
+	elseif (item.objtype == 0x12AB)
+		LeituraTaro(who, item, 0x12A9, 0x12A5, 0x12A8);
+	endif
 endprogram
 
-function LeituraTaro( who, item, grafico1, grafico2, grafico3 )
-  var cartasEmbaralhadas := EmbaralharCartas();
+function LeituraTaro(who, item, grafico1, grafico2, grafico3)
+	var cartasEmbaralhadas := EmbaralharCartas();
 
-  PrintTextAbove( item, "*Embaralhando*" );
-  PlaySoundEffect( who, 0x248 );
-  Sleep( 2 );
-  item.graphic := grafico1;
-  Sleep( 2 );
-  PrintTextAbove( item, "*Dando as cartas*" );
-  PlaySoundEffect( who, 0x248 );
-  Sleep( 2 );
-  item.graphic := grafico2;
-  Sleep( 1 );
-  item.graphic := grafico3;
+	PrintTextAbove(item, "*Embaralhando*");
+	PlaySoundEffect(who, 0x248);
+	Sleep(2);
+	item.graphic := grafico1;
+	Sleep(2);
+	PrintTextAbove(item, "*Dando as cartas*");
+	PlaySoundEffect(who, 0x248);
+	Sleep(2);
+	item.graphic := grafico2;
+	Sleep(1);
+	item.graphic := grafico3;
 
-  foreach carta in cartasEmbaralhadas
-	SendSysMessageEx( who, "Sua carta é " + tarotDeck[carta], SSM_INFO );
+	foreach carta in cartasEmbaralhadas
+		SendSysMessageEx(who, "Sua carta é " + tarotDeck[carta], SSM_INFO);
 
-	if ( !YesNoTarot( who, "Deseja passar para a próxima carta?" ) )
-	  break;
-	endif
-  endforeach
+		if (!YesNoTarot(who, "Deseja passar para a próxima carta?"))
+			break;
+		endif
+	endforeach
 
-  FecharBaralho( item, grafico3, grafico2, grafico1 );
+	FecharBaralho(item, grafico3, grafico2, grafico1);
 endfunction
 
 function EmbaralharCartas()
-  var totalCartas := tarotDeck.size();
-  var cartas := array{};
+	var totalCartas := tarotDeck.size();
+	var cartas := array{};
 
-  for i := 1 to totalCartas
-	cartas.append( i );
-  endfor
+	for i := 1 to totalCartas
+		cartas.append(i);
+	endfor
 
-  var cartasEmbaralhadas := {};
+	var cartasEmbaralhadas := {};
 
-  while ( cartas.size() > 0 )
-	var indice := RandomInt( cartas.size() ) + 1;
-	cartasEmbaralhadas.append( cartas[indice] );
-	cartas.erase( indice );
-  endwhile
+	while (cartas.size() > 0)
+		var indice := RandomInt(cartas.size()) + 1;
+		cartasEmbaralhadas.append(cartas[indice]);
+		cartas.erase(indice);
+	endwhile
 
-  return cartasEmbaralhadas;
+	return cartasEmbaralhadas;
 endfunction
 
-function FecharBaralho( item, grafico3, grafico2, grafico1 )
-  PrintTextAbove( item, "*Recolhendo as cartas*" );
-  PlaySoundEffect( item, 0x248 );
-  Sleep( 2 );
-  item.graphic := grafico3;
-  Sleep( 1 );
-  item.graphic := grafico2;
-  Sleep( 1 );
-  item.graphic := grafico1;
-  Sleep( 1 );
-  item.graphic := item.objtype;
-  SendSysMessage( item, "*Leitura concluída*" );
+function FecharBaralho(item, grafico3, grafico2, grafico1)
+	PrintTextAbove(item, "*Recolhendo as cartas*");
+	PlaySoundEffect(item, 0x248);
+	Sleep(2);
+	item.graphic := grafico3;
+	Sleep(1);
+	item.graphic := grafico2;
+	Sleep(1);
+	item.graphic := grafico1;
+	Sleep(1);
+	item.graphic := item.objtype;
+	SendSysMessage(item, "*Leitura concluída*");
 endfunction
 
-function YesNoTarot( who, message )
-  var gump := GFCreateGump();
-  GFResizePic( gump, 0, 0, 3600, 300, 100 );
-  GFTextMid( gump, 10, 10, 280, 1153, message );
-  GFAddButton( gump, 50, 55, 4005, 4006, 1, 1 );
-  GFAddButton( gump, 200, 55, 4005, 4006, 1, 0 );
-  GFTextMid( gump, 65, 55, 60, 1153, "Sim" );
-  GFTextMid( gump, 215, 55, 60, 1153, "Não" );
-  var input := GFSendGump( who, gump );
-  return input[0] == 1;
+function YesNoTarot(who, message)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 3600, 300, 100);
+	GFTextMid(gump, 10, 10, 280, 1153, message);
+	GFAddButton(gump, 50, 55, 4005, 4006, 1, 1);
+	GFAddButton(gump, 200, 55, 4005, 4006, 1, 0);
+	GFTextMid(gump, 65, 55, 60, 1153, "Sim");
+	GFTextMid(gump, 215, 55, 60, 1153, "Não");
+	var input := GFSendGump(who, gump);
+	return input[0] == 1;
 endfunction

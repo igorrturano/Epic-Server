@@ -1,6 +1,6 @@
 /* $Id: sendevent.src 1383 2006-05-13 09:26:14Z austin $
  *
- */
+*/
 // Example: .sendevent [event] -> Sends an event to the targetted npc.
 
 use uo;
@@ -8,26 +8,26 @@ use os;
 
 include ":gumps:requestGump";
 
-program textcmd_sendEvent( who, event )
-  if ( !event )
-	event := CInt( RequestGump( who, "Enter event value", "Place a + or - at the begining if it is a number." ) );
-  endif
+program textcmd_sendEvent(who, event)
+	if (!event)
+		event := CInt(RequestGump(who, "Enter event value", "Place a + or - at the begining if it is a number."));
+	endif
 
-  if ( event[1] in { "+", "-" } )
-	event := CInt( event );
-  endif
+	if (event[1] in { "+", "-" })
+		event := CInt(event);
+	endif
 
-  var ev := struct;
-  ev.+source := who;
-  ev.+type := event;
+	var ev := struct;
+	ev.+source := who;
+	ev.+type := event;
 
-  var targ := target( who );
-  if ( targ )
-	SendEvent( targ, ev );
-	SendSysMessage( who, "Event sent as (" + TypeOf( event ) + ")" );
-  else
-	SendSysMessage( who, "Cancelled" );
-  endif
+	var targ := target(who);
+	if (targ)
+		SendEvent(targ, ev);
+		SendSysMessage(who, "Event sent as (" + TypeOf(event) + ")");
+	else
+		SendSysMessage(who, "Cancelled");
+	endif
 
-  return 1;
+	return 1;
 endprogram

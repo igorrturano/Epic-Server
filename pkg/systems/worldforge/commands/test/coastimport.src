@@ -41,41 +41,41 @@ const ERRORMSGS_ENGLISH := "{}StaticsImport: CoastArea started..." + "{}StaticsI
 // Hauptprogram
 /////////////////
 
-program TextCMD_CoastImport( who )
-  Set_Script_Option( SCRIPTOPT_NO_RUNAWAY, 1 );
+program TextCMD_CoastImport(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-  PrintErrorMessage( 1 );
-  CoastArea( who );
-  PrintErrorMessage( 2 );
+	PrintErrorMessage(1);
+	CoastArea(who);
+	PrintErrorMessage(2);
 endprogram
 
 /////////////////////////////////////
 // CoastArea - Importiert die Items
 /////////////////////////////////////
 
-function CoastArea( who )
-  var datafile := ReadConfigFile( ":worldforge:config/coast" );
-  if ( datafile )
-	var item;
-	var object;
-	foreach name in GetConfigStringKeys( datafile )
-	  item := datafile[name];
-	  if ( item )
-		object := CreateItemAtLocation( item.x, item.y, item.z, item.id, 1 );
-		if ( object )
-		  object.color := item.color;
-		  object.decayat := 0;
-		  object.movable := 0;
-		else
-		  PrintErrorMessage( 3, { item.id, item.x, item.y, item.z } );
-		endif
-	  endif
-	endforeach
+function CoastArea(who)
+	var datafile := ReadConfigFile(":worldforge:config/coast");
+	if (datafile)
+		var item;
+		var object;
+		foreach name in GetConfigStringKeys(datafile)
+			item := datafile[name];
+			if (item)
+				object := CreateItemAtLocation(item.x, item.y, item.z, item.id, 1);
+				if (object)
+					object.color := item.color;
+					object.decayat := 0;
+					object.movable := 0;
+				else
+					PrintErrorMessage(3, { item.id, item.x, item.y, item.z });
+				endif
+			endif
+		endforeach
 
-	UnloadConfigFile( ":worldforge:config/coast" );
+		UnloadConfigFile(":worldforge:config/coast");
 
-	PrintErrorMessage( 4, {}, who );
-  else
-	PrintErrorMessage( 5, {}, who );
-  endif
+		PrintErrorMessage(4, {}, who);
+	else
+		PrintErrorMessage(5, {}, who);
+	endif
 endfunction

@@ -4,8 +4,8 @@ use uo;
 include ":tn:quests";
 
 // script usado pelo npc quester. ele executa isso aqui
-program startquest( questname )
+program startquest(questname)
 
-  SetupQuest( questname );
+	SetupQuest(questname);
 
 endprogram

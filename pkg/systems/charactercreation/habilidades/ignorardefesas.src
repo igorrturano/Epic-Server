@@ -6,9 +6,9 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack( who )
+program doubleattack(who)
 
-  SendSysMessageEx( who, "Voce achou um ponto fraco!", SSM_INFO );
-  SetObjProperty( who, "#ignorardefesas", 1 );
+	SendSysMessageEx(who, "Voce achou um ponto fraco!", SSM_INFO);
+	SetObjProperty(who, "#ignorardefesas", 1);
 
 endprogram

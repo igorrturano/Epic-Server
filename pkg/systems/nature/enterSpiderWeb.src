@@ -1,5 +1,5 @@
 use os;
 
-program neve( who )
-  start_script( ":nature:spiderWebEffect", who );
+program neve(who)
+	start_script(":nature:spiderWebEffect", who);
 endprogram

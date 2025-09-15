@@ -5,8 +5,8 @@ use util;
 
 include ":crafting:fabricaComplexos";
 
-program use_FletchTool( who, tool )
+program use_FletchTool(who, tool)
 
-  FabricaItensComplexos( who, "BowcraftFletching" );
+	FabricaItensComplexos(who, "BowcraftFletching");
 
 endprogram

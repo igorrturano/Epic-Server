@@ -3,56 +3,56 @@ use cfgfile;
 use util;
 use os;
 
-program cria( item )
+program cria(item)
 
-  if ( GetObjProperty( item, "spellinfo" ) != error )
+	if (GetObjProperty(item, "spellinfo") != error)
+		return 1;
+	endif
+
+	var spellinfo := struct;
+
+	// pega o level do scroll
+	var scrollcfg := ReadConfigFile(":spells:itemdesc");
+	var lvl := scrollcfg[item.objtype].Circle;
+	var spelltype_item := scrollcfg[item.objtype].SpellType;
+	if (!lvl)
+		lvl := 1;
+	endif
+
+	var spellcfg := ReadConfigFile(":spells:config/spellcaster");
+
+	var keys := GetConfigIntKeys(spellcfg);
+	var randomspells := array;
+	foreach key in keys
+		var spelllvl := GetConfigInt(FindconfigElem(spellcfg, key), "Circle");
+		var spelltype := GetConfigString(FindconfigElem(spellcfg, key), "Type");
+		var school := GetConfigString(FindconfigElem(spellcfg, key), "School");
+
+		if (spelltype == "spellcaster")
+			if (spelllvl == lvl)
+				randomspells.append(key);
+			endif
+		endif
+	endforeach
+
+	var random_spell_id := RandomInt(randomspells.size()) + 1;
+	spellinfo.+id := randomspells[random_spell_id];
+	spellinfo.+magic_path := spelltype_item;
+	if (spellinfo.magic_path == "spellcaster")
+		spellinfo.+School := GetConfigString(FindconfigElem(spellcfg, random_spell_id), "School");
+		if (spellinfo.School == "Kaijin")
+			item.graphic := 0x0E39;
+		elseif (spellinfo.School == "Evocatium")
+			item.graphic := 0x0E35;
+		elseif (spellinfo.School == "Velkyn")
+			item.graphic := 0x0E3A;
+		elseif (spellinfo.School == "Ahtaleloreth")
+			item.graphic := 0x0E38;
+		elseif (spellinfo.School == "Aradalore")
+			item.graphic := 0x0E37;
+		endif
+	endif
+	SetObjProperty(item, "spellinfo", spellinfo);
+
 	return 1;
-  endif
-
-  var spellinfo := struct;
-
-  // pega o level do scroll
-  var scrollcfg := ReadConfigFile( ":spells:itemdesc" );
-  var lvl := scrollcfg[item.objtype].Circle;
-  var spelltype_item := scrollcfg[item.objtype].SpellType;
-  if ( !lvl )
-	lvl := 1;
-  endif
-
-  var spellcfg := ReadConfigFile( ":spells:config/spellcaster" );
-
-  var keys := GetConfigIntKeys( spellcfg );
-  var randomspells := array;
-  foreach key in keys
-	var spelllvl := GetConfigInt( FindconfigElem( spellcfg, key ), "Circle" );
-	var spelltype := GetConfigString( FindconfigElem( spellcfg, key ), "Type" );
-	var school := GetConfigString( FindconfigElem( spellcfg, key ), "School" );
-
-	if ( spelltype == "spellcaster" )
-	  if ( spelllvl == lvl )
-		randomspells.append( key );
-	  endif
-	endif
-  endforeach
-
-  var random_spell_id := RandomInt( randomspells.size() ) + 1;
-  spellinfo.+id := randomspells[random_spell_id];
-  spellinfo.+magic_path := spelltype_item;
-  if ( spellinfo.magic_path == "spellcaster" )
-	spellinfo.+School := GetConfigString( FindconfigElem( spellcfg, random_spell_id ), "School" );
-	if ( spellinfo.School == "Kaijin" )
-	  item.graphic := 0x0E39;
-	elseif ( spellinfo.School == "Evocatium" )
-	  item.graphic := 0x0E35;
-	elseif ( spellinfo.School == "Velkyn" )
-	  item.graphic := 0x0E3A;
-	elseif ( spellinfo.School == "Ahtaleloreth" )
-	  item.graphic := 0x0E38;
-	elseif ( spellinfo.School == "Aradalore" )
-	  item.graphic := 0x0E37;
-	endif
-  endif
-  SetObjProperty( item, "spellinfo", spellinfo );
-
-  return 1;
 endprogram

@@ -5,8 +5,8 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:damage";
 
-program manobra( who )
+program manobra(who)
 
-  TS_StartTimer( who, "chamadacorrupcao", 60 );
+	TS_StartTimer(who, "chamadacorrupcao", 60);
 
 endprogram

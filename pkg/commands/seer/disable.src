@@ -10,7 +10,7 @@
 /////////////////////////////////////////////////////////////////////////////////
 use uo;
 
-program disable( who, priv )
-  who.disable( priv );
-  SendSysMessage( who, "Setting '" + priv + "' is disabled." );
+program disable(who, priv)
+	who.disable(priv);
+	SendSysMessage(who, "Setting '" + priv + "' is disabled.");
 endprogram

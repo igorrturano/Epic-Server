@@ -4,14 +4,14 @@ use vitals;
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy( params )
-  var mobile := params[1];
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
 
-  if ( GetObjProperty( mobile, "auraHpRegenMod" ) != error )
-	var mod := GetObjProperty( mobile, "auraHpRegenMod" );
-	EraseObjProperty( mobile, "auraHpRegenMod" );
-	AP_SetVitalRegenRateMod( mobile, "Hits", AP_GetVitalRegenRateMod( mobile, "Hits" ) - mod );
-  endif
+	if (GetObjProperty(mobile, "auraHpRegenMod") != error)
+		var mod := GetObjProperty(mobile, "auraHpRegenMod");
+		EraseObjProperty(mobile, "auraHpRegenMod");
+		AP_SetVitalRegenRateMod(mobile, "Hits", AP_GetVitalRegenRateMod(mobile, "Hits") - mod);
+	endif
 
-  return 1;
+	return 1;
 endprogram

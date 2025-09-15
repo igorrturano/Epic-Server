@@ -15,22 +15,22 @@ include ":spells:summon";
 include ":taming:taming";
 include "include/epicMageryUtils";
 
-program SummonMagicCreature( params )
+program SummonMagicCreature(params)
 
-  var who := params[1];
-  var targ := params[2];
-  var spellid := params[3];
-  params := 0; // No longer needed
+	var who := params[1];
+	var targ := params[2];
+	var spellid := params[3];
+	params := 0; // No longer needed
 
-  handleSilentMagic( who, targ, SFX_SPELL_HEAL );
+	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
 
-  var undead := summon( ":brainai:simulacro", targ, who );
+	var undead := summon(":brainai:simulacro", targ, who);
 
-  if ( undead )
-	SendSysMessageEx( who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO );
-	Corromper( who, 90, targ );
-  endif
+	if (undead)
+		SendSysMessageEx(who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO);
+		Corromper(who, 90, targ);
+	endif
 
-  TS_StartTimer( undead, "summon", GetSpellDuration( AP_GetSkill( who, ARCANA ) ) / 2 );
-  return 1;
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
+	return 1;
 endprogram
