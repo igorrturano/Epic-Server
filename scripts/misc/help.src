@@ -1,7 +1,7 @@
 /*
  * $Id: help.src 1404 2006-05-14 03:19:35Z austin $
  *
-*/
+ */
 use uo;
 use os;
 
