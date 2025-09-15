@@ -6,9 +6,9 @@ include "include/sysEvent";
 include "include/client";
 include "include/say";
 
-program taunt( who )
+program taunt(who)
 
-  SendSysMessageEx( who, "Voce vai se esquivar do proximo golpe!", SSM_INFO );
-  SetObjProperty( who, "evasao", 1 );
+	SendSysMessageEx(who, "Voce vai se esquivar do proximo golpe!", SSM_INFO);
+	SetObjProperty(who, "evasao", 1);
 
 endprogram

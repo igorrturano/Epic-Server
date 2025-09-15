@@ -7,10 +7,10 @@ include ":blood:blood";
 include ":combat:damage";
 include "include/say";
 
-program doubleattack( who )
+program doubleattack(who)
 
-  SendSysMessageEx( who, "Voce esta em postura de ataque.", SSM_INFO );
-  SetObjProperty( who, "#attackbonus", 100 );
-  setObjProperty( who, "#defensefail", 1 );
+	SendSysMessageEx(who, "Voce esta em postura de ataque.", SSM_INFO);
+	SetObjProperty(who, "#attackbonus", 100);
+	setObjProperty(who, "#defensefail", 1);
 
 endprogram

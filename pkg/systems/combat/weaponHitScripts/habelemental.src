@@ -10,65 +10,65 @@ include ":timedScripts:timedScripts";
 include ":spells:puremage";
 include "include/epicMageryUtils";
 
-program HitScript( params )
-  var attacker := params[1];
-  var defender := params[2];
-  var weapon := params[3];
-  // var armor	:= params[4];
-  // var basedamage	:= params[5];
-  var rawdamage := params[6];
-  var dmgtype := params[7];
-  var range := params[8];
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
+	var dmgtype := params[7];
+	var range := params[8];
 
-  if ( !range || range == error )
-	range := 2;
-  endif
-
-  if ( !dmgtype || dmgtype == error )
-	dmgtype := DMG_PHYSICAL;
-  endif
-
-  params := 0; // Not needed anymore.
-
-  // gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
-  if ( GetCooldown( weapon, "romperencantamento" ) )
-	ApplyChargesCalculation( weapon, 1, 4 );
-	dispel( defender );
-	EraseObjProperty( weapon, "#romperencantamento" );
-  endif
-  if ( GetCooldown( weapon, "ataqueespiritual" ) )
-	EraseObjProperty( weapon, "#ataqueespiritual" );
-	var manadmg := cint( AP_GetSkill( attacker, ARCANA ) / 3 );
-	manadmg := ApplyChargesCalculation( weapon, manadmg, 3 );
-	AP_ConsumeVital( defender, MANA, manadmg );
-  endif
-  if ( GetCooldown( weapon, "ataquefadiga" ) )
-	EraseObjProperty( weapon, "#ataquefadiga" );
-	var stamdmg := cint( AP_GetSkill( attacker, ARCANA ) / 2 );
-	stamdmg := ApplyChargesCalculation( weapon, stamdmg, 3 );
-	AP_ConsumeVital( defender, STAMINA, stamdmg );
-  endif
-
-  if ( dmgtype == DMG_COLD )
-
-	if ( GetObjProperty( weapon, "prisaogelida" ) == 1 )
-	  EraseObjProperty( weapon, "prisaogelida" );
-	  var time := cint( AP_GetSkill( attacker, ARCANA ) / 2 );
-	  time := ApplyChargesCalculation( weapon, time, 4 );
-	  TS_StartTimer( defender, "prisaogelida", time );
-	else
-	  PlayObjectCenteredEffect( defender, GFX_BLUE_SPARKLE_GROUND, 7, 16 );
-	  PlaySoundEffect( defender, SFX_GLASS_BREAK_3 );
-	  var time := ApplyChargesCalculation( weapon, 6, 4 );
-	  TS_StartTimer( defender, "paralysis", time );
+	if (!range || range == error)
+		range := 2;
 	endif
 
-  elseif ( dmgtype == DMG_FIRE )
+	if (!dmgtype || dmgtype == error)
+		dmgtype := DMG_PHYSICAL;
+	endif
 
-	PlayObjectCenteredEffect( defender, GFX_EXPLODE_1, 7, 16 );
-	PlaySoundEffect( defender, SFX_EXPLOSION_11 );
-	var time := ApplyChargesCalculation( weapon, 20, 4 );
-	TS_StartTimer( defender, "chamasperpetuas", time );
-  endif
-  return 1;
+	params := 0; // Not needed anymore.
+
+	// gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
+	if (GetCooldown(weapon, "romperencantamento"))
+		ApplyChargesCalculation(weapon, 1, 4);
+		dispel(defender);
+		EraseObjProperty(weapon, "#romperencantamento");
+	endif
+	if (GetCooldown(weapon, "ataqueespiritual"))
+		EraseObjProperty(weapon, "#ataqueespiritual");
+		var manadmg := cint(AP_GetSkill(attacker, ARCANA) / 3);
+		manadmg := ApplyChargesCalculation(weapon, manadmg, 3);
+		AP_ConsumeVital(defender, MANA, manadmg);
+	endif
+	if (GetCooldown(weapon, "ataquefadiga"))
+		EraseObjProperty(weapon, "#ataquefadiga");
+		var stamdmg := cint(AP_GetSkill(attacker, ARCANA) / 2);
+		stamdmg := ApplyChargesCalculation(weapon, stamdmg, 3);
+		AP_ConsumeVital(defender, STAMINA, stamdmg);
+	endif
+
+	if (dmgtype == DMG_COLD)
+
+		if (GetObjProperty(weapon, "prisaogelida") == 1)
+			EraseObjProperty(weapon, "prisaogelida");
+			var time := cint(AP_GetSkill(attacker, ARCANA) / 2);
+			time := ApplyChargesCalculation(weapon, time, 4);
+			TS_StartTimer(defender, "prisaogelida", time);
+		else
+			PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+			PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+			var time := ApplyChargesCalculation(weapon, 6, 4);
+			TS_StartTimer(defender, "paralysis", time);
+		endif
+
+	elseif (dmgtype == DMG_FIRE)
+
+		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+		PlaySoundEffect(defender, SFX_EXPLOSION_11);
+		var time := ApplyChargesCalculation(weapon, 20, 4);
+		TS_StartTimer(defender, "chamasperpetuas", time);
+	endif
+	return 1;
 endprogram

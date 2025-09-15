@@ -1,8 +1,8 @@
 
 use uo;
 
-program mining_logon( who )
+program mining_logon(who)
 
-  EraseObjProperty( who, "IsMining" );
+	EraseObjProperty(who, "IsMining");
 
 endprogram

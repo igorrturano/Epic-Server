@@ -2,10 +2,10 @@ use uo;
 use os;
 include ":musicianship:bardmusic";
 
-program TimedScript_bard_delete_mob( params )
-  var alvo := params[1];
-  PrintTextAbove( alvo, "*desaparece*", BARD_FONT, BARD_FONT_COLOR_NEUTRA );
-  Sleepms( 10 );
-  alvo.kill();
-  return 1;
+program TimedScript_bard_delete_mob(params)
+	var alvo := params[1];
+	PrintTextAbove(alvo, "*desaparece*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	Sleepms(10);
+	alvo.kill();
+	return 1;
 endprogram

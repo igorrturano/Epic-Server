@@ -5,7 +5,7 @@ use os;
 include ":attributes:attributes";
 include ":fls_core:packets";
 
-program TimedScript_Clumsy( params )
+program TimedScript_Clumsy(params)
 
-  return 1;
+	return 1;
 endprogram

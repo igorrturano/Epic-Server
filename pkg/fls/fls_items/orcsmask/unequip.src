@@ -4,15 +4,15 @@ use cfgfile;
 
 include ":attributes:attributes";
 
-program unequipweapon( who, item )
-  set_critical( 1 );
+program unequipweapon(who, item)
+	set_critical(1);
 
-  if ( who.npctemplate || who.cmdlevel )
-	return 1;
-  endif
+	if (who.npctemplate || who.cmdlevel)
+		return 1;
+	endif
 
-  set_critical( 0 );
+	set_critical(0);
 
-  return 0;
+	return 0;
 
 endprogram

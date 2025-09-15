@@ -6,7 +6,6 @@
 5- quando o npc vende o dinheiro vai pro seu id (uma prop) e 10% vai pro npc  OK
 6- player comuns (sem tag)so podem comprar e nao vende OK
 */
-
 use uo;
 use os;
 
@@ -51,97 +50,97 @@ const MOEDAS := 47715;
 
 // var item_cfg := ReadConfigFile(":*:itemdesc");
 
-program MerchantMenu( params )
-  var npc := params[1];
-  var player := params[2];
-  // 	var cur_menu := MENU_INTRO;
-  // 	var gump := MENU_INTRO;
-  // 	var input := MENU_INTRO;
-  var escondido := player.hidden;
-  var listaprodutos := dictionary;
-  var dicindex := " ";
-  var pagina := 1;
+program MerchantMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	// 	var cur_menu := MENU_INTRO;
+	// 	var gump := MENU_INTRO;
+	// 	var input := MENU_INTRO;
+	var escondido := player.hidden;
+	var listaprodutos := dictionary;
+	var dicindex := " ";
+	var pagina := 1;
 
-  if ( escondido )
-	player.hidden := 0;
-	SendSysMessageEx( player, "Voce se revelou ao mercador.", SSM_FAIL );
-  endif
-  while ( 1 )
-	// variaveis de controle do gump
-	var item := 0;
-	var linha := 0;
-	var limitepagfrente := MAX_ITEM_PAG * pagina;
-	var limitepagtras := limitepagfrente - MAX_ITEM_PAG;
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou ao mercador.", SSM_FAIL);
+	endif
+	while (1)
+		// variaveis de controle do gump
+		var item := 0;
+		var linha := 0;
+		var limitepagfrente := MAX_ITEM_PAG * pagina;
+		var limitepagtras := limitepagfrente - MAX_ITEM_PAG;
 
-	var gump := GFCreateGump( 0, 0 );
-	GFPage( gump, 0 );
-	GFResizePic( gump, 0, 0, BKGND_BLUESLAB, 480, 480 );
-	GFResizePic( gump, 15, 15, BKGND_STONESLAB, 320, 450 );
+		var gump := GFCreateGump(0, 0);
+		GFPage(gump, 0);
+		GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 480, 480);
+		GFResizePic(gump, 15, 15, BKGND_STONESLAB, 320, 450);
 
-	// 	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, SHOW_ITEMS_SOLD_BTN);
-	GFTextLine( gump, 20, 30, 2000, "Clique no item que deseja vender." );
-	GFTextLine( gump, 340, 30, 2000, "Valor Oferecido:" );
+		// 	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, SHOW_ITEMS_SOLD_BTN);
+		GFTextLine(gump, 20, 30, 2000, "Clique no item que deseja vender.");
+		GFTextLine(gump, 340, 30, 2000, "Valor Oferecido:");
 
-	foreach gema in ( EnumerateItemsInContainer( player.backpack ) )
-	  var valor := GetObjProperty( gema, "valorgem" ); // pega somente os itens que tenham valor de gema. CProp
-	  if ( valor != error )
-		item := item + 1; // contador geral de itens;
-		if ( item > limitepagfrente )
-		  break;
-		else
-		  if ( item > limitepagtras )
-			linha := linha + 1; // contador da linha na pagina
-			GFTextLine( gump, 40, 30 + ( 20 * linha ), GF_STDCOLOR, gema.desc );
-			GFTextLine( gump, 340, 30 + ( 20 * linha ), 2005, valor * gema.amount );
-			GFAddButton( gump, 20, 33 + ( 20 * linha ), 2117, 2118, GF_CLOSE_BTN, linha );
-			dicindex := pagina + CStr( linha );
-			listaprodutos[dicindex] := gema;
-		  endif
+		foreach gema in (EnumerateItemsInContainer(player.backpack))
+			var valor := GetObjProperty(gema, "valorgem"); // pega somente os itens que tenham valor de gema. CProp
+			if (valor != error)
+				item := item + 1; // contador geral de itens;
+				if (item > limitepagfrente)
+					break;
+				else
+					if (item > limitepagtras)
+						linha := linha + 1; // contador da linha na pagina
+						GFTextLine(gump, 40, 30 + (20 * linha), GF_STDCOLOR, gema.desc);
+						GFTextLine(gump, 340, 30 + (20 * linha), 2005, valor * gema.amount);
+						GFAddButton(gump, 20, 33 + (20 * linha), 2117, 2118, GF_CLOSE_BTN, linha);
+						dicindex := pagina + CStr(linha);
+						listaprodutos[dicindex] := gema;
+					endif
+				endif
+			endif
+		endforeach
+
+		if (pagina > 1)
+			GFAddButton(gump, 20, 430, 2117, 2118, GF_CLOSE_BTN, 201);
+			GFTextLine(gump, 40, 433, 2000, "Pagina Anterior");
 		endif
-	  endif
-	endforeach
 
-	if ( pagina > 1 )
-	  GFAddButton( gump, 20, 430, 2117, 2118, GF_CLOSE_BTN, 201 );
-	  GFTextLine( gump, 40, 433, 2000, "Pagina Anterior" );
-	endif
-
-	if ( item >= limitepagfrente )
-	  GFAddButton( gump, 315, 430, 2117, 2118, GF_CLOSE_BTN, 202 );
-	  GFTextLine( gump, 225, 433, 2000, "Proxima Pagina" );
-	endif
-
-	var input := GFSendGump( player, gump );
-
-	if ( input[0] == 0 || GetObjProperty( player, "#Online" ) ) // cancela o Gump.
-	  AI_Speak( npc, "Muito Obrigado. Volte Sempre!" );
-	  break;
-	elseif ( input[0] == 201 ) // controle de pagina anterior
-	  if ( pagina < 2 )
-		pagina := 1;
-	  else
-		pagina := pagina - 1;
-	  endif
-	elseif ( input[0] == 202 ) // controle de proxima pagina.
-	  if ( pagina >= 10 )
-		pagina := 10;
-	  else
-		pagina := pagina + 1;
-	  endif
-	else
-	  var Aceito := yesno( player, "Tem certeza de que deseja vender este item? " );
-	  if ( Aceito )
-		var escolhido := listaprodutos[pagina + CStr( input[0] )];
-		if ( escolhido != error || escolhido != 0 )
-		  AI_Speak( npc, "Aqui estão suas Moedas!" );
-		  CreateItemInBackpack( player, MOEDAS,
-						  escolhido.amount * GetObjProperty( escolhido, "valorgem" ) );
-		  DestroyItem( escolhido );
-		else
-		  SendSysMessageEx( player, "Erro de indice no menu de gemas!", SSM_FAIL );
+		if (item >= limitepagfrente)
+			GFAddButton(gump, 315, 430, 2117, 2118, GF_CLOSE_BTN, 202);
+			GFTextLine(gump, 225, 433, 2000, "Proxima Pagina");
 		endif
-	  endif
-	endif
-  endwhile
-  return 1;
+
+		var input := GFSendGump(player, gump);
+
+		if (input[0] == 0 || GetObjProperty(player, "#Online")) // cancela o Gump.
+			AI_Speak(npc, "Muito Obrigado. Volte Sempre!");
+			break;
+		elseif (input[0] == 201) // controle de pagina anterior
+			if (pagina < 2)
+				pagina := 1;
+			else
+				pagina := pagina - 1;
+			endif
+		elseif (input[0] == 202) // controle de proxima pagina.
+			if (pagina >= 10)
+				pagina := 10;
+			else
+				pagina := pagina + 1;
+			endif
+		else
+			var Aceito := yesno(player, "Tem certeza de que deseja vender este item? ");
+			if (Aceito)
+				var escolhido := listaprodutos[pagina + CStr(input[0])];
+				if (escolhido != error || escolhido != 0)
+					AI_Speak(npc, "Aqui estão suas Moedas!");
+					CreateItemInBackpack(player, MOEDAS,
+						  escolhido.amount * GetObjProperty(escolhido, "valorgem"));
+					DestroyItem(escolhido);
+				else
+					SendSysMessageEx(player, "Erro de indice no menu de gemas!", SSM_FAIL);
+				endif
+			endif
+		endif
+	endwhile
+	return 1;
 endprogram

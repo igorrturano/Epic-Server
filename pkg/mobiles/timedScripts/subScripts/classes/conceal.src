@@ -5,16 +5,16 @@ include "include/say";
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy( params )
-  var mobile := params[1];
-  var attacker := params[2];
-  params := 0; // Not needed anymore.
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
 
-  if ( GetObjProperty( mobile, "conceal" ) )
-	return 0;
-  endif
+	if (GetObjProperty(mobile, "conceal"))
+		return 0;
+	endif
 
-  mobile.concealed := 1;
+	mobile.concealed := 1;
 
-  return 1;
+	return 1;
 endprogram

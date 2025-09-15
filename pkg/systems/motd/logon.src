@@ -4,7 +4,7 @@ use file;
 
 include ":datafile:datafile";
 
-program MOTD( who )
+program MOTD(who)
 // var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
 // var data_elem := DFFindElement(data_file, who.acctname);
 

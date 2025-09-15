@@ -7,9 +7,9 @@ include "include/client";
 include "include/say";
 include ":tn:cooldown";
 
-program taunt( who )
+program taunt(who)
 
-  SendSysMessageEx( who, "Voce contra-atacara sempre que puder.", SSM_INFO );
-  SetCooldown( who, "contraataque", 40 );
+	SendSysMessageEx(who, "Voce contra-atacara sempre que puder.", SSM_INFO);
+	SetCooldown(who, "contraataque", 40);
 
 endprogram

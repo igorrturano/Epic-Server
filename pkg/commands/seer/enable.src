@@ -11,11 +11,11 @@
 
 use uo;
 
-program enable( who, priv )
-  var res := who.enable( priv );
-  if ( res )
-	SendSysMessage( who, "Setting '" + priv + "' is enabled." );
-  else
-	SendSysMessage( who, "You don't have that privilege." );
-  endif
+program enable(who, priv)
+	var res := who.enable(priv);
+	if (res)
+		SendSysMessage(who, "Setting '" + priv + "' is enabled.");
+	else
+		SendSysMessage(who, "You don't have that privilege.");
+	endif
 endprogram

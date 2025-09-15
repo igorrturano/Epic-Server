@@ -3,14 +3,14 @@ use os;
 
 include ":attributes:attributes";
 
-program cureScript( params )
-  var mobile := params[1];
-  var attacker := params[2];
-  var level := params[3];
-  params := 0; // Not needed anymore.
+program cureScript(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
 
-  var dmgbonus := cdbl( GetObjProperty( mobile, "#dmgbonus" ) );
-  var dmg := GetObjProperty( mobile, "dmg" );
-  SetObjProperty( mobile, "#dmgbonus", dmgbonus - dmg );
-  return 1;
+	var dmgbonus := cdbl(GetObjProperty(mobile, "#dmgbonus"));
+	var dmg := GetObjProperty(mobile, "dmg");
+	SetObjProperty(mobile, "#dmgbonus", dmgbonus - dmg);
+	return 1;
 endprogram

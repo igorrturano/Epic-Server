@@ -5,8 +5,8 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  SetCooldown( attacker, "ataqueinfalivel", 30 );
+	SetCooldown(attacker, "ataqueinfalivel", 30);
 
 endprogram

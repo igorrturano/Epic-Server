@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-program TimedScript_bard_delete_mob( params )
+program TimedScript_bard_delete_mob(params)
 
-  return 1;
+	return 1;
 endprogram

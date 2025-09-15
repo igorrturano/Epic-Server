@@ -6,10 +6,10 @@ include ":tn:cooldown";
 include "include/sysEvent";
 include "include/client";
 
-program manobra( attacker )
+program manobra(attacker)
 
-  SendSysMessageEx( attacker, "Sua proxima defesa sera gloriosa.", SSM_INFO );
+	SendSysMessageEx(attacker, "Sua proxima defesa sera gloriosa.", SSM_INFO);
 
-  SetCooldown( attacker, "defesasgloriosas", cint( AP_GetSkill( attacker, TACTICS ) ) );
+	SetCooldown(attacker, "defesasgloriosas", cint(AP_GetSkill(attacker, TACTICS)));
 
 endprogram
