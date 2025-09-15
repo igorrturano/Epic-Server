@@ -4,7 +4,7 @@ use util;
 
 include ":attributes:include/advanceCheck";
 include ":attributes:include/skills";
-program GetAge( who )
-  var what := Target( who );
-  SendSysMessage( who, "Personagem tem " + idadeChar( what ) + " dias." );
+program GetAge(who)
+	var what := Target(who);
+	SendSysMessage(who, "Personagem tem " + idadeChar(what) + " dias.");
 endprogram

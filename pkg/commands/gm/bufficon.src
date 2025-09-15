@@ -8,14 +8,14 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include ":damage:damage";
 
-program bufficon( who, icon )
-  // var mag;
-  //   start_script(":spells:diseasedamage", who);
-  // var tgt := Target(who, TGTOPT_CHECK_LOS);
-  var buff_icon := CInt( icon );
-  var level3 := CStr( 11 ) + "\t" + CStr( 11 ) + "\t" + CStr( 11 ) + "\t" + CStr( 10 ) + "\t" + CStr(
-					  10 ) + "\t" + CStr( 10 ) + "\t" + CStr( 10 );
-  who.addbuff( buff_icon, 10, 1017383, 1075633, level3 ); // VER ICONE PARA MUDAR
-  sleep( 1 );
-  who.clearBuffs();
+program bufficon(who, icon)
+	// var mag;
+	//   start_script(":spells:diseasedamage", who);
+	// var tgt := Target(who, TGTOPT_CHECK_LOS);
+	var buff_icon := CInt(icon);
+	var level3 := CStr(11) + "\t" + CStr(11) + "\t" + CStr(11) + "\t" + CStr(10) + "\t" + CStr(10) + "\t" + CStr(
+					10) + "\t" + CStr(10);
+	who.addbuff(buff_icon, 10, 1017383, 1075633, level3); // VER ICONE PARA MUDAR
+	sleep(1);
+	who.clearBuffs();
 endprogram

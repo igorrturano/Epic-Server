@@ -18,31 +18,31 @@
  *
  * var debugType := "clima";
  * DebugMsgEvent(debugType, "Está chovendo bastante!");
- */
+*/
 use uo;
 
 include ":debug:Controller/DebugController";
 
-program CMD_debug( who, debugName )
-  debugName.Lower();
+program CMD_debug(who, debugName)
+	debugName.Lower();
 
-  if ( !debugName || Lower( debugName ) == "list" )
-	SendSysMessageEx( who, "Lista de debugs disponíveis: " );
-	foreach debug in ( listDebugs )
-	  SendSysMessageEx( who, $"Tag: {_debug_iter} - PLevel: {debug.level}" );
-	endforeach
-	return;
-  endif
-
-  if ( !listDebugs[Lower( debugName )] )
-	SendSysMessageEx( who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.",
-				   SSM_FAIL );
-	SendSysMessageEx( who, "Para ver os debug disponíveis digite: .debug ou .debug list", SSM_FAIL );
-  else
-	if ( who.cmdlevel >= listDebugs[Lower( debugName )].level )
-	  who.setDebugProp( debugName );
-	else
-	  SendSysMessageEx( who, $"DEBUG {debugName}: Nível insuficiente.", SSM_FAIL );
+	if (!debugName || Lower(debugName) == "list")
+		SendSysMessageEx(who, "Lista de debugs disponíveis: ");
+		foreach debug in (listDebugs)
+			SendSysMessageEx(who, $"Tag: {_debug_iter} - PLevel: {debug.level}");
+		endforeach
+		return;
 	endif
-  endif
+
+	if (!listDebugs[Lower(debugName)])
+		SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.",
+				   SSM_FAIL);
+		SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list", SSM_FAIL);
+	else
+		if (who.cmdlevel >= listDebugs[Lower(debugName)].level)
+			who.setDebugProp(debugName);
+		else
+			SendSysMessageEx(who, $"DEBUG {debugName}: Nível insuficiente.", SSM_FAIL);
+		endif
+	endif
 endprogram

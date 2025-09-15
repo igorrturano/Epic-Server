@@ -11,7 +11,6 @@ program VacuoDeMana(attacker)
 	SetCooldown(attacker, "vacuodemana", 60);
 
 endprogram */
-
 use uo;
 
 include ":fls_core:packets";
@@ -21,25 +20,25 @@ include ":combat:damage";
 include "include/say";
 include ":timedscripts:timedScripts";
 
-program tironojoelho( params )
-  var attacker := params[1];
-  var defender := params[2];
-  var weapon := params[3];
-  var armor := params[4];
-  var basedamage := params[5];
-  var rawdamage := params[6];
-  params := 0; // Not needed anymore.
+program tironojoelho(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
+	params := 0; // Not needed anymore.
 
-  if ( lower( weapon.attribute ) == "ranged" )
-	SendSysMessage( attacker, "A habilidade falhou, voce precisa estar usando arco" );
-	return 1;
-  endif
+	if (lower(weapon.attribute) == "ranged")
+		SendSysMessage(attacker, "A habilidade falhou, voce precisa estar usando arco");
+		return 1;
+	endif
 
-  PlayAttackAnimation( attacker );
-  PlayHitSounds( attacker, defender );
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
 
-  TS_StartTimer( defender, "paralysis", 6 );
-  Run_Script_To_Completion( ":combat:mainHitScript", array{ attacker, defender, weapon, armor,
-														    basedamage, rawdamage } );
+	TS_StartTimer(defender, "paralysis", 6);
+	Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, weapon, armor,
+														 	basedamage, rawdamage });
 
 endprogram

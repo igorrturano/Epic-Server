@@ -7,14 +7,14 @@ include ":combat:damage";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 
-program doubleattack( who )
-  if ( GetObjProperty( who, "Postura" ) == "Ofensiva" ) // Golpe com escudo
-	SendSysMessageEx( who, "Seu jogo de defesas eh impecavel", SSM_INFO );
-	SetCooldown( who, "vitalidadeinabalavel", cint( AP_GetSkill( who, PARRY ) / 3 ) );
-  elseif ( GetObjProperty( who, "Postura" ) == "Defensiva" ) // Desarmar
-	SendSysMessageEx( who, "Voce se motiva a continuar o combate.", SSM_INFO );
-	TS_StartTimer( who, "recuperacaoaligera", 60 );
-  endif
+program doubleattack(who)
+	if (GetObjProperty(who, "Postura") == "Ofensiva") // Golpe com escudo
+		SendSysMessageEx(who, "Seu jogo de defesas eh impecavel", SSM_INFO);
+		SetCooldown(who, "vitalidadeinabalavel", cint(AP_GetSkill(who, PARRY) / 3));
+	elseif (GetObjProperty(who, "Postura") == "Defensiva") // Desarmar
+		SendSysMessageEx(who, "Voce se motiva a continuar o combate.", SSM_INFO);
+		TS_StartTimer(who, "recuperacaoaligera", 60);
+	endif
 
-  return 1;
+	return 1;
 endprogram

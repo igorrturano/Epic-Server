@@ -1,8 +1,8 @@
 use uo;
 
-program textcmd_getscript( who )
+program textcmd_getscript(who)
 
-  var targ := Target( who );
-  SendSysMessage( who, "Script - " + CStr( targ.script ) );
+	var targ := Target(who);
+	SendSysMessage(who, "Script - " + CStr(targ.script));
 
 endprogram

@@ -41,47 +41,47 @@ const ERRORMSGS_ENGLISH := "{}StaticsImport: ImportArea started..." + "{}Statics
 // Hauptprogram
 /////////////////
 
-program TextCMD_StaticsImport( who )
-  Set_Script_Option( SCRIPTOPT_NO_RUNAWAY, 1 );
+program TextCMD_StaticsImport(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-  PrintErrorMessage( 1 );
-  ImportArea( who );
-  PrintErrorMessage( 2 );
+	PrintErrorMessage(1);
+	ImportArea(who);
+	PrintErrorMessage(2);
 endprogram
 
 //////////////////////////////////////
 // ImportArea - Importiert die Items
 //////////////////////////////////////
 
-function ImportArea( who )
-  var datafile := ReadConfigFile( ":worldforge:config/staticscheckstackslarge" );
+function ImportArea(who)
+	var datafile := ReadConfigFile(":worldforge:config/staticscheckstackslarge");
 
-  if ( datafile )
-	var item;
-	var object;
+	if (datafile)
+		var item;
+		var object;
 
-	foreach name in GetConfigStringKeys( datafile )
-	  item := datafile[name];
-	  if ( item )
-		object := CreateItemAtLocation( item.x, item.y, item.z, item.objtype, item.amount );
-		if ( object )
-		  object.color := item.color;
-		  object.movable := item.movable;
+		foreach name in GetConfigStringKeys(datafile)
+			item := datafile[name];
+			if (item)
+				object := CreateItemAtLocation(item.x, item.y, item.z, item.objtype, item.amount);
+				if (object)
+					object.color := item.color;
+					object.movable := item.movable;
 
-		  var cprops := UnPack( item.cprops );
-		  foreach cpropname in ( cprops.keys() )
-			SetObjProperty( object, cpropname, cprops[cpropname] );
-		  endforeach
-		else
-		  PrintErrorMessage( 3, { item.objtype, item.x, item.y, item.z } );
-		endif
-	  endif
-	endforeach
+					var cprops := UnPack(item.cprops);
+					foreach cpropname in (cprops.keys())
+						SetObjProperty(object, cpropname, cprops[cpropname]);
+					endforeach
+				else
+					PrintErrorMessage(3, { item.objtype, item.x, item.y, item.z });
+				endif
+			endif
+		endforeach
 
-	UnloadConfigFile( ":worldforge:config/staticscheckstackslarge" );
+		UnloadConfigFile(":worldforge:config/staticscheckstackslarge");
 
-	PrintErrorMessage( 4, {}, who );
-  else
-	PrintErrorMessage( 5, {}, who );
-  endif
+		PrintErrorMessage(4, {}, who);
+	else
+		PrintErrorMessage(5, {}, who);
+	endif
 endfunction

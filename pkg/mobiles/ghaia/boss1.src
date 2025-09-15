@@ -7,7 +7,7 @@ include ":ghaia:ghaia";
 include ":ghaia:objective";
 include ":ghaia:boss1fight";
 
-var npccfgfile := ReadConfigFile( ":*:npcdesc" );
+var npccfgfile := ReadConfigFile(":*:npcdesc");
 var me := self();
 var idlesnd1;
 var idlesnd2;
@@ -22,92 +22,92 @@ var propallies;
 
 program KillPlayers()
 
-  var ev;
-  var wanders;
-  propallies := dictionary;
+	var ev;
+	var wanders;
+	propallies := dictionary;
 
-  InitializeNPC( me );
-  SetWarMode( 0 );
-  ev := os::wait_for_event( 0 );
-  wanders := 0;
-  EnableMainEvents();
-  Set_Event_Queue_Size( 1000 );
+	InitializeNPC(me);
+	SetWarMode(0);
+	ev := os::wait_for_event(0);
+	wanders := 0;
+	EnableMainEvents();
+	Set_Event_Queue_Size(1000);
 
-  while ( me )
+	while (me)
 
-	// se tem objetivo, anda na direcao dele, se nao tem so wander
-	if ( GetObjProperty( me, "objloc" ) != error )
-	  wanders := 0;
-	  DoObjective();
-	else
-	  MoveAround();
-	endif
-
-	wanders := wanders + 1;
-	if ( wanders >= 30 )
-	  wanders := 0;
-	  look_around();
-	  ev := sleepmode();
-	else
-	  ev := os::wait_for_event( 10 );
-	endif
-
-	if ( ev )
-	  case ( ev.type )
-		SYSEVENT_ENTEREDAREA:
-		  if ( CheckLineOfSight( me, ev.source ) )
-			if ( CanFight( me, ev.source, align ) ) // verifica se eh inimigo
-			  wanders := 0;
-			  Boss1Fight( ev.source );
-			endif
-		  endif
-		SYSEVENT_ENGAGED:  wanders := 0; Boss1Fight( ev.source );
-		SYSEVENT_DAMAGED:  wanders := 0; Boss1Fight( ev.source );
-		EVID_ALERT_ALLIES: wanders := 0; Boss1Fight( ev.opponent );
-		EVID_HERDING:      herd( ev );
-		EVID_TAUNT:
-		  if ( ev.source )
+		// se tem objetivo, anda na direcao dele, se nao tem so wander
+		if (GetObjProperty(me, "objloc") != error)
 			wanders := 0;
-			Boss1Fight( ev.opponent );
-		  endif
-		EVID_FLEE:
-		  if ( ev.source )
-			flee( ev.source );
-		  endif
-	  endcase
-	endif
+			DoObjective();
+		else
+			MoveAround();
+		endif
 
-	look_around();
-	sleepms( 100 );
-  endwhile
+		wanders := wanders + 1;
+		if (wanders >= 30)
+			wanders := 0;
+			look_around();
+			ev := sleepmode();
+		else
+			ev := os::wait_for_event(10);
+		endif
+
+		if (ev)
+			case (ev.type)
+				SYSEVENT_ENTEREDAREA:
+					if (CheckLineOfSight(me, ev.source))
+						if (CanFight(me, ev.source, align)) // verifica se eh inimigo
+							wanders := 0;
+							Boss1Fight(ev.source);
+						endif
+					endif
+				SYSEVENT_ENGAGED:  wanders := 0; Boss1Fight(ev.source);
+				SYSEVENT_DAMAGED:  wanders := 0; Boss1Fight(ev.source);
+				EVID_ALERT_ALLIES: wanders := 0; Boss1Fight(ev.opponent);
+				EVID_HERDING:      herd(ev);
+				EVID_TAUNT:
+					if (ev.source)
+						wanders := 0;
+						Boss1Fight(ev.opponent);
+					endif
+				EVID_FLEE:
+					if (ev.source)
+						flee(ev.source);
+					endif
+			endcase
+		endif
+
+		look_around();
+		sleepms(100);
+	endwhile
 
 endprogram
 
-function CloseDistance( opponent )
+function CloseDistance(opponent)
 
-  var sleepdelay := 275 - me.run_speed; // (CInt(GetDexterity(me)) * 1.5);
+	var sleepdelay := 275 - me.run_speed; // (CInt(GetDexterity(me)) * 1.5);
 
-  if ( sleepdelay < 0 )
-	sleepdelay := 0;
-  endif
+	if (sleepdelay < 0)
+		sleepdelay := 0;
+	endif
 
-  case ( CoordinateDistance( me.x, me.y, opponent.x, opponent.y ) )
-	1: // the most likely, so first
-	0:
-	  return 1;
-	default:
-	  RunToward( opponent );
-	  sleepms( sleepdelay );
-	  return 0;
-  endcase
+	case (CoordinateDistance(me.x, me.y, opponent.x, opponent.y))
+		1: // the most likely, so first
+		0:
+			return 1;
+		default:
+			RunToward(opponent);
+			sleepms(sleepdelay);
+			return 0;
+	endcase
 
 endfunction
 
 function look_around()
-  foreach npc in ListMobilesInLineOfSight( me, areasize )
-	if ( CanFight( me, npc, align ) )
-	  Fight( npc );
-	endif
-	sleepms( 2 );
-  endforeach
+	foreach npc in ListMobilesInLineOfSight(me, areasize)
+		if (CanFight(me, npc, align))
+			Fight(npc);
+		endif
+		sleepms(2);
+	endforeach
 endfunction

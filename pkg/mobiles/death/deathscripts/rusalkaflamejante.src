@@ -8,20 +8,20 @@ include "include/client";
 include "include/sounds";
 include ":combat:damage";
 
-program DeathScript( params )
-  var corpse := params[1];
-  // var npc_cfg := params[2];
-  var template := params[3];
-  params := 0; // Not needed anymore
+program DeathScript(params)
+	var corpse := params[1];
+	// var npc_cfg := params[2];
+	var template := params[3];
+	params := 0; // Not needed anymore
 
-  printtextabove( corpse, "*chamas saem do corpo por todo lado*" );
+	printtextabove(corpse, "*chamas saem do corpo por todo lado*");
 
-  // explode em chamas
-  foreach defender in ( ListMobilesNearLocation( corpse.x, corpse.y, corpse.z, 6, corpse.realm ) )
-	PlayObjectCenteredEffect( defender, GFX_EXPLODE_1, 7, 16 );
-	PlaySoundEffect( defender, SFX_EXPLOSION_11 );
-	ApplyDamageEX( defender, 15, DMG_FIRE );
-  endforeach
+	// explode em chamas
+	foreach defender in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 6, corpse.realm))
+		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+		PlaySoundEffect(defender, SFX_EXPLOSION_11);
+		ApplyDamageEX(defender, 15, DMG_FIRE);
+	endforeach
 
-  return 1;
+	return 1;
 endprogram

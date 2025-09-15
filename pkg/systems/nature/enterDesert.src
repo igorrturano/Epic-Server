@@ -5,6 +5,6 @@ use vitals;
 include ":charactercreation:resists";
 include ":combat:damage";
 
-program calor( who, regioname )
-  start_script( ":nature:caloreffect", { who } );
+program calor(who, regioname)
+	start_script(":nature:caloreffect", { who });
 endprogram

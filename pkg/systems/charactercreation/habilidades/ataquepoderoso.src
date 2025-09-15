@@ -3,9 +3,9 @@ use uo;
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 
-program manobra( who )
+program manobra(who)
 
-  PrintTextAbove( who, "*Ataque Poderoso*" );
-  TS_StartTimer( who, "ataquepoderoso", cint( AP_GetSkill( who, TACTICS ) ) );
+	PrintTextAbove(who, "*Ataque Poderoso*");
+	TS_StartTimer(who, "ataquepoderoso", cint(AP_GetSkill(who, TACTICS)));
 
 endprogram

@@ -1,6 +1,6 @@
 /* $Id: requestAttack.src 902 2005-11-05 07:46:41Z muaddiblsd $
  *
- */
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  name:    Request Attack Packet Hook
@@ -23,36 +23,36 @@ include ":mastery:Abilities";
 const BYTE_DEFENDER := 1;
 
 program requestAttack()
-  Print( "INSTALLING: Request Attack PH..." );
-  return 1;
+	Print("INSTALLING: Request Attack PH...");
+	return 1;
 endprogram
 
-exported function HandleAttackRequest( who, byref packet )
-  var defender := SystemFindObjectBySerial( packet.GetInt32( BYTE_DEFENDER ) );
+exported function HandleAttackRequest(who, byref packet)
+	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
 
-  if ( defender.npctemplate && !who.npctemplate ) // se o target for npc e quem clicou for player (sempre eh)
-	if ( who.weapon.attribute == "Ranged" )
-	  if ( Distance( who, defender ) > 18 )
-		SendSysMessageEx( who, "Voce esta muito distante.", SSM_FAIL );
+	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
+		if (who.weapon.attribute == "Ranged")
+			if (Distance(who, defender) > 18)
+				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
 
-		return 1;
-	  endif
-	else
-	  if ( Distance( who, defender ) > 6 )
-		SendSysMessageEx( who, "Voce esta muito distante.", SSM_FAIL );
+				return 1;
+			endif
+		else
+			if (Distance(who, defender) > 6)
+				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
 
-		return 1;
-	  endif
+				return 1;
+			endif
 
+		endif
 	endif
-  endif
 
-  if ( !CheckLineOfSight( who, defender ) )
-	SendSysMessage( who, "Voce nao enxerga esse inimigo para ameaca-lo." );
-	return 1;
-  endif
+	if (!CheckLineOfSight(who, defender))
+		SendSysMessage(who, "Voce nao enxerga esse inimigo para ameaca-lo.");
+		return 1;
+	endif
 
-  ExecuteMasteryAbility( who, defender, 0 );
+	ExecuteMasteryAbility(who, defender, 0);
 
-  return 0;
+	return 0;
 endfunction

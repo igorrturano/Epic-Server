@@ -19,7 +19,7 @@ use os;
 // Hauptprogram
 /////////////////
 
-program TextCMD_StaticsCheckExport( who, params )
-  Run_Script_to_Completion( "textcmd/test/staticscheck", { who, params } );
-  Run_Script_to_Completion( "textcmd/test/multiexport", { who, params } );
+program TextCMD_StaticsCheckExport(who, params)
+	Run_Script_to_Completion("textcmd/test/staticscheck", { who, params });
+	Run_Script_to_Completion("textcmd/test/multiexport", { who, params });
 endprogram

@@ -5,21 +5,21 @@ use os;
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 
-program TimedScript_Clumsy( params )
-  var who := params[1];
-  var attacker := params[2];
-  var level := params[3];
-  params := 0; // Not needed anymore.
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
 
-  params := 0; // Not needed anymore.
+	params := 0; // Not needed anymore.
 
-  if ( TemHabilidade( who, "Vínculo Elemental" ) )
-	if ( GetObjProperty( who.weapon, "#elementalweapon" ) ) // seta com a arma
-	  return 1;
+	if (TemHabilidade(who, "Vínculo Elemental"))
+		if (GetObjProperty(who.weapon, "#elementalweapon")) // seta com a arma
+			return 1;
+		endif
 	endif
-  endif
 
-  SetObjProperty( who, "desarmar", 1 );
+	SetObjProperty(who, "desarmar", 1);
 
-  return 1;
+	return 1;
 endprogram

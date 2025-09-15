@@ -11,39 +11,39 @@ use uo;
 // use basic;
 use cfgfile;
 
-program flip( me )
-  UnloadConfigFile( ":commands:config/flip" );
+program flip(me)
+	UnloadConfigFile(":commands:config/flip");
 
-  var furniture := 0;
+	var furniture := 0;
 
-  if ( TypeOf( me ) == "Array" )
-	furniture := me[2];
-	me := me[1];
-  endif
-
-  if ( !furniture )
-	SendSysMessage( me, "Escolha o objeto que deseja girar." );
-	furniture := Target( me );
-
-	if ( !furniture.isA( POLCLASS_ITEM ) )
-	  SendSysMessage( me, "Voce deve selecionar um item!" );
-	  return 0;
+	if (TypeOf(me) == "Array")
+		furniture := me[2];
+		me := me[1];
 	endif
 
-	if ( furniture.movable == 0 )
-	  SendSysMessage( me, "Este item esta fixo." );
-	  return 0;
+	if (!furniture)
+		SendSysMessage(me, "Escolha o objeto que deseja girar.");
+		furniture := Target(me);
+
+		if (!furniture.isA(POLCLASS_ITEM))
+			SendSysMessage(me, "Voce deve selecionar um item!");
+			return 0;
+		endif
+
+		if (furniture.movable == 0)
+			SendSysMessage(me, "Este item esta fixo.");
+			return 0;
+		endif
 	endif
-  endif
 
-  var flipConfig := ReadConfigFile( ":commands:config/flip" );
-  var flipGraphic := flipConfig[CInt( furniture.graphic )].ChangeTo;
+	var flipConfig := ReadConfigFile(":commands:config/flip");
+	var flipGraphic := flipConfig[CInt(furniture.graphic)].ChangeTo;
 
-  if ( !flipGraphic )
-	SendSysMessage( me, "Este objeto nao pode ser girado." );
-	return 0;
-  endif
+	if (!flipGraphic)
+		SendSysMessage(me, "Este objeto nao pode ser girado.");
+		return 0;
+	endif
 
-  furniture.graphic := flipGraphic;
+	furniture.graphic := flipGraphic;
 
 endprogram

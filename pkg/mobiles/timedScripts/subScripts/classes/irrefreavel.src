@@ -5,22 +5,22 @@ include "include/say";
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy( params )
-  var mobile := params[1];
-  var attacker := params[2];
-  params := 0; // Not needed anymore.
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
 
-  if ( GetObjProperty( mobile, "irrefreavel" ) )
-	return 0;
-  endif
+	if (GetObjProperty(mobile, "irrefreavel"))
+		return 0;
+	endif
 
-  SetObjProperty( mobile, "irrefreavel", 30 );
-  var hitsmod := Cint( GetObjProperty( mobile, "hitsmod" ) );
-  sendsysmessage( mobile, "hitsmod" + hitsmod );
-  hitsmod := hitsmod + 30;
-  SetObjProperty( mobile, "hitsmod", hitsmod );
-  recalcvitals( mobile );
-  HealDamage( mobile, 30 );
+	SetObjProperty(mobile, "irrefreavel", 30);
+	var hitsmod := Cint(GetObjProperty(mobile, "hitsmod"));
+	sendsysmessage(mobile, "hitsmod" + hitsmod);
+	hitsmod := hitsmod + 30;
+	SetObjProperty(mobile, "hitsmod", hitsmod);
+	recalcvitals(mobile);
+	HealDamage(mobile, 30);
 
-  return 1;
+	return 1;
 endprogram

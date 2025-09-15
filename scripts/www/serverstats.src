@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
-
+*/
 use uo;
 use util;
 use http;
