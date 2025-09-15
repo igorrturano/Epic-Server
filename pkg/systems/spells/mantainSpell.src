@@ -8,7 +8,7 @@ include ":charactercreation:habilidades";
 
 function SpellYesNo(who, nome, targname)
 	var gump := GfCreateGump(140, 100);
-	GfResizePic(gump, 0, 0, 0x53 ,200, 140);
+	GfResizePic(gump, 0, 0, 0x53, 200, 140);
 	GfAddAlphaRegion(gump, 0, 0, 200, 140);
 	GfTextLine(gump, 40, 20, 1153, "Manter Encantamento");
 	GfTextLine(gump, 40, 40, 1153, "" + nome);
@@ -16,8 +16,8 @@ function SpellYesNo(who, nome, targname)
 	GfTextLine(gump, 40, 80, 1153, "Sim");
 	GfTextLine(gump, 40, 100, 1153, "Nao");
 
-	GfAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN,  10);
-	GfAddButton(gump, 20, 103, 2117, 2118, GF_CLOSE_BTN,  11);
+	GfAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, 10);
+	GfAddButton(gump, 20, 103, 2117, 2118, GF_CLOSE_BTN, 11);
 
 	var input := GFSendGump(who, gump);
 
@@ -26,18 +26,18 @@ function SpellYesNo(who, nome, targname)
 	else
 		return 0;
 	endif
-//sendsysmessage(who, "Manter Encantamento");
+// sendsysmessage(who, "Manter Encantamento");
 endfunction
 
 program spell(params)
 
 	var mage := params[1];
 	var targ := SystemFindObjectBySerial(params[2]);
-	if ( !targ)
+	if (!targ)
 		return;
 	endif
 
-	if ( targ.dead)
+	if (targ.dead)
 		return;
 	endif
 
@@ -51,43 +51,43 @@ program spell(params)
 	var id := 0;
 	if (name == "weaken")
 		id := 26;
-	elseif ( name == "mantodabesta")
+	elseif (name == "mantodabesta")
 		id := 2;
-	elseif ( name == "desviarprojetil")
+	elseif (name == "desviarprojetil")
 		id := 8;
-	elseif ( name== "gloria")
+	elseif (name == "gloria")
 		id := 15;
-	elseif ( name == "strength")
+	elseif (name == "strength")
 		id := 16;
-	elseif ( name == "phmod")
+	elseif (name == "phmod")
 		id := 18;
-	elseif ( name == "intelligence")
+	elseif (name == "intelligence")
 		id := 19;
-	elseif ( name == "agility")
+	elseif (name == "agility")
 		id := 21;
 	elseif (name == "dmgreduction")
 		id := 34;
-    elseif (name == "dmgreturn")
+	elseif (name == "dmgreturn")
 		id := 49;
 	endif
 
-
 	elem := FindConfigElem(cfg, id);
 	mana := GetConfigInt(elem, "Mana");
-	mana := mana*2;
+	mana := mana * 2;
 	var spellname := GetConfigString(elem, "Name");
 
 	if (temhabilidade(mage, "Manter Magias"))
-		mana := mana/2;
+		mana := mana / 2;
 	endif
 
-	if ( SpellYesNo(mage, spellname,  targ.name ) )
-	        if (!AP_ConsumeVital(mage, MANA, mana))
-                    SendSysMessageEx(mage, "Voce nao possui mana suficiente para manter esse encantamento.", SSM_FAIL);
-				return 1;
+	if (SpellYesNo(mage, spellname, targ.name))
+		if (!AP_ConsumeVital(mage, MANA, mana))
+			SendSysMessageEx(mage, "Voce nao possui mana suficiente para manter esse encantamento.",
+							  SSM_FAIL);
+			return 1;
 		endif
 
-		TS_StartTimer(targ, name, duration, level, mage, 1) ;
+		TS_StartTimer(targ, name, duration, level, mage, 1);
 	else
 		SendSysMessageEx(mage, "Voce desistiu de manter o encantamento.", SSM_INFO);
 	endif

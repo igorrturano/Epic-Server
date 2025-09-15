@@ -1,6 +1,6 @@
 /* $Id: onCreate.src 984 2005-11-14 09:02:34Z muaddiblsd $
  *
- */
+*/
 use uo;
 use util;
 use cfgfile;
@@ -10,8 +10,8 @@ program OnCreate(snow)
 	var graphic_elem := snow_cfg["Graphics"];
 	var graphics := GetConfigStringArray(graphic_elem, "Graphic");
 
-	if ( graphics.size() > 0 )
-		snow.graphic := CInt(graphics[RandomInt(graphics.size())+1]);
+	if (graphics.size() > 0)
+		snow.graphic := CInt(graphics[RandomInt(graphics.size()) + 1]);
 	endif
 
 	return 1;

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 use vitals;
 
@@ -18,7 +18,7 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	if ( getObjProperty(targ, "summoned") != 1 )
+	if (getObjProperty(targ, "summoned") != 1)
 		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
 		return;
 	endif
@@ -28,11 +28,12 @@ program SpellScript(params)
 		return;
 	endif
 
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
 
-	PlayMovingEffectXYZEx( targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+	PlayMovingEffectXYZEx(targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm,
+					   GFX_LARGE_FIREBALL, 1, 10, 2320);
 
-	MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+	MoveObjectToLocation(targ, 10, 10, 10, targ.realm, MOVEOBJECT_FORCELOCATION);
 
 	ApplyRawDamage(targ, 200);
 	ApplyRawDamage(targ, 200);
@@ -46,4 +47,4 @@ program SpellScript(params)
 	ApplyRawDamage(targ, 200);
 
 	return 1;
-endprogram     
+endprogram

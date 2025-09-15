@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -20,38 +20,49 @@ program TimedScript_Clumsy(params)
 
 	sleepms(600);
 	while (x < 30)
-	rand := randomint(5);
-	randd := randomint(5);
-	rand2 := randomint(4);
-	randflor := randomint(5);
+		rand := randomint(5);
+		randd := randomint(5);
+		rand2 := randomint(4);
+		randflor := randomint(5);
 
-	if (randflor == 0) randflor := 3262;
-	elseif (randflor == 1) randflor := 3207;
-	elseif (randflor == 2) randflor := 3210;
-	elseif (randflor == 3) randflor := 3264;
-	elseif (randflor == 4) randflor := 3214;
-	elseif (randflor == 5) randflor := 3262;
-	endif
+		if (randflor == 0)
+			randflor := 3262;
+		elseif (randflor == 1)
+			randflor := 3207;
+		elseif (randflor == 2)
+			randflor := 3210;
+		elseif (randflor == 3)
+			randflor := 3264;
+		elseif (randflor == 4)
+			randflor := 3214;
+		elseif (randflor == 5)
+			randflor := 3262;
+		endif
 
-	if (rand2 == 1)
-	flor := createitematlocation( (mobile.x + rand) , (mobile.y + randd) , mobile.z , randflor , 1 ,  mobile.realm );
-	elseif (rand2 == 2)
-	flor := createitematlocation( (mobile.x - rand) , (mobile.y - randd) , mobile.z , randflor , 1 ,  mobile.realm );
-	elseif (rand2 == 3)
-	flor := createitematlocation( (mobile.x + rand) , (mobile.y - randd) , mobile.z , randflor , 1 ,  mobile.realm );
-	elseif (rand2 == 4)
-	flor := createitematlocation( (mobile.x - rand) , (mobile.y + randd) , mobile.z , randflor , 1 ,  mobile.realm );
-	elseif (rand2 == 0)
-	flor := createitematlocation( (mobile.x - rand) , (mobile.y + randd) , mobile.z , randflor , 1 ,  mobile.realm );
-	endif	
+		if (rand2 == 1)
+			flor := createitematlocation((mobile.x + rand), (mobile.y + randd), mobile.z, randflor, 1,
+										  mobile.realm);
+		elseif (rand2 == 2)
+			flor := createitematlocation((mobile.x - rand), (mobile.y - randd), mobile.z, randflor, 1,
+										  mobile.realm);
+		elseif (rand2 == 3)
+			flor := createitematlocation((mobile.x + rand), (mobile.y - randd), mobile.z, randflor, 1,
+										  mobile.realm);
+		elseif (rand2 == 4)
+			flor := createitematlocation((mobile.x - rand), (mobile.y + randd), mobile.z, randflor, 1,
+										  mobile.realm);
+		elseif (rand2 == 0)
+			flor := createitematlocation((mobile.x - rand), (mobile.y + randd), mobile.z, randflor, 1,
+										  mobile.realm);
+		endif
 
-	setobjproperty(flor, "bardmagic", 1);
+		setobjproperty(flor, "bardmagic", 1);
 
-	TS_StartTimer(flor, "delete", 60);	
+		TS_StartTimer(flor, "delete", 60);
 
-	x := x + 1;
-	sleepms(700);
+		x := x + 1;
+		sleepms(700);
 	endwhile
-	
+
 	return 1;
 endprogram

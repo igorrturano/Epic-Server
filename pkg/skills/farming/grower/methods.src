@@ -14,14 +14,13 @@ exported function GrowIt(grower)
 	var steps := GetGrowStep(grower);
 	var cfg_info := CfgInfo(grower);
 	var value := GetConfigInt(cfg_info, "Steps");
-	
-	var phase := GetGrowthPhase(grower);
 
+	var phase := GetGrowthPhase(grower);
 
 	if (steps > value)
 		steps := 0;
 		SetGrowStep(grower, 0);
-		phase := phase +1;
+		phase := phase + 1;
 		SetGrowthPhase(grower, phase);
 	endif
 
@@ -31,17 +30,16 @@ endfunction
 
 exported function NewGrowIt(grower)
 
-	var steps := GetGrowStep(grower); 
+	var steps := GetGrowStep(grower);
 	var cfg_info := CfgInfo(grower);
 	var value := GetConfigInt(cfg_info, "Steps");
-	
-	var phase := GetGrowthPhase(grower);
 
+	var phase := GetGrowthPhase(grower);
 
 	if (steps > value)
 		steps := 0;
 		SetGrowStep(grower, 0);
-		phase := phase +1;
+		phase := phase + 1;
 		SetGrowthPhase(grower, phase);
 	endif
 
@@ -83,7 +81,7 @@ endfunction
 exported function GetWaterAmount(grower)
 	var data_elem := GetGrowerDataElem(grower);
 	var water_amt := data_elem.GetProp("WaterAmt");
-	if ( water_amt == error )
+	if (water_amt == error)
 		water_amt := 10;
 		SetWaterAmount(grower, water_amt);
 	endif
@@ -92,19 +90,13 @@ exported function GetWaterAmount(grower)
 endfunction
 
 exported function SetWaterAmount(grower, water_amt)
-	var dry_colors := dictionary
-	{
-		"0" -> 1509, 
-		"1" -> 1509, 
-		"2" -> 1505, 
-		"3" -> 1501
-	};
-	
-	if ( water_amt < 0 )
+	var dry_colors := dictionary{ "0" -> 1509, "1" -> 1509, "2" -> 1505, "3" -> 1501 };
+
+	if (water_amt < 0)
 		water_amt := 0;
 	endif
-	
-	if ( dry_colors[water_amt] )
+
+	if (dry_colors[water_amt])
 		grower.color := dry_colors[water_amt];
 	else
 		var cfg_info := CfgInfo(grower);
@@ -118,7 +110,7 @@ endfunction
 exported function GetProduceAmount(grower)
 	var data_elem := GetGrowerDataElem(grower);
 	var produce_amt := data_elem.GetProp("ProduceAmt");
-	if ( produce_amt == error )
+	if (produce_amt == error)
 		produce_amt := 1;
 		SetProduceAmount(grower, produce_amt);
 	endif
@@ -134,7 +126,7 @@ endfunction
 exported function GetGrowthPhase(grower)
 	var data_elem := GetGrowerDataElem(grower);
 	var growth_phase := data_elem.GetProp("GrowthPhase");
-	if ( growth_phase == error )
+	if (growth_phase == error)
 		growth_phase := 0;
 		SetGrowthPhase(grower, 0);
 	endif
@@ -153,7 +145,7 @@ exported function SetGrowthPhase(grower, growth_phase)
 	var data_elem := GetGrowerDataElem(grower);
 
 	var graphic := GetGrowthPhaseGraphic(grower, growth_phase);
-	if ( graphic )
+	if (graphic)
 		grower.graphic := graphic;
 	endif
 
@@ -161,7 +153,7 @@ exported function SetGrowthPhase(grower, growth_phase)
 	if (topGraphic)
 		if (getObjProperty(grower, "top") != error)
 			var prevtop := SystemFindObjectBySerial(getObjProperty(grower, "top"));
-			prevtop.graphic  := topGraphic;
+			prevtop.graphic := topGraphic;
 		else
 			var top := createItemAtLocation(grower.x, grower.y, grower.z, 0x7022, 1, grower.realm);
 			SetObjProperty(grower, "top", top.serial);
@@ -174,7 +166,7 @@ exported function SetGrowthPhase(grower, growth_phase)
 		if (growth_phase >= 1)
 			grower.graphic := GetObjProperty(grower, "flower");
 		endif
-	endif 
+	endif
 
 	return data_elem.SetProp("GrowthPhase", CInt(growth_phase));
 endfunction
@@ -217,10 +209,10 @@ exported function MakeDead(grower)
 	data_elem.SetProp("Dead", 1);
 
 	var name := TruncateArticle(grower.desc);
-	SetName(grower, "a dead "+name);
-	
+	SetName(grower, "a dead " + name);
+
 	SetProduceAmount(grower, 0);
-	
+
 	return 1;
 endfunction
 
@@ -231,8 +223,8 @@ endfunction
 
 exported function GetSeedDice(grower)
 	var value := CfgInfo(grower).SeedChance;
-	if ( value == error )
-		//SysLog("ProduceRegenRate() Unable to find -> CfgInfo(grower).SeedChance");
+	if (value == error)
+		// SysLog("ProduceRegenRate() Unable to find -> CfgInfo(grower).SeedChance");
 		return 0;
 	endif
 
@@ -244,11 +236,11 @@ exported function GetDifficulty(grower)
 	var max_amt := CInt(settings.MaxProduce);
 	var cur_amt := GetProduceAmount(grower);
 	var diff_mod := CfgInfo(grower).DiffMod;
-	if ( !diff_mod )
+	if (!diff_mod)
 		diff_mod := 1.0;
 	endif
 
-	var difficulty := CfgInfo(grower).PlantDifficulty; //CInt(diff_mod * (100 - (100 * cur_amt / max_amt)));
+	var difficulty := CfgInfo(grower).PlantDifficulty; // CInt(diff_mod * (100 - (100 * cur_amt / max_amt)));
 
 	return difficulty;
 endfunction
@@ -261,16 +253,16 @@ endfunction
 
 exported function CanHarvest(grower)
 	var data_elem := GetGrowerDataElem(grower);
-	if ( IsDead(grower) )
+	if (IsDead(grower))
 		return 0;
-	elseif ( data_elem.GetProp("CanHarvest") )
+	elseif (data_elem.GetProp("CanHarvest"))
 		return 1;
 	endif
 	var cfg_info := CfgInfo(grower);
 	var phase_graphics := GetConfigStringArray(cfg_info, "PhaseGraphic");
 	var num_phases := phase_graphics.size();
 
-	if ( GetGrowthPhase(grower) >= num_phases )
+	if (GetGrowthPhase(grower) >= num_phases)
 		data_elem.SetProp("CanHarvest", 1);
 		return 1;
 	else
@@ -288,8 +280,8 @@ exported function CfgInfo(grower)
 	var cfg := ReadConfigFile(":*:itemdesc");
 	var type := GetGrowerType(grower);
 
-	if ( !type )
-		SysLog("Error - Plant ["+grower.desc+"] Serial ["+grower.serial+"] has no seed info. Destroying it!");
+	if (!type)
+		SysLog("Error - Plant [" + grower.desc + "] Serial [" + grower.serial + "] has no seed info. Destroying it!");
 		DestroyItem(grower);
 	else
 		return cfg[type];
@@ -299,7 +291,7 @@ endfunction
 exported function GetMaxProduceAmount(grower)
 	var data_elem := GetGrowerDataElem(grower);
 	var produce_amt := data_elem.GetProp("MaxProduce");
-	if ( produce_amt == error )
+	if (produce_amt == error)
 		produce_amt := 5;
 		SetProduceAmount(grower, produce_amt);
 	endif
@@ -325,4 +317,3 @@ exported function SetMaxProduceAmount(grower, amt)
 	data_elem.SetProp("MaxAmount", CInt(amt));
 
 endfunction
-

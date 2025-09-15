@@ -2,7 +2,7 @@ use uo;
 use os;
 
 program maxchar(who, param)
-	if (!param) 
+	if (!param)
 		SendSysMessage(who, ".maxchar <nome da conta> [quantidade]");
 		return;
 	endif
@@ -14,9 +14,9 @@ program maxchar(who, param)
 	var acc := FindAccount(nomeconta);
 
 	if (!qtd)
-		SendSysMessage(who, "Max Char: "+CInt(acc.getprop("maxchars")));
+		SendSysMessage(who, "Max Char: " + CInt(acc.getprop("maxchars")));
 	else
 		acc.setprop("maxchars", qtd);
-		SendSysMessage(who, "Max Char: "+qtd);
+		SendSysMessage(who, "Max Char: " + qtd);
 	endif
 endprogram

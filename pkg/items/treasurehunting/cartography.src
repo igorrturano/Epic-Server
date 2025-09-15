@@ -1,6 +1,6 @@
 /* $Id: cartography.src 739 2005-10-31 04:45:12Z muaddiblsd $
  *
- */
+*/
 use uo;
 
 program skill_Cartography(who)

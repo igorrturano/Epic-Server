@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -10,4 +10,4 @@ program manobra(attacker)
 	SendSysMessageEx(attacker, "Voce esmaga ossos!", SSM_INFO);
 	SetCooldown(attacker, "aleijar", cint(AP_GetSkill(attacker, TACTICS)));
 
-endprogram  
+endprogram

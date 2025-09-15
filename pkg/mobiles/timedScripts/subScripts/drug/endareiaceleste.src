@@ -1,7 +1,6 @@
 /* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
-
+*/
 use uo;
 use os;
 use util;
@@ -17,5 +16,5 @@ program TimedScript_Alcohol(params)
 	AP_ModifyStatMod(mobile, STRENGTH, -20);
 	AP_ModifySkillMod(mobile, TACTICS, -20);
 	RecalcVitals(mobile);
-	
+
 endprogram

@@ -6,8 +6,6 @@ include "include/say";
 
 program manobra(attacker)
 
-	
-
 	SendSysMessageEx(attacker, "Escolha o alvo para seus aliados cercarem.", SSM_REQUEST);
 	var alvo := Target(attacker);
 	if (!alvo)
@@ -19,12 +17,10 @@ program manobra(attacker)
 
 	sleep(5);
 	var festa := attacker.party;
-	if (listHostiles(attacker, 20, LH_FLAG_LOS) < cint(festa.members.size())/2)
+	if (listHostiles(attacker, 20, LH_FLAG_LOS) < cint(festa.members.size()) / 2)
 		SendSysMessageEx(attacker, "Voce nao esta em desvantagem.", SSM_FAIL);
 		return;
 	endif
-
-
 
 	if (!festa)
 		SendSysMessageEx(attacker, "Voce nao tem aliados!", SSM_FAIL);
@@ -39,7 +35,4 @@ program manobra(attacker)
 		endif
 	endforeach
 
-
-
-endprogram  
-
+endprogram

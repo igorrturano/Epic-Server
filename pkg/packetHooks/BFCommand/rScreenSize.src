@@ -1,6 +1,6 @@
 /* $Id: rScreenSize.src 1267 2006-05-03 22:00:44Z austin $
  *
- */
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  name:    0xBF Hook: Screen Size of Client play window Subcommand 0x5
@@ -15,11 +15,11 @@
 use uo;
 
 program rScreenSize()
-  Print( "INSTALLING: Screen Size Setup PH..." );
-  return 1;
+	Print("INSTALLING: Screen Size Setup PH...");
+	return 1;
 endprogram
 
-exported function HandleReceiveScreenSize( who, byref packet )
+exported function HandleReceiveScreenSize(who, byref packet)
 	// Get the X resolution
 	var x := packet.GetInt16(7);
 	// Get the Y resolution
@@ -30,7 +30,7 @@ exported function HandleReceiveScreenSize( who, byref packet )
 	// login, so would always be refreshed anyway.
 	// We store it as an array to make it easy to access. Such as "var[1] and var[2]"
 	// after reading the cprop.
-	SetObjProperty(who, "#Resolution", (dictionary {"X" -> x, "Y" -> y}));
+	SetObjProperty(who, "#Resolution", (dictionary{ "X" -> x, "Y" -> y }));
 
 	// No need for the core to see this packet.
 	return 1;

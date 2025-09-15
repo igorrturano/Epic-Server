@@ -14,11 +14,11 @@ program magicloot(who, text)
 
 	var e := CreateMagicItem(who.backpack, cstr(args[1]) + " 1 100 " + cint(args[2]) + " " + cstr(args[3]));
 	if (e == error)
-		SendSysMessageEx(who, ""+ e.errortext);
+		SendSysMessageEx(who, "" + e.errortext);
 		return 1;
 	else
 		SendSysMessageEx(who, "O item foi criado na sua mochila.", SSM_INFO);
 		return 1;
 	endif
 
-endprogram 
+endprogram

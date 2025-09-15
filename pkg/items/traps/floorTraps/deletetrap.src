@@ -3,11 +3,11 @@ use datafile;
 
 program deletespawn(item)
 
-	var df := OpenDataFile( ":tn:traps" );
+	var df := OpenDataFile(":tn:traps");
 	if (!df)
-		df := CreateDataFile( ":tn:traps", DF_KEYTYPE_INTEGER );
+		df := CreateDataFile(":tn:traps", DF_KEYTYPE_INTEGER);
 	endif
-	
+
 	var elem := df.DeleteElement(item.serial);
 
 endprogram

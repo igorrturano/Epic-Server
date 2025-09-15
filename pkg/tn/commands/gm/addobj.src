@@ -9,15 +9,17 @@ include ":tn:boss";
 
 program motherbrain(who)
 
-	var motherdata := OpenDataFile( ":tn:objetivos" );
+	var motherdata := OpenDataFile(":tn:objetivos");
 	if (motherdata == error)
-		motherdata := CreateDataFile( ":tn:objetivos", DF_KEYTYPE_STRING );
+		motherdata := CreateDataFile(":tn:objetivos", DF_KEYTYPE_STRING);
 	endif
 
 	var obj := struct;
 
-	obj.+name := RequestGump(who, "Escreva o nome do objetivo (o nome nao pode ser o mesmo dos existentes):", "", "", 1);
-	obj.+type := RadioGump(who, 400, 380, "Escolha o tipo do objetivo.", array{"Guerra", "Magia", "Crafting", "Farm"});
+	obj.+name := RequestGump(who, "Escreva o nome do objetivo (o nome nao pode ser o mesmo dos existentes):",
+						  "", "", 1);
+	obj.+type := RadioGump(who, 400, 380, "Escolha o tipo do objetivo.", array{ "Guerra", "Magia", "Crafting",
+																				"Farm" });
 
 	var loc := RequestGump(who, "Escreva as coordenadas x y z do objetivo", "", "", 1);
 	loc := SplitWords(loc);

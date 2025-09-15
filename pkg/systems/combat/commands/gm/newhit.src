@@ -24,7 +24,7 @@ program createhit(who)
 	SetObjProperty(item, "generichit", hitopt);
 
 	var hit_scripts := GetObjProperty(item, "HitScripts");
-	if ( !hit_scripts )
+	if (!hit_scripts)
 		hit_scripts := array{};
 	endif
 	foreach hit in hit_scripts

@@ -3,7 +3,7 @@
  * Purpose
  * This script allows code to run when the player logs in after having recently logged off.
  *
- */
+*/
 use uo;
 use os;
 
@@ -13,11 +13,11 @@ include ":accounts:accounts";
 
 program core_reconnect(who)
 	who := who; // Avoid compiler warnings.
-//	PrintTextAbove(who, "Reconnecting");
-//	who.setlightlevel(0, 2);
-//	return 1;
+	// 	PrintTextAbove(who, "Reconnecting");
+	// 	who.setlightlevel(0, 2);
+	// 	return 1;
 	EraseObjProperty(who, "#Casting"); // Bugs de cast
-	
+
 	if (who.cmdlevel <= 1)
 		var acc := who.acct;
 		var count := ACCT_GetNumCharacters(acc);
@@ -40,6 +40,6 @@ program core_reconnect(who)
 	else
 		who.setlightlevel(0, 2);
 	endif
-    destroyIllyraOutsideDungeons(who);
+	destroyIllyraOutsideDungeons(who);
 	return 1;
 endprogram

@@ -22,12 +22,10 @@ program manobra(attacker)
 		if (member.serial != attacker.serial)
 			if (Distance(attacker, member) < 8)
 				if (isBloodied(member))
-					HealFLS(member, cint(GetHP(member) - AP_GetVital(member, HITS) + 10 ));
+					HealFLS(member, cint(GetHP(member) - AP_GetVital(member, HITS) + 10));
 				endif
 			endif
 		endif
 	endforeach
 
-
-
-endprogram  
+endprogram

@@ -4,6 +4,6 @@ include ":musicianship:bardmusic";
 
 program TimedScript_bard_emudecer(params)
 	var alvo := params[1];
-	alvo.squelch(-1); //mute forever
+	alvo.squelch(-1); // mute forever
 	return 1;
 endprogram

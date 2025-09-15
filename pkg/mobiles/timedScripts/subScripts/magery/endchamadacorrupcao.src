@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -16,7 +16,6 @@ program TimedScript_Clumsy(params)
 	EraseObjProperty(mobile, "chamadacorrupcao");
 	var bonus := mlore - lvl;
 	AP_SetSkillMod(mobile, ARCANA, bonus);
-	
-	
+
 	return 1;
 endprogram

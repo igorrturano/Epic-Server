@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -9,7 +9,7 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var skill := params[3];
 
-	if ( GetObjProperty(who, "#dmgreductionspell") )
+	if (GetObjProperty(who, "#dmgreductionspell"))
 		return 0;
 	endif
 	var total := Cdbl(skill / 200); // 50% da skill
@@ -21,5 +21,3 @@ program TimedScript_Clumsy(params)
 
 	return 1;
 endprogram
-
-   

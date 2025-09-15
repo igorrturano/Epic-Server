@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -11,9 +11,8 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	params := 0; // Not needed anymore.
-	
+
 	EraseObjProperty(who, "#coldward");
-	
+
 	return 1;
 endprogram
- 

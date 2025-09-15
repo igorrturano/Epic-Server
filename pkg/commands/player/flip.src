@@ -8,24 +8,24 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 use uo;
-//use basic;
+// use basic;
 use cfgfile;
 
-program flip (me)
-UnloadConfigFile(":commands:config/flip");
+program flip(me)
+	UnloadConfigFile(":commands:config/flip");
 
 	var furniture := 0;
 
-	if( TypeOf(me) == "Array" )
+	if (TypeOf(me) == "Array")
 		furniture := me[2];
 		me := me[1];
 	endif
 
-	if( !furniture )
+	if (!furniture)
 		SendSysMessage(me, "Escolha o objeto que deseja girar.");
 		furniture := Target(me);
 
-		if ( !furniture.isA(POLCLASS_ITEM) )
+		if (!furniture.isA(POLCLASS_ITEM))
 			SendSysMessage(me, "Voce deve selecionar um item!");
 			return 0;
 		endif
@@ -36,10 +36,10 @@ UnloadConfigFile(":commands:config/flip");
 		endif
 	endif
 
-	var flipConfig  := ReadConfigFile(":commands:config/flip");
+	var flipConfig := ReadConfigFile(":commands:config/flip");
 	var flipGraphic := flipConfig[CInt(furniture.graphic)].ChangeTo;
 
-	if( !flipGraphic )
+	if (!flipGraphic)
 		SendSysMessage(me, "Este objeto nao pode ser girado.");
 		return 0;
 	endif
