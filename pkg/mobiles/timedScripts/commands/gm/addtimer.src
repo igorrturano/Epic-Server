@@ -5,33 +5,32 @@ use uo;
 
 include ":timedscripts:timedScripts";
 
-program textcmd_AddTimer(who, params)
-	params := SplitWords(params);
-	
-	var timer_name	:= params[1];
-	var duration	:= CInt(params[2]);
-	var level	:= CInt(params[3]);
+program textcmd_AddTimer( who, params )
+  params := SplitWords( params );
 
-	if ( !level )
-		level := 1;
-	endif
-	
-	if ( !timer_name || !duration )
-		SendSysMessage(who, "Command syntax .addtimer <timername> <duration> (level)");
-		return 0;
-	endif
+  var timer_name := params[1];
+  var duration := CInt( params[2] );
+  var level := CInt( params[3] );
 
-	SendSysMessage(who, "Select a mobile.");
-	var targ := target(who);
-	if ( !targ.IsA(POLCLASS_MOBILE) )
-		SendSysMessage(who, "Cancelled.");
-		return 0;
-	endif
-	
-	TS_StartTimer(targ, timer_name, duration, level);
+  if ( !level )
+	level := 1;
+  endif
 
-	SendSysMessage(who, "Done.");
+  if ( !timer_name || !duration )
+	SendSysMessage( who, "Command syntax .addtimer <timername> <duration> (level)" );
+	return 0;
+  endif
 
-	return 1;
+  SendSysMessage( who, "Select a mobile." );
+  var targ := target( who );
+  if ( !targ.IsA( POLCLASS_MOBILE ) )
+	SendSysMessage( who, "Cancelled." );
+	return 0;
+  endif
+
+  TS_StartTimer( targ, timer_name, duration, level );
+
+  SendSysMessage( who, "Done." );
+
+  return 1;
 endprogram
-

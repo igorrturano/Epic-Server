@@ -3,11 +3,11 @@ use os;
 
 program reinitshrinktable_textcmd( mobile )
 
-	var script := Start_Script( ":body:scripts/initialize/initializeShrink" );
-	if ( script.errortext )
-		SendSysMessage( mobile, "Unable to start script -> "+script.errortext, 0x3, 0x22 );
-		return 0;
-	endif
+  var script := Start_Script( ":body:scripts/initialize/initializeShrink" );
+  if ( script.errortext )
+	SendSysMessage( mobile, "Unable to start script -> " + script.errortext, 0x3, 0x22 );
+	return 0;
+  endif
 
-	return 1;
+  return 1;
 endprogram

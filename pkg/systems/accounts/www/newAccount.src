@@ -23,33 +23,33 @@ include ":accounts:settings";
  *
  */
 program HTTPScript()
-	var settings := ACCT_GetSettingsCfgElem("Settings");
-	if ( !settings.AllowWWWAccounts )
-		WriteHTMLRaw("Error: Web account maker is disabled.");
-		return 0;
-	endif
-	
-	var username := QueryParam("username");
-	var password := QueryParam("password");
-	var cmd_lvl := QueryParam("cmdlevel");
-	var expansion := QueryParam("expansion");
-	var email := QueryParam("email");
-	var admin_pw := QueryParam("adminpw");
-	var language := QueryParam("language");
-	
-	if ( settings.AuxWebPassword )
-		if ( settings.AuxWebPassword != admin_pw )
-			 WriteHTMLRaw("Error: Invalid administration password.");
-			 return 0;
-		endif
-	endif
+  var settings := ACCT_GetSettingsCfgElem( "Settings" );
+  if ( !settings.AllowWWWAccounts )
+	WriteHTMLRaw( "Error: Web account maker is disabled." );
+	return 0;
+  endif
 
-	var result := CreateNewAccount(username, password, cmd_lvl, expansion, email, language);
-	if ( result.errortext )
-		WriteHTMLRaw("Error: "+result.errortext);
-	else
-		WriteHTMLRaw("Success: The acount was created successfully.");
-	endif
+  var username := QueryParam( "username" );
+  var password := QueryParam( "password" );
+  var cmd_lvl := QueryParam( "cmdlevel" );
+  var expansion := QueryParam( "expansion" );
+  var email := QueryParam( "email" );
+  var admin_pw := QueryParam( "adminpw" );
+  var language := QueryParam( "language" );
 
-	return 1;
+  if ( settings.AuxWebPassword )
+	if ( settings.AuxWebPassword != admin_pw )
+	  WriteHTMLRaw( "Error: Invalid administration password." );
+	  return 0;
+	endif
+  endif
+
+  var result := CreateNewAccount( username, password, cmd_lvl, expansion, email, language );
+  if ( result.errortext )
+	WriteHTMLRaw( "Error: " + result.errortext );
+  else
+	WriteHTMLRaw( "Success: The acount was created successfully." );
+  endif
+
+  return 1;
 endprogram

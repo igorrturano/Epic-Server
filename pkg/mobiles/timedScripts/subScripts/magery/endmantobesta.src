@@ -3,10 +3,10 @@ use os;
 
 include ":attributes:attributes";
 
-program cureScript(params)
-	var who := params[1];
-	
-	EraseObjProperty(who, "empatiacomanimais");
-	
-	return 1;
-endprogram 
+program cureScript( params )
+  var who := params[1];
+
+  EraseObjProperty( who, "empatiacomanimais" );
+
+  return 1;
+endprogram

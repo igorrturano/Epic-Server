@@ -3,18 +3,17 @@ use os;
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
-	var attacker := params[2];
-	var level := params[3];
-	params := 0; // Not needed anymore.
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
+  var attacker := params[2];
+  var level := params[3];
+  params := 0; // Not needed anymore.
 
-	
-	if ( GetObjProperty(mobile, "#vinganca") )
-		return 0;
-	endif
+  if ( GetObjProperty( mobile, "#vinganca" ) )
+	return 0;
+  endif
 
-	SetObjProperty(mobile, "#vinganca", 1);
-	
-	return 1;
+  SetObjProperty( mobile, "#vinganca", 1 );
+
+  return 1;
 endprogram

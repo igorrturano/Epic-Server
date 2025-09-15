@@ -4,10 +4,8 @@ use util;
 include ":itemutils:canAccess";
 include ":crafting:fabricaComplexos";
 
+program use_SmithTool( who, tool )
 
-program use_SmithTool(who, tool)
-
-	var rinfo := FabricaItensComplexos(who, "Blacksmithy");
+  var rinfo := FabricaItensComplexos( who, "Blacksmithy" );
 
 endprogram
-

@@ -3,18 +3,18 @@ use os;
 
 include ":fls_core:fls_characters";
 
-program logon(who)
-	start_script("seasonaleffects");
-	sleep(1);
+program logon( who )
+  start_script( "seasonaleffects" );
+  sleep( 1 );
 
-	if (HaveReverseVision(who))
-		if (who.cmdlevel > 1)
-			SendSysMessage(who, "Ajustando infravision");
-		endif
-		ReverseLight(who);
-	else
-		// who.setlightlevel(0, 2);
+  if ( HaveReverseVision( who ) )
+	if ( who.cmdlevel > 1 )
+	  SendSysMessage( who, "Ajustando infravision" );
 	endif
+	ReverseLight( who );
+  else
+  // who.setlightlevel(0, 2);
+  endif
 
-    destroyIllyraOutsideDungeons(who);
+  destroyIllyraOutsideDungeons( who );
 endprogram

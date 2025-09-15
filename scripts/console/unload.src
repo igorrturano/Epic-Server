@@ -1,10 +1,10 @@
 use os;
 use uo;
 
-program ConsoleCmd_UnloadAllScripts ()
+program ConsoleCmd_UnloadAllScripts()
 
-    print("System Message: Unloading all scripts.");
-    Unload_Scripts(scriptname := "");
-    print("System Message: All scripts unloaded.");
+  print( "System Message: Unloading all scripts." );
+  Unload_Scripts( scriptname := "" );
+  print( "System Message: All scripts unloaded." );
 
 endprogram

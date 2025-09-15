@@ -4,7 +4,7 @@
 use uo;
 use os;
 
-program ControlScript(acid)
-	sleep(30);
-	DestroyItem(acid);
+program ControlScript( acid )
+  sleep( 30 );
+  DestroyItem( acid );
 endprogram

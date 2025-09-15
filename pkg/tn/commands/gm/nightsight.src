@@ -9,18 +9,18 @@
 
 use uo;
 
-//include "include/requestgump";
+// include "include/requestgump";
 
-program nightsight (who, level)
-	//if ( !level )
-	//	level := RequestGump(who, "Light Level", "Enter -1 to see the real light level.", "0");
-	//endif
-	
-	level := CInt(level);
-	if ( level >= 0 )
-		who.setlightlevel(level, 9000);
-	else
-		SendSysMessage(who, "Restoring normal vision.");
-		who.setlightlevel(1, 0);
-	endif
+program nightsight( who, level )
+  // if ( !level )
+  // 	level := RequestGump(who, "Light Level", "Enter -1 to see the real light level.", "0");
+  // endif
+
+  level := CInt( level );
+  if ( level >= 0 )
+	who.setlightlevel( level, 9000 );
+  else
+	SendSysMessage( who, "Restoring normal vision." );
+	who.setlightlevel( 1, 0 );
+  endif
 endprogram

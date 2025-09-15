@@ -8,7 +8,7 @@
 //  author:  MuadDib
 //
 //  Purpose: This hook will allow you to check LOS, Distance, or whatever you wish, when someone
-//		DoubleClicks another mob while in war mode.
+// 		DoubleClicks another mob while in war mode.
 //
 // Const settings:
 // BYTE_DEFENDER = 1  Position in the packet for the Defender's Serial.
@@ -20,41 +20,39 @@ use polsys;
 include "include/say";
 include ":mastery:Abilities";
 
-CONST BYTE_DEFENDER := 1;
+const BYTE_DEFENDER := 1;
 
 program requestAttack()
-	Print( "INSTALLING: Request Attack PH..." );
-	return 1;
+  Print( "INSTALLING: Request Attack PH..." );
+  return 1;
 endprogram
 
-
 exported function HandleAttackRequest( who, byref packet )
-	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
+  var defender := SystemFindObjectBySerial( packet.GetInt32( BYTE_DEFENDER ) );
 
-	if (defender.npctemplate && !who.npctemplate) //se o target for npc e quem clicou for player (sempre eh)
-		if ( who.weapon.attribute == "Ranged")
-			if (Distance(who, defender) > 18)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+  if ( defender.npctemplate && !who.npctemplate ) // se o target for npc e quem clicou for player (sempre eh)
+	if ( who.weapon.attribute == "Ranged" )
+	  if ( Distance( who, defender ) > 18 )
+		SendSysMessageEx( who, "Voce esta muito distante.", SSM_FAIL );
 
-				return 1;
-			endif
-		else
-			if (Distance(who, defender) > 6)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
-
-				return 1;
-			endif
-		
-		endif
-	endif
-
-
-	if(!CheckLineOfSight(who, defender))
-		SendSysMessage(who, "Voce nao enxerga esse inimigo para ameaca-lo.");
 		return 1;
+	  endif
+	else
+	  if ( Distance( who, defender ) > 6 )
+		SendSysMessageEx( who, "Voce esta muito distante.", SSM_FAIL );
+
+		return 1;
+	  endif
+
 	endif
+  endif
 
-	ExecuteMasteryAbility(who, defender, 0);
+  if ( !CheckLineOfSight( who, defender ) )
+	SendSysMessage( who, "Voce nao enxerga esse inimigo para ameaca-lo." );
+	return 1;
+  endif
 
-	return 0;
+  ExecuteMasteryAbility( who, defender, 0 );
+
+  return 0;
 endfunction

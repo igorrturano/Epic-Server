@@ -6,12 +6,12 @@ include "include/say";
 program Logon( who )
   var pid := GetProcess( GetObjProperty( who, "#priestpid" ) );
   if ( pid )
-    pid.kill();
-    PrintText( who, "Pid Killed" );
+	pid.kill();
+	PrintText( who, "Pid Killed" );
   endif
 
   var magia := GetObjProperty( who, "chardata" ).magia;
   if ( magia == "Sacerdote" )
-    Start_Script( ":spells:powerWords", array{ who } );
+	Start_Script( ":spells:powerWords", array{ who } );
   endif
 endprogram

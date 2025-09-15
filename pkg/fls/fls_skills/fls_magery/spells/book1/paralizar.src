@@ -8,22 +8,21 @@ include ":fls_magery:spellSounds";
 include "include/client";
 include "include/sounds";
 
-program SpellScript(params)
-	var who := params[1];
-	var info := params[2];
-	params := 0; // No longer needed
-	
-	var targ := MS_Target(who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS+TGTOPT_HARMFUL);
-	if ( !targ.IsA(POLCLASS_MOBILE) )
-		SendSysMessage(who, "Cancelado.");
-		return 0;
-	endif
-	
-	PlaySoundEffect(targ, SFX_SPELL_REACTIVE_ARMOR);
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);	
-	
+program SpellScript( params )
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
 
-	TS_StartTimer(targ, "paralysis", CINT(AP_GetSkill(who, MAGERY)*3), who);
-	
-	return 1;
+  var targ := MS_Target( who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS + TGTOPT_HARMFUL );
+  if ( !targ.IsA( POLCLASS_MOBILE ) )
+	SendSysMessage( who, "Cancelado." );
+	return 0;
+  endif
+
+  PlaySoundEffect( targ, SFX_SPELL_REACTIVE_ARMOR );
+  PlayObjectCenteredEffect( targ, GFX_RED_SPARKLES, 7, 7 );
+
+  TS_StartTimer( targ, "paralysis", CINT( AP_GetSkill( who, MAGERY ) * 3 ), who );
+
+  return 1;
 endprogram

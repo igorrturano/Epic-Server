@@ -13,51 +13,52 @@
 // Bibliotheken
 /////////////////
 
-Use uo;
-Use os;
-Use cfgfile;
+use uo;
+use os;
+use cfgfile;
 
 //////////////////
 // Hauptprogramm
 //////////////////
 
-Program TextCMD_MultiBuild(who, params)
-  params:=SplitWords(params);
+program TextCMD_MultiBuild( who, params )
+  params := SplitWords( params );
 
-  Var sleeptime:=CInt(params[2]);
-  If (!sleeptime)
-    sleeptime:=0;
-  EndIf
+  var sleeptime := CInt( params[2] );
+  if ( !sleeptime )
+	sleeptime := 0;
+  endif
 
-  Var multinumber:=CInt(params[1]);
-  If ((multinumber==0) Or multinumber)
-    Var multicfg:=ReadConfigFile("multis");
-    If (multicfg)
-      Var multi:=multicfg[multinumber];
-      If (multi)
-        ForEach itemtype in {"static", "dynamic"};
-          ForEach item in GetConfigStringArray(multi, itemtype)
-            Var splitted:=SplitWords(item);
+  var multinumber := CInt( params[1] );
+  if ( ( multinumber == 0 ) Or multinumber )
+	var multicfg := ReadConfigFile( "multis" );
+	if ( multicfg )
+	  var multi := multicfg[multinumber];
+	  if ( multi )
+		foreach itemtype in { "static", "dynamic" }
+		  foreach item in GetConfigStringArray( multi, itemtype )
+			var splitted := SplitWords( item );
 
-            Var item:=CreateItemAtLocation(who.x+CInt(splitted[2]), who.y+CInt(splitted[3]), who.z+CInt(splitted[4]), CInt(splitted[1]), 1);
-            If (item)
-              item.movable:=0;
-            Else
-              SendSysMessage(who, "Was impossible to execute following Entry: "+item+" !");
-            EndIf
+			var item := CreateItemAtLocation( who.x + CInt( splitted[2] ), who.y + CInt( splitted[3] ),
+											  who.z + CInt( splitted[4] ), CInt( splitted[1] ), 1 );
+			if ( item )
+			  item.movable := 0;
+			else
+			  SendSysMessage( who, "Was impossible to execute following Entry: " + item + " !" );
+			endif
 
-            If (sleeptime)
-              SleepMS(sleeptime);
-            EndIf
-          EndForEach
-        EndForEach
-      Else
-        SendSysMessage(who, "Multi "+Lower(Hex(multinumber))+" doesn't exist!");
-      EndIf
-    Else
-      SysLog("ERROR: Was impossible to open File 'multis.cfg' !");
-    EndIf
-  Else
-    SendSysMessage(who, "You've to enter a number!");
-  EndIf
-EndProgram
+			if ( sleeptime )
+			  SleepMS( sleeptime );
+			endif
+		  endforeach
+		endforeach
+	  else
+		SendSysMessage( who, "Multi " + Lower( Hex( multinumber ) ) + " doesn't exist!" );
+	  endif
+	else
+	  SysLog( "ERROR: Was impossible to open File 'multis.cfg' !" );
+	endif
+  else
+	SendSysMessage( who, "You've to enter a number!" );
+  endif
+endprogram

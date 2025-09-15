@@ -3,11 +3,11 @@ use uo;
 include "include/clock";
 
 program about( unused cmd )
-    var system := polcore();
+  var system := polcore();
 
-    print("System Message:    About" );
-    print("    POL:           " + system.verstr );
-    print("    Designer:      Syzygy" );
-    print("    Email          syzygy@pobox.com" );
-    print("    Last Updated:  " + system.compiledate + " " + system.compiletime );
+  print( "System Message:    About" );
+  print( "    POL:           " + system.verstr );
+  print( "    Designer:      Syzygy" );
+  print( "    Email          syzygy@pobox.com" );
+  print( "    Last Updated:  " + system.compiledate + " " + system.compiletime );
 endprogram

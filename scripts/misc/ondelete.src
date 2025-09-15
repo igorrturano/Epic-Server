@@ -11,29 +11,29 @@ use storage;
 include ":timeutils:time";
 include ":attributes:attributes";
 
-program core_onDelete(who)
-	var create_time := who.createdat;
-	var age := polcore().systime - create_time;
+program core_onDelete( who )
+  var create_time := who.createdat;
+  var age := polcore().systime - create_time;
 
-	if ( who.cmdlevel )
-		var tamedpets := Getobjproperty(who, "TamedPets");
-		foreach pet in tamedpets
-			SetObjProperty(pet, "GuardKill", 1);
-			ApplyDamage(pet, 9999);
-		endforeach
+  if ( who.cmdlevel )
+	var tamedpets := Getobjproperty( who, "TamedPets" );
+	foreach pet in tamedpets
+	  SetObjProperty( pet, "GuardKill", 1 );
+	  ApplyDamage( pet, 9999 );
+	endforeach
 
-		return 1;
-	elseif ( age >= SECONDS_IN_WEEK )
-		SysLog("Account ["+who.acctname+"] deleting character "+who.name+" ("+who.serial+")");
-		
-		var tamedpets := Getobjproperty(who, "TamedPets");
-		foreach pet in tamedpets
-			SetObjProperty(pet, "GuardKill", 1);
-			ApplyRawDamage(pet, 9999);
-		endforeach
+	return 1;
+  elseif ( age >= SECONDS_IN_WEEK )
+	SysLog( "Account [" + who.acctname + "] deleting character " + who.name + " (" + who.serial + ")" );
 
-		return 1;
-	else
-		return 0;
-	endif
+	var tamedpets := Getobjproperty( who, "TamedPets" );
+	foreach pet in tamedpets
+	  SetObjProperty( pet, "GuardKill", 1 );
+	  ApplyRawDamage( pet, 9999 );
+	endforeach
+
+	return 1;
+  else
+	return 0;
+  endif
 endprogram

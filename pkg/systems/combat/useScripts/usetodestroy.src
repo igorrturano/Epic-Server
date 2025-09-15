@@ -2,7 +2,7 @@
  *
  *
  */
- 
+
 use uo;
 use os;
 use util;
@@ -16,8 +16,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":destroyable:include/destroyItem";
 
-program use_Break(who, tool)
-	if(who.warmode)
-		return ComportamentoWarMode(who, tool);
-	endif
+program use_Break( who, tool )
+  if ( who.warmode )
+	return ComportamentoWarMode( who, tool );
+  endif
 endprogram

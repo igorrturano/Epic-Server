@@ -144,7 +144,7 @@ compile_scripts() {
         exit 1
     fi
     
-    docker exec -it epic-pol-server bash -c 'cd /opt/pol/scripts && ./ecompile -u'
+    docker exec -it epic-pol-server bash -c 'cd /opt/pol/scripts && ./ecompile -u -Fi'
     echo "✅ Scripts compiled!"
 }
 

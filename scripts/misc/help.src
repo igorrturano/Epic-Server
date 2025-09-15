@@ -6,16 +6,15 @@
 use uo;
 use os;
 
-program Help(who)
-	var script := Start_Script(":help:help", who);
-	if ( script.errortext )
-		SendSysMessage(who, "Error starting help system ->"+script.errortext);
-		return 0;
-	endif
-	
-	return 1;
-endprogram
+program Help( who )
+  var script := Start_Script( ":help:help", who );
+  if ( script.errortext )
+	SendSysMessage( who, "Error starting help system ->" + script.errortext );
+	return 0;
+  endif
 
+  return 1;
+endprogram
 
 /*
 include "include/help";

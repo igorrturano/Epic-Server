@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -7,26 +7,26 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 
-program SpellScript(params)
-	var who := params[1];
-	var info := params[2];
-	params := 0; // No longer needed
+program SpellScript( params )
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
 
-	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
-	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
-	if (!targ)
-		return;
-	endif
+  SendSysMessageEx( who, "Escolha o alvo.", SSM_REQUEST );
+  var targ := Spell_Target( who, TGTOPT_CHECK_LOS );
+  if ( !targ )
+	return;
+  endif
 
-	if (!targ.isa(POLCLASS_MOBILE))
-		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
-		return;
-	endif
+  if ( !targ.isa( POLCLASS_MOBILE ) )
+	SendSysMessageEx( who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL );
+	return;
+  endif
 
-	TS_StartTimer(targ, "velocidade", 60); //1 min
+  TS_StartTimer( targ, "velocidade", 60 ); // 1 min
 
-	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
-	SendSysMessageEx(targ, "Voce esta muito veloz.", SSM_INFO);
-	
-	return 1;
-endprogram 
+  PlaySoundEffect( targ, SFX_SPELL_STRENGTH );
+  SendSysMessageEx( targ, "Voce esta muito veloz.", SSM_INFO );
+
+  return 1;
+endprogram

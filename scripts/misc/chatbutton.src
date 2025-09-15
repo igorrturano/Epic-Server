@@ -17,5 +17,5 @@ program core_chatButton( mobile )
 	endif
 
 	return 1;
-	*/
+*/
 endprogram
