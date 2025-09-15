@@ -4,10 +4,9 @@ use os;
 include ":attributes:attributes";
 include "include/say";
 
-program cureScript(params)
-	var mobile := params[1];
+program cureScript( params )
+  var mobile := params[1];
 
-	EraseObjProperty(mobile, "#deathtime");
-	return 1;
-endprogram  
- 
+  EraseObjProperty( mobile, "#deathtime" );
+  return 1;
+endprogram

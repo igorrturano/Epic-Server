@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -7,28 +7,27 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 
-program SpellScript(params)
-	var who := params[1];
-	var info := params[2];
-	params := 0; // No longer needed
+program SpellScript( params )
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
 
-	var targets := array;
-	foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm))
-		if (CheckLineOfSight(who, mobile) )
-			targets.append(mobile);
-		endif
-	endforeach
+  var targets := array;
+  foreach mobile in ( ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm ) )
+	if ( CheckLineOfSight( who, mobile ) )
+	  targets.append( mobile );
+	endif
+  endforeach
 
-	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+  PlaySoundEffect( who, SFX_SPELL_STRENGTH );
 
+  foreach mobile in targets
+	if ( mobile != who )
+	  TS_StartTimer( mobile, "paralysis", 30 );
+	  SendSysMessageEx( mobile, "Voce esta completamente paralisado.", SSM_INFO );
+	  PlayStationaryEffectEx( mobile.x, mobile.y, mobile.z + 15, mobile.realm, 6161, 200, 200 );
+	endif
+  endforeach
 
-	foreach mobile in targets
-			if (mobile != who)
-				TS_StartTimer(mobile, "paralysis", 30);
-				SendSysMessageEx(mobile, "Voce esta completamente paralisado.", SSM_INFO);
-				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+15, mobile.realm,  6161, 200, 200);
-			endif
-	endforeach
-
-	return 1;
-endprogram    
+  return 1;
+endprogram

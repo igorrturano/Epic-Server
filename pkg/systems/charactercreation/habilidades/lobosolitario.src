@@ -8,12 +8,9 @@ include ":combat:damage";
 include "include/say";
 include ":tn:cooldown";
 
-program doubleattack(who)
+program doubleattack( who )
 
-	SendSysMessageEx(who, "Voce lutara melhor em desvantagem.", SSM_INFO);
-	SetCooldown(who, "lobosolitario", 60);
+  SendSysMessageEx( who, "Voce lutara melhor em desvantagem.", SSM_INFO );
+  SetCooldown( who, "lobosolitario", 60 );
 
 endprogram
-
-
-

@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -8,12 +8,12 @@ include ":combat:damage";
 
 use vitals;
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
-	var attacker := params[2];
-	var vontademod := GetObjProperty(mobile, "#VontadeMod");
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
+  var attacker := params[2];
+  var vontademod := GetObjProperty( mobile, "#VontadeMod" );
 
-	SetObjProperty(mobile, "#VontadeMod", vontademod+100);
-	
-	return 1;
+  SetObjProperty( mobile, "#VontadeMod", vontademod + 100 );
+
+  return 1;
 endprogram

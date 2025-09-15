@@ -1,5 +1,5 @@
 include ":achievements:Gump";
 
-program CMD_conquistas(who, params)
-	ShowAchievementsGump(who);
+program CMD_conquistas( who, params )
+  ShowAchievementsGump( who );
 endprogram

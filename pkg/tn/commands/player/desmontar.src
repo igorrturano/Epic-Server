@@ -1,9 +1,9 @@
 use uo;
 
 include ":mounts:mounts";
-program dismount(who)
+program dismount( who )
 
-	var targ := target(who);
-	MP_Unmount(targ);
+  var targ := target( who );
+  MP_Unmount( targ );
 
 endprogram

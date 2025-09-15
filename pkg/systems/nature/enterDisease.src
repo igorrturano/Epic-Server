@@ -5,9 +5,7 @@ use vitals;
 include ":charactercreation:resists";
 include ":combat:damage";
 
-program disease_enter(who, regioname)
-Printtextabove(who, "entrou");
-	start_script(":nature:diseaseAreaEffect", {who, regioname});
+program disease_enter( who, regioname )
+  Printtextabove( who, "entrou" );
+  start_script( ":nature:diseaseAreaEffect", { who, regioname } );
 endprogram
-
-

@@ -10,10 +10,10 @@ use uo;
 
 include "plankUtil";
 
-set_debug(1);
+set_debug( 1 );
 
 program plankcontrol( plank )
-    if (plank.locked && IsExtended(plank))
-        Retract( plank );
-    endif
+  if ( plank.locked && IsExtended( plank ) )
+	Retract( plank );
+  endif
 endprogram

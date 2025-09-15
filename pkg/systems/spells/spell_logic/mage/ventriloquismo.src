@@ -12,15 +12,15 @@ include "include/tileEffects";
 include "include/say";
 include ":gumps:requestGump";
 
-program SpellScript(params)
+program SpellScript( params )
 
-	var who := params[1];
-	var targ := params[2];
-	params := 0; // No longer needed
+  var who := params[1];
+  var targ := params[2];
+  params := 0; // No longer needed
 
-	var frase := RequestGump(who, "Escreva a frase");
-	PrintText(targ, ""+frase );
+  var frase := RequestGump( who, "Escreva a frase" );
+  PrintText( targ, "" + frase );
 
-	return 1;
+  return 1;
 
 endprogram

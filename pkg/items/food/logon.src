@@ -1,10 +1,9 @@
 
 use os;
 
-program hunger_logon(who)
+program hunger_logon( who )
 
-   start_script("hunger", who);
-   start_script("hunger_counter", who);
+  start_script( "hunger", who );
+  start_script( "hunger_counter", who );
 
 endprogram
-

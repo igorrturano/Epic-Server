@@ -10,25 +10,25 @@ include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
 
-program DeathScript(params)
-	var corpse := params[1];
-	//var corpse_cfg := params[2];
-	//var template := params[3];
-	params := 0; // Not needed anymore
+program DeathScript( params )
+  var corpse := params[1];
+  // var corpse_cfg := params[2];
+  // var template := params[3];
+  params := 0; // Not needed anymore
 
-	var template := Lower(GetObjProperty(corpse, "npctemplate"));
+  var template := Lower( GetObjProperty( corpse, "npctemplate" ) );
 
-	foreach item in (EnumerateItemsInContainer(corpse))
-		if (item.isa(POLCLASS_WEAPON))
-			DesTroyItem(item);
-		endif
+  foreach item in ( EnumerateItemsInContainer( corpse ) )
+	if ( item.isa( POLCLASS_WEAPON ) )
+	  DesTroyItem( item );
+	endif
 
-        if (item.isa(POLCLASS_ARMOR))
-            DesTroyItem(item);
-        endif
-		//printtextabove(corpse, " " + e);
-	endforeach
+	if ( item.isa( POLCLASS_ARMOR ) )
+	  DesTroyItem( item );
+	endif
+  // printtextabove(corpse, " " + e);
+  endforeach
 
-	DesTroyItem(corpse);
+  DesTroyItem( corpse );
 
 endprogram

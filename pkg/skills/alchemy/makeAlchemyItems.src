@@ -2,9 +2,8 @@
 use cfgfile;
 use util;
 
-
 include ":crafting:fabricaComplexos";
 
-program use_Alchemy(who, tool)
-	FabricaItensComplexos(who, "Alchemy");
+program use_Alchemy( who, tool )
+  FabricaItensComplexos( who, "Alchemy" );
 endprogram

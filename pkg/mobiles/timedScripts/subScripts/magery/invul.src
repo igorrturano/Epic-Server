@@ -5,16 +5,13 @@ include "include/say";
 
 include ":attributes:attributes";
 
-program TimedScript_Clumsy(params)
-	var mobile := params[1];
-	var attacker := params[2];
-	params := 0; // Not needed anymore.
+program TimedScript_Clumsy( params )
+  var mobile := params[1];
+  var attacker := params[2];
+  params := 0; // Not needed anymore.
 
-	GrantPrivilege(mobile, "invul");
-	mobile.enable("invul");	
-	
-	return 1;
+  GrantPrivilege( mobile, "invul" );
+  mobile.enable( "invul" );
+
+  return 1;
 endprogram
-
-  
- 

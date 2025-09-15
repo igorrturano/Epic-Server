@@ -5,12 +5,12 @@
 use uo;
 use os;
 
-program EndPoison(params)
-	var mobile := params[1];
+program EndPoison( params )
+  var mobile := params[1];
 
-	SendSYsMessage(mobile, "A larva nao esta mais no seu corpo.");
+  SendSYsMessage( mobile, "A larva nao esta mais no seu corpo." );
 
-	EraseObjProperty(mobile, "DarkBorer");
+  EraseObjProperty( mobile, "DarkBorer" );
 
-	return 1;
+  return 1;
 endprogram

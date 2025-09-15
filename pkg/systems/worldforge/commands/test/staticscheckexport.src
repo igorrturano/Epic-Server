@@ -13,13 +13,13 @@
 // Bibliotheken
 /////////////////
 
-Use os;
+use os;
 
 /////////////////
 // Hauptprogram
 /////////////////
 
-Program TextCMD_StaticsCheckExport(who, params)
-  Run_Script_to_Completion("textcmd/test/staticscheck", {who, params});
-  Run_Script_to_Completion("textcmd/test/staticsexport", {who, params});
-EndProgram
+program TextCMD_StaticsCheckExport( who, params )
+  Run_Script_to_Completion( "textcmd/test/staticscheck", { who, params } );
+  Run_Script_to_Completion( "textcmd/test/staticsexport", { who, params } );
+endprogram
