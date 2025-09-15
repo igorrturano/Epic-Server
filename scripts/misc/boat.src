@@ -12,13 +12,13 @@
 use uo;
 use os;
 
-program CoreScript_Boat( multi )
-  var result := start_script( ":boat:boat", multi );
+program CoreScript_Boat(multi)
+	var result := start_script(":boat:boat", multi);
 
-  if ( result.errortext )
-	PrintTextAbove( multi, "Error initializing control script" );
-	PrintTextAbove( multi, "" + result.errortext );
-  endif
+	if (result.errortext)
+		PrintTextAbove(multi, "Error initializing control script");
+		PrintTextAbove(multi, "" + result.errortext);
+	endif
 
-  return result;
+	return result;
 endprogram
