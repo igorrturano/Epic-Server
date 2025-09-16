@@ -8,5 +8,3 @@ include ":combat:damage";
 program swamp(who)
 	start_script(":nature:swampEffect", who);
 endprogram
-
-

@@ -10,13 +10,13 @@ include "include/client";
 include "include/say";
 
 program pickupItems()
-  Print( "Hooking Item Pickup..." );
-  return 1;
+	Print("Hooking Item Pickup...");
+	return 1;
 endprogram
 
-exported function HandleItemPickup( who, byref packet )
+exported function HandleItemPickup(who, byref packet)
 
- 	if ( GetProcess(CInt(GetObjProperty(who, "#PickPid"))) )
+	if (GetProcess(CInt(GetObjProperty(who, "#PickPid"))))
 		SendSysMessageEx(who, "Voce esta ocupado roubando alguem");
 		SendPacket(who, "2705");
 		return 1;
@@ -24,13 +24,13 @@ exported function HandleItemPickup( who, byref packet )
 
 	packet := packet;
 
-	var item := SystemFindObjectBySerial(packet.GetInt32(1)); //pega os 32 bits depois do primeiro byte
+	var item := SystemFindObjectBySerial(packet.GetInt32(1)); // pega os 32 bits depois do primeiro byte
 
-    if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
+	if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
 		SendPacket(who, "2705");
 		SendSysMessageEx(who, "Você não consegue pegar itens.", SSM_INFO);
-        return 1;
-    endif
+		return 1;
+	endif
 
 	var item1 := GetEquipmentByLayer(who, 1);
 	var item2 := GetEquipmentByLayer(who, 2);
@@ -42,19 +42,21 @@ exported function HandleItemPickup( who, byref packet )
 		else
 			if (item.movable != 0)
 				var primeira := GetObjProperty(item, "primeiro_dono");
-					if (GetObjProperty(item, "itemunico") == 1 && !primeira && (who.cmdlevel <= 0) )//Para o DiscordWebhook funcionar
-						Setobjproperty(item, "primeiro_dono", who.name);
-						var region := GetRegionName(who);
-						var char_name := who.serial;
-						var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
-						var coords := {who.x, who.y};
-						var tipo := "unico";
-						var nome := GetObjProperty(who, "nome_inicial");
-						Start_script(":DiscordWebhook:discord", {tipo, nome, fin.acctname, "chão", region, coords, item.desc});
-					endif
-					if (!(who.hidden || who.concealed))
-						PrintText(who, "*Pegou "+item.desc+"*");
-					endif
+				if (GetObjProperty(item, "itemunico") == 1 && !primeira &&
+		(who.cmdlevel <= 0)) // Para o DiscordWebhook funcionar
+					Setobjproperty(item, "primeiro_dono", who.name);
+					var region := GetRegionName(who);
+					var char_name := who.serial;
+					var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+					var coords := { who.x, who.y };
+					var tipo := "unico";
+					var nome := GetObjProperty(who, "nome_inicial");
+					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, "chão",
+										  					region, coords, item.desc });
+				endif
+				if (!(who.hidden || who.concealed))
+					PrintText(who, "*Pegou " + item.desc + "*");
+				endif
 			endif
 		endif
 	endif

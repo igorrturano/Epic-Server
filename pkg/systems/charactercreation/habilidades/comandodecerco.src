@@ -46,6 +46,4 @@ program manobra(attacker)
 		endforeach
 	endif
 
-
-
-endprogram  
+endprogram

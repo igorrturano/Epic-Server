@@ -19,15 +19,15 @@ program usedardo(who, dardo)
 		return 1;
 	endif
 
-	if(!SubtractAmount(dardo, 1))
+	if (!SubtractAmount(dardo, 1))
 		return 1;
 	endif
 
 	var rand := RandomInt(20) + 1;
 
-	PlayMovingEffect(who, targ, 3906, 15);	
+	PlayMovingEffect(who, targ, 3906, 15);
 
-	if ( rand <= 15 )
+	if (rand <= 15)
 		var msg := RandomInt(3);
 		PlaySoundEffect(targ, 570);
 		if (msg == 0)
@@ -38,13 +38,13 @@ program usedardo(who, dardo)
 			PrintText(targ, "voce parece uma mocinha!");
 		endif
 		return 1;
-	elseif ( rand > 15 && rand <= 20 )
+	elseif (rand > 15 && rand <= 20)
 		var msg := RandomInt(3);
 		if (msg == 0)
 			PrintText(targ, "arghh!");
 		elseif (msg == 1)
 			PrintText(targ, "argh! isso doi!");
-		elseif ( msg == 2)
+		elseif (msg == 2)
 			PrintText(targ, "ikes! joga a mae!");
 		endif
 
@@ -53,6 +53,5 @@ program usedardo(who, dardo)
 		sleepms(800);
 		targ.graphic := 6480;
 	endif
-
 
 endprogram

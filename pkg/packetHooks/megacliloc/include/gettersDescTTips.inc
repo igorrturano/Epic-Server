@@ -1,13 +1,15 @@
 use uo;
 
 include "/include/epicConstants";
+include "/include/epicPropNames";
 include ":charactercreation:habilidades";
 include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
-include ":equipsys:include/equipstats";
+include ":equipsys:Controller/WeaponController";
 include ":destroyable:include/destroyItem";
-
+include ":crafting:/include/fabricacaoUtil";
+include ":equipsys:Controller/ArmorController";
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
@@ -15,6 +17,61 @@ function PegaDescMagica(objeto,xDesc := "")
 		xDesc := xDesc + ROXO + "Magico Excepcional<br>";
 	elseif (PegaPropObjItemOrTemplate(objeto,"magic"))
 		xDesc := xDesc + ROXO + "Magico<br>";
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescComponente(objeto,xDesc := "")
+	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_TIER_COMPONENTE);
+	if(prop)
+		xDesc := xDesc + SOFT_PINK + "Componente<br>";
+		var tierDesc := PegaComponenteTierDesc(prop).desc;
+		if (tierDesc)
+			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
+		endif
+		var encaixeProp := PegaPropObjItemOrTemplate(objeto, PROPNAME_ENCAIXE_COMPONENTE);
+		if(encaixeProp)
+			xDesc := xDesc + WHITE + "Encaixe: " + encaixeProp + "<br>";
+		endif
+	endif
+
+	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
+	if((prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
+		//xDesc := xDesc + "<br>";
+		if(prop.qualidade > 0)
+			xDesc := xDesc + LARANJA + "Excepcional<br>";
+		endif
+		var larguraInicial := Len(xDesc);
+		foreach componente in (prop.componentes)
+			xDesc := PegaDescEfeitosComponente(componente, xDesc);
+			Sleepms(2);
+		endforeach
+		if(larguraInicial != Len(xDesc))
+			xDesc := xDesc + "<br>";
+		endif
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescProdutoMontado(objeto,xDesc := "")
+	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
+	if(prop.estado == ITEM_MONTADO)
+		var quantidadeLote := "";
+		if(prop.receita.lote && prop.receita.lote > 1)
+			quantidadeLote := prop.receita.lote  + "x ";
+		endif
+		
+		xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
+		if(prop.esquema.componentesEscolhidos.size() > 0)
+			xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
+			foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
+				Sleepms(2);
+				var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
+															componenteEscolhido.material.nome,
+															componenteEscolhido.tier.desc); 
+				xDesc := xDesc + WHITE + descComponente + " <br>";
+			endforeach
+		endif
 	endif
 	return xDesc;
 endfunction
@@ -112,7 +169,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := xDesc + "Perícia: " + StrReplace(cfg.elem.Attribute,"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
-	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
+	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(cfg.elem, objeto) + "<br>";
 
 	if (GetObjProperty(objeto, "polida"))
 		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
@@ -123,7 +180,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + LARANJA + crits;
 	endif
 
-	var hits :=  GetHitsInfo(cfg.elem);
+	var hits :=  GetHitsInfo2(cfg.elem);
 	if (hits != "")
 		xDesc := xDesc + AMARELO_CLARO + hits;
 	endif
@@ -140,7 +197,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
-	XDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
+	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
 
 	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
 		xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "swordmage") + "<br>";
@@ -175,9 +232,9 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
 		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
 
-		atrib.+SlashOffDamage :=getDamageByTier(elemOffDamage[1]);
-		atrib.+PiercingOffDamage :=getDamageByTier(elemOffDamage[2]);
-		atrib.+BluntOffDamage :=getDamageByTier(elemOffDamage[3]);
+		atrib.+SlashOffDamage := getDamageByTier(elemOffDamage[1]);
+		atrib.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]);
+		atrib.+BluntOffDamage := getDamageByTier(elemOffDamage[3]);
 	endif
 
 	slashMD := atrib.SlashMainDamage;
@@ -228,27 +285,33 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	endif
 
 	var xDesc := cfg.desc;
-	if (cint(cfg.elem.strrequired) > 0)
-		xDesc := xDesc + "Min Str: " + cfg.elem.strrequired + "<br>";
+	var atributosArmadura := PegaPropObjItemOrTemplate(objeto, "atributos");
+	if (atributosArmadura.STRRequired > 0)
+		xDesc := xDesc + "Min Str: " + atributosArmadura.STRRequired + "<br>";
 	endif
-	if (cfg.elem.DexPenalty || PegaPropObjItemOrTemplate(objeto, "penaltybonus"))
-		xDesc := xDesc + "Redutor Dex : " + getDexPenalty(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.DexPen)
+		xDesc := xDesc + "Redutor Dex : " + atributosArmadura.DexPen + "<br>";
 	endif
-	if (cfg.elem.parrybonus || PegaPropObjItemOrTemplate(objeto, "parrybonus"))
-		xDesc := xDesc + "Block Bonus: " + getParryBonus(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.BonusDelay)
+		xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
 	endif
-	if (cfg.elem.parrydelay || PegaPropObjItemOrTemplate(objeto, "parrydelay_mod"))
-		xDesc := xDesc + "Delay Bonus: " + getParryDelay(cfg.elem, objeto) + "<br>";
+	if (atributosArmadura.ParryDelay)
+		xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
 	endif
 
-	xDesc := PegaDescResistArmadura(objeto,cfg,xDesc);
+	xDesc := PegaDescResistArmadura(objeto,cfg,atributosArmadura,xDesc);
 
 	return xDesc;
 endfunction
 
-function PegaDescResistArmadura(objeto,cfg, xDesc := "")
+function PegaDescResistArmadura(objeto,cfg,atributosArmadura, xDesc := "")
 	
-	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
+	var atrib := struct;
+	if(atributosArmadura)
+		atrib := atributosArmadura;
+	else
+		// atrib := getArmorStats(cfg.elem); // Vai bugar após o EqupiSys v3.0 - É intencional, pra poder rastrear os outros bugs.... (Desculpa Deiro... HUAuhahuahu)
+	endif
 
 	var bluntRes,slashRes,pircRes :=0;
 	// if(!atrib)
@@ -261,10 +324,10 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + " Cort:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Cort:"  + ClassificaResistCor(cfg.elem.TipoProtecao) +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
 			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
@@ -347,6 +410,39 @@ function PegaDescEmperrado(objeto, xDesc)
 		if(IsEmperrado(objeto))
 			xDesc := xDesc + "[Emperrado]<br>";
 		endif
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescEfeitosComponente(componente, xDesc)
+	var propriedades := componente.propriedades;
+	if(propriedades.valorPrincipal != 0 && TypeOfInt(propriedades.valorPrincipal) != OT_UNINIT)
+		var descValor, corLinha;
+
+		if(propriedades.valorPrincipal > 0)
+			descValor := SOFT_GREEN + "+"+ propriedades.valorPrincipal + " <br>";
+			corLinha := BLUE;
+		else
+			corLinha := SOFT_PINK;
+			descValor := RED_FIRE + propriedades.valorPrincipal + " <br>";
+		endif
+
+		if(componente.tier.valor == 3)
+			corLinha := AMARELO_CLARO;
+		endif
+
+		xDesc := xDesc + corLinha + getComponenteToAprimoramento(propriedades.caracteristica,propriedades.valorPrincipal) + " " + descValor;
+	endif
+	
+	if(propriedades.efeitosAdicionais)
+		foreach efeitoAdicional in (propriedades.efeitosAdicionais)
+			Sleepms(2);
+			if(efeitoAdicional != 0)
+				xDesc := xDesc + BLUE + "*" +  _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+			else
+				continue;
+			endif
+		endforeach
 	endif
 	return xDesc;
 endfunction

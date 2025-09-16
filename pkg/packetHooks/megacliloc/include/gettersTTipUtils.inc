@@ -3,7 +3,6 @@ use cfgfile;
 
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
-include ":equipsys:props";
 include ":destroyable:include/destroyItem";
 
 
@@ -118,7 +117,7 @@ function GetCriticalInfo(entry)
 
 endfunction
 
-function GetHitsInfo(entry)
+function GetHitsInfo2(entry)
 
 	var criticals := GetconfigStringArray(entry, "HitScripts");
 
@@ -147,7 +146,7 @@ function getTipoStringDesc(elem) //Exibe o tipo de arma
 endfunction
 
 
-function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
+function getVelStringDesc2(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
 	var itemAttr := item.getAttrBase();
 	var speedE := CInt(itemAttr.AttackSpeed);
@@ -226,4 +225,21 @@ function GetConsultaEspecialistaTexto(profissao)
         "Adestrador de Animais": return "Consulte um Adestrador de Animais";
         default: return "Consulte um especialista em " + profissao_traduzida;
     endcase
+endfunction
+
+function getComponenteToAprimoramento(caracteristicaComponente, valor)
+	var config := ReadConfigFile( ":crafting:config/caracteristicas" );
+	var elementoConfig := config["descricaoToolTip"];
+	var descPositivaNegativa := GetConfigString(elementoConfig,caracteristicaComponente);
+
+	if(descPositivaNegativa)
+		var separadas :=  SplitWords(descPositivaNegativa,":");
+		if(separadas.size() != 2)
+			return "{Erro Sem Diferença Pos Neg!}";
+		else
+			return separadas[2 - CInt(valor > 0)];
+		endif 		
+	else
+		return "{Erro Não Enconrada!}";
+	endif
 endfunction

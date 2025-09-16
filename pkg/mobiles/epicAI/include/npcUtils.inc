@@ -1,4 +1,3 @@
-include ":equipsys:props";
 include "include/epicNPCUtils";
 
 function NPCRotateAttackType(npc)

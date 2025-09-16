@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -9,16 +9,15 @@ include ":timedScripts:timedScripts";
 
 program manobra(mobile)
 
-	var dmg := AP_GetVital(mobile, HITS) -  GetHP(mobile);
-    DamageFLS(mobile, dmg);
+	var dmg := AP_GetVital(mobile, HITS) - GetHP(mobile);
+	DamageFLS(mobile, dmg);
 	PrintText(mobile, "*autoflagelando-se*");
 	sleep(1);
-	
+
 	var corruption := GetObjProperty(mobile, "corruption");
-	corruption := corruption - dmg*2;
+	corruption := corruption - dmg * 2;
 	SetObjProperty(mobile, "corruption", corruption);
 	SendSysMessageEx(mobile, "A dor afasta Asan de sua alma. Quanto maior a dor, melhor.", SSM_FAIL);
-	
-		
+
 	return 1;
-endprogram 
+endprogram

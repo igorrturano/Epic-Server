@@ -1,17 +1,17 @@
 /////////////////////////////////////////////////////
 //
-//		".copy" - Copies an entire area a temporary cprop for later pasting.
+// 		".copy" - Copies an entire area a temporary cprop for later pasting.
 //
-//		Allows you to select an entire area and all items are then saved to a
-//		temporary cprop so you can then paste them at another location
-//		with ".paste" or ".mpaste".
+// 		Allows you to select an entire area and all items are then saved to a
+// 		temporary cprop so you can then paste them at another location
+// 		with ".paste" or ".mpaste".
 //
-//		CHANGE LOG:
-//			Version 1.0.0 -- Danielle Elora
-//				Initial Release
+// 		CHANGE LOG:
+// 			Version 1.0.0 -- Danielle Elora
+// 				Initial Release
 //
-//		Author: Danielle Elora, webmaster@nightscapeonline.com
-//		Nightscape Shard, http://www.nightscapeonline.com
+// 		Author: Danielle Elora, webmaster@nightscapeonline.com
+// 		Nightscape Shard, http://www.nightscapeonline.com
 //
 /////////////////////////////////////////////////////
 
@@ -23,8 +23,7 @@ include ":gumps:yesNo";
 // Defines the total number of items that can be moved at one time. If the number
 // exceeds this value, the command fails. Be careful setting this too high, you could
 // overwhelm your server or cause "black-holing"/crashing problems to clients in the area.
-Const ITEM_LIMIT := 6000;
-
+const ITEM_LIMIT := 6000;
 
 program textcmd_copy(who, text)
 
@@ -32,7 +31,7 @@ program textcmd_copy(who, text)
 	SendSysMessage(who, "Select coordinate #1");
 	var coordStructOne := TargetCoordinates(who);
 	if (!coordStructOne)
-		SendSysMessage(who, "Canceled." );
+		SendSysMessage(who, "Canceled.");
 		return 0;
 	endif
 
@@ -53,7 +52,7 @@ program textcmd_copy(who, text)
 		z_plus := CInt(zplus);
 	else
 		SendSysMessage(who, "Target the item that represents the maximum z-hieght...");
-		zplus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		zplus := Target(who, TGTOPT_NOCHECK_LOS + TGTOPT_NEUTRAL);
 		if (!zplus)
 			SendSysMessage(who, "Cancelled!");
 			return 0;
@@ -72,7 +71,7 @@ program textcmd_copy(who, text)
 		z_minus := CInt(zminus);
 	else
 		SendSysMessage(who, "Target the item that represents the minimum z-hieght...");
-		zminus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		zminus := Target(who, TGTOPT_NOCHECK_LOS + TGTOPT_NEUTRAL);
 		if (!zminus)
 			SendSysMessage(who, "Cancelled!");
 			return 0;
@@ -80,7 +79,7 @@ program textcmd_copy(who, text)
 		z_minus := zminus.z;
 	endif
 	if (!(z_minus or (z_minus == 0)))
-		SendSysMessage ( who, "You must enter a number or target a valid item!");
+		SendSysMessage(who, "You must enter a number or target a valid item!");
 		return 0;
 	endif
 
@@ -107,7 +106,8 @@ program textcmd_copy(who, text)
 	var temp_list := ListObjectsInBox(high_x, high_y, z_minus, low_x, low_y, z_plus);
 
 	if (temp_list.size() > ITEM_LIMIT)
-		SendSysMessage(who, "Item count out of bounds. You can only move up to " + ITEM_LIMIT + " items at a time.");
+		SendSysMessage(who, "Item count out of bounds. You can only move up to "
+						+ ITEM_LIMIT + " items at a time.");
 		SendSysMessage(who, "Use \".copypaste\" instead; which allows copying more items at a time.");
 		return 0;
 	endif

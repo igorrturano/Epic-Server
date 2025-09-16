@@ -1,6 +1,6 @@
 /* $Id: listtimers.src 128 2006-05-27 17:36:42Z austinheilman $
  *
- */
+*/
 use uo;
 use os;
 
@@ -15,7 +15,7 @@ program textcmd_listTimers(who, type)
 	endif
 
 	foreach timer_name in (TS_GetTimerNames(targ, type))
-		SendSysMessage(who, "->"+timer_name);
+		SendSysMessage(who, "->" + timer_name);
 		SleepMS(2);
 	endforeach
 

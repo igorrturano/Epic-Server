@@ -2,6 +2,6 @@
 
 program OnCreate(book)
 	book := book;
-	
+
 	return 1;
 endprogram

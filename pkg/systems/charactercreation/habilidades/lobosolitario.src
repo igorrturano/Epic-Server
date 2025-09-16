@@ -14,6 +14,3 @@ program doubleattack(who)
 	SetCooldown(who, "lobosolitario", 60);
 
 endprogram
-
-
-

@@ -1,16 +1,26 @@
 use uo;
-use util;
 
-
-program command_nsight(who, level)
+program textcmd_nsight(who, level)
 	level := CInt(level);
-	if ( level >= 0 )
-		who.SetLightLevel(level, 9000);
+
+	SendSysMessage(who, "Escolha o alvo para aplicar o efeito de visao noturna:");
+	var victim := Target(who);
+
+	if (!victim.ip)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if (level >= 0)
+		victim.setlightlevel(level, 9000);
+		SendSysMessage(who, "Nivel de luz " + level + " aplicado em " + victim.name + ".");
+		SendSysMessage(victim, "Sua visao foi alterada por um consul.");
 	else
 		// -1 restores the real light level
-		SendSysMessage(who, "Restoring normal vision.");
-		who.SetLightLevel(1, 0);
+		SendSysMessage(who, "Restaurando visao normal de " + victim.name + ".");
+		SendSysMessage(victim, "Sua visao foi restaurada ao normal.");
+		victim.setlightlevel(1, 0);
 	endif
-	
+
 	return 1;
 endprogram

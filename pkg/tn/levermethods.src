@@ -1,7 +1,6 @@
 use uo;
 use os;
 
-
 program Install()
 	return 1;
 endprogram
@@ -12,12 +11,14 @@ exported function IsLever(lever)
 endfunction
 
 exported function getLeverOpts(lever)
-   var opts := getObjProperty(lever, "lever_opts"); 
-   if (!opts) opts := struct{}; endif
+	var opts := getObjProperty(lever, "lever_opts");
+	if (!opts)
+		opts := struct{};
+	endif
 
-   return opts;
+	return opts;
 endfunction
 
 exported function setLeverOpts(lever, opts)
-   SetObjProperty(lever, "lever_opts", opts); 
+	SetObjProperty(lever, "lever_opts", opts);
 endfunction

@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -20,20 +19,20 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
-    var range := cint(AP_GetSkill(who, THEOLOGY)/5);
+	var range := cint(AP_GetSkill(who, THEOLOGY) / 5);
 
-    var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
 
-    PerformAction(who, ANIM_CAST_AREA);
-    foreach mobile in allMobiles
-        PlayStationaryEffect(mobile.x, mobile.y, mobile.z-5, 0X6D01 , 7, 40, 0, mobile.realm);
-        SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
-        TS_StartTimer(mobile, "paralysis", duration);
-        sleep(5);
-        SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
-        TS_StartTimer(mobile, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
-        sleepms(20);
-    endforeach
+	PerformAction(who, ANIM_CAST_AREA);
+	foreach mobile in allMobiles
+		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x38C8, 10, 100, 0, mobile.realm);
+		SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
+		TS_StartTimer(mobile, "paralysis", duration);
+		sleep(5);
+		SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
+		TS_StartTimer(mobile, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
+		sleepms(20);
+	endforeach
 
 	return 1;
 endprogram

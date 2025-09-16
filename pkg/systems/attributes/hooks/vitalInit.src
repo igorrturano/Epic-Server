@@ -8,7 +8,6 @@ include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
 
-
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
 	return 1;
@@ -19,15 +18,16 @@ endprogram
 // *****
 exported function GetHitsRegenRate(mobile)
 	var base_regen;
-	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Hits)) + (CInt(AP_GetTrueStat(mobile, "Strength"))*10); //base + 1 a cada 10 de atributo
+	if (!mobile.npctemplate) // calculo diferenciado pra player
+		base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Hits)) + (CInt(AP_GetTrueStat(mobile,
+																						  "Strength")) * 10); // base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Hits * 100);
+		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Hits * 100);
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
 
-	if (isBloodied(mobile) && (!mobile.npctemplate)  ) // Nao regenera se tiver sangrando
-		return regen/5; //reduz a regeneração bloodied para 1/5
+	if (isBloodied(mobile) && (!mobile.npctemplate)) // Nao regenera se tiver sangrando
+		return regen / 5; // reduz a regeneração bloodied para 1/5
 	endif
 
 	return regen;
@@ -37,26 +37,28 @@ exported function GetHitsMaximumValue(mobile)
 	var vital_points;
 
 	if (mobile.npctemplate)
-		vital_points := GetNPCVitalSetting(mobile, "HITS") + (Cint(GetObjProperty(mobile, "hitsmod")) + Cint(GetObjProperty(mobile, "#hitsmod"))) * 100;
-		vital_points := vital_points/*  * 2 */;
+		vital_points := GetNPCVitalSetting(mobile, "HITS")
+									 + (Cint(GetObjProperty(mobile, "hitsmod")) + Cint(GetObjProperty(mobile, "#hitsmod")))
+									 * 100;
+		vital_points := vital_points /** 2 */;
 	else // no getHP ja pega o hitsmod dos players
 		vital_points := (GetHP(mobile) + GetPH(mobile)) * 100;
 	endif
 
-    if (GetObjProperty(mobile, "chardata").culture == BADURAN)
-        vital_points := vital_points + 1000;
-    endif
+	if (GetObjProperty(mobile, "chardata").culture == BADURAN)
+		vital_points := vital_points + 1000;
+	endif
 
-    if (!mobile.npctemplate)
+	if (!mobile.npctemplate)
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
-			vital_points := vital_points - (FomeCalcDebuff(hunger)*100);
+			vital_points := vital_points - (FomeCalcDebuff(hunger) * 100);
 		endif
-		/*if (hunger == 5)
+	/* if (hunger == 5)
 			vital_points := vital_points - 2000;
 		elseif (hunger == 4)
 			vital_points := vital_points - 1000;
-		endif*/
+		endif */
 	endif
 
 	return vital_points;
@@ -67,10 +69,11 @@ endfunction
 // *****
 exported function GetManaRegenRate(mobile)
 	var base_regen;
-	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100) + (CInt(AP_GetTrueStat(mobile, "Intelligence"))*10); //base + 1 a cada 10 de atributo
+	if (!mobile.npctemplate) // calculo diferenciado pra player
+		base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100) + (CInt(AP_GetTrueStat(mobile,
+																								"Intelligence")) * 10); // base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Mana * 100);
+		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Mana * 100);
 	endif
 
 	if (TemHabilidade(mobile, "Mente Tranquila"))
@@ -87,21 +90,22 @@ endfunction
 exported function GetManaMaximumValue(mobile)
 	var vital_points := GetNPCVitalSetting(mobile, "MANA");
 
-	if ( !vital_points )
+	if (!vital_points)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Intelligence")) * 100;
 		if (GetObjProperty(mobile, "chardata").trait == "Conexão com Alora")
 			vital_points := vital_points + 1000;
 		endif
 	endif
 
-    if (!mobile.npctemplate)
+	if (!mobile.npctemplate)
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
-			vital_points := vital_points - (FomeCalcDebuff(hunger)*50);
+			vital_points := vital_points - (FomeCalcDebuff(hunger) * 50);
 		endif
 	endif
 
-	vital_points := vital_points + ((Cint( GetObjProperty(mobile, "manamod") ) + Cint( GetObjProperty(mobile, "#manamod")))*100);
+	vital_points := vital_points + ((Cint(GetObjProperty(mobile, "manamod")) + Cint(GetObjProperty(mobile,
+																									"#manamod"))) * 100);
 	return vital_points;
 endfunction
 
@@ -110,46 +114,48 @@ endfunction
 // *****
 exported function GetStaminaRegenRate(mobile)
 	var base_regen;
-	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Stamina) * 100)  + (CInt(AP_GetTrueStat(mobile, "Dexterity"))*10); //base + 1 a cada 10 de atributo
+	if (!mobile.npctemplate) // calculo diferenciado pra player
+		base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Stamina) * 100) + (CInt(AP_GetTrueStat(mobile,
+																								   "Dexterity")) * 10); // base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Stamina * 100);
+		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Stamina * 100);
 	endif
 
 	if (GetObjProperty(mobile, "chardata").culture == AIGLANA)
 		base_regen *= 1.5;
 	endif
-	
+
 	return Cint(base_regen + AP_GetVitalRegenRateMod(mobile, STAMINA));
 endfunction
 
 exported function GetStaminaMaximumValue(mobile)
-	var vital_points := 0; //Cint(GetObjProperty(mobile, "Vitality"));
+	var vital_points := 0; // Cint(GetObjProperty(mobile, "Vitality"));
 
 	vital_points := GetNPCVitalSetting(mobile, "STAM");
-	if (!vital_points);
+	if (!vital_points)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Dexterity")) * 100;
-        if (GetObjProperty(mobile, "chardata").culture == BADURAN)
+		if (GetObjProperty(mobile, "chardata").culture == BADURAN)
 			vital_points := vital_points + 1000;
 		endif
 	endif
 
-	vital_points := vital_points + (( Cint( GetObjProperty(mobile, "stammod") ) + Cint( GetObjProperty(mobile, "#stammod") ) )*100);
+	vital_points := vital_points + ((Cint(GetObjProperty(mobile, "stammod")) + Cint(GetObjProperty(mobile,
+																									"#stammod"))) * 100);
 
 	if (!mobile.npctemplate)
-		if(TemHabilidade(mobile,"Carregador"))
+		if (TemHabilidade(mobile, "Carregador"))
 			mobile.carrying_capacity_mod := (mobile.carrying_capacity - mobile.carrying_capacity_mod) * 2;
 		endif
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
-			vital_points := vital_points - (FomeCalcDebuff(hunger)*50);
+			vital_points := vital_points - (FomeCalcDebuff(hunger) * 50);
 		endif
 
-		/*if (hunger == 5)
+	/* if (hunger == 5)
 			vital_points := vital_points - 2000;
 		elseif (hunger == 4)
 			vital_points := vital_points - 1000;
-		endif*/
+		endif */
 	endif
 
 	return vital_points;
@@ -167,16 +173,14 @@ exported function GetHungerRegenRate(mobile)
 endfunction
 
 exported function GetHungerMaximumValue(mobile)
-	return 300*100;
+	return 300 * 100;
 endfunction
-
-
 
 // *****
 // Private Function for NPC stuff
 // *****
 function GetNPCVitalSetting(mobile, vital)
-	if ( !mobile.npctemplate )
+	if (!mobile.npctemplate)
 		return 0;
 	endif
 
@@ -185,20 +189,20 @@ function GetNPCVitalSetting(mobile, vital)
 	// CProp used if NPC had dice settings - so they dont change over and over.
 	var vital_settings := GetObjProperty(mobile, "%NPC_Vitals%");
 
-	if ( vital_settings.Exists(vital) )
+	if (vital_settings.Exists(vital))
 		value := CInt(vital_settings[vital]);
 	else
 		// No prior setup took place - get information from the npcdesc.cfg
 		var npc_cfg := NPC_GetNPCConfig(mobile.npctemplate);
 		value := GetConfigString(npc_cfg, vital);
 
-		if ( !value )
+		if (!value)
 			return 0;
 		endif
 
-		if ( value["d"] ) // Dice
+		if (value["d"]) // Dice
 			value := RandomDiceRoll(value);
-			if ( Lower(TypeOf(vital_settings)) != "dictionary" )
+			if (Lower(TypeOf(vital_settings)) != "dictionary")
 				vital_settings := dictionary;
 			endif
 			vital_settings[vital] := CInt(value);
@@ -224,7 +228,7 @@ exported function GetDPRegenRate(mobile)
 endfunction
 
 exported function GetDPMaximumValue(mobile)
-	return 50*100 + CInt(GetObjProperty(mobile, "dpmod"))*100;
+	return 50 * 100 + CInt(GetObjProperty(mobile, "dpmod")) * 100;
 endfunction
 
 // *****
@@ -233,39 +237,39 @@ endfunction
 // *****
 exported function GetSkillCapRegenRate(mobile)
 	if (mobile.npctemplate)
-			return 100;
+		return 100;
 	endif
-    var foodbonus := 0;
-    var bonusRP := 0;
-    var nota := 0;
+	var foodbonus := 0;
+	var bonusRP := 0;
+	var nota := 0;
 
-    if (!GetObjProperty(mobile, "fichaRP"))
+	if (!GetObjProperty(mobile, "fichaRP"))
 		return 0;
-    else
-        if (GetObjProperty(mobile, "capmod") == error)
-            foodbonus := 0;
-        else
-            foodbonus := CInt(GetObjProperty(mobile, "capmod"));
-        endif
+	else
+		if (GetObjProperty(mobile, "capmod") == error)
+			foodbonus := 0;
+		else
+			foodbonus := CInt(GetObjProperty(mobile, "capmod"));
+		endif
 
-        if ((GetGlobalProperty("BonusRP") == error) || (GetGlobalProperty("BonusRP") == 0))
-            bonusRP := 0;
-        else
-            bonusRP := CInt(GetGlobalProperty("BonusRP"));
-        endif
+		if ((GetGlobalProperty("BonusRP") == error) || (GetGlobalProperty("BonusRP") == 0))
+			bonusRP := 0;
+		else
+			bonusRP := CInt(GetGlobalProperty("BonusRP"));
+		endif
 
-        if (FindAccount(mobile.acctname).getprop("nota") == error)
-            nota := 0;
-        else
-            nota := CInt(FindAccount(mobile.acctname).getprop("nota"));
-        endif
+		if (FindAccount(mobile.acctname).getprop("nota") == error)
+			nota := 0;
+		else
+			nota := CInt(FindAccount(mobile.acctname).getprop("nota"));
+		endif
 
-        return CInt(50 + bonusRP*25 + nota*25 + foodbonus*15);
+		return CInt(50 + bonusRP * 25 + nota * 25 + foodbonus * 15);
 	endif
 endfunction
 
 exported function GetSkillCapMaximumValue(mobile)
-    return 100*100;
+	return 100 * 100;
 endfunction
 
 exported function GetVicioPotRegenRate(mobile)
@@ -276,5 +280,5 @@ exported function GetVicioPotRegenRate(mobile)
 endfunction
 
 exported function GetViciopotMaximumValue(mobile)
-	return 100*100;
+	return 100 * 100;
 endfunction

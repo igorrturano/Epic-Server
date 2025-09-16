@@ -6,6 +6,6 @@ include ":musicianship:bardmusic";
 
 program cureScript(params)
 	var item := params[1];
-	destroyitem( item );
+	destroyitem(item);
 	return 1;
 endprogram

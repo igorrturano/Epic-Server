@@ -14,5 +14,3 @@ program doubleattack(who)
 	SetCooldown(who, "golpesamplos", 60);
 
 endprogram
-
-

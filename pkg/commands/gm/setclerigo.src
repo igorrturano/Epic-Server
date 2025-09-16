@@ -6,16 +6,15 @@ program textcmd_setclerigo(who)
 	SendSysMessage(who, "escolha o char");
 	var targ := Target(who);
 
-	if ( !targ.IsA(POLCLASS_MOBILE) )
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Cancelled.");
 		return 0;
 	endif
-	
+
 	var myhabs := dictionary;
-	myhabs.insert(1,"Magia Divina");
+	myhabs.insert(1, "Magia Divina");
 	var habs := SetObjProperty(who, "myhabs", myhabs);
-	SendSysMessage(who, who.name+" agora tem a hab Magia Divina.");
-			
-	
+	SendSysMessage(who, who.name + " agora tem a hab Magia Divina.");
+
 	return 1;
 endprogram

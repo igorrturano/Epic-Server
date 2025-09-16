@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -6,8 +6,6 @@ include "include/say";
 include ":combat:damage";
 include ":combat:combat";
 include ":combat:damage";
-
-
 
 program manobra(attacker)
 
@@ -28,12 +26,12 @@ program manobra(attacker)
 	y3 := attacker.y;
 
 	var dmgList := dictionary;
-	dmgList := getNewDamageList(attacker);	
+	dmgList := getNewDamageList(attacker);
 	var mobs := array;
-	var rawdamage := CalculateRawDamage(attacker, attacker.weapon); 
+	var rawdamage := CalculateRawDamage(attacker, attacker.weapon);
 
-	foreach mobile in (ListMobilesNearLocation(x1, y1, attacker.z, 1, attacker.realm ))
-		if (! (mobile.serial in mobs))
+	foreach mobile in (ListMobilesNearLocation(x1, y1, attacker.z, 1, attacker.realm))
+		if (!(mobile.serial in mobs))
 			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
@@ -44,8 +42,8 @@ program manobra(attacker)
 		endif
 	endforeach
 
-	foreach mobile in (ListMobilesNearLocation(x2, y2, attacker.z, 1, attacker.realm ))
-		if (! (mobile.serial in mobs))
+	foreach mobile in (ListMobilesNearLocation(x2, y2, attacker.z, 1, attacker.realm))
+		if (!(mobile.serial in mobs))
 			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
@@ -56,8 +54,8 @@ program manobra(attacker)
 		endif
 	endforeach
 
-	foreach mobile in (ListMobilesNearLocation(x3, y3, attacker.z, 1, attacker.realm ))
-		if (! (mobile.serial in mobs))
+	foreach mobile in (ListMobilesNearLocation(x3, y3, attacker.z, 1, attacker.realm))
+		if (!(mobile.serial in mobs))
 			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
@@ -67,9 +65,5 @@ program manobra(attacker)
 			mobs.append(mobile.serial);
 		endif
 	endforeach
-	
 
-
-endprogram   
-
-
+endprogram

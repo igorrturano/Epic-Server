@@ -1,4 +1,4 @@
-     use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -6,7 +6,7 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include "include/tileEffects";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":timedScripts:timedScripts";
 
 program SpellScript(params)
@@ -29,6 +29,6 @@ program SpellScript(params)
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PrintText(targ, "A fogueira queima mais intensamente.");
-	
+
 	return 1;
-endprogram  
+endprogram

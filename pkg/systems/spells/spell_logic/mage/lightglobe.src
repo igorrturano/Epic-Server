@@ -20,48 +20,48 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	var spellid:=params[3];
+	var spellid := params[3];
 
-	var hostiles:= ListHostiles( who, range := 20, flags := 0 );
+	var hostiles := ListHostiles(who, range := 20, flags := 0);
 
-	if(Len(hostiles)==0)
+	if (Len(hostiles) == 0)
 		SendSysMessageEx(who, "Você não está sendo atacado.", SSM_FAIL);
 		return 0;
 	else
-        var cfg  := ReadConfigFile(":spells:config/cantripspells");
-        var elem := FindConfigElem(cfg, spellid.id);
-        var template := getConfigString(elem, "npcTemplate");
+		var cfg := ReadConfigFile(":spells:config/cantripspells");
+		var elem := FindConfigElem(cfg, spellid.id);
+		var template := getConfigString(elem, "npcTemplate");
 
-        if (template == error)
-            SendSysMessage(who, "Erro ao ler o template" + template);
-            return;
-        endif
+		if (template == error)
+			SendSysMessage(who, "Erro ao ler o template" + template);
+			return;
+		endif
 
-        var magiclore_skill := HandleSpellSkill(who);
-        
-        var globodeluz :=   summon(template, who, who);
-        var hitsmod := CInt(magiclore_skill * 10);
-        SetObjProperty(globodeluz, "hitsmod", hitsmod);
+		var magiclore_skill := HandleSpellSkill(who);
 
-        var duracao := CInt(magiclore_skill/3);
+		var globodeluz := summon(template, who, who);
+		var hitsmod := CInt(magiclore_skill * 10);
+		SetObjProperty(globodeluz, "hitsmod", hitsmod);
 
-        foreach hostile in hostiles
-            if (GetObjProperty(hostile,"raca")==error)
-                var event := struct{"type":=EVID_TAUNT, "source":=globodeluz};
-                SendEvent(hostile, event);
-            endif
-        endforeach
+		var duracao := CInt(magiclore_skill / 3);
 
-        PlaySoundEffect(who, SFX_SPELL_STRENGTH);
-        PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-        SendSysMessageEx(targ, "A luz ofuscou a visão dos seus inimigos.", SSM_INFO);
-        var level := CInt(magiclore_skill/5)+5;
+		foreach hostile in hostiles
+			if (GetObjProperty(hostile, "raca") == error)
+				var event := struct{ "type" := EVID_TAUNT, "source" := globodeluz };
+				SendEvent(hostile, event);
+			endif
+		endforeach
 
-        //Bonus de especialização
-        if(Temhabilidade(who, "Evocator"))
-            level := Cint(level * 1.2);
-        endif
+		PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+		PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+		SendSysMessageEx(targ, "A luz ofuscou a visão dos seus inimigos.", SSM_INFO);
+		var level := CInt(magiclore_skill / 5) + 5;
+
+		// Bonus de especialização
+		if (Temhabilidade(who, "Evocator"))
+			level := Cint(level * 1.2);
+		endif
 
 		TS_StartTimer(globodeluz, "summon", duracao, level);
 	endif
-endprogram   
+endprogram

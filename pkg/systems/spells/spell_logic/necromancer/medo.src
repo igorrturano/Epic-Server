@@ -16,12 +16,12 @@ program SpellScript(params)
 	var spell_school := spell.School;
 	params := 0; // No longer needed
 
-	if ( !targ.isa(POLCLASS_MOBILE) )
+	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Voce so pode usar esta magia em coisas vivas.", SSM_FAIL);
 		return 0;
 	endif
-	
-	if (temhabilidade(targ, "Fortitudo Impia"))
+
+	if (temhabilidade(targ, "Aura Divina"))
 		SendSysMessageEx(who, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;

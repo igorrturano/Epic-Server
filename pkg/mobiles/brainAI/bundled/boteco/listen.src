@@ -9,21 +9,18 @@ include ":containers:containers";
 include ":fls_core:tax";
 
 program BrainNerve(params)
-	var npc		:= params[1];
-	//var nerve_name:= params[2];
-	var event	:= params[3];
-	//var settings	:= params[4];
-	//var scripts	:= params[5];
+	var npc := params[1];
+	// var nerve_name:= params[2];
+	var event := params[3];
+	// var settings	:= params[4];
+	// var scripts	:= params[5];
 	params := 0; // Not needed anymore.
 
-	while ( npc )
-		if ( event )
-			case ( event.type )
-				SYSEVENT_SPEECH:
-					SpeechEvent(npc, event);
-					break;
-				default:
-					break;
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_SPEECH: SpeechEvent(npc, event); break;
+				default:         break;
 			endcase
 
 			event := 0;
@@ -38,10 +35,10 @@ function SpeechEvent(npc, byref event)
 	var text := Lower(event.text);
 	var source := event.source;
 
-	if ( source.IsA(POLCLASS_NPC) )
+	if (source.IsA(POLCLASS_NPC))
 		// Remember - NPCs can send speech events now.
 		return 0;
-	elseif ( !CheckLineOfSight(npc, event.source) )
+	elseif (!CheckLineOfSight(npc, event.source))
 		// No line of sight - ignore speech.
 		return 0;
 	endif
@@ -49,38 +46,37 @@ function SpeechEvent(npc, byref event)
 	// Support for regional banking.
 	// Example: Seperate bank boxes for Britain, Trinsic, Moonglow, etc.
 	var bank_region := GetObjProperty(npc, "City");
-	if ( !bank_region )
+	if (!bank_region)
 		bank_region := CP_DEFAULT_AREA;
 	endif
 
-
-	if ( text["alugar"] )
+	if (text["alugar"])
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var imoveis := GetObjProperty(npc, imoveis);
 		if (imoveis == error)
 			AI_Speak(npc, "Desculpe, mas estou sem nada para alugar no momento.");
 		endif
-		
-		//AI_Speak(npc, "Tenho alguns imoveis pra voce.");
+
+		// AI_Speak(npc, "Tenho alguns imoveis pra voce.");
 		var parms := array;
 		parms[0] := npc;
 		parms[1] := source;
-		start_script(":tax:alugar", parms);
-	elseif ( text["devolver"] )
+		start_script("alugar", parms);
+	elseif (text["devolver"])
 		AI_Speak(npc, "Vai devolver o imovel alugado?");
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var parms := array;
 		parms[0] := npc;
 		parms[1] := source;
-		start_script(":tax:devolver", parms);
-	elseif ( text["configurar"] )
+		start_script("devolver", parms);
+	elseif (text["configurar"])
 		if (source.cmdlevel > 1)
 			var parms := array;
 			parms[0] := npc;
 			parms[1] := source;
-			start_script(":tax:configuraAluguel", parms);
+			start_script("configuraAluguel", parms);
 		endif
-	elseif ( text["bom dia"] || text["boa noite"] || text["boa tarde"] )
+	elseif (text["bom dia"] || text["boa noite"] || text["boa tarde"])
 		AI_Speak(npc, "Ola, em que posso ajuda-lo? Tenho imoveis pata *alugar*.");
 	endif
 
@@ -89,7 +85,7 @@ endfunction
 
 function WithdrawlGold(npc, who, bank_box, byref text)
 	var amount := FindAmountInSpeech("withdrawl", text);
-	if ( !CheckGoldAmount(npc, bank_box, amount) )
+	if (!CheckGoldAmount(npc, bank_box, amount))
 		return 0;
 	endif
 
@@ -101,10 +97,10 @@ endfunction
 
 function CheckGoldAmount(npc, bank_box, amount)
 	var total_gold := AmountInContainer(bank_box, GetObjTypeByName("GoldCoin"));
-	if ( amount == 0 )
+	if (amount == 0)
 		AI_Speak(npc, "Everyone has atleast zero gold!");
 		return 0;
-	elseif ( amount > total_gold )
+	elseif (amount > total_gold)
 		AI_Speak(npc, "You do not have that much gold in your box.");
 		return 0;
 	else
@@ -115,7 +111,7 @@ endfunction
 
 function FindAmountInSpeech(key, text)
 	var key_pos := Find(text, key, 1);
-	text[1, (key_pos+Len(key))] := "";
+	text[1, (key_pos + Len(key))] := "";
 
 	text := SplitWords(text);
 	return CInt(text[1]);

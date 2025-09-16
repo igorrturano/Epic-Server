@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -6,10 +6,11 @@ include "include/say";
 
 program manobra(attacker)
 
-	//var hostiles := ListHostiles(attacker, 15, LH_FLAG_LOS);
+	// var hostiles := ListHostiles(attacker, 15, LH_FLAG_LOS);
 	var hostiles := ListHostiles(attacker, 20);
 	if (hostiles[1])
-		SendSysMessageEx(attacker, "Voce nao pode usar essa habilidade enquanto esta sendo atacado.", SSM_FAIL);
+		SendSysMessageEx(attacker, "Voce nao pode usar essa habilidade enquanto esta sendo atacado.",
+				   SSM_FAIL);
 		return;
 	endif
 
@@ -18,7 +19,7 @@ program manobra(attacker)
 	var x := attacker.x;
 	var y := attacker.y;
 	var z := attacker.z;
-    var r := attacker.realm;
+	var r := attacker.realm;
 	var mana := AP_GetVital(attacker, MANA);
 	var hits := AP_GetVital(attacker, HITS);
 	var stamina := AP_GetVital(attacker, STAMINA);
@@ -35,13 +36,12 @@ program manobra(attacker)
 	var e := MoveObjectToLocation(attacker, x, y, z, r, MOVEOBJECT_FORCELOCATION);
 	var corpse := attacker.getCorpse();
 
-	while( attacker.connected )
+	while (attacker.connected)
 
-		if( (attacker.x != corpse.x) && (attacker.y != corpse.y) )
+		if ((attacker.x != corpse.x) && (attacker.y != corpse.y))
 			SendSysMessageEx(attacker, "Voce nao esta mais no local inicial", SSM_FAIL);
 			break;
 		endif
-	
 
 		sleep(1);
 
@@ -50,14 +50,13 @@ program manobra(attacker)
 	attacker.concealed := 0;
 	attacker.squelch(0);
 
-
 	var serialC := attacker.serial;
 	foreach item in EnumerateItemsInContainer(corpse)
 		if (item.container == corpse)
 			MoveObjectToLocation(item, attacker.x, attacker.y, attacker.z, attacker.realm);
 			MoveItemToContainer(item, attacker.backpack);
-			if ( CInt(GetObjProperty(item, "#EquippedOn")) == serialC )
-				if ( !EquipItem(attacker, item) )
+			if (CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
+				if (!EquipItem(attacker, item))
 					EraseObjProperty(item, "#EquippedOn");
 				endif
 			endif
@@ -68,4 +67,4 @@ program manobra(attacker)
 	AP_SetVital(attacker, HITS, hits);
 	AP_SetVital(attacker, MANA, mana);
 	AP_SetVital(attacker, STAMINA, stamina);
-endprogram  
+endprogram

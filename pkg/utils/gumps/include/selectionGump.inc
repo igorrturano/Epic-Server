@@ -15,7 +15,7 @@
 use uo;
 use os;
 
-include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 CONST BTN_TYPE_RADIO	:= 0x1;	// Allows selecting one item in the list. "OKAY" must be clicked to return selections.
 CONST BTN_TYPE_CHECKBOX	:= 0x2;	// Allows multiple selections in the list. "OKAY" must be clicked to return the selections.

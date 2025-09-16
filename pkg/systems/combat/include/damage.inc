@@ -12,13 +12,14 @@ include ":fls_core:packets";
 include "include/epicCombatUtils";
 include "include/facings";
 include ":timedScripts:timedScripts";
-include ":commands:debugsystem";
+include ":debug:Controller/DebugController";
 include ":combat:armorZones";
 include ":combat:combat";
-include ":equipsys:utils";
-include ":equipsys:props";
+include ":combat:habilidades";
+include ":combat:weardown";
+include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
-include "weardown";
+include ":crafting:/include/caracteristicasFabricacao";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -263,6 +264,71 @@ function SetLastDamageInfo(mobile, amount, type, source, spell := "")
 		last_damage.+spell := spell;
 	endif
 
+////AUTOPSIA
+var life := AP_GetVital(mobile, "HITS");
+if (amount >= life)
+var autopsy := struct;
+	if ( source.weapon )// adicionado para o forensicevaluation detectar a arma do crime
+		//last_damage.+weapon := source.weapon;
+		autopsy.+serial_weapon := source.weapon.serial; 
+		autopsy.+objtype := source.weapon.objtype;
+	endif
+	
+    // Descobrir mais Dano
+    var slashDamage := getNPCMainDamage(mobile, SLASHDAMAGE);
+    var piercingDamage := getNPCMainDamage(mobile, PIERCINGDAMAGE);
+    var bluntDamage := getNPCMainDamage(mobile, BLUNTDAMAGE);
+    // Compara os valores dos dados (assumindo que dice tem um valor numérico)
+    var maxDamage := slashDamage.dice;
+    var maxType := SLASHDAMAGE;  
+    if (piercingDamage.dice > maxDamage)
+        maxDamage := piercingDamage.dice;
+        maxType := PIERCINGDAMAGE;
+    endif
+    if (bluntDamage.dice > maxDamage)
+        maxDamage := bluntDamage.dice;
+        maxType := BLUNTDAMAGE;
+    endif
+    autopsy.+dano_principal := maxType;
+
+	var stat := struct;
+	stat.+STR := AP_GetStat(mobile, "STRENGTH");
+	stat.+DEX := AP_GetStat(mobile, "DEXTERITY");
+	stat.+INT := AP_GetStat(mobile, "INTELLIGENCE");
+	
+	var vital := struct;
+	vital.+HIT := AP_GetVitalMaximumValue(mobile, "HITS");
+	vital.+STA := AP_GetVitalMaximumValue(mobile, "STAMINA");
+	vital.+MAN := AP_GetVitalMaximumValue(mobile, "MANA");
+	//Descobir as resits
+	autopsy.+resists := getNPCResists(mobile);
+	autopsy.+elemdamage := getNPCElemDamages(mobile);
+	autopsy.+stats := stat;
+	autopsy.+vitals := vital;
+	
+	var npc_elem := NPC_GetNPCConfig(mobile);
+	var classe := npc_elem.Classe;
+	var skills_combat := struct;
+	
+	if (classe == SABIO)
+		skills_combat.+magery := AP_GetTrueSkill(mobile, MAGERY);
+		skills_combat.+arcana := AP_GetTrueSkill(mobile, ARCANA);
+	elseif(classe == LADINO || mobile.isSpider())
+		skills_combat.+sneak := AP_GetTrueSkill(mobile, SNEAK);
+		skills_combat.+awareness := AP_GetTrueSkill(mobile, AWARENESS);
+		skills_combat.+pickpocketing := AP_GetTrueSkill(mobile, PICKPOCKETING);
+	else
+		skills_combat.+wrestling := AP_GetTrueSkill(mobile, WRESTLING);
+		skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
+	endif
+	autopsy.+skills := skills_combat;
+	autopsy.+taxonomy := npc_elem.Taxonomy;
+	autopsy.+rastros := npc_elem.rastro;
+
+	SetObjProperty(mobile, "Autopsy", autopsy);
+endif	
+//FIM AUTOPSIA
+
 	if ( last_damage.acctname )
 		last_damage.+acctname := source.acctname;
 	endif
@@ -294,6 +360,7 @@ endfunction
 
 function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") // Mantido, apesar de criar o CombatDamageEPIC(), para não dar conflito com os demais danos do shard após criar o novo sistema de danos por região
 	var totaldmg;
+	var attackInfo := struct{};
 
 	if (type == DMG_FORCED)
 		totaldmg := CInt(dmg);
@@ -305,44 +372,22 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 		SetScriptController(source);
 	endif
 
-	if (GetObjProperty(defender, "#martir"))
-		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
-		if (martir && !martir.dead)
-			defender := martir;
-		endif
-	endif
+	// Mesmo sendo uma função VANILLA. Talvez esses CheckHab_ precisem ser trocados por CheckDefenderHabsBeforeDamage() e CheckDefenderHabsAfterDamage()
+	attackInfo.+damage := dmg;
+	attackInfo.+type := type;
+	
+	// Checa as habilidades antes do dano
+	CheckHab_Martir(0, defender, attackInfo);
+	CheckHab_MantoRothen(0, defender, attackInfo);
 
-	if (GetObjProperty(defender, "#mantorothen"))
-		var healed := cint(totaldmg*0.3);
-		totaldmg := totaldmg - healed;
-		var party := defender.party;
-		var amthealed := cint(healed/party.members.size());
-		if (amthealed < 1)
-			amthealed := 1;
-		endif
-		foreach member in (party.members)
-			HealDamage(member, amthealed);
-		endforeach
-	endif
-
+	// Aplica o dano
 	DisplayDamage(defender, totaldmg, source);
 	ApplyRawDamage(defender, totaldmg);
-
-	if (isBloodied(defender))
-		RecalcVitals(defender);
-		MakeBleed(defender);
-		if (getObjProperty(defender, "#recuperacaosalvadora"))
-			EraseObjProperty(defender, "#recuperacaosalvadora");
-			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			HealDamage(defender, CInt(GetPH(defender)/2));
-		endif
-	endif
-
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
-	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + totaldmg));
-	endif
+	// Checa as habilidades depois do dano
+	CheckHab_RecuperacaoSalvadora(0, defender, attackInfo);
+	CheckHab_Vinganca(0, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;
@@ -353,6 +398,7 @@ endfunction
 
 function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
 	var totaldamage;
+	var attackInfo := struct{};
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
 
 	if (type == DMG_FORCED)
@@ -361,19 +407,23 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
 	endif
 
-	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
+	attackInfo.+damage := totaldamage;
+	attackInfo.+type := type;
+
+	CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo);
+	CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo);
 
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
 
-	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage, type);
+	CheckDefenderHabsAfterDamage(attacker, defender, attackInfo);
+	CheckAttackerHabsAfterDamage(attacker, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;
 	endif
 
-	// defender := defender;
 	return totaldamage;
 endfunction
 
@@ -444,7 +494,7 @@ endfunction
 function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
 	SetScriptController(attacker);
 
-	if (damages.FireDamage)
+	if (damages.FireDamage > 0)
 		WearDownArmor(defender, armor, damages.FireDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
 	endif
@@ -629,16 +679,21 @@ endfunction
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist := 0;
 	var armorResists := armor.getAttrBase();
+	var armorResistsFabricacao := PegaValorFabricacao(armor, CARACTERISTICA_FABRICACAO_DEFESA); 
 
     if(!armor || armor == error)
         return 0;
     endif
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
+		DMG_PHYSICAL:
+			var valorFabricado :=  PegaValorFabricacao(armor, CARACTERISTICA_FABRICACAO_DEFESA); 
+			resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod") + CInt(valorFabricado? valorFabricado : 0)); 
+			break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
-				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_CORTANTE].valor;
+				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod) + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -646,7 +701,8 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_PIERCING:
 			if (armorResists.PiercingResist)
-				resist := CInt(armorResists.PiercingResist) + CInt(armorResists.PiercingResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_PERFURANTE].valor;
+				resist := CInt(armorResists.PiercingResist) + CInt(armorResists.PiercingResistMod) + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -654,7 +710,8 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_BLUNT:  
 			if (armorResists.BluntResist)
-				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
+				var valorFabricado :=  armorResistsFabricacao[SUBCARACTERISTICA_FABRICACAO_CONTUSAO].valor;
+				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod)  + CInt(valorFabricado);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -667,171 +724,6 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	endcase
 
 	return CInt(resist);
-endfunction
-
-/**
- * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
-	var resist;
-	
-	if (GetObjProperty(defender, "#martir"))
-		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
-		if (martir && !martir.dead)
-			defender := martir;
-		endif
-	endif
-	
-	if (GetObjProperty(defender, "#mantorothen"))
-		var healed := CInt(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
-		damage := damage - healed;
-		var party := defender.party;
-		var amthealed := CInt(healed/party.members.size());
-		if (amthealed < 1)
-			amthealed := 1;
-		endif
-		foreach member in (party.members)
-			HealDamage(member, amthealed);
-		endforeach
-	endif
-
-	if (type == DMG_PHYSICAL || type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT)
-        if (TemHabilidade(defender, "Kani no Sutairu"))
-            resist += RandomDiceRoll("1d4");
-        endif
-		if (TemHabilidade(defender, "Exoesqueleto"))
-			resist += 2;
-		endif
-		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
-			resist += RandomDiceRoll("1d4");
-		endif
-		if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
-			resist += RandomDiceRoll("1d4");
-        elseif (TemHabilidade(defender, "Resiliência Bárbara"))
-			resist += RandomDiceRoll("1d4");
-		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
-			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
-				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
-			endif
-			if (resist < arcane_armor)
-				resist := arcane_armor;
-				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
-			endif
-		endif
-		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
-			EraseObjProperty(attacker, "backstab");
-			EraseObjProperty(attacker.weapon, "backstab");
-			EraseObjProperty(attacker, "#nextcritical");
-			if (TemHabilidade(defender, "Sempre Alerta"))
-				TS_StartTimer(attacker, "paralysis", 5);
-				PrintTextAbove(defender, "*Sempre Alerta*");
-			else
-				ataqueFurtivo(attacker,defender);
-			endif
-		endif
-	endif
-
-	if (GetObjProperty(attacker, "charge_damage"))
-		damage += Cint(GetObjProperty(attacker, "charge_damage"));
-
-		if (hasAntiMountedWeapon(attacker, defender))
-			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
-			defender := attacker;
-			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
-			if (!resisted)
-				TS_StartTimer(defender, "desmontar", 10);
-				TS_StartTimer(defender, "tombar", 5);
-				TS_StartTimer(defender, "paralysis", 5);
-			endif
-		endif
-
-		EraseObjProperty(attacker, "charge_damage");
-	endif
-
-	var totaldamage := CInt(damage-resist); 
-	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
-endfunction
-
-/**
- * CheckDefenderHabsAfterDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
-	if (isBloodied(defender))
-		RecalcVitals(defender);
-		MakeBleed(defender);
-		if (getObjProperty(defender, "#recuperacaosalvadora"))
-			EraseObjProperty(defender, "#recuperacaosalvadora");
-			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			HealDamage(defender, CInt(GetPH(defender)/2));
-		endif
-	endif
-
-	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
-	endif
-
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
-			var copdefenders := array;
-			
-			// Get the higher skill between ARCANA and THEOLOGY
-			var arcana_skill := AP_GetSkill(mage, ARCANA);
-			var theology_skill := AP_GetSkill(mage, THEOLOGY);
-			var skill_value := (arcana_skill > theology_skill) ? arcana_skill : theology_skill;
-			var lvl := cdbl(skill_value/200);
-			
-			var originalDefenderSerial := defender.serial;  // Store original defender's serial
-
-			foreach serial in copmobs
-				// Only add other targets, not the original defender
-				if (serial != originalDefenderSerial)
-					var targ := SystemFindObjectBySerial(serial);
-					if (targ)
-						copdefenders.append(targ);
-					endif
-				endif
-			endforeach
-			
-			// Apply damage to connected targets (excluding original)
-			foreach opponent in copdefenders
-				var total := Cint(damage * lvl);
-				if (total < 1)
-					total := 1;
-				endif
-				DamageFLS(opponent, total, DMG_FORCED, mage);
-			endforeach
-
-			return 1;
-		endif
-	endif
 endfunction
 
 function destroycraft(potion, who)
@@ -866,34 +758,6 @@ function CanDestroyCraft(who)
     return 0;
 endfunction
 
-function IsTwoHandedWeapon(item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Two_Handed)
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
-function IsThrowingWeapon(item)
-	if (!item.isa (POLCLASS_WEAPON))
-		return 0;
-	endif
-	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
-	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
-	if (weapon_elem)
-		if (weapon_elem.Throwing)
-			return 1;
-		endif
-	endif
-	return 0;
-endfunction
-
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	var damage := rawdamage;
 
@@ -909,6 +773,7 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 
 	if (damage < 1)
 		damage := 1;
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano Minimo Garantido ! (1)");
 	endif
 
 	// DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
@@ -952,7 +817,7 @@ endfunction
 
 function CalcDamageStats(attacker, damage)
 	var stat;
-	var elem := getItemCfgElem(attacker.weapon);
+	var elem := attacker.weapon.getCfgElem();
 
 	SkillCheck(attacker, TACTICS, -1);
 	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);
@@ -985,13 +850,18 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
+	/*var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
-	endif
+	endif*/
 
+	var danoFabricadoTotal := 0;
+	danoFabricadoTotal += PegaValorFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_DANO);
+	var SubCaracteristicas := PegaSubValoresFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_DANO);
+		//TODO Adicionar os danos de contusao, cortante e perfurante quando der.
+	
+	DebugMsg(attacker, DEBUG_DAMAGE, "Modificador Fabricacao: " + CInt(danoFabricadoTotal));
 	DebugMsg(attacker, DEBUG_DAMAGE, "Dano: " + CInt(damage));
-	DebugMsg(attacker, DEBUG_DAMAGE, "Arma Afiada: " + CInt(sharpened_weapon));
 
 	return damage;
 endfunction
@@ -1362,4 +1232,10 @@ function GetArmorInZone(mobile, zone_name, type)
     endforeach
     
     return result;
+endfunction
+
+function IsPhysicalDamage(type)
+	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
+	else return 0;
+	endif
 endfunction

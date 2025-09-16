@@ -1,4 +1,4 @@
-//$Id: use.src 128 2006-05-27 17:36:42Z austinheilman $
+// $Id: use.src 128 2006-05-27 17:36:42Z austinheilman $
 
 use uo;
 use os;
@@ -13,23 +13,23 @@ program useContainer(mobile, container)
 	var item_cfg := ReadConfigFile(":*:itemdesc");
 	item_cfg := item_cfg[container.graphic];
 
-	if ( mobile.cmdlevel )
+	if (mobile.cmdlevel)
 		SendSysMessage(mobile, "Command level is present - container is skipping locks, traps, etc.");
 		SendViewContainer(mobile, container);
-	elseif ( ContainerIsLocked(mobile, container) )
+	elseif (ContainerIsLocked(mobile, container))
 		return 0;
-	elseif ( GetObjProperty(container, "TrapList") != error )
+	elseif (GetObjProperty(container, "TrapList") != error)
 		RunTraps(container, mobile);
 		return 0;
 	elseif (IsEmperrado(container))
-		PrintTextAbovePrivate(container,"*Emperrado*",mobile);
+		PrintTextAbovePrivate(container, "*Emperrado*", mobile);
 		return 0;
 	endif
 
-	PrintText(mobile, "*Abriu "+container.desc+"*");
+	PrintText(mobile, "*Abriu " + container.desc + "*");
 	SendViewContainer(mobile, container);
 
-	if ( (item_cfg.OpenGraphic) && (item_cfg.CloseGraphic) )
+	if ((item_cfg.OpenGraphic) && (item_cfg.CloseGraphic))
 		container.graphic := item_cfg.OpenGraphic;
 		Sleep(2);
 		container.graphic := item_cfg.CloseGraphic;
@@ -37,17 +37,17 @@ program useContainer(mobile, container)
 endprogram
 
 function ContainerIsLocked(mobile, container)
-	if ( !container.locked )
+	if (!container.locked)
 		// Nothing to worry about.
 		// PrintText(mobile, "*Abriu "+container.desc+"*");
 		return 0;
-	elseif ( KP_HasKeyForLock(mobile, container) )
+	elseif (KP_HasKeyForLock(mobile, container))
 		// SendSysMessage(mobile, "Voce abre o container com a chave.");
-		PrintText(mobile, "*Usou uma chave em " +container.desc+"*");
+		PrintText(mobile, "*Usou uma chave em " + container.desc + "*");
 		return 0;
 	else
 		// PrintTextAbovePrivate(container, "Isto esta trancado.", mobile);
-		PrintText(mobile, "Tentou abrir " +container.desc+ " mas estava trancado*");
+		PrintText(mobile, "Tentou abrir " + container.desc + " mas estava trancado*");
 		return 1;
 	endif
 endfunction

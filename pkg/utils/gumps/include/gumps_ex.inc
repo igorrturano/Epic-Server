@@ -16,11 +16,11 @@
  */
 use uo;
 use os;
+use math;
 use polsys;
 use cfgfile;
 
 include ":gumps:gumps";
-
 
 enum GUMP_CONSTANTS
 	G_DIVISOR_DEFAULT := 0x1, 
@@ -576,7 +576,7 @@ function SelectWindowPosition(who)
       sleepms(2);
    endwhile
 
-	GFTextLine(gump, 341, 25, DEFAULT_FONT_COLOR, "Clique em um bot�o para reposicionar");
+	GFTextLine(gump, 341, 25, 1153, "Clique em um botão para reposicionar");
 
 	var input := GFSendGump(who, gump);
 

@@ -1,5 +1,5 @@
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -18,22 +18,22 @@ program SpellScript(params)
 		targ := who.weapon;
 	endif
 
-	var mlore :=  Cint(AP_GetSkill(who, THEOLOGY));
+	var mlore := Cint(AP_GetSkill(who, THEOLOGY));
 	var duration := Cint(mlore);
-	var bonus := Cint(mlore/10);
-		
+	var bonus := Cint(mlore / 10);
+
 	if (targ.isA(POLCLASS_WEAPON))
 		SetCooldown(targ, "blessweapon", duration);
 		SetObjProperty(targ, "blessedbonus", bonus);
-		start_script( ":spells:shared/armasagrada", {targ, duration} );
+		start_script(":spells:shared/armasagrada", { targ, duration });
 	else
 		SetCooldown(targ.weapon, "blessweapon", duration);
 		SetObjProperty(targ.weapon, "blessedbonus", bonus);
-		start_script( ":spells:shared/armasagrada", {targ.weapon, duration} );
+		start_script(":spells:shared/armasagrada", { targ.weapon, duration });
 	endif
 
 	PlaySoundEffect(targ, SFX_BLESS);
 	SendSysMessageEx(who, "Voce consagrou a arma.", SSM_INFO);
-	
+
 	return 1;
-endprogram    
+endprogram
