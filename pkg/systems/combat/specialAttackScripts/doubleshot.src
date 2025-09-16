@@ -1,0 +1,11 @@
+use os;
+
+program SpecialAttack_DoubleShot(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+
+	SleepMS(500);
+	attacker.attack_once(defender);
+
+	return true;
+endprogram

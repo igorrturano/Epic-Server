@@ -34,17 +34,17 @@ function AnimalBrain()
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
-                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
-                            EraseObjProperty(me, "#taunt_opponent");
                             HandleAnimalCombatEvent(opponent);
+                            EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.source))
-                        HandleAnimalCombatEvent(ev.source);
+                    if (CanFight(me, ev.opponent))
+                        HandleAnimalCombatEvent(ev.opponent);
                     endif
                 EVID_BUDDYATTACKED:
                     // Talvez nao precise usar
@@ -111,8 +111,7 @@ function HandleAnimalCombatEvent(opponent)
     CheckHealthTeleport(me);
 
     if (me.isSpider() && opponent.getRace() == DROW)
-        var npc_elem := NPC_GetNPCConfig(me);
-        var tier := CInt(npc_elem.Tier);
+        var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
         elseif (tier <= 3 && opponent.getCulture == HAROLOTH)

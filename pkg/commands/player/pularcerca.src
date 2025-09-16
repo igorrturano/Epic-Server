@@ -18,12 +18,12 @@ program cabelo(who)
 
 	SendSysMessageEx(who, "Selecione a cerca que deseja pular.", SSM_REQUEST);
 	var targ := TargetCoordinates(who);
-	if(!targ)
+	if (!targ)
 		SendSysMessage(who, "Cancelado.");
 		return 0;
 	endif
 
-	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1 || abs(who.z-targ.z) > 10)
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1 || abs(who.z - targ.z) > 10)
 		SendSysMessageEx(who, "Voce esta muito longe disto.", SSM_FAIL);
 		return 0;
 	endif
@@ -38,9 +38,11 @@ program cabelo(who)
 		grafico := targ.objtype;
 	endif
 
-var cerca := Cint(Getobjproperty(targ.item, "cerca"));
+	var cerca := Cint(Getobjproperty(targ.item, "cerca"));
 
-	if (grafico IN {947, 948, 949, 2101, 2102, 2103, 2140, 2141, 2142, 2143, 2144, 2145, 2149, 2167, 2168, 8657, 8658, 8659, 8660}|| cerca == 1)//2146, 2147, 2148,2186 e 2187 retirados para proibir de usar nas fazendas
+	if (grafico IN { 947, 948, 949, 2101, 2102, 2103, 2140, 2141, 2142, 2143,
+				 	2144, 2145, 2149, 2167, 2168, 8657, 8658, 8659, 8660 }
+		|| cerca == 1) // 2146, 2147, 2148,2186 e 2187 retirados para proibir de usar nas fazendas
 		if (GetVital(who, "Stamina") < GetVitalMaximumValue(who, "Stamina"))
 			SendSysMessageEx(who, "Voce precisa estar bastante disposto para fazer isto.", SSM_FAIL);
 			return 0;

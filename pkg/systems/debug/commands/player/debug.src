@@ -1,0 +1,48 @@
+/*
+ * O comando checa (e cria/remove) uma CProp temporária com o nome passado no debugName
+ * Modelo da CProp: #debug_<string>
+ * Exemplo da CProp: #debug_clima
+ *
+ * Forma de uso:
+ * Dar include ":commands:debugsystem" no script que for usar
+ * e adicionar a função DebugMsg(who, debugType, msg) dentro do script
+ * Exemplo de uso:
+ *
+ * include ":commands:debugsystem";
+ *
+ * var debugType := "clima";
+ * DebugMsg(who, debugType, "Está chovendo bastante!");
+ *
+ * Para scripts que não tenha who (Ref de Char) usar DebugMsgEvent(debugType, msg);
+ * Exemplo de uso:
+ *
+ * var debugType := "clima";
+ * DebugMsgEvent(debugType, "Está chovendo bastante!");
+*/
+use uo;
+
+include ":debug:Controller/DebugController";
+
+program CMD_debug(who, debugName)
+	debugName.Lower();
+
+	if (!debugName || Lower(debugName) == "list")
+		SendSysMessageEx(who, "Lista de debugs disponíveis: ");
+		foreach debug in (listDebugs)
+			SendSysMessageEx(who, $"Tag: {_debug_iter} - PLevel: {debug.level}");
+		endforeach
+		return;
+	endif
+
+	if (!listDebugs[Lower(debugName)])
+		SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.",
+				   SSM_FAIL);
+		SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list", SSM_FAIL);
+	else
+		if (who.cmdlevel >= listDebugs[Lower(debugName)].level)
+			who.setDebugProp(debugName);
+		else
+			SendSysMessageEx(who, $"DEBUG {debugName}: Nível insuficiente.", SSM_FAIL);
+		endif
+	endif
+endprogram

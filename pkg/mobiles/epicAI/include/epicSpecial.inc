@@ -979,14 +979,15 @@ function LayEggSac(spider)
 //       return 0;
 //    endif
 
-   var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1);
+   var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1, spider.realm);
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
       SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
-      SetCooldown(spider, "egg_sac", 60);
+      SetCooldown(spider, "egg_sac", 600);
+
+      egg.decayAt := ReadGameClock() + (60 * 15);
       return 1;
    endif
-   egg.decayAt := ReadGameClock() + (60 * 15);
 
    return 0;
 endfunction
@@ -1000,7 +1001,7 @@ function CreateInvisibleWeb(spider)
     if (web)
         PrintTextAbove(spider, "*tece teia*");
         SetObjProperty(web, "Creator", spider.serial);
-        SetCooldown(spider, "create_web", 30);
+        SetCooldown(spider, "create_web", 600);
         
         // Random static web graphic
         var web_graphics := array{4280, 4281, 4282, 4283, 4284, 4285, 4286, 4287, 4288, 

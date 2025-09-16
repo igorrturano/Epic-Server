@@ -15,14 +15,8 @@ include ":destroyable:include/destroyItem";
 function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
     var newx, newy, newz, checker, type, lootgroup, chest;
     var arraychest := array{};
-    
-    print("DEBUG::CreateTreasureChests - Iniciando criacao:");
-    print("  Level: " + lvl);
-    print("  Quantidade: " + amt);
-    print("  Local: " + x + "," + y + "," + z);
-    
+        
     if (x == error)
-        print("DEBUG::CreateTreasureChests - Coordenada X invalida");
         return arraychest;
     endif
     
@@ -62,16 +56,11 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
             if(chest)
         checker := 1;
         chest.movable := 0;
-        
-        print("DEBUG::CreateTreasureChests - Bau criado:");
-        print("  Serial: " + chest.serial);
-        print("  Grafico: " + chest.graphic);
-        print("  Local: " + chest.x + "," + chest.y + "," + chest.z);
-        
+                
         // Configurações do baú
         SetObjProperty(chest, "IsTreasureChest", 1);
         SetObjProperty(chest, "CreatedOn", ReadGameClock());
-        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, 1);
+        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, true);
         SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
         SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
         SetObjProperty(chest, "level", lvl);
@@ -86,24 +75,13 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         chest.movable := 0;
                     // Adiciona armadilhas com tratamento de erro
                     var trap := RandomInt(3)+1;
-                    print("DEBUG::CreateTreasureChests - Adicionando armadilha tipo " + trap);
                     var trap_result := 0;
                     case(trap)
                         1: trap_result := AddTrap(chest, "Needle", lvl);
                         2: trap_result := AddTrap(chest, "Explosion", lvl);
                         3: trap_result := AddTrap(chest, "PoisonGas", lvl);
                     endcase
-                    
-                    if (!trap_result)
-                        print("DEBUG::CreateTreasureChests - ALERTA: Falha ao adicionar armadilha");
-                    endif
-                    
-                    // Gera o loot com tratamento de erro
-                    print("DEBUG::CreateTreasureChests - Gerando loot: " + lootname);
-                    var loot_result := Loot_Generate(chest, lootname);
-                    if (!loot_result)
-                        print("DEBUG::CreateTreasureChests - ALERTA: Falha ao gerar loot");
-                    endif
+                    Loot_Generate(chest, lootname);
                 else
                     checker := 0;
                     tries := tries + 1;
@@ -111,7 +89,6 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
             endif
             
             if (tries > 30)
-                print("DEBUG::CreateTreasureChests - Muitas tentativas de spawn em " + x + "," + y + "," + z);
                 var players := EnumerateOnlineCharacters();
                 foreach player in players
                     if (player.cmdlevel > 2)
@@ -119,7 +96,7 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                     endif
                 endforeach
             endif
-            sleep(10);
+            sleep(1);
         endwhile
         
         if(chest)
@@ -129,7 +106,5 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         sleep(10);
     endwhile
     
-    print("DEBUG::CreateTreasureChests - Criacao finalizada:");
-    print("  Total de baus: " + arraychest.size());
     return arraychest;
 endfunction

@@ -21,12 +21,12 @@ function SwapBucket(bucket, change_to)
 	info.+x := bucket.x;
 	info.+y := bucket.y;
 	info.+z := bucket.z;
-	
+
 	ReleaseItem(bucket);
-	DestroyItem(bucket);
+	Print("whaaa? " + DestroyItem(bucket));
 
 	var new_bucket;
-	if ( info.container )
+	if (info.container)
 		new_bucket := CreateItemInContainer(info.container, change_to, 1);
 	else
 		new_bucket := CreateItemAtLocation(info.x, info.y, info.z, change_to, info.realm);
@@ -37,7 +37,7 @@ function SwapBucket(bucket, change_to)
 endfunction
 
 exported function IsFilled(bucket)
-	if ( bucket.objtype != EMPTY_BUCKET )
+	if (bucket.objtype != EMPTY_BUCKET)
 		return 1;
 	endif
 
@@ -45,7 +45,7 @@ exported function IsFilled(bucket)
 endfunction
 
 exported function IsEmpty(bucket)
-	if ( bucket.objtype == EMPTY_BUCKET )
+	if (bucket.objtype == EMPTY_BUCKET)
 		return 1;
 	endif
 

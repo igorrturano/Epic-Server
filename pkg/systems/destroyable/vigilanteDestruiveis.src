@@ -8,10 +8,10 @@ include ":destroyable:include/destroyItem";
 const T_HORA := 3600;
 
 program vigilanteDestruiveis()
-	while(true)
+	while (true)
 		sleep(60);
 		var retornoListaItens := PegaListaItens(T_HORA * 2);
-		
+
 		foreach infoItem in (retornoListaItens.itens)
 			CriaItemMarcado(infoItem);
 			Sleepms(4);
@@ -22,25 +22,25 @@ program vigilanteDestruiveis()
 			var novosSerials := array;
 			var novosItens := array;
 			deedCounter += 1;
-			foreach  item in deed
+			foreach item in deed
 				var novoItem := CriaItemMarcado(item);
 				novosSerials.append(novoItem.serial);
 				novosItens.append(novoItem);
-				
+
 				Sleepms(2);
 			endforeach
-			
+
 			foreach novoItem in novosItens
-				SetObjProperty(novoItem,"ItemsCreatedSerials",novosSerials);
+				SetObjProperty(novoItem, "ItemsCreatedSerials", novosSerials);
 				Sleepms(2);
 			endforeach
 			Sleepms(4);
 		endforeach
-		if(retornoListaItens.itens.size() > 0 )
+		if (retornoListaItens.itens.size() > 0)
 			Print("[VigilanteDestruíveis] -- " + retornoListaItens.itens.size() + " Itens destruídos recriado com sucesso.");
 		endif
 
-		if(deedCounter > 0)
+		if (deedCounter > 0)
 			Print("[VigilanteDestruíveis] -- " + deedCounter + " Deeds destruídas recriadas com sucesso.");
 		endif
 	endwhile
@@ -48,14 +48,32 @@ endprogram
 
 function CriaItemMarcado(infoItem)
 	var copy;
-	if(infoItem.template != error)
-		copy := CreateItemAtLocationFromTemplate(infoItem.x, infoItem.y, infoItem.z, infoItem.realm, infoItem.template);
-	else
-		copy := CreateItemAtLocation(infoItem.x, infoItem.y, infoItem.z,infoItem.objtype, infoItem.amount,infoItem.realm);
+
+	if (!IsItemJaCriado(infoItem))
+		if (infoItem.template != error)
+			copy := CreateItemAtLocationFromTemplate(infoItem.x, infoItem.y, infoItem.z, infoItem.realm,
+													  infoItem.template);
+		else
+			copy := CreateItemAtLocation(infoItem.x, infoItem.y, infoItem.z, infoItem.objtype, infoItem.amount,
+										  infoItem.realm);
+		endif
+		copy.movable := infoItem.movable;
+		var atributos := MontaAtributosItem(copy);
+		copy.hp := atributos.durabTotal;
 	endif
-	copy.movable := infoItem.movable;
-	var atributos := MontaAtributosItem(copy);
-	copy.hp := atributos.durabTotal;
 	RemoveItemMarcado(infoItem.serial);
 	return copy;
+endfunction
+
+function IsItemJaCriado(infoItem)
+	var itensEncontrados := ListItemsAtLocation(infoItem.x, infoItem.y, infoItem.z, infoItem.realm);
+	foreach itemEncontrado in itensEncontrados
+		Sleepms(2);
+		var serialOriginal := GetObjProperty(itemEncontrado, PROPNAME_CHAVE_ORIGINAL);
+		if (cstr(serialOriginal) == cstr(infoItem.serial))
+			return true;
+		endif
+	endforeach
+
+	return false;
 endfunction

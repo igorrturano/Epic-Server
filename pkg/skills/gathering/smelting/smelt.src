@@ -1,17 +1,15 @@
 // GRAPHICS:
-	// Elven Forge: 0x2DD8
-	// Elven Anvil: 0x2DD5 - 0x2DD6
-	// Soulforge Anvil: 0x4254 - 0x4257
-	// Forge: 0xB203 - 0xB20A
-	// Forge (com tampa): 0xB4F1 - 0xB502
+// Elven Forge: 0x2DD8
+// Elven Anvil: 0x2DD5 - 0x2DD6
+// Soulforge Anvil: 0x4254 - 0x4257
+// Forge: 0xB203 - 0xB20A
+// Forge (com tampa): 0xB4F1 - 0xB502
 
-
-include ":fls_core:fls_crafting";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":gathering:mining";
 include ":gathering:smelting/water";
 include ":gathering:smelting/smelt";
-include ":commands:debugsystem";
+include ":debug:Controller/DebugController";
 include ":gumps:epicGumps";
 
 const PROP_NAME := "Smelting";
@@ -24,7 +22,7 @@ program smelt_that_ore(who, item)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
-	if(!Accessible(who, item))
+	if (!Accessible(who, item))
 		return;
 	endif
 
@@ -45,7 +43,7 @@ function OpenGump(who, pot)
 	var tBoxAmt := dictionary{};
 	var options := array{};
 	foreach oreObjType in indexAbleToSmelt
-		var graphic := 0x1BF4; //TODO: MELHORAR ESSE GET
+		var graphic := 0x1BF4; // TODO: MELHORAR ESSE GET
 
 		if (ableToSmelt[oreObjType].ore.oreType == ORE_CHARCOAL)
 			graphic := 0xDF9;
@@ -59,11 +57,9 @@ function OpenGump(who, pot)
 			x2 += 50;
 			GFTextLine(gump, x2, y + 5, ableToSmelt[oreObjType].ore.color, ableToSmelt[oreObjType].ore.ingotName);
 			x2 += 160;
-			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 16, COLOR_YELLOW, ableToSmelt[oreObjType].items.amount, 0, 4);
-			options.append(struct{
-				"btnID" := btnID,
-				"oreObjType" := oreObjType
-				});
+			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 16, COLOR_YELLOW,
+												  ableToSmelt[oreObjType].items.amount, 0, 4);
+			options.append(struct{ "btnID" := btnID, "oreObjType" := oreObjType });
 			y += y_space;
 			btnID++;
 		endif
@@ -82,7 +78,7 @@ function OpenGump(who, pot)
 				toSmeltAmount := GFExtractData(input, tBoxAmt[option.oreObjType]);
 				toSmeltOre := ableToSmelt[option.oreObjType].ore;
 				toSmeltItems := ableToSmelt[option.oreObjType].items.toSmelt;
-				
+
 				foreach item in toSmeltItems
 					DebugMsg(who, DEBUG_SMELTING, "Item: " + item.desc);
 					DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
@@ -92,23 +88,23 @@ function OpenGump(who, pot)
 		endforeach
 	endif
 
-	if(!CheckSmelt(who, toSmeltOre, toSmeltItems, toSmeltAmount))
+	if (!CheckSmelt(who, toSmeltOre, toSmeltItems, toSmeltAmount))
 		return;
 	endif
 
 	SmeltOres(who, pot, toSmeltOre, toSmeltItems, toSmeltAmount);
-	
+
 endfunction
 
 function CheckSmelt(who, mainOre, itemsToSmelt, amount)
 	amount := CInt(amount); // POL BUGADO DO CARALHO!!!!!!!!!!!
 	foreach ore in itemsToSmelt
-		if(!ReserveItem(ore))
+		if (!ReserveItem(ore))
 			return 0;
 		endif
 
-		if(!Accessible(who, ore))
-			SendSysMessageEx(who, "Você não alcança "+ore.name, FONT_NORMAL, SSM_FAIL);
+		if (!Accessible(who, ore))
+			SendSysMessageEx(who, "Você não alcança " + ore.name, FONT_NORMAL, SSM_FAIL);
 			return 0;
 		endif
 
@@ -117,26 +113,15 @@ function CheckSmelt(who, mainOre, itemsToSmelt, amount)
 			return 0;
 		endif
 	endforeach
-	
+
 	if (!CheckForWater(who))
 		SendSysMessageEx(who, "Nenhuma fonte de água próxima encontrada.", SSM_FAIL);
 		return 0;
 	endif
 
-	if (mainOre.oreType == ORE_MITHRIL) //Se for Mithril verificar SoulForge
-		if (!CheckForSoulForge(who))
-			SendSysMessageEx(who, "Você precisa estar perto da Forja das Almas para usar este item.", SSM_FAIL);
-			return 0;
-		endif
-	else //Qualquer outro, pode ser qualquer forja
-		if(!CheckForForge(who))
-			SendSysMessageEx(who, "Você precisa estar perto de uma forja para usar este item.", SSM_FAIL);
-			return 0;
-		endif
-	endif
-
 	if (!mainOre.ingotObjType)
-		SendSysMessageEx(who, "Você não tem conhecimento para derreter nenhum material da bolsa.", SSM_FAIL);
+		SendSysMessageEx(who, "Você não tem conhecimento para derreter nenhum material da bolsa.",
+				   SSM_FAIL);
 		return 0;
 	endif
 
@@ -160,13 +145,13 @@ function getOresAbleToSmelt(bag, ableToSmelt, byref index)
 	var oresList := getAllOres();
 	var oresInBag := getOresInBag(oresList, bag);
 
-	//Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
-	foreach oreInOresList in oresList 
+	// Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
+	foreach oreInOresList in oresList
 		foreach oreInOresInBag in oresInBag
 			if (oreInOresInBag.objtype == oreInOresList.oreObjType)
 				var otherMaterialsNeeded := oreInOresList.neededToCraft;
 				var canSmelt := 0;
-				
+
 				// Checa se tem todos os materiais pra poder smeltar
 				var otherMaterialsFound := array{};
 				var otherObjTypesFound := array{};
@@ -199,7 +184,7 @@ function getOresAbleToSmelt(bag, ableToSmelt, byref index)
 					ableToSmelt[oreInOresInBag.objtype].+ore := oreInOresList;
 
 					// Adiciona os itemRef de todos os minérios necessários
-					var toSmelt := array{oreInOresInBag};
+					var toSmelt := array{ oreInOresInBag };
 
 					// Adiciona no array os demais minérios que serão derretidos
 					if (otherMaterialsFound.Size() > 0)
@@ -217,10 +202,7 @@ function getOresAbleToSmelt(bag, ableToSmelt, byref index)
 					endforeach
 
 					// Adiciona os items e a menor quantidade
-					ableToSmelt[oreInOresInBag.objtype].+items := struct{
-						"toSmelt" := toSmelt,
-						"amount" := amount
-					};
+					ableToSmelt[oreInOresInBag.objtype].+items := struct{ "toSmelt" := toSmelt, "amount" := amount };
 				endif
 			endif
 		endforeach
@@ -237,10 +219,7 @@ function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", FONT_NORMAL, 90);
 		endif
 
-		var prop := struct{
-			"ingot" := mainOre.ingotObjType,
-			"amount" := amt
-		};
+		var prop := struct{ "ingot" := mainOre.ingotObjType, "amount" := amt };
 		SetObjProperty(pot, PROP_NAME, prop);
 
 		foreach item in itemsToSmelt
@@ -279,7 +258,7 @@ function SmeltFail(who, ores, amt)
 	amt := CInt(amt); // POL BUGADO DO CARALHO!!!
 
 	var roll := RandomInt(6);
-	var lostBySkill := CInt(((AP_GetSkill(who, GATHERING)-100) * -1) / 10);
+	var lostBySkill := CInt(((AP_GetSkill(who, GATHERING) - 100) * -1) / 10);
 	var amtLost := roll + lostBySkill;
 
 	if (amtLost > amt)
@@ -291,17 +270,18 @@ function SmeltFail(who, ores, amt)
 	DebugMsg(who, DEBUG_SMELTING, $"Fator de perda pelo {GATHERING}: {lostBySkill}");
 	DebugMsg(who, DEBUG_SMELTING, $"Perdeu: {amtLost}");
 
-	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL, SSM_FAIL);
+	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL,
+				  SSM_FAIL);
 	foreach ore in ores
 		SubtractAmount(ore, CInt(amtLost));
-		SendSysMessageEx(who, "Você perdeu "+amtLost+" "+ore.desc, FONT_NORMAL, SSM_FAIL);
+		SendSysMessageEx(who, "Você perdeu " + amtLost + " " + ore.desc, FONT_NORMAL, SSM_FAIL);
 		SleepMS(50);
 	endforeach
 endfunction
 
 function CheckSmeltDifficulty(who, ore)
 	var diff := DetermineMiningDifficulty(ore.oreObjType);
-	if(SkillCheck(who, GATHERING, diff, ((diff / 2) + 10)) > 0)
+	if (SkillCheck(who, GATHERING, diff, ((diff / 2) + 10)) > 0)
 		return 1;
 	endif
 	return 0;

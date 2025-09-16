@@ -1,5 +1,5 @@
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -21,13 +21,12 @@ program SpellScript(params)
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))
-		targ.maxhp_mod := Cint(AP_GetSkill(who, ARCANA)) + 10;	
-        	PlaySoundEffect(targ, SFX_BLESS);
+		targ.maxhp_mod := Cint(AP_GetSkill(who, ARCANA)) + 10;
+		PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "Voce encantou a arma.", SSM_INFO);
 	else
 		SendSysMessageEx(who, "Esta magia so funciona em armas.", SSM_FAIL);
 	endif
 
-	
 	return 1;
-endprogram     
+endprogram

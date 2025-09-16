@@ -7,11 +7,11 @@ program comand(who)
 
 	var df := OpenDataFile(":tn:spawns");
 	if (!df)
-		df := CreateDataFile( ":tn:spawns", DF_KEYTYPE_INTEGER );
+		df := CreateDataFile(":tn:spawns", DF_KEYTYPE_INTEGER);
 	endif
-	
+
 	var spawns := array;
-	
+
 	SendSysMessageEx(who, "Resetando spawns.", SSM_INFO);
 
 	var spawnkill := 0;
@@ -19,11 +19,11 @@ program comand(who)
 		var spawnpoint := SystemFindObjectBySerial(spawn);
 
 		var spawns := GetObjProperty(spawnpoint, "Children");
-		
+
 		SetObjProperty(spawnpoint, "ResetMe", 1);
 		spawnkill := spawnkill + 1;
 		sleep(3);
-	endforeach 
+	endforeach
 
 	SendSysMessageEx(who, "Spawns: " + spawnkill, SSM_INFO);
 endprogram

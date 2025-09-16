@@ -1,6 +1,7 @@
 use uo;
 
 include ":gumps:gumps";
+include ":gumps:yesNo";
 
 program PromptDemo(who)
 	var prompt := "Are you sure you want to take this course of action?";
@@ -9,7 +10,7 @@ program PromptDemo(who)
 
 	var result := YesNo(who, prompt, yes, no);
 
-	if ( result )
+	if (result)
 		SendSysMessage(who, "You selected 'YES'");
 	else
 		SendSysMessage(who, "You selected 'NO'");

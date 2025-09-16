@@ -1,0 +1,16 @@
+use uo;
+
+program textcmd_ns(who, level)
+	level := CInt(level);
+
+	if (level >= 0)
+		who.setlightlevel(level, 9000);
+		SendSysMessage(who, "Nivel de luz " + level + " aplicado em voce.");
+	else
+		// -1 restores the real light level
+		SendSysMessage(who, "Restaurando sua visao normal.");
+		who.setlightlevel(1, 0);
+	endif
+
+	return 1;
+endprogram

@@ -1,4 +1,4 @@
-Use uo;
+use uo;
 use os;
 use cfgfile;
 use file;
@@ -7,13 +7,11 @@ include ":DiscordWebhook:outbound";
 include ":DiscordWebhook:report";
 
 program textcmd_testdiscordbot(who)
-	//var presetType := RequestInput(who, who.backpack, "Qual campo vc quer usar(narra):" );
-	var message1 := RequestInput(who, who.backpack, "Narre: (NAO utilize acentos!" );
-	var message := "**NARRAÇÃO** -> GM *"+who.acctname+"* narra: "+message1;
-	PresetDiscordMessage( message, "Narra");
+	// var presetType := RequestInput(who, who.backpack, "Qual campo vc quer usar(narra):" );
+	var message1 := RequestInput(who, who.backpack, "Narre: (NAO utilize acentos!");
+	var message := "**NARRAÇÃO** -> GM *" + who.acctname + "* narra: " + message1;
+	PresetDiscordMessage(message, "Narra");
 
-	
-//	LogToFile("log/discordbot.log", who.name+" ("+who.acctname+") editou "+outbound+" ("+who.acctname+") <br>", LOG_DATETIME);
-	
+// 	LogToFile("log/discordbot.log", who.name+" ("+who.acctname+") editou "+outbound+" ("+who.acctname+") <br>", LOG_DATETIME);
 
 endprogram

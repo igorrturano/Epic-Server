@@ -2,7 +2,7 @@
 use uo;
 use cfgfile;
 
-CONST BOOK := 0x702D;
+const BOOK := 0x702D;
 program fillbook(who)
 	if (who.cmdlevel < 1)
 		return;
@@ -10,25 +10,25 @@ program fillbook(who)
 	unloadconfigfile(":cooking:itemdesc");
 	var alchemy := ReadConfigFile(":cooking:cookbook");
 	alchemy := cint(GetConfigMaxIntKey(alchemy));
-	
-	var i:=1;
+
+	var i := 1;
 	var recipelist := {};
-	for(i:=1; i<= alchemy; i:=i+1)
+	for (i := 1; i <= alchemy; i := i + 1)
 		recipelist.append(i);
-		
+
 		if (i % 20 == 0)
 			var book := createiteminbackpack(who, BOOK);
 			setobjproperty(book, "recipes", recipelist);
 			recipelist := {};
 		endif
 	endfor
-	
+
 	recipelist := {};
-	var leftovers := alchemy - (alchemy%20);
-	for (i:=leftovers; i <=  alchemy; i:=i+1)
+	var leftovers := alchemy - (alchemy % 20);
+	for (i := leftovers; i <= alchemy; i := i + 1)
 		recipelist.append(i);
 	endfor
 	var book := createiteminbackpack(who, BOOK);
 	setobjproperty(book, "recipes", recipelist);
-	
+
 endprogram

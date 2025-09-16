@@ -12,6 +12,7 @@ use uo;
 use os;
 
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 /*
  * SendHTMLMessage(who, text)

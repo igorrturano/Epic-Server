@@ -1,8 +1,7 @@
 /*
  * $Id: endFeebleMind.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
-
+*/
 use uo;
 use os;
 include "include/say";
@@ -17,5 +16,3 @@ program TimedScript_EndFeebleMind(params)
 	SendSysMessageEx(mobile, "A Retribuicao Profana se dissipou.", SSM_FAIL);
 	return 1;
 endprogram
-
-

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 use vitals;
 
@@ -31,7 +31,7 @@ program SpellScript(params)
 	else
 
 		var espada := GetObjProperty(who, "cimitarravoadora");
-		if (espada != error )
+		if (espada != error)
 			var mob := SystemFindObjectBySerial(espada);
 			if (mob != error)
 				ApplyRawDamage(mob, 200);
@@ -39,44 +39,44 @@ program SpellScript(params)
 		endif
 
 		var globo;
-		if ( !targ.container )
+		if (!targ.container)
 
 			PrintText(targ, "*movendo-se*");
 
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z-1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z-1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z-1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z-1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
-			MoveObjectToLocation(targ, targ.x, targ.y, targ.z+1, targ.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 			sleepms(200);
 
@@ -86,13 +86,12 @@ program SpellScript(params)
 			globo := CreateNpcFromTemplate(":brainai:cimitarra", who.x, who.y, who.z, 0, who.realm);
 		endif
 
-
 		PrintText(globo, "*rodopia no ar*");
 
-		DestroyItem(targ);			
+		DestroyItem(targ);
 
 		globo.SetMaster(who);
-				
+
 		SetObjProperty(globo, "owner", who.serial);
 		SetObjProperty(globo, "name", globo.name);
 		SetObjproperty(globo, "script", globo.script);
@@ -100,11 +99,10 @@ program SpellScript(params)
 		SetObjProperty(globo, "summoned", 1);
 		globo.script := ":ghaia:tamed";
 		RestartScript(globo);
-		TS_StartTimer(globo, "summon", GetSpellDuration(who)+180);
+		TS_StartTimer(globo, "summon", GetSpellDuration(who) + 180);
 		SetObjProperty(who, "cimitarravoadora", globo.serial);
-
 
 	endif
 
 	return 1;
-endprogram    
+endprogram

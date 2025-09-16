@@ -1,11 +1,10 @@
 use uo;
 
-include ":equipsys:props";
 include "include/client";
 include "include/say";
 
 function setBonus(who, item, bonus)
-	var prop := item.getAttrBase();
+	var prop; // Vai bugar após o EqupiSys v3.0 - É intencional, pra poder rastrear os outros bugs....
 	var material := item.getMaterialID();
 	bonus := CInt(bonus); // POL BUGADO DO CARALHO!!!!!!!!!!
 	
@@ -69,7 +68,7 @@ function setBonus(who, item, bonus)
 		endcase
 	endif
 
-	item.setAttrBase(prop);
+	// item.setAttrBase(prop);
 	SendSysMessageEx(who, "Você encantou o objeto.", SSM_INFO);
 	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(who, SFX_SPELL_HEAL);

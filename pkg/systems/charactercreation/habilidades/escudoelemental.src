@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":combat:damage";
 include ":attributes:attributes";
@@ -8,8 +8,8 @@ include ":spells:include/swordmage";
 
 program manobra(who)
 
-	var element ;
-	element := 	GetObjProperty(who.weapon, "#elementalweapon");
+	var element;
+	element := GetObjProperty(who.weapon, "#elementalweapon");
 	element := element.type;
 
 	if (element == "Fire")
@@ -18,10 +18,9 @@ program manobra(who)
 	elseif (element == "Cold")
 		SendSysMessageEx(who, "Voce esta protegido do gelo.", SSM_INFO);
 		TS_StartTimer(who, "comod", 360, 100);
-	elseif( element == "Energy")
+	elseif (element == "Energy")
 		SendSysMessageEx(who, "Voce esta protegido da energia.", SSM_INFO);
 		TS_StartTimer(who, "enmod", 360, 100);
 	endif
 
-endprogram 
- 
+endprogram

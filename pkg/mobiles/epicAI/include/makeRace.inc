@@ -1,12 +1,11 @@
 include "include/client";
-
 function makeRace(mobile, race := 0)
     if (!race)
         var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
         race := races[RandomInt(races.size()) + 1];
         print("Making race: " + race);
     endif
-    
+  
    case (race)
       ANAO:   makeDwarven(mobile);
       ELFO:   makeElven(mobile);
@@ -28,16 +27,31 @@ function makeDwarven(mobile)
       mobile.graphic := 1829;
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["list"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
-   mobile.color := CInt(skin_colors[RandomInt(skin_colors.size()) + 1]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["list"];
+      var skin_colors := GetConfigStringArray(skin_elem, "color");
+      mobile.color := CInt(skin_colors[RandomInt(skin_colors.size()) + 1]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Anao"];
@@ -59,7 +73,7 @@ function makeDwarven(mobile)
    EquipItem(mobile, hair);
 
    // Get beard styles for males
-   if (mobile.gender == 0)
+   if (isMale(mobile) == 1)
       var beard_types := types_cfg["dwarwen_beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -85,16 +99,31 @@ function makeElven(mobile)
       mobile.graphic := 1831; // Female elf graphic
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["elfo"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
-   mobile.color := CInt(skin_colors[RandomInt(skin_colors.size()) + 1]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["elfo"];
+      var skin_colors := GetConfigStringArray(skin_elem, "color");
+      mobile.color := CInt(skin_colors[RandomInt(skin_colors.size()) + 1]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Elfo"];
@@ -128,16 +157,31 @@ function makeDrow(mobile)
       mobile.graphic := 1831; // Female elf graphic
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["drow"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
-   mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["drow"];
+      var skin_colors := GetConfigStringArray(skin_elem, "color");
+      mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Drow"];
@@ -169,16 +213,31 @@ function makeOrc(mobile)
       mobile.graphic := 1833; // Female orc graphic
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["orc"];
-   var skin_colors := GetConfigStringArray(skin_elem, "Color");
-   mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["orc"];
+      var skin_colors := GetConfigStringArray(skin_elem, "Color");
+      mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Orc"];
@@ -200,7 +259,7 @@ function makeOrc(mobile)
    EquipItem(mobile, hair);
 
    // Add beard for male orcs
-   if (mobile.gender == 0)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1)
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -226,16 +285,31 @@ function makePolski(mobile)
       mobile.graphic := 1829;
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["list"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
-   mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["list"];
+      var skin_colors := GetConfigStringArray(skin_elem, "color");
+      mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Index"];
@@ -267,16 +341,31 @@ function makeHuman(mobile)
       mobile.graphic := 401; // Female human graphic
    endif
 
+   // Get NPC config to check for existing colors
+   var npc_elem := NPC_GetNPCConfig(mobile);
+   
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
 
-   // Get skin colors from config
-   var skin_elem := skin_cfg["list"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
-   mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
-   mobile.truecolor := mobile.color;
+   // Set skin color - use NPC config if available, otherwise random
+   if (npc_elem.Color || npc_elem.TrueColor)
+      if (npc_elem.Color)
+         mobile.color := CInt(npc_elem.Color);
+      endif
+      if (npc_elem.TrueColor)
+         mobile.truecolor := CInt(npc_elem.TrueColor);
+      else
+         mobile.truecolor := mobile.color;
+      endif
+   else
+      // Get skin colors from config
+      var skin_elem := skin_cfg["list"];
+      var skin_colors := GetConfigStringArray(skin_elem, "color");
+      mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
+      mobile.truecolor := mobile.color;
+   endif
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Imperial"];
@@ -298,7 +387,7 @@ function makeHuman(mobile)
    EquipItem(mobile, hair);
 
    // Add beard for male humans (50% chance)
-   if (mobile.gender == 0 && RandomInt(2) == 1)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1)
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -316,3 +405,15 @@ function makeHuman(mobile)
    return 1;
 endfunction
 
+function isMale(mobile)
+   var female := GetObjProperty(mobile, "female");   
+   var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+   var result := 0;
+   if (female || mobile.gender == 1 || Cint(isBoss.gender) == 1)
+      result := 0;
+   else 
+      result := 1;
+   endif
+   
+   return result;
+endfunction

@@ -18,8 +18,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var tier := boss.tier != 0 ? boss.tier : npc_elem.Tier;
+    var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
     // Set basic properties
     if (boss.name)
@@ -29,6 +28,11 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.color)
         npc.color := CInt(boss.color);
         npc.truecolor := CInt(boss.color);
+    endif
+
+    if (boss.description)
+        SetObjProperty(npc, "descmodboss", boss.description + "<br>");
+        updateToolTip(npc);
     endif
     
     if (boss.trueboss)
@@ -246,35 +250,63 @@ function CreateEpicBoss(boss, x, y, z, realm)
         endforeach
         
         SetObjProperty(npc, "CombatEvents", cleaned_events);
-        start_script(":epicspawn:scripts/combatEventsControl", array{npc});
-    endif
-    
-    // Set timedscripts
-    if (boss.timedscripts && boss.timedscripts.size() > 0)
-        var timedscripts_array := array{};
-        foreach script in (boss.timedscripts)
-            var script_struct := struct{};
-            script_struct.+name := script.name;
-            script_struct.+target := script.target;
-            script_struct.+duration := script.duration;
-            script_struct.+level := script.level;
-            
-            timedscripts_array.append(script_struct);
-        endforeach
-        SetObjProperty(npc, "TimedScripts", timedscripts_array);
-        
-        // Start the TimedScript control process
-        start_script(":epicAI:scripts/timedScriptControl", array{npc});
+        var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
+        if(res == error)
+            PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
+        endif
     endif
 
     if (boss.flee_health)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
     endif
-    if (boss.class)
-        SetObjProperty(npc, "subclass", boss.class);
+
+    if (boss.classe)
+        SetObjProperty(npc, "subclass", boss.classe);
+    endif
+    
+    if (boss.preferred_target)
+        SetObjProperty(npc, "preferred_target", boss.preferred_target);
     endif
 
+    if (boss.target_priority)
+        SetObjProperty(npc, "target_priority", boss.target_priority);
+    endif
+
+    // Make sure this line exists when setting properties on the NPC
+    SetObjProperty(npc, "DeathEvents", boss.deathevents);
+   
+    // Set patrol points if they exist
+    if (boss.patrol_points && boss.patrol_points.size() > 0)
+        SetObjProperty(npc, "patrol_points", boss.patrol_points);
+        SetObjProperty(npc, "#current_patrol_point", 1);
+    endif
     
+    // Add teleport locations to boss structure
+    if (boss.teleport_locations && boss.teleport_locations.size() > 0)
+        SetObjProperty(npc, "teleport_locations", boss.teleport_locations);
+    endif
+
+    if (boss.natural_traits && boss.natural_traits.size() > 0)
+        SetObjProperty(npc, "natural_traits", boss.natural_traits);
+    endif
+
+    // Add Equipment if selected
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
+        if (weapon)
+            SetObjProperty(npc, "specific_weapon", weapon);
+        endif
+    endif
+
+    // And when creating the NPC:
+    if (boss.spell_school)
+        SetObjProperty(npc, "SpellSchool", boss.spell_school);
+    endif
+
+    if (boss.custom_abilities && boss.custom_abilities.size() > 0)
+        SetObjProperty(npc, "CustomAbilities", boss.custom_abilities);
+    endif
+
     if (boss.preferred_target)
         SetObjProperty(npc, "preferred_target", boss.preferred_target);
     endif
@@ -570,10 +602,8 @@ function ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons,
     
     // Add Cancel button
     GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
-    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
-    
+        
     var input := GFSendGump(who, gump);
-    
     // Handle pagination buttons
     if (input[0] == 900) // Previous page
         return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, weapon_type, page - 1);
@@ -632,7 +662,6 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
     
     // Add Cancel button
     GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
-    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
     
     var input := GFSendGump(who, gump);
     
@@ -730,7 +759,6 @@ function ShowMagicSchoolSelection(who, title, gump_width, gump_height)
     
     // Add Cancel button
     GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 0);
-    GFTextLine(gump, 240, 350, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -904,13 +932,9 @@ endfunction
 function HandleAddCustomAbility(who, byref form_data)
     var abilities := GetAvailableCustomAbilities();
     
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450);
-    GFResizePic(gump, 15, 15, 9350, 470, 420);
+    var gump := GFECreateGump("Select Custom Behavior", 450, 600);
     
-    GFTextMid(gump, 0, 25, 500, 1153, "Select Custom Behavior");
-    
-    var y_pos := 60;
+    var y_pos := 80;
     var btn_id := 1;
     var ability_map := dictionary{}; // To track button-to-ability mapping
     
@@ -936,7 +960,6 @@ function HandleAddCustomAbility(who, byref form_data)
 
     // Add Cancel button
     GFAddButton(gump, 30, y_pos + 20, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 60, y_pos + 20, 33, "Cancel");
     
     var result := GFSendGump(who, gump);
     
@@ -992,7 +1015,6 @@ function ShowTargetSelectionMenu(who, byref form_data)
     
     // Cancel button
     GFAddButton(gump, 150, 380, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 185, 380, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -1033,7 +1055,6 @@ function ShowTargetPriorityMenu(who, byref form_data)
     
     // Cancel button
     GFAddButton(gump, 150, 240, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 185, 240, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     

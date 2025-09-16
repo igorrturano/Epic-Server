@@ -15,7 +15,7 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 	var elem := FindConfigElem(cfg, armor.objtype);
 
 	if (!GetObjProperty(armor, "encerada") && elem.TipoProtecao)
-		bonus := RandomDiceRoll("1d4");
+		bonus := 1;
 	endif
 
 	if (armor)

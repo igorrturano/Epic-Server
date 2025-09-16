@@ -5,7 +5,7 @@ use util;
 program iniciaVigilante()
 
 	var script := Start_Script(":destroyable:vigilanteDestruiveis");
-	if ( script.errortext )
+	if (script.errortext)
 		SysLog(script.errortext);
 	else
 		print("Starting Vigilante de itens destruídos... OK");
