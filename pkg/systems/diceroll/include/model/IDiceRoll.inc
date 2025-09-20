@@ -1,5 +1,5 @@
-class IDamageDice()
-	uninit function IDamageDice(this);
+class IDiceRoll()
+	uninit function IDiceRoll(this);
 
 	uninit function SetDie(this, value); // e.g. "1d6+5"
 
