@@ -5,6 +5,7 @@ class CombatAbility(ICombatAbility)
 	var _description := "";
 	var _momentum := COMBATABILITY_MOMENTUM::ONHIT;
 	var _cooldown := 0; // em segundos
+	var _effectDuration := 0; // em segundos
 	var _range := 1; // em tiles
 	var _damage := DamageDice();
 
