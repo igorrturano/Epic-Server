@@ -1,8 +1,10 @@
 include ":datafile:DFTools";
 include ":achievements:model/Achievement";
 
+const pkg_name := ":achievements:";
+
 function SaveAchievement(type, who, achievement)
-	var DFController := DFTools(":achievements:" + type);
+	var DFController := DFTools(pkg_name + type);
 	var elem := Hex(who.serial);
 	var key := CStr(achievement.GetRef());
 	var prop := DFController.LoadValue(elem, key) ?: dictionary{};
@@ -13,11 +15,10 @@ function SaveAchievement(type, who, achievement)
 endfunction
 
 function LoadAchievement(type, who, key, name)
-	var DFController := DFTools(":achievements:" + type);
+	var DFController := DFTools(pkg_name + type);
 	var prop := DFController.LoadValue(Hex(who.serial), key);
-	var achiev;
+	var achiev := Achievement(name, key);
 
-	achiev := Achievement(name, key);
 	achiev.Deserialize(prop[name]);
 
 	return achiev;
@@ -28,7 +29,7 @@ function LoadListAchievement(who)
 	var types := array{ ACHIEVEMENT_COMBAT };
 
 	foreach type in (types)
-		var DFController := DFTools(":achievements:" + type);
+		var DFController := DFTools(pkg_name + type);
 		var elemKeys := DFController.GetElementKeys(Hex(who.serial));
 
 		if (elemKeys.size() < 1)
