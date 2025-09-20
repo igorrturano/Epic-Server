@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -16,17 +16,18 @@ program TimedScript_Clumsy(params)
 	var random_move := RandomDiceroll("1d2");
 	sleep(1);
 	mobile.concealed := 1;
-	if (random_move==1)
-	Moveobjecttolocation(mobile, mobile.x+random_x, mobile.y+random_y, mobile.z, mobile.realm, MOVEOBJECT_NORMAL);
+	if (random_move == 1)
+		Moveobjecttolocation(mobile, mobile.x + random_x, mobile.y + random_y, mobile.z, mobile.realm,
+					   MOVEOBJECT_NORMAL);
 	else
-	Moveobjecttolocation(mobile, mobile.x-random_x, mobile.y-random_y, mobile.z, mobile.realm, MOVEOBJECT_NORMAL);
+		Moveobjecttolocation(mobile, mobile.x - random_x, mobile.y - random_y, mobile.z, mobile.realm,
+					   MOVEOBJECT_NORMAL);
 	endif
-	    var nearby := ListMobilesNearLocation( mobile.x ,mobile.y, mobile.z, 8);
-            foreach char in nearby
-                var event := struct{"type":=EVID_TAUNT, "source":=char};
-                SendEvent(mobile, event);
-            endforeach
-	
+	var nearby := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 8);
+	foreach char in nearby
+		var event := struct{ "type" := EVID_TAUNT, "source" := char };
+		SendEvent(mobile, event);
+	endforeach
+
 	return 1;
 endprogram
-

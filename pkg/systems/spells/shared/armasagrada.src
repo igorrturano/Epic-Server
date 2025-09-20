@@ -1,7 +1,6 @@
 use uo;
 use os;
 
-
 program armasagrada(param)
 
 	var arma := param[1];
@@ -15,6 +14,5 @@ program armasagrada(param)
 
 	arma.color := originalColor;
 	EraseObjProperty(arma, "armaSagradaOriginalColor");
-
 
 endprogram

@@ -8,7 +8,7 @@ use os;
 
 program LogOff(mobile)
 
-        EraseObjProperty( mobile, "#AuthCodeGiven" );
-        
+	EraseObjProperty(mobile, "#AuthCodeGiven");
+
 	return 1;
 endprogram

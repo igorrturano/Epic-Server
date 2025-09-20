@@ -11,5 +11,3 @@ program TimedScript_Paralysis(params)
 	SetObjProperty(mobile, "#deathtime", 1);
 	return 1;
 endprogram
- 
- 

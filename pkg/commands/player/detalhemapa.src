@@ -1,11 +1,9 @@
 use uo;
 
-
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
 include "include/say";
-
 
 program map(who)
 
@@ -20,7 +18,7 @@ program map(who)
 
 endprogram
 
-function SendPinInfoGump(who,  map)
+function SendPinInfoGump(who, map)
 
 	var gumpRP := GFCreateGump();
 	GFClosable(gumpRP, 1);
@@ -38,26 +36,26 @@ function SendPinInfoGump(who,  map)
 		if (name == error)
 			name := "Marca sem nome";
 		endif
-		GFTexTLine(gumpRP,  30, y, 270, id +  ": " + name);
-		GFAddButton(gumpRP, 210, y,  4011, 4012, GF_CLOSE_BTN, (100+id) );
-		GFAddButton(gumpRP, 245, y,  4017, 4018, GF_CLOSE_BTN, (200+id) );
+		GFTexTLine(gumpRP, 30, y, 270, id + ": " + name);
+		GFAddButton(gumpRP, 210, y, 4011, 4012, GF_CLOSE_BTN, (100 + id));
+		GFAddButton(gumpRP, 245, y, 4017, 4018, GF_CLOSE_BTN, (200 + id));
 		y := y + 20;
 		id := id + 1;
 	endforeach
 
 	var input := GFSendGump(who, gumpRP);
 
-	if (input[0] > 200 )
-		map.erasepin(input[0]-201);
-		sendsysmessage(who, "Deletando marca " + (input[0]-200));
+	if (input[0] > 200)
+		map.erasepin(input[0] - 201);
+		sendsysmessage(who, "Deletando marca " + (input[0] - 200));
 		var newpininfo := dictionary;
-		var delpin := input[0]-200;
+		var delpin := input[0] - 200;
 		foreach pin in (pininfo.keys())
 			if (pin < delpin)
 				newpininfo[pin] := pininfo[pin];
 			else
 				if (pin != delpin)
-					newpininfo[pin-1] := pininfo[pin];
+					newpininfo[pin - 1] := pininfo[pin];
 				endif
 			endif
 		endforeach
@@ -65,7 +63,7 @@ function SendPinInfoGump(who,  map)
 
 	elseif (input[0] > 100)
 		var nome := RequestGump(who, "Digite o nome dessa marca.");
-		pininfo[input[0]-100].name := nome;
+		pininfo[input[0] - 100].name := nome;
 		SetObjProperty(map, "pininfo", pininfo);
 		SendSysMessage(who, "Nome alterado.");
 	endif

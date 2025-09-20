@@ -10,15 +10,13 @@ program settooltip(who)
 		return;
 	endif
 
-	 
 	AddItemDescMod(who, item);
 	SetName(item, item.desc);
 endprogram
 
-
 function AddItemDescMod(who, item)
-	var descmod:=GetObjProperty(item,"descmod");
+	var descmod := GetObjProperty(item, "descmod");
 	var str := SmallRequestGump(who, "Descreva o item", 0);
 
-    SetObjProperty(item, "descmod", str + "<br>");
+	SetObjProperty(item, "descmod", str + "<br>");
 endfunction

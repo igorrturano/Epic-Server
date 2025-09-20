@@ -1,5 +1,5 @@
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -18,19 +18,18 @@ program SpellScript(params)
 	if (!targ)
 		return;
 	endif
-	if ( !targ.isa(POLCLASS_MOBILE) )
+	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(targ, "Voce so pode usar esta magia em seres vivos.", SSM_FAIL);
-		return ;
+		return;
 	endif
 
-        PlaySoundEffect(targ, SFX_BLESS);
-        PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_BORDER, 7, 16);
+	PlaySoundEffect(targ, SFX_BLESS);
+	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_BORDER, 7, 16);
 
-	var level := (CInt(AP_GetSkill(who, THEOLOGY))/5)+5;
-	TS_StartTimer(targ, "fimod", GetSpellDuration(AP_GetSkill(who,THEOLOGY)), level); //20 min
+	var level := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + 5;
+	TS_StartTimer(targ, "fimod", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), level); // 20 min
 
 	SendSysMessageEx(targ, "Voce esta protegido contra o fogo.", SSM_INFO);
 
-	
 	return 1;
-endprogram  
+endprogram

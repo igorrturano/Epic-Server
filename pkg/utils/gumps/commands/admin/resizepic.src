@@ -2,10 +2,10 @@ use uo;
 
 include ":gumps:gumps";
 
-Program GumpTest(who, gump_id)
+program GumpTest(who, gump_id)
 	gump_id := CInt(gump_id);
 
-	if ( !gump_id )
+	if (!gump_id)
 		SendSysMessage(who, "Error - no gump ID to resize was sent.");
 		return 0;
 	endif

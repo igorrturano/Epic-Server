@@ -26,17 +26,17 @@ exported function CanDie(mobile)
 				if (call_stack && "speaklastwords" in call_stack)
 					return 1;
 				endif
-				
+
 				var processed := GetObjProperty(mobile, "DeathEventsProcessed");
 				if (processed)
 					return 1;
 				endif
 			endif
-			
+
 			print("TRACE: candie - Still processing events, preventing death");
 			return 0;
 		endif
-		
+
 		print("TRACE: candie - Found " + death_events.size() + " death events");
 		var i := 1;
 		foreach event in (death_events)
@@ -46,8 +46,8 @@ exported function CanDie(mobile)
 
 		// Set processing flag to prevent duplicate processing
 		SetObjProperty(mobile, "ProcessingDeathEvents", 1);
-		var process := start_script(":epicspawn:scripts/deathEventsControl", array{mobile});
-		
+		var process := start_script(":epicspawn:scripts/deathEventsControl", array{ mobile });
+
 		if (process.errortext)
 			print("TRACE: candie - Error starting death events controller: " + process.errortext);
 			EraseObjProperty(mobile, "ProcessingDeathEvents");
@@ -58,6 +58,6 @@ exported function CanDie(mobile)
 			return 0; // Prevent death until events are processed
 		endif
 	endif
-	
+
 	return 1;
 endfunction

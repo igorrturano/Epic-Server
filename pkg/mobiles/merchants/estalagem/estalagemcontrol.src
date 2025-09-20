@@ -10,17 +10,16 @@ include ":keys:key";
 include "include/client";
 include ":itemutils:itemdesc";
 
-CONST CYCLE_WAIT := 60 * 180;
-const MOEDAS			:= 47715;
-const MOEDAS_COBRE		:= 0xba63; //id das moedas de cobre
-const MOEDAS_PRATA		:= 0xba64; //id das moedas de prata
-const MOEDAS_OURO		:= 0xba65; //id das moedas de ouro
-const GOLD_COIN			:= 0xeed;  //id das moedas de ouro (outro tipo válido)
-
+const CYCLE_WAIT := 60 * 180;
+const MOEDAS := 47715;
+const MOEDAS_COBRE := 0xba63; // id das moedas de cobre
+const MOEDAS_PRATA := 0xba64; // id das moedas de prata
+const MOEDAS_OURO := 0xba65; // id das moedas de ouro
+const GOLD_COIN := 0xeed; // id das moedas de ouro (outro tipo válido)
 
 program GlobalInnControl()
-	//set_priority(1);
-	while(1)
+	// set_priority(1);
+	while (1)
 		InnKeeperChecks();
 		sleep(CYCLE_WAIT);
 	endwhile
@@ -46,8 +45,9 @@ function InnKeeperChecks()
 		if (!mural && !SystemFindObjectBySerial(cint(mural)) && !GetObjProperty(npc, "noglobalmsg"))
 			var players := EnumerateOnlineCharacters();
 			foreach player in players
-				if (player.cmdlevel > 2 )
-					SendSysMessageEx(player, "Bulletin Board: "+npc.name+" em '"+npc.x+" "+npc.y+" "+npc.z+"' nao possui Mural!", SSM_FAIL);
+				if (player.cmdlevel > 2)
+					SendSysMessageEx(player, "Bulletin Board: " + npc.name + " em '" + npc.x + " "
+									  + npc.y + " " + npc.z + "' nao possui Mural!", SSM_FAIL);
 				endif
 			endforeach
 		endif
@@ -70,12 +70,12 @@ function InnKeeperChecks()
 
 				if (ticks >= renttime)
 					var bank_region := GetObjProperty(npc, "City");
-					if ( !bank_region )
+					if (!bank_region)
 						bank_region := CP_DEFAULT_AREA;
 					endif
 					var player2 := SystemFindObjectBySerial(quartos[i].inquilino, SYSFIND_SEARCH_OFFLINE_MOBILES);
 
-					if ( !debitoEmConta(bank_region, player2, quartos[i].custo) )
+					if (!debitoEmConta(bank_region, player2, quartos[i].custo))
 						var door := SystemFindObjectBySerial(quarto.door);
 						Eraseobjproperty(door, "LockId");
 						quartos[i].inquilino := 0;
@@ -101,42 +101,41 @@ function InnKeeperChecks()
 					endif
 				endif
 			endif
-			i := i +1;
+			i := i + 1;
 			sleepms(20);
 		endforeach
-		x := x+1;
+		x := x + 1;
 		sleepms(20);
 	endwhile
 	return 1;
 endfunction
 
 function DestroyRentItens(x, y, z, r, player, npc)
-	var objects := ListItemsNearLocation( x, y, z, 10, r);
+	var objects := ListItemsNearLocation(x, y, z, 10, r);
 	var backpack;
 	if (player && player != error)
-		backpack := CreateItemAtLocation( x, y, z, hex(3701), 1, r);
+		backpack := CreateItemAtLocation(x, y, z, hex(3701), 1, r);
 		backpack.desc := player.name;
 	endif
 	foreach obj in objects
-		if (CheckLosBetween( x, y, z, obj.x, obj.y, obj.z, r))
+		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				if (player && player != error)
 					obj.movable := 1;
-					MoveItemToContainer( obj, backpack);
+					MoveItemToContainer(obj, backpack);
 				else
 					DestroyItem(obj);
 				endif
 
-
 			elseif (obj.IsA(POLCLASS_CONTAINER))
-				var container := EnumerateItemsInContainer( obj, ENUMERATE_IGNORE_LOCKED );
+				var container := EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED);
 				foreach item in container
-				if (player && player != error)
-					item.movable := 1;
-					MoveItemToContainer( item, backpack);
-				else
-					DestroyItem(item);
-				endif
+					if (player && player != error)
+						item.movable := 1;
+						MoveItemToContainer(item, backpack);
+					else
+						DestroyItem(item);
+					endif
 					sleepms(20);
 				endforeach
 			endif
@@ -144,20 +143,20 @@ function DestroyRentItens(x, y, z, r, player, npc)
 		sleepms(20);
 	endforeach
 	if (player && player != error)
-		if ( !npc.backpack )
+		if (!npc.backpack)
 			Set_Critical(1);
 			var newpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1, npc.realm);
-			if ( !EquipItem(npc, newpack) )
+			if (!EquipItem(npc, newpack))
 				DestroyItem(newpack);
 				return 0;
 			endif
 		endif
-		MoveItemToContainer( backpack, npc.backpack);
+		MoveItemToContainer(backpack, npc.backpack);
 		var confiscado := GetObjProperty(npc, "confiscados");
 		if (!confiscado || confiscado == error)
 			confiscado := struct;
 		endif
-		confiscado.insert(""+player.serial, backpack.serial);
+		confiscado.insert("" + player.serial, backpack.serial);
 		SetObjProperty(npc, "confiscados", confiscado);
 	endif
 	return 1;
@@ -170,7 +169,7 @@ function debitoEmConta(bank_region, player, amount)
 		SendSysMEssage(player, "Voce nao tem banco");
 		return 0;
 	endif
-	//Verifica o valos disnonível no banco
+	// Verifica o valos disnonível no banco
 	Set_Critical(1);
 	var recursosDisponiveis := CalculaRecursosDisponiveisBank(bank_box, MOEDAS_COBRE);
 	SendSysMessage(player, "Valor inicial disponivel no banco: " + recursosDisponiveis[5]);
@@ -181,14 +180,14 @@ function debitoEmConta(bank_region, player, amount)
 	else
 		var totalPago := 0;
 		var faltaPagar := amount;
-		var dicionarioAtual := Dictionary;
+		var dicionarioAtual := dictionary;
 		var recursos := recursosDisponiveis[5];
 		var diferenca;
 		var moeda;
 		if (recursos >= faltaPagar)
-			if (faltaPagar > 0) //Tenta pagar com os cobres
+			if (faltaPagar > 0) // Tenta pagar com os cobres
 				dicionarioAtual := recursosDisponiveis[1];
-				foreach serial in dicionarioAtual //Verifica se da pra pagar só com moedas de cobre
+				foreach serial in dicionarioAtual // Verifica se da pra pagar só com moedas de cobre
 					moeda := SystemFindObjectBySerial(_serial_iter);
 					diferenca := faltaPagar - moeda.amount;
 					if (diferenca > 0)
@@ -204,17 +203,17 @@ function debitoEmConta(bank_region, player, amount)
 					endif
 				endforeach
 			endif
-			if (faltaPagar > 0) //Tenta pagar com as pratas
+			if (faltaPagar > 0) // Tenta pagar com as pratas
 				dicionarioAtual := recursosDisponiveis[2];
-				foreach serial in dicionarioAtual //Verifica se da pra pagar só com moedas de cobre
+				foreach serial in dicionarioAtual // Verifica se da pra pagar só com moedas de cobre
 					moeda := SystemFindObjectBySerial(_serial_iter);
-					diferenca := faltaPagar - moeda.amount*10;
+					diferenca := faltaPagar - moeda.amount * 10;
 					if (diferenca > 0)
-						totalPago += moeda.amount*10;
-						faltaPagar -= moeda.amount*10;
+						totalPago += moeda.amount * 10;
+						faltaPagar -= moeda.amount * 10;
 						DestroyItem(moeda);
 					else
-						var troco := moeda.amount*10 - faltaPagar;
+						var troco := moeda.amount * 10 - faltaPagar;
 						DestroyItem(moeda);
 						totalPago += faltaPagar;
 						DarTrocoBank(player, bank_box, troco);
@@ -224,21 +223,21 @@ function debitoEmConta(bank_region, player, amount)
 					endif
 				endforeach
 			endif
-			if (faltaPagar > 0) //Tenta pagar com os ouros
+			if (faltaPagar > 0) // Tenta pagar com os ouros
 				dicionarioAtual := recursosDisponiveis[3];
-				foreach serial in dicionarioAtual //Verifica se da pra pagar só com moedas de cobre
+				foreach serial in dicionarioAtual // Verifica se da pra pagar só com moedas de cobre
 					moeda := SystemFindObjectBySerial(_serial_iter);
-					//print("Serial: "+ _serial_iter +" Quantidade: "+ serial);
-					//print("Moeda: "+ moeda.amount +" ");
-					//print("Falta Pagar: "+ faltaPagar +" ");
-					diferenca := faltaPagar - moeda.amount*100;
+					// print("Serial: "+ _serial_iter +" Quantidade: "+ serial);
+					// print("Moeda: "+ moeda.amount +" ");
+					// print("Falta Pagar: "+ faltaPagar +" ");
+					diferenca := faltaPagar - moeda.amount * 100;
 					if (diferenca > 0)
-						totalPago += moeda.amount*100;
-						faltaPagar -= moeda.amount*100;
+						totalPago += moeda.amount * 100;
+						faltaPagar -= moeda.amount * 100;
 						DestroyItem(moeda);
 					else
-						//print("Vai pagar com ouro");
-						var troco := moeda.amount*100 - faltaPagar;
+						// print("Vai pagar com ouro");
+						var troco := moeda.amount * 100 - faltaPagar;
 						DestroyItem(moeda);
 						totalPago += faltaPagar;
 						DarTrocoBank(player, bank_box, troco);
@@ -261,12 +260,12 @@ function debitoEmConta(bank_region, player, amount)
 endfunction
 
 function CalculaRecursosDisponiveisBank(bank_box, cost_type)
-	var recursosDisponiveis := Dictionary;
-	recursosDisponiveis[1] := Dictionary; //Cobre
-	recursosDisponiveis[2] := Dictionary; //Prata
-	recursosDisponiveis[3] := Dictionary; //Ouro
-	recursosDisponiveis[4] := Dictionary; //Outros
-	recursosDisponiveis[5] := 0; //Total
+	var recursosDisponiveis := dictionary;
+	recursosDisponiveis[1] := dictionary; // Cobre
+	recursosDisponiveis[2] := dictionary; // Prata
+	recursosDisponiveis[3] := dictionary; // Ouro
+	recursosDisponiveis[4] := dictionary; // Outros
+	recursosDisponiveis[5] := 0; // Total
 
 	foreach item in EnumerateItemsInContainer(bank_box)
 		if (item.objtype == MOEDAS_COBRE)
@@ -274,15 +273,14 @@ function CalculaRecursosDisponiveisBank(bank_box, cost_type)
 			recursosDisponiveis[5] += item.amount;
 		elseif (item.objtype == MOEDAS_PRATA)
 			recursosDisponiveis[2][item.serial] := item.amount;
-			recursosDisponiveis[5] += item.amount*10;
+			recursosDisponiveis[5] += item.amount * 10;
 		elseif (item.objtype == MOEDAS_OURO || item.objtype == GOLD_COIN)
 			recursosDisponiveis[3][item.serial] := item.amount;
-			recursosDisponiveis[5] += item.amount*100;
+			recursosDisponiveis[5] += item.amount * 100;
 		endif
 	endforeach
 	return recursosDisponiveis;
 endfunction
-
 
 function DarTrocoBank(player, bank_box, ValorTroco)
 	var faltaPagar := ValorTroco;
@@ -290,25 +288,25 @@ function DarTrocoBank(player, bank_box, ValorTroco)
 	if(ValorTroco > 0)
 		SendSysMessage(player, "Restam no banco:"); //Comentar quando for colocar em produção
 	endif
-	*/
-	var ouro := CInt(faltaPagar/100);
-	if(ouro > 0)
+*/
+	var ouro := CInt(faltaPagar / 100);
+	if (ouro > 0)
 		CreateItemInContainer(bank_box, MOEDAS_OURO, ouro);
-		//SendSysMessage(player, ouro + " moedas de ouro");
+	// SendSysMessage(player, ouro + " moedas de ouro");
 	endif
-	faltaPagar -= CInt(ouro*100);
+	faltaPagar -= CInt(ouro * 100);
 
-	var prata := CInt(faltaPagar/10);
-	if(prata > 0)
+	var prata := CInt(faltaPagar / 10);
+	if (prata > 0)
 		CreateItemInContainer(bank_box, MOEDAS_PRATA, prata);
-		//SendSysMessage(player, prata + " moedas de prata");
+	// SendSysMessage(player, prata + " moedas de prata");
 	endif
-	faltaPagar -= CInt(prata*10);
+	faltaPagar -= CInt(prata * 10);
 
 	var cobre := CInt(faltaPagar);
-	if(cobre > 0)
+	if (cobre > 0)
 		CreateItemInContainer(bank_box, MOEDAS_COBRE, cobre);
-		//SendSysMessage(player, cobre + " moedas de cobre");
+	// SendSysMessage(player, cobre + " moedas de cobre");
 	endif
 	return 1;
 endfunction
@@ -317,10 +315,10 @@ function CheckGoldAmount(bank_box, amount)
 
 	var prop := dictionary;
 	prop["objtype"] := 47715;
-	var total_gold := AmountInContainer(bank_box, prop );
-	if ( amount == 0 )
+	var total_gold := AmountInContainer(bank_box, prop);
+	if (amount == 0)
 		return 0;
-	elseif ( amount > total_gold )
+	elseif (amount > total_gold)
 		return 0;
 	else
 		return 1;
@@ -328,33 +326,32 @@ function CheckGoldAmount(bank_box, amount)
 
 endfunction
 function ChecarMobileQuarto(who, x, y, z, npc)
-	if ( CheckLosAt( who, x, y, z ) )
-		if (!MoveObjectToLocation(who, npc.x, npc.y+3, npc.z, npc.realm))
-			if (!MoveObjectToLocation(who, npc.x, npc.y-3, npc.z, npc.realm))
-				if (!MoveObjectToLocation(who, npc.x+3, npc.y, npc.z, npc.realm))
-					MoveObjectToLocation(who, npc.x-3, npc.y, npc.z, npc.realm);
+	if (CheckLosAt(who, x, y, z))
+		if (!MoveObjectToLocation(who, npc.x, npc.y + 3, npc.z, npc.realm))
+			if (!MoveObjectToLocation(who, npc.x, npc.y - 3, npc.z, npc.realm))
+				if (!MoveObjectToLocation(who, npc.x + 3, npc.y, npc.z, npc.realm))
+					MoveObjectToLocation(who, npc.x - 3, npc.y, npc.z, npc.realm);
 				endif
 			endif
 		endif
 	endif
 endfunction
 
-
 function BulletinReport(who, board, npc)
 	var board_data_file := DFOpenDataFile(":bulletinboard:MessageBoards", DF_CREATE);
 	var board_elem := DFFindElement(board_data_file, hex(board.serial), DF_CREATE);
 	var msg_string := "O pagamento da sua estalagem nao foi efetuado como esperado. Estarei colocando a estalagem de novo a disposicao de novos moradores, e armazenarei seus objetos ate que pague uma pequena taxa. Me procure.";
 	var post_num := CInt(board_elem.GetProp("NextPost"));
-	var new_num := CInt(board_elem.GetProp("NextPost"))+1;
+	var new_num := CInt(board_elem.GetProp("NextPost")) + 1;
 	if (new_num > 50)
-		//Were on post 50, reset the counter.
+		// Were on post 50, reset the counter.
 		new_num := 1;
 	endif
 	board_elem.SetProp("NextPost", new_num);
 
 	var post_info := struct;
 	post_info.+Name := " " + npc.name;
-	post_info.+Subject := "Aviso de Despejo: " +who.name;
+	post_info.+Subject := "Aviso de Despejo: " + who.name;
 	post_info.+Message := msg_string;
 	post_info.+Data := polcore().systime;
 	post_info.+Serial := who.serial;
@@ -364,9 +361,9 @@ function BulletinReport(who, board, npc)
 endfunction
 
 function CalcularDias(data)
-    var criadoEm := cint(data);
-    var tempoAgora := polcore().systime;// segundos
-    var tempoDevida:= tempoAgora - criadoEm;
-    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
-    return dias;
+	var criadoEm := cint(data);
+	var tempoAgora := polcore().systime; // segundos
+	var tempoDevida := tempoAgora - criadoEm;
+	var dias := cint(tempoDevida / (86400)); // 24horas*60minutos*60segundos = 86400 segundos
+	return dias;
 endfunction

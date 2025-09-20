@@ -12,7 +12,7 @@ program manobra(attacker)
 	var x := attacker.x;
 	var y := attacker.y;
 
-	SetCooldown(attacker, "defesatotal", CInt(AP_GetSkill(attacker, TACTICS)) );
+	SetCooldown(attacker, "defesatotal", CInt(AP_GetSkill(attacker, TACTICS)));
 
 	PrintText(attacker, "*defesa total*");
 
@@ -20,17 +20,17 @@ program manobra(attacker)
 
 	attacker.evasionchance_mod := attacker.evasionchance_mod + 25;
 
-	while(attacker.connected)
+	while (attacker.connected)
 
-		if( (attacker.x != x) && (attacker.y != y) )
+		if ((attacker.x != x) && (attacker.y != y))
 			SendSysMessageEx(attacker, "Voce nao esta mais no local inicial", SSM_FAIL);
 			break;
 		endif
 
-		if (GetCooldown(attacker, "defesatotal") <= 0 )
+		if (GetCooldown(attacker, "defesatotal") <= 0)
 			SendSysMessageEx(attacker, "Sua postura defensiva terminou.", SSM_INFO);
 			break;
-		endif		
+		endif
 
 		sleep(1);
 
@@ -38,5 +38,4 @@ program manobra(attacker)
 
 	attacker.evasionchance_mod := attacker.evasionchance_mod - 25;
 
-endprogram 
-
+endprogram

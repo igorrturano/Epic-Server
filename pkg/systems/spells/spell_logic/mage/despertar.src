@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -11,8 +11,7 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-
-	if  ( !targ.isa(POLCLASS_CORPSE) )
+	if (!targ.isa(POLCLASS_CORPSE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
@@ -23,10 +22,10 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
-	
+
 	if (!targ.npctemplate)
 		SetObjProperty(targ, "curado", 1);
 	endif
-	
+
 	return 1;
-endprogram 
+endprogram

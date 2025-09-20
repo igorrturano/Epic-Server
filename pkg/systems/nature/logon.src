@@ -13,8 +13,8 @@ program logon(who)
 		endif
 		ReverseLight(who);
 	else
-		// who.setlightlevel(0, 2);
+	// who.setlightlevel(0, 2);
 	endif
 
-    destroyIllyraOutsideDungeons(who);
+	destroyIllyraOutsideDungeons(who);
 endprogram

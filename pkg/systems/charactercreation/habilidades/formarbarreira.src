@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -38,4 +38,4 @@ program manobra(attacker)
 		SetObjProperty(member, "#tempparrybonus", 100);
 	endforeach
 
-endprogram  
+endprogram

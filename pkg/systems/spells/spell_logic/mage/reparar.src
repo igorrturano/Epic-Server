@@ -1,4 +1,4 @@
-   use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -17,25 +17,25 @@ program SpellScript(params)
 		return;
 	endif
 
-	if  ( !(targ.isa(POLCLASS_WEAPON) || targ.isa(POLCLASS_ARMOR)) )
+	if (!(targ.isa(POLCLASS_WEAPON) || targ.isa(POLCLASS_ARMOR)))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	elseif (GetObjProperty(targ, "broken"))
-		SendSysMessageEx(who, "Esse item esta danificado demais para ser reparado por essa magia.", SSM_FAIL);
+		SendSysMessageEx(who, "Esse item esta danificado demais para ser reparado por essa magia.",
+				   SSM_FAIL);
 		return;
 	endif
-		
-	if (targ.hp < cint(targ.maxhp/4))
-		targ.hp := cint(targ.maxhp/4);
-		//SetObjProperty(targ, "broken", 0);
-		//SetName(targ, GetObjProperty(targ, "realdesc"));
+
+	if (targ.hp < cint(targ.maxhp / 4))
+		targ.hp := cint(targ.maxhp / 4);
+		// SetObjProperty(targ, "broken", 0);
+		// SetName(targ, GetObjProperty(targ, "realdesc"));
 		PrintText(targ, "*consertada*");
 	else
 		PrintText(targ, "*nenhuma mudança aparente*");
 	endif
-	
 
 	PlaySoundEffect(targ, SFX_SPELL_BLESS);
-	
+
 	return 1;
-endprogram 
+endprogram

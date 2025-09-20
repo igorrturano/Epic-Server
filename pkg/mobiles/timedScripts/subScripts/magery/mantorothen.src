@@ -1,4 +1,4 @@
-  
+
 use uo;
 use os;
 
@@ -12,12 +12,11 @@ program TimedScript_Clumsy(params)
 
 	params := 0; // Not needed anymore.
 
-	if ( GetObjProperty(who, "#mantorothen") )
+	if (GetObjProperty(who, "#mantorothen"))
 		return 0;
 	endif
-	
+
 	SetObjProperty(who, "#mantorothen", 1);
-	
+
 	return 1;
 endprogram
-  

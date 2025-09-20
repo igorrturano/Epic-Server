@@ -12,11 +12,11 @@ include ":timedScripts:timedScripts";
 
 program SpellScript(params)
 	var who := params[1];
-	//var targ := params[2];
+	// var targ := params[2];
 	params := 0; // No longer needed
 
-    SendSysMessageEx(who, "O que deseja Jurar de Morte?", SSM_REQUEST);
-    var targ := Target(who);
+	SendSysMessageEx(who, "O que deseja Jurar de Morte?", SSM_REQUEST);
+	var targ := Target(who);
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Voce nao pode marcar isto para morte", SSM_FAIL);
@@ -27,15 +27,15 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Voce ja jurou outro alvo de morte", SSM_FAIL);
 		return;
 	endif
-		
+
 	var necrovital := AP_GetVitalMaximumValue(who, "Hits");
-	necrovital := necrovital/3;
+	necrovital := necrovital / 3;
 
 	SetObjProperty(who, "pactodesepulturadmg", necrovital);
 	SetObjProperty(who, "pactodesepultura", targ.serial);
 
 	SendSysMEssageEx(who, "Voce Jurou " + targ.name + " de morte!", SSM_INFO);
 	SendSysMEssageEx(targ, "Voce foi Jurado de Morte por " + who.name + " !", SSM_INFO);
-	
+
 	return 1;
-endprogram 
+endprogram

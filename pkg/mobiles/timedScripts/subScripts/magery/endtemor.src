@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -13,7 +13,7 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var vontademod := GetObjProperty(mobile, "#VontadeMod");
 
-	SetObjProperty(mobile, "#VontadeMod", vontademod+100);
-	
+	SetObjProperty(mobile, "#VontadeMod", vontademod + 100);
+
 	return 1;
 endprogram

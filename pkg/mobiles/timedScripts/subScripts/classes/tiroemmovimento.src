@@ -11,8 +11,7 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	GrantPrivilege(mobile, "firewhilemoving");
-	mobile.enable("firewhilemoving");	
-	
+	mobile.enable("firewhilemoving");
+
 	return 1;
 endprogram
-  

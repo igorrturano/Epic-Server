@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -8,6 +8,5 @@ program manobra(attacker)
 
 	SendSysMessageEx(attacker, "Voce trocou poder por precisao!", SSM_INFO);
 	TS_StartTimer(attacker, "ataquecerteiro", cint(AP_GetSkill(attacker, TACTICS)));
-
 
 endprogram
