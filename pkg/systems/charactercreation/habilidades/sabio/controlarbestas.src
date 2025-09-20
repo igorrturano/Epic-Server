@@ -14,7 +14,6 @@ program controlar(who)
 		return 1;
 	endif
 
-
 	TS_StartTimer(targ, "controlarbestas", 120, 1, who);
 
 endprogram

@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -20,27 +20,27 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
 	var coords := GetCoordsInSquare(who.x, who.y, 6);
 
-	//sendsysmessage(who, " " +coords);
+	// sendsysmessage(who, " " +coords);
 
 	var items := array;
 
 	foreach coord in coords
-		var rune := CreateItemAtLocation( coord.x, coord.y, GetWorldHeight(coord.x, coord.y), 3682, 1, who.realm);
+		var rune := CreateItemAtLocation(coord.x, coord.y, GetWorldHeight(coord.x, coord.y), 3682, 1,
+								   who.realm);
 		items.append(rune);
-	//	sendsysmessage(who,  " " + rune);
-	endforeach	
+	// 	sendsysmessage(who,  " " + rune);
+	endforeach
 
 	var time := Cint(AP_GetSkill(who, ARCANA));
 	TS_StartTimer(who, "paralysis", time);
 	TS_StartTimer(who, "invul", time);
 
 	while (time > 0)
-		var  mobs := ListMobilesNearLocation(who.x, who.y,  who.z, 6, who.realm);
-		//sendsysmessage(who, "mobs " + mobs);
+		var mobs := ListMobilesNearLocation(who.x, who.y, who.z, 6, who.realm);
+		// sendsysmessage(who, "mobs " + mobs);
 		foreach mob in (mobs)
 			if (!mob.frozen)
 				PrintText(mob, "*paralisado*");
@@ -55,7 +55,7 @@ program SpellScript(params)
 
 	foreach item in items
 		DestroyItem(item);
-	endforeach	
+	endforeach
 
 	return 1;
 

@@ -1,5 +1,4 @@
 
-
 use datafile;
 use uo;
 
@@ -11,7 +10,8 @@ include ":fls_core:fls_acct";
 
 program gmtools(who)
 
-	SendSysMessage(who, "Escolha quem voce deseja ver a acc. Pressione ESC para escrever a accname caso o alvo nao esteja online.");
+	SendSysMessage(who,
+					"Escolha quem voce deseja ver a acc. Pressione ESC para escrever a accname caso o alvo nao esteja online.");
 	var targ := target(who);
 	var acctname, input;
 	if (!targ)
@@ -20,9 +20,9 @@ program gmtools(who)
 		acctname := targ.acctname;
 	endif
 
-	var acct := FindAccount( acctname );
+	var acct := FindAccount(acctname);
 
-	if ( (!acct) || (acct == error))
+	if ((!acct) || (acct == error))
 		SendSysMessage(who, "Conta inexistente.");
 		return;
 	endif
@@ -81,14 +81,14 @@ program gmtools(who)
 	input := GFSendGump(who, chargump);
 	input := input[0];
 
-	if (input == 10 )
-		if ( !acct.enabled ) //
-			var jail := YesNo(who, "Deseja realmente desjailar essa conta?", "Sim.", "Nao."  );
+	if (input == 10)
+		if (!acct.enabled) //
+			var jail := YesNo(who, "Deseja realmente desjailar essa conta?", "Sim.", "Nao.");
 			if (jail)
 				acct.enable();
 			endif
 		else
-			var jail := YesNo(who, "Deseja realmente jailar essa conta?", "Sim.", "Nao."  );
+			var jail := YesNo(who, "Deseja realmente jailar essa conta?", "Sim.", "Nao.");
 			if (jail)
 				var time := Cint(RequestGump(who, "Digite o tempo (14 dias max)", "", "", 1));
 				time := time * 86400;
@@ -97,17 +97,17 @@ program gmtools(who)
 		endif
 	elseif (input == 11)
 		if (!acct.banned)
-			var ban := YesNo(who, "Deseja realmente banir essa conta?", "Sim.", "Nao."  );
+			var ban := YesNo(who, "Deseja realmente banir essa conta?", "Sim.", "Nao.");
 			if (ban)
 				acct.ban();
 			endif
 		else
-			var unban := YesNo(who, "Deseja realmente desbanir essa conta?", "Sim.", "Nao."  );
+			var unban := YesNo(who, "Deseja realmente desbanir essa conta?", "Sim.", "Nao.");
 			if (unban)
 				acct.unban();
 			endif
 		endif
-	elseif (input == 12 )
+	elseif (input == 12)
 		var expansion := cstr(RequestGump(who, "Digite a expansao: LBR, AOS, SE ou T2A", "", "", 1));
 		if (expansion != error)
 			acct.Set_UO_Expansion(expansion);

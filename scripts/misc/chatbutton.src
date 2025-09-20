@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-program core_chatButton( mobile )
+program core_chatButton(mobile)
 
 // This is commented out because I have not added the "new" guild system.
 // There is a guild system in this set of scripts based on the old-style
@@ -17,5 +17,5 @@ program core_chatButton( mobile )
 	endif
 
 	return 1;
-	*/
+*/
 endprogram

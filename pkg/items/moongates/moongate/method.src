@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
-
+*/
 use uo;
 
 include ":moongates:moongate";
@@ -21,7 +20,7 @@ exported function SetDestination(moongate, x, y, z, realm)
 	coords.+y := CInt(y);
 	coords.+z := CInt(z);
 	coords.+realm := CStr(realm);
-	
+
 	return SetObjProperty(moongate, "Destination", coords);
 endfunction
 
@@ -31,8 +30,8 @@ endfunction
 
 exported function SendToDestination(moongate, object)
 	var dest := GetDestination(moongate);
-	if ( !dest )
-		return error{"errortext":="moongate has no destination set."};
+	if (!dest)
+		return error{ "errortext" := "moongate has no destination set." };
 	endif
 
 	return MoveObjectToLocation(object, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);

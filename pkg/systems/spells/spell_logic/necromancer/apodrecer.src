@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -22,19 +22,20 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
-	
+
 	var targcolor;
-	if (!targ.npctemplate);
+	if (!targ.npctemplate)
 		targcolor := targ.color;
 		SetObjProperty(targ, "#RealColor", targcolor);
 		targ.color := 986;
-	endif		
+	endif
 
-	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, ARCANA))*2;
-	//sendsysmessage(who, " amt "+ amt);
-	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2, targ.color, who, 0); //20 min
+	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, ARCANA))*2;
+	// sendsysmessage(who, " amt "+ amt);
+	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2, targ.color, who,
+			   0); // 20 min
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "O corpo do alvo se torna podre e menos resistente", SSM_INFO);
-	
+
 	return 1;
-endprogram 
+endprogram

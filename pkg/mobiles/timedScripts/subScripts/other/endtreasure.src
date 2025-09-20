@@ -11,4 +11,4 @@ program cureScript(params)
 	sleep(2);
 	Destroyitem(item);
 	return 1;
-endprogram   
+endprogram

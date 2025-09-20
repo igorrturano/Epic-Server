@@ -6,50 +6,50 @@ include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
 
 program speech_hooks()
-  Print( "Hooking Unicode Outgoing..." );
-  return 1;
+	Print("Hooking Unicode Outgoing...");
+	return 1;
 endprogram
 
 const ITEM_ID := 3;
 const TEXT_TYPE := 9;
-const NAME_ID := 18; //posição do Name de quem fala
+const NAME_ID := 18; // posição do Name de quem fala
 const SYS_MSG := 0x06;
 
-exported function handleUCOutgoing( character, byref packet )
+exported function handleUCOutgoing(character, byref packet)
 
 	var type := packet.GetInt8(TEXT_TYPE);
 
 	var serial := packet.GetInt32(ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
 
-	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
+	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
-	if(GetObjProperty(source, "original_language"))
+	if (GetObjProperty(source, "original_language"))
 		message_txt := TranslateText(message_txt, "pt_BR", GetObjProperty(source, "original_language"));
 	endif
-	
+
 	var Object_Name;
 	if (source.IsA(POLCLASS_MOBILE))
-		//PREENCHE NOME DO MOBILE
+		// PREENCHE NOME DO MOBILE
 		Object_Name := source.name;
 
-		//Cor do nome dos NPC conforme skill de combate
+		// Cor do nome dos NPC conforme skill de combate
 		if (!source.npctemplate)
-			//Caso em que tá desconhecido
-			if(GetObjProperty(source, "realname"))
+			// Caso em que tá desconhecido
+			if (GetObjProperty(source, "realname"))
 				Object_Name := "Incognito";
 			else
 
-				//Verifica se o char já foi reconhecido por who
+				// Verifica se o char já foi reconhecido por who
 				var conhecidos := dictionary;
-				if(GetObjProperty(character, "conhecidos"))
-					var ID := Cstr(source.serial); //Salva o serial do personagem
-					if(GetObjProperty(source, "disfarce"))
-						ID := Cstr(GetObjProperty(source, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+				if (GetObjProperty(character, "conhecidos"))
+					var ID := Cstr(source.serial); // Salva o serial do personagem
+					if (GetObjProperty(source, "disfarce"))
+						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
 					endif
 
-					conhecidos := GetObjProperty(character, "conhecidos"); //Lista de pessoas conhecidadas
-					if(conhecidos.Exists(ID))
+					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
+					if (conhecidos.Exists(ID))
 						Object_Name := conhecidos[ID];
 					else
 						Object_Name := source.name;
@@ -58,54 +58,52 @@ exported function handleUCOutgoing( character, byref packet )
 					Object_Name := source.name;
 				endif
 			endif
-			packet.SetString(NAME_ID, Object_Name,1);
+			packet.SetString(NAME_ID, Object_Name, 1);
 		endif
 	endif
 
-    //Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
-    LogPlayerSpeech(source, message_txt);
+	// Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
+	LogPlayerSpeech(source, message_txt);
 
-	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
-	//SendSysMessage(source,"length "+ packet.GetInt16(1));
-	//SendSysMessage(source,"ID "+ packet.GetInt32(3));
-	//SendSysMessage(source,"model "+ packet.GetInt16(7));
-	//SendSysMessage(source,"type "+ packet.GetInt8(8));
-	//SendSysMessage(source,"color "+ packet.GetInt16(10));
-	//SendSysMessage(source,"font "+ packet.GetInt16(12));
-	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
-	//SendSysMessage(source,"Name "+ packet.GetString(18, 30));
-	//SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
+	// SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	// SendSysMessage(source,"length "+ packet.GetInt16(1));
+	// SendSysMessage(source,"ID "+ packet.GetInt32(3));
+	// SendSysMessage(source,"model "+ packet.GetInt16(7));
+	// SendSysMessage(source,"type "+ packet.GetInt8(8));
+	// SendSysMessage(source,"color "+ packet.GetInt16(10));
+	// SendSysMessage(source,"font "+ packet.GetInt16(12));
+	// SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	// SendSysMessage(source,"Name "+ packet.GetString(18, 30));
+	// SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
 
 	////var tamanho := packet.GetInt16(1)-30+nome.size();
 
 	////SendSysMessage(source,tamanho);
 	////packet.SetInt16(1,tamanho);
 
-	//packet.SetString(18, "Teste",1);
+	// packet.SetString(18, "Teste",1);
 
-	//SendSysMessage(source,"ZZZZZZZZZZZZZZZZZZZZZZZ");
+	// SendSysMessage(source,"ZZZZZZZZZZZZZZZZZZZZZZZ");
 
+	// SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	// SendSysMessage(source,"length "+ packet.GetInt16(1));
+	// SendSysMessage(source,"ID "+ packet.GetInt32(3));
+	// SendSysMessage(source,"model "+ packet.GetInt16(7));
+	// SendSysMessage(source,"type "+ type);
+	// SendSysMessage(source,"color "+ packet.GetInt16(10));
+	// SendSysMessage(source,"font "+ packet.GetInt16(12));
+	// SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	// SendSysMessage(source,"Name "+ packet.GetString(18,30));
+	// SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
 
-	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
-	//SendSysMessage(source,"length "+ packet.GetInt16(1));
-	//SendSysMessage(source,"ID "+ packet.GetInt32(3));
-	//SendSysMessage(source,"model "+ packet.GetInt16(7));
-	//SendSysMessage(source,"type "+ type);
-	//SendSysMessage(source,"color "+ packet.GetInt16(10));
-	//SendSysMessage(source,"font "+ packet.GetInt16(12));
-	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
-	//SendSysMessage(source,"Name "+ packet.GetString(18,30));
-	//SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
-
-
-	if ( (getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) || (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
-		if  (type != 0x02)
+	if ((getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) ||
+	 (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
+		if (type != 0x02)
 			return 1;
 		endif
 	endif
 
-
-	if  (type == 0x0E)
+	if (type == 0x0E)
 		if (source.cmdlevel >= 1 && GetObjProperty(source, "LastMSG") != message_txt)
 			SetObjProperty(source, "LastMSG", message_txt);
 			foreach player in GetGlobalProperty("GmsOnlines")
@@ -114,9 +112,9 @@ exported function handleUCOutgoing( character, byref packet )
 					sender := GetObjProperty(source, "realname");
 				endif
 				if (GetGlobalProperty("onlyuni"))
-					SendSysMessageUNI(player, "[GMBcast]["+sender+"]: "+message_txt, 0x0063, 0x02);
+					SendSysMessageUNI(player, "[GMBcast][" + sender + "]: " + message_txt, 0x0063, 0x02);
 				else
-					SendSysMessage(player, "[GMBcast]["+sender+"]: "+message_txt, 0x03, 0x0063);
+					SendSysMessage(player, "[GMBcast][" + sender + "]: " + message_txt, 0x03, 0x0063);
 				endif
 
 			endforeach
@@ -124,26 +122,32 @@ exported function handleUCOutgoing( character, byref packet )
 		return 1;
 	endif
 
-	var unvalid := { message_txt[1, 7], message_txt[1, 9], message_txt[1, 9], message_txt[1, 14], message_txt[1,13], message_txt[1,7] };
-	if (source.acctname && GetObjProperty(source, "LastMSG") != message_txt && unvalid[1] != "*Tirou " && unvalid[2] != "*Guardou " && unvalid[3] != "*Colocou " && unvalid[4] != "*escalpelando " && unvalid[5] != "*Acrescentou " && unvalid[6] != "*Pegou " && message_txt != "*defende o golpe*" && message_txt != "*usando ataduras em si mesmo*" && message_txt != "*parou de aplicar bandagens*" && message_txt != "*arrombando a fechadura*" && message_txt != "*desarmando armadilha*" && message_txt != "*preparando um extrato*")
+	var unvalid := { message_txt[1, 7], message_txt[1, 9], message_txt[1, 9], message_txt[1,
+				 	14], message_txt[1, 13], message_txt[1, 7] };
+	if (source.acctname && GetObjProperty(source, "LastMSG") != message_txt && unvalid[1] != "*Tirou " &&
+	 unvalid[2] != "*Guardou " && unvalid[3] != "*Colocou " && unvalid[4] != "*escalpelando " &&
+	 unvalid[5] != "*Acrescentou " && unvalid[6] != "*Pegou " && message_txt != "*defende o golpe*" &&
+	 message_txt != "*usando ataduras em si mesmo*" && message_txt != "*parou de aplicar bandagens*" &&
+	 message_txt != "*arrombando a fechadura*" && message_txt != "*desarmando armadilha*" &&
+	 message_txt != "*preparando um extrato*")
 		foreach player in GetGlobalProperty("GmsOnlines")
 			player := SystemFindObjectBySerial(Cint(player));
-			if ( GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != source)
+			if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != source)
 				var sender := source.name;
-				if (GetObjProperty(source, "realname")) //Se está com rosto coberto
+				if (GetObjProperty(source, "realname")) // Se está com rosto coberto
 					sender := GetObjProperty(source, "realname");
 				endif
 				if (GetObjProperty(player, "SaySpyOn") == "on")
 					if (GetGlobalProperty("onlyuni"))
-						SendSysMessageUNI(player, "["+sender+"]: "+message_txt);
+						SendSysMessageUNI(player, "[" + sender + "]: " + message_txt);
 					else
-						SendSysMessage(player, "["+sender+"]: "+message_txt);
+						SendSysMessage(player, "[" + sender + "]: " + message_txt);
 					endif
-				elseif(sender in GetObjProperty(player, "SaySpyOn"))
+				elseif (sender in GetObjProperty(player, "SaySpyOn"))
 					if (GetGlobalProperty("onlyuni"))
-						SendSysMessageUNI(player, "["+sender+"]: "+message_txt);
+						SendSysMessageUNI(player, "[" + sender + "]: " + message_txt);
 					else
-						SendSysMessage(player, "["+sender+"]: "+message_txt);
+						SendSysMessage(player, "[" + sender + "]: " + message_txt);
 					endif
 				endif
 			endif
@@ -152,35 +156,51 @@ exported function handleUCOutgoing( character, byref packet )
 		SetObjProperty(source, "LastMSG", message_txt);
 	endif
 
-
-	if( !CheckLineOfSight(source, character) )
-		if(type == 0x09)
+	if (!CheckLineOfSight(source, character))
+		if (type == 0x09)
 			return 0;
-		elseif(temHabilidade(character,"Mestre Espiao"))
+		elseif (temHabilidade(character, "Mestre Espiao"))
 			return 0;
 		else
 			if (temHabilidade(character, "Espionagem"))
-				if (Distance(character, source) < 12 && abs(character.z - source.z ) < 19) // A hab só serve pra ouvir até 8 tile e 19 z
+				if (Distance(character, source) < 12 &&
+		abs(character.z - source.z) < 19) // A hab só serve pra ouvir até 8 tile e 19 z
 					return 0;
 				else
 					return 1;
 				endif
 			else
-                //if (type == 0)
-                //    return 0;
-                //endif
+				// if (type == 0)
+				//    return 0;
+				// endif
 				return 0;
 			endif
 		endif
 	endif
 
-	var isGeneralAction := array{"*Tirou", "*Guardou", "*Colocou", "*escalpelando", "*Acrescentou", "*Pegou", "*Abriu", "*Arremessa"};
-	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*", 
-		"*preparando um extrato*", "*tentando se esconder*", "*CRÍTICO*", "*aparece*", "*Abre a escotilha*", "*Fecha a escotilha*",
-		"*veste o capuz*", "*remove o capuz*", "*Golpeia com o escudo*", "*morde um pedaço de comida*", "*Kaze no Ichigeki*", 
-		"*Acende o fusível do canhão*", "*Dispara*", "*Desmonta o equipamento*", "*Lento*", "*tentando estabilizar o paciente*",
-		"Você interrompeu a cura."
-	};
+	var isGeneralAction := array{ "*Tirou", "*Guardou", "*Colocou", "*escalpelando",
+							  	"*Acrescentou", "*Pegou", "*Abriu", "*Arremessa" };
+	var isSkillAction := array{ "*defende o golpe*",
+								"*tratando a si mesmo*",
+								"*arrombando a fechadura*",
+								"*desarmando armadilha*",
+								"*preparando um extrato*",
+								"*tentando se esconder*",
+								"*CRÍTICO*",
+								"*aparece*",
+								"*Abre a escotilha*",
+								"*Fecha a escotilha*",
+								"*veste o capuz*",
+								"*remove o capuz*",
+								"*Golpeia com o escudo*",
+								"*morde um pedaço de comida*",
+								"*Kaze no Ichigeki*",
+								"*Acende o fusível do canhão*",
+								"*Dispara*",
+								"*Desmonta o equipamento*",
+								"*Lento*",
+								"*tentando estabilizar o paciente*",
+								"Você interrompeu a cura." };
 
 	if (!source.npctemplate && type != 0x02)
 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
@@ -199,7 +219,8 @@ exported function handleUCOutgoing( character, byref packet )
 			return handleGhostVoice(source, message_txt, packet);
 		endif
 
-		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*" || character.cmdlevel >= 1 )
+		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) ||
+	  message_txt == "*Incompreensível*" || character.cmdlevel >= 1)
 			if (message_txt != "..." && message_txt != "" && chosen_language && chosen_language != "Comum")
 				var full_message := "[" + chosen_language + "] " + message_txt;
 				packet.SetUnicodeString(48, full_message, 1);
@@ -215,23 +236,23 @@ exported function handleUCOutgoing( character, byref packet )
 	return 0;
 endfunction
 
-exported function handleUCOrequest( character, byref packet )
+exported function handleUCOrequest(character, byref packet)
 
 	var serial := packet.GetInt32(ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
-	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
+	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
 
-	if(GetObjProperty(source, "original_language"))
+	if (GetObjProperty(source, "original_language"))
 		message_txt := TranslateText(message_txt, "pt_BR", "en_US");
 	endif
 
 	var type := packet.GetInt8(4);
 
-//	sendsysmessage(character, "type" + type);
+	// 	sendsysmessage(character, "type" + type);
 
 	if (getObjProperty(character, "metamorfose") != error)
-		if  ( type == 0x00)
+		if (type == 0x00)
 			return 1;
 		else
 			return 0;
@@ -244,6 +265,6 @@ endfunction
 function handleGhostVoice(source, message_txt, byref packet)
 	packet.SetUnicodeString(48, message_txt, 1);
 
-    EraseObjProperty(source, "ghostvoice");
-    return 0;
+	EraseObjProperty(source, "ghostvoice");
+	return 0;
 endfunction

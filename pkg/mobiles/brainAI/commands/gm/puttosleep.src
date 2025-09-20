@@ -1,7 +1,7 @@
 /* $Id: puttosleep.src 1383 2006-05-13 09:26:14Z austin $
  *
- */
-//Example: .puttosleep -> Puts targetted NPC to sleep.
+*/
+// Example: .puttosleep -> Puts targetted NPC to sleep.
 
 use uo;
 use os;
@@ -10,13 +10,13 @@ include ":brainAI:npcCommands";
 
 program textcmd_putToSleep(who)
 	var targ := target(who);
-	if ( !targ.IsA(POLCLASS_NPC) )
+	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessage(who, "Cancelled.");
 		return 0;
 	else
 		AI_Sleep(targ);
 		SendSysMessage(who, "Done.");
 	endif
-	
+
 	return 1;
 endprogram

@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
- 
+*/
 use uo;
 use os;
 use util;
@@ -12,20 +11,21 @@ include ":attributes:attributes";
 
 program DeathScript(params)
 	var corpse := params[1];
-	//var corpse_cfg := params[2];
-	//var template := params[3];
+	// var corpse_cfg := params[2];
+	// var template := params[3];
 	params := 0; // Not needed anymore
 
 	var template := Lower(GetObjProperty(corpse, "npctemplate"));
-	
+
 	foreach item in (EnumerateItemsInContainer(corpse))
-		var e := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
-		//printtextabove(corpse, " " + e);
+		var e := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, corpse.realm,
+									   MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
+	// printtextabove(corpse, " " + e);
 	endforeach
 
-	if ( (template == ":brainai:floatingskull") || (template == ":brainai:demiliche") )
+	if ((template == ":brainai:floatingskull") || (template == ":brainai:demiliche"))
 		var cranio := CreateItemAtLocation(corpse.x, corpse.y, corpse.z, 6884);
-		if ( template == ":brainai:floatingskull" )
+		if (template == ":brainai:floatingskull")
 			setname(cranio, "cranio");
 		else
 			setname(cranio, "cranio de demilich");

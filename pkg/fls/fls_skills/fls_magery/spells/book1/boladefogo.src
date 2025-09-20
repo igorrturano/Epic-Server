@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -18,22 +17,22 @@ program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
 	params := 0; // No longer needed
-	
-	var targ := MS_Target(who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS+TGTOPT_HARMFUL);
-	if ( !targ.IsA(POLCLASS_MOBILE) )
+
+	var targ := MS_Target(who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Cancelado.");
 		return 0;
 	endif
 
 	var skill := AP_GetSkill(who, MAGERY);
 	var aux;
-	if (MS_Reflection(targ)) 
+	if (MS_Reflection(targ))
 		aux := who;
 		who := targ;
 		targ := aux;
 	endif
-		
+
 	FireballEffect(who, targ, skill);
-	
+
 	return 1;
 endprogram

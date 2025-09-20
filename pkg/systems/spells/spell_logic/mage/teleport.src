@@ -13,32 +13,30 @@ program SpellScript(params)
 
 	SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
 	var loc := TargetCoordinates(who);
-	if ( !loc )
+	if (!loc)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return 0;
 	endif
 
-	if ( !CheckLosAt(who, loc.x, loc.y, loc.z) )
+	if (!CheckLosAt(who, loc.x, loc.y, loc.z))
 		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
 		return 0;
 	endif
 
 	TurnObjectToward(who, loc.x, loc.y);
 
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );	
-	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 , 2);
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
 	sleepms(400);
-	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 ,2);
+	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
 	sleepms(400);
-    if (CanWalk("L", who.x, who.y, who.z, loc.x, loc.y, who.realm) == error)
-        SendSysMessage(who, "Local Inacessível");
-        return 0;
-    else
-    	MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
-    endif
+	if (CanWalk("L", who.x, who.y, who.z, loc.x, loc.y, who.realm) == error)
+		SendSysMessage(who, "Local Inacessível");
+		return 0;
+	else
+		MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
+	endif
 
 	return 1;
 
 endprogram
-
-

@@ -44,33 +44,33 @@ function GMPageGump(who)
 	foreach page in pages
 		pagenum := pagenum + 1;
 		GFPage(pagegump, i);
-		elem := df.FindElement( page );
+		elem := df.FindElement(page);
 		player := SystemFindObjectBySerial(Cint(page));
-		var getdate := DFFindElement(DFOpenDataFile("gmpages", DF_CREATE, DF_KEYTYPE_INTEGER), cint(page), DF_CREATE);
-		GFTextLine(pagegump, 20, y, fontcolor, player.name+" ("+player.acctname+")");
+		var getdate := DFFindElement(DFOpenDataFile("gmpages", DF_CREATE, DF_KEYTYPE_INTEGER), cint(page),
+							   DF_CREATE);
+		GFTextLine(pagegump, 20, y, fontcolor, player.name + " (" + player.acctname + ")");
 		GFAddButton(pagegump, 165, y, 2117, 2118, 1, 200 + pagenum);
 		GFAddButton(pagegump, 205, y, 2117, 2118, 1, 400 + pagenum);
 		GFAddButton(pagegump, 255, y, 2117, 2118, 1, 600 + pagenum);
 		GFAddButton(pagegump, 320, y, 2117, 2118, 1, 800 + pagenum);
 		GFAddButton(pagegump, 380, y, 2117, 2118, 1, 1000 + pagenum);
-		GFTextLine(pagegump, 442, y, fontcolor, CalculateDaysInReal(getdate.GetProp("date"))+" dias");
+		GFTextLine(pagegump, 442, y, fontcolor, CalculateDaysInReal(getdate.GetProp("date")) + " dias");
 		y := y + 20;
-		if ( Cdbl(pagenum/18) == i)
-			i := i +1;
+		if (Cdbl(pagenum / 18) == i)
+			i := i + 1;
 			y := 90;
 			GFAddButton(pagegump, 445, 460, 2648, 2649, GF_PAGE_BTN, i);
 			GFPage(pagegump, i);
-			GFAddButton(pagegump, 445, 50, 2650, 2651, GF_PAGE_BTN, i-1);
+			GFAddButton(pagegump, 445, 50, 2650, 2651, GF_PAGE_BTN, i - 1);
 		endif
 	endforeach
-
 
 	input := GFSendGump(who, pagegump);
 	input := input[0];
 
-	if ( (input > 200) && (input < 400) )
+	if ((input > 200) && (input < 400))
 		var serial := GetPageIndexByPageNum(input - 200, "gmpages");
-		if ( serial )
+		if (serial)
 			var player := SystemFindObjectBySerial(Cint(serial));
 			if (player == error)
 				SendSysMessage(who, "Esse personagem foi deletado!");
@@ -81,29 +81,29 @@ function GMPageGump(who)
 			SendSysMessage(who, "Essa page foi deletada.");
 		endif
 		GMPageGump(who);
-	elseif ( (input > 400) && (input < 600) )
+	elseif ((input > 400) && (input < 600))
 		var serial := GetPageIndexByPageNum(input - 400, "gmpages");
-		if ( serial )
+		if (serial)
 			var player := SystemFindObjectBySerial(Cint(serial));
 			if (player == error)
 				SendSysMessage(who, "Esse personagem foi deletado!");
 			else
 				var message_txt := RequestInput(who, who.backpack, "Digite sua mensagem: ");
-				if ( !message_txt )
+				if (!message_txt)
 					SendSysMessage(who, "Cancelado.");
 					return 0;
 				else
 					SendSysMessage(who, "Resposta enviada para " + player.name + " .");
-					SendSysMessage(player, "Staff: " +  message_txt);
-				endif;
+					SendSysMessage(player, "Staff: " + message_txt);
+				endif
 			endif
 		else
 			SendSysMessage(who, "Essa page foi deletada.");
 		endif
 		GMPageGump(who);
-	elseif ( (input > 600) && (input < 800) )
+	elseif ((input > 600) && (input < 800))
 		var serial := GetPageIndexByPageNum(input - 600, "gmpages");
-		if ( serial )
+		if (serial)
 			var player := SystemFindObjectBySerial(Cint(serial));
 			if (player == error)
 				SendSysMessage(who, "Esse personagem foi deletado!");
@@ -114,9 +114,9 @@ function GMPageGump(who)
 			SendSysMessage(who, "Essa page foi deletada.");
 		endif
 		GMPageGump(who);
-	elseif ( (input > 800)  && (input < 1000) )
+	elseif ((input > 800) && (input < 1000))
 		var serial := GetPageIndexByPageNum(input - 800, "gmpages");
-		if ( serial )
+		if (serial)
 			var player := SystemFindObjectBySerial(Cint(serial));
 			var df := DFOpenDataFile("gmpages", DF_CREATE, DF_KEYTYPE_INTEGER);
 			var elem := DFFindElement(df, cint(serial), DF_CREATE);
@@ -129,9 +129,9 @@ function GMPageGump(who)
 			SendSysMessage(who, "Essa page foi deletada.");
 		endif
 		GMPageGump(who);
-	elseif ( (input > 1000) )
+	elseif ((input > 1000))
 		var serial := GetPageIndexByPageNum(input - 1000, "gmpages");
-		DeletePage( serial, "gmpages");
+		DeletePage(serial, "gmpages");
 		GMPageGump(who);
 	endif
 

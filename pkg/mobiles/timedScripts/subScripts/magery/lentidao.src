@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -10,29 +10,28 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var level := params[3];
 	params := 0; // Not needed anymore.
-	
+
 	var info := GetObjProperty(who, "#Slowness");
-	if ( !info )
+	if (!info)
 		info := struct;
 		info.+status := 0;
 		info.+dexmod := 0;
 	endif
-	
+
 	Slowdown(who, info);
-		
-	while(1)
-		if ( RandomInt(4) == 1 )
-			if ( info.status )
+
+	while (1)
+		if (RandomInt(4) == 1)
+			if (info.status)
 				Restore(who, info);
 			else
 				Slowdown(who, info);
 			endif
 		endif
-		
+
 		sleep(2);
 	endwhile
 
-	
 endprogram
 
 function Slowdown(who, byref info)
@@ -41,21 +40,21 @@ function Slowdown(who, byref info)
 
 	info.status := 1;
 	info.dexmod := AP_GetStatMod(who, DEXTERITY);
-	
-	AP_ModifyStatMod(who, DEXTERITY, 0-info.dexmod);
+
+	AP_ModifyStatMod(who, DEXTERITY, 0 - info.dexmod);
 	// who.paralyzed := 1;
-	
+
 	SetObjProperty(who, "#Slowness", info);
 endfunction
 
 function Restore(who, byref info)
 	SendSysMessage(who, "Voce consegue se mover normalmente.");
-	
+
 	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
 	// who.paralyzed := 0;
-	
+
 	info.status := 0;
 	info.dexmod := 0;
-	
+
 	EraseObjProperty(who, "#Slowness");
 endfunction

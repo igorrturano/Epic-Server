@@ -8,16 +8,16 @@ include "/include/epicPropNames";
 
 program SelecaoObjetosArea(parms)
 
-	var quem:=parms[1];
-	var objetos:=parms[2];
+	var quem := parms[1];
+	var objetos := parms[2];
 	var pid := parms[3];
 
-	while(true)
+	while (true)
 		Sleepms(600);
-		if(!GetProcess(pid))
+		if (!GetProcess(pid))
 			foreach objeto in objetos
-				var isCorOriginalAlterada :=  GetObjProperty(objeto,PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
-				if(!isCorOriginalAlterada)
+				var isCorOriginalAlterada := GetObjProperty(objeto, PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
+				if (!isCorOriginalAlterada)
 					objeto.color := GetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);
 				endif
 				LimpaProps(objeto);
@@ -26,13 +26,13 @@ program SelecaoObjetosArea(parms)
 
 			break;
 		endif
-	endwhile;
+	endwhile
 
 	return 1;
 endprogram
 
 function LimpaProps(objeto)
-	EraseObjProperty(objeto,PROPNAME_SEL_AREA_COR_ORIGINAL);
-	EraseObjProperty(objeto,PROPNAME_SEL_AREA_PID_SELECIONADOR);
-	EraseObjProperty(objeto,PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_PID_SELECIONADOR);
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
 endfunction

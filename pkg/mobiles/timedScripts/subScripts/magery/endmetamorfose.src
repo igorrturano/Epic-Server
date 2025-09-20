@@ -10,90 +10,90 @@ include ":attributes:vitals";
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 
-program cureScript( params )
-  var who := params[1];
+program cureScript(params)
+	var who := params[1];
 
-  // Check if the player used the voltar command and already reverted manually
-  if ( GetObjProperty( who, "voltou" ) )
-	EraseObjProperty( who, "voltou" );
-	return;
-  endif
+	// Check if the player used the voltar command and already reverted manually
+	if (GetObjProperty(who, "voltou"))
+		EraseObjProperty(who, "voltou");
+		return;
+	endif
 
-  // Proceed with reverting the player
-  var metamorfose := GetObjProperty( who, "metamorfose" );
-  if ( metamorfose == error )
-	SendSysMessageEx( who, "Você não está metamorfoseado.", SSM_FAIL );
-	return;
-  endif
+	// Proceed with reverting the player
+	var metamorfose := GetObjProperty(who, "metamorfose");
+	if (metamorfose == error)
+		SendSysMessageEx(who, "Você não está metamorfoseado.", SSM_FAIL);
+		return;
+	endif
 
-  // Revert appearance to original state
-  who.color := metamorfose.originalcolor;
-  who.graphic := metamorfose.originalgraphic;
-  who.truegraphic := metamorfose.originalgraphic;
+	// Revert appearance to original state
+	who.color := metamorfose.originalcolor;
+	who.graphic := metamorfose.originalgraphic;
+	who.truegraphic := metamorfose.originalgraphic;
 
-  // Restore player name
-  var namechar := GetObjProperty( who, "charname" );
-  SetName( who, namechar );
+	// Restore player name
+	var namechar := GetObjProperty(who, "charname");
+	SetName(who, namechar);
 
-  // Reset polymorph-related modifiers (hitsmod, manamod, stammod)
-  var hitsmod := CINT( GetObjProperty( who, "polymorph_hitsmod" ) );
-  var manamod := CINT( GetObjProperty( who, "polymorph_manamod" ) );
-  var stammod := CINT( GetObjProperty( who, "polymorph_stammod" ) );
+	// Reset polymorph-related modifiers (hitsmod, manamod, stammod)
+	var hitsmod := CINT(GetObjProperty(who, "polymorph_hitsmod"));
+	var manamod := CINT(GetObjProperty(who, "polymorph_manamod"));
+	var stammod := CINT(GetObjProperty(who, "polymorph_stammod"));
 
-  if ( hitsmod != error )
-	SetObjProperty( who, "hitsmod", CINT( GetObjProperty( who, "hitsmod" ) ) - hitsmod );
-  endif
+	if (hitsmod != error)
+		SetObjProperty(who, "hitsmod", CINT(GetObjProperty(who, "hitsmod")) - hitsmod);
+	endif
 
-  if ( manamod != error )
-	SetObjProperty( who, "manamod", CINT( GetObjProperty( who, "manamod" ) ) - manamod );
-  endif
+	if (manamod != error)
+		SetObjProperty(who, "manamod", CINT(GetObjProperty(who, "manamod")) - manamod);
+	endif
 
-  if ( stammod != error )
-	SetObjProperty( who, "stammod", CINT( GetObjProperty( who, "stammod" ) ) - stammod );
-  endif
+	if (stammod != error)
+		SetObjProperty(who, "stammod", CINT(GetObjProperty(who, "stammod")) - stammod);
+	endif
 
-  // Reset resistances
-  var resist := CINT( GetObjProperty( who, "polymorph_resistmod" ) );
-  if ( resist != error )
-	who.resist_physical_mod := who.resist_physical_mod - resist;
-	who.resist_fire_mod := who.resist_fire_mod - resist;
-	who.resist_cold_mod := who.resist_cold_mod - resist;
-	who.resist_poison_mod := who.resist_poison_mod - resist;
-	who.resist_energy_mod := who.resist_energy_mod - resist;
-  endif
+	// Reset resistances
+	var resist := CINT(GetObjProperty(who, "polymorph_resistmod"));
+	if (resist != error)
+		who.resist_physical_mod := who.resist_physical_mod - resist;
+		who.resist_fire_mod := who.resist_fire_mod - resist;
+		who.resist_cold_mod := who.resist_cold_mod - resist;
+		who.resist_poison_mod := who.resist_poison_mod - resist;
+		who.resist_energy_mod := who.resist_energy_mod - resist;
+	endif
 
-  // Call the new function to handle werewolf buffs removal
-  removeWerewolfBuffs( who );
+	// Call the new function to handle werewolf buffs removal
+	removeWerewolfBuffs(who);
 
-  // Clean up transformation properties
-  TS_LowerDuration( who, "velocidade", -1 );
-  TS_LowerDuration( who, "lentidao", -1 );
-  TS_LowerDuration( who, "strength", -1 );
-  TS_LowerDuration( who, "agility", -1 );
-  TS_LowerDuration( who, "intelligence", -1 );
-  EraseObjProperty( who, "skill_a" );
-  EraseObjProperty( who, "skill_d" );
-  EraseObjProperty( who, "dicedmg" );
-  EraseObjProperty( who, "polymorphbonus" );
-  EraseObjProperty( who, "metamorfose" );
-  EraseObjProperty( who, "polymorph_hitsmod" );
-  EraseObjProperty( who, "polymorph_manamod" );
-  EraseObjProperty( who, "polymorph_stammod" );
-  EraseObjProperty( who, "namechar" );
-  SendPacket(who, "BF0006002600");  // Disable speed boost packet
+	// Clean up transformation properties
+	TS_LowerDuration(who, "velocidade", -1);
+	TS_LowerDuration(who, "lentidao", -1);
+	TS_LowerDuration(who, "strength", -1);
+	TS_LowerDuration(who, "agility", -1);
+	TS_LowerDuration(who, "intelligence", -1);
+	EraseObjProperty(who, "skill_a");
+	EraseObjProperty(who, "skill_d");
+	EraseObjProperty(who, "dicedmg");
+	EraseObjProperty(who, "polymorphbonus");
+	EraseObjProperty(who, "metamorfose");
+	EraseObjProperty(who, "polymorph_hitsmod");
+	EraseObjProperty(who, "polymorph_manamod");
+	EraseObjProperty(who, "polymorph_stammod");
+	EraseObjProperty(who, "namechar");
+	SendPacket(who, "BF0006002600"); // Disable speed boost packet
 
-  if (who.npctemplate)
+	if (who.npctemplate)
 		var normal_speed := GetObjProperty(who, "runspeed");
 
 		who.run_speed := Cint(normal_speed);
-  endif
+	endif
 
-  PlaySoundEffect( who, SFX_SPELL_POLYMORPH );
+	PlaySoundEffect(who, SFX_SPELL_POLYMORPH);
 endprogram
-function removeWerewolfBuffs( who )
-  var bonus := GetObjProperty( who, "polymorphbonus_moon" );
-  if ( bonus != error )
-	AP_SetSkillMod( who, TACTICS, AP_GetSkillMod( who, TACTICS ) - bonus );
-	EraseObjProperty( who, "polymorphbonus_moon" );
-  endif
+function removeWerewolfBuffs(who)
+	var bonus := GetObjProperty(who, "polymorphbonus_moon");
+	if (bonus != error)
+		AP_SetSkillMod(who, TACTICS, AP_GetSkillMod(who, TACTICS) - bonus);
+		EraseObjProperty(who, "polymorphbonus_moon");
+	endif
 endfunction

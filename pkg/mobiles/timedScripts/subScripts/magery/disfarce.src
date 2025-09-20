@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -17,7 +17,6 @@ program TimedScript_Clumsy(params)
 
 	SetObjProperty(who, "originalname", who.name);
 	SetName(who, disfarce);
-	
+
 	return 1;
 endprogram
- 

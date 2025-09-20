@@ -13,6 +13,6 @@ program doubleattack(who)
 		SendSysMessageEx(who, "Furia Mortal", SSM_INFO);
 		SetCooldown(who, "furiamortal", 60);
 	else
-        SendSysMessageEx(who, "Voce precisa estar em furia.", SSM_INFO);
+		SendSysMessageEx(who, "Voce precisa estar em furia.", SSM_INFO);
 	endif
 endprogram

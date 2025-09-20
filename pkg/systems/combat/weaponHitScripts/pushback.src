@@ -50,20 +50,17 @@ include ":combat:damage";
 
 program HitScript(params)
 
-	var attacker	:= params[1];
-	var defender	:= params[2];
-	//var weapon	:= params[3];
-	//var armor	:= params[4];
-	//var basedamage	:= params[5];
-	var rawdamage	:= params[6];
+	var attacker := params[1];
+	var defender := params[2];
+	// var weapon	:= params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
-
 
 	if (randomInt(5) == 0)
 		PushBack(defender, 3, 300);
 	endif
-	
+
 	return 1;
 endprogram
-
-

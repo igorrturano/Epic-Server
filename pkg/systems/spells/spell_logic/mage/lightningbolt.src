@@ -12,42 +12,42 @@ include "include/epicConstants";
 include "include/epicMageryUtils";
 
 program cast_lightningbolt(params)
-    var caster := params[1];
+	var caster := params[1];
 	var targ := params[2];
-    var spellinfo := params[3];
-    var spell_circle := spellinfo.Circle;
-    var spell_school := spellinfo.School;
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
 
 	params := 0; // No longer needed
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	if ( !targ.IsA(POLCLASS_MOBILE) )
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(caster, "Alvo invalido.");
 		return 0;
 	endif
 
-    if (!targ)
+	if (!targ)
 		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
-    	
-	var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
+
+	var mlore := cint(AP_GetSkill(caster, ARCANA) / 20);
 	var dist := Distance(caster, targ);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+	var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
-    if (dist > dist_allowed)
-        SendSysMessage(caster, "O alvo esta muito distante");
-        return 0;
-    endif
+	if (dist > dist_allowed)
+		SendSysMessage(caster, "O alvo esta muito distante");
+		return 0;
+	endif
 
-    LaunchProjectile(caster, targ, spell_circle, spell_school);
+	LaunchProjectile(caster, targ, spell_circle, spell_school);
 endprogram
 
 function LaunchProjectile(caster, targ, spell_circle, spell_school)
-    PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
-    PlayMovingEffectXYZHued(caster, targ, 0x379f, 10, 1643, 0);
-    var dmg := epicSpellDamageRoll(caster, spell_circle);
-    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
+	PlayMovingEffectXYZHued(caster, targ, 0x379f, 10, 1643, 0);
+	var dmg := epicSpellDamageRoll(caster, spell_circle);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
-    DamageFLS(targ, cint(dmg), DMG_ENERGY, caster, "lightningbolt");
+	DamageFLS(targ, cint(dmg), DMG_ENERGY, caster, "lightningbolt");
 endfunction

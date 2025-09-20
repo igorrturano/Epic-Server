@@ -1,8 +1,7 @@
 /*
  * $Id: powerup.src 1069 2005-11-27 11:33:58Z austin $
  *
- */
-
+*/
 use os;
 use uo;
 
@@ -11,9 +10,9 @@ include ":gumps:requestGump";
 
 program textcmd_PowerUp(who, level)
 
-//	sendsysmessage(who, "systime " + polcore().systime + "createdat " + cint(getobjproperty(who, "createdate")) + "horas " + (polcore().systime-who.createdat)/3600);
+	// 	sendsysmessage(who, "systime " + polcore().systime + "createdat " + cint(getobjproperty(who, "createdate")) + "horas " + (polcore().systime-who.createdat)/3600);
 
-	if ( !level )
+	if (!level)
 		level := CDbl(RequestGump(who, "Power up level", "", 100));
 	else
 		level := CDbl(level);

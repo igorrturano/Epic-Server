@@ -7,7 +7,7 @@ program SpecialAttack_Pillum(combatInfo)
 	var attacker := combatInfo.attacker;
 	var defender := combatInfo.defender;
 	var effectTime := combatInfo.effectTime;
-	
+
 	PrintTextAbove(defender, "*Lança penetra o escudo*");
 	SendSysMessage(attacker, "Você ativa a lança no escudo do oponente.");
 	SendSysMessage(defender, "Uma lança inutiliza seu escudo temporariamente.");
@@ -15,7 +15,7 @@ program SpecialAttack_Pillum(combatInfo)
 	MoveItemToContainer(defender.shield, defender.backpack);
 	defender.shield.movable := 0;
 	Sleep(effectTime);
-	
+
 	SendSysMessage(defender, "Seu escudo pode ser equipado novamente.");
 	defender.shield.movable := 1;
 

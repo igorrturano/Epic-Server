@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 use vitals;
 
@@ -26,19 +26,16 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlayStationaryEffect(  targ.x, targ.y, targ.z, 6899, 1, 30, 0, who.realm );
-  	sleepms(2800);
-	var gate1 := CreateItemAtLocation( targ.x, targ.y, targ.z, "BlueMoonGate", 1, who.realm );
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 6899, 1, 30, 0, who.realm);
+	sleepms(2800);
+	var gate1 := CreateItemAtLocation(targ.x, targ.y, targ.z, "BlueMoonGate", 1, who.realm);
 	gate1.color := 2555;
-  	gate1.movable := 0;
-	gate1.SetDestination(  642, 2257, 60, REALM_BRITANNIA);
+	gate1.movable := 0;
+	gate1.SetDestination(642, 2257, 60, REALM_BRITANNIA);
 
-  	Detach();
-  	sleep(30);
+	Detach();
+	sleep(30);
 	DestroyItem(gate1);
 
 	return 1;
-endprogram     
-
-
- 
+endprogram

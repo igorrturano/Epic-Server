@@ -8,9 +8,9 @@ include ":tn:tngumps";
 function LogRPpoints(who, player, nota)
 	var today := StrFormatTime("%d - %m - %Y", POLCore().systime);
 	today := "Logs/" + today + ".log";
-	var msg := "- "+ who.acctname + " concedeu "+nota+" Pontos de RP a "+player+".";
+	var msg := "- " + who.acctname + " concedeu " + nota + " Pontos de RP a " + player + ".";
 
-	return LogToFile( today, msg );
+	return LogToFile(today, msg);
 endfunction
 
 function LogAccount(player, who, nota)
@@ -21,7 +21,7 @@ function LogAccount(player, who, nota)
 			logs := array;
 		endif
 		if (logs.size() > 200)
-			LogToFile( "Logs/Backup.src", "" + player + ": "+ logs);
+			LogToFile("Logs/Backup.src", "" + player + ": " + logs);
 			logs := { "Logs Reiniciados pelo Sistema." };
 		endif
 		logs.append(msg);
@@ -29,7 +29,6 @@ function LogAccount(player, who, nota)
 	endif
 
 endfunction
-
 
 function getGrade(acctname)
 
@@ -79,34 +78,31 @@ program giverp(who, params)
 		incGrade(player.acctname, nota);
 		LogAccount(player.acctname, who, nota);
 		LogRPpoints(who, player.name, nota);
-		SendSysMessageEx(who, "Os pontos do player "+player.acctname+" aumentou de "+oldnota+" para "+getGrade(player.acctname), SSM_INFO);
+		SendSysMessageEx(who, "Os pontos do player " + player.acctname + " aumentou de "
+				   + oldnota + " para " + getGrade(player.acctname), SSM_INFO);
 	else
 		if (!findAccount(conta) || findAccount(conta) == error)
-			SendSysMessageEX(who, "A Conta "+conta+" nao existe!", SSM_FAIL);
+			SendSysMessageEX(who, "A Conta " + conta + " nao existe!", SSM_FAIL);
 			return;
 		endif
 		if (!nota || typeof(nota) != "Integer")
 			SendSysMessageEX(who, "Os pontos precisam ser um numero inteiro!", SSM_FAIL);
 			return;
 		endif
-		SendSysMessage(who, "pontos: "+nota);
+		SendSysMessage(who, "pontos: " + nota);
 		var oldnota := getGrade(conta);
 		incGrade(conta, nota);
 		LogAccount(conta, who, nota);
 		LogRPpoints(who, findAccount(conta).GetCharacter(1).name, nota);
-		SendSysMessageEx(who, "Os pontos do player "+conta+" aumentou de "+oldnota+" para "+getGrade(conta), SSM_INFO);
+		SendSysMessageEx(who, "Os pontos do player " + conta + " aumentou de " +
+				   oldnota + " para " + getGrade(conta), SSM_INFO);
 	endif
 endprogram
 
-
-function PointsRPMotive(who);
+function PointsRPMotive(who)
 	var reasons := GetGlobalProperty("RPReasons");
 	if (!reasons[1])
 		reasons := array;
 	endif
-
-
-
-
 
 endfunction

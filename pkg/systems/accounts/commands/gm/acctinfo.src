@@ -1,7 +1,6 @@
 /* $Id: acctinfo.src 128 2006-05-27 17:36:42Z austinheilman $
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -16,52 +15,52 @@ include ":gumps:yesNo";
 include ":tn:tngumps";
 include "include/say";
 
-const EXPANSION_START	:= 0xB0000;
-const CHAR_INFO_START	:= 0xC0000;
+const EXPANSION_START := 0xB0000;
+const CHAR_INFO_START := 0xC0000;
 
-const CANCEL_BTN	:= 0xA0000;
-//const OKAY_BTN		:= 0xA0001;
-const BAN_BTN		:= 0xA0002;
-const DISABLE_BTN	:= 0xA0003;
-const UPDATE_NOTES_BTN	:= 0xA0004;
-const EXPANSION_BTN	:= 0xA0005;
-const DEF_CMDLEVEL_BTN	:= 0xA0006;
-const CHANGE_EMAIL	:= 0xA0007;
-const CHANGE_ACCTNAME	:= 0xA0008;
-const DELETE_CHARACTER	:= 0xA0009;
-const MAXCHAR_BTN	:= 0xA0010;
+const CANCEL_BTN := 0xA0000;
+// const OKAY_BTN		:= 0xA0001;
+const BAN_BTN := 0xA0002;
+const DISABLE_BTN := 0xA0003;
+const UPDATE_NOTES_BTN := 0xA0004;
+const EXPANSION_BTN := 0xA0005;
+const DEF_CMDLEVEL_BTN := 0xA0006;
+const CHANGE_EMAIL := 0xA0007;
+const CHANGE_ACCTNAME := 0xA0008;
+const DELETE_CHARACTER := 0xA0009;
+const MAXCHAR_BTN := 0xA0010;
 
 var msg_array := array{};
 
 program textcmd_AccountInfo(who, acctname)
-	if ( !acctname )
+	if (!acctname)
 		SendSysMessage(who, "Select a player.");
 		var targ := Target(who);
-		if ( !targ.acctname )
+		if (!targ.acctname)
 			SendSysMessage(who, "Cancelled.");
 			return 0;
 		else
 			acctname := targ.acctname;
 		endif
 	endif
-	if ( !acctname )
+	if (!acctname)
 		acctname := RequestGump(who, "Enter the account name you want to look up.", "", "", CANCEL_BTN_ON);
-		if ( !acctname )
+		if (!acctname)
 			SendSysMessage(who, "Cancelled.");
 			return 0;
 		endif
 	endif
 
 	var account := FindAccount(acctname);
-	if ( account.errortext )
-		GumpPrompt(who, "Error with account name "+acctname+" [P] "+acctname.errortext);
+	if (account.errortext)
+		GumpPrompt(who, "Error with account name " + acctname + " [P] " + acctname.errortext);
 		return 0;
 	endif
 
 	var input;
 	repeat
 		input := AcctGump(who, account);
-	until ( !ProcessInput(who, account, input) );
+	until (!ProcessInput(who, account, input));
 endprogram
 
 function AcctGump(who, account)
@@ -69,16 +68,16 @@ function AcctGump(who, account)
 	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 640, 480);
 	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 610, 30);
 
-	GFTextLine(gump, 20, 20, 2100, "Account Name:  "+account.name);
+	GFTextLine(gump, 20, 20, 2100, "Account Name:  " + account.name);
 	var status;
-	if ( account.banned )
+	if (account.banned)
 		status := "Banned";
-	elseif ( !account.enabled )
+	elseif (!account.enabled)
 		status := "Disabled";
 	else
 		status := "Active";
 	endif
-	GFTextRight(gump, 605, 20, 2100, "Account Status:  "+status);
+	GFTextRight(gump, 605, 20, 2100, "Account Status:  " + status);
 
 	GFPage(gump, 1);
 	CharListGump(account, gump);
@@ -94,16 +93,16 @@ function CharListGump(account, byref gump)
 	GFResizePic(gump, 15, 50, GFCfgConst("Defaults", "ForeGround"), 270, 140);
 	var y_pos := 55;
 	var i := 1;
-	for ( i; i<=5; i:=i+1 )
-		GFTextLine(gump, 20, y_pos+6, 2100, "Character "+i);
+	for (i; i <= 5; i := i + 1)
+		GFTextLine(gump, 20, y_pos + 6, 2100, "Character " + i);
 		var name := account.GetCharacter(i).name;
-		if ( name )
-			GFAddButton(gump, 110, y_pos+3, 2440, 2440, GF_CLOSE_BTN, CHAR_INFO_START+i);
-			GFTextLine(gump, 115, y_pos+5, 2100, CStr(name));
+		if (name)
+			GFAddButton(gump, 110, y_pos + 3, 2440, 2440, GF_CLOSE_BTN, CHAR_INFO_START + i);
+			GFTextLine(gump, 115, y_pos + 5, 2100, CStr(name));
 		else
-			GFGumpPic(gump, 110, y_pos+3, 2440);
+			GFGumpPic(gump, 110, y_pos + 3, 2440);
 		endif
-		y_pos := y_pos+25;
+		y_pos := y_pos + 25;
 	endfor
 endfunction
 
@@ -112,7 +111,7 @@ function GeneralInfoGump(account, byref gump)
 	// Top Right Buttons
 	/////
 	GFResizePic(gump, 290, 50, GFCfgConst("Defaults", "ForeGround"), 335, 140);
-	if ( !account.banned )
+	if (!account.banned)
 		GFAddButton(gump, 295, 55, 4017, 4018, GF_CLOSE_BTN, BAN_BTN);
 		GFTextLine(gump, 330, 55, 32, "Ban Account");
 	else
@@ -120,7 +119,7 @@ function GeneralInfoGump(account, byref gump)
 		GFTextLine(gump, 330, 55, 32, "Lift Account Ban");
 	endif
 
-	if ( !account.GetProp("ReleaseTime") )
+	if (!account.GetProp("ReleaseTime"))
 		GFAddButton(gump, 295, 85, 4020, 4021, GF_CLOSE_BTN, DISABLE_BTN);
 		GFTextLine(gump, 330, 85, 2100, "Disable/Jail Account");
 	else
@@ -147,20 +146,17 @@ function GeneralInfoGump(account, byref gump)
 	GFResizePic(gump, 140, 236, 2620, 50, 30);
 	GFTextMid(gump, 140, 241, 60, 2100, account.uo_expansion);
 
-
 	GFTextLine(gump, 25, 280, 2100, "Max Characters:");
 	GFAddButton(gump, 150, 280, 4023, 4024, GF_CLOSE_BTN, MAXCHAR_BTN);
 	GFResizePic(gump, 140, 276, 2620, 50, 30);
-	GFTextMid(gump, 140, 281, 60, 2100, account.getprop("maxchars") );
-
-
+	GFTextMid(gump, 140, 281, 60, 2100, account.getprop("maxchars"));
 
 	//////
 	// Mid-Right Buttons
 	/////
 	GFResizePic(gump, 205, 195, GFCfgConst("Defaults", "ForeGround"), 420, 90);
 	var email := account.GetProp("Email");
-	if ( !email )
+	if (!email)
 		email := "Not Set";
 	endif
 	GFTextRight(gump, 345, 208, 2100, "Email");
@@ -168,15 +164,15 @@ function GeneralInfoGump(account, byref gump)
 	GFTextMid(gump, 350, 208, 260, 2100, email);
 
 	var ip := account.GetProp("IP");
-	if ( !ip )
+	if (!ip)
 		ip := "";
 	endif
-	GFTextLine(gump, 220, 238, 2100, "Signup IP: "+ip);
+	GFTextLine(gump, 220, 238, 2100, "Signup IP: " + ip);
 	var host := account.GetProp("Host");
-	if ( !host )
+	if (!host)
 		host := "";
 	endif
-	GFTextLine(gump, 220, 258, 2100, "Signup Host: "+host);
+	GFTextLine(gump, 220, 258, 2100, "Signup Host: " + host);
 
 	//////
 	// Lower-Right Buttons
@@ -198,20 +194,20 @@ function NotesGump(account, byref gump)
 	var acct_notes := account.GetProp("notes");
 
 	var num_lines := acct_notes.size();
-	if ( num_lines < 19 )
-		//Makes sure that 'off the gump' notes dont get removed.
+	if (num_lines < 19)
+		// Makes sure that 'off the gump' notes dont get removed.
 		num_lines := 19;
 	endif
 
 	var y_pos := 55;
 	var i;
-	for ( i:=1; i<=num_lines; i:=i+1 )
+	for (i := 1; i <= num_lines; i := i + 1)
 		var line := acct_notes[i];
-		if ( line == error )
+		if (line == error)
 			line := "";
 		endif
 		msg_array.Append(GFTextEntry(gump, 20, y_pos, 595, 20, 2100, line));
-		y_pos := y_pos+19;
+		y_pos := y_pos + 19;
 	endfor
 
 	GFResizePic(gump, 15, 435, GFCfgConst("Defaults", "ForeGround"), 610, 30);
@@ -225,19 +221,18 @@ function NotesGump(account, byref gump)
 	return 1;
 endfunction
 
-
 function AccountBanner(who, account)
 	if (account.defaultcmdlevel < who.cmdlevel)
 		SendSysMessage(who, "You can't do that.");
 		return 0;
 	endif
-	if ( account.banned )
-		if ( YesNo(who, "Are you sure you want to unban this account?") )
+	if (account.banned)
+		if (YesNo(who, "Are you sure you want to unban this account?"))
 			account.UnBan();
 			return 1;
 		endif
 	else
-		if ( YesNo(who, "Are you sure you want to ban this account?") )
+		if (YesNo(who, "Are you sure you want to ban this account?"))
 			account.Ban();
 			return 1;
 		endif
@@ -248,21 +243,22 @@ function AccountBanner(who, account)
 endfunction
 
 function SuspendAccount(who, account)
-	var jail_time := RequestGump(who, "How many days do you want to disable this account?","", CStr(GetNumJailDays(account)), 1);
-	if ( jail_time == error )
+	var jail_time := RequestGump(who, "How many days do you want to disable this account?", "",
+							  CStr(GetNumJailDays(account)), 1);
+	if (jail_time == error)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	else
 		jail_time := CInt(jail_time);
 	endif
 
-	if ( jail_time == 0 )
+	if (jail_time == 0)
 		account.EraseProp("ReleaseTime");
 		account.Enable();
 	else
-		if ( jail_time > 0 )
+		if (jail_time > 0)
 			jail_time := jail_time * SECONDS_IN_DAY;
-			account.SetProp("ReleaseTime", polcore().systime+jail_time);
+			account.SetProp("ReleaseTime", polcore().systime + jail_time);
 		endif
 		account.Disable();
 	endif
@@ -272,32 +268,32 @@ endfunction
 
 function GetNumJailDays(account)
 	var seconds := account.GetProp("ReleaseTime");
-	if ( !seconds )
+	if (!seconds)
 		return 0;
 	endif
-	var num_days := CInt((seconds-polcore().systime) / SECONDS_IN_DAY)+1;
+	var num_days := CInt((seconds - polcore().systime) / SECONDS_IN_DAY) + 1;
 	return num_days;
 endfunction
 
 function UpdateNotes(who, account, input)
 	var i;
-	for ( i:=1; i<=msg_array.Size(); i:=i+1 )
+	for (i := 1; i <= msg_array.Size(); i := i + 1)
 		var line := GFExtractData(input, msg_array[i]);
-		if ( line )
+		if (line)
 			msg_array[i] := line;
 		else
 			msg_array[i] := "";
 		endif
 	endfor
 
-	//Clear off empty lines.
-	for ( i:=msg_array.Size(); i>=1; i:=i-1 )
-		if ( Len(msg_array[i]) <= 0 )
+	// Clear off empty lines.
+	for (i := msg_array.Size(); i >= 1; i := i - 1)
+		if (Len(msg_array[i]) <= 0)
 			msg_array.Erase(i);
 		endif
 		SleepMS(2);
 	endfor
-	if ( msg_array.Size() < 1 )
+	if (msg_array.Size() < 1)
 		account.EraseProp("notes");
 	else
 		account.SetProp("notes", msg_array);
@@ -309,10 +305,11 @@ function UpdateNotes(who, account, input)
 endfunction
 
 function SetDefaultCmdLevel(who, account)
-	var input := RequestGump(who, "What do you want to sent this account's default cmdlevel to?","", account.defaultcmdlevel, CANCEL_BTN_ON);
-	if ( input != error )
+	var input := RequestGump(who, "What do you want to sent this account's default cmdlevel to?", "",
+						  account.defaultcmdlevel, CANCEL_BTN_ON);
+	if (input != error)
 		input := CInt(input);
-		if ( input > who.cmdlevel )
+		if (input > who.cmdlevel)
 			input := who.cmdlevel;
 		endif
 
@@ -327,11 +324,12 @@ endfunction
 
 function ChangeEmail(who, account)
 	var email := account.GetProp("Email");
-	if ( !email )
+	if (!email)
 		email := "";
 	endif
-	var input := RequestGump(who, "What do you want to set the new email address for this account to?","", CStr(email), CANCEL_BTN_ON);
-	if ( input == error )
+	var input := RequestGump(who, "What do you want to set the new email address for this account to?",
+						  "", CStr(email), CANCEL_BTN_ON);
+	if (input == error)
 		SendSysMessage(who, "Cancelled");
 		return;
 	else
@@ -344,14 +342,15 @@ endfunction
 function ChangeAcctName(who, account)
 	var name := account.name;
 
-	var input := RequestGump(who, "What do you want to change this account's name to?", "", CStr(name), 1);
-	if ( input == error )
+	var input := RequestGump(who, "What do you want to change this account's name to?", "", CStr(name),
+						  1);
+	if (input == error)
 		SendSysMessage(who, "Cancelled");
 		return;
 	else
 		var res := account.SetName(input);
-		if ( res.errortext )
-			SendSysMessage(who, "Error: Could not set new account name ->"+res.errortext);
+		if (res.errortext)
+			SendSysMessage(who, "Error: Could not set new account name ->" + res.errortext);
 		endif
 	endif
 
@@ -368,10 +367,10 @@ function SetUOExpansion(who, account)
 	var expansions := ACCT_GetSettingsCfgElem("Expansions");
 	expansions := GetConfigStringDictionary(expansions, "Expansion");
 	var y_pos := 50;
-	foreach key in ( expansions.keys() )
-		GFRadioButton(gump, 20, y_pos, 210, 211, (key==account.uo_expansion), EXPANSION_START+_key_iter);
+	foreach key in (expansions.keys())
+		GFRadioButton(gump, 20, y_pos, 210, 211, (key == account.uo_expansion), EXPANSION_START + _key_iter);
 		GFTextLine(gump, 45, y_pos, 2100, expansions[key]);
-		y_pos := y_pos+20;
+		y_pos := y_pos + 20;
 		SleepMS(2);
 	endforeach
 
@@ -379,16 +378,16 @@ function SetUOExpansion(who, account)
 	GFAddButton(gump, 245, 260, 2119, 2120, GF_CLOSE_BTN, CANCEL_BTN);
 
 	var input := GFSendGump(who, gump);
-	if ( input[OKAY_BTN] )
+	if (input[OKAY_BTN])
 		var expansion;
-		foreach key in ( input.keys )
-			if ( key >= EXPANSION_START )
-				expansion := expansions.Keys()[key-EXPANSION_START];
+		foreach key in (input.keys)
+			if (key >= EXPANSION_START)
+				expansion := expansions.Keys()[key - EXPANSION_START];
 				break;
 			endif
 			SleepMS(2);
 		endforeach
-		if ( expansion )
+		if (expansion)
 			account.Set_UO_Expansion(expansion);
 		endif
 	endif
@@ -396,27 +395,27 @@ function SetUOExpansion(who, account)
 endfunction
 
 function ProcessInput(who, account, input)
-	if ( input[0] > CHAR_INFO_START )
+	if (input[0] > CHAR_INFO_START)
 		input := (input[0] - CHAR_INFO_START);
 		var char := account.GetCharacter(input).serial;
-		Start_Script(":commands:gm/info", {who, char});
-	elseif ( input[BAN_BTN] )
+		Start_Script(":commands:gm/info", { who, char });
+	elseif (input[BAN_BTN])
 		AccountBanner(who, account);
-	elseif ( input[DISABLE_BTN] )
+	elseif (input[DISABLE_BTN])
 		SuspendAccount(who, account);
-	elseif ( input[UPDATE_NOTES_BTN] )
+	elseif (input[UPDATE_NOTES_BTN])
 		UpdateNotes(who, account, input);
-	elseif ( input[DEF_CMDLEVEL_BTN] )
+	elseif (input[DEF_CMDLEVEL_BTN])
 		SetDefaultCmdLevel(who, account);
-	elseif ( input[EXPANSION_BTN] )
+	elseif (input[EXPANSION_BTN])
 		SetUOExpansion(who, account);
-	elseif ( input[CHANGE_EMAIL] )
+	elseif (input[CHANGE_EMAIL])
 		ChangeEmail(who, account);
-	elseif ( input[CHANGE_ACCTNAME] )
+	elseif (input[CHANGE_ACCTNAME])
 		ChangeAcctName(who, account);
-	elseif ( input[DELETE_CHARACTER] )
+	elseif (input[DELETE_CHARACTER])
 		DeleteCharacter(who, account);
-	elseif ( input[MAXCHAR_BTN]);
+	elseif (input[MAXCHAR_BTN])
 		SetMAxChar(who, account);
 	else
 		SendSysMessage(who, "Cancelled");
@@ -430,14 +429,14 @@ function SetMaxChar(who, account)
 
 	var qtd := Cint(RequestGump(who, "Quantos chars nessa conta?"));
 	account.setprop("maxchars", qtd);
-	SendSysMessage(who, "Max Char: "+qtd);
+	SendSysMessage(who, "Max Char: " + qtd);
 
 endfunction
 
 function DeleteCharacter(who, account)
 	var i := 1;
 	var chars := array;
-	for (i := 1; i < 6; i := i + 1 )
+	for (i := 1; i < 6; i := i + 1)
 		var name := account.getcharacter(i).name;
 		if (name)
 			chars.append(name);
@@ -446,7 +445,7 @@ function DeleteCharacter(who, account)
 
 	var deletar := RadioGump(who, 200, 200, "Escolha o char para deletar", chars);
 
-	for (i := 1; i < 6; i := i + 1 )
+	for (i := 1; i < 6; i := i + 1)
 		var name := account.getcharacter(i).name;
 		if (name == deletar)
 			account.deletecharacter(i);
@@ -454,7 +453,5 @@ function DeleteCharacter(who, account)
 			break;
 		endif
 	endfor
-
-
 
 endfunction

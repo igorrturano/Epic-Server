@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
- 
+*/
 use uo;
 use os;
 use cfgfile;
@@ -16,5 +15,3 @@ exported function IsReagent(reag)
 	reag := reag;
 	return 1;
 endfunction
-
-

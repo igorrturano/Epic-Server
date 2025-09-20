@@ -24,7 +24,7 @@ program SummonMagicCreature(params)
 
 	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
 
-	var undead :=   summon(":brainai:simulacro", targ, who);		
+	var undead := summon(":brainai:simulacro", targ, who);
 
 	if (undead)
 		SendSysMessageEx(who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO);
@@ -34,5 +34,3 @@ program SummonMagicCreature(params)
 	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
 	return 1;
 endprogram
-
-
