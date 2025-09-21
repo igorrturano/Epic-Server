@@ -104,37 +104,30 @@ class Damage(IDamage)
 	endfunction
 
 	function DecreaseSlashDamage(this, value)
-		if ( this._slash == 0 ) return; endif
 		this._slash -= CInt(value);
 	endfunction
 
 	function DecreasePiercingDamage(this, value)
-		if ( this._piercing == 0 ) return; endif
 		this._piercing -= CInt(value);
 	endfunction
 
 	function DecreaseBluntDamage(this, value)
-		if ( this._blunt == 0 ) return; endif
 		this._blunt -= CInt(value);
 	endfunction
 
 	function DecreaseFireDamage(this, value)
-		if ( this._fire == 0 ) return; endif
 		this._fire -= CInt(value);
 	endfunction
 
 	function DecreaseColdDamage(this, value)
-		if ( this._cold == 0 ) return; endif
 		this._cold -= CInt(value);
 	endfunction
 
 	function DecreasePoisonDamage(this, value)
-		if ( this._poison == 0 ) return; endif
 		this._poison -= CInt(value);
 	endfunction
 
 	function DecreaseEnergyDamage(this, value)
-		if ( this._energy == 0 ) return; endif
 		this._energy -= CInt(value);
 	endfunction
 

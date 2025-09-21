@@ -14,14 +14,12 @@ class ContainerGridLayout(Container)
 		for row := 1 to (this._maxRows)
 			var column := array{};
 			for col := 1 to (this._maxColumns)
-				print ("Creating cell " + row + "x" + col);
 				var cellContainer := Container($"Cell {row}x{col}", 
 					CInt((col - 1) * (width / this._maxColumns)), 
 					CInt((row - 1) * (height / this._maxRows)), 
 					CInt(width / this._maxColumns), 
 					CInt(height / this._maxRows)
 				);
-				print("cell->" + cellContainer.ToString());
 				column.append(cellContainer);
 			endfor
 			this._row.append(column);
