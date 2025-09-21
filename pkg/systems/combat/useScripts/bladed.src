@@ -79,8 +79,8 @@ function CarveItems(who, tool, item)
 					return 0;
 				else
 					return start_script(":tn:destroyitems", { who, item, tool });
-										// Script para quebrar itens quebraveis. //OBSOLETO
-										
+				// Script para quebrar itens quebraveis. //OBSOLETO
+
 				endif
 			default:
 				if (((item.objtype >= UOBJ_FISH_START) && (item.objtype <= UOBJ_FISH_END)) ||

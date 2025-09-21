@@ -4,7 +4,7 @@
  * This script allows an alternate behavior other than the default 'open paperdoll' behavior.
  * Useful for things like dismounting.
  *
-*/
+ */
 use uo;
 use os;
 
@@ -33,19 +33,19 @@ program core_dblClickSelf(who)
 	if (mount && !who.warmode)
 
 		// if (GetObjProperty(who, "unicorn") == 1)
-		// 	var op := TeleportGump(who);
-		// 	if (op == 2)
-		// 		var cd := GetCooldown(who, "unicornteleport");
-		// 		if ( cd > 0)
-		// 			SendSysMessage(who, "Ainda faltam " + cd + " segundos para voce usar essa habilidade novamente.");
-		// 			return;
-		// 		else
-		// 			teleport(who);
-		// 		endif
-		// 	elseif (op == 1)
-		// 		EraseObjProperty(who, "unicorn");
-		// 		return MP_Unmount(who);
-		// 	endif
+		//  var op := TeleportGump(who);
+		//  if (op == 2)
+		//      var cd := GetCooldown(who, "unicornteleport");
+		//      if ( cd > 0)
+		//          SendSysMessage(who, "Ainda faltam " + cd + " segundos para voce usar essa habilidade novamente.");
+		//          return;
+		//      else
+		//          teleport(who);
+		//      endif
+		//  elseif (op == 1)
+		//      EraseObjProperty(who, "unicorn");
+		//      return MP_Unmount(who);
+		//  endif
 		// else
 		return MP_Unmount(who);
 	// endif
