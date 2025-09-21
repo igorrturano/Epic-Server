@@ -12,6 +12,8 @@ class CombatAbility(ICombatAbility)
 	var _description := "";
 	var _momentum := COMBATABILITY_MOMENTUM::ONHIT;
 	var _cooldown := 0; // em segundos
+	var _stamCost := 0;
+	var _manaCost := 0;
 	var _effectDuration := 0; // em segundos
 	var _range := 1; // em tiles
 	var _damage := DiceRoll("1d1");
@@ -22,11 +24,20 @@ class CombatAbility(ICombatAbility)
 		this._description := info.description;
 		this._momentum := info.momentum;
 		this._cooldown := info.cooldown;
+		this._stamCost := info.stamCost;
+		this._manaCost := info.manaCost;
 		this._effectDuration := info.effectDuration;
 		this._range := info.range;
 		this._damage := info.damage;
 	endfunction
 
+	function ExecuteOn(this, byRef executor, byRef target)
+		// TODO: Implementar a lógica de execução da habilidade aqui
+		// executor e target são referências aos personagens envolvidos
+		return true;
+	endfunction
+
+	// Private methods
 	function _GetAbilityInfo(this, tag)
 		var cfgFile := ReadConfigFile(":charactercreation:config/habilidades");
 		
@@ -35,6 +46,8 @@ class CombatAbility(ICombatAbility)
 			description := "",
 			momentum := this._momentum,
 			cooldown := 0,
+			stamCost := 0,
+			manaCost := 0,
 			effectDuration := 0,
 			range := 1,
 			damage := DiceRoll("1d2")
@@ -42,10 +55,12 @@ class CombatAbility(ICombatAbility)
 
 		if (tag == COMBATABILITY_NAME::MARTIR)
 			var elem := FindConfigElem(cfgFile, "Martir");
-			info.name := GetConfigString(elem, "nome");
-			info.description := GetConfigString(elem, "desc");
+			info.name := elem.nome;
+			info.description := elem.desc;
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
-			info.cooldown := 0;
+			info.cooldown := CInt(elem.delay);
+			info.stamCost := CInt(elem.stam);
+			info.manaCost := CInt(elem.mana);
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -55,6 +70,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -64,6 +80,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -73,6 +90,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -82,6 +100,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -91,6 +110,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -100,6 +120,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -109,6 +130,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -118,6 +140,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -127,6 +150,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -136,6 +160,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -145,6 +170,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -154,6 +180,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -163,6 +190,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -172,6 +200,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -181,6 +210,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -190,6 +220,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -199,6 +230,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -208,6 +240,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -217,6 +250,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -226,6 +260,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -235,6 +270,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -244,6 +280,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -253,6 +290,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -262,6 +300,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -271,6 +310,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -280,6 +320,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -289,6 +330,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -298,6 +340,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -307,6 +350,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -316,6 +360,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -325,6 +370,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -334,6 +380,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -343,6 +390,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -352,6 +400,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -361,6 +410,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -370,6 +420,7 @@ class CombatAbility(ICombatAbility)
 			info.description := GetConfigString(elem, "desc");
 			info.momentum := COMBATABILITY_MOMENTUM::ONHIT;
 			info.cooldown := 0;
+			info.cost := elem.stam;
 			info.effectDuration := 0;
 			info.range := 1;
 			info.damage := DiceRoll("1d2");
@@ -377,13 +428,6 @@ class CombatAbility(ICombatAbility)
 
 		return info;
 	endfunction
-
-	function ExecuteOn(this, byRef executor, byRef target)
-		// TODO: Implementar a lógica de execução da habilidade aqui
-		// executor e target são referências aos personagens envolvidos
-		return true;
-	endfunction
-
 endclass
 
 enum class COMBATABILITY_NAME
