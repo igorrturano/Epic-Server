@@ -33,12 +33,12 @@ program do_res(parms)
 		endif
 		EraseObjProperty(mobile, "#ResMenu");
 	//  elseif((GetPoisonByType(who, "DefaultPoison").size() > 0) && CheckLineOfSight(who, mobile))
-	// 	PrintTextAbove(who, "Sacrifice Purifies the Body and Soul!");
-	// 	PerformAction(who, ANIM_CAST_AREA);
-	// 	FakeDeath(who);
+	//  PrintTextAbove(who, "Sacrifice Purifies the Body and Soul!");
+	//  PerformAction(who, ANIM_CAST_AREA);
+	//  FakeDeath(who);
 	//    sleep(1);
 	//    PlayObjectCenteredEffect(mobile, FX_BLESS_EFFECT, 10,10);
-	// 	SendSysMessage(mobile, who.name + " has cured you completely!");
+	//  SendSysMessage(mobile, who.name + " has cured you completely!");
 
 	endif
 

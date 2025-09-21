@@ -4,7 +4,7 @@
  * This script allows the scripter to run code when a new character is created.
  * Useful for giving out starting equipment, etc.
  *
-*/
+ */
 use uo;
 use os;
 

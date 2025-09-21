@@ -4,7 +4,7 @@ use util;
 
 program make_snow_balls(who, scoopsofsnow)
 
-	// 	DestroyItem(dung);
+	//  DestroyItem(dung);
 	if (scoopsofsnow.amount < 3)
 		SendSysMessage(who, "You need atleast three scoops of snow to make a snowball.");
 		return;

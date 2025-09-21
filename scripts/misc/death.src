@@ -3,7 +3,7 @@
  * Purpose
  * This script allows side effects to be triggered as a result of NPC death, like unmounting
  *
-*/
+ */
 use uo;
 use os;
 
