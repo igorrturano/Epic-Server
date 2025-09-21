@@ -1,10 +1,11 @@
 use util;
 use basic;
+use math;
 
 include "IDiceRoll";
 
 class DiceRoll(IDiceRoll)
-	var _dice := array{}; // e.g. "1d6+5"
+	var _dice := array{}; // Array de Dice()
 	var _result := array{}; 
 
 	function DiceRoll(this, dice := array{})
@@ -12,6 +13,7 @@ class DiceRoll(IDiceRoll)
 	endfunction
 
 	function SetDice(this, value)
+		this._dice := array{};
 		this._dice := this.AddDice(value);
 	endfunction
 
@@ -21,55 +23,63 @@ class DiceRoll(IDiceRoll)
 			this._result := array{};
 		endif
 		
-		if (TypeOfInt(value) == OT_STRING)
-			value := error { errortext := "Die format must be a string like '1d6+5'" };
+		if (TypeOf(value) != "Dice")
+			value := error { errortext := "Dice format must be a string like '1d6+5'" };
 		elseif (TypeOfInt(value) == OT_ARRAY)
-			foreach die in (value)
-				this.AddDice(die);
+			foreach dice in (value)
+				this.AddDice(dice);
 			endforeach
-		else
-			value := error { errortext := "Die format must be a string like '1d6+5'" };
 		endif
 
 		this._dice.append(value);
-		this._result.append(error { errortext := "Die not rolled yet" });
+		this._result.append(error { errortext := "Dice not rolled yet" });
 	endfunction
 
 	function GetDice(this)
 		return this._dice;
 	endfunction
 
-	function Roll(this)
-		if (this._dice.size() < 1) return error { errortext := "No dice to roll" }; endif
-
-		this._result := array{};
-		foreach die in (this._dice)
-			this._result.append(struct{
-				value := CInt(RandomDiceRoll(die))
-			});
-		endforeach
-	endfunction
-
 	function GetResult(this, resultType := DICE_RESULT::ALL)
 		var result := error { errortext := "No result" };
 		
 		if (resultType == DICE_RESULT::ALL)
-			result := this._result;
+			result := this._result.size() > 1 ? this._result : this._result[1];
 		elseif (resultType == DICE_RESULT::HIGHER)
-			// TODO: Lógica de maior valor
-			result := CInt(0);
+			result := Max(this._result);
 		elseif (resultType == DICE_RESULT::LOWER)
-			// TODO: Lógica de menor valor
-			result := CInt(0);
+			result := Min(this._result);
 		elseif (resultType == DICE_RESULT::SUM)
-			// TODO: Lógica de soma
-			result := CInt(0);
+			var sum := 0;
+			
+			foreach res in (this._result)
+				sum += CInt(res);
+			endforeach
+
+			result := sum;
 		elseif (resultType == DICE_RESULT::AVERAGE)
-			// TODO: Lógica de média
-			result := CInt(0);
+			var sum := 0;
+			var amt := 0;
+
+			foreach res in (this._result)
+				sum += CInt(res);
+				amt += 1;
+			endforeach
+
+			result := CInt(sum / amt);
 		endif
 
 		return result;
+	endfunction
+
+	function Roll(this)
+		if (this._dice.size() < 1) return error { errortext := "No dice to roll" }; endif
+
+		this._result := array{};
+		foreach dice in (this._dice)
+			this._result.append(dice.Roll());
+		endforeach
+
+		return this.GetResult();
 	endfunction
 
 	function ToString(this)
