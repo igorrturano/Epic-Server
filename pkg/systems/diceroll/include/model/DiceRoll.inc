@@ -12,26 +12,26 @@ class DiceRoll(IDiceRoll)
 		this._dice := this.AddDice(dice);
 	endfunction
 
-	function SetDice(this, value)
+	function SetDice(this, dice)
 		this._dice := array{};
-		this._dice := this.AddDice(value);
+		this._dice := this.AddDice(dice);
 	endfunction
 
-	function AddDice(this, value)
+	function AddDice(this, dice)
 		if (this._dice.size() == 0)
 			this._dice := array{};
 			this._result := array{};
 		endif
 		
-		if (TypeOf(value) != "Dice")
-			value := error { errortext := "Dice format must be a string like '1d6+5'" };
-		elseif (TypeOfInt(value) == OT_ARRAY)
-			foreach dice in (value)
-				this.AddDice(dice);
+		if (TypeOf(dice) != "Dice") // TODO: Verificar se o pol encara isso aqui como Dice ou como Class - Se não der certo, é só chamar uma função de Dice e verificar se retorna erro
+			dice := error { errortext := "Dice format must be a string like '1d6+5'" };
+		elseif (TypeOfInt(dice) == OT_ARRAY)
+			foreach die in (dice)
+				this.AddDice(die);
 			endforeach
 		endif
 
-		this._dice.append(value);
+		this._dice.append(dice);
 		this._result.append(error { errortext := "Dice not rolled yet" });
 	endfunction
 
