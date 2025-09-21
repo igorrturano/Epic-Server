@@ -5,12 +5,15 @@ include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/Container/Container";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";
-include ":achievements:model/AchievementCombat";
+include ":achievements:model/Achievement";
 
 function ShowAchievementsGump(who)
+	var whoAchievs := who.GetListAchievement() ?: array{};
+	print ($"Achievements do {who.name}: {whoAchievs}");
+	
 	var gump := Gump(who, "Progresso de Conquistas", 680, 400);
 	
-	var gridLayout := ContainerGridLayout("Layout", 25, 80, 100, 350, 4, 1);
+	var menuContainer := ContainerGridLayout("Layout", 25, 80, 100, 350, 4, 1);
 
 	var combatContainer := Container("CombatContainer", 0, 0, 100, 100);
 	combatContainer.SetVisible(true);
@@ -26,8 +29,30 @@ function ShowAchievementsGump(who)
 	skillsContainer.AddControl(skillsButton);
 	skillsContainer.AddControl(skillsText);
 
-	gridLayout.AddControl(combatContainer, 1,1);
-	gridLayout.AddControl(skillsContainer, 2,1);
-	gump.AddControl(gridLayout);
+	var displayContainer := ContainerGridLayout("DisplayContainer", 130, 80, 535, 305, 12, 5);
+	displayContainer.AddControl(Text("Header_Name", 0, 0, "Nome", TEXT_COLOR::COLOR_RED), 1, 1);
+	displayContainer.AddControl(Text("Header_Type", 0, 0, "Tipo", TEXT_COLOR::COLOR_RED), 1, 2);
+	displayContainer.AddControl(Text("Header_XP", 0, 0, "XP", TEXT_COLOR::COLOR_RED), 1, 3);
+	displayContainer.AddControl(Text("Header_Level", 0, 0, "Level", TEXT_COLOR::COLOR_RED), 1, 4);
+	displayContainer.AddControl(Text("Header_Value", 0, 0, "Valor", TEXT_COLOR::COLOR_RED), 1, 5);
+	var i := 1;
+	foreach achiev in (whoAchievs)
+		i++;
+		var achievRefName := Text("Achiev_RefName", 0, 0, achiev.GetRefName(), TEXT_COLOR::COLOR_YELLOW);
+		var achievName := Text("Achiev_Name", 0, 0, achiev.GetName(), TEXT_COLOR::COLOR_YELLOW);
+		var achievLevel := Text("Achiev_Level", 0, 0, achiev.GetLevel(), TEXT_COLOR::COLOR_YELLOW);
+		var achievXP := Text("Achiev_XP", 0, 0, achiev.GetXP(), TEXT_COLOR::COLOR_YELLOW);
+		var achievValue := Text("Achiev_Value", 0, 0, achiev.GetValue(), TEXT_COLOR::COLOR_YELLOW);
+		displayContainer.AddControl(achievRefName, i, 1);
+		displayContainer.AddControl(achievName, i, 2);
+		displayContainer.AddControl(achievLevel, i, 3);
+		displayContainer.AddControl(achievXP, i, 4);
+		displayContainer.AddControl(achievValue, i, 5);
+	endforeach
+
+	menuContainer.AddControl(combatContainer, 1,1);
+	menuContainer.AddControl(skillsContainer, 2,1);
+	gump.AddControl(menuContainer);
+	gump.AddControl(displayContainer);
 	gump.Show();
 endfunction
