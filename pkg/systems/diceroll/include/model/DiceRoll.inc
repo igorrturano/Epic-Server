@@ -8,7 +8,7 @@ class DiceRoll(IDiceRoll)
 	var _dice := array{}; // Array de Dice()
 	var _result := array{}; 
 
-	function DiceRoll(this, dice := array{})
+	function DiceRoll(this, dice) // dice pode ser string ou array de strings
 		this._dice := this.AddDice(dice);
 	endfunction
 
