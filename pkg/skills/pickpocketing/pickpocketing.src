@@ -156,6 +156,7 @@ program skill_Stealing(mobile)
 			elseif (steal.objtype IN { 0x1085, 0x1086, 0x1087, 0x1088, 0xA349, 0x1089, 0x108a,
 						   			0x2b6e, 0x2b6f, 0x2b70, 0xCE3D, 0xCE3E, 0xCE3F }) // joias
 			
+
 				diff := CInt(steal.weight * 10);
 				if (temHabilidade(mobile, "Batedor de Carteira"))
 					diff := 0;
