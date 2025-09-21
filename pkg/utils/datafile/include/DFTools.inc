@@ -1,10 +1,10 @@
 include ":datafile:datafile";
 
 class DFTools()
-	var filename;
+	var _filename;
 
-	function DFTools(this, _filename)
-		this.filename := _filename;
+	function DFTools(this, filename)
+		this._filename := filename;
 	endfunction
 
 	/*
@@ -26,7 +26,7 @@ class DFTools()
 	 *	- Overwrites existing property values
 	 */
 	function WriteValue(this, elem_name, prop_name, value)
-		var file := DFOpenDataFile(this.filename, DF_CREATE);
+		var file := DFOpenDataFile(this._filename, DF_CREATE);
 		var elem := DFFindElement(file, elem_name, DF_CREATE);
 		elem.SetProp(prop_name, value);
 
@@ -54,10 +54,10 @@ class DFTools()
 	 */
 	function LoadValue(this, elem_name, prop_name)
 		var value;
-		var file := OpenDataFile(this.filename);
+		var file := OpenDataFile(this._filename);
 		var elem := file.FindElement(elem_name);
 
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this.filename}" }; endif
+		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this._filename}" }; endif
 		value := elem.GetProp(prop_name);
 		if (!value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
 
@@ -77,12 +77,12 @@ class DFTools()
 	 * An array of property names for the specified element, or an error if the element is not found.
 	 */
 	function GetElementKeys(this, elem_key)
-		var file := DFOpenDataFile(this.filename, DF_CREATE);
+		var file := DFOpenDataFile(this._filename, DF_CREATE);
 		var elem := file.FindElement(elem_key);
-		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
+		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this._filename}" }; endif
 
 		var props := elem.PropNames();
-		if (!props) return error{ errortext := $"No properties found in element {elem_key} of {this.filename}" }; endif
+		if (!props) return error{ errortext := $"No properties found in element {elem_key} of {this._filename}" }; endif
 
 		return props;
 	endfunction
@@ -97,6 +97,6 @@ class DFTools()
 	 *
 	 */
 	function Erase(this)
-		DFPurgeFile(this.filename);
+		DFPurgeFile(this._filename);
 	endfunction
 endclass
