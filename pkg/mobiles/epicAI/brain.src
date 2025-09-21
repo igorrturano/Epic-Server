@@ -5,6 +5,7 @@ include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
+include "include/genericBrain";
 
 var brain_type;
 var me := Self();
@@ -30,7 +31,7 @@ program KillPlayers()
 				"monster":  MonsterBrain();
 				"animal":   AnimalBrain();
 				"humanoid": HumanoidBrain();
-			// default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
+				default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
 			endcase
 		// Process any TimedScripts
 		endif
