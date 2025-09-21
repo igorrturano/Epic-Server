@@ -36,7 +36,7 @@ class DiceRoll(IDiceRoll)
 	endfunction
 
 	function GetDice(this)
-		return this._dice;
+		return this._dice.size() > 1 ? this._dice : this._dice[1];
 	endfunction
 
 	function GetResult(this, resultType := DICE_RESULT::ALL)
@@ -83,6 +83,12 @@ class DiceRoll(IDiceRoll)
 	endfunction
 
 	function ToString(this)
+		var str := "";
+		foreach dice in (this._dice)
+			if (str != "") str += " + "; endif
+			str += dice.ToString();
+		endforeach
+		return str;
 	endfunction
 endclass
 
