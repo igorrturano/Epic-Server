@@ -31,7 +31,7 @@ program KillPlayers()
 				"monster":  MonsterBrain();
 				"animal":   AnimalBrain();
 				"humanoid": HumanoidBrain();
-				default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
+				default: GenericBrain();
 			endcase
 		// Process any TimedScripts
 		endif
