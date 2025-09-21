@@ -44,6 +44,10 @@ class Achievement()
 		return this.xp;
 	endfunction
 
+	function GetValue(this)
+		return this.value;
+	endfunction
+
 	function SetRefName(this, value)
 		this.refName := value;
 	endfunction

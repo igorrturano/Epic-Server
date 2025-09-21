@@ -4,7 +4,7 @@
  * This script allows the scripter to control how long the character lingers in the world
  * after logoff.
  *
-*/
+ */
 use uo;
 
 include ":timeutils:time";

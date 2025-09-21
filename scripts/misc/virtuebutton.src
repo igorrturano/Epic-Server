@@ -5,8 +5,8 @@ use datafile;
 
 program virtueachievements(who)
 
-	var gflayout := array{                 // 		"noclose",
-					   	"nodispose",                   // 		"nomove",
+	var gflayout := array{                 //      "noclose",
+					   	"nodispose",                   //      "nomove",
 			
 			"page 0",
 			"resizepic 84 90 9260 460 535",
