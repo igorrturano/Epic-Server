@@ -45,6 +45,18 @@ class Dice(IDice)
 		return this._result;
 	endfunction
 
+	function SetAmount(this, amount)
+		this._amount := amount;
+	endfunction
+
+	function SetSides(this, sides)
+		this._sides := sides;
+	endfunction
+
+	function SetModifier(this, modifier)
+		this._modifier := modifier;
+	endfunction
+
 	function Roll(this)
 		this._result := CInt(RandomDiceRoll(this._diceString));
 		return this.GetResult();
