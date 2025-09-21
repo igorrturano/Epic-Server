@@ -1,5 +1,7 @@
 include "ICombatAbility";
 
+include ":diceroll:model/DiceRoll";
+
 class CombatAbility(ICombatAbility)
 	var _name := "";
 	var _description := "";
@@ -7,7 +9,22 @@ class CombatAbility(ICombatAbility)
 	var _cooldown := 0; // em segundos
 	var _effectDuration := 0; // em segundos
 	var _range := 1; // em tiles
-	var _damage := DiceRoll();
+	var _damage := DiceRoll("1d1");
+
+	function CombatAbility(this, abilityName)
+	endfunction
+
+	function _GetAbilityInfo(this, tag)
+		var info := struct{
+			name := "",
+			description := "",
+			momentum := this._momentum,
+			cooldown := 0,
+			effectDuration := 0,
+			range := 1,
+			damage := DiceRoll("1d2")
+		};
+	endfunction
 
 endclass
 
