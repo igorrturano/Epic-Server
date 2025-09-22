@@ -2531,7 +2531,7 @@ function DoppelgangerTransformation(mobile, opponent)
             copied_item.name := item.name;
             copied_item.desc := item.desc;
             EquipItem(mobile, copied_item);
-            copied_items.append(copied_item.serial);
+            copied_items.append(copied_item);
         endif
         sleepms(2);
     endforeach
