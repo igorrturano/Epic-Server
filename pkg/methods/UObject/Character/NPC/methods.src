@@ -6,22 +6,23 @@ To add a new ability:
 3. Add appropriate properties to the ability dictionary
 
 Current Abilities:
-- CanDoWebWrap
-- canSpitAcid
-- CanTongueGrab
-- canCharge
 - CanAmbush
-- canDoConfusion
-- CanShootWeb
-- CanPoisonBite
-- CanClimbWall
-- CanLayEggSac
 - CanCharm
+- CanClimbWall
+- CanDoWebWrap
+- CanLayEggSac
+- CanPoisonBite
+- CanShootWeb
+- CanTongueGrab
 - canBite
+- canCharge
+- canDoConfusion
+- canSpitAcid
 - canThrow
 - hasHiveMind
-- hasTunnelTactics
 - hasRage
+- hasTunnelTactics
+- isDoppelganger
 Remember to maintain alphabetical order in both the comment block and the dictionary.
 */
 use uo;
@@ -457,6 +458,14 @@ exported function isDemonHunter(who)
 		return 1;
 	endif
 	return 0;
+endfunction
+
+exported function isDoppelganger(who)
+	var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+	if (template == "quelino")
+		return 1;
+	endif
+	return HasCustomAbility(who, "isDoppelganger");
 endfunction
 
 exported function getTameDifficulty(who)
