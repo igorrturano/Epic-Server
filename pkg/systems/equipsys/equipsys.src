@@ -8,14 +8,6 @@ program equipsys(params)
 	var who := params[1];
 	var item := params[2];
 
-	// if (item.IsA(POLCLASS_ARMOR))
-	// 	setArmorStats(item);
-	// 	debugArmor(who, item);
-	// elseif (item.IsA(POLCLASS_WEAPON))
-	// 	setWeaponStats(item);
-	// 	debugWeapon(who, item);
-	// endif
-
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
 		equip := EquipWrapperArmor(item);
@@ -26,9 +18,6 @@ program equipsys(params)
 	endif
 
 	equip.Update();
-	print(equip.ToString());
-	// SendSysMessage(who, equip.ToString());
-	Message(equip.ToString()).SendSys(who);
 endprogram
 
 // /**

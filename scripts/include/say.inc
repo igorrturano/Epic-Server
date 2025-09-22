@@ -39,7 +39,7 @@ function PrintTextPrivate(above_object, uc_text, character, color := _DEFAULT_UC
 		return;
 	endif
 
-	return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, character, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, journal_print := JOURNAL_UC_PRINT_NAME);
+	return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, character, font, color, journal_print);
 	// return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, font, color, journal_print);
 endfunction
 
