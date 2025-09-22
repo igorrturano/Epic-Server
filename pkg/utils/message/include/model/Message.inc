@@ -55,6 +55,8 @@ class Message()
 		foreach part in (newMsgArray)
 			this._newMessageFragments.append(part);
 		endforeach
+
+		return this;
 	endfunction
 
 	function SendSys(this, who)
