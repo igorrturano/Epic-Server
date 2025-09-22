@@ -1,6 +1,7 @@
 use uo;
 use os;
 
+include "include/say";
 include "include/client";
 include ":gumps:yesNo";
 
@@ -39,10 +40,10 @@ program point(who)
 	endif
 
 	PerformAction(who, ANIM_SALUTE);
-	PrintTextAbove(who, "*aponta para " + targettedesc + "*", FONT_NORMAL, 55);
+	PrintText(who, "*aponta para " + targettedesc + "*", FONT_NORMAL, 55);
 	sleepms(500);
 	if (!targetted.container)
-		PrintTextAbove(targetted, "*" + who.name + " aponta aqui*", FONT_NORMAL, 55);
+		PrintText(targetted, "*" + who.name + " aponta aqui*", FONT_NORMAL, 55);
 	endif
 	sleep(2);
 	if (targetted.objtype == 0x706c)

@@ -4,6 +4,8 @@ use npc;
 use util;
 use math;
 
+include "include/say";
+
 const COOLDOWN_SECONDS := 20;
 const HIDE_MAX_DIST := 28;
 const MAX_PET_SCAN_RANGE := 18;
@@ -13,7 +15,7 @@ program textcmd_Assoviar(character)
 	var last_use := GetObjProperty(character, "AssoviarCooldown");
 
 	// Adiciona emote de assovio
-	PrintTextAbove(character, "*assovia*");
+	PrintText(character, "*assovia*");
 
 	// Cooldown mais rigoroso
 	if (last_use && current_time < CInt(last_use) + COOLDOWN_SECONDS)
@@ -96,7 +98,7 @@ function CallPetBack(character, pet_serial)
 					  MOVEOBJECT_FORCELOCATION);
 
 	// Faz o pet andar até o dono
-	PrintTextAbove(pet, "*voltando para " + character.name + "*");
+	PrintText(pet, "*voltando para " + character.name + "*");
 
 	// Enviar um evento para o pet andar para o dono
 	var walk_event := struct{ "type" := 0xA008, // GO_LOC_CMD
@@ -165,7 +167,7 @@ function SendPetAway(character)
 	PlaySoundEffect(character, 0x336);
 
 	// Adiciona emote antes de enviar
-	PrintTextAbove(target_pet, "*correndo pro horizonte*");
+	PrintText(target_pet, "*correndo pro horizonte*");
 	sleepms(300); // Delay de 3 segundos
 
 	var params := struct{ pet_serial := target_pet.serial,

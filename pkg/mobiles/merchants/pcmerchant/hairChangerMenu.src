@@ -76,7 +76,7 @@ program MerchantMenu(params)
 				PrintText(npc, "Voce nao tem moedas necessarias.");
 			endif
 		else
-			PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+			PrintText(npc, "Voce nao tem moedas necessarias.");
 			return;
 		endif
 	else

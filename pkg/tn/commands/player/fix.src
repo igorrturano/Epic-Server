@@ -64,18 +64,18 @@ program fix(who, param)
 			endif
 			if (alvo.movable == 1)
 				Fixar(alvo, true);
-				PrintTextAbove(alvo, who.name + " fixou " + alvo.name + ".");
+				PrintText(alvo, who.name + " fixou " + alvo.name + ".");
 				SendSysMessageEx(who, "O item esta protegido contra decay.", SSM_INFO);
 			else
 				if (who.hidden)
-					PrintTextAbove(who, who.name + " tenta desfixar " + alvo.name + " e saiu do esconderijo.");
+					PrintText(who, who.name + " tenta desfixar " + alvo.name + " e saiu do esconderijo.");
 					who.hidden := 1;
 				else
-					PrintTextAbove(who, who.name + " tenta desfixar " + alvo.name + ".");
+					PrintText(who, who.name + " tenta desfixar " + alvo.name + ".");
 				endif
 				Sleep(2);
 				Fixar(alvo, false);
-				PrintTextAbove(alvo, who.name + " soltou " + alvo.name + ".");
+				PrintText(alvo, who.name + " soltou " + alvo.name + ".");
 			endif
 			return 1;
 		endif
@@ -96,12 +96,12 @@ program fix(who, param)
 			endif
 			if (!fixer)
 				SetObjProperty(alvo, "fixer", novoDono.serial);
-				PrintTextAbove(alvo, who.name + " passou o controle de " + alvo.name + " para "
+				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para "
 								+ novoDono.name + ".");
 				return 1;
 			else
 				SetObjProperty(alvo, "fixer", novoDono.serial);
-				PrintTextAbove(alvo, who.name + " passou o controle de " + alvo.name + " para "
+				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para "
 								+ novoDono.name + ".");
 				return 1;
 			endif

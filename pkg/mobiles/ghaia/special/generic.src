@@ -12,7 +12,7 @@ program loko(params)
 	var who := params[1];
 	var event := params[2];
 
-	printtextabove(who, "loko");
+	printtext(who, "loko");
 	if (!who.opponent)
 		return;
 	endif

@@ -111,12 +111,12 @@ function MakeCartoes(who, papel)
 		endfor
 
 		if (!SubtractAmount(papel, 1))
-			PrintTextAbovePrivate(who, "*Voce nao pode usar estes pergaminhos!*", who);
+			PrintTextPrivate(who, "*Voce nao pode usar estes pergaminhos!*", who);
 			return;
 		endif
 
 		if (!CreateItemInContainer(who.backpack, 0xEE23, 1))
-			PrintTextAbovePrivate(who, "*Sua mochila esta cheia!*", who);
+			PrintTextPrivate(who, "*Sua mochila esta cheia!*", who);
 			return;
 		endif
 

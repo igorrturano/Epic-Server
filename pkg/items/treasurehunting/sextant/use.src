@@ -4,9 +4,11 @@
 use uo;
 use math;
 
+include "include/say";
+
 program useScript(who, sextant)
-	PrintTextAbovePrivate(who, ToSextant(who.x, who.y), who);
-	// PrintTextAbovePrivate(who, "*Suas Coordenadas: " + who.x + "-" + who.y + "*", who);
+	PrintTextPrivate(who, ToSextant(who.x, who.y), who);
+	// PrintTextPrivate(who, "*Suas Coordenadas: " + who.x + "-" + who.y + "*", who);
 	return 1;
 endprogram
 

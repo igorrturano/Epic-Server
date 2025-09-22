@@ -28,7 +28,7 @@ program animateSword(params)
 
 	Performaction(who, elem.Anim);
 	PlaySoundEffect(who, 0x520);
-	PrintTextAbove(who, "*Ryu no Ikari*");
+	PrintText(who, "*Ryu no Ikari*");
 
 	sleepms(2);
 	PushBackEX(who, 5, 50, 1);

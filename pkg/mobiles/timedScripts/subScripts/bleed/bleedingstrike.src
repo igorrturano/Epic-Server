@@ -36,10 +36,10 @@ program default_poison(params)
 	viewermsg := "*" + who.name + " esta sangrando!*";
 
 	for (i := 0; i < loops; i := i + 1)
-		PrintTextAbovePrivate(who, poisonedmsg, who);
+		PrintTextPrivate(who, poisonedmsg, who);
 		foreach mobile in (ListMobilesInLineOfSight(who, 8))
 			if (mobile.ip && mobile != who)
-				PrintTextAbovePrivate(who, viewermsg, mobile);
+				PrintTextPrivate(who, viewermsg, mobile);
 			endif
 			sleepms(2);
 		endforeach
