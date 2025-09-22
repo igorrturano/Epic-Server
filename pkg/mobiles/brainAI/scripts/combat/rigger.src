@@ -83,7 +83,7 @@ function ShitToss(npc, opponent, byref dist)
 					AI_Speak(npc, "Take dat yuuz stinkar!!!", SPEAK_TEXTTYPE_YELL);
 					AI_Turn(npc, opponent, NETURN_TOWARD);
 					PlayMovingEffect(npc, opponent, 3900, 10, 10);
-					PrintTextAbove(opponent, "*SPLAT!*");
+					PrintText(opponent, "*SPLAT!*");
 					TS_StartTimer(opponent, "poostink", 30);
 					SetObjProperty(npc, "#NextShoot", ReadGameClock() + 30);
 				endif

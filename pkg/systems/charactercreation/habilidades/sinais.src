@@ -25,7 +25,7 @@ program sinais(who)
 			break;
 		endif
 		if (CheckLineOfSight(who, player)) // Se tiver na LOS
-			PrintTextAbovePrivate(who, "Sinais: " + mensagem, player);
+			PrintTextPrivate(who, "Sinais: " + mensagem, player);
 		else
 			SendSysMessageEx(who, "Fora de Visao", SSM_FAIL);
 		endif

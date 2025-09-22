@@ -382,10 +382,10 @@ function CompareMurderWeapons(character, murder_weapon, magnifyingGlass)
 		return;
 	endif
 	if (what.serial == CInt(murder_weapon))
-		PrintTextAbovePrivate(what, "Isso combina com a evidência!", character);
+		PrintTextPrivate(what, "Isso combina com a evidência!", character);
 		SetObjProperty(magnifyingGlass, "Arma_encontrada", what.name);
 	else
-		PrintTextAbovePrivate(what, "Não são compatíveis", character);
+		PrintTextPrivate(what, "Não são compatíveis", character);
 	endif
 
 endfunction

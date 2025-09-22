@@ -249,7 +249,7 @@ function CoolPot(who, pot)
 endfunction
 
 function SmeltSuccess(who, pot, item, amt)
-	PrintTextAbove(who, "*derretendo minerios*");
+	PrintText(who, "*derretendo minerios*");
 	SubtractAmount(item, CInt(amt));
 	PlayEffectSmelt(who, pot);
 endfunction

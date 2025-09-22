@@ -61,7 +61,7 @@ program UseWood(who, wood)
 
 	if (TesteSkill > 0)
 		Detach();
-		PrintTextAbove(who, "*acendendo uma fogueira*");
+		PrintText(who, "*acendendo uma fogueira*");
 		sleep(5);
 		var campfire := CreateItemAtLocation(x, y, z, UOBJ_CAMPFIRE, 1, who.realm);
 		var torch := CreateItemAtLocation(x, y, z - 4, UOBJ_TORCH, 1, who.realm);

@@ -6,6 +6,8 @@ use uo;
 use os;
 use util;
 
+include "include/say";
+
 program andou( quem )
   var x := quem.x;
   var y := quem.y;
@@ -17,7 +19,7 @@ program andou( quem )
   if ( oitem )
     quem.cleargottenitem();
     moveobjecttolocation( oitem, quem.x, quem.y, quem.z );
-    printtextaboveprivate( quem, "*deixa o item cair*", quem );
+    printtextprivate( quem, "*deixa o item cair*", quem );
   endif
   SetObjProperty( quem, "#torobando", 0 );
   EraseObjProperty( quem, "#pegueiesse" );

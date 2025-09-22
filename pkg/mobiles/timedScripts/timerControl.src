@@ -250,7 +250,7 @@ endfunction
 function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	var elem_info := TS_GetCfgElem(event.name);
 	if (elem_info.errortext)
-		printtextabove(mobile, "Error::AddNewTimer() - Unable to find config elem ["
+		printtext(mobile, "Error::AddNewTimer() - Unable to find config elem ["
 						+ event.name + "] - " + elem_info.errortext);
 		return 0;
 	endif
@@ -259,7 +259,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	if (elem_info.Script)
 		script := Start_Script(elem_info.Script, array{ mobile, event.attacker, event.level });
 		if (script.errortext)
-			printtextabove(mobile, "Error::AddNewTimer() - Unable to start script [" +
+			printtext(mobile, "Error::AddNewTimer() - Unable to start script [" +
 							elem_info.Script + "] ->" + script.errortext);
 			return 0;
 		endif
@@ -278,7 +278,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	timer.+endtime := event.amount + ReadGameClock();
 	timer.+pid := script.pid;
 	timer.+level := event.level;
-	// 	printtextabove(mobile, "event " + event);
+	// 	printtext(mobile, "event " + event);
 	if (event.mantain)
 		timer.+mantain := 1;
 		timer.+mage := event.mage;
@@ -382,15 +382,15 @@ function CheckTimerStatus(mobile, byref timer_list, byref cooldowns, byref num_p
 	foreach timer in (timer_list)
 		var cfg_info := TS_GetCfgElem(_timer_iter);
 		if (cfg_info.errortext)
-			printtextabove(mobile, "Error::CheckTimerStatus() - Unable to find config elem ["
+			printtext(mobile, "Error::CheckTimerStatus() - Unable to find config elem ["
 							+ _timer_iter + "] - " + cfg_info.errortext);
 			continue;
 		endif
 
 		if (Cint(cfg_info.StopOnEnd))
-			// printtextabove(mobile, "nao stop on end " + timer);
+			// printtext(mobile, "nao stop on end " + timer);
 			if (!GetProcess(timer.pid))
-				// printtextabove(mobile, "nao get process " + timer);
+				// printtext(mobile, "nao get process " + timer);
 				var event := struct;
 				event.+name := _timer_iter;
 				event.+amount := -1;

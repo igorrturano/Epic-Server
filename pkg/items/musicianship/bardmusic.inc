@@ -809,7 +809,7 @@ function partituraSom(byref who,byref instrumento,byref partitura)
 				PlaySoundEffect(who, c3);
 				break;
 			"L":
-				PrintTextAbove(who, letra[L],BARD_FONT,BARD_FONT_COLOR_NEUTRA);
+				PrintText(who, letra[L],BARD_FONT,BARD_FONT_COLOR_NEUTRA);
 				L += 1;
 				break;
 			"|":
@@ -831,7 +831,7 @@ function escrevePartitura(byref who, byref partitura)
 		//Verifica se o personagem tem a habilidade de escrever partituras
 
 	if (can_write || TemHabilidade(who, "Compositor Talentoso"))
-		printtextabove(who, "*Escrevendo a partitura*",BARD_FONT,0);
+		printtext(who, "*Escrevendo a partitura*",BARD_FONT,0);
 		PlaySoundEffect(who, 0x24a); //Toca som de escrita
 		sleepms(2000);
 
@@ -869,7 +869,7 @@ function escrevePartitura(byref who, byref partitura)
 		return 1;
 	else
 		SendSysMessage(who, "Voce arruinou a partitura",BARD_FONT,0);
-		printtextabove(who, "*Erra ao escrever as notas*",BARD_FONT_COLOR,BARD_FONT_COLOR_BAD);
+		printtext(who, "*Erra ao escrever as notas*",BARD_FONT_COLOR,BARD_FONT_COLOR_BAD);
 		SubtractAmount(partitura,1);
 		return 0;
 	endif
@@ -1296,7 +1296,7 @@ function comporPartitura(byref who,byref item)
 				until ((instrumento[0].graphic == 0x0eb1) || (instrumento[0].graphic == 0x0eb2) || (instrumento[0].graphic == 0x0eb3) || (instrumento[0].graphic == 0x0eb4));
 
 				//Executa o rascunho de paretitura com o instrumento selecionado
-				PrintTextAbove(who, "*Lendo rascunho de partitura*",BARD_FONT,BARD_FONT_COLOR_BAD);
+				PrintText(who, "*Lendo rascunho de partitura*",BARD_FONT,BARD_FONT_COLOR_BAD);
 				partituraSom(who,instrumento[0],item); //Executa os sons da partitura
 				comporPartitura(who,item); //após tocar o rascunho, volta para a edição
 				break;
@@ -1341,7 +1341,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			foreach mobile in mobiles
 				if ((mobile.connected) && (mobile != who)) //Afeta alvos logados ou NPCs. Não afeta o próprio bardo
 					TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-					PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+					PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 				endif
 			endforeach
 			break;
@@ -1350,10 +1350,10 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				if ((mobile.connected) && (mobile != who))
 					if (mobile.acctname)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 					elseif (GetObjProperty(mobile,"owner"))
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_GOOD);
+						PrintTextPrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_GOOD);
 					endif
 				endif
 			endforeach
@@ -1364,7 +1364,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if (!mobile.acctname)
 						if (!GetObjProperty(mobile,"owner"))
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 						endif
 					endif
 				endif
@@ -1375,7 +1375,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 					endif
 				endforeach
 			else //Alvos membros da mesma Party
@@ -1384,12 +1384,12 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if ((mobile.connected) && (mobile != who))
 						if ((mobile.acctname) && (who.Party == mobile.Party))
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party == dono.Party)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-								PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
+								PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
 							endif
 						endif
 					endif
@@ -1401,7 +1401,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 					endif
 				endforeach
 			else //Alvos nao membros da mesma Party
@@ -1411,17 +1411,17 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						if (mobile.acctname)
 							if (who.Party != mobile.Party)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-								PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+								PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 							endif
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party != dono.Party)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-								PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
+								PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
 							endif
 						else
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
+							PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_GOOD);
 						endif
 					endif
 				endforeach
@@ -1432,7 +1432,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				print (mobile.name + ":" +mobile.alignment);
 				if ((mobile.connected) && (mobile != who) && (mobile.alignment == 1)) //Alvo Evil
 					TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-					PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
+					PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_GOOD);
 				endif
 			endforeach
 			break;
@@ -1442,9 +1442,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 					else
-						PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+						PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 					endif
 				endif
 			endforeach
@@ -1456,17 +1456,17 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 						else
-							PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+							PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					elseif (GetObjProperty(mobile,"owner"))
 						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_BAD);
+							PrintTextPrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_BAD);
 						else
-							PrintTextAbovePrivate(mobile, "resistiu", SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+							PrintTextPrivate(mobile, "resistiu", SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					endif
 				endif
@@ -1480,9 +1480,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-								PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+								PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 							else
-								PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+								PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 							endif
 						endif
 					endif
@@ -1496,9 +1496,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 						else
-							PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+							PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					endif
 				endforeach
@@ -1511,9 +1511,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-									PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+									PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 								else
-									PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+									PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 								endif
 							endif
 						elseif (GetObjProperty(mobile,"owner"))
@@ -1522,9 +1522,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-									PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
+									PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
 								else
-									PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+									PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 								endif
 							endif
 						endif
@@ -1539,9 +1539,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 						else
-							PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+							PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					endif
 				endforeach
@@ -1554,9 +1554,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-									PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+									PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 								else
-									PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+									PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 								endif
 							endif
 						elseif (GetObjProperty(mobile,"owner"))
@@ -1565,18 +1565,18 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-									PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
+									PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
 								else
-									PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+									PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 								endif
 							endif
 						else
 							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-								PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
+								PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
 							else
-								PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+								PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 							endif
 						endif
 					endif
@@ -1590,9 +1590,9 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
-						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
+						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
 					else
-						PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+						PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 					endif
 				endif
 			endforeach
@@ -1767,7 +1767,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 
 	case (magica) //criar a funcao aplicaEfeito(bardo,nomedoefeito,duracao,modifier,range,tipodealvo)
 		BARD_COMUM:
-			PrintTextAbove(who, "*Tocando musica encorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica encorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1777,7 +1777,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_CALMA:
-			PrintTextAbove(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1787,7 +1787,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_TRISTE:
-			PrintTextAbove(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1797,7 +1797,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_ACAO:
-			PrintTextAbove(who, "*Tocando musica empolgante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica empolgante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1807,7 +1807,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_UP:
-			PrintTextAbove(who, "*Tocando musica encorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica encorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1817,7 +1817,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_DOWN:
-			PrintTextAbove(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1827,7 +1827,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_DEX_UP:
-			PrintTextAbove(who, "*Tocando musica empolgante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica empolgante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1837,7 +1837,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_DEX_DOWN:
-			PrintTextAbove(who, "*Tocando musica desanimadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desanimadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1847,7 +1847,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_INT_UP:
-			PrintTextAbove(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1857,7 +1857,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_INT_DOWN:
-			PrintTextAbove(who, "*Tocando musica desconcertante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desconcertante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1867,7 +1867,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_DEX_UP:
-			PrintTextAbove(who, "*Tocando musica motivadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica motivadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 3, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1879,7 +1879,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_DEX_DOWN:
-			PrintTextAbove(who, "*Tocando musica desmotivante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desmotivante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 3, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1891,7 +1891,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_DEX_INT_UP:
-			PrintTextAbove(who, "*Tocando musica motivadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica motivadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1905,7 +1905,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_STR_DEX_INT_DOWN:
-			PrintTextAbove(who, "*Tocando musica desmotivante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desmotivante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1919,7 +1919,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_INSPIRAR_COMPETENCIA: //concede buffs em pericias não combativas nem magicas a UM aliado escolhido
-			PrintTextAbove(who, "*Tocando musica ispiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
+			PrintText(who, "*Tocando musica ispiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
 			TS_StartTimer(who, "bard_tocando", sound_duration, 6, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1929,7 +1929,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_INSPIRAR_HEROISMO: //concede bônus de combate a UM aliado escolhido
-			PrintTextAbove(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
+			PrintText(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
 			TS_StartTimer(who, "bard_tocando", sound_duration, 6, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1939,7 +1939,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_INSPIRAR_CORAGEM: //aumenta todas as resistências em um percentual. Preciso ver como fazer isso ainda
-			PrintTextAbove(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
+			PrintText(who, "*Tocando musica inspiradora*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
@@ -1950,7 +1950,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			break;
 		break;
 		BARD_FASCINAR:
-			PrintTextAbove(who, "*Tocando musica fascinante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica fascinante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 6, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1961,7 +1961,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_ALUCINACAO:
-			PrintTextAbove(who, "*Tocando musica aluciante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica aluciante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 3, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -1974,7 +1974,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			endif
 			break;
 		BARD_DANCA_CONTAGIANTE: //força todos os que estão na área da música a dançarem) faz até aleijado dançar, afinal, é lendaria
-			PrintTextAbove(who, "*Tocando musica contagiante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica contagiante*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -2080,12 +2080,12 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 					if(!resistiu)
 						if ((mobile.connected) && (mobile != who)) //Verificar se esta funcionando nos MOB
 							TS_StartTimer(mobile, "bard_fascinar", duration, DebuffModifier, who, 0);
-							PrintTextAbove(mobile, "*Fascinado*", BARD_FONT, BARD_FONT_COLOR_BAD);
+							PrintText(mobile, "*Fascinado*", BARD_FONT, BARD_FONT_COLOR_BAD);
 						elseif (mobile.connected)
-							PrintTextAbove(mobile, "*Tocando musica fascinadora de cobras*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
+							PrintText(mobile, "*Tocando musica fascinadora de cobras*", BARD_FONT, BARD_FONT_COLOR); //Exibe sobre cabeca do bardo
 						endif
 					else
-						PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
+						PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 					endif
 				endif
 			endforeach
@@ -2103,7 +2103,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			//execução do efeito
 			var fogo;
 			var total_alvos := 0;
-			PrintTextAbove(who, "*Tocando musica dancante*", BARD_FONT, BARD_FONT_COLOR);
+			PrintText(who, "*Tocando musica dancante*", BARD_FONT, BARD_FONT_COLOR);
 			foreach item in mobiles //verifica varias fontes de fogo
 				if ((item.graphic > 1116 && item.graphic < 1167) ||
 					(item.graphic > 2347 && item.graphic < 2413) ||
@@ -2218,7 +2218,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 		 	break;
 		BARD_EMUDECER:
-			PrintTextAbove(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
+			PrintText(who, "*Tocando musica desencorajadora*", BARD_FONT, BARD_FONT_COLOR_COMUM);
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
@@ -2239,7 +2239,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 		BARD_BLOOM:
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
-			PrintTextAbove(who, "*A musica faz o ambiente florescer a sua volta*",BARD_FONT,BARD_FONT_COLOR_LENDARIA);
+			PrintText(who, "*A musica faz o ambiente florescer a sua volta*",BARD_FONT,BARD_FONT_COLOR_LENDARIA);
 			TS_StartTimer(who, "bard_florescer", duration, range, duration, 0);
 			break;
 		default:

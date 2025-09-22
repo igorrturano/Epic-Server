@@ -41,7 +41,7 @@ program PoisonScript(params)
 		duration := duration - 1;
 	endwhile
 
-	PrintTextAbove(mobile, "*uma larva negra rasga a pele*", 3, 55);
+	PrintText(mobile, "*uma larva negra rasga a pele*", 3, 55);
 	var baby := CreateNPCFromTemplate(":brainai:darkborer", mobile.x, mobile.y, mobile.z, 0,
 								   mobile.realm);
 	ApplyRawDamage(mobile, cint(AP_GetVitalMaximumValue(mobile, HITS)) + 3);

@@ -31,7 +31,7 @@ program useScript(mobile, door)
 	endif
 
 	if (IsEmperrado(door))
-		PrintTextAbovePrivate(door, "*Emperrado*", mobile);
+		PrintTextPrivate(door, "*Emperrado*", mobile);
 		return 0;
 	endif
 
@@ -66,7 +66,7 @@ function DoorIsLocked(mobile, door)
 		SendSysMessage(mobile, "You use your key to open the door.");
 		return 0;
 	else
-		PrintTextAbovePrivate(door, "That is locked.", mobile);
+		PrintTextPrivate(door, "That is locked.", mobile);
 		return 1;
 	endif
 endfunction

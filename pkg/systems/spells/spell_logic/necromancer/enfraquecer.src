@@ -37,7 +37,7 @@ program SpellScript(params)
 	endif
 
 	TS_StartTimer(targ, "weaken", cint(AP_GetSkill(who, ARCANA)), amt, who, 1);
-	PrintTextAbovePrivate(targ, "-" + amt + " Str", who, 3, 38); // vermelho
+	PrintTextPrivate(targ, "-" + amt + " Str", who, 3, 38); // vermelho
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 

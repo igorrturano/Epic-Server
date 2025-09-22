@@ -15,7 +15,7 @@ program drink_blue(who, potion)
 	if (lich_serial != who.serial)
 		var destroyPhylactery := YesNo(who, "Você deseja destruir o filactério?");
 		if (destroyPhylactery)
-			PrintTextAbove(potion, "*Quebra*");
+			PrintText(potion, "*Quebra*");
 			PlaySoundEffect(potion, 0x03F);
 			sleep(1);
 			SetCooldown(the_lich, "#phylactery", 0);

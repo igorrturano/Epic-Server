@@ -179,7 +179,7 @@ program runScript_CharProfileRequest(params)
 			if (who.hidden || who.concealed)
 				return;
 			else
-				PrintTextAbovePrivate(who, "*" + who.name + " esta observando voce*", chr, 3, 568);
+				PrintTextPrivate(who, "*" + who.name + " esta observando voce*", chr, 3, 568);
 			endif
 		endif
 	endif

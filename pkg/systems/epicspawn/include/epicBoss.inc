@@ -252,7 +252,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "CombatEvents", cleaned_events);
         var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
         if(res == error)
-            PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
+            PrintText(npc, "Combat Events script error: " + res.errortext);
         endif
     endif
 

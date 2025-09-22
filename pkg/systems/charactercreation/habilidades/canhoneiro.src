@@ -88,12 +88,12 @@ program vacuodemana(params)
 	who.frozen := 1;
 	TurnObjectToward(who, targ.x, targ.y);
 	sleep(1);
-	PrintTextAbove(who, "*Acende o fusível do canhão*");
+	PrintText(who, "*Acende o fusível do canhão*");
 	sleep(1);
 	PlaySoundEffect(who, 0x667); // cannon_fuse
 	sleep(2);
 
-	PrintTextAbove(the_cannon, "*Dispara*");
+	PrintText(the_cannon, "*Dispara*");
 	PlaySoundEffect(who, 0x665); // Shot
 	PlayMovingEffect(the_cannon, targ, 0x5418, 5, 1, 0); // anim do disparo
 	sleep(1);
@@ -116,7 +116,7 @@ program vacuodemana(params)
 	endforeach
 	// destroycraft(targ, who);
 
-	PrintTextAbove(who, "*Desmonta o equipamento*");
+	PrintText(who, "*Desmonta o equipamento*");
 	sleep(2);
 	DestroyItem(the_cannon);
 	who.frozen := 0;

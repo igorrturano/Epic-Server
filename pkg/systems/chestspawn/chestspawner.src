@@ -66,7 +66,7 @@ function makeChests(item, frq, amt, rng)
 		current := currentChests.size();
 		// current := len(chestarray);
 		newamt := CInt(amt - current);
-		// 		printtextabove(item, "current " + current + " amt " + amt + " new amt " + newamt);
+		// 		printtext(item, "current " + current + " amt " + amt + " new amt " + newamt);
 		if (newamt > 0)
 			/* while( 1 )
 				var playernear := hasplayernear(item.x, item.y, item.realm);
@@ -78,13 +78,13 @@ function makeChests(item, frq, amt, rng)
 				endif
 			endwhile */
 			chests := CreateTreasureChests(lvl, newamt, rng, item.x, item.y, item.z, item.realm, lootname);
-			// 			printtextabove(item, " criados " + chests.size());
+			// 			printtext(item, " criados " + chests.size());
 			foreach chest in chests
 				SetObjProperty(chest, "link", item.serial);
 				var e := currentChests.append(cint(chest.serial));
-			// 				printtextabove(item, " criado " + chest.serial);
+			// 				printtext(item, " criado " + chest.serial);
 			endforeach
-			// 			printtextabove(item, " novo current " + currentChests.size());
+			// 			printtext(item, " novo current " + currentChests.size());
 			SetObjProperty(item, "chests", currentChests);
 		endif
 

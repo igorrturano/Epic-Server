@@ -16,7 +16,7 @@ program HitScript(params)
 	params := 0; // Not needed anymore.
 
 	DamageFLS(defender, cint(basedamage - rawdamage), DMG_FORCED, attacker);
-	Printtextabove(defender, "*O ataque atravessa suas defesas!*");
+	PrintText(defender, "*O ataque atravessa suas defesas!*");
 
 	return 1;
 endprogram

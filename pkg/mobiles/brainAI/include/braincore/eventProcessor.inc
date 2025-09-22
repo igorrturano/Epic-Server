@@ -138,15 +138,15 @@ function ProcessEvent(byref event)
 		// Run when the npc is double clicked by a player.
 		// .source	: What sent the double click
 		SYSEVENT_DOUBLECLICKED:
-			//printtextabove(npc, "fui clicado" + g_scripts.keys());
+			//printtext(npc, "fui clicado" + g_scripts.keys());
 			
 			if ( g_scripts.Exists("DblClick") )
 				if ( Distance(event.source, npc) <= g_settings["DblClickRange"] )
 					var process := GetNerveProcess(npc, "DblClick");
-					//printtextabove(npc, " process " + process + " ev " + event + " ev.source " + event.source.name);
+					//printtext(npc, " process " + process + " ev " + event + " ev.source " + event.source.name);
 					if ( !process )
 						var ret := StartNerve(npc, "DblClick", g_scripts["DblClick"].script, array{event, g_settings, g_scripts}, g_scripts["DblClick"].flags);
-						//printtextabove(npc, "startnerve " + ret);
+						//printtext(npc, "startnerve " + ret);
 					else
 						process.SendEvent(event);
 					endif

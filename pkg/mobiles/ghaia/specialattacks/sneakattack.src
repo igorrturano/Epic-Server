@@ -35,7 +35,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*golpe furtivo*");
+	PrintText(attacker, "*golpe furtivo*");
 
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);
