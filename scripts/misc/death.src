@@ -7,14 +7,14 @@
 use uo;
 use os;
 
-program core_npcDeath( corpse )
-  var params := array{ corpse }; // Not necessary, but done to future-proof it.
-  var script := Start_Script( ":death:npcdeath", params );
+program core_npcDeath(corpse)
+	var params := array{ corpse }; // Not necessary, but done to future-proof it.
+	var script := Start_Script(":death:npcdeath", params);
 
-  if ( script.errortext )
-    SysLog( "Error::Start_Script(:death:npcdeath) - " + script.errortext );
-    return 0;
-  endif
+	if (script.errortext)
+		SysLog("Error::Start_Script(:death:npcdeath) - " + script.errortext);
+		return 0;
+	endif
 
-  return 1;
+	return 1;
 endprogram

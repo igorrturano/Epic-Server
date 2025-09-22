@@ -2531,7 +2531,7 @@ function DoppelgangerTransformation(mobile, opponent)
             copied_item.name := item.name;
             copied_item.desc := item.desc;
             EquipItem(mobile, copied_item);
-            copied_items.append(copied_item.serial);
+            copied_items.append(copied_item);
         endif
         sleepms(2);
     endforeach
@@ -2589,6 +2589,23 @@ function CleanupDoppelgangerTransformation(mobile)
         return 0;
     endif
 
+<<<<<<< HEAD
+    // Restore original appearance before destroying items
+    if (transformation_data.original_data)
+        var original := transformation_data.original_data;
+        mobile.graphic := original.graphic;
+        mobile.color := original.color;
+        mobile.name := original.name;
+        mobile.title_race := original.title_race;
+        mobile.title_suffix := original.title_suffix;
+        mobile.title_prefix := original.title_prefix;
+        mobile.gender := original.gender;
+        mobile.trueobjtype := original.trueobjtype;
+        mobile.truecolor := original.truecolor;
+    endif
+
+=======
+>>>>>>> 1b17cb9e37aef59dc054feb4b43db18e26d1fff4
     // Destroy all copied equipment
     if (transformation_data.copied_items)
         foreach item_serial in (transformation_data.copied_items)
