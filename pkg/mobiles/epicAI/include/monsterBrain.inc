@@ -291,7 +291,21 @@ function HandleMonsterEnteredArea(source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-    
+
+    // Handle doppelganger transformation first
+    if (me.isDoppelganger())
+        // Hide the doppelganger
+        me.hidden := 1;
+
+        // Perform transformation
+        if (DoppelgangerTransformation(me, source))
+            sleepms(500); // Brief delay for effect
+        endif
+
+        // Reveal the transformed doppelganger
+        me.hidden := 0;
+    endif
+
     handleMonsterInitialReaction(source);
     if (me.canCharge())
         StartCharge(me, source);
@@ -310,7 +324,7 @@ function HandleMonsterEnteredArea(source, is_ranged)
     endif
 
     HandleMonsterCombatEvent(source, is_ranged);
-    
+
     return 1;
 endfunction
 
