@@ -39,7 +39,7 @@ program cogumelo(who, item)
 		DamageFLS(who, dmg);
 		AP_ModifyStatMod(who, STRENGTH, 10);
 		RecalcVitals(who);
-		PrintTextAbove(who, "*Pupilas dilatam, a pele fica enrubrecida*");
+		PrintText(who, "*Pupilas dilatam, a pele fica enrubrecida*");
 		who.color := 2841;
 
 		var i := 0;
@@ -66,7 +66,7 @@ program cogumelo(who, item)
 		berserkerHallucination(who);
 		Sleep(10);
 	endfor
-	PrintTextAbove(who, "*Parece recobrar a sanidade*");
+	PrintText(who, "*Parece recobrar a sanidade*");
 	AP_ModifyStatMod(who, STRENGTH, -10);
 	RecalcVitals(who);
 
@@ -104,7 +104,7 @@ function berserkerHallucination(who)
 	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 20)
 		if (mobile == who)
 		else
-			PrintTextAbovePrivate(mobile, emotes[RandomInt(emotes.size())], who, _DEFAULT_UCFONT, 2117);
+			PrintTextPrivate(mobile, emotes[RandomInt(emotes.size())], who, _DEFAULT_UCFONT, 2117);
 			sleepms(500);
 		endif
 	endforeach

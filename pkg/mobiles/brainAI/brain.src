@@ -53,7 +53,7 @@ program BrainAI()
 
 	while (npc)
 		var ev;
-		// printtextabove(npc, "ev " + ev);
+		// printtext(npc, "ev " + ev);
 		if (!sleep_mode)
 			RunCycleScript();
 			ev := Wait_For_Event(g_settings["CycleWait"]);

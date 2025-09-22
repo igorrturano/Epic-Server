@@ -71,7 +71,7 @@ program forensic(who)
 		Sleepms(2);
 	endforeach
 
-	Printtextabove(who, "*Tateando e analisando*");
+	PrintText(who, "*Tateando e analisando*");
 	sleep(3);
 
 	if (Distance(who, subject) > 1)
@@ -293,7 +293,7 @@ program forensic(who)
 	else
 		SendSysMessage(who, "Você falhou em sua análise");
 		if (GetObjProperty(who, "fail"))
-			Printtextabove(who, "Você enfiou a mão onde não deve e machucou o paciente");
+			PrintText(who, "Você enfiou a mão onde não deve e machucou o paciente");
 			ApplyDamage(subject, 1);
 			Eraseobjproperty(who, "Fail");
 		endif
@@ -438,7 +438,7 @@ function Autopsy(who, corpse)
 
 	if (!autopsy_data || !lastDamage)
 		EraseObjProperty(who, "#DoingAutopsy");
-		PrintTextAbovePrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
+		PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
 		return;
 	endif
 
@@ -507,7 +507,7 @@ function Autopsy(who, corpse)
 		discoveries_to_make := CInt(optional_categories.size() * 0.25); // 25%
 	else
 		EraseObjProperty(who, "#DoingAutopsy");
-		PrintTextAbovePrivate(who, "*Você não consegue obter nenhuma informação relevante da autopsia.*",
+		PrintTextPrivate(who, "*Você não consegue obter nenhuma informação relevante da autopsia.*",
 							   who);
 		return;
 	endif
@@ -553,7 +553,7 @@ function Autopsy(who, corpse)
 
 	// Executar etapas
 	for stage := 1 to etapas
-		PrintTextAbovePrivate(who, stage_messages[stage], who);
+		PrintTextPrivate(who, stage_messages[stage], who);
 		PerformAction(who, 0x0009);
 		Sleep(3);
 
@@ -596,11 +596,11 @@ function Autopsy(who, corpse)
 
 	if (gm_desc)
 		Sleep(3);
-		PrintTextAbovePrivate(who, "*Você encontra algo diferente: " + gm_desc + "*", who);
+		PrintTextPrivate(who, "*Você encontra algo diferente: " + gm_desc + "*", who);
 		discovery_results["observação"] := gm_desc;
 	endif
 
-	PrintTextAbovePrivate(who, "*Você conclui a autopsia com sucesso.*", who);
+	PrintTextPrivate(who, "*Você conclui a autopsia com sucesso.*", who);
 
 	// Criar o laudo médico
 	CreateReportItem(who, discovery_results, corpse);

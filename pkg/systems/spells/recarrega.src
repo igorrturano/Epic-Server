@@ -51,9 +51,9 @@ program recarrega(item_recebe)
 							PlaySoundEffect(itemcerto, SFX_SPELL_HEAL);
 
 							if (customText == error)
-								PrintTextAbove(itemcerto, "*As propriedades magicas foram reestabelecidas*");
+								PrintText(itemcerto, "*As propriedades magicas foram reestabelecidas*");
 							else
-								PrintTextAbove(itemcerto, customText);
+								PrintText(itemcerto, customText);
 							endif
 
 							itemcerto.movable := 1;

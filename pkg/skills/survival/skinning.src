@@ -71,7 +71,7 @@ program skinning(parms)
 				var dpmod := cint(GetObjProperty(who, "dpmod"));
 				dpmod := dpmod - 10;
 				SetObjProperty(who, "dpmod", dpmod);
-				PrintTextAbove(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
+				PrintText(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
 								journal_print := JOURNAL_PRINT_NAME);
 				SetObjProperty(cadaver, "description", "[Decaptado]");
 				SetObjProperty(cadaver, "WeaponKill", blade.desc);
@@ -99,7 +99,7 @@ program skinning(parms)
 		 (c_type == 1830) || (c_type == 1831) || (c_type == 1832) || (c_type == 1833) || (c_type == 1834) ||
 		 (c_type == 1835)) && (GetObjProperty(cadaver, "morto") != 1))
 		DesmembreCorpse(cadaver);
-		PrintTextAbove(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
+		PrintText(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
 						journal_print := JOURNAL_PRINT_NAME);
 		SetObjProperty(cadaver, "morto", 1);
 	else

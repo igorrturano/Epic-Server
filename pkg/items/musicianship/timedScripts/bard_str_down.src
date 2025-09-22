@@ -15,7 +15,7 @@ program TimedScript_bard_str_down(params)
 			SetObjProperty(alvo, "#Bard_str_down", modificador);
 			AP_ModifyStatMod(alvo, STRENGTH, (modificador - teste));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, (modificador - teste) + " Str", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+			PrintTextPrivate(alvo, (modificador - teste) + " Str", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
 			return 1;
 		else
 			return 0;
@@ -25,7 +25,7 @@ program TimedScript_bard_str_down(params)
 		SetObjProperty(alvo, "#Bard_str_down", modificador);
 		AP_ModifyStatMod(alvo, STRENGTH, (modificador));
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, modificador + " Str", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+		PrintTextPrivate(alvo, modificador + " Str", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
 		return 1;
 	endif
 endprogram

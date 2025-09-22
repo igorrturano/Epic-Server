@@ -3,6 +3,8 @@ use cfgfile;
 use os;
 use vitals;
 
+include "include/say";
+
 const SOUND_MOVEDOWN := 557;
 const SOUND_MOVEUP := 241;
 const ACTION_BOW := 32;
@@ -65,7 +67,7 @@ endfunction
 function NewGraphic(guillotine)
 	var guillotine_cfg := ReadConfigFile(":torture:config/guillotine");
 	if (guillotine_cfg.errortext)
-		PrintTextAbove(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"
+		PrintText(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"
 						+ guillotine_cfg.errortext);
 		return guillotine.graphic;
 	endif

@@ -22,7 +22,7 @@ program useContainer(mobile, container)
 		RunTraps(container, mobile);
 		return 0;
 	elseif (IsEmperrado(container))
-		PrintTextAbovePrivate(container, "*Emperrado*", mobile);
+		PrintTextPrivate(container, "*Emperrado*", mobile);
 		return 0;
 	endif
 
@@ -46,7 +46,7 @@ function ContainerIsLocked(mobile, container)
 		PrintText(mobile, "*Usou uma chave em " + container.desc + "*");
 		return 0;
 	else
-		// PrintTextAbovePrivate(container, "Isto esta trancado.", mobile);
+		// PrintTextPrivate(container, "Isto esta trancado.", mobile);
 		PrintText(mobile, "Tentou abrir " + container.desc + " mas estava trancado*");
 		return 1;
 	endif

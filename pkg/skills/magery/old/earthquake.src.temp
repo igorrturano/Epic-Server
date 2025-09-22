@@ -24,7 +24,7 @@ program spell_earthquake(parms)
 			SetObjProperty(mobile, "LastHit", {caster.name,caster.serial, "earthquake" });
 			send_attack(mobile,caster, 57);
 			dmg := RandomDiceRoll("7d7");
-			PrintTextAbovePrivate( mobile,"You are tossed about as the earth trembles below your feet!", mobile );
+			PrintTextPrivate( mobile,"You are tossed about as the earth trembles below your feet!", mobile );
 			PlaySoundEffect( mobile, SFX_SPELL_EARTHQUAKE );
 			PlayObjectCenteredEffect( mobile, FX_SMOKE, 7, 7);
 			if (mobile.isA(POLCLASS_NPC))

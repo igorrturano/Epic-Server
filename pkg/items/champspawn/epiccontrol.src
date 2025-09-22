@@ -11,7 +11,7 @@ include "include/epicNPCUtils";
 
 program control(altar)
 	while (GetObjProperty(altar, "config") == error)
-		printtextabove(altar, "Sem config" + GetObjProperty(altar, "config"));
+		printtext(altar, "Sem config" + GetObjProperty(altar, "config"));
 		sleep(10);
 	endwhile
 
@@ -183,7 +183,7 @@ function getEpicSpawn(altar, level)
 	endif
 
 	if (!spawns)
-		PrintTextAbove(altar, "ERRO: " + spawns);
+		PrintText(altar, "ERRO: " + spawns);
 		return error;
 	endif
 

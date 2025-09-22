@@ -67,7 +67,7 @@ program potionWalkOn(mobile, potion)
 	else
 
 		PlaySoundEffect(potion, 0x03F);
-		PrintTextAbove(potion, "*Quebra*");
+		PrintText(potion, "*Quebra*");
 		SendSysMessageEx(mobile, "Voce pisou em algo de vidro.", SSM_FAIL);
 
 		sleep(1);

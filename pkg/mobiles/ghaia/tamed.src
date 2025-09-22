@@ -212,7 +212,7 @@ function ProcessSpeech(ev)
 
 	var text := lower(ev.text);
 	var name := lower(me.name);
-	// printtextabove(me, "meu nome " + name );
+	// printtext(me, "meu nome " + name );
 	var todos;
 	if ((ev.source).serial != (me.master).serial)
 
@@ -406,7 +406,7 @@ function TakeItem(ev)
 	// if ( cfgeat[(ev.item).objtype].script["eat"]) //evento comida checando tds os itemdesc para ver se são comíveis
 	if (Cstr(ev.item.objtype) in foodarray)
 		if (happy >= 100)
-			PrintTextAbovePrivate(me, "O animal já está satisfeito", ev.source);
+			PrintTextPrivate(me, "O animal já está satisfeito", ev.source);
 			return;
 		endif
 		// checkbond para ver se já tem animal fidelizado e quantos pode ter
@@ -431,7 +431,7 @@ function TakeItem(ev)
 					if (animais_fidelizados < limite_animais && animais_fidelizados < 2)
 						SetObjProperty(me, "bond", "fiel");
 						SetobjProperty(me, "NeverRelease", 1);
-						PrintTextAbovePrivate(me, "*O animal se esfrega em voce*", owner);
+						PrintTextPrivate(me, "*O animal se esfrega em voce*", owner);
 						PlaySoundEffect(me, npccfg[me.npctemplate].idlesound);
 						SendSysMessage(owner, +me.name + " criou um vinculo de fidelidade com voce!", 0, 61);
 						SetObjProperty(me, "dpmod", -20);
@@ -459,7 +459,7 @@ function TakeItem(ev)
 		endif
 		var tameinfo := "";
 		tameinfo := "* " + me.name + " " + GetHappy(happy) + "*";
-		PrintTextAbove(me, tameinfo);
+		PrintText(me, tameinfo);
 		return;
 	elseif (ev.item.graphic == 3701 || ev.item.graphic == 2482)
 		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
@@ -654,7 +654,7 @@ endfunction
 
 function UnTame()
 
-	PrintTextAbovePrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
+	PrintTextPrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
 	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 	if (GetObjProperty(me, "summoned"))
@@ -665,13 +665,13 @@ function UnTame()
 
 	if (!orig_script)
 
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif (orig_script["tamed"])
 
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		PrintText(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
@@ -882,7 +882,7 @@ function obediencecheck()
 	if ((GetObjProperty(me, "summoned") == 1) || (GetObjProperty(me, "NeverRelease") == 1)) // se for summon ou fiel/bond não destama não desobedece
 		return 1;
 	elseif ((happiness < 37) && (finaldefiance > checkvalue))
-		PrintTextAbovePrivate(me, "*O animal te ignora*", owner);
+		PrintTextPrivate(me, "*O animal te ignora*", owner);
 		PlaySoundEffect(me, dmgsound);
 		happiness := happiness - orneriness;
 		SetObjProperty(me, "happiness", (happiness - 1));

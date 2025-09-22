@@ -31,7 +31,7 @@ program doubleattack(params)
 	PlayHitSounds(attacker, defender);
 	PlaySoundEffect(attacker, 0x50E);
 
-	PrintTextAbove(attacker, "*palma explosiva*");
+	PrintText(attacker, "*palma explosiva*");
 
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);

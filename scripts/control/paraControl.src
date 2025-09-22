@@ -32,7 +32,7 @@ program paracontrol( field )
         send_attack( cast_on, boss, 46 );
         if ( !GetObjProperty( cast_on, "#pfield" ) )
           if ( CheckResist( cast_on, VONTADE, 70, -CInt( AP_GetSkill( creater, ARCANA ) / 2.5 ) ) )
-            PrintTextAbovePrivate( cast_on, "You resist the spell", cast_on );
+            PrintTextPrivate( cast_on, "You resist the spell", cast_on );
             PlaySoundEffect( cast_on, SFX_SPELL_WEAKEN );
             PlayObjectCenteredEffect( cast_on, FX_CURSE_EFFECT, 5, 5 );
           else

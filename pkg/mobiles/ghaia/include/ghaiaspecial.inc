@@ -60,14 +60,14 @@ function CanFight(me, mobile, align)
   elseif (mobile.cmdlevel && GetObjProperty(mobile, "ignorenpcs") == 1) //kra eh gm
         return 0;
   elseif ( GetCooldown(me, "peacemade") > 0 )
-	//printtextabove(me, "nao");
+	//printtext(me, "nao");
 	return 0;
   elseif ( GetObjProperty(mobile, "#fantasma") == 1)
 	return 0;
     endif
-  //printtextabove(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
+  //printtext(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
   if ( Cint(GetCooldown(mobile, "deathtime" )) > 0  )
-	//printtextabove(me, "nao vou atacar" + mobile.name);
+	//printtext(me, "nao vou atacar" + mobile.name);
 	return 0;
   endif
   
@@ -89,7 +89,7 @@ function CanFight(me, mobile, align)
 				endif
 		endif
       
-      //printtextabove(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais"))); 
+      //printtext(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais"))); 
       if ( (cint(GetObjProperty(mobile, "empatiacomanimais")) == 1) || TemHabilidade(mobile, "Senso da Natureza" )) //verifica se tem empatia por animais
         if ( (mytemplate == "giantbat") || (mytemplate == "giantrat") || (mytemplate == "gianttoad") 
         || (mytemplate == "giantserpent") || (mytemplate == "snake") || (mytemplate == "mongbat") || (mytemplate == "naja")
@@ -163,13 +163,13 @@ function AlertAllies(me, opponent)
   */
   /*var allies := GetConfigStringArray( npccfgfile[mytemplate], "allie" );
   
- // printtextabove(me, " " + allies);
+ // printtext(me, " " + allies);
   
   foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
     if (mobile.npctemplate)
       	if ( ParseTemplateName(mobile.npctemplate).template in allies)
 		if (mobile.opponent == error)
-		//	printtextabove(mobile, "fui alertado");
+		//	printtext(mobile, "fui alertado");
         		SendEvent(mobile, ev);
 		endif
 	endif
@@ -298,14 +298,14 @@ function InitializeNpc(mobile)
 
   //elem := FindConfigElem(npccfgfile, mytemplate);
   propallies := GetConfigStringDictionary( elem, "allyprop");
-  //printtextabove(mobile, " prop " + propallies + " " + elem + " " + propallies);
+  //printtext(mobile, " prop " + propallies + " " + elem + " " + propallies);
 
   var spawnpointserial := GetObjProperty(mobile, "spawnpoint");
-  //printtextabove(mobile, " " + spawnpointserial);
+  //printtext(mobile, " " + spawnpointserial);
   //print("spawnpoint " + spawnpointserial);
   if (spawnpointserial)
     var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
-    //printtextabove(mobile, " " + spawnpoint);
+    //printtext(mobile, " " + spawnpoint);
     if (spawnpoint)
       var range := cint(GetObjProperty(spawnpoint, "Range"));
       if (!range)
@@ -318,7 +318,7 @@ function InitializeNpc(mobile)
     endif
   endif
 
-//printtextabove(mobile, "initialize npc");
+//printtext(mobile, "initialize npc");
   if (GetObjProperty(mobile, "started"))
 	return 0;
   endif
@@ -388,8 +388,8 @@ function hasCombat(me)
   var str := GetConfigString(npccfgfile[mytemplate],  "SpecialCombat");
   str := splitwords(str);
   if TS_GetCooldown(me, str[1]))
-    return PrintTextAbove(me, "Estou em Cooldown");
-  //printtextabove(me, " " + str);
+    return PrintText(me, "Estou em Cooldown");
+  //printtext(me, " " + str);
   if (str.size() >= 1)
       return 1;
   endif
@@ -400,13 +400,13 @@ function doCombatSpecial(me)
 
   var str := GetConfigString(npccfgfile[mytemplate],  "SpecialCombat");
   str := splitwords(str);
-  //printtextabove(me, " " + TS_GetCooldown(me, str[1]))
+  //printtext(me, " " + TS_GetCooldown(me, str[1]))
   if (!TS_GetCooldown(me, str[1]))
     sleemps(10);
     TS_StartCooldown(me, cstr(str[1]), cint(str[2]));
       var e := Start_Script(str[1], array{me, cint(str[2]), str[1]});
     sleemps(10);
-      //printtextabove(me, " " + e +  " " + str[1]);
+      //printtext(me, " " + e +  " " + str[1]);
   endif
 
 endfunction

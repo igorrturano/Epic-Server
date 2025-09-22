@@ -13,15 +13,15 @@ program manobra(attacker)
 
 	SendSysMessageEx(attacker, "Corra entre seus inimigos.", SSM_INFO);
 	sleep(1);
-	PrintTextAbovePrivate(attacker, "3", attacker);
+	PrintTextPrivate(attacker, "3", attacker);
 	x1 := attacker.x;
 	y1 := attacker.y1;
 	sleep(1);
-	PrintTextAbovePrivate(attacker, "2", attacker);
+	PrintTextPrivate(attacker, "2", attacker);
 	x2 := attacker.x;
 	y2 := attacker.y;
 	sleep(1);
-	PrintTextAbovePrivate(attacker, "1", attacker);
+	PrintTextPrivate(attacker, "1", attacker);
 	x3 := attacker.x;
 	y3 := attacker.y;
 

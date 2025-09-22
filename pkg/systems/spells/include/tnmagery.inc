@@ -243,7 +243,7 @@ function CastSpell(mobile, spellinfo, targ)
 		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo});
 		return;
 	else
-		PrintTextAbove(mobile, " " + spellinfo);
+		PrintText(mobile, " " + spellinfo);
 	endif
 
 	var alvos := array;
@@ -344,7 +344,7 @@ function EncantoCurar(mobile, alvos, spellinfo)
 	else
 		foreach mob in alvos
 			mob.hits := mob.hits + dmg;
-			PrintTextAbove(mob, "*consertado*");
+			PrintText(mob, "*consertado*");
 		endforeach
 	endif
 

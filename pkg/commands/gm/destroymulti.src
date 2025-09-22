@@ -4,6 +4,7 @@
 */
 use uo;
 
+include "include/say";
 include ":gumps:yesNo";
 
 program textcmd_DestroyMulti(who, serial)
@@ -17,7 +18,7 @@ program textcmd_DestroyMulti(who, serial)
 		if (targ.multi)
 			multi := targ.multi;
 		else
-			PrintTextAbovePrivate(targ, "I dont have a multi property.", who);
+			PrintTextPrivate(targ, "I dont have a multi property.", who);
 			return 0;
 		endif
 	else

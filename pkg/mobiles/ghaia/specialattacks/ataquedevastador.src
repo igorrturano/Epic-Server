@@ -30,7 +30,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*ataque devastador*");
+	PrintText(attacker, "*ataque devastador*");
 
 	// TODO colocar isso em uma funcao depois
 	var dmgList := dictionary;

@@ -10,7 +10,7 @@ include "include/epicConstants";
 
 program sandstormEffect(who)
 	PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 10, 20, 0, who.realm); // Redemoinho
-	PrintTextAbove(who, "Você nota que uma tempestade de areia se aproxima");
+	PrintText(who, "Você nota que uma tempestade de areia se aproxima");
 
 	Sleep(5);
 
@@ -22,9 +22,9 @@ program sandstormEffect(who)
 	endif
 
 	if (CheckResist(who, FORTITUDE, difficulty, +Cint(survival_skill / 20)))
-		PrintTextAbove(who, "Você consegue se proteger da tempestade de areia!");
+		PrintText(who, "Você consegue se proteger da tempestade de areia!");
 	else
-		PrintTextAbove(who, "A tempestade de areia o atinge com força total!");
+		PrintText(who, "A tempestade de areia o atinge com força total!");
 		var effect := RandomInt(3);
 		case (effect)
 			0: InvokeCreature(who);
@@ -36,25 +36,25 @@ endprogram
 
 function InvokeCreature(who)
 	// Implemente a lógica para invocar uma criatura
-	PrintTextAbove(who, "Uma criatura misteriosa surge da tempestade!");
+	PrintText(who, "Uma criatura misteriosa surge da tempestade!");
 	// Exemplo: CreateNpcFromTemplate(":brainai:sandstormcreature", who.x, who.y, who.z, 0, who.realm);
 	CreateNPCFromTemplate(":brainai:caninoatroz", who.x, who.y, who.z, 0, who.realm);
 endfunction
 
 function TeleportPlayer(who)
 	// Implemente a lógica para teleportar o jogador
-	PrintTextAbove(who, "A tempestade o arrasta para outro lugar!");
+	PrintText(who, "A tempestade o arrasta para outro lugar!");
 	var loc := randomLocation(who);
 	// Exemplo: MoveObjectToLocation(who, RandomInt(100)+5000, RandomInt(100)+1000, 0, who.realm, MOVEOBJECT_FORCELOCATION);
 	MoveObjectToLocation(who, loc[1], loc[2], loc[2], who.realm, MOVEOBJECT_FORCELOCATION);
 endfunction
 
 function FreezeinSand(who)
-	PrintTextAbove(who, "Você fica atolado na areia!");
+	PrintText(who, "Você fica atolado na areia!");
 	who.frozen := 1;
 	Sleep(10);
 	who.frozen := 0;
-	PrintTextAbove(who, "Você consegue se libertar da areia.");
+	PrintText(who, "Você consegue se libertar da areia.");
 endfunction
 
 function randomLocation(who)

@@ -198,9 +198,9 @@ function normalusage(who, item)
    endif
 
    if (status == "off")
-      PrintTextAbove(who, "*Ativa*");
+      PrintText(who, "*Ativa*");
    else
-      PrintTextAbove(who, "*Desativa*");
+      PrintText(who, "*Desativa*");
 			if ( GetObjProperty(item, "powerword"))
 				item.invisible := 1;
 			endif
@@ -350,7 +350,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-			PrintTextAbove(creature,""+text_above);
+			PrintText(creature,""+text_above);
 			endif
 		else
 			var x := GetObjProperty(item, "x");
@@ -361,7 +361,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-				PrintTextAbove(creature,""+text_above);
+				PrintText(creature,""+text_above);
 			endif
 		endif
  SetObjProperty(item, "champ", creature.serial);
