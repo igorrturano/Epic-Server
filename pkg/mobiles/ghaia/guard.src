@@ -161,7 +161,7 @@ function CheckPlayer(who)
 
 				break;
 			"userban":
-				// printtextabove(me, "O userban ta batendo aqui " + law.opt + " vamo ver");
+				// printtext(me, "O userban ta batendo aqui " + law.opt + " vamo ver");
 				if (who.name == law.opt)
 					warning := who;
 					warn_type := 2;

@@ -3,6 +3,8 @@ use util;
 use cfgfile;
 use os;
 
+include "include/say";
+
 // In order of most dry, to least dry.
 var dry_colors := dictionary;
 dry_colors[0] := 1509;
@@ -20,7 +22,7 @@ program PlantGrower(grower)
 	set_priority(1);
 	sleep(1);
 	if (!GetObjProperty(grower, "seed"))
-		PrintTextAbove(grower, "No seed info. Destroying.");
+		PrintText(grower, "No seed info. Destroying.");
 		DestroyItem(grower);
 		return;
 	elseif (grower.GetPhase() <= 1)

@@ -169,9 +169,9 @@ program arremesso(params)
 		if (to_hit_chance < (to_miss_chance + parry_chance)) // Erra ou defende
 			if (to_hit_chance > to_miss_chance)
 				PlayHitSounds(who, alvo);
-				PrintTextAbove(alvo, "*Defendeu!*");
+				PrintText(alvo, "*Defendeu!*");
 			endif
-			PrintTextAbove(who, "*Errou!*");
+			PrintText(who, "*Errou!*");
 			return 0;
 		else
 			var poisonInfo := GetObjProperty(targ, "poisonInfo");
@@ -202,7 +202,7 @@ program arremesso(params)
 			PlayMovingEffect(who, alvo, 0x22C6, 10);
 			DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
 			PlaySoundEffect(alvo, 0x521);
-			PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+			PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 			MakeBleed(alvo);
 			PlayHitSounds(who, alvo);
 			return 1;
@@ -216,15 +216,15 @@ program arremesso(params)
 		endif
 		if (tipoAlvo != ARREMESSO_TIPO_TERRENO)
 			if (to_hit_chance < to_miss_chance) // Errou!
-				PrintTextAbove(who, "*Errou!*");
+				PrintText(who, "*Errou!*");
 				return 0;
 			else
-				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+				PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 				PlaySoundEffect(alvo, 0x136);
 				DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
 				DamageFLS(targ, dmg, DMG_PHYSICAL, who);
 				PlaySoundEffect(alvo, 0x521);
-				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+				PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 				if (alvo.isSpiderEggSac())
 					var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
 				endif

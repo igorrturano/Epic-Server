@@ -67,7 +67,7 @@ program change(who, item)
 			var deveCriarMarcadorIncendio := false;
 			if (tempoDecorrido % 2 == 0)
 				PerformAction(who, 0x20); // Bow
-				PrintTextAbove(who, "*Tentando iniciar um incêndio*");
+				PrintText(who, "*Tentando iniciar um incêndio*");
 			endif
 
 			var limiteTempo;
@@ -149,7 +149,7 @@ function Destilar(balao, beker, who, item)
 	SendSysMessage(who, "O extrato começa a ferver.");
 	sleep(5);
 	PlaySoundEffect(who, 0x0021);
-	PrintTextAbove(balao, "O liquido esta em ebulicao.");
+	PrintText(balao, "O liquido esta em ebulicao.");
 	sleep(5);
 	PlaySoundEffect(who, 0x241);
 	sleep(3);

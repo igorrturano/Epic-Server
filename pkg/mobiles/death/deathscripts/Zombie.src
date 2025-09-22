@@ -20,7 +20,7 @@ program DeathScript(params)
 			ResZombie(corpse, pieces, template);
 		endif
 	else
-		PrintTextAbove(corpse, "*o zumbi se desfaz em poeira*");
+		PrintText(corpse, "*o zumbi se desfaz em poeira*");
 		SleepMS(500);
 		DestroyItem(corpse);
 	endif
@@ -29,7 +29,7 @@ program DeathScript(params)
 endprogram
 
 function ResZombie(corpse, byref pieces, template)
-	PrintTextAbove(corpse, "*os ossos se movem*");
+	PrintText(corpse, "*os ossos se movem*");
 	SleepMS(30);
 
 	var corpse_color := corpse.color;

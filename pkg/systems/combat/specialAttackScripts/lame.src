@@ -8,7 +8,7 @@ program SpecialAttack_Lame(combatInfo)
 	var defender := combatInfo.defender;
 	var effectTime := combatInfo.effectTime;
 
-	PrintTextAbove(defender, "*Aleijado*");
+	PrintText(defender, "*Aleijado*");
 	SendSysMessage(attacker, "Você ataca a perna do oponente.");
 	SendSysMessage(defender, "Sua perna foi atingida.");
 

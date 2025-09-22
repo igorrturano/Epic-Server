@@ -20,6 +20,6 @@ function TrapMobile(mobile)
 		SendSysMessageEx(mobile, "Você ficou preso na teia de aranha!", SSM_FAIL);
 		TS_StartTimer(mobile, "paralysis", 5);
 		SetObjProperty(mobile, "spiderWebArea", 1);
-		PrintTextAbove(mobile, "*preso na teia*");
+		PrintText(mobile, "*preso na teia*");
 	endif
 endfunction

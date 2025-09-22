@@ -26,7 +26,7 @@ program TimedScript_Bard_tocando(params)
 		else
 			AP_SetVital(alvo, "Stamina", 0);
 			damageFLS(alvo, cint(custo * 2), DMG_FORCED, 0);
-			PrintTextAbovePrivate(alvo, "Voce esta tocando alem do seu limite fisico.", alvo, BARD_FONT,
+			PrintTextPrivate(alvo, "Voce esta tocando alem do seu limite fisico.", alvo, BARD_FONT,
 								   BARD_FONT_COLOR_BAD);
 		endif
 		// Efeito visual

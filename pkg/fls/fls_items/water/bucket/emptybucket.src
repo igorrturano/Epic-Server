@@ -1,6 +1,7 @@
 use uo;
 use os;
 
+include "include/say";
 include ":water:buckets";
 include ":propagacao:include/propagacao";
 
@@ -65,7 +66,7 @@ function IrrigateFarm(who, bucket, scarecrow)
 	foreach plant in plant_list
 		var ret := WaterPlant(who, bucket, plant, water_per, 0); // no messages!
 		result[ret] := result[ret] + 1;
-		// PrintTextAbovePrivate(plant, "*has been watered a little*", who);
+		// PrintTextPrivate(plant, "*has been watered a little*", who);
 		sleepms(10);
 	endforeach
 	// No message for watering properly.
@@ -156,7 +157,7 @@ endfunction
 
 function SplashObject(who, bucket, targ)
 	PerformAction(who, 0xD);
-	PrintTextAbove(who, "*" + who.name + " joga agua do balde*");
+	PrintText(who, "*" + who.name + " joga agua do balde*");
 	sleepms(800);
 	PlayMovingEffect(who, targ, 8111, 7, 10);
 	PlaySoundEffect(targ, SOUND_POUR2);
@@ -170,11 +171,11 @@ function SplashObject(who, bucket, targ)
 
 	var aguinha := CreateItemAtLocation(targ.x, targ.y, targ.z, 4091, 1, targ.realm);
 	if (targ.isa(POLCLASS_MOBILE))
-		PrintTextAbove(targ, "*" + name + " fica molhado*");
+		PrintText(targ, "*" + name + " fica molhado*");
 		if (bucket.objtype == MILK_BUCKET)
 			aguinha.color := 2322;
 			SetName(aguinha, "leite derramado");
-			PrintTextAbove(targ, "*" + name + " esta cheirando leite*");
+			PrintText(targ, "*" + name + " esta cheirando leite*");
 		// 	elseif ( targ.IsA(POLCLASS_MOBILE) )
 		// 		CureSpecific(targ, "poostink", -1);
 		endif
@@ -183,7 +184,7 @@ function SplashObject(who, bucket, targ)
 		EraseObjProperty(targ, "molhado");
 	else
 		if ((targ.objtype >= 14732) && (targ.objtype <= 14746))
-			PrintTextAbove(targ, "*O fogo apaga*");
+			PrintText(targ, "*O fogo apaga*");
 			DestroyItem(targ);
 		elseif (targ.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
 			var marcadoresIncendio := ListItemsNearLocationOfType(targ.x, targ.y, targ.z, 1,
@@ -194,10 +195,10 @@ function SplashObject(who, bucket, targ)
 				marcador.Estimular(RESFRIAMENTOS::RAZOAVEL, true);
 			endforeach
 		elseif (targ.objtype == 3555)
-			PrintTextAbove(targ, "*A fogueira apaga");
+			PrintText(targ, "*A fogueira apaga");
 			DestroyItem(targ);
 		else
-			PrintTextAbove(targ, "*fica molhado*");
+			PrintText(targ, "*fica molhado*");
 		endif
 	endif
 

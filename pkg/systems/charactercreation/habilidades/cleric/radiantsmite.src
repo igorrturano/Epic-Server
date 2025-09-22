@@ -19,7 +19,7 @@ program habilidade(who)
 			PlaySoundEffect(targ, 0x1F8);
 			var blind_duration := theology_bonus;
 			SetCooldown(targ, "blinded", blind_duration);
-			PrintTextAbove(targ, "*cegado pela luz divina*");
+			PrintText(targ, "*cegado pela luz divina*");
 
 			// Remove objetos da visão do alvo como no spell cegar
 			var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 16, targ.realm);
@@ -70,7 +70,7 @@ program habilidade(who)
 			AP_ModifyStatMod(targ, INTELLIGENCE, points);
 			var int_points := points;
 
-			PrintTextAbove(targ, "*enfraquecido pela ira divina*");
+			PrintText(targ, "*enfraquecido pela ira divina*");
 			SendSysMessageEx(who, "Seu alvo foi enfraquecido pela ira sagrada!", SSM_INFO);
 
 			// Remove debuffs após duração
@@ -91,7 +91,7 @@ program habilidade(who)
 
 			SetCooldown(targ, "exposed", theology_bonus);
 
-			PrintTextAbove(targ, "*exposto*");
+			PrintText(targ, "*exposto*");
 			SendSysMessageEx(who, "Seu alvo está exposto!", SSM_INFO);
 			SendSysMessageEx(targ, "Você foi marcado! Sua defesa está comprometida!", SSM_FAIL);
 	endcase

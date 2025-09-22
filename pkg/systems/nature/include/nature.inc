@@ -425,7 +425,7 @@ function wetPowder(who)
     var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
     foreach item in items
         if (item.objtype == 0x9092)
-            PrintTextAbove(item, "*Molhada*");
+            PrintText(item, "*Molhada*");
             SubtractAmount(item, RandomInt(5) + 1);
         endif
     endforeach

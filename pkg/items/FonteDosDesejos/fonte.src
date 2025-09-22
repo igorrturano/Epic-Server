@@ -3,6 +3,7 @@ use uo;
 use os;
 use datafile;
 
+include "include/say";
 include "include/client";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
@@ -57,7 +58,7 @@ program fonte(who, fountain)
 		DestroyItem(moeda);
 	endif
 
-	PrintTextAbove(fountain, "*" + who.name + " joga " + qtd_escolhida + " moedas na fonte*");
+	PrintText(fountain, "*" + who.name + " joga " + qtd_escolhida + " moedas na fonte*");
 
 	// Abre o gump para fazer o desejo
 	var desejo := ShowDesejoGump(who);

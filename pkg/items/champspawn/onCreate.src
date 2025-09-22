@@ -99,7 +99,7 @@ program Setup(altar)
 	item.movable := 0;
 	item.name := "champion altar";
 	pent.append(item.serial);
-	// 	PrintTextAbove(mainPent, "1 - " + pent);
+	// 	PrintText(mainPent, "1 - " + pent);
 	SetObjProperty(mainPent, "pentagram", pent);
 
 endprogram

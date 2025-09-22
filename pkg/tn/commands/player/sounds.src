@@ -4,6 +4,7 @@ use util;
 use os;
 use cfgfile;
 
+include "include/say";
 include ":tn:actions_sounds_tools";
 
 program sound(who, text)
@@ -21,7 +22,7 @@ program sound(who, text)
 	// Reproduz o som normalmente
 	PlaySoundEffect(who, resultado[1]);
 	if (resultado[2])
-		PrintTextAbove(who, resultado[2]);
+		PrintText(who, resultado[2]);
 
 		// Para cada área de eco encontrada, reproduz o eco
 		foreach echo_area in echo_areas
@@ -33,7 +34,7 @@ program sound(who, text)
 			// Reproduz o eco 3 vezes
 			for i := 1 to 3
 				PlaySoundEffectXYZ(echo_area.x, echo_area.y, echo_area.z, resultado[1]);
-				PrintTextAbove(echo_anchor, resultado[2] + " ...", 33 + i);
+				PrintText(echo_anchor, resultado[2] + " ...", 33 + i);
 				Sleep(2);
 			endfor
 

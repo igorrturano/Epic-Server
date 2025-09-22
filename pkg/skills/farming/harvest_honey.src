@@ -74,10 +74,10 @@ program harvest_honey(character, beehive)
 							SendSysMessage(character, "Voce enfureceu as abelhas!", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
 							if (character.graphic == 401)
 								PlaySoundEffect(character, 0x32F);
-								PrintTextAbove(character, "*Gritando*");
+								PrintText(character, "*Gritando*");
 							else
 								PlaySoundEffect(character, 0x441);
-								PrintTextAbove(character, "*Gritando*");
+								PrintText(character, "*Gritando*");
 							endif
 							return 0;
 						endif

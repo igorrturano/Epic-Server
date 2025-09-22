@@ -416,7 +416,7 @@ function CreatureTrack(who, mobontrack, mobname)
 					else
 						var mob_marcado := SystemFindObjectBySerial(GetObjProperty(who, "marcou_mob"));
 						EraseObjProperty(mob_marcado, "marcadacaca");
-						PrintTextaboveprivate(who, "*Voce se concentra no novo alvo, esquecendo o anterior!*", who);
+						PrintTextPrivate(who, "*Voce se concentra no novo alvo, esquecendo o anterior!*", who);
 						sleepms(300);
 					endif
 					SetObjProperty(mobontrack, "marcadacaca", 1); // Marca da caça, definida no scritp de damage.inc

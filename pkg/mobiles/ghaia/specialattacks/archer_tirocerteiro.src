@@ -19,7 +19,7 @@ program tirocerteiro(params)
 	var dist := distance(attacker, defender);
 	CheckDistance(attacker, defender, dist);
 
-	Printtextabove(attacker, "Mira com precisão", SSM_INFO);
+	PrintText(attacker, "Mira com precisão", SSM_INFO);
 	SetObjProperty(attacker, "#attackbonus", 100);
 
 endprogram
