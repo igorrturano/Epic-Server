@@ -28,12 +28,18 @@ include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
 include ":achievements:CombatController";
+include ":epicAI:epicai";
 
 // include ":spawnnet:spawnnet";
 // include ":spawnregion:spawn";
 
 program core_npcDeath(params)
 	var corpse := params[1];
+
+	// Clean up doppelganger transformation if this was a doppelganger
+	if (GetObjProperty(corpse, "#doppelganger_transformed"))
+		CleanupDoppelgangerTransformation(corpse);
+	endif
 
 	var lastHit := GetObjProperty(corpse, "lastHit");
 	if (":combat:weaponHitScripts/generic" in lastHit.hitscript)
