@@ -2531,7 +2531,7 @@ function DoppelgangerTransformation(mobile, opponent)
             copied_item.name := item.name;
             copied_item.desc := item.desc;
             EquipItem(mobile, copied_item);
-            copied_items.append(copied_item);
+            copied_items.append(copied_item.serial);
         endif
         sleepms(2);
     endforeach
@@ -2609,9 +2609,10 @@ function CleanupDoppelgangerEquipment(mobile)
         return 0;
     endif
 
-    // Destroy all copied equipment (items stored directly, not serials)
+    // Destroy all copied equipment (using serials to find items)
     if (transformation_data.copied_items)
-        foreach item in (transformation_data.copied_items)
+        foreach item_serial in (transformation_data.copied_items)
+            var item := SystemFindObjectBySerial(item_serial);
             if (item)
                 DestroyItem(item);
             endif

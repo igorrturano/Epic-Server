@@ -31,6 +31,7 @@ function MonsterBrain()
                 HandleMonsterLeftArea(me.opponent);
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
+                is_ranged := isMonsterRanged();
                 is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
             endif
         endif
@@ -300,6 +301,13 @@ function HandleMonsterEnteredArea(source, is_ranged)
         // Perform transformation
         if (DoppelgangerTransformation(me, source))
             sleepms(500); // Brief delay for effect
+            // Re-evaluate ranged status after transformation
+            is_ranged := isMonsterRanged();
+            // Enable archer-specific abilities if needed
+            if (is_ranged)
+                GrantPrivilege(me, "firewhilemoving");
+                me.enable("firewhilemoving");
+            endif
         endif
 
         // Reveal the transformed doppelganger
