@@ -26,7 +26,7 @@ program jogar(who, dano)
 		return;
 	endif
 
-	PrintTextAbovePrivate(who, "*arremessa*", who);
+	PrintTextPrivate(who, "*arremessa*", who);
 
 	PerformAction(who, 4);
 

@@ -117,7 +117,7 @@ endfunction
 function DoFeverEffect(mobile, damage)
 	// Fever effects: sweating, shivering, etc.
 	Imersao(mobile, "arfar");
-	PrintTextAbove(mobile, "*suando*");
+	PrintText(mobile, "*suando*");
 
 	// Apply life damage
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
@@ -129,7 +129,7 @@ function DoThromboEffect(mobile, damage)
 	// Thrombus effects: limping, sudden pain
 	Imersao(mobile, "gemer"); // Just the animation, no sound or emote
 	PlayerSpeedSlower(mobile, 1);
-	PrintTextAbove(mobile, "*manca*");
+	PrintText(mobile, "*manca*");
 
 	// Apply stamina damage
 	ReduceStamina(mobile, damage);
@@ -142,7 +142,7 @@ endfunction
 
 function DoPustulesEffect(mobile, damage)
 	// Pustules effects: scratching, visible pustules
-	PrintTextAbove(mobile, "*coça a pele irritada*");
+	PrintText(mobile, "*coça a pele irritada*");
 	// Use bow animation for scratching motion
 	sleep(1);
 	Imersao(mobile, "tossir1");
@@ -151,7 +151,7 @@ function DoPustulesEffect(mobile, damage)
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
 
 	sleep(3);
-	PrintTextAbove(mobile, "*uma pústula estoura*");
+	PrintText(mobile, "*uma pústula estoura*");
 
 	var pus := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x122A, 1); // Small blood pool
 	pus.name := "pus nojento";
@@ -164,7 +164,7 @@ endfunction
 function DoLacerationEffect(mobile, damage)
 	// Laceration effects: bleeding, pain
 	Imersao(mobile, "sentirdor"); // Pain sound
-	PrintTextAbove(mobile, "*segura o ferimento*");
+	PrintText(mobile, "*segura o ferimento*");
 
 	// Apply life damage
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
@@ -186,7 +186,7 @@ function DoItchingEffect(mobile, damage)
 								"*coça as costas contra uma superfície*", "*coça o rosto*" };
 
 	var spot := scratch_spots[RandomInt(scratch_spots.size()) + 1];
-	PrintTextAbove(mobile, spot);
+	PrintText(mobile, spot);
 	Imersao(mobile, "bow"); // Bow animation for scratching
 
 	// Apply stamina damage
@@ -197,7 +197,7 @@ endfunction
 
 function DoStomachacheEffect(mobile, damage)
 	// Colic/Stomachache effects: doubling over, pain
-	PrintTextAbove(mobile, "*segura o estômago*");
+	PrintText(mobile, "*segura o estômago*");
 	Imersao(mobile, "vomitar"); // Sound and emote
 
 	// Apply life damage
@@ -214,14 +214,14 @@ endfunction
 function DoPalpitationsEffect(mobile, damage)
 	// Palpitations effects: heart racing, breathing difficulties
 	// Chest pain
-	PrintTextAbove(mobile, "*segura o peito*");
+	PrintText(mobile, "*segura o peito*");
 	Imersao(mobile, "arfar"); // Pain sound
 
 	// Apply stamina damage
 	ReduceStamina(mobile, damage);
 
 	sleep(2);
-	PrintTextAbove(mobile, "*sente o coração acelerado*");
+	PrintText(mobile, "*sente o coração acelerado*");
 	Imersao(mobile, "tossir2"); // Stagger animation
 	mobile.facing := RandomDiceRoll("1d8");
 
@@ -230,7 +230,7 @@ endfunction
 
 function DoNauseaEffect(mobile, damage)
 	// Nausea effects: discomfort, potential vomiting
-	PrintTextAbove(mobile, "*parece enjoado*");
+	PrintText(mobile, "*parece enjoado*");
 	Imersao(mobile, "vomitar"); // Discomfort sound
 
 	// Apply stamina damage
@@ -243,7 +243,7 @@ endfunction
 
 function DoHeadacheEffect(mobile, damage)
 	// Headache effects: holding head, dizziness
-	PrintTextAbove(mobile, "*Você se sente tonto*");
+	PrintText(mobile, "*Você se sente tonto*");
 	Imersao(mobile, "cair"); // Pain sound
 	PlayCharCair(mobile);
 

@@ -42,7 +42,7 @@ program SpellScript(params)
 	// equipitem(globo, backpack);
 	var lantern := CreateItematLocation(globo.x, globo.y, globo.z, "lantern1", 1, globo.realm);
 	TS_StartTimer(globo, "summon", GetSpellDuration(who) + 180);
-	// printtextabove(globo, " " + lantern);
+	// printtext(globo, " " + lantern);
 	EquipITem(globo, lantern);
 	return 1;
 endprogram

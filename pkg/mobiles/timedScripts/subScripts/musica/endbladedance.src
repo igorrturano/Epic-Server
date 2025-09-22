@@ -11,7 +11,7 @@ program cureScript(params)
 
 	var newsword := MoveObjectToLocation(espada, mobile.x, mobile.y, mobile.z, mobile.realm,
 									  MOVEOBJECT_FORCELOCATION);
-	PrintTextAbove(mobile, "*A espada adormece*", 3, 191);
+	PrintText(mobile, "*A espada adormece*", 3, 191);
 	SetObjProperty(mobile, "GuardKill", 1);
 	ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
 	DestroyItem(mobile);

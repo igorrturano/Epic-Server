@@ -34,17 +34,17 @@ program evidence(params)
 			var remember;
 			if (!victim.acctname)
 				remember := "Sofri " + crimeType + "!!! Vou te repassar o que me lembro...";
-				PrintTextAbovePrivate(victim, remember, character);
+				PrintTextPrivate(victim, remember, character);
 			else
 				var options := { "Sim", "Não" };
 				var quest_gump := SelectionGumpSmall(character,
 										 "Você quer repassar as informações do crime para o investigador?", options);
 				if (options == "Sim")
 					remember := "*" + crimeType + "!!! Você repassa o que se recorda*";
-					PrintTextAbove(victim, remember);
+					PrintText(victim, remember);
 				else
 					remember := "A vítima se nega a te repassar informações sobre o crime";
-					PrintTextAbovePrivate(character, remember, character);
+					PrintTextPrivate(character, remember, character);
 					return;
 				endif
 			endif
@@ -302,13 +302,13 @@ function InvestigarAreaCrime(magnifyingGlass, areax, areay, areaz, arearealm)
 	foreach option in selectedOptions
 		case (option)
 			"pegadas":
-				Printtextabove(investigator, "*Analisando o solo em busca de pegadas*");
+				PrintText(investigator, "*Analisando o solo em busca de pegadas*");
 				CreatePegadas(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv, investigator);
 			"testemunha":
-				Printtextabove(investigator, "*Recolhendo evidências acerca de testemunha ocular*");
+				PrintText(investigator, "*Recolhendo evidências acerca de testemunha ocular*");
 				CriarTestemunha(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv);
 			"dedução":
-				Printtextabove(investigator, "*Efetuando deduções conforme vestígios do ambiente*");
+				PrintText(investigator, "*Efetuando deduções conforme vestígios do ambiente*");
 				SetObjProperty(magnifyingGlass, "Deduzir Realizado", 1);
 				InvestigarEvidencias(magnifyingGlass, investigator, "deduzir");
 		endcase
@@ -348,7 +348,7 @@ function CreatePegadas(magnifyingGlass, areax, areay, areaz, arearealm, skillChe
 		attempts += 1;
 		if (moveobj != error)
 			SetObjProperty(pegadas, "evidência", 1);
-			PrintTextAbove(pegadas, "*!*");
+			PrintText(pegadas, "*!*");
 			SendSysMessage(investigator, "Você encontrou pegadas suspeitas na área.");
 			print(" x " + x + " y " + y);
 			return pegadas;
@@ -581,7 +581,7 @@ function InvestigarEvidencias(magnifyingGlass, investigator, type := "pegada")
 		SetObjProperty(magnifyingGlass, "Depoimento Coletado", 1);
 		SetObjProperty(targ, "GuardKill", 1);
 		Sleep(2);
-		PrintTextAbove(targ, "*Sofre um ataque cardíaco fulminante*");
+		PrintText(targ, "*Sofre um ataque cardíaco fulminante*");
 		Sleep(2);
 		ApplyRawDamage(targ, CInt(AP_GetVitalMaximumValue(targ, "Hits")));
 	endif
@@ -618,7 +618,7 @@ function murder_weapon(character, victimSerial, magnifyingGlass) // RETIRAR
 	endif
 
 	if (SkillCheck(character, MEDICINE, -1, pts) > 0)
-		Printtextabove(character, "Desenhando...");
+		PrintText(character, "Desenhando...");
 		sleep(3);
 		SendSysMessage(character, "Você concluiu o desenho da suposta arma com sucesso!");
 
@@ -703,7 +703,7 @@ function GerenciarDicas(magnifyingGlass, numDicas, autor, tipo, alvo := 0)
 
 			case (tipo)
 				"analisarPegada": SendSysMessageEx(alvo, "Nova informação sobre: " + dica, SSM_INFO);
-				"depoimento":     PrintTextAbove(alvo, resultado);
+				"depoimento":     PrintText(alvo, resultado);
 				"deduzir":        SendSysMessageEx(alvo, "Nova informação sobre: " + dica, SSM_INFO);
 			endcase
 		endif

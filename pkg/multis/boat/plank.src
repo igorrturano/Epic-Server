@@ -16,7 +16,7 @@ program useplank(mob, plank)
 			YankOntoBoat(mob, plank);
 		endif
 	else
-		PrintTextAbovePrivate(plank, "Esta trancado.", mob);
+		PrintTextPrivate(plank, "Esta trancado.", mob);
 	endif
 endprogram
 

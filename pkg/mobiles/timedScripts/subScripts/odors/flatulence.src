@@ -2,6 +2,8 @@ use uo;
 use os;
 use util;
 
+include "include/say";
+
 program TimedScript_Flatulence(params)
 	var who := params[1];
 
@@ -14,7 +16,7 @@ program TimedScript_Flatulence(params)
 
 		PlaySoundEffect(who, sounds[RandomInt(sounds.size()) + 1]);
 
-		PrintTextAbove(who, "*breaks wind*");
+		PrintText(who, "*breaks wind*");
 
 		foreach mobile in (ListMobilesNearLocationEX(who.x, who.y, who.z, 10,
 													  LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN))

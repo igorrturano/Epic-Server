@@ -18,7 +18,7 @@ program TimedScript_bard_inspirar_coragem(params)
 			SetObjProperty(alvo, "#ReflexosMod", modificador + GetObjProperty(alvo, "#ReflexosMod"));
 			SetObjProperty(alvo, "#VontadeMod", modificador + GetObjProperty(alvo, "#VontadeMod"));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
+			PrintTextPrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
 								   BARD_FONT_COLOR_GOOD);
 			SendSysMessage(alvo, "Fortitude, Reflexos e Vontade melhorados.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 			return 1;
@@ -32,7 +32,7 @@ program TimedScript_bard_inspirar_coragem(params)
 		SetObjProperty(alvo, "#ReflexosMod", modificador + GetObjProperty(alvo, "#ReflexosMod"));
 		SetObjProperty(alvo, "#VontadeMod", modificador + GetObjProperty(alvo, "#VontadeMod"));
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
+		PrintTextPrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
 							   BARD_FONT_COLOR_GOOD);
 		SendSysMessage(alvo, "Fortitude, Reflexos e Vontade melhorados.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 		return 1;

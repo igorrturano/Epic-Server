@@ -87,7 +87,7 @@ function MakeBoardSerra(who, item, nova_tabua)
 	var charactery := who.y;
 	var toras;
 
-	PrintTextAbove(who, "*começa a serrar madeira*");
+	PrintText(who, "*começa a serrar madeira*");
 	repeat
 		if ((item.amount) <= 0)
 			break;

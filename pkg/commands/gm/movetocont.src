@@ -1,5 +1,7 @@
 use uo;
 
+include "include/say";
+
 program textcmd_moveitem(who)
 	SendSysMessage(who, "Select an item to move.");
 	var what := TargetCoordinates(who);
@@ -14,7 +16,7 @@ program textcmd_moveitem(who)
 				// (by leaving parameters 2 and 3 default)
 				var result := MoveItemToContainer(what.item, cont.item);
 				if (result)
-					PrintTextAbovePrivate(what.item, "Done!", who);
+					PrintTextPrivate(what.item, "Done!", who);
 				else
 					SendSysMessage(who, "Unable to move item: " + result.errortext);
 				endif

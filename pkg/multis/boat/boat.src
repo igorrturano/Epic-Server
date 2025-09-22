@@ -93,7 +93,7 @@ program autostart_boat(param)
 				if ((x == boat.x) && (y == boat.y))
 					ms_delay_between_moves := 1000;
 					state := STATE_DRIFTING;
-					PrintTextAbove(tillerman, "Aargh!! Se continuarmos bateremos em algo!");
+					PrintText(tillerman, "Aargh!! Se continuarmos bateremos em algo!");
 				// SmackEveryone();
 				endif
 				sleepms(ms_delay_between_moves);
@@ -148,12 +148,12 @@ function handle_speech(event)
 	if (text["drift"] || text["levantar ancora"])
 		ms_delay_between_moves := 1000;
 		state := STATE_DRIFTING;
-		PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+		PrintText(tillerman, "Aye Aye, Capitao!");
 	elseif (text["avante"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			state := STATE_MOVING;
 			if (text["a bombordo"])
 				relative_direction := 7;
@@ -165,9 +165,9 @@ function handle_speech(event)
 		endif
 	elseif (text["para tras"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			state := STATE_MOVING;
 			if (text["a bombordo"])
 				relative_direction := 5;
@@ -178,99 +178,99 @@ function handle_speech(event)
 			endif
 		endif
 	elseif (text["recolher velas"] || text["parar o barco"] || text["furl"])
-		PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+		PrintText(tillerman, "Aye Aye, Capitao!");
 		ms_delay_between_moves := 1000;
 		state := STATE_DRIFTING;
 	elseif (text["jogar ancora"])
-		PrintTextAbove(tillerman, "Aye Aye, Capitao! Barco Ancorado!");
+		PrintText(tillerman, "Aye Aye, Capitao! Barco Ancorado!");
 		ms_delay_between_moves := 1000;
 		state := STATE_STATIONARY;
 	elseif (text["virar a estibordo"] || text["starboard"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			TurnBoat(boat, 1);
 		endif
 	elseif (text["a estibordo"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			state := STATE_MOVING;
 			relative_direction := 2;
 		endif
 	elseif (text["virar a bombordo"] || text["port"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			TurnBoat(boat, 3);
 		endif
 	elseif (text["a bombordo"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Capitao!");
+			PrintText(tillerman, "Aye Aye, Capitao!");
 			state := STATE_MOVING;
 			relative_direction := 6;
 		endif
 	elseif (text["come about"] || text["girar o barco"])
 		if (state == STATE_STATIONARY)
-			PrintTextAbove(tillerman, "O barco esta ancorado, Capitao!");
+			PrintText(tillerman, "O barco esta ancorado, Capitao!");
 		else
-			PrintTextAbove(tillerman, "Aye Aye, Captain! Girando o Barco!");
+			PrintText(tillerman, "Aye Aye, Captain! Girando o Barco!");
 			TurnBoat(boat, 2);
 			sleep(1);
 		endif
 	/* NEW MAP COURSE COMMANDS */
 	elseif (text["viagem"])
-		PrintTextAbove(tillerman, "Me entregue o bilhete.");
+		PrintText(tillerman, "Me entregue o bilhete.");
 		var map := Target(event.source);
 		// if(!map.isa(POLCLASS_MAP))
 		if (GetObjProperty(map, "plots") == error)
-			PrintTextAbove(tillerman, "Eu preciso do seu bilhete!");
+			PrintText(tillerman, "Eu preciso do seu bilhete!");
 		else
 			SetObjProperty(tillerman, "course", GetObjProperty(map, "plots"));
 			SetObjProperty(tillerman, "nextwaypoint", 1);
-			PrintTextAbove(tillerman, "Arr, rota programada.");
+			PrintText(tillerman, "Arr, rota programada.");
 		endif
 	// elseif(text["clear course"])
-	// 	PrintTextAbove(tillerman, "Arr, course cleared Cap'n.");
+	// 	PrintText(tillerman, "Arr, course cleared Cap'n.");
 	// 	EraseObjProperty(tillerman, "course");
 	// 	EraseObjProperty(tillerman, "nextwaypoint");
 	// elseif(text["nav"])
 	// 	if(state != STATE_FOLLOWING_COURSE)
-	// 		PrintTextAbove(tillerman, "We are not currently following a course.");
+	// 		PrintText(tillerman, "We are not currently following a course.");
 	// 	else
-	// 		PrintTextAbove(tillerman, "We are following our course.");
-	// 		PrintTextAbove(tillerman, "The next waypoint is #" + GetObjProperty(tillerman,"nextwaypoint"));
+	// 		PrintText(tillerman, "We are following our course.");
+	// 		PrintText(tillerman, "The next waypoint is #" + GetObjProperty(tillerman,"nextwaypoint"));
 	// 	endif
 	elseif (text["partir"])
 		if ((GetObjProperty(tillerman, "course") == error) || (GetObjProperty(tillerman, "nextwaypoint") == error))
-		// PrintTextAbove(tillerman,"Arr, set course first Cap'n.");
+		// PrintText(tillerman,"Arr, set course first Cap'n.");
 		else
 			state := STATE_FOLLOWING_COURSE;
 			SetObjProperty(tillerman, "nextwaypoint", 1);
-		// PrintTextAbove(tillerman,"Aye, sailing to first waypoint.");
+		// PrintText(tillerman,"Aye, sailing to first waypoint.");
 		endif
 	// elseif(text["continue"])
 	// 	if( (GetObjProperty(tillerman,"course")==error) || (GetObjProperty(tillerman,"nextwaypoint")==error))
-	// 		PrintTextAbove(tillerman,"Arr, set course first Cap'n.");
+	// 		PrintText(tillerman,"Arr, set course first Cap'n.");
 	// 	else
 	// 	    state := STATE_FOLLOWING_COURSE;
-	// 		PrintTextAbove(tillerman,"Aye, moving on.");
+	// 		PrintText(tillerman,"Aye, moving on.");
 	// 	endif
 	endif
 	/* END NEW MAP COURSE COMMANDS */
 	if (text["a toda velocidade"])
 		if (state != STATE_STATIONARY)
-			PrintTextAbove(tillerman, "Aye Aye, Capitao! A toda velocidade!");
+			PrintText(tillerman, "Aye Aye, Capitao! A toda velocidade!");
 			ms_delay_between_moves := 100;
 		endif
 	elseif (text["diminuir velocidade"])
 		if (state != STATE_STATIONARY)
-			PrintTextAbove(tillerman, "Aye Aye, Capitao! ");
+			PrintText(tillerman, "Aye Aye, Capitao! ");
 			ms_delay_between_moves := 1000;
 		endif
 	endif
@@ -288,7 +288,7 @@ function process_event(event)
 		var text := lower(event.text);
 		if (CanCommandMe(event.source) || text["partir"])
 			if (text["drydock"])
-				PrintTextAbove(tillerman, "Aye Aye, Captain! Docking.");
+				PrintText(tillerman, "Aye Aye, Captain! Docking.");
 				drydock(event);
 				sleep(1);
 			else
@@ -415,20 +415,20 @@ function drydock(event)
 	var mobsondeck := boat.mobiles;
 
 	if (len(items) > 0)
-		PrintTextAbovePrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while items are on deck!",
+		PrintTextPrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while items are on deck!",
 							   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
 	endif
 	items := EnumerateItemsInContainer(boat.hold);
 	if (len(items) > 0)
-		PrintTextAbovePrivate(boat.tillerman, "Arrh, we'd best clear out the items in the hold first, Captain!",
+		PrintTextPrivate(boat.tillerman, "Arrh, we'd best clear out the items in the hold first, Captain!",
 							   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
 	endif
 	if (len(mobsondeck) > 0)
-		PrintTextAbovePrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while people are on the deck!",
+		PrintTextPrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while people are on the deck!",
 							   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
@@ -631,7 +631,7 @@ function BoatFollowCourse(boat)
 	destx := cint(course[nextwaypoint].x);
 	desty := cint(course[nextwaypoint].y);
 
-	// printtextabove(boat, " destx " + destx + " desty " + desty);
+	// printtext(boat, " destx " + destx + " desty " + desty);
 
 	newpoint := lineBresenham(startx, starty, destx, desty);
 	newfacing := GetNewFacing(startx, starty, newpoint[1], newpoint[2]);
@@ -642,7 +642,7 @@ function BoatFollowCourse(boat)
 		if (nextwaypoint > course.size()) // done
 			state := STATE_DRIFTING;
 			EraseObjProperty(boat.tillerman, "course");
-			PrintTextAbove(boat.tillerman, "Arr, chegamos ao nosso destino!");
+			PrintText(boat.tillerman, "Arr, chegamos ao nosso destino!");
 			return;
 		else
 			SetObjProperty(boat.tillerman, "nextwaypoint", nextwaypoint);
@@ -660,7 +660,7 @@ function BoatFollowCourse(boat)
 
 		if ((startx == boat.x) && (starty == boat.y)) // we didn't move. must be blocked
 			state := STATE_DRIFTING;
-			PrintTextAbove(tillerman, "Aaargh!  We've stopped!");
+			PrintText(tillerman, "Aaargh!  We've stopped!");
 		endif
 	endif
 

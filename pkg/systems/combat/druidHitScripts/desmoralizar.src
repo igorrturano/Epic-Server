@@ -23,6 +23,6 @@ program taunt(who)
 	if (!CheckResist(targ, VONTADE, who))
 		var event := struct{ "type" := EVID_FLEE, "source" := who };
 		SendEvent(targ, event);
-		PrintTextAbove(targ, "*Em panico*");
+		PrintText(targ, "*Em panico*");
 	endif
 endprogram

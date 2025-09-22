@@ -5,7 +5,7 @@ include ":timedScripts:timedScripts";
 
 program manobra(who)
 
-	PrintTextAbove(who, "*Ataque Poderoso*");
+	PrintText(who, "*Ataque Poderoso*");
 	TS_StartTimer(who, "ataquepoderoso", cint(AP_GetSkill(who, TACTICS)));
 
 endprogram

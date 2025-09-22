@@ -37,7 +37,7 @@ program use_explosion(who, potion)
 		return 0;
 	endif
 
-	PrintTextAbove(who, "Sopra uma baforada de fogo.");
+	PrintText(who, "Sopra uma baforada de fogo.");
 
 	// Use TurnObjectToward para virar o who na direção do alvo.
 	TurnObjectToward(who, targ.x, targ.y);
