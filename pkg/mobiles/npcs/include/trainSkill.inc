@@ -64,13 +64,13 @@ function MerchantTrain(me, who, text)
 					// Nope. Train to the variance level.
 					max_skill_to_train := Abs( variance );
 				endif
-				PrintTextAbovePrivate( me, "I will train the in " + attrib_name + " for " + max_skill_to_train + ".", who );
+				PrintTextPrivate( me, "I will train the in " + attrib_name + " for " + max_skill_to_train + ".", who );
 				SetObjProperty(who, "TrainMaxCost", max_skill_to_train);
 				SetObjProperty(who, "TrainSkill", attrib_name);
 				return;
 			endif
 		endforeach
-		PrintTextAbovePrivate(me, "I know not of that skill.", who);
+		PrintTextPrivate(me, "I know not of that skill.", who);
 	endif
 endfunction
 
@@ -117,7 +117,7 @@ function TrainSkill(me, who, item)
 			gold_received := gold_received - excess_gold;
 		endif
 		SetAttributeBaseValue( who, attribute_name, gold_received );
-		PrintTextAbovePrivate(me, "Let me show you how it's done.", who);
+		PrintTextPrivate(me, "Let me show you how it's done.", who);
 		RecalcVitals(who);
 		DestroyItem(item);
 		SendSysMessage(who, "Your skill increases.");

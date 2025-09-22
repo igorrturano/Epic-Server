@@ -42,7 +42,7 @@ program skill_animal_lore(who)
 	endif
 
 	var npcDificuldade := CInt(AP_GetSkill(creature, "Wrestling"));
-	PrintTextAbove(who, "*Analisando " + creature.name + "*");
+	PrintText(who, "*Analisando " + creature.name + "*");
 	Sleep(1);
 	if (SkillCheck(who, HANDLEANIMAL, npcDificuldade, npcDificuldade - 10, advance_flags) > 0)
 		var al_Gump := AL_LoadGump(who, creature);
@@ -60,7 +60,7 @@ program skill_animal_lore(who)
 			ev.source := who;
 			sendEvent(creature, ev);
 			SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL) * 5));
-			PrintTextAbovePrivate(creature, "A criatura foi acalmada.", who);
+			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		endif
 
 		if (input[0] == 999)
@@ -76,10 +76,10 @@ program skill_animal_lore(who)
 			ev.source := who;
 			sendEvent(creature, ev);
 			SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL) * 5));
-			PrintTextAbovePrivate(creature, "A criatura foi acalmada.", who);
+			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		endif
 	else
-		PrintTextAbovePrivate(creature, "Voce falha em conseguir examinar este animal.", who);
+		PrintTextPrivate(creature, "Voce falha em conseguir examinar este animal.", who);
 	endif
 
 	return 0;

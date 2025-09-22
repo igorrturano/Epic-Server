@@ -266,7 +266,7 @@ function try_to_make_potion(user, potion, in_mortar, mortar, reg)
     var loop := 0;
     while(loop < 3)
       PlaySoundEffect(user, SOUND_EFFECT_GRIND);
-      PrintTextAbovePrivate(user, "You grind the reagent",user);
+      PrintTextPrivate(user, "You grind the reagent",user);
       sleep(1);
       loop := loop + 1;
     endwhile
@@ -293,16 +293,16 @@ function try_to_make_potion(user, potion, in_mortar, mortar, reg)
         var thing := CreateItemInBackpack(user, product, 1);
         SetObjProperty(thing, "pocao", product);
         PlaySoundEffect(user, SOUND_EFFECT_POUR);
-        PrintTextAbovePrivate(user, "You create the potion and put it in your backpack", user);
+        PrintTextPrivate(user, "You create the potion and put it in your backpack", user);
         return;
       else
-        PrintTextAbovePrivate(user, "You dont have any bottles.", user);
+        PrintTextPrivate(user, "You dont have any bottles.", user);
         SetObjProperty(mortar, "contents", product);
         return;
       endif
     else
       PlaySoundEffect(user, SOUND_EFFECT_POUR);
-      PrintTextAbovePrivate(user, "You pour out the useless mixture", user);
+      PrintTextPrivate(user, "You pour out the useless mixture", user);
       return;
     endif
   else
@@ -321,11 +321,11 @@ function try_to_make_potion(user, potion, in_mortar, mortar, reg)
       var thing := CreateItemInBackpack(user, product, 1);
       SetObjProperty(thing, "pocao", product);
       PlaySoundEffect(user, SOUND_EFFECT_POUR);
-      PrintTextAbovePrivate(user, "You create the item and put it in your backpack", user);
+      PrintTextPrivate(user, "You create the item and put it in your backpack", user);
       EraseObjProperty( mortar, "contents" );
       return;
     else
-      PrintTextAbovePrivate(user, "You dont have any bottles.", user);
+      PrintTextPrivate(user, "You dont have any bottles.", user);
       return;
     endif
   endif
@@ -375,13 +375,13 @@ function try_to_make_last(user, potion, mortar)
     return;
   endif
   PlaySoundEffect(user, SOUND_EFFECT_GRIND);
-  PrintTextAbovePrivate(user, "You grind the reagent",user);
+  PrintTextPrivate(user, "You grind the reagent",user);
   sleep(2);
   PlaySoundEffect(user, SOUND_EFFECT_GRIND);
-  PrintTextAbovePrivate(user, "You grind the reagent",user);
+  PrintTextPrivate(user, "You grind the reagent",user);
   sleep(2);
   PlaySoundEffect(user, SOUND_EFFECT_GRIND);
-  PrintTextAbovePrivate(user, "You grind the reagent",user);
+  PrintTextPrivate(user, "You grind the reagent",user);
   sleep(2);
   if(CheckSkill(user, SKILLID_ALCHEMY, difficulty, points))
     var hasbottle:= 0;
@@ -400,16 +400,16 @@ function try_to_make_last(user, potion, mortar)
       SetObjProperty(thing, "pocao", product);
       PlaySoundEffect(user, SOUND_EFFECT_POUR);
       SetObjProperty(mortar, "LastMade", potion);
-      PrintTextAbovePrivate(user, "You create the potion and put it in your backpack", user);
+      PrintTextPrivate(user, "You create the potion and put it in your backpack", user);
       return;
     else
-      PrintTextAbovePrivate(user, "You dont have any bottles.", user);
+      PrintTextPrivate(user, "You dont have any bottles.", user);
       SetObjProperty(mortar, "contents", product);
       return;
     endif
   else
     PlaySoundEffect(user, SOUND_EFFECT_POUR);
-    PrintTextAbovePrivate(user, "You pour out the useless mixture", user);
+    PrintTextPrivate(user, "You pour out the useless mixture", user);
     return;
   endif
 endfunction

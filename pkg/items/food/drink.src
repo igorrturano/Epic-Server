@@ -74,7 +74,7 @@ program drink(character, drink)
 	endif
 
 	if (drink_emote)
-		PrintTextAbovePrivate(character, "*" + drink_emote + "*", character);
+		PrintTextPrivate(character, "*" + drink_emote + "*", character);
 	endif
 
 	if (drink_proof)

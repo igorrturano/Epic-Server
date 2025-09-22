@@ -51,7 +51,7 @@ program summonSkeletaSteed(params)
 	TS_StartTimer(mount, "summon", duracao); // inicio do timedScripts no summon
 
 	PlayObjectCenteredEffect(mount, 0x6d57, 10, 20);
-	printtextabove(mount, "ADAR KOR DOOM!");
+	printtext(mount, "ADAR KOR DOOM!");
 	SendSysMessageEx(who, "Xali'Gijak. PELA HORDA!");
 	return 1;
 

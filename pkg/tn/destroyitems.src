@@ -90,7 +90,7 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 
 		var danoCalculado := DanificaItem(quem, itemAlvo, fonteDano);
 		if (!danoCalculado.isEficaz)
-			PrintTextAbove(itemAlvo, "*golpe ineficaz*");
+			PrintText(itemAlvo, "*golpe ineficaz*");
 		endif
 	endif
 endfunction

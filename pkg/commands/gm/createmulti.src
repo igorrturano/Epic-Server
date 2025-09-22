@@ -15,7 +15,7 @@ program textcmd_Kill(who, text)
 	SendSysMessage(who, "multi: " + ship);
 
 	if (!ship)
-		PrintTextAbovePrivate(who, "I can't place the multi there.", who);
+		PrintTextPrivate(who, "I can't place the multi there.", who);
 		return 0;
 	endif
 	return 1;

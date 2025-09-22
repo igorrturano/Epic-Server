@@ -23,7 +23,7 @@ program animateSword(params)
 	var world_z := GetStandingHeight(who.x, who.y, who.z + 15, who.realm);
 	var moved := 0;
 	PerformAction(who, 12);
-	PrintTextAbove(who, "*Arremessa o martelo*");
+	PrintText(who, "*Arremessa o martelo*");
 
 	if (world_z.z <= who.z + 1)
 		moved := 1;

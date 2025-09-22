@@ -1,6 +1,8 @@
 use os;
 use uo;
 
+include "include/say";
+
 program onremove_container(character, container, item)
 
 	sleep(30);
@@ -10,12 +12,12 @@ program onremove_container(character, container, item)
 			DestroyItem(item);
 			return;
 		endif
-		PrintTextAbove(item, "*a peca do jogo foi retirada*");
+		PrintText(item, "*a peca do jogo foi retirada*");
 	elseif (itemcontainer != container)
 		if (!MoveItemToContainer(item, container))
 			DestroyItem(item);
 			return;
 		endif
-		PrintTextAbove(item, "*a peca do jogo foi retirada*");
+		PrintText(item, "*a peca do jogo foi retirada*");
 	endif
 endprogram

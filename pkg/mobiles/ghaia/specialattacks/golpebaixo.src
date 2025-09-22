@@ -30,7 +30,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*ataque atordoante*");
+	PrintText(attacker, "*ataque atordoante*");
 
 	TS_StartTimer(defender, "paralysis", 5);
 

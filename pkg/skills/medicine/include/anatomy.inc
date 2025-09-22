@@ -110,13 +110,13 @@ include "include/say";
 		strFail := "das caracteristicas fisicas dessa criatura.";
 	endif
 
-	PrintTextAbove(who, "*examinando" + strMsg + "*");
+	PrintText(who, "*examinando" + strMsg + "*");
 	if (!Wait(subject, 2))
 		SendSysMessageEx(who, "O paciente precisa ficar preparado.", SSM_FAIL);
 		return 0;
 	endif
 	var hunger := CInt(AP_GetVital(subject, "Hunger") / 10);
-	PrintTextAbovePrivate(subject, "Niveis de fome: " + hunger , who);
+	PrintTextPrivate(subject, "Niveis de fome: " + hunger , who);
 
 	var sucesso := 0;
 	if (who.serial == subject.serial) sucesso := 1; //PARA O PLAYER SEMPRE ACERTAR E NUNCA UPAR, CASO USE NELE MESMO

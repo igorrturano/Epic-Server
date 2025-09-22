@@ -19,9 +19,9 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*ataque atordoante*");
+	PrintText(attacker, "*ataque atordoante*");
 
 	TS_StartTimer(defender, "paralysis", 5);
-	PrintTextAbove(defender, "*atordoado*");
+	PrintText(defender, "*atordoado*");
 
 endprogram

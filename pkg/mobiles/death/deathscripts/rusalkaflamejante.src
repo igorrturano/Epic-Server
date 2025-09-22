@@ -14,7 +14,7 @@ program DeathScript(params)
 	var template := params[3];
 	params := 0; // Not needed anymore
 
-	printtextabove(corpse, "*chamas saem do corpo por todo lado*");
+	printtext(corpse, "*chamas saem do corpo por todo lado*");
 
 	// explode em chamas
 	foreach defender in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 6, corpse.realm))

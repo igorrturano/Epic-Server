@@ -18,7 +18,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*ataque duplo*");
+	PrintText(attacker, "*ataque duplo*");
 	basedamage := basedamage * 2;
 
 	// TODO colocar isso em uma funcao depois

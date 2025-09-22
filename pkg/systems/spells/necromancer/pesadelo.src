@@ -38,7 +38,7 @@ program SpellScript(params)
 		endif
 	endif
 	DamageFLS(targ, dmg, DMG_FORCED, who);
-	PrintTextAbovePrivate(targ, "-" + dmg + " Vida", who, 3, 38); // vermelho
+	PrintTextPrivate(targ, "-" + dmg + " Vida", who, 3, 38); // vermelho
 
 	handleSilentMagic(who, who, 385);
 

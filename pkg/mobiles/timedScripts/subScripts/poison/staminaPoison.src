@@ -55,7 +55,7 @@ program default_poison(params)
 	endcase
 	var i := 0;
 	while (i <= loops)
-		PrintTextAbovePrivate(who, poisonedmsg, who);
+		PrintTextPrivate(who, poisonedmsg, who);
 
 		Set_Critical(1);
 		var curr := CInt(AP_GetVital(who, "Stamina"));

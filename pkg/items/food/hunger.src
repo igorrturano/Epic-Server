@@ -30,25 +30,25 @@ program Hunger(chr)
 		case (hunger)
 			5:
 				SendSysMessageEx(chr, "Voce esta faminto e totalmente sem forcas.", SSM_FAIL);
-				PrintTextAbove(chr, "*parece estar fraco e zonzo*");
+				PrintText(chr, "*parece estar fraco e zonzo*");
 				ModStatFome(chr, hunger);
 				break;
 
 			4:
 				SendSysMessageEx(chr, "Voce esta com fome e fraco.", SSM_FAIL);
-				PrintTextAbove(chr, "*barriga roncando alto*");
+				PrintText(chr, "*barriga roncando alto*");
 				ModStatFome(chr, hunger);
 				break;
 
 			3:
 				SendSysMessageEx(chr, "Voce esta com fome.", SSM_FAIL);
-				PrintTextAbove(chr, "*barriga roncando*");
+				PrintText(chr, "*barriga roncando*");
 				ModStatFome(chr, hunger);
 				break;
 
 			2:
 				SendSysMessageEx(chr, "Voce esta comecando a ficar com fome.", SSM_INFO);
-				PrintTextAbovePrivate(chr, "*barriga roncando baixo*", chr);
+				PrintTextPrivate(chr, "*barriga roncando baixo*", chr);
 				break;
 
 			default:

@@ -229,7 +229,7 @@ exported function handleUCOutgoing(character, byref packet)
 		endif
 
 		if (source != character)
-			PrintTextAbovePrivate(source, "*Incompreensível*", character);
+			PrintTextPrivate(source, "*Incompreensível*", character);
 			return 1;
 		endif
 	endif
