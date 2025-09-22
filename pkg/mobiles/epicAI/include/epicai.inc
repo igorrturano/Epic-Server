@@ -2589,6 +2589,7 @@ function CleanupDoppelgangerTransformation(mobile)
         return 0;
     endif
 
+<<<<<<< HEAD
     // Restore original appearance before destroying items
     if (transformation_data.original_data)
         var original := transformation_data.original_data;
@@ -2603,6 +2604,8 @@ function CleanupDoppelgangerTransformation(mobile)
         mobile.truecolor := original.truecolor;
     endif
 
+=======
+>>>>>>> 1b17cb9e37aef59dc054feb4b43db18e26d1fff4
     // Destroy all copied equipment
     if (transformation_data.copied_items)
         foreach item_serial in (transformation_data.copied_items)
