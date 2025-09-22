@@ -1,3 +1,4 @@
+include ":message:model/Message";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
 include ":equipsys:utils/consts";
@@ -26,7 +27,8 @@ program equipsys(params)
 
 	equip.Update();
 	print(equip.ToString());
-	SendSysMessage(who, equip.ToString());
+	// SendSysMessage(who, equip.ToString());
+	Message(equip.ToString()).SendSys(who);
 endprogram
 
 // /**

@@ -15,7 +15,7 @@ program TimedScript_bard_dex_up(params)
 			SetObjProperty(alvo, "#Bard_dex_up", modificador);
 			AP_ModifyStatMod(alvo, DEXTERITY, (modificador - teste));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + (modificador - teste) + " Dex", caster, BARD_FONT,
+			PrintTextPrivate(alvo, "+" + (modificador - teste) + " Dex", caster, BARD_FONT,
 								   BARD_FONT_COLOR_GOOD);
 			return 1;
 		else
@@ -26,7 +26,7 @@ program TimedScript_bard_dex_up(params)
 		SetObjProperty(alvo, "#Bard_dex_up", modificador);
 		AP_ModifyStatMod(alvo, DEXTERITY, modificador);
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		PrintTextPrivate(alvo, "+" + modificador + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
 		return 1;
 	endif
 endprogram

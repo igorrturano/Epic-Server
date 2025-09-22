@@ -275,7 +275,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 	// Verificar se é uma doença conhecida (datafile)
 	var datafile_disease := GetDiseaseInfoFromDatafile(original_symptoms);
 	var is_known_disease := (datafile_disease != 0);
-	PrintTextAbove(who, "Realizando o procedimento: " + name);
+	PrintText(who, "Realizando o procedimento: " + name);
 
 	// Configurar dificuldade baseada no grau da doença
 	var diff_grade;
@@ -375,7 +375,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 				// SendSysMessage(patient, "O procedimento " + name + " tratou com sucesso seu sintoma: " + symptom, 3, 73);
 				endif
 
-				PrintTextAbove(patient, success_msg, 3, 73);
+				PrintText(patient, success_msg, 3, 73);
 
 				if (is_known_disease)
 					// Obter histórico de cura em ordem
@@ -424,7 +424,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 				MakeBleed(patient);
 				ApplyRawDamage(who, 30);
 
-				PrintTextAbove(patient, fail_skill_msg, 3, 33);
+				PrintText(patient, fail_skill_msg, 3, 33);
 				AgravarDoenca(who, patient, disease_grade);
 				UpdateDiseaseProperty(patient, "diseases", new_diseases);
 
@@ -448,7 +448,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 							3, 33);
 		endif
 
-		PrintTextAbove(patient, incompatible_msg, 3, 33);
+		PrintText(patient, incompatible_msg, 3, 33);
 
 		AgravarDoenca(who, patient, disease_grade);
 
@@ -470,7 +470,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 
 	// Verificar se todos os sintomas foram curados
 	if (new_diseases.size() == 0)
-		PrintTextAbove(patient, "*Curado!*");
+		PrintText(patient, "*Curado!*");
 		SendSysMessage(who, "Todos os sintomas foram tratados! O paciente está curado.", 3, 73);
 		TS_LowerDuration(patient, "disease", -1);
 
@@ -724,13 +724,13 @@ function AgravarDoenca(who, patient, disease_grade)
 		"Leve":
 			UpdateDiseaseProperty(patient, "grade", "Moderado");
 			SendSysMessageEX(who, "A doença do paciente progrediu para um grau moderado!", SSM_FAIL);
-			PrintTextAbove(patient, "Aparenta estar pior!", 3, 33);
+			PrintText(patient, "Aparenta estar pior!", 3, 33);
 			// TS_UpdateTimerDuration(patient, "disease", 8600); //Não está funcioanando!!!
 			break;
 		"Moderado":
 			UpdateDiseaseProperty(patient, "grade", "Grave");
 			SendSysMessageEX(who, "A doença do paciente progrediu para um grau grave!", SSM_FAIL);
-			PrintTextAbove(patient, "Aparenta estar muito pior!", 3, 33);
+			PrintText(patient, "Aparenta estar muito pior!", 3, 33);
 			break;
 		"Grave":
 			UpdateDiseaseProperty(patient, "grade", "Incuravel");

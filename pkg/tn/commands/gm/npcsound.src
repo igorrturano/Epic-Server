@@ -1,4 +1,6 @@
 use uo;
+
+include "include/say";
 include ":tn:actions_sounds_tools";
 
 program setsound(who, text)
@@ -16,7 +18,7 @@ program setsound(who, text)
 
 	PlaySoundEffect(npc, resultado[1]);
 	if (resultado[2])
-		PrintTextAbove(npc, resultado[2]);
+		PrintText(npc, resultado[2]);
 	endif
 
 endprogram

@@ -4,13 +4,15 @@
 use uo;
 use os;
 
+include "include/say";
+
 program canRemove(mobile, container, item, move_type)
 	if (mobile.cmdlevel)
 		return 1;
 	elseif (move_type == MOVETYPE_COREMOVE)
 		return 1;
 	else
-		PrintTextAbovePrivate(container, "That cannot be removed.", mobile);
+		PrintTextPrivate(container, "That cannot be removed.", mobile);
 		return 0;
 	endif
 endprogram

@@ -35,7 +35,7 @@ program SpellStarter(params)
 			return 0;
 		endif
 	elseif (spell_elem.NPCOnly && !who.npctemplate)
-		PrintTextAbove(who, "Unable to cast - NPC only spell.");
+		PrintText(who, "Unable to cast - NPC only spell.");
 		return 0;
 	endif
 

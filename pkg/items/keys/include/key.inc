@@ -33,12 +33,12 @@ endfunction
  */
 function KP_ToggleLock(object, mobile:=0)
 	if ( object.locked )
-		// PrintTextAbovePrivate(object, "*destrancado*", mobile);
+		// PrintTextPrivate(object, "*destrancado*", mobile);
 		PrintText(mobile, "*Destrancou "+object.desc+"*");
 		object.locked := 0;
 	else
 		PrintText(mobile, "*Trancou "+object.desc+"*");
-		// PrintTextAbovePrivate(object, "*trancado*", mobile);
+		// PrintTextPrivate(object, "*trancado*", mobile);
 		object.locked := 1;
 	endif
 

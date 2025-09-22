@@ -31,10 +31,10 @@ program SpellScript(params)
 			if ((cfg[npctemplate.template].Category in inimigo) && tier <= max_tier && !is_boss)
 				affected += 1;
 				PlayObjectCenteredEffect(mobile, 0x37CC, 10, 10);
-				PrintTextAbove(mobile, "*Banido*", who);
+				PrintText(mobile, "*Banido*", who);
 				ApplyRawDamage(mobile, 9999);
 			elseif ((cfg[npctemplate.template].Category in inimigo) && (tier > max_tier || is_boss))
-				PrintTextAbove(mobile, "*Resiste ao Banimento*");
+				PrintText(mobile, "*Resiste ao Banimento*");
 				SendSysMessageEx(who, "A criatura é poderosa demais para ser banida!", SSM_FAIL);
 			endif
 		endif

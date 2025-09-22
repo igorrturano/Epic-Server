@@ -55,7 +55,7 @@ function AnimalBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 

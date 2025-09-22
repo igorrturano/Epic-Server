@@ -345,7 +345,7 @@ function ActivateMagicItem(item)
 			var cfg := ReadConfigFile(":tn:config/tnspells");
 			var elem := FindConfigElem(cfg, spellinfo.id);
 			var name := GetConfigString(elem, "Name");
-			//printtextabove(item, " " + name);
+			//printtext(item, " " + name);
 			if (name && GetObjProperty(item, "magic") != 2)
 				SetName(item, item.desc+" ["+name+"]");
 			endif

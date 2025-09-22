@@ -2,7 +2,7 @@ include "include/string";
 
 function execgenerichit(attacker, defender, hitopt, rawdamage)
 
-//printtextabove(attacker, " " + hitopt.vitals);
+//printtext(attacker, " " + hitopt.vitals);
 	//slayer entra aqui
 	foreach vital in (hitopt.vitals)
 		var dmg := rawdamage*hitopt.dmg;
@@ -20,19 +20,19 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 			endforeach
 		else
 
-   //   printtextabove(attacker, " " + vital);
+   //   printtext(attacker, " " + vital);
 
 			if (vital == "Hits")
 				var hitdmg := dmg;
 				if (defender.npctemplate)
 					var npccfg := NPC_GetNPCConfig(defender.npctemplate);
 					var category := GetConfigString(npccfg, "Category");
-      //    printtextabove(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
+      //    printtext(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
 					if (hitopt.slayer ==  category)
 						hitdmg := hitdmg * 2;
 					endif
 				endif
-        //printtextabove(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
+        //printtext(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
 				DamageFLS(defender, hitdmg, DMG_FORCED, attacker);
 			elseif (vital == "Stam")
 				AP_ConsumeVital(defender, STAMINA, dmg);

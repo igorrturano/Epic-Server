@@ -1,6 +1,7 @@
 use os;
 use uo;
 
+include "include/say";
 include ":tn:tngumps";
 include ":gumps:yesNo";
 
@@ -22,10 +23,10 @@ program renameboat(you, tillerman)
 					if (moedas.objtype == 47715)
 						if (moedas.amount >= cint(dest.cost))
 							if (!SubtractAmount(moedas, cint(dest.cost)))
-								PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+								PrintText(tillerman, "Voce nao tem moedas necessarias.");
 							endif
 						else
-							PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+							PrintText(tillerman, "Voce nao tem moedas necessarias.");
 							return;
 						endif
 					else
@@ -33,7 +34,7 @@ program renameboat(you, tillerman)
 					endif
 					SetObjProperty(tillerman, "course", dest.plots);
 					SetObjProperty(tillerman, "nextwaypoint", 1);
-					PrintTextAbove(tillerman, "Viagem programada, iremos *partir* quando me ordenar!");
+					PrintText(tillerman, "Viagem programada, iremos *partir* quando me ordenar!");
 				endif
 			endforeach
 		endif
@@ -41,7 +42,7 @@ program renameboat(you, tillerman)
 	endif
 
 	if ((GetObjProperty(tillerman, "owner") != you.serial) && (you.cmdlevel < 2))
-		// PrintTextAbove(tillerman,"Stop that, or I'll throw ye overboard!");
+		// PrintText(tillerman,"Stop that, or I'll throw ye overboard!");
 		return;
 	endif
 	if (YesNo(you, "Deseja Mudar o Nome do Barco?"))

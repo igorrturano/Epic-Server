@@ -16,7 +16,7 @@ const DIR_W := 0x06; // West.
 const DIR_NW := 0x07; // Northwest.
 program useshipdeed(who, deed)
 	if (DeedAlreadyBuiltFrom(deed))
-		PrintTextAbovePrivate(deed, "That ship has already been built.", who);
+		PrintTextPrivate(deed, "That ship has already been built.", who);
 	elseif (Accessible(who, deed))
 		BuildShip(who, deed);
 	endif
@@ -25,7 +25,7 @@ endprogram
 function BuildShip(who, deed)
 	var shiptype := GetShipObjtype(deed.objtype);
 	if (!shiptype)
-		PrintTextAbovePrivate(deed, "That ship deed appears to be broken.", who);
+		PrintTextPrivate(deed, "That ship deed appears to be broken.", who);
 		return;
 	endif
 	var flags := ShipFacingFlags(who.facing);
@@ -123,13 +123,13 @@ function CreateShipKeysAndBuiltDeed(who, shiptype, x, y, z, flags)
 	// var bankbox := FindBankBox(who);
 	var packkey := CreateItemInBackpack(who, 0x100E);
 	if (!packkey)
-		PrintTextAbovePrivate(who, "My backpack is too full!", who);
+		PrintTextPrivate(who, "My backpack is too full!", who);
 		return 0;
 	endif
 	var ship := CreateMultiAtLocation(x, y, z, shiptype, flags, who.realm);
 	SendSysMessage(who, "ship: " + ship);
 	if (!ship)
-		PrintTextAbovePrivate(who, "I can't place the ship there.", who);
+		PrintTextPrivate(who, "I can't place the ship there.", who);
 		DestroyItem(packkey);
 		return 0;
 	else

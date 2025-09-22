@@ -2,6 +2,7 @@ use uo;
 use os;
 use util;
 
+include "include/say";
 include "include/client";
 
 program onInsert(who, container, movetype, inserttype, item, existing_stack, amount_to_add)
@@ -39,7 +40,7 @@ program onInsert(who, container, movetype, inserttype, item, existing_stack, amo
 		var joke := jokes[jokeIdx];
 
 		// Apenas um método para exibir a piada
-		PrintTextAbove(container, joke);
+		PrintText(container, joke);
 
 		// Toca um som de fantasma
 		PlaySoundEffect(container, 0x1F3);

@@ -7,7 +7,7 @@ include "include/say";
 program cureScript(params)
 	var item := params[1];
 
-	Printtextabove(item, "*O tesouro eh tragado pela terra*", SSM_INFO);
+	PrintText(item, "*O tesouro eh tragado pela terra*", SSM_INFO);
 	sleep(2);
 	Destroyitem(item);
 	return 1;

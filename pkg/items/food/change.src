@@ -12,6 +12,8 @@ use uo;
 use os;
 use cfgfile;
 
+include "include/say";
+
 program change(who, item)
 	var cfg := ReadConfigFile(":*:itemdesc");
 	var elem := FindConfigElem(cfg, item.objtype);
@@ -63,7 +65,7 @@ function Destilar(balao, beker, who, item)
 	SendSysMessage(who, "O extrato começa a ferver.");
 	sleep(5);
 	PlaySoundEffect(who, 0x0021);
-	PrintTextAbove(balao, "O liquido esta em ebulicao.");
+	PrintText(balao, "O liquido esta em ebulicao.");
 	sleep(5);
 	PlaySoundEffect(who, 0x241);
 	sleep(3);

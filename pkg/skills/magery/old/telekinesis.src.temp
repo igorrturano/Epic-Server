@@ -39,9 +39,9 @@ program spell_telekinesis(parms)
     start_script(":tinkering:tinkerTraps", parms);
   else
     if(MoveItemToContainer( castOn, caster.backpack, x := -1, y := -1 ))
-      PrintTextAbovePrivate(caster, "You pick up the item with your mind.", caster);
+      PrintTextPrivate(caster, "You pick up the item with your mind.", caster);
     else
-      PrintTextAbovePrivate(caster, "You cannot will it to move.", caster);
+      PrintTextPrivate(caster, "You cannot will it to move.", caster);
     endif
   endif
 endprogram

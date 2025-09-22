@@ -35,10 +35,10 @@ program KillPlayers()
 	propallies := dictionary;
 
 	set_critical(1);
-	// printtextabove(me, "vai inicializr");
+	// printtext(me, "vai inicializr");
 	InitializeNPC(me);
 	set_critical(0);
-	// printtextabove(me, "done");
+	// printtext(me, "done");
 
 	while (1)
 		var hasPlayerNearMe := hasPlayerNear(me);
@@ -359,7 +359,7 @@ function PetFollow(character := 0)
 	if (life != lifeatual)
 		following := 0;
 		TS_LowerDuration(me, "encantar", -1);
-		printtextabove(me, "O animal está assustado demais!");
+		printtext(me, "O animal está assustado demais!");
 		return;
 	endif
 
@@ -383,7 +383,7 @@ function PetFollow(character := 0)
 	endif
 	// endwhile
 
-	// printtextabove(me, "O animal parou de te seguir");
+	// printtext(me, "O animal parou de te seguir");
 	// TS_LowerDuration(me, "encantar", -1);
 	return 1;
 

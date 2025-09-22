@@ -144,12 +144,12 @@ function ExecuteTeleportAction(npc, targets, action)
         if (move_result)
             success := 1;
         else
-            PrintTextAbove(npc, "Falha ao teleportar: " + move_result.errortext);
+            PrintText(npc, "Falha ao teleportar: " + move_result.errortext);
         endif
     endforeach
     
     if (!targets.size())
-        PrintTextAbove(npc, "Teleporte falhou - Nenhum alvo válido encontrado");
+        PrintText(npc, "Teleporte falhou - Nenhum alvo válido encontrado");
     endif
     
     return success;
@@ -179,10 +179,10 @@ function ExecuteTextAction(npc, action)
     if (action.target)
         var targets := GetActionTargets(npc, action);
         foreach targ in targets
-            PrintTextAbove(targ, action.text, color);
+            PrintText(targ, action.text, color);
         endforeach
     else
-        PrintTextAbove(npc, action.text, color);
+        PrintText(npc, action.text, color);
     endif
 
     return 1;

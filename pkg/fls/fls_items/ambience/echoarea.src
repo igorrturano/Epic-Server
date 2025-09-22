@@ -2,6 +2,7 @@
 use uo;
 use os;
 
+include "include/say";
 include ":tn:actions_sounds_tools";
 
 program echoarea(rune)
@@ -50,7 +51,7 @@ function CreateEcho(ev, rune, range)
 		if (sound_result[1]) // Se encontrou um som válido
 			for i := 1 to 3
 				PlaySoundEffectXYZ(rune.x, rune.y, rune.z, sound_result[1]);
-				PrintTextAbove(rune, text + " ...", 33 + i);
+				PrintText(rune, text + " ...", 33 + i);
 				Sleep(2);
 			endfor
 			DestroyItem(echo_anchor);
@@ -71,7 +72,7 @@ function CreateEcho(ev, rune, range)
 				var known_languages := GetObjProperty(player, "linguas_conhecidas");
 
 				if (!known_languages || !(speaker_language in known_languages))
-					PrintTextAbovePrivate(echo_anchor, "*o eco é incompreensível*", player, 33 + i);
+					PrintTextPrivate(echo_anchor, "*o eco é incompreensível*", player, 33 + i);
 				else
 					var echo_text := text;
 					case (i)
@@ -79,7 +80,7 @@ function CreateEcho(ev, rune, range)
 						2: echo_text := Lower(text) + "  ...  ...";
 						3: echo_text := Lower(text) + "   ...   ...   ...";
 					endcase
-					PrintTextAbovePrivate(echo_anchor, echo_text, player, 33 + i);
+					PrintTextPrivate(echo_anchor, echo_text, player, 33 + i);
 				endif
 			endif
 		endforeach

@@ -142,7 +142,7 @@ endfunction
 
 function PrintEmoteAbove(mobile, text)
 	PerformAction(mobile, ANIM_CAST_AREA);
-	PrintTextAbove(mobile, "*" + text + "*", 3, 66);
+	PrintText(mobile, "*" + text + "*", 3, 66);
 endfunction
 
 function EvaluateItem(who, item, eval_type)
