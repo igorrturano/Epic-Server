@@ -923,9 +923,14 @@ function GetAvailableCustomAbilities()
             "name" := "Rage",
             "description" := "Allows the NPC to enter a rage state",
             "method" := "hasRage"
+        },
+        "Doppelganger" := struct{
+            "name" := "Doppelganger",
+            "description" := "Allows the NPC to copy opponent's appearance and combat style",
+            "method" := "isDoppelganger"
         }
     };
-    
+
     return abilities;
 endfunction
 
