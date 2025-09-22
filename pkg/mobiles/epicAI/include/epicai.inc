@@ -2564,7 +2564,7 @@ function DoppelgangerTransformation(mobile, opponent)
     // Store transformation data for cleanup
     var transformation_data := struct{
         "original_data" := original_data,
-        "storage_pack" := storage_pack.serial,
+        "storage_pack" := storage_pack,
         "copied_items" := copied_items,
         "combat_properties" := combat_properties,
         "transformation_time" := ReadGameClock()
@@ -2583,30 +2583,35 @@ function DoppelgangerTransformation(mobile, opponent)
     return 1;
 endfunction
 
-function CleanupDoppelgangerTransformation(mobile)
+function RestoreDoppelgangerAppearance(mobile)
+    var transformation_data := GetObjProperty(mobile, "#doppelganger_data");
+    if (!transformation_data || !transformation_data.original_data)
+        return 0;
+    endif
+
+    var original := transformation_data.original_data;
+    mobile.graphic := original.graphic;
+    mobile.color := original.color;
+    mobile.name := original.name;
+    mobile.title_race := original.title_race;
+    mobile.title_suffix := original.title_suffix;
+    mobile.title_prefix := original.title_prefix;
+    mobile.gender := original.gender;
+    mobile.trueobjtype := original.trueobjtype;
+    mobile.truecolor := original.truecolor;
+
+    return 1;
+endfunction
+
+function CleanupDoppelgangerEquipment(mobile)
     var transformation_data := GetObjProperty(mobile, "#doppelganger_data");
     if (!transformation_data)
         return 0;
     endif
 
-    // Restore original appearance before destroying items
-    if (transformation_data.original_data)
-        var original := transformation_data.original_data;
-        mobile.graphic := original.graphic;
-        mobile.color := original.color;
-        mobile.name := original.name;
-        mobile.title_race := original.title_race;
-        mobile.title_suffix := original.title_suffix;
-        mobile.title_prefix := original.title_prefix;
-        mobile.gender := original.gender;
-        mobile.trueobjtype := original.trueobjtype;
-        mobile.truecolor := original.truecolor;
-    endif
-
-    // Destroy all copied equipment
+    // Destroy all copied equipment (items stored directly, not serials)
     if (transformation_data.copied_items)
-        foreach item_serial in (transformation_data.copied_items)
-            var item := SystemFindObjectBySerial(item_serial);
+        foreach item in (transformation_data.copied_items)
             if (item)
                 DestroyItem(item);
             endif
@@ -2616,7 +2621,7 @@ function CleanupDoppelgangerTransformation(mobile)
 
     // Destroy the storage pack and its contents
     if (transformation_data.storage_pack)
-        var storage_pack := SystemFindObjectBySerial(transformation_data.storage_pack);
+        var storage_pack := transformation_data.storage_pack;
         if (storage_pack)
             DestroyItem(storage_pack);
         endif
@@ -2628,5 +2633,13 @@ function CleanupDoppelgangerTransformation(mobile)
     EraseObjProperty(mobile, "#force_ranged");
     EraseObjProperty(mobile, "SpellSchool");
 
+    return 1;
+endfunction
+
+function CleanupDoppelgangerTransformation(mobile)
+    // This function calls both appearance restoration and equipment cleanup
+    // for backward compatibility
+    RestoreDoppelgangerAppearance(mobile);
+    CleanupDoppelgangerEquipment(mobile);
     return 1;
 endfunction
