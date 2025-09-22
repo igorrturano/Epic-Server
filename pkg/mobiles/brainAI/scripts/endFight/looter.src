@@ -65,13 +65,13 @@ function LootSomething(npc, corpse)
 		endif
 
 		if (inside > 0)
-		// PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
+		// PrintText(corpse, item.desc+" is a container.. skipping it");
 		// Do nothing
 		elseif (!item.movable)
-		// PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
+		// PrintText(corpse, item.desc+" cant be moved.. skipping it");
 		// Do nothing
 		else
-			// PrintTextAbove(corpse, item.desc+" is lootable.");
+			// PrintText(corpse, item.desc+" is lootable.");
 			contents.append(item);
 		endif
 		sleepms(5);
@@ -82,7 +82,7 @@ function LootSomething(npc, corpse)
 		contents := 0;
 
 		if (item)
-			PrintTextAbove(npc, "*revirando o corpo*");
+			PrintText(npc, "*revirando o corpo*");
 			MoveItemToContainer(item, npc.backpack);
 
 			if (item.layer)

@@ -164,7 +164,7 @@ program use_Carimbo(who, tool)
 		SetName(targ, nome_do_selo_para_item);
 	endif
 
-	PrintTextAbove(who, "*selando o item com cera e o sinete*");
+	PrintText(who, "*selando o item com cera e o sinete*");
 	PlaySoundEffect(who, 0x4D4);
 
 	if (eh_livro_de_loot)

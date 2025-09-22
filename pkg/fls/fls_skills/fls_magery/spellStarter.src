@@ -33,7 +33,7 @@ program SpellStarter(params)
 			return 0;
 		endif
 	elseif (spell_elem.NPCOnly && !mobile.npctemplate)
-		PrintTextAbove(mobile, "Unable to cast - NPC only spell.");
+		PrintText(mobile, "Unable to cast - NPC only spell.");
 		return 0;
 	endif
 

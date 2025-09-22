@@ -1,6 +1,8 @@
 use uo;
 use os;
 
+include "include/say";
+
 program trash( item )
   var count := 0;
   while ( item )
@@ -11,7 +13,7 @@ program trash( item )
       endif
     endforeach
     if ( count )
-      PrintTextAbove( item, "Destroying items in trash" );
+      PrintText( item, "Destroying items in trash" );
     endif
     count := 0;
     sleep( 120 );

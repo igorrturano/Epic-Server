@@ -32,7 +32,7 @@ program terremoto(params)
 		var landscape := CStr(GetMapInfo(who.x, who.y).landtile);
 
 		if (landscape in GetConfigStringArray(config, "landscape"))
-			PrintTextAbove(who, "*A floresta toda parece ter vida*");
+			PrintText(who, "*A floresta toda parece ter vida*");
 			continue;
 		endif
 
@@ -70,7 +70,7 @@ program terremoto(params)
 				endwhile
 
 				MoveObjectToLocation(who, numajaX, numajaY, 5, who.realm, MOVEOBJECT_FORCELOCATION);
-				PrintTextAbove(who, "*Você parece perdido*");
+				PrintText(who, "*Você parece perdido*");
 			endif
 		endif
 	endwhile

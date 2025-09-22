@@ -42,7 +42,7 @@ program habilidade(params)
 									2, 2740);
 			PlaySoundEffect(targ, 0x1F8);
 			SetCooldown(targ, "blinded", theology_bonus);
-			PrintTextAbove(targ, "*cegueira*");
+			PrintText(targ, "*cegueira*");
 
 		ELUITHORTH:
 			PlayStationaryEffect(targ.x, targ.y, targ.z, 0x3789, 0x0A, 0x1E);

@@ -72,7 +72,7 @@ function MonsterBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
@@ -110,7 +110,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintTextAbove(me, "*"+me.name+" se acovarda*");
+            PrintText(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -353,7 +353,7 @@ function handleMonsterInitialReaction(source)
                     Say(responseAI);
                 else
                     Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
+                    PrintText(me, "*Aterrorizado*");
                 endif
                 FleeFrom(source);
                 return 1;

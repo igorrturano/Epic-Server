@@ -13,7 +13,7 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	SendSysMessage(who, "Voce assume uma forma espectral.");
-	// printtextabove(who, " " + who.paralyzed);
+	// printtext(who, " " + who.paralyzed);
 	SetObjProperty(who, "#spectralform", who.color);
 	who.color := 30000;
 

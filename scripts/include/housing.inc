@@ -252,7 +252,7 @@ function SetLockdownInfo( sign, mobile, item, type := "lockeddown" )
         item.movable := 0;
         SetObjProperty(item, "lockeddown", 1);
         SetObjProperty(home, "RemainingLockdowns", GetObjProperty(home, "RemainingLockdowns") - 1);
-        PrintTextAbove(item, "Locked Down.");
+        PrintText(item, "Locked Down.");
       else
         SendSysMessage(mobile, "That is not yours to lock down!", 2, 33);
       endif

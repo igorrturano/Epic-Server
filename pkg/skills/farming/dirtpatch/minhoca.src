@@ -31,13 +31,13 @@ program catarminhoca(who, dirt)
 	var randomcritical := RandomInt(200);
 
 	PerformAction(who, ANIM_BOW);
-	PrintTextAbove(who, "*revirando a terra*", FONT_NORMAL, 0);
+	PrintText(who, "*revirando a terra*", FONT_NORMAL, 0);
 	sleepms(1000);
 	PerformAction(who, ANIM_BOW);
 	sleepms(1000);
 
 	if (randomcritical == 0)
-		PrintTextAbove(dirt, "*tremor da terra*", FONT_NORMAL, 0);
+		PrintText(dirt, "*tremor da terra*", FONT_NORMAL, 0);
 		sleepms(1500);
 		SendSysMessage(who, "Isso nao parece uma minhoca", FONT_NORMAL, 0);
 		var elemental := CreateNpcFromTemplate("earthelemental", dirt.x, dirt.y, dirt.z);

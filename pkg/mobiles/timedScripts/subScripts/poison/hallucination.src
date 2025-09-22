@@ -13,7 +13,7 @@ program TimedScript_bard_alucinacao(params)
 	var modificador := params[3];
 
 	if (alvo.client)
-		PrintTextAbovePrivate(alvo, "*Alucinado*", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+		PrintTextPrivate(alvo, "*Alucinado*", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
 		var i;
 		for (i := 0; i < 4; i := i + 1)
 			Hallucinate(alvo);

@@ -3,6 +3,7 @@ use os;
 use util;
 use datafile;
 
+include "include/say";
 include ":gumps:gumps";
 include ":gumps:epicGumps";
 include "include/arrays";
@@ -287,7 +288,7 @@ function RefreshSingleSpawner(who, serial)
 	EraseObjProperty(spawner, "spawned");
 	EraseObjProperty(spawner, "mobsBySerial");
 	RestartScript(spawner);
-	PrintTextAbove(spawner, "Resetado com sucesso");
+	PrintText(spawner, "Resetado com sucesso");
 
 	SendSysMessage(who, "Spawner atualizado com sucesso. Novas criaturas aparecerão em breve.",
 					color := 66);
@@ -390,7 +391,7 @@ function RefreshAllSpawners(who, globalSpawns)
 		EraseObjProperty(spawner, "spawned");
 		EraseObjProperty(spawner, "mobsBySerial");
 		RestartScript(spawner);
-		PrintTextAbove(spawner, "Resetado com sucesso");
+		PrintText(spawner, "Resetado com sucesso");
 		refreshCount += 1;
 	endforeach
 

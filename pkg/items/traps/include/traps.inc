@@ -168,7 +168,7 @@ function RunTraps(object, mobile)
 
 		var result := start_script(cfg_info.Script, {mobile, object, trap_info, _trap_info_iter});
 		if ( result.errortext )
-			PrintTextAbove(object, result.errortext);
+			PrintText(object, result.errortext);
 			continue;
 		endif
 

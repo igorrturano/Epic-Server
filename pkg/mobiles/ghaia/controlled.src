@@ -184,7 +184,7 @@ function ProcessSpeech(ev)
 
 	var text := lower(ev.text);
 	var name := lower(me.name);
-	// printtextabove(me, "meu nome " + name );
+	// printtext(me, "meu nome " + name );
 
 	if ((ev.source).serial != (me.master).serial)
 
@@ -315,7 +315,7 @@ function TakeItem(ev)
 	if (cfg[(ev.item).objtype].script["eat"])
 		PlaySoundEffect(me, CInt(0x3b) + RandomInt(3));
 		DestroyItem(ev.item);
-		PrintTextAbovePrivate(me, "*O animal parece feliz*", ev.source);
+		PrintTextPrivate(me, "*O animal parece feliz*", ev.source);
 		SetObjProperty(me, "happiness", 100);
 	elseif (ev.item.objtype IN { 2482, 3701 } && !(me.graphic in pack_animals))
 		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
@@ -505,7 +505,7 @@ endfunction
 
 function UnTame()
 
-	PrintTextAbovePrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
+	PrintTextPrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
 	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 
@@ -513,13 +513,13 @@ function UnTame()
 
 	if (!orig_script)
 
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif (orig_script["tamed"])
 
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		PrintText(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
@@ -1084,7 +1084,7 @@ function Opendoors(me)
 				door.Open();
 			endif
 		// 	else
-		// 		printtextabove(me, "a porta nao ajudara");
+		// 		printtext(me, "a porta nao ajudara");
 		// 	endif
 		endif
 	endforeach

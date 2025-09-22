@@ -697,7 +697,7 @@ function dragTo()
 		endif
 
 		if (RandomInt(8) == 1)
-			PrintTextAbove(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
+			PrintText(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
 		endif
 	endif
 
@@ -779,17 +779,17 @@ endfunction
 function catchItem(tobj)
 	if (Accessible(me, tobj))
 		if (!tobj.movable)
-			PrintTextAbove(me, "*parece estar preso*");
+			PrintText(me, "*parece estar preso*");
 			return;
 		endif
 		if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
 			if (tobj.amount == 1)
 				MoveItemToContainer(tobj, mypack);
 			else
-				PrintTextAbove(me, "*muitas coisas de uma vez*");
+				PrintText(me, "*muitas coisas de uma vez*");
 			endif
 		else
-			PrintTextAbove(me, "*muito pesado para pegar*");
+			PrintText(me, "*muito pesado para pegar*");
 		endif
 	endif
 endfunction
@@ -860,11 +860,11 @@ function Deliver(source)
 
 	if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
 		if (tobj.amount > 1)
-			PrintTextAbove(me, "*muitas coisas de uma vez*");
+			PrintText(me, "*muitas coisas de uma vez*");
 			return;
 		endif
 	else
-		PrintTextAbove(me, "*muito pesado para pegar*");
+		PrintText(me, "*muito pesado para pegar*");
 		return;
 	endif
 
@@ -879,14 +879,14 @@ function Deliver(source)
 endfunction
 
 function DeliverItem(tobj, twho)
-	PrintTextAbove(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
+	PrintText(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
 	var trade := YesNo(twho, me.name + " está te oferecendo " + tobj.desc + ". Aceita?",
 						"Sim, muito obrigado.", "Não, eu não aceito!");
 	if (trade)
 		MoveItemToContainer(tobj, twho.backpack);
-		PrintTextAbove(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
+		PrintText(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
 	else
-		PrintTextAbove(twho, "*nao aceita*");
+		PrintText(twho, "*nao aceita*");
 	endif
 endfunction
 
@@ -922,7 +922,7 @@ function Drag2(tobj)
 	if (Accessible(me, tobj))
 		// if( tobj.weight > CInt(AP_GetStat(me, STRENGTH)) )
 		if (CInt(AP_GetStat(me, STRENGTH)) < 60)
-			PrintTextAbove(me, "*muito pesado para pegar*");
+			PrintText(me, "*muito pesado para pegar*");
 			drag_loc := 0;
 			return;
 		endif
@@ -984,7 +984,7 @@ function TakeItem(ev)
 	if (cfg[(ev.item).objtype].script["eat"])
 		PlaySoundEffect(me, CInt(0x3b) + RandomInt(3));
 		DestroyItem(ev.item);
-		PrintTextAbovePrivate(me, "*O animal parece feliz*", ev.source);
+		PrintTextPrivate(me, "*O animal parece feliz*", ev.source);
 		SetObjProperty(me, "happiness", 100);
 	elseif (ev.item.objtype IN { 2482, 3701 } && !(me.graphic in pack_animals))
 		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
@@ -1017,17 +1017,17 @@ function UnTame()
 
 	TS_LowerDuration(me, "summon", 10000, 1);
 
-	PrintTextAbovePrivate(me, "*" + me.name + " pode viver livre denovo.*", me.master);
+	PrintTextPrivate(me, "*" + me.name + " pode viver livre denovo.*", me.master);
 
 	me.SetMaster(0);
 
 	var orig_script := GetObjProperty(me, "script");
 	if (!orig_script)
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":ai_brain:brain";
 	elseif (orig_script["tamed"])
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		PrintText(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainAI:brain";
 	endif
@@ -1098,7 +1098,7 @@ endfunction
 /////////////////////////////////
 
 function s(texto)
-	PrintTextAbove(me, texto);
+	PrintText(me, texto);
 endfunction
 
 function a(texto)

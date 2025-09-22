@@ -1430,7 +1430,7 @@ function FleeFrom(opponent)
     while (opponent && Distance(me, opponent) < 16 && runs < 20)
         TryToRunAway(opponent);
         if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintTextAbove(me, "*Exausto*");
+            PrintText(me, "*Exausto*");
             break;
         endif
         runs += 1;
@@ -1732,7 +1732,7 @@ function shouldKeepPursuing(opponent, dist)
                 var flee_chance := (npcState == "dying") ? 40 : 15;
                 
                 if (RandomInt(100) < flee_chance)
-                    PrintTextAbove(me, "*"+me.name+" recua*");
+                    PrintText(me, "*"+me.name+" recua*");
                     FleeFrom(opponent);
                     return 0;  // Added return 0 after fleeing
                 endif
@@ -1785,7 +1785,7 @@ function LootCorpse(corpse)
     
     // Loot items
     while (looted < max_loot)
-        PrintTextAbove(me, "*revira o corpo*");
+        PrintText(me, "*revira o corpo*");
         if (!LootSomething(me, corpse))
             break;
         endif
@@ -1895,7 +1895,7 @@ function LootItem(npc, item)
         EquipItem(npc, backpack);
     endif
 
-    PrintTextAbove(npc, "*pega " + item.desc + "*");
+    PrintText(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);
 
     return MoveItemToContainer(item, npc.backpack);
@@ -2398,7 +2398,7 @@ function DetectAklatsThreats(npc)
     // Verifica se foi alertado por som (taunt_opponent)
     var taunt_opponent := GetObjProperty(npc, "#taunt_opponent");
     if (taunt_opponent)
-        PrintTextAbove(npc, "*Alertado pelo som!*");
+        PrintText(npc, "*Alertado pelo som!*");
         return 1;
     endif
     
@@ -2416,7 +2416,7 @@ function DetectAklatsThreats(npc)
     
     // Verifica se há pegadas suficientes e alinhadas
     if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
-        PrintTextAbove(npc, "*Alertado pelas vibrações!*");
+        PrintText(npc, "*Alertado pelas vibrações!*");
         return 1;
     endif
     

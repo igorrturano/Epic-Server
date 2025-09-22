@@ -14,7 +14,7 @@ program do_res( parms )
   var mobile := parms[2];
   if ( ( ( who.npctemplate == "healer" ) || ( who.npctemplate == "townhealer" ) ||
        ( who.npctemplate == "wanderinghealer" ) ) && ( mobile.criminal ) )
-    PrintTextAbove( who, "I will not aid a criminal.", color := 33 );
+    PrintText( who, "I will not aid a criminal.", color := 33 );
     return;
   endif
   if ( ( mobile.dead ) && ( CheckLineOfSight( who, mobile ) ) )
@@ -25,7 +25,7 @@ program do_res( parms )
     SetObjProperty( mobile, "#ResMenu", 1 );
     set_critical( 0 );
     if ( ResNow( mobile ) == 1 )
-      PrintTextAbove( who, "Live again by the Virtues!", color := 66 );
+      PrintText( who, "Live again by the Virtues!", color := 66 );
       PerformAction( who, ACTION_EFFECT_CAST2 );
       PlaySoundEffect( who, SOUND_EFFECT_RES );
       Resurrect( mobile );
@@ -33,7 +33,7 @@ program do_res( parms )
     endif
     EraseObjProperty( mobile, "#ResMenu" );
   //  elseif((GetPoisonByType(who, "DefaultPoison").size() > 0) && CheckLineOfSight(who, mobile))
-  //  PrintTextAbove(who, "Sacrifice Purifies the Body and Soul!");
+  //  PrintText(who, "Sacrifice Purifies the Body and Soul!");
   //  PerformAction(who, ANIM_CAST_AREA);
   //  FakeDeath(who);
   //    sleep(1);

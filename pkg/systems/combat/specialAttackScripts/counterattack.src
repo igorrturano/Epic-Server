@@ -6,7 +6,7 @@ program SpecialAttack_CounterAttack(combatInfo)
 	var attacker := combatInfo.attacker;
 	var defender := combatInfo.defender;
 
-	PrintTextAbove(defender, "*Contra-Ataque*");
+	PrintText(defender, "*Contra-Ataque*");
 	SendSysMessage(attacker, "Você realiza um contra-ataque.");
 
 	attacker.attack_once(defender);

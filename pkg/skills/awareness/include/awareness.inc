@@ -38,7 +38,7 @@ function ExaminarObjeto(who,targ)
 			if(who.hidden)
 				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
-				PrintTextAbove(who, "*Examinando "+targ.name+"*");
+				PrintText(who, "*Examinando "+targ.name+"*");
 			endif
 			sleep(1);
 		endif
@@ -52,8 +52,8 @@ function ExaminarObjeto(who,targ)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
 			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
-				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
-				PrintTextAbove(targ, "*!*");
+				PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
+				PrintText(targ, "*!*");
 				TrapFound(targ, who);
 			endif
 			return 1;
@@ -79,8 +79,8 @@ function ExaminarObjeto(who,targ)
 				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
-					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
-					PrintTextAbove(targ, "*!*");
+					PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
+					PrintText(targ, "*!*");
 					TrapFound(targ, who);
 				endif
 				return 1;
@@ -156,17 +156,17 @@ function ExaminarArea(who)
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,258);
-		        	PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
+		        	PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
 	        	endif
 	        elseif (!mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra PJ escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,36);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
 				endif
 	        elseif (mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra NPC escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,37);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
 				endif
 			else //Revela todo mundo que deveria
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
@@ -202,7 +202,7 @@ function ExaminarArea(who)
 				found := found+1;
 				item.invisible := 0;
 				SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-				PrintTextAbovePrivate(item, "*!*", who);
+				PrintTextPrivate(item, "*!*", who);
 			endif
 		endif
 		sleepms(2);
