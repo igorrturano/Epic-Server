@@ -10,9 +10,9 @@ exported function CanDie(mobile)
 		pcdata.DeleteElement(mobile.serial);
 	endif
 
-	// Clean up doppelganger transformation before death
+	// Restore doppelganger appearance before death (while still alive)
 	if (GetObjProperty(mobile, "#doppelganger_transformed"))
-		CleanupDoppelgangerTransformation(mobile);
+		RestoreDoppelgangerAppearance(mobile);
 	endif
 
 	if (GetObjProperty(mobile, "allowdeath") == 1)
