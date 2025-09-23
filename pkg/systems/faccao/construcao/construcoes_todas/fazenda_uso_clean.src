@@ -1,0 +1,333 @@
+use uo;
+use os;
+use guilds;
+use polsys;
+use util;
+
+include ":gumps:epicGumps";
+include ":gumps:yesNo";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":faccao:include/shared_functions";
+include ":faccao:construcao/include/feudo_buildings";
+include ":faccao:include/logging";
+include ":faccao:include/permissions";
+include ":faccao:include/safe_guild_utils";
+
+// Constants
+const MOEDAS_COBRE := 0xba63;
+
+program use_fazenda_placa(who, placa)
+    LogDebug("fazenda", "Farm sign clicked by " + who.name + " at " + placa.x + "," + placa.y);
+
+    var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+
+    if (!build_info)
+        LogError("fazenda", "Missing BuildingInfo on farm sign " + placa.serial);
+        SendSysMessage(who, "Esta placa de fazenda está com dados corrompidos.");
+        return;
+    endif
+
+    if (who.guildid == owner_guild_id && (IsGuildLeader(who) || who.cmdlevel >= 1))
+        ShowFarmLeaderGump(who, placa);
+    elseif (who.guildid == owner_guild_id)
+        ShowFarmCitizenGump(who, placa);
+    else
+        ShowFarmForeignerGump(who, placa);
+    endif
+endprogram
+
+// Utility function to find player by serial
+function FindPlayerBySerial(serial)
+    foreach player in (EnumerateOnlineCharacters())
+        if (player.serial == serial)
+            return player;
+        endif
+    endforeach
+    return 0;
+endfunction
+
+// Format farm bonus for display
+function FormatFarmBonus(bonus_text)
+    var texto := CStr(bonus_text);
+
+    if (texto["ProducaoComida"])
+        var parts := SplitWords(texto);
+        var numero := "";
+
+        if (parts.size() >= 2)
+            numero := parts[2];
+        else
+            // Extract digits manually
+            var i := 1;
+            for (i := 1; i <= texto.size(); i := i + 1)
+                var char := texto[i];
+                if (char >= "0" && char <= "9")
+                    numero += char;
+                endif
+            endfor
+        endif
+
+        return "Produção de Comida - " + numero;
+    else
+        return texto;
+    endif
+endfunction
+
+// Main leader management gump
+function ShowFarmLeaderGump(who, placa)
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+    if (!build_info)
+        LogError("fazenda", "Missing BuildingInfo on farm sign " + placa.serial);
+        SendSysMessage(who, "Erro: BuildingInfo não encontrado na placa.");
+        return;
+    endif
+
+    var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+    if (!details)
+        LogError("fazenda", "Failed to get building details for type: " + build_info.type + ", level: " + build_info.level);
+        SendSysMessage(who, "Erro ao carregar detalhes da propriedade.");
+        return;
+    endif
+
+    var continuar := 1;
+    while (continuar)
+        var gump := CreateFarmLeaderGump(details, placa);
+        var input := GFSendGump(who, gump);
+        var button := input[0];
+
+        case (button)
+            1: // Upgrade building
+                SendSysMessage(who, "Funcionalidade de upgrade ainda não implementada.");
+                break;
+            2: // Manage farm manager
+                var current_manager := GetObjProperty(placa, "GerenteFazenda");
+                if (current_manager)
+                    DismissFarmManager(who, placa);
+                else
+                    AssignFarmManager(who, placa);
+                endif
+                break;
+            99: // Demolish
+                if (YesNo(who, "TEM CERTEZA? A demolição é irreversível."))
+                    LogInfo("fazenda", "Building demolished by " + who.name + " at " + placa.x + "," + placa.y);
+                    DemolirConstrucao(placa);
+                    SendSysMessage(who, details.Name + " foi demolida com sucesso.");
+                    continuar := 0;
+                endif
+                break;
+            default:
+                continuar := 0;
+        endcase
+    endwhile
+endfunction
+
+// Create the leader gump UI
+function CreateFarmLeaderGump(details, placa)
+    var gump := GFECreateGump("🌾 FAZENDA 🌾 Gestão: " + details.Name, 450, 420, array{BORDER_MARBLE});
+    var y := 80;
+    var x := 30;
+
+    // Building status section
+    GFTextLine(gump, x, y, 1153, "Status da Propriedade:");
+    y += 25;
+    GFTextLine(gump, x + 20, y, 0, "Nível: " + GetObjProperty(placa, "BuildingInfo").level);
+    y += 20;
+
+    var bonus_formatado := FormatFarmBonus(details.Bonus[1]);
+    GFTextLine(gump, x + 20, y, 0, "Bônus para o Feudo: " + bonus_formatado);
+    y += 20;
+    GFTextLine(gump, x + 20, y, 0, "Durabilidade: 100%");
+    y += 40;
+
+    // Manager section
+    var manager_x := x + 280;
+    var manager_y := y;
+    GFTextLine(gump, manager_x, manager_y, 1153, "Fazendeiro Chefe");
+    manager_y += 20;
+
+    var manager_serial := GetObjProperty(placa, "GerenteFazenda");
+    if (manager_serial)
+        var manager := SystemFindObjectBySerial(CInt(manager_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (manager)
+            var nome_exibicao := GetPlayerDisplayName(manager);
+            GFTextLine(gump, manager_x, manager_y, 68, "Nome: " + nome_exibicao);
+        else
+            GFTextLine(gump, manager_x, manager_y, 38, "Nome: <Não encontrado>");
+        endif
+    else
+        GFTextLine(gump, manager_x, manager_y, 38, "Nome: Nenhum");
+    endif
+
+    // Action buttons
+    y += 60;
+    GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, x + 50, y, 0, "Evoluir Construção");
+    y += 30;
+
+    var current_manager := GetObjProperty(placa, "GerenteFazenda");
+    if (current_manager)
+        GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, x + 50, y, 38, "Demitir Gerente");
+    else
+        GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, x + 50, y, 0, "Designar Gerente");
+    endif
+    y += 30;
+
+    GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 99);
+    GFTextLine(gump, x + 50, y, 38, "Demolir Construção");
+
+    return gump;
+endfunction
+
+// Citizen view gump
+function ShowFarmCitizenGump(who, placa)
+    var build_info := GetObjProperty(placa, "BuildingInfo");
+    if (!build_info)
+        SendSysMessage(who, "Esta propriedade parece estar com dados corrompidos.");
+        return;
+    endif
+
+    var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+    if (details.errortext)
+        SendSysMessage(who, "Erro ao carregar detalhes da propriedade.");
+        return;
+    endif
+
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 420, 300);
+    GFResizePic(gump, 15, 15, 9350, 390, 270);
+
+    GFTextMid(gump, 15, 25, 390, 2100, "Propriedade do Feudo: " + placa.name);
+
+    var y := 80;
+    var x := 30;
+
+    GFTextLine(gump, x, y, 1153, "Esta é uma propriedade do nosso feudo.");
+    y += 30;
+
+    GFTextLine(gump, x + 20, y, 0, "Status:");
+    GFTextLine(gump, x + 80, y, 68, "Propriedade da guilda.");
+    y += 30;
+
+    GFTextLine(gump, x, y, 1153, "Bônus Contribuído ao Feudo:");
+    y += 25;
+
+    foreach bonus_line in (details.Bonus)
+        var bonus_formatado := FormatFarmBonus(bonus_line);
+        GFTextLine(gump, x + 20, y, 68, "• " + bonus_formatado);
+        y += 20;
+    endforeach
+
+    GFAddButton(gump, 190, 250, 247, 248, GF_CLOSE_BTN, 0);
+    GFSendGump(who, gump);
+endfunction
+
+// Foreigner view gump
+function ShowFarmForeignerGump(who, placa)
+    var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+    var guild := FindGuild(owner_guild_id);
+    var guild_name := SafeGetGuildName(guild);
+
+    if (guild_name == "Unknown Guild" || guild_name == "No Guild")
+        guild_name := "um feudo desconhecido";
+    endif
+
+    var gump := GFECreateGump("Propriedade Privada", 350, 200, array{BORDER_MARBLE});
+
+    var y := 80;
+    GFTextLine(gump, 40, y, 1153, "Propriedade do Feudo de " + guild_name);
+    y += 25;
+
+    GFTextLine(gump, 60, y, 0, "Status: Propriedade da guilda.");
+
+    GFSendGump(who, gump);
+endfunction
+
+// Assign a new farm manager
+function AssignFarmManager(who, placa)
+    SendSysMessage(who, "Clique no jogador que você deseja designar como gerente da fazenda...");
+
+    var loc := TargetCoordinates(who);
+    if (!loc)
+        SendSysMessage(who, "Operação cancelada.");
+        return;
+    endif
+
+    var mobiles := ListMobilesNearLocation(loc.x, loc.y, loc.z, 0, loc.realm);
+    var targ := 0;
+
+    foreach mobile in mobiles
+        if (mobile.acctname && !mobile.npctemplate)
+            targ := mobile;
+            break;
+        endif
+    endforeach
+
+    if (!targ)
+        SendSysMessage(who, "Você deve selecionar um jogador.");
+        return;
+    endif
+
+    var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+    if (targ.guildid != owner_guild_id)
+        SendSysMessage(who, "O gerente deve ser membro da mesma guilda!");
+        return;
+    endif
+
+    var current_manager := GetObjProperty(placa, "GerenteFazenda");
+    if (current_manager == targ.serial)
+        SendSysMessage(who, targ.name + " já é o gerente atual desta fazenda.");
+        return;
+    endif
+
+    var leader_name := GetPlayerDisplayName(who);
+    var proposal_msg := leader_name + " quer designar você como gerente da fazenda '" + placa.name + "'. Você aceita esta responsabilidade?";
+
+    SendSysMessage(targ, "Você recebeu uma proposta para ser gerente da fazenda. Responda na janela que apareceu.");
+
+    if (YesNo(targ, proposal_msg))
+        var targ_name := GetPlayerDisplayName(targ);
+        SetObjProperty(placa, "GerenteFazenda", targ.serial);
+        SetObjProperty(placa, "GerenteNome", targ_name);
+
+        SendSysMessage(who, targ_name + " aceitou e foi designado como gerente desta fazenda.");
+        SendSysMessage(targ, "Você aceitou ser o gerente da fazenda '" + placa.name + "'!");
+        LogInfo("fazenda", "New farm manager assigned: " + targ_name + " by " + who.name);
+    else
+        var targ_name := GetPlayerDisplayName(targ);
+        SendSysMessage(who, targ_name + " recusou a proposta para ser gerente da fazenda.");
+        SendSysMessage(targ, "Você recusou a proposta para ser gerente da fazenda.");
+    endif
+endfunction
+
+// Dismiss current farm manager
+function DismissFarmManager(who, placa)
+    var manager_serial := GetObjProperty(placa, "GerenteFazenda");
+    if (!manager_serial)
+        SendSysMessage(who, "Não há gerente designado para esta fazenda.");
+        return;
+    endif
+
+    var manager := SystemFindObjectBySerial(CInt(manager_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var manager_name := GetPlayerDisplayName(manager);
+
+    if (YesNo(who, "Tem certeza que deseja demitir " + manager_name + " do cargo de gerente desta fazenda?"))
+        EraseObjProperty(placa, "GerenteFazenda");
+        EraseObjProperty(placa, "GerenteNome");
+
+        SendSysMessage(who, manager_name + " foi demitido do cargo de gerente da fazenda.");
+        LogInfo("fazenda", "Farm manager dismissed: " + manager_name + " by " + who.name);
+
+        var manager_online := SystemFindObjectBySerial(CInt(manager_serial));
+        if (manager_online)
+            SendSysMessage(manager_online, "Você foi demitido do cargo de gerente da fazenda '" + placa.name + "' por " + who.name + ".");
+        endif
+    else
+        SendSysMessage(who, "Operação cancelada.");
+    endif
+endfunction

@@ -86,8 +86,8 @@ function CreateTotemOnBossDeath(territory_id, x, y, z, realm)
         return;
     endif
     
-    // Define um tempo de expiração de 60 segundos (1 minuto)
-    var expiration_timestamp := polcore().systime + 60;
+    // Define um tempo de expiração de 60 minutos (3600 segundos)
+    var expiration_timestamp := polcore().systime + 60 * 60;
     LogCritical("TotemLifecycle", "PASSO 1: Totem " + totem.serial + " criado. Definindo expiração para " + expiration_timestamp + " (" + (expiration_timestamp - polcore().systime) + " segundos a partir de agora).");
 
     LogInfo("CreateTotem_LOG", "SUCESSO: Totem criado (Serial: " + totem.serial + "). Configurando CProps...");

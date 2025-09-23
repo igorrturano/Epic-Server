@@ -1,0 +1,563 @@
+// use uo;
+// use os;
+// use guilds;
+// use polsys;
+// use util;
+
+// include ":gumps:epicGumps";
+// include ":gumps:yesNo";
+// include ":gumps:gumps";
+// include ":gumps:gumps_ex";
+// include ":gumps:requestGump";
+// include ":tn:tngumps";
+// // include ":keys:key"; - Sistema de chaves agora é separado
+// include ":faccao:include/shared_functions";
+// include ":faccao:construcao/include/feudo_buildings";
+// include ":faccao:include/logging";
+// include ":faccao:include/permissions";
+// include ":faccao:include/safe_guild_utils";
+
+
+// // ==========================================================
+// // PROGRAMA PRINCIPAL (ROTEADOR DE PERMISSÕES)
+// // ==========================================================
+// const MOEDAS_COBRE     := 0xba63;
+
+// program use_fazenda_placa(who, placa)
+//     LogDebug("fazenda", "Farm sign clicked by " + who.name + " at " + placa.x + "," + placa.y);
+
+//     var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+//     var build_info := GetObjProperty(placa, "BuildingInfo");
+
+//     if (!build_info)
+//         LogError("fazenda", "Missing BuildingInfo on farm sign " + placa.serial);
+//         SendSysMessage(who, "Esta placa de fazenda está com dados corrompidos.");
+//         return;
+//     endif
+
+//     if (who.guildid == owner_guild_id && (IsGuildLeader(who) || who.cmdlevel >= 1))
+//         Fazenda_ShowLeaderGump(who, placa);
+//     elseif (who.guildid == owner_guild_id)
+//         Fazenda_ShowCidadaoGump(who, placa);
+//     else
+//         Fazenda_ShowForasteiroGump(who, placa);
+//     endif
+// endprogram
+
+// // ==========================================================
+// // FUNÇÃO UTILITÁRIA PARA ENCONTRAR PLAYER POR SERIAL
+// // ==========================================================
+
+// function Fazenda_FindPlayerBySerial(serial)
+//     foreach player in (EnumerateOnlineCharacters())
+//         if (player.serial == serial)
+//             return player;
+//         endif
+//     endforeach
+//     return 0;
+// endfunction
+
+// // ==========================================================
+// // FUNÇÃO UTILITÁRIA PARA FORMATAÇÃO DE BÔNUS
+// // ==========================================================
+
+// function FormatFarmBonus(bonus_text)
+//     var texto := CStr(bonus_text);
+
+//     if (texto["ProducaoComida"])
+//         var parts := SplitWords(texto);
+//         var numero := "";
+
+//         if (parts.size() >= 2)
+//             numero := parts[2];
+//         else
+//             // Fallback: extract digits manually
+//             var i := 1;
+//             for (i := 1; i <= texto.size(); i := i + 1)
+//                 var char := texto[i];
+//                 if (char >= "0" && char <= "9")
+//                     numero += char;
+//                 endif
+//             endfor
+//         endif
+
+//         return "Produção de Comida - " + numero;
+//     else
+//         return texto;
+//     endif
+// endfunction
+
+
+// // ==========================================================
+// // GUMP 1: LÍDER / GM (A GUMP DE GESTÃO COMPLETA) - VERSÃO FAZENDA
+// // ==========================================================
+
+// function ShowFarmLeaderGump(who, placa)
+//     var build_info := GetObjProperty(placa, "BuildingInfo");
+//     if (!build_info)
+//         LogError("fazenda", "Missing BuildingInfo on farm sign " + placa.serial);
+//         SendSysMessage(who, "Erro: BuildingInfo não encontrado na placa.");
+//         return;
+//     endif
+    
+//     var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+//     if (!details)
+//         LogError("fazenda", "Failed to get building details for type: " + build_info.type + ", level: " + build_info.level);
+//         SendSysMessage(who, "Erro ao carregar detalhes da propriedade.");
+//         return;
+//     endif
+
+//     var continuar := 1;
+//     while (continuar)
+//         var gump := GFECreateGump("🌾 FAZENDA 🌾 Gestão: " + details.Name, 450, 420, array{BORDER_MARBLE});
+
+//         var y := 80;
+//         var x := 30;
+//         LogCritical("FAZENDA_DEBUG", "Posições iniciais: x=" + x + ", y=" + y);
+
+//         // --- Seção de Status da Construção ---
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 5: ADICIONANDO STATUS DA PROPRIEDADE ---");
+//         GFTextLine(gump, x, y, 1153, "Status da Propriedade:");
+//         y += 25;
+//         LogCritical("FAZENDA_DEBUG", "Adicionando nível: " + build_info.level);
+//         GFTextLine(gump, x + 20, y, 0, "Nível: " + build_info.level);
+//         y += 20;
+//         // Formatação melhorada do bônus
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 6: FORMATANDO BÔNUS ---");
+//         LogCritical("FAZENDA_DEBUG", "Chamando Fazenda_FormatarBonus com: '" + details.Bonus[1] + "'");
+//         var bonus_formatado := Fazenda_FormatarBonus(details.Bonus[1]);
+//         LogCritical("FAZENDA_DEBUG", "bonus_formatado retornado: '" + bonus_formatado + "'");
+//         GFTextLine(gump, x + 20, y, 0, "Bônus para o Feudo: " + bonus_formatado);
+//         y += 20;
+//         GFTextLine(gump, x + 20, y, 0, "Durabilidade: 100%");
+//         y += 20;
+        
+//         // --- Seção de Upkeep Semanal (MOVIDA PARA CIMA) ---
+//         LogCritical("FAZENDA_DEBUG", "--- DEBUGANDO EXIBIÇÃO DO UPKEEP ---");
+//         LogCritical("FAZENDA_DEBUG", "details exists: " + (details ? "SIM" : "NÃO"));
+//         if (details)
+//             LogCritical("FAZENDA_DEBUG", "details.Name: '" + details.Name + "'");
+//             LogCritical("FAZENDA_DEBUG", "details.Upkeep exists: " + (details.Upkeep ? "SIM" : "NÃO"));
+//             if (details.Upkeep)
+//                 LogCritical("FAZENDA_DEBUG", "details.Upkeep.size(): " + details.Upkeep.size());
+//             endif
+//         endif
+        
+//         if (details && details.Name == "Lote de Fazenda")
+//             LogCritical("FAZENDA_DEBUG", "ENTRANDO NO BLOCO LOTE DE FAZENDA");
+//             // Para Lote de Fazenda, mostrar upkeep específico
+//             if (details.Upkeep && details.Upkeep.size() > 0)
+//                 LogCritical("FAZENDA_DEBUG", "UPKEEP ENCONTRADO! Criando texto...");
+//                 var upkeep_text := "Upkeep Semanal: ";
+//                 var recursos_lista := array{};
+//                 LogCritical("FAZENDA_DEBUG", "Iniciando loop pelos recursos do upkeep...");
+//                 foreach recurso in (details.Upkeep.keys())
+//                     LogCritical("FAZENDA_DEBUG", "Processando recurso: '" + recurso + "'");
+//                     var quantidade := details.Upkeep[recurso];
+//                     LogCritical("FAZENDA_DEBUG", "Quantidade: " + quantidade + " (tipo: " + TypeOf(quantidade) + ")");
+//                     if (quantidade && quantidade > 0)
+//                         LogCritical("FAZENDA_DEBUG", "Quantidade válida! Processando...");
+//                         var nome_recurso := recurso;
+//                         // Comparação mais robusta
+//                         var recurso_lower := Lower(CStr(recurso));
+//                         LogCritical("FAZENDA_DEBUG", "recurso_lower: '" + recurso_lower + "'");
+//                         if (recurso_lower == "madeira") nome_recurso := "Madeira";
+//                         elseif (recurso_lower == "pedra") nome_recurso := "Pedra";
+//                         elseif (recurso_lower == "ferro") nome_recurso := "Ferro";
+//                         endif
+//                         LogCritical("FAZENDA_DEBUG", "nome_recurso final: '" + nome_recurso + "'");
+//                         recursos_lista.append(nome_recurso + " " + quantidade);
+//                         LogCritical("FAZENDA_DEBUG", "Recurso adicionado: '" + nome_recurso + " " + quantidade + "'");
+//                     else
+//                         LogCritical("FAZENDA_DEBUG", "Quantidade inválida ou zero! Pulando recurso.");
+//                     endif
+//                 endforeach
+//                 LogCritical("FAZENDA_DEBUG", "Total de recursos processados: " + recursos_lista.size());
+//                 if (recursos_lista.size() > 0)
+//                     // Concatenação manual em vez de join() que está falhando
+//                     LogCritical("FAZENDA_DEBUG", "Fazendo concatenação manual...");
+//                     var primeiro := 1;
+//                     foreach recurso_str in recursos_lista
+//                         LogCritical("FAZENDA_DEBUG", "Concatenando: '" + recurso_str + "'");
+//                         if (!primeiro)
+//                             upkeep_text += ", ";
+//                         endif
+//                         upkeep_text += recurso_str;
+//                         primeiro := 0;
+//                     endforeach
+//                     LogCritical("FAZENDA_DEBUG", "TEXTO FINAL DO UPKEEP: '" + upkeep_text + "'");
+//                     GFTextLine(gump, x + 20, y, 38, upkeep_text);
+//                     y += 20;
+//                 else
+//                     LogCritical("FAZENDA_DEBUG", "RECURSOS_LISTA VAZIA! Não exibindo upkeep.");
+//                 endif
+//             else
+//                 LogCritical("FAZENDA_DEBUG", "UPKEEP NÃO ENCONTRADO OU VAZIO! size: " + (details.Upkeep ? details.Upkeep.size() : "NULL"));
+//             endif
+//         elseif (details.Upkeep)
+//             LogCritical("FAZENDA_DEBUG", "NÃO É LOTE DE FAZENDA! Name: '" + (details ? details.Name : "NULL") + "'");
+//             // Para outras construções, tentar ler normalmente
+//             if (details.Upkeep.size() > 0)
+//                 var upkeep_text := "Upkeep Semanal: ";
+//                 var recursos_lista := array{};
+//                 foreach recurso in (details.Upkeep.keys())
+//                     var quantidade := details.Upkeep[recurso];
+//                     if (quantidade && quantidade > 0)
+//                         var nome_recurso := recurso;
+//                         // Comparação mais robusta
+//                         var recurso_lower := Lower(CStr(recurso));
+//                         if (recurso_lower == "madeira") nome_recurso := "Madeira";
+//                         elseif (recurso_lower == "pedra") nome_recurso := "Pedra";
+//                         elseif (recurso_lower == "ferro") nome_recurso := "Ferro";
+//                         endif
+//                         recursos_lista.append(nome_recurso + " " + quantidade);
+//                     endif
+//                 endforeach
+//                 if (recursos_lista.size() > 0)
+//                     upkeep_text += recursos_lista.join(", ");
+//                     GFTextLine(gump, x + 20, y, 38, upkeep_text);
+//                     y += 20;
+//                 endif
+//             endif
+//         endif
+//         y += 20;
+        
+//         // --- Seção de Status da Ocupação ---
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 6.5: ADICIONANDO STATUS DA OCUPAÇÃO ---");
+//         var gerente_serial := GetObjProperty(placa, "GerenteFazenda");
+//         LogCritical("FAZENDA_DEBUG", "gerente_serial: " + gerente_serial);
+        
+//         // --- SEÇÃO REORGANIZADA DO GERENTE DA FAZENDA ---
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 6.6: ADICIONANDO SEÇÃO DO GERENTE ---");
+//         // Posição da seção do gerente (mesmo local onde estava a imagem)
+//         var gerente_x := x + 280; // Posição X da seção do gerente
+//         var gerente_y := y + 30;  // Posição Y da seção do gerente
+//         var img_width := 100; // Largura da imagem
+//         var img_height := 100; // Altura da imagem
+        
+//         // Título da seção
+//         GFTextLine(gump, gerente_x, gerente_y, 1153, "Fazendeiro Chefe");
+//         gerente_y += 20; // Move para baixo para o nome
+        
+//         if (gerente_serial)
+//             var gerente := SystemFindObjectBySerial(CInt(gerente_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+//             LogCritical("FAZENDA_DEBUG", "gerente found: " + (gerente ? GetPlayerDisplayName(gerente) : "NULL"));
+//             if (gerente)
+//                 var nome_exibicao := GetPlayerDisplayName(gerente);
+//                 GFTextLine(gump, gerente_x, gerente_y, 68, "Nome: " + nome_exibicao);
+//             else
+//                 GFTextLine(gump, gerente_x, gerente_y, 38, "Nome: <Não encontrado>");
+//             endif
+//         else
+//             GFTextLine(gump, gerente_x, gerente_y, 38, "Nome: Nenhum");
+//         endif
+        
+//         gerente_y += 25; // Espaço entre o nome e a imagem
+        
+//         // --- IMAGEM DO GERENTE DA FAZENDA (ABAIXO DO TEXTO) ---
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 6.7: ADICIONANDO IMAGEM DO GERENTE ---");
+        
+//         // Criar fundo da imagem
+//         GFResizePic(gump, gerente_x, gerente_y, 9200, img_width + 10, img_height + 10);
+        
+//         if (gerente_serial)
+//             var gerente := SystemFindObjectBySerial(CInt(gerente_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+//             if (gerente)
+//                 var gerente_url := GetObjProperty(gerente, "url");
+//                 LogCritical("FAZENDA_DEBUG", "URL do gerente: " + (gerente_url ? gerente_url : "NONE"));
+                
+//                 if (gerente_url && gerente_url != "" && gerente_url != error)
+//                     // Mostrar imagem personalizada do gerente
+//                     GFHTMLArea(gump, gerente_x + 5, gerente_y + 5, img_width, img_height, "<img src=\"" + gerente_url + "\" width=\"" + img_width + "\" height=\"" + img_height + "\" x=\"0\" y=\"0\">");
+//                 else
+//                     // Imagem padrão se não tiver URL definida
+//                     var default_url := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
+//                     GFHTMLArea(gump, gerente_x + 5, gerente_y + 5, img_width, img_height, "<img src=\"" + default_url + "\" width=\"" + img_width + "\" height=\"" + img_height + "\" x=\"0\" y=\"0\">");
+//                 endif
+//             else
+//                 // Gerente não encontrado - imagem de placeholder
+//                 var placeholder_url := "https://via.placeholder.com/100x100/cccccc/666666?text=SEM+GERENTE";
+//                 GFHTMLArea(gump, gerente_x + 5, gerente_y + 5, img_width, img_height, "<img src=\"" + placeholder_url + "\" width=\"" + img_width + "\" height=\"" + img_height + "\" x=\"0\" y=\"0\">");
+//             endif
+//         else
+//             // Sem gerente - imagem de placeholder
+//             var no_manager_url := "https://via.placeholder.com/100x100/ff6666/ffffff?text=VAGO";
+//             GFHTMLArea(gump, gerente_x + 5, gerente_y + 5, img_width, img_height, "<img src=\"" + no_manager_url + "\" width=\"" + img_width + "\" height=\"" + img_height + "\" x=\"0\" y=\"0\">");
+//         endif
+//         y += 20;
+        
+//         // --- Seção de Status da Ocupação ---
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 6.5: ADICIONANDO STATUS DA OCUPAÇÃO ---");
+//         GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 1);
+//         GFTextLine(gump, x + 50, y, 0, "Evoluir Construção");
+//         LogCritical("FAZENDA_DEBUG", "Botão 1 adicionado: Evoluir Construção");
+//         y += 30;
+
+//         // Botão para Designar/Demitir Gerente baseado no status atual
+//         var gerente_atual := GetObjProperty(placa, "GerenteFazenda");
+//         if (gerente_atual)
+//             GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 2);
+//             GFTextLine(gump, x + 50, y, 38, "Demitir Gerente");
+//             LogCritical("FAZENDA_DEBUG", "Botão 2 adicionado: Demitir Gerente");
+//         else
+//             GFAddButton(gump, x + 20, y, 4005, 4007, GF_CLOSE_BTN, 2);
+//             GFTextLine(gump, x + 50, y, 0, "Designar Gerente");
+//             LogCritical("FAZENDA_DEBUG", "Botão 2 adicionado: Designar Gerente");
+//         endif
+//         y += 30;
+        
+//         GFAddButton(gump, x + 20, y, 4017, 4019, GF_CLOSE_BTN, 99);
+//         GFTextLine(gump, x + 50, y, 38, "Demolir Construção");
+//         LogCritical("FAZENDA_DEBUG", "Botão 99 adicionado: Demolir Construção");
+        
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 8: ENVIANDO GUMP PARA PLAYER ---");
+//         LogCritical("FAZENDA_DEBUG", "Enviando gump para: " + who.name);
+//         var input := GFSendGump(who, gump);
+//         LogCritical("FAZENDA_DEBUG", "Gump enviado! Aguardando resposta...");
+//         var button := input[0];
+//         LogCritical("FAZENDA_DEBUG", "--- STEP 9: RESPOSTA RECEBIDA ---");
+//         LogCritical("FAZENDA_DEBUG", "Botão clicado: " + button);
+
+//         case (button)
+//             1: 
+//                 LogCritical("FAZENDA_DEBUG", "AÇÃO: Evoluir Construção");
+//                 SendSysMessage(who, "Funcionalidade de upgrade ainda não implementada."); 
+//                 break;
+//             2: 
+//                 var gerente_atual := GetObjProperty(placa, "GerenteFazenda");
+//                 if (gerente_atual)
+//                     LogCritical("FAZENDA_DEBUG", "AÇÃO: Demitir Gerente");
+//                     Fazenda_DemitirGerente(who, placa);
+//                 else
+//                     LogCritical("FAZENDA_DEBUG", "AÇÃO: Designar Gerente");
+//                     Fazenda_DesignarGerente(who, placa);
+//                 endif
+//                 // Após designar/demitir, continua no gump para ver as mudanças
+//                 break;
+//             99:
+//                 LogCritical("FAZENDA_DEBUG", "AÇÃO: Demolir Construção");
+//                 if (YesNo(who, "TEM CERTEZA? A demolição é irreversível."))
+//                     LogCritical("FAZENDA_DEBUG", "CONFIRMADO: Demolindo construção");
+//                     DemolirConstrucao(placa);
+//                     SendSysMessage(who, details.Name + " foi demolida com sucesso.");
+//                     continuar := 0;
+//                 else
+//                     LogCritical("FAZENDA_DEBUG", "CANCELADO: Demolição cancelada pelo usuário");
+//                 endif
+//                 break;
+//             default: 
+//                 LogCritical("FAZENDA_DEBUG", "AÇÃO: Fechar gump (botão padrão)");
+//                 continuar := 0;
+//         endcase
+//         iteracao += 1;
+//         LogCritical("FAZENDA_DEBUG", "--- FIM DA ITERAÇÃO " + (iteracao - 1) + " ---");
+//     endwhile
+//     LogCritical("FAZENDA_DEBUG", "======================================================");
+//     LogCritical("FAZENDA_DEBUG", "=== SAINDO DE ShowLeaderGump (FAZENDA) ===");
+//     LogCritical("FAZENDA_DEBUG", "======================================================");
+// endfunction
+
+// // ==========================================================
+// // GUMP 2: CIDADÃO DA GUILDA
+// // ==========================================================
+
+// function Fazenda_ShowCidadaoGump(who, placa)
+//     var build_info := GetObjProperty(placa, "BuildingInfo");
+//     if (!build_info)
+//         SendSysMessage(who, "Esta propriedade parece estar com dados corrompidos.");
+//         return;
+//     endif
+    
+//     var details := FEUDO_GetBuildingLevelDetails(build_info.type, build_info.level);
+//     if (details.errortext)
+//         SendSysMessage(who, "Erro ao carregar detalhes da propriedade.");
+//         return;
+//     endif
+
+//     // Usando o mesmo estilo de fundo limpo
+//     var gump := GFCreateGump();
+//     GFResizePic(gump, 0, 0, 9200, 420, 300);
+//     GFResizePic(gump, 15, 15, 9350, 390, 270);
+    
+//     GFTextMid(gump, 15, 25, 390, 2100, "Propriedade do Feudo: " + placa.name);
+
+//     var y := 80;
+//     var x := 30;
+
+//     GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+//     y += 15;
+//     GFTextLine(gump, x, y, 1153, "Esta é uma propriedade do nosso feudo.");
+//     y += 30;
+
+//     GFTextLine(gump, x + 20, y, 0, "Status:");
+//     GFTextLine(gump, x + 80, y, 68, "Propriedade da guilda.");
+//     y += 30;
+
+//     GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+//     y += 15;
+//     GFTextLine(gump, x, y, 1153, "Bônus Contribuído ao Feudo:");
+//     y += 25;
+
+//     var bonus_list := details.Bonus;
+//     foreach bonus_line in (bonus_list)
+//         var bonus_formatado := Fazenda_FormatarBonus(bonus_line);
+//         GFTextLine(gump, x + 20, y, 68, "• " + bonus_formatado);
+//         y += 20;
+//     endforeach
+    
+//     // --- Seção de Upkeep Semanal para Cidadãos ---
+//     if (details.Upkeep && details.Upkeep.size() > 0)
+//         y += 10;
+//         GFGumpPicTiled(gump, x, y, 360, 2, 9101); // Linha divisória
+//         y += 15;
+//         GFTextLine(gump, x, y, 1153, "Custo de Manutenção Semanal:");
+//         y += 25;
+        
+//         foreach recurso in (details.Upkeep.keys())
+//             var quantidade := details.Upkeep[recurso];
+//             var nome_recurso := recurso;
+//             if (recurso == "madeira") nome_recurso := "Madeira";
+//             elseif (recurso == "pedra") nome_recurso := "Pedra";
+//             elseif (recurso == "ferro") nome_recurso := "Ferro";
+//             endif
+//             GFTextLine(gump, x + 20, y, 38, "• " + nome_recurso + ": " + quantidade);
+//             y += 20;
+//         endforeach
+//         y += 5;
+//     endif
+
+//     GFAddButton(gump, 190, 250, 247, 248, GF_CLOSE_BTN, 0); // Botão OK
+
+//     GFSendGump(who, gump);
+// endfunction
+
+// // ==========================================================
+// // GUMP 3: FORASTEIRO
+// // ==========================================================
+
+// function Fazenda_ShowForasteiroGump(who, placa)
+//     var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+//     var guild := FindGuild(owner_guild_id);
+//     var guild_name := SafeGetGuildName(guild);
+    
+//     if (guild_name == "Unknown Guild" || guild_name == "No Guild")
+//         guild_name := "um feudo desconhecido";
+//     endif
+
+//     var gump := GFECreateGump("Propriedade Privada", 350, 200, array{BORDER_MARBLE});
+    
+//     var y := 80;
+//     GFTextLine(gump, 40, y, 1153, "Propriedade do Feudo de " + guild_name);
+//     y += 25;
+
+//     GFTextLine(gump, 60, y, 0, "Status: Propriedade da guilda.");
+    
+//     GFSendGump(who, gump);
+// endfunction
+
+// // ==========================================================
+// // FUNÇÃO: DESIGNAR GERENTE DA FAZENDA (VERSÃO COM CONFIRMAÇÃO)
+// // ==========================================================
+
+// function Fazenda_DesignarGerente(who, placa)
+//     SendSysMessage(who, "Clique no jogador que você deseja designar como gerente da fazenda...");
+    
+//     var loc := TargetCoordinates(who);
+//     if (!loc)
+//         SendSysMessage(who, "Operação cancelada.");
+//         return;
+//     endif
+    
+//     // Buscar por mobiles na localização alvo
+//     var mobiles := ListMobilesNearLocation(loc.x, loc.y, loc.z, 0, loc.realm);
+//     var alvo := 0;
+    
+//     // Encontrar o primeiro jogador válido na localização
+//     foreach mobile in mobiles
+//         if (mobile.acctname && !mobile.npctemplate)
+//             alvo := mobile;
+//             break;
+//         endif
+//     endforeach
+    
+//     if (!alvo)
+//         SendSysMessage(who, "Você deve selecionar um jogador.");
+//         return;
+//     endif
+    
+//     // Verificar se o jogador está na mesma guild
+//     var owner_guild_id := GetObjProperty(placa, "GuildOwner");
+//     if (alvo.guildid != owner_guild_id)
+//         SendSysMessage(who, "O gerente deve ser membro da mesma guilda!");
+//         return;
+//     endif
+    
+//     // Verificar se já é o gerente atual
+//     var gerente_atual := GetObjProperty(placa, "GerenteFazenda");
+//     if (gerente_atual == alvo.serial)
+//         SendSysMessage(who, alvo.name + " já é o gerente atual desta fazenda.");
+//         return;
+//     endif
+    
+//     // *** NOVA FUNCIONALIDADE: CONFIRMAÇÃO DO JOGADOR ALVO ***
+//     var nome_exibicao_lider := GetPlayerDisplayName(who);
+//     var dados_convite_lider := GetObjProperty(who, "dados_convite");
+//     var cargo_lider := "";
+//     if (dados_convite_lider && dados_convite_lider.cargo_rp)
+//         cargo_lider := ", " + dados_convite_lider.cargo_rp + ",";
+//     endif
+    
+//     var proposta_msg := nome_exibicao_lider + cargo_lider + " quer designar você como gerente da fazenda '" + placa.name + "'. Você aceita esta responsabilidade?";
+    
+//     SendSysMessage(alvo, "Você recebeu uma proposta para ser gerente da fazenda. Responda na janela que apareceu.");
+    
+//     if (YesNo(alvo, proposta_msg))
+//         // Jogador aceitou - designar como gerente
+//         var nome_exibicao_alvo := GetPlayerDisplayName(alvo);
+//         SetObjProperty(placa, "GerenteFazenda", alvo.serial);
+//         SetObjProperty(placa, "GerenteNome", nome_exibicao_alvo);
+        
+//         SendSysMessage(who, nome_exibicao_alvo + " aceitou e foi designado como gerente desta fazenda.");
+//         SendSysMessage(alvo, "Você aceitou ser o gerente da fazenda '" + placa.name + "'!");
+//     else
+//         // Jogador recusou
+//         var nome_exibicao_alvo := GetPlayerDisplayName(alvo);
+//         SendSysMessage(who, nome_exibicao_alvo + " recusou a proposta para ser gerente da fazenda.");
+//         SendSysMessage(alvo, "Você recusou a proposta para ser gerente da fazenda.");
+//     endif
+// endfunction
+
+// // ==========================================================
+// // FUNÇÃO: DEMITIR GERENTE DA FAZENDA
+// // ==========================================================
+
+// function Fazenda_DemitirGerente(who, placa)
+//     var gerente_serial := GetObjProperty(placa, "GerenteFazenda");
+//     if (!gerente_serial)
+//         SendSysMessage(who, "Não há gerente designado para esta fazenda.");
+//         return;
+//     endif
+    
+//     var gerente := SystemFindObjectBySerial(CInt(gerente_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+//     var nome_exibicao_gerente := GetPlayerDisplayName(gerente);
+    
+//     if (YesNo(who, "Tem certeza que deseja demitir " + nome_exibicao_gerente + " do cargo de gerente desta fazenda?"))
+//         // Remove as propriedades do gerente
+//         EraseObjProperty(placa, "GerenteFazenda");
+//         EraseObjProperty(placa, "GerenteNome");
+        
+//         SendSysMessage(who, nome_exibicao_gerente + " foi demitido do cargo de gerente da fazenda.");
+        
+//         // Notifica o gerente se estiver online
+//         var gerente_online := SystemFindObjectBySerial(CInt(gerente_serial));
+//         if (gerente_online)
+//             SendSysMessage(gerente_online, "Você foi demitido do cargo de gerente da fazenda '" + placa.name + "' por " + who.name + ".");
+//         else
+//             // Enviar mensagem offline se possível (função não implementada no exemplo)
+//             // SendOfflineMessage(gerente_serial, "Você foi demitido do cargo de gerente da fazenda '" + placa.name + "' pelo líder do feudo.");
+//         endif
+//     else
+//         SendSysMessage(who, "Operação cancelada.");
+//     endif
+// endfunction
+

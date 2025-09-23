@@ -334,20 +334,20 @@ function ReinoGump(byref gump, item_serial, who := 0)
     GFResizePic(gump, 38, 60, 40267, 400, 502);
     
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    LogCritical("ReinoGump_DEBUG", "----------------- INICIANDO ReinoGump -----------------");
-    LogCritical("ReinoGump_DEBUG", "1. Lendo CProp da MESA (item): GetObjProperty(item, 'faction') -> '" + mesa_faction + "'");
+    LogDebug("reino_gump","----------------- INICIANDO ReinoGump -----------------");
+    LogDebug("reino_gump","1. Lendo CProp da MESA (item): GetObjProperty(item, 'faction') -> '" + mesa_faction + "'");
 
     var guild := FindGuild(FindGuildByName(mesa_faction));
     if (guild)
         var guild_true_name := guild.GetProp(FACTION_PROP_NAME);
         var guild_culture := guild.GetProp("culture");
-        LogCritical("ReinoGump_DEBUG", "2. Encontrada GUILD ID: " + guild.guildid);
-        LogCritical("ReinoGump_DEBUG", "3. Lendo CProp da GUILDA: guild.GetProp('name') -> '" + guild_true_name + "'");
-        LogCritical("ReinoGump_DEBUG", "4. Lendo CProp da GUILDA: guild.GetProp('culture') -> '" + guild_culture + "'");
+        LogDebug("reino_gump","2. Encontrada GUILD ID: " + guild.guildid);
+        LogDebug("reino_gump","3. Lendo CProp da GUILDA: guild.GetProp('name') -> '" + guild_true_name + "'");
+        LogDebug("reino_gump","4. Lendo CProp da GUILDA: guild.GetProp('culture') -> '" + guild_culture + "'");
     else
-        LogCritical("ReinoGump_DEBUG", "2. AVISO: Nenhuma GUILD encontrada para o nome '" + mesa_faction + "' lido da mesa.");
+        LogDebug("reino_gump","2. AVISO: Nenhuma GUILD encontrada para o nome '" + mesa_faction + "' lido da mesa.");
     endif
-    LogCritical("ReinoGump_DEBUG", "---------------------------------------------------------");
+    LogDebug("reino_gump","---------------------------------------------------------");
     // ====================================================================
     
  GFResizePic(gump, 38, 60, 40267, 400, 502);
@@ -358,24 +358,24 @@ function ReinoGump(byref gump, item_serial, who := 0)
         var xp_info := GetGuildXPInfo(guild);
         
         // ======== DEBUG ADICIONAL PARA CULTURA ========
-        LogCritical("CULTURA_DEBUG", "=== DEBUG CULTURA COMPLETO ===");
-        LogCritical("CULTURA_DEBUG", "xp_info.culture (bruto): '" + xp_info.culture + "'");
-        LogCritical("CULTURA_DEBUG", "Tipo da cultura: " + TypeOf(xp_info.culture));
+        LogDebug("culture","=== DEBUG CULTURA COMPLETO ===");
+        LogDebug("culture","xp_info.culture (bruto): '" + xp_info.culture + "'");
+        LogDebug("culture","Tipo da cultura: " + TypeOf(xp_info.culture));
         
         if (xp_info.culture)
             var cultura_formatada := FormatCultureForDisplay(xp_info.culture);
-            LogCritical("CULTURA_DEBUG", "Cultura formatada: '" + cultura_formatada + "'");
+            LogDebug("culture","Cultura formatada: '" + cultura_formatada + "'");
             
             // Teste das funções individuais
             var levels_test := GetKingdomLevels(xp_info.culture);
-            LogCritical("CULTURA_DEBUG", "GetKingdomLevels retornou: " + levels_test.size() + " níveis");
+            LogDebug("culture","GetKingdomLevels retornou: " + levels_test.size() + " níveis");
             if (levels_test.size() > 0)
-                LogCritical("CULTURA_DEBUG", "Primeiro nível: '" + levels_test[1].name + "'");
+                LogDebug("culture","Primeiro nível: '" + levels_test[1].name + "'");
             endif
         else
-            LogCritical("CULTURA_DEBUG", "CULTURA É NULA/VAZIA!");
+            LogDebug("culture","CULTURA É NULA/VAZIA!");
         endif
-        LogCritical("CULTURA_DEBUG", "================================");
+        LogDebug("culture","================================");
         // ======== FIM DEBUG CULTURA ========
         
          // ==========================================================
@@ -780,11 +780,11 @@ function DoacoesGump(byref gump, item_mesa_gestao)
     var recursos_a_exibir := CreateEmptyResourceStruct();
 
     // DEBUG: Verificar qual facção está sendo detectada
-    LogCritical("gestao_use_UNIFIED", "=== DOACOES GUMP DEBUG ===");
-    LogCritical("gestao_use_UNIFIED", "Facção detectada da mesa: '" + faction_name_da_mesa + "'");
-    LogCritical("gestao_use_UNIFIED", "KINGDOM_FACTION é: '" + KINGDOM_FACTION + "'");
-    LogCritical("gestao_use_UNIFIED", "Comparação: faction_name_da_mesa == KINGDOM_FACTION ? " + (faction_name_da_mesa == KINGDOM_FACTION));
-    LogCritical("gestao_use_UNIFIED", "==========================");
+    LogDebug("gestao","=== DOACOES GUMP DEBUG ===");
+    LogDebug("gestao","Facção detectada da mesa: '" + faction_name_da_mesa + "'");
+    LogDebug("gestao","KINGDOM_FACTION é: '" + KINGDOM_FACTION + "'");
+    LogDebug("gestao","Comparação: faction_name_da_mesa == KINGDOM_FACTION ? " + (faction_name_da_mesa == KINGDOM_FACTION));
+    LogDebug("gestao","==========================");
 
     // ===================================================================
     // SISTEMA UNIFICADO HÍBRIDO: Prioriza baú físico, mas usa datafile como fallback
