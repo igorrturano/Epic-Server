@@ -92,7 +92,7 @@ function getEpicSpawnLocation(altar)
 	// Simply choose a random location within the defined area
 	var x := RandomIntMinMax(xMin, xMax);
 	var y := RandomIntMinMax(yMin, yMax);
-	var z := GetMapInfo(x, y).z;
+	var z := GetWorldHeight(x, y, altar.realm);
 
 	return { x, y, z };
 endfunction
@@ -108,10 +108,6 @@ function summonLevelMobs(altar, level, mobsBySerial, totalMobs)
 		var mobTemplate := getEpicSpawn(altar, level);
 		var creature := CreateNPCFromTemplate(":epicAI:" + mobTemplate, loc[1], loc[2], loc[3], 0,
 											   altar.realm);
-		if (creature.errortext)
-			creature := CreateNPCFromTemplate(":brainai:" + mobTemplate, loc[1], loc[2], loc[3], 0,
-											   altar.realm);
-		endif
 		customizeNpc(creature);
 		if (creature && creature != error)
 			mobsBySerial[level].append(creature.serial);
@@ -153,10 +149,6 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 				var mobTemplate := getEpicSpawn(altar, level);
 				var creature := CreateNPCFromTemplate(":epicAI:" + mobTemplate, loc[1], loc[2], loc[3], 0,
 													   altar.realm);
-				if (creature.errortext)
-					creature := CreateNPCFromTemplate(":brainai:" + mobTemplate, loc[1], loc[2], loc[3], 0,
-													   altar.realm);
-				endif
 				customizeNpc(creature);
 				if (creature && creature != error)
 					currentMobs.append(creature.serial);
