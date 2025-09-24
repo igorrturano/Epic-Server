@@ -72,6 +72,12 @@ class Control()
 		endif
 	endfunction
 
+	function Equals(this, byRef other)
+		return this._gumpId == other.GetGumpId()
+			&& this._type == other.GetType()
+			&& this._name == other.GetName();
+	endfunction
+
 	function ToString(this)
 		return "Control(gumpId=" + this.GetGumpId()
 			+ ", name=" + this.GetName()
