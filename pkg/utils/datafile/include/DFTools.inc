@@ -1,10 +1,45 @@
 include ":datafile:datafile";
 
 class DFTools()
-	var filename;
+	var _package;
+	var _element;
+	var _property;
+	var _value;
 
-	function DFTools(this, _filename)
-		this.filename := _filename;
+	function DFTools(this, package)
+		this._package := package;
+	endfunction
+
+	function GetPackage(this)
+		return this._package;
+	endfunction
+
+	function GetElement(this)
+		return this._element;
+	endfunction
+
+	function GetProperty(this)
+		return this._property;
+	endfunction
+
+	function GetValue(this)
+		return this._value;
+	endfunction
+
+	function SetPackage(this, package)
+		this._package := package;
+	endfunction
+
+	function SetElement(this, element)
+		this._element := element;
+	endfunction
+
+	function SetProperty(this, property)
+		this._property := property;
+	endfunction
+
+	function SetValue(this, value)
+		this._value := value;
 	endfunction
 
 	/*
@@ -25,8 +60,8 @@ class DFTools()
 	 *	- Creates the element if it doesn't exist in the file
 	 *	- Overwrites existing property values
 	 */
-	function WriteValue(this, elem_name, prop_name, value)
-		var file := DFOpenDataFile(this.filename, DF_CREATE);
+	function WriteValue(this, elem_name := false, prop_name := false, value := false)
+		var file := DFOpenDataFile(this._package, DF_CREATE);
 		var elem := DFFindElement(file, elem_name, DF_CREATE);
 		elem.SetProp(prop_name, value);
 
@@ -52,9 +87,9 @@ class DFTools()
 	 *   - Retrieves the specified property from the found element
 	 *   - Returns descriptive error messages for debugging
 	 */
-	function LoadValue(this, elem_name, prop_name)
+	function LoadValue(this, elem_name := false, prop_name := false)
 		var value;
-		var file := OpenDataFile(this.filename);
+		var file := OpenDataFile(this._package);
 		var elem := file.FindElement(elem_name);
 
 		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this.filename}" }; endif
@@ -76,7 +111,7 @@ class DFTools()
 	 * Returns:
 	 * An array of property names for the specified element, or an error if the element is not found.
 	 */
-	function GetElementKeys(this, elem_key)
+	function GetElementKeys(this, elem_key := false)
 		var file := DFOpenDataFile(this.filename, DF_CREATE);
 		var elem := file.FindElement(elem_key);
 		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this.filename}" }; endif
@@ -97,6 +132,6 @@ class DFTools()
 	 *
 	 */
 	function Erase(this)
-		DFPurgeFile(this.filename);
+		DFPurgeFile(this._filename);
 	endfunction
 endclass
