@@ -52,6 +52,7 @@ class DFTools()
 	endfunction
 
 	function GetPropertyValue(this)
+		// this._Read();
 		return this._property.value;
 	endfunction
 
@@ -82,26 +83,26 @@ class DFTools()
 
 	function SetPropertyValue(this, byRef prop_value)
 		this._property.value := prop_value;
+		this._Write();
 		return this;
 	endfunction
 
-	function Write(this, elem_name := false, prop_name := false, value := false)
+	function _Write(this, elem_name := false, prop_name := false, value := false)
 		this._LoadElement(elem_name);
 		this._element.value := DFFindElement(this._packageName + this._fileName, elem_name, DF_CREATE);
 		this._element.value.SetProp(prop_name, value);
 
-		return true;
+		return this;
 	endfunction
 
-	function Read(this, elem_name := false, prop_name := false)
-		var value;
-		var elem := this._LoadElement(elem_name);
+	function _Read(this, elem_name := false, prop_name := false)
+		this._LoadElement(this._element.name);
 
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this._packageName}" }; endif
-		value := elem.GetProp(prop_name);
-		if (!value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
+		if (!this._element.value) return error{ errortext := $"Element {elem_name} not found in {this._packageName}" }; endif
+		this._property.value := this._element.value.GetProp(prop_name);
+		if (!this._property.value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
 
-		return value;
+		return this._property.value;
 	endfunction
 
 	function GetElementKeys(this, elem_key := false)
