@@ -47,6 +47,16 @@ class DFTools()
 		return this._element.value;
 	endfunction
 
+	function GetElementKeys(this, elem_key := false)
+		var result;
+
+		if (!this._element.value) result := error{ errortext := $"Element {elem_key} not found in {this._packageName}" }; endif
+		result := this._element.value.PropNames();
+		if (!result) result := error{ errortext := $"No properties found in element {elem_key} of {this._packageName}" }; endif
+
+		return result;
+	endfunction
+
 	function GetPropertyName(this)
 		return this._property.name;
 	endfunction
@@ -103,15 +113,6 @@ class DFTools()
 		if (!this._property.value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
 
 		return this._property.value;
-	endfunction
-
-	function GetElementKeys(this, elem_key := false)
-		if (!this._element.value) return error{ errortext := $"Element {elem_key} not found in {this._packageName}" }; endif
-
-		var props := this._element.value.PropNames();
-		if (!props) return error{ errortext := $"No properties found in element {elem_key} of {this._packageName}" }; endif
-
-		return props;
 	endfunction
 
 	/**
