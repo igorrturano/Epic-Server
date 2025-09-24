@@ -9,22 +9,22 @@ program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
-	if(!Accessible(who, potion))
+	if (!Accessible(who, potion))
 		return;
 	endif
 
-	if(potion.movable == 0)
+	if (potion.movable == 0)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
 
-	if(!checkifcandrink(who, "green_potion"))
+	if (!checkifcandrink(who, "green_potion"))
 		return;
 	endif
 
 	do_poison(who, potion);
 	empty_bottle(who, potion);
-	
+
 	DestroyItem(potion);
 	Detach();
 endprogram

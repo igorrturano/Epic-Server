@@ -9,7 +9,7 @@ program TimedScript_Clumsy(params)
 	if (GetObjProperty(mobile, "enMod") != error)
 		var mod := GetObjProperty(mobile, "enMod");
 		EraseObjProperty(mobile, "enMod");
-		mobile.resist_energy_mod := mobile.resist_energy_mod  - mod;
+		mobile.resist_energy_mod := mobile.resist_energy_mod - mod;
 	endif
 
 	return 1;

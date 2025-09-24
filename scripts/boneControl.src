@@ -2,7 +2,7 @@ use uo;
 use os;
 use util;
 
-program bonecontrol(corpse)
-  Sleep(600);
-  DestroyItem(corpse);
+program bonecontrol( corpse )
+  Sleep( 600 );
+  DestroyItem( corpse );
 endprogram

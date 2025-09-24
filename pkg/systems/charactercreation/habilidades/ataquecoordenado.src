@@ -1,4 +1,4 @@
-  use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -23,5 +23,4 @@ program manobra(attacker)
 		endif
 	endforeach
 
-
-endprogram   
+endprogram

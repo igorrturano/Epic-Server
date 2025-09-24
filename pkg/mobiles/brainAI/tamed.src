@@ -4,7 +4,6 @@ use npc;
 use util;
 use storage;
 
-
 /*
  * POR FAZER
  * comandos:
@@ -19,9 +18,7 @@ use storage;
  * - voar
  * - group
  * - patrol (guard entre.. )
- */
-
-
+*/
 include ":attributes:attributes";
 include "include/sysEvent";
 include ":mounts:mounts";
@@ -31,14 +28,13 @@ include "include/npcUtil";
 include "include/commonFunctions";
 include "include/npcSettings";
 include "include/say";
-//include "include/dungeons";
+// include "include/dungeons";
 include ":gumps:gumps";
 include ":timedScripts:timedScripts";
 
-
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
-CONST UOBJ_BANKBOX      := 0x0e40;
+const UOBJ_BANKBOX := 0x0e40;
 
 var pack_animals := array(291, 292);
 var mount := 0;
@@ -48,12 +44,11 @@ var wait_time := 120;
 
 var mypack := FindMyPack(me.serial);
 
-
 var next_watch := ReadGameClock();
 var guarding := 0;
 
 var last_following := 0;
-var following :=0;
+var following := 0;
 
 var going_to;
 var going_loc := 0;
@@ -64,38 +59,37 @@ var stuck := 0;
 var blocked;
 var dragging;
 var drag_loc := struct;
-    drag_loc.+x;
-    drag_loc.+y;
-    drag_loc.+z;
-    drag_loc.+oldx;
-    drag_loc.+oldy;
-    drag_loc.+oldz;
+drag_loc.+x;
+drag_loc.+y;
+drag_loc.+z;
+drag_loc.+oldx;
+drag_loc.+oldy;
+drag_loc.+oldz;
 
 var running_from := 0;
-//var theway := 0;
+// var theway := 0;
 
 var fighting := 0;
 var opponent := 0;
 var flee_level := GetMyFleeLevel();
 
-//Owner info
+// Owner info
 var owner_serial;
 var owner;
 
-//Custom events
-const FOLLOW_CMD	:= 0xA001;
-const ATTACK_CMD	:= 0xA002;
-const NEW_MASTER_CMD	:= 0xA003;
-const GUARD_CMD		:= 0xA004;
-const RUN_FORREST_CMD	:= 0xA005;
-const FETCH_CMD		:= 0xA006;
-const GO_OBJ_CMD	:= 0xA007;
-const GO_LOC_CMD	:= 0xA008;
-const DRAG_CMD		:= 0xA009;
-const STOP_CMD		:= 0xA010;
-const DELIVER_CMD	:= 0xA011;
-const DROP_CMD		:= 0xA012;
-
+// Custom events
+const FOLLOW_CMD := 0xA001;
+const ATTACK_CMD := 0xA002;
+const NEW_MASTER_CMD := 0xA003;
+const GUARD_CMD := 0xA004;
+const RUN_FORREST_CMD := 0xA005;
+const FETCH_CMD := 0xA006;
+const GO_OBJ_CMD := 0xA007;
+const GO_LOC_CMD := 0xA008;
+const DRAG_CMD := 0xA009;
+const STOP_CMD := 0xA010;
+const DELIVER_CMD := 0xA011;
+const DROP_CMD := 0xA012;
 
 program TamedAI()
 
@@ -104,53 +98,48 @@ program TamedAI()
 	Setup();
 
 	sleep(1);
-	while ( me )
-		if ( wait_time < 1 )
+	while (me)
+		if (wait_time < 1)
 			sleepms(10);
 		endif
 
 		var ev := Wait_For_Event(wait_time);
-		case ( ev.type )
-			SYSEVENT_SPEECH:
-				ProcessSpeech(ev);
+		case (ev.type)
+			SYSEVENT_SPEECH: ProcessSpeech(ev);
 			SYSEVENT_ENGAGED:
-				if( ev.source != owner )
+				if (ev.source != owner)
 					opponent := ev.source;
 				endif
 			SYSEVENT_DAMAGED:
-				if ( (ev.source).IsA(POLCLASS_MOBILE) )
+				if ((ev.source).IsA(POLCLASS_MOBILE))
 					opponent := ev.source;
 				endif
 			SYSEVENT_DOUBLECLICKED:
-					if( (Distance(ev.source, me) > 1) )
-						if (ev.source == owner)
-							ProcessDoubleClick(ev);
-						endif
-					else
-						if ( me.graphic in pack_animals )
-							OpenPack(ev);
-						elseif ( !GetEquipmentByLayer(ev.source, LAYER_MOUNT) )
-							if ( (mount == 1) )
-								//if( !InDungeon(ev.source) ) algumas montarias podem ser montadas em dungeons como besouros
-									ev.source.hidden := 0;
-									MP_Mount(ev.source, me);
-									me.hidden := 0;
-								//endif
-							endif
+				if ((Distance(ev.source, me) > 1))
+					if (ev.source == owner)
+						ProcessDoubleClick(ev);
+					endif
+				else
+					if (me.graphic in pack_animals)
+						OpenPack(ev);
+					elseif (!GetEquipmentByLayer(ev.source, LAYER_MOUNT))
+						if ((mount == 1))
+							// if( !InDungeon(ev.source) ) algumas montarias podem ser montadas em dungeons como besouros
+							ev.source.hidden := 0;
+							MP_Mount(ev.source, me);
+							me.hidden := 0;
+						// endif
 						endif
 					endif
+				endif
 			SYSEVENT_ITEM_GIVEN:
 				if (ev.source == owner)
 					TakeItem(ev);
 				endif
-			//SYSEVENT_ENTEREDAREA:
-
-			FOLLOW_CMD:
-				following := ev.targ;
-			ATTACK_CMD:
-				opponent := ev.targ;
-			GUARD_CMD:
-				guarding := ev.targ;
+			// SYSEVENT_ENTEREDAREA:
+			FOLLOW_CMD:      following := ev.targ;
+			ATTACK_CMD:      opponent := ev.targ;
+			GUARD_CMD:       guarding := ev.targ;
 			FETCH_CMD:
 			GO_OBJ_CMD:
 				going_to := ev.targ;
@@ -164,12 +153,10 @@ program TamedAI()
 				drag_loc.x := ev.x;
 				drag_loc.y := ev.y;
 				drag_loc.z := ev.z;
-			DROP_CMD:
-				Drop();
-			DELIVER_CMD:
-				Deliver(ev.source);
+			DROP_CMD:        Drop();
+			DELIVER_CMD:     Deliver(ev.source);
 			STOP_CMD:
-				//SendSysMessage(ev.source, "parei");
+				// SendSysMessage(ev.source, "parei");
 				opponent := 0;
 				fighting := 0;
 				guarding := 0;
@@ -178,54 +165,53 @@ program TamedAI()
 				going_loc := 0;
 				dragging := 0;
 				running_from := 0;
-				//Stop();
-			NEW_MASTER_CMD:
-				Transfer(ev.targ);
+			// Stop();
+			NEW_MASTER_CMD:  Transfer(ev.targ);
 			RUN_FORREST_CMD:
-				if(ev.targ != 0)
+				if (ev.targ != 0)
 					running_from := ev.targ;
 				endif
 				RunForrestRun();
 		endcase
-		if ( CInt(GetObjProperty(me, "happiness")) < 10 )
+		if (CInt(GetObjProperty(me, "happiness")) < 10)
 			SetObjProperty(me, "happiness", 100);
-		elseif ( running_from )
+		elseif (running_from)
 			fugindo();
-		elseif ( opponent )
-			if ( AP_GetVital(me, "Hits") > flee_level )
+		elseif (opponent)
+			if (AP_GetVital(me, "Hits") > flee_level)
 				Fight();
 				Follow();
 			else
 				running_from := opponent;
 			endif
-			if ( IsDead(opponent) || Distance(opponent, me) > 20 )
+			if (IsDead(opponent) || Distance(opponent, me) > 20)
 				following := last_following;
 				fighting := 0;
 				opponent := 0;
 				last_following := 0;
 				SetWarMode(0);
-				if(dragging)
+				if (dragging)
 					going_to := dragging;
 					dragging := 0;
 				endif
 			endif
-		elseif ( dragging )
+		elseif (dragging)
 			dragTo();
-		elseif ( going_loc )
+		elseif (going_loc)
 			goToLoc();
-		elseif ( going_to )
+		elseif (going_to)
 			goToObj();
-		elseif ( guarding )
+		elseif (guarding)
 			Guard();
-			if( following )
+			if (following)
 				Follow();
 			endif
-		elseif ( following )
+		elseif (following)
 			Follow();
 		else
 			wait_time := 120;
 		endif
-		//debuggg();
+	// debuggg();
 	endwhile
 endprogram
 
@@ -233,140 +219,136 @@ endprogram
 /////// FUNCOES GERAIS //////////
 /////////////////////////////////
 
-
 function ProcessSpeech(ev)
 
 	var text := lower(ev.text);
 	var name := lower(me.name);
-	if	( ( (ev.source).serial != (me.master).serial ) &&
-		( ev.source.serial != GetObjProperty(me, "AntigoTreinadorID") ) &&
-		( ev.source.serail != GetObjProperty(me, "friend") ) &&
-		( !ev.source.cmdlevel ) );
-		//Say("Querido "+ev.source.name+", fique calado. Eu so ouco o meu dono.");
+	if (((ev.source).serial != (me.master).serial) && (ev.source.serial != GetObjProperty(me, "AntigoTreinadorID")) &&
+	 (ev.source.serail != GetObjProperty(me, "friend")) && (!ev.source.cmdlevel))
+		// Say("Querido "+ev.source.name+", fique calado. Eu so ouco o meu dono.");
 		return;
 	endif
 
-	if( !text[name] && !text[GetObjProperty(me, "Group")] && !text[GetObjProperty(me, "All")] )
+	if (!text[name] && !text[GetObjProperty(me, "Group")] && !text[GetObjProperty(me, "All")])
 		return;
 	endif
 
 	var cmd := IsItACommand(text);
 
-
 	var group := GetObjProperty(me, "Group");
 	var all := GetObjProperty(me, "All");
 
-	if( !cmd )
+	if (!cmd)
 		return;
 	endif
 
-	if(ev.source.serial == owner.serial)
-		if( GetObjProperty(me, "friend") )
+	if (ev.source.serial == owner.serial)
+		if (GetObjProperty(me, "friend"))
 			EraseObjProperty(me, "friend");
 		endif
 	endif
 
-	if( cmd == "attack" )
+	if (cmd == "attack")
 		var targ := Target(me.master, TGTOPT_CHECK_LOS);
-		if ( targ == me || targ == ev.source || !targ.IsA(POLCLASS_MOBILE) )
+		if (targ == me || targ == ev.source || !targ.IsA(POLCLASS_MOBILE))
 			return;
 		endif
 
-		if ( text[all] )
+		if (text[all])
 			AllCommand(ATTACK_CMD, targ);
-		elseif ( text[group] )
+		elseif (text[group])
 			GroupCommand(ATTACK_CMD, targ);
 		else
 			opponent := targ;
 		endif
-	elseif ( cmd == "guard" )
-		if ( !text[name] )
-			if ( text["-me"] )
+	elseif (cmd == "guard")
+		if (!text[name])
+			if (text["-me"])
 				guarding := ev.source;
 			else
 				var targ := target(me.master);
-				if ( !targ.IsA(POLCLASS_MOBILE) )
+				if (!targ.IsA(POLCLASS_MOBILE))
 					return;
 				endif
 
-				if ( text[all] )
+				if (text[all])
 					AllCommand(GUARD_CMD, targ);
-				elseif ( text[group] )
+				elseif (text[group])
 					GroupCommand(GUARD_CMD, targ);
 				endif
 			endif
-		elseif( text["-me"] )
+		elseif (text["-me"])
 			guarding := ev.source;
 		else
 			var targ := target(me.master);
-			if ( targ == me )
+			if (targ == me)
 				return;
-			elseif ( targ.IsA(POLCLASS_MOBILE) )
+			elseif (targ.IsA(POLCLASS_MOBILE))
 				guarding := targ;
 			endif
 		endif
-	elseif ( cmd == "stop" )
+	elseif (cmd == "stop")
 		Stop();
 
-	elseif ( cmd == "follow" )
-		if ( !text[name] )
-			if ( text["-me"] )
+	elseif (cmd == "follow")
+		if (!text[name])
+			if (text["-me"])
 				following := ev.source;
 			else
 				var targ := target(me.master);
-				if ( !targ.IsA(POLCLASS_MOBILE) )
+				if (!targ.IsA(POLCLASS_MOBILE))
 					return;
 				endif
 
-				if ( text[all] )
+				if (text[all])
 					AllCommand(FOLLOW_CMD, targ);
-				elseif ( text[group] )
+				elseif (text[group])
 					GroupCommand(FOLLOW_CMD, targ);
 				endif
 			endif
-		elseif ( text["-me"] )
+		elseif (text["-me"])
 			following := ev.source;
 		else
 			following := target(me.master);
 		endif
-	elseif ( cmd == "transfer" )
+	elseif (cmd == "transfer")
 		var targ := target(ev.source);
-		if ( !targ.acctname )
+		if (!targ.acctname)
 			return;
-		elseif ( text[all] )
+		elseif (text[all])
 			AllCommand(NEW_MASTER_CMD, targ);
-		elseif ( text[group] )
+		elseif (text[group])
 			GroupCommand(NEW_MASTER_CMD, targ);
 		else
 			Transfer(targ);
 		endif
-	elseif( cmd == "release" )
+	elseif (cmd == "release")
 		UnTame();
-	elseif( cmd == "fetch" )
+	elseif (cmd == "fetch")
 		Fetch();
-	elseif( cmd == "drop" )
+	elseif (cmd == "drop")
 		drop();
-	elseif( cmd == "runto" )
+	elseif (cmd == "runto")
 		go("run", text[group], text[all]);
-	elseif( cmd == "walkto" )
+	elseif (cmd == "walkto")
 		go("walk", text[group], text[all]);
 
-	elseif( cmd == "deliver" )
+	elseif (cmd == "deliver")
 		Deliver(ev.source);
-	elseif( cmd == "drag" )
+	elseif (cmd == "drag")
 		Drag1(ev.source);
-	elseif( cmd == "flee" )
-		if( text[all] )
+	elseif (cmd == "flee")
+		if (text[all])
 			AllCommand(RUN_FORREST_CMD, 0);
-		elseif( text[group] )
+		elseif (text[group])
 			GroupCommand(RUN_FORREST_CMD, 0);
 		else
 			RunForrestRun();
 		endif
-	elseif( cmd == "friend" )
-		if ( ev.source.serial == owner.serial )
+	elseif (cmd == "friend")
+		if (ev.source.serial == owner.serial)
 			var targ := Target(owner);
-			if ( (targ.acct) && (CheckLineOfSight(owner, targ)) )
+			if ((targ.acct) && (CheckLineOfSight(owner, targ)))
 				SetObjProperty(me, "friend", targ.serial);
 			else
 				SendSysMessage(owner, "Alvo invalido.");
@@ -381,17 +363,17 @@ function ProcessDoubleClick(ev)
 	var targ := TargetCoordinates(owner);
 	if (targ)
 		if (targ.mobile == me)
-			if ( me.graphic in pack_animals )
+			if (me.graphic in pack_animals)
 				if ((EnumerateItemsInContainer(me.backpack)).size() > 0)
 					SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
 					return;
 				endif
-				PrintText(ev.source, "*remove a mochila de "+me.name+"*");
+				PrintText(ev.source, "*remove a mochila de " + me.name + "*");
 				me.graphic := GetObjProperty(me, "beforepack");
 				CreateItemInBackpack(ev.source, "backpack");
 				EraseObjProperty(me, "beforepack");
 
-				if(IsMountable(me.graphic))
+				if (IsMountable(me.graphic))
 					mount := 1;
 				else
 					mount := 0;
@@ -399,7 +381,7 @@ function ProcessDoubleClick(ev)
 			endif
 		elseif (targ.mobile)
 			var gump := GFCreateGump(220, 70);
-			//GFGumpPic(gump, 0, 0, 0x254E);
+			// GFGumpPic(gump, 0, 0, 0x254E);
 			GFResizePic(gump, 0, 0, 0x254E, 100, 100);
 			GFTextLine(gump, 30, 15, 2100, "Guarda ");
 			GFTextLine(gump, 30, 35, 2100, "Segue ");
@@ -412,18 +394,18 @@ function ProcessDoubleClick(ev)
 				GFAddButton(gump, 15, 57, 2117, 2118, 1, 30);
 			endif
 			var input := GFSendGump(owner, gump);
-			input  := input[0];
+			input := input[0];
 			if (input == 10)
 				guarding := struct;
 				guarding := targ.mobile;
-			elseif (input ==  20)
+			elseif (input == 20)
 				following := struct;
 				following := targ.mobile;
 			elseif (input == 30)
 				opponent := targ.mobile;
 			endif
 
-		elseif (!Cint(targ.mobile))//se nao for nem item nem mobile anda ate la
+		elseif (!Cint(targ.mobile)) // se nao for nem item nem mobile anda ate la
 			if (!Cint(targ.item))
 				going_loc := struct;
 				going_loc.+x := targ.x;
@@ -438,31 +420,31 @@ endfunction
 function Setup()
 	owner_serial := GetObjProperty(me, "owner");
 	owner := SystemFindObjectBySerial(owner_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
-	if ( !owner )
+	if (!owner)
 		UnTame();
-	elseif ( (me.master).serial != owner )
+	elseif ((me.master).serial != owner)
 		me.SetMaster(owner);
 	endif
 
 	var happiness := GetObjProperty(me, "happiness");
-	if ( !happiness || happiness == error )
+	if (!happiness || happiness == error)
 		happiness := 100;
 		SetObjProperty(me, "happiness", happiness);
 	endif
 
-	if ( !me.backpack )
+	if (!me.backpack)
 		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
 		EquipItem(me, new_pack);
 	endif
 
-	me.facing := me.facing+1;
+	me.facing := me.facing + 1;
 	TurnToward(me.master);
 
-	if ( !GetProcess(GetObjProperty(me, "#happypid")) )
-		start_script(":taming:happycounter", {me, ReadGameClock()});
+	if (!GetProcess(GetObjProperty(me, "#happypid")))
+		start_script(":taming:happycounter", { me, ReadGameClock() });
 	endif
 
-	if(IsMountable(me.graphic))
+	if (IsMountable(me.graphic))
 		mount := 1;
 	else
 		mount := 0;
@@ -487,7 +469,7 @@ function DisableMainEvents()
 endfunction
 
 function OpenPack(ev)
-	if ( Distance(me, ev.source) > 2 )
+	if (Distance(me, ev.source) > 2)
 		return;
 	else
 		SendOpenSpecialContainer(ev.source, me.backpack);
@@ -495,27 +477,27 @@ function OpenPack(ev)
 endfunction
 
 function OpenTamedStorageAreas()
-  var bank := FindStorageArea("Tamed Storage");
-  if(!bank)
-    bank := CreateStorageArea("Tamed Storage");
-  endif
-  return bank;
+	var bank := FindStorageArea("Tamed Storage");
+	if (!bank)
+		bank := CreateStorageArea("Tamed Storage");
+	endif
+	return bank;
 endfunction
 
 function FindMyPack(myserial)
-  var mybank := OpenTamedStorageAreas();
-  var bank_obj_name := "Bankbox  " + Hex(myserial);
-  var bankbox := FindRootItemInStorageArea(mybank, bank_obj_name);
-  if(!bankbox)
-     bankbox := CreateRootItemInStorageArea(mybank, bank_obj_name, UOBJ_BANKBOX);
-  endif
-  return bankbox;
+	var mybank := OpenTamedStorageAreas();
+	var bank_obj_name := "Bankbox  " + Hex(myserial);
+	var bankbox := FindRootItemInStorageArea(mybank, bank_obj_name);
+	if (!bankbox)
+		bankbox := CreateRootItemInStorageArea(mybank, bank_obj_name, UOBJ_BANKBOX);
+	endif
+	return bankbox;
 endfunction
 
 function DungeonTestOK(who)
-	if( GetEquipmentByLayer(who, LAYER_MOUNT).graphic == BEETLE_MOUNTPIECE_GRAPHIC )
+	if (GetEquipmentByLayer(who, LAYER_MOUNT).graphic == BEETLE_MOUNTPIECE_GRAPHIC)
 		return 1;
-	elseif ( !InDungeon(who) )
+	elseif (!InDungeon(who))
 		return 1;
 	else
 		SendSysMessage(who, "Voce nao pode montar neste animal dentro da caverna.");
@@ -529,7 +511,7 @@ function IsItACommand(speech)
 	var cmd_keys := meus_comandos.Keys();
 	foreach thing in cmd_keys
 		var cmd := meus_comandos[thing];
-		if( speech[cmd.singular] || speech[cmd.plural] )
+		if (speech[cmd.singular] || speech[cmd.plural])
 			return lower(thing);
 		endif
 	endforeach
@@ -537,18 +519,13 @@ function IsItACommand(speech)
 	return 0;
 endfunction
 
-
-
-
 /////////////////////////////////
 //////////  COMBATE  ////////////
 /////////////////////////////////
 
-
-
 function Fight()
-	if ( !fighting )
-		if(!dragging)
+	if (!fighting)
+		if (!dragging)
 			last_following := following;
 		endif
 		following := opponent;
@@ -561,11 +538,11 @@ function Fight()
 endfunction
 
 function IsDead(opponent)
-	if ( !opponent )
+	if (!opponent)
 		return 1;
-	elseif ( !opponent.dead )
+	elseif (!opponent.dead)
 		return 0;
-	elseif ( opponent.npctemplate )
+	elseif (opponent.npctemplate)
 		return 0;
 	else
 		return 1;
@@ -579,18 +556,14 @@ function GetMyFleeLevel()
 	return fleelevel;
 endfunction
 
-
-
 /////////////////////////////////
 //////// MOVIMENTACAO ///////////
 /////////////////////////////////
 
-
-
 function Follow()
 	var dist := Distance(me, following);
-	if ( opponent )
-		if ( dist > 1 )
+	if (opponent)
+		if (dist > 1)
 			var ma := 200 - me.run_speed;
 			me.run_speed := me.run_speed + ma;
 			RunToward(following);
@@ -599,12 +572,12 @@ function Follow()
 		else
 			wait_time := 1;
 		endif
-	elseif( dist <= 2 )
+	elseif (dist <= 2)
 		wait_time := 1;
-	elseif( dist > 25 )
+	elseif (dist > 25)
 		following := 0;
 		wait_time := 120;
-	elseif ( dist > 6 )
+	elseif (dist > 6)
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;
 		RunToward(following);
@@ -622,16 +595,16 @@ endfunction
 function goToObj()
 	var dist := Distance(me, going_to);
 
-	if( dist <= 1 )
-		if( going_to.isa(POLCLASS_CORPSE) )
+	if (dist <= 1)
+		if (going_to.isa(POLCLASS_CORPSE))
 			Drag2(going_to);
-			if(blocked)
+			if (blocked)
 				dragging.movable := 1;
 				MoveObjectToLocation(dragging, me.x, me.y, me.z);
 				dragging.movable := 0;
 				blocked := 0;
 			endif
-		elseif( going_to.isa(POLCLASS_ITEM) )
+		elseif (going_to.isa(POLCLASS_ITEM))
 			catchItem(going_to);
 		else
 			var myitems := EnumerateItemsInContainer(mypack);
@@ -640,7 +613,7 @@ function goToObj()
 
 		wait_time := 1;
 		going_to := 0;
-	elseif ( (dist > 6) || (opponent) )
+	elseif ((dist > 6) || (opponent))
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;
 		RunToward(going_to);
@@ -658,15 +631,15 @@ function goToObj()
 endfunction
 
 function goToLoc()
-	var dist :=CoordinateDistance(me.x, me.y, going_loc.x, going_loc.y);
+	var dist := CoordinateDistance(me.x, me.y, going_loc.x, going_loc.y);
 
-	if( dist <= 1 )
+	if (dist <= 1)
 		wait_time := 1;
 		going_loc := 0;
 		stuck := 0;
 		lastdistance := 0;
 		return;
-	elseif( (going_loc.type == "run") || opponent )
+	elseif ((going_loc.type == "run") || opponent)
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;
 		RunTowardLocation(going_loc.x, going_loc.y);
@@ -684,21 +657,21 @@ function goToLoc()
 endfunction
 
 function dragTo()
-	var dist :=CoordinateDistance(me.x, me.y, drag_loc.x, drag_loc.y);
+	var dist := CoordinateDistance(me.x, me.y, drag_loc.x, drag_loc.y);
 
-	if( opponent )
+	if (opponent)
 		going_to := dragging;
 		dragging := 0;
 		wait_time := 0;
-	elseif( (dist <= 1) || !drag_loc )
+	elseif ((dist <= 1) || !drag_loc)
 		wait_time := 1;
 		dragging := 0;
 		drag_loc := 0;
-		if(last_following)
+		if (last_following)
 			following := last_following;
 			last_following := 0;
 		endif
-	elseif( (Distance(me, dragging) > 1) && !opponent )
+	elseif ((Distance(me, dragging) > 1) && !opponent)
 		going_to := dragging;
 		dragging := 0;
 		blocked := 1;
@@ -711,19 +684,20 @@ function dragTo()
 		wait_time := 0;
 
 		dragging.movable := 1;
-		MoveObjectToLocation(dragging, dragging.x + (me.x - drag_loc.oldx), dragging.y + (me.y - drag_loc.oldy), dragging.z + (me.z - drag_loc.oldz));
+		MoveObjectToLocation(dragging, dragging.x + (me.x - drag_loc.oldx), dragging.y + (me.y - drag_loc.oldy),
+					   dragging.z + (me.z - drag_loc.oldz));
 		dragging.movable := 0;
 		drag_loc.oldx := me.x;
 		drag_loc.oldy := me.y;
 		drag_loc.oldz := me.z;
 
-		if( (RandomInt(3) == 1) && guarding )
+		if ((RandomInt(3) == 1) && guarding)
 			Guard();
 			wait_time := 0;
 		endif
 
-		if(RandomInt(8) == 1)
-			PrintTextAbove(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
+		if (RandomInt(8) == 1)
+			PrintText(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
 		endif
 	endif
 
@@ -733,10 +707,10 @@ endfunction
 function fugindo()
 	var dist := Distance(me, running_from);
 
-	if( dist > 20)
+	if (dist > 20)
 		running_from := 0;
 		wait_time := 120;
-	elseif ( dist > 15 )
+	elseif (dist > 15)
 		WalkAwayFrom(running_from);
 		wait_time := 0;
 	else
@@ -746,17 +720,17 @@ function fugindo()
 endfunction
 
 function HandleStuck(dist, byref going_where)
-	if ( !lastdistance )
+	if (!lastdistance)
 		lastdistance := dist;
-	elseif( lastdistance <= dist )
+	elseif (lastdistance <= dist)
 		stuck += 1;
 	else
-		if(stuck > 0 )
+		if (stuck > 0)
 			stuck := 0;
 		endif
 		lastdistance := dist;
 	endif
-	if( stuck == 5 )
+	if (stuck == 5)
 		going_where := 0;
 		wait_time := 1;
 		stuck := 0;
@@ -764,38 +738,33 @@ function HandleStuck(dist, byref going_where)
 	endif
 endfunction
 
-
-
 /////////////////////////////////
 /////// COMANDOS DE VOZ /////////
 /////////////////////////////////
 
-
 function Guard()
 	wait_time := 3;
 
-	if ( !guarding.IsA(POLCLASS_MOBILE) )
+	if (!guarding.IsA(POLCLASS_MOBILE))
 		guarding := 0;
-	elseif ( Distance(me, guarding) > 15 )
+	elseif (Distance(me, guarding) > 15)
 		guarding := 0;
-	elseif ( next_watch < ReadGameClock() )
-		next_watch := ReadGameClock()+3;
-		if ( RandomInt(100) < 5 )
-			Say("*protegendo "+guarding.name+"*");
+	elseif (next_watch < ReadGameClock())
+		next_watch := ReadGameClock() + 3;
+		if (RandomInt(100) < 5)
+			Say("*protegendo " + guarding.name + "*");
 		endif
 
-		foreach mob in ListHostiles(guarding, 9, LH_FLAG_LOS);
+		foreach mob in ListHostiles(guarding, 9, LH_FLAG_LOS)
 			opponent := mob;
 			return;
 		endforeach
 	endif
 endfunction
 
-
-
 function Fetch()
 
-	if ( len(EnumerateItemsInContainer(mypack)) )
+	if (len(EnumerateItemsInContainer(mypack)))
 		drop();
 	endif
 
@@ -808,19 +777,19 @@ function Fetch()
 endfunction
 
 function catchItem(tobj)
-	if (Accessible(me,tobj))
-		if( !tobj.movable )
-			PrintTextAbove(me, "*parece estar preso*");
+	if (Accessible(me, tobj))
+		if (!tobj.movable)
+			PrintText(me, "*parece estar preso*");
 			return;
 		endif
-		if( tobj.weight <= CInt(AP_GetStat(me, STRENGTH)/13) )
-			if( tobj.amount == 1 )
+		if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
+			if (tobj.amount == 1)
 				MoveItemToContainer(tobj, mypack);
 			else
-				PrintTextAbove(me, "*muitas coisas de uma vez*");
+				PrintText(me, "*muitas coisas de uma vez*");
 			endif
 		else
-			PrintTextAbove(me, "*muito pesado para pegar*");
+			PrintText(me, "*muito pesado para pegar*");
 		endif
 	endif
 endfunction
@@ -836,8 +805,6 @@ function drop()
 
 endfunction
 
-
-
 function Go(forma, grupo, todos)
 
 	SendSysMessage(owner, "Escolha para onde ir.");
@@ -851,18 +818,15 @@ function Go(forma, grupo, todos)
 	data.+y := tloc.y;
 	data.+type := forma;
 
-
-
-	if( todos )
+	if (todos)
 		AllCommand(GO_LOC_CMD, data);
-	elseif( grupo )
+	elseif (grupo)
 		GroupCommand(GO_LOC_CMD, data);
 	else
 		going_loc := data;
 	endif
 
 endfunction
-
 
 function Stop()
 	opponent := 0;
@@ -875,12 +839,11 @@ function Stop()
 	running_from := 0;
 endfunction
 
-
 function Deliver(source)
 
 	var tobj;
 	var myitems := EnumerateItemsInContainer(mypack);
-	if ( len(myitems) > 0 )
+	if (len(myitems) > 0)
 		tobj := myitems[RandomInt(len(myitems)) + 1];
 	else
 		SendSysMessage(source, "Escolha o que voce deseja entregar.");
@@ -895,19 +858,19 @@ function Deliver(source)
 		endif
 	endif
 
-	if( tobj.weight <= CInt(AP_GetStat(me, STRENGTH)/13) )
-		if( tobj.amount > 1 )
-			PrintTextAbove(me, "*muitas coisas de uma vez*");
+	if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
+		if (tobj.amount > 1)
+			PrintText(me, "*muitas coisas de uma vez*");
 			return;
 		endif
 	else
-		PrintTextAbove(me, "*muito pesado para pegar*");
+		PrintText(me, "*muito pesado para pegar*");
 		return;
 	endif
 
 	SendSysMessage(source, "E agora, para quem voce vai entregar.");
 	var twho := Target(source);
-	if(!twho.acct)
+	if (!twho.acct)
 		return;
 	endif
 
@@ -916,21 +879,20 @@ function Deliver(source)
 endfunction
 
 function DeliverItem(tobj, twho)
-	PrintTextAbove(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
-	var trade := YesNo(twho, me.name + " está te oferecendo " + tobj.desc + ". Aceita?", "Sim, muito obrigado.", "Não, eu não aceito!");
-	if(trade)
+	PrintText(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
+	var trade := YesNo(twho, me.name + " está te oferecendo " + tobj.desc + ". Aceita?",
+						"Sim, muito obrigado.", "Não, eu não aceito!");
+	if (trade)
 		MoveItemToContainer(tobj, twho.backpack);
-		PrintTextAbove(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
+		PrintText(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
 	else
-		PrintTextAbove(twho, "*nao aceita*");
+		PrintText(twho, "*nao aceita*");
 	endif
 endfunction
 
-
-
 function Drag1(source)
 
-	if ( len(EnumerateItemsInContainer(mypack)) )
+	if (len(EnumerateItemsInContainer(mypack)))
 		drop();
 	endif
 
@@ -957,17 +919,16 @@ endfunction
 
 function Drag2(tobj)
 
-	if (Accessible(me,tobj))
-		//if( tobj.weight > CInt(AP_GetStat(me, STRENGTH)) )
-		if( CInt(AP_GetStat(me, STRENGTH)) < 60 )
-			PrintTextAbove(me, "*muito pesado para pegar*");
+	if (Accessible(me, tobj))
+		// if( tobj.weight > CInt(AP_GetStat(me, STRENGTH)) )
+		if (CInt(AP_GetStat(me, STRENGTH)) < 60)
+			PrintText(me, "*muito pesado para pegar*");
 			drag_loc := 0;
 			return;
 		endif
 	else
 		return;
 	endif
-
 
 	dragging := tobj;
 	drag_loc.oldx := me.x;
@@ -978,12 +939,10 @@ function Drag2(tobj)
 	last_following := following;
 	following := 0;
 
-
 endfunction
 
-
 function RunForrestRun()
-	if(opponent)
+	if (opponent)
 		running_from := opponent;
 	endif
 
@@ -1000,20 +959,19 @@ endfunction
 
 function FindTheWay()
 	var targ := TargetCoordinates(owner);
-	if(!targ)
+	if (!targ)
 		SendSysMessage(owner, "Invalido!");
 		return;
 	endif
 
-
-	theway := FindPath(me.x, me.y, me.z, targ.x, targ.y, targ.z, me.realm, FP_IGNORE_DOORS , 50);
-	if(theway.errortext)
+	theway := FindPath(me.x, me.y, me.z, targ.x, targ.y, targ.z, me.realm, FP_IGNORE_DOORS, 50);
+	if (theway.errortext)
 		a("erro: " + theway.errortext);
 	endif
 	s("tam: " + len(theway));
 	var i;
 	for (i := 1; i <= len(theway); i := i + 1)
-		while(CoordDistance(me.x, me.y, theway[i].x, theway[i].y) > 0)
+		while (CoordDistance(me.x, me.y, theway[i].x, theway[i].y) > 0)
 			RunTowardLocation(theway[i].x, theway[i].y);
 			sleepms(2);
 		endwhile
@@ -1021,32 +979,31 @@ function FindTheWay()
 	theway := 0;
 endfunction
 
-
 function TakeItem(ev)
 	var cfg := ReadConfigFile(":*:itemdesc");
-	if ( cfg[(ev.item).objtype].script["eat"] )
-		PlaySoundEffect(me, CInt(0x3b)+ RandomInt(3));
+	if (cfg[(ev.item).objtype].script["eat"])
+		PlaySoundEffect(me, CInt(0x3b) + RandomInt(3));
 		DestroyItem(ev.item);
-		PrintTextAbovePrivate(me,"*O animal parece feliz*", ev.source);
+		PrintTextPrivate(me, "*O animal parece feliz*", ev.source);
 		SetObjProperty(me, "happiness", 100);
-	elseif ( ev.item.objtype IN {2482, 3701} && !(me.graphic in pack_animals) )
+	elseif (ev.item.objtype IN { 2482, 3701 } && !(me.graphic in pack_animals))
 		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
 			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
 			return;
 		endif
-		if ( me.npctemplate == ":brainai:Horse3" )
+		if (me.npctemplate == ":brainai:Horse3")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 291;
 			DestroyItem(ev.item);
-			PrintText(ev.source,"*prende uma mochila no cavalo*");
-		elseif ( me.npctemplate == ":brainai:Llama" )
+			PrintText(ev.source, "*prende uma mochila no cavalo*");
+		elseif (me.npctemplate == ":brainai:Llama")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 292;
 			DestroyItem(ev.item);
-			PrintText(ev.source,"*prende uma mochila na llama*");
+			PrintText(ev.source, "*prende uma mochila na llama*");
 		endif
 
-		if(IsMountable(me.graphic))
+		if (IsMountable(me.graphic))
 			mount := 1;
 		else
 			mount := 0;
@@ -1056,28 +1013,26 @@ function TakeItem(ev)
 	endif
 endfunction
 
-
 function UnTame()
 
 	TS_LowerDuration(me, "summon", 10000, 1);
 
-	PrintTextAbovePrivate(me, "*"+me.name+" pode viver livre denovo.*", me.master);
+	PrintTextPrivate(me, "*" + me.name + " pode viver livre denovo.*", me.master);
 
 	me.SetMaster(0);
 
 	var orig_script := GetObjProperty(me, "script");
-	if ( !orig_script )
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
-		SysLog(me.name+" doesnt have an original script to use now that taming is done?!");
+	if (!orig_script)
+		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":ai_brain:brain";
-	elseif ( orig_script["tamed"] )
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
-		SysLog(me.name+" my original script was tamed.src ?!");
+	elseif (orig_script["tamed"])
+		PrintText(me, "*my original script was tamed.src ?!*");
+		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainAI:brain";
 	endif
 
 	me.script := orig_script;
-
 
 	SetName(me, GetObjProperty(me, "name"));
 
@@ -1096,11 +1051,11 @@ function Transfer(targ)
 		return;
 	endif
 
-	if ( !targ.acctname )
+	if (!targ.acctname)
 		return;
 	endif
 
-	Say("*"+me.name+" aceitou "+targ.name+" como seu novo dono*");
+	Say("*" + me.name + " aceitou " + targ.name + " como seu novo dono*");
 	SetObjProperty(me, "owner", targ.serial);
 	me.SetMaster(targ);
 
@@ -1114,8 +1069,8 @@ function AllCommand(ev_type, targ)
 	event.+targ := targ;
 
 	foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 10)
-		if ( (mobile.master).serial == (me.master).serial )
-			//If they have the same masters.
+		if ((mobile.master).serial == (me.master).serial)
+			// If they have the same masters.
 			SendEvent(mobile, event);
 		endif
 		sleepms(2);
@@ -1129,8 +1084,8 @@ function GroupCommand(ev_type, targ)
 	event.+targ := targ;
 
 	foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 10)
-		if ( (mobile.master).serial == (me.master).serial ) //If they have the same masters.
-			if( GetObjProperty(me, "Group") == GetObjProperty(mobile, "Group") ) // mesmo grupo
+		if ((mobile.master).serial == (me.master).serial) // If they have the same masters.
+			if (GetObjProperty(me, "Group") == GetObjProperty(mobile, "Group")) // mesmo grupo
 				SendEvent(mobile, event);
 			endif
 		endif
@@ -1138,60 +1093,54 @@ function GroupCommand(ev_type, targ)
 	endforeach
 endfunction
 
-
-
-
-
 /////////////////////////////////
 //////// MSGS DE DEBUG //////////
 /////////////////////////////////
 
-
 function s(texto)
-	PrintTextAbove(me, texto);
+	PrintText(me, texto);
 endfunction
 
 function a(texto)
 	SendSysMessage(owner, texto, _DEFAULT_TEXT_FONT, RandomInt(1000) + 1);
 endfunction
 
-
 function debuggg()
 	a("----------------------------");
 	a("");
 
-	if(following)
-		a("following: "+ following.name);
+	if (following)
+		a("following: " + following.name);
 	else
 		a("following: 0");
 	endif
 
-	if(dragging)
+	if (dragging)
 		a("dragging: " + dragging.name);
 	else
 		a("dragging: 0");
 	endif
 
-	if(going_to)
+	if (going_to)
 		a("going_to: " + going_to.name);
 	else
 		a("going_to: 0");
 	endif
 
-	if(guarding)
-		a("guarding: "+ guarding.name);
+	if (guarding)
+		a("guarding: " + guarding.name);
 	else
 		a("guarding: 0");
 	endif
 
-	if(last_following)
-		a("last_following: "+ last_following.name);
+	if (last_following)
+		a("last_following: " + last_following.name);
 	else
 		a("last_following: 0");
 	endif
 
-	if(running_from)
-		a("running_from: "+ running_from.name);
+	if (running_from)
+		a("running_from: " + running_from.name);
 	else
 		a("running_from: 0");
 	endif

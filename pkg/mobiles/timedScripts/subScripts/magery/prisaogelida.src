@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -12,8 +12,8 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	params := 0; // Not needed anymore.
-	
-	if ( GetObjProperty(mobile, "#PrisaoGelida") )
+
+	if (GetObjProperty(mobile, "#PrisaoGelida"))
 		return 0;
 	endif
 
@@ -30,7 +30,6 @@ program TimedScript_Clumsy(params)
 	SetObjProperty(mobile, "originalcolor", mobile.color);
 	mobile.color := 1153;
 	SetObjProperty(mobile, "#PrisaoGelida", 1);
-	
+
 	return 1;
 endprogram
- 

@@ -25,15 +25,13 @@ program usavarinha(who, wand)
 		SetObjPRoperty(wand, "cargas", cargas);
 	endif
 
-
 	var spellinfo := GetObjProperty(wand, "spellinfo");
 
-	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
-	 setCoolDown(wand, "delay", 5);
-         if ( script.errortext )
-	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
-	       return 0;
-	 endif  
-
+	var script := Start_Script(":spells:cast_spell", { who, spellinfo, 999 });
+	setCoolDown(wand, "delay", 5);
+	if (script.errortext)
+		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
+		return 0;
+	endif
 
 endprogram

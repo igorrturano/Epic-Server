@@ -4,43 +4,41 @@
  * Purpose
  * Fixes old teleport tiles.
  *
- */
-
+*/
 use uo;
 use datafile;
 
 program controlScript(tile)
 
-	var df := OpenDataFile( ":tn:teleport" );
+	var df := OpenDataFile(":tn:teleport");
 	if (!df)
-		df := CreateDataFile( ":tn:teleport", DF_KEYTYPE_INTEGER );
+		df := CreateDataFile(":tn:teleport", DF_KEYTYPE_INTEGER);
 	endif
-	
+
 	var elem := df.FindElement(tile.serial);
 	if (!elem)
-		elem := df.CreateElement( tile.serial ) ;
+		elem := df.CreateElement(tile.serial);
 	endif
 
-
-	if ( GetObjProperty(tile, "Destination") )
+	if (GetObjProperty(tile, "Destination"))
 		// Modern teleport tile
 		return 0;
 	endif
-	
-	if ( tile.graphic == 1 )
+
+	if (tile.graphic == 1)
 		tile.graphic := 0x17E5;
 	endif
-	if ( tile.color != 1001 )
+	if (tile.color != 1001)
 		tile.color := 1001;
 	endif
-	
+
 	var dest := struct;
 	dest.+realm := tile.realm;
 	dest.+x := CInt(GetObjProperty(tile, "DestX"));
 	dest.+y := CInt(GetObjProperty(tile, "DestY"));
 	dest.+z := CInt(GetObjProperty(tile, "DestZ"));
 	dest.+race := "all";
-	
+
 	SetObjProperty(tile, "Destination", dest);
 	EraseObjProperty(tile, "DestX");
 	EraseObjProperty(tile, "DestY");
@@ -48,5 +46,3 @@ program controlScript(tile)
 
 	return 1;
 endprogram
-	
-	

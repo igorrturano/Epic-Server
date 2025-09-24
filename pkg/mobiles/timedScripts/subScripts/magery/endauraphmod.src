@@ -9,7 +9,7 @@ program TimedScript_Clumsy(params)
 	if (GetObjProperty(mobile, "auraPhMod") != error)
 		var mod := GetObjProperty(mobile, "auraPhMod");
 		mobile.resist_physical_mod := mobile.resist_physical_mod - mod;
-		EraseObjProperty(mobile, "auraPhMod");		
+		EraseObjProperty(mobile, "auraPhMod");
 	endif
 
 	return 1;

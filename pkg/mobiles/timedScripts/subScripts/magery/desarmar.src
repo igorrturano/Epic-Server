@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -14,14 +14,12 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	if (TemHabilidade(who, "Vínculo Elemental"))
-		if (GetObjProperty(who.weapon, "#elementalweapon"))//seta com a arma
+		if (GetObjProperty(who.weapon, "#elementalweapon")) // seta com a arma
 			return 1;
 		endif
 	endif
-	
+
 	SetObjProperty(who, "desarmar", 1);
-	
+
 	return 1;
 endprogram
-
-  

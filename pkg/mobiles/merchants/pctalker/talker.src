@@ -14,15 +14,15 @@ program talker(params)
 	var npc := params[1];
 
 	var gump := GFCreateGump();
-    GFDisposable(gump, 0);
+	GFDisposable(gump, 0);
 	GFResizePic(gump, 0, 25, 3600, 330, 350);
 	GFResizePic(gump, 15, 40, 0x13BE, 300, 320);
 	GFTextLine(gump, 125, 50, 1153, "Frases do NPC");
 
-	GFAddButton(gump, 20, 320, 2103, 2104, 1, 200 );
+	GFAddButton(gump, 20, 320, 2103, 2104, 1, 200);
 	GFTextLine(gump, 35, 315, 1153, "Adicionar Nova Frase");
 
-	GFAddButton(gump, 188, 330, 2103, 2104, 1, 201 );
+	GFAddButton(gump, 188, 330, 2103, 2104, 1, 201);
 	GFTextLine(gump, 200, 325, 1153, "Tempo Cycle:");
 
 	var tempo := 900;
@@ -32,9 +32,9 @@ program talker(params)
 		SetObjProperty(npc, "cyclewait", 900);
 	endif
 
-	GFTextLine(gump, 280,325, SSM_INFO, tempo);
+	GFTextLine(gump, 280, 325, SSM_INFO, tempo);
 
-//	var tempocycle := GFTextEntry(gump, 280, 325, 255, 35, SSM_INFO, tempo);
+	// 	var tempocycle := GFTextEntry(gump, 280, 325, 255, 35, SSM_INFO, tempo);
 
 	var i := 1;
 	var x := 70;
@@ -43,24 +43,23 @@ program talker(params)
 		frases := GetObjProperty(npc, "frases");
 	endif
 	foreach checkfrase in frases
-		var frase := GetObjProperty(npc, "frase"+checkfrase[i]);
+		var frase := GetObjProperty(npc, "frase" + checkfrase[i]);
 		var tipo := "";
 		if (frase.frase1)
 			tipo := " [SubFrases]";
 		endif
 
 		GFTextLine(gump, 40, x, 1153, "" + frase.frase + tipo);
-		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, i);
+		GFAddButton(gump, 20, x + 4, 2103, 2104, GF_CLOSE_BTN, i);
 		i := i + 1;
-		x := x +15;
+		x := x + 15;
 		sleepms(20);
 	endforeach
-
 
 	var input := GFSendGump(who, gump);
 	if (input[0] == 200)
 		var frase := struct;
-		if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{"Say","Yell"}) == "Say")
+		if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{ "Say", "Yell" }) == "Say")
 			frase.+say := 1;
 		else
 			frase.+yell := 1;
@@ -70,15 +69,15 @@ program talker(params)
 		var repeating := 1;
 
 		while (repeating)
-			if ( !YesNo(who, "Adicionar uma sequencia para esta frase?") )
+			if (!YesNo(who, "Adicionar uma sequencia para esta frase?"))
 				break;
 			endif
-			if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{"Say","Yell"}) == "Say")
-				frase.insert("say"+repeating, 1);
+			if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{ "Say", "Yell" }) == "Say")
+				frase.insert("say" + repeating, 1);
 			else
-				frase.insert("yell"+repeating, 1);
+				frase.insert("yell" + repeating, 1);
 			endif
-			frase.insert("frase"+repeating, RequestGump(who, "Escreva a Frase"));
+			frase.insert("frase" + repeating, RequestGump(who, "Escreva a Frase"));
 			repeating := repeating + 1;
 			sleepms(5);
 		endwhile

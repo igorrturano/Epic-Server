@@ -1,8 +1,7 @@
 /*
  * $Id: control.src 1008 2007-03-04 20:58:58Z tekproxy $
  *
- */
-
+*/
 use uo;
 use os;
 use util;
@@ -13,7 +12,7 @@ program controlScript(field)
 	SetObjProperty(field, "#PID", GetPid());
 
 	var creator := field.GetOwner();
-	if ( creator.IsA(POLCLASS_MOBILE) )
+	if (creator.IsA(POLCLASS_MOBILE))
 		SetScriptController(creator);
 	endif
 
@@ -21,12 +20,12 @@ program controlScript(field)
 	SleepMS(500);
 
 	var poison_level := CInt(GetObjProperty(field, "PoisonLevel"));
-	if ( !poison_level )
-		poison_level := RandomInt(5)+1;
+	if (!poison_level)
+		poison_level := RandomInt(5) + 1;
 	endif
 
-	while ( field )
-		if ( field.IsExpired() )
+	while (field)
+		if (field.IsExpired())
 			DestroyItem(field);
 			return 1;
 		endif

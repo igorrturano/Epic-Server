@@ -13,19 +13,18 @@ use os;
 
 include ":spawnsystem:spawnerUtil";
 
-program command_WhereSpawner( mobile )
+program command_WhereSpawner(mobile)
 
+	var zones := SS_FindSpawnZone(mobile);
+	if (zones.Size() < 1)
+		SendSysMessage(mobile, "You are not in any spawn region.");
+		return 0;
+	endif
 
-        var zones := SS_FindSpawnZone( mobile );
-        if( zones.Size() < 1 )
-                SendSysMessage( mobile, "You are not in any spawn region." );
-                return 0;
-        endif
-
-        foreach region_name in zones
-                SendSysMessage( mobile, "SpawnRegion name: "+region_name, color := 88 );
-                SleepMS(5);
-        endforeach
+	foreach region_name in zones
+		SendSysMessage(mobile, "SpawnRegion name: " + region_name, color := 88);
+		SleepMS(5);
+	endforeach
 
 	return 1;
 endprogram

@@ -10,19 +10,19 @@ include ":crafting:crafting";
 include ":crafting:craftingRepair";
 include ":crafting:toolWear";
 
-var item_config     := ReadConfigFile(":*:itemdesc");
-var craft_config    := ReadConfigFile(":stonework:stonework");
+var item_config := ReadConfigFile(":*:itemdesc");
+var craft_config := ReadConfigFile(":stonework:stonework");
 
 program use_SmithTool(who, tool)
 
-	if ( !ReserveItem(tool) )
+	if (!ReserveItem(tool))
 		SendSysMessage(who, "That is already in use.");
 		return 0;
-	elseif( (!tool.movable) || !ReserveItem(tool) )
+	elseif ((!tool.movable) || !ReserveItem(tool))
 		SendSysMessage(who, "You cannot use that");
 		return 0;
-	elseif( !tool in ListEquippedItems(who) )
-		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+	elseif (!tool in ListEquippedItems(who))
+		if (!(tool in EnumerateItemsInContainer(who.backpack)))
 			SendSysMessage(who, "That item is not in your backpack nor equipped.");
 			return 0;
 		endif
@@ -34,19 +34,19 @@ program use_SmithTool(who, tool)
 	var rinfo := sendCraftGump(who, "Masonry");
 
 	// OK was pressed, close it on out
-	if(rinfo == 0)
+	if (rinfo == 0)
 		return 0;
 	endif
 
 	var the_objtype := rinfo[1];
-	var amt         := rinfo[2];
-	var repairit    := rinfo[3];
-	var resmeltit   := rinfo[4];
+	var amt := rinfo[2];
+	var repairit := rinfo[3];
+	var resmeltit := rinfo[4];
 
-	if( repairit )
+	if (repairit)
 		repair_this(who, craft_skill);
 		return 0;
-	elseif( resmeltit )
+	elseif (resmeltit)
 		resmelt(who, craft_skill);
 		return 0;
 	endif
@@ -57,20 +57,20 @@ endprogram
 
 function makeBlacksmithItems(who, what, amt, tool)
 
-	if( !what )
+	if (!what)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
 
 	// Metal is sent for the ResourceList entry type.
-//	var itemchk;
-//	var use_on;
-//	var ptmod;
+	// 	var itemchk;
+	// 	var use_on;
+	// 	var ptmod;
 
 	var custo := CInt(craft_config[what].custo);
 	var items := CraftItem(who, "Masonry", tool, what, amt, 0, 0);
 	foreach item in items
-		if (item == OUT_OF_MATERIALS) //retornou erro ao inves do item
+		if (item == OUT_OF_MATERIALS) // retornou erro ao inves do item
 			return 1;
 		endif
 		var pedreiro := CInt(craft_config[what].pedreiro);
@@ -84,33 +84,33 @@ function makeBlacksmithItems(who, what, amt, tool)
 						DestroyItem(item);
 						return 0;
 					endif
-					var qtdnovo := GetObjProperty(plano,"pts") - custo;
+					var qtdnovo := GetObjProperty(plano, "pts") - custo;
 					if (qtdnovo < 0)
 						SendSysMessageEx(who, "Esse planejamento ja nao lhe serve mais.", SSM_FAIL);
 						DestroyItem(item);
 						DestroyItem(plano);
 						return 0;
 					else
-						SetObjProperty(plano,"pts",qtdnovo);
+						SetObjProperty(plano, "pts", qtdnovo);
 					endif
-					SetName(plano, "Planos de Construcao ["+((500-qtdnovo)/5)+"%%%]");
+					SetName(plano, "Planos de Construcao [" + ((500 - qtdnovo) / 5) + "%%%]");
 				endif
 			else
 				item.movable := 1;
 			endif
 		endif
 	endforeach
-	
+
 	return 0;
 endfunction
 
 function MarkItem(who, theitem)
-       
-       theitem.movable := 1;
-       MoveObjectToLocation(theitem, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
-       theitem.movable := 0;
-       SetObjProperty(theitem, "pedreiro", who.serial);
-       SetObjProperty(theitem, "criador", who.acctname);
-       SetObjProperty(theitem, "validade", CInt(ReadGameClock()+180));
+
+	theitem.movable := 1;
+	MoveObjectToLocation(theitem, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+	theitem.movable := 0;
+	SetObjProperty(theitem, "pedreiro", who.serial);
+	SetObjProperty(theitem, "criador", who.acctname);
+	SetObjProperty(theitem, "validade", CInt(ReadGameClock() + 180));
 
 endfunction

@@ -10,13 +10,13 @@ program TimedScript_bard_int_down(params)
 	var caster := params[2];
 	var modificador := (-1) * params[3];
 	var teste := GetObjProperty(alvo, "#Bard_int_down");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(modificador < teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (modificador < teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(alvo, "#Bard_int_down", modificador);
-			AP_ModifyStatMod(alvo, INTELLIGENCE, modificador-teste);
+			AP_ModifyStatMod(alvo, INTELLIGENCE, modificador - teste);
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, (modificador-teste) + " Int", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+			PrintTextPrivate(alvo, (modificador - teste) + " Int", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
 			return 1;
 		else
 			return 0;
@@ -26,7 +26,7 @@ program TimedScript_bard_int_down(params)
 		SetObjProperty(alvo, "#Bard_int_down", modificador);
 		AP_ModifyStatMod(alvo, INTELLIGENCE, modificador);
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, modificador + " Int", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+		PrintTextPrivate(alvo, modificador + " Int", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
 		return 1;
 	endif
 endprogram

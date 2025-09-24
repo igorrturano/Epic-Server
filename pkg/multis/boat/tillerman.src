@@ -1,6 +1,7 @@
 use os;
 use uo;
 
+include "include/say";
 include ":tn:tngumps";
 include ":gumps:yesNo";
 
@@ -19,13 +20,13 @@ program renameboat(you, tillerman)
 				if (destname == (dest.name + " [" + dest.cost + " moedas]"))
 					SendSysMessage(you, "Voce deve pagar " + dest.cost + " moedas por essa viagem.");
 					var moedas := target(you);
-					if ( moedas.objtype == 47715)
+					if (moedas.objtype == 47715)
 						if (moedas.amount >= cint(dest.cost))
 							if (!SubtractAmount(moedas, cint(dest.cost)))
-								PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+								PrintText(tillerman, "Voce nao tem moedas necessarias.");
 							endif
 						else
-							PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+							PrintText(tillerman, "Voce nao tem moedas necessarias.");
 							return;
 						endif
 					else
@@ -33,21 +34,21 @@ program renameboat(you, tillerman)
 					endif
 					SetObjProperty(tillerman, "course", dest.plots);
 					SetObjProperty(tillerman, "nextwaypoint", 1);
-					PrintTextAbove(tillerman,"Viagem programada, iremos *partir* quando me ordenar!");
+					PrintText(tillerman, "Viagem programada, iremos *partir* quando me ordenar!");
 				endif
 			endforeach
 		endif
 		return;
 	endif
 
-	if((GetObjProperty(tillerman,"owner") != you.serial) &&(you.cmdlevel < 2))
-		//PrintTextAbove(tillerman,"Stop that, or I'll throw ye overboard!");
+	if ((GetObjProperty(tillerman, "owner") != you.serial) && (you.cmdlevel < 2))
+		// PrintText(tillerman,"Stop that, or I'll throw ye overboard!");
 		return;
 	endif
 	if (YesNo(you, "Deseja Mudar o Nome do Barco?"))
 		var boatname := RequestInput(you, tillerman, "Entre com um novo nome para o barco.(max 40 characters)");
-		if(boatname)
-			if(len(boatname) <= 40)
+		if (boatname)
+			if (len(boatname) <= 40)
 				tillerman.name := boatname;
 				SendSysMessage(you, "Barco renomeado.");
 			else

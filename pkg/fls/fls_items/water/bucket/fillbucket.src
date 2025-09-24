@@ -1,22 +1,22 @@
 use uo;
 use os;
-use cfgfile; 
+use cfgfile;
 include ":water:buckets";
 include "include/say";
 var config := ReadConfigFile("water");
 
-const SPLASH_SOUND	:= 0x26;
+const SPLASH_SOUND := 0x26;
 
 program FillBucket(who, bucket)
-	if ( !ReserveItem(bucket) )
+	if (!ReserveItem(bucket))
 		SendSysMessage(who, "Alguem ja esta usando isto.");
 		return;
 	endif
-	
+
 	SendSysMessage(who, "Onde voce deseja usar isto?");
 	var targ := TargetCoordinates(who);
-	
-	if ( targ.mobile )
+
+	if (targ.mobile)
 		MilkIt(who, targ.mobile, bucket);
 	else
 		GetWater(who, targ, bucket);
@@ -24,28 +24,28 @@ program FillBucket(who, bucket)
 endprogram
 
 function MilkIt(who, mobile, bucket)
-	if ( Distance(who, mobile) > 1 )
+	if (Distance(who, mobile) > 1)
 		SendSysMessage(who, "O alvo esta muito distante.");
 		return;
-	elseif ( CInt(GetObjProperty(mobile, "#MilkWait")) > ReadGameClock() )
+	elseif (CInt(GetObjProperty(mobile, "#MilkWait")) > ReadGameClock())
 		SendSysMessage(who, "A femea esta sem leite.");
 		return;
 	endif
-	
+
 	var cows := array(":brainai:cow", ":brainai:cow2", ":brainai:cabra");
 	var template := lower(mobile.npctemplate);
-	if ( template in cows )
-		SetObjProperty(mobile, "#MilkWait", ReadGameClock()+90);
+	if (template in cows)
+		SetObjProperty(mobile, "#MilkWait", ReadGameClock() + 90);
 		if (mobile.npctemplate == ":brainai:cabra")
-		PlaySoundEffect(mobile, 0x099);
+			PlaySoundEffect(mobile, 0x099);
 		else
-		PlaySoundEffect(mobile, 0x7A);
+			PlaySoundEffect(mobile, 0x7A);
 		endif
 		sleep(3);
 		if (mobile.npctemplate == ":brainai:cabra")
 			PlaySoundEffect(mobile, 0x09D);
 		else
-			PlaySoundEffect(mobile, 0x7B);;
+			PlaySoundEffect(mobile, 0x7B);
 		endif
 		sleep(3);
 		if (mobile.npctemplate == ":brainai:cabra")
@@ -54,11 +54,11 @@ function MilkIt(who, mobile, bucket)
 			PlaySoundEffect(mobile, 0x7A);
 		endif
 		SendSysMessage(who, "Voce encheu o balde de leite.");
-		
+
 		ReleaseItem(bucket);
 		var new_bucket := bucket.FillBucket(MILK_BUCKET);
-		if ( new_bucket.errortext )
-			SendSysMessage(who, "Unable to create filled bucket ->"+new_bucket.errortext);
+		if (new_bucket.errortext)
+			SendSysMessage(who, "Unable to create filled bucket ->" + new_bucket.errortext);
 		endif
 	else
 		SendSysMessage(who, "Esta criatura nao da leite.");
@@ -67,10 +67,10 @@ function MilkIt(who, mobile, bucket)
 endfunction
 
 function GetWater(who, targ, bucket)
-	if ( !IsWater(targ) )
+	if (!IsWater(targ))
 		SendSysMessage(who, "Esta nao e uma boa fonte de agua!");
 		return;
-	elseif ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 3 )
+	elseif (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 3)
 		SendSysMessage(who, "O alvo esta muito distante.");
 		return;
 	endif
@@ -84,7 +84,7 @@ function GetWater(who, targ, bucket)
 		var x2 := CInt(region[3]);
 		var y2 := CInt(region[4]);
 
-		if ( ( targ.x >= x1 && targ.y >= y1 && targ.x <= x2 && targ.y <= y2 ) )
+		if ((targ.x >= x1 && targ.y >= y1 && targ.x <= x2 && targ.y <= y2))
 			is_fresh := 1;
 			break;
 		endif
@@ -96,7 +96,7 @@ function GetWater(who, targ, bucket)
 			SendSysMessageEx(who, "A agua deste balde esta muito suja ou e escassa", SSM_FAIL);
 			return;
 		endif
-		waternumber := waternumber -1;
+		waternumber := waternumber - 1;
 		SetObjProperty(targ.item, "water", waternumber);
 		if (waternumber <= 0)
 			if (targ.item.graphic == 3707)
@@ -104,14 +104,14 @@ function GetWater(who, targ, bucket)
 			endif
 		endif
 	endif
-	
+
 	PlaySoundEffect(who, SPLASH_SOUND);
 	if (!CStr(targ.objtype) in GetConfigStringArray(config["WaterTiles"], "staticWater"))
 		PlayStationaryEffect(targ.x, targ.y, targ.z, 13613, 10, 10, 1);
 	endif
-	
+
 	var new_bucket;
-	if ( is_fresh )
+	if (is_fresh)
 		SendSysMessage(who, "Voce encheu o balde com agua doce.");
 		ReleaseItem(bucket);
 		new_bucket := bucket.FillBucket(FRESH_WATER_BUCKET);
@@ -120,9 +120,9 @@ function GetWater(who, targ, bucket)
 		ReleaseItem(bucket);
 		new_bucket := bucket.FillBucket(SALT_WATER_BUCKET);
 	endif
-	
-	if ( new_bucket.errortext )
-		SendSysMessage(who, "Unable to create filled bucket ->"+new_bucket.errortext);
+
+	if (new_bucket.errortext)
+		SendSysMessage(who, "Unable to create filled bucket ->" + new_bucket.errortext);
 	endif
 endfunction
 
@@ -133,11 +133,11 @@ function EmptyBalde(bucket)
 	info.+x := bucket.x;
 	info.+y := bucket.y;
 	info.+z := bucket.z;
-	
+
 	ReleaseItem(bucket);
 
 	var new_bucket;
-	if ( info.container )
+	if (info.container)
 		new_bucket := CreateItemInContainer(info.container, 3715, 1);
 	else
 		new_bucket := CreateItemAtLocation(info.x, info.y, info.z, 3715, info.realm);
@@ -153,19 +153,19 @@ endfunction
 
 function IsWater(targ)
 	var tiles := config["WaterTiles"];
-	var land_scape := CStr( GetMapInfo(targ.x, targ.y).landtile );
-	if ( targ.objtype )
-		if ( CStr(targ.objtype) in GetConfigStringArray(tiles, "static") )
-		 	return 1;
+	var land_scape := CStr(GetMapInfo(targ.x, targ.y).landtile);
+	if (targ.objtype)
+		if (CStr(targ.objtype) in GetConfigStringArray(tiles, "static"))
+			return 1;
 		endif
-	elseif ( land_scape in GetConfigStringArray(tiles, "landscape") )
+	elseif (land_scape in GetConfigStringArray(tiles, "landscape"))
 		return 1;
 	endif
 	if (targ.item.objtype)
-		if ( CStr(targ.item.objtype) in GetConfigStringArray(tiles, "staticWater") )
-		 	return 1;
+		if (CStr(targ.item.objtype) in GetConfigStringArray(tiles, "staticWater"))
+			return 1;
 		endif
 	endif
-	
+
 	return 0;
 endfunction

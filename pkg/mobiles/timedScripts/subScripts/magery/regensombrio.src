@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -13,19 +13,18 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var level := params[3];
 
-	
 	var points := level;
 	var i := 0;
-		
-	//if (GetObjProperty(mobile, "coMod") != error)
-	//	return;
-	//endif
-	
-	while(i < 10)
+
+	// if (GetObjProperty(mobile, "coMod") != error)
+	// 	return;
+	// endif
+
+	while (i < 10)
 		HealFLS(attacker, points);
-		i := i+1;
+		i := i + 1;
 		sleep(2);
 	endwhile
-	
+
 	return 1;
 endprogram

@@ -23,14 +23,14 @@ program resethab(who)
 	endforeach
 
 	var newsizey := myhabs.size() + 50;
-	var opts := CheckBoxGump(who, 300, 150+newsizey, "Escolha as habs para resetar", habnames);
+	var opts := CheckBoxGump(who, 300, 150 + newsizey, "Escolha as habs para resetar", habnames);
 
 	sendsysmessage(who, "saida " + opts);
 
 	foreach hab in opts
 		var i := 0;
 		for (i := 0; i < 21; i := i + 1)
-			if ( myhabs[i] == hab )
+			if (myhabs[i] == hab)
 				myhabs.erase(i);
 				habs[i] := 1;
 				break;

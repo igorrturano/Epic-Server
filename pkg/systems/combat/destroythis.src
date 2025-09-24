@@ -3,5 +3,5 @@ use os;
 include "include/say";
 
 program destroythis(item)
-    DestroyItem(item);
+	DestroyItem(item);
 endprogram

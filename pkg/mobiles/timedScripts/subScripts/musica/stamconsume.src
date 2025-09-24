@@ -13,8 +13,6 @@ program cureScript(params)
 	while (ok != 0)
 		AP_ConsumeVital(mobile, "Stamina", 1.5);
 		sleepms(1000);
-	endwhile		
+	endwhile
 
-	
-	
 endprogram

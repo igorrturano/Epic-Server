@@ -27,14 +27,14 @@ include ":fls_core:fls_characters";
 include ":fls_core:packets";
 include ":attributes:skillCheck";
 include "include/sysEvent";
-//include ":cooldown:cooldown";
+// include ":cooldown:cooldown";
 include "include/epicUtils";
 
 program habilidade(who, text)
 
-//	if (who.cmdlevel < 3)
-//		return;
-//	endif
+	// 	if (who.cmdlevel < 3)
+	// 		return;
+	// 	endif
 
 	if (who.dead)
 		return 1;
@@ -46,7 +46,7 @@ program habilidade(who, text)
 	endif
 
 	if (!text)
-		//CreateGumpHabilidade(who);
+		// CreateGumpHabilidade(who);
 		return;
 	endif
 
@@ -54,14 +54,13 @@ program habilidade(who, text)
 
 endprogram
 
-
 function CreateGumpHabilidade(who)
 
 	UnloadConfigFile(":charactercreation:config/habilidades");
 
 	var gump := GFCreateGump();
 
-        GFDisposable(gump, 0);
+	GFDisposable(gump, 0);
 	GFResizePic(gump, 0, 25, 3600, 380, 650);
 	GFResizePic(gump, 15, 40, 0x13BE, 350, 620);
 	GFTextMid(gump, 80, 50, 250, 1153, "Habilidades de Classe");
@@ -82,18 +81,16 @@ function CreateGumpHabilidade(who)
 		var uso := GetConfigString(habelem, "uso");
 		var nome := GetConfigString(habelem, "nome");
 		var nivel := GetConfigInt(habelem, nivel);
-		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
+		// var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
 
-		//GFGumpPic(gump, x, y+20, gumpid) ;
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
+		// GFGumpPic(gump, x, y+20, gumpid) ;
+		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]");
+		GFHTMLArea(gump, x, y + 20, 300, 90, desc, 1150, 0);
 
 		y := y + 110;
 	endforeach
 
 	var input := GFSendGump(who, gump);
 	input := input[0];
-
-
 
 endfunction

@@ -1,6 +1,6 @@
 use uo;
 
-program makehitscript(item)
+program makehitscript( item )
 
-item.hitscript := ":combat:mainHitScript";
+  item.hitscript := ":combat:mainHitScript";
 endprogram
