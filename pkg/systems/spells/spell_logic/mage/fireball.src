@@ -7,7 +7,7 @@ include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
 include "include/client";
-include "include/say"; 
+include "include/say";
 include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -15,59 +15,52 @@ include ":destroyable:include/destroyItem";
 include ":propagacao:include/efeitosIncendiarios";
 
 program spell_fireball(params)
-    var caster := params[1];
-    var cast_on := params[2];
+	var caster := params[1];
+	var cast_on := params[2];
 	var spell := params[3];
 	var spell_circle := spell.Circle;
 	var spell_school := spell.School;
-	//var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+	// var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 
 	params := 0; // No longer needed
 
-    SendSysMessage(caster, "Selecione o alvo.");
-	//var cast_on := Target(caster);
-    if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
-        cast_on := params[4];
-    endif
-    if (!cast_on)
-        SendSysMessage (caster, "cancelado.", color := 33);
-        return 0;
-    endif
+	SendSysMessage(caster, "Selecione o alvo.");
+	// var cast_on := Target(caster);
+	if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
+		cast_on := params[4];
+	endif
+	if (!cast_on)
+		SendSysMessage(caster, "cancelado.", color := 33);
+		return 0;
+	endif
 
-	var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
+	var mlore := cint(AP_GetSkill(caster, ARCANA) / 20);
 	var dist := Distance(caster, cast_on);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+	var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
-    if (dist > dist_allowed)
-        SendSysMessage(caster, "O alvo esta muito distante");
-        return 0;
-    endif
+	if (dist > dist_allowed)
+		SendSysMessage(caster, "O alvo esta muito distante");
+		return 0;
+	endif
 
-    PlayMovingEffect(caster, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
+	PlayMovingEffect(caster, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
 
 	var coord_list := GetCoordsInLine(caster.x, caster.y, cast_on.x, cast_on.y);
 	foreach coord in coord_list
-		if ( _coord_iter < 4 ) // Dont make one where its standing
+		if (_coord_iter < 4) // Dont make one where its standing
 			continue;
 		endif
-		
-		var field := CriaMuralhaFogo(
-									coord.x, 
-									coord.y, 
-									caster.z,
-									caster.realm,
-									GRAFICO_FIREWALL_NORTE_SUL,
-									0, 
-									20, 
-									caster);
+
+		var field := CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
+							   0, 20, caster);
 		sleepms(105);
 	endforeach
 
 	foreach coord in GetCoordsInSquare(cast_on.x, cast_on.y, 5)
-		if ( RandomInt(2) != 1 ) // Don't place a fire field
+		if (RandomInt(2) != 1) // Don't place a fire field
 			continue;
 		endif
-		case( RandomInt(3) )
+		case (RandomInt(3))
 			default:
 				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_1, 10, 10, 0, caster.realm);
 				break;
@@ -79,41 +72,27 @@ program spell_fireball(params)
 				break;
 		endcase
 		var field;
-		if ( RandomInt(2) )
-			CriaMuralhaFogo(
-									coord.x, 
-									coord.y, 
-									caster.z,
-									caster.realm,
-									GRAFICO_FIREWALL_NORTE_SUL,
-									0, 
-									10, 
-									caster,
-									10);
+		if (RandomInt(2))
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 10,
+							 caster, 10);
 		else
-			CriaMuralhaFogo(
-									coord.x, 
-									coord.y, 
-									caster.z,
-									caster.realm,
-									GRAFICO_FIREWALL_OESTE_LESTE,
-									0, 
-									10, 
-									caster,
-									10);
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_OESTE_LESTE, 0, 10,
+							 caster, 10);
 		endif
 		sleepms(5);
 	endforeach
 
 	PlaySoundEffect(cast_on, 0x208);
-    
-	var range := cint(AP_GetSkill(caster, ARCANA)/20);
-    var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, cast_on);
+
+	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, cast_on);
 	var dmg := epicSpellDamageRoll(caster, spell_circle);
 	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
-	DanificaObjetosProximos(caster,cast_on.x, cast_on.y, cast_on.z,cast_on.realm,struct{dano := dmg, desc := "Bola de Fogo." },range,GFX_EXPLODE_1);
+	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, struct{ dano := dmg,
+																							desc := "Bola de Fogo." },
+							range, GFX_EXPLODE_1);
 
-    foreach mobile in allMobiles
+	foreach mobile in allMobiles
 		var dmg := epicSpellDamageRoll(caster, spell_circle);
 
 		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
@@ -124,7 +103,7 @@ program spell_fireball(params)
 			DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
 		endif
 
-        sleepms(20);
-    endforeach
-	//destroycraft(cast_on, caster);
+		sleepms(20);
+	endforeach
+// destroycraft(cast_on, caster);
 endprogram

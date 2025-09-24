@@ -10,7 +10,7 @@ include ":charactercreation:habilidades";
 program rope(who, item)
 	var alvo := Target(who, TGTOPT_CHECK_LOS);
 
-    if (alvo.objtype == 0x14f8)
+	if (alvo.objtype == 0x14f8)
 		if (temHabilidade(who, "Caçador Experiente"))
 			PrintText(who, "*Amarrando varios pontos da corda*");
 			sleep(4);
@@ -21,7 +21,7 @@ program rope(who, item)
 			return;
 		endif
 		SendSysMessageEx(who, "Voce nao tem a menor ideia de como fazer isso.", SSM_FAIL);
-        return 0;
+		return 0;
 	endif
 
 	SendSysMessage(who, "Selecione um corpo.");
@@ -45,7 +45,10 @@ program rope(who, item)
 		mod := 20;
 	endif
 
-	if (alvo.corpsetype == 400 || alvo.corpsetype == 401 || alvo.corpsetype == 1828 || alvo.corpsetype == 1829 || alvo.corpsetype == 1830 || alvo.corpsetype == 1831 || alvo.corpsetype == 1832 || alvo.corpsetype == 1833 || alvo.corpsetype == 1834 || alvo.corpsetype == 1835) // Se for corpo
+	if (alvo.corpsetype == 400 || alvo.corpsetype == 401 || alvo.corpsetype == 1828 ||
+	 alvo.corpsetype == 1829 || alvo.corpsetype == 1830 || alvo.corpsetype == 1831 ||
+	 alvo.corpsetype == 1832 || alvo.corpsetype == 1833 || alvo.corpsetype == 1834 ||
+	 alvo.corpsetype == 1835) // Se for corpo
 		var char := SystemFindObjectBySerial(alvo.ownerserial);
 
 		if (!char)
@@ -53,23 +56,23 @@ program rope(who, item)
 			return;
 		endif
 
-		PrintText(who, "*amarra "+char.name+"*");
+		PrintText(who, "*amarra " + char.name + "*");
 		SubtractAmount(item, 1);
-		SetObjProperty (alvo, "corda", 1);
-		SetObjProperty (char, "corda", diff+mod);
+		SetObjProperty(alvo, "corda", 1);
+		SetObjProperty(char, "corda", diff + mod);
 	elseif (alvo.ip) // Se for player e tiver on
 		if (!alvo.connected)
 			SendSysMessage(who, "Nao pode amarrar um jogador deslogado.");
 			return;
 		endif
-		var ok := YesNo(alvo, "Voce permite ser amarrado por "+who.name+"?" , "Sim, permito.", "Nao.");
+		var ok := YesNo(alvo, "Voce permite ser amarrado por " + who.name + "?", "Sim, permito.", "Nao.");
 		if (ok)
-			PrintText(who, "*amarra "+alvo.name+"*");
+			PrintText(who, "*amarra " + alvo.name + "*");
 			SubtractAmount(item, 1);
-			SetObjProperty (alvo, "corda", diff+mod);
+			SetObjProperty(alvo, "corda", diff + mod);
 			alvo.frozen := 1;
 		else
-			SendSysMessage(who, alvo.name+" nao permitiu que voce amarrasse!");
+			SendSysMessage(who, alvo.name + " nao permitiu que voce amarrasse!");
 		endif
 	else
 		SendSysMessage(who, "Voce nao pode amarrar isso!");

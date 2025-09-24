@@ -1,3 +1,4 @@
+include ":message:model/Message";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
 include ":equipsys:utils/consts";
@@ -6,14 +7,6 @@ include ":debug:Controller/DebugController";
 program equipsys(params)
 	var who := params[1];
 	var item := params[2];
-
-	// if (item.IsA(POLCLASS_ARMOR))
-	// 	setArmorStats(item);
-	// 	debugArmor(who, item);
-	// elseif (item.IsA(POLCLASS_WEAPON))
-	// 	setWeaponStats(item);
-	// 	debugWeapon(who, item);
-	// endif
 
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
@@ -25,8 +18,6 @@ program equipsys(params)
 	endif
 
 	equip.Update();
-	print (equip.ToString());
-	SendSysMessage(who, equip.ToString());
 endprogram
 
 // /**
@@ -74,7 +65,7 @@ function debugWeapon(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {equip.GetMainDamage().GetPiercingDamage()}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {equip.GetMainDamage().GetBluntDamage()}");
 
-	if(equip.GetOffDamage())
+	if (equip.GetOffDamage())
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {equip.GetOffDamage().GetSlashDamage()}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {equip.GetOffDamage().GetPiercingDamage()}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {equip.GetOffDamage().GetBluntDamage()}");
@@ -85,7 +76,7 @@ function debugWeapon(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] Veneno: {equip.GetMainDamage().GetPoisonDamage()}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] Energia: {equip.GetMainDamage().GetEnergyDamage()}");
 
-	if(equip.GetOffDamage())
+	if (equip.GetOffDamage())
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] Fogo: {equip.GetOffDamage().GetFireDamage()}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] Gelo: {equip.GetOffDamage().GetColdDamage()}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] Veneno: {equip.GetOffDamage().GetPoisonDamage()}");
@@ -101,7 +92,7 @@ endfunction
 function debugArmor(who, equip)
 	var slot := equip.GetCoverage();
 	var type := equip.GetTipoProtecao();
-	
+
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {equip.GetName()}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
@@ -111,9 +102,12 @@ function debugArmor(who, equip)
 
 	DebugMsg(who, DEBUG_EQUIP, $"
 		[RESISTÊNCIA FÍSICA]");
-	DebugMsg(who, DEBUG_EQUIP, $"{SLASHDAMAGE}: {equip.GetResists().GetSlashResist()} (+{equip.GetResistsMod().GetSlashResist()})");
-	DebugMsg(who, DEBUG_EQUIP, $"{PIERCINGDAMAGE}: {equip.GetResists().GetPiercingResist()} (+{equip.GetResistsMod().GetPiercingResist()})");
-	DebugMsg(who, DEBUG_EQUIP, $"{BLUNTDAMAGE}: {equip.GetResists().GetBluntResist()} (+{equip.GetResistsMod().GetBluntResist()})");
+	DebugMsg(who, DEBUG_EQUIP,
+		  $"{SLASHDAMAGE}: {equip.GetResists().GetSlashResist()} (+{equip.GetResistsMod().GetSlashResist()})");
+	DebugMsg(who, DEBUG_EQUIP,
+		  $"{PIERCINGDAMAGE}: {equip.GetResists().GetPiercingResist()} (+{equip.GetResistsMod().GetPiercingResist()})");
+	DebugMsg(who, DEBUG_EQUIP,
+		  $"{BLUNTDAMAGE}: {equip.GetResists().GetBluntResist()} (+{equip.GetResistsMod().GetBluntResist()})");
 	// DebugMsg(who, DEBUG_EQUIP, $"Material ({materialName}): {resistByMaterial["SlashResist"]}/{resistByMaterial["PiercingResist"]}/{resistByMaterial["BluntResist"]}");
 	// DebugMsg(who, DEBUG_EQUIP, $"Slot ({slot}): {resistBySlot["SlashResist"]}/{resistBySlot["PiercingResist"]}/{resistBySlot["BluntResist"]}");
 	// DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({type}): {resistByProtection["SlashResist"]}/{resistByProtection["PiercingResist"]}/{resistByProtection["BluntResist"]}
@@ -125,7 +119,7 @@ function debugArmor(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, $"Gelo: {equip.ColdResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"Veneno: {equip.PoisonResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"Energia: {equip.EnergyResist}");
-	
+
 	DebugMsg(who, DEBUG_EQUIP, $"
 		[PENALIDADES]");
 	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {equip.GetPenalties()[DEXTERITY]}");
@@ -136,7 +130,7 @@ function debugArmor(who, equip)
 
 	DebugMsg(who, DEBUG_EQUIP, $"
 		[MODIFICADORES]");
-	// DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
-	// DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
-	// DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
+// DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+// DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
+// DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
 endfunction

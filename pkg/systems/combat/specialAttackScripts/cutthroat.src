@@ -3,23 +3,24 @@ include ":attributes:attributes";
 program SpecialAttack_Cutthroat(combatInfo)
 	var attacker := combatInfo.attacker;
 	var defender := combatInfo.defender;
-	
-	PrintTextAbove(attacker, $"*corta a garganta de {defender.name}*");
-	PrintTextAbove(defender, "*garganta cortada*");
-	PrintTextAbovePrivate(defender, "Voce foi executado!", defender);
-	PrintTextAbovePrivate(defender, "Voce executou seu alvo!", attacker);
+
+	PrintText(attacker, $"*corta a garganta de {defender.name}*");
+	PrintText(defender, "*garganta cortada*");
+	PrintTextPrivate(defender, "Voce foi executado!", defender);
+	PrintTextPrivate(defender, "Voce executou seu alvo!", attacker);
 
 	ApplyRawDamage(defender, 1000); // Dano absurdo pra garantir que matou
 	// RecalcVitals(defender);
-	
-	var location := struct{ x := defender.x, y := defender.y, z := defender.z, realm := defender.realm };
+
+	var location := struct{ x := defender.x, y := defender.y, z := defender.z,
+							realm := defender.realm };
 	FormarPocaSangue(location);
 
 	return true;
 endprogram
 
 function FormarPocaSangue(center)
-	
+
 	for x := -1 to 1
 		for y := -1 to 1
 			var location := struct{ x := center.x, y := center.y, z := center.z, realm := center.realm };

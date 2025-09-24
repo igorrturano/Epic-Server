@@ -10,7 +10,6 @@ AI Settings opcionais:
   throwMiss (int sound)
   throwAnim (int anim)
 */
-
 use uo;
 use os;
 
@@ -25,14 +24,14 @@ include "include/facings";
 include ":combat:damage";
 
 program BrainNerve(params)
-	var npc		:= params[1];
-	var nerve_name	:= params[2];
-	var event	:= params[3];
-	var settings	:= params[4];
-	var scripts	:= params[5];
+	var npc := params[1];
+	var nerve_name := params[2];
+	var event := params[3];
+	var settings := params[4];
+	var scripts := params[5];
 	params := 0; // Not needed anymore.
 
-	//Store it here so it does not have to do the math over and over.
+	// Store it here so it does not have to do the math over and over.
 	var flee_level := NPC_GetFleeLevel(npc, settings["FleeLevel"]);
 
 	var opponent := event.source;
@@ -42,23 +41,23 @@ program BrainNerve(params)
 
 	SetObjProperty(npc, "#Throws", settings["throwNum"]);
 
-	while( npc )
+	while (npc)
 		var dist := Distance(npc, opponent);
-		if ( ShouldFlee(npc, flee_level, flee_mode) )
+		if (ShouldFlee(npc, flee_level, flee_mode))
 			flee_mode := 1;
 			AI_Move(npc, opponent, NEMOVE_AWAY, NEMOVE_RUN, WAKEUP, 25);
-		elseif ( DoneFighting(npc, opponent, dist) )
-			if ( scripts.Exists("EndFight") )
-				params := array{npc, "EndFight", opponent, settings, scripts};
+		elseif (DoneFighting(npc, opponent, dist))
+			if (scripts.Exists("EndFight"))
+				params := array{ npc, "EndFight", opponent, settings, scripts };
 				AI_StartNerve(npc, "EndFight", scripts["EndFight"].script, params);
 			else
 				AI_WarMode(npc, 0);
 			endif
 			AI_EndNerve(npc, nerve_name);
-		elseif( dist > settings["throwRange"] )
+		elseif (dist > settings["throwRange"])
 			AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_RUN, WAKEUP, dist);
 			throw(npc, opponent, dist, settings);
-		elseif ( dist > 1);
+		elseif (dist > 1)
 			AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_RUN, WAKEUP, dist);
 		else
 			npc.facing := GetFacing(npc.x, npc.y, opponent.x, opponent.y);
@@ -70,17 +69,17 @@ program BrainNerve(params)
 endprogram
 
 function DoneFighting(npc, opponent, byref dist)
-	if ( opponent.dead )
+	if (opponent.dead)
 		return 1;
-	elseif ( !opponent )
+	elseif (!opponent)
 		return 1;
-	elseif ( opponent.hidden )
+	elseif (opponent.hidden)
 		return 1;
-	elseif ( opponent.concealed > npc.cmdlevel )
+	elseif (opponent.concealed > npc.cmdlevel)
 		return 1;
-	elseif ( dist > 20 )
+	elseif (dist > 20)
 		return 1;
-	elseif ( dist > 10 && !CheckLineOfSight(npc, opponent) )
+	elseif (dist > 10 && !CheckLineOfSight(npc, opponent))
 		return 1;
 	endif
 
@@ -88,7 +87,7 @@ function DoneFighting(npc, opponent, byref dist)
 endfunction
 
 function ShouldFlee(npc, byref flee_level, byref flee_mode)
-	if ( AP_GetVital(npc, "Hits") < flee_level )
+	if (AP_GetVital(npc, "Hits") < flee_level)
 		return 1;
 	endif
 
@@ -96,16 +95,16 @@ function ShouldFlee(npc, byref flee_level, byref flee_mode)
 endfunction
 
 function throw(npc, opponent, byref dist, settings)
-	if ( dist < 3 || dist > 15 )
+	if (dist < 3 || dist > 15)
 		return 0;
-	elseif ( !CheckLineOfSight(npc, opponent) )
+	elseif (!CheckLineOfSight(npc, opponent))
 		return 0;
-	elseif ( !CInt(GetObjProperty(npc, "#Throws")) )
+	elseif (!CInt(GetObjProperty(npc, "#Throws")))
 		return 0;
 	endif
 
 	var next_shoot := CInt(GetObjProperty(npc, "#NextShoot"));
-	if ( next_shoot > ReadGameClock() )
+	if (next_shoot > ReadGameClock())
 		return 0;
 	endif
 
@@ -125,7 +124,7 @@ function throw(npc, opponent, byref dist, settings)
 
 	var chance := GetAttribute(npc, "Dexterity") - GetAttribute(opponent, "Dexterity") / 3;
 	if (RandomInt(100) > chance) // Errou!
-		PrintTextAbove(npc, "*Miss!*", _DEFAULT_TEXT_FONT, 38);
+		PrintText(npc, "*Miss!*", _DEFAULT_TEXT_FONT, 38);
 		if (settings["throwMiss"])
 			PlaySoundEffect(npc, settings["throwMiss"]);
 		else
@@ -136,7 +135,7 @@ function throw(npc, opponent, byref dist, settings)
 		PlaySoundEffect(npc, settings["throwHit"]);
 	endif
 
-	SetObjProperty(npc, "#NextShoot", ReadGameClock()+5);
+	SetObjProperty(npc, "#NextShoot", ReadGameClock() + 5);
 	SetObjProperty(npc, "#Throws", CInt(GetObjProperty(npc, "#Throws")) - 1);
 
 	return 1;

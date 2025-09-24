@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -26,30 +26,30 @@ program SpellScript(params)
 	var oldx := who.x;
 	var oldy := who.y;
 
-	//who.frozen := 1;
+	// who.frozen := 1;
 
 	var amt := 10;
 	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))
-			amt := CInt(amt*1.5);
+			amt := CInt(amt * 1.5);
 		endif
 	endif
 
 	Corromper(who, 8, targ);
 
-    var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-    if (CheckResist(targ, VONTADE, diff, -bonus))
-        SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-        SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-        return;
-    endif
+	if (CheckResist(targ, VONTADE, diff, -bonus))
+		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		return;
+	endif
 
-	SetObjProperty(who, "#Casting",1);
+	SetObjProperty(who, "#Casting", 1);
 
-	while  (time < 10)
+	while (time < 10)
 
-		if ( (who.x != oldx) || (who.y != oldy))
+		if ((who.x != oldx) || (who.y != oldy))
 			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
 			break;
 		endif
@@ -59,7 +59,7 @@ program SpellScript(params)
 			break;
 		endif
 
-		if(targ.dead)
+		if (targ.dead)
 			break;
 		endif
 
@@ -68,8 +68,8 @@ program SpellScript(params)
 			break;
 		endif
 
-		AP_SetVital(targ, MANA, (targmana-amt));
-		PrintTextAbovePrivate(targ, "-"+amt + " Mana", who, 3, 38); // vermelho
+		AP_SetVital(targ, MANA, (targmana - amt));
+		PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
 
 		var mymana := AP_GetVital(who, MANA) + amt;
 		var maxmana := AP_GetVitalMaximumValue(who, MANA);
@@ -79,7 +79,7 @@ program SpellScript(params)
 		endif
 
 		AP_SetVital(who, MANA, mymana);
-		PrintTextAbovePrivate(who, "+"+amt + " Mana", who, 3, 568); // verde
+		PrintTextPrivate(who, "+" + amt + " Mana", who, 3, 568); // verde
 		PlayMovingEffectEx(targ, who, 3982, 255, 1, 2119);
 		time := time + 1;
 		PerformAction(who, ANIM_CAST_AREA);

@@ -18,13 +18,13 @@ program skill_Hide(who)
 	var orig_y := who.y;
 	var isPolski := GetObjProperty(who, "chardata").race == POLSKI;
 
-	if ( who.hidden )
+	if (who.hidden)
 		Start_Script("stealth", who);
 		// Stealth
 		return;
-	elseif ( !CanHide(who, orig_x, orig_y) )
+	elseif (!CanHide(who, orig_x, orig_y))
 		return;
-	elseif ( GetProcess(CInt(GetObjProperty(who, "#HidePid"))) )
+	elseif (GetProcess(CInt(GetObjProperty(who, "#HidePid"))))
 		SendSysMessageEx(who, "Voce ja esta tentando se esconder.", SSM_FAIL);
 		return;
 	else
@@ -34,22 +34,23 @@ program skill_Hide(who)
 	SendSysMessageEx(who, "Voce comecou a tentar se esconder...", SSM_INFO);
 
 	if (temHabilidade(who, "Camuflagem"))
-		while ( 1 )
+		while (1)
 			if (isPolski)
 				sleep(2);
 			else
 				sleep(3);
 			endif
 
-			if ( !CanHide(who, orig_x, orig_y) )
+			if (!CanHide(who, orig_x, orig_y))
 				break;
 			endif
 			var check := SkillCheck(who, SURVIVAL, -1);
 			var diff;
-	
+
 			var region := GetRegionName(who);
-			var towns := {"Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell", "Aldorathrim", "Feira", "Colhesol", "Aigla"};
-			if(!(region in towns))
+			var towns := { "Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell",
+			   			"Aldorathrim", "Feira", "Colhesol", "Aigla" };
+			if (!(region in towns))
 				diff := diff - 50;
 				if (diff <= 0)
 					diff := 5;
@@ -57,22 +58,22 @@ program skill_Hide(who)
 			else
 				diff := 50;
 			endif
-									
-			if ( GetObjProperty(who, "forjoumorte") == 1 )
+
+			if (GetObjProperty(who, "forjoumorte") == 1)
 				diff := diff - 50;
-					if (diff <= 0)
-						diff := 5;
-					endif
+				if (diff <= 0)
+					diff := 5;
+				endif
 
 			endif
 
 			var semfalha := AP_GetSkill(who, SURVIVAL);
 
-			if( check > diff )
+			if (check > diff)
 				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
 				who.hidden := 1;
-				var a := start_script(":sneak:stealthmode", array{who});
-				//sendsysmessage(who, " "+ a);
+				var a := start_script(":sneak:stealthmode", array{ who });
+				// sendsysmessage(who, " "+ a);
 				EraseObjProperty(who, "#steathsteps");
 				if (GetCooldown(who, "partyhiding") > 0) // Se tiver usado habilidade de Emboscada
 					HidingParty(who);
@@ -85,24 +86,23 @@ program skill_Hide(who)
 				PrintText(who, "*tentando se esconder*");
 			endif
 		endwhile
-		SetObjProperty(who, "#hidewait", readgameclock()+5);
+		SetObjProperty(who, "#hidewait", readgameclock() + 5);
 		return;
 	else
 
-		while ( 1 )
+		while (1)
 			if (isPolski)
 				sleep(2);
 			else
 				sleep(3);
 			endif
-			
 
-			if ( !CanHide(who, orig_x, orig_y) )
+			if (!CanHide(who, orig_x, orig_y))
 				break;
 			endif
 			var check := SkillCheck(who, SNEAK, -1);
 			var diff := 0;
-			/*case ( temHabilidade(who, "Misturar-se na Selva") )
+			/* case ( temHabilidade(who, "Misturar-se na Selva") )
 				1:
 					var region := GetRegionName(who);
 					if(region != "aghaja" && region != "zharkia")
@@ -114,27 +114,26 @@ program skill_Hide(who)
 				0:
 					diff := 0;
 			endcase */
-
-			if ( GetObjProperty(who, "forjoumorte") == 1 )
+			if (GetObjProperty(who, "forjoumorte") == 1)
 				diff := diff - 50;
-                if (diff <= 0)
-                    diff := 5;
-                endif
+				if (diff <= 0)
+					diff := 5;
+				endif
 			endif
-            var chardata := GetObjProperty(who, "chardata");
-            if (chardata.trait == "Sorrateiro")
-                diff := -10;
-                if (diff <= 0)
-                    diff := 5;
-                endif
-            endif
+			var chardata := GetObjProperty(who, "chardata");
+			if (chardata.trait == "Sorrateiro")
+				diff := -10;
+				if (diff <= 0)
+					diff := 5;
+				endif
+			endif
 			var semfalha := AP_GetSkill(who, SNEAK);
 
-			if( check > diff )
+			if (check > diff)
 				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
 				who.hidden := 1;
-				var a := start_script(":sneak:stealthmode", array{who});
-				//sendsysmessage(who, " "+ a);
+				var a := start_script(":sneak:stealthmode", array{ who });
+				// sendsysmessage(who, " "+ a);
 				EraseObjProperty(who, "#steathsteps");
 				if (GetCooldown(who, "partyhiding") > 0) // Se tiver usado habilidade de Emboscada
 					HidingParty(who);
@@ -147,7 +146,7 @@ program skill_Hide(who)
 				PrintText(who, "*tentando se esconder*");
 			endif
 		endwhile
-		SetObjProperty(who, "#hidewait", readgameclock()+5);
+		SetObjProperty(who, "#hidewait", readgameclock() + 5);
 	endif
 endprogram
 
@@ -167,11 +166,11 @@ function HidingParty(who)
 				if (CanHide(member, member.x, member.y, skill))
 					SendSysMessageEx(member, "Voce esta preparando a emboscada!", SSM_INFO);
 					member.hidden := 1;
-					start_script(":sneak:stealthmode", array{who});
+					start_script(":sneak:stealthmode", array{ who });
 					SetObjProperty(member, "#overridehiding", skill);
 				else
 					SendSysMessageEx(member, "Voce nao pode se esconder!", SSM_FAIL);
-					SendSysMessageEx(who, member.name +" nao consegue se esconder!", SSM_FAIL);
+					SendSysMessageEx(who, member.name + " nao consegue se esconder!", SSM_FAIL);
 				endif
 			endif
 		endif
@@ -181,16 +180,16 @@ endfunction
 
 function CanHide(who, orig_x, orig_y, override_hiding := 0)
 
-	if ( who.warmode )
+	if (who.warmode)
 		SendSysMessageEx(who, "Voce nao pode se esconder em posicao de combate.", SSM_FAIL);
 		return 0;
-	elseif ( who.x != orig_x || who.y != orig_y )
+	elseif (who.x != orig_x || who.y != orig_y)
 		SendSysMessageEx(who, "Voce parou de tentar se esconder.", SSM_FAIL);
 		return 0;
-	elseif ( GetEquipmentByLayer(who, 0x19) ) // Equip de Montaria
+	elseif (GetEquipmentByLayer(who, 0x19)) // Equip de Montaria
 		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
 		return 0;
-	elseif ( who.frozen )
+	elseif (who.frozen)
 		SendSysMessageEx(who, "Voce nao pode fazer isto.", SSM_FAIL);
 		return 0;
 	endif
@@ -215,11 +214,11 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 	var hostiles := ListHostiles(who, range);
 	if (temHabilidade(who, "Fuga de Emergencia") || temHabilidade(who, "Mestre Espiao"))
 		return 1;
-	elseif ( hostiles[1] )
-		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name + " esta atacando voce.", SSM_FAIL);
+	elseif (hostiles[1])
+		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name
+				   + " esta atacando voce.", SSM_FAIL);
 		return 0;
 	endif
-
 
 	var num_watching := GetWatchingPeople(who);
 	var skill2 := AP_GetSkill(who, SNEAK) / 20;
@@ -228,18 +227,17 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 		skill2 := 0;
 	endif
 
-	if ( num_watching > skill2 )
+	if (num_watching > skill2)
 		SendSysMessageEx(who, "Existem muitas pessoas olhando voce se esconder aqui.", SSM_FAIL);
 		return 0;
 	endif
-
 
 	return 1;
 endfunction
 
 function GetWatchingPeople(who)
 	var counter := 0;
-	var counterpt :=0;
+	var counterpt := 0;
 	var range := GetHidingRange(AP_GetSkill(who, SNEAK));
 	if (temHabilidade(who, "Camuflagem"))
 		var range := GetHidingRange(AP_GetSkill(who, SURVIVAL));
@@ -247,40 +245,40 @@ function GetWatchingPeople(who)
 	// adicionada exclusão para membros de pt - BORS
 	foreach person in ListMobilesInLineOfSight(who, range)
 		if ((person.connected) && (person != who))
-			if ( (person in who.party.members ) )
+			if ((person in who.party.members))
 				if (IsFacing(person, who.x, who.y))
-				counterpt := counterpt+1;
+					counterpt := counterpt + 1;
 				endif
 			endif
 		endif
-		if ( IsFacing(person, who.x, who.y) ) //&& (SkillCheck(person, AWARENESS, 20) > 0) ) - Caso queira impor um minimo de awareness
-			counter := counter+1;
+		if (IsFacing(person, who.x, who.y)) // && (SkillCheck(person, AWARENESS, 20) > 0) ) - Caso queira impor um minimo de awareness
+			counter := counter + 1;
 		endif
 		sleepms(4);
 	endforeach
-	var counterliq:= counter-counterpt;
+	var counterliq := counter - counterpt;
 	return counterliq;
 endfunction
 
-function GetHidingRange( skill )
+function GetHidingRange(skill)
 
-  if (skill >= 100)
-    return 2;
-  elseif( skill >= 90 )
-    return 4;
-  elseif( skill >= 80 )
-    return 6;
-  elseif( skill >= 70 )
-    return 7;
-  elseif( skill >= 60 )
-    return 8;
-  elseif( skill >= 50 )
-    return 9;
-  elseif( skill >= 40 )
-    return 10;
-  elseif( skill >= 30 )
-    return 12;
-  else
-    return 15;
-  endif
+	if (skill >= 100)
+		return 2;
+	elseif (skill >= 90)
+		return 4;
+	elseif (skill >= 80)
+		return 6;
+	elseif (skill >= 70)
+		return 7;
+	elseif (skill >= 60)
+		return 8;
+	elseif (skill >= 50)
+		return 9;
+	elseif (skill >= 40)
+		return 10;
+	elseif (skill >= 30)
+		return 12;
+	else
+		return 15;
+	endif
 endfunction

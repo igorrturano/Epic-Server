@@ -1,3 +1,5 @@
+use util;
+
 include ":gumpDesigner:Control/Control";
 
 class Container(Control)
@@ -80,7 +82,8 @@ class Container(Control)
 
 	function SelfCreate(this, byRef gump)
 		if (this._isVisible)
-			GFGumpPicTiled(gump, this._x, this._y, this._width, this._height, 0x5B8);
+			var bg := array{0x5B8, 0xBBC, 0xE14, 0x13C2, 0x1414, 0x1436};
+			GFGumpPicTiled(gump, this._x, this._y, this._width, this._height, bg[RandomInt(bg.size() + 1)]);
 		endif
 
 		foreach control in (this._controls)

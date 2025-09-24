@@ -13,21 +13,21 @@ program default_poison(params)
 	var who := params[1];
 	var attacker := params[2];
 
-	if ( attacker )
+	if (attacker)
 		SetScriptController(attacker);
 	endif
-    print("params[1]" + params[1]);
-    print("params[2]" + params[2]);
-  
-    var dmg := 0;
-    var loops := 0;
-    if (TemHabilidade(attacker, "Golpe Afiado"))
-        dmg := CInt(AP_GetSkill(attacker, TACTICS) / 8 );
-        loops := CInt(AP_GetSkill(attacker, TACTICS) / 10);
-    else
-	    dmg := CInt(AP_GetSkill(attacker, ALCHEMY) / 8 );
-	    loops := CInt(AP_GetSkill(attacker, ALCHEMY) / 10);
-    endif
+	print("params[1]" + params[1]);
+	print("params[2]" + params[2]);
+
+	var dmg := 0;
+	var loops := 0;
+	if (TemHabilidade(attacker, "Golpe Afiado"))
+		dmg := CInt(AP_GetSkill(attacker, TACTICS) / 8);
+		loops := CInt(AP_GetSkill(attacker, TACTICS) / 10);
+	else
+		dmg := CInt(AP_GetSkill(attacker, ALCHEMY) / 8);
+		loops := CInt(AP_GetSkill(attacker, ALCHEMY) / 10);
+	endif
 
 	var i;
 	var poisonedmsg := "dmg " + dmg + " " + "loops" + loops;
@@ -35,30 +35,29 @@ program default_poison(params)
 	poisonedmsg := "Voce sente um corte profundo!";
 	viewermsg := "*" + who.name + " esta sangrando!*";
 
-    for ( i := 0; i < loops; i := i+1)
-        PrintTextAbovePrivate(who, poisonedmsg, who);
-            foreach mobile in ( ListMobilesInLineOfSight(who, 8) )
-                if( mobile.ip && mobile != who )
-                    PrintTextAbovePrivate(who, viewermsg, mobile);
-                endif
-            sleepms(2);
-            endforeach		
+	for (i := 0; i < loops; i := i + 1)
+		PrintTextPrivate(who, poisonedmsg, who);
+		foreach mobile in (ListMobilesInLineOfSight(who, 8))
+			if (mobile.ip && mobile != who)
+				PrintTextPrivate(who, viewermsg, mobile);
+			endif
+			sleepms(2);
+		endforeach
 
-    damageFLS(who, cint(dmg), DMG_FORCED, attacker);
-    MakeBleed(who);
+		damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+		MakeBleed(who);
 
-        if (who.dead)
-        break;
-        endif
+		if (who.dead)
+			break;
+		endif
 
+		sleep(4);
+	endfor
 
-    sleep(4);
-    endfor
-
-//	TS_CurePoison(who, 120,"P", 5);
+	// 	TS_CurePoison(who, 120,"P", 5);
 	TS_LowerDuration(who, "bleedingstrike", -1);
 	var script := GetProcess(GetPid());
 	script.kill();
-	
+
 	return;
 endprogram

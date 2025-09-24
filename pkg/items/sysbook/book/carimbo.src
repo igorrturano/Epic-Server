@@ -1,8 +1,7 @@
 use uo;
 use os;
-use polsys;   
+use polsys;
 use util;
-
 
 include ":tn:tngumps";
 include ":gumps:requestGump";
@@ -13,46 +12,44 @@ include ":sysbook:include/sealedBooks";
 include ":datafile:datafile";
 
 function SimpleLog(datafile_spec, message)
-    var current_clock := ReadGameClock();
-    var log_entry := "Clock[" + current_clock + "] - " + message;
-    // Se você conseguir fazer StrFormatTime funcionar, substitua a linha acima por:
-    // var log_entry := StrFormatTime("%Y-%m-%d %H:%M:%S", ReadGameClock()) + " - " + message;
+	var current_clock := ReadGameClock();
+	var log_entry := "Clock[" + current_clock + "] - " + message;
+	// Se você conseguir fazer StrFormatTime funcionar, substitua a linha acima por:
+	// var log_entry := StrFormatTime("%Y-%m-%d %H:%M:%S", ReadGameClock()) + " - " + message;
 
-    var df := DFOpenDataFile(datafile_spec, DF_APPEND | DF_NO_CREATE); // Tenta abrir para anexar, não cria se não existir
+	var df := DFOpenDataFile(datafile_spec, DF_APPEND | DF_NO_CREATE); // Tenta abrir para anexar, não cria se não existir
 
-    if (df.errortext) // Se falhou ao abrir (ex: não existe)
-        df := CreateDataFile(datafile_spec); // Tenta criar o datafile (será tipo string por padrão)
-        if(df.errortext)
-            return 0;
-        endif
-    endif
+	if (df.errortext) // Se falhou ao abrir (ex: não existe)
+		df := CreateDataFile(datafile_spec); // Tenta criar o datafile (será tipo string por padrão)
+		if (df.errortext)
+			return 0;
+		endif
+	endif
 
-    // Se chegou aqui, df é um datafile válido.
-    // AppendElement adiciona a string como um novo elemento no final do datafile.
-    var append_result := df.AppendElement(log_entry);
-    if (append_result.errortext)
-        return 0;
-    endif
-    
-    // Para datafiles usados como logs simples, não precisamos descarregá-los imediatamente
-    // a menos que haja um volume muito alto de escrita ou preocupação com perda de dados em crash.
-    // UnloadDataFile(datafile_spec); // Opcional: descomente se quiser forçar a escrita no disco imediatamente.
+	// Se chegou aqui, df é um datafile válido.
+	// AppendElement adiciona a string como um novo elemento no final do datafile.
+	var append_result := df.AppendElement(log_entry);
+	if (append_result.errortext)
+		return 0;
+	endif
 
-    return 1;
+	// Para datafiles usados como logs simples, não precisamos descarregá-los imediatamente
+	// a menos que haja um volume muito alto de escrita ou preocupação com perda de dados em crash.
+	// UnloadDataFile(datafile_spec); // Opcional: descomente se quiser forçar a escrita no disco imediatamente.
+
+	return 1;
 endfunction
-
-
 
 program use_Carimbo(who, tool)
 
-	if(!can_access(who, tool))
+	if (!can_access(who, tool))
 		return 0;
 	endif
-	if((!tool.movable) or !ReserveItem(tool))
+	if ((!tool.movable) or !ReserveItem(tool))
 		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
 		return 0;
 	endif
-	if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+	if (!(tool in EnumerateItemsInContainer(who.backpack)))
 		SendSysMessage(who, "O item precisa estar na sua mochila.", SSM_FAIL);
 		return 0;
 	endif
@@ -101,15 +98,17 @@ program use_Carimbo(who, tool)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
- SendSysMessageEx(who, "Selecione uma vela acesa para extrair a cera", SSM_REQUEST);
-    var vela := Target(who);
-    if (!vela)
-        SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-        return; // Remove the SetObjProperty here
-    elseif ((vela.objtype != 5171) && (vela.objtype != 0x0A0F) && (vela.objtype != 0x0A26) && (vela.objtype != 0x0A29) && (vela.objtype != 0x142C) && (vela.objtype != 0x1853) && (vela.objtype != 0x1854) && (vela.objtype != 0x1856) && (vela.objtype != 0x1C14))
-        SendSysMessageEx(who, "Isto nao e uma vela acesa.", SSM_FAIL);
-        return;
-    endif
+	SendSysMessageEx(who, "Selecione uma vela acesa para extrair a cera", SSM_REQUEST);
+	var vela := Target(who);
+	if (!vela)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return; // Remove the SetObjProperty here
+	elseif ((vela.objtype != 5171) && (vela.objtype != 0x0A0F) && (vela.objtype != 0x0A26) &&
+		 (vela.objtype != 0x0A29) && (vela.objtype != 0x142C) && (vela.objtype != 0x1853) &&
+		 (vela.objtype != 0x1854) && (vela.objtype != 0x1856) && (vela.objtype != 0x1C14))
+		SendSysMessageEx(who, "Isto nao e uma vela acesa.", SSM_FAIL);
+		return;
+	endif
 
 	SendSysMessageEx(who, "Selecione o item (livro ou carta) para selar.", SSM_REQUEST);
 	var targ := Target(who);
@@ -124,54 +123,56 @@ program use_Carimbo(who, tool)
 		return;
 	endif
 
-    var eh_livro_de_loot := targ.isBook() && (targ.objtype != 0xFF5 && targ.objtype != 0x0FF5);
-    var eh_carta := targ.isBook() && (targ.objtype == 0xFF5 || targ.objtype == 0x0FF5);
+	var eh_livro_de_loot := targ.isBook() && (targ.objtype != 0xFF5 && targ.objtype != 0x0FF5);
+	var eh_carta := targ.isBook() && (targ.objtype == 0xFF5 || targ.objtype == 0x0FF5);
 
-    if (!eh_livro_de_loot && !eh_carta)
-        SendSysMessageEx(who, "Este Sinete so pode selar livros compativeis ou cartas (objtype 0xFF5).", SSM_FAIL);
-        return;
-    endif
+	if (!eh_livro_de_loot && !eh_carta)
+		SendSysMessageEx(who, "Este Sinete so pode selar livros compativeis ou cartas (objtype 0xFF5).",
+				   SSM_FAIL);
+		return;
+	endif
 
-    var msg_confirmacao := "Deseja selar este item? Ele nao podera sofrer alteracoes depois disso.";
-    if (eh_livro_de_loot)
-        msg_confirmacao := "Deseja selar este livro? Ele nao podera sofrer alteracoes depois disso. Para arquiva-lo nos tesouros do mundo, leve-o ao bibliotecario.";
-    elseif (eh_carta)
-         msg_confirmacao := "Deseja carimbar esta carta? Ela nao podera sofrer alteracoes depois disso.";
-    endif
+	var msg_confirmacao := "Deseja selar este item? Ele nao podera sofrer alteracoes depois disso.";
+	if (eh_livro_de_loot)
+		msg_confirmacao := "Deseja selar este livro? Ele nao podera sofrer alteracoes depois disso. Para arquiva-lo nos tesouros do mundo, leve-o ao bibliotecario.";
+	elseif (eh_carta)
+		msg_confirmacao := "Deseja carimbar esta carta? Ela nao podera sofrer alteracoes depois disso.";
+	endif
 
-    var yes := YesNo(who, msg_confirmacao);
-    if (!yes)
-        SendSysMessageEx(who, "Voce optou por nao selar.", SSM_FAIL);
-        return;
-    endif
+	var yes := YesNo(who, msg_confirmacao);
+	if (!yes)
+		SendSysMessageEx(who, "Voce optou por nao selar.", SSM_FAIL);
+		return;
+	endif
 
-    var nome_do_selo_para_item := GetObjProperty(tool, "selo");
+	var nome_do_selo_para_item := GetObjProperty(tool, "selo");
 
-    // 1. Tornar o item alvo ReadOnly
-    var readonly_op_result := targ.ReadOnly(1);
+	// 1. Tornar o item alvo ReadOnly
+	var readonly_op_result := targ.ReadOnly(1);
 
-    if (!readonly_op_result)
-        SendSysMessageEx(who, "Erro ao tentar tornar o item somente leitura. A selagem falhou.", SSM_FAIL);
-        return;
-    endif
-    
- SetObjProperty(targ, "Selado", "sim");
-    SetObjProperty(targ, "description", nome_do_selo_para_item);
-    // Adicionar o nome da conta do jogador que selou
-    SetObjProperty(targ, "account_name_of_sealer", who.acctname);
-    
-    if (eh_carta)
-         SetName(targ, nome_do_selo_para_item);
-    endif
+	if (!readonly_op_result)
+		SendSysMessageEx(who, "Erro ao tentar tornar o item somente leitura. A selagem falhou.", SSM_FAIL);
+		return;
+	endif
 
-    PrintTextAbove(who, "*selando o item com cera e o sinete*");
-    PlaySoundEffect(who, 0x4D4);
+	SetObjProperty(targ, "Selado", "sim");
+	SetObjProperty(targ, "description", nome_do_selo_para_item);
+	// Adicionar o nome da conta do jogador que selou
+	SetObjProperty(targ, "account_name_of_sealer", who.acctname);
 
-    if (eh_livro_de_loot)
-        SendSysMessageEx(who, "Livro selado com sucesso. Leve-o ao bibliotecario se desejar arquiva-lo nos tesouros do mundo.", SSM_INFO);
-    elseif (eh_carta)
-        SendSysMessageEx(who, "Carta selada com sucesso.", SSM_INFO);
-    endif
+	if (eh_carta)
+		SetName(targ, nome_do_selo_para_item);
+	endif
 
-    return 1;
+	PrintText(who, "*selando o item com cera e o sinete*");
+	PlaySoundEffect(who, 0x4D4);
+
+	if (eh_livro_de_loot)
+		SendSysMessageEx(who, "Livro selado com sucesso. Leve-o ao bibliotecario se desejar arquiva-lo nos tesouros do mundo.",
+				   SSM_INFO);
+	elseif (eh_carta)
+		SendSysMessageEx(who, "Carta selada com sucesso.", SSM_INFO);
+	endif
+
+	return 1;
 endprogram

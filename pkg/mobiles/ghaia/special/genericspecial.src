@@ -9,7 +9,7 @@ include "include/sysEvent";
 include ":ghaia:generic";
 
 program loko(params)
-//print("entrou");
+	// print("entrou");
 	var who := params[1];
 	var event := params[2];
 
@@ -18,25 +18,25 @@ program loko(params)
 	endif
 
 	if (event.onlybloodied)
-		if ( !IsBloodied(who) )
+		if (!IsBloodied(who))
 			return;
 		endif
 	endif
 
-	//check distancia
+	// check distancia
 	if (event.dist > 0)
 		if (CoordinateDistance(who.x, who.y, who.opponent.x, who.opponent.y) > event.dist)
 			return;
 		endif
 	endif
 
-	//checa cooldown
-	if ( TS_GetCooldown(who, event.name) != error)
+	// checa cooldown
+	if (TS_GetCooldown(who, event.name) != error)
 		return;
 	endif
 
 	TS_StartCooldown(who, event.name, event.cd);
-	//executa os states
+	// executa os states
 	foreach state in (event.steps)
 
 		EraseObjPRoperty(who, "noclosecombat");
@@ -49,16 +49,16 @@ program loko(params)
 			ev.x := state.x;
 			ev.y := state.y;
 			var loop := 1;
-    			while (loop)
+			while (loop)
 				SendEvent(who, ev);
-            			if (CoordinateDistance( who.x, who.y, state.x, state.y ) <= 1 )
+				if (CoordinateDistance(who.x, who.y, state.x, state.y) <= 1)
 					EraseObjPRoperty(who, "noclosecombat");
 					loop := 0;
 				else
 					loop := 1;
 				endif
 				sleepms(100);
-    			endwhile
+			endwhile
 
 		elseif (state.type == "Teleport")
 			if (state.target == "Self")
@@ -83,7 +83,7 @@ program loko(params)
 			foreach t in targ
 				TS_StartTimer(t, state.timername, state.timerduration, state.level);
 			endforeach
-		elseif (state.type == "Perform Action" )
+		elseif (state.type == "Perform Action")
 			var targ := array;
 			if (state.target == "Self")
 				targ.append(who);
@@ -112,9 +112,9 @@ program loko(params)
 		elseif (state.type == "Delay")
 			Sleep(state.delay);
 		elseif (state.type == "Heal")
-			  HealFLS(who, state.healamt);
-			    RecalcVitals(who);
-		elseif ( state.type == "Graphic Effect")
+			HealFLS(who, state.healamt);
+			RecalcVitals(who);
+		elseif (state.type == "Graphic Effect")
 			var targ := array;
 			if (state.target == "Self")
 				targ.append(who);
@@ -128,26 +128,27 @@ program loko(params)
 
 				elseif (state.graphictype == "Moving")
 					var startx := Cint(state.startx) + RandomInt(2 * state.startradius) - state.startradius;
-					var starty :=  Cint(state.starty) + RandomInt(2 * state.startradius) - state.startradius;
+					var starty := Cint(state.starty) + RandomInt(2 * state.startradius) - state.startradius;
 					var endx := Cint(state.endx) + RandomInt(2 * state.endradius) - state.endradius;
 					var endy := Cint(state.endy) + RandomInt(2 * state.endradius) - state.endradius;
-					PlayMovingEffectXYZ(startx,  starty, Cint(state.startz), endx, endy, Cint(state.endz), state.fxid, state.speed, state.loop);
+					PlayMovingEffectXYZ(startx, starty, Cint(state.startz), endx, endy, Cint(state.endz), state.fxid,
+										 state.speed, state.loop);
 				endif
 			else
 				foreach t in targ
-				if (state.graphictype == "Stationary")
-					if (state.fxid == "Lightning")
-						PlayLightningBoltEffect(t);
-					else
-						PlayObjectCenteredEffect(t, state.fxid, state.speed, state.loops);
+					if (state.graphictype == "Stationary")
+						if (state.fxid == "Lightning")
+							PlayLightningBoltEffect(t);
+						else
+							PlayObjectCenteredEffect(t, state.fxid, state.speed, state.loops);
+						endif
+					elseif (state.graphictype == "Moving")
+						if (state.direction == "Mob->Player")
+							PlayMovingEffect(who, t, state.fxid, state.speed, state.loops);
+						else
+							PlayMovingEffect(t, who, state.fxid, state.speed, state.loops);
+						endif
 					endif
-				elseif (state.graphictype == "Moving")
-					if (state.direction == "Mob->Player")
-						PlayMovingEffect(who, t, state.fxid, state.speed, state.loops);
-					else
-						PlayMovingEffect(t, who, state.fxid, state.speed, state.loops);
-					endif
-				endif
 				endforeach
 			endif
 
@@ -176,30 +177,30 @@ program loko(params)
 			while (amt < state.amount)
 				var npc;
 				if (Cint(state.x) == 6 && CInt(state.y) == 6 && Cint(state.z) == 6)
-					npc := CreateNpcFromTemplate( cstr(state.npctemplate), Cint(who.x) + RandomInt(2 * state.range) - state.range,
+					npc := CreateNpcFromTemplate(cstr(state.npctemplate),
+												  Cint(who.x) + RandomInt(2 * state.range) - state.range,
 												  Cint(who.y) + RandomInt(2 * state.range) - state.range, Cint(who.z));
 				else
-					npc := CreateNpcFromTemplate( cstr(state.npctemplate), Cint(state.x) + RandomInt(2 * state.range) - state.range,
+					npc := CreateNpcFromTemplate(cstr(state.npctemplate),
+												  Cint(state.x) + RandomInt(2 * state.range) - state.range,
 												  Cint(state.y) + RandomInt(2 * state.range) - state.range, Cint(state.z));
 				endif
-                if (npc != error)
+				if (npc != error)
 					var duracaonpc := state.duracao;
 					if (!duracaonpc)
 						duracaonpc := 120;
 					endif
 					TS_StartTimer(npc, "summon", duracaonpc);
-                	amt := amt + 1;
-                endif
-              	sleepms(2);
-            endwhile
+					amt := amt + 1;
+				endif
+				sleepms(2);
+			endwhile
 
 		endif
 		sleepms(500);
 	endforeach
 
-
 endprogram
-
 
 function GetAllOpponents(who)
 
@@ -208,8 +209,8 @@ function GetAllOpponents(who)
 
 	foreach mobile in mobs
 		if (mobile.serial != who.serial)
-			if ( !(mobile in a) )
-				if (mobile.acctname || mobile.script == ":ghaia:tamed" )
+			if (!(mobile in a))
+				if (mobile.acctname || mobile.script == ":ghaia:tamed")
 					a.append(mobile);
 				endif
 			endif
@@ -217,6 +218,5 @@ function GetAllOpponents(who)
 	endforeach
 
 	return a;
-
 
 endfunction

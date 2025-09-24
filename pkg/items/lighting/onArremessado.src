@@ -8,10 +8,10 @@ program onArremessado(params)
 	var quem := params[1];
 	var item := params[2];
 
-	while(item)
-		if(item.graphic == 0x0a12 && !item.container)
+	while (item)
+		if (item.graphic == 0x0a12 && !item.container)
 			sleep(4);
-			
+
 			var marcador := CriaFagulhaIncendiaria(quem, item);
 			break;
 		else

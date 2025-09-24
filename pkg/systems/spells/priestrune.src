@@ -6,9 +6,9 @@ include ":tn:cooldown";
 include ":charactercreation:habilidades";
 
 program usavarinha(who, wand)
-    var chardata := GetObjProperty(who, "chardata");
-	if ( chardata.magia != "Sacerdote")
-        SendSysMEssageEx(who, "Voce nao esta em sintonia com o poder das runas", SSM_FAIL);
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.magia != "Sacerdote")
+		SendSysMEssageEx(who, "Voce nao esta em sintonia com o poder das runas", SSM_FAIL);
 		return 1;
 	endif
 
@@ -22,7 +22,7 @@ program usavarinha(who, wand)
 	var cargas := GetObjProperty(wand, "cargas");
 	if (cargas == error)
 		cargas := 40;
-		if ( temHabilidade(who, "Fluxo Divino") )
+		if (temHabilidade(who, "Fluxo Divino"))
 			cargas := 50;
 		endif
 	endif
@@ -34,18 +34,17 @@ program usavarinha(who, wand)
 		cargas := cargas - 1;
 		SetObjProperty(wand, "description", "Cargas: " + cargas);
 		SetObjPRoperty(wand, "cargas", cargas);
-		SetName(wand, ""+wand.desc);
+		SetName(wand, "" + wand.desc);
 	endif
-
 
 	var spellinfo := GetObjProperty(wand, "spellinfo");
 	var delay := 30;
 
-	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+	var script := Start_Script(":spells:cast_spell", { who, spellinfo, 999 });
 
-         if ( script.errortext )
-	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
-	       return 0;
-	 endif
+	if (script.errortext)
+		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
+		return 0;
+	endif
 
 endprogram

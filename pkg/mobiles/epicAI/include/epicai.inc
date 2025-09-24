@@ -1430,7 +1430,7 @@ function FleeFrom(opponent)
     while (opponent && Distance(me, opponent) < 16 && runs < 20)
         TryToRunAway(opponent);
         if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintTextAbove(me, "*Exausto*");
+            PrintText(me, "*Exausto*");
             break;
         endif
         runs += 1;
@@ -1732,7 +1732,7 @@ function shouldKeepPursuing(opponent, dist)
                 var flee_chance := (npcState == "dying") ? 40 : 15;
                 
                 if (RandomInt(100) < flee_chance)
-                    PrintTextAbove(me, "*"+me.name+" recua*");
+                    PrintText(me, "*"+me.name+" recua*");
                     FleeFrom(opponent);
                     return 0;  // Added return 0 after fleeing
                 endif
@@ -1785,7 +1785,7 @@ function LootCorpse(corpse)
     
     // Loot items
     while (looted < max_loot)
-        PrintTextAbove(me, "*revira o corpo*");
+        PrintText(me, "*revira o corpo*");
         if (!LootSomething(me, corpse))
             break;
         endif
@@ -1895,7 +1895,7 @@ function LootItem(npc, item)
         EquipItem(npc, backpack);
     endif
 
-    PrintTextAbove(npc, "*pega " + item.desc + "*");
+    PrintText(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);
 
     return MoveItemToContainer(item, npc.backpack);
@@ -2007,6 +2007,11 @@ function StayNearAllies(max_distance, sleepdelay, opponent)
 endfunction
 
 function isMonsterRanged()
+    // Check for doppelganger override first
+    if (GetObjProperty(me, "#force_ranged"))
+        return 1;
+    endif
+
     // Get monster configuration
     var npc_elem := NPC_GetNPCConfig(me);
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
@@ -2393,7 +2398,7 @@ function DetectAklatsThreats(npc)
     // Verifica se foi alertado por som (taunt_opponent)
     var taunt_opponent := GetObjProperty(npc, "#taunt_opponent");
     if (taunt_opponent)
-        PrintTextAbove(npc, "*Alertado pelo som!*");
+        PrintText(npc, "*Alertado pelo som!*");
         return 1;
     endif
     
@@ -2411,7 +2416,7 @@ function DetectAklatsThreats(npc)
     
     // Verifica se há pegadas suficientes e alinhadas
     if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
-        PrintTextAbove(npc, "*Alertado pelas vibrações!*");
+        PrintText(npc, "*Alertado pelas vibrações!*");
         return 1;
     endif
     
@@ -2453,4 +2458,189 @@ function ArePointsAligned(p1, p2, p3)
     endif
     
     return (crossProduct <= 1); // Tolerância de 1 para compensar arredondamentos
+endfunction
+
+function DoppelgangerTransformation(mobile, opponent)
+    if (!mobile || !opponent || !mobile.isDoppelganger())
+        return 0;
+    endif
+
+    // Don't transform if already transformed
+    if (GetObjProperty(mobile, "#doppelganger_transformed"))
+        return 0;
+    endif
+
+    // Don't transform NPCs or already dead opponents
+    if (opponent.npctemplate || opponent.dead)
+        return 0;
+    endif
+
+    // Store original appearance and equipment for cleanup
+    var original_data := struct{
+        "graphic" := mobile.graphic,
+        "color" := mobile.color,
+        "name" := mobile.name,
+        "title_race" := mobile.title_race,
+        "title_suffix" := mobile.title_suffix,
+        "title_prefix" := mobile.title_prefix,
+        "gender" := mobile.gender,
+        "trueobjtype" := mobile.trueobjtype,
+        "truecolor" := mobile.truecolor
+    };
+
+    // Create safe storage area for original equipment
+    var storage_pack := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0xe75, 1, mobile.realm);
+    if (!storage_pack)
+        return 0;
+    endif
+    MoveObjectToLocation(storage_pack, 4230, 25, 1, mobile.realm, MOVEOBJECT_FORCELOCATION);
+
+    // Store original equipment
+    var original_items := ListEquippedItems(mobile);
+    foreach item in original_items
+        MoveItemToContainer(item, storage_pack);
+        sleepms(2);
+    endforeach
+
+    // Copy opponent's appearance
+    mobile.gender := opponent.gender;
+    mobile.graphic := opponent.graphic;
+    mobile.color := opponent.color;
+    mobile.title_race := opponent.title_race;
+    mobile.title_suffix := opponent.title_suffix;
+    mobile.title_prefix := opponent.title_prefix;
+    mobile.name := opponent.name;
+    mobile.TrueColor := opponent.TrueColor;
+    mobile.trueobjtype := opponent.trueobjtype;
+
+    // Copy opponent's description if available
+    var desc := GetObjProperty(opponent, "description");
+    if (desc != error)
+        SetObjProperty(mobile, "description", desc);
+    else
+        EraseObjProperty(mobile, "description");
+    endif
+
+    // Copy and equip opponent's equipment
+    var copied_items := array{};
+    var opponent_items := ListEquippedItems(opponent);
+    foreach item in opponent_items
+        var copied_item := CreateItemCopyAtLocation(mobile.x, mobile.y, mobile.z, item);
+        if (copied_item)
+            copied_item.color := item.color;
+            copied_item.name := item.name;
+            copied_item.desc := item.desc;
+            EquipItem(mobile, copied_item);
+            copied_items.append(copied_item.serial);
+        endif
+        sleepms(2);
+    endforeach
+
+    // Set combat behavior based on opponent's class
+    var opponent_class := GetObjProperty(opponent, "classe");
+    var combat_properties := struct{
+        "original_behavior" := isMonsterRanged() ? "ranged" : "melee",
+        "adopted_behavior" := "melee",
+        "spell_school" := "",
+        "is_ranged" := 0
+    };
+
+    // Determine combat style
+    if (opponent_class == "Sabio")
+        combat_properties.adopted_behavior := "mage";
+        combat_properties.spell_school := GetObjProperty(opponent, "SpellSchool");
+        if (combat_properties.spell_school)
+            SetObjProperty(mobile, "SpellSchool", combat_properties.spell_school);
+        endif
+        combat_properties.is_ranged := 1;
+    elseif (opponent.weapon && opponent.weapon.isRanged())
+        combat_properties.adopted_behavior := "ranged";
+        combat_properties.is_ranged := 1;
+    else
+        combat_properties.adopted_behavior := "melee";
+        combat_properties.is_ranged := 0;
+    endif
+
+    // Store transformation data for cleanup
+    var transformation_data := struct{
+        "original_data" := original_data,
+        "storage_pack" := storage_pack,
+        "copied_items" := copied_items,
+        "combat_properties" := combat_properties,
+        "transformation_time" := ReadGameClock()
+    };
+
+    SetObjProperty(mobile, "#doppelganger_transformed", 1);
+    SetObjProperty(mobile, "#doppelganger_data", transformation_data);
+
+    // Set combat behavior override
+    if (combat_properties.is_ranged)
+        SetObjProperty(mobile, "#force_ranged", 1);
+    else
+        EraseObjProperty(mobile, "#force_ranged");
+    endif
+
+    return 1;
+endfunction
+
+function RestoreDoppelgangerAppearance(mobile)
+    var transformation_data := GetObjProperty(mobile, "#doppelganger_data");
+    if (!transformation_data || !transformation_data.original_data)
+        return 0;
+    endif
+
+    var original := transformation_data.original_data;
+    mobile.graphic := original.graphic;
+    mobile.color := original.color;
+    mobile.name := original.name;
+    mobile.title_race := original.title_race;
+    mobile.title_suffix := original.title_suffix;
+    mobile.title_prefix := original.title_prefix;
+    mobile.gender := original.gender;
+    mobile.trueobjtype := original.trueobjtype;
+    mobile.truecolor := original.truecolor;
+
+    return 1;
+endfunction
+
+function CleanupDoppelgangerEquipment(mobile)
+    var transformation_data := GetObjProperty(mobile, "#doppelganger_data");
+    if (!transformation_data)
+        return 0;
+    endif
+
+    // Destroy all copied equipment (using serials to find items)
+    if (transformation_data.copied_items)
+        foreach item_serial in (transformation_data.copied_items)
+            var item := SystemFindObjectBySerial(item_serial);
+            if (item)
+                DestroyItem(item);
+            endif
+            sleepms(2);
+        endforeach
+    endif
+
+    // Destroy the storage pack and its contents
+    if (transformation_data.storage_pack)
+        var storage_pack := transformation_data.storage_pack;
+        if (storage_pack)
+            DestroyItem(storage_pack);
+        endif
+    endif
+
+    // Clear transformation properties
+    EraseObjProperty(mobile, "#doppelganger_transformed");
+    EraseObjProperty(mobile, "#doppelganger_data");
+    EraseObjProperty(mobile, "#force_ranged");
+    EraseObjProperty(mobile, "SpellSchool");
+
+    return 1;
+endfunction
+
+function CleanupDoppelgangerTransformation(mobile)
+    // This function calls both appearance restoration and equipment cleanup
+    // for backward compatibility
+    RestoreDoppelgangerAppearance(mobile);
+    CleanupDoppelgangerEquipment(mobile);
+    return 1;
 endfunction

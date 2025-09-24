@@ -1,7 +1,6 @@
 /* $Id$
  *
- */
-
+*/
 use os;
 use uo;
 

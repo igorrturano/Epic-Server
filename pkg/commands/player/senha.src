@@ -9,9 +9,9 @@ program pswd(who, text)
 		SendSysMessageEx(who, "Modo de usar: senha <senha atual> <nova senha>. ", SSM_INFO);
 		return;
 	endif
- 
-	var acc := FindAccount( who.acctname);
-	//sendsysmessage(who, " " + tokens[1]  +  " " + acc.checkpassword(tokens[1]));
+
+	var acc := FindAccount(who.acctname);
+	// sendsysmessage(who, " " + tokens[1]  +  " " + acc.checkpassword(tokens[1]));
 	if (acc.checkpassword(tokens[1]))
 		SendSysMessageEx(who, "Senha alterada com sucesso.", SSM_INFO);
 		acc.setpassword(tokens[2]);
@@ -20,5 +20,5 @@ program pswd(who, text)
 		SendSysMessageEx(who, "Voce errou sua senha atual.", SSM_FAIL);
 		return;
 	endif
-		
+
 endprogram

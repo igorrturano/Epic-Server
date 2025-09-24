@@ -11,10 +11,7 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	GrantPrivilege(mobile, "invul");
-	mobile.enable("invul");	
-	
+	mobile.enable("invul");
+
 	return 1;
 endprogram
-
-  
- 

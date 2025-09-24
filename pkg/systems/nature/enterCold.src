@@ -6,7 +6,5 @@ include ":charactercreation:resists";
 include ":combat:damage";
 
 program neve(who, regioname)
-	start_script(":nature:coldeffect", {who} );
+	start_script(":nature:coldeffect", { who });
 endprogram
-
-

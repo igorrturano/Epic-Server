@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -9,11 +9,9 @@ program TimedScript_Clumsy(params)
 	var attacker := params[2];
 	var level := params[3];
 	params := 0; // Not needed anymore.
-	
+
 	SendSysMessage(who, "Voce nao pode se curar.", 3, 0);
-	SetObjProperty(who, "nocure", 1 );
-	
+	SetObjProperty(who, "nocure", 1);
+
 	return 1;
 endprogram
-
-

@@ -15,12 +15,11 @@ program Test(who)
 		return;
 	endif
 
-	var targ:="targ";
+	var targ := "targ";
 
-
-	if(targ=="targ")
-		SendSysMessage( who, "Mover qual corpo?" );
-		targ := Target( who );
+	if (targ == "targ")
+		SendSysMessage(who, "Mover qual corpo?");
+		targ := Target(who);
 	endif
 
 	var type;
@@ -36,9 +35,8 @@ program Test(who)
 		return;
 	endif
 
-
-	if( CoordinateDistance(targ.x, targ.y, who.x, who.y) > 2 )
-		SendSysMessage( who, "O "+type+" esta muito longe." );
+	if (CoordinateDistance(targ.x, targ.y, who.x, who.y) > 2)
+		SendSysMessage(who, "O " + type + " esta muito longe.");
 		return;
 	endif
 
@@ -46,9 +44,9 @@ program Test(who)
 
 	if (!(who.hidden || who.concealed))
 		if (type == "corpo")
-			PrintText(who, "*arrastando "+targ.desc+"*");
+			PrintText(who, "*arrastando " + targ.desc + "*");
 		else
-			PrintText(who, "*arrastando "+targ.name+"*");
+			PrintText(who, "*arrastando " + targ.name + "*");
 		endif
 	endif
 
@@ -60,33 +58,33 @@ program Test(who)
 	endif
 
 	var desgaste := 500;
-	if(TemHabilidade(who, "Vigor do Extrator"))
-		desgaste := desgaste -100;
+	if (TemHabilidade(who, "Vigor do Extrator"))
+		desgaste := desgaste - 100;
 	endif
-	if(TemHabilidade(who, "Carregador"))
-		desgaste := desgaste -200;
+	if (TemHabilidade(who, "Carregador"))
+		desgaste := desgaste - 200;
 	endif
 
-	while(1)
+	while (1)
 		if (AP_GetVital(who, "Stamina") < 10)
 			SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 			break;
 		endif
-		if(who.warmode == 1 || who.frozen == 1)
+		if (who.warmode == 1 || who.frozen == 1)
 			SendSysMessage(who, "Voce solta o corpo");
 			break;
 		endif
-		if(who.dead == 1)
+		if (who.dead == 1)
 			break;
 		endif
 		MoveObjectToLocation(targ, who.x, who.y, who.z, who.realm);
 		var mob := SystemFindObjectBySerial(targ.ownerserial);
 
-		ConsumeVital (who, "Stamina", desgaste);
+		ConsumeVital(who, "Stamina", desgaste);
 
 		sleep(2);
 	endwhile
 	targ.movable := 0;
 
-return;
+	return;
 endprogram

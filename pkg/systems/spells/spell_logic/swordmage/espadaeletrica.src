@@ -1,5 +1,5 @@
 
- use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -22,11 +22,11 @@ program SpellScript(params)
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))
-		if(checkForElementalWeapons(who, targ))
+		if (checkForElementalWeapons(who, targ))
 			return 0;
-		endif     
-		ApplyElementalWeaponProperties(who,DMG_ENERGY);
-        PlaySoundEffect(targ, SFX_BLESS);
+		endif
+		ApplyElementalWeaponProperties(who, DMG_ENERGY);
+		PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "A arma esta eletrificada.", SSM_INFO);
 
 		return 1;
@@ -35,4 +35,3 @@ program SpellScript(params)
 	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
 
 endprogram
-

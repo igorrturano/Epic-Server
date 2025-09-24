@@ -6,7 +6,5 @@ include ":charactercreation:resists";
 include ":combat:damage";
 
 program sandstorm(who, regioname)
-    start_script(":nature:sandstorm", {who});
+	start_script(":nature:sandstorm", { who });
 endprogram
-
-

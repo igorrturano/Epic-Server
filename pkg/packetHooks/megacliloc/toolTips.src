@@ -1,8 +1,7 @@
 /* $Id: toolTips.src 104 2006-05-25 22:14:15Z montuz $
  *	Description: AOS Tooltips. Starter script.
  *	This packet takes awhile to get used to.
- */
-
+*/
 use uo;
 use basic;
 use cfgfile;
@@ -16,34 +15,34 @@ include ":megacliloc:/include/nomeObjetoTTip";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include "include/epicConstants";
 
-const OFFSET_OBJECT_SERIAL   := 0x05;
-const OFFSET_CLILOC_ID       := 0x0F;
-const OFFSET_LENGTH_ID       := 0x13;
-const OFFSET_UNICODE_TEXT    := 0x14;
+const OFFSET_OBJECT_SERIAL := 0x05;
+const OFFSET_CLILOC_ID := 0x0F;
+const OFFSET_LENGTH_ID := 0x13;
+const OFFSET_UNICODE_TEXT := 0x14;
 
 program Install()
 
-	 Print("INSTALLING: Outgoing Tooltip PH...");
-	 return 1;
+	Print("INSTALLING: Outgoing Tooltip PH...");
+	return 1;
 
 endprogram
 
-exported function MegaCliloc( who, byref packet )
+exported function MegaCliloc(who, byref packet)
 
 	var Object_Name;
 
-	var xDesc := ""; //Será utilizado para juntar as informações do tooltip do item
-	var desc; //Salva o campo de descrição do item ou personagem
+	var xDesc := ""; // Será utilizado para juntar as informações do tooltip do item
+	var desc; // Salva o campo de descrição do item ou personagem
 
-	//Encontra o objeto que terá o tooltip preenchido
+	// Encontra o objeto que terá o tooltip preenchido
 	var item := SystemFindObjectBySerial(packet.GetInt32(OFFSET_OBJECT_SERIAL));
 
-	if(item)
-		packet.SetSize(15); //primeira parte do packet eh tamanho 15
+	if (item)
+		packet.SetSize(15); // primeira parte do packet eh tamanho 15
 
-		Object_Name := PreencheNome(item,who);
+		Object_Name := PreencheNome(item, who);
 
-		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DO NOME DO ITEM
+		// MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DO NOME DO ITEM
 		Object_Name := CAscZ(Object_Name);
 		packet.SetInt32(OFFSET_CLILOC_ID, 1042971);
 		packet.SetUnicodeString(OFFSET_UNICODE_TEXT, Object_Name, 1);
@@ -53,21 +52,21 @@ exported function MegaCliloc( who, byref packet )
 		// for some reason. Maybe a core/client issue?
 
 		xDesc := "";
-		xDesc := AddSpecialBookshelfDescription(item, xDesc);  // Adicione esta linha
-		xDesc := MontaDescPersonagem(item,who,xDesc);
+		xDesc := AddSpecialBookshelfDescription(item, xDesc); // Adicione esta linha
+		xDesc := MontaDescPersonagem(item, who, xDesc);
 
-		//LIMITA O TAMANHO DAS DESCRIÇÕES
+		// LIMITA O TAMANHO DAS DESCRIÇÕES
 		if (len(desc) > 85)
 			desc := desc[1, 85];
 		endif
-		
-		//MONTA DEscrição commum a qualquer item. [Colocar as novas descs dentro deste metodo]
-		xDesc := MontaDescricaoItem(item,who,xDesc);
 
-		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES
+		// MONTA DEscrição commum a qualquer item. [Colocar as novas descs dentro deste metodo]
+		xDesc := MontaDescricaoItem(item, who, xDesc);
+
+		// MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES
 		xDesc := CAscZ(xDesc);
 
-		if ( xDesc.Size() > 0 )
+		if (xDesc.Size() > 0)
 			// Cliloc ID if these two ID's match it'll only show one line.
 			packet.SetInt32(packet.GetSize() - 1, 1070722);
 
@@ -87,5 +86,3 @@ exported function MegaCliloc( who, byref packet )
 	return 0;
 
 endfunction
-
-

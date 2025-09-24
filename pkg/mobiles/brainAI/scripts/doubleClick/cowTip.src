@@ -1,6 +1,6 @@
 /* $Id: cowTip.src 1155 2006-02-09 08:31:16Z austin $
  *
- */
+*/
 ///////////////////////////////////////////////
 // cowTip.src
 //
@@ -26,21 +26,18 @@ include ":brainAI:npcNerves";
 include ":brainAI:npcCommands";
 
 program npcTip(params)
-	var npc		:= params[1];
-	//var nerve_name:= params[2];
-	var event	:= params[3];
-	//var settings	:= params[4];
-	//var scripts	:= params[5];
+	var npc := params[1];
+	// var nerve_name:= params[2];
+	var event := params[3];
+	// var settings	:= params[4];
+	// var scripts	:= params[5];
 	params := 0;
 
-	while ( npc )
-		if ( event )
-			case ( event.type )
-				SYSEVENT_DOUBLECLICKED:
-					CowTipEvent(npc, event);
-					break;
-				default:
-					break;
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_DOUBLECLICKED: CowTipEvent(npc, event); break;
+				default:                break;
 			endcase
 
 			event := 0;
@@ -51,7 +48,6 @@ program npcTip(params)
 	endwhile
 
 endprogram
-
 
 function CowTipEvent(npc, byref event)
 	PlaySoundEffect(npc, 0x7C);

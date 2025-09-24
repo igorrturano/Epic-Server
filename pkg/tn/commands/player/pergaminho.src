@@ -10,4 +10,4 @@ program pergaminho(who, text)
 
 	SetObjProperty(targ, "spellinfo", spellinfo);
 
-endprogram 
+endprogram

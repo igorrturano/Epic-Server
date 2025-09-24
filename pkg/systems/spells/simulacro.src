@@ -21,22 +21,17 @@ program SummonMagicCreature(params)
 	var spellid := params[3];
 	params := 0; // No longer needed
 
-
-	//Efeito da magia
+	// Efeito da magia
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
-
-
-	var undead :=   summon(":brainai:simulacro", targ, who);		
+	var undead := summon(":brainai:simulacro", targ, who);
 
 	if (undead)
 		SendSysMessageEx(who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO);
 	endif
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);	
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
 
 	return 1;
 
 endprogram
-
-

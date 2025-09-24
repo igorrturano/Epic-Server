@@ -1,7 +1,6 @@
 /*
  *
- */
-
+*/
 use uo;
 use os;
 include "include/say";
@@ -22,7 +21,8 @@ program onInsert(character, container, movetype, insert_type, item, existing_sta
 				SendSysMessageEx(character, "Pagamento executado com sucesso!", SSM_INFO);
 				container.color := 2123;
 			else
-				SendSysMessageEx(character, "Case deseje efetuar o pagamento insira "+pagamento+" moedas de cobre.", SSM_INFO);
+				SendSysMessageEx(character, "Case deseje efetuar o pagamento insira " + pagamento
+								  + " moedas de cobre.", SSM_INFO);
 			endif
 		endif
 	endif

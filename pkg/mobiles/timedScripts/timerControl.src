@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 use util;
@@ -14,7 +13,7 @@ include "include/say";
 include ":spells:tnmagery";
 
 program TimerControl(mobile)
-	if ( !mobile.IsA(POLCLASS_MOBILE) )
+	if (!mobile.IsA(POLCLASS_MOBILE))
 		mobile := mobile[1];
 	endif
 
@@ -26,26 +25,26 @@ program TimerControl(mobile)
 	var cooldowns := dictionary;
 	StartUp(mobile, timer_list, cooldowns, num_poisons);
 
-	while ( 1 )
+	while (1)
 		mobile.SetPoisoned((num_poisons > 0));
 
 		var event;
-		if ( (timer_list.Size() > 0) || (cooldowns.Size() > 0) )
+		if ((timer_list.Size() > 0) || (cooldowns.Size() > 0))
 			event := Wait_For_Event(1);
 		else // sleep-mode
 			event := Wait_For_Event(900000);
 		endif
 
-		if( event.type == EVENT_ADD_TIMER )
+		if (event.type == EVENT_ADD_TIMER)
 			AddTimer(mobile, event, timer_list, cooldowns, num_poisons);
-		elseif( event.type == EVENT_LOWER_TIMER )
+		elseif (event.type == EVENT_LOWER_TIMER)
 			LowerDuration(mobile, event, timer_list, cooldowns, num_poisons);
-		elseif ( event.type == EVENT_NPC_DIED )
+		elseif (event.type == EVENT_NPC_DIED)
 			NPCDeath(timer_list);
 			break;
-		elseif( event.type == EVENT_PLAYER_DIED )
+		elseif (event.type == EVENT_PLAYER_DIED)
 			PlayerDeath(mobile, timer_list, num_poisons);
-		elseif ( event.type == EVENT_LOGOFF )
+		elseif (event.type == EVENT_LOGOFF)
 			LogOff(mobile, timer_list, cooldowns);
 			break;
 		endif
@@ -61,7 +60,7 @@ function SaveState(mobile, byref timer_list, byref cooldowns)
 	// Need a new dictionary to save the remaining time
 	// Example ( timer.endtime - ReadGameClock() ) == duration
 
-	foreach timer in ( timer_list )
+	foreach timer in (timer_list)
 		var save_timer := struct;
 		save_timer.+name := _timer_iter;
 		save_timer.+duration := timer.endtime - ReadGameClock();
@@ -80,7 +79,7 @@ function SaveState(mobile, byref timer_list, byref cooldowns)
 
 	if (cooldowns != NO_COOLDOWNS)
 		var cooldowns_dict := dictionary;
-		foreach timer in ( cooldowns )
+		foreach timer in (cooldowns)
 			var save_timer := struct;
 			save_timer.+name := _timer_iter;
 			save_timer.+duration := timer.endtime - ReadGameClock();
@@ -89,7 +88,7 @@ function SaveState(mobile, byref timer_list, byref cooldowns)
 
 			cooldowns_dict[_timer_iter] := save_timer;
 		endforeach
-		//sendsysmessage(mobile, "s cd");
+		// sendsysmessage(mobile, "s cd");
 		TS_SaveCooldownList(mobile, cooldowns_dict);
 	endif
 
@@ -102,7 +101,7 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	var temp_list := TS_GetTimerList(mobile); // Will initialize dictionary.
 	var temp_cooldowns := TS_GetCooldownList(mobile);
 
-	foreach timer in ( temp_list )
+	foreach timer in (temp_list)
 		var event := struct;
 		event.+name := _timer_iter;
 		event.+amount := timer.duration;
@@ -113,7 +112,7 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 		SleepMS(2);
 	endforeach
 
-	foreach timer in ( temp_cooldowns )
+	foreach timer in (temp_cooldowns)
 		var event := struct;
 		event.+name := _timer_iter;
 		event.+amount := timer.duration;
@@ -127,29 +126,29 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 endfunction
 
 function LogOff(mobile, byref timer_list, byref cooldowns)
-	//On Logout, save the status of timers. Then stop the scripts.
+	// On Logout, save the status of timers. Then stop the scripts.
 
 	Set_Critical(1);
 	SaveState(mobile, timer_list, cooldowns);
 
-	foreach timer in ( timer_list )
+	foreach timer in (timer_list)
 		timer := timer; // So the compiler doesn't warn.
 		KillTimedScript(mobile, timer_list.pid, timer_list, _timer_iter);
 
 		var elem_info := TS_GetCfgElem(_timer_iter);
-		if ( elem_info.errortext )
-			print("Error::LogOff() - Unable to find elem ["+_timer_iter+"] "+elem_info.errortext);
+		if (elem_info.errortext)
+			print("Error::LogOff() - Unable to find elem [" + _timer_iter + "] " + elem_info.errortext);
 			continue;
-		elseif( elem_info.LogOffScript )
-			var script := Start_Script(elem_info.LogOffScript, array{mobile, "LogOff"});
-			if( script.errortext )
-				print("Error::LogOff() - ["+elem_info.LogOffScript+"] "+script.errortext);
+		elseif (elem_info.LogOffScript)
+			var script := Start_Script(elem_info.LogOffScript, array{ mobile, "LogOff" });
+			if (script.errortext)
+				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
 			endif
-		elseif ( elem_info.EndScript )
+		elseif (elem_info.EndScript)
 			SetObjProperty(mobile, "prop", timer);
 			var script := Start_Script(elem_info.EndScript, mobile);
-			if( script.errortext )
-				print("Error::LogOff() - ["+elem_info.LogOffScript+"] "+script.errortext);
+			if (script.errortext)
+				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
 			endif
 		endif
 	endforeach
@@ -163,13 +162,11 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 	// If it does not exist, add it to the list on the mobile.
 	// Start the necessary script and store the name, duration and sub-script pid.
 
-
-
 	if (event.timerType == EVENT_TYPE_COOLDOWN)
 		var result := 0;
-		//sendsysmessage(mobile, "add cd");
-		if ( !cooldowns.Exists(event.name) )
-			//sendsysmessage(mobile, "!cd.Exists");
+		// sendsysmessage(mobile, "add cd");
+		if (!cooldowns.Exists(event.name))
+			// sendsysmessage(mobile, "!cd.Exists");
 			event.amount := CInt(event.amount);
 			var timer := struct;
 			timer.+endtime := event.amount + ReadGameClock();
@@ -179,12 +176,12 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 			result := 0;
 		endif
 
-		if ( result )
+		if (result)
 			SaveState(mobile, timer_list, cooldowns);
 		endif
 		return 1;
 	else
-		/*
+	/*
 		sendsysmessage(mobile, "add timer "+event.name+" "+event.amount);
 		event.amount := CInt(event.amount);
 		var timer := struct;
@@ -193,58 +190,57 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 		cooldowns.Insert(event.name, timer);
 		sendsysmessage(mobile, "timer new "+cooldowns[event.name]);
 		//SaveState(mobile, timer_list, cooldowns);
-		*/
-
+*/
 	endif
 
-	if( !TS_GetCfgElem(event.name) )
-		print("Error::AddTimer() - "+event.name+" not found in timedScripts.cfg");
+	if (!TS_GetCfgElem(event.name))
+		print("Error::AddTimer() - " + event.name + " not found in timedScripts.cfg");
 		return 0;
 	endif
 
 	var elem_info := TS_GetCfgElem(event.name);
-	if ( Cstr(elem_info.Type) == "P" )
+	if (Cstr(elem_info.Type) == "P")
 		if (Cint(GetObjProperty(mobile, "protecaoveneno")))
 			SendSysMessageEx(mobile, "Voce nao ficou envenenado.", SSM_INFO);
 			EraseObjProperty(mobile, "protecaoveneno");
 			return 0;
 		endif
-		if ( GetObjProperty(mobile, "kit") == "criado por encatadores de serpentes" )
+		if (GetObjProperty(mobile, "kit") == "criado por encatadores de serpentes")
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
-		if ( TemHabilidade(mobile, "Resistencia a Venenos" ) )
+		if (TemHabilidade(mobile, "Resistencia a Venenos"))
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
-		if ( TemHabilidade(mobile, "Mumificacao" ) )
+		if (TemHabilidade(mobile, "Mumificacao"))
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
 	endif
 
 	var result := 0;
-	if ( !timer_list.Exists(event.name) )
+	if (!timer_list.Exists(event.name))
 		if (event.name)
-			//1005007
+			// 1005007
 			if (elem_info.Icon)
 				var text := elem_info.Text;
 				if (!text)
 					text := "";
 				endif
-				//SendSysMessage(mobile, "te " + text);
-				SendBuff(mobile, 1, elem_info.Icon, event.amount, elem_info.cliloc1, elem_info.cliloc2, text  );
+				// SendSysMessage(mobile, "te " + text);
+				SendBuff(mobile, 1, elem_info.Icon, event.amount, elem_info.cliloc1, elem_info.cliloc2, text);
 			endif
 		endif
-		//SendSysMessage(mobile, "AddNewTimer");
+		// SendSysMessage(mobile, "AddNewTimer");
 		result := AddNewTimer(mobile, event, timer_list, num_poisons);
 	else
-		//SendSysMessage(mobile, "AddExistingTimer");
+		// SendSysMessage(mobile, "AddExistingTimer");
 		result := AddExistingTimer(mobile, event, timer_list, num_poisons);
 
 	endif
 
-	if ( result )
+	if (result)
 		SaveState(mobile, timer_list, cooldowns);
 	endif
 
@@ -253,24 +249,26 @@ endfunction
 
 function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	var elem_info := TS_GetCfgElem(event.name);
-	if ( elem_info.errortext )
-		printtextabove(mobile, "Error::AddNewTimer() - Unable to find config elem ["+event.name+"] - "+elem_info.errortext);
+	if (elem_info.errortext)
+		printtext(mobile, "Error::AddNewTimer() - Unable to find config elem ["
+						+ event.name + "] - " + elem_info.errortext);
 		return 0;
 	endif
 
 	var script;
-	if ( elem_info.Script )
-		script := Start_Script(elem_info.Script, array{mobile, event.attacker, event.level});
-		if( script.errortext )
-			printtextabove(mobile, "Error::AddNewTimer() - Unable to start script ["+elem_info.Script+"] ->"+script.errortext);
+	if (elem_info.Script)
+		script := Start_Script(elem_info.Script, array{ mobile, event.attacker, event.level });
+		if (script.errortext)
+			printtext(mobile, "Error::AddNewTimer() - Unable to start script [" +
+							elem_info.Script + "] ->" + script.errortext);
 			return 0;
 		endif
 	endif
 
 	var maxdur := CInt(elem_info.MaxDuration);
 	event.amount := CInt(event.amount);
-	if ( maxdur > 0 )
-		if ( event.amount > maxdur )
+	if (maxdur > 0)
+		if (event.amount > maxdur)
 			event.amount := maxdur;
 		endif
 	endif
@@ -280,7 +278,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	timer.+endtime := event.amount + ReadGameClock();
 	timer.+pid := script.pid;
 	timer.+level := event.level;
-//	printtextabove(mobile, "event " + event);
+	// 	printtext(mobile, "event " + event);
 	if (event.mantain)
 		timer.+mantain := 1;
 		timer.+mage := event.mage;
@@ -291,7 +289,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 
 	timer_list.Insert(event.name, timer);
 
-	if( elem_info.IndicatePoison )
+	if (elem_info.IndicatePoison)
 		num_poisons += 1;
 	endif
 
@@ -300,8 +298,8 @@ endfunction
 
 function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	var elem_info := TS_GetCfgElem(event.name);
-	if ( elem_info.errortext )
-		print("Error::AddExistingTimer() - Unable to find config elem ["+event.name+"] - "+elem_info.errortext);
+	if (elem_info.errortext)
+		print("Error::AddExistingTimer() - Unable to find config elem [" + event.name + "] - " + elem_info.errortext);
 		return 0;
 	endif
 
@@ -312,10 +310,10 @@ function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poiso
 	var duration := end_time - ReadGameClock();
 
 	event.amount := CInt(event.amount);
-	if ( elem_info.Cumulative )
-		if ( (event.level) && level )
+	if (elem_info.Cumulative)
+		if ((event.level) && level)
 			amt := CInt(CDbl(amt) * (CDbl(event.level) / CDbl(timer_list[event.name].level)));
-			if ( level >= event.level )
+			if (level >= event.level)
 				event.amount := duration + amt;
 			else
 				KillTimedScript(mobile, timer_list[event.name].pid, timer_list, event.name);
@@ -327,7 +325,7 @@ function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poiso
 		else
 			event.amount := (duration + amt);
 		endif
-/*	else
+	/* else
 		if ( (event.level) && level )
 			if ( (level == event.level) && (amt > duration) )
 				event.amount := amt;
@@ -345,19 +343,19 @@ function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poiso
 	endif
 
 	var maxdur := CInt(elem_info.MaxDuration);
-	if ( maxdur > 0 )
-		if ( (duration+event.amount) > maxdur )
+	if (maxdur > 0)
+		if ((duration + event.amount) > maxdur)
 			duration := maxdur;
 		else
-			duration := duration+event.amount;
+			duration := duration + event.amount;
 		endif
 	endif
 
-	//SendSysMessage(mobile, "duration: "+duration);
-	//SendSysMessage(mobile, "endtime old: "+timer_list[event.name].endtime);
-	//timer_list[event.name].endtime := duration+ReadGameClock();
-	timer_list[event.name].endtime := event.amount+ReadGameClock();
-	//SendSysMessage(mobile, "endtime new: "+timer_list[event.name].endtime);
+	// SendSysMessage(mobile, "duration: "+duration);
+	// SendSysMessage(mobile, "endtime old: "+timer_list[event.name].endtime);
+	// timer_list[event.name].endtime := duration+ReadGameClock();
+	timer_list[event.name].endtime := event.amount + ReadGameClock();
+	// SendSysMessage(mobile, "endtime new: "+timer_list[event.name].endtime);
 
 	return 1;
 endfunction
@@ -368,8 +366,8 @@ function CheckTimerStatus(mobile, byref timer_list, byref cooldowns, byref num_p
 		/*
 		if (mobile.name == "Zedh")
 			sendsysmessage(mobile, "check: "+timer+" "+ReadGameClock());
-		endif*/
-		if ( ReadGameClock() >= timer.endtime )
+		endif */
+		if (ReadGameClock() >= timer.endtime)
 
 			var event := struct;
 			event.+name := _timer_iter;
@@ -381,17 +379,18 @@ function CheckTimerStatus(mobile, byref timer_list, byref cooldowns, byref num_p
 
 	endforeach
 
-	foreach timer in ( timer_list )
+	foreach timer in (timer_list)
 		var cfg_info := TS_GetCfgElem(_timer_iter);
-		if ( cfg_info.errortext )
-			printtextabove(mobile, "Error::CheckTimerStatus() - Unable to find config elem ["+_timer_iter+"] - "+cfg_info.errortext);
+		if (cfg_info.errortext)
+			printtext(mobile, "Error::CheckTimerStatus() - Unable to find config elem ["
+							+ _timer_iter + "] - " + cfg_info.errortext);
 			continue;
 		endif
 
-		if ( Cint(cfg_info.StopOnEnd) )
-			//printtextabove(mobile, "nao stop on end " + timer);
-			if ( !GetProcess(timer.pid) )
-				//printtextabove(mobile, "nao get process " + timer);
+		if (Cint(cfg_info.StopOnEnd))
+			// printtext(mobile, "nao stop on end " + timer);
+			if (!GetProcess(timer.pid))
+				// printtext(mobile, "nao get process " + timer);
 				var event := struct;
 				event.+name := _timer_iter;
 				event.+amount := -1;
@@ -399,8 +398,8 @@ function CheckTimerStatus(mobile, byref timer_list, byref cooldowns, byref num_p
 				LowerDuration(mobile, event, timer_list, cooldowns, num_poisons);
 				continue;
 			endif
-		elseif ( !Cint(cfg_info.NoEnd) )
-			if ( ReadGameClock() >= timer.endtime )
+		elseif (!Cint(cfg_info.NoEnd))
+			if (ReadGameClock() >= timer.endtime)
 				var event := struct;
 				event.+name := _timer_iter;
 				event.+amount := -1;
@@ -421,7 +420,7 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 
 		SendSysMessageEx(mobile, "Voce pode usar " + event.name + " novamente.", SSM_INFO);
 
-		if ( event.amount == -1 )
+		if (event.amount == -1)
 			var e := cooldowns.Erase(event.name);
 			SaveState(mobile, timer_list, cooldowns);
 			return 1;
@@ -430,27 +429,25 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 		var duration := timer_info.endtime - ReadGameClock();
 		duration -= event.amount;
 
-		if ( duration <= 0 )
+		if (duration <= 0)
 			cooldowns.Erase(event.name);
 		endif
 		SaveState(mobile, timer_list, cooldowns);
 
-
-		//tive que colocar esse codigo aqui, deveria ser em outro arquivo separado
-		if (event.name[1,5] == "quest")
-			Start_Script(":tn:endquest", array{mobile, timer_info} );
+		// tive que colocar esse codigo aqui, deveria ser em outro arquivo separado
+		if (event.name[1, 5] == "quest")
+			Start_Script(":tn:endquest", array{ mobile, timer_info });
 		endif
 
 		return 1;
 	endif
 
-
 	var timer_info := timer_list[event.name];
 	var elem_info := TS_GetCfgElem(event.name);
-	if ( event.amount == -1 )
+	if (event.amount == -1)
 		EndTimedScript(mobile, event.name, num_poisons);
 		KillTimedScript(mobile, timer_info.pid, timer_list, event.name);
-		//sendsysmessage(mobile, "mantain "+ timer_info.mantain);
+		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -460,13 +457,13 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 	var duration := timer_info.endtime - ReadGameClock();
 	duration -= event.amount;
 
-	if ( duration <= 0 )
+	if (duration <= 0)
 		EndTimedScript(mobile, event.name, num_poisons);
 		KillTimedScript(mobile, timer_info.pid, timer_list, event.name);
-		if ( elem_info.Icon )
+		if (elem_info.Icon)
 			SendBuff(mobile, 0, elem_info.Icon);
 		endif
-		//sendsysmessage(mobile, "mantain "+ timer_info.mantain);
+		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -476,7 +473,7 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 endfunction
 
 function NPCDeath(byref timer_list)
-	foreach timer in ( timer_list )
+	foreach timer in (timer_list)
 		GetProcess(timer.pid).Kill();
 		SleepMS(2);
 	endforeach
@@ -486,13 +483,13 @@ endfunction
 
 function PlayerDeath(mobile, byref timer_list, byref num_poisons)
 	Set_Critical(1);
-	foreach timer in ( timer_list )
+	foreach timer in (timer_list)
 		timer := timer; // So the compiler does not issue warnings.
 		var elem_info := TS_GetCfgElem(_timer_iter);
-		if ( elem_info.errortext )
-			print("Error::PlayerDeath() - Unable to find config elem ["+_timer_iter+"] - "+elem_info.errortext);
+		if (elem_info.errortext)
+			print("Error::PlayerDeath() - Unable to find config elem [" + _timer_iter + "] - " + elem_info.errortext);
 			return 0;
-		elseif ( elem_info.ContinueOnDeath )
+		elseif (elem_info.ContinueOnDeath)
 			continue;
 		endif
 
@@ -510,40 +507,39 @@ endfunction
 
 function EndTimedScript(mobile, byref timer_name, byref num_poisons)
 	var elem_info := TS_GetCfgElem(timer_name);
-	if ( elem_info.errortext )
-		print("Error::EndTimedScript() - Unable to find config elem ["+timer_name+"] - "+elem_info.errortext);
+	if (elem_info.errortext)
+		print("Error::EndTimedScript() - Unable to find config elem [" + timer_name + "] - " + elem_info.errortext);
 		return 0;
 	endif
 
-	if( elem_info.IndicatePoison )
+	if (elem_info.IndicatePoison)
 		num_poisons -= 1;
 	endif
 
-	if( elem_info.EndMessage )
+	if (elem_info.EndMessage)
 		SendSysMessage(mobile, elem_info.EndMessage);
 	endif
 
- 	if ( elem_info.Icon )
-                 SendBuff(mobile, 0, elem_info.Icon);
-	 endif
+	if (elem_info.Icon)
+		SendBuff(mobile, 0, elem_info.Icon);
+	endif
 
-	if( elem_info.EndScript )
+	if (elem_info.EndScript)
 		Set_Critical(1);
 		var info := TS_GetTimerInfo(mobile, timer_name);
 		SetObjProperty(mobile, "prop", info.level);
 		var script := Start_Script(elem_info.EndScript, mobile);
 		Set_Critical(0);
-		if( script.errortext )
-			print("Error::EndTimedScript() - "+script.errortext);
+		if (script.errortext)
+			print("Error::EndTimedScript() - " + script.errortext);
 		endif
 	endif
-
 
 endfunction
 
 function KillTimedScript(mobile, byref pid, byref timer_list, byref timer_name)
 	var script := GetProcess(CInt(pid));
-	if ( script )
+	if (script)
 		script.Kill();
 	endif
 

@@ -1,6 +1,6 @@
 use os;
 
-/*var script := start_script(":death:dpCheck");
+/* var script := start_script(":death:dpCheck");
 if ( script.errortext )
 	SysLog(script.errortext);
 else

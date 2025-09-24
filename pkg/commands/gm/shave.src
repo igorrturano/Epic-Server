@@ -12,11 +12,11 @@ program command_RemoveHair(who, text)
 	var cabelo := GetEquipmentByLayer(targ, LAYER_HAIR);
 	var barba := GetEquipmentByLayer(targ, LAYER_BEARD);
 
-	SendSysMessage(who, "Cor: "+CInt(cabelo.color)+" "+CInt(barba.color));
+	SendSysMessage(who, "Cor: " + CInt(cabelo.color) + " " + CInt(barba.color));
 
-	if ( text == "cabelo" )
+	if (text == "cabelo")
 		DestroyItem(cabelo);
-	elseif ( text == "barba" )
+	elseif (text == "barba")
 		DestroyItem(barba);
 	else
 		DestroyItem(cabelo);

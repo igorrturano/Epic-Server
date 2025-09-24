@@ -64,11 +64,11 @@ function Broadcast(uc_text, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, 
   return BroadcastUC(UC(uc_text), langcode, font, color);
 endfunction
 
-function PrintTextAbove(above_object, uc_text, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, langcode := "ENG")
+function PrintText(above_object, uc_text, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, langcode := "ENG")
   return PrintTextAboveUC(above_object, UC(uc_text), langcode, font, color);
 endfunction
 
-function PrintTextAbovePrivate(above_object, uc_text, character, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, langcode := "ENG")
+function PrintTextPrivate(above_object, uc_text, character, font := _DEFAULT_UCFONT, color := _DEFAULT_UCCOLOR, langcode := "ENG")
   return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, character, font, color);
 endfunction
 

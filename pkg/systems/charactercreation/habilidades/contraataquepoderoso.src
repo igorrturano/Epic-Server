@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -9,5 +9,4 @@ program manobra(attacker)
 	SendSysMessageEx(attacker, "*prepara o contra ataque*");
 	SetObjPRoperty(attacker, "#contraataquepoderoso", 1);
 
-endprogram   
-
+endprogram
