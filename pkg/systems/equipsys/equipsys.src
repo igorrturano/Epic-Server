@@ -1,7 +1,5 @@
-include ":message:model/Message";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
-include ":equipsys:utils/consts";
 include ":debug:Controller/DebugController";
 
 program equipsys(params)
