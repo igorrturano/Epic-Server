@@ -18,7 +18,7 @@
  * Para adicionar novos tipos de debug:
  * 1. Adicione um novo nome à enumeração DEBUGNAMES.
  * 2. Inclua o novo debug na lista "listDebugs" com o nível de acesso desejado.
- * 3. Utilize a função `DebugMsg` ou `DebugMsgEvent` para enviar mensagens
+ * 3. Utilize a função `DebugMsg` ou `DebugMsgAll` para enviar mensagens
  *    de depuração relacionadas ao novo debug.
  * 
  * Documentação adicional pode ser encontrada em: debug.src
@@ -29,7 +29,7 @@
 
 use uo;
 
-include "include/say";
+include ":message:model/Message";
 
 const PROPTAG := "#debug_";
 
@@ -103,12 +103,12 @@ var listDebugs := dictionary {
  */
 function DebugMsg(who, debugName, msg)
     if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-        SendSysMessage(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
+        Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
     endif
 endfunction
 
 /**
- * DebugMsgEvent(debugName, msg)
+ * DebugMsgAll(debugName, msg)
  *
  * Envia uma mensagem de debug para todos os jogadores online que possuem
  * a propriedade de debug específica ou a propriedade DEBUG_ALL ativada.
@@ -121,10 +121,10 @@ endfunction
  * a propriedade DEBUG_ALL. Se possuírem, a mensagem é enviada como uma
  * mensagem do sistema com nível de informação.
  */
-function DebugMsgEvent(debugName, msg) 
+function DebugMsgAll(debugName, msg)
     foreach who in EnumerateOnlineCharacters()
         if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-            SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
+            Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
         endif
     endforeach
 endfunction
