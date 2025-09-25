@@ -56,9 +56,9 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 				armor.hp := armorhp;
 			endif
 			var nome := armor.name;
-			SetName(armor, nome + " -");
-			sleepms(30);
+
 			SetName(armor, nome);
+			updateToolTip(armor);
 		endif
 		//endif
 	endif
