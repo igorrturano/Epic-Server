@@ -1,3 +1,4 @@
+include ":message:model/Message";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
 include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
 include ":debug:Controller/DebugController";
