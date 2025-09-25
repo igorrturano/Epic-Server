@@ -1,22 +1,20 @@
 include ":datafile:DFTools";
 include ":achievements:model/Achievement";
 
-const pkg_name := ":achievements:";
+const pkg_name := "achievements";
 
 function SaveAchievement(type, who, achievement)
-	var DFController := DFTools(pkg_name + type);
-	var elem := Hex(who.serial);
-	var key := CStr(achievement.GetRef());
-	var prop := DFController.LoadValue(elem, key) ?: dictionary{};
+	var DFController := DFTools(pkg_name, type, Hex(who.serial), CStr(achievement.GetRef()));
+	var prop := DFController.GetPropertyValue() ?: dictionary{};
 
 	prop[achievement.GetName()] := achievement.Serialize();
 
-	return DFController.WriteValue(elem, key, prop);
+	return DFController.SetPropertyValue(prop);
 endfunction
 
 function LoadAchievement(type, who, key, name)
-	var DFController := DFTools(pkg_name + type);
-	var prop := DFController.LoadValue(Hex(who.serial), key);
+	var DFController := DFTools(pkg_name, type, Hex(who.serial), key);
+	var prop := DFController.GetPropertyValue();
 	var achiev := Achievement(name, key);
 
 	achiev.Deserialize(prop[name]);
@@ -29,15 +27,17 @@ function LoadListAchievement(who)
 	var types := array{ ACHIEVEMENT_COMBAT };
 
 	foreach type in (types)
-		var DFController := DFTools(pkg_name + type);
-		var elemKeys := DFController.GetElementKeys(Hex(who.serial));
+		var DFController := DFTools(pkg_name, type, Hex(who.serial));
+		var elemKeys := DFController.GetElementKeys();
+		print ("elemKeys: " + elemKeys);
 
 		if (elemKeys.size() < 1)
 			continue;
 		endif
 
 		foreach key in (elemKeys)
-			var prop := DFController.LoadValue(Hex(who.serial), key);
+			DFController.SetPropertyName(key);
+			var prop := DFController.GetPropertyValue();
 			foreach value in (prop)
 				var achievement := Achievement(value.name, key);
 				achievement.Deserialize(value);

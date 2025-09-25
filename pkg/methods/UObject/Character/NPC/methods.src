@@ -295,7 +295,7 @@ exported function isMage(who)
 endfunction
 
 exported function isShaman(who)
-	var templates := array{ "ratoide_xama", "vulcanideomage", "varagxama" };
+	var templates := array{ "ratoide_xama", "vulcanideomage", "varag4" };
 	var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
 	if (template in templates)
 		return 1;
