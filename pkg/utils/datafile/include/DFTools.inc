@@ -10,7 +10,6 @@ class DFTools()
 	function DFTools(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
 		this._packageName := CStr(packageName);
 		this._fileName := CStr(fileName);
-		this._file := this._LoadFile(createFile);
 		this._element := struct{
 			name := error{ errortext := "Element not loaded" },
 			value := error{ errortext := "Element not loaded" }
@@ -20,15 +19,9 @@ class DFTools()
 			value := error{ errortext := "Property not loaded" }
 		};
 
-		if (elem_name)
-			this._element.name := CStr(elem_name);
-			this._element.value := this._LoadElement(this._element.name);
-		endif
-
-		if (prop_name)
-			this._property.name := CStr(prop_name);
-			this._property.value := this._LoadProperty(this._property.name);
-		endif
+		this._LoadFile(createFile);
+		if (elem_name) this.SetElementName(elem_name); endif
+		if (prop_name) this.SetPropertyName(prop_name);	endif
 	endfunction
 
 	function GetPackageName(this)
@@ -51,6 +44,7 @@ class DFTools()
 		var result;
 
 		if (!this._element.value) result := error{ errortext := $"Element {elem_key} not found in {this._packageName}" }; endif
+		
 		result := this._element.value.PropNames();
 		if (!result) result := error{ errortext := $"No properties found in element {elem_key} of {this._packageName}" }; endif
 
@@ -62,7 +56,6 @@ class DFTools()
 	endfunction
 
 	function GetPropertyValue(this)
-		// this._Read();
 		return this._property.value;
 	endfunction
 
@@ -77,7 +70,8 @@ class DFTools()
 	endfunction
 
 	function SetElementName(this, elem_name)
-		this._element.name := elem_name;
+		this._element.name := CStr(elem_name);
+		this._LoadElement(this._element.name);
 		return this;
 	endfunction
 
@@ -87,32 +81,15 @@ class DFTools()
 	endfunction
 
 	function SetPropertyName(this, prop_name)
-		this._property.name := prop_name;
+		this._property.name := CStr(prop_name);
+		this._LoadProperty(this._property.name);
 		return this;
 	endfunction
 
 	function SetPropertyValue(this, byRef prop_value)
 		this._property.value := prop_value;
-		this._Write();
+		this._element.value.SetProp(this._property.name, this._property.value);
 		return this;
-	endfunction
-
-	function _Write(this, elem_name := false, prop_name := false, value := false)
-		this._LoadElement(elem_name);
-		this._element.value := DFFindElement(this._packageName + this._fileName, elem_name, DF_CREATE);
-		this._element.value.SetProp(prop_name, value);
-
-		return this;
-	endfunction
-
-	function _Read(this, elem_name := false, prop_name := false)
-		this._LoadElement(this._element.name);
-
-		if (!this._element.value) return error{ errortext := $"Element {elem_name} not found in {this._packageName}" }; endif
-		this._property.value := this._element.value.GetProp(prop_name);
-		if (!this._property.value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
-
-		return this._property.value;
 	endfunction
 
 	/**
@@ -137,14 +114,14 @@ class DFTools()
 		
 		this._element.value := this._file.FindElement(elem_name);
 
-		return this._element;
+		return this._element.value;
 	endfunction
 
 	function _LoadProperty(this, prop_name := false)
 		if (prop_name) this._property.name := prop_name; endif
 
-		this._property.value := this._element.value.FindProp(this._property.name);
+		this._property.value := this._element.value.GetProp(this._property.name);
 
-		return this._property;
+		return this._property.value;
 	endfunction
 endclass
