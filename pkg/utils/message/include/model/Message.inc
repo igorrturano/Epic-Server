@@ -3,9 +3,6 @@ use os;
 
 include "include/say";
 
-const _SYS_MESSAGE_MAX_SIZE := 200;
-const _ABOVE_MESSAGE_MAX_SIZE := 60;
-
 class Message()
 	var _originalMessage := "";
 	var _newMessageFragments := array{ struct{ // Array de structs com as informações de cada fragmento da mensagem: string, cor, fonte
@@ -38,13 +35,18 @@ class Message()
 		return this._newMessageFragments;
 	endfunction
 
-	function AddMessage(this, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT)
+	function AddMessage(this, msgType, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT)
 		var newMsgArray := array{};
-		var msgFragmentsAmt := CInt(text.length() / _SYS_MESSAGE_MAX_SIZE) + 1;
+		var maxSize := 1;
+		if (msgType == MSG_TYPE::SYSMSG) maxSize := MSG_MAXSIZE::SYSMSG;
+		elseif (msgType == MSG_TYPE::PRINTTEXT) maxSize := MSG_MAXSIZE::PRINTTEXT;
+		endif
+		
+		var msgFragmentsAmt := CInt(text.length() / maxSize) + 1;
 		
 		for i := 1 to (msgFragmentsAmt)
-			var start := ((i - 1) * _SYS_MESSAGE_MAX_SIZE) + 1;
-			var length := Min(text.length() - start + 1, _SYS_MESSAGE_MAX_SIZE);
+			var start := ((i - 1) * maxSize) + 1;
+			var length := Min(text.length() - start + 1, maxSize);
 			newMsgArray.append(struct{
 				text := text[start, length],
 				color := color,
@@ -84,4 +86,15 @@ class Message()
 			SleepMS(2);
 		endforeach
 	endfunction
+
 endclass
+
+enum class MSG_TYPE
+	SYSMSG,
+	PRINTTEXT,
+endenum
+
+enum class MSG_MAXSIZE
+	SYSMSG := 200,
+	PRINTTEXT := 60
+endenum
