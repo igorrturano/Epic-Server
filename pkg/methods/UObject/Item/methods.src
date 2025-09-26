@@ -4,6 +4,7 @@ use datafile;
 use math;
 
 include "include/say";
+include ":io:CFGFile";
 include ":gumps:epicGumps";
 
 program Install()
@@ -58,7 +59,7 @@ endfunction
  * 					  ou null se não encontrado.
 */
 exported function getCfgElem(item)
-	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
+	return CFGFile("*", "itemdesc").SetElementName(item.objtype).GetElementValue();
 endfunction
 
 exported function isSpiderEggSac(item)
