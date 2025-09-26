@@ -20,7 +20,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*tiro multiplo*");
+	PrintText(attacker, "*tiro multiplo*");
 
 	var ammo := GetObjProperty(attacker.weapon, "ammo");
 

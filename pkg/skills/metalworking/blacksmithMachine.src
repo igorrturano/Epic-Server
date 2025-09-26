@@ -164,7 +164,7 @@ function ApplyImprovement(byref item, improvement, player)
 endfunction
 
 function playMachineAnimations(who, item, delay)
-	PrintTextAbove(who, "*Aprimorando item*");
+	PrintText(who, "*Aprimorando item*");
 
 	if (item.objtype == 0x9A88)
 		item.graphic := 0x9A81;
@@ -185,5 +185,5 @@ function playMachineAnimations(who, item, delay)
 	endif
 
 	PlaySoundEffect(who, 0x145);
-	PrintTextAbove(who, "*Item aprimorado*");
+	PrintText(who, "*Item aprimorado*");
 endfunction

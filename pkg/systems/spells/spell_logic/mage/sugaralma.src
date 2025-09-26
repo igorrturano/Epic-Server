@@ -48,10 +48,10 @@ program SpellScript(params)
 			if (GetObjProperty(targ, "#sleep"))
 				EraseObjProperty(targ, "#sleep");
 			endif
-			PrintTextAbovePrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
+			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
 			HealDamage(who, amt);
 			DamageMana(targ, amt);
-			PrintTextAbovePrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
+			PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
 			time := time + 1;
 			sleep(1);
 		endif

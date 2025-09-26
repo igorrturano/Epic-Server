@@ -31,10 +31,10 @@ program KillPlayers()
 	propallies := dictionary;
 
 	// 	set_critical(1);
-	// printtextabove(me, "vai inicializr");
+	// printtext(me, "vai inicializr");
 	InitializeNPC(me);
 	// 	set_critical(0);
-	// printtextabove(me, "done");
+	// printtext(me, "done");
 	SetWarMode(0);
 	ev := os::wait_for_event(0);
 	wanders := 0;

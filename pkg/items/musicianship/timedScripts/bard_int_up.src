@@ -16,7 +16,7 @@ program TimedScript_bard_int_up(params)
 			SetObjProperty(alvo, "#Bard_int_up", modificador);
 			AP_ModifyStatMod(alvo, INTELLIGENCE, (modificador - teste));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + (modificador - teste) + " Int", caster, BARD_FONT,
+			PrintTextPrivate(alvo, "+" + (modificador - teste) + " Int", caster, BARD_FONT,
 								   BARD_FONT_COLOR_GOOD);
 			return 1;
 		else
@@ -27,7 +27,7 @@ program TimedScript_bard_int_up(params)
 		SetObjProperty(alvo, "#Bard_int_up", modificador);
 		AP_ModifyStatMod(alvo, INTELLIGENCE, modificador);
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " Int", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		PrintTextPrivate(alvo, "+" + modificador + " Int", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
 		return 1;
 	endif
 endprogram

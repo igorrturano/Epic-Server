@@ -116,7 +116,7 @@ function CreatehouseKeysAndBuiltDeed(character, housetype, where, deed)
 	Sendsysmessage(character, " " + housetype);
 	var house := CreateMultiAtLocation(x, y, z, housetype);
 	if (!house)
-		PrintTextAbovePrivate(character, "I can't place the house there.", character);
+		PrintTextPrivate(character, "I can't place the house there.", character);
 		DestroyItem(packkey);
 		return;
 	endif

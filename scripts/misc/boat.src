@@ -8,17 +8,19 @@
  * The boat control script has been moved into the 'boat' package
  * which can be found in /pkg/systems/boat/
  *
-*/
+ */
 use uo;
 use os;
 
-program CoreScript_Boat(multi)
-	var result := start_script(":boat:boat", multi);
+include "include/say";
 
-	if (result.errortext)
-		PrintTextAbove(multi, "Error initializing control script");
-		PrintTextAbove(multi, "" + result.errortext);
-	endif
+program CoreScript_Boat( multi )
+  var result := start_script( ":boat:boat", multi );
 
-	return result;
+  if ( result.errortext )
+    PrintText( multi, "Error initializing control script" );
+    PrintText( multi, "" + result.errortext );
+  endif
+
+  return result;
 endprogram

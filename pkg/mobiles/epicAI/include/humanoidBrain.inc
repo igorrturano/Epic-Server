@@ -92,7 +92,7 @@ function HumanoidBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
@@ -130,7 +130,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintTextAbove(me, "*"+me.name+" se acovarda*");
+            PrintText(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -251,17 +251,17 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isMage())
-        PrintTextAbove(me, "Mage Behavior");
+        PrintText(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        PrintTextAbove(me, "Shaman Behavior");
+        PrintText(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
-        PrintTextAbove(me, "Priest Behavior");
+        PrintText(me, "Priest Behavior");
         HumanoidPriestBehavior(me, opponent);
     endif
 

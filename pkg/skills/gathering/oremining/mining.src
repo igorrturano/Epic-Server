@@ -186,7 +186,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 				endif
 				if (TemHabilidade(who, "Minerar Raridades"))
 					if (mineraRaroAleatorio(who))
-						PrinttextAbove(who, "*encontra algo chamativo*");
+						PrintText(who, "*encontra algo chamativo*");
 					endif
 				endif
 			else

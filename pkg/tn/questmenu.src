@@ -69,18 +69,18 @@ program SendQuestMenu(params)
 			if (testRequisites)
 				var agradecimento := questinfo.agradecimento;
 				if (agradecimento)
-					PrintTextAbove(me, "" + agradecimento);
+					PrintText(me, "" + agradecimento);
 				endif
 				//CreateRecompense(questinfo, player);
 				//SendSysMEssage(player, " " + questinfo.recompensas);
-				Printtextabove(me, "Obrigado. Voce concluiu a tarefa. ");
+				PrintText(me, "Obrigado. Voce concluiu a tarefa. ");
 				foreach premio in (questinfo.recompensas)
-					//printtextabove(me, " " + premio);
+					//printtext(me, " " + premio);
 					ExecuteEvent(premio);
 				endforeach
 				EraseObjProperty(me, "runningquest");
 			else
-				PrintTextAbove(me, "Voce nao conseguiu concluir a quest");
+				PrintText(me, "Voce nao conseguiu concluir a quest");
 			endif
 		endif */
 	endif

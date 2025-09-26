@@ -27,7 +27,7 @@ program doubleattack(who)
 	var i := 1;
 	while (i <= 3)
 		PerformAction(who, ANIM_CAST_DIR);
-		PrintTextAbove(who, "*Conjurando*");
+		PrintText(who, "*Conjurando*");
 		if (i == 1)
 			sound := 583;
 		elseif (i == 2)
