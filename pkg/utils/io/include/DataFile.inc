@@ -1,17 +1,15 @@
+include "model/IOFile";
+
 include ":datafile:datafile";
 
-class DataFile()
-	var _packageName := "";
-	var _fileName := "";
-	var _fullPath := "";
-	var _file; // DataFile reference
+class DataFile(IOFile)
 	var _element := struct{};
 	var _property := struct{};
 
 	function DataFile(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
-		this._packageName := CStr(packageName);
-		this._fileName := CStr(fileName);
-		this._fullPath := $":{this._packageName}:{this._fileName}";
+		Super(packageName, fileName);
+		this._LoadFile(createFile);
+
 		this._element := struct{
 			name := error{ errortext := "Element not loaded" },
 			value := error{ errortext := "Element not loaded" }
@@ -21,17 +19,8 @@ class DataFile()
 			value := error{ errortext := "Property not loaded" }
 		};
 
-		this._LoadFile(createFile);
 		if (elem_name) this.SetElementName(elem_name); endif
 		if (prop_name) this.SetPropertyName(prop_name);	endif
-	endfunction
-
-	function GetPackageName(this)
-		return this._packageName;
-	endfunction
-
-	function GetFileName(this)
-		return this._fileName;
 	endfunction
 
 	function GetElementName(this)
@@ -62,16 +51,6 @@ class DataFile()
 
 	function GetPropertyValue(this)
 		return this._property.value;
-	endfunction
-
-	function SetPackageName(this, packageName)
-		this._packageName := packageName;
-		return this;
-	endfunction
-
-	function SetFileName(this, fileName)
-		this._fileName := fileName;
-		return this;
 	endfunction
 
 	function SetElementName(this, elem_name)

@@ -3,6 +3,7 @@ use cfgfile;
 include "ICombatAbility";
 
 include ":diceroll:model/DiceRoll";
+include ":IO:CFGFile";
 
 class CombatAbility(ICombatAbility)
 	// TODO: Pensar se precisa encapsular os modificadores de cooldown, effect, damage, etc.
@@ -22,23 +23,23 @@ class CombatAbility(ICombatAbility)
 	var _damage := DiceRoll("1d1");
 
 	function CombatAbility(this, abilityName)
-		var cfgFile := ReadConfigFile(":charactercreation:config/habilidades");
+		// var cfgFile := ReadConfigFile(":charactercreation:config/habilidades");
+		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
 		
-		var info := this._GetAbilityInfo(abilityName);
-		this._name := info.name;
-		this._description := info.description;
-		this._momentum := info.momentum;
-		this._cooldown := info.cooldown;
-		this._stamCost := info.stamCost;
-		this._manaCost := info.manaCost;
-		this._effectDuration := info.effectDuration;
-		this._range := info.range;
-		this._damage := info.damage;
+		// var info := this._GetAbilityInfo(abilityName);
+		this._name := cfgFile.SetKeyName("name").GetKeyValue();
+		this._description := cfgFile.SetKeyName("description").GetKeyValue();
+		this._momentum := cfgFile.SetKeyName("momentum").GetKeyValue();
+		this._cooldown := cfgFile.SetKeyName("cooldown").GetKeyValue();
+		this._stamCost := cfgFile.SetKeyName("stam").GetKeyValue();
+		this._manaCost := cfgFile.SetKeyName("mana").GetKeyValue();
+		this._effectDuration := cfgFile.SetKeyName("effectDuration").GetKeyValue();
+		this._range := cfgFile.SetKeyName("range").GetKeyValue();
+		this._damage := cfgFile.SetKeyName("damage").GetKeyValue();
 	endfunction
 
 	function ExecuteOn(this, byRef executor, byRef target)
 		// TODO: Implementar a lógica de execução da habilidade aqui
-		// executor e target são referências aos personagens envolvidos
 		return true;
 	endfunction
 

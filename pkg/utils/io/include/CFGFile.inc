@@ -1,15 +1,15 @@
 use cfgfile;
 
-class CFGFile()
-	var _packageName := "";
-	var _fileName := "";
-	var _file;
+include "model/IOFile";
+
+class CFGFile(IOFile)
 	var _element := struct{};
 	var _key := struct{};
 	
 	function CFGFile(this, packageName, fileName, elem_name := false, key_name := false, createFile := true)
-		this._packageName := CStr(packageName);
-		this._fileName := CStr(fileName);
+		Super(packageName, fileName);
+		this._LoadFile(createFile);
+		
 		this._element := struct{
 			name := error{ errortext := "Element not loaded" },
 			value := error{ errortext := "Element not loaded" }
@@ -19,17 +19,8 @@ class CFGFile()
 			value := error{ errortext := "Property not loaded" }
 		};
 
-		this._LoadFile(createFile);
 		if (elem_name) this.SetElementName(elem_name); endif
 		if (key_name) this.SetKeyName(key_name); endif
-	endfunction
-
-	function GetPackageName(this)
-		return this._packageName;
-	endfunction
-
-	function GetFileName(this)
-		return this._fileName;
 	endfunction
 
 	function GetElementName(this)
@@ -68,20 +59,9 @@ class CFGFile()
 		return this;
 	endfunction
 
-	function SetElementValue(this, byRef elem_value)
-		this._element.value := elem_value;
-		return this;
-	endfunction
-
-	function SetKeyName(this, key_name, returnAsDictionary := false)
+	function SetKeyName(this, key_name, isDictionary := false)
 		this._key.name := CStr(key_name);
-		this._LoadKey(this._key.name, returnAsDictionary);
-		return this;
-	endfunction
-
-	function SetKeyValue(this, byRef key_value)
-		this._key.value := key_value;
-		this._element.value.SetProp(this._key.name, this._key.value);
+		this._LoadKey(this._key.name, isDictionary);
 		return this;
 	endfunction
 
@@ -102,11 +82,11 @@ class CFGFile()
 		return this._element.value;
 	endfunction
 
-	function _LoadKey(this, key_name := false, returnAsDictionary := false)
+	function _LoadKey(this, key_name := false, isDictionary := false)
 		if (key_name) this._key.name := key_name; endif
 
 		if (TypeOf(this._key.name) == "String")
-			if (returnAsDictionary)
+			if (isDictionary)
 				this._key.value := GetConfigStringDictionary(this._file, this._key.name);
 			else
 				this._key.value := GetConfigStringArray(this._file, this._key.name);
