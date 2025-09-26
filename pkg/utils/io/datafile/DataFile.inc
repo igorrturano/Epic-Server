@@ -1,6 +1,6 @@
 include ":datafile:datafile";
 
-class DFTools()
+class DataFile()
 	var _packageName := "";
 	var _fileName := "";
 	var _fullPath := "";
@@ -8,7 +8,7 @@ class DFTools()
 	var _element := struct{};
 	var _property := struct{};
 
-	function DFTools(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
+	function DataFile(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
 		this._packageName := CStr(packageName);
 		this._fileName := CStr(fileName);
 		this._fullPath := $":{this._packageName}:{this._fileName}";
