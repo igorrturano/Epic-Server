@@ -12,13 +12,18 @@ class CombatAbility(ICombatAbility)
 	var _description := "";
 	var _momentum := COMBATABILITY_MOMENTUM::ONHIT;
 	var _cooldown := 0; // em segundos
-	var _stamCost := 0;
-	var _manaCost := 0;
+	var _cost := struct{
+		hp := 0,
+		stam := 0,
+		mana := 0
+	};
 	var _effectDuration := 0; // em segundos
 	var _range := 1; // em tiles
 	var _damage := DiceRoll("1d1");
 
 	function CombatAbility(this, abilityName)
+		var cfgFile := ReadConfigFile(":charactercreation:config/habilidades");
+		
 		var info := this._GetAbilityInfo(abilityName);
 		this._name := info.name;
 		this._description := info.description;
