@@ -3,6 +3,7 @@ use os;
 use vitals;
 
 include ":blood:blood";
+include "include/say";
 
 const GRAPHIC_OPEN := 4681;
 const GRAPHIC_CLOSED := 4683;
@@ -24,7 +25,7 @@ program UseIronMaiden(who, iron_maiden)
 		set_critical(0);
 
 		iron_maiden.graphic := GRAPHIC_CLOSED;
-		PrintTextAbove(iron_maiden, "AHHHHHHHHHHHH!!!!", 3, 32);
+		PrintText(iron_maiden, "AHHHHHHHHHHHH!!!!", 3, 32);
 		sleep(1);
 
 		iron_maiden.graphic := GRAPHIC_BLOOD1;

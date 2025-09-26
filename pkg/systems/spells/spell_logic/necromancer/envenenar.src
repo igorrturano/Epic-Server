@@ -48,7 +48,7 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 	endif
 	Set_Critical(0);
-	PrintTextAbovePrivate(targ, "Veneno level " + lvl + ".", who, 3, 38); // vermelho
+	PrintTextPrivate(targ, "Veneno level " + lvl + ".", who, 3, 38); // vermelho
 
 	return 1;
 endprogram

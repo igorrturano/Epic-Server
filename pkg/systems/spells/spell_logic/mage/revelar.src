@@ -22,10 +22,10 @@ program SpellScript(params)
     	foreach item in items
 		if ( GetObjProperty(item, "TrapList") != error )
 				SetObjProperty(item, "trapSpoted", 1);
-				PrintTextAbovePrivate(item, "*este item contem uma armadilha*", who);
+				PrintTextPrivate(item, "*este item contem uma armadilha*", who);
 		elseif ( item.isTrap())
 				item.invisible := 0;
-				PrintTextAbovePrivate(item, "*este item contem uma armadilha*", who);
+				PrintTextPrivate(item, "*este item contem uma armadilha*", who);
 		endif
 	 endforeach
 */
@@ -49,7 +49,7 @@ program SpellScript(params)
 			if (diff)
 				item.invisible := 0;
 				SendSysMessage(who, "Voce encontrou " + item.desc + ".");
-				PrintTextAbovePrivate(item, "*!*", who);
+				PrintTextPrivate(item, "*!*", who);
 			endif
 		endif
 		sleepms(2);

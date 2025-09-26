@@ -39,7 +39,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*desarmar*");
+	PrintText(attacker, "*desarmar*");
 
 	TS_StartTimer(defender, "desarmar", 10, 0, attacker);
 	var defweapon := defender.weapon;

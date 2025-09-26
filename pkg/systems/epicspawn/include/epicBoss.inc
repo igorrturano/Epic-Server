@@ -252,7 +252,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "CombatEvents", cleaned_events);
         var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
         if(res == error)
-            PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
+            PrintText(npc, "Combat Events script error: " + res.errortext);
         endif
     endif
 
@@ -923,9 +923,14 @@ function GetAvailableCustomAbilities()
             "name" := "Rage",
             "description" := "Allows the NPC to enter a rage state",
             "method" := "hasRage"
+        },
+        "Doppelganger" := struct{
+            "name" := "Doppelganger",
+            "description" := "Allows the NPC to copy opponent's appearance and combat style",
+            "method" := "isDoppelganger"
         }
     };
-    
+
     return abilities;
 endfunction
 

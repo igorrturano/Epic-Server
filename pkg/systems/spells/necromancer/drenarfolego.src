@@ -70,7 +70,7 @@ program SpellScript(params)
 		endif
 
 		AP_SetVital(targ, STAMINA, (targmana - amt));
-		PrintTextAbovePrivate(targ, "-" + amt + " Stamina", who, 3, 38); // vermelho
+		PrintTextPrivate(targ, "-" + amt + " Stamina", who, 3, 38); // vermelho
 
 		var mymana := AP_GetVital(who, STAMINA) + amt;
 		var maxmana := AP_GetVitalMaximumValue(who, STAMINA);
@@ -80,7 +80,7 @@ program SpellScript(params)
 		endif
 
 		AP_SetVital(who, STAMINA, mymana);
-		PrintTextAbovePrivate(who, "+" + amt + " Stamina", who, 3, 568); // verde
+		PrintTextPrivate(who, "+" + amt + " Stamina", who, 3, 568); // verde
 
 		PlayMovingEffect(targ, who, 3982, 255, 1);
 		time := time + 1;

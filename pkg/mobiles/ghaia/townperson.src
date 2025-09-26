@@ -31,19 +31,19 @@ program ghaghaia()
 
 	while (me)
 		ev := os::wait_for_event(5);
-		// printtextabove(me, "event " + ev);
+		// printtext(me, "event " + ev);
 		case (ev.type)
 			SYSEVENT_SPEECH:
 				var text := lower(ev.text);
-				// printtextabove(me, " " + text);
+				// printtext(me, " " + text);
 				if (text["rumor"] || text["aventura"] || text["aventuras"] || text["rumores"])
 					// mostra apenas as quests que nao estao executando
 					var myquests := GetObjProperty(me, "quests");
 					var running := TS_GetCooldownList(me);
-					// printtextabove(me, "myquests: " + myquests + " running: " + running);
+					// printtext(me, "myquests: " + myquests + " running: " + running);
 					if (myquests != error && cint(myquests.size()) > 0 &&
 		 (cint(myquests.size()) > cint(running.keys().size())))
-						// printtextabove(me, " " +  cint(myquests.size()) + " " +  cint(running.keys().size()) );
+						// printtext(me, " " +  cint(myquests.size()) + " " +  cint(running.keys().size()) );
 						var avaliable := array;
 						var names := array;
 						foreach q in (running.keys())
@@ -56,7 +56,7 @@ program ghaghaia()
 						endforeach
 						var result := Start_Script(":tn:questmenu", { (ev.source), me, avaliable });
 						if (!result)
-							printtextabove(me, "Erro: " + result);
+							printtext(me, "Erro: " + result);
 						endif
 					else
 						var resp := RandomInt(5) + 1;
@@ -74,11 +74,11 @@ program ghaghaia()
 	/* nao precisa mais desse codigo, agora mostra sempre todas as quests e ela eh inicializada quando alguem escolhe
 	 if (ReadGameClock() >= next_wander)
       //wander();
-      //printtextabove(me, "wander");
+      //printtext(me, "wander");
       if (GetObjProperty(me, "runningquest") == error)
 	var nextQuest := Cint(GetObjProperty(me, "nextQuest"));
 	if (!nextQuest)
-		//printtextabove(me, "nao quest");
+		//printtext(me, "nao quest");
 		if (GetObjProperty(me, "quests") != error) //se tem quests no npc, prepara pra fazer uma em breve
 			var questTime := cint(GetObjProperty(me, "questcycle"));
 			if (!questTime)
@@ -89,9 +89,9 @@ program ghaghaia()
 			SetObjProperty(me, "nextQuest", nextQuest);
 		endif
 	else
-		//printtextabove(me, "tem quest");
+		//printtext(me, "tem quest");
 		if (  ReadGameClock() >= Cint(nextQuest))
-			//printtextabove(me, "setup");
+			//printtext(me, "setup");
 			//var quests := GetObjProperty(me, "quests");
 			SetupNewQuest(me);
 		endif
@@ -117,13 +117,13 @@ function SetupNewQuest(me)
 	var selected := quests[RandomInt(quests.size()) + 1];
 	if (selected != error)
 		var lol := SetObjProperty(self(), "runningquest", selected);
-		// printtextabove(me, "iniciara " + selected);
+		// printtext(me, "iniciara " + selected);
 		var script := Start_Script(":tn:startquest", selected);
 		if (script == error)
-			PrintTextAbove(me, "Erro " + script);
+			PrintText(me, "Erro " + script);
 		endif
 
-		// printtextabove(me, "iniciou " + selected);
+		// printtext(me, "iniciou " + selected);
 		EraseObjProperty(self(), "nextQuest");
 	endif
 

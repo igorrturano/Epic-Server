@@ -15,7 +15,7 @@ include ":tn:boss";
 program control(altar)
 
 	while (GetObjProperty(altar, "config") == error)
-		printtextabove(altar, "Sem config" + GetObjProperty(altar, "config"));
+		printtext(altar, "Sem config" + GetObjProperty(altar, "config"));
 		sleep(10);
 	endwhile
 
@@ -40,11 +40,11 @@ program control(altar)
 			var champserial := GetObjProperty(altar, "champ");
 
 			if (!champserial) // Ok, champ didnt spawn yet, lets see how many creatures he killed and respawn
-				// printtextabove(altar, "sem champ serial");
+				// printtext(altar, "sem champ serial");
 				if (GetObjProperty(altar, "#completed")) // se comppletou cria o champion
 					spawnChampion(altar);
 					champserial := GetObjProperty(altar, "champ");
-				// printtextabove(altar, "completo, spawnando champ");
+				// printtext(altar, "completo, spawnando champ");
 				else // se nao completou faz o loop pra determinar o level
 					var i;
 
@@ -89,7 +89,7 @@ program control(altar)
 							overide.+CProps := cprops;
 							var creature := CreateNPCFromTemplate(get_spawn(altar), loc[1], loc[2], loc[3], overide,
 																   altar.realm);
-							// 							printtextabove(altar, "spawnando mob: " + creature);
+							// 							printtext(altar, "spawnando mob: " + creature);
 							if (creature)
 								creatures.append(creature.serial);
 								// moveobjecttolocation(creature, 10, 10, 10, creature.realm, MOVEOBJECT_FORCELOCATION);
@@ -103,7 +103,7 @@ program control(altar)
 					endif
 				endif
 			elseif (!SystemFindObjectBySerial(champserial)) // Champ is death
-				// printtextabove(altar, "desativando altar");
+				// printtext(altar, "desativando altar");
 				deactivateAltar(altar);
 			endif
 

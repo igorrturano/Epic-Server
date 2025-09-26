@@ -42,7 +42,7 @@ program SpellScript(params)
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 
 	SendSysMessageEx(who, "Voce deixou o alvo atrapalhado.", SSM_INFO);
-	PrintTextAbovePrivate(targ, "-" + amt + " Dex", who, 3, 38);
+	PrintTextPrivate(targ, "-" + amt + " Dex", who, 3, 38);
 	Corromper(who, 3, targ);
 
 	return 1;

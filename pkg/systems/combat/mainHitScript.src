@@ -287,7 +287,7 @@ endfunction
 // 	if (GetObjProperty(attacker, "surprise_attack") && attacker.hidden)
 // 		PerformAction(defender, 0x0e);
 //         PlaySoundEffect(defender, 0x3b4);
-// 		PrintTextAbove(defender, "*Ataque surpresa*");
+// 		PrintText(defender, "*Ataque surpresa*");
 // 		TS_StartTimer(attacker, "paralysis", 5);
 //         sleep(2);
 // 	endif
@@ -327,7 +327,7 @@ endfunction
 // 				EraseObjProperty(attacker, "#nextcritical");
 //                 if (TemHabilidade(defender, "Sempre Alerta"))
 //                     TS_StartTimer(attacker, "paralysis", 5);
-//                     PrintTextAbove(defender, "*Sempre Alerta*");
+//                     PrintText(defender, "*Sempre Alerta*");
 //                 else
 //                     DamageFLS(defender, total, DMG_FORCED, attacker);
 //                     ataqueFurtivo(attacker,defender);
@@ -587,7 +587,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	//     chance := chance + 2;
 	// endif
 	var rand := Cint((RandomInt(100) + 1) + bonus_Preservar_Orgaos);
-	// printtextabove(attacker, "chance " + chance + " rand " + rand + " " + (chance > rand) );
+	// printtext(attacker, "chance " + chance + " rand " + rand + " " + (chance > rand) );
 
 	if (TemHabilidade(defender, "Mumificacao"))
 		SendSysMessageEx(defender, "Seu corpo evita o critico", SSM_INFO);
@@ -680,13 +680,13 @@ function ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamag
 		others_scripts := array{};
 	endif
 
-	// printtextabove(defender, " " + GetCooldown(defender, "campoeletrico"));
+	// printtext(defender, " " + GetCooldown(defender, "campoeletrico"));
 
 	if (GetCooldown(defender, "campoeletrico"))
 		var e := start_script(":combat:armorHitScripts/campoeletrico", array{ attacker, defender, weapon,
 																	  		armor, basedamage, rawdamage });
 		if (e == error)
-			printtextabove(defender, "  " + e);
+			printtext(defender, "  " + e);
 		endif
 	endif
 
@@ -1111,7 +1111,7 @@ function disarmOpponent(attacker, defender)
 		endif
 	endif
 
-	PrintTextAbove(attacker, "*desarmar*");
+	PrintText(attacker, "*desarmar*");
 	var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
 	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);
 	var defweapon := defender.weapon;
@@ -1187,7 +1187,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	elseif (pet_instinto == 1 || pet_selvagem == 1)
 		weapon_scripts := GetConfigStringArray(taming_cfg[pet_critic], "CriticalHitScripts");
 		sleepms(5);
-		printtextabove(attacker, "" + pet_txt[1]);
+		printtext(attacker, "" + pet_txt[1]);
 	else
 		weapon_scripts := GetConfigStringArray(item_cfg[weapon.objtype], "CriticalHitScripts");
 	endif

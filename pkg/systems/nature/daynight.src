@@ -31,24 +31,24 @@ program daynightsystem()
 		var durationDayMod := 1.0; // Initialize as float for precision
 		var date := getCurrentDate();
 
-		DebugMsgEvent(DEBUG_CLIMA, "Dia do ano: " + date.dayYear);
-		DebugMsgEvent(DEBUG_CLIMA, "Dia: " + date.day);
-		DebugMsgEvent(DEBUG_CLIMA, "Mes: " + date.month);
-		DebugMsgEvent(DEBUG_CLIMA, "Ano: " + date.year);
-		DebugMsgEvent(DEBUG_CLIMA, "Lua: " + date.moonPhase);
-		DebugMsgEvent(DEBUG_CLIMA, "Estacao: " + season);
+		DebugMsgAll(DEBUG_CLIMA, "Dia do ano: " + date.dayYear);
+		DebugMsgAll(DEBUG_CLIMA, "Dia: " + date.day);
+		DebugMsgAll(DEBUG_CLIMA, "Mes: " + date.month);
+		DebugMsgAll(DEBUG_CLIMA, "Ano: " + date.year);
+		DebugMsgAll(DEBUG_CLIMA, "Lua: " + date.moonPhase);
+		DebugMsgAll(DEBUG_CLIMA, "Estacao: " + season);
 
 		if (date.month == "Idrithae")
 			durationDayMod -= 0.3;
 		endif
 
 		if (season == SUMMER) // Checa se é solstício de verão ou inverno
-			DebugMsgEvent(DEBUG_CLIMA, "Estacao: SUMMER");
-			DebugMsgEvent(DEBUG_CLIMA, "Eh Solsticio de: SUMMER");
+			DebugMsgAll(DEBUG_CLIMA, "Estacao: SUMMER");
+			DebugMsgAll(DEBUG_CLIMA, "Eh Solsticio de: SUMMER");
 			durationDayMod += 0.2;
 		elseif (season == WINTER)
-			DebugMsgEvent(DEBUG_CLIMA, "Estacao: WINTER");
-			DebugMsgEvent(DEBUG_CLIMA, "Eh Solsticio de: WINTER");
+			DebugMsgAll(DEBUG_CLIMA, "Estacao: WINTER");
+			DebugMsgAll(DEBUG_CLIMA, "Eh Solsticio de: WINTER");
 			durationDayMod -= 0.2;
 		endif
 
@@ -65,8 +65,8 @@ program daynightsystem()
 		SetGlobalProperty("CurrentActualDaySeconds", actual_day_period_seconds);
 		SetGlobalProperty("CurrentActualNightSeconds", actual_night_period_seconds);
 
-		DebugMsgEvent(DEBUG_CLIMA, "Duracao do dia: " + actual_day_period_seconds / 60 + "min");
-		DebugMsgEvent(DEBUG_CLIMA, "Duracao da noite: " + actual_night_period_seconds / 60 + "min");
+		DebugMsgAll(DEBUG_CLIMA, "Duracao do dia: " + actual_day_period_seconds / 60 + "min");
+		DebugMsgAll(DEBUG_CLIMA, "Duracao da noite: " + actual_night_period_seconds / 60 + "min");
 
 		Broadcast("O sol esta nascendo.");
 

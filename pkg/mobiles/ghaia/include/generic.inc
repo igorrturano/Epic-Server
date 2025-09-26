@@ -138,14 +138,14 @@ function Fight(opponent, alerted := 0)
   var ev;
   var waittime := 0;
 
-//	printtextabove(me, " " + alert_allies);
+//	printtext(me, " " + alert_allies);
   if (!alerted) //se ele ja nao foi alertado por outro aliado
 	if (alert_allies) //se esse npc eh do tipo que alerta
-	//	printtextabove(me, "vou alertar");
+	//	printtext(me, "vou alertar");
 		AlertAllies(me, opponent);
 	endif
  // else
-//	printtextabove(me, "fui alertado, nao vou alertar");
+//	printtext(me, "fui alertado, nao vou alertar");
   endif
    var PlayerRaca := GetObjProperty(opponent, "chardata").raca;
 	 var sourceDescription := GetObjProperty(opponent, "descricao");
@@ -243,7 +243,7 @@ function Fight(opponent, alerted := 0)
       var unique := GetBossStruct(me);
       foreach ce in (unique.combatevent)
         sleepms(10);
-    //		printtextabove(me, " "  + ce);
+    //		printtext(me, " "  + ce);
         if (!TS_GetCooldown(me, ce.name))
           var e := Start_Script(":ghaia:special/genericspecial" , array{me, ce});
         endif
@@ -316,7 +316,7 @@ function Fight(opponent, alerted := 0)
 
     ev := wait_for_event(waittime);
 
-//    printtextabove(self(), "event " + ev);
+//    printtext(self(), "event " + ev);
   	if(ev.type != SYSEVENT_SPEECH)
   		case (ev.type)
   			SYSEVENT_DAMAGED:
@@ -763,13 +763,13 @@ function LootSomething(me)
         endif
 
         if ( inside > 0 );
-          //PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
+          //PrintText(corpse, item.desc+" is a container.. skipping it");
           //Do nothing
         elseif ( !item.movable );
-          //PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
+          //PrintText(corpse, item.desc+" cant be moved.. skipping it");
           //Do nothing
         else
-          //PrintTextAbove(corpse, item.desc+" is lootable.");
+          //PrintText(corpse, item.desc+" is lootable.");
           contents.append(item);
         endif
         sleepms(5);
@@ -782,7 +782,7 @@ function LootSomething(me)
 		contents := 0;
 
 		if ( item )
-			//PrintTextAbove(me, "*revirando o corpo*");
+			//PrintText(me, "*revirando o corpo*");
 			MoveItemToContainer(item, me.backpack);
 
 			if ( item.layer )

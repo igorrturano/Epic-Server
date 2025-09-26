@@ -1,90 +1,95 @@
 include ":datafile:datafile";
 
 class DFTools()
-	var _filename;
+	var _packageName := "";
+	var _fileName := "";
+	var _file;
+	var _element := struct{};
+	var _property := struct{};
 
-	function DFTools(this, filename)
-		this._filename := filename;
+	function DFTools(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
+		this._packageName := CStr(packageName);
+		this._fileName := CStr(fileName);
+		this._element := struct{
+			name := error{ errortext := "Element not loaded" },
+			value := error{ errortext := "Element not loaded" }
+		};
+		this._property := struct{
+			name := error{ errortext := "Property not loaded" },
+			value := error{ errortext := "Property not loaded" }
+		};
+
+		this._LoadFile(createFile);
+		if (elem_name) this.SetElementName(elem_name); endif
+		if (prop_name) this.SetPropertyName(prop_name);	endif
 	endfunction
 
-	/*
-	 * WriteValue(elem_name, prop_name, value)
-	 *
-	 * Purpose: Writes a property value to a specific element in the data file
-	 *
-	 * Parameters:
-	 *	elem_name: String - Name of the element to write to (created if doesn't exist)
-	 *	prop_name: String - Name of the property to set
-	 *	value:     Mixed  - Value to assign to the property
-	 *
-	 * Return Value:
-	 *	Boolean - Always returns true on successful operation
-	 *
-	 * Notes:
-	 *	- Opens the data file in create mode (creates file if it doesn't exist)
-	 *	- Creates the element if it doesn't exist in the file
-	 *	- Overwrites existing property values
-	 */
-	function WriteValue(this, elem_name, prop_name, value)
-		var file := DFOpenDataFile(this._filename, DF_CREATE);
-		var elem := DFFindElement(file, elem_name, DF_CREATE);
-		elem.SetProp(prop_name, value);
-
-		return true;
+	function GetPackageName(this)
+		return this._packageName;
 	endfunction
 
-	/*
-	 * LoadValue(elem_name, prop_name)
-	 *
-	 * Purpose: Loads a specific property value from an element in the data file
-	 *
-	 * Parameters:
-	 *   elem_name - String: Name of the element to find in the data file
-	 *   prop_name - String: Name of the property to retrieve from the element
-	 *
-	 * Returns:
-	 *   Mixed: The value of the specified property if found
-	 *   Error: Returns error struct with errortext if element or property not found
-	 *
-	 * Notes:
-	 *   - Opens the data file specified in this.filename
-	 *   - Searches for the specified element by name
-	 *   - Retrieves the specified property from the found element
-	 *   - Returns descriptive error messages for debugging
-	 */
-	function LoadValue(this, elem_name, prop_name)
-		var value;
-		var file := OpenDataFile(this._filename);
-		var elem := file.FindElement(elem_name);
-
-		if (!elem) return error{ errortext := $"Element {elem_name} not found in {this._filename}" }; endif
-		value := elem.GetProp(prop_name);
-		if (!value) return error{ errortext := $"Property {prop_name} not found in element {elem_name}" }; endif
-
-		return value;
+	function GetFileName(this)
+		return this._fileName;
 	endfunction
 
-	/**
-	 * GetElementKeys(this, elem_key)
-	 *
-	 * Purpose: Retrieves the names of all properties for a specific element in the data file.
-	 *
-	 * Parameters:
-	 * this: The DFTools instance containing the filename of the data file.
-	 * elem_key: The key (name) of the element whose properties are to be retrieved.
-	 *
-	 * Returns:
-	 * An array of property names for the specified element, or an error if the element is not found.
-	 */
-	function GetElementKeys(this, elem_key)
-		var file := DFOpenDataFile(this._filename, DF_CREATE);
-		var elem := file.FindElement(elem_key);
-		if (!elem) return error{ errortext := $"Element {elem_key} not found in {this._filename}" }; endif
+	function GetElementName(this)
+		return this._element.name;
+	endfunction
 
-		var props := elem.PropNames();
-		if (!props) return error{ errortext := $"No properties found in element {elem_key} of {this._filename}" }; endif
+	function GetElementValue(this)
+		return this._element.value;
+	endfunction
 
-		return props;
+	function GetElementKeys(this, elem_key := false)
+		var result;
+
+		if (!this._element.value) result := error{ errortext := $"Element {elem_key} not found in {this._packageName}" }; endif
+		
+		result := this._element.value.PropNames();
+		if (!result) result := error{ errortext := $"No properties found in element {elem_key} of {this._packageName}" }; endif
+
+		return result;
+	endfunction
+
+	function GetPropertyName(this)
+		return this._property.name;
+	endfunction
+
+	function GetPropertyValue(this)
+		return this._property.value;
+	endfunction
+
+	function SetPackageName(this, packageName)
+		this._packageName := packageName;
+		return this;
+	endfunction
+
+	function SetFileName(this, fileName)
+		this._fileName := fileName;
+		return this;
+	endfunction
+
+	function SetElementName(this, elem_name)
+		this._element.name := CStr(elem_name);
+		this._LoadElement(this._element.name);
+		return this;
+	endfunction
+
+	function SetElementValue(this, byRef elem_value)
+		this._element.value := elem_value;
+		return this;
+	endfunction
+
+	function SetPropertyName(this, prop_name)
+		this._property.name := CStr(prop_name);
+		this._LoadProperty(this._property.name);
+		return this;
+	endfunction
+
+	function SetPropertyValue(this, byRef prop_value)
+		this._property.value := prop_value;
+		this._element.value.SetProp(this._property.name, this._property.value);
+		return this;
 	endfunction
 
 	/**
@@ -97,6 +102,26 @@ class DFTools()
 	 *
 	 */
 	function Erase(this)
-		DFPurgeFile(this._filename);
+		return DFPurgeFile(this._filename);
+	endfunction
+
+	function _LoadFile(this, createFile := false)
+		this._file := DFOpenDataFile($":{this._packageName}:{this._fileName}", createFile);
+	endfunction
+	
+	function _LoadElement(this, elem_name := false)
+		if (elem_name) this._element.name := elem_name; endif
+		
+		this._element.value := this._file.FindElement(elem_name);
+
+		return this._element.value;
+	endfunction
+
+	function _LoadProperty(this, prop_name := false)
+		if (prop_name) this._property.name := prop_name; endif
+
+		this._property.value := this._element.value.GetProp(this._property.name);
+
+		return this._property.value;
 	endfunction
 endclass

@@ -86,7 +86,7 @@ function ExecuteEvent(evento)
 				var item := SystemFindObjectBySerial(serial);
 				item.movable := 1;
 				var e := MoveObjectToLocation(item, item.x, item.y, item.z + 1, item.realm, MOVEOBJECT_FORCELOCATION);
-        //printtextabove(item, "move object " + e );
+        //printtext(item, "move object " + e );
 				item.movable := 0;
 			endforeach
 			i := i + 1;

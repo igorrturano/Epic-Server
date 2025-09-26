@@ -23,10 +23,10 @@ program walkOn(mobile, tile)
 	endif
 
 	var result;
-	if (mobile.getRace() in racesAllowed)
+	if ( mobile.getRace() in racesAllowed || mobile.cmdlevel > 2)
 		result := tile.SendToDestination(mobile);
 	else
-		SendSysMessageEx(mobile, "Seu tamanho não é proporcional, logo você não conseguiu passar!",
+		SendSysMessageEx(mobile, "Seu tamanho é desproporcional!",
 				   SSM_FAIL);
 		return 0;
 	endif

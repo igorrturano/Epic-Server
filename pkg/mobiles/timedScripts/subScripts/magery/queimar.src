@@ -17,7 +17,7 @@ program TimedScript_sacrificio(params)
 	while (1)
 		if (RandomInt(4) == 1)
 			var dmg := RandomDiceRoll("2d8");
-			PrintTextAbove(who, "Incinerado: " + Cstr(dmg));
+			PrintText(who, "Incinerado: " + Cstr(dmg));
 			ApplyRawDamage(who, dmg);
 			PlayObjectCenteredEffectHuefx(who, 0x6e26, 10, 20, 0, 1);
 		endif
