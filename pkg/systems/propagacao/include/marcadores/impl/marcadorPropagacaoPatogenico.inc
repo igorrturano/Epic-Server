@@ -158,8 +158,29 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase)
 
   function RecebeEstimulo(this, valor ,isRemetenteAcumulando := false)
     isRemetenteAcumulando == false;
-    this.isAcumulando := valor > 0;
+    this.isAcumulando := valor > 0 && !this._isVisaoTileBloqueada();
     Print("Valor recebido ! " + valor + " - " + this.isAcumulando);
+  endfunction
+
+  function _isVisaoTileBloqueada(this)
+
+    foreach item in (this.tileProspectado.PegaItensEncontrados())
+		Sleepms(2);
+		var tilesInfo := BuscaConfiguracaoTiles(item);
+		if(tilesInfo.BlockSight)
+			return true;
+		endif
+	endforeach
+
+	foreach itemEstatico in (this.tileProspectado.PegaEstaticosEncontrados())
+		Sleepms(2);
+		var tilesInfo := BuscaConfiguracaoTiles(itemEstatico);
+		if(tilesInfo.BlockSight)
+			return true;
+		endif
+	endforeach
+
+	return false;
   endfunction
 
   function _DevePropagar(this)
