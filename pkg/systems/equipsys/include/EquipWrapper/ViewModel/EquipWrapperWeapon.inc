@@ -184,6 +184,12 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		Range: {this._minRange}-{this._maxRange}";
 	endfunction
 
+	function IsDualWield(this)
+		return this._offDamageTier.GetSlashDamage() == DAMAGE_NONE &&
+		       this._offDamageTier.GetPiercingDamage() == DAMAGE_NONE &&
+		       this._offDamageTier.GetBluntDamage() == DAMAGE_NONE;
+	endfunction
+
 	// Private functions
 	function _GetWeight(this)
 		var maxMainDamage := Max(array{
