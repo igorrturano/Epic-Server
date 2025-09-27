@@ -10,17 +10,25 @@ class TranslatableText()
 		lang := LANGUAGE::ENGLISH
 	};
 
-	function TranslatableText(this, text := "", langSource := "", langTarget := "")
+	function TranslatableText(this, text := "", langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._source := struct{
 			text := text,
 			lang := langSource
 		};
 		this._target := struct{
-			text := "",
+			text := text,
 			lang := langTarget
 		};
 	endfunction
-	
+
+	function GetTextOriginal(this)
+		return this._source.text;
+	endfunction
+
+	function GetTextTranslated(this)
+		return this._target.text;
+	endfunction
+
 	function SetText(this, text)
 		this._source.text := text;
 		return this;
@@ -48,7 +56,7 @@ class TranslatableText()
 endclass
 
 enum class LANGUAGE
-	PORTUGUESE,
-	ENGLISH,
-	SPANISH
+	PORTUGUESE := "pt-BR",
+	ENGLISH := "en-US",
+	SPANISH := "es-ES"
 endenum
