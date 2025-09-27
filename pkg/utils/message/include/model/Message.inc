@@ -26,6 +26,22 @@ class Message()
 		return this;
 	endfunction
 
+	function SetColor(this, color)
+		foreach msg in (this._messages)
+			msg.color := color;
+		endforeach
+
+		return this;
+	endfunction
+	
+	function SetFont(this, font)
+		foreach msg in (this._messages)
+			msg.font := font;
+		endforeach
+
+		return this;
+	endfunction
+
 	function _SplitMessages(this, maxSize)
 		var msgSplitted := array{};
 
