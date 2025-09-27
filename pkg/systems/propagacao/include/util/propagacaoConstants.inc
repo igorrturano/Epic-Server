@@ -14,6 +14,13 @@ enum class PROPAGACAO_TIPO
 	PATOGENICO := 2,
 endenum
 
+enum class TILE_SCANNER
+	ITENS,
+	STATICOS,
+	MOBILES,
+	TERRENO
+endenum
+
 enum class RESFRIAMENTOS
 	BASICO := -10,
 	RAZOAVEL := -55,

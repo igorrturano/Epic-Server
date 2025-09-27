@@ -21,14 +21,13 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase)
 
     var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
     this.mobileOrigemIncendio := SystemFindObjectBySerial( cint(propPropagacao.origem), SYSFIND_SEARCH_OFFLINE_MOBILES);
-    //this.resourceConfig := ReadConfigFile(":crafting:config/resourceList");
     this.estimuloLimite := 25;
     this.ciclosDormenteLimite := 15;
     this.ciclosDormente := 0;
     this.duracaoCiclos := 10;
     this.ciclos := 0;
     this.ciclosRetorno := 2;
-    this.tileProspectado := this.Prospectar();
+    this.tileProspectado := this.ProspectarPersonalizado();
     this.isAcumulando := true;
     this.graficos := dictionary {ESTADO_PROPAGACAO::DORMENTE -> 0x3794, ESTADO_PROPAGACAO::INTENSO -> 0x113B};
   endfunction
@@ -145,7 +144,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase)
     endif
     this.MarcarAdjacentes();
     if(!this.tileProspectado)
-      this.tileProspectado := this.Prospectar();
+      this.tileProspectado := this.ProspectarPersonalizado();
     endif
   endfunction
 
@@ -171,6 +170,10 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase)
 
   function Propagar(this)
     return this.MarcarAdjacentes();
+  endfunction
+
+  function ProspectarPersonalizado(this)
+    return this.Prospectar(array {TILE_SCANNER::ITENS, TILE_SCANNER::STATICOS, TILE_SCANNER::MOBILES});
   endfunction
 
 endclass

@@ -43,7 +43,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function EfetuarCiclo(this)
     if(!this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
-      var tileProspectado := this.Prospectar(this.tileProspectado);
+      var tileProspectado := this.Prospectar(array {TILE_SCANNER::ITENS,TILE_SCANNER::MOBILES});
       this.isAcumulando := false;
 
       if(this.IsEstadoControle(CONTROLE_PROPAGACAO::ATIVO))
