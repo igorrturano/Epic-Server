@@ -96,13 +96,11 @@ program fix(who, param)
 			endif
 			if (!fixer)
 				SetObjProperty(alvo, "fixer", novoDono.serial);
-				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para "
-								+ novoDono.name + ".");
+				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para " + novoDono.name + ".");
 				return 1;
 			else
 				SetObjProperty(alvo, "fixer", novoDono.serial);
-				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para "
-								+ novoDono.name + ".");
+				PrintText(alvo, who.name + " passou o controle de " + alvo.name + " para " + novoDono.name + ".");
 				return 1;
 			endif
 		else
