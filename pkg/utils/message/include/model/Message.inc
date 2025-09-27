@@ -4,7 +4,10 @@ use os;
 include "include/say";
 
 class Message()
-	var _originalMessage := "";
+	var _originalMessage := struct{
+		text := "",
+		lang := ""
+	};
 	var _newMessageFragments := array{ struct{ // Array de structs com as informações de cada fragmento da mensagem: string, cor, fonte
 		str := "",
 		color := _DEFAULT_TEXT_COLOR,
