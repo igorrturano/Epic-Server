@@ -42,6 +42,14 @@ class Message()
 		return this;
 	endfunction
 
+	function SetLanguage(this, langSource, langTarget)
+		foreach msg in (this._messages)
+			msg.text.SetLanguage(langSource, langTarget);
+		endforeach
+
+		return this;
+	endfunction
+
 	function _SplitMessages(this, maxSize)
 		var msgSplitted := array{};
 
