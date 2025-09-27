@@ -1,5 +1,4 @@
 use uo;
-// use cfgfile;
 
 include "IEquipWrapper";
 include ":IO:CFGFile";
@@ -36,7 +35,6 @@ class EquipWrapper(IEquipWrapper)
 			endif
 			
 		else // Caso seja apenas um template
-			// this._template := FindConfigElem(ReadConfigFile(":*:itemdesc"), item);
 			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
 			this._item := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
