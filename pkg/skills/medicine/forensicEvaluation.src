@@ -508,7 +508,7 @@ function Autopsy(who, corpse)
 	else
 		EraseObjProperty(who, "#DoingAutopsy");
 		PrintTextPrivate(who, "*Você não consegue obter nenhuma informação relevante da autopsia.*",
-							   who);
+				   who);
 		return;
 	endif
 

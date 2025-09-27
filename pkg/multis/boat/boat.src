@@ -416,20 +416,20 @@ function drydock(event)
 
 	if (len(items) > 0)
 		PrintTextPrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while items are on deck!",
-							   me);
+				   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
 	endif
 	items := EnumerateItemsInContainer(boat.hold);
 	if (len(items) > 0)
 		PrintTextPrivate(boat.tillerman, "Arrh, we'd best clear out the items in the hold first, Captain!",
-							   me);
+				   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
 	endif
 	if (len(mobsondeck) > 0)
 		PrintTextPrivate(boat.tillerman, "Arrh, Captain!  You can't drydock the boat while people are on the deck!",
-							   me);
+				   me);
 		EraseObjProperty(me, "#DryDocking");
 		return;
 	endif
