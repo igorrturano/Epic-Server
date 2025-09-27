@@ -87,34 +87,25 @@ endprogram
 
 function CanAttack(attacker, defender)
 	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
-		SendSysMessageEx(attacker, "Você não pode atacar o alvo.", SSM_FAIL);
+		Message("Você não pode atacar o alvo.", SSM_FAIL).SendSys(attacker);
 		return 0;
 	endif
 
-	// Impede de atacar-se
-	if (attacker == defender)
-		SendSysMessageEx(attacker, "attacker é igual ao defender");
+	if (attacker == defender) // Impede de atacar-se
+		Message("Você não pode atacar a si mesmo.", SSM_FAIL).SendSys(attacker);
 		return 0;
 	endif
 
-	// Impede de atacar gente escondida
-	if (defender.hidden)
+	if (defender.hidden) // Impede de atacar gente escondida
 		return 0;
-
-	// Calcula se o atacante escondido revela ou não
-	elseif (attacker.hidden)
-		// Gasta a carga de Ataque Furtivo Aprimorado e não se revela
-		if (GetObjProperty(attacker, "ataquefurtivoaprimorado") == 1)
+	elseif (attacker.hidden) // Calcula se o atacante escondido revela ou não
+		if (GetObjProperty(attacker, "ataquefurtivoaprimorado") == 1) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
 			EraseObjProperty(attacker, "ataquefurtivoaprimorado");
-		// Revela o atacante
-		else
+		else // Revela o atacante
 			attacker.hidden := 0;
 		endif
-
-	// Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
-	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master)
-		LogToFile(":fls_core:pets.log", attacker.acctname + " atacou " + defender.name + " (" + defender.npctemplate + ")",
-				   LOG_DATETIME);
+	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+		LogToFile(":fls_core:pets.log", attacker.acctname + " atacou " + defender.name + " (" + defender.npctemplate + ")", LOG_DATETIME);
 	elseif (defender.npctemplate == ":brainai:GolemMartelo")
 		return 0;
 	endif
@@ -134,7 +125,7 @@ function DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage)
 			EraseObjProperty(attacker, "movement");
 			return 1;
 		else
-			SendSysMessageEx(attacker, "Você perdeu seu ataque especial.", SSM_INFO);
+			Message("Você perdeu seu ataque especial.", SSM_INFO).SendSys(attacker);
 			EraseObjProperty(attacker, "movement");
 		endif
 	endif
@@ -171,22 +162,6 @@ function SetLastHitInfo(mobile, damage, type, source)
 			mobile.setProp("lastNpcDmg", source.npctemplate);
 		endif
 	endif
-endfunction
-
-function ParseScriptString(crit)
-	var str := "";
-	var i := 1;
-
-	while (crit[i] != "/")
-		i := i + 1;
-	endwhile
-	i := i + 1;
-	while (crit[i])
-		str := str + crit[i];
-		i := i + 1;
-	endwhile
-
-	return lower(str);
 endfunction
 
 function FacingChecks(attacker, defender)
@@ -470,20 +445,6 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	endif
 
 	foreach hitscript in weapon_scripts
-		/* var crit := ParseScriptString(hitscript);
-		if (crit == "damage3")
-			rawdamage := rawdamage * 3;
-		elseif (crit == "damage2")
-			rawdamage := rawdamage * 2;
-		elseif (crit == "armorignore")
-			rawdamage := basedamage;
-		elseif ( crit == "stun")
-			TS_StartTimer(defender, "paralysis", 5);
-		elseif (Crit == "bleed")
-			TS_StartTimer(defender, "bleed", 30);
-		endif */
-		// Modificando pra ficar legal - Katabrok burro, ficou legal nada, voltei ao que era
-
 		var script := start_script(
 			hitscript,
 			array{ attacker, defender, weapon, armor, basedamage, rawdamage }
