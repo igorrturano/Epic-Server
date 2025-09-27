@@ -26,5 +26,5 @@ class IOFile()
 		return this._fullPath;
 	endfunction
 
-	uninit function _LoadFile(this); // Implementar nas subclasses a forma de carregar o arquivo
+	uninit function _LoadFile(this, default createFile); // Implementar nas subclasses a forma de carregar o arquivo
 endclass

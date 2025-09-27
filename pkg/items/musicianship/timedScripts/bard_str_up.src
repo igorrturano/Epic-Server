@@ -17,7 +17,7 @@ program TimedScript_bard_str_up(params)
 			AP_ModifyStatMod(alvo, STRENGTH, (modificador - teste));
 			Set_Critical(0);
 			PrintTextPrivate(alvo, "+" + (modificador - teste) + " Str", caster, BARD_FONT,
-								   BARD_FONT_COLOR_GOOD);
+							  BARD_FONT_COLOR_GOOD);
 			return 1;
 		else
 			return 0;

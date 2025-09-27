@@ -70,7 +70,7 @@ class CFGFile(IOFile)
 	endfunction
 
 	// Private Functions
-	function _LoadFile(this)
+	function _LoadFile(this, createFile := false)
 		this._file := ReadConfigFile($":{this._packageName}:{this._fileName}");
 	endfunction
 	
