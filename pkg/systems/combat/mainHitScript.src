@@ -2,19 +2,12 @@
  * $Id
  *
 */
-// use uo;
-// use os;
-// use cfgfile;
-
-// include ":combat:settings";
 include ":combat:damage";
 include ":combat:critical";
-// include ":charactercreation:resists";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
 include ":IO:CFGFile";
 include ":message:model/Message";
-// include ":crafting:/include/caracteristicasFabricacao";
 
 program MainHitScript(params)
 	var attacker := params[1];
@@ -233,6 +226,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 			hitscript,
 			array{ attacker, defender, weapon, armor, basedamage, rawdamage, hitopt }
 		);
+
 		if (!script || script.errortext)
 			Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext)
 				.SendSys(attacker)
@@ -256,7 +250,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 			elseif (elemental.type == DMG_COLD)
 				start_script(
 					":combat:weaponHitScripts/IceHit",
-					 array{ attacker, defender, weapon, armor, basedamage, dmg * 2 }
+					array{ attacker, defender, weapon, armor, basedamage, dmg * 2 }
 				);
 			elseif (elemental.type == DMG_ENERGY)
 				start_script(
@@ -371,11 +365,11 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 
 	var weaponAttr := weapon.getAttrBase();
-	var chance := CInt(										// Weapon
+	var chance := CInt(
 		CInt(weaponAttr.CriticalChance) +    	            // Crítico base da arma
 		CInt(weaponAttr.CriticalChanceMod) +    			// Crítico extra da arma
 		// CInt(GetObjProperty(weapon, "CriticalChance")) + // Crítico extra da arma
-		// Char
+		
 		CInt(GetObjProperty(attacker, "CriticalChance")) +	// Crítico extra do Char
 		skillCriticalBonus +								// Crítico extra da Skill
 		CInt(GetObjProperty(attacker, "#CriticalChance"))	// Crítico extra de Habilidade especial do personagem
@@ -391,25 +385,14 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 		chance := chance * 2.0;
 		critcooldown := 20;
 	endif
-	// Inicio vivisec Igor-----------------------------
 	var bonus_Preservar_Orgaos := 0;
-	/*
-	if (TemHabilidade(defender, "Preservar Orgaos"))
-		bonus_Preservar_Orgaos := 25;
-	endif
-*/
-	// if (GetObjProperty(attacker, "chardata").povo == "Orc")
-	//     chance := chance + 2;
-	// endif
 	var rand := Cint((RandomInt(100) + 1) + bonus_Preservar_Orgaos);
-	// printtext(attacker, "chance " + chance + " rand " + rand + " " + (chance > rand) );
 
 	if (TemHabilidade(defender, "Mumificacao"))
 		Message("Seu corpo evita o crítico", SSM_INFO).SendSys(defender);
 		Message("Seu critico não surte efeito", SSM_FAIL).SendSys(attacker);
 		chance := 0;
 	endif
-	// FIM add vivisec igor----------------------------
 	var result := chance > rand;
 
 	if (autoCritical)
@@ -486,8 +469,6 @@ function ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamag
 		others_scripts := array{};
 	endif
 
-	// printtext(defender, " " + GetCooldown(defender, "campoeletrico"));
-
 	if (GetCooldown(defender, "campoeletrico"))
 		var e := start_script(
 			":combat:armorHitScripts/campoeletrico",
@@ -520,6 +501,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 	if (rawdamage < 1)
 		return 0;
 	endif
+
 	if (GetObjProperty(weapon, "ammo"))
 		var aljavas := array{ 0x791c, 0x2fb7 };
 		var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
