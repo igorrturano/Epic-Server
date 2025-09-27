@@ -1,15 +1,15 @@
+include "model/IOFile";
+
 include ":datafile:datafile";
 
-class DFTools()
-	var _packageName := "";
-	var _fileName := "";
-	var _file;
+class DataFile(IOFile)
 	var _element := struct{};
 	var _property := struct{};
 
-	function DFTools(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
-		this._packageName := CStr(packageName);
-		this._fileName := CStr(fileName);
+	function DataFile(this, packageName, fileName, elem_name := false, prop_name := false, createFile := true)
+		Super(packageName, fileName);
+		this._LoadFile(createFile);
+
 		this._element := struct{
 			name := error{ errortext := "Element not loaded" },
 			value := error{ errortext := "Element not loaded" }
@@ -19,17 +19,8 @@ class DFTools()
 			value := error{ errortext := "Property not loaded" }
 		};
 
-		this._LoadFile(createFile);
 		if (elem_name) this.SetElementName(elem_name); endif
 		if (prop_name) this.SetPropertyName(prop_name);	endif
-	endfunction
-
-	function GetPackageName(this)
-		return this._packageName;
-	endfunction
-
-	function GetFileName(this)
-		return this._fileName;
 	endfunction
 
 	function GetElementName(this)
@@ -40,13 +31,16 @@ class DFTools()
 		return this._element.value;
 	endfunction
 
-	function GetElementKeys(this, elem_key := false)
+	function GetElementKeys(this, elem_name := false)
 		var result;
 
-		if (!this._element.value) result := error{ errortext := $"Element {elem_key} not found in {this._packageName}" }; endif
-		
+		if (elem_name) this._element.name := elem_name; endif
+		this._LoadElement(this._element.name);
+
+		if (!this._element.value) result := error{ errortext := $"Element {this._element.name} not found in {this._fullPath}" }; endif
+
 		result := this._element.value.PropNames();
-		if (!result) result := error{ errortext := $"No properties found in element {elem_key} of {this._packageName}" }; endif
+		if (!result) result := error{ errortext := $"No properties found in element {this._element.name} of {this._fullPath}" }; endif
 
 		return result;
 	endfunction
@@ -57,16 +51,6 @@ class DFTools()
 
 	function GetPropertyValue(this)
 		return this._property.value;
-	endfunction
-
-	function SetPackageName(this, packageName)
-		this._packageName := packageName;
-		return this;
-	endfunction
-
-	function SetFileName(this, fileName)
-		this._fileName := fileName;
-		return this;
 	endfunction
 
 	function SetElementName(this, elem_name)
@@ -92,21 +76,12 @@ class DFTools()
 		return this;
 	endfunction
 
-	/**
-	 * Erase(this)
-	 *
-	 * Apaga todos os dados do arquivo de dados associado a este objeto.
-	 *
-	 * Parameters
-	 * this: O objeto Datafile cuja propriedade 'filename' especifica o arquivo a ser apagado.
-	 *
-	 */
 	function Erase(this)
-		return DFPurgeFile(this._filename);
+		return DFPurgeFile(this._fileName);
 	endfunction
 
 	function _LoadFile(this, createFile := false)
-		this._file := DFOpenDataFile($":{this._packageName}:{this._fileName}", createFile);
+		this._file := DFOpenDataFile(this._fullPath, createFile);
 	endfunction
 	
 	function _LoadElement(this, elem_name := false)
