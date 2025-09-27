@@ -36,12 +36,8 @@ class TranslatableText()
 		return this;
 	endfunction
 
-	function SetLanguageSource(this, langSource)
+	function SetLanguage(this, langSource, langTarget)
 		this._source.lang := langSource;
-		return this;
-	endfunction
-
-	function SetLanguageTarget(this, langTarget)
 		this._target.lang := langTarget;
 		return this;
 	endfunction
