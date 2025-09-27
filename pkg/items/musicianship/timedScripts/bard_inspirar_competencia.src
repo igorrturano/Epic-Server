@@ -28,7 +28,7 @@ program TimedScript_bard_inspirar_competencia(params)
 			AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
 			Set_Critical(0);
 			PrintTextPrivate(alvo, "+" + modificador + " nas skills pacificas", caster, BARD_FONT,
-								   BARD_FONT_COLOR_GOOD);
+							  BARD_FONT_COLOR_GOOD);
 			SendSysMessage(alvo, "Sente-se mais focado no trabalho.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 			return 1;
 		else
@@ -51,7 +51,7 @@ program TimedScript_bard_inspirar_competencia(params)
 		AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
 		Set_Critical(0);
 		PrintTextPrivate(alvo, "+" + modificador + " nas skills pacificas", caster, BARD_FONT,
-							   BARD_FONT_COLOR_GOOD);
+				   BARD_FONT_COLOR_GOOD);
 		SendSysMessage(alvo, "Sente-se mais focado no trabalho.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 		return 1;
 	endif
