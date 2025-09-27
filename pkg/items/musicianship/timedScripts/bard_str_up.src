@@ -10,13 +10,14 @@ program TimedScript_bard_str_up(params)
 	var caster := params[2];
 	var modificador := params[3];
 	var teste := GetObjProperty(alvo, "#Bard_str_up");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(modificador > teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (modificador > teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(alvo, "#Bard_str_up", modificador);
-			AP_ModifyStatMod(alvo, STRENGTH, (modificador-teste));
+			AP_ModifyStatMod(alvo, STRENGTH, (modificador - teste));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + (modificador-teste) + " Str", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+			PrintTextPrivate(alvo, "+" + (modificador - teste) + " Str", caster, BARD_FONT,
+							  BARD_FONT_COLOR_GOOD);
 			return 1;
 		else
 			return 0;
@@ -26,7 +27,7 @@ program TimedScript_bard_str_up(params)
 		SetObjProperty(alvo, "#Bard_str_up", modificador);
 		AP_ModifyStatMod(alvo, STRENGTH, modificador);
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " Str", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		PrintTextPrivate(alvo, "+" + modificador + " Str", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
 		return 1;
 	endif
 endprogram

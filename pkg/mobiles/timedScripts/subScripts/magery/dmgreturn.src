@@ -25,5 +25,3 @@ program TimedScript_Clumsy(params)
 
 	return 1;
 endprogram
-
-

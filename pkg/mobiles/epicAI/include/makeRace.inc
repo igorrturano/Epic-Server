@@ -1,11 +1,11 @@
 include "include/client";
 function makeRace(mobile, race := 0)
-    if (!race)
-        var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
-        race := races[RandomInt(races.size()) + 1];
-        print("Making race: " + race);
-    endif
-  
+   if (!race)
+      var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
+      race := races[RandomInt(races.size()) + 1];
+      print("Making race: " + race);
+   endif
+   
    case (race)
       ANAO:   makeDwarven(mobile);
       ELFO:   makeElven(mobile);

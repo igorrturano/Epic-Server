@@ -2,6 +2,6 @@ use uo;
 use vitals;
 
 program removeunderwatereffect(who)
-    EraseObjProperty(who, "spiderWebArea");
+	EraseObjProperty(who, "spiderWebArea");
 	RecalcVitals(who);
 endprogram

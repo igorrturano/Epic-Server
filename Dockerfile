@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 ubuntu:latest
+# Dockerfile para servidor POL (Penultima Online)
+FROM ubuntu:latest
 
 # Evitar prompts interativos durante a instalação
 ENV DEBIAN_FRONTEND=noninteractive
@@ -40,8 +41,8 @@ COPY . /opt/pol/
 # Dar permissões ao usuário pol
 RUN chown -R pol:pol /opt/pol
 
-# Make ecompile executable (compilation will happen in entrypoint)
-RUN chmod +x /opt/pol/scripts/ecompile
+# Compilar o POL
+RUN cd /opt/pol/scripts && ./ecompile -Fi && ./ecompile -u
 
 # Criar diretório para dados UO (será montado como volume)
 RUN mkdir -p /opt/uo-data && chown pol:pol /opt/uo-data
@@ -56,4 +57,4 @@ USER pol
 ENTRYPOINT ["/opt/pol/docker-entrypoint.sh"]
 
 # Comando padrão para executar o servidor
-CMD [] 
+CMD ["/opt/pol/pol"] 

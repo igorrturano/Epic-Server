@@ -67,19 +67,19 @@ function SetupName(mobile)
   var nametemplate := GetConfigString(npcelem, "NameTemplate");
 	var name_elem := npc_names[nametemplate];
 	if ( !name_elem )
-    //printtextabove(mobile, "npcdesc: " + npccfgfile);
-    //printtextabove(mobile, "npc template " + ParseTemplateName(mobile.npctemplate).template);
-    //printtextabove(mobile, "npc_name: " + npc_names);
-    //printtextabove(mobile, "nametemplate: " + nametemplate);
-    //printtextabove(mobile, "name_elem: " + name_elem);
+    //printtext(mobile, "npcdesc: " + npccfgfile);
+    //printtext(mobile, "npc template " + ParseTemplateName(mobile.npctemplate).template);
+    //printtext(mobile, "npc_name: " + npc_names);
+    //printtext(mobile, "nametemplate: " + nametemplate);
+    //printtext(mobile, "name_elem: " + name_elem);
 		return 0;
 	endif
 
 	var name_list := GetConfigStringArray(name_elem, "Name");
 	if ( !name_list )
-    //printtextabove(mobile, "elem name not found");
-    //printtextabove(mobile, "name_elem " + name_elem);
-    //printtextabove(mobile, "name_list " + name_list);
+    //printtext(mobile, "elem name not found");
+    //printtext(mobile, "name_elem " + name_elem);
+    //printtext(mobile, "name_list " + name_list);
 		return 0;
 	endif
 

@@ -10,7 +10,7 @@ include ":timedscripts:timedScripts";
 
 function removeDisguise(who)
 	var original := GetObjProperty(who, "disfarce");
-//	printtextabove(who, "original " + original);
+//	printtext(who, "original " + original);
 	if (original == error)
 		sendsysmessage(who, "Nao foi possivel achar sua configuracao inicial.");
 		return 1;

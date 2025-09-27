@@ -6,7 +6,7 @@ include ":fls_core:packets";
 
 program cureScript(params)
 	var mobile := params[1];
-	
+
 	if (mobile.npctemplate)
 		var normal_speed := GetObjProperty(mobile, "runspeed");
 

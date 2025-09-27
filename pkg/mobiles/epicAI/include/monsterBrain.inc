@@ -31,6 +31,7 @@ function MonsterBrain()
                 HandleMonsterLeftArea(me.opponent);
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
+                is_ranged := isMonsterRanged();
                 is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
             endif
         endif
@@ -71,7 +72,7 @@ function MonsterBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
@@ -95,7 +96,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-
+	EraseObjProperty(me, "#taunt_opponent");
     // Evita spam de falas
     if (GetCooldown(me, "combat_speech") > 0)
         return;
@@ -109,7 +110,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintTextAbove(me, "*"+me.name+" se acovarda*");
+            PrintText(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -291,7 +292,28 @@ function HandleMonsterEnteredArea(source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-    
+
+    // Handle doppelganger transformation first
+    if (me.isDoppelganger())
+        // Hide the doppelganger
+        me.hidden := 1;
+
+        // Perform transformation
+        if (DoppelgangerTransformation(me, source))
+            sleepms(500); // Brief delay for effect
+            // Re-evaluate ranged status after transformation
+            is_ranged := isMonsterRanged();
+            // Enable archer-specific abilities if needed
+            if (is_ranged)
+                GrantPrivilege(me, "firewhilemoving");
+                me.enable("firewhilemoving");
+            endif
+        endif
+
+        // Reveal the transformed doppelganger
+        me.hidden := 0;
+    endif
+
     handleMonsterInitialReaction(source);
     if (me.canCharge())
         StartCharge(me, source);
@@ -310,7 +332,7 @@ function HandleMonsterEnteredArea(source, is_ranged)
     endif
 
     HandleMonsterCombatEvent(source, is_ranged);
-    
+
     return 1;
 endfunction
 
@@ -331,7 +353,7 @@ function handleMonsterInitialReaction(source)
                     Say(responseAI);
                 else
                     Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
+                    PrintText(me, "*Aterrorizado*");
                 endif
                 FleeFrom(source);
                 return 1;

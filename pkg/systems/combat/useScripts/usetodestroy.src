@@ -1,8 +1,7 @@
 /* $Id: bladed.src 1344 2006-05-12 08:12:38Z austin $
  *
  *
- */
- 
+*/
 use uo;
 use os;
 use util;
@@ -17,7 +16,7 @@ include ":tn:cooldown";
 include ":destroyable:include/destroyItem";
 
 program use_Break(who, tool)
-	if(who.warmode)
+	if (who.warmode)
 		return ComportamentoWarMode(who, tool);
 	endif
 endprogram

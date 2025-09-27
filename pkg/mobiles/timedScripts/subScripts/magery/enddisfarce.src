@@ -1,4 +1,4 @@
- use uo;
+use uo;
 use os;
 
 include ":attributes:attributes";
@@ -8,6 +8,6 @@ program cureScript(params)
 
 	var name := GetObjProperty(who, "originalname");
 	SetName(who, name);
-	
+
 	return 1;
 endprogram

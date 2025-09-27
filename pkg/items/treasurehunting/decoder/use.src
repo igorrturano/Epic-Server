@@ -7,25 +7,26 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":coords:coords";
 
-program decode_map( who, map )
-	if(!Accessible(who, map))
+program decode_map(who, map)
+	if (!Accessible(who, map))
 		SendSysMessageEx(who, "Voce nao alcanca o mapa.", SSM_FAIL);
 		return;
 	endif
-		if(map.movable == 0)
-			SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
-			return;
-		endif   var cfgfile := ReadConfigFile( "itemdesc" );
+	if (map.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return;
+	endif
+	var cfgfile := ReadConfigFile("itemdesc");
 
-	var elem := FindConfigElem( cfgfile, map.objtype );
-	var maplevel := GetConfigInt( elem, "Level" );
-	//var maxlevel := GetMaxMapLevel( who );
+	var elem := FindConfigElem(cfgfile, map.objtype);
+	var maplevel := GetConfigInt(elem, "Level");
+	// var maxlevel := GetMaxMapLevel( who );
 
-	//if( maplevel > maxlevel )
+	// if( maplevel > maxlevel )
 	if (!TemHabilidade(who, "Desbravador Nato"))
-		SendSysMessageEx( who, "Voce nao compreende esse mapa.", SSM_FAIL );
+		SendSysMessageEx(who, "Voce nao compreende esse mapa.", SSM_FAIL);
 	else
-		CreateTreasureMap( who, map, maplevel );
+		CreateTreasureMap(who, map, maplevel);
 	endif
 endprogram
 
@@ -47,40 +48,38 @@ function GetMaxMapLevel(who)
 	endif
 endfunction
 */
-
 function CreateTreasureMap(who, oldmap, maplevel)
-	var map := CreateItemInBackpack( who, GetObjtypeByName("map_nonedit"), 1 );
+	var map := CreateItemInBackpack(who, GetObjtypeByName("map_nonedit"), 1);
 
-	/*if (TemHabilidade(who, "Tesouro Escondido"))
+	/* if (TemHabilidade(who, "Tesouro Escondido"))
 		SetObjProperty(map, "tesouroescondido", 1);
 	endif
-	*/
-
+*/
 	SetObjProperty(map, "level", maplevel);
 	SetObjProperty(map, "decoder", who.serial);
-	//map.name := "Mapa do tesouro [Coordenadas: " + coordenada + "] [desvendado por " + who.name + "]";
+	// map.name := "Mapa do tesouro [Coordenadas: " + coordenada + "] [desvendado por " + who.name + "]";
 	SetTreasureCoords(map);
-	SendSysMessage( who, "Voce desvendou o mapa!" );
-	DestroyItem( oldmap );
+	SendSysMessage(who, "Voce desvendou o mapa!");
+	DestroyItem(oldmap);
 endfunction
 
-function SetTreasureCoords( map );
-	var cfgfile := ReadConfigFile( "treasure" );
-	var num := GetConfigMaxIntKey( cfgfile );
-	var pick := (RandomInt( num ) + 1);
-	var elem := FindConfigElem( cfgfile, pick );
-	var x := GetConfigInt( elem, "X" );
-	var y := GetConfigInt( elem, "Y" );
-	var z := GetConfigInt( elem, "Z" );
-	SetObjProperty( map, "chestx", x );
-	SetObjProperty( map, "chesty", y );
-	SetObjProperty( map, "chestz", z );
-	//SetName( map, "a treasure map" );
+function SetTreasureCoords(map)
+	var cfgfile := ReadConfigFile("treasure");
+	var num := GetConfigMaxIntKey(cfgfile);
+	var pick := (RandomInt(num) + 1);
+	var elem := FindConfigElem(cfgfile, pick);
+	var x := GetConfigInt(elem, "X");
+	var y := GetConfigInt(elem, "Y");
+	var z := GetConfigInt(elem, "Z");
+	SetObjProperty(map, "chestx", x);
+	SetObjProperty(map, "chesty", y);
+	SetObjProperty(map, "chestz", z);
+	// SetName( map, "a treasure map" );
 	var chstx := GetObjProperty(map, "chestx");
 	var chsty := GetObjProperty(map, "chesty");
 	var coordenada := ToSextant(chstx, chsty);
-	SetName( map, "Mapa do tesouro [Coordenadas: " + coordenada + "]");
-	/*
+	SetName(map, "Mapa do tesouro [Coordenadas: " + coordenada + "]");
+/*
 	if( x < 265 )
 		map.xwest := 0;
 	else
@@ -96,7 +95,7 @@ function SetTreasureCoords( map );
 	map.gumpwidth := 200;
 	map.gumpheight := 200;
 	map.AppendPin(x,y);
-	*/
+*/
 endfunction
 
 /*

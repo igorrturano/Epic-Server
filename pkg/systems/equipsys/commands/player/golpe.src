@@ -16,12 +16,12 @@ function OpenGump(who)
 		var weapon := who.weapon;
 		var weaponAttr := weapon.getAttrBase();
 
-		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
+		var gump := GFECreateGump("Postura de Combate", 225, 115, { HIDE_TITLE, HIDE_PAGE, BORDER_BLUE });
 		var x := 15;
 		var y := 40;
 
 		if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
-			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x - 13, y - 23, 30062);
 			GFGumpPic(gump, x, y, 1004, COLOR_RED);
 			x += 70;
 			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
@@ -30,7 +30,7 @@ function OpenGump(who)
 		elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
 			x += 70;
-			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x - 13, y - 23, 30062);
 			GFGumpPic(gump, x, y, 1008, COLOR_RED);
 			x += 70;
 			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
@@ -39,7 +39,7 @@ function OpenGump(who)
 			x += 70;
 			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
 			x += 70;
-			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x - 13, y - 23, 30062);
 			GFGumpPic(gump, x, y, 1009, COLOR_RED);
 		endif
 
@@ -53,7 +53,7 @@ function OpenGump(who)
 		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
 			return 0;
 		endif
-		
+
 		if (input[0] == 0)
 			return;
 		elseif (input[0] == 10)
@@ -65,13 +65,15 @@ function OpenGump(who)
 		endif
 
 		weapon.setAttrBase(weaponAttr);
-		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
-		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}", SSM_INFO);
+		PrintText(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
+		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}",
+				   SSM_INFO);
 	endwhile
 endfunction
 
 function canChangePostura(who, weapon)
-	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) || (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
+	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) ||
+	 (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
 		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
 		return 0;
 	endif

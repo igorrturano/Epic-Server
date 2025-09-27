@@ -3,7 +3,7 @@
  * habilidades.inc
  *
  * Created: 12/05/2025 13:15PM
- * Updated: 12/05/2025 13:15PM
+ * Updated: 13/09/2025 05:15PM
  *
  * Responsável por:
  * Gerenciar a aplicar os cálculos das habilidades de combate.
@@ -20,6 +20,7 @@
 include "damage";
 include "hitchance";
 include "mainHitScript";
+include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum HAB_TAGS
@@ -401,7 +402,7 @@ function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo := s
 			EraseObjProperty(attacker.weapon, "backstab");
 			EraseObjProperty(attacker, "#nextcritical");
 			if (!CheckHab_SempreAlerta(attacker, defender, attackInfo))
-				ataqueFurtivo(attacker, defender);
+				CheckHab_AtaqueFurtivo(attacker, defender);
 			endif
 		endif
 	endif
@@ -446,7 +447,7 @@ endfunction
 function CheckHab_SempreAlerta(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(defender, "Sempre Alerta"))
 		TS_StartTimer(attacker, "paralysis", 5);
-		PrintTextAbove(defender, "*Sempre Alerta*");
+		PrintText(defender, "*Sempre Alerta*");
 		return 1;
 	endif
 
@@ -508,7 +509,7 @@ function CheckHab_KenNoTatsujin(byref attacker, byref defender, byRef attackInfo
 	
 	if (TemHabilidade(defender, HAB_NAME))
 		if (!defender.shield)
-			printtextabove(defender, $"*{HAB_NAME}*");
+			printtext(defender, $"*{HAB_NAME}*");
 			PlaySoundEffect(defender, 0x51f);
 			defender.attack_once(attacker);
 
@@ -693,7 +694,7 @@ endfunction
 function CheckHab_DisparoMistico(byref attacker, byref defender, byRef attackInfo := struct{})
 	var trickster_bonus := CInt( AP_GetSkill( attacker, ARCANA ) / 20 );
 	if ( getCooldown( attacker, "disparomistico" ) )
-		PrintTextAbovePrivate( attacker, "*passo nebuloso*", attacker );
+		PrintTextPrivate( attacker, "*passo nebuloso*", attacker );
 		SetCooldown( attacker, "disparomisticoHit", trickster_bonus );
 		return 1;
 	endif
@@ -707,7 +708,7 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo 
 	if (GetCooldown(defender, "contraataque") > 0)
 		if (GetObjProperty(defender, "#contraatacando") == error)
 			SetObjProperty(defender, "#contraatacando", 1);
-			PrintTextAbove(defender, "*contra ataque*");
+			PrintText(defender, "*contra ataque*");
 			//defender.attack_once(attacker);
 			var new_hit_chance := CalculateHitChance(defender, attacker);
 			var new_random := RandomInt(100);

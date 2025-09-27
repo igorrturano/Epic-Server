@@ -12,9 +12,9 @@ use uo;
 
 program propertyinfo(who, property)
 	var targ := target(who);
-	if ( !targ )
+	if (!targ)
 		SendSysMessage(who, "Cancelled");
 		return;
 	endif
-	SendSysMessage(who, "Property "+property+": "+targ.get_member(property));
+	SendSysMessage(who, "Property " + property + ": " + targ.get_member(property));
 endprogram

@@ -1,8 +1,7 @@
 /*
  * $Id$
  *
- */
-
+*/
 use uo;
 use os;
 
@@ -17,18 +16,18 @@ program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
 	params := 0; // No longer needed
-	
-	var targ := MS_Target(who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS+TGTOPT_HARMFUL);
-	if ( !targ.IsA(POLCLASS_MOBILE) )
+
+	var targ := MS_Target(who, info.targ, "Escolha um alvo.", TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Cancelado.");
 		return 0;
 	endif
-	
+
 	PlaySoundEffect(targ, SFX_SPELL_REACTIVE_ARMOR);
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);	
-	
+	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+
 	SetObjProperty(targ, "mage", who.serial);
-	TS_StartTimer(targ, "PhysicalResist", CINT(AP_GetSkill(who, MAGERY)*2)+30, 1, who);
-	
+	TS_StartTimer(targ, "PhysicalResist", CINT(AP_GetSkill(who, MAGERY) * 2) + 30, 1, who);
+
 	return 1;
 endprogram

@@ -5,11 +5,11 @@ use npc;
 program textcmd_attack(who)
 	SendSysMessage(who, "Selecione o NPC.");
 	var targ := target(who);
-	if ( !targ.npctemplate ) 
+	if (!targ.npctemplate)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
-	
+
 	SendSysMessage(who, "Clique para onde ele deve ir.");
 	var loc := TargetCoordinates(who);
 

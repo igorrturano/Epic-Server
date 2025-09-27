@@ -1,7 +1,6 @@
 /* $Id: openpack.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
-
+*/
 use uo;
 use os;
 include "include/client";
@@ -22,7 +21,6 @@ program textcmd_openPack(who, robe)
 		PrintText(who, "*remove o capuz*");
 	endif
 	EquipItem(who, robe);
-
 
 	return 1;
 endprogram

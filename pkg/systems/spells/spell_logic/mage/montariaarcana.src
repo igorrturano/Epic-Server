@@ -1,4 +1,4 @@
-   use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -14,8 +14,6 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-
-
 	var globo := 0;
 	var tentativas := 0;
 
@@ -25,15 +23,15 @@ program SpellScript(params)
 		template := ":brainai:horse1";
 	elseif (r == 2)
 		template := ":brainai:horse2";
-	elseif( r == 3)
+	elseif (r == 3)
 		template := ":brainai:horse3";
-	elseif ( r == 4)
+	elseif (r == 4)
 		template := ":brainai:horse4";
 	endif
 
-	while( !globo )
+	while (!globo)
 
-		var dir := RandomInt(6)+1;
+		var dir := RandomInt(6) + 1;
 		var finalx := who.x;
 		var finaly := who.y;
 		if (dir == 1)
@@ -47,15 +45,15 @@ program SpellScript(params)
 			finaly := finaly - 13;
 		elseif (dir == 4)
 			finalx := finalx + 13;
-		elseif (dir == 5 )
+		elseif (dir == 5)
 			finaly := finaly + 13;
-		elseif( dir == 6 )
+		elseif (dir == 6)
 			finalx := finalx - 13;
 			finaly := finaly + 13;
 		endif
 
 		var height := GetWorldHeight(finalx, finaly, who.realm);
-		if (CheckLosAt( who, finalx, finaly, height ))
+		if (CheckLosAt(who, finalx, finaly, height))
 			globo := CreateNpcFromTemplate(template, finalx, finaly, height, 0, who.realm);
 		endif
 		if (tentativas == 10)
@@ -79,7 +77,7 @@ program SpellScript(params)
 	SetObjProperty(globo, "summoned", 1);
 	globo.script := ":ghaia:tamed";
 	RestartScript(globo);
-	TS_StartTimer(globo, "summon", GetSpellDuration(who)+180);
+	TS_StartTimer(globo, "summon", GetSpellDuration(who) + 180);
 
 	var ev := struct;
 	ev.type := EVID_HERDING;

@@ -12,14 +12,14 @@ program loko(params)
 	var cdtime := params[2];
 	var cdname := params[3];
 
-	//printtextabove(who, "loko");
+	// printtext(who, "loko");
 
-	if ( IsBloodied(who) && who.opponent) //
+	if (IsBloodied(who) && who.opponent) //
 		if (CoordinateDistance(who.x, who.y, who.opponent.x, who.opponent.y) <= 3)
 			TS_StartCooldown(who, cdname, cdtime);
 			who.frozen := 1;
 			PerformAction(who, 0x0d);
-			PrintTextAbove(who, "*drenando sangue*");
+			PrintText(who, "*drenando sangue*");
 			TS_StartTimer(who.opponent, "paralyze", 6);
 			var i := 0;
 			while (i < 5)
@@ -31,7 +31,7 @@ program loko(params)
 			who.frozen := 0;
 			if (randomint(100) < 5)
 				SendSysMessageEx(who.opponent, "Voce esta muito fraco com a perda de sangue.", SSM_FAIL);
-				TS_StartTimer(who.opponent,  "weaken", 360, 40, who, 1);
+				TS_StartTimer(who.opponent, "weaken", 360, 40, who, 1);
 			endif
 		endif
 	endif

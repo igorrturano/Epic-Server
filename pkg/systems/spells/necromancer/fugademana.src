@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -27,9 +27,10 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	var e := TS_StartTimer(targ, "fugademana", cint(AP_GetSkill(who, ARCANA)/2), cint(AP_GetSkill(who, ARCANA)), who, 0);
+	var e := TS_StartTimer(targ, "fugademana", cint(AP_GetSkill(who, ARCANA) / 2),
+							cint(AP_GetSkill(who, ARCANA)), who, 0);
 	if (e == error)
-		printtextabove(who, "sonho " + e);
+		printtext(who, "sonho " + e);
 	endif
 
 	handleSilentMagic(who, who, 385);

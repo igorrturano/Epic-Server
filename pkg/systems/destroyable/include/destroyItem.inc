@@ -634,7 +634,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	if(!IsDestroco(item))
-		PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
+		PrintTextPrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
 		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
 	endif
 

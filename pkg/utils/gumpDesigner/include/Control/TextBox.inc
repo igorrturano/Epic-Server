@@ -63,7 +63,7 @@ class TextBox(Control)
 
 	function ToString(this)
 		return "TextBox(gumpId=" + this.GetGumpId()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
 			+ ", width=" + this.GetWidth()

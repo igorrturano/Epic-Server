@@ -10,26 +10,26 @@ program Tame(who)
 
 	var cmds := GetObjProperty(targ, "cmds");
 	var keys := array;
-	if(cmds)
+	if (cmds)
 		keys := cmds.keys();
 	endif
 
-	if ( !targ.IsA(POLCLASS_NPC) )
+	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessage(who, "Soh use em NPCs!");
 		return;
 	endif
 
-	if( targ.master )
+	if (targ.master)
 		text += "Dono: " + targ.master.name + " (" + targ.master.acctname + ")<BR>";
 	endif
 
 	var group := GetObjProperty(targ, "Group");
-	if ( group )
+	if (group)
 		text += "<BR>Comando de Grupo: " + group;
 	endif
 
 	var all := GetObjProperty(targ, "All");
-	if ( all )
+	if (all)
 		text += "<BR>Comando para Todos: " + all;
 	endif
 
@@ -40,8 +40,7 @@ program Tame(who)
 		text += "Plural: " + cmd.plural;
 	endforeach
 
-
-	if( len(keys) == 0 )
+	if (len(keys) == 0)
 		text += "Nenhum comando foi ensinado ainda.";
 	endif
 

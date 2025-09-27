@@ -4,9 +4,9 @@ include ":disguise:disguise";
 
 program TimedScript_EndClumsy(params)
 	var mobile := params[1];
-	
-	//printtextabove(mobile, "FIM DO DISFARCE");
+
+	// printtext(mobile, "FIM DO DISFARCE");
 	removeDisguise(mobile);
 
 	return 1;
-endprogram 
+endprogram

@@ -22,7 +22,7 @@ class TooltipText(Control)
 
 	function ToString(this)
 		return "Tooltip(type=" + this.GetType()
-			+ ", name=" + this._GetName()
+			+ ", name=" + this.GetName()
 			+ ", text=" + this.GetText()
 			+ ")";
 	endfunction

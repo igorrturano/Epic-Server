@@ -1,6 +1,8 @@
+use os;
+
+include "client";
 include "include/epicConstants";
 include ":combat:damage";
-
 
 function playAltarAnimations(who, item)
    var altar := altarByObjtype(who, item);

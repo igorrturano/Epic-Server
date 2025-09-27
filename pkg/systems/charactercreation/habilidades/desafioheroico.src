@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include "include/say";
@@ -26,4 +26,4 @@ program manobra(attacker)
 
 	endwhile
 
-endprogram 
+endprogram

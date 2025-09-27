@@ -7,7 +7,7 @@ program mdestroy(who)
 	var targ := Target(who);
 	SendSysMessageEx(who, "Escolh os itens, aperte Esc para cancelar.", SSM_INFO);
 
-	while(targ)
+	while (targ)
 		DestroyItem(targ);
 		targ := target(who);
 	endwhile

@@ -3,23 +3,23 @@ use uo;
 include "include/say";
 include ":keys:key";
 
-program rekey( who )
+program rekey(who)
 
-    SendSysMessageEx( who, "Escolha uma porta para refazer a chave.", SSM_REQUEST );
-    var lockeditem := Target( who);
+	SendSysMessageEx(who, "Escolha uma porta para refazer a chave.", SSM_REQUEST);
+	var lockeditem := Target(who);
 
-    if(! lockeditem)
-       SendSysMessageEx( who, "Cancelado.", SSM_FAIL );
-       return;
-    endif
+	if (!lockeditem)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
 
-    var lockid := AllocLockId();
+	var lockid := AllocLockId();
 
-    SetObjProperty( lockeditem, "LockId", lockid );
-   
-    var key := CreateItemInBackpack( who, "ironkey", 1 );
-    SetObjProperty( key, "LockId", lockid );
+	SetObjProperty(lockeditem, "LockId", lockid);
 
-    SendSysMessageEx( who, "A chave criada esta na sua mochila.", SSM_INFO );
+	var key := CreateItemInBackpack(who, "ironkey", 1);
+	SetObjProperty(key, "LockId", lockid);
+
+	SendSysMessageEx(who, "A chave criada esta na sua mochila.", SSM_INFO);
 
 endprogram

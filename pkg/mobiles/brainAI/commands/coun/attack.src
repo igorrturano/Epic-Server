@@ -1,7 +1,7 @@
 /* $Id: attack.src 1383 2006-05-13 09:26:14Z austin $
  *
- */
-//Example: .attack -> Makes an npc attack another mobile.
+*/
+// Example: .attack -> Makes an npc attack another mobile.
 
 use uo;
 use os;
@@ -11,22 +11,22 @@ include "include/sysEvent";
 program textcmd_attack(who)
 	SendSysMessage(who, "Select an npc (attacker).");
 	var targ := target(who);
-	if ( !targ.npctemplate ) 
+	if (!targ.npctemplate)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
 	SetObjProperty(targ, "#ForcedTarget", 1);
-	
+
 	SendSysMessage(who, "Select a mobile (defender).");
 	var targ2 := target(who);
-	if ( !targ2.IsA(POLCLASS_MOBILE) )
+	if (!targ2.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
 	SetObjProperty(targ2, "#ForcedTarget", 1);
 
-	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=targ2};
+	var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := targ2 };
 	SendEvent(targ, event);
-	
+
 	return 1;
 endprogram

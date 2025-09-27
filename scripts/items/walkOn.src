@@ -3,7 +3,7 @@ use os;
 
 program walkon(who, what)
 
-	var myscript := GetObjProperty(what,"walkon");
-	start_script(myscript,who);
+	var myscript := GetObjProperty(what, "walkon");
+	start_script(myscript, who);
 
 endprogram

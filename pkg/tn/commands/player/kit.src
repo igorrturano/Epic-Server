@@ -12,32 +12,34 @@ include ":spells:tnmagery";
 
 program kit(who)
 
-	if ( GetObjProperty(who, "kit") == "movidopelahonra")
+	if (GetObjProperty(who, "kit") == "movidopelahonra")
 		SetObjProperty(who, "kit", "movidopelagloria");
 	endif
 
-	if ( GetObjProperty(who, "kit") == "movidopelacompaixao")
+	if (GetObjProperty(who, "kit") == "movidopelacompaixao")
 		var lastuse := Cint(GetObjProperty(who, "curamao"));
-		if ( lastuse != 0)
-			if ( readGameClock() >= lastuse + 1800 )
+		if (lastuse != 0)
+			if (readGameClock() >= lastuse + 1800)
 				SetObjProperty(who, "lastuse", readgameclock());
 				healhand(who);
 			else
-				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + ( ((lastuse + 1800) - readgameclock())/60 )+ " minutos.");
+				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + (((lastuse + 1800) - readgameclock()) / 60)
+								+ " minutos.");
 				return;
 			endif
 		else
 			SetObjProperty(who, "lastuse", readgameclock());
 			healhand(who);
 		endif
-	elseif ( GetObjProperty(who, "kit") == "movidopelagloria")
+	elseif (GetObjProperty(who, "kit") == "movidopelagloria")
 		var lastuse := Cint(GetObjProperty(who, "curamao"));
-		if ( lastuse != 0)
-			if ( readGameClock() >= lastuse + 3600)
+		if (lastuse != 0)
+			if (readGameClock() >= lastuse + 3600)
 				SetObjProperty(who, "lastuse", readgameclock());
 				TS_StartTimer(who, "gloria", 10);
 			else
-				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + ((lastuse+3600-readgameclock())/60) + " minutos.");
+				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + ((lastuse + 3600 - readgameclock()) / 60)
+								+ " minutos.");
 				return;
 			endif
 		else
@@ -47,7 +49,6 @@ program kit(who)
 	endif
 
 endprogram
-
 
 function healhand(who)
 	var alvo := Target(who);

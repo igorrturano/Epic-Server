@@ -7,13 +7,13 @@ include ":combat:damage";
 include ":attributes:attributes";
 
 program doubleattack(who)
-    if (GetObjProperty(who, "Postura") == "Ofensiva") // Golpe com escudo
-        SendSysMessageEx(who, "Sua proxima defesa sera gloriosa.", SSM_INFO);
-    	SetCooldown(who, "defesasgloriosas", cint(AP_GetSkill(who, PARRY)/ 10));
-    elseif(GetObjProperty(who, "Postura") == "Defensiva" ) // Desarmar
-        SendSysMessageEx(who, "Sua proxima defesa sera surpreendente.", SSM_INFO);
-    	SetCooldown(who, "disarm", cint(AP_GetSkill(who, PARRY)/ 10));
-    endif
+	if (GetObjProperty(who, "Postura") == "Ofensiva") // Golpe com escudo
+		SendSysMessageEx(who, "Sua proxima defesa sera gloriosa.", SSM_INFO);
+		SetCooldown(who, "defesasgloriosas", cint(AP_GetSkill(who, PARRY) / 10));
+	elseif (GetObjProperty(who, "Postura") == "Defensiva") // Desarmar
+		SendSysMessageEx(who, "Sua proxima defesa sera surpreendente.", SSM_INFO);
+		SetCooldown(who, "disarm", cint(AP_GetSkill(who, PARRY) / 10));
+	endif
 
-    return 1;
+	return 1;
 endprogram

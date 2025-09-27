@@ -378,7 +378,7 @@ function SetBoss(npc, boss)
             SetObjProperty(npc, "HitScripts", hit_scripts);
          elseif (spec.name == "Special AI")
             npc.script := spec.ai;
-      //      printtextabove(npc, " " + spec.ai);
+      //      printtext(npc, " " + spec.ai);
             restartscript(npc);
          endif
          sleepms(2);
@@ -401,7 +401,7 @@ function FormatAttack(npctemplate, new_attack, AttackDamage)
 		"DamageType" := attack[3],
 		"AttackAnim" := cint(attack[4]),
       "AttackDamage" := AttackDamage,
-		"Attribute"  := npctemplate.AttackAttribute,
+		"Attribute"  := WRESTLING,
 		"MaxRange"   := npctemplate.MaxRange,
 		"MinRange"   := npctemplate.MinRange
 	};

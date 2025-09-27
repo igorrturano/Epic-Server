@@ -38,8 +38,8 @@ function AnimalBrain()
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
-                            EraseObjProperty(me, "#taunt_opponent");
                             HandleAnimalCombatEvent(opponent);
+                            EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
@@ -55,7 +55,7 @@ function AnimalBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 

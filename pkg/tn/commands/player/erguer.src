@@ -4,15 +4,16 @@ use basic;
 use math;
 
 include "include/say";
-CONST CIMA :=1;
-CONST BAIXO :=0;
-CONST ALTURA_MAX := 18;
-CONST ALTURA_MIN := 0;
+const CIMA := 1;
+const BAIXO := 0;
+const ALTURA_MAX := 18;
+const ALTURA_MIN := 0;
 
-program erguer(who,param)
+program erguer(who, param)
 
-	if(!param)
-		SendSysMessageEx(who, "Use .erguer seguido da altura relativa a sua que deseja. ("+ALTURA_MIN+" a "+ALTURA_MAX+").", SSM_INFO);
+	if (!param)
+		SendSysMessageEx(who, "Use .erguer seguido da altura relativa a sua que deseja. ("
+				   + ALTURA_MIN + " a " + ALTURA_MAX + ").", SSM_INFO);
 		return 0;
 	endif
 
@@ -21,7 +22,7 @@ program erguer(who,param)
 	if (!alvo)
 		SendSysMessage(who, "Cancelado", SSM_FAIL);
 		return 0;
-	elseif (!Accessible(who, alvo,2) || !CheckLineOfSight(who, alvo))
+	elseif (!Accessible(who, alvo, 2) || !CheckLineOfSight(who, alvo))
 		SendSysMessageEx(who, "Voce nao alcanca o alvo. Tente chegar mais perto.", SSM_FAIL);
 		return 0;
 	elseif (TypeOf(alvo.container) == "ItemRef")
@@ -41,13 +42,14 @@ program erguer(who,param)
 
 	var fixer := GetObjProperty(alvo, "fixer");
 	if ((who.serial != fixer) && (!who.cmdlevel))
-		SendSysMessageEx(who, "Esse item precisa ser transferido para voce antes de usar esse comando.", SSM_FAIL);
+		SendSysMessageEx(who, "Esse item precisa ser transferido para voce antes de usar esse comando.",
+				   SSM_FAIL);
 		return 0;
 	endif
 
-	var alturaDesejada := who.z + Min(ALTURA_MAX, Max(ALTURA_MIN, CInt(param))); //garante que o valor está entre 0 e 9
+	var alturaDesejada := who.z + Min(ALTURA_MAX, Max(ALTURA_MIN, CInt(param))); // garante que o valor está entre 0 e 9
 	if (who.cmdlevel)
-		alturaDesejada := who.z + CInt(param); //GM pode colocar alturas maiores
+		alturaDesejada := who.z + CInt(param); // GM pode colocar alturas maiores
 	endif
 	var direcao;
 	var altura := alvo.z;
@@ -60,34 +62,34 @@ program erguer(who,param)
 		direcao := CIMA;
 	endif
 
-	PrintTextAbove(who, "*Ajustando a altura de "+alvo.name+"*");
+	PrintText(who, "*Ajustando a altura de " + alvo.name + "*");
 	if (who.cmdlevel)
 		alvo.z := who.z + alturaDesejada;
 		return 1;
 	endif
 
-	while(altura != alturaDesejada)
+	while (altura != alturaDesejada)
 		if (direcao == CIMA)
-			PrintTextAbove(alvo, "*^*");
-			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z+1, alvo.realm, MOVEOBJECT_FORCELOCATION);
-			if (!Accessible(who, alvo,1) || !CheckLineOfSight(who, alvo))
-				PrintTextAbove(alvo, "*Nao consegue erguer mais que isso*");
-				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z-1, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			PrintText(alvo, "*^*");
+			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z + 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			if (!Accessible(who, alvo, 1) || !CheckLineOfSight(who, alvo))
+				PrintText(alvo, "*Nao consegue erguer mais que isso*");
+				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z - 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 				SendSysMessageEx(who, "Parou de ajustar a altura do item.", SSM_FAIL);
 				return 0;
 			endif
-			altura := altura+1;
+			altura := altura + 1;
 			Sleepms(500);
 		elseif (direcao == BAIXO)
-			PrintTextAbove(alvo, "*v*");
-			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z-1, alvo.realm, MOVEOBJECT_FORCELOCATION);
-			if (!Accessible(who, alvo,1) || !CheckLineOfSight(who, alvo))
-				PrintTextAbove(alvo, "*Nao consegue abaixar mais que isso*");
-				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z+1, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			PrintText(alvo, "*v*");
+			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z - 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			if (!Accessible(who, alvo, 1) || !CheckLineOfSight(who, alvo))
+				PrintText(alvo, "*Nao consegue abaixar mais que isso*");
+				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z + 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 				SendSysMessageEx(who, "Parou de ajustar a altura do item.", SSM_FAIL);
 				return 0;
 			endif
-			altura := altura+-1;
+			altura := altura + -1;
 			Sleepms(500);
 		endif
 	endwhile

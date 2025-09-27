@@ -7,19 +7,19 @@ include ":blood:blood";
 include ":combat:damage";
 
 program doubleattack(params)
-	var attacker	:= params[1];
-	var defender	:= params[2];
-	var weapon	:= params[3];
-	var armor	:= params[4];
-	var basedamage	:= params[5];
-	var rawdamage	:= params[6];
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
-	
-	PrintTextAbove(attacker, "*ataque giratorio*");
+
+	PrintText(attacker, "*ataque giratorio*");
 	var dmgList := dictionary;
-	dmgList := getNewDamageList(attacker);	
-	
-	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm ))
+	dmgList := getNewDamageList(attacker);
+
+	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
 		var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 		ApplyRawDamage(mobile, total);
 		MostraDano(attacker, mobile, total);
@@ -29,6 +29,5 @@ program doubleattack(params)
 		sleepms(250);
 		attacker.facing := attacker.facing + 1;
 	endforeach
-	
 
-endprogram 
+endprogram

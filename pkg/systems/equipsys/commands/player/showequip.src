@@ -1,5 +1,5 @@
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":equipsys:EquipWrapper/ViewModel/EquipWrapperWeapon";
+include ":equipsys:EquipWrapper/ViewModel/EquipWrapperArmor";
 
 program cmd_showequip(who, args)
 	var item, type;
@@ -34,3 +34,5 @@ program cmd_showequip(who, args)
 
 	SendSysMessage(who, item.ToString());
 endprogram
+
+// TODO: Criar um Gump que mostre o item

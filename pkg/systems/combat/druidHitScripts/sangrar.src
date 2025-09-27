@@ -1,17 +1,17 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
 include "include/client";
-include "include/say"; 
+include "include/say";
 //
 
 program taunt(who)
 
 	var targ := Target(who);
 
-	if(CoordinateDistance(who.x, who.y, targ.x, targ.y) <= 1 && targ && targ != who)
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) <= 1 && targ && targ != who)
 		if (TS_GetCooldown(who, "habilidade dois"))
 			return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
 		endif
@@ -19,7 +19,7 @@ program taunt(who)
 		if (who.hidden)
 			who.hidden := 0;
 			PrintText(who, "*dá o bote*");
-			PlaySoundEffect( who, 0x62 );
+			PlaySoundEffect(who, 0x62);
 			PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
 			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 3);
 		else
@@ -29,7 +29,4 @@ program taunt(who)
 
 	endif
 
-
-
 endprogram
-

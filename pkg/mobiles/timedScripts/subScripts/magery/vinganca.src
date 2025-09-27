@@ -9,12 +9,11 @@ program TimedScript_Clumsy(params)
 	var level := params[3];
 	params := 0; // Not needed anymore.
 
-	
-	if ( GetObjProperty(mobile, "#vinganca") )
+	if (GetObjProperty(mobile, "#vinganca"))
 		return 0;
 	endif
 
 	SetObjProperty(mobile, "#vinganca", 1);
-	
+
 	return 1;
 endprogram

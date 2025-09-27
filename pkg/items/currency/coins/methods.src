@@ -11,11 +11,11 @@ endprogram
 
 // This was borrowed from gems ethod. It needs fine tuned for coins
 // but that will wait for another day.
-exported function GetDropSound ( item )
+exported function GetDropSound(item)
 
-	if ( item.Amount <= 1 )
+	if (item.Amount <= 1)
 		return 0x2E2;
-	elseif ( item.Amount <= 50 )
+	elseif (item.Amount <= 50)
 		return 0x2E3;
 	else
 		return 0x2E4;
@@ -23,10 +23,10 @@ exported function GetDropSound ( item )
 
 endfunction
 
-exported function GetCoinType ( item )
+exported function GetCoinType(item)
 
 	var CoinType := "";
-	case(item.objtype)
+	case (item.objtype)
 		0xBA63: CoinType := "Copper";
 		0xBA64: CoinType := "Silver";
 		0xBA65: CoinType := "Gold";
@@ -35,7 +35,7 @@ exported function GetCoinType ( item )
 
 endfunction
 
-exported function IsCoin( unused item )
+exported function IsCoin(unused item)
 
 	return 1;
 
