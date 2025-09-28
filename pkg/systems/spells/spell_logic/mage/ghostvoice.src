@@ -31,7 +31,7 @@ program SpellScript(params)
 
 	var frase := RequestGump(who, "Escreva a frase");
 	var result := PrintText(targ, "[" + chosen_language + "] " + frase, _DEFAULT_TEXT_FONT,
-							  targ.last_textcolor);
+							 targ.last_textcolor);
 
 	return 1;
 endprogram
