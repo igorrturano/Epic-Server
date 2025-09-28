@@ -88,7 +88,7 @@ endclass
 
 enum class MSG_TYPE
 	SYSMSG,
-	PRINTTEXT,
+	PRINTTEXT
 endenum
 
 enum class MSG_MAXSIZE
