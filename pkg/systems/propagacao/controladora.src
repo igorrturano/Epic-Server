@@ -43,7 +43,7 @@ program controladoraPropagacao(esteItemMarcador)
 			event := Wait_For_Event(esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) ? cint(descanso)
 									 : 0);
 		else
-			Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo)); // descanso minimo
+			Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo)); // descanso minimo	
 			event := Wait_For_Event(0);
 		endif
 
@@ -60,7 +60,6 @@ program controladoraPropagacao(esteItemMarcador)
 		endif
 
 			if (!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
-
 				esteObjetoMarcador.EfetuarCiclo();
 			else
 				DestroyItem(esteItemMarcador);

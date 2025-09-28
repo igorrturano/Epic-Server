@@ -57,7 +57,7 @@ class MarcadorPropagacaoBase()
 				var marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
-					Sleepms(RandomIntMinMax(25,120));//Marreta pra diminuir a condição de corrida nr 1. kkkk
+					Sleepms(RandomIntMinMax(25,60));//Marreta pra diminuir a condição de corrida nr 1. kkkk
 					var posicaoAvaliada := this.AvaliarPosicao(
 													adjacenteX, 
 													adjacenteY, 
@@ -304,7 +304,7 @@ class ProspectoMobilesManipulador(IManipuladorTileScanner)
 	endfunction
 
 	function Executar(this,byref tileProspectado)
-		tileProspectado.AtribuiMobilesEncontrados(ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.esteItemMarcador.realm));
+		tileProspectado.AtribuiMobilesEncontrados(ListMobilesNearLocationEx(this.x, this.y, this.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.realm));
 	endfunction
 endclass
 
@@ -317,7 +317,7 @@ class ProspectoTerrenoManipulador(IManipuladorTileScanner)
 	endfunction
 
 	function Executar(this,byref tileProspectado)
-		tileProspectado.AtribuiMobilesEncontrados(GetMapInfo( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.realm ));
+		tileProspectado.AtribuiTerrenoInfo(GetMapInfo( this.x, this.y, this.realm ));
 	endfunction
 endclass
 
