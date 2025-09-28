@@ -175,13 +175,17 @@ class MarcadorPropagacaoBase()
 		
 	endfunction
 
-	function Prospectar(this, opcoes := array)
+	function Prospectar(this, opcoes := array, tileProspectado := 0)
 		var tileScanner := TileScanner(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,this.esteItemMarcador.realm); 
 		if(opcoes && opcoes.size() > 0)
 			foreach opcao in (opcoes)
 				Sleepms(2);
 				tileScanner.AdicionaManipulador(opcao);
 			endforeach
+
+			if(tileProspectado)
+				tileScanner.AtribuiTileProspectado(tileProspectado);
+			endif
 
 			return tileScanner.Prospectar();
 		else
@@ -230,6 +234,13 @@ class TileScanner()
 		this.z := z;
 		this.realm := realm;
 		this.manipuladores := dictionary;
+		this.tileProspectado := 0;
+	endfunction
+
+	function AtribuiTileProspectado(this, tileProspectado)
+		this.tileProspectado := tileProspectado;
+
+		return this;
 	endfunction
 
 	function AdicionaManipulador(this,  tipo, deveIgnorarZ := false)
@@ -253,12 +264,16 @@ class TileScanner()
 	endfunction
 
 	function Prospectar(this)
-		var tileProspectado := TileProspectado();
+		if(!this.tileProspectado)
+			this.tileProspectado := TileProspectado();
+		endif
+		
 		foreach manipulador in (this.manipuladores)
 			Sleepms(2);
-			manipulador.Executar(tileProspectado);
+			manipulador.Executar(this.tileProspectado);
 		endforeach
-		return tileProspectado;
+
+		return this.tileProspectado;
 	endfunction
 
 endclass
