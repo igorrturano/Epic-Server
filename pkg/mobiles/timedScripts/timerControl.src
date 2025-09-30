@@ -251,7 +251,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 	var elem_info := TS_GetCfgElem(event.name);
 	if (elem_info.errortext)
 		printtext(mobile, "Error::AddNewTimer() - Unable to find config elem ["
-						+ event.name + "] - " + elem_info.errortext);
+				   + event.name + "] - " + elem_info.errortext);
 		return 0;
 	endif
 
@@ -260,7 +260,7 @@ function AddNewTimer(mobile, byref event, byref timer_list, byref num_poisons)
 		script := Start_Script(elem_info.Script, array{ mobile, event.attacker, event.level });
 		if (script.errortext)
 			printtext(mobile, "Error::AddNewTimer() - Unable to start script [" +
-							elem_info.Script + "] ->" + script.errortext);
+					   elem_info.Script + "] ->" + script.errortext);
 			return 0;
 		endif
 	endif
@@ -383,7 +383,7 @@ function CheckTimerStatus(mobile, byref timer_list, byref cooldowns, byref num_p
 		var cfg_info := TS_GetCfgElem(_timer_iter);
 		if (cfg_info.errortext)
 			printtext(mobile, "Error::CheckTimerStatus() - Unable to find config elem ["
-							+ _timer_iter + "] - " + cfg_info.errortext);
+					   + _timer_iter + "] - " + cfg_info.errortext);
 			continue;
 		endif
 

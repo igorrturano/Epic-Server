@@ -23,7 +23,7 @@ program TimedScript_bard_inspirar_heroismo(params)
 			AP_ModifySkillMod(alvo, TACTICS, modificador);
 			Set_Critical(0);
 			PrintTextPrivate(alvo, "+" + modificador + " nas skills de batalha", caster, BARD_FONT,
-								   BARD_FONT_COLOR_GOOD);
+							  BARD_FONT_COLOR_GOOD);
 			SendSysMessage(alvo, "Sente-se mais focado para batalha.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 			return 1;
 		else
@@ -41,7 +41,7 @@ program TimedScript_bard_inspirar_heroismo(params)
 		AP_ModifySkillMod(alvo, TACTICS, modificador);
 		Set_Critical(0);
 		PrintTextPrivate(alvo, "+" + modificador + " nas skills de batalha", caster, BARD_FONT,
-							   BARD_FONT_COLOR_GOOD);
+				   BARD_FONT_COLOR_GOOD);
 		SendSysMessage(alvo, "Sente-se mais focado para batalha.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 		return 1;
 	endif
