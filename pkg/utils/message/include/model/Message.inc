@@ -11,9 +11,9 @@ class Message()
 		font := _DEFAULT_TEXT_FONT
 	}};
 
-	function Message(this, text, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT, lang := LANGUAGE::PORTUGUESE)
+	function Message(this, text, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._messages := array{};
-		this.AddMessage(text, color, font_number, lang);
+		this.AddMessage(text, color, font_number, langSource, langTarget);
 	endfunction
 
 	function AddMessage(this, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
@@ -50,17 +50,27 @@ class Message()
 		return this;
 	endfunction
 
+	function Translate(this)
+		foreach msg in (this._messages)
+			msg.text.Translate();
+			SleepMS(2);
+		endforeach
+
+		return this;
+	endfunction
+
 	function _SplitMessages(this, maxSize)
 		var msgSplitted := array{};
+		this.Translate();
 
 		foreach msg in (this._messages)
-			var msgFragmentsAmt := CInt(msg.text.GetTextTranslated().length() / maxSize) + 1;
+			var msgFragmentsAmt := CInt(msg.text.GetTextTarget().length() / maxSize) + 1;
 			
 			for i := 1 to (msgFragmentsAmt)
 				var start := ((i - 1) * maxSize) + 1;
-				var length := Min(msg.text.GetTextTranslated().length() - start + 1, maxSize);
+				var length := Min(msg.text.GetTextTarget().length() - start + 1, maxSize);
 				msgSplitted.append(struct{
-					text := msg.text.GetTextTranslated()[start, length],
+					text := msg.text.GetTextTarget()[start, length],
 					color := msg.color,
 					font := msg.font
 				});

@@ -1,4 +1,4 @@
-include "include/epicLoggerUtils";
+include ":message:TranslateController";
 
 class TranslatableText()
 	var _source := struct{
@@ -19,12 +19,18 @@ class TranslatableText()
 			text := text,
 			lang := langTarget
 		};
-
-		if (langTarget != "") this.Translate(); endif
 	endfunction
 
 	function GetTextSource(this)
 		return this._source.text;
+	endfunction
+
+	function GetLanguageSource(this)
+		return this._source.lang;
+	endfunction
+
+	function GetLanguageTarget(this)
+		return this._target.lang;
 	endfunction
 
 	function GetTextTarget(this)
@@ -43,7 +49,12 @@ class TranslatableText()
 	endfunction
 
 	function Translate(this)
-		this._target.text := TranslateText(this._source.text, this._target.lang, this._source.lang);
+		print("Chamou Translate!");
+		// this._target.text := TranslateText(this._source.text, this._source.lang, this._target.lang);
+		var translation := (Run_Script(":message:translate", this)).GetTextTarget();
+		Wait_For_Event(10);
+		this._target.text := translation;
+		print(this.ToString());
 		return this;
 	endfunction
 
@@ -55,6 +66,6 @@ endclass
 
 enum class LANGUAGE
 	PORTUGUESE := "pt-BR",
-	ENGLISH := "en-US",
-	SPANISH := "es-ES"
+	ENGLISH := "en",
+	SPANISH := "es"
 endenum
