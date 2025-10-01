@@ -1,0 +1,16 @@
+use os;
+use basic;
+
+include ":message:TranslateController";
+
+program translate(translatableText)
+
+    print("DEBUG SCRIPT: Translating message: " + translatableText.ToString());
+
+    // Translate the message
+    var translated_msg := TranslateText(translatableText.GetTextSource(), translatableText.GetLanguageSource(), translatableText.GetLanguageTarget());
+
+    print("DEBUG SCRIPT: Translation result: " + translated_msg);
+
+	return translatableText;
+endprogram
