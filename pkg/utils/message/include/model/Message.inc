@@ -3,6 +3,8 @@ use os;
 
 include "include/say";
 include "TranslatableText";
+// include ":message:TranslateController";
+include ":message:Translator";
 
 class Message()
 	var _messages := array{ struct{ // Array de structs com as informações de cada mensagem: string, cor, fonte, lingua
@@ -10,9 +12,11 @@ class Message()
 		color := _DEFAULT_TEXT_COLOR,
 		font := _DEFAULT_TEXT_FONT
 	}};
+	var _translator := Translator(); // Objeto tradutor
 
 	function Message(this, text, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._messages := array{};
+		this._translator := Translator();
 		this.AddMessage(text, color, font_number, langSource, langTarget);
 	endfunction
 
@@ -52,8 +56,7 @@ class Message()
 
 	function Translate(this)
 		foreach msg in (this._messages)
-			msg.text.Translate();
-			SleepMS(2);
+			msg.text := this._translator.SetText(msg.text).Translate();
 		endforeach
 
 		return this;

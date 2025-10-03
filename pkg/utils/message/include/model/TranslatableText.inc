@@ -1,6 +1,6 @@
-include ":message:TranslateController";
+include "ITranslatable";
 
-class TranslatableText()
+class TranslatableText(ITranslatable)
 	var _source := struct{
 		text := "",
 		lang := LANGUAGE::PORTUGUESE
@@ -25,6 +25,10 @@ class TranslatableText()
 		return this._source.text;
 	endfunction
 
+	function GetTextTarget(this)
+		return this._target.text;
+	endfunction
+
 	function GetLanguageSource(this)
 		return this._source.lang;
 	endfunction
@@ -33,12 +37,13 @@ class TranslatableText()
 		return this._target.lang;
 	endfunction
 
-	function GetTextTarget(this)
-		return this._target.text;
-	endfunction
-
 	function SetTextSource(this, text)
 		this._source.text := text;
+		return this;
+	endfunction
+
+	function SetTextTarget(this, text)
+		this._target.text := text;
 		return this;
 	endfunction
 
@@ -48,19 +53,8 @@ class TranslatableText()
 		return this;
 	endfunction
 
-	function Translate(this)
-		print("Chamou Translate!");
-		// this._target.text := TranslateText(this._source.text, this._source.lang, this._target.lang);
-		var translation := (Run_Script(":message:translate", this)).GetTextTarget();
-		Wait_For_Event(10);
-		this._target.text := translation;
-		print(this.ToString());
-		return this;
-	endfunction
-
 	function ToString(this)
-		return $"Texto original ({this._source.lang}): {this._source.text}
-			Texto traduzido ({this._target.lang}): {this._target.text}";
+		return $"Texto original ({this._source.lang}): {this._source.text} -> Texto traduzido ({this._target.lang}): {this._target.text}";
 	endfunction
 endclass
 
