@@ -94,6 +94,7 @@ function MapeiaPropPropagacao(structRecebido)
 	structPropagacao.tipoPropagacao := structRecebido.tipoPropagacao ? structRecebido.tipoPropagacao : structPropagacao.tipoPropagacao;
 	structPropagacao.estadoInicial := structRecebido.estadoInicial ? structRecebido.estadoInicial : structPropagacao.estadoInicial;
 	structPropagacao.marcadorOrigemPid := structRecebido.marcadorOrigemPid ? structRecebido.marcadorOrigemPid : structPropagacao.marcadorOrigemPid;
+	structPropagacao.marcadorOrigem := structRecebido.marcadorOrigem ? structRecebido.marcadorOrigem : structPropagacao.marcadorOrigem;
 	structPropagacao.esteMarcadorPid := structRecebido.esteMarcadorPid ? structRecebido.esteMarcadorPid : structPropagacao.esteMarcadorPid;
 	structPropagacao.marcadorProps := structRecebido.marcadorProps ? structRecebido.marcadorProps : structPropagacao.marcadorProps;
 	structPropagacao.efeitosPersonalizados := structRecebido.efeitosPersonalizados ? structRecebido.efeitosPersonalizados : structPropagacao.efeitosPersonalizados;

@@ -67,11 +67,11 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
 
     if(this._DeveEnviarEstimuloProgresso())
       this.isEstimuloEnviado := true;
-      this._EnviaEstimulo( 1 );
+      this.EnviaEstimulo( 1 );
     else
       if ( this._DeveMandarEstimuloParada() )
         this.isEstimuloParadaEnviado := true;
-        this._EnviaEstimulo( -1 );
+        this.EnviaEstimulo( -1 );
       endif
     endif
   endfunction
@@ -116,10 +116,10 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
     endif
 
     if ( this._DeveFicarIntenso() )
-      this._AtualizaEstado( ESTADO_PROPAGACAO::INTENSO );
+      this.AtualizaEstado( ESTADO_PROPAGACAO::INTENSO );
     else
       if ( this._DeveFicarDormente() )
-        this._AtualizaEstado( ESTADO_PROPAGACAO::DORMENTE );
+        this.AtualizaEstado( ESTADO_PROPAGACAO::DORMENTE );
       endif
     endif
   endfunction
@@ -129,7 +129,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   endfunction
 
   function _AdormecerMarcador(this)
-    this._AtualizaEstado( ESTADO_PROPAGACAO::DORMENTE );
+    this.AtualizaEstado( ESTADO_PROPAGACAO::DORMENTE );
     this.isAcumulando := false;
   endfunction
 
@@ -146,12 +146,11 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
             || this.isVisaoBloqueada;
   endfunction
 
-  function _AtualizaEstado( this, estado )
-    this.estado := estado;
-    var propPropagacao := this.PegaPropPropagacao();
-    propPropagacao.lerEstadoAtual := this.estado;
-    SetObjProperty( PROPNAME_PROP_PROPAGACAO, this.esteItemMarcador, propPropagacao );
+  function GanchoAntesAtualizaEstado( this, estado )
+    return estado;
+  endfunction
 
+  function AtualizaComportamentoMarcador(this)
     case ( this.estado )
       ESTADO_PROPAGACAO::INTENSO:
         this.AtribuiEstadoControle(CONTROLE_PROPAGACAO::ATIVO); 
@@ -183,7 +182,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
     return this.PegaPropPropagacao().geracaoMaxima <= this.geracao;
   endfunction
 
-  function _EnviaEstimulo( this, valor )
+  function EnviaEstimulo( this, valor )
     foreach adjacente in ( this.marcadoresAdjacentes )
       Sleepms( RandomIntMinMax( 20, 60 ) );
       var propAdjacente := GetObjProperty( adjacente, PROPNAME_PROP_PROPAGACAO );
@@ -197,7 +196,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   endfunction
 
   function Iniciar( this )
-    this._AtualizaEstado(this.estado);
+    this.AtualizaComportamentoMarcador();
     this.MarcarAdjacentes();
     if ( !this.tileProspectado )
       this.tileProspectado := this.Prospectar();
@@ -206,7 +205,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
 
   function InjetaCombustivel( this, deveResetarEstado )
     if ( deveResetarEstado )
-      this.AtribuiEstado( this.PegaPropPropagacao().estadoInicial );
+      this.AtualizaEstado( this.PegaPropPropagacao().estadoInicial );
       this.isAcumulando := true;
     endif
     this.mobileOrigem := SystemFindObjectBySerial( cint( this.PegaPropPropagacao().origem ),

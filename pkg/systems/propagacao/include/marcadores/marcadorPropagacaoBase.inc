@@ -1,8 +1,9 @@
 
 use util;
 include ":propagacao:include/propagacao";
+include ":propagacao:include/marcadores/IMarcadorPropagacao";
 
-class MarcadorPropagacaoBase()
+class MarcadorPropagacaoBase(IMarcadorPropagacao)
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento)
 		var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 		if(propPropagacao.geracao == 0)
@@ -19,6 +20,7 @@ class MarcadorPropagacaoBase()
 			this.isMarcadorCoberto := propPropagacao.isMarcadorCoberto;
 		endif
 		this.geracao := propPropagacao.geracao;
+		this.marcadorOrigem := propPropagacao.marcadorOrigem;
 		this.esteItemMarcador := esteItemMarcador;
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
@@ -31,16 +33,30 @@ class MarcadorPropagacaoBase()
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 
-	//@abstract 
-	function Iniciar() endfunction
-	//@abstract 
-	function EfetuarCiclo() endfunction
-  	//@abstract 
-	function RecebeEstimulo( valorEstimulo , isAcumulando ) endfunction
-  	//@abstract 
-	function EnviaEstimulo(valorEstimulo) endfunction
-  	//@abstract 
-	function InjetaCombustivel(deveResetarEstado) endfunction
+	uninit function Iniciar(this);
+	uninit function EfetuarCiclo(this);
+	uninit function EnviaEstimulo(this, valorEstimulo);
+	uninit function RecebeEstimulo(this, valorEstimulo, isAcumulando);
+	uninit function InjetaCombustivel(this, deveResetarEstado);
+	uninit function GanchoAntesAtualizaEstado(this, estado);
+	uninit function AtualizaComportamentoMarcador(this);
+
+	function AtualizaEstado(this, estado)
+	  var novoEstado := this.GanchoAntesAtualizaEstado(estado);
+	  var valorAntigo := this.estado;
+	  var prop := this.PegaPropPropagacao();
+
+	  Print("estado: " + estado + " atualizado: " + novoEstado);
+	  novoEstado := TypeOfInt(novoEstado) == OT_LONG? novoEstado : estado;
+	  
+      prop.lerEstadoAtual := novoEstado;
+      SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
+	  this.estado := novoEstado;
+
+	  if(valorAntigo != this.estado)
+	  	this.AtualizaComportamentoMarcador();
+	  endif
+	endfunction
 
 	function MarcarAdjacentes(this)
 		for deslocamentoX := -1 to 1
@@ -57,7 +73,7 @@ class MarcadorPropagacaoBase()
 				var marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
-					Sleepms(RandomIntMinMax(25,60));//Marreta pra diminuir a condição de corrida nr 1. kkkk
+					Sleepms(RandomIntMinMax(25,90));//Marreta pra diminuir a condição de corrida nr 1. kkkk
 					var posicaoAvaliada := this.AvaliarPosicao(
 													adjacenteX, 
 													adjacenteY, 
