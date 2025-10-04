@@ -41,12 +41,15 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 	uninit function GanchoAntesAtualizaEstado(this, estado);
 	uninit function AtualizaComportamentoMarcador(this);
 
+	function Propagar( this )
+	  return this.MarcarAdjacentes();
+	endfunction
+
 	function AtualizaEstado(this, estado)
 	  var novoEstado := this.GanchoAntesAtualizaEstado(estado);
 	  var valorAntigo := this.estado;
 	  var prop := this.PegaPropPropagacao();
 
-	  Print("estado: " + estado + " atualizado: " + novoEstado);
 	  novoEstado := TypeOfInt(novoEstado) == OT_LONG? novoEstado : estado;
 	  
       prop.lerEstadoAtual := novoEstado;
@@ -74,14 +77,14 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 				
 				if(!marcadorPropagacaoEncontrado)
 					Sleepms(RandomIntMinMax(25,90));//Marreta pra diminuir a condição de corrida nr 1. kkkk
-					var posicaoAvaliada := this.AvaliarPosicao(
+					var posicaoMarcador := this.BuscaPosicaoMarcador(
 													adjacenteX, 
 													adjacenteY, 
 													this.esteItemMarcador.z, 
 													this.esteItemMarcador.realm,
 													this.PegaPropPropagacao().tipoPropagacao
 												);
-					marcadorPropagacaoEncontrado := posicaoAvaliada.marcadorEncontrado;
+					marcadorPropagacaoEncontrado := posicaoMarcador.marcadorEncontrado;
 
 					if(DeveCriarMarcadorPropagacaoAdjacente(
 															marcadorPropagacaoEncontrado,
@@ -90,13 +93,13 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 														))
 
 						var propPropagacao := this.PegaPropPropagacao();
-						propPropagacao.isMarcadorCoberto := posicaoAvaliada.temTeto;
+						propPropagacao.isMarcadorCoberto := posicaoMarcador.temTeto;
 						
 						marcadorPropagacaoEncontrado := CriaMarcadorPropagacaoAdjacente(
 																this.esteItemMarcador,
 																adjacenteX, 
 																adjacenteY, 
-																posicaoAvaliada.zMaisProximo,
+																posicaoMarcador.zMaisProximo,
 																this.esteItemMarcador.realm, 
 																propPropagacao);
 					endif
@@ -112,7 +115,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 		endfor
 	endfunction
 
-	function AvaliarPosicao(this,x, y, z, realm, tipoPropagacao)
+	function BuscaPosicaoMarcador(this,x, y, z, realm, tipoPropagacao)
 		
 		var posicaoAvaliada := struct {zMaisProximo := z, temTeto := false, marcadorEncontrado := 0};
 		var menorDistancia := 4000;

@@ -476,10 +476,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         && !this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO);
   endfunction
 
-  function Propagar(this)
-    return this.MarcarAdjacentes();
-  endfunction
-
   function PegaCatalogoDano(this)
     var catalogoDano := this.PegaPropPropagacao().marcadorProps.catalogoDano;
     if(catalogoDano)

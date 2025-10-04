@@ -19,9 +19,13 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
 
     // esteItemMarcador.usescript := ":propagacao:dblClickMarcadorIncendio";
 
-    var propagacaoConfig := ReadConfigFile( ":propagacao:config/propagacao" );
     this.mobileOrigem := SystemFindObjectBySerial( cint( propPropagacao.origem ),
                                                            SYSFIND_SEARCH_OFFLINE_MOBILES );
+    this.InicializaVariaveis();
+  endfunction
+
+  function InicializaVariaveis(this)
+    var propagacaoConfig := ReadConfigFile( ":propagacao:config/propagacao" );
     //flags de controle;
     this.isAcumulando := true;
     this.isVisaoBloqueada := false;
@@ -48,8 +52,8 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   function EfetuarCiclo( this )
     if ( !this.IsEstadoControle( CONTROLE_PROPAGACAO::MORTO ) )
       this.ciclos++;
-      Print( this.ciclos + " - " + this.PegaPropPropagacao().geracaoMaxima + " - " + this.isAcumulando + " geracao: " + this.geracao
-           + " geracaoMaxima " + this.PegaPropPropagacao().geracaoMaxima + " serial: " + this.esteItemMarcador.serial );
+      //Print( this.ciclos + " - " + this.PegaPropPropagacao().geracaoMaxima + " - " + this.isAcumulando + " geracao: " + this.geracao
+      //     + " geracaoMaxima " + this.PegaPropPropagacao().geracaoMaxima + " serial: " + this.esteItemMarcador.serial );
       this._ProcessaTile();
       this._ProcessaEstado();
       this._ProcessaEnvioEstimulo();
@@ -141,9 +145,32 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   endfunction
 
   function _DeveFicarDormente( this )
-    return this.esteItemMarcador.graphic != this.graficos[ESTADO_PROPAGACAO::DORMENTE] 
-            && !this.isAcumulando 
+    
+    return (this.esteItemMarcador.graphic != this.graficos[ESTADO_PROPAGACAO::DORMENTE] 
+            && !this.isAcumulando
+            && this.IsProximaGeracaoDormente()) 
             || this.isVisaoBloqueada;
+  endfunction
+
+  function IsProximaGeracaoDormente(this)
+    var totalEncontrado := 0;
+    var totalDormente := 0;
+
+    if( this._IsUltimaGeracao())
+      return true;
+    endif
+
+    foreach marcador in (this.marcadoresAdjacentes)
+      Sleepms(2);
+      if(marcador.PegaGeracao() == this.geracao + 1)
+        totalEncontrado++;
+        if(marcador.LerEstado() == ESTADO_PROPAGACAO::DORMENTE)
+          totalDormente++;
+        endif
+      endif
+    endforeach
+
+    return totalEncontrado == totalDormente;
   endfunction
 
   function GanchoAntesAtualizaEstado( this, estado )
@@ -179,7 +206,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   endfunction
 
   function _IsUltimaGeracao( this )
-    return this.PegaPropPropagacao().geracaoMaxima <= this.geracao;
+    return this.PegaPropPropagacao().geracaoMaxima <= this.geracao || this.IsLimiteGeracaoAlcancado(this.geracao);
   endfunction
 
   function EnviaEstimulo( this, valor )
@@ -206,7 +233,7 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   function InjetaCombustivel( this, deveResetarEstado )
     if ( deveResetarEstado )
       this.AtualizaEstado( this.PegaPropPropagacao().estadoInicial );
-      this.isAcumulando := true;
+      this.InicializaVariaveis();
     endif
     this.mobileOrigem := SystemFindObjectBySerial( cint( this.PegaPropPropagacao().origem ),
                                                            SYSFIND_SEARCH_OFFLINE_MOBILES );
@@ -220,7 +247,9 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
       this.ciclosRetornoMarcador := this.ciclos;
     endif
     this._ProcessaEstado();
-    Print( "Valor recebido ! " + valor + " - " + this.isAcumulando  + " geracao: " + this.geracao);
+    if(this.geracao == 0)
+      Print( "Valor recebido ! " + valor + " - " + this.isAcumulando  + " geracao: " + this.geracao);
+    endif
   endfunction
 
   function _ProcessaObjetosEncontrados( this )
@@ -231,32 +260,28 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
       Sleepms( 2 );
       if(item.serial == this.esteItemMarcador.serial) continue; endif
       var tilesInfo := BuscaConfiguracaoTiles( item );
-      if ( !this.isVisaoBloqueada )
-        this.isVisaoBloqueada := this._ChecaVisaoBloqueada( tilesInfo );
-      endif
+      this._VerificaVisaoBloqueada( tilesInfo );
     endforeach
 
     foreach itemEstatico in ( this.tileProspectado.PegaEstaticosEncontrados() )
       Sleepms( 2 );
       var tilesInfo := BuscaConfiguracaoTiles( itemEstatico );
-      if ( !this.isVisaoBloqueada )
-        this.isVisaoBloqueada := this._ChecaVisaoBloqueada( tilesInfo );
-      endif
+      this._VerificaVisaoBloqueada( tilesInfo );
     endforeach
 
   endfunction
 
-  function _ChecaVisaoBloqueada( this, tilesInfo )
-    return tilesInfo.BlockSight && tilesInfo.Blocking;
+  function _VerificaVisaoBloqueada( this, tilesInfo )
+    if ( !this.isVisaoBloqueada )
+      this.isVisaoBloqueada := tilesInfo.BlockSight && tilesInfo.Blocking;
+    endif
   endfunction
 
   function _DevePropagar( this )
-    return this.estado > ESTADO_PROPAGACAO::DORMENTE && !this.IsEstadoControle( CONTROLE_PROPAGACAO::MORTO ) &&
-                                                        this.geracao < this.PegaPropPropagacao().geracaoMaxima;
-  endfunction
-
-  function Propagar( this )
-    return this.MarcarAdjacentes();
+    return this.estado > ESTADO_PROPAGACAO::DORMENTE 
+           && !this.IsEstadoControle( CONTROLE_PROPAGACAO::MORTO ) 
+           && this.geracao < this.PegaPropPropagacao().geracaoMaxima
+           && this.isAcumulando;
   endfunction
 
   function ProspectarPersonalizado( this )
