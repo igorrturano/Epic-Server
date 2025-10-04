@@ -119,6 +119,8 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
 		endif
 
+		print("Assigning gumpId " + id + " to control " + control.GetName() + " of type " + control.GetType());
+
 		control.SetGumpId(id);
 
 		this._controls[control.GetType()].append(control);
@@ -147,7 +149,7 @@ class Gump(IGump)
 		this._gumpResult := GFSendGump(this._parent, this._gump);
 
 		if (this._gumpResult[0] == 0)
-			eventHandled := EventHandler("CLOSED GUMP");
+			eventHandled := EventHandler("CLOSED");
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][this._gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
@@ -161,6 +163,7 @@ class Gump(IGump)
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::IMAGETILED + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILED][this._gumpResult[0]-GUMP_ID_REFERENCE::IMAGETILED]);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::BUTTON + GUMP_ID_REFERENCE::LIMIT)
+			print("Button pressed with gumpId: " + (this._gumpResult[0]-GUMP_ID_REFERENCE::BUTTON));
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][this._gumpResult[0]-GUMP_ID_REFERENCE::BUTTON]);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::CHECKBOX + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][this._gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);

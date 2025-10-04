@@ -1,8 +1,8 @@
 include ":gumps:epicGumps";
 
 class Control()
-	var _gumpId := GUMP_CONTROL::NONE;
-	var _type := ""; // enum GUMP_CONTROL
+	var _gumpId := 0;
+	var _type := GUMP_CONTROL::NONE; // enum GUMP_CONTROL
 	var _name := "";
 	var _tooltip; // Tooltip (Control)
 

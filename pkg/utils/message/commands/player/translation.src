@@ -1,0 +1,46 @@
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+
+program cmd_translation(who)
+	// TODO: Gump para escolher a lingua que fala
+		// Também escolher se quer as falas traduzidas ou legendas
+	
+	var cont := true;
+	while(cont)
+		var gump := Gump(who, "Translation Settings", 400, 400);
+		var label := Text("Text1", 0, 0, "Setting");
+		var label2 := Text("Text2", 0, 0, "Ativar Legenda");
+		var label3 := Text("Text3", 0, 0, "Ativar Dublagem");
+		var label4 := Text("Text4", 0, 0, "Desativar Tradução");
+
+		// var button1 := Button(gump, 10, 40, "Lingua", "Escolher Língua");
+		var button2 := Button("Legenda", 0, 0);
+		var button3 := Button("Dublagem", 0, 0);
+		var button4 := Button("Tradução", 0, 0);
+
+		var container := ContainerGridLayout(gump, 20, 80, 100, 100, 4, 2);
+		container.AddControl(label, 1, 2);
+		container.AddControl(label2, 2, 2);
+		container.AddControl(label3, 3, 2);
+		container.AddControl(label4, 4, 2);
+		container.AddControl(button2, 2, 1);
+		container.AddControl(button3, 3, 1);
+		container.AddControl(button4, 4, 1);
+		gump.AddControl(container);
+
+		var result := gump.Show();
+		print(result.GetEvent());
+
+		if (result.GetEvent() == "CLOSED")
+			cont := false;
+		elseif (result.GetEvent() == button2)
+			who.SetProp("translation", 1);
+		elseif (result.GetEvent() == button3)
+			who.SetProp("translation", 2);
+		elseif (result.GetEvent() == button4)
+			who.SetProp("translation", 0);
+		endif
+	endwhile
+endprogram
