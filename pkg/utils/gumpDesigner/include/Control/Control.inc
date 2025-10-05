@@ -1,9 +1,9 @@
 include ":gumps:epicGumps";
 
 class Control()
-	var _gumpId := 0;
+	var _gumpId := 0; // ID que é retornado quando o gump fecha
 	var _type := GUMP_CONTROL::NONE; // enum GUMP_CONTROL
-	var _name := "";
+	var _name := ""; // Nome do controle, pra identificar na chamada de eventos ou no script
 	var _tooltip; // Tooltip (Control)
 
 	var _x := 0;
@@ -105,5 +105,6 @@ enum class GUMP_CONTROL
 
 	TEXTBOX := "textbox",
 
-	CONTAINER := "container"
+	CONTAINER := "container",
+	CONTAINERGRIDLAYOUT := "containergridlayout"
 endenum

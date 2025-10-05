@@ -117,9 +117,25 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
 		elseif (control.GetType() == GUMP_CONTROL::TEXTBOX)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
+		elseif (control.GetType() == GUMP_CONTROL::CONTAINER) // Container precisa pegar os controles internos e adicionar aqui no gump
+			foreach containerControl in (control.GetControls())
+				this.AddControl(containerControl);
+			endforeach
+			// return; // Container não precisa de ID próprio, só os controles internos
+		elseif (control.GetType() == GUMP_CONTROL::CONTAINERGRIDLAYOUT) // ContainerGridLayout é ainda pior, precisa pegar os controles internos de cada célula
+			foreach row in (control.GetControls()) // Cada linha do grid é um array de containers
+				foreach container in (row) // Cada container pode ter múltiplos controles
+					foreach containerControl in (container.GetControls())
+						this.AddControl(containerControl);
+					endforeach
+				endforeach
+			endforeach
+			// return; // ContainerGridLayout não precisa de ID próprio, só os controles internos
+		elseif (control.GetType() == GUMP_CONTROL::NONE)
+			return error { errortext := "Control type is NONE!" };
+		else
+			return error { errortext := "Unknown control type!" };
 		endif
-
-		print("Assigning gumpId " + id + " to control " + control.GetName() + " of type " + control.GetType());
 
 		control.SetGumpId(id);
 
@@ -163,7 +179,6 @@ class Gump(IGump)
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::IMAGETILED + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::IMAGETILED][this._gumpResult[0]-GUMP_ID_REFERENCE::IMAGETILED]);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::BUTTON + GUMP_ID_REFERENCE::LIMIT)
-			print("Button pressed with gumpId: " + (this._gumpResult[0]-GUMP_ID_REFERENCE::BUTTON));
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::BUTTON][this._gumpResult[0]-GUMP_ID_REFERENCE::BUTTON]);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::CHECKBOX + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::CHECKBOX][this._gumpResult[0]-GUMP_ID_REFERENCE::CHECKBOX]);
