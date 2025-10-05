@@ -97,7 +97,7 @@ function SetEquipmentMods(who, item)
 	endif
 
 	//magery
-	penalty := GetPenaltyValue(item, MAGERY);
+	penalty := GetObjProperty(item, "atributos").MageryPen;
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -296,7 +296,7 @@ function RemoveEquipmentMods(who, item)
 		AP_ModifySkillMod(who, AWARENESS, penalty);
 	endif
 
-	penalty := GetPenaltyValue(item, MAGERY);
+	penalty := GetObjProperty(item, "atributos").MageryPen;
 	if (penalty < 0)
 		penalty := 0;
 	endif
