@@ -22,14 +22,17 @@ class EventHandler()
 
 	function SetParent(this, parent)
 		this._parent := parent;
+		return this;
 	endfunction
 
 	function SetControl(this, control)
 		this._control := control;
+		return this;
 	endfunction
 
 	function SetAction(this, action)
 		this._action := action;
+		return this;
 	endfunction
 
 	function ToString(this)

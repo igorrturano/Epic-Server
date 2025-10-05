@@ -33,6 +33,8 @@ class ContainerGridLayout(Container)
 
 		var container := this._controls[row][column];
 		container.AddControl(control);
+
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)

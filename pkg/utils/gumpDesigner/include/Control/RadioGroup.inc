@@ -22,10 +22,12 @@ class RadioGroup(Control)
 
 	function SetButtons(this, buttons)
 		this._buttons := buttons;
+		return this;
 	endfunction
 
 	function AddButton(this, button)
 		this._buttons.append(button);
+		return this;
 	endfunction
 
 endclass

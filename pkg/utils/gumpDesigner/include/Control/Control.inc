@@ -44,26 +44,32 @@ class Control()
 
 	function SetGumpId(this, gumpId)
 		this._gumpId := gumpId;
+		return this;
 	endfunction
 
 	function SetType(this, type)
 		this._type := type;
+		return this;
 	endfunction
 
 	function _SetName(this, name)
 		this._name := name;
+		return this;
 	endfunction
 
 	function SetTooltip(this, tooltip)
 		this._tooltip := tooltip;
+		return this;
 	endfunction
 
 	function SetX(this, x)
 		this._x := x;
+		return this;
 	endfunction
 
 	function SetY(this, y)
 		this._y := y;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
