@@ -97,10 +97,15 @@ function SetEquipmentMods(who, item)
 	endif
 
 	//magery
-	penalty :=  GetObjProperty(item, "atributos").MageryPen;
-	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
-        AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
-    endif
+	penalty := GetPenaltyValue(item, MAGERY);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
+			AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
+		endif
+	endif
     
 	//verifica se eh magico
 	var mods := GetObjProperty(item, "equip");
@@ -291,9 +296,14 @@ function RemoveEquipmentMods(who, item)
 		AP_ModifySkillMod(who, AWARENESS, penalty);
 	endif
 
-	penalty := GetObjProperty(item, "atributos").MageryPen;
-	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
-	  	AP_ModifySkillMod(who, MAGERY, penalty);
+	penalty := GetPenaltyValue(item, MAGERY);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
+			AP_ModifySkillMod(who, MAGERY, penalty);
+		endif
 	endif
 
 	var mods := GetObjProperty(item, "equip");
