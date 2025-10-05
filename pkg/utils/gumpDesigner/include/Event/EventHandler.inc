@@ -1,10 +1,10 @@
 class EventHandler()
 	var _parent;
-	var _event;
+	var _control;
 	var _action;
 
-	function EventHandler(this, event, action := 0)
-		this._event := event;
+	function EventHandler(this, control, action := 0)
+		this._control := control;
 		this._action := action;
 	endfunction
 
@@ -12,8 +12,8 @@ class EventHandler()
 		return this._parent;
 	endfunction
 
-	function GetEvent(this)
-		return this._event;
+	function GetControl(this)
+		return this._control;
 	endfunction
 
 	function GetAction(this)
@@ -24,8 +24,8 @@ class EventHandler()
 		this._parent := parent;
 	endfunction
 
-	function SetEvent(this, event)
-		this._event := event;
+	function SetControl(this, control)
+		this._control := control;
 	endfunction
 
 	function SetAction(this, action)
@@ -33,7 +33,7 @@ class EventHandler()
 	endfunction
 
 	function ToString(this)
-		return "EventHandled: (event=" + this._event
+		return "EventHandled: (control=" + this._control
 			+ ", action=" + this._action
 			+ ")";
 	endfunction
