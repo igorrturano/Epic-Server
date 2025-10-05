@@ -9,18 +9,18 @@ program cmd_translation(who)
 	
 	var cont := true;
 	while(cont)
-		var gump := Gump(who, "Translation Settings", 400, 400);
+		var gump := Gump(who, "Translation Settings", 300, 200);
 		var label := Text("Text1", 0, 0, "Setting");
 		var label2 := Text("Text2", 0, 0, "Ativar Legenda");
 		var label3 := Text("Text3", 0, 0, "Ativar Dublagem");
 		var label4 := Text("Text4", 0, 0, "Desativar Tradução");
 
-		// var button1 := Button(gump, 10, 40, "Lingua", "Escolher Língua");
-		var button2 := Button("Legenda", 0, 0);
-		var button3 := Button("Dublagem", 0, 0);
-		var button4 := Button("Tradução", 0, 0);
+		var button2 := Button("Legenda", 0, 3);
+		var button3 := Button("Dublagem", 0, 3);
+		var button4 := Button("Tradução", 0, 3);
 
-		var container := ContainerGridLayout(gump, 20, 80, 100, 100, 4, 2);
+		var container := ContainerGridLayout("Container1", 30, 80, 100, 100, 4, 2);
+		container.SetVisible(true);
 		container.AddControl(label, 1, 2);
 		container.AddControl(label2, 2, 2);
 		container.AddControl(label3, 3, 2);
@@ -31,15 +31,18 @@ program cmd_translation(who)
 		gump.AddControl(container);
 
 		var result := gump.Show();
-		print(result.GetEvent());
+		print(result.GetControl());
 
-		if (result.GetEvent() == "CLOSED")
+		if (result.GetControl() == "CLOSED")
 			cont := false;
-		elseif (result.GetEvent() == button2)
+		elseif (result.GetControl().Equals(button2))
+			print("Legenda");
 			who.SetProp("translation", 1);
-		elseif (result.GetEvent() == button3)
+		elseif (result.GetControl().Equals(button3))
+			print("Dublagem");
 			who.SetProp("translation", 2);
-		elseif (result.GetEvent() == button4)
+		elseif (result.GetControl().Equals(button4))
+			print("Tradução Desativada");
 			who.SetProp("translation", 0);
 		endif
 	endwhile
