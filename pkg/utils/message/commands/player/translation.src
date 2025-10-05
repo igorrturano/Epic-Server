@@ -2,6 +2,7 @@ include ":gumpDesigner:Gump/Gump";
 include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/Text";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":message:model/Message";
 
 program cmd_translation(who)
 	// TODO: Gump para escolher a lingua que fala
@@ -19,31 +20,30 @@ program cmd_translation(who)
 		var button3 := Button("Dublagem", 0, 3);
 		var button4 := Button("Tradução", 0, 3);
 
-		var container := ContainerGridLayout("Container1", 30, 80, 100, 100, 4, 2);
-		container.SetVisible(true);
-		container.AddControl(label, 1, 2);
-		container.AddControl(label2, 2, 2);
-		container.AddControl(label3, 3, 2);
-		container.AddControl(label4, 4, 2);
-		container.AddControl(button2, 2, 1);
-		container.AddControl(button3, 3, 1);
-		container.AddControl(button4, 4, 1);
+		var container := ContainerGridLayout("Container1", 30, 80, 100, 100, 4, 2)
+			.AddControl(label, 1, 2)
+			.AddControl(label2, 2, 2)
+			.AddControl(label3, 3, 2)
+			.AddControl(label4, 4, 2)
+			.AddControl(button2, 2, 1)
+			.AddControl(button3, 3, 1)
+			.AddControl(button4, 4, 1);
+		
 		gump.AddControl(container);
 
 		var result := gump.Show();
-		print(result.GetControl());
 
 		if (result.GetControl() == "CLOSED")
 			cont := false;
 		elseif (result.GetControl().Equals(button2))
-			print("Legenda");
 			who.SetProp("translation", 1);
+			Message("Tradução: Legenda Ativada.").SendSys(who);
 		elseif (result.GetControl().Equals(button3))
-			print("Dublagem");
 			who.SetProp("translation", 2);
+			Message("Tradução: Dublagem Ativada.").SendSys(who);
 		elseif (result.GetControl().Equals(button4))
-			print("Tradução Desativada");
 			who.SetProp("translation", 0);
+			Message("Tradução: Desativada.").SendSys(who);
 		endif
 	endwhile
 endprogram

@@ -54,26 +54,32 @@ class Container(Control)
 
 	function _SetName(this, name)
 		this._name := name;
+		return this;
 	endfunction
 
 	function SetX(this, x)
 		this._x := x;
+		return this;
 	endfunction
 
 	function SetY(this, y)
 		this._y := y;
+		return this;
 	endfunction
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SetVisible(this, isVisible)
 		this._isVisible := isVisible;
+		return this;
 	endfunction
 	
 	function AddControl(this, byRef control)
@@ -82,6 +88,7 @@ class Container(Control)
 		if (control.GetWidth() > this.GetWidth()) control.SetWidth(this.GetWidth()); endif // Ajusta a largura do controle se ela for maior que o container
 		if (control.GetHeight() > this.GetHeight()) control.SetHeight(this.GetHeight()); endif // Ajusta a altura do controle se ela for maior que o container
 		this._controls.append(control);
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)

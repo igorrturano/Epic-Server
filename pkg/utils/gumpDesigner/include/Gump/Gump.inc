@@ -64,32 +64,39 @@ class Gump(IGump)
 
 	function SetParent(this, parent)
 		this._parent := parent;
+		return this;
 	endfunction
 
 	function SetTitle(this, title)
 		this._title := title;
+		return this;
 	endfunction
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SetOptions(this, options)
 		this._options := options;
+		return this;
 	endfunction
 
 	function AddOption(this, option)
 		if (option in this._options) return error { errortext := "Option already set!" }; endif
 
 		this._options.append(option);
+		return this;
 	endfunction
 
 	function AddCustomization(this, byRef customFunction)
 		this._customization.append(customFunction);
+		return this;
 	endfunction
 
 	function AddControl(this, byRef control)
@@ -140,6 +147,8 @@ class Gump(IGump)
 		control.SetGumpId(id);
 
 		this._controls[control.GetType()].append(control);
+
+		return this;
 	endfunction
 
 	function ToString(this)
