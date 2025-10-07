@@ -24,6 +24,10 @@ program KillPlayers()
     
     DetermineBrainType();
     SetWarMode(0);
+    
+    while (!HasPlayerNear(me))
+        Sleep(15);
+    endwhile
 
     case (brain_type)
         "monster":  MonsterBrain();
