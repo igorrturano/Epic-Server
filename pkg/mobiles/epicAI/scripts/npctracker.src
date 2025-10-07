@@ -23,7 +23,6 @@ program Logon(player)
                 if (mobile.script)
                     var script_ref := mobile.script;
                     var result := script_ref.kill();
-                    PrintTextAbove(mobile, "res: " + result);
                     sleepms(10);
                 endif
                 
