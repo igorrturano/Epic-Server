@@ -65,27 +65,47 @@ function SetEquipmentMods(who, item)
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-	AP_ModifySkillMod(who, SNEAK, (-1)*penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, SNEAK, (-1)*penalty);
+	endif
 
 	//mechanical apitude
 	penalty := GetObjProperty(item, "atributos").MAPen;
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-	AP_ModifySkillMod(who, MECHANICS, (-1)*penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, MECHANICS, (-1)*penalty);
+	endif
 
 	//awareness
 	penalty := GetObjProperty(item, "atributos").AwarenessPen;
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-	AP_ModifySkillMod(who, AWARENESS, (-1)*penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, AWARENESS, (-1)*penalty);
+	endif
 
 	//magery
-	penalty :=  GetObjProperty(item, "atributos").MageryPen;
-	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
-        AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
-    endif
+	penalty := GetObjProperty(item, "atributos").MageryPen;
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
+			AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
+		endif
+	endif
     
 	//verifica se eh magico
 	var mods := GetObjProperty(item, "equip");
@@ -245,25 +265,45 @@ function RemoveEquipmentMods(who, item)
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-  	AP_ModifySkillMod(who, SNEAK, penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, SNEAK, penalty);
+	endif
 
 	//mechanical  apitude
   	penalty := GetObjProperty(item, "atributos").MAPen;
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-  	AP_ModifySkillMod(who, MECHANICS, penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, MECHANICS, penalty);
+	endif
 
 	//awareness
   	penalty := GetObjProperty(item, "atributos").AwarenessPen;
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-  	AP_ModifySkillMod(who, AWARENESS, penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		AP_ModifySkillMod(who, AWARENESS, penalty);
+	endif
 
 	penalty := GetObjProperty(item, "atributos").MageryPen;
-	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
-	  	AP_ModifySkillMod(who, MAGERY, penalty);
+	if (penalty < 0)
+		penalty := 0;
+	endif
+	if (penalty > 0)
+		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
+			AP_ModifySkillMod(who, MAGERY, penalty);
+		endif
 	endif
 
 	var mods := GetObjProperty(item, "equip");
