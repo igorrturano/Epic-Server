@@ -14,6 +14,7 @@ const AREA_SIZE := 18;
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
+<<<<<<< HEAD
     // Only initialize if not already done
     var already_started := GetObjProperty(me, "started");
     if (!already_started)
@@ -25,12 +26,25 @@ program KillPlayers()
     DetermineBrainType();
     SetWarMode(0);
 
+=======
+    set_critical(1);
+    InitializeEpicNPC(me);
+    DetermineBrainType();
+    set_critical(0);
+
+    SetWarMode(0);
+
+>>>>>>> 2acd998d13663379f78b45f2498f52c373e62628
     case (brain_type)
         "monster":  MonsterBrain();
         "animal":   AnimalBrain();
         "humanoid": HumanoidBrain();
         default:    GenericBrain();
     endcase
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2acd998d13663379f78b45f2498f52c373e62628
 endprogram
 
 function DetermineBrainType()
