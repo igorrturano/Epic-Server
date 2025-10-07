@@ -3,18 +3,13 @@ use npc;
 function AnimalBrain()
     var ev;
     var wanders := 0;
-    var idle_checks := 0;  // NEW: Counter for idle cycles
     EnableMainEvents();
     Set_Event_Queue_Size(50);
-
-    PrintText(me, "*WAKE UP*");  // Debug message when brain starts
-    Broadcast(me.name + ": *WAKE UP*", FONT_BOLD, 73);  // NEW: Broadcast so you can see from anywhere
 
     while (me)
         ev := os::wait_for_event(0);
 
         if (me.opponent)
-            idle_checks := 0;  // Reset counter when in combat
             if (!CanFight(me, me.opponent))
                 HandleAnimalLeftArea(me.opponent);
             else
@@ -23,7 +18,6 @@ function AnimalBrain()
         endif
 
         if (ev)
-            idle_checks := 0;  // Reset counter on any event
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     AlertAllies(ev.source, me);
@@ -67,18 +61,6 @@ function AnimalBrain()
 
         // If no events and no combat, do idle behavior
         if (!ev && !me.opponent)
-            idle_checks += 1;  // Increment idle counter
-            
-            // After 60 idle cycles (~6 seconds), check for players
-            if (idle_checks >= 60)
-                if (!HasPlayerNear(me))
-                    PrintText(me, "*BACK TO SLEEP*");  // Debug message
-                    Broadcast(me.name + ": *BACK TO SLEEP*", FONT_BOLD, 73);  // NEW: Broadcast
-                    return;  // Exit the brain function completely
-                endif
-                idle_checks := 0;  // Reset if player is still near
-            endif
-            
             AnimalIdle(wanders);
             if (RandomInt(100) < 30) // 30% chance to wander
                 wanders += 1;
