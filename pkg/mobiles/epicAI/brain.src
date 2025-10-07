@@ -12,38 +12,28 @@ var me := Self();
 const AREA_SIZE := 18;
 
 program KillPlayers()
-	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-	set_critical(1);
-	InitializeEpicNPC(me);
-	DetermineBrainType();
-	set_critical(0);
+    set_critical(1);
+    InitializeEpicNPC(me);
+    DetermineBrainType();
+    set_critical(0);
 
-	SetWarMode(0);
+    SetWarMode(0);
 
-	while (1)
-		var hasPlayerNearMe := HasPlayerNear(me);
-		var patrol_points := GetObjProperty(me, "patrol_points");
-		var isOnPatrol := (patrol_points && patrol_points.size() >= 2);
+    case (brain_type)
+        "monster":  MonsterBrain();
+        "animal":   AnimalBrain();
+        "humanoid": HumanoidBrain();
+        default:    GenericBrain();
+    endcase
 
-		if (hasPlayerNearMe || isOnPatrol)
-			case (brain_type)
-				"monster":  MonsterBrain();
-				"animal":   AnimalBrain();
-				"humanoid": HumanoidBrain();
-				default:    GenericBrain();
-			endcase
-		// Process any TimedScripts
-		endif
-
-		sleep(15);
-	endwhile
 endprogram
 
 function DetermineBrainType()
-	var npc_config := NPC_GetNPCConfig(me);
-	brain_type := lower(npc_config.BrainType);
-	if (!brain_type)
-		brain_type := "generic";
-	endif
+    var npc_config := NPC_GetNPCConfig(me);
+    brain_type := lower(npc_config.BrainType);
+    if (!brain_type)
+        brain_type := "generic";
+    endif
 endfunction
