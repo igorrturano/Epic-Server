@@ -11,6 +11,7 @@ include "include/epicLoggerUtils";
 function HumanoidBrain()
     var ev;
     var wanders := 0;
+    var idle_checks := 0;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
@@ -30,10 +31,11 @@ function HumanoidBrain()
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
+            idle_checks := 0;
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
@@ -51,6 +53,8 @@ function HumanoidBrain()
         endif
         
         if (ev)
+            idle_checks := 0;
+            
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     AlertAllies(ev.source, me);
@@ -61,12 +65,12 @@ function HumanoidBrain()
                 SYSEVENT_ENTEREDAREA:
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -83,7 +87,7 @@ function HumanoidBrain()
                         HandleHumanoidCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    if (me.isShaman()   )
+                    if (me.isShaman())
                         HumanoidShamanBehavior(me, ev.source);
                     endif
                     if (me.isPriest())
@@ -91,17 +95,25 @@ function HumanoidBrain()
                     endif
                 EVID_FLEE:
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                HumanoidIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            idle_checks += 1;
+            
+            if (idle_checks >= 60)
+                if (!HasPlayerNear(me))
+                    return;
+                else
+                    idle_checks := 0;
+                endif
+            endif
+            
+            HumanoidIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
                     HandleIdleState();
                 endif

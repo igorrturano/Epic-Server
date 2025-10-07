@@ -10,6 +10,7 @@ include "NPCMageryUtils";
 function MonsterBrain()
     var ev;
     var wanders := 0;
+    var idle_checks := 0;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
@@ -23,10 +24,11 @@ function MonsterBrain()
     endif
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
+            idle_checks := 0;
             if (!CanFight(me, me.opponent))
                 HandleMonsterLeftArea(me.opponent);
             else
@@ -37,6 +39,8 @@ function MonsterBrain()
         endif
         
         if (ev)
+            idle_checks := 0;
+            
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     AlertAllies(ev.source, me);
@@ -45,13 +49,12 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -71,17 +74,25 @@ function MonsterBrain()
                     ShamanBehavior(me);
                 EVID_FLEE:
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                MonsterIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            idle_checks += 1;
+            
+            if (idle_checks >= 60)
+                if (!HasPlayerNear(me))
+                    return;
+                else
+                    idle_checks := 0;
+                endif
+            endif
+            
+            MonsterIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
                     HandleIdleState();
                 endif

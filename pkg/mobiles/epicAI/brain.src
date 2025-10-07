@@ -25,16 +25,25 @@ program KillPlayers()
     DetermineBrainType();
     SetWarMode(0);
     
-    while (!HasPlayerNear(me))
-        Sleep(15);
-    endwhile
+    // NEW: Wrap everything in a master loop
+    while (me)
+        // Wait for player
+        while (!HasPlayerNear(me))
+            Sleep(15);
+        endwhile
 
-    case (brain_type)
-        "monster":  MonsterBrain();
-        "animal":   AnimalBrain();
-        "humanoid": HumanoidBrain();
-        default:    GenericBrain();
-    endcase
+        // Run the appropriate brain (will return when going idle)
+        case (brain_type)
+            "monster":  MonsterBrain();
+            "animal":   AnimalBrain();
+            "humanoid": HumanoidBrain();
+            default:    GenericBrain();
+        endcase
+        
+        // Brain returned, loop back to waiting for player
+        SetWarMode(0);
+        sleepms(100);
+    endwhile
 endprogram
 
 function DetermineBrainType()
