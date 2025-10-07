@@ -11,7 +11,7 @@ include "include/epicLoggerUtils";
 function HumanoidBrain()
     var ev;
     var wanders := 0;
-    var idle_checks := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
@@ -32,10 +32,18 @@ function HumanoidBrain()
 
     while (me)
         ev := os::wait_for_event(1);
+        
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
-            idle_checks := 0;
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
@@ -52,14 +60,14 @@ function HumanoidBrain()
             endif
         endif
         
-        if (ev)
-            idle_checks := 0;
-            
+        if (ev)            
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
@@ -83,6 +91,7 @@ function HumanoidBrain()
                         endif
                     endif
                 EVID_TAUNT:
+                    last_activity_time := polcore().systime;
                     if (CanFight(me, ev.opponent))
                         HandleHumanoidCombatEvent(ev.opponent, is_ranged);
                     endif
@@ -94,22 +103,13 @@ function HumanoidBrain()
                         HumanoidPriestBehavior(me, ev.source);
                     endif
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)
-            idle_checks += 1;
-            
-            if (idle_checks >= 60)
-                if (!HasPlayerNear(me))
-                    return;
-                else
-                    idle_checks := 0;
-                endif
-            endif
-            
+        if (!me.opponent)           
             HumanoidIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;

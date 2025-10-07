@@ -20,17 +20,25 @@ program KillPlayers()
         set_critical(1);
         InitializeEpicNPC(me);
         set_critical(0);
+        SetObjProperty(me, "dormant", 1);
+    endif
+    
+    // ONE-TIME MIGRATION: Set dormant for existing NPCs
+    // Remove this code after one server restart
+    if (already_started && !GetObjProperty(me, "dormant_migrated"))
+        SetObjProperty(me, "dormant", 1);
+        SetObjProperty(me, "dormant_migrated", 1);
+    endif
+    
+    // Check if dormant - if so, just exit
+    if (GetObjProperty(me, "dormant"))
+        return;
     endif
     
     DetermineBrainType();
     SetWarMode(0);
-    
-    // Wait for player to come near
-    while (!HasPlayerNear(me))
-        Sleep(15);
-    endwhile
 
-    // Run the appropriate brain (will return when going idle)
+    // Run the active brain
     case (brain_type)
         "monster":  MonsterBrain();
         "animal":   AnimalBrain();
@@ -38,9 +46,10 @@ program KillPlayers()
         default:    GenericBrain();
     endcase
     
-    // Brain returned = no players nearby
-    // Restart the script (goes back to waiting)
-    RestartScript(me);
+    // Brain returned (went idle) - go back to dormant
+    SetObjProperty(me, "dormant", 1);
+    SetWarMode(0);
+    SetOpponent(0);
 endprogram
 
 function DetermineBrainType()
