@@ -23,13 +23,6 @@ program KillPlayers()
         SetObjProperty(me, "dormant", 1);
     endif
     
-    // ONE-TIME MIGRATION: Set dormant for existing NPCs
-    // Remove this code after one server restart
-    if (already_started && !GetObjProperty(me, "dormant_migrated"))
-        SetObjProperty(me, "dormant", 1);
-        SetObjProperty(me, "dormant_migrated", 1);
-    endif
-    
     // Check if dormant - if so, just exit
     if (GetObjProperty(me, "dormant"))
         return;
