@@ -5,14 +5,16 @@ include "include/facings";
 function GenericBrain()
     var ev;
     var wanders := 0;
+    var idle_checks := 0;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
+            idle_checks := 0;
             if (!CanFight(me, me.opponent))
                 ClearCombatState();
             else
@@ -27,6 +29,8 @@ function GenericBrain()
         endif
         
         if (ev)
+            idle_checks := 0;
+            
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     SetOpponent(ev.source);
@@ -48,12 +52,22 @@ function GenericBrain()
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                GenericIdle(wanders);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            idle_checks += 1;
+            
+            if (idle_checks >= 60)
+                if (!HasPlayerNear(me))
+                    return;
+                else
+                    idle_checks := 0;
+                endif
+            endif
+            
+            GenericIdle(wanders);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
                 endif
             endif
