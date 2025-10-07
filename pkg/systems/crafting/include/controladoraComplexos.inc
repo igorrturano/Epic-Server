@@ -431,9 +431,10 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 
 	var encaixesEncontrados := array;
 	var configEncaixes := ReadConfigFile(":*:encaixes");
-
-	foreach elemento in  contagem
+	
+	foreach elemento in contagem
 		Sleepms(2);
+		//Print("elemento " + elemento.nomeItem + " - " + elemento.quantidadeEncontrada + " - " + elemento.quantidadeNecessaria);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
 			var mensagem; 
 			if (elemento.?encaixe)
@@ -455,6 +456,7 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 		if(!(necessario.encaixe in encaixesEncontrados))
 			if(necessario.isOpcional)
 				foreach componenteEscolhido in (esquema.componentesEscolhidos)
+					Sleepms(2);
 					if((componenteEscolhido.componenteNecessario.encaixe == necessario.encaixe))//o cara selecionou, mas não tinha nenhum componente. Neste caso acaba não caíndo na contagem.
 						SendSysMessageEX(quem,"Você não tem componentes suficientes para o encaixe opcional [{}].".format(configEncaixes[necessario.encaixe].desc),SSM_FAIL);
 						return false;
@@ -464,10 +466,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 				SendSysMessageEX(quem,"O encaixe [{}] é obrigatório e não foi preenchido.".format(configEncaixes[necessario.encaixe].desc),SSM_FAIL);
 				return false;
 			endif
-		endif
-
-		if(necessario.isOpcional)
-			
 		endif
 	
 	endforeach
@@ -799,12 +797,10 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 					material := material,
 					tier := tier,
 					quantidade := item.amount};
-				//Print("envelope ------- " + envelope);
 
 				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe],
 										envelope,
-										componenteNecessario.caracteristica,
-										componenteNecessario.qtdNecessaria);
+										componenteNecessario.caracteristica);
 
 				retorno[componenteNecessario.encaixe].conjunto.append(envelope);
 			endif
@@ -814,11 +810,7 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	return retorno;
 endfunction
 
-function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica, quantidadeNecessaria)
-
-	if(TypeOfInt(envelopeNovo.quantidade) != OT_UNINIT && envelopeNovo.quantidade < CInt(quantidadeNecessaria))
-		return;
-	endif
+function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica)
 
 	if(componentesEncontrados.melhor == 0)
 		componentesEncontrados.melhor := envelopeNovo;
