@@ -1,0 +1,37 @@
+use uo;
+use os;
+
+const ACTIVATION_RANGE := 30;
+const CHECK_INTERVAL := 3;
+
+program Logon(player)
+    sleep(2);
+    while (player.connected)
+        // Find NPCs near player
+        foreach mobile in ListMobilesNearLocationEx(player.x, player.y, player.z, ACTIVATION_RANGE, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, player.realm)
+            // Skip players
+            if (mobile.acctname)
+                continue;
+            endif
+            
+            // Check if NPC is dormant
+            if (GetObjProperty(mobile, "dormant"))
+                // Wake it up!
+                EraseObjProperty(mobile, "dormant");
+                
+                // Restart the script (will now skip dormant check and run brain)
+                if (mobile.script)
+                    var script_ref := mobile.script;
+                    var result := script_ref.kill();
+                    PrintTextAbove(mobile, "res: " + result);
+                    sleepms(10);
+                endif
+                
+                RestartScript(mobile);
+                sleepms(10);
+            endif
+        endforeach
+        
+        sleep(CHECK_INTERVAL);
+    endwhile
+endprogram
