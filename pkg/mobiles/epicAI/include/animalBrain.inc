@@ -3,13 +3,15 @@ use npc;
 function AnimalBrain()
     var ev;
     var wanders := 0;
+    var idle_checks := 0;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
 
         if (me.opponent)
+            idle_checks := 0;
             if (!CanFight(me, me.opponent))
                 HandleAnimalLeftArea(me.opponent);
             else
@@ -18,6 +20,8 @@ function AnimalBrain()
         endif
 
         if (ev)
+            idle_checks := 0;
+            
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     AlertAllies(ev.source, me);
@@ -25,12 +29,12 @@ function AnimalBrain()
                 SYSEVENT_DAMAGED: 
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
@@ -46,23 +50,29 @@ function AnimalBrain()
                     if (CanFight(me, ev.opponent))
                         HandleAnimalCombatEvent(ev.opponent);
                     endif
-                EVID_BUDDYATTACKED:
-                    // Talvez nao precise usar
                 EVID_PEACEMADE:
-                    SetWarMode( 0 );
-                    SetOpponent( 0 );
+                    SetWarMode(0);
+                    SetOpponent(0);
                     sleep(1);
                 EVID_FLEE:
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        // If no events and no combat, do idle behavior
-        if (!ev && !me.opponent)
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            idle_checks += 1;
+            
+            if (idle_checks >= 60)
+                if (!HasPlayerNear(me))
+                    return;
+                else
+                    idle_checks := 0;
+                endif
+            endif
+            
             AnimalIdle(wanders);
-            if (RandomInt(100) < 30) // 30% chance to wander
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
                     wanders := 0;
