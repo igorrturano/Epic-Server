@@ -6,9 +6,6 @@ include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
 class CombatAbility(ICombatAbility)
-	// TODO: Pensar se precisa encapsular os modificadores de cooldown, effect, damage, etc.
-	// TODO: Pensar também se precisa encapsular executor e target.
-
 	var _name := "";
 	var _description := "";
 	var _momentum := COMBATABILITY_MOMENTUM::ONHIT;
@@ -23,10 +20,8 @@ class CombatAbility(ICombatAbility)
 	var _damage := DiceRoll("1d1");
 
 	function CombatAbility(this, abilityName)
-		// var cfgFile := ReadConfigFile(":charactercreation:config/habilidades");
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
 		
-		// var info := this._GetAbilityInfo(abilityName);
 		this._name := cfgFile.SetKeyName("name").GetKeyValue();
 		this._description := cfgFile.SetKeyName("description").GetKeyValue();
 		this._momentum := cfgFile.SetKeyName("momentum").GetKeyValue();

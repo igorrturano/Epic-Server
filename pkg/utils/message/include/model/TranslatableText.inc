@@ -1,6 +1,6 @@
-include "include/epicLoggerUtils";
+include "ITranslatable";
 
-class TranslatableText()
+class TranslatableText(ITranslatable)
 	var _source := struct{
 		text := "",
 		lang := LANGUAGE::PORTUGUESE
@@ -19,8 +19,6 @@ class TranslatableText()
 			text := text,
 			lang := langTarget
 		};
-
-		if (langTarget != "") this.Translate(); endif
 	endfunction
 
 	function GetTextSource(this)
@@ -31,34 +29,37 @@ class TranslatableText()
 		return this._target.text;
 	endfunction
 
+	function GetLanguageSource(this)
+		return this._source.lang;
+	endfunction
+
+	function GetLanguageTarget(this)
+		return this._target.lang;
+	endfunction
+
 	function SetTextSource(this, text)
 		this._source.text := text;
 		return this;
 	endfunction
 
-	function SetLanguageSource(this, langSource)
-		this._source.lang := langSource;
+	function SetTextTarget(this, text)
+		this._target.text := text;
 		return this;
 	endfunction
 
-	function SetLanguageTarget(this, langTarget)
+	function SetLanguage(this, langSource, langTarget)
+		this._source.lang := langSource;
 		this._target.lang := langTarget;
 		return this;
 	endfunction
 
-	function Translate(this)
-		this._target.text := TranslateText(this._source.text, this._target.lang, this._source.lang);
-		return this;
-	endfunction
-
 	function ToString(this)
-		return $"Texto original ({this._source.lang}): {this._source.text}
-			Texto traduzido ({this._target.lang}): {this._target.text}";
+		return $"Texto original ({this._source.lang}): {this._source.text} -> Texto traduzido ({this._target.lang}): {this._target.text}";
 	endfunction
 endclass
 
 enum class LANGUAGE
 	PORTUGUESE := "pt-BR",
-	ENGLISH := "en-US",
-	SPANISH := "es-ES"
+	ENGLISH := "en",
+	SPANISH := "es"
 endenum

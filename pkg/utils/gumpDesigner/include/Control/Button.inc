@@ -32,18 +32,22 @@ class Button(Control)
 
 	function SetImage(this, image)
 		this._image := image;
+		return this;
 	endfunction
 
 	function SetPressedImage(this, pressedImage)
 		this._pressedImage := pressedImage;
+		return this;
 	endfunction
 
 	function SetButtonType(this, buttonType)
 		this._buttonType := buttonType;
+		return this;
 	endfunction
 
 	function AddAction(this, action)
 		this._action.append(action);
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
