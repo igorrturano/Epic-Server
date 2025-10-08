@@ -6,33 +6,33 @@ include "include/sysEvent";
 include "include/say";
 include "include/epicUtils";
 
-function TranslateText(text, target_language, original_language)
-  var apiURL := "localhost:5000/epic-brain/translate";
-  var jsonData := PackJSON(struct{
-    "message" := text,
-    "target_language" := Lower(target_language),
-    "original_language" := Lower(original_language)
-  });
+// function TranslateText(text, target_language, original_language)
+//   var apiURL := "localhost:5000/epic-brain/translate";
+//   var jsonData := PackJSON(struct{
+//     "message" := text,
+//     "target_language" := Lower(target_language),
+//     "original_language" := Lower(original_language)
+//   });
 
-  var apiResponse := HTTPRequest(
-        apiURL,
-        "POST",
-        struct{
-          data := jsonData,
-          headers := struct{
-              "Content-Type" := "application/json"
-          }
-        },
-        HTTPREQUEST_EXTENDED_RESPONSE
-    );
+//   var apiResponse := HTTPRequest(
+//         apiURL,
+//         "POST",
+//         struct{
+//           data := jsonData,
+//           headers := struct{
+//               "Content-Type" := "application/json"
+//           }
+//         },
+//         HTTPREQUEST_EXTENDED_RESPONSE
+//     );
 
-  if (apiResponse.status == 200)
-    var unpackedJSON := UnpackJSON(apiResponse.body);
-    return unpackedJSON["message"];
-  else
-    return text; // Return original text if translation fails
-  endif
-endfunction
+//   if (apiResponse.status == 200)
+//     var unpackedJSON := UnpackJSON(apiResponse.body);
+//     return unpackedJSON["message"];
+//   else
+//     return text; // Return original text if translation fails
+//   endif
+// endfunction
 
 function LogPlayerSpeech( who, text )
   if ( text == "..." || text == " . . . " || text == ". . ." )

@@ -1,9 +1,9 @@
 include ":gumps:epicGumps";
 
 class Control()
-	var _gumpId := GUMP_CONTROL::NONE;
-	var _type := ""; // enum GUMP_CONTROL
-	var _name := "";
+	var _gumpId := 0; // ID que é retornado quando o gump fecha
+	var _type := GUMP_CONTROL::NONE; // enum GUMP_CONTROL
+	var _name := ""; // Nome do controle, pra identificar na chamada de eventos ou no script
 	var _tooltip; // Tooltip (Control)
 
 	var _x := 0;
@@ -44,26 +44,32 @@ class Control()
 
 	function SetGumpId(this, gumpId)
 		this._gumpId := gumpId;
+		return this;
 	endfunction
 
 	function SetType(this, type)
 		this._type := type;
+		return this;
 	endfunction
 
 	function _SetName(this, name)
 		this._name := name;
+		return this;
 	endfunction
 
 	function SetTooltip(this, tooltip)
 		this._tooltip := tooltip;
+		return this;
 	endfunction
 
 	function SetX(this, x)
 		this._x := x;
+		return this;
 	endfunction
 
 	function SetY(this, y)
 		this._y := y;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
@@ -105,5 +111,6 @@ enum class GUMP_CONTROL
 
 	TEXTBOX := "textbox",
 
-	CONTAINER := "container"
+	CONTAINER := "container",
+	CONTAINERGRIDLAYOUT := "containergridlayout"
 endenum

@@ -64,32 +64,39 @@ class Gump(IGump)
 
 	function SetParent(this, parent)
 		this._parent := parent;
+		return this;
 	endfunction
 
 	function SetTitle(this, title)
 		this._title := title;
+		return this;
 	endfunction
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SetOptions(this, options)
 		this._options := options;
+		return this;
 	endfunction
 
 	function AddOption(this, option)
 		if (option in this._options) return error { errortext := "Option already set!" }; endif
 
 		this._options.append(option);
+		return this;
 	endfunction
 
 	function AddCustomization(this, byRef customFunction)
 		this._customization.append(customFunction);
+		return this;
 	endfunction
 
 	function AddControl(this, byRef control)
@@ -117,11 +124,31 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
 		elseif (control.GetType() == GUMP_CONTROL::TEXTBOX)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
+		elseif (control.GetType() == GUMP_CONTROL::CONTAINER) // Container precisa pegar os controles internos e adicionar aqui no gump
+			foreach containerControl in (control.GetControls())
+				this.AddControl(containerControl);
+			endforeach
+			// return; // Container não precisa de ID próprio, só os controles internos
+		elseif (control.GetType() == GUMP_CONTROL::CONTAINERGRIDLAYOUT) // ContainerGridLayout é ainda pior, precisa pegar os controles internos de cada célula
+			foreach row in (control.GetControls()) // Cada linha do grid é um array de containers
+				foreach container in (row) // Cada container pode ter múltiplos controles
+					foreach containerControl in (container.GetControls())
+						this.AddControl(containerControl);
+					endforeach
+				endforeach
+			endforeach
+			// return; // ContainerGridLayout não precisa de ID próprio, só os controles internos
+		elseif (control.GetType() == GUMP_CONTROL::NONE)
+			return error { errortext := "Control type is NONE!" };
+		else
+			return error { errortext := "Unknown control type!" };
 		endif
 
 		control.SetGumpId(id);
 
 		this._controls[control.GetType()].append(control);
+
+		return this;
 	endfunction
 
 	function ToString(this)
@@ -147,7 +174,7 @@ class Gump(IGump)
 		this._gumpResult := GFSendGump(this._parent, this._gump);
 
 		if (this._gumpResult[0] == 0)
-			eventHandled := EventHandler("CLOSED GUMP");
+			eventHandled := EventHandler("CLOSED");
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][this._gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)

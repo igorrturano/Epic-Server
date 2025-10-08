@@ -24,15 +24,18 @@ class ImageGump(Control)
 
 	function SetImageId(this, imageId)
 		this._imageId := imageId;
+		return this;
 	endfunction
 
 	function SetColor(this, color)
 		this._color := color;
+		return this;
 	endfunction
 
 	function Resize(this, width, height)
 		this._width := width;
 		this._height := height;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
