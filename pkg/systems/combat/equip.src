@@ -155,8 +155,9 @@ program equipweapon(who, item)
 		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
+	Run_Script(":equipsys:equipsys", { who, item });
 	set_critical(1);
-	Run_Script_To_Completion(":equipsys:equipsys", { who, item });
+	
 	var ret := SetEquipmentMods(who, item);
 
 	var cfg := readconfigfile(":combat:itemdesc");
