@@ -14,6 +14,7 @@ class TooltipText(Control)
 
 	function SetText(this, text)
 		this._text := text;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)

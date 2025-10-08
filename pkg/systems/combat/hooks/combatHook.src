@@ -337,17 +337,6 @@ function ThrowerNPC(attacker, defender)
 	return 1;
 endfunction
 
-function CombatDbgMsg(mobile, text)
-	SendSysMessage(mobile, "CombatHook:" + text);
-endfunction
-
-function CombatMsg(mobile, type, text, ssm_type := 0)
-	// This is done just to prevent spam from would-be repetetive messages.
-	if (GetObjProperty(mobile, "#CH" + type))
-		SendSysMessage(mobile, text);
-	endif
-endfunction
-
 function FacingChecks(attacker, defender)
 	var retval := 1;
 	if (!IsFacing(attacker, defender.x, defender.y))
