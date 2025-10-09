@@ -43,22 +43,21 @@ function DisplaySpawnersGump(who)
 	// Crie o gump usando o estilo Epic gump
 	var gump := GFECreateGump("Epic Spawner Gerenciamento", 550, 500);
 
-	// Cabeçalho
-	var y_pos := 70;
-	GFTextLine(gump, 30, y_pos, 66, "ID");
-	GFTextLine(gump, 80, y_pos, 66, "Nome");
-	// GFTextLine(gump, 175, y_pos, 66, "Tipos de Criaturas");
-	GFTextLine(gump, 400, y_pos, 66, "Ações");
-
-	// Divisor
-	y_pos += 20;
-	GFResizePic(gump, 20, y_pos, 3000, 510, 2);
-	y_pos += 10;
-
 	// Liste os spawners com paginação, se necessário
 	var itemsPerPage := 12;
 	var pageNum := 1;
 	var itemCount := 0;
+	var y_pos := 100;
+
+	GFPage(gump, pageNum); // Inicie a primeira página
+
+	// Cabeçalho
+	GFTextLine(gump, 30, 70, 66, "ID");
+	GFTextLine(gump, 80, 70, 66, "Nome");
+	GFTextLine(gump, 400, 70, 66, "Ações");
+
+	// Divisor
+	GFResizePic(gump, 20, 90, 3000, 510, 2);
 
 	for i := 1 to globalSpawns.size()
 		var serial := globalSpawns[i];
@@ -77,6 +76,12 @@ function DisplaySpawnersGump(who)
 			// Mova para a próxima página
 			pageNum += 1;
 			GFPage(gump, pageNum);
+
+			// Redesenhe o cabeçalho na nova página
+			GFTextLine(gump, 30, 70, 66, "ID");
+			GFTextLine(gump, 80, 70, 66, "Nome");
+			GFTextLine(gump, 400, 70, 66, "Ações");
+			GFResizePic(gump, 20, 90, 3000, 510, 2);
 
 			// Se não estiver na primeira página, adicione botão de página anterior
 			if (pageNum > 1)
@@ -161,7 +166,8 @@ function DisplaySpawnersGump(who)
 		endif
 	endfor
 
-	// Adicione botões de ação global
+	// Adicione botões de ação global na página 0 (visível em todas as páginas)
+	GFPage(gump, 0);
 	GFResizePic(gump, 20, 450, 3000, 510, 2);
 
 	GFAddButton(gump, 30, 470, 2117, 2118, GF_CLOSE_BTN, 500);
