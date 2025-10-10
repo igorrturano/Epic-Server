@@ -8,7 +8,7 @@ class Translator()
 	var _translatableText := TranslatableText(); // Objeto de texto traduzível
 	
 	function Translator(this, translatableText := false)
-		this._apiURL := "http://epic-shard.com:5000/translate";
+		this._apiURL := "http://127.0.0.1:5000/translate";
 		this._translatableText := translatableText;
 	endfunction
 
