@@ -6,8 +6,8 @@ include ":IO:CFGFile";
 const PROPNAME := "atributos";
 
 class EquipWrapper(IEquipWrapper)
-	var _template;
-	var _item;
+	var _template; // CfgElem
+	var _item; // ItemRef
 	var _prop;
 
 	var _name := "";
@@ -15,6 +15,8 @@ class EquipWrapper(IEquipWrapper)
 	var _weight := 0;
 	var _maxHP := 0;
 	var _material := "";
+
+	var _penalties := dictionary{}; // Dictionary of CombatPenalty (adicionar com o enum da classe filha, pra facilitar a busca por hash)
 
 	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
@@ -33,6 +35,8 @@ class EquipWrapper(IEquipWrapper)
 				this._maxHP := item.maxHP;
 				this._graphic := item.graphic;
 			endif
+
+			this._material := this._template.Material ?: error{"errortext" := "The item have no Material!"};
 			
 		else // Caso seja apenas um template
 			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
@@ -44,6 +48,8 @@ class EquipWrapper(IEquipWrapper)
 			this._weight := this._template.weight;
 			this._maxHP := this._template.maxHP;
 			this._graphic := this._template.graphic;
+
+			this._material := this._template.Material ?: error{"errortext" := "This item is just a template and have no Material!"};
 		endif
 	endfunction
 
@@ -52,11 +58,11 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function GetItem(this)
-		return this._item;
+		return this._item ?: error{"errortext" := "This item is just a template!"};
 	endfunction
 
 	function GetProp(this)
-		return this._prop;
+		return this._prop ?: error{"errortext" := "This item has no attributes Property or is just a template!"};
 	endfunction
 
 	function GetName(this)
@@ -79,30 +85,55 @@ class EquipWrapper(IEquipWrapper)
 		return this._maxHP;
 	endfunction
 
+	function GetMaterial(this)
+		return this._material ?: error{"errortext" := "The item have no Material!"};
+	endfunction
+
+	function GetPenalties(this)
+		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
+	endfunction
+
 	function _SetName(this, name)
 		if (this._item == error) return this._item; endif
 		this._name := name;
+		return this;
 	endfunction
 
 	function SetDesc(this, desc)
 		if (this._item == error) return this._item; endif
 		this._desc := desc;
+		return this;
 	endfunction
 
 	function SetGraphic(this, graphic)
 		if (this._item == error) return this._item; endif
 		this._graphic := graphic;
+		return this;
 	endfunction
 
 	function SetWeight(this, weight)
 		if (this._item == error) return this._item; endif
 		this._weight := weight;
+		return this;
 	endfunction
 
 	function SetMaxHP(this, maxHP)
 		if (this._item == error) return this._item; endif
 		this._maxHP := maxHP;
+		return this;
 	endfunction
+
+	function SetMaterial(this, material)
+		if (this._item == error) return this._item; endif
+		this._material := material;
+		return this;
+	endfunction
+
+	function SetPenalties(this, penalties)
+		if (this._item == error) return this._item; endif
+		this._penalties := penalties;
+		return this;
+	endfunction 
 
 	function Update(this)
 		if (this._item == error) return this._item; endif
@@ -113,10 +144,12 @@ class EquipWrapper(IEquipWrapper)
 		this._prop.+Weight := this._weight;
 		this._prop.+MaxHP := this._maxHP;
 
-		SetName(this._item, this._name);
+		this._SetName(this._name);
 		this._item.graphic := this._graphic;
 		this._item.weight := this._weight;
 		this._item.maxHP := this._maxHP;
+
+		return this;
 	endfunction
 
 	function ToString(this)
@@ -126,4 +159,7 @@ class EquipWrapper(IEquipWrapper)
 		Weight: {this._weight},
 		MaxHP: {this._maxHP}";
 	endfunction
+
+	uninit function ApplyModifiers(this, byRef who);
+	uninit function RemoveModifiers(this, byRef who);
 endclass
