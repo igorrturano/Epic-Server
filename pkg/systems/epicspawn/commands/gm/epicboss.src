@@ -141,32 +141,33 @@ function InitializeFormData()
 	form_data.enresist := "0";
 	form_data.poresist := "0";
 
-	// Skills
-	form_data.wrestling := "0";
-	form_data.tactics := "0";
-	form_data.magery := "0";
-	form_data.awareness := "0";
-	form_data.alchemy := "0";
-	form_data.arcana := "0";
-	form_data.domestic_work := "0";
-	form_data.dual_wield := "0";
-	form_data.gathering := "0";
-	form_data.handle_animal := "0";
-	form_data.magic_lore := "0";
-	form_data.mechanics := "0";
-	form_data.medicine := "0";
-	form_data.metal_working := "0";
-	form_data.one_handed := "0";
-	form_data.parry := "0";
-	form_data.pickpocketing := "0";
-	form_data.ranged := "0";
-	form_data.science := "0";
-	form_data.sneak := "0";
-	form_data.survival := "0";
-	form_data.theology := "0";
-	form_data.throwing := "0";
-	form_data.two_handed := "0";
-	form_data.wood_working := "0";
+	// Skills - Initialize skills_mod as a nested struct for cleaner in-game reading
+	form_data.+skills_mod := struct{};
+	form_data.skills_mod.+wrestling := "0";
+	form_data.skills_mod.+tactics := "0";
+	form_data.skills_mod.+magery := "0";
+	form_data.skills_mod.+awareness := "0";
+	form_data.skills_mod.+alchemy := "0";
+	form_data.skills_mod.+arcana := "0";
+	form_data.skills_mod.+domestic_work := "0";
+	form_data.skills_mod.+dual_wield := "0";
+	form_data.skills_mod.+gathering := "0";
+	form_data.skills_mod.+handle_animal := "0";
+	form_data.skills_mod.+magic_lore := "0";
+	form_data.skills_mod.+mechanics := "0";
+	form_data.skills_mod.+medicine := "0";
+	form_data.skills_mod.+metal_working := "0";
+	form_data.skills_mod.+one_handed := "0";
+	form_data.skills_mod.+parry := "0";
+	form_data.skills_mod.+pickpocketing := "0";
+	form_data.skills_mod.+ranged := "0";
+	form_data.skills_mod.+science := "0";
+	form_data.skills_mod.+sneak := "0";
+	form_data.skills_mod.+survival := "0";
+	form_data.skills_mod.+theology := "0";
+	form_data.skills_mod.+throwing := "0";
+	form_data.skills_mod.+two_handed := "0";
+	form_data.skills_mod.+wood_working := "0";
 
 	// Behavior
 	form_data.teleport_health := "25";
@@ -331,25 +332,25 @@ function ExtractPageData(input, page)
 				form_data.poresist := poresist;
 			endif
 
-			// Skills
+			// Skills - Update to use skills_mod nested structure
 			var wrestling := GFExtractData(input, 20);
 			if (wrestling != error && wrestling != "")
-				form_data.wrestling := wrestling;
+				form_data.skills_mod.wrestling := wrestling;
 			endif
 
 			var tactics := GFExtractData(input, 21);
 			if (tactics != error && tactics != "")
-				form_data.tactics := tactics;
+				form_data.skills_mod.tactics := tactics;
 			endif
 
 			var magery := GFExtractData(input, 22);
 			if (magery != error && magery != "")
-				form_data.magery := magery;
+				form_data.skills_mod.magery := magery;
 			endif
 
 			var awareness := GFExtractData(input, 23);
 			if (awareness != error && awareness != "")
-				form_data.awareness := awareness;
+				form_data.skills_mod.awareness := awareness;
 			endif
 			break;
 
@@ -667,106 +668,106 @@ function ShowPage2(who, title, gump_width, gump_height)
 	// Column 1
 	// Alchemy
 	GFTextLine(gump, skill_x_start[1], skill_y_start, 1153, "Alchemy:");
-	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start, 30, 20, 1150, form_data.alchemy ?
-				 form_data.alchemy : "0", 41, 4);
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start, 30, 20, 1150, form_data.skills_mod.alchemy ?
+				 form_data.skills_mod.alchemy : "0", 41, 4);
 
 	// Arcana
 	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing, 1153, "Arcana:");
 	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.arcana ? form_data.arcana : "0", 44, 4);
+				 form_data.skills_mod.arcana ? form_data.skills_mod.arcana : "0", 44, 4);
 
 	// Awareness
 	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 2, 1153, "Awareness:");
 	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
-				 form_data.awareness ? form_data.awareness : "0", 23, 4);
+				 form_data.skills_mod.awareness ? form_data.skills_mod.awareness : "0", 23, 4);
 
 	// Domestic Work
 	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 3, 1153, "Domestic Work:");
 	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
-				 form_data.domestic_work ? form_data.domestic_work : "0", 36, 4);
+				 form_data.skills_mod.domestic_work ? form_data.skills_mod.domestic_work : "0", 36, 4);
 
 	// Dual Wield
 	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 4, 1153, "Dual Wield:");
 	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
-				 form_data.dual_wield ? form_data.dual_wield : "0", 39, 4);
+				 form_data.skills_mod.dual_wield ? form_data.skills_mod.dual_wield : "0", 39, 4);
 
 	// Column 2
 	// Gathering
 	GFTextLine(gump, skill_x_start[2], skill_y_start, 1153, "Gathering:");
-	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start, 30, 20, 1150, form_data.gathering ?
-				 form_data.gathering : "0", 37, 4);
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start, 30, 20, 1150, form_data.skills_mod.gathering ?
+				 form_data.skills_mod.gathering : "0", 37, 4);
 
 	// Handle Animal
 	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing, 1153, "Handle Animal:");
 	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.handle_animal ? form_data.handle_animal : "0", 38, 4);
+				 form_data.skills_mod.handle_animal ? form_data.skills_mod.handle_animal : "0", 38, 4);
 
 	// Magic Lore
 	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 2, 1153, "Magic Lore:");
 	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
-				 form_data.magic_lore ? form_data.magic_lore : "0", 24, 4);
+				 form_data.skills_mod.magic_lore ? form_data.skills_mod.magic_lore : "0", 24, 4);
 
 	// Magery
 	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 3, 1153, "Magery:");
 	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
-				 form_data.magery ? form_data.magery : "0", 22, 4);
+				 form_data.skills_mod.magery ? form_data.skills_mod.magery : "0", 22, 4);
 
 	// Mechanics
 	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 4, 1153, "Mechanics:");
 	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
-				 form_data.mechanics ? form_data.mechanics : "0", 31, 4);
+				 form_data.skills_mod.mechanics ? form_data.skills_mod.mechanics : "0", 31, 4);
 
 	// Column 3
 	// Medicine
 	GFTextLine(gump, skill_x_start[3], skill_y_start, 1153, "Medicine:");
-	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start, 30, 20, 1150, form_data.medicine ?
-				 form_data.medicine : "0", 32, 4);
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start, 30, 20, 1150, form_data.skills_mod.medicine ?
+				 form_data.skills_mod.medicine : "0", 32, 4);
 
 	// Metal Working
 	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing, 1153, "Metal Working:");
 	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.metal_working ? form_data.metal_working : "0", 34, 4);
+				 form_data.skills_mod.metal_working ? form_data.skills_mod.metal_working : "0", 34, 4);
 
 	// One Handed
 	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 2, 1153, "One Handed:");
 	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
-				 form_data.one_handed ? form_data.one_handed : "0", 26, 4);
+				 form_data.skills_mod.one_handed ? form_data.skills_mod.one_handed : "0", 26, 4);
 
 	// Parry
 	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 3, 1153, "Parry:");
 	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
-				 form_data.parry ? form_data.parry : "0", 25, 4);
+				 form_data.skills_mod.parry ? form_data.skills_mod.parry : "0", 25, 4);
 
 	// Pickpocketing
 	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 4, 1153, "Pickpocketing:");
 	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
-				 form_data.pickpocketing ? form_data.pickpocketing : "0", 30, 4);
+				 form_data.skills_mod.pickpocketing ? form_data.skills_mod.pickpocketing : "0", 30, 4);
 
 	// Column 4
 	// Ranged
 	GFTextLine(gump, skill_x_start[4], skill_y_start, 1153, "Ranged:");
-	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start, 30, 20, 1150, form_data.ranged ?
-				 form_data.ranged : "0", 28, 4);
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start, 30, 20, 1150, form_data.skills_mod.ranged ?
+				 form_data.skills_mod.ranged : "0", 28, 4);
 
 	// Science
 	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing, 1153, "Science:");
 	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.science ? form_data.science : "0", 43, 4);
+				 form_data.skills_mod.science ? form_data.skills_mod.science : "0", 43, 4);
 
 	// Sneak
 	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 2, 1153, "Sneak:");
 	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
-				 form_data.sneak ? form_data.sneak : "0", 29, 4);
+				 form_data.skills_mod.sneak ? form_data.skills_mod.sneak : "0", 29, 4);
 
 	// Survival
 	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 3, 1153, "Survival:");
 	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
-				 form_data.survival ? form_data.survival : "0", 33, 4);
+				 form_data.skills_mod.survival ? form_data.skills_mod.survival : "0", 33, 4);
 
 	// Tactics
 	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 4, 1153, "Tactics:");
 	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
-				 form_data.tactics ? form_data.tactics : "0", 21, 4);
+				 form_data.skills_mod.tactics ? form_data.skills_mod.tactics : "0", 21, 4);
 
 	// Column 5 - Using the same spacing pattern as the other columns
 	// Add a new element to the arrays for the 5th column
@@ -775,28 +776,28 @@ function ShowPage2(who, title, gump_width, gump_height)
 
 	// Theology
 	GFTextLine(gump, skill_x_start[5], skill_y_start, 1153, "Theology:");
-	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start, 30, 20, 1150, form_data.theology ?
-				 form_data.theology : "0", 42, 4);
+	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start, 30, 20, 1150, form_data.skills_mod.theology ?
+				 form_data.skills_mod.theology : "0", 42, 4);
 
 	// Throwing
 	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing, 1153, "Throwing:");
 	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.throwing ? form_data.throwing : "0", 40, 4);
+				 form_data.skills_mod.throwing ? form_data.skills_mod.throwing : "0", 40, 4);
 
 	// Two Handed
 	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 2, 1153, "Two Handed:");
 	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
-				 form_data.two_handed ? form_data.two_handed : "0", 27, 4);
+				 form_data.skills_mod.two_handed ? form_data.skills_mod.two_handed : "0", 27, 4);
 
 	// Wood Working
 	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 3, 1153, "Wood Working:");
 	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
-				 form_data.wood_working ? form_data.wood_working : "0", 35, 4);
+				 form_data.skills_mod.wood_working ? form_data.skills_mod.wood_working : "0", 35, 4);
 
 	// Wrestling
 	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 4, 1153, "Wrestling:");
 	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
-				 form_data.wrestling ? form_data.wrestling : "0", 20, 4);
+				 form_data.skills_mod.wrestling ? form_data.skills_mod.wrestling : "0", 20, 4);
 
 	// Add a divider line before buttons
 	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -2503,96 +2504,98 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 	boss.enresist := CInt(form_data.enresist);
 	boss.poresist := CInt(form_data.poresist);
 
-	// Skills - Add all skills collected from form_data
+	// Skills - Create nested skills_mod structure for cleaner in-game reading
+	boss.+skills_mod := struct{};
+
 	// Basic 4 skills
-	boss.wrestling := CInt(form_data.wrestling);
-	boss.tactics := CInt(form_data.tactics);
-	boss.magery := CInt(form_data.magery);
-	boss.awareness := CInt(form_data.awareness);
+	boss.skills_mod.+wrestling := CInt(form_data.skills_mod.wrestling);
+	boss.skills_mod.+tactics := CInt(form_data.skills_mod.tactics);
+	boss.skills_mod.+magery := CInt(form_data.skills_mod.magery);
+	boss.skills_mod.+awareness := CInt(form_data.skills_mod.awareness);
 
 	// Additional skills from Page 2
-	if (form_data.alchemy)
-		boss.alchemy := CInt(form_data.alchemy);
+	if (form_data.skills_mod.alchemy)
+		boss.skills_mod.+alchemy := CInt(form_data.skills_mod.alchemy);
 	endif
 
-	if (form_data.arcana)
-		boss.arcana := CInt(form_data.arcana);
+	if (form_data.skills_mod.arcana)
+		boss.skills_mod.+arcana := CInt(form_data.skills_mod.arcana);
 	endif
 
-	if (form_data.domestic_work)
-		boss.domestic_work := CInt(form_data.domestic_work);
+	if (form_data.skills_mod.domestic_work)
+		boss.skills_mod.+domestic_work := CInt(form_data.skills_mod.domestic_work);
 	endif
 
-	if (form_data.dual_wield)
-		boss.dual_wield := CInt(form_data.dual_wield);
+	if (form_data.skills_mod.dual_wield)
+		boss.skills_mod.+dual_wield := CInt(form_data.skills_mod.dual_wield);
 	endif
 
-	if (form_data.gathering)
-		boss.gathering := CInt(form_data.gathering);
+	if (form_data.skills_mod.gathering)
+		boss.skills_mod.+gathering := CInt(form_data.skills_mod.gathering);
 	endif
 
-	if (form_data.handle_animal)
-		boss.handle_animal := CInt(form_data.handle_animal);
+	if (form_data.skills_mod.handle_animal)
+		boss.skills_mod.+handle_animal := CInt(form_data.skills_mod.handle_animal);
 	endif
 
-	if (form_data.magic_lore)
-		boss.magic_lore := CInt(form_data.magic_lore);
+	if (form_data.skills_mod.magic_lore)
+		boss.skills_mod.+magic_lore := CInt(form_data.skills_mod.magic_lore);
 	endif
 
-	if (form_data.mechanics)
-		boss.mechanics := CInt(form_data.mechanics);
+	if (form_data.skills_mod.mechanics)
+		boss.skills_mod.+mechanics := CInt(form_data.skills_mod.mechanics);
 	endif
 
-	if (form_data.medicine)
-		boss.medicine := CInt(form_data.medicine);
+	if (form_data.skills_mod.medicine)
+		boss.skills_mod.+medicine := CInt(form_data.skills_mod.medicine);
 	endif
 
-	if (form_data.metal_working)
-		boss.metal_working := CInt(form_data.metal_working);
+	if (form_data.skills_mod.metal_working)
+		boss.skills_mod.+metal_working := CInt(form_data.skills_mod.metal_working);
 	endif
 
-	if (form_data.one_handed)
-		boss.one_handed := CInt(form_data.one_handed);
+	if (form_data.skills_mod.one_handed)
+		boss.skills_mod.+one_handed := CInt(form_data.skills_mod.one_handed);
 	endif
 
-	if (form_data.parry)
-		boss.parry := CInt(form_data.parry);
+	if (form_data.skills_mod.parry)
+		boss.skills_mod.+parry := CInt(form_data.skills_mod.parry);
 	endif
 
-	if (form_data.pickpocketing)
-		boss.pickpocketing := CInt(form_data.pickpocketing);
+	if (form_data.skills_mod.pickpocketing)
+		boss.skills_mod.+pickpocketing := CInt(form_data.skills_mod.pickpocketing);
 	endif
 
-	if (form_data.ranged)
-		boss.ranged := CInt(form_data.ranged);
+	if (form_data.skills_mod.ranged)
+		boss.skills_mod.+ranged := CInt(form_data.skills_mod.ranged);
 	endif
 
-	if (form_data.science)
-		boss.science := CInt(form_data.science);
+	if (form_data.skills_mod.science)
+		boss.skills_mod.+science := CInt(form_data.skills_mod.science);
 	endif
 
-	if (form_data.sneak)
-		boss.sneak := CInt(form_data.sneak);
+	if (form_data.skills_mod.sneak)
+		boss.skills_mod.+sneak := CInt(form_data.skills_mod.sneak);
 	endif
 
-	if (form_data.survival)
-		boss.survival := CInt(form_data.survival);
+	if (form_data.skills_mod.survival)
+		boss.skills_mod.+survival := CInt(form_data.skills_mod.survival);
 	endif
 
-	if (form_data.theology)
-		boss.theology := CInt(form_data.theology);
+	if (form_data.skills_mod.theology)
+		boss.skills_mod.+theology := CInt(form_data.skills_mod.theology);
 	endif
 
-	if (form_data.throwing)
-		boss.throwing := CInt(form_data.throwing);
+	if (form_data.skills_mod.throwing)
+		boss.skills_mod.+throwing := CInt(form_data.skills_mod.throwing);
 	endif
 
-	if (form_data.two_handed)
-		boss.two_handed := CInt(form_data.two_handed);
+	if (form_data.skills_mod.two_handed)
+		boss.skills_mod.+two_handed := CInt(form_data.skills_mod.two_handed);
 	endif
 
-	if (form_data.wood_working)
-		boss.wood_working := CInt(form_data.wood_working);
+	if (form_data.skills_mod.wood_working)
+		boss.skills_mod.+wood_working := CInt(form_data.skills_mod.wood_working);
 	endif
 
 	// Movement
