@@ -1,9 +1,9 @@
 use uo;
 
-include "ICharWrapper";
+include "IMobileWrapper";
 include ":attributes:skills";
 
-class CharWrapper(ICharWrapper)
+class MobileWrapper(IMobileWrapper)
 	var _mobRef; // MobRef
 
 	var _name := "";
@@ -22,25 +22,27 @@ class CharWrapper(ICharWrapper)
 	var _gold := 0;
 	var _weight := 0;
 
-	function CharWrapper(this, byRef char)
-		if (char.isA(POLCLASS_MOBILE)) // Caso o charRef exista
-			this._mobRef := char;
+	var _skills := dictionary{}; // Dictionary of skills (string) and their base value (double)
 
-			this._name := char.name;
-			this._str := char.str;
-			this._dex := char.dex;
-			this._int := char.int;
+	function MobileWrapper(this, byRef mobRef)
+		if (mobRef.isA(POLCLASS_MOBILE)) // Caso o mobile exista
+			this._mobRef := mobRef;
 
-			this._currentHP := char.currentHP;
-			this._currentStamina := char.currentStamina;
-			this._currentMana := char.currentMana;
+			this._name := mobRef.name;
+			this._str := mobRef.str;
+			this._dex := mobRef.dex;
+			this._int := mobRef.int;
 
-			this._maxHP := char.maxHP;
-			this._maxStamina := char.maxStamina;
-			this._maxMana := char.maxMana;
+			this._currentHP := mobRef.currentHP;
+			this._currentStamina := mobRef.currentStamina;
+			this._currentMana := mobRef.currentMana;
 
-			this._gold := char.gold;
-			this._weight := char.weight;
+			this._maxHP := mobRef.maxHP;
+			this._maxStamina := mobRef.maxStamina;
+			this._maxMana := mobRef.maxMana;
+
+			this._gold := mobRef.gold;
+			this._weight := mobRef.weight;
 		else
 			error{"errortext" := "This character does not exist!"};
 		endif
