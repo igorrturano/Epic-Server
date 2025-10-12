@@ -89,6 +89,11 @@ class EquipWrapper(IEquipWrapper)
 		return this._material ?: error{"errortext" := "The item have no Material!"};
 	endfunction
 
+	function GetPenalty(this, penaltyName)
+		if ( this._penalties == dictionary{} ) return error{"errortext" := "The item have no Penalties!"}; endif
+		return this._penalties[penaltyName] ?: error{"errortext" := "This penalty does not exist!"};
+	endfunction
+	
 	function GetPenalties(this)
 		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
 	endfunction
@@ -159,7 +164,4 @@ class EquipWrapper(IEquipWrapper)
 		Weight: {this._weight},
 		MaxHP: {this._maxHP}";
 	endfunction
-
-	uninit function ApplyModifiers(this, byRef who);
-	uninit function RemoveModifiers(this, byRef who);
 endclass
