@@ -10,9 +10,16 @@ include ":tn:boss";
 include "include/epicNPCUtils";
 
 program control(altar)
+	var timeout := 1; // Allow the program to self-destruct after timeout
 	while (GetObjProperty(altar, "config") == error)
 		printtext(altar, "Sem configuracao em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
 		sleep(10);
+		timeout++;
+		if (timeout > 10) // 10 minutes timeout
+			printtext(altar, "Timeout exceeded, exiting control program.");
+			DestroyItem(altar);
+			return 0;
+		endif
 	endwhile
 
 	var globalSpawns := GetGlobalProperty("epicSpawns");
