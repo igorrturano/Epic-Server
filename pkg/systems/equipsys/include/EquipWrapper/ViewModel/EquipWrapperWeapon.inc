@@ -22,7 +22,6 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _strRequired := 0;
 	var _minRange := 0;
 	var _maxRange := 0;
-	var _penalties := struct{};
 
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);

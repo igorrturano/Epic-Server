@@ -11,7 +11,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 	var _resists := ArmorResist();
 	var _resistsMod := ArmorResist();
-	var _penalties := dictionary{}; // Dictionary of CombatPenalty
 
 	function EquipWrapperArmor(this, byRef item)
 		Super(item);
@@ -32,11 +31,11 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			);
 			this._resistsMod := ArmorResist();
 			this._penalties := dictionary{
-				DEXTERITY -> CombatPenalty(DEXTERITY, this._prop.Penalties[DEXTERITY]),
-				SNEAK -> CombatPenalty(SNEAK, this._prop.Penalties[SNEAK]),
-				MECHANICS -> CombatPenalty(MECHANICS, this._prop.Penalties[MECHANICS]),
-				MAGERY -> CombatPenalty(MAGERY, this._prop.Penalties[MAGERY]),
-				AWARENESS -> CombatPenalty(AWARENESS, this._prop.Penalties[AWARENESS])
+				COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::DEXTERITY]),
+				COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::SNEAK]),
+				COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::MECHANICS]),
+				COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::MAGERY]),
+				COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::AWARENESS])
 			};
 
 		else // Caso não tenha prop ou seja um item não existente (template)
@@ -57,11 +56,26 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
 			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
 			this._penalties := dictionary{
-				DEXTERITY -> CombatPenalty(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()),
-				SNEAK -> CombatPenalty(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()),
-				MECHANICS -> CombatPenalty(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()),
-				MAGERY -> CombatPenalty(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()),
-				AWARENESS -> CombatPenalty(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue())
+				COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(
+					COMBATPENALTY_ATTRIBUTE::DEXTERITY, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::DEXTERITY].GetValue() +
+					penaltiesProt[COMBATPENALTY_ATTRIBUTE::DEXTERITY].GetValue()
+				),
+				COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(
+					COMBATPENALTY_ATTRIBUTE::SNEAK, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::SNEAK].GetValue() +
+					penaltiesProt[COMBATPENALTY_ATTRIBUTE::SNEAK].GetValue()
+				),
+				COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(
+					COMBATPENALTY_ATTRIBUTE::MECHANICS, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::MECHANICS].GetValue() +
+					penaltiesProt[COMBATPENALTY_ATTRIBUTE::MECHANICS].GetValue()
+				),
+				COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(
+					COMBATPENALTY_ATTRIBUTE::MAGERY, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::MAGERY].GetValue() +
+					penaltiesProt[COMBATPENALTY_ATTRIBUTE::MAGERY].GetValue()
+				),
+				COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(
+					COMBATPENALTY_ATTRIBUTE::AWARENESS, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::AWARENESS].GetValue() +
+					penaltiesProt[COMBATPENALTY_ATTRIBUTE::AWARENESS].GetValue()
+				)
 			};
 		endif
 		
@@ -84,11 +98,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	function GetResistsMod(this)
 		return this._resistsMod ?: error{"errortext" := "The item have no Resists Modifier!"};
 	endfunction
-
-	function GetPenalties(this)
-		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
-	endfunction
-
+	
 	function SetResists(this, resists)
 		if (this._item == error) return this._item; endif
 		this._resists := resists;
@@ -98,11 +108,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		if (this._item == error) return this._item; endif
 		this._resistsMod := resists;
 	endfunction
-
-	function SetPenalties(this, penalties)
-		if (this._item == error) return this._item; endif
-		this._penalties := penalties;
-	endfunction 
 
 	function Update(this)
 		if (this._item == error) return this._item; endif
