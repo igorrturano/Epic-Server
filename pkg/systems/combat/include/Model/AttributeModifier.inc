@@ -3,7 +3,7 @@ include "IAttributeModifier";
 include ":attributes:attributeConstants";
 
 class AttributeModifier(IAttributeModifier)
-	var _attribute := ""; // enum
+	var _attribute := ""; // attribute constant in attributeConstants.inc
 	var _value := 0;
 
 	function AttributeModifier(this, attribute := "", value := 0)
@@ -38,13 +38,3 @@ class AttributeModifier(IAttributeModifier)
 		return this._attribute + ": " + this._value;
 	endfunction
 endclass
-
-enum class COMBATPENALTY_ATTRIBUTE
-	STRENGTH,
-	DEXTERITY,
-	INTELLIGENCE,
-	SNEAK,
-	MECHANICS,
-	MAGERY,
-	AWARENESS
-endenum

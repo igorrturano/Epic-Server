@@ -4,7 +4,6 @@ class IAttributeModifier()
 	uninit function GetAttribute(this);
 	uninit function GetValue(this);
 
-	uninit function SetAttribute(this, attribute);
 	uninit function SetValue(this, value);
 
 	uninit function DecreaseValue(this, value);
