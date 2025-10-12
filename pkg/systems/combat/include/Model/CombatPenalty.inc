@@ -3,7 +3,7 @@ include "ICombatPenalty";
 include ":attributes:attributeConstants";
 
 class CombatPenalty(ICombatPenalty)
-	var _attribute := "";
+	var _attribute := ""; // enum
 	var _value := 0;
 
 	function CombatPenalty(this, attribute := "", value := 0)
@@ -40,3 +40,13 @@ class CombatPenalty(ICombatPenalty)
 		return this._attribute + ": " + this._value;
 	endfunction
 endclass
+
+enum class COMBATPENALTY_ATTRIBUTE
+	STRENGTH,
+	DEXTERITY,
+	INTELLIGENCE,
+	SNEAK,
+	MECHANICS,
+	MAGERY,
+	AWARENESS
+endenum

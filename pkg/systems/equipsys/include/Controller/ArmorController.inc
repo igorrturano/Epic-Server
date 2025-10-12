@@ -137,17 +137,17 @@ function getPenaltiesBySlot(slot)
 	endcase
 
 	return dictionary{
-		DEXTERITY -> CombatPenalty(DEXTERITY, penalties[1]),
-		SNEAK -> CombatPenalty(SNEAK, penalties[2]),
-		MECHANICS -> CombatPenalty(MECHANICS, penalties[3]),
-		MAGERY -> CombatPenalty(MAGERY, penalties[4]),
-		AWARENESS -> CombatPenalty(AWARENESS, penalties[5])
+		COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, penalties[1]),
+		COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, penalties[2]),
+		COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, penalties[3]),
+		COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, penalties[4]),
+		COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, penalties[5])
 	};
 endfunction
 
 function getPenaltiesByProtection(protection)
 	var penalties := array{};
-	case(Upper(protection)) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+	case(Upper(protection)) // {Dexterity, Sneak, Mechanics, Magery, Awareness}
 		//TIER 1
 		ARMOR_LOWLOW: penalties := {0,0,0,0,0}; break;
 		ARMOR_LOWMID: penalties := {0,0,0,0,0}; break;
@@ -174,11 +174,11 @@ function getPenaltiesByProtection(protection)
 	endcase
 
 	return dictionary{
-		DEXTERITY -> CombatPenalty(DEXTERITY, penalties[1]),
-		SNEAK -> CombatPenalty(SNEAK, penalties[2]),
-		MECHANICS -> CombatPenalty(MECHANICS, penalties[3]),
-		MAGERY -> CombatPenalty(MAGERY, penalties[4]),
-		AWARENESS -> CombatPenalty(AWARENESS, penalties[5])
+		COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, penalties[1]),
+		COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, penalties[2]),
+		COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, penalties[3]),
+		COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, penalties[4]),
+		COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, penalties[5])
 	};
 endfunction
 
