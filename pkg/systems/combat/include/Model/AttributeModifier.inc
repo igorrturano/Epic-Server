@@ -1,12 +1,12 @@
-include "ICombatPenalty";
+include "IAttributeModifier";
 
 include ":attributes:attributeConstants";
 
-class CombatPenalty(ICombatPenalty)
+class AttributeModifier(IAttributeModifier)
 	var _attribute := ""; // enum
 	var _value := 0;
 
-	function CombatPenalty(this, attribute := "", value := 0)
+	function AttributeModifier(this, attribute := "", value := 0)
 		this._attribute := attribute;
 		this._value := CInt(value);
 	endfunction
@@ -19,21 +19,19 @@ class CombatPenalty(ICombatPenalty)
 		return this._value;
 	endfunction
 
-	function SetAttribute(this, attribute)
-		this._attribute := attribute;
-	endfunction
-
 	function SetValue(this, value)
 		this._value := CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseValue(this, value)
+		this._value -= CInt(value);
+		return this;
 	endfunction
 
 	function IncreaseValue(this, value)
 		this._value += CInt(value);
-	endfunction
-
-	function DecreaseValue(this, value)
-		if ( this._value == 0 ) return; endif
-		this._value -= CInt(value);
+		return this;
 	endfunction
 
 	function ToString(this)
