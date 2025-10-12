@@ -1,6 +1,7 @@
 use uo;
 
 include "ICharWrapper";
+include ":attributes:skills";
 
 class CharWrapper(ICharWrapper)
 	var _mobRef; // MobRef
@@ -97,10 +98,30 @@ class CharWrapper(ICharWrapper)
 		return this._weight;
 	endfunction
 
+	function GetSkill(this, skillName)
+		return AP_GetSkill(this._mobRef, skillName);
+	endfunction
 
+	function GetSkillBase(this, skillName)
+		return AP_GetTrueSkill(this._mobRef, skillName);
+	endfunction
+
+	function GetSkillMod(this, skillName)
+		return AP_GetSkillMod(this._mobRef, skillName);
+	endfunction
 
 	function IsNPC(this)
 		return this._mobRef.isA(POLCLASS_NPC);
+	endfunction
+
+	function SetSkillBase(this, skillName, value)
+		AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
+		return this;
+	endfunction
+
+	function SetSkillMod(this, skillName, value)
+		AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
+		return this;
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
