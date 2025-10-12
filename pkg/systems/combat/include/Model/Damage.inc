@@ -157,7 +157,7 @@ class Damage(IDamage)
 	endfunction
 endclass
 
-enum class DAMAGETIER
+enum class DAMAGE_TIER
 	DAMAGE_NONE := "DAMAGE_NONE",
 
 	ONEHANDED_LOW := "ONEHANDED_LOW",
@@ -181,7 +181,7 @@ enum class DAMAGETIER
 	THROWING_HIGH := "THROWING_HIGH"
 endenum
 
-enum class DAMAGETYPE
+enum class DAMAGE_TYPE
 	SLASHDAMAGE := "Cortante",
 	PIERCINGDAMAGE := "Perfurante",
 	BLUNTDAMAGE := "Contusivo"

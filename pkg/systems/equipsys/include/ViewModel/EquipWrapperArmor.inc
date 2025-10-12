@@ -3,7 +3,6 @@ include "IEquipWrapperArmor";
 include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
-include ":combat:Model/CombatPenalty";
 
 class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 	var _coverage := array{};
@@ -30,13 +29,11 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 				this._prop.EnergyResist
 			);
 			this._resistsMod := ArmorResist();
-			this._penalties := dictionary{
-				COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::DEXTERITY]),
-				COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::SNEAK]),
-				COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::MECHANICS]),
-				COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::MAGERY]),
-				COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, this._prop.Penalties[COMBATPENALTY_ATTRIBUTE::AWARENESS])
-			};
+			this.AddModifier(AttributeModifier(DEXTERITY, this._prop.Penalties[DEXTERITY]));
+			this.AddModifier(AttributeModifier(SNEAK, this._prop.Penalties[SNEAK]));
+			this.AddModifier(AttributeModifier(MECHANICS, this._prop.Penalties[MECHANICS]));
+			this.AddModifier(AttributeModifier(MAGERY, this._prop.Penalties[MAGERY]));
+			this.AddModifier(AttributeModifier(AWARENESS, this._prop.Penalties[AWARENESS]));
 
 		else // Caso não tenha prop ou seja um item não existente (template)
 			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
@@ -55,28 +52,11 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
 			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
-			this._penalties := dictionary{
-				COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(
-					COMBATPENALTY_ATTRIBUTE::DEXTERITY, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::DEXTERITY].GetValue() +
-					penaltiesProt[COMBATPENALTY_ATTRIBUTE::DEXTERITY].GetValue()
-				),
-				COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(
-					COMBATPENALTY_ATTRIBUTE::SNEAK, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::SNEAK].GetValue() +
-					penaltiesProt[COMBATPENALTY_ATTRIBUTE::SNEAK].GetValue()
-				),
-				COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(
-					COMBATPENALTY_ATTRIBUTE::MECHANICS, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::MECHANICS].GetValue() +
-					penaltiesProt[COMBATPENALTY_ATTRIBUTE::MECHANICS].GetValue()
-				),
-				COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(
-					COMBATPENALTY_ATTRIBUTE::MAGERY, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::MAGERY].GetValue() +
-					penaltiesProt[COMBATPENALTY_ATTRIBUTE::MAGERY].GetValue()
-				),
-				COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(
-					COMBATPENALTY_ATTRIBUTE::AWARENESS, penaltiesSlot[COMBATPENALTY_ATTRIBUTE::AWARENESS].GetValue() +
-					penaltiesProt[COMBATPENALTY_ATTRIBUTE::AWARENESS].GetValue()
-				)
-			};
+			this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
+			this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
+			this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
+			this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
+			this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
 		endif
 		
 		this._weight := this._GetWeight();

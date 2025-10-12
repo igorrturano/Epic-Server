@@ -54,7 +54,7 @@ class ArmorResist(IArmorResist)
 	endfunction
 endclass
 
-enum class PROTECTIONTYPE
+enum class PROTECTION_TYPE
 	ARMOR_LOWLOW := "ARMADURA LEVE FRACA",
 	ARMOR_LOWMID := "ARMADURA LEVE MEDIA",
 	ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",

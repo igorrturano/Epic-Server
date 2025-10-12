@@ -3,7 +3,7 @@ use math;
 
 include ":equipsys:utils/consts";
 include ":combat:Model/ArmorResist";
-include ":combat:Model/CombatPenalty";
+include ":combat:Model/AttributeModifier";
 
 function getResistPhysicalByProtection(tier)
 	var resists := array{};
@@ -137,11 +137,11 @@ function getPenaltiesBySlot(slot)
 	endcase
 
 	return dictionary{
-		COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, penalties[1]),
-		COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, penalties[2]),
-		COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, penalties[3]),
-		COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, penalties[4]),
-		COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, penalties[5])
+		DEXTERITY -> AttributeModifier(DEXTERITY, penalties[1]),
+		SNEAK -> AttributeModifier(SNEAK, penalties[2]),
+		MECHANICS -> AttributeModifier(MECHANICS, penalties[3]),
+		MAGERY -> AttributeModifier(MAGERY, penalties[4]),
+		AWARENESS -> AttributeModifier(AWARENESS, penalties[5])
 	};
 endfunction
 
@@ -174,11 +174,11 @@ function getPenaltiesByProtection(protection)
 	endcase
 
 	return dictionary{
-		COMBATPENALTY_ATTRIBUTE::DEXTERITY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::DEXTERITY, penalties[1]),
-		COMBATPENALTY_ATTRIBUTE::SNEAK -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::SNEAK, penalties[2]),
-		COMBATPENALTY_ATTRIBUTE::MECHANICS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MECHANICS, penalties[3]),
-		COMBATPENALTY_ATTRIBUTE::MAGERY -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::MAGERY, penalties[4]),
-		COMBATPENALTY_ATTRIBUTE::AWARENESS -> CombatPenalty(COMBATPENALTY_ATTRIBUTE::AWARENESS, penalties[5])
+		DEXTERITY -> AttributeModifier(DEXTERITY, penalties[1]),
+		SNEAK -> AttributeModifier(SNEAK, penalties[2]),
+		MECHANICS -> AttributeModifier(MECHANICS, penalties[3]),
+		MAGERY -> AttributeModifier(MAGERY, penalties[4]),
+		AWARENESS -> AttributeModifier(AWARENESS, penalties[5])
 	};
 endfunction
 

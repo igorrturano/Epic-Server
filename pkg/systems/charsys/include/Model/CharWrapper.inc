@@ -115,17 +115,5 @@ class CharWrapper(ICharWrapper)
 		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
 			return error {"errortext" := "The object passed must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
-
-		this._str -= itemWrapped.GetStrMod();
-		this._dex -= itemWrapped.GetDexMod();
-		this._int -= itemWrapped.GetIntMod();
-
-		this._maxHP -= itemWrapped.GetMaxHPMod();
-		this._maxStamina -= itemWrapped.GetMaxStaminaMod();
-		this._maxMana -= itemWrapped.GetMaxManaMod();
-
-		this._statCap -= itemWrapped.GetStatCapMod();
-
-		this._weight -= itemWrapped.GetWeightMod();
 	endfunction
 endclass

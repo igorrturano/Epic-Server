@@ -3,6 +3,8 @@ use uo;
 include "IEquipWrapper";
 include ":IO:CFGFile";
 
+include ":combat:Model/AttributeModifier";
+
 const PROPNAME := "atributos";
 
 class EquipWrapper(IEquipWrapper)
@@ -16,7 +18,7 @@ class EquipWrapper(IEquipWrapper)
 	var _maxHP := 0;
 	var _material := "";
 
-	var _penalties := dictionary{}; // Dictionary of CombatPenalty (adicionar com o enum da classe filha, pra facilitar a busca por hash)
+	var _modifiers := dictionary{}; // Dictionary of AttributeModifier (adicionar com o enum da classe filha, pra facilitar a busca por hash)
 
 	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
@@ -51,6 +53,8 @@ class EquipWrapper(IEquipWrapper)
 
 			this._material := this._template.Material ?: error{"errortext" := "This item is just a template and have no Material!"};
 		endif
+
+		this._modifiers := dictionary{};
 	endfunction
 
 	function GetTemplate(this)
@@ -89,13 +93,13 @@ class EquipWrapper(IEquipWrapper)
 		return this._material ?: error{"errortext" := "The item have no Material!"};
 	endfunction
 
-	function GetPenalty(this, penaltyName)
-		if ( this._penalties == dictionary{} ) return error{"errortext" := "The item have no Penalties!"}; endif
-		return this._penalties[penaltyName] ?: error{"errortext" := "This penalty does not exist!"};
+	function GetModifier(this, modifierName)
+		if ( this._modifiers == dictionary{} ) return error{"errortext" := "The item have no Modifiers!"}; endif
+		return this._modifiers[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
 	endfunction
 	
-	function GetPenalties(this)
-		return this._penalties ?: error{"errortext" := "The item have no Penalties!"};
+	function GetModifiers(this)
+		return this._modifiers ?: error{"errortext" := "The item have no Modifiers!"};
 	endfunction
 
 	function _SetName(this, name)
@@ -134,11 +138,11 @@ class EquipWrapper(IEquipWrapper)
 		return this;
 	endfunction
 
-	function SetPenalties(this, penalties)
+	function AddModifier(this, modifier) // modifier is of type AttributeModifier
 		if (this._item == error) return this._item; endif
-		this._penalties := penalties;
+		this._modifiers[modifier.GetName()] := modifier;
 		return this;
-	endfunction 
+	endfunction
 
 	function Update(this)
 		if (this._item == error) return this._item; endif
