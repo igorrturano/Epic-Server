@@ -51,30 +51,37 @@ class WeaponDamage(IWeaponDamage)
 
 	function SetSlashDamage(this, value)
 		this._slash := value;
+		return this;
 	endfunction
 
 	function SetPiercingDamage(this, value)
 		this._piercing := value;
+		return this;
 	endfunction
 
 	function SetBluntDamage(this, value)
 		this._blunt := value;
+		return this;
 	endfunction
 
 	function SetFireDamage(this, value)
 		this._fire := value;
+		return this;
 	endfunction
 
 	function SetColdDamage(this, value)
 		this._cold := value;
+		return this;
 	endfunction
 
 	function SetPoisonDamage(this, value)
 		this._poison := value;
+		return this;
 	endfunction
 
 	function SetEnergyDamage(this, value)
 		this._energy := value;
+		return this;
 	endfunction
 
 	function ToString(this)

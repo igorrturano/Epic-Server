@@ -49,86 +49,107 @@ class Damage(IDamage)
 
 	function SetSlashDamage(this, value)
 		this._slash := CInt(value);
+		return this;
 	endfunction
 
 	function SetPiercingDamage(this, value)
 		this._piercing := CInt(value);
+		return this;
 	endfunction
 
 	function SetBluntDamage(this, value)
 		this._blunt := CInt(value);
+		return this;
 	endfunction
 
 	function SetFireDamage(this, value)
 		this._fire := CInt(value);
+		return this;
 	endfunction
 
 	function SetColdDamage(this, value)
 		this._cold := CInt(value);
+		return this;
 	endfunction
 
 	function SetPoisonDamage(this, value)
 		this._poison := CInt(value);
+		return this;
 	endfunction
 
 	function SetEnergyDamage(this, value)
 		this._energy := CInt(value);
-	endfunction
-
-	function IncreaseSlashDamage(this, value)
-		this._slash += CInt(value);
-	endfunction
-
-	function IncreasePiercingDamage(this, value)
-		this._piercing += CInt(value);
-	endfunction
-
-	function IncreaseBluntDamage(this, value)
-		this._blunt += CInt(value);
-	endfunction
-
-	function IncreaseFireDamage(this, value)
-		this._fire += CInt(value);
-	endfunction
-
-	function IncreaseColdDamage(this, value)
-		this._cold += CInt(value);
-	endfunction
-
-	function IncreasePoisonDamage(this, value)
-		this._poison += CInt(value);
-	endfunction
-
-	function IncreaseEnergyDamage(this, value)
-		this._energy += CInt(value);
+		return this;
 	endfunction
 
 	function DecreaseSlashDamage(this, value)
 		this._slash -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreasePiercingDamage(this, value)
 		this._piercing -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreaseBluntDamage(this, value)
 		this._blunt -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreaseFireDamage(this, value)
 		this._fire -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreaseColdDamage(this, value)
 		this._cold -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreasePoisonDamage(this, value)
 		this._poison -= CInt(value);
+		return this;
 	endfunction
 
 	function DecreaseEnergyDamage(this, value)
 		this._energy -= CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseSlashDamage(this, value)
+		this._slash += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePiercingDamage(this, value)
+		this._piercing += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseBluntDamage(this, value)
+		this._blunt += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseFireDamage(this, value)
+		this._fire += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseColdDamage(this, value)
+		this._cold += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePoisonDamage(this, value)
+		this._poison += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseEnergyDamage(this, value)
+		this._energy += CInt(value);
+		return this;
 	endfunction
 
 	function ToString(this)
