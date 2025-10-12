@@ -11,7 +11,7 @@ include "include/epicNPCUtils";
 
 program control(altar)
 	while (GetObjProperty(altar, "config") == error)
-		printtext(altar, "Sem config" + GetObjProperty(altar, "config"));
+		printtext(altar, "Sem configuracao em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
 		sleep(10);
 	endwhile
 
