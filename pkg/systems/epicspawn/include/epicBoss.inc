@@ -18,6 +18,12 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
+
+    // IMPORTANT: Set EpicBossStruct BEFORE customizeNpc to prevent race condition
+    // The NPC brain may start during customizeNpc and needs this property
+    SetObjProperty(npc, "EpicBossStruct", boss);
+    SetObjProperty(npc, "IsBoss", 1);
+
     var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
     // Set basic properties
@@ -217,10 +223,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.detailed_description)
         SetObjProperty(npc, "descricao", boss.detailed_description);
     endif
-
-    SetObjProperty(npc, "IsBoss", 1); // Mark this NPC as a boss
-    // Set the boss structure on the NPC for reference
-    SetObjProperty(npc, "EpicBossStruct", boss);
 
     // Set combat events
     if (boss.combatevents && boss.combatevents.size() > 0)
