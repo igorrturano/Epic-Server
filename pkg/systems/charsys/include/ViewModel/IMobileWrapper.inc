@@ -1,5 +1,5 @@
-class ICharWrapper()
-	uninit function ICharWrapper(this, byRef char);
+class IMobileWrapper()
+	uninit function IMobileWrapper(this, byRef mobRef);
 
 	uninit function GetMobRef(this);
 	uninit function GetName(this);
