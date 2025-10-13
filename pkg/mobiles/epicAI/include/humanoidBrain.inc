@@ -11,6 +11,7 @@ include "include/epicLoggerUtils";
 function HumanoidBrain()
     var ev;
     var wanders := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
@@ -30,10 +31,19 @@ function HumanoidBrain()
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
+        
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
@@ -50,23 +60,25 @@ function HumanoidBrain()
             endif
         endif
         
-        if (ev)
+        if (ev)            
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -79,29 +91,29 @@ function HumanoidBrain()
                         endif
                     endif
                 EVID_TAUNT:
+                    last_activity_time := polcore().systime;
                     if (CanFight(me, ev.opponent))
                         HandleHumanoidCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    if (me.isShaman()   )
+                    if (me.isShaman())
                         HumanoidShamanBehavior(me, ev.source);
                     endif
                     if (me.isPriest())
                         HumanoidPriestBehavior(me, ev.source);
                     endif
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                HumanoidIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)           
+            HumanoidIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
                     HandleIdleState();
                 endif

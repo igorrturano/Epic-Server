@@ -52,6 +52,10 @@ endfunction
 //
 ///////////////////////////////////////////////////////////
 
+const ALIGN_EVIL := "evil";
+const ALIGN_GOOD := "good";
+const ALIGN_NEUTRAL := "neutral";
+
 function GetAlignment(mobile)
 
 	var align := mobile.alignment;

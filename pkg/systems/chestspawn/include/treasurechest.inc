@@ -92,7 +92,9 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                 var players := EnumerateOnlineCharacters();
                 foreach player in players
                     if (player.cmdlevel > 2)
-                        SendSysMessageEx(player, "Chestspawner em x " + x + " y " + y + " z " + z + " esta consumindo muito a CPU, delete-o ou recrie-o", SSM_FAIL);
+                        SendSysMessageEx(player, "Chestspawner em x " + x + " y " + y + " z " + z + " esta consumindo muito a CPU, e sera destruido", SSM_FAIL);
+                        DestroyItem(chest);
+                        sleepms(20);
                     endif
                 endforeach
             endif

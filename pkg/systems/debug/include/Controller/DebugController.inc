@@ -30,6 +30,7 @@
 use uo;
 
 include ":message:model/Message";
+include ":message:Translator";
 
 const PROPTAG := "#debug_";
 
@@ -56,9 +57,9 @@ enum DEBUGNAMES
 	DEBUG_CLIMA := "clima",
 	DEBUG_DAMAGE := "damage",
 	DEBUG_SMELTING := "smelting",
-    DEBUG_UP := "up",
+	DEBUG_UP := "up",
 	DEBUG_EQUIP := "equip",
-    DEBUG_HIT := "hit",
+	DEBUG_HIT := "hit",
 	DEBUG_HAB := "habilidades",
 	DEBUG_MASTERY := "maestria",
 	DEBUG_ACHIEVEMENT := "conquistas",
@@ -74,9 +75,9 @@ endenum
  * e especificando o nível de permissão adequado.
  */
 var listDebugs := dictionary {
-    DEBUG_ALL -> struct { name := DEBUG_ALL, "level" := 0 },
-    DEBUG_CLIMA -> struct { name := DEBUG_CLIMA, "level" := 0 },
-    DEBUG_DAMAGE -> struct { name := DEBUG_DAMAGE, "level" := 0 },
+	DEBUG_ALL -> struct { name := DEBUG_ALL, "level" := 0 },
+	DEBUG_CLIMA -> struct { name := DEBUG_CLIMA, "level" := 0 },
+	DEBUG_DAMAGE -> struct { name := DEBUG_DAMAGE, "level" := 0 },
 	DEBUG_SMELTING -> struct { name := DEBUG_SMELTING, "level" := 0 },
 	DEBUG_UP -> struct { name := DEBUG_UP, "level" := 0 },
 	DEBUG_EQUIP -> struct { name := DEBUG_EQUIP, "level" := 0 },
@@ -102,9 +103,9 @@ var listDebugs := dictionary {
  * @returns Nenhum valor de retorno
  */
 function DebugMsg(who, debugName, msg)
-    if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-        Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
-    endif
+	if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
+		Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+	endif
 endfunction
 
 /**
@@ -122,9 +123,9 @@ endfunction
  * mensagem do sistema com nível de informação.
  */
 function DebugMsgAll(debugName, msg)
-    foreach who in EnumerateOnlineCharacters()
-        if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-            Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
-        endif
-    endforeach
+	foreach who in EnumerateOnlineCharacters()
+		if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
+			Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+		endif
+	endforeach
 endfunction

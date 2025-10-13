@@ -33,18 +33,22 @@ class Text(Control)
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetAlign(this, align)
 		this._align := align;
+		return this;
 	endfunction
 
 	function SetColor(this, color)
 		this._color := color;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)

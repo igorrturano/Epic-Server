@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+include ":npcs:NPCUtilities";
 
 const MAX_Z_DIFF := 18;
 
@@ -1411,13 +1412,22 @@ function HandleIdleState()
         return;
     endif
 
-    while (!hasPlayerNear(me))    
-        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+    if (!hasPlayerNear(me))
+        var attempts := 0;
+        while (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
             WalkTowardLocation(home_x, home_y);
+            sleepms(100);
+            attempts += 1;
+        endwhile
+        
+        // If still not home after 20 attempts, just teleport
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+            PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+            sleep(3);
+            MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
         endif
-    endwhile
+    endif
     
-    // No need for event checking here since MonsterBrain already does it
     return 1;
 endfunction
 
@@ -2121,6 +2131,11 @@ function ShouldFlee(me)
             return 1;
         endif
     endif
+     // if mob is neutral alignment, alaways flee
+    if (GetAlignment(me) == ALIGN_NEUTRAL)
+        return 1;
+    endif
+
     return 0;
 endfunction
 

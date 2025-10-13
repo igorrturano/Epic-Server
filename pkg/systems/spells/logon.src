@@ -30,5 +30,7 @@ program Logon(who)
 		Start_Script(":spells:powerWords", array{ who });
 	endif
 
+	Start_Script(":epicai:scripts/npctracker", who);
+
 	return 1;
 endprogram

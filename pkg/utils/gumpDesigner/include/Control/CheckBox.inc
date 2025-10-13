@@ -26,14 +26,17 @@ class CheckBox(Control)
 
 	function SetUncheckedImage(this, uncheckedImage)
 		this._uncheckedImage := uncheckedImage;
+		return this;
 	endfunction
 
 	function SetCheckedImage(this, checkedImage)
 		this._checkedImage := checkedImage;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function ToString(this)

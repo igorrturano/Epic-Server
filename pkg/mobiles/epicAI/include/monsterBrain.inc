@@ -10,23 +10,30 @@ include "NPCMageryUtils";
 function MonsterBrain()
     var ev;
     var wanders := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get monster configuration
     var is_ranged := isMonsterRanged();
 
-    // Enable archer-specific abilities if needed
     if (is_ranged)
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
 
     while (me)
-        ev := os::wait_for_event(0);
-    
-        // If we have an opponent, maintain combat position regardless of events
+        ev := os::wait_for_event(1);
+        
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
+           
         if (me.opponent)
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleMonsterLeftArea(me.opponent);
             else
@@ -38,20 +45,21 @@ function MonsterBrain()
         
         if (ev)
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -64,26 +72,25 @@ function MonsterBrain()
                         endif
                     endif
                 EVID_TAUNT:
+                    last_activity_time := polcore().systime;
                     if (CanFight(me, ev.opponent))
                         HandleMonsterCombatEvent(ev.opponent, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                MonsterIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            MonsterIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
-                    HandleIdleState();
                 endif
             endif
         endif
