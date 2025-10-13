@@ -36,34 +36,102 @@ class MobileWrapper(IMobileWrapper)
 	var _weight := 0;
 
 	var _skills := dictionary{ // Dictionary of skills (string) and their base value (double)
-		ALCHEMY := 0.0,
-		MAGERY := 0.0,
-		ARCANA := 0.0,
-		SCIENCE := 0.0,
-		THEOLOGY := 0.0,
+		ALCHEMY := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		MAGERY := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		ARCANA := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		SCIENCE := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		THEOLOGY := struct{
+			base := 0.0,
+			mod := 0.0
+		},
 
-		PARRY := 0.0,
-		ONEHANDED := 0.0,
-		TWOHANDED := 0.0,
-		DUALWIELD := 0.0,
-		RANGED := 0.0,
-		TACTICS := 0.0,
+		PARRY := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		ONEHANDED := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		TWOHANDED := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		DUALWIELD := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		RANGED := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		TACTICS := struct{
+			base := 0.0,
+			mod := 0.0
+		},
 
-		SNEAK := 0.0,
-		PICKPOCKETING := 0.0,
-		AWARENESS := 0.0,
-		MECHANICS := 0.0,
+		SNEAK := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		PICKPOCKETING := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		AWARENESS := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		MECHANICS := struct{
+			base := 0.0,
+			mod := 0.0
+		},
 
-		MEDICINE := 0.0,
-		SURVIVAL := 0.0,
+		MEDICINE := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		SURVIVAL := struct{
+			base := 0.0,
+			mod := 0.0
+		},
 
-		METALWORKING := 0.0,
-		WOODWORKING := 0.0,
-		DOMESTIC_WORK := 0.0,
-		GATHERING := 0.0,
-		HANDLEANIMAL := 0.0,
-
-		WRESTLING := 0.0
+		METALWORKING := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		WOODWORKING := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		DOMESTIC_WORK := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		GATHERING := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		HANDLEANIMAL := struct{
+			base := 0.0,
+			mod := 0.0
+		},
+		WRESTLING := struct{
+			base := 0.0,
+			mod := 0.0
+		}
 	};
 
 	function MobileWrapper(this, byRef mobRef)
@@ -101,15 +169,28 @@ class MobileWrapper(IMobileWrapper)
 
 			this._skills := MobileWrapper::_skills;
 			foreach skillName in (this._skills.keys())
-				this._skills[skillName] := AP_GetTrueSkill(mobRef, skillName);
+				this._skills[skillName].base := AP_GetTrueSkill(mobRef, skillName);
+				this._skills[skillName].mod := AP_GetSkillMod(mobRef, skillName);
 			endforeach
 		else
-			error{"errortext" := "This character does not exist!"};
+			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
+			this._mobRef := err;
+			this._name := err;
+			this._str := err;
+			this._dex := err;
+			this._int := err;
+			this._hp := err;
+			this._stamina := err;
+			this._mana := err;
+			this._hunger := err;
+			this._gold := err;
+			this._weight := err;
+			this._skills := err;
 		endif
 	endfunction
 
 	function GetMobRef(this)
-		return this._mobRef ?: error{"errortext" := "This character does not exist!"};
+		return this._mobRef;
 	endfunction
 
 	function GetName(this)
@@ -196,15 +277,19 @@ class MobileWrapper(IMobileWrapper)
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
-			return error {"errortext" := "The object passed must be an EquipWrapperArmor or EquipWrapperWeapon!"};
+			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
 
+
+		return this;
 	endfunction
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
-			return error {"errortext" := "The object passed must be an EquipWrapperArmor or EquipWrapperWeapon!"};
+			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
+
+		return this;
 	endfunction
 endclass
