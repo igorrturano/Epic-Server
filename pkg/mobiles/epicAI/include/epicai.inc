@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+include ":npcs:NPCUtilities";
 
 const MAX_Z_DIFF := 18;
 
@@ -2130,6 +2131,11 @@ function ShouldFlee(me)
             return 1;
         endif
     endif
+     // if mob is neutral alignment, alaways flee
+    if (GetAlignment(me) == ALIGN_NEUTRAL)
+        return 1;
+    endif
+
     return 0;
 endfunction
 
