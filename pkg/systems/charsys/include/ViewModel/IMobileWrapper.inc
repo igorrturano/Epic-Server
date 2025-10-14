@@ -14,12 +14,10 @@ class IMobileWrapper()
 	uninit function GetMaxMana(this);
 	uninit function GetGold(this);
 	uninit function GetWeight(this);
-	uninit function GetStatCap(this);
 	uninit function GetSkill(this, skillName);
 	uninit function GetSkillBase(this, skillName);
 	uninit function GetSkillMod(this, skillName);
 
-	uninit function SetSkill(this, skillName, value);
 	uninit function SetSkillBase(this, skillName, value);
 	uninit function SetSkillMod(this, skillName, value);
 
