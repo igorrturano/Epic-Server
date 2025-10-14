@@ -4,7 +4,8 @@ include "EquipWrapper";
 include "IEquipWrapperWeapon";
 include ":equipsys:Controller/WeaponController";
 
-include ":combat:Model/WeaponDamage";
+include ":combat:Model/DamageDice";
+include ":diceroll:model/Dice";
 
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
@@ -13,11 +14,11 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _speed := 0; // TODO: Transformar pra struct
 	var _speedModTier := ""; // TODO: Transformar pra struct
 	var _speedMod := 0; // TODO: Transformar pra struct
-	var _mainDamageTier := WeaponDamage(); // TODO: Transformar pra struct
-	var _offDamageTier := WeaponDamage(); // TODO: Transformar pra struct
-	var _mainDamage := WeaponDamage(); // TODO: Transformar pra struct
-	var _offDamage := WeaponDamage(); // TODO: Transformar pra struct
-	var _damageMod := WeaponDamage(); // TODO: Transformar pra struct
+	var _mainDamageTier := DamageDice(); // TODO: Transformar pra struct
+	var _offDamageTier := DamageDice(); // TODO: Transformar pra struct
+	var _mainDamage := DamageDice(); // TODO: Transformar pra struct
+	var _offDamage := DamageDice(); // TODO: Transformar pra struct
+	var _damageMod := DamageDice(); // TODO: Transformar pra struct
 	var _criticalChanceTier := ""; // TODO: Transformar pra struct
 	var _criticalChance := 0; // TODO: Transformar pra struct
 	var _criticalChanceMod := 0;
@@ -34,25 +35,25 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
 		this._criticalChanceTier := this._template.EpicCriticalChance;
-		this._mainDamageTier := !this._template.EpicMainDamage ? WeaponDamage() : WeaponDamage(
-			SplitWords(this._template.EpicMainDamage)[1],
-			SplitWords(this._template.EpicMainDamage)[2],
-			SplitWords(this._template.EpicMainDamage)[3]
+		this._mainDamageTier := !this._template.EpicMainDamage ? DamageDice() : DamageDice(
+			Dice(SplitWords(this._template.EpicMainDamage)[1]),
+			Dice(SplitWords(this._template.EpicMainDamage)[2]),
+			Dice(SplitWords(this._template.EpicMainDamage)[3])
 		);
-		this._offDamageTier := !this._template.EpicOffDamage ? WeaponDamage() : WeaponDamage(
-			SplitWords(this._template.EpicOffDamage)[1],
-			SplitWords(this._template.EpicOffDamage)[2],
-			SplitWords(this._template.EpicOffDamage)[3]
+		this._offDamageTier := !this._template.EpicOffDamage ? DamageDice() : DamageDice(
+			Dice(SplitWords(this._template.EpicOffDamage)[1]),
+			Dice(SplitWords(this._template.EpicOffDamage)[2]),
+			Dice(SplitWords(this._template.EpicOffDamage)[3])
 		);
-		this._mainDamage := WeaponDamage(
-			getDamageByTier(this._mainDamageTier.GetSlashDamage()),
-			getDamageByTier(this._mainDamageTier.GetPiercingDamage()),
-			getDamageByTier(this._mainDamageTier.GetBluntDamage())
+		this._mainDamage := DamageDice(
+			Dice(getDamageByTier(this._mainDamageTier.GetSlashDamage())),
+			Dice(getDamageByTier(this._mainDamageTier.GetPiercingDamage())),
+			Dice(getDamageByTier(this._mainDamageTier.GetBluntDamage()))
 		);
-		this._offDamage := WeaponDamage(
-			getDamageByTier(this._offDamageTier.GetSlashDamage()),
-			getDamageByTier(this._offDamageTier.GetPiercingDamage()),
-			getDamageByTier(this._offDamageTier.GetBluntDamage())
+		this._offDamage := DamageDice(
+			Dice(getDamageByTier(this._offDamageTier.GetSlashDamage())),
+			Dice(getDamageByTier(this._offDamageTier.GetPiercingDamage())),
+			Dice(getDamageByTier(this._offDamageTier.GetBluntDamage()))
 		);
 		this._speed := getSpeedByTier(this._speedTier);
 		this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
@@ -171,12 +172,12 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	endfunction
 
 	function ToString(this)
-		return $"Weapon {EquipWrapper::ToString(this)},
-		Attribute: {this._attribute}, Attack Type: {this._attackType},
-		MainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()}),
-		OffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()}),
-		Speed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier}),
-		Range: {this._minRange}-{this._maxRange}";
+		return "Weapon " + {EquipWrapper::ToString(this)} +
+		$"\nAttribute: {this._attribute}, Attack Type: {this._attackType}" +
+		$"\nMainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()})" +
+		$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
+		$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
+		$"\nRange: {this._minRange}-{this._maxRange}";
 	endfunction
 
 	function IsDualWield(this)
