@@ -10,6 +10,7 @@ include ":timedscripts:timedScripts";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include ":combat:damage";
+include "include/eventID";
 
 program habilidade(params)
 	var who := params[1];
