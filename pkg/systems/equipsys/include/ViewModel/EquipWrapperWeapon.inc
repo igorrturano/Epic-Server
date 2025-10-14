@@ -9,19 +9,21 @@ include ":combat:Model/WeaponDamage";
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _attackType := "";
-	var _speedTier := "";
-	var _speed := 0;
-	var _mainDamageTier := WeaponDamage();
-	var _offDamageTier := WeaponDamage();
-	var _mainDamage := WeaponDamage();
-	var _offDamage := WeaponDamage();
-	var _damageMod := WeaponDamage();
-	var _criticalChanceTier := "";
-	var _criticalChance := 0;
+	var _speedTier := ""; // TODO: Transformar pra struct
+	var _speed := 0; // TODO: Transformar pra struct
+	var _speedModTier := ""; // TODO: Transformar pra struct
+	var _speedMod := 0; // TODO: Transformar pra struct
+	var _mainDamageTier := WeaponDamage(); // TODO: Transformar pra struct
+	var _offDamageTier := WeaponDamage(); // TODO: Transformar pra struct
+	var _mainDamage := WeaponDamage(); // TODO: Transformar pra struct
+	var _offDamage := WeaponDamage(); // TODO: Transformar pra struct
+	var _damageMod := WeaponDamage(); // TODO: Transformar pra struct
+	var _criticalChanceTier := ""; // TODO: Transformar pra struct
+	var _criticalChance := 0; // TODO: Transformar pra struct
 	var _criticalChanceMod := 0;
 	var _strRequired := 0;
-	var _minRange := 0;
-	var _maxRange := 0;
+	var _minRange := 0; // TODO: Transformar pra struct
+	var _maxRange := 0; // TODO: Transformar pra struct
 
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
@@ -32,7 +34,6 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
 		this._criticalChanceTier := this._template.EpicCriticalChance;
-
 		this._mainDamageTier := !this._template.EpicMainDamage ? WeaponDamage() : WeaponDamage(
 			SplitWords(this._template.EpicMainDamage)[1],
 			SplitWords(this._template.EpicMainDamage)[2],
@@ -43,39 +44,26 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 			SplitWords(this._template.EpicOffDamage)[2],
 			SplitWords(this._template.EpicOffDamage)[3]
 		);
-
-		if (this._prop) // Caso já tenha prop, não sobrepor os valores
-			this._speed := this._prop.AttackSpeed;
-			this._mainDamage := WeaponDamage(
-				this._prop.SlashMainDamage,
-				this._prop.PiercingMainDamage,
-				this._prop.BluntMainDamage
-			);
-			this._offDamage := WeaponDamage(
-				this._prop.SlashOffDamage,
-				this._prop.PiercingOffDamage,
-				this._prop.BluntOffDamage
-			);
-			this._criticalChance := this._prop.CriticalChance;
-			this._criticalChanceMod := this._prop.CriticalChanceMod;
-		else // Caso não tenha prop ou seja um item não existente (template)
-			this._speed := getSpeedByTier(this._speedTier);
-			this._mainDamage := WeaponDamage(
-				getDamageByTier(this._mainDamageTier.GetSlashDamage()),
-				getDamageByTier(this._mainDamageTier.GetPiercingDamage()),
-				getDamageByTier(this._mainDamageTier.GetBluntDamage())
-			);
-			this._offDamage := WeaponDamage(
-				getDamageByTier(this._offDamageTier.GetSlashDamage()),
-				getDamageByTier(this._offDamageTier.GetPiercingDamage()),
-				getDamageByTier(this._offDamageTier.GetBluntDamage())
-			);
-			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
-			this._criticalChanceMod := 0;
-		endif
-
+		this._mainDamage := WeaponDamage(
+			getDamageByTier(this._mainDamageTier.GetSlashDamage()),
+			getDamageByTier(this._mainDamageTier.GetPiercingDamage()),
+			getDamageByTier(this._mainDamageTier.GetBluntDamage())
+		);
+		this._offDamage := WeaponDamage(
+			getDamageByTier(this._offDamageTier.GetSlashDamage()),
+			getDamageByTier(this._offDamageTier.GetPiercingDamage()),
+			getDamageByTier(this._offDamageTier.GetBluntDamage())
+		);
+		this._speed := getSpeedByTier(this._speedTier);
+		this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
+
+		if (this._prop) // Caso já tenha prop, não sobrepor os valores dos mods
+			this._criticalChanceMod := this._prop.CriticalChanceMod;
+		else
+			this._criticalChanceMod := 0;
+		endif
 	endfunction
 
 	function GetAttribute(this)
@@ -129,6 +117,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	function SetSpeed(this, value)
 		if (this._item == error) return this._item; endif
 		this._speed := value;
+
+		return this;
 	endfunction
 
 	function SetMainDamage(this, slash, piercing, blunt)
@@ -136,6 +126,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._mainDamage.SetSlashDamage(slash);
 		this._mainDamage.SetPiercingDamage(piercing);
 		this._mainDamage.SetBluntDamage(blunt);
+
+		return this;
 	endfunction
 
 	function SetOffDamage(this, slash, piercing, blunt)
@@ -143,11 +135,15 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._offDamage.SetSlashDamage(slash);
 		this._offDamage.SetPiercingDamage(piercing);
 		this._offDamage.SetBluntDamage(blunt);
+
+		return this;
 	endfunction
 
 	function SetCriticalChance(this, value)
 		if (this._item == error) return this._item; endif
 		this._criticalChance := value;
+
+		return this;
 	endfunction
 
 	function Update(this)
