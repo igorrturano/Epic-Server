@@ -4,7 +4,7 @@ include "IDice";
 
 class Dice(IDice)
 	var _diceString; // String representando o dado (ex: "2d6+3")
-	var _amount := 1; // Quantidade de dados
+	var _amount := 2; // Quantidade de dados
 	var _sides := 6; // Lados do dado
 	var _modifier := 0; // Modificador a ser somado ao resultado do dado
 	var _result := 0; // Resultado da última rolagem
@@ -47,14 +47,17 @@ class Dice(IDice)
 
 	function SetAmount(this, amount)
 		this._amount := amount;
+		return this;
 	endfunction
 
 	function SetSides(this, sides)
 		this._sides := sides;
+		return this;
 	endfunction
 
 	function SetModifier(this, modifier)
 		this._modifier := modifier;
+		return this;
 	endfunction
 
 	function Roll(this)
