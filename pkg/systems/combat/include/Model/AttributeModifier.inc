@@ -1,6 +1,8 @@
 include "IAttributeModifier";
 
 include ":attributes:attributeConstants";
+include ":attributes:skills";
+include ":message:model/Message";
 
 class AttributeModifier(IAttributeModifier)
 	var _attribute := ""; // attribute constant in attributeConstants.inc
@@ -32,6 +34,23 @@ class AttributeModifier(IAttributeModifier)
 	function IncreaseValue(this, value)
 		this._value += CInt(value);
 		return this;
+	endfunction
+
+	function ApplyOn(this, who)
+		Message("Aplicando modificador: " + this.ToString()).SendSys(who);
+		AP_SetSkillMod(
+			who,
+			this._attribute,
+			AP_GetSkillMod(who, this._attribute) + this._value
+		);
+	endfunction
+
+	function RemoveFrom(this, who)
+		AP_SetSkillMod(
+			who,
+			this._attribute,
+			AP_GetSkillMod(who, this._attribute) - this._value
+		);
 	endfunction
 
 	function ToString(this)

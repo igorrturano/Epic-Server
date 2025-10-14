@@ -18,7 +18,7 @@ class EquipWrapper(IEquipWrapper)
 	var _maxHP := 0;
 	var _material := "";
 
-	var _modifiers := dictionary{}; // Dictionary of AttributeModifier (adicionar com o enum da classe filha, pra facilitar a busca por hash)
+	var _modifiers := dictionary{}; // Dictionary of AttributeModifier()
 
 	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
@@ -94,7 +94,7 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function GetModifier(this, modifierName)
-		if ( this._modifiers == dictionary{} ) return error{"errortext" := "The item have no Modifiers!"}; endif
+		if ( this._modifiers.size() == 0 ) return error{"errortext" := "The item have no Modifiers!"}; endif
 		return this._modifiers[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
 	endfunction
 	
