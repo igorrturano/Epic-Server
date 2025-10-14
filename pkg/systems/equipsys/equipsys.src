@@ -81,7 +81,7 @@ function debugWeapon(who, equip)
 	endif
 
 	// DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
-	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {equip.GetTipoAtaque()}");
+	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {equip.GetAttackType()}");
 	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {equip.GetSpeed()}");
 	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {equip.GetCriticalChance()}%");
 endfunction

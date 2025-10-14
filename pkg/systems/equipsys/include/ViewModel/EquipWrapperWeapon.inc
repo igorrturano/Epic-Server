@@ -44,7 +44,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 			SplitWords(this._template.EpicOffDamage)[3]
 		);
 
-		if (this._prop) // Caso o itemRef exista
+		if (this._prop) // Caso já tenha prop, não sobrepor os valores
 			this._speed := this._prop.AttackSpeed;
 			this._mainDamage := WeaponDamage(
 				this._prop.SlashMainDamage,
