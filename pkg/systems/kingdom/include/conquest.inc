@@ -7,6 +7,7 @@ use uo;
 use os;
 use npc;
 use vitals;
+use util;
 
 include ":kingdom:constants";
 include ":kingdom:datafile";
@@ -152,15 +153,30 @@ function CNQST_SpawnWave(war_totem, wave_number)
 	var spawned_count := 0;
 
 	foreach spawn_point in (spawn_points)
-		// Create NPC
-		var npc := CreateNpcFromTemplate(wave_info.npc_template, spawn_point.x, spawn_point.y, war_totem.z, 0, war_totem.realm);
+		// Retry spawn with proper height calculation like epiccontrol does
+		var max_tries := 5;
+		var npc := 0;
 
-		if (npc)
-			// Link NPC to totem for tracking
-			npc.SetProp("conquest_totem", war_totem.serial);
-			npc.SetProp("conquest_wave", wave_number);
+		for i := 1 to max_tries
+			var z := GetWorldHeight(spawn_point.x, spawn_point.y, war_totem.realm);
+			npc := CreateNPCFromTemplate(":epicAI:" + wave_info.npc_template, spawn_point.x, spawn_point.y, z, 0, war_totem.realm);
 
-			spawned_count := spawned_count + 1;
+			if (npc && !npc.errortext)
+				// Link NPC to totem for tracking
+				npc.SetProp("conquest_totem", war_totem.serial);
+				npc.SetProp("conquest_wave", wave_number);
+				spawned_count := spawned_count + 1;
+				break;
+			else
+				// Try a different nearby location
+				spawn_point.x := spawn_point.x + RandomInt(3) - 1;
+				spawn_point.y := spawn_point.y + RandomInt(3) - 1;
+			endif
+			sleepms(100);
+		endfor
+
+		if (!npc || npc.errortext)
+			syslog("KINGDOM: Failed to spawn NPC after retries: " + wave_info.npc_template + " - " + npc.errortext);
 		endif
 
 		sleepms(wave_info.delay);
@@ -204,7 +220,13 @@ function CNQST_OnNPCDeath(npc)
 		return 0;
 	endif
 
-	// Increment kill counter
+	// Check if this is the boss
+	if (npc.GetProp("conquest_boss"))
+		syslog("KINGDOM: Boss defeated - triggering victory");
+		return CNQST_Victory(war_totem);
+	endif
+
+	// Regular wave NPC - increment kill counter
 	var total_kills := CInt(war_totem.GetProp("total_kills")) + 1;
 	war_totem.SetProp("total_kills", total_kills);
 
@@ -290,11 +312,28 @@ function CNQST_SpawnBoss(war_totem)
 		return 0;
 	endif
 
-	// Spawn boss at totem location
-	var boss := CreateNpcFromTemplate(boss_info.npc_template, war_totem.x, war_totem.y, war_totem.z, 0, war_totem.realm);
+	// Spawn boss at totem location with retry logic
+	var max_tries := 10;
+	var boss := 0;
+	var spawn_x := war_totem.x;
+	var spawn_y := war_totem.y;
 
-	if (!boss)
-		syslog("KINGDOM: Failed to spawn boss: " + boss_info.npc_template);
+	for i := 1 to max_tries
+		var z := GetWorldHeight(spawn_x, spawn_y, war_totem.realm);
+		boss := CreateNpcFromTemplate(":epicAI:" + boss_info.npc_template, spawn_x, spawn_y, z, 0, war_totem.realm);
+
+		if (boss && !boss.errortext)
+			break;
+		else
+			// Try nearby location
+			spawn_x := war_totem.x + RandomInt(5) - 2;
+			spawn_y := war_totem.y + RandomInt(5) - 2;
+		endif
+		sleepms(100);
+	endfor
+
+	if (!boss || boss.errortext)
+		syslog("KINGDOM: Failed to spawn boss after retries: " + boss_info.npc_template + " - " + boss.errortext);
 		return 0;
 	endif
 
@@ -393,8 +432,8 @@ function CNQST_TransformToKingdomTotem(war_totem)
 
 	var territory_name := war_totem.GetProp("territory_name");
 
-	// Create kingdom totem at same location
-	var kingdom_totem := CreateItemAtLocation(war_totem.x, war_totem.y, war_totem.z, 0x1183, 1, war_totem.realm);
+	// Create kingdom totem at same location using the proper objtype
+	var kingdom_totem := CreateItemAtLocation(war_totem.x, war_totem.y, war_totem.z, 0x5008, 1, war_totem.realm);
 
 	if (!kingdom_totem)
 		syslog("KINGDOM: Failed to create kingdom totem");
@@ -407,6 +446,7 @@ function CNQST_TransformToKingdomTotem(war_totem)
 	kingdom_totem.SetProp("victory_time", POLCore().systime);
 	kingdom_totem.name := "Kingdom Totem [" + territory_name + "]";
 	kingdom_totem.color := 0x47; // Gold color
+	kingdom_totem.movable := 0;
 
 	// Destroy old war totem
 	DestroyItem(war_totem);

@@ -11,6 +11,7 @@ use cfgfile;
 include ":kingdom:constants";
 include ":kingdom:datafile";
 include ":kingdom:territory";
+include ":faccao:faccao";
 
 // ============================================================================
 // KINGDOM CREATION AND DELETION
@@ -279,10 +280,17 @@ function KGD_ValidateFactionLeader(who, faction_name := "")
 		return 0;
 	endif
 
-	var guild_name := guild.guildid();
+	// Get faction info using GetFaccao
+	var faccao := GetFaccao(guild);
 
+	if (!faccao || !faccao.name)
+		SendSysMessage(who, ERR_NO_FACTION);
+		return 0;
+	endif
+
+	var player_faction := faccao.name;
 	// If faction_name specified, verify it matches
-	if (faction_name != "" && guild_name != faction_name)
+	if (faction_name != "" && player_faction != faction_name)
 		SendSysMessage(who, "You are not a member of that faction.");
 		return 0;
 	endif
@@ -317,7 +325,12 @@ function KGD_GetPlayerFaction(who)
 		return "";
 	endif
 
-	return guild.guildid();
+	var faccao := GetFaccao(guild);
+	if (!faccao || !faccao.name)
+		return "";
+	endif
+
+	return faccao.name;
 endfunction
 
 // ============================================================================
