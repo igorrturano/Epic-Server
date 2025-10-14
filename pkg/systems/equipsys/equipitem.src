@@ -1,9 +1,10 @@
 include ":message:model/Message";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":charsys:ViewModel/MobileWrapper";
 include ":debug:Controller/DebugController";
 
-program equipsys(params)
+program equipitem(params)
 	var who := params[1];
 	var item := params[2];
 
@@ -17,42 +18,8 @@ program equipsys(params)
 	endif
 
 	equip.Update();
+	MobileWrapper(who).ApplyItemModifiers(equip);
 endprogram
-
-// /**
-//  * setWeaponStats(weapon)
-//  *
-//  * Purpose
-//  * Define os valores na arma, setando as devidas props e os atributos no item.
-//  *
-//  * Parameters
-//  * weapon: ItemRef da arma.
-//  *
-//  */
-// function setWeaponStats(weapon)
-// 	var stats := getWeaponStats(weapon);
-// 	weapon.setAttrBase(stats);
-
-// 	// Setar a partir daqui, direto no item, o que não vai em CProp
-// 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
-// endfunction
-
-// /**
-//  * setArmorStats(armor)
-//  *
-//  * Purpose
-//  * Define os valores na armadura, setando as devidas props e os atributos no item.
-//  *
-//  * Parameters
-//  * weapon: ItemRef da armadura.
-//  *
-//  */
-// function setArmorStats(armor)
-// 	var stats := getArmorStats(armor);
-// 	armor.setAttrBase(stats);
-
-// 	// Setar a partir daqui, direto no item, o que não vai em CProp
-// endfunction
 
 function debugWeapon(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, $"====================
