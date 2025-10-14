@@ -10,7 +10,7 @@ include ":attributes:attributes";
 include ":attributes:vitals";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
-include ":ghaia:ghaia";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];

@@ -9,9 +9,9 @@ include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
 include ":combat:damage";
 include ":tn:cooldown";
-include ":ghaia:ghaia";
-include "include/sysEvent";
 include "include/eventID";
+include ":epicAI:epicai";
+include ":tn:boss";
 
 program skill_animal_lore(who)
 
