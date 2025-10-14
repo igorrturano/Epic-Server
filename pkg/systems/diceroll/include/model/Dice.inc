@@ -62,7 +62,8 @@ class Dice(IDice)
 		return this.GetResult();
 	endfunction
 
-	function ToString(this)
+	function ToString(this, isDetailed := false)
+		if (!isDetailed) return this._diceString; endif
 		var str := "";
 		str += $"Esta rolagem contém {this._amount} dados de {this._sides} lados com um modificador de +{this._modifier}. O resultado foi: ";
 		str += !this._result ? "nunca rolado." : $"{this._result}.";
