@@ -276,11 +276,16 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
-		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
+		if (!itemWrapped.GetTemplate())
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
+		print(itemWrapped.GetModifiers());
 
+		foreach mod in (itemWrapped.GetModifiers())
+			mod.ApplyOn(this._mobRef);
+			SleepMS(2);
+		endforeach
 
 		return this;
 	endfunction
@@ -289,6 +294,11 @@ class MobileWrapper(IMobileWrapper)
 		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
+
+		foreach mod in (itemWrapped.GetModifiers())
+			mod.RemoveFrom(this._mobRef);
+			SleepMS(2);
+		endforeach
 
 		return this;
 	endfunction
