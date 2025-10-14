@@ -16,51 +16,33 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 		this._coverage := GetConfigStringArray(this._template, "Coverage");
 		this._tipoProtecao := this._template.TipoProtecao ?: error{"errortext" := "The item have no Protection Type!"};
+		var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
+		var slotResists := getResistPhysicalBySlot(this._coverage);
+		this._resists := ArmorResist(
+			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
+			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
+			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
 
-		if (this._prop) // Caso tenha prop com valores já definidos
-			this._resists := ArmorResist(
-				this._prop.SlashResist,
-				this._prop.PiercingResist,
-				this._prop.BluntResist,
-
-				this._prop.FireResist,
-				this._prop.ColdResist,
-				this._prop.PoisonResist,
-				this._prop.EnergyResist
-			);
-			this._resistsMod := ArmorResist();
-			this.AddModifier(AttributeModifier(DEXTERITY, this._prop.Penalties[DEXTERITY]));
-			this.AddModifier(AttributeModifier(SNEAK, this._prop.Penalties[SNEAK]));
-			this.AddModifier(AttributeModifier(MECHANICS, this._prop.Penalties[MECHANICS]));
-			this.AddModifier(AttributeModifier(MAGERY, this._prop.Penalties[MAGERY]));
-			this.AddModifier(AttributeModifier(AWARENESS, this._prop.Penalties[AWARENESS]));
-
-		else // Caso não tenha prop ou seja um item não existente (template)
-			var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
-			var slotResists := getResistPhysicalBySlot(this._coverage);
-			this._resists := ArmorResist(
-				templateResists.GetSlashResist() + slotResists.GetSlashResist(),
-				templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
-				templateResists.GetBluntResist() + slotResists.GetBluntResist(),
-
-				this._template.FireResist,
-				this._template.ColdResist,
-				this._template.PoisonResist,
-				this._template.EnergyResist
-			);
-			this._resistsMod := ArmorResist();
-
-			var penaltiesSlot := getPenaltiesBySlot(this._coverage);
-			var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
-			this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
-			this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
-			this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
-			this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
-			this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
-		endif
-		
+			this._template.FireResist,
+			this._template.ColdResist,
+			this._template.PoisonResist,
+			this._template.EnergyResist
+		);
+		var penaltiesSlot := getPenaltiesBySlot(this._coverage);
+		var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
+		this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
+		this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
+		this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
+		this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
+		this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
+
+		if (this._prop)
+			this._resistsMod := ArmorResist(); // TODO: Pegar os valores da prop
+		else // Caso não tenha prop ou seja um item não existente (template)
+			this._resistsMod := ArmorResist(); // TODO: Não tem mod, é tudo 0
+		endif
 	endfunction
 	
 	function GetTipoProtecao(this)
