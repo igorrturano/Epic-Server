@@ -92,8 +92,7 @@ endfunction
 
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
-	var weaponWrapped := EquipWrapperWeapon(weapon);
-	var attackType := weaponWrapped.GetAttackType();
+	var attackType := EquipWrapperWeapon(weapon).GetAttackType();
 
 	if (weapon.objtype == FIST)
 		if (FX == WEAPON_FX_ANIM)
