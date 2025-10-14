@@ -161,7 +161,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
     endif
     
     if (boss.domestic_work)
-        AP_SetSkillMod(npc, Domestic_Work, CInt(boss.domestic_work));
+        AP_SetSkillMod(npc, DOMESTIC_WORK, CInt(boss.domestic_work));
     endif
     
     if (boss.gathering)
