@@ -4,9 +4,11 @@ use datafile;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
-include ":ghaia:ghaia";
 include ":gumps:yesNo";
 include ":tn:tngumps";
+include ":datafile:datafile";
+include "include/say";
+include ":attributes:vitals";
 
 program gumpspawn(who, text)
 

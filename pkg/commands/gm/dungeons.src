@@ -6,11 +6,12 @@ use util;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
-include ":ghaia:ghaia";
 include ":gumps:yesNo";
 include ":tn:tngumps";
 include ":gumps:htmlGump";
 include "include/say";
+include ":datafile:datafile";
+include ":gumps:epicGumps";
 
 const GUMP_WIDTH := 600;
 const GUMP_HEIGHT := 500;
