@@ -763,25 +763,25 @@ function pathOfWisdom(who, culture_pic)
 endfunction
 
 function startAdventure(who)
-	MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(who, 1407, 1062, -4, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
-	PlaySoundEffectPrivate(who, 0x306, who);
-	PlayStationaryEffect(who.x + 1, who.y + 1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
-	sleep(1);
-	PlayStationaryEffect(who.x - 2, who.y + 1, 4, GFX_SMOKE, 10, 20, 0, who.realm);
-	sleep(1);
-	PlayStationaryEffect(who.x - 2, who.y, 2, GFX_SMOKE, 10, 20, 0, who.realm);
-	sleep(1);
-	PlaySoundEffectPrivate(who, 0x2F4, who);
+	// PlaySoundEffectPrivate(who, 0x306, who);
+	// PlayStationaryEffect(who.x + 1, who.y + 1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlayStationaryEffect(who.x - 2, who.y + 1, 4, GFX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlayStationaryEffect(who.x - 2, who.y, 2, GFX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlaySoundEffectPrivate(who, 0x2F4, who);
 
-	// Cria lanternas para os exploradores
-	CreateItemInBackpack(who, 0xC61F, 1);
-	CreateItemInBackpack(who, 0xC627, 1);
-	CreateItemInBackpack(who, 0x6161, 1);
+	// // Cria lanternas para os exploradores
+	// CreateItemInBackpack(who, 0xC61F, 1);
+	// CreateItemInBackpack(who, 0xC627, 1);
+	// CreateItemInBackpack(who, 0x6161, 1);
 
-	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
+	// PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
 	sleep(1);
-	startAdventureGump(who);
+	// startAdventureGump(who);
 endfunction
 
 function languageSelection(who, culture_pic)
