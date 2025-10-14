@@ -1,0 +1,50 @@
+// ============================================================================
+// Donation Chest Script
+// Resource donation interface for kingdom members
+// Epic! Shard - Kingdom Management System v0.1.0
+// ============================================================================
+
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":kingdom:constants";
+include ":kingdom:datafile";
+include ":kingdom:territory";
+include ":kingdom:kingdom";
+include ":kingdom:resources";
+
+program DonationChest(who, chest)
+	if (!who.IsA(POLCLASS_MOBILE))
+		return 0;
+	endif
+
+	var territory_name := chest.GetProp("territory_name");
+
+	if (!territory_name || territory_name == "")
+		SendSysMessage(who, "Error: This chest is not linked to a territory.");
+		return 0;
+	endif
+
+	var territory := KD_GetTerritory(territory_name);
+	if (!territory)
+		SendSysMessage(who, "Error: Territory not found.");
+		return 0;
+	endif
+
+	// Check if player is in the owning faction
+	var faction_name := KGD_GetPlayerFaction(who);
+	if (faction_name != territory.owner_faction)
+		SendSysMessage(who, "You are not a member of the faction that owns this territory.");
+		return 0;
+	endif
+
+	// TODO Phase 3: Resource donation system
+	SendSysMessage(who, "Donation Chest - Coming in Phase 3 (Resources)");
+	SendSysMessage(who, "Territory: " + territory.name);
+	SendSysMessage(who, "Faction: " + territory.owner_faction);
+
+	return 1;
+endprogram

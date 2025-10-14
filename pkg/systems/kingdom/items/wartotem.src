@@ -1,0 +1,303 @@
+// ============================================================================
+// War Totem Script
+// Handles territory conquest and information display
+// Epic! Shard - Kingdom Management System v0.1.0
+// ============================================================================
+
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":kingdom:constants";
+include ":kingdom:datafile";
+include ":kingdom:territory";
+include ":kingdom:kingdom";
+include ":kingdom:conquest";
+include ":kingdom:waves";
+
+program WarTotem(who, totem)
+	if (!who.IsA(POLCLASS_MOBILE))
+		return 0;
+	endif
+
+	var territory_name := totem.GetProp("territory_name");
+
+	if (!territory_name || territory_name == "")
+		SendSysMessage(who, "Error: This totem is not linked to a territory.");
+		return 0;
+	endif
+
+	var territory := KD_GetTerritory(territory_name);
+	if (!territory)
+		SendSysMessage(who, "Error: Territory not found.");
+		return 0;
+	endif
+
+	// Check if player is GM
+	if (who.cmdlevel >= 2)
+		ShowGMMenu(who, totem, territory);
+	else
+		ShowPlayerMenu(who, totem, territory);
+	endif
+
+	return 1;
+endprogram
+
+function DisplayTerritoryInfo(who, territory)
+	SendSysMessage(who, "=======================================");
+	SendSysMessage(who, "Territory: " + territory.name);
+	SendSysMessage(who, "=======================================");
+
+	if (territory.owner_faction == "")
+		SendSysMessage(who, "Status: UNCLAIMED");
+		SendSysMessage(who, "This territory is available for conquest.");
+		SendSysMessage(who, " ");
+		SendSysMessage(who, "To claim this territory:");
+		SendSysMessage(who, "1. Have a faction leader create a kingdom");
+		SendSysMessage(who, "2. Defeat the champion spawn waves");
+		SendSysMessage(who, "3. Click the totem to claim");
+	else
+		SendSysMessage(who, "Status: CLAIMED");
+		SendSysMessage(who, "Owner: " + territory.owner_faction);
+		if (territory.is_capital)
+			SendSysMessage(who, "Type: CAPITAL");
+		else
+			SendSysMessage(who, "Type: EXPANSION");
+		endif
+
+		SendSysMessage(who, "Size Level: " + territory.size_level);
+
+		if (territory.rare_resources.size() > 0)
+			var resources := "";
+			foreach res in (territory.rare_resources)
+				if (resources != "")
+					resources += ", ";
+				endif
+				resources += res;
+			endforeach
+			SendSysMessage(who, "Rare Resources: " + resources);
+		endif
+
+		SendSysMessage(who, "Buildings: " + territory.buildings.size());
+	endif
+
+	SendSysMessage(who, "=======================================");
+endfunction
+
+// ============================================================================
+// GM MENU
+// ============================================================================
+
+function ShowGMMenu(who, totem, territory)
+	var conquest_status := CNQST_GetConquestStatus(totem);
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 500, 400);
+	GFResizePic(gump, 10, 10, 9350, 480, 380);
+
+	GFTextMid(gump, 10, 20, 480, 1153, "WAR TOTEM - GM CONTROLS");
+	GFTextMid(gump, 10, 40, 480, 2100, territory.name);
+
+	var y_offset := 70;
+
+	// Status
+	if (conquest_status)
+		GFTextLine(gump, 30, y_offset, 0x44, "CONQUEST ACTIVE");
+		y_offset += 20;
+		GFTextLine(gump, 30, y_offset, 1149, "Wave Template: " + conquest_status.wave_template);
+		y_offset += 20;
+		GFTextLine(gump, 30, y_offset, 1149, "Current Wave: " + conquest_status.current_wave);
+		y_offset += 20;
+		GFTextLine(gump, 30, y_offset, 1149, "Kills: " + conquest_status.total_kills + "/" + conquest_status.required_kills);
+		y_offset += 30;
+	else
+		var wave_template := totem.GetProp("wave_template");
+		if (wave_template && wave_template != "")
+			GFTextLine(gump, 30, y_offset, 0x58, "CONFIGURED: " + wave_template);
+			y_offset += 20;
+		else
+			GFTextLine(gump, 30, y_offset, 0x26, "NOT CONFIGURED");
+			y_offset += 20;
+		endif
+		y_offset += 10;
+	endif
+
+	// Buttons
+	if (conquest_status)
+		// Conquest is active
+		GFAddButton(gump, 30, y_offset, 4017, 4019, GF_CLOSE_BTN, 2);
+		GFTextLine(gump, 65, y_offset, 1149, "Cancel Conquest");
+		y_offset += 30;
+
+		GFAddButton(gump, 30, y_offset, 4005, 4007, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 65, y_offset, 1149, "Force Victory (Test)");
+		y_offset += 30;
+	else
+		// No active conquest
+		GFAddButton(gump, 30, y_offset, 4005, 4007, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 65, y_offset, 1149, "Configure Wave Template");
+		y_offset += 30;
+
+		var wave_template := totem.GetProp("wave_template");
+		if (wave_template && wave_template != "")
+			GFAddButton(gump, 30, y_offset, 4029, 4031, GF_CLOSE_BTN, 4);
+			GFTextLine(gump, 65, y_offset, 0x44, "START CONQUEST");
+			y_offset += 30;
+		endif
+	endif
+
+	// View status button
+	GFAddButton(gump, 30, y_offset, 4011, 4013, GF_CLOSE_BTN, 5);
+	GFTextLine(gump, 65, y_offset, 1149, "View Status");
+	y_offset += 30;
+
+	// Close
+	GFAddButton(gump, 200, 350, 4017, 4019, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 235, 350, 1149, "Close");
+
+	var result := GFSendGump(who, gump);
+
+	if (!result || !result[0])
+		return;
+	endif
+
+	case (result[0])
+		1: // Configure
+			ConfigureWaveTemplate(who, totem);
+		2: // Cancel
+			if (YesNo(who, "Cancel the active conquest?"))
+				CNQST_CancelConquest(totem);
+				SendSysMessage(who, "Conquest cancelled.", 0x58);
+			endif
+		3: // Force Victory
+			if (YesNo(who, "Force conquest victory? (Test only)"))
+				CNQST_Victory(totem);
+				SendSysMessage(who, "Conquest victory triggered!", 0x44);
+			endif
+		4: // Start
+			if (YesNo(who, "Start conquest with this wave template?"))
+				if (CNQST_StartConquest(totem))
+					SendSysMessage(who, "Conquest started!", 0x44);
+				else
+					SendSysMessage(who, "Failed to start conquest.", 0x26);
+				endif
+			endif
+		5: // View Status
+			DisplayConquestStatus(who, totem);
+	endcase
+endfunction
+
+function ConfigureWaveTemplate(who, totem)
+	var templates := WAVE_GetTemplateNames();
+	print("Found " + templates);
+	if (templates.size() == 0)
+		SendSysMessage(who, "No wave templates found in waves.cfg");
+		return;
+	endif
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 400, 500);
+	GFResizePic(gump, 10, 10, 9350, 380, 480);
+
+	GFTextMid(gump, 10, 20, 380, 1153, "SELECT WAVE TEMPLATE");
+
+	var y_offset := 50;
+	var button_id := 100;
+
+	foreach template_name in (templates)
+		print("Found wave template: " + template_name);
+		var template := WAVE_LoadTemplate(template_name);
+		print("Loaded template: " + template);
+		if (template)
+			var description := WAVE_GetDescription(template);
+			print("Template description: " + description);
+			GFAddButton(gump, 30, y_offset, 4005, 4007, GF_CLOSE_BTN, button_id);
+			GFTextLine(gump, 65, y_offset, 1149, template_name);
+			if (description && description != "")
+				GFTextLine(gump, 65, y_offset + 15, 2100, description);
+			endif
+
+			y_offset += 40;
+			button_id += 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	// Close button
+	GFAddButton(gump, 150, 450, 4017, 4019, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 185, 450, 1149, "Cancel");
+
+	var result := GFSendGump(who, gump);
+
+	if (!result || !result[0] || result[0] == 0)
+		return;
+	endif
+
+	var clicked_index := result[0] - 100;
+	if (clicked_index < 0 || clicked_index >= templates.size())
+		return;
+	endif
+
+	var selected_template := templates[clicked_index + 1];
+	totem.SetProp("wave_template", selected_template);
+
+	SendSysMessage(who, "Wave template set to: " + selected_template, 0x58);
+endfunction
+
+// ============================================================================
+// PLAYER MENU
+// ============================================================================
+
+function ShowPlayerMenu(who, totem, territory)
+	var conquest_status := CNQST_GetConquestStatus(totem);
+
+	if (!conquest_status)
+		// No active conquest - show territory info
+		DisplayTerritoryInfo(who, territory);
+		return;
+	endif
+
+	// Show conquest status
+	DisplayConquestStatus(who, totem);
+endfunction
+
+function DisplayConquestStatus(who, totem)
+	var status := CNQST_GetConquestStatus(totem);
+
+	if (!status)
+		SendSysMessage(who, "No active conquest on this totem.");
+		return;
+	endif
+
+	var territory_name := status.territory_name;
+	var territory := KD_GetTerritory(territory_name);
+
+	SendSysMessage(who, "=======================================");
+	SendSysMessage(who, "CONQUEST STATUS");
+	SendSysMessage(who, "=======================================");
+	if (territory)
+		SendSysMessage(who, "Territory: " + territory.name);
+	endif
+	SendSysMessage(who, "Wave Template: " + status.wave_template);
+
+	if (status.current_wave <= 3)
+		SendSysMessage(who, "Current Wave: " + status.current_wave + " of 3");
+		SendSysMessage(who, "Progress: " + status.total_kills + "/" + status.required_kills + " kills");
+	elseif (status.current_wave == 4)
+		SendSysMessage(who, "BOSS WAVE - Defeat the champion!");
+		if (status.boss_serial && status.boss_serial > 0)
+			var boss := SystemFindObjectBySerial(status.boss_serial);
+			if (boss && boss.connected)
+				SendSysMessage(who, "Boss Health: " + boss.hp + "/" + boss.maxhp);
+			endif
+		endif
+	endif
+
+	var elapsed := POLCore().systime - status.started_time;
+	var minutes := CInt(elapsed / 60);
+	SendSysMessage(who, "Time Elapsed: " + minutes + " minutes");
+
+	SendSysMessage(who, "=======================================");
+endfunction
