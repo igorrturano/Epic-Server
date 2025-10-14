@@ -1,5 +1,5 @@
-class IWeaponDamage()
-	uninit function IWeaponDamage(this, default slash, default piercing, default blunt, default fire, default cold, default poison, default energy);
+class IDamageDice()
+	uninit function IDamageDice(this, default slash, default piercing, default blunt, default fire, default cold, default poison, default energy);
 
 	uninit function GetSlashDamage(this);
 	uninit function GetPiercingDamage(this);
