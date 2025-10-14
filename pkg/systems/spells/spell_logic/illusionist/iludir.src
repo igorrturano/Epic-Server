@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include "include/sysEvent";
 include "include/epicMageryUtils";
 include ":charactercreation:resists";
+include "include/eventID";
 
 program SpellScript(params)
 	var who := params[1];
