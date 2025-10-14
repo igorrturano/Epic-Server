@@ -4,7 +4,6 @@ use datafile;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
-include ":ghaia:ghaia";
 include ":gumps:yesNo";
 
 program gumpspawn(who)

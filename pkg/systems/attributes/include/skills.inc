@@ -1,7 +1,4 @@
-include ":fls_core:fls_characters";
-include ":charactercreation:habilidades";
 include ":attributes:attributes_ex";
-include "include/eventID";
 use uo;
 
 /*

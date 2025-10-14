@@ -10,7 +10,6 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
-include ":ghaia:ghaia";
 include ":spells:summon";
 include ":taming:taming";
 include "include/epicMageryUtils";

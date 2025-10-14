@@ -6,11 +6,15 @@
 
 use uo;
 use os;
+use cfgfile;
 
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
 include ":kingdom:constants";
 include ":kingdom:datafile";
 include ":kingdom:territory";
 include ":kingdom:kingdom";
+include ":kingdom:resources";
 
 program DonationChest(who, chest)
 	if (!who.IsA(POLCLASS_MOBILE))
