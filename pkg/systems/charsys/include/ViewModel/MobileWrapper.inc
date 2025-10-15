@@ -280,8 +280,6 @@ class MobileWrapper(IMobileWrapper)
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
-		print(itemWrapped.GetModifiers());
-
 		foreach mod in (itemWrapped.GetModifiers())
 			mod.ApplyOn(this._mobRef);
 			SleepMS(2);
@@ -294,8 +292,6 @@ class MobileWrapper(IMobileWrapper)
 		if (!itemWrapped.GetTemplate())
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
-
-		print(itemWrapped.GetModifiers());
 
 		foreach mod in (itemWrapped.GetModifiers())
 			mod.RemoveFrom(this._mobRef);
