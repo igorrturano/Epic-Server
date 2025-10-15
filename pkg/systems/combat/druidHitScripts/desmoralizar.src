@@ -15,7 +15,7 @@ program taunt(who)
 		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
 	endif
 
-	PrintText(who, "*urra*");
+	PrintTextAbove(who, "*urra*");
 	PlaySoundEffect(who, 96);
 	PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
 	// Voltar aqui depois, parece que é magia de druida. usar o outro lá de VONTADe para magos do epicmagerytutils
@@ -23,6 +23,6 @@ program taunt(who)
 	if (!CheckResist(targ, VONTADE, who))
 		var event := struct{ "type" := EVID_FLEE, "source" := who };
 		SendEvent(targ, event);
-		PrintText(targ, "*Em panico*");
+		PrintTextAbove(targ, "*Em panico*");
 	endif
 endprogram

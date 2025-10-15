@@ -48,7 +48,7 @@ program DeathScript(params)
 			RestartScript(npc);
 			num := num - 1;
 		endif
-		PrintText(corpse, txt);
+		PrintTextAbove(corpse, txt);
 	endwhile
 
 	return 1;

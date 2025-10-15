@@ -153,13 +153,13 @@ function CriarPergaminho(who, tipo)
 	endif
 
 	if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
-		PrintText(who, "*Juntando as folhas*");
+		PrintTextAbove(who, "*Juntando as folhas*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(3);
-		PrintText(who, "*Organizando o material*");
+		PrintTextAbove(who, "*Organizando o material*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(3);
-		PrintText(who, "*Ordenando o texto*");
+		PrintTextAbove(who, "*Ordenando o texto*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(4);
 

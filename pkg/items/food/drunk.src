@@ -75,7 +75,7 @@ function do_drunk_stuff(character, drunkness)
 	// if they're only a tiny bit drunk, just give them the hiccups
 	if (drunkness > 4 and drunkness <= 8)
 		sleep(5);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		sleep(10);
 
 	// if they're somewhat more drunk, make them stumble a bit
@@ -83,11 +83,11 @@ function do_drunk_stuff(character, drunkness)
 		PerformAction(character, ACTION_BOW);
 		character.facing := RandomDiceRoll("1d8");
 		sleep(5);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		PerformAction(character, ACTION_BOW);
 		character.facing := RandomDiceRoll("1d8");
 		sleep(5);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		PerformAction(character, ACTION_BOW);
 		character.facing := RandomDiceRoll("1d8");
 		sleep(5);
@@ -99,14 +99,14 @@ function do_drunk_stuff(character, drunkness)
 		sleep(3);
 		vomit(character, 1);
 		PerformAction(character, ACTION_BOW);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
 		PerformAction(character, ACTION_BOW);
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
 		PerformAction(character, ACTION_BOW);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
 		vomit(character, 1);
@@ -121,7 +121,7 @@ function do_drunk_stuff(character, drunkness)
 		sleep(3);
 		vomit(character, 4);
 		PerformAction(character, ACTION_BOW);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
 		if (GetEquipmentByLayer(character, 25))
@@ -133,7 +133,7 @@ function do_drunk_stuff(character, drunkness)
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
 		vomit(character, 4);
-		PrintText(character, "*hic*");
+		PrintTextAbove(character, "*hic*");
 		PerformAction(character, ACTION_BOW);
 		character.facing := RandomDiceRoll("1d8");
 		sleep(3);
@@ -155,7 +155,7 @@ endfunction
 
 function vomit(character, chance)
 	if (randomint(100) <= chance)
-		PrintText(character, "*RALPH*");
+		PrintTextAbove(character, "*RALPH*");
 		var puke := CreateItemAtLocation(character.x, character.y, character.z, 0x0f3c, 1);
 		puke.name := cstr(character.name + "'s vomit");
 

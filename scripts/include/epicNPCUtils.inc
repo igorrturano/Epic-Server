@@ -374,13 +374,13 @@ function endControlNPC(who)
 
 	if ( !orig_script )
 
-		PrintText(who, "*doesnt have an original script to use now that taming is done?!*");
+		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif ( orig_script["tamed"] )
 
-		PrintText(who, "*my original script was tamed.src ?!*");
+		PrintTextAbove(who, "*my original script was tamed.src ?!*");
 		SysLog(who.name+" my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 

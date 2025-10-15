@@ -56,8 +56,8 @@ program MerchantMenu(params)
 
 	MAIN_LOOP: while (1)
 		if (!player.concealed)
-			PrintText(player, "O que tem a venda?", SSM_FAIL);
-			PrintText(npc, array{ "Olhe so este produto...", "Bem-vindo, vamos ver...",
+			PrintTextAbove(player, "O que tem a venda?", SSM_FAIL);
+			PrintTextAbove(npc, array{ "Olhe so este produto...", "Bem-vindo, vamos ver...",
 					  			"Esta procurando algo especifico?" }.randomentry(), SSM_INFO);
 		endif
 		gump := MainLayout(player); // Gera o Layout padr�o do gump do mercador
@@ -118,7 +118,7 @@ program MerchantMenu(params)
 				cur_menu := MENU_INTRO;
 			BOTAO_HISTORICO:
 				if (!player.concealed)
-					PrintText(npc, "Aqui esta o historico de vendas, Sr.");
+					PrintTextAbove(npc, "Aqui esta o historico de vendas, Sr.");
 				endif
 				var historico := GetMerchantLog(npc);
 				historico := "<br> - {}".format("<br> -".join(historico));

@@ -68,7 +68,7 @@ exported function IsInTheDungeon(who)
 
 			// Validação melhorada do tamanho do array
 			if (rect_array.size() < 4)
-				PrintText(who, "Erro: Dados de retângulo inválidos para " + dungeon_name + " (" + rect_prop + ")");
+				PrintTextAbove(who, "Erro: Dados de retângulo inválidos para " + dungeon_name + " (" + rect_prop + ")");
 				continue;
 			endif
 

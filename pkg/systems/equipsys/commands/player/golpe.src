@@ -65,7 +65,7 @@ function OpenGump(who)
 		endif
 
 		weapon.setAttrBase(weaponAttr);
-		PrintText(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
+		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
 		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}",
 				   SSM_INFO);
 	endwhile

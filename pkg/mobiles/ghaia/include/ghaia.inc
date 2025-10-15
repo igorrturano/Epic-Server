@@ -50,7 +50,7 @@ function CanFight(me, mobile, align)
 		var dif := CalculateDhDiff(me, mobile);
 		if (SkillCheck(me, AWARENESS, dif) > 0)
 			mobile.hidden := 0;
-			PrintText(mobile, "*aparece*");
+			PrintTextAbove(mobile, "*aparece*");
 			SendSysMessage(me, "Voce encontrou " + mobile.name + ".");
 			SendSysMessage(mobile, me.name + " te encontrou!");
 
@@ -74,14 +74,14 @@ function CanFight(me, mobile, align)
 	elseif (mobile.cmdlevel && GetObjProperty(mobile, "ignorenpcs") == 1) // kra eh gm
 		return 0;
 	elseif (GetCooldown(me, "peacemade") > 0)
-		// printtext(me, "nao");
+		// PrintTextAbove(me, "nao");
 		return 0;
 	elseif (GetObjProperty(mobile, "#fantasma") == 1)
 		return 0;
 	endif
-	// printtext(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
+	// PrintTextAbove(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
 	if (Cint(GetCooldown(mobile, "deathtime")) > 0)
-		// printtext(me, "nao vou atacar" + mobile.name);
+		// PrintTextAbove(me, "nao vou atacar" + mobile.name);
 		return 0;
 	endif
 
@@ -116,7 +116,7 @@ function CanFight(me, mobile, align)
 				endif
 			endif
 
-			// printtext(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais")));
+			// PrintTextAbove(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais")));
 			if ((GetObjProperty(mobile, "kit") == "criado por lobos") ||
 	   (cint(GetObjProperty(mobile, "empatiacomanimais")) == 1) || TemHabilidade(mobile, "Senso da Natureza") ||
 	   TemHabilidade(mobile, "Campestre")) // verifica se tem empatia por animais
@@ -324,14 +324,14 @@ function InitializeNpc(mobile)
 
 	// elem := FindConfigElem(npccfgfile, mytemplate);
 	propallies := GetConfigStringDictionary(elem, "allyprop");
-	// printtext(mobile, " prop " + propallies + " " + elem + " " + propallies);
+	// PrintTextAbove(mobile, " prop " + propallies + " " + elem + " " + propallies);
 
 	var spawnpointserial := GetObjProperty(mobile, "spawnpoint");
-	// printtext(mobile, " " + spawnpointserial);
+	// PrintTextAbove(mobile, " " + spawnpointserial);
 	// print("spawnpoint " + spawnpointserial);
 	if (spawnpointserial)
 		var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
-		// printtext(mobile, " " + spawnpoint);
+		// PrintTextAbove(mobile, " " + spawnpoint);
 		if (spawnpoint)
 			var range := cint(GetObjProperty(spawnpoint, "Range"));
 			if (!range)
@@ -344,7 +344,7 @@ function InitializeNpc(mobile)
 		endif
 	endif
 
-	// printtext(mobile, "initialize npc");
+	// PrintTextAbove(mobile, "initialize npc");
 	if (GetObjProperty(mobile, "started"))
 		return 0;
 	endif
@@ -393,7 +393,7 @@ function MoveAround()
 				TurnTowardLocation(anchor[1], anchor[2]);
 				WalkTowardLocation(anchor[1], anchor[2]);
 				if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35 && !GetObjProperty(me, "#peacemode"))
-					PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+					PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
 					sleep(3);
 					MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
 				endif
@@ -418,7 +418,7 @@ function hasCombat(me)
 	if (TS_GetCooldown(me, str[1]))
 		return;
 	endif
-	// printtext(me, " " + str);
+	// PrintTextAbove(me, " " + str);
 	if (str.size() >= 1)
 		return 1;
 	endif
@@ -444,7 +444,7 @@ function doCombatSpecial(me)
 		TS_StartCooldown(me, cstr(str[1]), cint(delay));
 		var e := Start_Script(str[1], array{ me, cint(delay), str[1] });
 		sleepms(10);
-	// printtext(me, " " + e +  " " + str[1]);
+	// PrintTextAbove(me, " " + e +  " " + str[1]);
 	endif
 
 endfunction
@@ -452,7 +452,7 @@ endfunction
 function hasAttack(me)
 	var str := GetConfigString(npccfgfile[mytemplate], "SpecialAttack");
 	// str := splitwords(str);
-	// printtext(me, " " + str);
+	// PrintTextAbove(me, " " + str);
 	if (!str) // .size() >= 1)
 		return 0;
 	endif
@@ -462,7 +462,7 @@ endfunction
 function hasSpecialCombat(me)
 	var str := GetConfigString(npccfgfile[mytemplate], "SpecialCombat");
 	// str := splitwords(str);
-	// printtext(me, " " + str);
+	// PrintTextAbove(me, " " + str);
 	if (!str) // .size() >= 1)
 		return 0;
 	endif
@@ -486,7 +486,7 @@ function doCombatSpecialNotBoss(me, opponent)
 
 	TS_StartCooldown(me, "npc_special", delay);
 	if (CheckResist(opponent, REFLEXOS, diff_aleatorio))
-		printtext(opponent, "*Evitou o ataque especial do inimigo!*");
+		PrintTextAbove(opponent, "*Evitou o ataque especial do inimigo!*");
 		return 0;
 	else
 		var e := Start_Script(script, array{ me, opponent, 0, armor, GetRawDmg(me) });
@@ -527,7 +527,7 @@ function throwItem(npc, opponent, dist)
 
 	var diff_aleatorio := diffs.RandomInt(diffs.size());
 	if (CheckResist(opponent, REFLEXOS, diff_aleatorio)) // Errou!
-		PrintText(npc, "*Errou!*", _DEFAULT_TEXT_FONT, 38);
+		PrintTextAbove(npc, "*Errou!*", _DEFAULT_TEXT_FONT, 38);
 		if (throwinfo.misssound)
 			PlaySoundEffect(npc, throwinfo.misssound);
 		else
@@ -744,7 +744,7 @@ function herd(ev)
 		endcase
 	endwhile
 	if (saytrigger)
-		printtext(me, "*atende o chamado de " + nome + "*");
+		PrintTextAbove(me, "*atende o chamado de " + nome + "*");
 	endif
 
 	if (idlesound)

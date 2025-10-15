@@ -22,7 +22,7 @@ program PlantGrower(grower)
 	set_priority(1);
 	sleep(1);
 	if (!GetObjProperty(grower, "seed"))
-		PrintText(grower, "No seed info. Destroying.");
+		PrintTextAbove(grower, "No seed info. Destroying.");
 		DestroyItem(grower);
 		return;
 	elseif (grower.GetPhase() <= 1)

@@ -23,9 +23,9 @@ program cara_ou_coroa(who, item)
 		if (usarhab)
 			cara := YesNo(who, "Qual resultado deseja?", "Cara", "Coroa");
 			if (cara)
-				PrintText(who, "*jogou uma moeda e deu cara*");
+				PrintTextAbove(who, "*jogou uma moeda e deu cara*");
 			else
-				PrintText(who, "*jogou uma moeda e deu coroa*");
+				PrintTextAbove(who, "*jogou uma moeda e deu coroa*");
 			endif
 		else
 			coin(who); // Random normal
@@ -42,8 +42,8 @@ endprogram
 
 function coin(who)
 	if (RandomInt(2) == 1)
-		PrintText(who, "*jogou uma moeda e deu coroa*");
+		PrintTextAbove(who, "*jogou uma moeda e deu coroa*");
 	else
-		PrintText(who, "*jogou uma moeda e deu cara*");
+		PrintTextAbove(who, "*jogou uma moeda e deu cara*");
 	endif
 endfunction

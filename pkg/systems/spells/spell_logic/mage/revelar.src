@@ -15,7 +15,7 @@ program SpellScript(params)
 	/*
 	foreach mobile in (ListMobilesNearLocationEx(who.x, who.y, who.z, 8, LISTEX_FLAG_HIDDEN, who.realm))
 		mobile.hidden := 0;
-		printtext(mobile, "*revelado*");
+		PrintTextAbove(mobile, "*revelado*");
 	endforeach
 
 	var items  := ListItemsNearLocation( cint(who.x), cint(who.y), cint(who.z), 8, who.realm );
@@ -35,7 +35,7 @@ program SpellScript(params)
 		else
 			if (CheckLineOfSight(who, mobile))
 				mobile.hidden := 0;
-				PrintText(mobile, "*aparece*");
+				PrintTextAbove(mobile, "*aparece*");
 				SendSysMessage(who, "Voce encontrou " + mobile.name + ".");
 				SendSysMessage(mobile, who.name + " te encontrou!");
 			endif

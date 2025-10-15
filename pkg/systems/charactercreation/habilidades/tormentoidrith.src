@@ -22,13 +22,13 @@ program truesight(who)
 		var duration := cint(AP_GetSkill(who, THEOLOGY) / 8);
 		TS_StartTimer(mobile, "paralysis", duration);
 		PlayObjectCenteredEffect(mobile, 0x54F7, 10, 30);
-		PrintText(mobile, "*atormentado*");
+		PrintTextAbove(mobile, "*atormentado*");
 		DamageFLS(mobile, dano_mlore, DMG_FORCED, who);
 
 		if (InDarkness(mobile))
 			duration += cint(AP_GetSkill(who, THEOLOGY) / 5);
 			SetCooldown(mobile, "blinded", duration);
-			PrintText(mobile, "*cegueira*");
+			PrintTextAbove(mobile, "*cegueira*");
 		endif
 
 		sleepms(20);

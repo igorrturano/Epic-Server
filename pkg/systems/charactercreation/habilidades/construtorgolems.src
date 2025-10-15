@@ -72,7 +72,7 @@ program summonSkeletaSteed(params)
 	endif
 	while (i < 10)
 		PerformAction(who, 12);
-		PrintText(who, "*Construindo*");
+		PrintTextAbove(who, "*Construindo*");
 		PlaySoundEffect(who, SFX_ANVIL); // Som de martelada
 		PlayStationaryEffect(who.x, who.y, who.z, 0x6DF1, 0, 40, 0, who.realm);
 
@@ -89,7 +89,7 @@ program summonSkeletaSteed(params)
 	var golem := CreateNpcFromTemplate(template, who.x, who.y, who.z, 0, who.realm);
 	golem.frozen := 1;
 	SetObjProperty(golem, "golem_maker", who.serial);
-	PrintText(golem, "O mecanismo esta pronto para ser operado");
+	PrintTextAbove(golem, "O mecanismo esta pronto para ser operado");
 	// var mount := summon(template, targ, who);
 	// var duracao := 120 + 180 * AP_GetSkill(who, ARCANA)/ 100;
 

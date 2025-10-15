@@ -19,7 +19,7 @@ program habilidade(params)
 	var religiao := chardata.religion;
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 10);
 
-	PrintText(who, "*Invoca poder profano*");
+	PrintTextAbove(who, "*Invoca poder profano*");
 	PlayObjectCenteredEffect(who, 0x376A, 1, 32);
 
 	case (religiao)
@@ -49,7 +49,7 @@ program habilidade(params)
 		HALLEUAD:
 			PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, 15, 2, 2740);
 			SetCooldown(targ, "blinded", 15);
-			PrintText(targ, "*cegueira*");
+			PrintTextAbove(targ, "*cegueira*");
 
 		ELUITHORTH:
 			var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, targ.realm);

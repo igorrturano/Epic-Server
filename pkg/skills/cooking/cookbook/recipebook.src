@@ -369,7 +369,7 @@ function copyrecipe(who, recipe)
 			setobjproperty(item, "RecipeId", num);
 			setname(item, "Receita de " + recipe.name);
 			SendSysMessageEx(who, "Voce fez uma copia da receita.", SSM_INFO);
-			printtext(who, "*escrevendo pergaminho*");
+			PrintTextAbove(who, "*escrevendo pergaminho*");
 		else
 			SendSysMessageEx(who, "Voce copiou a receita sem cuidados e ela esta ilegivel.", SSM_FAIL);
 		endif

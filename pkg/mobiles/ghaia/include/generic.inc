@@ -138,14 +138,14 @@ function Fight(opponent, alerted := 0)
   var ev;
   var waittime := 0;
 
-//	printtext(me, " " + alert_allies);
+//	PrintTextAbove(me, " " + alert_allies);
   if (!alerted) //se ele ja nao foi alertado por outro aliado
 	if (alert_allies) //se esse npc eh do tipo que alerta
-	//	printtext(me, "vou alertar");
+	//	PrintTextAbove(me, "vou alertar");
 		AlertAllies(me, opponent);
 	endif
  // else
-//	printtext(me, "fui alertado, nao vou alertar");
+//	PrintTextAbove(me, "fui alertado, nao vou alertar");
   endif
    var PlayerRaca := GetObjProperty(opponent, "chardata").raca;
 	 var sourceDescription := GetObjProperty(opponent, "descricao");
@@ -243,7 +243,7 @@ function Fight(opponent, alerted := 0)
       var unique := GetBossStruct(me);
       foreach ce in (unique.combatevent)
         sleepms(10);
-    //		printtext(me, " "  + ce);
+    //		PrintTextAbove(me, " "  + ce);
         if (!TS_GetCooldown(me, ce.name))
           var e := Start_Script(":ghaia:special/genericspecial" , array{me, ce});
         endif
@@ -316,7 +316,7 @@ function Fight(opponent, alerted := 0)
 
     ev := wait_for_event(waittime);
 
-//    printtext(self(), "event " + ev);
+//    PrintTextAbove(self(), "event " + ev);
   	if(ev.type != SYSEVENT_SPEECH)
   		case (ev.type)
   			SYSEVENT_DAMAGED:
@@ -436,7 +436,7 @@ function Flee(opponent)
 
     if (furtivo == 1)
       if (!GetCooldown(me, "fleestealth"))
-         PrintText(me, "*esconde*");
+         PrintTextAbove(me, "*esconde*");
          sleep(1);
          me.hidden := 1;
          me.stealthsteps := 60;
@@ -604,7 +604,7 @@ function CalcPathAndMove(me, byref opponent, sleepdelay)
       var last_msg := GetObjProperty(me, "#fatigue");
       if (!last_msg || last_msg < ReadGameClock())
          SetObjProperty(me, "#fatigue", ReadGameClock()+15);
-         PrintText(me, "*fatigado*");
+         PrintTextAbove(me, "*fatigado*");
       endif
       sleep(1);
    elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
@@ -716,10 +716,10 @@ function Opendoors(me)
   foreach door in (ListItemsNearLocation(me.x, me.y, me.z, 1))
     if  ((door.isa(POLCLASS_DOOR)) and (!door.locked)) //se nao ta trancada
 		if ( cint(GetObjProperty(me, "ignoredoor")) == 1)
-			PrintText(me, "*atravessa a porta*");
+			PrintTextAbove(me, "*atravessa a porta*");
 			MoveObjectToLocation(me, door.x, door.y, door.z, door.realm, MOVEOBJECT_FORCELOCATION);
 		elseif (cint(GetObjProperty(me, "opendoor")) == 1)
-			PrintText(me, "*abre a porta*");
+			PrintTextAbove(me, "*abre a porta*");
 			door.Open();
 		endif
 	endif
@@ -737,7 +737,7 @@ function procura_em_volta(me)
                 var difficulty := CalculateDHDiff(me, mobile);
                 if ( SkillCheck(me, AWARENESS, difficulty) > 0 )
                     mobile.hidden := 0;
-                    PrintText(mobile, "*aparece*");
+                    PrintTextAbove(mobile, "*aparece*");
                     SendSysMessageEx(mobile, me.name+" te encontrou!", SSM_FAIL);
                 endif
             endif
@@ -763,13 +763,13 @@ function LootSomething(me)
         endif
 
         if ( inside > 0 );
-          //PrintText(corpse, item.desc+" is a container.. skipping it");
+          //PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
           //Do nothing
         elseif ( !item.movable );
-          //PrintText(corpse, item.desc+" cant be moved.. skipping it");
+          //PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
           //Do nothing
         else
-          //PrintText(corpse, item.desc+" is lootable.");
+          //PrintTextAbove(corpse, item.desc+" is lootable.");
           contents.append(item);
         endif
         sleepms(5);
@@ -782,7 +782,7 @@ function LootSomething(me)
 		contents := 0;
 
 		if ( item )
-			//PrintText(me, "*revirando o corpo*");
+			//PrintTextAbove(me, "*revirando o corpo*");
 			MoveItemToContainer(item, me.backpack);
 
 			if ( item.layer )
@@ -820,7 +820,7 @@ function arrastaporai(me, corpo)
       var i := 1;
 	    while ( i < 5)
         if (!(me.hidden || me.concealed))
-          PrintText(me, "*arrastando "+corpo.name+"*");
+          PrintTextAbove(me, "*arrastando "+corpo.name+"*");
         endif
 
         MoveObjectToLocation(corpo, me.x, me.y, me.z);
@@ -828,7 +828,7 @@ function arrastaporai(me, corpo)
         sleep(2);
 		    i := i + 1;
       endwhile
-      PrintText(me, "*Solta "+corpo.desc+"*");
+      PrintTextAbove(me, "*Solta "+corpo.desc+"*");
       EraseObjPRoperty(corpo, "moving");
       corpo.movable := 0;
   endif

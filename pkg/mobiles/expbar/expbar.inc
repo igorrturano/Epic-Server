@@ -199,7 +199,7 @@ function LevelUp(who)
    PlayObjectCenteredEffect(who, 0xB462, 10, 60);
    
    // Floating text
-   PrintText(who, "*LEVEL UP!*", _DEFAULT_TEXT_FONT, 1152);
+   PrintTextAbove(who, "*LEVEL UP!*", _DEFAULT_TEXT_FONT, 1152);
    AP_RefreshVitals(who);
 
    SendSysMessage(who, "Voce alcancou o nivel "+curr_level+"!");

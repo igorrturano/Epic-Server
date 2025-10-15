@@ -31,10 +31,10 @@ program KillPlayers()
 	propallies := dictionary;
 
 	// 	set_critical(1);
-	// printtext(me, "vai inicializr");
+	// PrintTextAbove(me, "vai inicializr");
 	InitializeNPC(me);
 	// 	set_critical(0);
-	// printtext(me, "done");
+	// PrintTextAbove(me, "done");
 	SetWarMode(0);
 	ev := os::wait_for_event(0);
 	wanders := 0;
@@ -188,7 +188,7 @@ function CloseDistance(opponent)
 		var last_msg := GetObjProperty(me, "#fatigue");
 		if (!last_msg || last_msg < ReadGameClock())
 			SetObjProperty(me, "#fatigue", ReadGameClock() + 15);
-			PrintText(me, "*fatigado*");
+			PrintTextAbove(me, "*fatigado*");
 		endif
 		sleep(1);
 	elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))

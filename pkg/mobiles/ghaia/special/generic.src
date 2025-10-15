@@ -12,7 +12,7 @@ program loko(params)
 	var who := params[1];
 	var event := params[2];
 
-	printtext(who, "loko");
+	PrintTextAbove(who, "loko");
 	if (!who.opponent)
 		return;
 	endif
@@ -99,7 +99,7 @@ program loko(params)
 				targ := GetAllOpponents(who);
 			endif
 			foreach t in targ
-				PrintText(t, state.text, state.color);
+				PrintTextAbove(t, state.text, state.color);
 			endforeach
 		elseif (state.type == "Play Sound")
 			PlaySoundEffect(who, state.id);
