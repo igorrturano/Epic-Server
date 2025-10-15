@@ -46,6 +46,7 @@ program skillremoveTrap(who)
 		endif
 
 		var traps := GetObjProperty(item, "TrapList");
+
 		foreach trap in traps
 			if (trap.Name == "Magic")
 				SendSysMessageEx(who, "Voce nao sabe desarmar essa armadilha.", SSM_FAIL);
