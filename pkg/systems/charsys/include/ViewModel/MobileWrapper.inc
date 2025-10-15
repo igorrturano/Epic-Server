@@ -291,9 +291,11 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
-		if (TypeOf(itemWrapped) != "EquipWrapperArmor" && TypeOf(itemWrapped) != "EquipWrapperWeapon")
+		if (!itemWrapped.GetTemplate())
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
+
+		print(itemWrapped.GetModifiers());
 
 		foreach mod in (itemWrapped.GetModifiers())
 			mod.RemoveFrom(this._mobRef);
