@@ -444,7 +444,7 @@ function InitiateResearch(who, recipe)
 			PlaySoundEffect(who, 0x43e);
 		endif
 
-		PrintText(who, "*inicia a pesquisa com determinação*");
+		PrintTextAbove(who, "*inicia a pesquisa com determinação*");
 
 		NotifyResearchResult(who, 1);
 		return 1;
@@ -486,7 +486,7 @@ function StartResearch(who, recipe, remainingTime := 0)
 			return 0;
 		endif
 
-		PrintText(who, research_actions[RandomInt(research_actions.size()) + 1]);
+		PrintTextAbove(who, research_actions[RandomInt(research_actions.size()) + 1]);
 		PlaySoundEffect(who, 0x24a); // Som de estudo
 
 		sleep(3);
@@ -1114,7 +1114,7 @@ function PerformRapidResearch(who, recipe)
 			break;
 		endif
 
-		PrintText(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+		PrintTextAbove(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
 		PlaySoundEffect(who, 0x24a);
 
 		sleep(5);

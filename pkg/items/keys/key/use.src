@@ -79,7 +79,7 @@ function CopyKey(who, key, targ)
 	if (TemHabilidade(who, "Truque Sujo") || SkillCheck(who, "Metal_Working", 25) > 0)
 		targ.SetLockId(key_id);
 		SendSysMessageEx(who, "Voce copiou a chave.", SSM_INFO);
-		PrintText(who, "*copia uma chave*");
+		PrintTextAbove(who, "*copia uma chave*");
 	else
 		SendSysMessageEx(who, "Voce quebrou a chave.", SSM_FAIL);
 		DestroyItem(targ);

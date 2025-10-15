@@ -58,7 +58,7 @@ program canalizadorDaSangria(player)
 	elseif (GetObjProperty(player, "Cano Serrado"))
 		sound := 0x057;
 	endif
-	PrintText(player, "*Aprimorando o equipamento*");
+	PrintTextAbove(player, "*Aprimorando o equipamento*");
 	PlaySoundEffect(player, sound); // hammer
 
 	PlaySoundEffect(player, 0x4d3);

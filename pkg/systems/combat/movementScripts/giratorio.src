@@ -15,7 +15,7 @@ program doubleattack(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PrintText(attacker, "*ataque giratorio*");
+	PrintTextAbove(attacker, "*ataque giratorio*");
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);
 

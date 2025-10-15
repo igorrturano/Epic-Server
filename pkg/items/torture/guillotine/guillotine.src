@@ -67,7 +67,7 @@ endfunction
 function NewGraphic(guillotine)
 	var guillotine_cfg := ReadConfigFile(":torture:config/guillotine");
 	if (guillotine_cfg.errortext)
-		PrintText(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"
+		PrintTextAbove(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"
 				   + guillotine_cfg.errortext);
 		return guillotine.graphic;
 	endif

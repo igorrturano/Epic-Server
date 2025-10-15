@@ -71,7 +71,7 @@ program forensic(who)
 		Sleepms(2);
 	endforeach
 
-	PrintText(who, "*Tateando e analisando*");
+	PrintTextAbove(who, "*Tateando e analisando*");
 	sleep(3);
 
 	if (Distance(who, subject) > 1)
@@ -293,7 +293,7 @@ program forensic(who)
 	else
 		SendSysMessage(who, "Você falhou em sua análise");
 		if (GetObjProperty(who, "fail"))
-			PrintText(who, "Você enfiou a mão onde não deve e machucou o paciente");
+			PrintTextAbove(who, "Você enfiou a mão onde não deve e machucou o paciente");
 			ApplyDamage(subject, 1);
 			Eraseobjproperty(who, "Fail");
 		endif

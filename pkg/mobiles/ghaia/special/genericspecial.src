@@ -105,7 +105,7 @@ program loko(params)
 				targ := GetAllOpponents(who);
 			endif
 			foreach t in targ
-				PrintText(t, state.text, state.color);
+				PrintTextAbove(t, state.text, state.color);
 			endforeach
 		elseif (state.type == "Play Sound")
 			PlaySoundEffect(who, state.id);

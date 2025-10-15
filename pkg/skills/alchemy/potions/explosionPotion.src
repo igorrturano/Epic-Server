@@ -54,7 +54,7 @@ program use_explosion(who, potion)
 
 		if (RandomInt(100) > chance)
 			SendSysMessageEx(who, "Voce falhou em um teste de reflexos e caiu do cavalo", SSM_FAIL);
-			PrintText(who, "*Perde o equilibrio e cai vergonhosamente*");
+			PrintTextAbove(who, "*Perde o equilibrio e cai vergonhosamente*");
 			ApplyDamageEX(who, RandomDiceRoll("4d10"), DMG_PHYSICAL);
 			TS_StartTimer(who, "paralysis", 8);
 			TS_StartTimer(who, "desmontar", 10);
@@ -77,7 +77,7 @@ program use_explosion(who, potion)
 		return;
 	endif
 
-	PrintText(who, "*joga um frasco*");
+	PrintTextAbove(who, "*joga um frasco*");
 	if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
 		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
 		SendSysMessage(who, "Voce nao consegue ver o alvo!");

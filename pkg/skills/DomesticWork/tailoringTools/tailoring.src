@@ -98,7 +98,7 @@ function MakeCloth(character, yarn)
 		return 0;
 	endif
 
-	PrintText(character, "*Começou a tear algo*");
+	PrintTextAbove(character, "*Começou a tear algo*");
 	while (yarn.amount >= 5)
 		if (character.x != whox || character.y != whoy)
 			SendSysMessageEx(character, "Voce se moveu e parou de tear!", SSM_FAIL);

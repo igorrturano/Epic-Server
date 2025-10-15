@@ -76,7 +76,7 @@ function PerformTransformation(who, form)
 	SetObjProperty(who, "metamorfose", metamorfose);
 
 	PerformAction(who, ANIM_CAST_AREA);
-	PrintText(who, "*transformando-se*");
+	PrintTextAbove(who, "*transformando-se*");
 	// Freeze player during transformation
 	who.frozen := 1;
 	who.graphic := form.graphic;

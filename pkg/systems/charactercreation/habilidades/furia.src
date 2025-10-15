@@ -10,7 +10,7 @@ include ":tn:cooldown";
 program doubleattack(who)
 	var rage_time := Cint(AP_GetSkill(who, TACTICS));
 
-	PrintText(who, "RRRAARRRRGHH!!!", SSM_INFO);
+	PrintTextAbove(who, "RRRAARRRRGHH!!!", SSM_INFO);
 	SetCooldown(who, "furia", rage_time);
 
 	shoutByGender(who);

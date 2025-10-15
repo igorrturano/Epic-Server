@@ -170,7 +170,7 @@ program use_curing(who, item)
 			repeat
 				if (qtd > 5)
 					if (SubtractAmount(useon, 5))
-						PrintText(who, "*curtindo couro*");
+						PrintTextAbove(who, "*curtindo couro*");
 						Sleep(3);
 						CreateItemInBackpack(who, prod_type, 5);
 						PlaySoundEffect(who, 0x49);
@@ -181,7 +181,7 @@ program use_curing(who, item)
 					endif
 				else
 					if (SubtractAmount(useon, qtd))
-						PrintText(who, "*curtindo couro*");
+						PrintTextAbove(who, "*curtindo couro*");
 						Sleep(3);
 						CreateItemInBackpack(who, prod_type, qtd);
 						PlaySoundEffect(who, 0x49);

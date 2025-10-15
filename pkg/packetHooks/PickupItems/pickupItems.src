@@ -55,7 +55,7 @@ exported function HandleItemPickup(who, byref packet)
 										  					region, coords, item.desc });
 				endif
 				if (!(who.hidden || who.concealed))
-					PrintText(who, "*Pegou " + item.desc + "*");
+					PrintTextAbove(who, "*Pegou " + item.desc + "*");
 				endif
 			endif
 		endif

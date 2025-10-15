@@ -59,7 +59,7 @@ function empty_bottle(character, potion, potiontype := 0)
   endif
 
   PlaySoundEffect(character, DRINK_SOUND);
-  PrintText(character, "*usa uma pocao*");
+  PrintTextAbove(character, "*usa uma pocao*");
   var goles;
 
   if (!GetObjProperty(potion, "goles"))

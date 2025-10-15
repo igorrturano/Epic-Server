@@ -42,7 +42,7 @@ program textcmd_openPack(who, item)
 		var loop := 0;
 		while (loop < 3)
 			PlaySoundEffect(who, 0x243); // 0x242 mortar 0x247 powder
-			PrintText(who, "*preparando a polvora*");
+			PrintTextAbove(who, "*preparando a polvora*");
 			sleep(1);
 			loop := loop + 1;
 		endwhile

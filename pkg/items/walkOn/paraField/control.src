@@ -21,7 +21,7 @@ program controlScript(field)
 		duration := RandomDiceRoll("5d3");
 	endif
 
-	// printText(field, "field duration " + duration);
+	// PrintTextAbove(field, "field duration " + duration);
 
 	while (field)
 		ParalyzeNearbyMobiles(field, duration);
@@ -57,7 +57,7 @@ function ParalyzeNearbyMobiles(field, duration)
 endfunction
 
 function ParalyzeMobile(mobile, duration)
-	// printtext(mobile, "TIME " + duration);
+	// PrintTextAbove(mobile, "TIME " + duration);
 	TS_StartTimer(mobile, "paralysis", duration);
 
 	return 1;

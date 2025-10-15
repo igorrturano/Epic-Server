@@ -90,7 +90,7 @@ function BuyStuff(npc, mobile)
 
 	var result := SendBuyWindow(mobile, forsale, npc, shopping_cart);
 	if (!result)
-		PrintText(npc, "SendBuyWindow() error - " + result.errortext);
+		PrintTextAbove(npc, "SendBuyWindow() error - " + result.errortext);
 	endif
 
 	return 1;

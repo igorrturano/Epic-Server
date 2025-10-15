@@ -116,7 +116,7 @@ function Boss1Fight(opponent, alerted := 0)
 			for (x := 4857; x <= 4866;  x := x+1)
 				var fire := CreateITemAtLocation( x, 888, 0, 0x398C, 1, me.realm);
 				queue.append(fire);
-				//printtext(me, " fire " + fire);
+				//PrintTextAbove(me, " fire " + fire);
 				fire.SetDuration(30);
 				sleepms(100);
 			endfor
@@ -190,7 +190,7 @@ function Boss1Fight(opponent, alerted := 0)
 						sleepms(sleeptime);
 					endfor
 				else
-					//printtext(me, " x " + queue[queue.size()].x  + " y " + queue[queue.size()].y);
+					//PrintTextAbove(me, " x " + queue[queue.size()].x  + " y " + queue[queue.size()].y);
 				endif
 			endfor
 

@@ -182,7 +182,7 @@ function NPC_SetupRandomEquipment(mobile, elem_name:=0, flags:=EQUIP_NOGENDER)
 		if ( RandomInt(100)+1 <= CInt(entry) )
 			var group_elem := group_cfg[CStr(_entry_iter)];
 			if ( !group_elem )
-				PrintText(mobile, "equipGroups.cfg elem ["+_entry_iter+"] does not exist.");
+				PrintTextAbove(mobile, "equipGroups.cfg elem ["+_entry_iter+"] does not exist.");
 				continue;
 			endif
 
@@ -201,9 +201,9 @@ function NPC_SetupRandomEquipment(mobile, elem_name:=0, flags:=EQUIP_NOGENDER)
 			item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, item, 1, mobile.realm);
 			item.movable := 1;
 			if ( item.errortext )
-				PrintText(mobile, "Unable to create ["+item+"] ->"+item.errortext);
+				PrintTextAbove(mobile, "Unable to create ["+item+"] ->"+item.errortext);
 			elseif ( !EquipItem(mobile, item) )
-				PrintText(mobile, "Unable to equip - "+item.desc+" - destroying.");
+				PrintTextAbove(mobile, "Unable to equip - "+item.desc+" - destroying.");
 				DestroyItem(item);
 			endif
 		endif

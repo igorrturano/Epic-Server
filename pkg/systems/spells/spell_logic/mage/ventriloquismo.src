@@ -19,7 +19,7 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	var frase := RequestGump(who, "Escreva a frase");
-	PrintText(targ, "" + frase);
+	PrintTextAbove(targ, "" + frase);
 
 	return 1;
 

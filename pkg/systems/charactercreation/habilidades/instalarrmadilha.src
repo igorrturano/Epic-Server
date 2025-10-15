@@ -68,7 +68,7 @@ program instalararmadilha(who)
 			return 0;
 		endif
 
-		PrintText(who, "*instalando armadilha*");
+		PrintTextAbove(who, "*instalando armadilha*");
 		DestroyITem(trap);
 		sleep(4);
 		armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0xff98, 1, who.realm);
@@ -114,7 +114,7 @@ program instalararmadilha(who)
 			return;
 		endif
 
-		PrintText(who, "*instalando armadilha*");
+		PrintTextAbove(who, "*instalando armadilha*");
 		sleep(4);
 		SendSysMessageEx(who, "Voce instalou a armadilha.", SSM_INFO);
 		AddTrap(alvo, traptype, level);
@@ -133,7 +133,7 @@ program instalararmadilha(who)
 			return 0;
 		endif
 
-		PrintText(who, "*instalando armadilha*");
+		PrintTextAbove(who, "*instalando armadilha*");
 		DestroyITem(trap);
 		sleep(4);
 		armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0x367a, 1, who.realm);

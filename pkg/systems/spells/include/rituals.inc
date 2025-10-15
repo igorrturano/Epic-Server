@@ -110,7 +110,7 @@ function CheckIngredients(master, ritualid)
 
 	foreach loop in loops
 		foreach mobile in ritualmages
-			PrintText(mobile, powerwords);
+			PrintTextAbove(mobile, powerwords);
 			PerformAction(mobile, ANIM_CAST_AREA);
 		endforeach
 		sleepms(delay);
