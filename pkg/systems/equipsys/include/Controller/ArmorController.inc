@@ -121,64 +121,64 @@ function getResistPhysicalByMaterial(ID)
 	return ArmorResist(resists[1], resists[2], resists[3]);
 endfunction
 
-function getPenaltiesBySlot(slot)
-	var penalties := array{};
+function GetModifiersBySlot(slot)
+	var modifiers := array{};
 	case(Upper(slot[1]))
-		HEAD: penalties := {1,0,0,1,0}; break;
-		NECK: penalties := {1,0,0,1,0}; break;
-		BODY: penalties := {4,0,0,12,0}; break;
-		ARMS: penalties := {2,0,2,6,0}; break;
-		HANDS: penalties := {1,0,4,3,0}; break;
-		LEGS: penalties := {2,0,0,6,0}; break;
-		FEET: penalties := {2,0,0,0,0}; break;
-		SHIELD: penalties := {0,1,10,5,0}; break;
+		HEAD: modifiers := {-1,0,0,-1,0}; break;
+		NECK: modifiers := {-1,0,0,-1,0}; break;
+		BODY: modifiers := {-4,0,0,-12,0}; break;
+		ARMS: modifiers := {-2,0,-2,-6,0}; break;
+		HANDS: modifiers := {-1,0,-4,-3,0}; break;
+		LEGS: modifiers := {-2,0,0,-6,0}; break;
+		FEET: modifiers := {-2,0,0,0,0}; break;
+		SHIELD: modifiers := {0,-1,-10,-5,0}; break;
 
-		default: penalties := {0,0,0,0,0}; break;
+		default: modifiers := {0,0,0,0,0}; break;
 	endcase
 
 	return dictionary{
-		DEXTERITY -> AttributeModifier(DEXTERITY, penalties[1]),
-		SNEAK -> AttributeModifier(SNEAK, penalties[2]),
-		MECHANICS -> AttributeModifier(MECHANICS, penalties[3]),
-		MAGERY -> AttributeModifier(MAGERY, penalties[4]),
-		AWARENESS -> AttributeModifier(AWARENESS, penalties[5])
+		DEXTERITY -> AttributeModifier(DEXTERITY, modifiers[1]),
+		SNEAK -> AttributeModifier(SNEAK, modifiers[2]),
+		MECHANICS -> AttributeModifier(MECHANICS, modifiers[3]),
+		MAGERY -> AttributeModifier(MAGERY, modifiers[4]),
+		AWARENESS -> AttributeModifier(AWARENESS, modifiers[5])
 	};
 endfunction
 
-function getPenaltiesByProtection(protection)
-	var penalties := array{};
+function GetModifiersByProtection(protection)
+	var modifiers := array{};
 	case(Upper(protection)) // {Dexterity, Sneak, Mechanics, Magery, Awareness}
 		//TIER 1
-		ARMOR_LOWLOW: penalties := {0,0,0,0,0}; break;
-		ARMOR_LOWMID: penalties := {0,0,0,0,0}; break;
-		ARMOR_LOWHIGH: penalties := {0,0,0,0,0}; break;
+		ARMOR_LOWLOW: modifiers := {0,0,0,0,0}; break;
+		ARMOR_LOWMID: modifiers := {0,0,0,0,0}; break;
+		ARMOR_LOWHIGH: modifiers := {0,0,0,0,0}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: penalties := {0,0,0,2,0}; break;
-		ARMOR_MIDMID: penalties := {1,0,0,4,0}; break;
-		ARMOR_MIDHIGH: penalties := {2,0,0,5,0}; break;
+		ARMOR_MIDLOW: modifiers := {0,0,0,-2,0}; break;
+		ARMOR_MIDMID: modifiers := {-1,0,0,-4,0}; break;
+		ARMOR_MIDHIGH: modifiers := {-2,0,0,-5,0}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: penalties := {3,0,0,8,0}; break;
-		ARMOR_HIGHMID: penalties := {4,0,0,12,0}; break;
-		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0}; break;
+		ARMOR_HIGHLOW: modifiers := {-3,0,0,-8,0}; break;
+		ARMOR_HIGHMID: modifiers := {-4,0,0,-12,0}; break;
+		ARMOR_HIGHHIGH: modifiers := {-5,0,0,-24,0}; break;
 
 		// ESCUDOS
-		SHIELD_BUCKLER: penalties := {0,0,0,0,0}; break;
-		SHIELD_SMALL: penalties := {4,0,0,0,0}; break;
-		SHIELD_MEDIUM: penalties := {8,0,0,6,0}; break;
-		SHIELD_LARGE: penalties := {12,0,0,12,0}; break;
-		SHIELD_TOWER: penalties := {16,0,0,24,0}; break;
+		SHIELD_BUCKLER: modifiers := {0,0,0,0,0}; break;
+		SHIELD_SMALL: modifiers := {-4,0,0,0,0}; break;
+		SHIELD_MEDIUM: modifiers := {-8,0,0,-6,0}; break;
+		SHIELD_LARGE: modifiers := {-12,0,0,-12,0}; break;
+		SHIELD_TOWER: modifiers := {-16,0,0,-24,0}; break;
 
-		default: penalties := {0,0,0,0,0}; break;
+		default: modifiers := {0,0,0,0,0}; break;
 	endcase
 
 	return dictionary{
-		DEXTERITY -> AttributeModifier(DEXTERITY, penalties[1]),
-		SNEAK -> AttributeModifier(SNEAK, penalties[2]),
-		MECHANICS -> AttributeModifier(MECHANICS, penalties[3]),
-		MAGERY -> AttributeModifier(MAGERY, penalties[4]),
-		AWARENESS -> AttributeModifier(AWARENESS, penalties[5])
+		DEXTERITY -> AttributeModifier(DEXTERITY, modifiers[1]),
+		SNEAK -> AttributeModifier(SNEAK, modifiers[2]),
+		MECHANICS -> AttributeModifier(MECHANICS, modifiers[3]),
+		MAGERY -> AttributeModifier(MAGERY, modifiers[4]),
+		AWARENESS -> AttributeModifier(AWARENESS, modifiers[5])
 	};
 endfunction
 

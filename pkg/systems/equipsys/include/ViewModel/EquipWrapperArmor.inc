@@ -28,18 +28,34 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			this._template.PoisonResist,
 			this._template.EnergyResist
 		);
-		var penaltiesSlot := getPenaltiesBySlot(this._coverage);
-		var penaltiesProt := getPenaltiesByProtection(this._tipoProtecao);
-		this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
-		this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
-		this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
-		this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
-		this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
 
+		if (this._prop.Modifiers.size() > 1)
+			foreach modifier in (this._prop.Modifiers.keys())
+				this.AddModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
+			endforeach
+		else
+			var penaltiesSlot := GetModifiersBySlot(this._coverage);
+			var penaltiesProt := GetModifiersByProtection(this._tipoProtecao);
+			this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
+			this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
+			this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
+			this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
+			this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
+		endif
+
 		if (this._prop)
-			this._resistsMod := ArmorResist(); // TODO: Pegar os valores da prop
+			this._resistsMod := ArmorResist(
+				CInt(this._prop.SlashResistMod),
+				CInt(this._prop.PiercingResistMod),
+				CInt(this._prop.BluntResistMod),
+				CInt(this._prop.FireResistMod),
+				CInt(this._prop.ColdResistMod),
+				CInt(this._prop.PoisonResistMod),
+				CInt(this._prop.EnergyResistMod)
+			);
+			
 		else // Caso não tenha prop ou seja um item não existente (template)
 			this._resistsMod := ArmorResist(); // TODO: Não tem mod, é tudo 0
 		endif
@@ -84,11 +100,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._prop.+EnergyResist := this._resists.GetEnergyResist();
 		this._prop.+PoisonResist := this._resists.GetPoisonResist();
 
-		// Penalties
-		this._prop.+Penalties := dictionary{};
-		foreach penalty in (this._penalties)
-			this._prop.Penalties[penalty.GetAttribute()] := penalty.GetValue();
-		endforeach
 
 		this._item.SetProp(PROPNAME, this._prop);
 	endfunction
@@ -117,12 +128,16 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		var prot := SplitWords(this._tipoProtecao);
 		
 		if (Upper(prot[1]) == "ESCUDO") // Se for escudo, peso é o DEX Penalty
-			weight := this._penalties[DEXTERITY].GetValue() ?: 0;
+			weight := -(this._modifiers[DEXTERITY].GetValue()) ?: 0;
 		else // Se não for, é a soma do maior valor de resistência + resistência por slot
 			weight := Max(array{this._resists.GetSlashResist(), this._resists.GetPiercingResist(), this._resists.GetBluntResist()});
 			weight += CInt(getResistPhysicalBySlot(this._coverage));
 		endif
 
 		return weight;
+	endfunction
+
+	function _GetSTRRequired(this)
+		return CInt(this._weight * 7.5);
 	endfunction
 endclass

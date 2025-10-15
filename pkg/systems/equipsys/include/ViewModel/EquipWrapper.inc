@@ -140,7 +140,7 @@ class EquipWrapper(IEquipWrapper)
 
 	function AddModifier(this, modifier) // modifier is of type AttributeModifier
 		if (this._item == error) return this._item; endif
-		this._modifiers[modifier.GetName()] := modifier;
+		this._modifiers[modifier.GetAttribute()] := modifier;
 		return this;
 	endfunction
 
@@ -158,6 +158,12 @@ class EquipWrapper(IEquipWrapper)
 		this._item.weight := this._weight;
 		this._item.maxHP := this._maxHP;
 
+		// Modifiers
+		this._prop.+Modifiers := dictionary{};
+		foreach modifier in (this._modifiers)
+			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
+		endforeach
+
 		return this;
 	endfunction
 
@@ -168,4 +174,7 @@ class EquipWrapper(IEquipWrapper)
 		Weight: {this._weight},
 		MaxHP: {this._maxHP}";
 	endfunction
+
+	uninit function _GetWeight(this);
+	uninit function _GetSTRRequired(this);
 endclass
