@@ -82,7 +82,8 @@ program daynightsystem()
 			ApllyLightLevel();
 			sleepms(transspeed);
 		endfor
-		setregionlightlevel("Umbraeterna", 28);
+		// Umbraeterna stays dark (underdark/dungeons never get daylight)
+	setregionlightlevel("Umbraeterna", darkness);
 
 		sleep(actual_day_period_seconds);
 
@@ -98,7 +99,8 @@ program daynightsystem()
 			ApllyLightLevel();
 			sleepms(transspeed);
 		endfor
-		setregionlightlevel("Umbraeterna", 28);
+		// Umbraeterna stays dark (underdark/dungeons never get daylight)
+	setregionlightlevel("Umbraeterna", darkness);
 		sleep(actual_night_period_seconds);
 
 		advanceDay();
