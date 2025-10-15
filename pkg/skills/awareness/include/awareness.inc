@@ -76,7 +76,20 @@ function ExaminarObjeto(who,targ)
 			if ( SkillCheck(who, AWARENESS, diff) > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
-				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+
+				// Check how many traps the chest has
+				var traps := GetObjProperty(targ, "TrapList");
+				var trap_count := 0;
+				if (traps)
+					trap_count := traps.size();
+				endif
+
+				if (trap_count > 1)
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+				else
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+				endif
+
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
 					PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
