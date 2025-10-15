@@ -29,17 +29,17 @@ include ":commands:possess";
 include ":expbar:expbar";
 include ":achievements:CombatController";
 include ":epicAI:epicai";
-include ":kingdom:conquest";
+// include ":kingdom:conquest";
 // include ":spawnnet:spawnnet";
 // include ":spawnregion:spawn";
 
 program core_npcDeath(params)
 	var corpse := params[1];
 
-	// Check if this is a conquest NPC
-	if (corpse.GetProp("conquest_totem"))
-		CNQST_OnNPCDeath(corpse);
-	endif
+	// // Check if this is a conquest NPC
+	// if (corpse.GetProp("conquest_totem"))
+	// 	CNQST_OnNPCDeath(corpse);
+	// endif
 
 	// Clean up doppelganger equipment and storage (appearance was already restored in candie.src)
 	if (GetObjProperty(corpse, "#doppelganger_transformed"))
