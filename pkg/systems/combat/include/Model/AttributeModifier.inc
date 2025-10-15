@@ -37,7 +37,6 @@ class AttributeModifier(IAttributeModifier)
 	endfunction
 
 	function ApplyOn(this, who)
-		Message("Aplicando modificador: " + this.ToString()).SendSys(who);
 		AP_SetSkillMod(
 			who,
 			this._attribute,
@@ -46,7 +45,6 @@ class AttributeModifier(IAttributeModifier)
 	endfunction
 
 	function RemoveFrom(this, who)
-		Message("Removendo modificador: " + this.ToString()).SendSys(who);
 		AP_SetSkillMod(
 			who,
 			this._attribute,
