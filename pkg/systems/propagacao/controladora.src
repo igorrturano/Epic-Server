@@ -35,15 +35,20 @@ program controladoraPropagacao(esteItemMarcador)
 		while (esteItemMarcador)
 			var event;
 
-			if (esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::DORMENTE))
+			if (esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::DORMENTE))// Condição para adicionar mais descanso se não tiver razão pro marcador estar ativo.
 				Sleepms(esteObjetoMarcador.descansoControleDormente);
 
-				var descanso := (esteObjetoMarcador.descansoControleDormente * propagacaoConfig["sistema"].multiplicadorDescansoDormente
+				var descanso := (
+								esteObjetoMarcador.descansoControleDormente 
+								* propagacaoConfig["sistema"].multiplicadorDescansoDormente
 								/ 1000);
-				event := Wait_For_Event(esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) ? cint(descanso)
+				
+				event := Wait_For_Event(
+										esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) 
+										? cint(descanso)
 										: 0);
 			else
-				Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo)); // descanso minimo	
+				Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo));
 				event := Wait_For_Event(0);
 			endif
 

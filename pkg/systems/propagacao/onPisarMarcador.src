@@ -13,7 +13,7 @@ program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
 	item.EnviaEventoPisado();
 	var propPropagacao := GetObjProperty(item, PROPNAME_PROP_PROPAGACAO);
 	if (propPropagacao)
-		if(item.IsMarcadorTipo() == PROPAGACAO_TIPO::INCENDIO)
+		if(item.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
 			var estado := propPropagacao.lerEstadoAtual;
 			if (estado > ESTADO_PROPAGACAO::DORMENTE)
 				var danoDado := propPropagacao.catalogoDano[cstr(estado)];
@@ -21,7 +21,7 @@ program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
 
 				DamageFLS(quem, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
 			endif
-		elseif(item.IsMarcadorTipo() == PROPAGACAO_TIPO::PATOGENICO)
+		elseif(item.IsMarcadorTipo(PROPAGACAO_TIPO::PATOGENICO))
 			//nada
 		endif
 	endif
