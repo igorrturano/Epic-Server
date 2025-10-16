@@ -160,9 +160,6 @@ class EquipWrapper(IEquipWrapper)
 
 		// Modifiers
 		this._prop.+Modifiers := dictionary{};
-		foreach modifier in (this._modifiers)
-			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
-		endforeach
 
 		return this;
 	endfunction

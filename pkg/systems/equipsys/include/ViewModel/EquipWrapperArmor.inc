@@ -75,24 +75,26 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._prop.+ColdResist := this._resists.GetColdResist();
 		this._prop.+EnergyResist := this._resists.GetEnergyResist();
 		this._prop.+PoisonResist := this._resists.GetPoisonResist();
+		this._AddModifiers();
+		foreach modifier in (this._modifiers)
+			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
+		endforeach
 
 
 		this._item.SetProp(PROPNAME, this._prop);
 	endfunction
 
 	function ToString(this)
-		var str := "";
-		str += $"Armor {EquipWrapper::ToString(this)},
-		Coverage: {this._coverage}, Protection Type: {this._tipoProtecao},
-		SlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()}),
-		PiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()}),
-		BluntResist: {this._resists.GetBluntResist()} (+{this._resistsMod.GetBluntResist()});
+		var str := $"Armor {EquipWrapper::ToString(this)}" +
+		$"\nCoverage: {this._coverage}, Protection Type: {this._tipoProtecao}" +
+		$"\nSlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()})" +
+		$"\nPiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()})" +
+		$"\nBluntResist: {this._resists.GetBluntResist()} (+{this._resistsMod.GetBluntResist()})" +
+		
+		"\n\nModifiers:";
 
-		BluntResist: {this._resists} (+{this._resistsMod})";
-
-		foreach penalty in (this._penalties)
-			str += $",
-			{penalty.GetAttribute()}: {penalty.GetValue()}";
+		foreach modifier in (this._modifiers.values())
+			str += $"\n{modifier.ToString()}, ";
 		endforeach
 
 		return str;
