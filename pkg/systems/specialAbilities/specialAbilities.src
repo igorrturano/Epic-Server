@@ -42,6 +42,8 @@ program specialAbilities(who)
 		LADINO:    return DoRogueAbility(who, final_cooldown);
 		SABIO:     return DoSageAbility(who, chardata, final_cooldown);
 	endcase
+	sleep(final_cooldown);
+	SendSysMessageEx(who, "Sua habilidade especial está pronta para uso novamente.", SSM_INFO);
 
 	return 0;
 endprogram
