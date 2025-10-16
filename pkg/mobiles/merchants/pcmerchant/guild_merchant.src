@@ -10,7 +10,6 @@ include "include/string";
 include "include/sounds";
 include ":combat:damage";
 include ":merchants:crafthelp";
-include ":ghaia:ghaiaUtil";
 include ":gumps:gumps";
 include ":recipes:recipes";
 include ":gumps:gumps_ex";
