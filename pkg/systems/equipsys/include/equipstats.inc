@@ -450,10 +450,10 @@ function addPenaltiesBy(type, stats, armor)
 	
 	case(Upper(type))
 		"SLOT":
-			penalties := getPenaltiesBySlot(armor);
+			penalties := GetModifiersBySlot(armor);
 			break;
 		"PROTECTION":
-			penalties := getPenaltiesByProtection(armor);
+			penalties := GetModifiersByProtection(armor);
 			break;
 	endcase
 
@@ -466,7 +466,7 @@ function addPenaltiesBy(type, stats, armor)
 	return stats;
 endfunction
 
-function getPenaltiesBySlot(armor)
+function GetModifiersBySlot(armor)
 	var penalties := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
@@ -492,7 +492,7 @@ function getPenaltiesBySlot(armor)
 	};
 endfunction
 
-function getPenaltiesByProtection(armor)
+function GetModifiersByProtection(armor)
 	var penalties := array{};
 	case(Upper(armor.getType())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 		//TIER 1

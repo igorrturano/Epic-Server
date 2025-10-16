@@ -8,7 +8,6 @@ include ":attributes:include/attributes";
 include ":brainAI:npcUtil";
 include ":tn:npcutil";
 include ":tn:cooldown";
-include ":ghaia:ghaia";
 include "include/sysEvent";
 include "include/eventID";
 

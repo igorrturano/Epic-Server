@@ -1231,11 +1231,11 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
-    if (skills[Domestic_Work] >= 1)
+    if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInBackpack(who, 0x0f9d, 1); // sewingkit
     endif
 
-    if (skills[Domestic_Work] >= 1 || skills[MEDICINE] >= 1)
+    if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
         CreateItemInBackpack(who, 0xf9e, 1); // Scissors
     endif
     

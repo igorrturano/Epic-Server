@@ -4,6 +4,7 @@ use npc;
 
 include "include/say";
 include ":attributes:attributes";
+include "include/eventID";
 
 program SpellScript(params)
 	var who := params[1];

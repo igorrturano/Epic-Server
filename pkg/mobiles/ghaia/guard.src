@@ -10,18 +10,13 @@ include "include/say";
 include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
-// include ":ghaia:generic";
-include ":ghaia:objective";
-include ":ghaia:ghaiaInit";
-// include ":ghaia:habs";
 include ":faccao:npc";
 include ":combat:combat";
-include ":ghaia:combatevents";
 include ":faccao:faccao";
 include "include/dungeons";
-include "include/ghaia";
 include "include/utils";
 include "include/epicNPCUtils";
+include "include/eventID";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
@@ -258,7 +253,7 @@ program NPCMonitor()
 	SetAnchor(0, 0, 0, 0);
 	while (me)
 		if (GetObjProperty(me, "objloc") != error)
-			DoObjectiveGuard();
+			// DoObjectiveGuard();
 		endif
 
 		if (warning)
@@ -1218,9 +1213,9 @@ function Setup()
          me.trueobjtype := me.objtype+1;
          me.gender := 1;
       endif */
-		SetupColor(me);
-		SetupEquip(me);
-		SetupName(me);
+		// SetupColor(me);
+		// SetupEquip(me);
+		// SetupName(me);
 		SetObjProperty(me, "DaysOfService", polcore().systime);
 		SetObjProperty(me, "started", 1);
 	// SetupSpecials(me);
@@ -1416,9 +1411,9 @@ function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
 
 		if (change_opponent && randomint(6) <= 2)
 			me.setAggro(opponent.serial, -100);
-			if (ChooseHighestOpponent(me, opponent))
-				break;
-			endif
+			// if (ChooseHighestOpponent(me, opponent))
+			// 	break;
+			// endif
 		endif
 
 		if (ev.type == SYSEVENT_DAMAGED)
@@ -1548,7 +1543,7 @@ function CalcPathAndMove(me, byref opponent, sleepdelay)
 					EraseObjProperty(me, "path"); // deleta o path atual
 					me.remAggro(opponent);
 					var old_opponent := opponent;
-					ChooseHighestOpponent(me, opponent);
+					// ChooseHighestOpponent(me, opponent);
 					if (old_opponent == opponent)
 						Flee(opponent, sleepdelay, 1);
 					endif
@@ -1574,12 +1569,21 @@ function procura_em_volta(me)
 		// Do Nothing
 		else
 			if (CheckLineOfSight(me, mobile))
+<<<<<<< HEAD
 				var difficulty := CalculateDHDiff(me, mobile);
 				if (SkillCheck(me, AWARENESS, difficulty) > 0)
 					mobile.hidden := 0;
 					PrintTextAbove(mobile, "*aparece*");
 					SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
 				endif
+=======
+				// var difficulty := CalculateDHDiff(me, mobile);
+				// if (SkillCheck(me, AWARENESS, difficulty) > 0)
+				// 	mobile.hidden := 0;
+				// 	PrintText(mobile, "*aparece*");
+				// 	SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
+				// endif
+>>>>>>> 7905a7bbbbf5055f32e388201f8ab9c951d03734
 			endif
 		endif
 		sleepms(2);

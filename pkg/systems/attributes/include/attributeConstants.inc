@@ -16,9 +16,9 @@ endenum
 enum STATS
 	STRENGTH		:= "Strength",
 	DEXTERITY		:= "Dexterity",
-	INTELLIGENCE		:= "Intelligence",
-	//CONSTITUTION		:= "Constitution",
-	//WISDOM			:= "Wisdom",
+	INTELLIGENCE	:= "Intelligence",
+	//CONSTITUTION	:= "Constitution",
+	//WISDOM		:= "Wisdom",
 	//CHARISMA		:= "Charisma"
 endenum
 
@@ -37,18 +37,18 @@ enum SKILLS
 	TACTICS			:= "Tactics",
 
 	SNEAK			:= "Sneak",
-	PICKPOCKETING		:= "Pickpocketing",
+	PICKPOCKETING	:= "Pickpocketing",
 	AWARENESS		:= "Awareness",
-	MECHANICS	:= "Mechanics",
+	MECHANICS		:= "Mechanics",
 
 	MEDICINE		:= "Medicine",
 	SURVIVAL		:= "Survival",
 
-	METALWORKING		:= "Metal_Working",
+	METALWORKING	:= "Metal_Working",
 	WOODWORKING		:= "Wood_Working",
-	Domestic_Work		:= "Domestic_Work",
+	DOMESTIC_WORK	:= "Domestic_Work",
 	GATHERING		:= "Gathering",
-	HANDLEANIMAL		:= "Handle_Animal",
+	HANDLEANIMAL	:= "Handle_Animal",
 
 	//pros npcs
 	WRESTLING		:= "Wrestling"

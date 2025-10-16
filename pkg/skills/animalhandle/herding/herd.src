@@ -10,6 +10,7 @@ include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
+include "include/eventID";
 
 var cfg := ReadConfigFile(":*:npcdesc");
 const FOLLOW_CMD := 0xA001;

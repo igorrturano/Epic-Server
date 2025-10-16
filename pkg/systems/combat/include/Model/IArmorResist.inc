@@ -18,5 +18,11 @@ class IArmorResist()
 	uninit function GetPoisonResist(this);
 	uninit function GetEnergyResist(this);
 
-	uninit function ToString(this);
+	uninit function SetSlashResist(this);
+	uninit function SetPiercingResist(this);
+	uninit function SetBluntResist(this);
+	uninit function SetFireResist(this);
+	uninit function SetColdResist(this);
+	uninit function SetPoisonResist(this);
+	uninit function SetEnergyResist(this);
 endclass
