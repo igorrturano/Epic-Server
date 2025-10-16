@@ -4,6 +4,7 @@ use util;
 
 include ":propagacao:include/marcadores/marcadorPropagacaoBase";
 include ":propagacao:include/propagacao";
+include ":propagacao:include/afetaMobilePropagacao";
 include ":propagacao:include/combustiveis/combustivelIncendio";
 include ":propagacao:include/combustiveis/impl/combustivelEstaticos";
 include ":propagacao:include/combustiveis/impl/combustivelTerreno";
@@ -58,7 +59,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function Iniciar(this)
-    this.AtualizaComportamentoMarcador();
+    this.AtualizaEstado(this.estado, true);
     this.MarcarAdjacentes();
     if(!this.tileProspectado)
       this.tileProspectado := this.Prospectar();
@@ -150,7 +151,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
         Sleepms(2);
         if(!mobile) continue; endif//Estanhamente tá vindo um unintialized as vezes. maluquice
         isAlvoEncontrado := true;
-        DamageFLS(mobile, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
+        AfetaMobileIncendiado(mobile,this.estado,this.PegaPropPropagacao(),rolagemDano);
       endforeach
     endif
 

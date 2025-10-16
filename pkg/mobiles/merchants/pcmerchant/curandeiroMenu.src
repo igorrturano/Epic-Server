@@ -5,6 +5,7 @@ include ":brainAI:npcCommands";
 include ":gumps:yesNo";
 include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
+include ":medicine:util/diseaseConstants";
 
 program CurandeiroMenu(params)
 	var npc := params[1];
@@ -30,9 +31,9 @@ program CurandeiroMenu(params)
 		return;
 	endif
 
-	if (grade == "Moderado")
+	if (grade == DISEASE_GRADES::MODERATE)
 		grade_valour := 2;
-	elseif (grade == "Grave")
+	elseif (grade == DISEASE_GRADES::SERIOUS)
 		grade_valour := 3;
 	else
 		grade_valour := 1;

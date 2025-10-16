@@ -84,7 +84,7 @@ class PropagacaoEstiloGas( MarcadorPropagacaoBase )
   endfunction
 
   function Iniciar( this )
-    this.AtualizaComportamentoMarcador();
+    this.AtualizaEstado(this.estado, true);
     this.MarcarAdjacentes();
     if ( !this.tileProspectado )
       this.tileProspectado := this.Prospectar();
@@ -200,7 +200,6 @@ class PropagacaoEstiloGas( MarcadorPropagacaoBase )
     if ( this.ciclos >= this.duracaoCiclos )
 
       if ( this._IsUltimaGeracao())
-        Print(" geracao: {} - serial {} - ciclos {} this.duracao  {}".format(this.geracao,this.esteItemMarcador.serial, this.ciclos, this.duracaoCiclos));
         this._AdormecerMarcador();
         return 1;
       elseif(this.ciclos >= this._CalculaCicloMaximo())

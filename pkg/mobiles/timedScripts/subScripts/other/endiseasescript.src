@@ -4,7 +4,7 @@ use vitals;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":medicine:anatomy";
+include ":medicine:disease";
 
 program TimedScript_disease(params)
 	var mobile := params[1];

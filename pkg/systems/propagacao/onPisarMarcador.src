@@ -2,6 +2,7 @@ use uo;
 use util;
 include "/include/epicPropNames";
 include ":propagacao:include/propagacao";
+include ":propagacao:include/afetaMobilePropagacao";
 include ":combat:damage";
 
 program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
@@ -13,16 +14,16 @@ program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
 	item.EnviaEventoPisado();
 	var propPropagacao := GetObjProperty(item, PROPNAME_PROP_PROPAGACAO);
 	if (propPropagacao)
+		var estado := propPropagacao.lerEstadoAtual;
 		if(item.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
-			var estado := propPropagacao.lerEstadoAtual;
 			if (estado > ESTADO_PROPAGACAO::DORMENTE)
-				var danoDado := propPropagacao.catalogoDano[cstr(estado)];
-				var rolagemDano := RandomDiceRoll(danoDado);
-
-				DamageFLS(quem, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
+				AfetaMobileIncendiado(quem,estado,propPropagacao);
 			endif
 		elseif(item.IsMarcadorTipo(PROPAGACAO_TIPO::PATOGENICO))
-			//nada
+			Print("Pisei no patogenico e o estado era + " + estado);
+			if(estado == ESTADO_PROPAGACAO::INTENSO)
+				AfetaMobileInfectado(quem,propPropagacao);
+			endif
 		endif
 	endif
 endprogram

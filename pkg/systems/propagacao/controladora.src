@@ -12,7 +12,7 @@ program controladoraPropagacao(esteItemMarcador)
 	var momentoInicial := ReadMillisecondClock();
 	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 
-	Set_Event_Queue_Size(12);
+	Set_Event_Queue_Size(20);
 
 	var marcadorOrigem := propPropagacao.marcadorOrigem;
 	if (propPropagacao.?esteMarcadorPid)

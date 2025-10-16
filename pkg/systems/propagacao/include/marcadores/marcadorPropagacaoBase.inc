@@ -45,7 +45,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 	  return this.MarcarAdjacentes();
 	endfunction
 
-	function AtualizaEstado(this, estado)
+	function AtualizaEstado(this, estado, forcaAtualizar := false)
 	  var novoEstado := this.GanchoAntesAtualizaEstado(estado);
 	  var valorAntigo := this.estado;
 	  var prop := this.PegaPropPropagacao();
@@ -56,7 +56,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
       SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
 	  this.estado := novoEstado;
 
-	  if(valorAntigo != this.estado)
+	  if(valorAntigo != this.estado || forcaAtualizar)
 	  	this.AtualizaComportamentoMarcador();
 	  endif
 	endfunction

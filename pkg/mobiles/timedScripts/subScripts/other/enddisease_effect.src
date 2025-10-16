@@ -12,6 +12,7 @@ include ":attributes:attributes";
 include "include/imersao"; // This would be the path to your immersion script
 include ":combat:damage";
 include ":medicine:anatomy";
+include ":medicine:util/diseaseConstants";
 
 program disease_effects(params)
 	var mobile := params[1];
@@ -56,15 +57,15 @@ function ScheduleNextDiseaseEffect(subject, disease_grade)
 	var min_minutes, max_minutes;
 
 	case (disease_grade)
-		"Leve":
+		DISEASE_GRADES::LIGHT:
 			min_minutes := 185; // 3 horas ALTERADO PARA TESTES
 			max_minutes := 300; // 5 horas
 			break;
-		"Moderado":
+		DISEASE_GRADES::MODERATE:
 			min_minutes := 60; // 1 hora
 			max_minutes := 180; // 3 horas
 			break;
-		"Grave":
+		DISEASE_GRADES::SERIOUS:
 			min_minutes := 30; // 30 minutos
 			max_minutes := 60; // 1 hora
 			break;
@@ -92,22 +93,22 @@ function DisplaySymptomEffect(mobile, symptom, disease_grade)
 	var damage := 0;
 
 	case (disease_grade)
-		"Leve":     damage := 15; break;
-		"Moderado": damage := 30; break;
-		"Grave":    damage := 45; break;
+		DISEASE_GRADES::LIGHT:     damage := 15; break;
+		DISEASE_GRADES::MODERATE: damage := 30; break;
+		DISEASE_GRADES::SERIOUS:    damage := 45; break;
 		default:    damage := 15;
 	endcase
 
 	case (symptom)
-		"Febre":       DoFeverEffect(mobile, damage); break;
-		"Trombo":      DoThromboEffect(mobile, damage); break;
-		"Pustulas":    DoPustulesEffect(mobile, damage); break;
-		"Laceracao":   DoLacerationEffect(mobile, damage); break;
-		"Prurido":     DoItchingEffect(mobile, damage); break;
-		"Colicas":     DoStomachacheEffect(mobile, damage); break;
-		"Palpitacoes": DoPalpitationsEffect(mobile, damage); break;
-		"Nausea":      DoNauseaEffect(mobile, damage); break;
-		"Cefaleia":    DoHeadacheEffect(mobile, damage); break;
+		DISEASES::FEVER:       DoFeverEffect(mobile, damage); break;
+		DISEASES::THROMBOSIS:      DoThromboEffect(mobile, damage); break;
+		DISEASES::PUSTULES:    DoPustulesEffect(mobile, damage); break;
+		DISEASES::LACERATION:   DoLacerationEffect(mobile, damage); break;
+		DISEASES::ITCHING:     DoItchingEffect(mobile, damage); break;
+		DISEASES::COLIC:     DoStomachacheEffect(mobile, damage); break;
+		DISEASES::PALPITATIONS: DoPalpitationsEffect(mobile, damage); break;
+		DISEASES::NAUSEA:      DoNauseaEffect(mobile, damage); break;
+		DISEASES::HEADACHE:    DoHeadacheEffect(mobile, damage); break;
 		default:       break;
 	endcase
 
