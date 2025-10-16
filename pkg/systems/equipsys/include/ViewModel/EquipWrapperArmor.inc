@@ -16,18 +16,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 		this._coverage := GetConfigStringArray(this._template, "Coverage");
 		this._tipoProtecao := this._template.TipoProtecao ?: error{"errortext" := "The item have no Protection Type!"};
-		var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
-		var slotResists := getResistPhysicalBySlot(this._coverage);
-		this._resists := ArmorResist(
-			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
-			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
-			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
-
-			this._template.FireResist,
-			this._template.ColdResist,
-			this._template.PoisonResist,
-			this._template.EnergyResist
-		);
+		this._resists := this._GetArmorResist();
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
 
@@ -139,5 +128,20 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 
 	function _GetSTRRequired(this)
 		return CInt(this._weight * 7.5);
+	endfunction
+
+	function _GetArmorResist(this)
+		var templateResists := getResistPhysicalByProtection(this._template.tipoProtecao);
+		var slotResists := this._tipoProtecao ? getResistPhysicalBySlot(this._coverage) : ArmorResist();
+
+		return ArmorResist(
+			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
+			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
+			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
+			this._template.FireResist,
+			this._template.ColdResist,
+			this._template.PoisonResist,
+			this._template.EnergyResist
+		);
 	endfunction
 endclass
