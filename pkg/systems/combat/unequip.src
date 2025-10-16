@@ -30,8 +30,6 @@ program unequipweapon(who, item)
 		SetName(who, ori_name);
 	endif
 
-	set_critical(1);
-
 	if (who.npctemplate)
 		return 1;
 	endif
@@ -40,7 +38,7 @@ program unequipweapon(who, item)
 
 	if ("cursed" in (mods.keys()))
 		if (who.dead)
-			RemoveEquipmentMods(who, item);
+			Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
 		endif
 		return 0;
 	endif
@@ -49,7 +47,6 @@ program unequipweapon(who, item)
 		EraseObjProperty(who, "twohanded");
 	endif
 
-	RemoveEquipmentMods(who, item);
+	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
 
-	set_critical(0);
 endprogram
