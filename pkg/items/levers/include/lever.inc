@@ -401,10 +401,6 @@ function changegraphici(item, opts)
   EraseObjProperty(item, "#inuse");
 endfunction
 
-function stobj(who, item)
-
-endfunction
-
 function moveObjects(item, opts)
    SetObjProperty(item, "#inuse", 1);
    Detach();
@@ -654,6 +650,8 @@ function reset(item, force_reset := 0)
    
 	if ( cint(GetObjProperty(item, "level")) > 0 || GetObjProperty(item, "powerword"))
 		item.invisible := 1;
+	elseif (GetObjProperty(item, "nature_event"))
+		CheckNatureEvent(item);
 	endif
 
 	if ( GetObjProperty(item, "HaveTrap") && !ExistTrap(item))
@@ -717,4 +715,19 @@ endforeach
    if (opts.all_levers_order == 2)
       SetRandomOrder(item);
    endif
+endfunction
+
+function CheckNatureEvent(item)
+   var nature_event := GetObjProperty(item, "nature_event");
+   
+   var current_day := GetGlobalProperty("dia");
+   var current_moon := getMoonPhase();
+   var current_season := GetSeasonName(getSeason());
+   
+   var nature_global := {current_day, current_moon, current_season};
+	if (nature_event in nature_global)
+		item.invisible := 0;
+	else
+		item.invisible := 1;
+	endif
 endfunction
