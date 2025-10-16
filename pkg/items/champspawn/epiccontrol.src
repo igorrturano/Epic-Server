@@ -13,10 +13,10 @@ program control(altar)
 	var tries := 0;
 	while (GetObjProperty(altar, "config") == error)
 
-		printtext(altar, "Sem configuracao em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
+		PrintTextAbove(altar, "Sem configuracao em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
 		tries := tries + 1;
 		if (tries > 5)
-			printtext(altar, "Destruindo altar em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
+			PrintTextAbove(altar, "Destruindo altar em " + "x: " + altar.x + " y: " + altar.y + " z: " + altar.z + " realm: " + altar.realm);
 			DestroyItem(altar);
 			return 0;
 		endif
@@ -183,7 +183,7 @@ function getEpicSpawn(altar, level)
 	endif
 
 	if (!spawns)
-		PrintText(altar, "ERRO: " + spawns);
+		PrintTextAbove(altar, "ERRO: " + spawns);
 		return error;
 	endif
 

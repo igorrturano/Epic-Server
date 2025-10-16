@@ -19,7 +19,7 @@ program doubleattack(who)
 		var y := who.y;
 
 		SetCooldown(who, "defesatotal", CInt(AP_GetSkill(who, TACTICS)));
-		PrintText(who, "*defesa total*");
+		PrintTextAbove(who, "*defesa total*");
 		detach();
 		who.evasionchance_mod := who.evasionchance_mod + 25;
 		while (who.connected)

@@ -19,7 +19,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*finta*");
+	PrintTextAbove(attacker, "*finta*");
 
 	// SetObjProperty(defender, "finta", ReadGameclock());
 	SetCooldown(defender, "finta", 20);

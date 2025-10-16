@@ -59,7 +59,7 @@ function ApplyAreaDamage(mobile, rune)
 	endif
 
 	if (damage_message != "")
-		PrintText(mobile, damage_message, 3, 38);
+		PrintTextAbove(mobile, damage_message, 3, 38);
 	endif
 
 	var mensagem := GetObjProperty(rune, "mensagem");

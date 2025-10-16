@@ -21,10 +21,10 @@ program useimage(who, self)
 	if (who.serial != GetObjProperty(self, "crafterserial"))
 		var soundAndEmote := GetSoundAndEmote(who.graphic);
 
-		PrintText(who, "*Observando detalhadamente*");
+		PrintTextAbove(who, "*Observando detalhadamente*");
 		Sleep(2);
 		PlaySoundEffect(who, soundAndEmote[1]);
-		PrintText(who, soundAndEmote[2]);
+		PrintTextAbove(who, soundAndEmote[2]);
 
 		ShowImageGump(who, title, url);
 	else

@@ -51,7 +51,7 @@ program canalizadorDaSangria(player)
 	elseif (GetObjProperty(player, "Infusão Ígnea"))
 		sound := 0x5cb;
 	endif
-	PrintText(player, "*Infundindo poção*");
+	PrintTextAbove(player, "*Infundindo poção*");
 	PlaySoundEffect(player, sound); // hammer
 
 	PlaySoundEffect(player, 0x243);

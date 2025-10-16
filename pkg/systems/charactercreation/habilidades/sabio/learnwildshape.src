@@ -223,7 +223,7 @@ function StudyLoop(who, targ, byref info)
 		return 0;
 	endif
 
-	PrintText(who, "*observando atentamente " + targ.name + "*");
+	PrintTextAbove(who, "*observando atentamente " + targ.name + "*");
 
 	return 1; // Continue studying
 endfunction

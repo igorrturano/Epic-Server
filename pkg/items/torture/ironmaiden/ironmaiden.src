@@ -25,7 +25,7 @@ program UseIronMaiden(who, iron_maiden)
 		set_critical(0);
 
 		iron_maiden.graphic := GRAPHIC_CLOSED;
-		PrintText(iron_maiden, "AHHHHHHHHHHHH!!!!", 3, 32);
+		PrintTextAbove(iron_maiden, "AHHHHHHHHHHHH!!!!", 3, 32);
 		sleep(1);
 
 		iron_maiden.graphic := GRAPHIC_BLOOD1;

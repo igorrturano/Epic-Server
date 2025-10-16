@@ -99,12 +99,12 @@ endprogram
 function LeituraTaro(who, item, grafico1, grafico2, grafico3)
 	var cartasEmbaralhadas := EmbaralharCartas();
 
-	PrintText(item, "*Embaralhando*");
+	PrintTextAbove(item, "*Embaralhando*");
 	PlaySoundEffect(who, 0x248);
 	Sleep(2);
 	item.graphic := grafico1;
 	Sleep(2);
-	PrintText(item, "*Dando as cartas*");
+	PrintTextAbove(item, "*Dando as cartas*");
 	PlaySoundEffect(who, 0x248);
 	Sleep(2);
 	item.graphic := grafico2;
@@ -142,7 +142,7 @@ function EmbaralharCartas()
 endfunction
 
 function FecharBaralho(item, grafico3, grafico2, grafico1)
-	PrintText(item, "*Recolhendo as cartas*");
+	PrintTextAbove(item, "*Recolhendo as cartas*");
 	PlaySoundEffect(item, 0x248);
 	Sleep(2);
 	item.graphic := grafico3;

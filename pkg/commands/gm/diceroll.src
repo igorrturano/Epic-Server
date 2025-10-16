@@ -18,7 +18,7 @@ program diceroll(who, text)
 	// 0x245 msytery3
 	// 0x2E2 dropgem2
 	var roll := RandomDiceRoll(text);
-	PrintText(targ, "*" + text + " = " + roll + "*");
+	PrintTextAbove(targ, "*" + text + " = " + roll + "*");
 	PlaySoundEffect(targ, 738);
 	PlaySoundEffect(targ, 739);
 // 0x503 shaku bad (fail)

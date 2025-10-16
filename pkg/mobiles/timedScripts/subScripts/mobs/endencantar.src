@@ -6,6 +6,6 @@ include ":attributes:attributes";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 
-	PrintText(mobile, "O animal nao te segue mais");
+	PrintTextAbove(mobile, "O animal nao te segue mais");
 	return 1;
 endprogram

@@ -12,7 +12,7 @@ program habilidade(who)
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 5);
 	var duration := theology_bonus;
 
-	PrintText(who, "*Cria terreno consagrado*");
+	PrintTextAbove(who, "*Cria terreno consagrado*");
 	PlayObjectCenteredEffect(who, 0x376A, 1, 32);
 	PlaySoundEffect(who, 0x1F2);
 
@@ -61,7 +61,7 @@ program habilidade(who)
 			foreach mobile in nearby_mobiles
 				if (mobile != who)
 					SetCooldown(mobile, "silence", duration);
-					PrintText(mobile, "*silenciado*");
+					PrintTextAbove(mobile, "*silenciado*");
 				endif
 			endforeach
 			SendSysMessageEx(who, "Você cria um campo de silêncio divino!", SSM_INFO);
@@ -71,7 +71,7 @@ program habilidade(who)
 			PlayStationaryEffect(who.x, who.y, who.z, 0x373A, 10, 20);
 			foreach ally in allies
 				SetCooldown(ally, "balance_restored", duration);
-				PrintText(ally, "*equilibrio restaurado*");
+				PrintTextAbove(ally, "*equilibrio restaurado*");
 				SendSysMessageEx(ally, "Você está protegido contra ataques críticos!", SSM_INFO);
 			endforeach
 			SendSysMessageEx(who, "Você restaura o equilíbrio divino aos aliados!", SSM_INFO);
@@ -81,7 +81,7 @@ program habilidade(who)
 			PlayStationaryEffect(who.x, who.y, who.z, 0x6d67, 10, 20);
 			foreach ally in allies
 				SetCooldown(ally, "mountains_strength", duration);
-				PrintText(ally, "*forca da montanha*");
+				PrintTextAbove(ally, "*forca da montanha*");
 				SendSysMessageEx(ally, "Você sente a força inabalável da montanha!", SSM_INFO);
 			endforeach
 			SendSysMessageEx(who, "Você concede a força da montanha aos aliados!", SSM_INFO);
@@ -92,7 +92,7 @@ program habilidade(who)
 					PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 10, mobile.realm, 0x6e0d, 5, duration * 3,
 											2, 2740);
 					SetCooldown(mobile, "blinded", duration);
-					PrintText(mobile, "*cegado pelo eclipse*");
+					PrintTextAbove(mobile, "*cegado pelo eclipse*");
 					SendSysMessageEx(mobile, "Você foi cegado pelo eclipse divino!", SSM_FAIL);
 				endif
 			endforeach
@@ -104,7 +104,7 @@ program habilidade(who)
 			foreach mob in nearby_mobiles
 				SetCooldown(mob, "true_darkness", duration);
 				SetCooldown(mob, "darkness", duration);
-				PrintText(mob, "*envolvido em trevas*");
+				PrintTextAbove(mob, "*envolvido em trevas*");
 				SendSysMessageEx(mob, "Você é envolvido pelas trevas sagradas!", SSM_INFO);
 			endforeach
 			SendSysMessageEx(who, "Você concede o domínio das sombras aos aliados!", SSM_INFO);

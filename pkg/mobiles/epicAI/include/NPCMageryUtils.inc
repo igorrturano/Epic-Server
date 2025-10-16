@@ -407,7 +407,7 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   PrintText(me, "Casting " + chosen_spell);
+   PrintTextAbove(me, "Casting " + chosen_spell);
    return NPC_CastSpell(me, chosen_spell);
 endfunction
 
@@ -426,7 +426,7 @@ function NPC_CastSpell(me, spellname)
    var params := array{me, spellInfo, 0, targ};
    var script := Start_Script(":spells:cast_spell", params);
    if (script.errortext)
-      PrintText(me, "Error starting spell: " + script.errortext);
+      PrintTextAbove(me, "Error starting spell: " + script.errortext);
       return 0;
    endif
    
@@ -537,7 +537,7 @@ function NPC_CastShamanSpell(me, spellname)
     var params := array{me, spellInfo, 0, targ};
     var script := Start_Script(":spells:cast_spell", params);
     if (script.errortext)
-        PrintText(me, "Error starting shaman spell: " + script.errortext);
+        PrintTextAbove(me, "Error starting shaman spell: " + script.errortext);
         return 0;
     endif
 
@@ -579,7 +579,7 @@ function HumanoidShamanBehavior(me, opponent)
         endif
     endif
 
-    PrintText(me, "Casting " + chosen_spell + " (Shaman)");
+    PrintTextAbove(me, "Casting " + chosen_spell + " (Shaman)");
     return NPC_CastShamanSpell(me, chosen_spell);
 endfunction
 
@@ -717,7 +717,7 @@ function HumanoidPriestBehavior(me, opponent)
         endif
     endif
 
-    PrintText(me, "Casting " + chosen_spell + " (Priest)");
+    PrintTextAbove(me, "Casting " + chosen_spell + " (Priest)");
     return NPC_CastPriestSpell(me, chosen_spell);
 endfunction
 
@@ -814,7 +814,7 @@ function NPC_CastPriestSpell(me, spellname)
     var params := array{me, spellInfo, 0, targ};
     var script := Start_Script(":spells:cast_spell", params);
     if (script.errortext)
-        PrintText(me, "Error starting priest spell: " + script.errortext);
+        PrintTextAbove(me, "Error starting priest spell: " + script.errortext);
         return 0;
     endif
     

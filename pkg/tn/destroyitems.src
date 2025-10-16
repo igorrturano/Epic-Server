@@ -72,6 +72,10 @@ function isPossivelDestruir(quem, itemAlvo, fonteDano, byref consumoStamina)
 endfunction
 
 function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
+	if (quem.isA(POLCLASS_CORPSE))
+		return;
+	endif
+
 	if (fonteDano.ISA(POLCLASS_WEAPON))
 
 		if (quem.concealed || quem.invisible)
@@ -90,7 +94,7 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 
 		var danoCalculado := DanificaItem(quem, itemAlvo, fonteDano);
 		if (!danoCalculado.isEficaz)
-			PrintText(itemAlvo, "*golpe ineficaz*");
+			PrintTextAbove(itemAlvo, "*golpe ineficaz*");
 		endif
 	endif
 endfunction
