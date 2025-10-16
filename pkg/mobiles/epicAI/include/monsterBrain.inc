@@ -117,7 +117,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintText(me, "*"+me.name+" se acovarda*");
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -261,7 +261,7 @@ function MonsterIdle(wanders, is_ranged)
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
      endif
@@ -360,7 +360,7 @@ function handleMonsterInitialReaction(source)
                     Say(responseAI);
                 else
                     Say("Ahhh " + playerRaca + "!!!");
-                    PrintText(me, "*Aterrorizado*");
+                    PrintTextAbove(me, "*Aterrorizado*");
                 endif
                 FleeFrom(source);
                 return 1;

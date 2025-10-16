@@ -16,7 +16,7 @@ program invocarminions(params)
 
 	var minion_template := GetobjProperty(attacker, "minion"); // tem que ser setado no Cprop do npcdesc
 	if (!minion_template)
-		PrintText(attacker, "Nao foi setado minion para esse mob, avise a staff por favor!");
+		PrintTextAbove(attacker, "Nao foi setado minion para esse mob, avise a staff por favor!");
 	endif
 	var minion_template2 := GetobjProperty(attacker, "minion2"); // tb np cprop, é um minion mais forte que surgirá com life menor q a metade do mother
 
@@ -26,7 +26,7 @@ program invocarminions(params)
 		var pet := GetobjProperty(player, "owner");
 		if (player.ip || pet)
 			// if (!CheckLOSAt(attacker, player.x, player.y, player.z))
-			// printtext(attacker, "O Alvo nao esta visivel para voce.");
+			// PrintTextAbove(attacker, "O Alvo nao esta visivel para voce.");
 			// else
 			enemy.append(player.serial);
 			// endif

@@ -25,7 +25,11 @@ use vitals;
 function FatalError(errmsg)
 	set_critical(1);
 	
+<<<<<<< HEAD
 	PrintText(npc, errmsg, _DEFAULT_TEXT_FONT, 32);
+=======
+	PrintTextAbove(npc, errmsg, _DEFAULT_TEXT_FONT, 32);
+>>>>>>> 0541fde230b7b565d5547dcd21d1156243870fe9
 	
 	NPC_ErrorSysLog(npc, errmsg);
 	

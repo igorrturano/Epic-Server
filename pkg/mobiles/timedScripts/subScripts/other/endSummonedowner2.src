@@ -21,7 +21,7 @@ program endSummonedowner(params)
 	if (summon_serial)
 		var summon := SystemFindObjectBySerial(summon_serial);
 		if (summon)
-			PrintText(summon, "*sumindo pouco a pouco*");
+			PrintTextAbove(summon, "*sumindo pouco a pouco*");
 			PlaySoundEffect(summon, SFX_SPELL_MANA_VAMPIRE);
 			PlayStationaryEffect(summon.x, summon.y, summon.z, FX_SMOKE, 0xa, 0xa, 0, summon.realm);
 

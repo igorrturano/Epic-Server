@@ -36,7 +36,7 @@ program SpellScript(params)
 	// Efeito da magia
 	var pentagrama;
 
-	PrintText(who, "*sangrando muito*", 3, 0);
+	PrintTextAbove(who, "*sangrando muito*", 3, 0);
 	pentagrama := CriarPentagrama(who, who);
 	if (pentagrama == "fail")
 		SendSysMessageEx(who, "O pacto falhou", SSM_INFO);
@@ -48,7 +48,7 @@ program SpellScript(params)
 	PlayMovingEffect(who, targ, 14154, 5, 0, 0);
 	sleepms(700);
 
-	PrintText(targ, "*sangrando muito*", 3, 0);
+	PrintTextAbove(targ, "*sangrando muito*", 3, 0);
 	pentagrama := CriarPentagrama(targ, who);
 	if (pentagrama == "fail")
 		SendSysMessageEx(who, "O pacto falhou", SSM_INFO);

@@ -121,7 +121,7 @@ program use_MapmakersPen(who, tool)
 					endif
 				endif
 
-				PrintText(who, "*copiando um livro*");
+				PrintTextAbove(who, "*copiando um livro*");
 				PlaySoundEffect(who, 0x24a);
 				sleep(5);
 
@@ -161,11 +161,11 @@ program use_MapmakersPen(who, tool)
 					else
 						yes := YesNo(who, "Nao entende que esta escrito. Quer apagar o conteudo?");
 						if (yes)
-							PrintText(who, "*Apagando livro*");
+							PrintTextAbove(who, "*Apagando livro*");
 							EraseObjProperty(targ, "lingua");
 							return 0;
 						else
-							PrintText(who, "*fecha livro*");
+							PrintTextAbove(who, "*fecha livro*");
 						endif
 					endif
 				else

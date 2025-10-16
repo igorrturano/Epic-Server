@@ -95,6 +95,9 @@ const ADD_STRUCT_RADIO := 1015;
 var finished := 0;
 var gump_width := 2; // 2 = medium size
 var show_in_hex := 0;
+var navigation_path := array{}; // Tracks the navigation path for nested structures
+var root_thing; // Root object for nested property access
+var root_propname; // Root property name for nested access
 
 //////////
 
@@ -1270,6 +1273,98 @@ function ToggleHex(value, value_type := 0)
 	else
 		return Cstr(value);
 	endif
+endfunction
+
+////////////////////////////////////////////////////////////////////////////////
+// NavigateNestedValue
+// - wrapper to navigate into nested structures (structs within structs, etc)
+// - supports drilling down infinitely into nested arrays/dicts/structs
+//
+function NavigateNestedValue(who, thing, propname, nested_value, nested_key)
+	// Store root for saving changes later
+	if (!root_thing)
+		root_thing := thing;
+		root_propname := propname;
+	endif
+
+	// Add to navigation path
+	navigation_path.append(struct{ "key" := nested_key, "type" := TypeOf(nested_value) });
+
+	// Navigate based on type
+	var value_type := TypeOf(nested_value);
+	case (value_type)
+		"Array":
+			while (DoNestedArrayGump(who, thing, propname, nested_value, nested_key) && !finished)
+				SleepMS(25);
+			endwhile
+		"Dictionary":
+			while (DoNestedDictGump(who, thing, propname, nested_value, nested_key) && !finished)
+				SleepMS(25);
+			endwhile
+		"Struct":
+			while (DoNestedStructGump(who, thing, propname, nested_value, nested_key) && !finished)
+				SleepMS(25);
+			endwhile
+	endcase
+
+	// Pop from navigation path when returning
+	navigation_path.erase(len(navigation_path));
+
+	// Clear root if we're back at top level
+	if (len(navigation_path) == 0)
+		root_thing := 0;
+		root_propname := "";
+	endif
+endfunction
+
+////////////////////////////////////////////////////////////////////////////////
+// GetNavigationBreadcrumb
+// - returns a string showing the current navigation path
+//
+function GetNavigationBreadcrumb()
+	if (len(navigation_path) == 0)
+		return "";
+	endif
+
+	var breadcrumb := "";
+	foreach path_item in navigation_path
+		if (breadcrumb != "")
+			breadcrumb := breadcrumb + " > ";
+		endif
+		breadcrumb := breadcrumb + path_item.key;
+	endforeach
+
+	return breadcrumb;
+endfunction
+
+////////////////////////////////////////////////////////////////////////////////
+// SaveNestedValue
+// - saves a nested value back through the entire navigation path
+//
+function SaveNestedValue(thing, propname, new_value)
+	if (len(navigation_path) == 0)
+		// Direct property, no nesting
+		SetCProp(thing, propname, new_value);
+		return;
+	endif
+
+	// Get the root property
+	var root_val := GetCProp(thing, propname);
+	var current_ref := root_val;
+	var i, path_item;
+
+	// Navigate to the parent of our target
+	for (i := 1; i < len(navigation_path); i += 1)
+		path_item := navigation_path[i];
+		current_ref := current_ref[path_item.key];
+	endfor
+
+	// Set the final value
+	var last_key := navigation_path[len(navigation_path)].key;
+	current_ref[last_key] := new_value;
+
+	// Save the entire root property back
+	SetCProp(thing, propname, root_val);
 endfunction
 
 ////////////////////////////////////////////////////////////////////////////////

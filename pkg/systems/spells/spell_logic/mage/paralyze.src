@@ -33,7 +33,7 @@ program SpellScript(params)
 		return 1;
 	endif
 
-	printText(targ, "*paralisado*");
+	PrintTextAbove(targ, "*paralisado*");
 
 	var duration := CINT(AP_GetSkill(who, ARCANA) / 5);
 

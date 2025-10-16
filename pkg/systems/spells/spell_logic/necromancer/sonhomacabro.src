@@ -32,7 +32,7 @@ program SpellScript(params)
 	Detach();
 	Attach(targ);
 	if (e == error)
-		printtext(who, "sonho " + e);
+		PrintTextAbove(who, "sonho " + e);
 	endif
 
 	handleSilentMagic(who, targ, 0x658);
@@ -45,7 +45,7 @@ program SpellScript(params)
 		PlayObjectCenteredEffect(targ, 0xB8FB, 3, 56);
 		sleep(3);
 	endwhile
-	printtext(targ, "*desperta*");
+	PrintTextAbove(targ, "*desperta*");
 	targ.paralyzed := 0;
 
 	return 1;
