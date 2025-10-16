@@ -22,7 +22,7 @@ program truesight(who)
 			char.concealed := 0;
 
 			var duration := cint(AP_GetSkill(who, THEOLOGY) / 10);
-			PrintText(char, "*revelado*");
+			PrintTextAbove(char, "*revelado*");
 			PlayObjectCenteredEffect(char, 0x6D4B, 10, 20);
 			TS_StartTimer(char, "paralyzePoison", duration);
 			SetObjProperty(char, "truesight", 1);

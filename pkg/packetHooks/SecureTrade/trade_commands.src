@@ -15,7 +15,7 @@ exported function intrade(player, byref packet)
 	if (player.concealed < 1 && character.concealed < 1 && !GetObjProperty(player, "nomsgtrade") &&
 	 !GetObjProperty(character, "nomsgtrade"))
 		if (type == 0x00)
-			PrintText(player, "*" + player.name + " realizando uma troca com " + character.name + "*", 6);
+			PrintTextAbove(player, "*" + player.name + " realizando uma troca com " + character.name + "*", 6);
 		endif
 	endif
 

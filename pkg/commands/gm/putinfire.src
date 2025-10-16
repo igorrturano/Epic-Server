@@ -25,7 +25,7 @@ endprogram
 
 function PutFire(targ)
 
-	PrintText(targ, "*Pegando fogo*");
+	PrintTextAbove(targ, "*Pegando fogo*");
 	var objtype;
 	if (RandomInt(2) == 1)
 		objtype := RandomIntMinMax(14732, 14737);
@@ -42,7 +42,7 @@ function PutFire(targ)
 		Alastrar(fogo);
 		var Itens := ListItemsNearLocation(targ.x, targ.y, targ.z, 1, targ.realm);
 		if (RandomInt(2) == 1)
-			PrintText(targ, "*Objeto foi destruido pelo fogo*");
+			PrintTextAbove(targ, "*Objeto foi destruido pelo fogo*");
 			DestroyItem(targ);
 		else
 			targ.color := 2887;
@@ -85,7 +85,7 @@ function Alastrar(fogo)
 		4: fogo2 := CreateItemAtLocation(fogo.x - 1, fogo.y - 1, fogo.z, objtype, 1, fogo.realm);
 	endcase
 
-	PrintText(fogo2, "*Pegando fogo*");
+	PrintTextAbove(fogo2, "*Pegando fogo*");
 	sleep(80);
 
 	if (fogo2)

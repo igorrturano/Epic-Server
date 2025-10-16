@@ -21,7 +21,7 @@ include "include/say";
 	if(!subject)
 		return 0;
 	elseif(subject.graphic == 0x2006)
-		PrintText(who, "*examinando o corpo*");
+		PrintTextAbove(who, "*examinando o corpo*");
 		if (temHabilidade(who, "Formacao Academica"))
 			if (GetObjProperty(subject, "morto") == 1)
 				SendSysMessageEx(who, "Parece morto para voce.", SSM_INFO);
@@ -57,7 +57,7 @@ include "include/say";
 			return 0;
 		endif
 	elseif(subject.objtype == 0xEFFF)
-		PrintText(who, "*examinando os ossos*");
+		PrintTextAbove(who, "*examinando os ossos*");
 		if (temHabilidade(who, "Formacao Academica"))
 			SendSysMessageEx(who, "Parece inanimado para voce.", SSM_INFO);
 			if( SkillCheck(who, MEDICINE, 50) > 0 )
@@ -110,7 +110,7 @@ include "include/say";
 		strFail := "das caracteristicas fisicas dessa criatura.";
 	endif
 
-	PrintText(who, "*examinando" + strMsg + "*");
+	PrintTextAbove(who, "*examinando" + strMsg + "*");
 	if (!Wait(subject, 2))
 		SendSysMessageEx(who, "O paciente precisa ficar preparado.", SSM_FAIL);
 		return 0;

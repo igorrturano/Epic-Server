@@ -35,7 +35,7 @@ program TimedScript_Clumsy(params)
 endprogram
 
 function Slowdown(who, byref info)
-	printtext(who, "*Lento*");
+	PrintTextAbove(who, "*Lento*");
 	SendSysMessage(who, "Voce se move devagar.");
 
 	info.status := 1;

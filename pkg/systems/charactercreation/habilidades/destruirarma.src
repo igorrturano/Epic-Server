@@ -19,7 +19,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*destroi arma*");
+	PrintTextAbove(attacker, "*destroi arma*");
 
 	TS_StartTimer(defender, "desarmar", 60, 0, attacker);
 	var defweapon := defender.weapon;

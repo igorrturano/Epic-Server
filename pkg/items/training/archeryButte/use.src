@@ -182,7 +182,7 @@ program ArcheryButte(who, butte)
 		else // Acertou o 'butte' (alvo de arqueria)
 			var hit_text := DetermineHit(who, weapon_attrib); // DetermineHit já tem seus próprios logs
 
-			PrintText(butte, hit_text);
+			PrintTextAbove(butte, hit_text);
 
 			var hit_points := AwardPoints(hit_text);
 			var color := 52;
@@ -192,7 +192,7 @@ program ArcheryButte(who, butte)
 				color := 36;
 			endif
 
-			PrintText(butte, "+" + hit_points.points, _DEFAULT_TEXT_FONT, color, JOURNAL_PRINT_NAME);
+			PrintTextAbove(butte, "+" + hit_points.points, _DEFAULT_TEXT_FONT, color, JOURNAL_PRINT_NAME);
 
 			var new_graphic := GetGraphicForHit(hit_text, original_objtype, projectile_type);
 
@@ -229,7 +229,7 @@ program ArcheryButte(who, butte)
 									 		"*Sem sucesso! A flecha se cravou no chão, longe de qualquer área de pontuação.*",
 									 		"*Errou feio, a flecha voou longe!*" };
 		var fail_text := realistic_fail_phrases[RandomInt(realistic_fail_phrases.size()) + 1];
-		PrintText(butte, fail_text);
+		PrintTextAbove(butte, fail_text);
 
 		var fail_points := AwardPoints(fail_text);
 		var fail_color := 36;
@@ -241,9 +241,9 @@ program ArcheryButte(who, butte)
 		endif
 
 		if (fail_points.points == 0)
-			PrintText(butte, "+0", _DEFAULT_TEXT_FONT, 33, JOURNAL_PRINT_NAME);
+			PrintTextAbove(butte, "+0", _DEFAULT_TEXT_FONT, 33, JOURNAL_PRINT_NAME);
 		else
-			PrintText(butte, "+" + fail_points.points, _DEFAULT_TEXT_FONT, fail_color, JOURNAL_PRINT_NAME);
+			PrintTextAbove(butte, "+" + fail_points.points, _DEFAULT_TEXT_FONT, fail_color, JOURNAL_PRINT_NAME);
 
 			if (butte.graphic != original_objtype)
 				butte.graphic := original_objtype;
@@ -313,7 +313,7 @@ function RecoverAmmo(who, butte, original_objtype_param)
 
 	if (butte.graphic != original_objtype_param)
 		butte.graphic := original_objtype_param;
-		PrintText(butte, "*Limpo*");
+		PrintTextAbove(butte, "*Limpo*");
 	endif
 
 	if (recovered_something)

@@ -23,10 +23,10 @@ program renameboat(you, tillerman)
 					if (moedas.objtype == 47715)
 						if (moedas.amount >= cint(dest.cost))
 							if (!SubtractAmount(moedas, cint(dest.cost)))
-								PrintText(tillerman, "Voce nao tem moedas necessarias.");
+								PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
 							endif
 						else
-							PrintText(tillerman, "Voce nao tem moedas necessarias.");
+							PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
 							return;
 						endif
 					else
@@ -34,7 +34,7 @@ program renameboat(you, tillerman)
 					endif
 					SetObjProperty(tillerman, "course", dest.plots);
 					SetObjProperty(tillerman, "nextwaypoint", 1);
-					PrintText(tillerman, "Viagem programada, iremos *partir* quando me ordenar!");
+					PrintTextAbove(tillerman, "Viagem programada, iremos *partir* quando me ordenar!");
 				endif
 			endforeach
 		endif
@@ -42,7 +42,7 @@ program renameboat(you, tillerman)
 	endif
 
 	if ((GetObjProperty(tillerman, "owner") != you.serial) && (you.cmdlevel < 2))
-		// PrintText(tillerman,"Stop that, or I'll throw ye overboard!");
+		// PrintTextAbove(tillerman,"Stop that, or I'll throw ye overboard!");
 		return;
 	endif
 	if (YesNo(you, "Deseja Mudar o Nome do Barco?"))

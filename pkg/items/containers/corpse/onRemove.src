@@ -13,7 +13,7 @@ program onRemove(character, container, item, item_amount, move_type)
 		if (GetObjProperty(character, "maosleves") == 1)
 			EraseObjProperty(character, "maosleves");
 		else
-			PrintText(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41);
+			PrintTextAbove(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41);
 		endif
 	elseif (GetObjProperty(character, "pilotando"))
 		SendSysMessageEx(character, "Você não pode pegar itens enquanto estiver pilotando um golem.",

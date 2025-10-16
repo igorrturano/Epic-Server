@@ -142,7 +142,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintText(me, "*"+me.name+" se acovarda*");
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -263,17 +263,17 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isMage())
-        PrintText(me, "Mage Behavior");
+        PrintTextAbove(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        PrintText(me, "Shaman Behavior");
+        PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
-        PrintText(me, "Priest Behavior");
+        PrintTextAbove(me, "Priest Behavior");
         HumanoidPriestBehavior(me, opponent);
     endif
 
@@ -317,7 +317,7 @@ function HumanoidIdle(wanders, is_ranged)
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif

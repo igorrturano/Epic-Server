@@ -30,7 +30,7 @@ function EncontraGema(who)
 	endwhile
 	SendSysMessageEx(who, "Você achou uma pedra preciosa!", SSM_INFO);
 	CreateItemInBackPack(who, gema, 1);
-	PrintText(who, "*encontra algo reluzente*");
+	PrintTextAbove(who, "*encontra algo reluzente*");
 	SkillCheck(who, GATHERING, -1);
 	return;
 endfunction

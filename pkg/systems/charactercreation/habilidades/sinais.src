@@ -11,9 +11,9 @@ program sinais(who)
 	var tam := len(mensagem);
 
 	if (tam > 25)
-		PrintText(who, "*gesticula bastante*");
+		PrintTextAbove(who, "*gesticula bastante*");
 	elseif (tam > 10)
-		PrintText(who, "*faz alguns gestos*");
+		PrintTextAbove(who, "*faz alguns gestos*");
 	endif
 
 	SendSysMessageEx(who, "Escolha os personagens que irao lhe entender. (Esc para Cancelar)",

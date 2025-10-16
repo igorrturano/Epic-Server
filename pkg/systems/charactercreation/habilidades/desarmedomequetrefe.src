@@ -20,7 +20,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*desarma " + defender.name + "*");
+	PrintTextAbove(attacker, "*desarma " + defender.name + "*");
 
 	var defweapon := defender.weapon;
 	if (defweapon.objtype != 0x1F020)

@@ -368,7 +368,7 @@ function ProcessDoubleClick(ev)
 					SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
 					return;
 				endif
-				PrintText(ev.source, "*remove a mochila de " + me.name + "*");
+				PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
 				me.graphic := GetObjProperty(me, "beforepack");
 				CreateItemInBackpack(ev.source, "backpack");
 				EraseObjProperty(me, "beforepack");
@@ -697,7 +697,7 @@ function dragTo()
 		endif
 
 		if (RandomInt(8) == 1)
-			PrintText(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
+			PrintTextAbove(me, "*arrastando corpo de " + dragging.desc[13, len(dragging.desc) - 12] + "*");
 		endif
 	endif
 
@@ -779,17 +779,17 @@ endfunction
 function catchItem(tobj)
 	if (Accessible(me, tobj))
 		if (!tobj.movable)
-			PrintText(me, "*parece estar preso*");
+			PrintTextAbove(me, "*parece estar preso*");
 			return;
 		endif
 		if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
 			if (tobj.amount == 1)
 				MoveItemToContainer(tobj, mypack);
 			else
-				PrintText(me, "*muitas coisas de uma vez*");
+				PrintTextAbove(me, "*muitas coisas de uma vez*");
 			endif
 		else
-			PrintText(me, "*muito pesado para pegar*");
+			PrintTextAbove(me, "*muito pesado para pegar*");
 		endif
 	endif
 endfunction
@@ -860,11 +860,11 @@ function Deliver(source)
 
 	if (tobj.weight <= CInt(AP_GetStat(me, STRENGTH) / 13))
 		if (tobj.amount > 1)
-			PrintText(me, "*muitas coisas de uma vez*");
+			PrintTextAbove(me, "*muitas coisas de uma vez*");
 			return;
 		endif
 	else
-		PrintText(me, "*muito pesado para pegar*");
+		PrintTextAbove(me, "*muito pesado para pegar*");
 		return;
 	endif
 
@@ -879,14 +879,14 @@ function Deliver(source)
 endfunction
 
 function DeliverItem(tobj, twho)
-	PrintText(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
+	PrintTextAbove(me, "*estende " + tobj.desc + " apontando para " + twho.name + "*");
 	var trade := YesNo(twho, me.name + " está te oferecendo " + tobj.desc + ". Aceita?",
 						"Sim, muito obrigado.", "Não, eu não aceito!");
 	if (trade)
 		MoveItemToContainer(tobj, twho.backpack);
-		PrintText(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
+		PrintTextAbove(twho, "*pega " + tobj.desc + " e coloca na bolsa*");
 	else
-		PrintText(twho, "*nao aceita*");
+		PrintTextAbove(twho, "*nao aceita*");
 	endif
 endfunction
 
@@ -922,7 +922,7 @@ function Drag2(tobj)
 	if (Accessible(me, tobj))
 		// if( tobj.weight > CInt(AP_GetStat(me, STRENGTH)) )
 		if (CInt(AP_GetStat(me, STRENGTH)) < 60)
-			PrintText(me, "*muito pesado para pegar*");
+			PrintTextAbove(me, "*muito pesado para pegar*");
 			drag_loc := 0;
 			return;
 		endif
@@ -995,12 +995,12 @@ function TakeItem(ev)
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 291;
 			DestroyItem(ev.item);
-			PrintText(ev.source, "*prende uma mochila no cavalo*");
+			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
 		elseif (me.npctemplate == ":brainai:Llama")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 292;
 			DestroyItem(ev.item);
-			PrintText(ev.source, "*prende uma mochila na llama*");
+			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
 		endif
 
 		if (IsMountable(me.graphic))
@@ -1023,11 +1023,11 @@ function UnTame()
 
 	var orig_script := GetObjProperty(me, "script");
 	if (!orig_script)
-		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":ai_brain:brain";
 	elseif (orig_script["tamed"])
-		PrintText(me, "*my original script was tamed.src ?!*");
+		PrintTextAbove(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainAI:brain";
 	endif
@@ -1098,7 +1098,7 @@ endfunction
 /////////////////////////////////
 
 function s(texto)
-	PrintText(me, texto);
+	PrintTextAbove(me, texto);
 endfunction
 
 function a(texto)

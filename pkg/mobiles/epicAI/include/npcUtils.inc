@@ -17,7 +17,7 @@ function NPCRotateAttackType(npc)
 endfunction
 
 function NPCRotateAttackTypeTo(npc, type)
-	PrintText(npc, $"*muda postura de ataque para golpe {Lower(type)}*");
+	PrintTextAbove(npc, $"*muda postura de ataque para golpe {Lower(type)}*");
 	setPropNPCAttackType(npc, type);
 endfunction
 

@@ -99,7 +99,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintText(who, "*aparece*");
+				PrintTextAbove(who, "*aparece*");
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -147,7 +147,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintText(who, "*aparece*");
+				PrintTextAbove(who, "*aparece*");
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)

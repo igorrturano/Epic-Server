@@ -8,7 +8,7 @@ program SpecialAttack_Knockdown(combatInfo)
 	var defender := combatInfo.defender;
 	var effectTime := combatInfo.effectTime;
 
-	PrintText(defender, "*Derrubado*");
+	PrintTextAbove(defender, "*Derrubado*");
 	SendSysMessage(attacker, "Você derruba o oponente.");
 	SendSysMessage(defender, "Você foi derrubado temporariamente.");
 
