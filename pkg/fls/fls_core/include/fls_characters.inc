@@ -112,13 +112,18 @@ function ReverseLight(player)
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var darkness := cint(config.darkness);
+	var chardata := GetObjProperty(player, "chardata");
+	var playerRace := "unknown";
+	if (chardata)
+		playerRace := chardata.raca;
+	endif
 
 	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
-		player.setlightlevel(0, 9000); // Dungeons are always bright for drows
+		player.setlightlevel(20, 9000); // Dungeons are moderately lit for drows (20)
 	else
 		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);
-		player.setlightlevel(newlight, 9000); // Reverse surface light
+		player.setlightlevel(newlight, 9000); // Reverse surface light (0-28 becomes 28-0)
 	endif
 endfunction
 
