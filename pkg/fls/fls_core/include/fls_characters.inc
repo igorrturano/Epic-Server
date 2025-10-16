@@ -113,16 +113,13 @@ function ReverseLight(player)
 	config := config["settings"];
 	var darkness := cint(config.darkness);
 
-	var light := cint(getglobalproperty("lightlevel"));
-	if (player.realm == "britannia" && !GetCooldown(player, "lightvision"))
-		player.setlightlevel(20, 9000); // Is in a dungeon
-	elseif(player.x >= 4390 && player.y >= 0 && player.x <= 6100 && player.y <= 4095)
-		player.setlightlevel(20, 9000); // Is in a dungeon
+	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
+		player.setlightlevel(0, 9000); // Dungeons are always bright for drows
 	else
+		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);
-		player.setlightlevel(newlight, 9000);
+		player.setlightlevel(newlight, 9000); // Reverse surface light
 	endif
-
 endfunction
 
 //RETIRADO por estar redundante com methods/char
