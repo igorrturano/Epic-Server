@@ -18,7 +18,7 @@ program newprogram(who)
 
 	var numLobos := 0;
 	var bonusAtk := AP_GetTrueSkill(who, THEOLOGY) / 10;
-	PrintText(who, "*uiva*");
+	PrintTextAbove(who, "*uiva*");
 	PlaySoundEffect(who, 231);
 	PerformAction(who, ANIM_HIT);
 

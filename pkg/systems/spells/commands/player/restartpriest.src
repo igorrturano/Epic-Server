@@ -7,7 +7,7 @@ program Logon(who)
 	var pid := GetProcess(GetObjProperty(who, "#priestpid"));
 	if (pid)
 		pid.kill();
-		PrintText(who, "Pid Killed");
+		PrintTextAbove(who, "Pid Killed");
 	endif
 
 	var magia := GetObjProperty(who, "chardata").magia;

@@ -62,7 +62,7 @@ program erguer(who, param)
 		direcao := CIMA;
 	endif
 
-	PrintText(who, "*Ajustando a altura de " + alvo.name + "*");
+	PrintTextAbove(who, "*Ajustando a altura de " + alvo.name + "*");
 	if (who.cmdlevel)
 		alvo.z := who.z + alturaDesejada;
 		return 1;
@@ -70,10 +70,10 @@ program erguer(who, param)
 
 	while (altura != alturaDesejada)
 		if (direcao == CIMA)
-			PrintText(alvo, "*^*");
+			PrintTextAbove(alvo, "*^*");
 			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z + 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 			if (!Accessible(who, alvo, 1) || !CheckLineOfSight(who, alvo))
-				PrintText(alvo, "*Nao consegue erguer mais que isso*");
+				PrintTextAbove(alvo, "*Nao consegue erguer mais que isso*");
 				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z - 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 				SendSysMessageEx(who, "Parou de ajustar a altura do item.", SSM_FAIL);
 				return 0;
@@ -81,10 +81,10 @@ program erguer(who, param)
 			altura := altura + 1;
 			Sleepms(500);
 		elseif (direcao == BAIXO)
-			PrintText(alvo, "*v*");
+			PrintTextAbove(alvo, "*v*");
 			MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z - 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 			if (!Accessible(who, alvo, 1) || !CheckLineOfSight(who, alvo))
-				PrintText(alvo, "*Nao consegue abaixar mais que isso*");
+				PrintTextAbove(alvo, "*Nao consegue abaixar mais que isso*");
 				MoveObjectToLocation(alvo, alvo.x, alvo.y, alvo.z + 1, alvo.realm, MOVEOBJECT_FORCELOCATION);
 				SendSysMessageEx(who, "Parou de ajustar a altura do item.", SSM_FAIL);
 				return 0;

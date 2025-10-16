@@ -26,11 +26,11 @@ program HitScript(params)
 	if (!CheckResist(defender, VONTADE, RESIST_MEDIUM, -CInt(AP_GetStat(attacker, STRENGTH) / 20)))
 		TS_StartTimer(defender, "dmgreduction", Cint(AP_GetStat(attacker, STRENGTH)), lvl, attacker, 1);
 		PlaySoundEffect(attacker, urro_sound);
-		printText(defender, "*Apavorado*");
+		PrintTextAbove(defender, "*Apavorado*");
 	// SendSysMessageEx(who, "O alvo esta apavorado.", SSM_INFO);3
 	else
 		PlaySoundEffect(attacker, urro_sound);
-		printText(defender, "*O alvo resiste e ignora o rugido*");
+		PrintTextAbove(defender, "*O alvo resiste e ignora o rugido*");
 		return 1;
 	endif
 endprogram

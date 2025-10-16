@@ -73,7 +73,7 @@ program use_FishingPole(who, fishingpole)
 
 	var locinfo := GetMapInfo(targetsquare.x, targetsquare.y, who.realm);
 	if (IsValidFishingSpot(who, targetsquare, locinfo))
-		PrintText(who, "*arremessando a isca*");
+		PrintTextAbove(who, "*arremessando a isca*");
 		SubtractAmount(isca, 1);
 		var px := who.x, py := who.y;
 		PerformAction(who, 0x9);
@@ -145,7 +145,7 @@ program use_FishingPole(who, fishingpole)
 				endif
 
 				SendSysMessageEx(who, "Alguma coisa fisgou a isca!!", SSM_INFO);
-				PrintText(who, "*vara tremendo*");
+				PrintTextAbove(who, "*vara tremendo*");
 
 				var fishcatch := FishFight(who, fishingpole, pretfish, targetsquare, molinete);
 				if (fishcatch != 0)
@@ -156,7 +156,7 @@ program use_FishingPole(who, fishingpole)
 					return 1;
 				endif
 				if (fishcatch == 0)
-					PrintText(who, "*linha estoura*");
+					PrintTextAbove(who, "*linha estoura*");
 					SendSysMessageEx(who, "A linha nao aguentou toda a tensao e o peixe escapou.", SSM_INFO);
 					return 1;
 				endif
@@ -327,7 +327,7 @@ function FishFight(who, fishingpole, pretfish, targetsquare, molinete)
 	while ((distancia > 0) && (tensao < tensaomax))
 		acao := GumpPescaria(who, fishingpole, pretfish, targetsquare, tensao, distancia, tensaomax);
 		if (acao == 1)
-			PrintText(who, "*puxando a linha*");
+			PrintTextAbove(who, "*puxando a linha*");
 			PlaySoundEffect(who, cInt(0x5A5));
 			PerformAction(who, ANIM_ATTACK_2HAND_WIDE);
 			tensao := Cint(tensao + (peso * (RandomInt(2) + 1)) - (GetAttribute(who,
@@ -343,7 +343,7 @@ function FishFight(who, fishingpole, pretfish, targetsquare, molinete)
 			endif
 		endif
 		if (acao == 2)
-			PrintText(who, "*soltando a linha*");
+			PrintTextAbove(who, "*soltando a linha*");
 			PerformAction(who, ANIM_ATTACK_2HAND_JAB);
 			tensao := Cint(tensao - (GetAttribute(who, DEXTERITY) / 10) - (AP_GetSkill(who, SURVIVAL) / 2));
 			distancia := distancia + 1;

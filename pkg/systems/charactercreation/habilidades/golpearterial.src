@@ -18,7 +18,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*golpe arterial*");
+	PrintTextAbove(attacker, "*golpe arterial*");
 
 	start_script(":charactercreation:habilidades/arterialstryke", defender);
 

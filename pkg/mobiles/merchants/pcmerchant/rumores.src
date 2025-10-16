@@ -95,15 +95,15 @@ program MerchantMenu(params)
 			endif
 		else
 			if (cint(rumores[id].custo) != 0)
-				PrintText(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
+				PrintTextAbove(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
 				var moedas := target(player);
 				if (moedas.objtype == 47715)
 					if (moedas.amount >= cint(rumores[id].custo))
 						if (!SubtractAmount(moedas, cint(rumores[id].custo)))
-							PrintText(npc, "Voce nao tem moedas necessarias.");
+							PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
 						endif
 					else
-						PrintText(npc, "Voce nao tem moedas necessarias.");
+						PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
 						return;
 					endif
 				else

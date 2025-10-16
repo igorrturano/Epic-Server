@@ -1022,7 +1022,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
-			PrintText(attacker, "*enfurecido*");
+			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 	endif
 
@@ -1032,7 +1032,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
-			PrintText(attacker, "*enfurecido*");
+			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)

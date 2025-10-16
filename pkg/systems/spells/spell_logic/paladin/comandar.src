@@ -37,7 +37,7 @@ program SpellScript(params)
 	// Visual and sound effects
 	PlaySoundEffect(targ, 0x1FD);
 	PlayObjectCenteredEffect(targ, 0x37B9, 7, 0x10);
-	PrintText(who, "Fuja!", 3); // Font 3, Red color
+	PrintTextAbove(who, "Fuja!", 3); // Font 3, Red color
 
 	// Handle NPCs
 	if (targ.npctemplate)

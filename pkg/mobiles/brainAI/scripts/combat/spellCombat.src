@@ -89,19 +89,19 @@ endfunction
 function SpecialAttack(npc, opponent, byref settings, byref dist)
 
 	if (GetObjProperty(npc, "#medding"))
-		printtext(npc, "medding");
+		PrintTextAbove(npc, "medding");
 		return 0;
 	elseif (CInt(GetObjProperty(npc, "#NextCast")) > ReadGameClock())
-		printtext(npc, "nexcast");
+		PrintTextAbove(npc, "nexcast");
 		return 0;
 	elseif (AP_GetVital(npc, MANA) <= 10)
-		printtext(npc, "low mana");
+		PrintTextAbove(npc, "low mana");
 		return 0;
 	elseif (!CheckLineOfSight(npc, opponent))
-		printtext(npc, "los");
+		PrintTextAbove(npc, "los");
 		return 0;
 	elseif (dist > settings["MaxRange"])
-		printtext(npc, "dist");
+		PrintTextAbove(npc, "dist");
 		return 0;
 	endif
 
@@ -111,11 +111,11 @@ function SpecialAttack(npc, opponent, byref settings, byref dist)
 	cast_spell := SplitWords(cast_spell);
 	var spell_id := 5; // MS_SpellNameToId(cast_spell[1]);
 
-	printtext(npc, "spell: " + cast_spell);
-	printtext(npc, "spell_id: " + spell_id);
+	PrintTextAbove(npc, "spell: " + cast_spell);
+	PrintTextAbove(npc, "spell_id: " + spell_id);
 
 	if (!spell_id)
-		printtext(npc, "no spellid");
+		PrintTextAbove(npc, "no spellid");
 		return 0;
 	// elseif ( RandomInt(100) > CInt(cast_spell[2]) )
 	// 	return 0;
@@ -123,7 +123,7 @@ function SpecialAttack(npc, opponent, byref settings, byref dist)
 
 	var script := Start_Script(":magery:spellStarter", { npc, spell_id, 0, opponent });
 	if (script.errortext)
-		PrintText(npc, script.errortext);
+		PrintTextAbove(npc, script.errortext);
 		return 0;
 	endif
 

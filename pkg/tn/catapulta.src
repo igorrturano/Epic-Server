@@ -30,12 +30,12 @@ program catapulta(who, item)
 			who.frozen := 1;
 			while (cont != 6)
 				if (ori_hp == AP_GetVital(who, HITS))
-					PrintText(item, "*Corda sendo puxada*");
+					PrintTextAbove(item, "*Corda sendo puxada*");
 					PlaySoundEffect(item, SFX_4C);
 					sleep(10);
 					cont += 1;
 				else
-					PrintText(who, "*Solta a corda*");
+					PrintTextAbove(who, "*Solta a corda*");
 					AddAmount(bola, 1);
 					AddAmount(enxofre, 1);
 					who.frozen := 0;
@@ -45,7 +45,7 @@ program catapulta(who, item)
 			who.frozen := 0;
 
 			PlaySoundEffect(item, SFX_4B);
-			PrintText(item, "*Engatilhado*");
+			PrintTextAbove(item, "*Engatilhado*");
 
 			SetObjProperty(item, "engatilhado", 1);
 		else
@@ -57,7 +57,7 @@ program catapulta(who, item)
 		var pos := TargetCoordinates(who);
 
 		if (CheckLosAt(who, pos.x, pos.y, pos.z))
-			PrintText(item, "*Corta a corda da catapulta*");
+			PrintTextAbove(item, "*Corta a corda da catapulta*");
 			PlaySoundEffect(item, SFX_235);
 			sleep(1);
 			SetObjProperty(item, "engatilhado", 0);

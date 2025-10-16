@@ -93,7 +93,7 @@ program infectar(who)
 	UpdateDiseaseProperty(subject, "serial_peste_corpse", corpo_peste.serial);
 	SendSysMessageEx(who, "Você infectou " + subject.name + " com os sintomas selecionados: "
 				  + diseases, SSM_INFO);
-	PrintText(who, "*Infectado*");
+	PrintTextAbove(who, "*Infectado*");
 	return 1;
 endprogram
 

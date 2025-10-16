@@ -95,12 +95,12 @@ program resinaelemental(who)
 					endif
 
 					PlaySoundEffect(who, 0x243);
-					PrintText(who, "*Misturando*");
+					PrintTextAbove(who, "*Misturando*");
 					sleep(2);
-					PrintText(who, "*Misturando*");
+					PrintTextAbove(who, "*Misturando*");
 					sleep(2);
 					PlaySoundEffect(who, 0x243);
-					PrintText(who, "*Misturando*");
+					PrintTextAbove(who, "*Misturando*");
 					sleep(2);
 					CreateItemInBackPack(who, 0x6071, 1);
 					PlaySoundEffect(who, 0x23F);
@@ -193,11 +193,11 @@ program resinaelemental(who)
 					endif
 
 					PlaySoundEffect(who, 0x243);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
 					PlaySoundEffect(who, 0x243);
 					CreateItemInBackPack(who, 0xBD14, 1);
@@ -290,11 +290,11 @@ program resinaelemental(who)
 					endif
 
 					PlaySoundEffect(who, 0x243);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
-					PrintText(who, "*Misturando Reagentes*");
+					PrintTextAbove(who, "*Misturando Reagentes*");
 					sleep(1);
 					PlaySoundEffect(who, 0x243);
 					CreateItemInBackPack(who, 0x6070, 1);

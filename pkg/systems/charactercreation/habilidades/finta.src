@@ -20,7 +20,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*finta*");
+	PrintTextAbove(attacker, "*finta*");
 
 	TS_StartTimer(defender, "finta", cint(AP_GetSkill(attacker, TACTICS)));
 

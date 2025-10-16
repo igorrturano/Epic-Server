@@ -43,7 +43,7 @@ program use_Bedroll(who, bedroll)
 		var nearbypeople := ListMobilesNearLocation(x, y, z, 6);
 		foreach char in (nearbypeople)
 			if (char.warmode)
-				PrintText(who, "Algo atrapalha o seu descanso.");
+				PrintTextAbove(who, "Algo atrapalha o seu descanso.");
 				return;
 			endif
 		endforeach

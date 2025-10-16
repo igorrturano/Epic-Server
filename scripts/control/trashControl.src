@@ -13,7 +13,7 @@ program trash(item)
 			endif
 		endforeach
 		if (count)
-			PrintText(item, "Destroying items in trash");
+			PrintTextAbove(item, "Destroying items in trash");
 		endif
 		count := 0;
 		sleep(120);
