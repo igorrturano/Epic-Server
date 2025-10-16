@@ -447,7 +447,7 @@ endfunction
 function CheckHab_SempreAlerta(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(defender, "Sempre Alerta"))
 		TS_StartTimer(attacker, "paralysis", 5);
-		PrintTextAbove(defender, "*Sempre Alerta*");
+		PrintText(defender, "*Sempre Alerta*");
 		return 1;
 	endif
 
@@ -509,7 +509,7 @@ function CheckHab_KenNoTatsujin(byref attacker, byref defender, byRef attackInfo
 	
 	if (TemHabilidade(defender, HAB_NAME))
 		if (!defender.shield)
-			PrintTextAbove(defender, $"*{HAB_NAME}*");
+			printtext(defender, $"*{HAB_NAME}*");
 			PlaySoundEffect(defender, 0x51f);
 			defender.attack_once(attacker);
 
@@ -549,7 +549,7 @@ function CheckHab_Trespassar(byref attacker, byref defender, byRef attackInfo :=
 		SetObjProperty(attacker, "#trespassando", 1);
 		var targ := list[RandomInt(list.size())+1 ];
 		if (GetVital(targ, HITS) > 0)
-			PrintTextAbove(attacker, "*trespassar*");
+			PrintText(attacker, "*trespassar*");
 			if (TemHabilidade(attacker, "Trespassar Critico")) // TODO: Criar função essa hab também
 				SetObjProperty(attacker, "#nextcritical", 1);
 			endif
@@ -708,7 +708,7 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo 
 	if (GetCooldown(defender, "contraataque") > 0)
 		if (GetObjProperty(defender, "#contraatacando") == error)
 			SetObjProperty(defender, "#contraatacando", 1);
-			PrintTextAbove(defender, "*contra ataque*");
+			PrintText(defender, "*contra ataque*");
 			//defender.attack_once(attacker);
 			var new_hit_chance := CalculateHitChance(defender, attacker);
 			var new_random := RandomInt(100);
@@ -734,7 +734,7 @@ function CheckHab_DesviarProjetil(byref attacker, byref defender, byRef attackIn
 	if (getObjProperty(defender, "#desviarprojetil"))
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
-			PrintTextAbove(defender, "*esquiva-se*");
+			PrintText(defender, "*esquiva-se*");
 			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
 			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
 			EraseObjProperty(defender, "#desviarprojetil");
@@ -749,7 +749,7 @@ function CheckHab_DesviarDisparos(byref attacker, byref defender, byRef attackIn
 	if (getCooldown(defender, "desviardisparos") > 0)
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
-			PrintTextAbove(defender, "*desvia o disparo*");
+			PrintText(defender, "*desvia o disparo*");
 			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
 			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
 			return 1;
@@ -774,7 +774,7 @@ function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byRef 
 		// if (IsRaging(defender))
 			if (GetObjProperty(defender, "#contraatacando") == error)
 				SetObjProperty(defender, "#contraatacando", 1);
-				PrintTextAbove(defender, "*contra ataque*");
+				PrintText(defender, "*contra ataque*");
 				//defender.attack_once(attacker);
 				var new_hit_chance := CalculateHitChance(defender, attacker);
 				var new_random := RandomInt(100);
@@ -806,12 +806,12 @@ function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo := str
 	// var hitchance := 0;
 	
 	if (Cint(GetObjProperty(defender, "evasao")))
-		PrintTextAbove(defender, "*esquiva-se*");
+		PrintText(defender, "*esquiva-se*");
 		EraseObjProperty(defender, "evasao");
 		if (TemHabilidade(defender, "Esquiva Oportunista"))
 			if (GetObjProperty(defender, "#atacandooportunidade") == error)
 				SetObjProperty(defender, "#atacandooportunidade", 1);
-				PrintTextAbove(defender, "*ataque de oportunidade*");
+				printtext(defender, "*ataque de oportunidade*");
 				
 				// TODO: Testar para ver se isso não vai explodir o combat:
 					// Possibilidade de erros:
@@ -826,11 +826,11 @@ function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo := str
 
 		return 1;
 	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((attackInfo.dice-attackInfo.hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
-		PrintTextAbove(defender, "*esquiva com jogo de pés*");
+		printtext(defender, "*esquiva com jogo de pés*");
 		if (TemHabilidade(defender, "Esquiva Oportunista"))
 			if (GetObjProperty(defender, "#atacandooportunidade") == error)
 				SetObjProperty(defender, "#atacandooportunidade", 1);
-				PrintTextAbove(defender, "*ataque de oportunidade*");
+				printtext(defender, "*ataque de oportunidade*");
 				// Mesma coisa de lá de cima
 				defender.attack_once(attacker);
 				EraseObjProperty(defender, "#atacandooportunidade");
@@ -854,7 +854,7 @@ endfunction
 
 function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
-		PrintTextAbove(attacker, "*ataque infalivel*");
+		printtext(attacker, "*ataque infalivel*");
 		var armor := GetArmorToHit(defender);
 		var dmg := CalculateRawDamage(attacker, attacker.weapon)*0.33;
 		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});
@@ -868,7 +868,7 @@ endfunction
 
 function CheckHab_MestreDuelista(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "mestreduelista") > 0)
-		PrintTextAbove(attacker, "*mestre duelista*");
+		printtext(attacker, "*mestre duelista*");
 		var armor := GetArmorToHit(defender);
 		var dmg := CalculateRawDamage(attacker, attacker.weapon);
 		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});

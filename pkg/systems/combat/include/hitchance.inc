@@ -255,7 +255,7 @@ function CalculateHitChance(attacker, defender)
     var ranged_weapons := array{ 0x13B2, 0xe137, 0x26CC, 0xe139, 0x2d2b, 0x2d2a, 0x27A5, 0x0f4f, 0x13fd };
 
     if (GetCooldown(defender, "Desviar Disparos") > 0 && attacker_weapon in ranged_weapons)
-        PrintTextAbove(defender, "*desviar disparos*");
+        printtext(defender, "*desviar disparos*");
         return 0.0;
     endif
 
@@ -293,7 +293,7 @@ function CalculateHitChance(attacker, defender)
 			def := def.serial;
 			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
 				hit_chance += 50;
-				PrintTextAbove(attacker, "*ataque inesperado*");
+				printtext(attacker, "*ataque inesperado*");
 			endif
 		endif
 		EraseObjPRoperty(attacker, "#ataqueinesperado");

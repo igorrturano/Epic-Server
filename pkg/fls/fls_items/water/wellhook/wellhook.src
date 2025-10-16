@@ -40,7 +40,7 @@ program FillBucket(who, hook)
 	bucket := bucket.FillBucket(FRESH_WATER_BUCKET);
 	sleepms(800);
 	if (!bucket)
-		PrintTextAbove(hook, "I lost the bucket!");
+		PrintText(hook, "I lost the bucket!");
 	endif
 	RemoveHookFromWell(hook, bucket);
 	if (Distance(bucket, who) <= 1)

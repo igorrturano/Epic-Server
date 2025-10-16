@@ -18,13 +18,13 @@ function StartScript(mobile, attacker := 0, level := 0)
 		PerformAction(mobile, 0x14, 5, 1, ACTION_DIR_FORWARD, 0, 1);
 		sleepms(850);
 		PlayHurtSound(mobile);
-		PrintTextAbove(mobile, "*cai no chão*", SSM_FAIL);
+		PrintText(mobile, "*cai no chão*", SSM_FAIL);
 		PerformAction(mobile, 0x03, 5, 1, ACTION_DIR_FORWARD, 0, 4);
 	else
 		PerformAction(mobile, 0x14, 5, 1, ACTION_DIR_FORWARD, 0, 1);
 		sleepms(850);
 		PlayHurtSound(mobile);
-		PrintTextAbove(mobile, "*cai no chão*", SSM_FAIL);
+		PrintText(mobile, "*cai no chão*", SSM_FAIL);
 		PerformAction(mobile, 0x15, 5, 1, ACTION_DIR_FORWARD, 0, 4);
 	endif
 

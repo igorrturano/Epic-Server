@@ -378,7 +378,7 @@ function SetBoss(npc, boss)
             SetObjProperty(npc, "HitScripts", hit_scripts);
          elseif (spec.name == "Special AI")
             npc.script := spec.ai;
-      //      PrintTextAbove(npc, " " + spec.ai);
+      //      printtext(npc, " " + spec.ai);
             restartscript(npc);
          endif
          sleepms(2);

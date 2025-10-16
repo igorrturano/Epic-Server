@@ -53,7 +53,7 @@ program espirito(spirit)
 endprogram
 
 function KillSpirit(spirit)
-	PrintTextAbove(spirit, "*sumindo pouco a pouco*");
+	PrintText(spirit, "*sumindo pouco a pouco*");
 	PlaySoundEffect(spirit, SFX_SPELL_MANA_VAMPIRE);
 	PlayStationaryEffect(spirit.x, spirit.y, spirit.z, FX_SMOKE, 0xa, 0xa, 0, spirit.realm);
 

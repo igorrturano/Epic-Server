@@ -90,13 +90,13 @@ program eat_food(who, food)
 	endif
 
 	if (subtract)
-		PrintTextAbove(who, "*morde um pedaço de comida*");
+		printtext(who, "*morde um pedaço de comida*");
 		if (surprisemsg != "")
 			SendSysMessageEx(who, "" + surprisemsg, SSM_INFO);
 		endif
 
 		if (surpriseabove)
-			PrintTextAbove(who, "" + surpriseabove);
+			printtext(who, "" + surpriseabove);
 		endif
 
 		hungerlvl := hungerlvl - foodvalue * 60;

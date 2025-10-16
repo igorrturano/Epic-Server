@@ -47,7 +47,7 @@ endprogram
 function CarveItems(who, tool, item)
 	if (item.IsA(POLCLASS_CORPSE)) // Escalpela e esquarteja corpo
 		if (item.graphic == 0x10DA) // Escalpela
-			PrintTextAbove(item, "*Liberta o corpo das teias*");
+			PrintText(item, "*Liberta o corpo das teias*");
 			SetObjProperty(item, "freed_from_web", 1);
 		else
 			return start_script(":survival:skinning", { who, item, tool });
@@ -218,7 +218,7 @@ function FazPergaminhoEmBranco(who, item)
 
 		var xInicial := who.x;
 		var yInicial := who.y;
-		PrintTextAbove(who, "*cortando couro*");
+		PrintText(who, "*cortando couro*");
 
 		while (item)
 			if (who.x != xInicial || who.y != yInicial)
@@ -274,7 +274,7 @@ function CarveMobiles(who, tool, mobile)
 			return 1;
 		endif
 	elseif (GetObjProperty(mobile, "corda")) // Desamarra alguem
-		PrintTextAbove(who, "*" + mobile.name + " foi solto da corda*");
+		PrintText(who, "*" + mobile.name + " foi solto da corda*");
 		EraseObjProperty(mobile, "corda");
 		mobile.frozen := 0;
 		return 1;

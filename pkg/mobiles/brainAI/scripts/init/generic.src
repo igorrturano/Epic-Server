@@ -20,7 +20,7 @@ program BrainCriticalScript(params)
 	NPC_SetupRandomEquipment(npc);
 
 	var hair := GetEquipmentByLayer(npc, LAYER_HAIR);
-	// PrintTextAbove(npc, " " + hair);
+	// printtext(npc, " " + hair);
 	if (hair)
 		var colors := { 52, 55, 150, 153, 340, 348, 442, 447, 542, 550, 902, 922 };
 		hair.color := colors[RandomInt(12) + 1];

@@ -799,10 +799,10 @@ function CreateBoss( boss, x, y, z, realm )
 	endif
   endif
 
-  // PrintTextAbove(npc, " " + boss.special);
+  // printtext(npc, " " + boss.special);
   if ( boss.special )
 	foreach spec in ( boss.special )
-	  // PrintTextAbove(npc,  " " + spec.name);
+	  // printtext(npc,  " " + spec.name);
 	  if ( spec.name == "Ice Hit" )
 		var hit_scripts := GetObjProperty( npc, "HitScripts" );
 		if ( !hit_scripts )
@@ -843,7 +843,7 @@ function CreateBoss( boss, x, y, z, realm )
 		SetObjProperty( npc, "HitScripts", hit_scripts );
 	  elseif ( spec.name == "Special AI" )
 		npc.script := spec.ai;
-		// PrintTextAbove(npc,  " " + spec.ai);
+		// printtext(npc,  " " + spec.ai);
 		restartscript( npc );
 	  endif
 	endforeach

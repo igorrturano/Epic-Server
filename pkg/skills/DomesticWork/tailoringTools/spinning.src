@@ -30,7 +30,7 @@ program use_wool(who, wool)
 	endif
 	var obj := use_on.objtype;
 	if (((obj >= uobj_wheel_start) && (obj <= uobj_wheel_end)) || ((obj >= 0x10a4) && (obj <= 0x10a6)))
-		PrintTextAbove(who, "*comecou a fiar algo*");
+		PrintText(who, "*comecou a fiar algo*");
 		var gfx;
 		case (obj)
 			4117: gfx := 0x1016;

@@ -21,7 +21,7 @@ program OnRemove(who, container, item, item_amount, movetype)
 	if (is_donation)
 		// Registrar a remoção de recursos
 		if (!(who.concealed || who.hidden))
-			PrintTextAbove(who, "*Removeu " + item.desc + " do " + container.desc + "*", 6);
+			PrintText(who, "*Removeu " + item.desc + " do " + container.desc + "*", 6);
 		endif
 
 		// Atualizar contadores de recursos após a remoção

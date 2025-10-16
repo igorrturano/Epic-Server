@@ -9,7 +9,7 @@ program habilidade(who)
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 5);
 	var diaounoite := GetGlobalProperty("dia");
 
-	PrintTextAbove(who, "*Conecta com energia divina*");
+	PrintText(who, "*Conecta com energia divina*");
 	PlayObjectCenteredEffect(who, 0x376A, 1, 32);
 
 	case (religiao)
@@ -39,7 +39,7 @@ program habilidade(who)
 			// Use barreira de escudos ability
 			start_script(":charactercreation:habilidades/barreiradeescudos", who);
 			SendSysMessageEx(who, "Você canaliza a proteção divina!", SSM_INFO);
-			PrintTextAbove(who, "*Parede de Escudos*");
+			PrintText(who, "*Parede de Escudos*");
 
 		HALLEUAD:
 			var skill := TACTICS;

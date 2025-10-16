@@ -179,15 +179,15 @@ program core_npcDeath(params)
 				EraseObjProperty(who, "golem_maker");
 				EraseObjProperty(who, "pilotando");
 				who.concealed := 0;
-				PrintTextAbove(corpse, "*EJETAR*");
+				printtext(corpse, "*EJETAR*");
 				sleep(1);
 				PushBackEX(who, 3, 300);
-				PrintTextAbove(corpse, "*Iniciar auto destruição*");
+				printtext(corpse, "*Iniciar auto destruição*");
 
 				var i := 1;
 				while (i <= 3)
 					sleep(1);
-					PrintTextAbove(corpse, Cstr(i));
+					printtext(corpse, Cstr(i));
 					i++;
 				endwhile
 
@@ -227,11 +227,11 @@ program core_npcDeath(params)
 	endif
 
 	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
-		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
+		// printtext(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
-			// 	PrintTextAbove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
+			// 	printtext(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
 			if (cint(GetObjProperty(mob, "#satisfacaosadica")) > readgameclock())
-				// 		PrintTextAbove(corpse, "ta no time ");
+				// 		printtext(corpse, "ta no time ");
 				// 		var souls := Cint(getobjProperty(mob, "souls"));
 				// 		souls := souls + 1;
 				// 		SetobjProperty(mob, "souls", souls);
@@ -294,7 +294,7 @@ program core_npcDeath(params)
 		var speech := GetConfigStringArray(npc_cfg, "diespeech");
 		if (speech && speech.size() > 0)
 			if (RandomInt(100) < 30) // sempre 30% de chance de falar
-				PrintTextAbove(corpse, speech[RandomInt(speech.size() + 1)]);
+				printtext(corpse, speech[RandomInt(speech.size() + 1)]);
 			endif
 		endif
 	endif
@@ -304,20 +304,20 @@ program core_npcDeath(params)
 	if (spawnpoint_serial && !spawnpoint_serial.errortext)
 		spawnpoint := SystemFindObjectBySerial(spawnpoint_serial);
 	endif
-	// PrintTextAbove(corpse, "spawnpoint " + spawnpoint);
+	// printtext(corpse, "spawnpoint " + spawnpoint);
 	if (GetObjProperty(corpse, "spawnkill") == error)
 		if (spawnpoint)
 			if (GetObjProperty(spawnpoint, "unique") == 1)
 				var boss := GetObjProperty(spawnpoint, "uniquestat");
 				if (boss.deathevent)
 					foreach nevent in (boss.deathevent)
-						// 	PrintTextAbove(corpse, " " + nevent.type);
+						// 	printtext(corpse, " " + nevent.type);
 						if ((nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) &&
 		  (cint(nevent.z) == 6))
 							nevent.x := corpse.x;
 							nevent.y := corpse.y;
 							nevent.z := corpse.z;
-						// PrintTextAbove(corpse, "mudei o evento");
+						// printtext(corpse, "mudei o evento");
 						endif
 						ExecuteEvent(nevent);
 					endforeach
@@ -331,7 +331,7 @@ program core_npcDeath(params)
 			params.Append(npc_cfg);
 			var result := Start_Script("deathscripts/" + death_script, params);
 			if (result.errortext)
-				PrintTextAbove(corpse, "Error::Death Script -" + result.errortext);
+				PrintText(corpse, "Error::Death Script -" + result.errortext);
 				SysLog("Error::Death Script Tmplt:[" + template + "] Desc:[" + corpse.desc + "] Ser:[" + Hex(corpse.serial)
 						+ "] - " + result.errortext);
 			endif
@@ -347,7 +347,7 @@ program core_npcDeath(params)
 	DP_PlayDeathSound(corpse);
 	CPM_DeleteContainers(corpse);
 
-	// PrintTextAbove(corpse, " " + corpse);	
+	// printtext(corpse, " " + corpse);	
 
 	if (corpse)
 		var loot := NoLootCheck(corpse, npc_cfg);
@@ -413,14 +413,14 @@ function NoLootCheck(corpse, npc_cfg)
 	endif
 
 	// No corpse. Don't drop backpack contents.
-	// PrintTextAbove(corpse, "*guardkilling*");
+	// PrintText(corpse, "*guardkilling*");
 	foreach item in (EnumerateItemsInContainer(corpse))
 		if (item.container == corpse)
 			DestroyItem(item);
 		endif
 		sleepms(2);
 	endforeach
-	// PrintTextAbove(corpse, "no loot check");
+	// printtext(corpse, "no loot check");
 	// no loot  nao destroi o corpo, so NoCorpse
 	// DestroyItem(corpse);
 
@@ -441,17 +441,17 @@ function NoCorpseCheck(corpse, npc_cfg)
 	endif
 
 	// No corpse. Place backpack contents where the corpse is.
-	// PrintTextAbove(corpse, "no corpse");
+	// printtext(corpse, "no corpse");
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// if ( item.container == corpse )
 		var itm := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, item.realm,
 										 MOVEOBJECT_FORCELOCATION);
 
 		// endif
-		// PrintTextAbove(corpse, " " + item + " " + itm);
+		// printtext(corpse, " " + item + " " + itm);
 		sleepms(2);
 	endforeach
-	// PrintTextAbove(corpse, "no corpse check");
+	// printtext(corpse, "no corpse check");
 	DestroyItem(corpse);
 
 	return 1;
@@ -485,7 +485,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-			// 	PrintTextAbove(who, "*bate no obstaculo*");
+			// 	PrintText(who, "*bate no obstaculo*");
 			return 0;
 		endif
 		sleepms(delay);

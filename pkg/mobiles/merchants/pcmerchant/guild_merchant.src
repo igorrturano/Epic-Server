@@ -75,14 +75,14 @@ function HandleSeeEvent(npc, player)
 	endif
 
 	PlaySoundEffect(npc, 14);
-	PrintTextAbove(npc, "{}, vendi alguns artigos seu!".format(player.name), SSM_INFO);
+	PrintText(npc, "{}, vendi alguns artigos seu!".format(player.name), SSM_INFO);
 	SetCooldown(npc, "{}_see".format(player.serial), 600);
 endfunction
 
 function HandleItemGiven(npc, player, item)
 	var items_inside := GetSellerAccount(npc, player.serial);
 	if (items_inside.size() >= 5 && !player.cmdlevel)
-		PrintTextAbove(npc, "Desculpe, mas j� estou vendendo muitas mercadorias sua.");
+		PrintText(npc, "Desculpe, mas j� estou vendendo muitas mercadorias sua.");
 		return;
 	endif
 
@@ -105,7 +105,7 @@ function HandleItemGiven(npc, player, item)
 		return;
 	endif
 
-	PrintTextAbove(player, "*vendendo item*");
+	PrintText(player, "*vendendo item*");
 	var result := AddItemToSell(npc, player, item);
 	return result;
 endfunction
@@ -114,8 +114,8 @@ function DoPurchaseCmd(npc, player)
 	var canceled := 0;
 	while (!canceled)
 		if (!player.concealed)
-			PrintTextAbove(player, "O que tem a venda?", SSM_FAIL);
-			PrintTextAbove(npc, array{ "Olhe s� este produto...", "Bem-vindo, vamos ver...",
+			PrintText(player, "O que tem a venda?", SSM_FAIL);
+			PrintText(npc, array{ "Olhe s� este produto...", "Bem-vindo, vamos ver...",
 					  			"Est� procurando algo espec�fico?" }.randomentry(), SSM_INFO);
 		endif
 		var input := SendItemView(npc, player);
@@ -124,7 +124,7 @@ function DoPurchaseCmd(npc, player)
 		elseif (input[0] == 2)
 		elseif (input[0] == 3)
 			if (!player.concealed)
-				PrintTextAbove(npc, "Certo, estou te ouvindo", SSM_INFO);
+				PrintText(npc, "Certo, estou te ouvindo", SSM_INFO);
 			endif
 			SetupMerchant(npc, player);
 		elseif (input[0] > 90000)
@@ -154,7 +154,7 @@ function HandleSpeech(npc, player, text)
 	if (above_merchant)
 		if (text["hist"] && text["vend"])
 			if (!player.concealed)
-				PrintTextAbove(npc, "Aqui esta o histprico de vendas, Sr.");
+				PrintText(npc, "Aqui esta o histprico de vendas, Sr.");
 			endif
 			var historico := GetMerchantLog(npc);
 			historico := "<br> - {}".format("<br> -".join(historico));
@@ -406,19 +406,19 @@ function removeItemMerchant(npc, player, input)
 		endif
 		ItensRevogados.Insert(cost.seller, 1);
 		if (ItensRevogados == error)
-			PrintTextAbove(npc, "Error" + ItensRevogados);
+			Printtext(npc, "Error" + ItensRevogados);
 		else
 			SetObjProperty(npc, "ItensRevogados", itensRevogados);
 		endif
 
 		if (!player.concealed)
-			PrintTextAbove(npc, "Aqui esta o objeto confiscado, avisarei o dono assim que ele aparecer por aqui.");
+			Printtext(npc, "Aqui esta o objeto confiscado, avisarei o dono assim que ele aparecer por aqui.");
 		endif
 	else
 		if (!YesNo(player, "Voc� deseja mesmo pegar este item de volta?"))
 			return;
 		endif
-		PrintTextAbove(npc, "Certo. Aqui esta seu produto.", SSM_INFO);
+		PrintText(npc, "Certo. Aqui esta seu produto.", SSM_INFO);
 	endif
 
 	RemoveItemForSale(npc, input);
@@ -429,7 +429,7 @@ function removeItemMerchant(npc, player, input)
 		if (purchase == error)
 			SendSysMessageEx(player, "Error - Unable to create item! ->" + purchase.errortext);
 		else
-			PrintTextAbove(npc, "Eu n�o fui capaz de colocar o item na sua bolsa. Coloquei aos seus p�s entao.");
+			Printtext(npc, "Eu n�o fui capaz de colocar o item na sua bolsa. Coloquei aos seus p�s entao.");
 		endif
 	endif
 	var return_amt := CInt(cdbl(cost.cost_amt * (selling.amount / cost.lote)) * cdbl(imposto));
@@ -464,7 +464,7 @@ endfunction
 function AddItemToSell(npc, player, item)
 	var items_sold := GetItemsSoldList(npc);
 	if (items_sold.size() >= 45)
-		PrintTextAbove(npc, "Desculpe, n�o posso vender mais coisas no momento. Venha outra hora.");
+		PrintText(npc, "Desculpe, n�o posso vender mais coisas no momento. Venha outra hora.");
 		return 0;
 	endif
 
@@ -505,16 +505,16 @@ function AddItemToSell(npc, player, item)
 		endif
 
 		if (!(itemcategory in item_types))
-			PrintTextAbove(npc, "Desculpe, n�o posso vender este item. Procure uma vendedora de {}".format(itemcategory));
+			PrintText(npc, "Desculpe, n�o posso vender este item. Procure uma vendedora de {}".format(itemcategory));
 			return 0;
 		endif
 	endif
 
 	if (onlyguild && player.guildid != guild.guildid)
-		PrintTextAbove(npc, "Desculpe, n�o posso vender itens para membros fora da {}".format(guild.getProp("name")));
+		PrintText(npc, "Desculpe, n�o posso vender itens para membros fora da {}".format(guild.getProp("name")));
 		return 0;
 	elseif (norace && player.isRace(norace) && player.guildid != guild.guildid)
-		PrintTextAbove(npc, "Desculpe, fui proibido(a) de comercializar com sua ra�a");
+		PrintText(npc, "Desculpe, fui proibido(a) de comercializar com sua ra�a");
 		return 0;
 	endif
 
@@ -642,7 +642,7 @@ function AddItemToSell(npc, player, item)
 							  infinite);
 	if (result != error)
 		if (!player.concealed)
-			PrintTextAbove(npc, "Tudo certo. Colocarei seu item a venda.");
+			PrintText(npc, "Tudo certo. Colocarei seu item a venda.");
 		endif
 		SendSysMessageEx(player, "O item foi adicionado com sucesso.", SSM_FAIL);
 		StoreGumpView(npc, player);
@@ -650,7 +650,7 @@ function AddItemToSell(npc, player, item)
 	endif
 
 	if (!player.concealed)
-		PrintTextAbove(npc, "Me desculpe mas n�o poderei vender isto para voc�, tome seu dinheiro de volta.",
+		PrintText(npc, "Me desculpe mas n�o poderei vender isto para voc�, tome seu dinheiro de volta.",
 				   SSM_FAIL);
 	endif
 	CreateItemInBackpack(player, MOEDAS, total_imposto);

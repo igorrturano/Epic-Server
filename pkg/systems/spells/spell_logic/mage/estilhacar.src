@@ -27,7 +27,7 @@ program SpellScript(params)
 		if (wpn.objtype != 0x1F020)
 			MoveObjectToLocation(wpn, who.x, who.y, who.z, who.realm);
 			DestroyItem(wpn);
-			PrintTextAbove(targ, "*arma quebrou*");
+			PrintText(targ, "*arma quebrou*");
 		endif
 	endif
 

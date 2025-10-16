@@ -81,7 +81,7 @@ program command_invocacoes(who)
 
 					// Mata o summon imediatamente
 					SendSysMessageEx(who, "Voce libertou sua invocacao.", SSM_INFO);
-					PrintTextAbove(pet, "*sumindo pouco a pouco*");
+					PrintText(pet, "*sumindo pouco a pouco*");
 					PlaySoundEffect(pet, SFX_SPELL_MANA_VAMPIRE);
 					PlayStationaryEffect(pet.x, pet.y, pet.z, FX_SMOKE, 0xa, 0xa, 0, pet.realm);
 					SetObjProperty(pet, "GuardKill", 1);

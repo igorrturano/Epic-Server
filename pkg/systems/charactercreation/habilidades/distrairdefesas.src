@@ -13,7 +13,7 @@ program ataque(who)
 		return;
 	endif
 
-	PrintTextAbove(targ, "*baixou a guarda*");
+	PrintText(targ, "*baixou a guarda*");
 	SetCooldown(targ, "parrydelay", 60);
 
 endprogram

@@ -407,7 +407,7 @@ function ProccessHab(who, txt)
 	if (GetObjProperty(who, "#mimico"))
 		mimic := SystemFindObjectBySerial(GetObjProperty(who, "#mimico"));
 		if (mimic && (Distance(mimic, who) < 12))
-			PrintTextAbove(mimic, "*copia a habilidade " + hab);
+			PrintText(mimic, "*copia a habilidade " + hab);
 		endif
 		EraseObjProperty(who, "#mimico");
 	endif

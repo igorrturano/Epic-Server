@@ -10,7 +10,7 @@ include ":mounts:mounts";
 program endSummoned(params)
 	var mobile := params[1];
 
-	PrintTextAbove(mobile, "*sumindo pouco a pouco*");
+	PrintText(mobile, "*sumindo pouco a pouco*");
 
 	// Limpa montaria do Dread Lord se necessário
 	if (getObjProperty(mobile, "owner"))

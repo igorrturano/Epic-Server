@@ -45,7 +45,7 @@ program aurafe(paladin)
 
 	case (input)
 		1: // Formacao
-			PrintTextAbove(paladin, "*ordena formacao*");
+			PrintText(paladin, "*ordena formacao*");
 			foreach member in (festa.members)
 				if (member.serial != paladin.serial)
 					if (Distance(paladin, member) < range)
@@ -75,7 +75,7 @@ program aurafe(paladin)
 			break;
 
 		2: // Ate o fim
-			PrintTextAbove(paladin, "*ordena resiliencia*");
+			PrintText(paladin, "*ordena resiliencia*");
 			foreach member in (festa.members)
 				if (member.serial != paladin.serial)
 					if (Distance(paladin, member) < range)
@@ -94,7 +94,7 @@ program aurafe(paladin)
 			break;
 
 		3: // Pela Gloria
-			PrintTextAbove(paladin, "*inspira seus aliados*");
+			PrintText(paladin, "*inspira seus aliados*");
 			var duracao := cint(AP_GetSkill(paladin, THEOLOGY) / 2);
 
 			foreach member in (festa.members)

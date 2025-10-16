@@ -108,14 +108,14 @@ function Fight(opponent, alerted := 0)
   var ev;
   var waittime := 0;
 
-//	PrintTextAbove(me, " " + alert_allies);
+//	printtext(me, " " + alert_allies);
   if (!alerted) //se ele ja nao foi alertado por outro aliado
 	if (alert_allies) //se esse npc eh do tipo que alerta
-	//	PrintTextAbove(me, "vou alertar");
+	//	printtext(me, "vou alertar");
 		AlertAllies(me, opponent);
 	endif
  // else
-//	PrintTextAbove(me, "fui alertado, nao vou alertar");
+//	printtext(me, "fui alertado, nao vou alertar");
   endif
 
 /*   var speech := GetConfigStringArray( npccfgfile[mytemplate], "InitCombatSpeech" );
@@ -194,7 +194,7 @@ function Fight(opponent, alerted := 0)
   //   var unique := GetBossStruct(me);
   //   foreach ce in (unique.combatevent)
   //     sleepms(10);
-  //     PrintTextAbove(me, " "  + ce);
+  //     printtext(me, " "  + ce);
   //     if (!TS_GetCooldown(me, ce.name))
   //       var e := Start_Script(":ghaia:special/genericspecial" , array{me, ce});
   //     endif
@@ -237,7 +237,7 @@ function Fight(opponent, alerted := 0)
     checkFlee(opponent);
 
     ev := wait_for_event(waittime);
-//    PrintTextAbove(self(), "event " + ev);
+//    printtext(self(), "event " + ev);
 	if(ev.type != SYSEVENT_SPEECH)
 		case (ev.type)
 			SYSEVENT_DAMAGED:
@@ -464,7 +464,7 @@ function procura_em_volta(me)
                 var difficulty := CalculateDHDiff(me, mobile);
                 if ( SkillCheck(me, AWARENESS, difficulty) > 0 )
                     mobile.hidden := 0;
-                    PrintTextAbove(mobile, "*aparece*");
+                    PrintText(mobile, "*aparece*");
                     SendSysMessageEx(mobile, me.name+" te encontrou!", SSM_FAIL);
                 endif
             endif

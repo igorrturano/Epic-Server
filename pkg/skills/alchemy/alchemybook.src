@@ -103,7 +103,7 @@ function MakePotion(pot, who)
 
 	while (loop < 3)
 		PlaySoundEffect(who, SOUND_EFFECT_GRIND);
-		PrintTextAbove(who, "*preparando um extrato*");
+		PrintText(who, "*preparando um extrato*");
 		sleep(1);
 		loop := loop + 1;
 	endwhile

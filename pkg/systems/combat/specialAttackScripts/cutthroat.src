@@ -4,8 +4,8 @@ program SpecialAttack_Cutthroat(combatInfo)
 	var attacker := combatInfo.attacker;
 	var defender := combatInfo.defender;
 
-	PrintTextAbove(attacker, $"*corta a garganta de {defender.name}*");
-	PrintTextAbove(defender, "*garganta cortada*");
+	PrintText(attacker, $"*corta a garganta de {defender.name}*");
+	PrintText(defender, "*garganta cortada*");
 	PrintTextPrivate(defender, "Voce foi executado!", defender);
 	PrintTextPrivate(defender, "Voce executou seu alvo!", attacker);
 

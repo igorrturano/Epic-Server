@@ -10,7 +10,7 @@ include "include/say";
 
 program doubleattack(who)
 
-	PrintTextAbove(who, "*Emana uma aura de medo*", SSM_INFO);
+	PrintText(who, "*Emana uma aura de medo*", SSM_INFO);
 	case (who.graphic)
 		401:  PlaySoundEffect(who, 0x339);
 		400:  PlaySoundEffect(who, 0x44B);

@@ -35,7 +35,7 @@ program BrainNerve(params)
 
 					var cyclesize := enterarea.size();
 					if (enterarea.size() >= 1)
-						PrintTextAbove(npc, "" + enterarea[RandomIntMinMax(1, cyclesize - 1)]);
+						PrintText(npc, "" + enterarea[RandomIntMinMax(1, cyclesize - 1)]);
 					endif
 					break;
 				default: break;

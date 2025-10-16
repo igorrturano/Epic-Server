@@ -58,7 +58,7 @@ program fonte(who, fountain)
 		DestroyItem(moeda);
 	endif
 
-	PrintTextAbove(fountain, "*" + who.name + " joga " + qtd_escolhida + " moedas na fonte*");
+	PrintText(fountain, "*" + who.name + " joga " + qtd_escolhida + " moedas na fonte*");
 
 	// Abre o gump para fazer o desejo
 	var desejo := ShowDesejoGump(who);

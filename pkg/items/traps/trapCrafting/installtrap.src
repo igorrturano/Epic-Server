@@ -41,7 +41,7 @@ program installtrap(who, trap)
 			SendSysMessageEx(who, "Esta armadilha esta quebrada.", SSM_FAIL);
 			return;
 		endif
-		PrintTextAbove(who, "*instalando armadilha*");
+		PrintText(who, "*instalando armadilha*");
 		sleep(4);
 		var dif := level * 20;
 		var check := SkillCheck(who, MECHANICS, dif);
@@ -53,7 +53,7 @@ program installtrap(who, trap)
 			SendSysMessageEx(who, "Voce falhou em instalar a armadilha", SSM_INFO);
 			return;
 		else
-			PrintTextAbove(who, "*" + who.name + " disparou a armadilha.");
+			PrintText(who, "*" + who.name + " disparou a armadilha.");
 			foreach mobile in ListMobilesNearLocation(alvo.x, alvo.y, alvo.z, level, alvo.realm)
 				// SendSysMessageEx(mobile, "A armadilha disparou!", SSM_FAIL);
 				var trap_list := array;

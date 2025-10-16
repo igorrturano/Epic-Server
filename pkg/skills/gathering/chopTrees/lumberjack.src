@@ -78,7 +78,7 @@ program skill_LumberJack(who, tool)
 		CheckToolWear(who, tool, GATHERING);
 		sleep(1);
 		if (LJ_GetWoodAmount(who.realm, targ.x, targ.y) == 0)
-			PrintTextAbove(who, "*derruba a arvore*");
+			PrintText(who, "*derruba a arvore*");
 			break;
 		endif
 	endwhile

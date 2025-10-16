@@ -11,7 +11,7 @@ include ":tn:cooldown";
 
 program taunt(who)
 
-	PrintTextAbove(who, "*urra*");
+	PrintText(who, "*urra*");
 	case (who.graphic)
 		401:  PlaySoundEffect(who, 0x339);
 		400:  PlaySoundEffect(who, 0x44B);

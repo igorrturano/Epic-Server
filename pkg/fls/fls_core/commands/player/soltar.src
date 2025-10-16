@@ -26,7 +26,7 @@ program soltar(me)
 	endif
 	if (RandomInt(100) < chance)
 		if (RandomInt(100) > GetAttribute(me, "Dexterity"))
-			PrintTextAbove(me, "*consegue se soltar*");
+			PrintText(me, "*consegue se soltar*");
 		else
 			SendSysMessage(me, "Voce conseguiu se soltar discretamente...");
 			var corda := CreateItemInBackpack(me, "rope");
@@ -35,7 +35,7 @@ program soltar(me)
 		EraseObjProperty(me, "corda");
 		me.frozen := 0;
 	elseif (RandomInt(100) > GetAttribute(me, "Dexterity"))
-		PrintTextAbove(me, "*tentando se soltar*");
+		PrintText(me, "*tentando se soltar*");
 	else
 		SendSysMessage(me, "Voce falhou...");
 	endif

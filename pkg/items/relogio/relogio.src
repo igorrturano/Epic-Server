@@ -9,7 +9,7 @@ program dclick(item)
 	// var tempo := GetTimeDesc(ReadGameClock() - getGlobalProperty("halfdaytime"), 1);
 	var tempo := calcularTempo(ReadGameClock() - getGlobalProperty("halfdaytime"));
 	// var minuto := G
-	PrintTextAbove(item, "Sao: {}".format(tempo));
+	PrintText(item, "Sao: {}".format(tempo));
 endprogram
 
 function calcularTempo(byref seconds)

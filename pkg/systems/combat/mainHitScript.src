@@ -789,11 +789,11 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 
 	if (blocker)
 		PerformAction(defender, 13);
-		PrintTextAbove(blocker, "*defende o golpe pelo aliado*");
+		printtext(blocker, "*defende o golpe pelo aliado*");
 		SetCooldown(attacker, "parrydelay", parryDelay * 2);
 	else
 		PerformAction(defender, 13);
-		PrintTextAbove(defender, "*defende o golpe*");
+		PrintText(defender, "*defende o golpe*");
 		SetCooldown(attacker, "parrydelay", parryDelay);
 	endif
 
@@ -852,7 +852,7 @@ function SacarRapido(who, shield := 0)
 			if (Cint(item_cfg[item.objtype].parrybonus) > 0)
 				if (item.container == who.backpack)
 					EquipItem(who, item);
-					PrintTextAbove(who, "*saca um escudo rapidamente*");
+					PrintText(who, "*saca um escudo rapidamente*");
 				endif
 			endif
 		endforeach
@@ -862,7 +862,7 @@ function SacarRapido(who, shield := 0)
 			if (Cint(item.isa(POLCLASS_WEAPON)))
 				if (item.container == who.backpack)
 					EquipItem(who, item);
-					PrintTextAbove(who, "*saca um escudo rapidamente*");
+					PrintText(who, "*saca um escudo rapidamente*");
 				endif
 			endif
 		endforeach

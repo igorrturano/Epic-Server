@@ -12,14 +12,14 @@ program loko(params)
 	var who := params[1];
 	var cdtime := params[2];
 	var cdname := params[3];
-	// PrintTextAbove(who, "loko");
+	// printtext(who, "loko");
 
 	if (IsBloodied(who) && who.opponent) //
 		if (!SystemFindObjectBySerial(GetObjProperty(who, "blood")))
 			TS_StartCooldown(who, cdname, cdtime);
-			PrintTextAbove(who, "*corta a palma da mao com a espada*", _DEFAULT_TEXT_FONT, 1361);
+			PrintText(who, "*corta a palma da mao com a espada*", _DEFAULT_TEXT_FONT, 1361);
 			sleep(1);
-			PrintTextAbove(who, "Espiritos da magia, eu vos invoco", _DEFAULT_TEXT_FONT, 1361);
+			PrintText(who, "Espiritos da magia, eu vos invoco", _DEFAULT_TEXT_FONT, 1361);
 			sleep(2);
 
 			detach();
@@ -33,19 +33,19 @@ program loko(params)
 			var e := PerformAction(blood, 0x0c); // , 5, 1, 1, 0, 200);
 			// blood.concealed := 0;
 
-			// PrintTextAbove(blood,  " " + e);
+			// printtext(blood,  " " + e);
 
 			sleep(3);
 			var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who.opponent };
-			PrintTextAbove(blood, "Sim, meu senhor!", _DEFAULT_TEXT_FONT, 1643);
+			printtext(blood, "Sim, meu senhor!", _DEFAULT_TEXT_FONT, 1643);
 			SendEvent(blood, event);
 			setobjproperty(who, "blood", blood.serial);
 
 		endif
 	else
-		// PrintTextAbove(who, "riairia to bem");
+		// printtext(who, "riairia to bem");
 		if (who.opponent)
-			// 	PrintTextAbove(who, "inimigo");
+			// 	printtext(who, "inimigo");
 			TS_StartCooldown(who, cdname, cdtime / 2);
 			var blood;
 			var randomskulls := RandomInt(10) + 10;
@@ -53,10 +53,10 @@ program loko(params)
 			while (randomskulls > 0)
 				if (randomint(2) == 0)
 					blood := CreateNpcFromTemplate(":brainai:floatingskull", 4854, 2534, 31, 0, who.realm);
-				// PrintTextAbove(who, " "+ blood);
+				// printtext(who, " "+ blood);
 				else
 					blood := CreateNpcFromTemplate(":brainai:floatingskull", 4854, 2534, 31, 0, who.realm);
-				// PrintTextAbove(who, " "+ blood);
+				// printtext(who, " "+ blood);
 				endif
 				randomskulls := randomskulls - 1;
 				sleepms(500);
@@ -65,7 +65,7 @@ program loko(params)
 
 			sleep(1);
 			var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who.opponent };
-			// PrintTextAbove(blood, "Sim, meu senhor!", _DEFAULT_TEXT_FONT, 1643);
+			// printtext(blood, "Sim, meu senhor!", _DEFAULT_TEXT_FONT, 1643);
 			SendEvent(blood, event);
 
 		endif

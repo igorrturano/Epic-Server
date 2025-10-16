@@ -63,5 +63,5 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
 	TS_Starttimer(targ, "lentidao", CINT(AP_GetSkill(caster, ARCANA) / 10));
 
-	PrintTextAbove(targ, "*congelado*");
+	printText(targ, "*congelado*");
 endfunction

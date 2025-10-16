@@ -28,15 +28,15 @@ program HitScript(params)
 	var pet_instinto := Cstr(Getobjproperty(attacker, "Critic"));
 	// print("instinto eh "+pet_instinto);
 	if (pet_instinto == "Bote")
-		PrintTextAbove(attacker, "*Bote*");
+		printText(attacker, "*Bote*");
 		TS_StartTimer(defender, "paralysis", 5);
 	elseif (pet_instinto == "Teia")
 		PlayMovingEffect(attacker, defender, 0x10DD, 10, 1);
-		PrintTextAbove(defender, "*A teia emaranha o alvo*");
+		printText(defender, "*A teia emaranha o alvo*");
 		TS_StartTimer(defender, "paralysis", 5);
 	elseif (pet_instinto == "Coice")
 		attacker.facing := attacker.facing + 2;
-		PrintTextAbove(attacker, "*Coice*");
+		printText(attacker, "*Coice*");
 		PushBack(defender, 3);
 		AP_ConsumeVital(defender, STAMINA, dmg);
 	else
@@ -79,7 +79,7 @@ endprogram
 // 		var finaly := (who.y + y);
 // 		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm );
 // 		if (err == error)
-// 		//	PrintTextAbove(who, "*bate no obstaculo*");
+// 		//	PrintText(who, "*bate no obstaculo*");
 // 			break;
 // 		endif
 // 	endfor

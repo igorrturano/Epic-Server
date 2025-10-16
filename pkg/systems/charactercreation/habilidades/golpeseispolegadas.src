@@ -48,7 +48,7 @@ function golpeseispolegadas(who, dist, delay, attacker)
 		sleepms(delay);
 		if (err == error)
 			damageFLS(who, cint(dmg), DMG_FORCED, attacker);
-			PrintTextAbove(who, "*bate no obstaculo*");
+			PrintText(who, "*bate no obstaculo*");
 			break;
 		endif
 	endfor

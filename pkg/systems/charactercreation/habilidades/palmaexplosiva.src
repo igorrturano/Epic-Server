@@ -24,14 +24,14 @@ program doubleattack(params)
 	start_script(":charactercreation:habilidades/desviardisparos", attacker);
 
 	attacker.frozen := 1;
-	PrintTextAbove(attacker, "*meditando*");
+	PrintText(attacker, "*meditando*");
 	sleep(2);
 	attacker.frozen := 0;
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 	PlaySoundEffect(attacker, 0x50E);
 
-	PrintTextAbove(attacker, "*palma explosiva*");
+	PrintText(attacker, "*palma explosiva*");
 
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);

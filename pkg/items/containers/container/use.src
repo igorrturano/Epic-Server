@@ -26,7 +26,7 @@ program useContainer(mobile, container)
 		return 0;
 	endif
 
-	PrintTextAbove(mobile, "*Abriu " + container.desc + "*");
+	PrintText(mobile, "*Abriu " + container.desc + "*");
 	SendViewContainer(mobile, container);
 
 	if ((item_cfg.OpenGraphic) && (item_cfg.CloseGraphic))
@@ -39,15 +39,15 @@ endprogram
 function ContainerIsLocked(mobile, container)
 	if (!container.locked)
 		// Nothing to worry about.
-		// PrintTextAbove(mobile, "*Abriu "+container.desc+"*");
+		// PrintText(mobile, "*Abriu "+container.desc+"*");
 		return 0;
 	elseif (KP_HasKeyForLock(mobile, container))
 		// SendSysMessage(mobile, "Voce abre o container com a chave.");
-		PrintTextAbove(mobile, "*Usou uma chave em " + container.desc + "*");
+		PrintText(mobile, "*Usou uma chave em " + container.desc + "*");
 		return 0;
 	else
 		// PrintTextPrivate(container, "Isto esta trancado.", mobile);
-		PrintTextAbove(mobile, "Tentou abrir " + container.desc + " mas estava trancado*");
+		PrintText(mobile, "Tentou abrir " + container.desc + " mas estava trancado*");
 		return 1;
 	endif
 endfunction

@@ -41,7 +41,7 @@ program SpellScript(params)
 		var globo;
 		if (!targ.container)
 
-			PrintTextAbove(targ, "*movendo-se*");
+			PrintText(targ, "*movendo-se*");
 
 			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
@@ -86,7 +86,7 @@ program SpellScript(params)
 			globo := CreateNpcFromTemplate(":brainai:cimitarra", who.x, who.y, who.z, 0, who.realm);
 		endif
 
-		PrintTextAbove(globo, "*rodopia no ar*");
+		PrintText(globo, "*rodopia no ar*");
 
 		DestroyItem(targ);
 

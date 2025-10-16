@@ -20,7 +20,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*desmontar*");
+	PrintText(attacker, "*desmontar*");
 
 	TS_StartTimer(defender, "desmontar", cint(AP_GetSkill(attacker, TACTICS)));
 

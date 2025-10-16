@@ -30,7 +30,7 @@ function SkillChecks(attacker, defender, weapon, rawdamage)
 
 	//se a skill do atacante for maior 10 pontos a mais que a do defesor, não upa
 	if (skillAttacker > (skillDefender+10))
-        //PrintTextAbove(attacker, "NAO UPA!");
+        //PrintText(attacker, "NAO UPA!");
 		return 0;
 	endif
 

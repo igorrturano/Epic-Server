@@ -68,15 +68,15 @@ program MerchantMenu(params)
 		SendSysMessageEx(player, "Voce se revelou ao mercador.", SSM_FAIL);
 	endif
 
-	PrintTextAbove(npc, "Meu custo para barba e cabelo sao 100 moedas de cobre.");
+	PrintText(npc, "Meu custo para barba e cabelo sao 100 moedas de cobre.");
 	var moedas := target(player);
 	if (moedas.objtype == 47715)
 		if (moedas.amount >= 100)
 			if (!SubtractAmount(moedas, 100))
-				PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+				PrintText(npc, "Voce nao tem moedas necessarias.");
 			endif
 		else
-			PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+			PrintText(npc, "Voce nao tem moedas necessarias.");
 			return;
 		endif
 	else

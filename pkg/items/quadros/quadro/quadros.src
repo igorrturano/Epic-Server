@@ -41,7 +41,7 @@ program quadros(who, item)
 		var ok := YesNo(who, "Voce deseja continuar pintando?", "Sim.", "Nao, retire a tela e a moldura.");
 		if (!ok)
 			EraseObjProperty(item, "tela_moldura");
-			PrintTextAbove(who, "*retira a tela e a moldura*");
+			PrintText(who, "*retira a tela e a moldura*");
 			CreateItemInBackpack(who, 0x7029, amount := 1);
 			CreateItemInBackpack(who, 4606, amount := 1);
 
@@ -134,7 +134,7 @@ function pintaquadro(who, item)
 			SendSysMessageEx(who, "Voce parou de pintar o quadro.", SSM_FAIL);
 			return 0;
 		endif
-		PrintTextAbove(who, "*pintando um quadro*");
+		PrintText(who, "*pintando um quadro*");
 		Performaction(who, 0x09, 5, 1, ACTION_DIR_FORWARD, 0, 1);
 		PlaySoundEffect(who, 0x501);
 		sleep(5);

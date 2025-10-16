@@ -16,7 +16,7 @@ program TimedScript_Flatulence(params)
 
 		PlaySoundEffect(who, sounds[RandomInt(sounds.size()) + 1]);
 
-		PrintTextAbove(who, "*breaks wind*");
+		PrintText(who, "*breaks wind*");
 
 		foreach mobile in (ListMobilesNearLocationEX(who.x, who.y, who.z, 10,
 													  LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN))

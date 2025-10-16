@@ -136,7 +136,7 @@ class Message()
 			foreach part in (msgSplitted)
 				print("Sending message part...");
 				print("Text: " + part);
-				PrintTextAbove(who, part.textTarget, part.color, part.font);
+				PrintText(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
 			print("Sending async message...");

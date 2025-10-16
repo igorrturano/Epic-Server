@@ -29,7 +29,7 @@ program WhipIt(who, whip)
 	 targ.graphic == 1830 || targ.graphic == 1831 || targ.graphic == 1832 || targ.graphic == 1833 ||
 	 targ.graphic == 1834 || targ.graphic == 1835)
 		PerformAction(targ, 0x0014);
-		PrintTextAbove(who, "*chicoteia " + targ.name + "*");
+		PrintText(who, "*chicoteia " + targ.name + "*");
 	endif
 	PlaySoundEffect(who, 0x23A);
 	sleepms(100);

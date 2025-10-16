@@ -145,7 +145,7 @@ function CheckAllLevers(lever, lever_list, opts)
 
             if (GetObjProperty(item, "status") != "on")
                ChangeLeverStatus(lever.serial);
-               PrintTextAbove(lever, "*desativa*");
+               PrintText(lever, "*desativa*");
                return 0;
             endif
             sleepms(2);
@@ -198,9 +198,9 @@ function normalusage(who, item)
    endif
 
    if (status == "off")
-      PrintTextAbove(who, "*Ativa*");
+      PrintText(who, "*Ativa*");
    else
-      PrintTextAbove(who, "*Desativa*");
+      PrintText(who, "*Desativa*");
 			if ( GetObjProperty(item, "powerword"))
 				item.invisible := 1;
 			endif
@@ -226,7 +226,7 @@ function normalusage(who, item)
          SendSysMessageEx(who, "Você não percebe nada de diferente", SSM_FAIL);
          if (RunTraps(item, who)) //se estiver errado, vai cair no outro runtraps
             SetObjProperty(item, "trapSpoted", 1);
-            PrintTextAbove(who, "*dispara armadilha*"); 
+            PrintText(who, "*dispara armadilha*"); 
          endif
          return;
       endif
@@ -237,7 +237,7 @@ function normalusage(who, item)
    
    if (RunTraps(item, who))
       SetObjProperty(item, "trapSpoted", 1);
-      PrintTextAbove(who, "*dispara armadilha*");
+      PrintText(who, "*dispara armadilha*");
       ChangeLeverStatus(lever_list);
       return;
    endif
@@ -350,7 +350,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-			PrintTextAbove(creature,""+text_above);
+			PrintText(creature,""+text_above);
 			endif
 		else
 			var x := GetObjProperty(item, "x");
@@ -361,7 +361,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-				PrintTextAbove(creature,""+text_above);
+				PrintText(creature,""+text_above);
 			endif
 		endif
  SetObjProperty(item, "champ", creature.serial);

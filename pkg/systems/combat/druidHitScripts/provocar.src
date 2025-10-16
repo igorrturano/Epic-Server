@@ -14,7 +14,7 @@ program taunt(who)
 		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
 	endif
 
-	PrintTextAbove(who, "*urra*");
+	PrintText(who, "*urra*");
 	PlaySoundEffect(who, 96);
 	PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
 	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8);

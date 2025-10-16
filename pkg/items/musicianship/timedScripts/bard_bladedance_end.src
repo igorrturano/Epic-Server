@@ -13,7 +13,7 @@ program TimedScript_bard_bladedance(params)
 		realm := _DEFAULT_REALM;
 	endif
 
-	PrintTextAbove(laminaAnimada, "*A espada para de dancar*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	PrintText(laminaAnimada, "*A espada para de dancar*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 	MoveObjectToLocation(espadaBase, laminaAnimada.x, laminaAnimada.y, laminaAnimada.z + 1, realm,
 					  MOVEITEM_IGNOREMOVABLE | MOVEOBJECT_FORCELOCATION);
 	sleepms(200);

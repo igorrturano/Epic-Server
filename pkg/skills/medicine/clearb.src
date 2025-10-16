@@ -30,13 +30,13 @@ program UseBloodyBandage(mobile, bandage)
 				SubtractAmount(bandage, restoBandage);
 				CreateItemInBackpack(mobile, 0xE21, restoBandage);
 				PlaySoundEffect(mobile, 0x26);
-				PrintTextAbove(mobile, "*lavando bandagem*");
+				PrintText(mobile, "*lavando bandagem*");
 				restoBandage := 0;
 			else
 				SubtractAmount(bandage, 5);
 				CreateItemInBackpack(mobile, 0xE21, 5);
 				PlaySoundEffect(mobile, 0x26);
-				PrintTextAbove(mobile, "*lavando bandagem*");
+				PrintText(mobile, "*lavando bandagem*");
 			endif
 		endwhile
 	else

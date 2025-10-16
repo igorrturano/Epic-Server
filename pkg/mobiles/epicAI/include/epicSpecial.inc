@@ -21,7 +21,7 @@ function StartCharge(attacker, defender)
 
    // Grant speed boost during charge
    SetCooldown(attacker, "charge", 120);
-   PrintTextAbove(attacker, "*inicia carga*");
+   PrintText(attacker, "*inicia carga*");
    TS_StartTimer(attacker, "velocidade", 10);
 
    return 1;
@@ -70,7 +70,7 @@ function SporeSpecial(attacker, defender)
             
             2: // Poison
                 if (!CheckResist(mobile, FORTITUDE, RESIST_HARD))
-                    PrintTextAbove(attacker, "*libera esporos venenosos*");
+                    PrintText(attacker, "*libera esporos venenosos*");
                     var sounds := { 560, 561, 562 };
                     PlaysoundEffect(mobile, sounds[RandomInt(sounds.size())+1]);
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, 0x54f7, 10, 30, 2283);
@@ -79,10 +79,10 @@ function SporeSpecial(attacker, defender)
             
             3: // Blind
                 if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
-                    PrintTextAbove(attacker, "*libera esporos cegantes*");
+                    PrintText(attacker, "*libera esporos cegantes*");
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
                     SetCooldown(mobile, "blinded", 15);
-                    PrintTextAbove(mobile, "*cegueira*");
+                    PrintText(mobile, "*cegueira*");
                     
                     foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
                         DeleteObject(mobile, mob);
@@ -146,7 +146,7 @@ function DoThiefSteal(opponent)
                         EquipItem(me, backpack);
                     endif
                     MoveItemToContainer(item, me.backpack);
-                    PrintTextAbove(me, "*furtou " + item.desc + "*");
+                    PrintText(me, "*furtou " + item.desc + "*");
                 endif
             endif
         else
@@ -189,7 +189,7 @@ function DoThiefSneakAttack(opponent)
 
     // Only attack if still hidden and in position
     if (me.hidden && IsBehind(me, opponent.x, opponent.y))
-        PrintTextAbove(me, "*ataque furtivo*");
+        PrintText(me, "*ataque furtivo*");
         SetObjProperty(me, "backstab", 1);
         SetObjProperty(me.weapon, "backstab", 1);
         me.attack_once(opponent);
@@ -208,7 +208,7 @@ function PerformHeal(shaman, targ, tier)
         return 0;
     endif
 
-    PrintTextAbove(shaman, "*curando " + targ.name + "*");
+    PrintText(shaman, "*curando " + targ.name + "*");
     PerformAction(shaman, ANIM_CAST_AREA);
     PlaySoundEffect(shaman, SFX_SPELL_HEAL);
     PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
@@ -222,7 +222,7 @@ endfunction
 function PerformHealingRain(shaman, allies)
     var mlore := CInt(AP_GetSkill(shaman, ARCANA));
     
-    PrintTextAbove(shaman, "*invoca tempestade*");
+    PrintText(shaman, "*invoca tempestade*");
     PerformAction(shaman, ANIM_CAST_AREA);
     
     // Heal allies
@@ -239,7 +239,7 @@ function PerformHealingRain(shaman, allies)
         if (!mobile.isUnderRoof() && CanFight(shaman, mobile))
             PlayLightningBoltEffect(mobile);
             DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);
-            PrintTextAbove(mobile, "*atingido por um raio*");
+            PrintText(mobile, "*atingido por um raio*");
             SetWeatherForPlayer(mobile, 1, 50);
             wetPowder(mobile);
         endif
@@ -262,7 +262,7 @@ function CastEnraizar(shaman, targ, diff)
       return 0;
    endif
    
-   PrintTextAbove(shaman, "*conjura raízes*");
+   PrintText(shaman, "*conjura raízes*");
    PerformAction(shaman, ANIM_CAST_AREA);
    
    if (!CheckResist(targ, VONTADE, diff))
@@ -281,7 +281,7 @@ function CastWeaken(shaman, targ, diff)
       return 0;
    endif
 
-   PrintTextAbove(shaman, "*enfraquece inimigo*");
+   PrintText(shaman, "*enfraquece inimigo*");
    PerformAction(shaman, ANIM_CAST_AREA);
    
    var bonus := CInt(AP_GetSkill(shaman, ARCANA) / 20); // Small bonus based on skill
@@ -308,7 +308,7 @@ function AcidSpray(me, targ)
 
    SetCooldown(me, "acid_spit", 15); // 15 second cooldown
    
-   PrintTextAbove(me, "*cospe ácido*");
+   PrintText(me, "*cospe ácido*");
    PlayMovingEffectXYZHued(me, targ, 0x36d4, 5, 1, 1, 0x47, 0);
    var acid_pool := CreateItemAtLocation(targ.x, targ.y, GetMapInfo(targ.x, targ.y).z, "acid", 1, targ.realm);
    
@@ -338,7 +338,7 @@ function HiveMind(me)
         var bonus := ally * 2;
         SetObjProperty(me, "#attackbonus", bonus);
         if (!GetCooldown(me, "hivemind_effect"))
-            PrintTextAbove(me, "*sincroniza com a colmeia*");
+            PrintText(me, "*sincroniza com a colmeia*");
             PlayObjectCenteredEffect(me, 0x376A, 7, 16);
             SetCooldown(me, "hivemind_effect", 15);
         endif
@@ -376,7 +376,7 @@ function TunnelTactics(me, targ)
         // Make them disappear
         ally.concealed := 1;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
-        PrintTextAbove(ally, "*escava no subsolo*");
+        PrintText(ally, "*escava no subsolo*");
 
         // Wait a moment before emerging
         sleep(3);
@@ -389,7 +389,7 @@ function TunnelTactics(me, targ)
         MoveObjectToLocation(ally, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
         ally.concealed := 0;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
-        PrintTextAbove(ally, "*emerge do subsolo*");
+        PrintText(ally, "*emerge do subsolo*");
         TS_StartTimer(ally, "hole", 5);
         if (ally.isUmberHulk())
             earthquake(ally);
@@ -448,7 +448,7 @@ function doConfusion(opponent)
         1: // Paralyze
             PlayStationaryEffect(opponent.x, opponent.y, opponent.z, 0x6e0d, 5, 15);
             TS_StartTimer(opponent, "paralysis", 5);
-            PrintTextAbove(opponent, "*paralisado*");
+            PrintText(opponent, "*paralisado*");
         2: // Walk randomly
             if (!opponent.npctemplate)
                 // For players - simulate random walking
@@ -462,7 +462,7 @@ function doConfusion(opponent)
                         PerformAction(opponent, ANIM_WALK_WARMODE);
                         sleepms(200);
                     endforeach
-                    PrintTextAbove(opponent, "*movendo aleatoriamente*");
+                    PrintText(opponent, "*movendo aleatoriamente*");
                 endfor
             else
                 // For NPCs - use Wander()
@@ -471,7 +471,7 @@ function doConfusion(opponent)
                     opponent.Wander();
                     sleepms(200);
                 endfor
-                PrintTextAbove(opponent, "*vagueia*");
+                PrintText(opponent, "*vagueia*");
             endif
         3: // Attack allies
             if (opponent.npctemplate)
@@ -483,7 +483,7 @@ function doConfusion(opponent)
                     var random_target := potential_targets[RandomInt(potential_targets.size())+1];
                     if (random_target.hidden || random_target.concealed) return 0; endif
                     opponent.opponent := random_target;
-                    PrintTextAbove(opponent, "*ataca " + random_target.name + "*");
+                    PrintText(opponent, "*ataca " + random_target.name + "*");
                 endif
             else
                 // For players, make them walk to and attack an ally
@@ -500,7 +500,7 @@ function doConfusion(opponent)
                             break;
                         endif
                     endforeach
-                    PrintTextAbove(opponent, "*ataca aliado " + random_ally.name + "*");
+                    PrintText(opponent, "*ataca aliado " + random_ally.name + "*");
                 endif
             endif
     endcase
@@ -524,7 +524,7 @@ function Bite(me, opponent)
         cd := 10;
     endif
     
-    PrintTextAbove(me, "*morde*");
+    PrintText(me, "*morde*");
     PlaySoundEffect(me, 0x28a);
     PlayAttackAnimation(me);
     
@@ -534,7 +534,7 @@ function Bite(me, opponent)
     elseif (resist == -1) // Falha crítica
         TS_StartTimer(opponent, "paralysis", 5);
     else
-        PrintTextAbove(opponent, "*esquiva*");
+        PrintText(opponent, "*esquiva*");
     endif
 
     SetCooldown(me, "bite_cooldown", cd);
@@ -586,7 +586,7 @@ function HandleAmbush(me, opponent)
         if (dist <= AMBUSH_DISTANCE)
             MoveObjectToLocation(me, opponent.x, opponent.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
             me.hidden := 0;
-            PrintTextAbove(me, "*emboscada*");
+            PrintText(me, "*emboscada*");
             
             // Set up advantage hits
             SetObjProperty(me, "backstab", 1);
@@ -642,7 +642,7 @@ function TongueGrab(toad, opponent)
     endif
     
     // Animation and sound effects
-    PrintTextAbove(toad, "*dispara a língua*");
+    PrintText(toad, "*dispara a língua*");
     PlayAttackAnimation(toad);
     PlaySoundEffect(toad, 0x2b2); //slurp sound
     
@@ -653,13 +653,13 @@ function TongueGrab(toad, opponent)
     
     // Initial resistance check
     if (CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
-        PrintTextAbove(opponent, "*desvia da língua*");
+        PrintText(opponent, "*desvia da língua*");
         SetCooldown(toad, "tongue_grab", 10);
         return 0;
     endif
     
     // Success! Start dragging animation
-    PrintTextAbove(opponent, "*preso pela língua*");
+    PrintText(opponent, "*preso pela língua*");
     opponent.frozen := 1;
     
     // Store original position to move back
@@ -696,7 +696,7 @@ function TongueGrab(toad, opponent)
         // Per-tile resistance check (20% chance)
         if (RandomInt(100) < 20)
             if (CheckResist(opponent, FORTITUDE, RESIST_MEDIUM))
-                PrintTextAbove(opponent, "*se liberta*");
+                PrintText(opponent, "*se liberta*");
                 success := 0;
                 break;
             endif
@@ -710,7 +710,7 @@ function TongueGrab(toad, opponent)
         // Final grab damage
         var raw_dmg := RandomDiceRoll("2d6");
         DamageFLS(opponent, raw_dmg, DMG_PHYSICAL, toad);
-        PrintTextAbove(toad, "*engole " + opponent.name + "*");
+        PrintText(toad, "*engole " + opponent.name + "*");
         TS_StartTimer(opponent, "paralysis", 5);
     endif
     
@@ -783,7 +783,7 @@ function GetThrowInfo(attacker)
 endfunction
 
 function PlayThrowAnimation(attacker)
-   PrintTextAbove(attacker, "*arremessa*");
+   PrintText(attacker, "*arremessa*");
    PlayAttackAnimation(attacker);
    if (attacker.isLizardMan()) 
       attacker.graphic := 0x21;
@@ -842,7 +842,7 @@ function WebWrapCorpse(spider)
          item.graphic := 0x10DA;  // Web cocoon graphic
     
          start_script(":epicai:scripts/webcheck", {item, spider});     
-         PrintTextAbove(spider, "*envolve o corpo em teia*");
+         PrintText(spider, "*envolve o corpo em teia*");
          SetCooldown(spider, "web_wrap", 30);
          Set_Critical(0);
 
@@ -868,15 +868,15 @@ function WebShot(spider, opponent)
       return 0;
    endif
 
-   PrintTextAbove(spider, "*dispara teia*");
+   PrintText(spider, "*dispara teia*");
    PlayMovingEffect(spider, opponent, 3814, 50);
 
    if (!CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
-      PrintTextAbove(opponent, "*preso na teia*");
+      PrintText(opponent, "*preso na teia*");
 	  TS_StartTimer(opponent, "paralysis", 5);
    else
       TS_StartTimer(opponent, "lentidao", 10);
-      PrintTextAbove(opponent, "*parcialmente preso*");
+      PrintText(opponent, "*parcialmente preso*");
    endif
 
    SetCooldown(spider, "web_shot", 15);
@@ -897,7 +897,7 @@ function WallClimb(spider)
    // 50% chance to climb when possible
    if (RandomInt(100) < 50)
       spider.concealed := 1;
-      PrintTextAbove(spider, "*sobe pela parede*");
+      PrintText(spider, "*sobe pela parede*");
       
       // Wait a moment
       sleep(2);
@@ -926,7 +926,7 @@ function WallClimb(spider)
       me.hidden := 1;
       me.stealthsteps := 100;
       
-      PrintTextAbove(spider, "*ataca do alto*");
+      PrintText(spider, "*ataca do alto*");
       SetObjProperty(spider, "backstab", 1);
       SetObjProperty(spider.weapon, "backstab", 1);
 
@@ -952,7 +952,7 @@ function PoisonBite(spider, opponent)
    var tier := CInt(npc_elem.Tier);
    if (!tier) tier := 1; endif
 
-   PrintTextAbove(spider, "*morde venenosamente*");
+   PrintText(spider, "*morde venenosamente*");
    
    if (!CheckResist(opponent, FORTITUDE, getNpcResist()))
       case (RandomInt(6)+1)
@@ -981,7 +981,7 @@ function LayEggSac(spider)
 
    var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1, spider.realm);
    if (egg)
-      PrintTextAbove(spider, "*deposita ovos*");
+      PrintText(spider, "*deposita ovos*");
       SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
       SetCooldown(spider, "egg_sac", 600);
 
@@ -999,7 +999,7 @@ function CreateInvisibleWeb(spider)
 
     var web := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderWebTrap", 1, spider.realm);
     if (web)
-        PrintTextAbove(spider, "*tece teia*");
+        PrintText(spider, "*tece teia*");
         SetObjProperty(web, "Creator", spider.serial);
         SetCooldown(spider, "create_web", 600);
         
@@ -1020,7 +1020,7 @@ endfunction
 
 function charmOpponent(attacker, defender)
     if (!CheckResist(defender, VONTADE, RESIST_VERY_HARD))
-        PrintTextAbove(attacker, "*Hipnotiza*");
+        PrintText(attacker, "*Hipnotiza*");
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
         
         SetObjProperty(defender, "charmed_by", attacker.serial);

@@ -136,7 +136,7 @@ program genericscript(who, item)
 		TS_StartTimer(trg, "polymorph", Cint(GetObjProperty(item, "time")),
 					   Cint(GetObjProperty(item, "graphic")));
 	elseif ("timedscript" in scripts)
-		// PrintTextAbove(trg, "timed script usando " + GetObjProperty(item, "timername") + " " + Cint(GetObjProperty(item, "timertime")) + " " + Cint(GetObjProperty(item, "timerlevel")));
+		// printtext(trg, "timed script usando " + GetObjProperty(item, "timername") + " " + Cint(GetObjProperty(item, "timertime")) + " " + Cint(GetObjProperty(item, "timerlevel")));
 
 		var timers := GetObjProperty(item, "timers");
 		if (timers == error)

@@ -36,7 +36,7 @@ program rope(who, item)
 			return;
 		endif
 
-		PrintTextAbove(who, "*amarra " + char.name + "*");
+		PrintText(who, "*amarra " + char.name + "*");
 		SubtractAmount(item, 1);
 		SetObjProperty(alvo, "corda", 1);
 		SetObjProperty(char, "corda", diff);
@@ -47,7 +47,7 @@ program rope(who, item)
 		endif
 		var ok := YesNo(alvo, "Voce permite ser amarrado por " + who.name + "?", "Sim, permito.", "Nao.");
 		if (ok)
-			PrintTextAbove(who, "*amarra " + alvo.name + "*");
+			PrintText(who, "*amarra " + alvo.name + "*");
 			SubtractAmount(item, 1);
 			SetObjProperty(alvo, "corda", diff);
 			alvo.frozen := 1;

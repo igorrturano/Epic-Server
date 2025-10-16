@@ -11,7 +11,7 @@ program manobra(mobile)
 
 	var dmg := AP_GetVital(mobile, HITS) - GetHP(mobile);
 	DamageFLS(mobile, dmg);
-	PrintTextAbove(mobile, "*autoflagelando-se*");
+	PrintText(mobile, "*autoflagelando-se*");
 	sleep(1);
 
 	var corruption := GetObjProperty(mobile, "corruption");

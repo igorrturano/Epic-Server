@@ -41,7 +41,7 @@ include ":combat:damage";
 // 		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm );
 // 		sleepms(delay);
 // 		if (err == error)
-// 		//	PrintTextAbove(who, "*bate no obstaculo*");
+// 		//	PrintText(who, "*bate no obstaculo*");
 // 			break;
 // 		endif
 // 	endfor

@@ -25,12 +25,12 @@ program cachimbo(player, cachimbo)
 endprogram
 
 function fumar(player, cachimbo)
-	PrintTextAbove(player, "*Acendendo um cachimbo*");
+	PrintText(player, "*Acendendo um cachimbo*");
 	Fumaca(player);
 	var loop := 0;
 	Sleep(4);
 	while (loop < 4)
-		PrintTextAbove(player, "*Dando tragadas em um cachimbo*");
+		PrintText(player, "*Dando tragadas em um cachimbo*");
 		Fumaca(player);
 		Sleep(4);
 		Fumaca(player);

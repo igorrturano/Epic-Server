@@ -18,7 +18,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	mobile.frozen := 1;
-	PrintTextAbove(mobile, "*congelado*");
+	PrintText(mobile, "*congelado*");
 
 	foreach item in (ListEquippedItems(mobile))
 		if (!GetObjProperty(item, "#elementalweapon"))

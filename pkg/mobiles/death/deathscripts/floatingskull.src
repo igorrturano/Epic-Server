@@ -20,7 +20,7 @@ program DeathScript(params)
 	foreach item in (EnumerateItemsInContainer(corpse))
 		var e := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, corpse.realm,
 									   MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
-	// PrintTextAbove(corpse, " " + e);
+	// printtext(corpse, " " + e);
 	endforeach
 
 	if ((template == ":brainai:floatingskull") || (template == ":brainai:demiliche"))

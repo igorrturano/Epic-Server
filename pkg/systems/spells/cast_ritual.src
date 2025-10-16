@@ -75,7 +75,7 @@ program SpellStarter(params)
 		EraseObjProperty(mobile, "#Medding");
 		if (!mobile.npctemplate)
 			if (spellinfo.powerwords)
-				PrintTextAbove(mobile, spellinfo.powerwords);
+				PrintText(mobile, spellinfo.powerwords);
 			endif
 		endif
 		//SpeakPowerWords(mobile, spell_id);

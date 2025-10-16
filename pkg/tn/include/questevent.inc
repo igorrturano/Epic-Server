@@ -86,7 +86,7 @@ function ExecuteEvent(evento)
 				var item := SystemFindObjectBySerial(serial);
 				item.movable := 1;
 				var e := MoveObjectToLocation(item, item.x, item.y, item.z + 1, item.realm, MOVEOBJECT_FORCELOCATION);
-        //PrintTextAbove(item, "move object " + e );
+        //printtext(item, "move object " + e );
 				item.movable := 0;
 			endforeach
 			i := i + 1;
@@ -105,7 +105,7 @@ function ExecuteEvent(evento)
 					TS_StartTimer(npc, "summon", duracaonpc);
                   amt := amt + 1;
 			if (evento.summontext)
-				PrintTextAbove(npc, evento.summontext);
+				printtext(npc, evento.summontext);
 			endif
                 endif
               sleepms(2);
@@ -128,7 +128,7 @@ function ExecuteEvent(evento)
                 		success := 1;
 
 				if (evento.summonbosstext)
-					PrintTextAbove(boss, evento.summonbosstext);
+					PrintText(boss, evento.summonbosstext);
 				endif
             		endif
 

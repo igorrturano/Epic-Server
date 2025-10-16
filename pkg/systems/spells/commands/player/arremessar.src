@@ -162,16 +162,16 @@ program arremesso(params)
 		var parry_chance := Cint(AP_GetSkill(alvo, PARRY) / 3);
 		if (alvo)
 			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
-			PrintTextAbove(who, "*Arremessa " + targ.name + " em " + alvo.name + "*");
+			PrintText(who, "*Arremessa " + targ.name + " em " + alvo.name + "*");
 			PlaySoundEffect(who, 0x51C);
 		endif
 
 		if (to_hit_chance < (to_miss_chance + parry_chance)) // Erra ou defende
 			if (to_hit_chance > to_miss_chance)
 				PlayHitSounds(who, alvo);
-				PrintTextAbove(alvo, "*Defendeu!*");
+				PrintText(alvo, "*Defendeu!*");
 			endif
-			PrintTextAbove(who, "*Errou!*");
+			PrintText(who, "*Errou!*");
 			return 0;
 		else
 			var poisonInfo := GetObjProperty(targ, "poisonInfo");
@@ -202,7 +202,7 @@ program arremesso(params)
 			PlayMovingEffect(who, alvo, 0x22C6, 10);
 			DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
 			PlaySoundEffect(alvo, 0x521);
-			PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+			PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 			MakeBleed(alvo);
 			PlayHitSounds(who, alvo);
 			return 1;
@@ -210,21 +210,21 @@ program arremesso(params)
 	else
 		if (alvo)
 			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
-			PrintTextAbove(who, "*Arremessa " + targ.name + " em " + (tipoAlvo != ARREMESSO_TIPO_TERRENO ? alvo.name :
+			PrintText(who, "*Arremessa " + targ.name + " em " + (tipoAlvo != ARREMESSO_TIPO_TERRENO ? alvo.name :
 																  "direção a um ponto") + "*");
 			PlaySoundEffect(who, 0x51C);
 		endif
 		if (tipoAlvo != ARREMESSO_TIPO_TERRENO)
 			if (to_hit_chance < to_miss_chance) // Errou!
-				PrintTextAbove(who, "*Errou!*");
+				PrintText(who, "*Errou!*");
 				return 0;
 			else
-				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+				PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 				PlaySoundEffect(alvo, 0x136);
 				DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
 				DamageFLS(targ, dmg, DMG_PHYSICAL, who);
 				PlaySoundEffect(alvo, 0x521);
-				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
+				PrintText(alvo, "*Foi acertado por " + targ.name + "*");
 				if (alvo.isSpiderEggSac())
 					var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
 				endif
