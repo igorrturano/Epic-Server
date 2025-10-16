@@ -1567,6 +1567,7 @@ function procura_em_volta(me)
 		// Do Nothing
 		elseif (CInt(GetObjProperty(me, "IgnoreHidden")))
 		// Do Nothing
+<<<<<<< HEAD
 		else
 			if (CheckLineOfSight(me, mobile))
 				var difficulty := CalculateDHDiff(me, mobile);
@@ -1575,13 +1576,23 @@ function procura_em_volta(me)
 					PrintText(mobile, "*aparece*");
 					SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
 				endif
+=======
+		// else
+			// if (CheckLineOfSight(me, mobile))
+			// 	var difficulty := CalculateDHDiff(me, mobile);
+			// 	if (SkillCheck(me, AWARENESS, difficulty) > 0)
+			// 		mobile.hidden := 0;
+			// 		PrintText(mobile, "*aparece*");
+			// 		SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
+			// 	endif
+>>>>>>> 85b47f06d2c5026124709b2d4003e483ad1b3e5e
 				// var difficulty := CalculateDHDiff(me, mobile);
 				// if (SkillCheck(me, AWARENESS, difficulty) > 0)
 				// 	mobile.hidden := 0;
 				// 	PrintText(mobile, "*aparece*");
 				// 	SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
 				// endif
-			endif
+			// endif
 		endif
 		sleepms(2);
 	endforeach
