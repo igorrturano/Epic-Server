@@ -7,7 +7,6 @@ use uo;
 use os;
 
 include "include/sysEvent";
-include ":ghaia:ghaiaInit";
 
 program textcmd_attack(who, range)
 	range := CInt(range);

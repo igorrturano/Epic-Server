@@ -180,10 +180,10 @@ function addPenaltiesBy(type, stats, armor)
 
 	case(Upper(type))
 		"SLOT":
-			penalties := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? getPenaltiesBySlot(armor.getSlot) : getPenaltiesBySlot(0);
+			penalties := (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) ? GetModifiersBySlot(armor.getSlot) : GetModifiersBySlot(0);
 			break;
 		"PROTECTION":
-			penalties := getPenaltiesByProtection(armor.getType());
+			penalties := GetModifiersByProtection(armor.getType());
 			break;
 	endcase
 

@@ -235,7 +235,7 @@ function backgroundSelection(who, culture_pic)
 		endforeach
 		if (btn_value == 201)
 			chardata.+background := BACKGROUNDS.DOMESTIC_WORK;
-			chardata.+bgBonus := Domestic_Work;
+			chardata.+bgBonus := DOMESTIC_WORK;
 			break;
 		elseif (btn_value == 202)
 			chardata.+background := BACKGROUNDS.GATHERING;
