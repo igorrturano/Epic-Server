@@ -1569,21 +1569,18 @@ function procura_em_volta(me)
 		// Do Nothing
 		else
 			if (CheckLineOfSight(me, mobile))
-<<<<<<< HEAD
 				var difficulty := CalculateDHDiff(me, mobile);
 				if (SkillCheck(me, AWARENESS, difficulty) > 0)
 					mobile.hidden := 0;
 					PrintTextAbove(mobile, "*aparece*");
 					SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
 				endif
-=======
 				// var difficulty := CalculateDHDiff(me, mobile);
 				// if (SkillCheck(me, AWARENESS, difficulty) > 0)
 				// 	mobile.hidden := 0;
 				// 	PrintText(mobile, "*aparece*");
 				// 	SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
 				// endif
->>>>>>> 7905a7bbbbf5055f32e388201f8ab9c951d03734
 			endif
 		endif
 		sleepms(2);
