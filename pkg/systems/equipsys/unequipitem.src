@@ -14,7 +14,5 @@ program unequipitem(params)
 		equip := EquipWrapperWeapon(item);
 	endif
 
-	print($"Unequiping item {item} from {who}");
-
 	MobileWrapper(who).RemoveItemModifiers(equip);
 endprogram
