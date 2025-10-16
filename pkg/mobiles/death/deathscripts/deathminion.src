@@ -10,9 +10,9 @@ use vitals;
 include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
-include ":ghaia:include/ghaia";
 include ":combat:damage";
 include ":attributes:vitals";
+include ":epicAI:epicai";
 
 program DeathScript(params)
 	var corpse := params[1];

@@ -32,7 +32,6 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
-include ":ghaia:ghaia";
 include ":spells:summon";
 
 program transformwildshape(who, formname)

@@ -718,7 +718,7 @@ function GetResearchSkills(who)
 	return struct{ "ferreiro" := AP_GetSkill(who, METALWORKING),
 			   	"costureiro" := AP_GetSkill(
 			   	who,
-			   	Domestic_Work),
+			   	DOMESTIC_WORK),
 			   	"alquimista" := AP_GetSkill(who, ALCHEMY),
 			   	"mago" := AP_GetSkill(who, MAGERY),
 			   	"carpenter" := AP_GetSkill(who, WOODWORKING) };
@@ -1080,7 +1080,7 @@ function PerformRapidResearch(who, recipe)
 						   			"metalworking" := AP_GetSkill(
 						   			who,
 						   			METALWORKING),
-						   			"domesticwork" := AP_GetSkill(who, Domestic_Work) };
+						   			"domesticwork" := AP_GetSkill(who, DOMESTIC_WORK) };
 			var highestSkill := Max(craftSkills.woodworking,
 									 Max(craftSkills.metalworking, craftSkills.domesticwork));
 			if (highestSkill == craftSkills.woodworking)
@@ -1088,7 +1088,7 @@ function PerformRapidResearch(who, recipe)
 			elseif (highestSkill == craftSkills.metalworking)
 				skillname := METALWORKING;
 			else
-				skillname := Domestic_Work;
+				skillname := DOMESTIC_WORK;
 			endif
 		"Receita Alquimica": skillname := ALCHEMY;
 		"Tinta":             skillname := ALCHEMY;

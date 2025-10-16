@@ -9,6 +9,7 @@ include "include/say";
 include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
+include "include/eventID";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 

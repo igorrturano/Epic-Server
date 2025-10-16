@@ -8,8 +8,7 @@ use util;
 include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
-include ":ghaia:include/ghaia";
-
+include ":epicAI:epicai";
 program DeathScript(params)
 	var corpse := params[1];
 	var npc := params[2];

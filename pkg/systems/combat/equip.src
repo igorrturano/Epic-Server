@@ -6,6 +6,11 @@ include ":tn:equipment";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
+include ":message:model/Message";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":charsys:ViewModel/MobileWrapper";
+include ":debug:Controller/DebugController";
 
 program equipweapon(who, item)
 
@@ -155,16 +160,12 @@ program equipweapon(who, item)
 		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
-	Run_Script(":equipsys:equipsys", { who, item });
-	set_critical(1);
-	
-	var ret := SetEquipmentMods(who, item);
+	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 
 	var cfg := readconfigfile(":combat:itemdesc");
 	if (cint(cfg[item.objtype].parrybonus) > 0)
 		EraseObjProperty(who, "twohanded");
 	endif
-	set_critical(0);
 
-	return ret;
+	return 1;
 endprogram

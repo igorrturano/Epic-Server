@@ -5,6 +5,7 @@ include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
+include ":brainAI:npcCommands";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;

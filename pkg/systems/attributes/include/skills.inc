@@ -1,7 +1,4 @@
-include ":fls_core:fls_characters";
-include ":charactercreation:habilidades";
 include ":attributes:attributes_ex";
-include "include/eventID";
 use uo;
 
 /*
@@ -13,13 +10,7 @@ use uo;
  * Return: an integer.
  */
 function AP_GetSkill(who, skill_name)
-	var bonus_corrucao := 0;
-	if (skill_name == ARCANA)
-		if (TemHabilidade(who, "Corrupcao Constante"))
-			bonus_corrucao := cInt(GetObjProperty(who, "corruption")/1000);
-		endif
-	endif
-	return AP_GetTrueSkill(who, skill_name) + AP_GetSkillMod(who, skill_name) + bonus_corrucao;
+	return AP_GetTrueSkill(who, skill_name) + AP_GetSkillMod(who, skill_name);
 endfunction
 
 /*
