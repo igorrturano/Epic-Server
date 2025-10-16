@@ -1,5 +1,5 @@
 include ":propagacao:include/propagacao";
-//include ":crafting:include/fabricacaoUtil";
+include ":crafting:include/fabricacaoUtil";
 
 enum graphicsFirewall
 	GRAFICO_FIREWALL_OESTE_LESTE := 0x398C,
