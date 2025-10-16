@@ -210,12 +210,8 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					new_chest.movable := 0;
 					new_chest.locked := 1;
 
-					var trap := RandomInt(3) + 1;
-					case (trap)
-						1: AddTrap(new_chest, "Needle", level);
-						2: AddTrap(new_chest, "Explosion", level);
-						3: AddTrap(new_chest, "PoisonGas", level);
-					endcase
+					// Traps are already added by CreateTreasureChests() in treasurechest.inc
+					// No need to add traps here for regular chests
 
 					// Generate loot for puzzle chest
 					if (GetObjProperty(new_chest, "IsPuzzleChest"))
