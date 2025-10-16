@@ -19,20 +19,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._resists := this._GetArmorResist();
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
-
-		if (this._prop.Modifiers.size() > 1)
-			foreach modifier in (this._prop.Modifiers.keys())
-				this.AddModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
-			endforeach
-		else
-			var penaltiesSlot := GetModifiersBySlot(this._coverage);
-			var penaltiesProt := GetModifiersByProtection(this._tipoProtecao);
-			this.AddModifier(AttributeModifier(DEXTERITY, penaltiesSlot[DEXTERITY].GetValue() + penaltiesProt[DEXTERITY].GetValue()));
-			this.AddModifier(AttributeModifier(SNEAK, penaltiesSlot[SNEAK].GetValue() + penaltiesProt[SNEAK].GetValue()));
-			this.AddModifier(AttributeModifier(MECHANICS, penaltiesSlot[MECHANICS].GetValue() + penaltiesProt[MECHANICS].GetValue()));
-			this.AddModifier(AttributeModifier(MAGERY, penaltiesSlot[MAGERY].GetValue() + penaltiesProt[MAGERY].GetValue()));
-			this.AddModifier(AttributeModifier(AWARENESS, penaltiesSlot[AWARENESS].GetValue() + penaltiesProt[AWARENESS].GetValue()));
-		endif
+		this._AddModifiers();
 
 		if (this._prop)
 			this._resistsMod := ArmorResist(
@@ -143,5 +130,23 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			this._template.PoisonResist,
 			this._template.EnergyResist
 		);
+	endfunction
+
+	function _AddModifiers(this)
+		if (this._prop.Modifiers.size() > 1)
+			foreach modifier in (this._prop.Modifiers.keys())
+				this.AddModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
+			endforeach
+		else
+			if (this._tipoProtecao)
+				var modifiersSlot := GetModifiersBySlot(this._coverage);
+				var modifiersProt := GetModifiersByProtection(this._tipoProtecao);
+				this.AddModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
+				this.AddModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
+				this.AddModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
+				this.AddModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
+				this.AddModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + modifiersProt[AWARENESS].GetValue()));
+			endif
+		endif
 	endfunction
 endclass
