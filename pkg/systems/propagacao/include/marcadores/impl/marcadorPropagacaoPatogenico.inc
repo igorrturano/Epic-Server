@@ -34,12 +34,12 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
     this.deveProgredir := false;
 
     //Parametros
-    this.ciclosRetorno := 4;
+    this.ciclosRetorno := 1;
     this.ciclosExpancao := 2;
     this.duracaoCiclos := 10;
 
     //variaveis
-    this.ciclosDormenteLimite := 15;
+    this.ciclosDormenteLimite := 2;
     this.ciclosDormente := 0;
     this.ciclos := 0;
     this.ciclosRetornoMarcador := 0;
@@ -96,9 +96,6 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
   endfunction
 
   function _DeveMandarEstimuloParada( this )
-    if(this.geracao == 0)
-      Print("(this.ciclosRetorno + this.ciclosRetornoMarcador) " + (this.ciclosRetorno + this.ciclosRetornoMarcador) + " ciclos " + this.ciclos);
-    endif
   
     return !this.isAcumulando  
             && this.ciclos >= (this.ciclosRetorno + this.ciclosRetornoMarcador)
@@ -241,15 +238,12 @@ class MarcadorPropagacaoPatogenico( MarcadorPropagacaoBase )
 
   function RecebeEstimulo( this, valor, isRemetenteAcumulando := false )
     isRemetenteAcumulando == false;
-    this.isAcumulando := valor > 0;
+    this.isAcumulando := valor > 0 && !this.isEstimuloParadaEnviado;
     this.deveProgredir := this.isAcumulando;
     if(!this.deveProgredir && this.ciclosRetornoMarcador == 0)
       this.ciclosRetornoMarcador := this.ciclos;
     endif
     this._ProcessaEstado();
-    if(this.geracao == 0)
-      Print( "Valor recebido ! " + valor + " - " + this.isAcumulando  + " geracao: " + this.geracao);
-    endif
   endfunction
 
   function _ProcessaObjetosEncontrados( this )
