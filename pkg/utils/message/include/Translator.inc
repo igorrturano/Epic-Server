@@ -1,7 +1,6 @@
 use os;
 
 include "model/TranslatableText";
-// include "controller/TranslateController";
 
 class Translator()
 	var _apiURL := ""; // URL da API de tradução
@@ -39,28 +38,6 @@ class Translator()
 		
 		return this;
 	endfunction
-
-	// function Translate(this)
-	// 	print ("Translating text...");
-	// 	if (!this._translatableText) return error{ errortext := "There is no text to translate"}; endif
-		
-	// 	var params := struct{
-	// 		apiURL := this._apiURL,
-	// 		translatableText := this._translatableText
-	// 	};
-	// 	var translation;
-
-	// 	translation := Run_Script(":message:translate", params);
-
-	// 	print ("Translation result: " + translation);
-	// 	print ("Translation result: " + translation.GetTextTarget());
-
-	// 	if (!translation)
-	// 		print("!!!!!!!!!! Translation failed !!!!!!!!!!");
-	// 	endif
-		
-	// 	return this;
-	// endfunction
 
 	function _apiTranslate(params)
 		var apiURL := params.apiURL;

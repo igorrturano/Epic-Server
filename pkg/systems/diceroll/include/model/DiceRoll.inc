@@ -12,6 +12,10 @@ class DiceRoll(IDiceRoll)
 		this._dice := this.AddDice(dice);
 	endfunction
 
+	function GetDice(this)
+		return this._dice;
+	endfunction
+
 	function SetDice(this, dice)
 		this._dice := array{};
 		this._dice := this.AddDice(dice);
@@ -35,15 +39,11 @@ class DiceRoll(IDiceRoll)
 		this._result.append(error { errortext := "Dice not rolled yet" });
 	endfunction
 
-	function GetDice(this)
-		return this._dice.size() > 1 ? this._dice : this._dice[1];
-	endfunction
-
 	function GetResult(this, resultType := DICE_RESULT::ALL)
 		var result := error { errortext := "No result" };
 		
 		if (resultType == DICE_RESULT::ALL)
-			result := this._result.size() > 1 ? this._result : this._result[1];
+			result := this._result;
 		elseif (resultType == DICE_RESULT::HIGHER)
 			result := Max(this._result);
 		elseif (resultType == DICE_RESULT::LOWER)
