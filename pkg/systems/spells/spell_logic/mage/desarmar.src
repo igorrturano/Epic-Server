@@ -53,7 +53,7 @@ program SpellScript(params)
 		SendSysMessage(targ, "desarmado");
 	endif
 
-	PrintText(targ, "*desarmado*", SSM_FAIL);
+	PrintTextAbove(targ, "*desarmado*", SSM_FAIL);
 
 	return 1;
 endprogram

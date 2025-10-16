@@ -9,21 +9,21 @@ program explosion_timer(parms)
 	var who := parms[2];
 	Set_Priority(5);
 	if (potion.container)
-		PrintText(who, "3");
+		PrintTextAbove(who, "3");
 	else
-		PrintText(potion, "3");
+		PrintTextAbove(potion, "3");
 	endif
 	sleep(1);
 	if (potion.container)
-		PrintText(who, "2");
+		PrintTextAbove(who, "2");
 	else
-		PrintText(potion, "2");
+		PrintTextAbove(potion, "2");
 	endif
 	sleep(1);
 	if (potion.container)
-		PrintText(who, "1");
+		PrintTextAbove(who, "1");
 	else
-		PrintText(potion, "1");
+		PrintTextAbove(potion, "1");
 	endif
 	sleep(1);
 	if (potion in EnumerateItemsInContainer(who.backpack))

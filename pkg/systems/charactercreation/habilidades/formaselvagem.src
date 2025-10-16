@@ -146,7 +146,7 @@ function Transforma(who, animal)
 
 	var npc := CreateNpcFromTemplate(template, who.x, who.y, who.z, 0, who.realm);
 
-	PrintText(who, "*transformando-se*");
+	PrintTextAbove(who, "*transformando-se*");
 	if (npc)
 		// detach();
 		Playsoundeffect(npc, snd);

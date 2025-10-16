@@ -70,7 +70,7 @@ endfunction
  * Level 1: Bandidos
  */
 function SpawnBanditGroup(who, x, y, z, realm)
-    PrintText(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
+    PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
     Sleep(2);
     
     // Primeira onda com templates simplificados
@@ -100,7 +100,7 @@ function SpawnBanditGroup(who, x, y, z, realm)
     
     // Segunda onda com líder
     if (npcs.size() > 0)
-        PrintText(who, "*O ataque continua e o lider se aproxima*");
+        PrintTextAbove(who, "*O ataque continua e o lider se aproxima*");
         var leader := CreateGuardian("MercenarioLider", x, y, z, realm, who);
         if (leader)
             npcs.append(leader);
@@ -114,7 +114,7 @@ endfunction
  * Level 2: Mercenários
  */
 function SpawnMercenaryGroup(who, x, y, z, realm)
-    PrintText(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
+    PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
     Sleep(2);
     
     var npcs := array{
@@ -133,7 +133,7 @@ endfunction
  * Level 3: Fantasmas
  */
 function SpawnGhostGroup(who, x, y, z, realm)
-    PrintText(who, "*Gritos e lamurias de almas atormendas* Juntem-se a nos...");
+    PrintTextAbove(who, "*Gritos e lamurias de almas atormendas* Juntem-se a nos...");
     Sleep(5);
     
     // Primeira onda
@@ -149,7 +149,7 @@ function SpawnGhostGroup(who, x, y, z, realm)
     Sleep(15);
     
     // Segunda onda
-    PrintText(who, "*Vozes Fantasmagoricas* Deliciosa ganancia...");
+    PrintTextAbove(who, "*Vozes Fantasmagoricas* Deliciosa ganancia...");
     npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
     npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
     npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
@@ -161,7 +161,7 @@ endfunction
  * Level 4: Dragões
  */
 function SpawnDragonGroup(who, x, y, z, realm)
-    PrintText(who, "*Criaturas gigantescas guardam o local*");
+    PrintTextAbove(who, "*Criaturas gigantescas guardam o local*");
     Sleep(5);
     
     // Wyverns primeiro

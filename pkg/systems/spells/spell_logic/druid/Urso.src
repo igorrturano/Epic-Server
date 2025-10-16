@@ -25,7 +25,7 @@ program SpellScript(params)
 
 	var amt := cint(AP_GetSkill(who, THEOLOGY) * 0.5);
 	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, THEOLOGY))*2;
-	// printtext(who, "maic lore " + AP_GetSkill(who, INSCRIPTION));
+	// PrintTextAbove(who, "maic lore " + AP_GetSkill(who, INSCRIPTION));
 	TS_StartTimer(targ, "strength", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), amt, who, 1);
 
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);

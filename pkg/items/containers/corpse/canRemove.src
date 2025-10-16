@@ -27,7 +27,7 @@ program canRemove(character, container, item, move_type)
 	var cannotPickItems := GetObjProperty(character, "pilotando") ||
 									   GetObjProperty(character, "metamorfose") != error;
 	if (container.objtype == 0xEFFF && !cannotPickItems) // Se for remains
-		PrintText(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41); // Imprime a mensagem de removendo item
+		PrintTextAbove(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41); // Imprime a mensagem de removendo item
 	endif
 
 	return 1;

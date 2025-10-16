@@ -32,7 +32,7 @@ program cabelo(who, estilo)
 		if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
 			SendSysMessage(who, "Voce esta muito longe de onde deseja lavar as bandagens.");
 		elseif (IsWater(targ, locinfo))
-			PrintText(who, "*lava o cabelo*");
+			PrintTextAbove(who, "*lava o cabelo*");
 			var hair := GetEquipmentByLayer(who, LAYER_HAIR);
 			var beard := GetEquipmentByLayer(who, LAYER_BEARD);
 			var origin := GetObjProperty(who, "haircolor");
@@ -58,35 +58,35 @@ program cabelo(who, estilo)
 	case (estilo)
 		"prender":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso, 1, realm);
-			PrintText(who, "*prende o cabelo*");
+			PrintTextAbove(who, "*prende o cabelo*");
 			break;
 		"soltar":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, solto, 1, realm);
-			PrintText(who, "*solta o cabelo*");
+			PrintTextAbove(who, "*solta o cabelo*");
 			break;
 		"trancar":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, tranca, 1, realm);
-			PrintText(who, "*trança o cabelo*");
+			PrintTextAbove(who, "*trança o cabelo*");
 			break;
 		"trancalonga":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, trancalonga, 1, realm);
-			PrintText(who, "*trança o cabelo*");
+			PrintTextAbove(who, "*trança o cabelo*");
 			break;
 		"flor":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, flor, 1, realm);
-			PrintText(who, "*coloca uma flor no cabelo*");
+			PrintTextAbove(who, "*coloca uma flor no cabelo*");
 			break;
 		"pena":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, pena, 1, realm);
-			PrintText(who, "*coloca uma pena no cabelo*");
+			PrintTextAbove(who, "*coloca uma pena no cabelo*");
 			break;
 		"preso1":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso1, 1, realm);
-			PrintText(who, "*prende o cabelo*");
+			PrintTextAbove(who, "*prende o cabelo*");
 			break;
 		"preso2":
 			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso2, 1, realm);
-			PrintText(who, "*prende o cabelo*");
+			PrintTextAbove(who, "*prende o cabelo*");
 			break;
 	endcase
 

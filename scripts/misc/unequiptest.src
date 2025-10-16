@@ -19,7 +19,7 @@ program UnequipTest(mobile, item)
 		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
 			SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
 			mobile.hidden := 0;
-			PrintText(mobile, "*aparece*");
+			PrintTextAbove(mobile, "*aparece*");
 		endif
 	endif
 

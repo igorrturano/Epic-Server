@@ -68,9 +68,9 @@ program tirocarregado(who)
 	endif
 	who.frozen := 1;
 	Performaction(who, elem.Anim, 5, 2, ACTION_DIR_FORWARD, ACTION_REPEAT);
-	PrintText(who, "*mirando*");
+	PrintTextAbove(who, "*mirando*");
 	sleep(2);
-	PrintText(who, "*mirando*");
+	PrintTextAbove(who, "*mirando*");
 	sleep(2);
 	PlaySoundEffect(who, 0x235);
 	Performaction(who, elem.Anim);
@@ -148,7 +148,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref
 	endif
 
 	if (temhabilidade(attacker, "Oportunidade Critica"))
-		printtext(attacker, "*ataque de oportunidade*");
+		PrintTextAbove(attacker, "*ataque de oportunidade*");
 		if (defender)
 			attacker.attack_once(defender);
 		endif
@@ -163,7 +163,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref
 	endif
 	var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
 	if (weapon_scripts.size() > 0)
-		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
+		PrintTextAbove(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
 		SetObjProperty(attacker, "critdelay", ReadGameClock() + 180);
 		if (getCooldown(defender, "#vitalidadeinabalavel") > 0 || isDwarverDefender)
 			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);

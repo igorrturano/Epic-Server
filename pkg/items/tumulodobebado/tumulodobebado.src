@@ -52,7 +52,7 @@ program onInsert(character, container, movetype, insert_type, adding_item, exist
 			var joke := jokes[jokeIdx];
 
 			// Mostra a piada
-			PrintText(container, joke);
+			PrintTextAbove(container, joke);
 
 			// Toca um som de fantasma
 			PlaySoundEffect(container, 0x17E);

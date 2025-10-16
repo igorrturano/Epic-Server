@@ -38,7 +38,7 @@ function ExaminarObjeto(who,targ)
 			if(who.hidden)
 				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
-				PrintText(who, "*Examinando "+targ.name+"*");
+				PrintTextAbove(who, "*Examinando "+targ.name+"*");
 			endif
 			sleep(1);
 		endif
@@ -52,8 +52,8 @@ function ExaminarObjeto(who,targ)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
 			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
-				PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-				PrintText(targ, "*!*");
+				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+				PrintTextAbove(targ, "*!*");
 				TrapFound(targ, who);
 			endif
 			return 1;
@@ -92,8 +92,8 @@ function ExaminarObjeto(who,targ)
 
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
-					PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-					PrintText(targ, "*!*");
+					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+					PrintTextAbove(targ, "*!*");
 					TrapFound(targ, who);
 				endif
 				return 1;
@@ -164,7 +164,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
@@ -185,7 +185,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif

@@ -43,7 +43,7 @@ program useBook(who, book)
 			SendSysMessage(who, "Voce optou por nao romper o selo");
 			return;
 		endif
-		PrintText(book, "Rompe o selo", who);
+		PrintTextAbove(book, "Rompe o selo", who);
 		var desc := GetObjProperty(book, "description") + " [Rompido]";
 		SetObjProperty(book, "description", desc);
 		SetObjProperty(book, "Selado", "quebrado");
