@@ -61,8 +61,6 @@ program walkOn(mobile, tile)
 	if (name)
 		SendSysMessageEx(mobile, "Dungeon: " + name + ". Seu feedback é importante para nós!( .feedback ou no Discord)",
 				   SSM_INFO);
-	else
-		SendSysMessage(mobile, "NAO ENTROU" + name);
 	endif
 	return 1;
 endprogram
