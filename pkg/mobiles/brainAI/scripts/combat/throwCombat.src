@@ -124,7 +124,7 @@ function throw(npc, opponent, byref dist, settings)
 
 	var chance := GetAttribute(npc, "Dexterity") - GetAttribute(opponent, "Dexterity") / 3;
 	if (RandomInt(100) > chance) // Errou!
-		PrintTextAbove(npc, "*Miss!*", _DEFAULT_TEXT_FONT, 38);
+		PrintText(npc, "*Miss!*", _DEFAULT_TEXT_FONT, 38);
 		if (settings["throwMiss"])
 			PlaySoundEffect(npc, settings["throwMiss"]);
 		else

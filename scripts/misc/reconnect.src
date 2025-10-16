@@ -13,7 +13,7 @@ include ":accounts:accounts";
 
 program core_reconnect(who)
 	who := who; // Avoid compiler warnings.
-	//  PrintTextAbove(who, "Reconnecting");
+	//  PrintText(who, "Reconnecting");
 	//  who.setlightlevel(0, 2);
 	//  return 1;
 	EraseObjProperty(who, "#Casting"); // Bugs de cast

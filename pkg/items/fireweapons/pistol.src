@@ -54,7 +54,7 @@ program fireweapon(who, item)
 		if (pot.movable && Accessible(who, pot) && valid)
 			if (subtractamount(pot, 1))
 				SetObjProperty(item, "balas", 1);
-				PrintTextAbove(who, "*recarrega a arma*");
+				printtext(who, "*recarrega a arma*");
 				TS_StartTimer(who, "paralysis", 5);
 				return;
 			endif
@@ -79,7 +79,7 @@ program fireweapon(who, item)
 	var cd := 3;
 
 	TurnObjectToward(who, targ.x, targ.y);
-	PrintTextAbove(who, "*mirando em *" + targ.name);
+	PrintText(who, "*mirando em *" + targ.name);
 	who.frozen := 1;
 	sleep(cd);
 	who.frozen := 0;

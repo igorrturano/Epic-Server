@@ -8,7 +8,7 @@ program textcmd_sayabove(who, text)
 
 	foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm))
 		if (mob != who)
-			PrintTextAbove(mob, text);
+			PrintText(mob, text);
 		endif
 	endforeach
 

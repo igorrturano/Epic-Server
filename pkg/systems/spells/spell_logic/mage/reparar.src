@@ -30,9 +30,9 @@ program SpellScript(params)
 		targ.hp := cint(targ.maxhp / 4);
 		// SetObjProperty(targ, "broken", 0);
 		// SetName(targ, GetObjProperty(targ, "realdesc"));
-		PrintTextAbove(targ, "*consertada*");
+		PrintText(targ, "*consertada*");
 	else
-		PrintTextAbove(targ, "*nenhuma mudança aparente*");
+		PrintText(targ, "*nenhuma mudança aparente*");
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_BLESS);

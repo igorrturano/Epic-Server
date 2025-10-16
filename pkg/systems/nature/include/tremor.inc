@@ -20,15 +20,15 @@ function EfeitosTerremoto(who,danobase,danoale,dif)
      endif
 
      PlaySoundEffectPrivate(who, 0x222, who);
-     PrintTextAbove(who, "*Raizes se movem ao redor*");
+     PrintText(who, "*Raizes se movem ao redor*");
 
      sleep(5);
 
      if (CheckResist(who,  REFLEXOS, dif))//note: colocar uma variavel de chance de resistir ao terremoto
-        PrintTextAbove(who, "*Evitou as raizes*");
+        PrintText(who, "*Evitou as raizes*");
         PerformAction(who, 20);
      else
-        PrintTextAbove(who, "*Preso pelas raizes*");
+        PrintText(who, "*Preso pelas raizes*");
          TS_StartTimer(who, "paralysis", 5);
          PerformAction(who, 21);
          DamageFLS(who, danobase + (RandomInt(danoale)));

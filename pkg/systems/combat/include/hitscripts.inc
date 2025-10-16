@@ -2,7 +2,7 @@ include "include/string";
 
 function execgenerichit(attacker, defender, hitopt, rawdamage)
 
-//PrintTextAbove(attacker, " " + hitopt.vitals);
+//printtext(attacker, " " + hitopt.vitals);
 	//slayer entra aqui
 	foreach vital in (hitopt.vitals)
 		var dmg := rawdamage*hitopt.dmg;
@@ -20,19 +20,19 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 			endforeach
 		else
 
-   //   PrintTextAbove(attacker, " " + vital);
+   //   printtext(attacker, " " + vital);
 
 			if (vital == "Hits")
 				var hitdmg := dmg;
 				if (defender.npctemplate)
 					var npccfg := NPC_GetNPCConfig(defender.npctemplate);
 					var category := GetConfigString(npccfg, "Category");
-      //    PrintTextAbove(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
+      //    printtext(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
 					if (hitopt.slayer ==  category)
 						hitdmg := hitdmg * 2;
 					endif
 				endif
-        //PrintTextAbove(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
+        //printtext(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
 				DamageFLS(defender, hitdmg, DMG_FORCED, attacker);
 			elseif (vital == "Stam")
 				AP_ConsumeVital(defender, STAMINA, dmg);
@@ -47,11 +47,11 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 	endif
 
 	if (hitopt.textatacante != error)
-		PrintTextAbove(attacker, hitopt.textatacante);
+		PrintText(attacker, hitopt.textatacante);
 	endif
 
 	if (hitopt.textdefensor != error)
-		PrintTextAbove(defender, hitopt.textdefensor);
+		PrintText(defender, hitopt.textdefensor);
 	endif
 
 	if (hitopt.fxatacante != error)
@@ -119,7 +119,7 @@ function execonkill(attacker, defender)
 
 
   if (onkill.text != "")
-    PrintTextAbove(defender, onkill.text);
+    printtext(defender, onkill.text);
   endif
   if (onkill.fxmorto != error)
     PlayObjectCenteredEffect(defender, onkill.fxmorto[1], onkill.fxmorto[2], onkill.fxmorto[3]);
@@ -143,7 +143,7 @@ function execonkill(attacker, defender)
   if (onkill.lootcreate != error)
     var itm := CreateItemInContainer(defender, onkill.lootcreate, onkill.lootamt);
     if (itm  == error)
-      PrintTextAbove(defender, " " + itm);
+      printText(defender, " " + itm);
     endif
   endif
   if (onkill.destroy != error)

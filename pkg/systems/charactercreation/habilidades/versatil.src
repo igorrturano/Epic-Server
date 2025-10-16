@@ -23,10 +23,10 @@ program versatil(who)
 	var valor := cint(GetObjProperty(who, "twohanded"));
 	if (!valor)
 		SetObjProperty(who, "twohanded", 1);
-		PrintTextAbove(who, "*empunha a arma com duas maos*");
+		PrintText(who, "*empunha a arma com duas maos*");
 	else
 		EraseObjProperty(who, "twohanded");
-		PrintTextAbove(who, "*empunha a arma com uma mao*");
+		PrintText(who, "*empunha a arma com uma mao*");
 	endif
 
 endprogram

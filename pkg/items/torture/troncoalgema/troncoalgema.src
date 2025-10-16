@@ -43,7 +43,7 @@ program troncoAlgema(who, item)
 
 			SetObjProperty(targ, "algemado", 1);
 			targ.frozen := 1;
-			PrintTextAbove(who, "*fecha a algema*");
+			PrintText(who, "*fecha a algema*");
 			PlaySoundEffect(targ, 0x04B);
 			SetName(targ, targ.name + " [ALGEMADO AO POSTE]");
 		else
@@ -51,7 +51,7 @@ program troncoAlgema(who, item)
 			if (ok)
 				EraseObjProperty(targ, "algemado");
 				targ.frozen := 0;
-				PrintTextAbove(who, "*abre a algema*");
+				PrintText(who, "*abre a algema*");
 				PlaySoundEffect(targ, 0x4D4);
 				SetName(targ, GetObjProperty(targ, "alg_oriname"));
 				EraseObjProperty(targ, "alg_oriname");

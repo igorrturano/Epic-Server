@@ -35,10 +35,10 @@ program KillPlayers()
 	propallies := dictionary;
 
 	set_critical(1);
-	// PrintTextAbove(me, "vai inicializr");
+	// printtext(me, "vai inicializr");
 	InitializeNPC(me);
 	set_critical(0);
-	// PrintTextAbove(me, "done");
+	// printtext(me, "done");
 
 	while (1)
 		var hasPlayerNearMe := hasPlayerNear(me);
@@ -208,7 +208,7 @@ function CloseDistance(opponent)
 		var last_msg := GetObjProperty(me, "#fatigue");
 		if (!last_msg || last_msg < ReadGameClock())
 			SetObjProperty(me, "#fatigue", ReadGameClock() + 15);
-			PrintTextAbove(me, "*fatigado*");
+			PrintText(me, "*fatigado*");
 		endif
 		sleep(1);
 	elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
@@ -359,7 +359,7 @@ function PetFollow(character := 0)
 	if (life != lifeatual)
 		following := 0;
 		TS_LowerDuration(me, "encantar", -1);
-		PrintTextAbove(me, "O animal está assustado demais!");
+		printtext(me, "O animal está assustado demais!");
 		return;
 	endif
 
@@ -383,7 +383,7 @@ function PetFollow(character := 0)
 	endif
 	// endwhile
 
-	// PrintTextAbove(me, "O animal parou de te seguir");
+	// printtext(me, "O animal parou de te seguir");
 	// TS_LowerDuration(me, "encantar", -1);
 	return 1;
 

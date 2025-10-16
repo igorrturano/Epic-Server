@@ -102,7 +102,7 @@ function MakeDye(pot, who)
 
 	while (loop < 3)
 		PlaySoundEffect(who, SOUND_EFFECT_GRIND);
-		PrintTextAbove(who, "*preparando uma tinta*");
+		PrintText(who, "*preparando uma tinta*");
 		sleep(1);
 		loop := loop + 1;
 	endwhile

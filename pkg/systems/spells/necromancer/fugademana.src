@@ -30,7 +30,7 @@ program SpellScript(params)
 	var e := TS_StartTimer(targ, "fugademana", cint(AP_GetSkill(who, ARCANA) / 2),
 							cint(AP_GetSkill(who, ARCANA)), who, 0);
 	if (e == error)
-		PrintTextAbove(who, "sonho " + e);
+		printtext(who, "sonho " + e);
 	endif
 
 	handleSilentMagic(who, who, 385);

@@ -25,7 +25,7 @@ program animateSword(params)
 		endif
 	endif
 
-	PrintTextAbove(who, "*salta e atira*");
+	PrintText(who, "*salta e atira*");
 	who.attack_once(who.opponent);
 
 	var world_z := GetStandingHeight(who.x, who.y, who.z + 15, who.realm);
@@ -80,7 +80,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-			// 	PrintTextAbove(who, "*bate no obstaculo*");
+			// 	PrintText(who, "*bate no obstaculo*");
 			return 0;
 		endif
 		sleepms(delay);

@@ -269,7 +269,7 @@ endfunction
 function RemoveItemForSale(merchant, item_num, removeInfinite :=0)
 	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
 	var selling_info := data_elem.GetProp(Cstr(item_num));
- 	// PrintTextAbove(merchant, " " + selling_info);
+ 	// printtext(merchant, " " + selling_info);
 	if (selling_info[3] == 1 && !removeInfinite)
 		return 1;
 	else

@@ -26,7 +26,7 @@ program speak(mobile)
 		line_count += 1;
 		if (fala != error)
 			print("TRACE: LastWords - Speaking line " + line_count + ": " + fala);
-			PrintTextAbove(mobile, fala);
+			PrintText(mobile, fala);
 			sleepms(800);
 		else
 			print("TRACE: LastWords - Error in speech line " + line_count);

@@ -308,12 +308,12 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	endif
 	if (mobile == targ)
 		heal_amt := heal_amt / 2;
-		PrintTextAbove(mobile, "*tratando a si mesmo*");
+		PrintText(mobile, "*tratando a si mesmo*");
 	elseif (Distance(mobile, targ) > 2)
 		SendSysMessage(mobile, "Seu paciente esta muito distante.");
 		return 1;
 	else
-		PrintTextAbove(mobile, "*tratando o paciente*");
+		PrintText(mobile, "*tratando o paciente*");
 	endif
 	if (!WaitCura(mobile, 5))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
@@ -347,7 +347,7 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	var resto := heal_amt / q - CInt(heal_amt / q);
 	var r := 0;
 	SetObjProperty(targ, "curando", ReadGameClock() + q);
-	// PrintTextAbove(targ, "Loops: "+q+" | Cura: "+heal_amt/q+" | Total: "+heal_amt);
+	// PrintText(targ, "Loops: "+q+" | Cura: "+heal_amt/q+" | Total: "+heal_amt);
 	for (i := 0; i < q; i := i + 1)
 		Sleep(1);
 		if (x != targ.x || y != targ.y)
@@ -367,7 +367,7 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 		RecalcVitals(targ);
 	endfor
 	SendSysMessage(targ, "Acabou o efeito das bandagens.");
-	// PrintTextAbove(targ, "*acabou bandagem*");
+	// PrintText(targ, "*acabou bandagem*");
 
 	// bandagens com garlic
 	if ((poison == 1))
@@ -381,7 +381,7 @@ endfunction
 function HealCorpse(mobile, targ, aux_skill, restauraDP)
 	var name := targ.desc;
 	name["corpo de "] := "";
-	PrintTextAbove(mobile, "*tentando estabilizar o paciente*");
+	PrintText(mobile, "*tentando estabilizar o paciente*");
 	if (!WaitCura(mobile, 10))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
 		return 0;
@@ -419,7 +419,7 @@ endfunction
 function HealNpcCorpse(mobile, targ, aux_skill)
 	var name := targ.desc;
 	name["corpo de "] := "";
-	PrintTextAbove(mobile, "*tentando estabilizar o paciente*");
+	PrintText(mobile, "*tentando estabilizar o paciente*");
 	if (!Wait(mobile, 10))
 		SendSysMessage(mobile, "Você interrompeu a cura.");
 		return 0;

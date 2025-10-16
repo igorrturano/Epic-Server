@@ -101,7 +101,7 @@ program TotemDeAquisicao(who, totem)
 
 	SendSysMessage(who, "Sua facção reivindicou com sucesso o território: " + rect_name);
 	SendSysMessage(who, "O território começará a produzir recursos em " + interval + " minutos.");
-	PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + guild_obj.name + "*");
+	PrintText(who, "*" + who.name + " reivindica este território em nome de " + guild_obj.name + "*");
 
 	return 1;
 endprogram

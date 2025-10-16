@@ -20,7 +20,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*ricochetear ataque*");
+	PrintText(attacker, "*ricochetear ataque*");
 
 	var hostiles := ListHostiles(attacker, 4, LH_FLAG_LOS);
 	var targets := array;
@@ -32,7 +32,7 @@ program doubleattack(params)
 	endforeach
 
 	var targ := hostiles[RandomInt(targets.size()) + 1];
-	PrintTextAbove(targ, "*Ricocheteado*");
+	printtext(targ, "*Ricocheteado*");
 
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);

@@ -185,7 +185,7 @@ function ProcessSpeech(ev)
 
 	var text := lower(ev.text);
 	var name := lower(me.name);
-	// PrintTextAbove(me, "meu nome " + name );
+	// printtext(me, "meu nome " + name );
 
 	if ((ev.source).serial != (me.master).serial)
 
@@ -327,12 +327,12 @@ function TakeItem(ev)
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 291;
 			DestroyItem(ev.item);
-			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
+			PrintText(ev.source, "*prende uma mochila no cavalo*");
 		elseif (me.npctemplate == ":brainai:Llama" || me.npctemplate == "Llama")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 292;
 			DestroyItem(ev.item);
-			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
+			PrintText(ev.source, "*prende uma mochila na llama*");
 		endif
 
 	// if(IsMountable(me.graphic))
@@ -514,13 +514,13 @@ function UnTame()
 
 	if (!orig_script)
 
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif (orig_script["tamed"])
 
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		PrintText(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
@@ -582,7 +582,7 @@ function ProcessDoubleClick(ev)
 						SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
 						return;
 					endif
-					PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
+					PrintText(ev.source, "*remove a mochila de " + me.name + "*");
 					me.graphic := GetObjProperty(me, "beforepack");
 					if (!GetObjProperty(me, "beforepack"))
 						if (me.graphic == 292)
@@ -710,7 +710,7 @@ endfunction
 
 function CastFaerieHeal(me, owner)
 
-	PrintTextAbove(me, "*bate as asas*");
+	PrintText(me, "*bate as asas*");
 	PlaysoundEffect(me, 1137);
 	PlayObjectCenteredEffect(owner, 0x373a, 7, 0x10);
 
@@ -752,7 +752,7 @@ function CalcPathAndMove(me, byref opponent, sleepdelay)
 		var last_msg := GetObjProperty(me, "#fatigue");
 		if (!last_msg || last_msg < ReadGameClock())
 			SetObjProperty(me, "#fatigue", ReadGameClock() + 15);
-			PrintTextAbove(me, "*fatigado*");
+			PrintText(me, "*fatigado*");
 		endif
 		sleep(1);
 	elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
@@ -947,7 +947,7 @@ function CloseDistance(opponent)
 		var last_msg := GetObjProperty(me, "#fatigue");
 		if (!last_msg || last_msg < ReadGameClock())
 			SetObjProperty(me, "#fatigue", ReadGameClock() + 15);
-			PrintTextAbove(me, "*fatigado*");
+			PrintText(me, "*fatigado*");
 		endif
 		sleep(1);
 	elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
@@ -1078,14 +1078,14 @@ function Opendoors(me)
 			// 	if (CheckLosBetween( door.x, door.y, door.z, opponent.x, opponent.y, opponent.z, me.realm )) // se a porta vai me levar ate o oponente
 
 			if (cint(GetObjProperty(me, "ignoredoor")) == 1)
-				PrintTextAbove(me, "*atravessa a porta*");
+				PrintText(me, "*atravessa a porta*");
 				MoveObjectToLocation(me, door.x, door.y, door.z, door.realm, MOVEOBJECT_FORCELOCATION);
 			elseif (cint(GetObjProperty(me, "opendoor")) == 1)
-				PrintTextAbove(me, "*abre a porta*");
+				PrintText(me, "*abre a porta*");
 				door.Open();
 			endif
 		// 	else
-		// 		PrintTextAbove(me, "a porta nao ajudara");
+		// 		printtext(me, "a porta nao ajudara");
 		// 	endif
 		endif
 	endforeach

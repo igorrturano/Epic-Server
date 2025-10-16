@@ -253,16 +253,16 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 		//adicionado emote para mesa de alchemy
 		case (lower(craft_skill))
 			"alchemy":
-				PrintTextAbove(who, "*preparando um extrato*");
+				PrintText(who, "*preparando um extrato*");
 				break;
 			"metalworking":
-				PrintTextAbove(item, "*item em brasa*");
+				PrintText(item, "*item em brasa*");
 				break;
 			"domesticwork":
-				PrintTextAbove(who, "*costurando*");
+				PrintText(who, "*costurando*");
 				break;
 			"woodworking":
-				PrintTextAbove(who, "*moldando*");
+				PrintText(who, "*moldando*");
 				break;
 		endcase
 		

@@ -97,8 +97,8 @@ function ReloadWeapon(who, item, weapon_info)
 		var reload_time := weapon_info.reload_time;
 
 		// Visual feedback
-		PrintTextAbove(who, "*Coloca polvora na arma*");
-		PrintTextAbove(who, "*Socando a polvora*");
+		printtext(who, "*Coloca polvora na arma*");
+		printtext(who, "*Socando a polvora*");
 
 		// Animation and sound effects
 		var i := 0;
@@ -107,7 +107,7 @@ function ReloadWeapon(who, item, weapon_info)
 			sleep(1);
 		endfor
 
-		PrintTextAbove(who, "*Municiando o equipamento*");
+		printtext(who, "*Municiando o equipamento*");
 		for (i := 0; i < 2; i++)
 			PlaySoundEffect(who, SFX_FARMING);
 			sleep(2);
@@ -115,7 +115,7 @@ function ReloadWeapon(who, item, weapon_info)
 
 		PlaySoundEffect(who, SFX_HIT_11);
 		SetObjProperty(item, "balas", 1);
-		PrintTextAbove(who, "*Arma recarregada*");
+		printtext(who, "*Arma recarregada*");
 		updateToolTip(item);
 
 		return 1;
@@ -155,7 +155,7 @@ function ReloadWeapon(who, item, weapon_info)
 	var current_y := who.y;
 
 	// Start reloading process
-	PrintTextAbove(who, "*Coloca polvora na arma*");
+	printtext(who, "*Coloca polvora na arma*");
 
 	if (!who.npctemplate)
 		if (!SubtractAmount(ammo, 1) || !SubtractAmount(powder, powder_needed))
@@ -164,7 +164,7 @@ function ReloadWeapon(who, item, weapon_info)
 		endif
 	endif
 
-	PrintTextAbove(who, "*Socando a polvora*");
+	printtext(who, "*Socando a polvora*");
 
 	var reload_time := weapon_info.reload_time;
 	if (TemHabilidade(who, "Municiador Experiente"))
@@ -184,7 +184,7 @@ function ReloadWeapon(who, item, weapon_info)
 		sleep(1);
 	endfor
 
-	PrintTextAbove(who, "*Municiando o equipamento*");
+	printtext(who, "*Municiando o equipamento*");
 	for (i := 0; i < 2; i++)
 		if (!who.npctemplate) // Only check position for players
 			if (who.x != current_x || who.y != current_y)
@@ -198,7 +198,7 @@ function ReloadWeapon(who, item, weapon_info)
 
 	PlaySoundEffect(who, SFX_HIT_11);
 	SetObjProperty(item, "balas", 1);
-	PrintTextAbove(who, "*Arma recarregada*");
+	printtext(who, "*Arma recarregada*");
 	updateToolTip(item);
 
 	return 1;
@@ -247,7 +247,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 
 	// Handle aiming animation
 	TurnObjectToward(who, targ.x, targ.y);
-	PrintTextAbove(who, "*mirando em {}*".format(targ.name));
+	PrintText(who, "*mirando em {}*".format(targ.name));
 	PlaySoundEffect(who, 0x667);
 
 	// Skip freezing for NPCs

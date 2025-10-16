@@ -36,7 +36,7 @@ program HitScript(params)
 				time := 10;
 			endif
 			TS_StartTimer(defender, poisonName, time, level + 1, attacker);
-			PrintTextAbove(attacker, "*Acerta a veia no alvo, tornando a toxina mais efetiva*");
+			printText(attacker, "*Acerta a veia no alvo, tornando a toxina mais efetiva*");
 		endif
 	else
 		return 0;

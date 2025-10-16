@@ -49,14 +49,14 @@ program specialAbilities(who)
 endprogram
 
 function DoWarriorAbility(who, cooldown)
-	PrintTextAbove(who, "*ataque extra*");
+	PrintText(who, "*ataque extra*");
 	who.attack_once();
 	SetCooldown(who, "special_ability", cooldown);
 	return 1;
 endfunction
 
 function DoRogueAbility(who, cooldown)
-	PrintTextAbove(who, "*evasão*");
+	PrintText(who, "*evasão*");
 	who.hidden := 1;
 	sleepms(500);
 	PushBack(who, 4, 75, 1);
@@ -96,7 +96,7 @@ endfunction
 function FastReload(who, weapon, cooldown)
 	var balas := CInt(GetObjProperty(weapon, "balas"));
 	SetObjProperty(weapon, "balas", balas + 1);
-	PrintTextAbove(who, "*recarrega rapidamente*");
+	PrintText(who, "*recarrega rapidamente*");
 	SetCooldown(who, "special_ability", cooldown);
 	return 1;
 endfunction
@@ -104,14 +104,14 @@ endfunction
 function DoSpellcasterAbility(who, cooldown)
 	SetObjProperty(who, "#free_cast", 1);
 	SetObjProperty(who, "#cast_time", ReadGameClock());
-	PrintTextAbove(who, "*conjuração rápida*");
+	PrintText(who, "*conjuração rápida*");
 	SetCooldown(who, "special_ability", cooldown);
 	return 1;
 endfunction
 
 function DoArcaneArcherAbility(who, cooldown)
 	TS_StartTimer(who, "velocidade", 4); // 4 seconds of speed boost
-	PrintTextAbove(who, "*velocidade arcana*");
+	PrintText(who, "*velocidade arcana*");
 	SetCooldown(who, "special_ability", cooldown);
 	return 1;
 endfunction

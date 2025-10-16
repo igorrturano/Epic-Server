@@ -51,7 +51,7 @@ function CreateEcho(ev, rune, range)
 		if (sound_result[1]) // Se encontrou um som válido
 			for i := 1 to 3
 				PlaySoundEffectXYZ(rune.x, rune.y, rune.z, sound_result[1]);
-				PrintTextAbove(rune, text + " ...", 33 + i);
+				PrintText(rune, text + " ...", 33 + i);
 				Sleep(2);
 			endfor
 			DestroyItem(echo_anchor);

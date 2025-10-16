@@ -14,7 +14,7 @@ program manobra(attacker)
 
 	SetCooldown(attacker, "defesatotal", CInt(AP_GetSkill(attacker, TACTICS)));
 
-	PrintTextAbove(attacker, "*defesa total*");
+	PrintText(attacker, "*defesa total*");
 
 	detach();
 

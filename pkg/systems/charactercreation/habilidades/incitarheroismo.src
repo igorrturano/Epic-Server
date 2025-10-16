@@ -26,7 +26,7 @@ program manobra(attacker)
 	var duracao := cint((time + AP_GetSkill(attacker, TACTICS)) / 2);
 	print(duracao);
 
-	PrintTextAbove(attacker, "*ordena os aliados*");
+	PrintText(attacker, "*ordena os aliados*");
 
 	foreach member in (festa.members)
 		if (member.serial != attacker.serial)

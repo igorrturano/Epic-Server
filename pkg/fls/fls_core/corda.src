@@ -12,7 +12,7 @@ program rope(who, item)
 
 	if (alvo.objtype == 0x14f8)
 		if (temHabilidade(who, "Caçador Experiente"))
-			PrintTextAbove(who, "*Amarrando varios pontos da corda*");
+			PrintText(who, "*Amarrando varios pontos da corda*");
 			sleep(4);
 			SendSysMessage(who, "Voce usou a corda para fazer uma rede");
 			DestroyItem(item);
@@ -56,7 +56,7 @@ program rope(who, item)
 			return;
 		endif
 
-		PrintTextAbove(who, "*amarra " + char.name + "*");
+		PrintText(who, "*amarra " + char.name + "*");
 		SubtractAmount(item, 1);
 		SetObjProperty(alvo, "corda", 1);
 		SetObjProperty(char, "corda", diff + mod);
@@ -67,7 +67,7 @@ program rope(who, item)
 		endif
 		var ok := YesNo(alvo, "Voce permite ser amarrado por " + who.name + "?", "Sim, permito.", "Nao.");
 		if (ok)
-			PrintTextAbove(who, "*amarra " + alvo.name + "*");
+			PrintText(who, "*amarra " + alvo.name + "*");
 			SubtractAmount(item, 1);
 			SetObjProperty(alvo, "corda", diff + mod);
 			alvo.frozen := 1;

@@ -9,6 +9,6 @@ program textcmd_sayabove_pet(who, text)
 	var what := Target(who);
 
 	if (what.master == who)
-		PrintTextAbove(what, "*" + text + "*");
+		PrintText(what, "*" + text + "*");
 	endif
 endprogram

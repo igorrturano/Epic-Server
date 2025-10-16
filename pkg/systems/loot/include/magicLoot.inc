@@ -318,7 +318,7 @@ function ActivateMagicItem(item)
 
 			if (key == "PhysicalResistMod")
 				item.resist_physical_mod := item.resist_physical_mod + cint(mods[key]);
-				PrintTextAbove(item,"yaaaaa");
+				printtext(item,"yaaaaa");
 			elseif (key == "ColdResistMod")
 				item.resist_cold_mod := item.resist_cold_mod + cint(mods[key]);
 			elseif (key == "FireResistMod")
@@ -345,7 +345,7 @@ function ActivateMagicItem(item)
 			var cfg := ReadConfigFile(":tn:config/tnspells");
 			var elem := FindConfigElem(cfg, spellinfo.id);
 			var name := GetConfigString(elem, "Name");
-			//PrintTextAbove(item, " " + name);
+			//printtext(item, " " + name);
 			if (name && GetObjProperty(item, "magic") != 2)
 				SetName(item, item.desc+" ["+name+"]");
 			endif

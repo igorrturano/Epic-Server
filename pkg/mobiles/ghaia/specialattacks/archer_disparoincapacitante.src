@@ -34,7 +34,7 @@ program tironojoelho(params)
 
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
-	PrintTextAbove(attacker, "Mira no joelho do alvo!");
+	PrintText(attacker, "Mira no joelho do alvo!");
 	TS_StartTimer(defender, "paralysis", 6);
 	Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, weapon, armor,
 														 	basedamage, rawdamage });

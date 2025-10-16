@@ -32,7 +32,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintTextAbove(attacker, "*desarma " + defender.name + "*");
+	PrintText(attacker, "*desarma " + defender.name + "*");
 
 	var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
 	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);

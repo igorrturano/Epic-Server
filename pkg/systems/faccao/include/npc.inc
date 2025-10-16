@@ -134,7 +134,7 @@ function ContractNPC(guild, npc_i, who, loc)
 				var equipped := EquipItem(agent, item);
        		endforeach
 
-			PrintTextAbove(agent, "As suas ordens");
+			PrintText(agent, "As suas ordens");
 
 			npc_list.append(struct{
 				"serial" := agent.serial,
@@ -160,7 +160,7 @@ function ContractNPC(guild, npc_i, who, loc)
           SetBoss(agent, template.bossStruct);
        endif
 */
-			PrintTextAbove(agent, "As suas ordens");
+			PrintText(agent, "As suas ordens");
 
 			npc_list.append(struct{
 				"serial" := agent.serial,

@@ -19,7 +19,7 @@ program Logon(who)
 
 	var e := Start_Script("auraControl", { who });
 	if (e == error)
-		PrintTextAbove(who, " " + e);
+		PrintText(who, " " + e);
 	endif
 	var magia := GetObjProperty(who, "chardata").magia;
 	if (magia == "Shaman" && !GetProcess(GetObjProperty(who, "#clericpid")))

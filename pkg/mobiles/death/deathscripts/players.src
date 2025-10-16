@@ -42,7 +42,7 @@ program death(params)
 
 	if (killer.npctemplate || killer.connected) // Assassino existente
 		if (temhabilidade(ghost, "Ultimo Suspiro") && Distance(killer, corpse) <= 2)
-			PrintTextAbove(corpse, "*acerta um ponto vital de " + killer.name + "*");
+			PrintText(corpse, "*acerta um ponto vital de " + killer.name + "*");
 			TS_StartTimer(killer, "bleed", 30);
 		endif
 	endif
@@ -372,7 +372,7 @@ function KataWakeUp(ghost, corpse)
 	if (TemHabilidade(ghost, "Recuperacao"))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
-		// 		PrintTextAbove(ghost, " " + GetHP(ghost));
+		// 		printtext(ghost, " " + GetHP(ghost));
 		HealDamage(ghost, GetHP(ghost) + 1);
 	endif
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
@@ -382,7 +382,7 @@ function KataWakeUp(ghost, corpse)
 	DestroyItem(corpse);
 
 	if (GetObjProperty(ghost, "corda"))
-		PrintTextAbove(ghost, "*amarrado*");
+		PrintText(ghost, "*amarrado*");
 		SendSysMessage(ghost, "Para tentar se soltar utilize o comando .soltar");
 		var item;
 		item := GetEquipmentByLayer(ghost, LAYER_HAND1);

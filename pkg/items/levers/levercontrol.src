@@ -31,13 +31,13 @@ program lever(item)
 				var word := lower(event.text);
 				if (word == lower(powerevent))
 					item.invisible := 0;
-					PrintTextAbove(item, "*!*");
+					PrintText(item, "*!*");
 					SetObjProperty(item, "reset_cd", polcore().systime + 600);
 				endif
 			elseif (event.source.concealed)
 			//         elseif (event.type == SYSEVENT_ENTEREDAREA && event.source.connected && item.invisible && !powerevent)
 			//          item.invisible := 0;
-			// PrintTextAbove(item, "*!*");
+			// PrintText(item, "*!*");
 			//        SetObjProperty(item, "reset_cd", polcore().systime+600);
 			endif
 		endif

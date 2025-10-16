@@ -19,8 +19,8 @@ program diceroll(who, item)
 		var segundoresultado := (RandomInt(6) + 1);
 		if (usarhab)
 			var valor := RadioGump(who, 200, 260, "Escolha o valor", { "1", "2", "3", "4", "5", "6" });
-			PrintTextAbove(who, "*Primeiro Dado: " + valor + "*");
-			PrintTextAbove(who, "*Segundo Dado: " + segundoresultado + "*");
+			PrintText(who, "*Primeiro Dado: " + valor + "*");
+			PrintText(who, "*Segundo Dado: " + segundoresultado + "*");
 		else
 			coin(who); // Random normal
 		endif
@@ -45,29 +45,29 @@ function coin(who)
 
 	var valor := RadioGump(who, 200, 260, "Vai rolar quantos dados?", { "1", "2", "3", "4",
 																		"5", "6" });
-	PrintTextAbove(who, "*Rola " + valor + " Dados*");
+	PrintText(who, "*Rola " + valor + " Dados*");
 	if (valor == "1")
-		PrintTextAbove(who, "Resultado: " + dado1 + "");
+		PrintText(who, "Resultado: " + dado1 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;
 	elseif (valor == "2")
-		PrintTextAbove(who, "Resultado: " + dado1 + ", " + dado2 + "");
+		PrintText(who, "Resultado: " + dado1 + ", " + dado2 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;
 	elseif (valor == "3")
-		PrintTextAbove(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + "");
+		PrintText(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;
 	elseif (valor == "4")
-		PrintTextAbove(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + ", " + dado4 + "");
+		PrintText(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + ", " + dado4 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;
 	elseif (valor == "5")
-		PrintTextAbove(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + ", " + dado4 + ", " + dado5 + "");
+		PrintText(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3 + ", " + dado4 + ", " + dado5 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;
 	elseif (valor == "6")
-		PrintTextAbove(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3
+		PrintText(who, "Resultado: " + dado1 + ", " + dado2 + ", " + dado3
 				   + ", " + dado4 + ", " + dado5 + ", " + dado6 + "");
 		PlaySoundEffect(who, 0x2E4);
 		return;

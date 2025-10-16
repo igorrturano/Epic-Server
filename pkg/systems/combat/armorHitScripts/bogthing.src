@@ -16,7 +16,7 @@ program HitScript(params)
 	params := 0; // Not needed anymore.
 
 	if (RandomInt(100) < 20) // 20% de chance sempre
-		PrintTextAbove(defender, "*cria do pantano surge entre horror do pantano*");
+		PrintText(defender, "*cria do pantano surge entre horror do pantano*");
 		CreateNpcFromTemplate(":brainai:bogling", defender.x, defender.y, defender.z, 0, defender.realm);
 	endif
 

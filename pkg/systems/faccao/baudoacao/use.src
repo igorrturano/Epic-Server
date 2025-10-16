@@ -70,7 +70,7 @@ endprogram
 function OpenChestAndGump(who, item)
 	var message := GetOpeningMessage(who);
 	SendSysMessage(who, message);
-	PrintTextAbove(who, "*Abriu " + item.desc + "*");
+	PrintText(who, "*Abriu " + item.desc + "*");
 	SendViewContainer(who, item);
 endfunction
 

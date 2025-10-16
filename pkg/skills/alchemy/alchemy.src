@@ -21,7 +21,7 @@ program skill_alchemy(who)
 	endif
 
 	if (item.graphic == 3849)
-		PrintTextAbove(who, "*analisando um frasco*");
+		PrintText(who, "*analisando um frasco*");
 
 		var identificado := GetObjProperty(item, "magicwho");
 

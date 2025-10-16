@@ -30,7 +30,7 @@ program TimedScript_sacrificio(params)
 
 		SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, ARCANA) / 20));
 		SetObjProperty(who, "#xsac", i);
-		PrintTextAbove(who, "*queimando com chamas da espada*");
+		PrintText(who, "*queimando com chamas da espada*");
 		sleep(5);
 
 		i := i + 1;

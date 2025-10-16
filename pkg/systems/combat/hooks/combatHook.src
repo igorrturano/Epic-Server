@@ -175,7 +175,7 @@ function CanAttack(attacker, defender)
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
 	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		PrintTextAbove(attacker, "*hipnotizado*");
+		PrintText(attacker, "*hipnotizado*");
 		return 0;
 	endif
 

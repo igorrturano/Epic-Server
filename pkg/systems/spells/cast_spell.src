@@ -253,13 +253,13 @@ endfunction
 
 function performSpellVocalization(mobile, spellinfo)
 	if (spellinfo.powerwords && GetObjProperty(mobile, "#magiasilenciosa") == error)
-		PrintTextAbove(mobile, spellinfo.powerwords);
+		PrintText(mobile, spellinfo.powerwords);
 	endif
 // if (spellinfo.prayer[1] && GetObjProperty(mobile, "#magiasilenciosa") == error)
 //     if (RandomInt(100) < 15)
 //         var prayer := spellinfo.prayer[RandomInt(spellinfo.prayer.size()) + 1];
 //         prayer := replaceAccentedCharacters(prayer);
-//         PrintTextAbove(mobile, prayer);
+//         PrintText(mobile, prayer);
 //     endif
 // endif
 endfunction
@@ -426,7 +426,7 @@ function checkTargetValidity(mobile, targ, spellinfo)
 	endif
 
 	if (Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
-		PrintTextAbove(mobile, "*hipnotizado*");
+		PrintText(mobile, "*hipnotizado*");
 		return 0;
 	endif
 

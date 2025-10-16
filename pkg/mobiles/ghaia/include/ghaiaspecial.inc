@@ -46,7 +46,7 @@ function CanFight(me, mobile, align)
 	var dif := CalculateDhDiff(me, mobile);
 	if ( CheckLineOfSight(mobile, me) && (SkillCheck(me, AWARENESS, dif) > 0) )
 		mobile.hidden := 0;
-		PrintTextAbove(mobile, "*aparece*");
+		PrintText(mobile, "*aparece*");
 		SendSysMessage(me, "Voce encontrou "+mobile.name+".");
 		SendSysMessage(mobile, me.name+" te encontrou!");
 		if ( GetObjProperty(me, "attackhiddenenemy" ))
@@ -60,14 +60,14 @@ function CanFight(me, mobile, align)
   elseif (mobile.cmdlevel && GetObjProperty(mobile, "ignorenpcs") == 1) //kra eh gm
         return 0;
   elseif ( GetCooldown(me, "peacemade") > 0 )
-	//PrintTextAbove(me, "nao");
+	//printtext(me, "nao");
 	return 0;
   elseif ( GetObjProperty(mobile, "#fantasma") == 1)
 	return 0;
     endif
-  //PrintTextAbove(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
+  //printtext(me, "nao vou atacar " + mobile.name + " " + GetObjProperty(mobile, "#deathtime" ) );
   if ( Cint(GetCooldown(mobile, "deathtime" )) > 0  )
-	//PrintTextAbove(me, "nao vou atacar" + mobile.name);
+	//printtext(me, "nao vou atacar" + mobile.name);
 	return 0;
   endif
   
@@ -89,7 +89,7 @@ function CanFight(me, mobile, align)
 				endif
 		endif
       
-      //PrintTextAbove(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais"))); 
+      //printtext(me, "mytemplate " + mytemplate + " " + cint(GetObjProperty(mobile, "empatiacomanimais"))); 
       if ( (cint(GetObjProperty(mobile, "empatiacomanimais")) == 1) || TemHabilidade(mobile, "Senso da Natureza" )) //verifica se tem empatia por animais
         if ( (mytemplate == "giantbat") || (mytemplate == "giantrat") || (mytemplate == "gianttoad") 
         || (mytemplate == "giantserpent") || (mytemplate == "snake") || (mytemplate == "mongbat") || (mytemplate == "naja")
@@ -163,13 +163,13 @@ function AlertAllies(me, opponent)
   */
   /*var allies := GetConfigStringArray( npccfgfile[mytemplate], "allie" );
   
- // PrintTextAbove(me, " " + allies);
+ // printtext(me, " " + allies);
   
   foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
     if (mobile.npctemplate)
       	if ( ParseTemplateName(mobile.npctemplate).template in allies)
 		if (mobile.opponent == error)
-		//	PrintTextAbove(mobile, "fui alertado");
+		//	printtext(mobile, "fui alertado");
         		SendEvent(mobile, ev);
 		endif
 	endif
@@ -298,14 +298,14 @@ function InitializeNpc(mobile)
 
   //elem := FindConfigElem(npccfgfile, mytemplate);
   propallies := GetConfigStringDictionary( elem, "allyprop");
-  //PrintTextAbove(mobile, " prop " + propallies + " " + elem + " " + propallies);
+  //printtext(mobile, " prop " + propallies + " " + elem + " " + propallies);
 
   var spawnpointserial := GetObjProperty(mobile, "spawnpoint");
-  //PrintTextAbove(mobile, " " + spawnpointserial);
+  //printtext(mobile, " " + spawnpointserial);
   //print("spawnpoint " + spawnpointserial);
   if (spawnpointserial)
     var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
-    //PrintTextAbove(mobile, " " + spawnpoint);
+    //printtext(mobile, " " + spawnpoint);
     if (spawnpoint)
       var range := cint(GetObjProperty(spawnpoint, "Range"));
       if (!range)
@@ -318,7 +318,7 @@ function InitializeNpc(mobile)
     endif
   endif
 
-//PrintTextAbove(mobile, "initialize npc");
+//printtext(mobile, "initialize npc");
   if (GetObjProperty(mobile, "started"))
 	return 0;
   endif
@@ -365,7 +365,7 @@ function MoveAround()
           TurnTowardLocation( anchor[1], anchor[2] );
           WalkTowardLocation( anchor[1], anchor[2] );
 		  if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35 && !GetObjProperty(me, "#peacemode"))
-			PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+			PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
 			sleep(3);
 			MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
 		  endif
@@ -388,8 +388,8 @@ function hasCombat(me)
   var str := GetConfigString(npccfgfile[mytemplate],  "SpecialCombat");
   str := splitwords(str);
   if TS_GetCooldown(me, str[1]))
-    return PrintTextAbove(me, "Estou em Cooldown");
-  //PrintTextAbove(me, " " + str);
+    return PrintText(me, "Estou em Cooldown");
+  //printtext(me, " " + str);
   if (str.size() >= 1)
       return 1;
   endif
@@ -400,13 +400,13 @@ function doCombatSpecial(me)
 
   var str := GetConfigString(npccfgfile[mytemplate],  "SpecialCombat");
   str := splitwords(str);
-  //PrintTextAbove(me, " " + TS_GetCooldown(me, str[1]))
+  //printtext(me, " " + TS_GetCooldown(me, str[1]))
   if (!TS_GetCooldown(me, str[1]))
     sleemps(10);
     TS_StartCooldown(me, cstr(str[1]), cint(str[2]));
       var e := Start_Script(str[1], array{me, cint(str[2]), str[1]});
     sleemps(10);
-      //PrintTextAbove(me, " " + e +  " " + str[1]);
+      //printtext(me, " " + e +  " " + str[1]);
   endif
 
 endfunction
@@ -664,7 +664,7 @@ function herd(ev)
         endcase
   endwhile
   if (saytrigger)
-  	PrintTextAbove(me, "*atende o chamado de " + nome + "*");
+  	printtext(me, "*atende o chamado de " + nome + "*");
   endif
 
   if (idlesound)

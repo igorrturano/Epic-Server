@@ -23,7 +23,7 @@ program manobra(attacker)
 		return;
 	endif
 
-	PrintTextAbove(attacker, "*ordena os aliados*");
+	PrintText(attacker, "*ordena os aliados*");
 
 	var testes := array;
 

@@ -7,7 +7,7 @@ program cureScript(params)
 	var mobile := params[1];
 
 	var color := CInt(GetObjProperty(mobile, "#RealColor"));
-	// PrintTextAbove(mobile, "color " + color);
+	// printtext(mobile, "color " + color);
 	if (color)
 		mobile.color := color;
 	endif
