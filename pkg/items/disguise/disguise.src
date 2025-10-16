@@ -171,7 +171,7 @@ function usarDisfarce(who, disfarce)
 		Print("Disguise");
 	endif
 */
-	PrintText(who, "*usando um disfarce*");
+	PrintTextAbove(who, "*usando um disfarce*");
 
 	var original := struct;
 

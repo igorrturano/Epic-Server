@@ -42,7 +42,7 @@ program meditar(who, text)
 	elseif (GetObjProperty(who, "cold_arrow"))
 		sound := 0x5c8;
 	endif
-	PrintText(who, "*Canalizando Elemento*");
+	PrintTextAbove(who, "*Canalizando Elemento*");
 	PlaySoundEffect(who, sound); // hammer
 	sleep(2);
 	PlaySoundEffect(who, 0x656); // purgeMagic

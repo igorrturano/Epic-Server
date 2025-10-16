@@ -14,7 +14,7 @@ program habilidade(who)
 	var theology_skill := AP_GetSkill(who, THEOLOGY);
 	var duration := Cint(theology_skill / 5);
 
-	PrintText(who, "*Ascende à manifestação divina*");
+	PrintTextAbove(who, "*Ascende à manifestação divina*");
 	PlayObjectCenteredEffect(who, 0x37C4, 1, 32);
 	PlaySoundEffect(who, 0x1F2);
 
@@ -29,7 +29,7 @@ program habilidade(who)
 			var nearby_enemies := GetNearbyEnemies(who, 8);
 			foreach enemy in nearby_enemies
 				TS_StartTimer(enemy, "apodrecer", duration);
-				PrintText(enemy, "*marcado pela glória eterna*");
+				PrintTextAbove(enemy, "*marcado pela glória eterna*");
 				PlayObjectCenteredEffect(enemy, 0x37C4, 10, 20);
 				SendSysMessageEx(enemy, "Você foi marcado pela glória divina eterna!", SSM_FAIL);
 			endforeach
@@ -65,7 +65,7 @@ program habilidade(who)
 
 					if (isDarknessCreature && !InDarkness(mobile))
 						ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
-						PrintText(mobile, "*destruido pela luz divina*");
+						PrintTextAbove(mobile, "*destruido pela luz divina*");
 						PlayObjectCenteredEffect(mobile, 0x36BD, 10, 20);
 					endif
 				endif
@@ -85,7 +85,7 @@ program habilidade(who)
 				SetObjProperty(ally, "#attackbonus", 100);
 				SetObjProperty(ally, "#CriticalChance", 100);
 
-				PrintText(ally, "*destino manifesto*");
+				PrintTextAbove(ally, "*destino manifesto*");
 				PlayObjectCenteredEffect(ally, 0x373A, 10, 20);
 				SendSysMessageEx(ally, "Seu destino foi manifestado! Seu próximo atque será um acerto crítico!",
 								  SSM_INFO);

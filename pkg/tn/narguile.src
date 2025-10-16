@@ -23,7 +23,7 @@ program usenarguile(who, item)
 		endif
 
 		if (narguile.objtype == 0x9956)
-			PrintText(who, "*Preenchendo o Narguile com ervas mentolada*", 3, 0);
+			PrintTextAbove(who, "*Preenchendo o Narguile com ervas mentolada*", 3, 0);
 			TS_StartTimer(narguile, "narguile", 600);
 			var tragadas := Getobjproperty(narguile, "tragadas");
 			if (tragadas == error)
@@ -61,7 +61,7 @@ program usenarguile(who, item)
 			return 0;
 		endif
 
-		PrintText(who, "*Tragando o Narguile*", 3, 0);
+		PrintTextAbove(who, "*Tragando o Narguile*", 3, 0);
 		var fumaca := Createitematlocation(item.x, item.y, (item.z + 10), 14133, 1, who.realm);
 		fumaca.color := 1150;
 		sleepms(6000);

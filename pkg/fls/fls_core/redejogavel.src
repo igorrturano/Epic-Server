@@ -59,7 +59,7 @@ program jogarede(who, rede)
 	DestroyItem(rede);
 	AP_ConsumeVital(who, "Stamina", 10);
 
-	PrintText(who, "*Arremessa uma rede em " + alvo.name + "*");
+	PrintTextAbove(who, "*Arremessa uma rede em " + alvo.name + "*");
 	PlaySoundEffect(who, 0x51C);
 	PlayMovingEffect(who, alvo, rede, 10);
 
@@ -68,12 +68,12 @@ program jogarede(who, rede)
 		alvo.frozen := 1;
 		var preso1 := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA4, alvo.realm);
 
-		PrintText(alvo, "*Preso*");
+		PrintTextAbove(alvo, "*Preso*");
 		SetObjProperty(alvo, "corda", 1);
 		sleepms(5);
 		sleep(4);
 		sleepms(50);
-		PrintText(alvo, "*Começa a se soltar*");
+		PrintTextAbove(alvo, "*Começa a se soltar*");
 		sleep(4);
 		alvo.frozen := 0;
 		DestroyItem(preso1);
@@ -99,7 +99,7 @@ program jogarede(who, rede)
 
 		var preso1 := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA4, alvo.realm);
 
-		PrintText(alvo, "*Preso*");
+		PrintTextAbove(alvo, "*Preso*");
 		SetObjProperty(alvo, "corda", 1);
 		sleepms(5);
 		sleep(4);

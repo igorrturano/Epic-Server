@@ -113,7 +113,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 				PerformAction( quem, ANIM_CAST_DIR );
 
 				if(contadorInterno >=  CORES_AQUECIMENTO_FORJA.size())
-					PrintText(produto,"*Item em brasa*");
+					PrintTextAbove(produto,"*Item em brasa*");
 				endif
 
 				if(contadorInterno >= LIMITE_AQUECIMENTO)
@@ -226,7 +226,7 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 						estacao.realm, 
 						MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 		
-		PrintText(quem,"*Trabalhando*");
+		PrintTextAbove(quem,"*Trabalhando*");
 		PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
 		PlaySoundEffect(quem, SFX_56);
 		CheckToolWear(quem,ferramentaNecessaria,skill);

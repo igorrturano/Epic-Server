@@ -28,7 +28,7 @@ program animateSword(params)
 
 	Performaction(who, elem.Anim);
 	PlaySoundEffect(who, 0x520);
-	PrintText(who, "*Ryu no Ikari*");
+	PrintTextAbove(who, "*Ryu no Ikari*");
 
 	sleepms(2);
 	PushBackEX(who, 5, 50, 1);
@@ -98,7 +98,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-			// 	PrintText(who, "*bate no obstaculo*");
+			// 	PrintTextAbove(who, "*bate no obstaculo*");
 			return 0;
 		endif
 		sleepms(delay);

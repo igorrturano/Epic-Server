@@ -53,7 +53,7 @@ program cabelo(who)
 			MP_Unmount(who);
 		endif
 		MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
-		PrintText(who, "*pulou a cerca*");
+		PrintTextAbove(who, "*pulou a cerca*");
 	else
 		SendSysMessageEx(who, "Voce nao pode pular isto.", SSM_FAIL);
 		return 0;

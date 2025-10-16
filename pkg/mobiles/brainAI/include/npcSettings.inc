@@ -124,11 +124,11 @@ function NPC_LoadScriptSettings(source)
 	var script_list := GetConfigStringDictionary(npc_elem, "AIScript");
 	var flag_list := GetConfigStringDictionary(npc_elem, "AIScriptFlag");
 
-	//printtext(npc, "npc_elem " + npc_elem + " source " + source);
+	//PrintTextAbove(npc, "npc_elem " + npc_elem + " source " + source);
 
 	var script_settings := dictionary;
 	foreach script_type in (script_list.keys())
-		//printtext(npc, "script " + script_type);
+		//PrintTextAbove(npc, "script " + script_type);
 		var temp := struct;
 		temp.+script := script_list[script_type];
 		

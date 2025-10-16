@@ -31,21 +31,21 @@ program usedardo(who, dardo)
 		var msg := RandomInt(3);
 		PlaySoundEffect(targ, 570);
 		if (msg == 0)
-			PrintText(targ, "*desvia*");
+			PrintTextAbove(targ, "*desvia*");
 		elseif (msg == 1)
-			PrintText(targ, "ha! errou!");
+			PrintTextAbove(targ, "ha! errou!");
 		elseif (msg == 2)
-			PrintText(targ, "voce parece uma mocinha!");
+			PrintTextAbove(targ, "voce parece uma mocinha!");
 		endif
 		return 1;
 	elseif (rand > 15 && rand <= 20)
 		var msg := RandomInt(3);
 		if (msg == 0)
-			PrintText(targ, "arghh!");
+			PrintTextAbove(targ, "arghh!");
 		elseif (msg == 1)
-			PrintText(targ, "argh! isso doi!");
+			PrintTextAbove(targ, "argh! isso doi!");
 		elseif (msg == 2)
-			PrintText(targ, "ikes! joga a mae!");
+			PrintTextAbove(targ, "ikes! joga a mae!");
 		endif
 
 		targ.graphic := 6481;

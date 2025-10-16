@@ -25,7 +25,7 @@ program DeathScript(params)
 		if (item.isa(POLCLASS_ARMOR))
 			DesTroyItem(item);
 		endif
-	// printtext(corpse, " " + e);
+	// PrintTextAbove(corpse, " " + e);
 	endforeach
 
 	DesTroyItem(corpse);

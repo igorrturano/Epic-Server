@@ -27,7 +27,7 @@ program SpellScript(params)
 
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 
-	PrintText(targ, "*transformando-se*");
+	PrintTextAbove(targ, "*transformando-se*");
 
 	targ.graphic := 81;
 	sleepms(400);

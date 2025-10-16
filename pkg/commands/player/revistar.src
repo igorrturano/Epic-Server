@@ -56,7 +56,7 @@ program textcmd_openPack(who)
 				endif
 			endif
 		endif
-		PrintText(who, "*revistando " + targ.name + "*");
+		PrintTextAbove(who, "*revistando " + targ.name + "*");
 		SendOpenSpecialContainer(who, targ.backpack);
 
 		while (1)

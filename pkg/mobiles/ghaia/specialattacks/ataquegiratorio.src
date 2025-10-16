@@ -27,7 +27,7 @@ program doubleattack(params)
 		return;
 	endif
 
-	PrintText(attacker, "*ataque giratorio*");
+	PrintTextAbove(attacker, "*ataque giratorio*");
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);
 

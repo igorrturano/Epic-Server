@@ -44,9 +44,9 @@ program Test(who)
 
 	if (!(who.hidden || who.concealed))
 		if (type == "corpo")
-			PrintText(who, "*arrastando " + targ.desc + "*");
+			PrintTextAbove(who, "*arrastando " + targ.desc + "*");
 		else
-			PrintText(who, "*arrastando " + targ.name + "*");
+			PrintTextAbove(who, "*arrastando " + targ.name + "*");
 		endif
 	endif
 
