@@ -14,7 +14,7 @@ const GUMPID_CLERICSPELL := 0x00001C;
 program clericPowerWords(who)
 	detach();
 	var magia := GetObjProperty(who, "chardata").magia;
-	if (magia != "Shaman" && magia != "Sacerdote")
+	if (magia != "Shaman" && magia != "Sacerdote" && magia != "Druid")
 		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
 		return;
 	endif
@@ -69,6 +69,31 @@ program clericPowerWords(who)
 				priest_list := GetObjProperty(who, "priest_list");
 				priest_list.Erase(slot);
 				SetObjProperty(who, "priest_list", priest_list);
+				SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+				canceled := 1;
+			endif
+		endwhile
+	elseif (magia == "Druid")
+		var druid_list := GetObjProperty(who, "druid_list");
+		if (!druid_list)
+			druid_list := array{};
+		endif
+		var slots_used := 0;
+		foreach spell in druid_list
+			slots_used += cint(spell.circle);
+		endforeach
+		var available_slots := cleric_slots - slots_used;
+		var canceled := 0;
+		while (!canceled)
+			var input := CreateClericGump(who, druid_list, available_slots);
+
+			if (!input[0])
+				canceled := 1;
+			elseif (input[0] >= 200)
+				var slot := input[0] - 200;
+				druid_list := GetObjProperty(who, "druid_list");
+				druid_list.Erase(slot);
+				SetObjProperty(who, "druid_list", druid_list);
 				SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
 				canceled := 1;
 			endif

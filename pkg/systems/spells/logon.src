@@ -21,14 +21,16 @@ program Logon(who)
 	if (e == error)
 		PrintTextAbove(who, " " + e);
 	endif
-	var magia := GetObjProperty(who, "chardata").magia;
-	if (magia == "Shaman" && !GetProcess(GetObjProperty(who, "#clericpid")))
-		Start_Script(":spells:powerWords", array{ who });
-	endif
 
-	if (magia == "Sacerdote" && !GetProcess(GetObjProperty(who, "#priestpid")))
-		Start_Script(":spells:powerWords", array{ who });
-	endif
+	// DEPRECATED: powerWords listener system removed in favor of .r command
+	// Priests, Shamans, and Druids now use `.r <spellname>` to cast memorized rituals
+	// var magia := GetObjProperty(who, "chardata").magia;
+	// if (magia == "Shaman" && !GetProcess(GetObjProperty(who, "#clericpid")))
+	// 	Start_Script(":spells:powerWords", array{ who });
+	// endif
+	// if (magia == "Sacerdote" && !GetProcess(GetObjProperty(who, "#priestpid")))
+	// 	Start_Script(":spells:powerWords", array{ who });
+	// endif
 
 	Start_Script(":epicai:scripts/npctracker", who);
 
