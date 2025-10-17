@@ -24,7 +24,7 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 endenum
 
 enum MAXIMO_BTN_IDS // Valores máixmos dos ids.
-	COMPLEXOS_DROPDOWN_MAX := 20,
+	COMPLEXOS_DROPDOWN_MAX := 80,
 	COMPONENTES_DROPDOWN_MAX := 10,
 endenum
 
@@ -373,9 +373,10 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessa
 		return 0;
 	endif
 	var gerenciador := sessao.gerenciadorDropDown;
-	gerenciador.dropDowns[indice].x := x;
-	gerenciador.dropDowns[indice].y := y + 20;
-	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
+	var dropDownAtual := gerenciador.PegaDropDowns()[indice];
+	dropDownAtual.AtribuiX(x);
+	dropDownAtual.AtribuiY(y + 20);
+	var nome := dropDownAtual.PegaValorEscolhido().nome ? dropDownAtual.PegaValorEscolhido().nome : "";
 
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
 	GFTextLine(gump,x + 20,y, (Find(material,materialPrincipal,1) ? 253 : 1111), Trim(material) + ": " + nome);
@@ -486,10 +487,10 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	var xBotao := x + 5;
 	var yBotao := y + 60;
 	var gerenciador := sessao.gerenciadorDropDown;
-	gerenciador.dropDowns[indice].x := xBotao;
-	gerenciador.dropDowns[indice].y := yBotao + 20;
+	gerenciador.PegaDropDowns()[indice].AtribuiX(xBotao);
+	gerenciador.PegaDropDowns()[indice].AtribuiY(yBotao + 20);
 	
-	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,gerenciador.dropDowns[indice].idBottao);
+	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,gerenciador.dropDowns[indice].PegaIdBottao());
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)

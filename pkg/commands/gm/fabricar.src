@@ -1,0 +1,7 @@
+use uo;
+
+include ":crafting:fabricaComplexos";
+
+program fabricarItem(quem)
+	FabricaItensComplexos(quem, "Blacksmithy", true);
+endprogram

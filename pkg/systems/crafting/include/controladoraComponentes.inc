@@ -62,7 +62,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 	var gump;
 
 	while(retorno)
-		FechaTodosDropdowns(quem,gerenciador.dropDowns);
+		FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
 			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos);
@@ -81,10 +81,10 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
-				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
-				var objetoDropDown := gerenciador.dropDowns[indice];
+				var indice := retorno[0] - gerenciador.PegaAdicionalIdDropDown();
+				var objetoDropDown := gerenciador.PegaDropDowns()[indice];
 
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
 				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
 				
 				if(process)

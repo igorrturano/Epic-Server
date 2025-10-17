@@ -3,17 +3,19 @@
 include ":gumps:/include/epicGumps";
 
 class DropDown()
+
+	var VALOR_ESCOLHIDO_BASE := struct; 
 	
-	function DropDown(this,idBottao,x,y,pid,adicionalIdValores , valorEscolhido, gerenciador, largura := 200)
+	function DropDown(this,idBottao,x,y,pid,adicionalIdOpcoes , valorEscolhido, gerenciador, largura := 200)
 		this.idBottao := CInt(idBottao);
 		this.x := x;
 		this.y := y;
 		this.largura := largura;
 		this.pid := pid;
 		this.gerenciador := gerenciador;
-		this.valores := array;
+		this.itens := array;
 		this.valorEscolhido := valorEscolhido;
-		this.adicionalIdValores := adicionalIdValores;
+		this.adicionalIdOpcoes := adicionalIdOpcoes;
 	endfunction
 
 	function AdicionaOpcao(this,opcao,indice,valor)
@@ -23,10 +25,24 @@ class DropDown()
 			return isValida;
 		endif
 		
-		var objeto := MontaOpcao(this, opcao, indice, valor);
+		var objetoOpcao := MontaOpcao(this, opcao, indice, valor);
 
-		this.valores.append(objeto);
+		this.itens.append(objetoOpcao);
 		return 1;
+	endfunction
+
+	function AdicionaOpcoes(this,dictOpcoes)
+
+		if(TypeOfInt( dictOpcoes ) == OT_DICTIONARY)
+			var indice := 1;
+			foreach opcao in (dictOpcoes.keys())
+				Sleepms(2);
+				this.AdicionaOpcao(opcao, _opcao_iter, dictOpcoes[opcao]);
+			endforeach
+		else
+			return error{"errortext" := "parâmetro [dictOpcoes] precisa ser do tipo dictionary."};
+		endif
+
 	endfunction
 
 	function MontaOpcao(this,opcao,indice, valor)
@@ -35,7 +51,7 @@ class DropDown()
 		
 		var objeto := struct;
 		objeto.+opcao := opcao;
-		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdValores, valorReal := valor}; 
+		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdOpcoes, valorReal := valor}; 
 
 		return objeto;
 	endfunction
@@ -45,14 +61,14 @@ class DropDown()
 			return error{"errortext" := "parâmetro obrigatório [opcao] não informado."};
 		endif
 
-		if(this.valores.size() > this.gerenciador.maxOpcoes)
+		if(this.itens.size() > this.gerenciador.maxOpcoes)
 			return error{"errortext" := "Limite de opções alcançado. opcao "  + opcao + " não incluída."};
 		endif
 
 		var opcaoExists := false;
-		foreach valor in (this.valores)
+		foreach item in (this.itens)
 			Sleepms(2);
-			if(valor.opcao == opcao)
+			if(item.opcao == opcao)
 				opcaoExists:= true;
 				break;
 			endif
@@ -65,12 +81,13 @@ class DropDown()
 		return 1;
 	endfunction
 
-	function ResetaValores(this)
-		this.valores := array;
+	function ResetaItens(this)
+		this.itens := array;
+		this.valorEscolhido := VALOR_ESCOLHIDO_BASE;
 	endfunction
 
 	function LimpaValorEscolhido(this)
-		this.valorEscolhido := struct;
+		this.valorEscolhido := VALOR_ESCOLHIDO_BASE;
 	endfunction
 
 	function RemoveOpcao(this,opcao)
@@ -78,19 +95,24 @@ class DropDown()
 			return error{"errortext" := "parâmetro obrigatório não informado."};
 		endif
 
-		var indice := this.valores.findIndex( @(valor) {
-				return valor == opcao;
+		var indice := this.itens.findIndex( @(item) {
+				return item == opcao;
 		});
 
 		if(indice)
-			this.valores.erase(indice);
+			this.itens.erase(indice);
 		endif
 	endfunction
 
 	function DefineValorEscolhido(this, idOpcaoSelecionada)
-		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdValores) % this.gerenciador.maxOpcoes;
-		this.valorEscolhido := this.valores[indiceValorSelecionado].botao.valorReal;
+		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdOpcoes) % this.gerenciador.maxOpcoes;
+		this.valorEscolhido := this._PegaValorReal(this.itens[indiceValorSelecionado]);
+		this.bufferValorEscolhido := this.valorEscolhido;
 		return this;
+	endfunction
+
+	function _PegaValorReal(this, opcao)
+		return  opcao.botao.valorReal;
 	endfunction
 
 	function PegaTexto(this)
@@ -100,9 +122,49 @@ class DropDown()
 		" y: " + this.y +
 		" pid: " + this.pid +
 		" valorEscolhido: " + this.valorEscolhido +
-		" valores: " + this.valores +
-		" adicionalIdValores: " + this.adicionalIdValores;
+		" itens: " + this.itens +
+		" adicionalIdOpcoes: " + this.adicionalIdOpcoes;
 
+	endfunction
+
+	function PegaPid(this)
+		return this.pid;
+	endfunction
+
+	function AtribuiPid(this, pid)
+		this.pid := pid;
+	endfunction
+	
+	function PegaValorEscolhido(this)
+		return this.valorEscolhido;
+	endfunction
+
+	function PegaIdBottao(this)
+		return this.idBottao;
+	endfunction
+
+	function PegaX(this)
+		return this.x;
+	endfunction
+	
+	function PegaY(this)
+		return this.y;
+	endfunction
+
+	function AtribuiX(this, x)
+		this.x := x;
+	endfunction
+
+	function AtribuiY(this, y)
+		this.y := y;
+	endfunction
+
+	function PegaLargura(this)
+		return this.largura;
+	endfunction
+
+	function AtribuiLargura(this, largura)
+		this.largura := largura	;
 	endfunction
 
 	function PegaIdBottaoNormalizado(this)
@@ -110,60 +172,66 @@ class DropDown()
 		return this.idBottao - this.gerenciador.adicionalIdDropDown;
 	endfunction
 
-	function Equals(this,obj)
-		if(obj is @DropDown)
-			return cint(this.idBottao) == cint(obj.idBottao) ;
-		else
-			if(TypeOf(obj) == "Integer")
-				return cint(this.idBottao) == cint(obj);
-			endif
-			return false;
-		endif
-	endfunction
 endclass
 
 class GerenciadorDropDown()
 
 	//TODO criar metodo padrão onde se nenhuma das opções for informada, gera os ids dinâmicamente. [versões futuras.]
-	function GerenciadorDropDown(this,maxOpcoes,adicionalIdDropDown,adicionalIdValores,maxDropDown)
+	function GerenciadorDropDown(this,maxOpcoes,adicionalIdDropDown,adicionalIdOpcoes,maxDropDown)
 		this.maxOpcoes := CInt(maxOpcoes);
 		this.maxDropDown := CInt(maxDropDown);
 		this.adicionalIdDropDown := CInt(adicionalIdDropDown);
-		this.adicionalIdValores := CInt(adicionalIdValores);
+		this.adicionalIdOpcoes := CInt(adicionalIdOpcoes);
 		this.idOpcoesMaximo := this.maxOpcoes * this.maxDropDown + this.adicionalIdDropDown;
-		this.dropDowns := array;
+		this.dropDowns := dictionary;
 	endfunction
 
-	function RegistraDropDown(this,idBottao, valorEscolhido := "")
+	function _MontaIdBotao(this, posicao)
+		return cInt(posicao + this.adicionalIdDropDown);
+	endfunction
 
-		var dropDown := DropDown(cInt(idBottao + this.adicionalIdDropDown),0,0,0,this.adicionalIdValores,valorEscolhido, this);
-		this.dropDowns.append(dropDown);
+	function ObtemDropDown(this,posicao, largura := 200, valorEscolhido := "")
+		var dropDown := this.BuscaDropDownPorPosicao(posicao);
+		
+		if(!dropDown) 
+			dropDown := this.RegistraDropDown(posicao, largura , valorEscolhido);
+		else
+			DropDown::ResetaItens(dropDown);
+		endif
+
+		return dropDown;
+	endfunction
+
+	function RegistraDropDown(this,posicaoBottao, largura := 200, valorEscolhido := "")
+		if(valorEscolhido == "")
+			valorEscolhido := DropDown::VALOR_ESCOLHIDO_BASE;
+		endif
+
+		var dropDown := DropDown(this._MontaIdBotao(posicaoBottao),0,0,0,this.adicionalIdOpcoes,valorEscolhido, this, largura);
+		this.dropDowns.insert(dropDown.PegaIdBottao(),dropDown);
 		return dropDown;
 
 	endfunction
 
-	function EncontraDropDown(this,idBottao)
-		foreach object in (this.dropDowns)	
-			if(object.Equals(idBottao + this.adicionalIdDropDown))
-				return object;
-			endif
-			Sleepms(2);
-		endforeach
-		return 0;
+	function BuscaDropDown(this,idBottao)
+		return this.dropDowns[idBottao];
 	endfunction
 
-	function DefineValorEscolhido(this,idOpcaoSelecionada)
+	function BuscaDropDownPorPosicao(this,posicaoBottao)
+		return this.dropDowns[this._MontaIdBotao(posicaoBottao)];
+	endfunction
 
-		var indiceDropDownSelecionado := CInt((idOpcaoSelecionada - this.adicionalIdValores) / this.maxOpcoes) + 1;
-		if(indiceDropDownSelecionado && this.dropDowns.size() > 0 &&  indiceDropDownSelecionado <= this.dropDowns.size())
-			return DropDown::DefineValorEscolhido(this.dropDowns[indiceDropDownSelecionado],idOpcaoSelecionada);
+	function DefineValorEscolhido(this,idBottao,idOpcaoSelecionada)
+		var dropdown := this.EncontraDropDown(idBottao);
+		if(dropdown)
+			return DropDown::DefineValorEscolhido(dropdown,idOpcaoSelecionada);
 		endif
 
-		return error{"errortext" := "valor não encontrado"};
+		return error{"errortext" := "opção não encontrada"};
 	endfunction
 
 	function IsIdDentroOpcoes(this, id)
-		return id >= this.adicionalIdValores && id <= this.idOpcoesMaximo;
+		return id >= this.adicionalIdOpcoes && id <= this.idOpcoesMaximo;
 	endfunction
 
 	function IsIdDentroDropDowns(this, id)
@@ -174,6 +242,39 @@ class GerenciadorDropDown()
 		this.dropDowns := array;
 	endfunction
 
+	function PegaDropDowns(this)
+		return this.dropDowns;
+	endfunction
+
+	function PegaAdicionalIdDropDown(this)
+		return this.adicionalIdDropDown;
+	endfunction
+
+	function PegaAdicionalIdOpcoes(this)
+		return this.adicionalIdOpcoes;
+	endfunction
+
+	function PegaMaxDropDown(this)
+		return this.maxDropDown;
+	endfunction
+
+	function PegaIdOpcoesMaximo(this)
+		return this.idOpcoesMaximo;
+	endfunction
+
+	function Descarga(this)
+		this.dropDowns := dictionary;
+	endfunction
+
+	function FechaTodosDropdowns(this, quem)
+		foreach dropdown in (this.dropdowns)
+
+			if(GetProcess( dropdown.PegaPid() ))
+				CloseGump(quem,dropdown.PegaIdBottao());
+			endif
+			Sleepms(2);
+		endforeach
+	endfunction
 endclass
 
 function MontaDropDownGump(parx,pary,parLargura,valores)
@@ -210,14 +311,4 @@ endfunction
 
 function SendDropDownGump( quem, pid, objetoDropDown)
 	return Start_Script( ":gumps:scripts/dropDown/dropDownGump", array{quem, pid, objetoDropDown} );
-endfunction
-
-function FechaTodosDropdowns(quem,dropdowns)
-	foreach dropdown in dropdowns
-
-		if(GetProcess( dropdown.pid ))
-			CloseGump(quem,dropdown.idBottao);
-		endif
-		Sleepms(2);
-	endforeach
 endfunction

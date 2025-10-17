@@ -1,7 +1,7 @@
 include ":crafting:controladoraComplexos";
 
-function FabricaItensComplexos(quem,profissao)
-	EnviaItensComplexosGump(quem,profissao);
+function FabricaItensComplexos(quem,profissao, isGmMode := false)
+	EnviaItensComplexosGump(quem,profissao, isGmMode);
 endfunction
 
 function GeraItemComplexo( material, objtype, tier, isDispensavel, classe := 1)
