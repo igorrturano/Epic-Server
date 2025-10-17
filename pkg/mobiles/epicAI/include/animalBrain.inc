@@ -56,8 +56,8 @@ function AnimalBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.opponent))
-                        HandleAnimalCombatEvent(ev.opponent);
+                    if (CanFight(me, ev.source))
+                        HandleAnimalCombatEvent(ev.source);
                     endif
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
