@@ -11,10 +11,10 @@ class MarcadorPropagacaoPatogenico( PropagacaoEstiloGas )
 			propPropagacao,
 			momentoNascimento,
 			propagacaoConfig["patogenica"].multiplicadorCiclosMaximo,
-			dictionary{ ESTADO_PROPAGACAO::DORMENTE -> 0x3794, ESTADO_PROPAGACAO::INTENSO -> 0x113B }
+			dictionary{ ESTADO_PROPAGACAO::DORMENTE -> 0x3794, ESTADO_PROPAGACAO::INTENSO -> 0x113B },
+			cint(propagacaoConfig["patogenica"].descasoMinimo)
 		);
 		
-		this.descasoMinimo := cint(propagacaoConfig["patogenica"].descasoMinimo);
 		this.resfriamento := cint(propagacaoConfig["patogenica"].resfriamento);
 		this.duracaoPatogenico := this.PegaPropPropagacao().marcadorProps.duracaoPatogenico;
 		this.nivelInfeccao := this.PegaPropPropagacao().marcadorProps.nivelInfeccao;

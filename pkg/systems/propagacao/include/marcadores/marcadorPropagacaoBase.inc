@@ -4,7 +4,7 @@ include ":propagacao:include/propagacao";
 include ":propagacao:include/marcadores/IMarcadorPropagacao";
 
 class MarcadorPropagacaoBase(IMarcadorPropagacao)
-	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento)
+	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento, descansoMinimo := 0)
 		var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 		if(propPropagacao.geracao == 0)
 			
@@ -28,8 +28,9 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 		this.isAcumulando := false;
 		this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
 		this.fatorMudancaEstado := 1; //divede o medidor de estimulo. limite
-		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50 
-		this.descansoControleDormente := cint(propagacaoConfig["sistema"].descansoMinimo) * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
+		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50
+		this.descasoMinimo := descansoMinimo ? descansoMinimo : cint(propagacaoConfig["sistema"].descansoMinimo);
+		this.descansoControleDormente := this.descasoMinimo * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 

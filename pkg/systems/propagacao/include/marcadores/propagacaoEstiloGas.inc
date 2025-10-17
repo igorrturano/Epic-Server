@@ -14,8 +14,8 @@ include ":nature:include/nature";
 
 class PropagacaoEstiloGas( MarcadorPropagacaoBase )
 
-  function PropagacaoEstiloGas( this, esteItemMarcador, propPropagacao, momentoNascimento, multiplicadorCicloMax, graficos )
-    super( esteItemMarcador, propPropagacao, momentoNascimento );
+  function PropagacaoEstiloGas( this, esteItemMarcador, propPropagacao, momentoNascimento, multiplicadorCicloMax, graficos, descansoMinimo )
+    super( esteItemMarcador, propPropagacao, momentoNascimento, descansoMinimo );
 
     // esteItemMarcador.usescript := ":propagacao:dblClickMarcadorIncendio";
 
