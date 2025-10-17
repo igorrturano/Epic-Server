@@ -5,7 +5,7 @@ function CriaMarcadorPatogenico(
 									y,
 									z,
 									realm,
-									distancia := 1,
+									alcance := 1,
 									ciclosAteExpancao, 
 									duracaoNuvemEmCiclos, 
 									gravidade, 
@@ -22,7 +22,7 @@ function CriaMarcadorPatogenico(
 											struct {
 												tipoPropagacao := PROPAGACAO_TIPO::PATOGENICO,
 												estadoInicial := ESTADO_PROPAGACAO::INTENSO,
-												geracaoMaxima := distancia,
+												geracaoMaxima := alcance,
 												marcadorProps := struct { 
 																	ciclosExpancao := ciclosAteExpancao,
 																	duracaoCiclos := duracaoNuvemEmCiclos,

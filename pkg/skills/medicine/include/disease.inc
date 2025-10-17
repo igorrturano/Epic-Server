@@ -5,7 +5,9 @@ use vitals;
 
 include ":timedscripts:timedScripts";
 include ":attributes:attributes";
+include "include/client";
 include ":medicine:util/diseaseConstants";
+include ":charactercreation:resists";
 
 function ScheduleNextDiseaseEffect(subject, disease_grade)
 	// Base: 3-5 horas para leve, 1-3 horas para moderado, 30min-1hora para grave
@@ -38,30 +40,42 @@ function ScheduleNextDiseaseEffect(subject, disease_grade)
 	return 1;
 endfunction
 
-function InfectMobile(subject,duration,attacker,level,diseases,disease_grade)
-
-	//TODO verificar com o Frajolas se isto faz sentido.
+function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, deveIgnorarResistencia := false)
 
 	if(disease_grade == "" || TypeOfInt(disease_grade) != OT_STRING)
 		return error{"error_text" := "A gravidade é obrigatória."};
 	endif
 
-	UpdateDiseaseProperty(subject, "diseases", diseases);
-	UpdateDiseaseProperty(subject, "grade", disease_grade);
-	var retornoTimer := TS_StartTimer(subject, "disease",duration,level, attacker); // ALTERAR TESTE
+	//TODO verificar com o Frajolas se isto faz sentido.
+	var dif := level * 8;
+	var resistcheck := deveIgnorarResistencia ? false : CheckResist(subject, FORTITUDE, dif);
 
-	if(!retornoTimer)
-		return retornoTimer;
+	if (resistcheck)
+		SendSysMessageEx(subject, "Você resiste aos efeitos da doenca.", SSM_INFO);
+	else
+		SendSysMessageEx(subject, "Você não resiste aos efeitos da doenca.", SSM_FAIL);
+
+		UpdateDiseaseProperty(subject, "diseases", diseases);
+		UpdateDiseaseProperty(subject, "grade", disease_grade);
+		var retornoTimer := TS_StartTimer(subject, "disease",duration,level, attacker); // ALTERAR TESTE
+
+		if(!retornoTimer)
+			return retornoTimer;
+		endif
+
+		var corpo_peste :=  GetEquipmentByLayer( subject, LAYER_PACK2 ); 
+
+		if(!corpo_peste)
+			var corpo_peste := CreateItemAtLocation(subject.x, subject.y, subject.z, 0xd1bc, 1);
+			var isPesteEquipado := EquipItem(subject, corpo_peste);
+			if(!isPesteEquipado)
+				return  error{"error_text" := "Não foi possível criar aparência de pestilência."};
+			endif
+		endif
+
+		UpdateDiseaseProperty(subject, "serial_peste_corpse", corpo_peste.serial);
 	endif
-
-	var corpo_peste := CreateItemAtLocation(subject.x, subject.y, subject.z, 0xd1bc, 1);
-
-	if(TypeOfInt(corpo_peste) == OT_ERROR )
-		return corpo_peste;
-	endif
-
-	EquipItem(subject, corpo_peste);
-	UpdateDiseaseProperty(subject, "serial_peste_corpse", corpo_peste.serial);
+	
 	return 1;
 endfunction
 
