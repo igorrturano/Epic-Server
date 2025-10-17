@@ -20,9 +20,10 @@ program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
 				AfetaMobileIncendiado(quem,estado,propPropagacao);
 			endif
 		elseif(item.IsMarcadorTipo(PROPAGACAO_TIPO::PATOGENICO))
-			Print("Pisei no patogenico e o estado era + " + estado);
 			if(estado == ESTADO_PROPAGACAO::INTENSO)
-				AfetaMobileInfectado(quem,propPropagacao);
+				var propagacaoConfig := ReadConfigFile( ":propagacao:config/propagacao" );
+
+				AfetaMobileInfectado(quem,propPropagacao, cint(propagacaoConfig["patogenica"].resfriamento));
 			endif
 		endif
 	endif

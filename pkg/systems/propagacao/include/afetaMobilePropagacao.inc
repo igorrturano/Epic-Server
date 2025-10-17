@@ -2,6 +2,7 @@ use util;
 
 include ":combat:damage";
 include ":medicine:disease";
+include ":tn:cooldown";
 
 function AfetaMobileIncendiado(quem,estado,propPropagacao,rolagemDano := 0)
 	var danoDado;
@@ -13,20 +14,25 @@ function AfetaMobileIncendiado(quem,estado,propPropagacao,rolagemDano := 0)
 	DamageFLS(quem, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
 endfunction
 
-function AfetaMobileInfectado(quem,propPropagacao)
+function AfetaMobileInfectado(quem,propPropagacao, resfriamento)
+	
+	if(!(getCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN) > 0))
+		
+		var duracaoPatogenico := propPropagacao.marcadorProps.duracaoPatogenico;
+		var nivelInfeccao := propPropagacao.marcadorProps.nivelInfeccao;
+		var gravidadeInfeccao := propPropagacao.marcadorProps.gravidadeInfeccao;
+		var arraySintomas := propPropagacao.marcadorProps.arraySintomas;
 
-	var duracaoPatogenico := propPropagacao.marcadorProps.duracaoPatogenico;
-	var nivelInfeccao := propPropagacao.marcadorProps.nivelInfeccao;
-	var gravidadeInfeccao := propPropagacao.marcadorProps.gravidadeInfeccao;
-	var arraySintomas := propPropagacao.marcadorProps.arraySintomas;
 
-	PrintTextAbove(quem,"Infectado com " + arraySintomas.size() + " sintomas ");
-	InfectMobile(
-		quem,
-		duracaoPatogenico,
-		0,
-		nivelInfeccao,
-		arraySintomas,
-		gravidadeInfeccao
-	);
+		InfectMobile(
+			quem,
+			duracaoPatogenico,
+			0,
+			nivelInfeccao,
+			arraySintomas,
+			gravidadeInfeccao
+		);
+		setCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN,resfriamento);
+	endif
+
 endfunction

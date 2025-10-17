@@ -14,7 +14,8 @@ class MarcadorPropagacaoPatogenico( PropagacaoEstiloGas )
 			dictionary{ ESTADO_PROPAGACAO::DORMENTE -> 0x3794, ESTADO_PROPAGACAO::INTENSO -> 0x113B }
 		);
 		
-		this.descasoMinimo := propagacaoConfig["patogenica"].descasoMinimo;
+		this.descasoMinimo := cint(propagacaoConfig["patogenica"].descasoMinimo);
+		this.resfriamento := cint(propagacaoConfig["patogenica"].resfriamento);
 		this.duracaoPatogenico := this.PegaPropPropagacao().marcadorProps.duracaoPatogenico;
 		this.nivelInfeccao := this.PegaPropPropagacao().marcadorProps.nivelInfeccao;
 		this.gravidadeInfeccao := this.PegaPropPropagacao().marcadorProps.gravidadeInfeccao;
@@ -24,6 +25,7 @@ class MarcadorPropagacaoPatogenico( PropagacaoEstiloGas )
 	
 
 	function AplicaEfeitoMarcador(this, mobileEncontrado)
-		AfetaMobileInfectado(mobileEncontrado,this.PegaPropPropagacao());
+		
+		AfetaMobileInfectado(mobileEncontrado,this.PegaPropPropagacao(), this.resfriamento);
 	endfunction
 endclass

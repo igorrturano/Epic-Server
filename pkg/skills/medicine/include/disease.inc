@@ -48,9 +48,9 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 
 	//TODO verificar com o Frajolas se isto faz sentido.
 	var dif := level * 8;
-	var resistcheck := deveIgnorarResistencia ? false : CheckResist(subject, FORTITUDE, dif);
+	var resistcheck := deveIgnorarResistencia ? 0 : CheckResist(subject, FORTITUDE, dif);
 
-	if (resistcheck)
+	if (resistcheck > 0)
 		SendSysMessageEx(subject, "Você resiste aos efeitos da doenca.", SSM_INFO);
 	else
 		SendSysMessageEx(subject, "Você não resiste aos efeitos da doenca.", SSM_FAIL);
@@ -67,10 +67,13 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 
 		if(!corpo_peste)
 			var corpo_peste := CreateItemAtLocation(subject.x, subject.y, subject.z, 0xd1bc, 1);
+			corpo_peste.movable := 1;
 			var isPesteEquipado := EquipItem(subject, corpo_peste);
 			if(!isPesteEquipado)
-				return  error{"error_text" := "Não foi possível criar aparência de pestilência."};
+				return  isPesteEquipado;
 			endif
+			Sleepms(2);
+			corpo_peste.movable := 0;
 		endif
 
 		UpdateDiseaseProperty(subject, "serial_peste_corpse", corpo_peste.serial);

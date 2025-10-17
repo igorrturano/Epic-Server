@@ -18,7 +18,6 @@ program TimedScript_disease(params)
 
 		var corpo_peste_id := diseases_system.serial_peste_corpse;
 		var corpo_peste := SystemFindObjectBySerial(corpo_peste_id);
-		MoveObjectToLocation(corpo_peste, 1, 1, 1, MOVEITEM_IGNOREMOVABLE);
 		DestroyItem(corpo_peste);
 		return 1;
 	endif
