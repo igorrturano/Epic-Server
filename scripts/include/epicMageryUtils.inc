@@ -12,7 +12,7 @@ function playAltarAnimations(who, item)
    item.graphic := item.objtype;
    var effect := effectByAltar(altar);
    PlaySoundEffect(who, SFX_SPELL_HEAL);
-   PlayStationaryEffectEx(who.x, who.y, who.z,who.realm, effect, 255, 80, 0, 0);
+   PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, effect, 255, 80, 0, 0);
 endfunction
 
 function effectByAltar(altar)
@@ -33,7 +33,9 @@ function effectByAltar(altar)
 	  CETICOS:
 		 effect := 0;
 	  HALLEUAD:
-		 effect := 0x6CEB; //
+		 effect := 0x6CEB;
+	  ARADALORE:
+		 effect := 0xA2CC;
    endcase
 
    return effect;
@@ -59,13 +61,14 @@ function altarByObjtype(who, altar)
 		 religion := CETICOS;
 	  0xA060:
 		 religion := HALLEUAD;
+	  0xA49E:
+		 religion := ARADALORE;
    endcase
 
    return religion;
 endfunction
 
 function graphicByAltar(altar)
-	print(altar);
    var graphic := 0;
    case (altar)
 	  ELUITHORTH:
@@ -84,6 +87,8 @@ function graphicByAltar(altar)
 		 graphic := 0xA061;
 	  CETICOS:
 		 graphic := 0xA262;
+	  ARADALORE:
+		 graphic := 0xA49F;
 	  default:
 		 graphic := 0;
    endcase
