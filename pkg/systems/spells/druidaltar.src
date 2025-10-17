@@ -96,16 +96,23 @@ endprogram
 
 function CreateDruidGump(who, spell_list, available_slots)
 	var gump := GFCreateGump();
-	var size := spell_list.Size();
-	if (size >= 1)
-		size := size * 26 - (8 * 26); // Cantrips
-	else
-		size := 0;
+	// Count only non-cantrip spells (circle != 0) for gump sizing
+	var non_cantrip_count := 0;
+	foreach spell in spell_list
+		if (spell.circle != 0)
+			non_cantrip_count += 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	var size := 0;
+	if (non_cantrip_count > 0)
+		size := non_cantrip_count * 26;
 	endif
 	GFResizePic(gump, 17, 31, 9390, 359, 125 + size);
-	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Alora", 0, 0); // shadow
-	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Alora", 0, 0); // shadow
-	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#22dd22 >Alora", 0, 0);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Druidismo", 0, 0); // shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Druidismo", 0, 0); // shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#2d8a2d >Druidismo", 0, 0);
 	GFGumpPic(gump, 63, 91, 1469);
 	GFGumpPic(gump, 80, 91, 1469);
 	GFTextLine(gump, 63, 100, 0, "Rituais Druídicos");
@@ -116,11 +123,11 @@ function CreateDruidGump(who, spell_list, available_slots)
 
 	var y := 121;
 	foreach spell in spell_list
-		var color := "22dd22";
+		var color := "2d8a2d";
 		if (spell.circle != 0)
 			GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
-			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>{}".format(color,
-				 spell.name, spell.desc));
+			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
+				 spell.desc));
 			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
 			if (available_slots >= spell.circle)
 				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
