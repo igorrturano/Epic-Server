@@ -31,6 +31,9 @@ program controladoraPropagacao(esteItemMarcador)
 
 	if(esteObjetoMarcador)
 		esteObjetoMarcador.Iniciar();
+		var descansoMinimo := esteObjetoMarcador.descasoMinimo 
+								? esteObjetoMarcador.descasoMinimo 
+								: cint(propagacaoConfig["sistema"].descansoMinimo);
 
 		while (esteItemMarcador)
 			var event;
@@ -48,7 +51,8 @@ program controladoraPropagacao(esteItemMarcador)
 										? cint(descanso)
 										: 0);
 			else
-				Sleepms(cint(propagacaoConfig["sistema"].descansoMinimo));
+				
+				Sleepms(descansoMinimo);
 				event := Wait_For_Event(0);
 			endif
 
