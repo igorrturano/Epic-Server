@@ -73,8 +73,8 @@ function MonsterBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.opponent))
-                        HandleMonsterCombatEvent(ev.opponent, is_ranged);
+                    if (CanFight(me, ev.source))
+                        HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
