@@ -5,6 +5,7 @@ function CriaMarcadorPatogenico(
 									y,
 									z,
 									realm,
+									serialConjurador,
 									alcance := 1,
 									ciclosAteExpancao, 
 									duracaoNuvemEmCiclos, 
@@ -23,6 +24,7 @@ function CriaMarcadorPatogenico(
 												tipoPropagacao := PROPAGACAO_TIPO::PATOGENICO,
 												estadoInicial := ESTADO_PROPAGACAO::INTENSO,
 												geracaoMaxima := alcance,
+												origem := serialConjurador,
 												marcadorProps := struct { 
 																	ciclosExpancao := ciclosAteExpancao,
 																	duracaoCiclos := duracaoNuvemEmCiclos,
