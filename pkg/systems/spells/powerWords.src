@@ -1,3 +1,19 @@
+/*
+ * DEPRECATED: This file is no longer used as of the ritual casting system migration.
+ *
+ * The powerWords speech listener system has been replaced with the `.r` command.
+ * Priests (Sacerdote), Shamans, and Druids now use `.r <spellname>` to cast memorized rituals.
+ *
+ * This file is kept for reference only. It is no longer started by logon.src.
+ * The continuous speech listener was resource-intensive and has been removed in favor
+ * of the command-based system that mages already use.
+ *
+ * See: pkg/systems/spells/commands/player/r.src for the replacement system
+ *
+ * Migration date: 2025-10-16
+ * Last functional version: Git commit before druid/spells branch merge
+ */
+
 use uo;
 use os;
 
@@ -10,6 +26,18 @@ include ":fls_core:fls_characters";
 program clericPowerWords(parms)
 	detach();
 	var who := parms[1];
+
+	// DEPRECATED: This script should not be running anymore
+	SendSysMessageEx(who, "AVISO: Sistema de powerWords obsoleto detectado. Use o comando .r para rituais.", SSM_FAIL);
+
+	// Clean up old PID properties if they exist
+	EraseObjProperty(who, "#clericpid");
+	EraseObjProperty(who, "#priestpid");
+
+	return 0;
+
+	// OLD CODE BELOW - KEPT FOR REFERENCE ONLY
+	/*
 	var pid := GetPid();
 
 	var magia := GetObjProperty(who, "chardata").magia;
@@ -25,6 +53,7 @@ program clericPowerWords(parms)
 		EnableEvents(SYSEVENT_SPEECH, 1);
 		ProcessSpeechEvents(who, "Sacerdote", "priest_list");
 	endif
+	*/
 endprogram
 
 function ProcessSpeechEvents(who, magic_path, list_property)
