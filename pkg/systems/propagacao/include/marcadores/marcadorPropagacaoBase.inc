@@ -47,7 +47,9 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 	endfunction
 
 	function AtualizaEstado(this, estado, forcaAtualizar := false)
+	  Print("estado chamada: " + estado);
 	  var novoEstado := this.GanchoAntesAtualizaEstado(estado);
+	  Print("estado novoEstado: " + novoEstado);
 	  var valorAntigo := this.estado;
 	  var prop := this.PegaPropPropagacao();
 

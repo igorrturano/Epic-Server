@@ -304,7 +304,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this._DeveAvancarEstado(valorAvanco))
 
         var novoValorEstado := this.estado + valorAvanco;
-        this.AtualizaEstado(this, novoValorEstado);
+        this.AtualizaEstado(novoValorEstado);
 
         this.medidorEstimulo := 0;
       else
@@ -317,7 +317,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this._DeveRegredirEstado(valorRegresso))
 
         var novoValorEstado := this.estado + valorRegresso;
-        this.AtualizaEstado(this, novoValorEstado);
+        this.AtualizaEstado(novoValorEstado);
 
         this.medidorEstimulo := 0;
       else

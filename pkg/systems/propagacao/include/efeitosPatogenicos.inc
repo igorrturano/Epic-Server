@@ -31,7 +31,8 @@ function CriaMarcadorPatogenico(
 																	duracaoPatogenico := duracaoPatogenico,
 																	arraySintomas := arraySintomas,
 																	gravidadeInfeccao := gravidade,
-																	nivelInfeccao := nivelInfeccao
+																	nivelInfeccao := nivelInfeccao,
+																	devePropagarProps := true
 																}
 											}	
 											);

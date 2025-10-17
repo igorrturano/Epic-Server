@@ -59,7 +59,13 @@ function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propProp
 	structPropagacao.+estadoInicial := estadoInicial;
 	structPropagacao.+isMarcadorCoberto := propPropagacaoOrigem.isMarcadorCoberto;
 	structPropagacao.+geracaoMaxima := propPropagacaoOrigem.geracaoMaxima;
-	structPropagacao.+marcadorProps := propPropagacaoOrigem.marcadorProps;
+
+	var marcadorProps := propPropagacaoOrigem.marcadorProps;
+	if(marcadorProps)
+		if(marcadorProps.devePropagarProps)
+			structPropagacao.+marcadorProps := propPropagacaoOrigem.marcadorProps;
+		endif
+	endif
 
 	return CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, true);
 	
