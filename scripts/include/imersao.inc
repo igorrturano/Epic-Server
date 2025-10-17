@@ -223,6 +223,7 @@ function Imersao(who, tipoimersao, qtdloops:=1, tempoloop:=0, saisom:=1, saiemot
 
 		"tossir1":
 			whoemote := EL_TOSSIR1["emote"];
+			whoanim := EL_TOSSIR1["anim"];
 			case (who.graphic)
 				400:
 					whosound := EL_TOSSIR1["sound"][1];

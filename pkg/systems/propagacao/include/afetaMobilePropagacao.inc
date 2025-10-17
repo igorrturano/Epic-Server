@@ -3,6 +3,7 @@ use util;
 include ":combat:damage";
 include ":medicine:disease";
 include ":tn:cooldown";
+include "include/imersao";
 
 function AfetaMobileIncendiado(quem,estado,propPropagacao,rolagemDano := 0)
 	var danoDado;
@@ -32,6 +33,8 @@ function AfetaMobileInfectado(quem,propPropagacao, resfriamento)
 			arraySintomas,
 			gravidadeInfeccao
 		);
+
+		Imersao(quem,"tossir1");
 		setCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN,resfriamento);
 	endif
 
