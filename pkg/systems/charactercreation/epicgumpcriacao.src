@@ -753,6 +753,10 @@ function pathOfWisdom(who, culture_pic)
 			SetObjProperty(pistol1, "serialid", who.serial);
 			SetObjProperty(pistol2, "serialid", who.serial);
 			break;
+		elseif (btn_value == 205)
+			chardata.+wisdom_path := "Druida";
+			chardata.+magia := "Druid";
+			break;
 		else
 			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
 		endif
