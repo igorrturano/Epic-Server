@@ -443,8 +443,8 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 	var skill_check := SkillCheck(mobile, attribute, difficulty);
 
 	// Chance to also up magic lore on cast
-	SkillCheck(mobile, HandleSpellSkill(mobile), difficulty);
 
+	var magic_lore_check := SkillCheck(mobile, getSupportingSkill(mobile), difficulty);
 	if (skill_check > 0)
 		if (scroll.isA(POLCLASS_ITEM))
 			consumeScroll(mobile, scroll);
@@ -457,6 +457,15 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 	handleFailedSpell(mobile, spellinfo);
 
 	return 0;
+endfunction
+
+function getSupportingSkill(mobile)
+	var chardata := getobjProperty(mobile, "chardata");
+	var attribute := ARCANA;
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(mobile, "Sensibilidade Arcana")))
+		attribute := THEOLOGY;
+	endif
+	return attribute;
 endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
