@@ -47,13 +47,17 @@ class DropDown()
 
 	function MontaOpcao(this,opcao,indice, valor)
 
-		var idOpcao :=  (this.PegaIdBottaoNormalizado() - 1) * this.gerenciador.maxOpcoes +  CInt(indice);
+		var idOpcao :=  this.CalculaIdOpcaoInicial() + CInt(indice);
 		
 		var objeto := struct;
 		objeto.+opcao := opcao;
-		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdOpcoes, valorReal := valor}; 
+		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao, valorReal := valor}; 
 
 		return objeto;
+	endfunction
+
+	function CalculaIdOpcaoInicial(this)
+		return (this.PegaPosicaoBottao() - 1) * this.gerenciador.maxOpcoes  + this.adicionalIdOpcoes;
 	endfunction
 
 	function ValidaOpcao(this,opcao)
@@ -109,6 +113,13 @@ class DropDown()
 		this.valorEscolhido := this._PegaValorReal(this.itens[indiceValorSelecionado]);
 		this.bufferValorEscolhido := this.valorEscolhido;
 		return this;
+	endfunction
+
+	function ContainIdOpcao(this, idOpcaoSelecionada)
+		var inicial := this.CalculaIdOpcaoInicial();
+		var maximo := this.gerenciador.maxOpcoes + inicial;
+
+		return this.CalculaIdOpcaoInicial() <= idOpcaoSelecionada && idOpcaoSelecionada < maximo;
 	endfunction
 
 	function _PegaValorReal(this, opcao)
@@ -167,9 +178,12 @@ class DropDown()
 		this.largura := largura	;
 	endfunction
 
-	function PegaIdBottaoNormalizado(this)
-	
+	function PegaPosicaoBottao(this)
 		return this.idBottao - this.gerenciador.adicionalIdDropDown;
+	endfunction
+
+	function PegaItens(this)
+		return this.itens;
 	endfunction
 
 endclass
@@ -218,16 +232,19 @@ class GerenciadorDropDown()
 	endfunction
 
 	function BuscaDropDownPorPosicao(this,posicaoBottao)
-		return this.dropDowns[this._MontaIdBotao(posicaoBottao)];
+		return this.PegaDropDowns()[this._MontaIdBotao(posicaoBottao)];
 	endfunction
 
-	function DefineValorEscolhido(this,idBottao,idOpcaoSelecionada)
-		var dropdown := this.EncontraDropDown(idBottao);
-		if(dropdown)
-			return DropDown::DefineValorEscolhido(dropdown,idOpcaoSelecionada);
-		endif
+	function DefineValorEscolhido(this,idOpcaoSelecionada)
+		foreach dropdown in (this.PegaDropDowns())
+			Sleepms(2);
+			if(DropDown::ContainIdOpcao(dropdown, idOpcaoSelecionada))
+				DropDown::DefineValorEscolhido(dropdown,idOpcaoSelecionada);
+				return dropdown;
+			endif
+		endforeach
 
-		return error{"errortext" := "opção não encontrada"};
+		return 0;
 	endfunction
 
 	function IsIdDentroOpcoes(this, id)
@@ -239,7 +256,7 @@ class GerenciadorDropDown()
 	endfunction
 
 	function LimpaDropDowns(this)
-		this.dropDowns := array;
+		this.dropDowns := dictionary;
 	endfunction
 
 	function PegaDropDowns(this)
@@ -262,10 +279,6 @@ class GerenciadorDropDown()
 		return this.idOpcoesMaximo;
 	endfunction
 
-	function Descarga(this)
-		this.dropDowns := dictionary;
-	endfunction
-
 	function FechaTodosDropdowns(this, quem)
 		foreach dropdown in (this.dropdowns)
 
@@ -277,7 +290,7 @@ class GerenciadorDropDown()
 	endfunction
 endclass
 
-function MontaDropDownGump(parx,pary,parLargura,valores)
+function MontaDropDownGump(parx,pary,parLargura,valores, idInicialOpcao)
 	var altura := 235;
 	var gump := GFCreateGump(parx, pary, parLargura, altura);
 	var x := 0;
@@ -302,7 +315,8 @@ function MontaDropDownGump(parx,pary,parLargura,valores)
 	colCfg["botao"] := struct{titulo := "X",ordem := 1,largura := 3};
 	
 	if(valores.size() > 0)
-		CriaTabelaGumpPaginada(x + 10,y + 10,parLargura - 10,valores,gump,opcoesTabela,colCfg);
+		Print("idInicialOpcao " + idInicialOpcao);
+		CriaTabelaGumpPaginada(x + 10,y + 10,parLargura - 10,valores,gump,opcoesTabela,colCfg, idInicialOpcao);
 	else
 		GFTextLine(gump,x + 10,y + 10,1153, "Sem opções.");
 	endif

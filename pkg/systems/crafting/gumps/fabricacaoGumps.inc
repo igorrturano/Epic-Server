@@ -373,12 +373,12 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessa
 		return 0;
 	endif
 	var gerenciador := sessao.gerenciadorDropDown;
-	var dropDownAtual := gerenciador.PegaDropDowns()[indice];
+	var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
 	dropDownAtual.AtribuiX(x);
 	dropDownAtual.AtribuiY(y + 20);
 	var nome := dropDownAtual.PegaValorEscolhido().nome ? dropDownAtual.PegaValorEscolhido().nome : "";
 
-	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
+	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, dropDownAtual.PegaIdBottao());
 	GFTextLine(gump,x + 20,y, (Find(material,materialPrincipal,1) ? 253 : 1111), Trim(material) + ": " + nome);
 endfunction
 
@@ -487,10 +487,12 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	var xBotao := x + 5;
 	var yBotao := y + 60;
 	var gerenciador := sessao.gerenciadorDropDown;
-	gerenciador.PegaDropDowns()[indice].AtribuiX(xBotao);
-	gerenciador.PegaDropDowns()[indice].AtribuiY(yBotao + 20);
+	var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
 	
-	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,gerenciador.dropDowns[indice].PegaIdBottao());
+	dropDownAtual.AtribuiX(xBotao);
+	dropDownAtual.AtribuiY(yBotao + 20);
+	
+	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,dropDownAtual.PegaIdBottao());
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)

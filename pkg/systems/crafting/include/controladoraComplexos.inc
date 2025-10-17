@@ -89,7 +89,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 			MontaItensComplexosGump(gump,parametros,sessao);
 		else
 			if(sessao.devePopularDropDown)
-				FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
 				sessao.devePopularDropDown := false;
 			endif
@@ -171,6 +171,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
+				Print("dropdown.PegaValorEscolhido(): " + dropdown.PegaValorEscolhido());
 				TratarEscolhaComponente(quem, dropdown.PegaValorEscolhido(), sessao, configRecursos);
 				break;
 			
@@ -209,7 +210,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 
 				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();//limpa esquema selecionado.
 				sessao.gumpAtual := COMPLEXOS;
-				FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				break;
 
 			RT_ESQUEMAS:
@@ -274,7 +275,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 
 			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
-				FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 1;
 				break;
 
@@ -285,7 +286,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 				var propCraft := GetObjProperty(quem, "Craft");
 				propCraft.pericias[parametros.pericia]["visualizadas"] := sessao.visualizadas;
 				SetObjProperty(quem, "Craft", propCraft);
-				FechaTodosDropdowns(quem,gerenciador.PegaDropDowns());
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 0;
 				break;
 		endcase
@@ -358,7 +359,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, isGmMode := false
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,esquema, receita, isGmMode);
+			var retorno := FabricaItemMontado(quem,esquema, receita, 1, isGmMode);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -405,13 +406,14 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 
+	Print("descriptor: " + descriptor + " quantidade " +  quantidade);
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 
 	if(item)
 		item.weight_multiplier_mod := pesoFinal;
 		SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
 	else
-		SendSysMessageEX(quem, "falha ao criar item.".format(item.desc), SSM_FAIL);
+		SendSysMessageEX(quem, "falha ao criar item. {} " .format(item), SSM_FAIL);
 	endif
 
 endfunction
@@ -727,13 +729,14 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 	
 	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
-
+		Print("_componenteNecessario_iter: " + _componenteNecessario_iter + " componenteNecessario: " + componenteNecessario);
 		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_componenteNecessario_iter, LARGURA_DROPDOWN);
+		Print("dropDown: " + dropDown);
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
 			var isValorEscolhidoPresente := false;
 			var indiceOpcoes := 1;
-
+			Print("componentesEncontrados[componenteNecessario.encaixe]: " + componentesEncontrados[componenteNecessario.encaixe]);
 			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe].conjunto)
 				Sleepms(2);
 				var quantidadeFormatada :=  componenteEncontrado.quantidade <= 99 ? 
@@ -751,6 +754,8 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 														indiceOpcoes,
 														MontaObetoOpcaoComponente(componenteEncontrado, _componenteNecessario_iter)
 													);
+
+				Print("retorno Adicionar: " + retorno + " nomeOpcao " + nomeOpcao);
 				
 				if(!retorno) 
 					continue;
