@@ -24,7 +24,7 @@ program SpellScript_AprisionarDemonio(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(targ, 0x202); // Magical sound
-	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x375A, 10, 10); // Blue magical circle
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z, targ.realm, EPIC_FX_MAZE, 10, 10);
 
 	// Duration based on Theology skill
 	var duration := 5 + CInt(AP_GetSkill(caster, THEOLOGY) / 10);
@@ -63,9 +63,8 @@ function IsDemon(mobile)
 
 	var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
-	var inimigo := array{ "Demon" };
 
-	if (cfg[npctemplate.template].Category in inimigo)
+	if (cfg[npctemplate.template].Category == "Demons")
 		return 1;
 	endif
 
