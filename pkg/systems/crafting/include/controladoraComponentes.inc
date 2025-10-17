@@ -352,18 +352,15 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 		
 		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_materialNecessario_iter);
 
-		Print("dropDown: " + dropDown);
 		var tipo := materiaisNecessariosInvertidos[_materialNecessario_iter];
 		var qtd := materiaisNecessarios[materialNecessario];
 		var indiceOpcoes := 1;
 		var materiaisEncontrados := sessao.materiaisEncontrados[Lower(materialNecessario)].keys();
 
-		Print("materiaisEncontrados: " + materiaisEncontrados);
 		if(materiaisEncontrados)
 			var isValorEscolhidoPresente := false;
 
 			foreach chave in (materiaisEncontrados)
-				Print("chave: " + chave  + " dropDown.PegaValorEscolhido() " + dropDown.PegaValorEscolhido());
 				Sleepms(2); 
 				if (dropDown.PegaValorEscolhido().objtype == chave)
 					isValorEscolhidoPresente := true;
@@ -381,8 +378,6 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 				++indiceOpcoes;
 			endforeach
 		endif
-
-		Print("dropDown.PegaTexto: " + dropDown.PegaTexto());
 		
 		Sleepms(2);
 	endforeach

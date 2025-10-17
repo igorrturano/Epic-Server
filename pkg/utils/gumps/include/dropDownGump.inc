@@ -315,7 +315,6 @@ function MontaDropDownGump(parx,pary,parLargura,valores, idInicialOpcao)
 	colCfg["botao"] := struct{titulo := "X",ordem := 1,largura := 3};
 	
 	if(valores.size() > 0)
-		Print("idInicialOpcao " + idInicialOpcao);
 		CriaTabelaGumpPaginada(x + 10,y + 10,parLargura - 10,valores,gump,opcoesTabela,colCfg, idInicialOpcao);
 	else
 		GFTextLine(gump,x + 10,y + 10,1153, "Sem opções.");

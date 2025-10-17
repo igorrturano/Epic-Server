@@ -171,7 +171,6 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-				Print("dropdown.PegaValorEscolhido(): " + dropdown.PegaValorEscolhido());
 				TratarEscolhaComponente(quem, dropdown.PegaValorEscolhido(), sessao, configRecursos);
 				break;
 			
@@ -406,7 +405,6 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 
-	Print("descriptor: " + descriptor + " quantidade " +  quantidade);
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 
 	if(item)
@@ -446,7 +444,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	foreach elemento in contagem
 		Sleepms(2);
-		//Print("elemento " + elemento.nomeItem + " - " + elemento.quantidadeEncontrada + " - " + elemento.quantidadeNecessaria);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
 			var mensagem; 
 			if (elemento.?encaixe)
@@ -729,14 +726,12 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 	
 	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
-		Print("_componenteNecessario_iter: " + _componenteNecessario_iter + " componenteNecessario: " + componenteNecessario);
 		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_componenteNecessario_iter, LARGURA_DROPDOWN);
-		Print("dropDown: " + dropDown);
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
 			var isValorEscolhidoPresente := false;
 			var indiceOpcoes := 1;
-			Print("componentesEncontrados[componenteNecessario.encaixe]: " + componentesEncontrados[componenteNecessario.encaixe]);
+			
 			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe].conjunto)
 				Sleepms(2);
 				var quantidadeFormatada :=  componenteEncontrado.quantidade <= 99 ? 
@@ -755,7 +750,6 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 														MontaObetoOpcaoComponente(componenteEncontrado, _componenteNecessario_iter)
 													);
 
-				Print("retorno Adicionar: " + retorno + " nomeOpcao " + nomeOpcao);
 				
 				if(!retorno) 
 					continue;
