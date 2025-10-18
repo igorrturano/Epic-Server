@@ -210,34 +210,42 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetCurrentHP(this)
+		this._hp.current := AP_GetVital(this._mobRef, HITS);
 		return this._hp.current;
 	endfunction
 
 	function GetCurrentStamina(this)
+		this._stamina.current := AP_GetVital(this._mobRef, STAMINA);
 		return this._stamina.current;
 	endfunction
 
 	function GetCurrentMana(this)
+		this._mana.current := AP_GetVital(this._mobRef, MANA);
 		return this._mana.current;
 	endfunction
 
 	function GetCurrentHunger(this)
+		this._hunger.current := AP_GetVital(this._mobRef, HUNGER);
 		return this._hunger.current;
 	endfunction
 
 	function GetMaxHP(this)
+		this._hp.max := AP_GetVitalMaximumValue(this._mobRef, HITS);
 		return this._hp.max;
 	endfunction
 
 	function GetMaxStamina(this)
+		this._stamina.max := AP_GetVitalMaximumValue(this._mobRef, STAMINA);
 		return this._stamina.max;
 	endfunction
 
 	function GetMaxMana(this)
+		this._mana.max := AP_GetVitalMaximumValue(this._mobRef, MANA);
 		return this._mana.max;
 	endfunction
 
 	function GetMaxHunger(this)
+		this._hunger.max := AP_GetVitalMaximumValue(this._mobRef, HUNGER);
 		return this._hunger.max;
 	endfunction
 
@@ -250,15 +258,18 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetSkill(this, skillName)
-		return AP_GetSkill(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetSkill(this._mobRef, skillName);
+		return this._skills[skillName];
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		return AP_GetTrueSkill(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetTrueSkill(this._mobRef, skillName);
+		return this._skills[skillName].base;
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		return AP_GetSkillMod(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetSkillMod(this._mobRef, skillName);
+		return this._skills[skillName].mod;
 	endfunction
 
 	function IsNPC(this)
@@ -266,12 +277,12 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].base := AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
-		AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].mod := AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
