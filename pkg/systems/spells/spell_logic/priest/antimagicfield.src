@@ -38,7 +38,7 @@ program SpellScript(params)
 	// Get all mobiles near the target location (5 tile radius)
 	var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 5, targ.realm);
 	var silenced_count := 0;
-	PlayObjectCenteredEffectEx(who, EPIC_FX_MAGIC_IMMUNITY, 7, duration * 10);
+	PlayObjectCenteredEffectEx(targ, EPIC_FX_MAGIC_IMMUNITY, 7, duration * 10);
 	PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
 
 	foreach mobile in nearby
