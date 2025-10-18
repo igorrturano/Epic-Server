@@ -93,6 +93,8 @@ function HumanoidBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     if (CanFight(me, ev.source))
+                        // Taunt forces a target switch - clear current opponent first
+                        SetOpponent(0);
                         HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
@@ -215,15 +217,33 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    // Only check for ideal target if we don't have a valid opponent already
-    // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-    if (!me.opponent || !CanFight(me, me.opponent))
-        SetOpponent(opponent);
-        opponent := CheckForIdealTarget();
-        SetOpponent(opponent);
+    // Check if NPC is taunted - if so, only fight the taunter
+    if (GetCooldown(me, "taunted") > 0)
+        var taunter_serial := GetObjProperty(me, "#taunter");
+        if (taunter_serial)
+            var taunter := SystemFindObjectBySerial(taunter_serial);
+            if (taunter && CanFight(me, taunter))
+                // Forced to fight the taunter, ignore all other targets
+                opponent := taunter;
+                SetOpponent(opponent);
+            else
+                // Taunter is no longer valid, clear taunt
+                EraseObjProperty(me, "#taunter");
+                SetCooldown(me, "taunted", 0);
+            endif
+        endif
     else
-        // We already have a valid opponent, stick with them
-        opponent := me.opponent;
+        // Not taunted - use normal target selection logic
+        // Only check for ideal target if we don't have a valid opponent already
+        // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
+        if (!me.opponent || !CanFight(me, me.opponent))
+            SetOpponent(opponent);
+            opponent := CheckForIdealTarget();
+            SetOpponent(opponent);
+        else
+            // We already have a valid opponent, stick with them
+            opponent := me.opponent;
+        endif
     endif
 
     if (ShouldFlee(me))
