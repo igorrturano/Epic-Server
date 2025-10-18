@@ -311,4 +311,19 @@ class MobileWrapper(IMobileWrapper)
 
 		return this;
 	endfunction
+
+	function Dispose(this)
+		this._mobRef := 0;
+		this._name := "";
+		this._str := 0;
+		this._dex := 0;
+		this._int := 0;
+		this._hp := 0;
+		this._stamina := 0;
+		this._mana := 0;
+		this._hunger := 0;
+		this._gold := 0;
+		this._weight := 0;
+		this._skills := 0;
+	endfunction
 endclass
