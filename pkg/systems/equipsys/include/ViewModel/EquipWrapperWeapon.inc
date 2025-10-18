@@ -60,7 +60,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
 
-		if (this._prop) // Caso já tenha prop, não sobrepor os valores dos mods
+		if (this._prop) // Caso já tenha prop, não sobrepor alguns valores que devem ser mantidos
+			this._attackType := this._prop.AttackType;
 			this._criticalChanceMod := this._prop.CriticalChanceMod;
 		else
 			this._criticalChanceMod := 0;
