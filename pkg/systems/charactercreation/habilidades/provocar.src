@@ -27,11 +27,15 @@ program taunt(who)
 	PerformAction(who, ANIM_HIT);
 	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
 	var provoke_times := cint(AP_GetSkill(who, PARRY) / 20);
+	var taunt_duration := cint(AP_GetSkill(who, PARRY) / 5); // Duration based on skill
 	var i := 0;
 	while (i < provoke_times)
 		foreach char in nearby
 			var event := struct{ "type" := EVID_TAUNT, "source" := who };
 			SendEvent(char, event);
+			// Mark this NPC as taunted by this player for a duration
+			SetCooldown(char, "taunted", taunt_duration);
+			SetObjProperty(char, "#taunter", who.serial);
 		endforeach
 
 		sleep(2);
