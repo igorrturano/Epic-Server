@@ -67,7 +67,7 @@ program runecarving(who, chisel)
 		RuneType::HOLY_WEAPON
 	};
 
-	var choice := RadioGump(who, 220, 200, "Escolha o tipo de runa:", rune_choices);
+	var choice := RadioGump(who, 220, 230, "Escolha o tipo de runa:", rune_choices);
 
 	if (!choice)
 		SendSysMessageEx(who, "Cancelado.", SSM_INFO);
