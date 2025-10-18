@@ -215,9 +215,16 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    SetOpponent(opponent);
-    opponent := CheckForIdealTarget();
-    SetOpponent(opponent);
+    // Only check for ideal target if we don't have a valid opponent already
+    // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
+    if (!me.opponent || !CanFight(me, me.opponent))
+        SetOpponent(opponent);
+        opponent := CheckForIdealTarget();
+        SetOpponent(opponent);
+    else
+        // We already have a valid opponent, stick with them
+        opponent := me.opponent;
+    endif
 
     if (ShouldFlee(me))
         FleeFrom(opponent);
