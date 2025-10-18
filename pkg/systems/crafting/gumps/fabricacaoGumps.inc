@@ -15,7 +15,7 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
 	COMPLEXOS_RECEITAS := 100,
 	COMPLEXOS_ESQUEMAS := 300,
-	COMPLEXOS_ESQUEMAS_CPNT := 330,
+	COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT := 360,
 	COMPLEXOS_DROPDOWN_INICIAL := 2000,
 	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	3000,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
@@ -61,6 +61,7 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_CANCELADO_COMPLX,
 	RT_ESCOLHA_DROPDOWN_CPX,
 	RT_ESCOLHA_DD_OPCOES_CPX,
+	RT_ABRE_GM_COMPONENT,
 	RT_RCT_PROX_PAGINA,
 	RT_RCT_ANT_PAGINA,
 	RT_MEMORIZAR_COMPONENTES,
@@ -85,7 +86,8 @@ endenum
 
 enum GUMP_ATUAL_COMPLEXOS //Definição do Gump atual da sessão no gump de itens complexos.
 	COMPLEXOS,
-	ESQUEMAS
+	ESQUEMAS,
+	GM_COMPONENTE
 endenum
 
 enum ACAO_COMPLEXOS //Definição do Gump atual da sessão no gump de itens complexos.
@@ -486,13 +488,18 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var xBotao := x + 5;
 	var yBotao := y + 60;
-	var gerenciador := sessao.gerenciadorDropDown;
-	var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
-	
-	dropDownAtual.AtribuiX(xBotao);
-	dropDownAtual.AtribuiY(yBotao + 20);
-	
-	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,dropDownAtual.PegaIdBottao());
+
+	if(!sessao.modoGm)
+		var gerenciador := sessao.gerenciadorDropDown;
+		var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
+		
+		dropDownAtual.AtribuiX(xBotao);
+		dropDownAtual.AtribuiY(yBotao + 20);
+		
+		GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,dropDownAtual.PegaIdBottao());
+	else
+		GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT + indice);
+	endif
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)

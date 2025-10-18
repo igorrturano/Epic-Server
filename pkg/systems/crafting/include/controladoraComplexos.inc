@@ -19,7 +19,9 @@ const NR_MAXIMO_RECEITAS_POR_PAGINA := 8;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function InicializaSessaoComplexos(byref profissaoCraftProp, isGmMode)
+var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
+
+function InicializaSessaoComplexos(byref profissaoCraftProp, modoGm)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
@@ -29,7 +31,6 @@ function InicializaSessaoComplexos(byref profissaoCraftProp, isGmMode)
 	sessao.+paginaAtual := 0;
 	sessao.+acao := ADICIONAR;
 	sessao.+quantidade := 1;
-	sessao.+isGmMode := isGmMode;
 	sessao.+deveAtrasarAtualizacao := false;
 	sessao.+visualizadas := profissaoCraftProp["visualizadas"];
 	sessao.+gerenciadorDropDown := GerenciadorDropDown(100,
@@ -38,7 +39,20 @@ function InicializaSessaoComplexos(byref profissaoCraftProp, isGmMode)
 										COMPLEXOS_DROPDOWN_MAX);
 	sessao.+devePopularDropDown := true;
 
+	if(modoGm)
+		sessao.+modoGm := NovoObjetoModoGm();
+	endif
+
 	return sessao;
+endfunction
+
+function NovoObjetoModoGm()
+	return struct{ 
+					encaixeEscolhido := struct { id := 0, encaixe := 0 },
+					componenteEscolhido := 0, 
+					qualidadeEscolhida := 0, 
+					materialEscolhido := 0
+			};
 endfunction
 
 
@@ -54,7 +68,13 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "", classe := 1)
+function NovoObjetoEsquemaSelecionado(
+									nomeEsquema := "", 
+									dictComponentesEscolhidos := dictionary, 
+									corItem := 0, 
+									material := "", 
+									classe := 1
+								)
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
@@ -75,34 +95,30 @@ function SelecionaReceita(byref sessao, quem, parametros , indice)
 	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,nomeReceitaClassificado));
 endfunction
 
-function EnviaItensComplexosGump(quem,profissao, isGmMode)
+function EnviaItensComplexosGump(quem,profissao, modoGm)
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
-	var parametros := PreparaItensComplexosGump(quem, profissao, isGmMode);
+	var parametros := PreparaItensComplexosGump(quem, profissao, modoGm);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos(parametros.propCraft.pericias[parametros.pericia], isGmMode);
+	var sessao := InicializaSessaoComplexos(parametros.propCraft.pericias[parametros.pericia], modoGm);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
 			MontaItensComplexosGump(gump,parametros,sessao);
-		else
+		elseif(sessao.gumpAtual == ESQUEMAS)
 			if(sessao.devePopularDropDown)
 				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
 				sessao.devePopularDropDown := false;
 			endif
 			MontaEsquemaGump(gump,sessao);
+		elseif(sessao.gumpAtual == GM_COMPONENTE)
+			retorno[0];
 		endif
 
 		retorno := GFSendGump(quem,gump);
-
-		/*
-		if(sessao.deveAtrasarAtualizacao)//booleano para atrasar atualizacao de alguma parte do gump por 1 ciclo. [visualizados, por exemplo]
-			sessao.deveAtrasarAtualizacao := false;
-		endif
-		*/
 
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
@@ -151,22 +167,29 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						var melhorEsquema := MontaMelhorEsquema(quem, sessao);
 
-						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade, sessao.isGmMode);
+						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
 						sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 						break;
 
 				endcase
 				break;
 
+			RT_ABRE_GM_COMPONENT:
+				var retornoMapeado := MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT);
+				var componenteEscolhido := sessao.receitaSelecionada.receita.componentesNecessarios[retornoMapeado.indice];
+				var gmMode := NovoObjetoModoGm();
+				gmMode.encaixeEscolhido.encaixe := componenteEscolhido.encaixe;
+				gmMode.encaixeEscolhido.indice := retornoMapeado.indice;
+
+				sessao.gumpAtual := GM_COMPONENTE;
+				//TODO criar o gump de escolha de componete pra gm.
+				break;
+
 			RT_ESCOLHA_DROPDOWN_CPX:
 				var retornoMapeado := MapeiaRetornoGump(retorno[0],gerenciador.PegaAdicionalIdDropDown());
 				var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(retornoMapeado.indice);
 				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
-				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-				
-				if(process)
-					objetoDropDown.AtribuiPid(process.pid);
-				endif
+				objetoDropDown.SendGump(quem, GetPid());
 				break;
 
 			RT_ESCOLHA_DD_OPCOES_CPX: 
@@ -221,7 +244,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 				case (retornoMapeado.indiceBotao)
 					1: //Editar
 						sessao.receitaSelecionada.esquemaSelecionado := esquema;
-						sessao.gumpAtual := ESQUEMAS;
+					sessao.gumpAtual := ESQUEMAS;
 						sessao.acao := EDITAR;
 						break;
 
@@ -231,7 +254,7 @@ function EnviaItensComplexosGump(quem,profissao, isGmMode)
 
 					3: //Fabricar
 						//TODO Animações e sons.
-						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade, sessao.isGmMode);
+						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
 						break;
 
 				endcase
@@ -296,17 +319,14 @@ function MarcaCategoriaVisualizada(byref sessao,byref parametros)
 	if(sessao.categoriaAnterior != "")
 		if(!(sessao.categoriaAnterior in (sessao.visualizadas.categorias)))
 			sessao.visualizadas.categorias.append(sessao.categoriaAnterior);
-			//if(!sessao.deveAtrasarAtualizacao)	
-				foreach receita in (parametros.visaoReceitas[sessao.categoriaAnterior])
-					Sleepms(2);
-					var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
-					if(!(nomeClassificado in sessao.visualizadas.receitas))
-						receita.isVisualizada := true;
-						sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
-					endif
-				endforeach
-			//endif
-			//sessao.deveAtrasarAtualizacao := true;
+			foreach receita in (parametros.visaoReceitas[sessao.categoriaAnterior])
+				Sleepms(2);
+				var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
+				if(!(nomeClassificado in sessao.visualizadas.receitas))
+					receita.isVisualizada := true;
+					sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
+				endif
+			endforeach
 		endif
 	endif
 endfunction
@@ -337,19 +357,19 @@ function MontaMelhorEsquema(quem, sessao)
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
-function FabricaItens(quem, esquema, receita, quantidade := 1, isGmMode := false)
+function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
 	var posicaoInicial := CriaObjetoPosicao(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
 		Sleep(1);
-		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, isGmMode);
+		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 		endif
 	else
 		for indice := 1 to Cint(quantidade)
-			if(isGmMode)
+			if(modoGm)
 				Sleepms(2);
 			else
 				Sleep(1);
@@ -358,7 +378,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, isGmMode := false
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,esquema, receita, 1, isGmMode);
+			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -383,7 +403,10 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 endfunction
 
 function hasMovido(quem,posicaoInicial)
-	return quem.x != posicaoInicial.x || quem.y != posicaoInicial.y || quem.z != posicaoInicial.z || quem.realm != posicaoInicial.realm;
+	return quem.x != posicaoInicial.x 
+			|| quem.y != posicaoInicial.y 
+			|| quem.z != posicaoInicial.z 
+			|| quem.realm != posicaoInicial.realm;
 endfunction
 
 function CriaItemMontado(quem,esquema,receita, quantidade)
@@ -722,14 +745,69 @@ function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, co
 	return componenteEscolhido;
 endfunction
 
-function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
+function CarregaDropDownGmMode(byref sessao,byref gerenciador)
+	var configEncaixes := ReadConfigFile(":*:encaixes");
+	var configComponentes := ReadConfigFile(":*:componentes");
+
+	var quantidadeEscolhasParaAcharComponente := 3;
+	
+	for indice := 1 to quantidadeEscolhasParaAcharComponente
+
+		var posicaoDropDown := quantidadeEscolhasParaAcharComponente; 
+		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,posicaoDropDown);
+
+		case(indice)
+			1: //componentes
+				var elementoEcaixe := configEncaixes[sessao.modoGm.encaixeEscolhido.encaixe];
+				var componentes := GetConfigIntArray(elementoEcaixe,"Item");
+
+				Print("componentes: " + componentes);
+				foreach item in componentes
+					Sleepms(2);
+					var infoComponente := configComponentes[item];
+					
+					DropDown::AdicionaOpcao(
+												dropDown,
+												infoComponente.name,
+												_item_iter, 
+												struct{ 
+													objtype := item ,
+													principalMaterial := infoComponente.principalMaterial
+												}
+											);
+				endforeach
+				break;
+			2: //qualidade
+				var tiers := PegaComponenteTiers();
+				Print("tiers: " + tiers);
+				foreach tier in tiers
+					Sleepms(2);
+					var tierInfo := PegaComponenteTierDesc(tier);
+					DropDown::AdicionaOpcao(dropDown,tierInfo.desc,_tier_iter,tierInfo.valor);
+				endforeach
+				break;
+			3: //material
+				var componenteEscolhido := sessao.modoGm.componenteEscolhido;
+				var tipo := componenteEscolhido.principalMaterial;
+
+				var materiais := LISTA_TIPO_MATERIAL[UPPER(tipo)];
+
+				Print("materiais: " + materiais);
+				foreach material in materiais
+					DropDown::AdicionaOpcao(dropDown,material.nome,_material_iter,material.chave);
+				endforeach
+				break;
+		endcase
+	endfor
+endfunction
+
+function CarregaDropDownNormal(quem, byref sessao,byref gerenciador, configRecursos)
 	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 	
 	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
 		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_componenteNecessario_iter, LARGURA_DROPDOWN);
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
-			var isValorEscolhidoPresente := false;
 			var indiceOpcoes := 1;
 			
 			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe].conjunto)
@@ -760,6 +838,14 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 		
 		Sleepms(2);
 	endforeach
+endfunction
+
+function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
+	if(sessao.modoGm)
+		CarregaDropDownGmMode(sessao, gerenciador);
+	else
+		CarregaDropDownNormal(quem, sessao, gerenciador, configRecursos);
+	endif
 endfunction
 
 function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
@@ -929,7 +1015,7 @@ function IsAlvoValido(quem, alvo)
 	return 1;
 endfunction
 
-function PreparaItensComplexosGump(quem, profissao, isGmMode)
+function PreparaItensComplexosGump(quem, profissao, modoGm)
 
 	var parametrosGump := struct;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
@@ -956,12 +1042,12 @@ function PreparaItensComplexosGump(quem, profissao, isGmMode)
 											parametrosGump.receitasConfig, 
 											parametrosGump.propCraft,
 											profissao,
-											isGmMode);
+											modoGm);
 	
 	return parametrosGump;
 endfunction
 
-function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft, nomeProfissao, isGmMode)
+function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft, nomeProfissao, modoGm)
 
 	var retornoVisao := Dictionary;
 	
@@ -1020,7 +1106,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 							receitasAprendidas,
 							isDuplaOrigem,
 							nomeProfissao,
-							isGmMode))
+							modoGm))
 
 				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
 				if(!receitaItem.isVisualizada) //Tenho que apagar a categoria das visualizadas, porque apareceu uma receita nova.
@@ -1179,7 +1265,7 @@ function DeveAparecerReceita(
 								receitasAprendidas,
 								isDuplaOrigem,
 								nomeProfissao,
-								isGmMode
+								modoGm
 							)
 	
 	var isOrigemValida := false;
@@ -1197,7 +1283,7 @@ function DeveAparecerReceita(
 		endif
 	endif
 
-	return (isOrigemValida && isValorPericiaSuficiente) || isGmMode;
+	return (isOrigemValida && isValorPericiaSuficiente) || modoGm;
 endfunction
 
 function TemValorPericiaNecessaria(quem, objtype, classe, nomePericia, nomeProfissao)
@@ -1208,16 +1294,21 @@ endfunction
 
 function ClassificaRetornoComplexos(retorno,sessao)
 	var valorRetorno := retorno[0];
+	//FAIXAS
 	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
 		return RT_CATEGORIAS;
 	elseif(valorRetorno > COMPLEXOS_RECEITAS && valorRetorno <= COMPLEXOS_ESQUEMAS)
 		return RT_RECEITAS;
-	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_CPNT)
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT)
 		return RT_ESQUEMAS;
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT && valorRetorno <= COMPLEXOS_DROPDOWN_INICIAL)
+		return RT_ABRE_GM_COMPONENT;
 	elseif(GerenciadorDropDown::IsIdDentroDropDowns(sessao.gerenciadorDropDown,valorRetorno))
 		return RT_ESCOLHA_DROPDOWN_CPX;
 	elseif(GerenciadorDropDown::IsIdDentroOpcoes(sessao.gerenciadorDropDown,valorRetorno))
 		return RT_ESCOLHA_DD_OPCOES_CPX;
+	
+	//BOTOES
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
 	elseif(valorRetorno == COMPLEXOS_BTN_AJUDA)
@@ -1230,6 +1321,8 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_MEMORIZAR_COMPONENTES;
 	elseif(valorRetorno == COMPLEXOS_BTN_LIMPAR_MEMORIA)
 		return RT_LIMPAR_MEMORIA;
+
+	//CANCELAMENTOS
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
 	elseif(valorRetorno == COMPLEXOS_BTN_CANCELAR)

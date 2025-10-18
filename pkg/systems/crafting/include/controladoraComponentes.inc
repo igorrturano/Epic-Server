@@ -77,23 +77,14 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		endif
 		sessao.filtros.encaixe := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
 		sessao.filtros.nome := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_NOME);
-		Print("retorno[0]: " + retorno[0]);
 
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
-				
 				var indice := retorno[0] - gerenciador.PegaAdicionalIdDropDown();
-				//Print("indice: " + indice);
 				var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(indice);
 
-				//Print("objetoDropDown: " + objetoDropDown);
-
 				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
-				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-				
-				if(process)
-					objetoDropDown.AtribuiPid(process.pid);
-				endif
+				objetoDropDown.SendGump(quem,GetPid());
 				break;
 
 			RT_ESCOLHA_DD_OPCOES:
@@ -316,7 +307,12 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
 		var quantidadeRestante := quantidadeConsumo;
 
-		foreach itemEncontrado in (materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].itensEncontrados)			
+		foreach itemEncontrado in (
+							materiaisEncontrados
+								[Lower(materialEscolhido.tipoMaterial)]
+								[materialEscolhido.objtype]
+								.itensEncontrados
+							)			
 
 			If(quantidadeRestante <= 0) 
 				break; 
@@ -336,7 +332,6 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 	endforeach
 
 endfunction
-
 
 function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
 	var materiaisNecessarios := sessao.componenteSelecionado.selecione.materiais;
@@ -531,7 +526,9 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 			var isMemorizadoEncontrado := false;
 			foreach encaixeMemorizado in encaixesMemorizados
 				Sleepms(2);
-				isMemorizadoEncontrado := encaixesConfig[configProfissao[chave].encaixe].Desc == encaixesConfig[encaixeMemorizado].Desc;
+				isMemorizadoEncontrado :=  encaixesConfig[configProfissao[chave].encaixe].Desc 
+											== encaixesConfig[encaixeMemorizado].Desc;
+
 				if(isMemorizadoEncontrado) break; endif
 			endforeach
 			if(!isMemorizadoEncontrado) continue; endif

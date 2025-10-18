@@ -31,6 +31,14 @@ enum COMPONENTES_ENCAIXE_ORDEM
 	DESC_ENCAIXE_CONDICIONAL := 5,
 endenum
 
+enum class COMPONENTE_TIERS
+	MEDIOCRE := 1,
+	COMUM := 2,
+	NOTAVEL := 3,
+	SUPERIOR := 4,
+	EXCEPCIONAL := 5,
+endenum
+
 var CATALOGO_LOG_PRA_TABUA := dictionary {
         "0xee36" -> 0xee66,
         "0xee37" -> 0xee67,
@@ -69,6 +77,27 @@ endfunction
 function PegaMaterialConfig(materialObjtype)
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 	return configRecursos[hex(materialObjtype)];
+endfunction
+
+function PegaListaTipoMateriais()
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+	var materiaisChaves :=  GetConfigStringKeys(configRecursos);
+	var dictRetorno := Dictionary;
+	foreach chave in materiaisChaves
+		Sleepms(2);
+		var elementoCfg := configRecursos[chave];
+		var tipo := elementoCfg.Type;
+		tipo := Upper(tipo);
+
+		if(!dictRetorno.contains())
+			dictRetorno.insert(tipo, array);
+		endif
+
+		dictRetorno[tipo].append(struct{chave := chave, nome := elementoCfg.Name});
+
+	endforeach
+
+	return dictRetorno;
 endfunction
 
 function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
@@ -134,14 +163,24 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		1 : return struct {desc := "Mediocre" , valor := -1}; break;
-		2 : return struct {desc := "Comum" , valor := 0}; break;
-		3 : return struct {desc := "Notável" , valor := 1}; break;
-		4 : return struct {desc := "Superior" , valor := 2}; break;
-		5 : return struct {desc := "Excepcional" , valor := 3}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Mediocre" , valor := -1}; break;
+		COMPONENTE_TIERS::COMUM : return struct {desc := "Comum" , valor := 0}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 1}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 2}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 3}; break;
 		default:
 			return struct {desc := "Erro!" , valor := 0}; break;
 	endcase
+endfunction
+
+function PegaComponenteTiers()
+	return array{
+				COMPONENTE_TIERS::MEDIOCRE,
+				COMPONENTE_TIERS::COMUM,
+				COMPONENTE_TIERS::NOTAVEL,
+				COMPONENTE_TIERS::SUPERIOR,
+				COMPONENTE_TIERS::EXCEPCIONAL
+			};
 endfunction
 
 function CalculaValorPico(quem, pericia)

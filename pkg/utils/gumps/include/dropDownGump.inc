@@ -111,7 +111,6 @@ class DropDown()
 	function DefineValorEscolhido(this, idOpcaoSelecionada)
 		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdOpcoes) % this.gerenciador.maxOpcoes;
 		this.valorEscolhido := this._PegaValorReal(this.itens[indiceValorSelecionado]);
-		this.bufferValorEscolhido := this.valorEscolhido;
 		return this;
 	endfunction
 
@@ -124,6 +123,14 @@ class DropDown()
 
 	function _PegaValorReal(this, opcao)
 		return  opcao.botao.valorReal;
+	endfunction
+
+	function SendGump(this, quem, pidPai)
+		var process := SendDropDownGump(quem, pidPai, this);
+		
+		if(process)
+			this.AtribuiPid(process.pid);
+		endif
 	endfunction
 
 	function PegaTexto(this)
