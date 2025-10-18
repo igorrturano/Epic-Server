@@ -88,7 +88,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, priest_list, available_slots);
-		var input := CreateClericGump(who, spell_list, available_slots);
+		var input := CreateClericGump(who, spell_list, available_slots, priest_list);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -98,7 +98,7 @@ program orderSpells(who, item)
 			var spell := spell_list[input[0] - 200];
 			var ret := StoreSpell(who, spell, priest_list, available_slots);
 			if (ret)
-				playAltarAnimations(who, altar);
+				playAltarAnimations(who, item);
 			endif
 		elseif (!input[0])
 			canceled := 1;
@@ -106,7 +106,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateClericGump(who, spell_list, available_slots)
+function CreateClericGump(who, spell_list, available_slots, priest_list)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -142,7 +142,11 @@ function CreateClericGump(who, spell_list, available_slots)
 			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
 				 spell.desc));
 			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
-			if (available_slots >= spell.circle)
+
+			// Check if spell already exists in priest_list
+			var spell_exists := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
+
+			if (available_slots >= spell.circle && !spell_exists)
 				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
 			else
 				GFGumpPic(gump, 319, y + 5, 10006, 1891);
