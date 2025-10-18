@@ -159,9 +159,9 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.skills_mod.wood_working)
         AP_SetSkillMod(npc, WOODWORKING, CInt(boss.skills_mod.wood_working));
     endif
-
-    if (boss.skills_mod.domestic_work)
-        AP_SetSkillMod(npc, Domestic_Work, CInt(boss.skills_mod.domestic_work));
+    
+    if (boss.domestic_work)
+        AP_SetSkillMod(npc, DOMESTIC_WORK, CInt(boss.domestic_work));
     endif
 
     if (boss.skills_mod.gathering)
@@ -254,7 +254,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "CombatEvents", cleaned_events);
         var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
         if(res == error)
-            PrintText(npc, "Combat Events script error: " + res.errortext);
+            PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
         endif
     endif
 

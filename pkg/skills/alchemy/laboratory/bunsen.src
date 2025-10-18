@@ -41,14 +41,14 @@ function Destilar(balao, beker, who, item)
 	beker.movable := 0;
 
 	sleep(5);
-	PrintText(balao, "O extrato comeca a ferver.");
+	PrintTextAbove(balao, "O extrato comeca a ferver.");
 	sleep(10);
 	PlaySoundEffect(who, 0x0021);
-	PrintText(balao, "O liquido esta em ebulicao.");
+	PrintTextAbove(balao, "O liquido esta em ebulicao.");
 	sleep(10);
 	PlaySoundEffect(who, 0x241);
 	sleep(10);
-	PrintText(beker, "O liquido esta no beker.");
+	PrintTextAbove(beker, "O liquido esta no beker.");
 
 	var extrato := CINT(GetObjProperty(balao, "extrato"));
 	SetObjProperty(beker, "pocao", extrato);

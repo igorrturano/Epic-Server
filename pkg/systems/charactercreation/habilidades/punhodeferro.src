@@ -24,11 +24,11 @@ program SpellScript(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*punho de ferro*");
+	PrintTextAbove(attacker, "*punho de ferro*");
 	TS_StartTimer(defender, "sleep", tactics_bonus, 1, attacker, 0);
 	Detach();
 	Attach(defender);
-	printtext(defender, "*K.O.*");
+	PrintTextAbove(defender, "*K.O.*");
 	PlaySoundEffect(attacker, 0x658);
 	SendSysMessageEx(attacker, "O alvo apagou.", SSM_INFO);
 	if (attacker.graphic == 400 || attacker.graphic == 401 || attacker.graphic == 1828 ||

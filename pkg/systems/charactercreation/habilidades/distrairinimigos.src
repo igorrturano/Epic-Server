@@ -6,7 +6,7 @@ include ":timedScripts:timedScripts";
 
 program doubleattack(attacker)
 
-	PrintText(attacker, "*distraindo os inimigos*");
+	PrintTextAbove(attacker, "*distraindo os inimigos*");
 
 	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
 		if (!(mobile in attacker.party.members))

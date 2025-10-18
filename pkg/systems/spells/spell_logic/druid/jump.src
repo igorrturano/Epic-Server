@@ -91,7 +91,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-			// PrintText(who, "*bate no obstaculo*");
+			// PrintTextAbove(who, "*bate no obstaculo*");
 			return 0;
 		endif
 

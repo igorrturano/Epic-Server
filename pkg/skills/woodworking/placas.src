@@ -27,7 +27,7 @@ program placas(who, item)
 		if (marked != error)
 			return 0;
 		// if (GetObjProperty(item,"marked") != playerid)
-		// 	PrintText(who, "*voc� danificou a placa ao retira-la*");
+		// 	PrintTextAbove(who, "*voc� danificou a placa ao retira-la*");
 		// 	if (item.movable == 0)
 		// 		item.movable:=1;
 		// 	endif

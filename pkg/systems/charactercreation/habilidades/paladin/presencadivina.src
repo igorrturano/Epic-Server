@@ -45,7 +45,7 @@ program presencadivina(paladin)
 
 	case (input)
 		1: // Cerquem!
-			PrintText(paladin, "*ordena cerco*");
+			PrintTextAbove(paladin, "*ordena cerco*");
 			SendSysMessageEx(paladin, "Escolha o alvo para seus aliados cercarem.", SSM_REQUEST);
 			var alvo := Target(paladin);
 			if (!alvo)
@@ -76,7 +76,7 @@ program presencadivina(paladin)
 			break;
 
 		2: // Reviravolta!
-			PrintText(paladin, "*ordena reviravolta*");
+			PrintTextAbove(paladin, "*ordena reviravolta*");
 			var inimigos := ListHostiles(paladin, range);
 			if (len(inimigos) < cint(festa.members.size()) / 2)
 				SendSysMessageEx(paladin, "Voce nao esta em desvantagem.", SSM_FAIL);
@@ -95,7 +95,7 @@ program presencadivina(paladin)
 			break;
 
 		3: // Por Justica!
-			PrintText(paladin, "*guia aliado para gloria*");
+			PrintTextAbove(paladin, "*guia aliado para gloria*");
 			var testes := array;
 
 			foreach member in (festa.members)
@@ -125,7 +125,7 @@ program presencadivina(paladin)
 			break;
 
 		4: // Vitoria Divina!
-			PrintText(paladin, "*proclama vitória divina*");
+			PrintTextAbove(paladin, "*proclama vitória divina*");
 			foreach member in (festa.members)
 				if (Distance(paladin, member) < range)
 					var cds := TS_GetCooldownList(member);

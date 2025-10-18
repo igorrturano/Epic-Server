@@ -44,8 +44,8 @@ function PushTarget(attacker, defender)
 	endcase
 
 	SendSysMessage(attacker, "Você empurrou seu oponente!", 3, 89);
-	PrintText(attacker, $"*Empurra {defender.name}*", COLOR_BLUE);
-	PrintText(defender, $"*Empurrado por {attacker.name}*", COLOR_RED);
+	PrintTextAbove(attacker, $"*Empurra {defender.name}*", COLOR_BLUE);
+	PrintTextAbove(defender, $"*Empurrado por {attacker.name}*", COLOR_RED);
 	attacker.attack_once(defender);
 
 	if (CheckLOSAt(defender, newx, newy, defender.z))
@@ -55,7 +55,7 @@ function PushTarget(attacker, defender)
 	else // Se bateu em algo toma dano extra
 		ApplyRawDamage(defender, RandomDiceRoll("1d4"));
 		PlaySoundEffect(defender, 0x136);
-		PrintText(defender, "*Bate em algo*", COLOR_RED);
+		PrintTextAbove(defender, "*Bate em algo*", COLOR_RED);
 	endif
 
 	return false;

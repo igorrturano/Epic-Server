@@ -693,6 +693,7 @@ function skillGump(who, culture_pic, byref chardata)
             continue;
         endif
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#0000CC >{}".format(StrReplace(skill, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 100+btn_value);
         endif
@@ -711,6 +712,7 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
         endif
@@ -727,6 +729,7 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(gathering);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(gathering, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(gathering));
         if (chardata.Skills[gathering] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
         endif
@@ -752,6 +755,7 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#FFE700 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 300+btn_value);
         endif
@@ -771,6 +775,7 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#CC0000 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 400+btn_value);
         endif
@@ -1231,11 +1236,11 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
-    if (skills[Domestic_Work] >= 1)
+    if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInBackpack(who, 0x0f9d, 1); // sewingkit
     endif
 
-    if (skills[Domestic_Work] >= 1 || skills[MEDICINE] >= 1)
+    if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
         CreateItemInBackpack(who, 0xf9e, 1); // Scissors
     endif
     
@@ -1512,6 +1517,8 @@ function pathOfWisdomGump(who, culture_pic)
         wisdomPaths.append("Augur");
     elseif (culture == HAROLOTH && who.graphic == 1831)
         wisdomPaths.append("Clériga de Idrith");
+    elseif (culture != HAROLOTH)
+        wisdomPaths.append("Druida");
     endif
     foreach path in wisdomPaths
         var color := "#000000";
@@ -2577,3 +2584,17 @@ function alchSelectionGump(who, gump, alchs, selected_alchs, qtd, x, y)
     return GFSendGump(who, gump);
 endfunction
 
+function GetSkillTooltipDescriptionFromName(name)
+	var cfg := AP_GetAttributesCfgFile();
+	var elem := FindConfigElem(cfg, name);
+	if (elem == error)
+		return "Descrição não encontrada para: " + name;
+	endif
+
+	var tooltip := GetConfigString(elem, "TooltipDesc");
+	if (!tooltip || tooltip == error)
+		return "Habilidade: " + name;
+	endif
+
+	return tooltip;
+endfunction

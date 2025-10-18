@@ -14,7 +14,7 @@ program dblClickMarcadorIncendio(quem, item)
 		 Distance(quem, item) <= 1)
 			if (tentativas % 8 == 0)
 				TurnObjectToward(quem, item.x, item.y);
-				PrintText(quem, "*Tentando apagar incêndio*");
+				PrintTextAbove(quem, "*Tentando apagar incêndio*");
 				PerformAction(quem, ANIM_BOW);
 				PlaySoundEffect(quem, SFX_12A);
 			endif

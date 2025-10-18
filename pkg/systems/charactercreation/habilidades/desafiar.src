@@ -24,7 +24,7 @@ program manobra(attacker)
 
 	var event := struct{ "type" := EVID_TAUNT, "source" := attacker };
 	SendEvent(targ, event);
-	PrintText(attacker, "*Um desafio foi feito*", targ);
+	PrintTextAbove(attacker, "*Um desafio foi feito*", targ);
 	SetCooldown(targ, "desafioheroico", cint(AP_GetSkill(attacker, TACTICS)));
 	SetObjProperty(targ, "#desafiante", attacker.serial);
 

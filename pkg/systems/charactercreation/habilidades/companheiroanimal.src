@@ -46,7 +46,7 @@ program pet(who)
 		var tamed := GetObjProperty(who, "TamedPets");
 		if (targ.serial in tamed)
 			SetPetMods(targ);
-			PrintText(targ, "*a natureza escolhe esta criatura*");
+			PrintTextAbove(targ, "*a natureza escolhe esta criatura*");
 			SendSysMessageEx(who, "Voce escolheu seu companheiro animal.", SSM_INFO);
 			SetObjProperty(who, "companheiro", targ.serial);
 		else

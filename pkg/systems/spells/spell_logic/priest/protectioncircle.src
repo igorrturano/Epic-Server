@@ -9,6 +9,7 @@ include "include/tileEffects";
 include ":timedscripts:timedScripts";
 include "include/sysEvent";
 include "include/utils";
+include "include/eventID";
 
 program SpellScript(params)
 	var who := params[1];

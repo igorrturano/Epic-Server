@@ -2370,11 +2370,12 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 	var boss := struct{};
 
 	// Initialize arrays
-	boss.special := form_data.special;
-	boss.loot := form_data.loot;
+	// Only initialize arrays that will be populated below to avoid aliasing
+	boss.special := array{};                     // will be filled by copying form_data.special
+	boss.loot := array{};
 	boss.deathevents := form_data.deathevents;
-	boss.combatevents := form_data.combatevents;
-	boss.custom_abilities := form_data.custom_abilities; // Add custom abilities to boss structure
+	boss.combatevents := array{};               // will be filled by copying form_data.combatevents
+	boss.custom_abilities := form_data.custom_abilities; // keep reference if not mutated here
 
 	// Basic info
 	boss.npctemplate := form_data.npctemplate;

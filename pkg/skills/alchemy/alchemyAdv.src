@@ -164,7 +164,7 @@ function FazPotion(who, item)
 			var loop := 0;
 			while (loop < 3)
 				PlaySoundEffect(who, SOUND_EFFECT_GRIND);
-				PrintText(who, "*preparando um extrato*");
+				PrintTextAbove(who, "*preparando um extrato*");
 				sleep(1);
 				loop := loop + 1;
 			endwhile
@@ -224,7 +224,7 @@ function MakePotion(pot, item, who, magic, strength := 0)
 		if (hasbottle)
 			while (loop < 3)
 				PlaySoundEffect(who, SOUND_EFFECT_GRIND);
-				PrintText(who, "*preparando um extrato*");
+				PrintTextAbove(who, "*preparando um extrato*");
 				sleep(1);
 				loop := loop + 1;
 			endwhile
@@ -308,7 +308,7 @@ function FalhaCritica(who, item)
 	if (falha < 65)
 		while (loop < 3)
 			PlaySoundEffect(who, SOUND_EFFECT_GRIND);
-			PrintText(who, "*preparando um extrato*");
+			PrintTextAbove(who, "*preparando um extrato*");
 			sleep(1);
 			loop := loop + 1;
 		endwhile

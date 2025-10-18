@@ -54,7 +54,7 @@ class DataFile(IOFile)
 	endfunction
 
 	function SetElementName(this, elem_name)
-		this._element.name := CStr(elem_name);
+		this._element.name := elem_name;
 		this._LoadElement(this._element.name);
 		return this;
 	endfunction
@@ -65,7 +65,7 @@ class DataFile(IOFile)
 	endfunction
 
 	function SetPropertyName(this, prop_name)
-		this._property.name := CStr(prop_name);
+		this._property.name := prop_name;
 		this._LoadProperty(this._property.name);
 		return this;
 	endfunction
@@ -76,10 +76,23 @@ class DataFile(IOFile)
 		return this;
 	endfunction
 
+	function DeleteElement(this, elem_name := false)
+		if (elem_name) this._element.name := elem_name; endif
+		this._file.DeleteElement(this._element.name);
+		return this;
+	endfunction
+
+	function DeleteProperty(this, prop_name := false)
+		if (prop_name) this._property.name := prop_name; endif
+		this._element.value.EraseProp(this._property.name);
+		return this;
+	endfunction
+
 	function Erase(this)
 		return DFPurgeFile(this._fileName);
 	endfunction
 
+	// Private Functions
 	function _LoadFile(this, createFile := false)
 		this._file := DFOpenDataFile(this._fullPath, createFile);
 	endfunction

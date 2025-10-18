@@ -3,7 +3,6 @@ use os;
 include "include/say";
 include "include/utils";
 include ":timedscripts:timedScripts";
-// include ":ghaia:ghaiaUtil";
 include ":fls_core:fls_characters";
 include "include/client";
 include "include/facings";

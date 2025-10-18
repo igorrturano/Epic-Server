@@ -58,7 +58,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 			return 1;
 		endif
 	elseif (!can_crit)
-		Message("Apenas armas elaboradas causam crítico").SetColor(SSM_FAIL).SendSys(attacker);
+		// Message("Apenas armas elaboradas causam crítico").SetColor(SSM_FAIL).SendSys(attacker);
 		return 1;
 	endif
 

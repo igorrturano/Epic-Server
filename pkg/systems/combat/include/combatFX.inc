@@ -12,6 +12,7 @@ include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
 include ":equipsys:utils/consts";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 enum WEAPONFX
 	WEAPON_FX_SOUND, WEAPON_FX_ANIM
@@ -91,7 +92,7 @@ endfunction
 
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
-	var weaponAttr := weapon.getAttrBase();
+	var attackType := EquipWrapperWeapon(weapon).GetAttackType();
 
 	if (weapon.objtype == FIST)
 		if (FX == WEAPON_FX_ANIM)
@@ -116,19 +117,19 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 			endif
 		else
 			if (weapon.getType().Upper() == TWOHANDED.Upper())
-				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (attackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(SLASH_2H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(SLASH_2H_FX, isCriticalAttack);
 					endif
-				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (attackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(PIERCING_2H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(PIERCING_2H_FX, isCriticalAttack);
 					endif
-				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (attackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(BLUNT_2H_FX, isCriticalAttack);
 					else
@@ -136,19 +137,19 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 					endif
 				endif
 			else
-				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (attackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(SLASH_1H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(SLASH_1H_FX, isCriticalAttack);
 					endif
-				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (attackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(PIERCING_1H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(PIERCING_1H_FX, isCriticalAttack);
 					endif
-				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (attackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(BLUNT_1H_FX, isCriticalAttack);
 					else
