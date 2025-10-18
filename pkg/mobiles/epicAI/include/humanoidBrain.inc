@@ -92,8 +92,8 @@ function HumanoidBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.opponent))
-                        HandleHumanoidCombatEvent(ev.opponent, is_ranged);
+                    if (CanFight(me, ev.source))
+                        HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     if (me.isShaman())

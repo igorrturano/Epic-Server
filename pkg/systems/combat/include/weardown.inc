@@ -4,6 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":combat:settings";
 include ":spells:include/swordmage";
+include ":runecarving:runeCarving";
 
 function WearDownArmor(defender, armor, rawdamage, weapon)
 	var bonus;
@@ -61,6 +62,30 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 			SetName(armor, nome);
 		endif
 		//endif
+
+		// Check for priest rune charges
+		var hasRune := GetObjProperty(armor, "priestrune");
+		if (hasRune)
+			var charges := CInt(GetObjProperty(armor, "runecharges"));
+			if (charges > 0)
+				charges := charges - 1;
+				SetObjProperty(armor, "runecharges", charges);
+
+				if (charges <= 0)
+					// Rune blessing worn out
+					SendSysMessageEx(defender, "A benção divina da " + hasRune.name + " em " + armor.desc + " se esvaiu.", SSM_INFO);
+					PlaySoundEffect(defender, SFX_SPELL_DISPEL);
+
+					// Remove rune bonuses
+					removeRuneBonus(armor, hasRune);
+
+					// Update item name to remove [Rúnico]
+					var currentName := armor.name;
+					currentName := SubStrReplace(currentName, " [Rúnico]", "");
+					SetName(armor, currentName);
+				endif
+			endif
+		endif
 	endif
 
 	return 1;
@@ -156,6 +181,31 @@ function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 				sleepms(30);
 				SetName(weapon, nome);
 			endif
+
+			// Check for priest rune charges (Holy Weapon rune)
+			var hasRune := GetObjProperty(weapon, "priestrune");
+			if (hasRune)
+				var charges := CInt(GetObjProperty(weapon, "runecharges"));
+				if (charges > 0)
+					charges := charges - 1;
+					SetObjProperty(weapon, "runecharges", charges);
+
+					if (charges <= 0)
+						// Rune blessing worn out
+						SendSysMessageEx(attacker, "A benção divina da " + hasRune.name + " em " + weapon.desc + " se esvaiu.", SSM_INFO);
+						PlaySoundEffect(attacker, SFX_SPELL_DISPEL);
+
+						// Remove rune bonuses
+						removeRuneBonus(weapon, hasRune);
+
+						// Update item name to remove [Rúnico]
+						var currentName := weapon.name;
+						currentName := SubStrReplace(currentName, " [Rúnico]", "");
+						SetName(weapon, currentName);
+					endif
+				endif
+			endif
+
 			return 1;
 		endif
 	else
