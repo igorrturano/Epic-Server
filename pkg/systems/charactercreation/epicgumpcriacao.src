@@ -741,6 +741,7 @@ function pathOfWisdom(who, culture_pic)
 				CreateItemInBackpack(who, 0x166E, 1);
 			endif
 			chardata.+wisdom_path := "Clérigo";
+			CreateItemInBackPack(who, "chisels", 1);
 			break;
 		elseif (btn_value == 204)
 			chardata.+wisdom_path := "Engenheiro";
@@ -752,6 +753,10 @@ function pathOfWisdom(who, culture_pic)
 			var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
 			SetObjProperty(pistol1, "serialid", who.serial);
 			SetObjProperty(pistol2, "serialid", who.serial);
+			break;
+		elseif (btn_value == 205)
+			chardata.+wisdom_path := "Druida";
+			chardata.+magia := "Druid";
 			break;
 		else
 			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);

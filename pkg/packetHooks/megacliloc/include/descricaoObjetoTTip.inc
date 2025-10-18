@@ -40,6 +40,9 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	xDesc := PegaDescArtefato(objeto,who,xDesc);
 	xDesc := PegaDescEmperrado(objeto,xDesc);
 	xDesc := PegaDescComum(objeto,xDesc);
+
+	xDesc := PegaDescCargasRunicas(objeto,who,xDesc);
+
 	
 	if (isArma || isArmadura)
 		

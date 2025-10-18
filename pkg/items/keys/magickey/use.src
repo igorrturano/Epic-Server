@@ -49,7 +49,6 @@ program UseKey(who, key)
 
 	KP_ToggleLock(targ, who);
 	SetObjProperty(targ, "arrombado", "" + who.name);
-	SetObjProperty(targ, "locktime", polcore().systime);
 	PlaySoundEffect(targ, 0x0200);
 	PlayObjectCenteredEffect(targ, 0x3763, 1, 16);
 	SendSysMessageEX(who, "A chave se molda magicamente e abre a fechadura.", SSM_INFO);

@@ -73,6 +73,10 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._prop.+ColdResist := this._resists.GetColdResist();
 		this._prop.+EnergyResist := this._resists.GetEnergyResist();
 		this._prop.+PoisonResist := this._resists.GetPoisonResist();
+		this._AddModifiers();
+		foreach modifier in (this._modifiers)
+			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
+		endforeach
 
 		this._AddModifiers();
 		foreach modifier in (this._modifiers)
