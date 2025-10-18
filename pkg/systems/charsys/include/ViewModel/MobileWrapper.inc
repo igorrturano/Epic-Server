@@ -2,6 +2,8 @@ use uo;
 
 include "IMobileWrapper";
 include ":attributes:skills";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 class MobileWrapper(IMobileWrapper)
 	var _mobRef; // mobRef
@@ -287,7 +289,7 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
-		if (!itemWrapped.GetTemplate())
+		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
@@ -300,7 +302,7 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
-		if (!itemWrapped.GetTemplate())
+		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
