@@ -56,8 +56,8 @@ function AnimalBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.opponent))
-                        HandleAnimalCombatEvent(ev.opponent);
+                    if (CanFight(me, ev.source))
+                        HandleAnimalCombatEvent(ev.source);
                     endif
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
@@ -237,7 +237,7 @@ function AnimalIdle(wanders)
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif

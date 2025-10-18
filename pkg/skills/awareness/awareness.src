@@ -56,7 +56,7 @@ program skill_Alertness(who)
 		if (who.hidden)
 			SendSysMessageEx(who, "Procurando algo", SSM_INFO);
 		else
-			PrintText(who, "*Procurando algo*");
+			PrintTextAbove(who, "*Procurando algo*");
 		endif
 		isEncontrado := ExaminarArea(who);
 	endif

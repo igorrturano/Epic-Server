@@ -38,7 +38,7 @@ function ExaminarObjeto(who,targ)
 			if(who.hidden)
 				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
-				PrintText(who, "*Examinando "+targ.name+"*");
+				PrintTextAbove(who, "*Examinando "+targ.name+"*");
 			endif
 			sleep(1);
 		endif
@@ -52,8 +52,8 @@ function ExaminarObjeto(who,targ)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
 			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
-				PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-				PrintText(targ, "*!*");
+				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+				PrintTextAbove(targ, "*!*");
 				TrapFound(targ, who);
 			endif
 			return 1;
@@ -76,11 +76,24 @@ function ExaminarObjeto(who,targ)
 			if ( SkillCheck(who, AWARENESS, diff) > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
-				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+
+				// Check how many traps the chest has
+				var traps := GetObjProperty(targ, "TrapList");
+				var trap_count := 0;
+				if (traps)
+					trap_count := traps.size();
+				endif
+
+				if (trap_count > 1)
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+				else
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+				endif
+
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
-					PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-					PrintText(targ, "*!*");
+					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+					PrintTextAbove(targ, "*!*");
 					TrapFound(targ, who);
 				endif
 				return 1;
@@ -151,7 +164,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
@@ -172,7 +185,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif
@@ -183,12 +196,11 @@ function ExaminarArea(who)
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
 		// Ignore spawners and other system items
-		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807)
+		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807 || item.objtype == 0x6203)
 			continue;
 		endif
-		
-		if ( item.invisible )
-			lvl := Cint(GetObjProperty(item, "level"));
+		lvl := Cint(GetObjProperty(item, "level"));
+		if ( item.invisible && lvl != error)
 			case (lvl)
 				1: diff := 20;
 				2: diff := 40;

@@ -4,6 +4,7 @@ use npc;
 
 include "include/say";
 include ":attributes:attributes";
+include "include/eventID";
 
 program SpellScript(params)
 	var who := params[1];
@@ -29,12 +30,12 @@ program SpellScript(params)
 			if ((category == "undead" || category == "demons") && tier <= max_tier && !is_boss)
 				affected += 1;
 				PlayObjectCenteredEffect(mobile, 0x37C4, 10, 10);
-				PrintText(mobile, "*Afastando-se*", who);
+				PrintTextAbove(mobile, "*Afastando-se*", who);
 
 				var event := struct{ "type" := EVID_FLEE, "source" := who };
 				SendEvent(mobile, event);
 			elseif ((category == "undead" || category == "demons") && (tier > max_tier || is_boss))
-				PrintText(mobile, "*Resiste*");
+				PrintTextAbove(mobile, "*Resiste*");
 				SendSysMessageEx(who, "A criatura é poderosa demais para ser afetada!", SSM_FAIL);
 			endif
 		endif

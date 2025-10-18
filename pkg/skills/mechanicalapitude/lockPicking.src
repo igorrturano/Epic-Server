@@ -71,10 +71,10 @@ program skill_lockpicking(me, lockpick)
 			if (me.hidden)
 				SendSysMessageEx(me, "Tenta arrombar a fechadura. [silencioso]", SSM_INFO);
 			else
-				PrintText(me, "*Tenta arrombar a fechadura [silencioso]*");
+				PrintTextAbove(me, "*Tenta arrombar a fechadura [silencioso]*");
 			endif
 		else
-			PrintText(me, "*Tenta arrombar a fechadura [barulhento]*");
+			PrintTextAbove(me, "*Tenta arrombar a fechadura [barulhento]*");
 			me.hidden := 0;
 			PlaySoundEffect(chest, 0x242);
 		endif
@@ -120,10 +120,10 @@ function PickTreasureChest(me, lockpick, chest)
 		if (me.hidden)
 			SendSysMessageEx(me, "*Arrombando a fechadura. [silencioso]*", SSM_INFO);
 		else
-			PrintText(me, "*Arrombando a fechadura. [silencioso]*");
+			PrintTextAbove(me, "*Arrombando a fechadura. [silencioso]*");
 		endif
 	else
-		PrintText(me, "*Arrombando a fechadura. [barulhento]*");
+		PrintTextAbove(me, "*Arrombando a fechadura. [barulhento]*");
 		me.hidden := 0;
 		PlaySoundEffect(chest, 0x0242);
 	endif
@@ -164,10 +164,10 @@ function PickTreasureChest(me, lockpick, chest)
 			if (mini_game(me, diff, mec_skill, chest))
 				if (chest.isDoor())
 					set_critical(1);
-					PrintText(me, "*Destrancou " + chest.desc + "*");
+					PrintTextAbove(me, "*Destrancou " + chest.desc + "*");
 					chest.locked := 0;
 					SetObjProperty(chest, "arrombado", "" + me.name);
-					SetObjProperty(chest, "locktime", polcore().systime);
+					KP_SetDungeonDoorRelockTimer(chest);
 					PlaySoundEffect(chest, 0x0200);
 					PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
 					set_critical(0);
@@ -177,7 +177,7 @@ function PickTreasureChest(me, lockpick, chest)
 					SetObjProperty(chest, "locktime", ReadGameClock());
 					chest.locked := 0;
 					set_critical(0);
-					PrintText(me, "*" + me.name + " disparou a armadilha*");
+					PrintTextAbove(me, "*" + me.name + " disparou a armadilha*");
 					SendSysMessageEx(me, "Você forçou a abertura disparando a armadilha!", SSM_FAIL);
 					RunTraps(chest, me);
 					SendViewContainer(me, chest);
@@ -189,7 +189,7 @@ function PickTreasureChest(me, lockpick, chest)
 				SendSysMessageEx("Voce falhou!", SSM_FAIL);
 				if (chest.isDoor())
 					SetObjProperty(chest, "arrombado", "" + me.name);
-					SetObjProperty(chest, "locktime", polcore().systime);
+					KP_SetDungeonDoorRelockTimer(chest);
 				else
 					SetObjProperty(chest, "arrombado", "" + me.name);
 					SetObjProperty(chest, "locktime", ReadGameClock());
@@ -208,7 +208,7 @@ function PickTreasureChest(me, lockpick, chest)
 			SendSysMessageEx(me, "*Destrancou [silencioso]*", SSM_INFO);
 			PrintTextPrivate(chest, "*$*", me);
 		else
-			PrintText(me, "*Destrancou [barulhento]*");
+			PrintTextAbove(me, "*Destrancou [barulhento]*");
 			me.hidden := 0;
 			PlaySoundEffect(chest, 0x200);
 			SendSysMessageEx(me, "*Destrancou [barulhento]*", SSM_INFO);
@@ -216,7 +216,12 @@ function PickTreasureChest(me, lockpick, chest)
 
 		set_critical(1);
 		SetObjProperty(chest, "arrombado", "" + me.name);
-		SetObjProperty(chest, "locktime", ReadGameClock());
+		// Check if it's a dungeon door with relock time
+		if (chest.isDoor())
+			KP_SetDungeonDoorRelockTimer(chest);
+		else
+			SetObjProperty(chest, "locktime", ReadGameClock());
+		endif
 		chest.locked := 0;
 		set_critical(0);
 		return 1;
@@ -226,7 +231,7 @@ function PickTreasureChest(me, lockpick, chest)
 		endif
 
 		PlaySoundEffect(chest, 0x122);
-		PrintText(me, "*Falhou em arrombar*");
+		PrintTextAbove(me, "*Falhou em arrombar*");
 		Sleepms(500);
 
 		if (!temHabilidade(me, "Especialista em Invasoes") && check < -20)

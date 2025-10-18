@@ -31,7 +31,7 @@ function get_spawn(altar)
   endif
   
 	if ( !spawns )
-		PrintText(altar, "ERRO: " + spawns);
+		PrintTextAbove(altar, "ERRO: " + spawns);
 		return error;
 	endif
 
@@ -46,7 +46,7 @@ function spawnChampion(altar)
   var creature := CreateBoss(cfg.boss, loc[1], loc[2], loc[3], altar.realm);
   SetObjPRoperty(creature, "#championspawn", altar.serial); //deixa corpo se tiver essa prop
   if (creature == error)
-    printtext(altar, " " + creature);
+    PrintTextAbove(altar, " " + creature);
   endif
 	SetObjProperty(altar, "champ", creature.serial);
 endfunction
@@ -78,9 +78,9 @@ function activateAltar(altar)
 	endforeach
 	SetObjProperty(altar, "#active", 1);
   
-//  printtext(altar, "activate");
+//  PrintTextAbove(altar, "activate");
   if (GetObjProperty(altar,  "status") == "on")
-   // printtext(altar, "status on, preparando");
+   // PrintTextAbove(altar, "status on, preparando");
     var configuracao := GetObjProperty(altar, "config");
     PrepareEvent(configuracao.evento);
     SetObjProperty(altar, "status", "off");
@@ -101,9 +101,9 @@ function deactivateAltar(altar)
   ApplyDamage( boss, 20000);
 	EraseObjProperty(altar, "champ");
   var configuracao := GetObjProperty(altar, "config");
-  //printtext(altar, "desativando");
+  //PrintTextAbove(altar, "desativando");
   if (GetObjProperty(altar, "status") == "off")
-    //printtext(altar,"status off, executando");
+    //PrintTextAbove(altar,"status off, executando");
     ExecuteEvent(configuracao.evento);
     SetObjProperty(altar,  "status", "on");
   endif

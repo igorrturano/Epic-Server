@@ -41,19 +41,19 @@ program reanimar(who)
 		endif
 
 		who.paralyzed := 1;
-		printText(who, "*pressionando o peito da pessoa*");
+		PrintTextAbove(who, "*pressionando o peito da pessoa*");
 		PerformAction(who, Cint(29));
 		Imersao(who, "arfar");
 		sleep(3);
-		printText(who, "*pressionando o peito da pessoa*");
+		PrintTextAbove(who, "*pressionando o peito da pessoa*");
 		PerformAction(who, Cint(29));
 		Imersao(who, "arfar");
 		sleep(3);
-		printText(who, "*pressionando o peito da pessoa*");
+		PrintTextAbove(who, "*pressionando o peito da pessoa*");
 		PerformAction(who, Cint(29));
 		Imersao(who, "arfar");
 		sleep(3);
-		printText(who, "*pressionando o peito da pessoa*");
+		PrintTextAbove(who, "*pressionando o peito da pessoa*");
 		PerformAction(who, Cint(29));
 		Imersao(who, "arfar");
 		sleep(3);

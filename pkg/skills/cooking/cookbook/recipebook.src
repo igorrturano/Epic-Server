@@ -311,7 +311,7 @@ function makefood(who, input)
 			allocateresources(who, element.vector, element.amount);
 		endforeach
 
-		if (SkillCheck(who, Domestic_Work, recipeinfo.skill, recipeinfo.skill * 2) > 0)
+		if (SkillCheck(who, DOMESTIC_WORK, recipeinfo.skill, recipeinfo.skill * 2) > 0)
 			var newitem := createiteminbackpack(who, getobjtypebyname(recipeinfo.objtype), 1);
 			SendSysMessageEx(who, "Voce guardou a comida na sua mochila.", SSM_INFO);
 			var ingredients_temp := ingredientesno + capmod_temp;
@@ -361,7 +361,7 @@ function copyrecipe(who, recipe)
 	var num := cint(recipe);
 	recipe := recipecfg(recipe);
 	if (ConsumeSubstance(who.backpack, OBJ_BLANK_SCROLL, 1))
-		if ((SkillCheck(who, Domestic_Work, cint(recipe.scribe), cint(recipe.scribe + 10)) > 0))
+		if ((SkillCheck(who, DOMESTIC_WORK, cint(recipe.scribe), cint(recipe.scribe + 10)) > 0))
 			var item := createiteminbackpack(who, OBJ_RECIPE_SLIP, 1);
 			if (item == error)
 				sendsysmessage(who, "  " + item);
@@ -369,7 +369,7 @@ function copyrecipe(who, recipe)
 			setobjproperty(item, "RecipeId", num);
 			setname(item, "Receita de " + recipe.name);
 			SendSysMessageEx(who, "Voce fez uma copia da receita.", SSM_INFO);
-			printtext(who, "*escrevendo pergaminho*");
+			PrintTextAbove(who, "*escrevendo pergaminho*");
 		else
 			SendSysMessageEx(who, "Voce copiou a receita sem cuidados e ela esta ilegivel.", SSM_FAIL);
 		endif

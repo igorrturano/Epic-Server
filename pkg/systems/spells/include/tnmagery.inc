@@ -243,7 +243,7 @@ function CastSpell(mobile, spellinfo, targ)
 		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo});
 		return;
 	else
-		PrintText(mobile, " " + spellinfo);
+		PrintTextAbove(mobile, " " + spellinfo);
 	endif
 
 	var alvos := array;
@@ -344,7 +344,7 @@ function EncantoCurar(mobile, alvos, spellinfo)
 	else
 		foreach mob in alvos
 			mob.hits := mob.hits + dmg;
-			PrintText(mob, "*consertado*");
+			PrintTextAbove(mob, "*consertado*");
 		endforeach
 	endif
 
@@ -624,10 +624,12 @@ function WritespellInfo(who, byref spellinfo)
 	var chardata := GetObjProperty(who, "chardata");
 	if (chardata.magia == "Shaman")
 		cfg := ReadConfigFile(":spells:config/shamanspells");
-		spellinfo.used := 1;
+		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
 	elseif (chardata.magia == "Sacerdote")
 		cfg := ReadConfigFile(":spells:config/priestspells");
-		spellinfo.used := 1;
+		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
+	elseif (chardata.magia == "Druid")
+		cfg := ReadConfigFile(":spells:config/druidspells");
 	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
@@ -651,7 +653,7 @@ function WritespellInfo(who, byref spellinfo)
 	spellinfo.+script := GetConfigString( elem, "SpellScript" );
 	spellinfo.+reagents := GetConfigStringDictionary(elem, "RegCost");
 	spellinfo.+spelltype := GetConfigString(elem, "Type");
-	spellinfo.+align := GetConfigStringDictionary(elem, "Align");
+	spellinfo.+align := GetConfigString(elem, "Align");  // FIX: Changed from GetConfigStringDictionary to GetConfigString
 	spellinfo.+flavortext := GetConfigString( elem, "FlavorText" );
 	spellinfo.+cycles := GetConfigInt( elem, "Cycles" );
 	spellinfo.+corruption := GetConfigInt( elem, "Corruption" );

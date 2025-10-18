@@ -68,10 +68,13 @@ class Message()
 	endfunction
 
 	function Translate(this)
-		print("Translating all messages...");
-		foreach msg in (this._messages)
-			msg.text := this._translator.SetTranslatableText(msg.text).Translate().GetTranslatableText();
-		endforeach
+		var wantTranslation := false; // TODO: Pegar prop do player
+
+		if (wantTranslation)
+			foreach msg in (this._messages)
+				msg.text := this._translator.SetTranslatableText(msg.text).Translate().GetTranslatableText();
+			endforeach
+		endif
 
 		return this;
 	endfunction
@@ -133,7 +136,7 @@ class Message()
 			foreach part in (msgSplitted)
 				print("Sending message part...");
 				print("Text: " + part);
-				PrintText(who, part.textTarget, part.color, part.font);
+				PrintTextAbove(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
 			print("Sending async message...");

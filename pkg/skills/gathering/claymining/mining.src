@@ -207,7 +207,7 @@ function EnterrarCorpo(who, scoop, targ)
 	for (i := 0; i < RandomDiceRoll("2d3"); i := i + 1)
 		PerformAction(who, MINING_ANIMATION);
 		PlaySoundEffect(who, MINING_SOUND);
-		PrintText(who, "*Cavando a terra*");
+		PrintTextAbove(who, "*Cavando a terra*");
 		sleep(3);
 		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
 			return 0;
@@ -244,7 +244,7 @@ function DesenterrarCorpo(who, scoop, targ)
 	for (i := 0; i < RandomDiceRoll("2d3"); i := i + 1)
 		PerformAction(who, MINING_ANIMATION);
 		PlaySoundEffect(who, MINING_SOUND);
-		PrintText(who, "*Revirando a terra*");
+		PrintTextAbove(who, "*Revirando a terra*");
 		sleep(3);
 		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
 			return 0;

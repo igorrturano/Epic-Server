@@ -97,6 +97,10 @@ exported function Attack(attacker, defender)
 
 		ExecuteMasteryAbility(attacker, defender, attackInfo);
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
+
+		if (attacker.acctname)
+			updateTooltip(attacker.weapon);
+		endif
 	else
 		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 
@@ -175,7 +179,7 @@ function CanAttack(attacker, defender)
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
 	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		PrintText(attacker, "*hipnotizado*");
+		PrintTextAbove(attacker, "*hipnotizado*");
 		return 0;
 	endif
 
@@ -197,6 +201,7 @@ function EpicAttack(attacker, defender, weaponHand)
 		dmg := Start_Script(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
 															armor, dmg, dmg, OFFHAND_DELAY });
 	endif
+	updateTooltip(armor);
 endfunction
 
 // Arqueiros

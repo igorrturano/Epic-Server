@@ -260,7 +260,7 @@ function TameLoop(who, targ, byref info)
 		return 0;
 	endif
 
-	PrintText(who, "*tentando adestrar " + targ.name + "*");
+	PrintTextAbove(who, "*tentando adestrar " + targ.name + "*");
 
 	var ownerarray := GetObjProperty(targ, "LastOwners"); // identifica se teve último dono
 	if (!ownerarray)

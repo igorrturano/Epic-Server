@@ -34,15 +34,42 @@ endfunction
 function KP_ToggleLock(object, mobile:=0)
 	if ( object.locked )
 		// PrintTextPrivate(object, "*destrancado*", mobile);
-		PrintText(mobile, "*Destrancou "+object.desc+"*");
+		PrintTextAbove(mobile, "*Destrancou "+object.desc+"*");
 		object.locked := 0;
+		
+		// If it's a dungeon door, set the relock timer
+		KP_SetDungeonDoorRelockTimer(object);
 	else
-		PrintText(mobile, "*Trancou "+object.desc+"*");
+		PrintTextAbove(mobile, "*Trancou "+object.desc+"*");
 		// PrintTextPrivate(object, "*trancado*", mobile);
 		object.locked := 1;
 	endif
 
 	return 1;
+endfunction
+
+/*
+ * KP_SetDungeonDoorRelockTimer(door)
+ *
+ * Purpose
+ * Sets the relock timer for dungeon doors that have a "time" property.
+ * This centralizes the logic so it's consistent across all unlock methods.
+ *
+ * Parameters
+ * door:	Door object to set the timer on.
+ *
+ * Return value
+ * Returns 1 if timer was set, 0 otherwise.
+ *
+ */
+function KP_SetDungeonDoorRelockTimer(door)
+	if ( door.IsDoor() && GetObjProperty(door, "time") )
+		var relock_time := polcore().systime + Cint(GetObjProperty(door, "time"));
+		SetObjProperty(door, "relock_at", relock_time);
+		return 1;
+	endif
+	
+	return 0;
 endfunction
 
 /*

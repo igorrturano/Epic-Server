@@ -54,13 +54,13 @@ class CFGFile(IOFile)
 	endfunction
 
 	function SetElementName(this, elem_name)
-		this._element.name := CStr(elem_name);
+		this._element.name := elem_name;
 		this._LoadElement(this._element.name);
 		return this;
 	endfunction
 
 	function SetKeyName(this, key_name, isDictionary := false)
-		this._key.name := CStr(key_name);
+		this._key.name := key_name;
 		this._LoadKey(this._key.name, isDictionary);
 		return this;
 	endfunction
