@@ -198,7 +198,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
 	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
-
+	
 	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
 		xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "swordmage") + "<br>";
 	endif
@@ -216,6 +216,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 			endif
 		endforeach
 	endif
+	
 	return xDesc;
 endfunction
 
@@ -445,4 +446,11 @@ function PegaDescEfeitosComponente(componente, xDesc)
 		endforeach
 	endif
 	return xDesc;
+endfunction
+
+function PegaDescCargasRunicas(objeto, who, XDesc := "")
+	if ( GetObjProperty(objeto, "runecharges"))	
+		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: "+GetObjProperty(objeto, "runecharges")+"<br>";
+	endif
+	return XDesc;
 endfunction
