@@ -1,0 +1,61 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Selecione o centro do campo anti-magia.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Calculate duration based on Theology skill
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var duration := cint(theology);
+	if (duration < 10)
+		duration := 10;
+	endif
+
+	// Get all mobiles near the target location (5 tile radius)
+	var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 5, targ.realm);
+	var silenced_count := 0;
+	PlayObjectCenteredEffectEx(who, EPIC_FX_MAGIC_IMMUNITY, 7, duration * 10);
+	PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
+
+	foreach mobile in nearby
+		// Silence the mobile
+		SetCooldown(mobile, "silence", duration);
+
+		if (mobile != who)
+			SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia! (" + duration + " segundos)", SSM_FAIL);
+		endif
+
+		silenced_count := silenced_count + 1;
+	endforeach
+
+	// Visual effect at target's location
+	PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_MAGIC_IMMUNITY, 10, 15);
+
+	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
+
+	return 1;
+endprogram
