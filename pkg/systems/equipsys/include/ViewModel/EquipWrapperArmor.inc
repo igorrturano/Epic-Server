@@ -31,7 +31,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 				CInt(this._prop.PoisonResistMod),
 				CInt(this._prop.EnergyResistMod)
 			);
-			
 		else // Caso não tenha prop ou seja um item não existente (template)
 			this._resistsMod := ArmorResist(); // TODO: Não tem mod, é tudo 0
 		endif
@@ -67,7 +66,6 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
 
-		// Resists
 		this._prop.+SlashResist := this._resists.GetSlashResist();
 		this._prop.+PiercingResist := this._resists.GetPiercingResist();
 		this._prop.+BluntResist := this._resists.GetBluntResist();
@@ -80,6 +78,10 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
 
+		this._AddModifiers();
+		foreach modifier in (this._modifiers)
+			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
+		endforeach
 
 		this._item.SetProp(PROPNAME, this._prop);
 	endfunction

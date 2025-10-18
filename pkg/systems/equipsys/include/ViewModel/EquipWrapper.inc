@@ -158,10 +158,7 @@ class EquipWrapper(IEquipWrapper)
 		this._item.weight := this._weight;
 		this._item.maxHP := this._maxHP;
 
-		// Modifiers
 		this._prop.+Modifiers := dictionary{};
-
-		return this;
 	endfunction
 
 	function ToString(this)
