@@ -56,6 +56,7 @@ function AnimalBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
+                    SetOpponent(0);
                     if (CanFight(me, ev.source))
                         HandleAnimalCombatEvent(ev.source);
                     endif
@@ -132,7 +133,23 @@ function HandleAnimalCombatEvent(opponent)
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos
     endif
- 
+
+    // Check if animal is taunted - if so, only fight the taunter
+    if (GetCooldown(me, "taunted") > 0)
+        var taunter_serial := GetObjProperty(me, "#taunter");
+        if (taunter_serial)
+            var taunter := SystemFindObjectBySerial(taunter_serial);
+            if (taunter && CanFight(me, taunter))
+                // Forced to fight the taunter, ignore all other targets
+                opponent := taunter;
+            else
+                // Taunter is no longer valid, clear taunt
+                EraseObjProperty(me, "#taunter");
+                SetCooldown(me, "taunted", 0);
+            endif
+        endif
+    endif
+
     SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks
