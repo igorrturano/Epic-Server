@@ -742,6 +742,19 @@ function pathOfWisdom(who, culture_pic)
 			endif
 			chardata.+wisdom_path := "Clérigo";
 			CreateItemInBackPack(who, "chisels", 1);
+			var gems := array{ 
+				"rawstarsapphire",
+				"rawemerald",
+				"rawsapphire",
+				"rawruby",
+				"rawcitrine",
+				"rawamethyst",
+				"rawtourmaline",
+				"rawamber",
+				"rawdiamond"
+			};
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			break;
 		elseif (btn_value == 204)
 			chardata.+wisdom_path := "Engenheiro";
