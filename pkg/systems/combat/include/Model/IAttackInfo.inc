@@ -1,5 +1,5 @@
-class IHitInfo()
-	uninit function IHitInfo(this);
+class IAttackInfo()
+	uninit function IAttackInfo(this);
 
 	uninit function SetAttacker(this, attacker);
 	uninit function SetDefender(this, defender);
