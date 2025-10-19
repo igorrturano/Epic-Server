@@ -193,6 +193,10 @@ class DropDown()
 		return this.itens;
 	endfunction
 
+	function PegaGerenciador(this)
+		return this.gerenciador;
+	endfunction
+
 endclass
 
 class GerenciadorDropDown()

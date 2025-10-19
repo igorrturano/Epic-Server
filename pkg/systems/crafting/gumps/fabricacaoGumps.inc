@@ -790,3 +790,19 @@ function MontaFabricacaoAjudaGump(byref gump, parametros)
 	gump.cur_page := cint(parametros.pagina);
 	return gump;
 endfunction
+
+function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
+	gump := GFECreateGump("Escolha de componente no modo GM",G_LARGURA,G_ALTURA,array{BORDER_GOLDEN});
+
+	var margemEsquerda := espacamentoAplicado;
+	var alturaBarraMenu := 80;
+
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu,252,253,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_GERAL);
+	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 20,52,sessao.modoGm.componenteEscolhido.name);
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 40,252,253,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_GERAL);
+	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 60,52,sessao.modoGm.qualidadeEscolhida.desc);
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 80,252,253,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_GERAL);
+	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 100,52,sessao.modoGm.qualidadeEscolhida.nome);
+
+	return gump;
+endfunction

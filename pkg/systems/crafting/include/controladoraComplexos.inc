@@ -115,7 +115,9 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 			endif
 			MontaEsquemaGump(gump,sessao);
 		elseif(sessao.gumpAtual == GM_COMPONENTE)
-			retorno[0];
+			GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+			PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
+			MontaEscolhaComponenteModoGmGump(gump, sessao);
 		endif
 
 		retorno := GFSendGump(quem,gump);
@@ -176,13 +178,15 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 
 			RT_ABRE_GM_COMPONENT:
 				var retornoMapeado := MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT);
+				Print("retornoMapeado.indice: " + retornoMapeado.indice);
 				var componenteEscolhido := sessao.receitaSelecionada.receita.componentesNecessarios[retornoMapeado.indice];
-				var gmMode := NovoObjetoModoGm();
-				gmMode.encaixeEscolhido.encaixe := componenteEscolhido.encaixe;
-				gmMode.encaixeEscolhido.indice := retornoMapeado.indice;
+				var modoGm := NovoObjetoModoGm();
+				modoGm.encaixeEscolhido.encaixe := componenteEscolhido.encaixe;
+				modoGm.encaixeEscolhido.indice := retornoMapeado.indice;
 
+				sessao.modoGm := modoGm;
 				sessao.gumpAtual := GM_COMPONENTE;
-				//TODO criar o gump de escolha de componete pra gm.
+				//TODO criar o gump de escolha de componete pra gm
 				break;
 
 			RT_ESCOLHA_DROPDOWN_CPX:
@@ -194,7 +198,7 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-				TratarEscolhaComponente(quem, dropdown.PegaValorEscolhido(), sessao, configRecursos);
+				TratarEscolhaDropDown(quem, dropdown, sessao, configRecursos);
 				break;
 			
 			RT_AJUDA_CPX: 
@@ -619,24 +623,53 @@ function MapeiaRetornoGump (retorno, indiceInicial, quantidadeBotoes := 0)
 	
 endfunction
 
-function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, configRecursos)
+function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 
-	var componenteNecessario := sessao.
+	if(sessao.gmMode)
+		var retornoMapeado := MapeiaRetornoGump(
+											dropdown.PegaIdBottao(), 
+											dropdown.PegaGerenciador().PegaAdicionalIdDropDown(), 
+											3
+										);
+		var valorEscolhido := dropdown.PegaValorEscolhido();
+
+		case(retornoMapeado.indiceBotao)
+			1:
+				sessao.gmMode.componenteEscolhido := valorEscolhido;
+				break;
+			2:
+				sessao.gmMode.qualidadeEscolhida := valorEscolhido;
+				break;
+			3:
+				sessao.gmMode.materialEscolhido := valorEscolhido;
+				break;
+		endcase
+	else
+		var retornoDropDownOpcao := dropdown.PegaValorEscolhido();
+		var componenteNecessario := sessao.
 									receitaSelecionada.
 									receita.
 									componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
 	
-	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
-		var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
-		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(
-				sessao.receitaSelecionada.esquemaSelecionado,
-				componenteNecessario,
-				componenteEscolhido, 
-				retornoDropDownOpcao.indiceEncaixeComponente, 
-				sessao.receitaSelecionada.receita.receitaClassificada.classe
-				);
+		if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
+			var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
+			var componenteEscolhido := MontaComponenteEscolhido(
+																retornoDropDownOpcao, 
+																componenteNecessario, 
+																configRecursos, 
+																quantidadeComponentesNecessaria, 
+																sessao.receitaSelecionada.receita.quantidadeOpicionais
+															);
+			AcrescentaComponenteEscolhido(
+											sessao.receitaSelecionada.esquemaSelecionado,
+											componenteNecessario,
+											componenteEscolhido, 
+											retornoDropDownOpcao.indiceEncaixeComponente, 
+											sessao.receitaSelecionada.receita.receitaClassificada.classe
+										);
+		endif
 	endif
+	
 endfunction
 
 function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe, classe)
@@ -758,6 +791,7 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 
 		case(indice)
 			1: //componentes
+				Print("sessao.modoGm.encaixeEscolhido.encaixe: " + sessao.modoGm.encaixeEscolhido.encaixe);
 				var elementoEcaixe := configEncaixes[sessao.modoGm.encaixeEscolhido.encaixe];
 				var componentes := GetConfigIntArray(elementoEcaixe,"Item");
 
@@ -783,7 +817,7 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 				foreach tier in tiers
 					Sleepms(2);
 					var tierInfo := PegaComponenteTierDesc(tier);
-					DropDown::AdicionaOpcao(dropDown,tierInfo.desc,_tier_iter,tierInfo.valor);
+					DropDown::AdicionaOpcao(dropDown,tierInfo.desc,_tier_iter,tierInfo);
 				endforeach
 				break;
 			3: //material
@@ -794,7 +828,7 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 
 				Print("materiais: " + materiais);
 				foreach material in materiais
-					DropDown::AdicionaOpcao(dropDown,material.nome,_material_iter,material.chave);
+					DropDown::AdicionaOpcao(dropDown,material.nome,_material_iter,material);
 				endforeach
 				break;
 		endcase
