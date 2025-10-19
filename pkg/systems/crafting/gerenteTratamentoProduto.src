@@ -16,6 +16,8 @@ program GerenteTratamentoProduto(parametros)
 	var alvo := parametros[3];
 
 	var evento;
+	var receitaAntigaProp := GetObjProperty(produto, PROPNAME_FABRICADO);
+	var receitaAntigaObjtype := receitaAntigaProp.receita.objtype;
 	var corOriginal := produto.color;
 	var processosGerenciados := IniciaProcessosGerenciados(dictionary, quem, getPid(), produto, alvo);
 
@@ -78,15 +80,16 @@ program GerenteTratamentoProduto(parametros)
 		if (estadoGerenciamento != CANCELADO)
 			if (fazerSemelhantes)
 				var produtoAntigo := produto;
+				Print("receitaAntigaObjtype: "  + receitaAntigaObjtype);
+				produto := EncontraNovoProduto(quem, receitaAntigaObjtype);
 
 				if (produto.stackable)
 					SubtractAmount(produtoAntigo, 1);
 				else
 					DestroyItem(produtoAntigo);
 				endif
-
-				produto := EncontraNovoProduto(quem, produtoAntigo);
 				if (produto)
+					EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
 					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem,
 																		getPid(), produto, alvo);
 					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
@@ -154,13 +157,12 @@ function LimpaProcessosGerenciados(quem, processosGerenciados)
 	Clear_Event_Queue();
 endfunction
 
-function EncontraNovoProduto(quem, produtoAntigo)
+function EncontraNovoProduto(quem, receitaAntigaObjtype)
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
-		if (item.objtype == produtoAntigo.objtype) // ambos são produtos montados.
+		if (item.objtype == OBJTYPE_ITEM_MONTADO) // ambos são produtos montados.
 			var itemProp := GetObjProperty(item, PROPNAME_FABRICADO);
-			var antigoProp := GetObjProperty(produtoAntigo, PROPNAME_FABRICADO);
-			if (itemProp.receita.objtype == antigoProp.receita.objtype)
+			if (itemProp.receita.objtype == receitaAntigaObjtype)
 				return item;
 			endif
 		endif

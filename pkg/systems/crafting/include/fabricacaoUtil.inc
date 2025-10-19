@@ -321,6 +321,7 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
 			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
 				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+				return 0;
 			endif
 		endif
 	else
