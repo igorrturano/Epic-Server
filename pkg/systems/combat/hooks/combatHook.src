@@ -25,25 +25,30 @@ use uo;
 use cfgfile;
 
 // Internos
-include ":combat:armorZones";
-include ":combat:combat";
+// include ":combat:armorZones";
+// include ":combat:combat";
 include ":combat:habilidades";
-include ":combat:hitchance";
-include ":combat:damage";
-include ":combat:mainHitScript";
-include ":combat:combatFX";
+// include ":combat:hitchance";
+// include ":combat:damage";
+// include ":combat:mainHitScript";
+// include ":combat:combatFX";
+include ":combat:Model/AttackInfo";
 
 // Externos
-include "include/packets";
-include "include/facings";
-include "include/epicConstants";
-include "include/epicMageryUtils";
-include "include/epicCombatUtils";
+// include "include/packets";
+// include "include/facings";
+// include "include/epicConstants";
+// include "include/epicMageryUtils";
+// include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
-include ":fls_magery:spellSounds";
+// include ":fls_magery:spellSounds";
 include ":mastery:Abilities";
+include ":charsys:ViewModel/MobileWrapper";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":diceroll:model/Dice";
 
 var item_cfg := ReadConfigFile(":combat:itemdesc");
 var strat_cfg := ReadConfigFile("combatlevel");
@@ -51,8 +56,8 @@ var npc_cfg := ReadConfigFile(":*:npcdesc");
 
 // Global because they're important, and it keeps the function
 // prototypes shorter and easier to read.
-var wpn_a, wpn_d;
-var wpn_a_elem, wpn_d_elem;
+// var wpn_a, wpn_d;
+// var wpn_a_elem, wpn_d_elem;
 
 enum DAMAGEHAND
 	DAMAGE_MAINHAND,
@@ -66,41 +71,36 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	var attackInfo := struct{};
-	wpn_a := attacker.weapon;
-	wpn_d := defender.weapon;
-	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
-	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
+	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
+	attackInfo.SetAttackerWeapon(EquipWrapperWeapon(attacker.weapon)).SetDefenderWeapon(EquipWrapperWeapon(defender.weapon));
 
-	if (!CanAttack(attacker, defender))
+	if (!CanAttack(attackInfo.GetAttacker(), attackInfo.GetDefender()))
 		return 1;
 	endif
 
-	start_script(":combat:hooks/opportunityAttack", { attacker, defender });
-	Start_Script(":combat:weaponHitScripts/AttackAnimation", { attacker });
+	Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef() });
+	Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef() });
 
-	attackInfo.+hitchance := CInt(CalculateHitChance(attacker, defender));
-	attackInfo.+dice := RandomDiceRoll("1d100");
-	DebugMsg(attacker, DEBUG_HIT, "=================");
-	DebugMsg(attacker, DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attacker, DEBUG_HIT, "=================");
-	DebugMsg(attacker, DEBUG_HIT, "Mão -> MainHand");
-	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: " + attackInfo.hitchance);
-	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: " + attackInfo.dice);
+	attackInfo.SetHitChance(CalculateHitChance(attackInfo.GetAttacker(), attackInfo.GetDefender())); // TODO: Revisar função CalculateHitChance() INTEIRA
+	attackInfo.RollHitChance();
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "ATAQUE INICIADO!");
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Mão -> MainHand");
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Chance de acerto: " + attackInfo.GetHitChance());
+	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
 
-	if (attackInfo.dice < attackInfo.hitchance)
-		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
-		SkillChecks(attacker, defender, attacker.weapon, 1);
+	if (attackInfo.Succeeded())
+		DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "***ACERTOU!***");
+		SkillChecks(attackInfo.GetAttacker(), attackInfo.GetDefender(), attackInfo.GetAttackerWeapon(), 1);
 
-		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
-		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
+		CheckAbilities(attackInfo);
+		CheckAttackerHabsOnHit(attackInfo);
+		CheckDefenderHabsOnHit(attackInfo);
 
-		ExecuteMasteryAbility(attacker, defender, attackInfo);
-		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
+		ExecuteMasteryAbility(attackInfo);
+		EpicAttack(attackInfo, DAMAGE_MAINHAND);
 
-		if (attacker.acctname)
-			updateTooltip(attacker.weapon);
-		endif
 	else
 		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 
@@ -137,12 +137,19 @@ exported function Attack(attacker, defender)
 		endif
 	endif
 
+	if (attacker.acctname)
+		updateTooltip(attacker.weapon);
+	endif
+
 	playSoundAndEffectForThroiwingWeapons(attacker, defender);
 	return 1;
 
 endfunction
 
 function CanAttack(attacker, defender)
+	attacker := attacker.GetMobRef();
+	defender := defender.GetMobRef();
+	
 	if (attacker == defender)
 		ApplyRawDamage(attacker, 5000);
 		return 0;
