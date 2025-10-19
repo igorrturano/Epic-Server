@@ -79,21 +79,29 @@ program GerenteTratamentoProduto(parametros)
 
 		if (estadoGerenciamento != CANCELADO)
 			if (fazerSemelhantes)
+				
 				var produtoAntigo := produto;
-				Print("receitaAntigaObjtype: "  + receitaAntigaObjtype);
-				produto := EncontraNovoProduto(quem, receitaAntigaObjtype);
+				var novoProduto := EncontraNovoProduto(quem, receitaAntigaObjtype);
 
-				if (produto.stackable)
+				if (produtoAntigo.stackable)
 					SubtractAmount(produtoAntigo, 1);
 				else
 					DestroyItem(produtoAntigo);
 				endif
+
+				if(produtoAntigo.amount > 0)
+					produto := produtoAntigo;
+				else
+					produto := novoProduto;
+				endif
+
 				if (produto)
 					EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
 					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem,
 																		getPid(), produto, alvo);
 					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
 				else
+					DevolveProdutoMontado(quem, produtoAntigo);
 					estadoGerenciamento := FINALIZADO;
 				endif
 			else
@@ -107,8 +115,7 @@ program GerenteTratamentoProduto(parametros)
 			if (produto)
 				// evento interrompido (EV_CANCELADO).
 				produto.color := corOriginal;
-				produto.movable := 1;
-				MoveItemToContainer(produto, quem.backpack);
+				DevolveProdutoMontado(quem, produto);
 				LimpaProcessosGerenciados(quem, processosGerenciados);
 			endif
 		endif
@@ -144,6 +151,19 @@ function IniciaProcessosGerenciados(processosAntigos, quem, pidGerente, produto,
 																							 	produto,
 																							 	pidGerente,
 																							 	alvo }) };
+endfunction
+
+function DevolveProdutoMontado(quem, produto)
+	MoveObjectToLocation( 
+								produto,
+								quem.x,
+								quem.y,
+								quem.height, 
+								quem.realm, 
+								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
+	Sleepms(2);
+	produto.movable := 1;
+	MoveItemToContainer(produto, quem.backpack);
 endfunction
 
 function LimpaProcessosGerenciados(quem, processosGerenciados)
