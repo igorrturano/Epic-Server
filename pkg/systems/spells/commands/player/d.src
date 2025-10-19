@@ -51,31 +51,14 @@ program ritual(who, spellname)
 		class_name := "ritual";
 	endif
 
-	// Get memorized spell list
+	// Get memorized spell list (includes cantrips)
 	var ritual_list := GetObjProperty(who, spell_list_prop);
 	if (!ritual_list || ritual_list.size() < 1)
 		SendSysMessageEx(who, "Voce nao memorizou nenhum " + class_name + ".", SSM_FAIL);
 		return 0;
 	endif
 
-	// Check cantrips first (Circle 0 spells that don't need memorization)
-	var cantrips := GetObjProperty(who, "cantrips");
-	if (cantrips && cantrips.size() > 0)
-		var cantrip_found := FindMemorizedSpell(cantrips, spellname);
-		if (cantrip_found)
-			// Load full spell info from config and cast
-			var spellInfo := struct{ "id" := cantrip_found.id };
-			WritespellInfo(who, spellInfo);  // FIX: Correct function name and parameters
-			var script := Start_Script(":spells:cast_spell", array{ who, spellInfo, magia });
-			if (script.errortext)
-				SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
-				return 0;
-			endif
-			return 1;
-		endif
-	endif
-
-	// Find spell in memorized list
+	// Find spell in memorized list (cantrips are now in this list)
 	var spell_found := FindMemorizedSpell(ritual_list, spellname);
 	if (!spell_found)
 		SendSysMessageEx(who, "Voce nao memorizou o " + class_name + " " + spellname + ".", SSM_FAIL);

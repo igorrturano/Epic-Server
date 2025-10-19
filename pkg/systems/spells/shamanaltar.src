@@ -39,42 +39,50 @@ program orderSpells(who, item)
 		shaman_list := array{};
 	endif
 
-	var spell_list := array{};
-	var slots_used := 0;
-
-	// Adiciona cantrips
-	if (!GetObjProperty(who, "cantrips"))
-		var cantrips := array{};
+	// Auto-grant cantrips on first visit (circle 0 spells)
+	if (!GetObjProperty(who, "cantrips_granted"))
 		foreach spell in (GetConfigIntKeys(cfg))
 			spell := FindConfigElem(cfg, spell);
-			var new_spell := struct{};
 			WriteSpellInfo(spell, ":spells:config/shamanspells");
 			sleepms(2);
 			if (spell.circle == 0)
-				new_spell.+id := spell.SpellId;
-				new_spell.+name := spell.name;
-				new_spell.+powerwords := spell.powerwords;
-				cantrips.Append(new_spell);
+				var cantrip := struct{
+					"id" := spell.SpellId,
+					"name" := spell.name,
+					"powerwords" := spell.powerwords,
+					"circle" := 0,
+					"desc" := spell.desc,
+					"cantrip" := 1  // Flag to prevent removal
+				};
+				shaman_list.Append(cantrip);
 			endif
 		endforeach
-		SetObjProperty(who, "cantrips", cantrips);
+		SetObjProperty(who, "shaman_list", shaman_list);
+		SetObjProperty(who, "cantrips_granted", 1);
 	endif
 
+	var spell_list := array{};
+	var slots_used := 0;
+
+	// Count slots used (excluding cantrips)
+	foreach spell in shaman_list
+		if (spell.circle > 0)
+			slots_used += cint(spell.circle);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Build list of available spells to memorize
 	foreach spell in (GetConfigIntKeys(cfg))
 		spell := FindConfigElem(cfg, spell);
 		sleepms(2);
 		WriteSpellInfo(spell, ":spells:config/shamanspells");
-		var spell_found := FindAllElemInArray(shaman_list, struct{ id := spell.SpellId }, 1);
-		if (spell_found)
-			slots_used += cint(spell.circle * spell_found.size());
-			foreach i in spell_found
-				shaman_list[spell_found].circle := spell.circle;
-				sleepms(2);
-			endforeach
-		endif
+
 		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
 			continue;
 		elseif (spell.type == "Auto")
+			continue;
+		elseif (spell.circle == 0) // Skip cantrips - they're auto-granted
 			continue;
 		endif
 		spell_list.append(spell);
