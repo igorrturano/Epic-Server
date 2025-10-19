@@ -132,8 +132,10 @@ function CheckResist(defender, resist_type, dif, mod := 0)
         return 1;
     endif
 
-    SendSysMessageEx(defender, "Chance: " + chance + " Dif: " + dif, SSM_INFO);
-    
+	if (defender.cmdlevel > 2)
+    	SendSysMessageEx(defender, "Chance: " + chance + " Dif: " + dif, SSM_INFO);
+    endif
+
     if (chance >= dif)
         return 1;
     else
@@ -146,7 +148,7 @@ function CheckResist(defender, resist_type, dif, mod := 0)
             endif
         endif
         
-        SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_INFO);
+        SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_FAIL);
         return 0;
     endif
 
