@@ -29,6 +29,7 @@ program orderSpells(who, item)
 			if (handleReligionConversion(who, item))
 				return;
 			endif
+			return;
 		endif
 	endif
 
@@ -48,6 +49,11 @@ program orderSpells(who, item)
 			return;
 		endif
 		SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
+		return;
+	endif
+
+	if (magia == "Sacerdote" && religiao != altar)
+		SendSysMessageEx(who, "Você não pode ordenar bênçãos de uma religião que não segue.", SSM_FAIL);
 		return;
 	endif
 
@@ -300,7 +306,7 @@ function handleReligionConversion(who, altar)
 
 	// Play conversion animations
 	playAltarAnimations(who, altar);
-
+	PerformAction(who, 0x0020); // Bow
 	if (current_religion && current_religion != "")
 		SendSysMessageEx(who, "Você abandonou {} e se converteu a {}.".format(current_name, target_name),
 				   SSM_INFO);
