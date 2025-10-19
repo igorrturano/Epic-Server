@@ -131,15 +131,11 @@ class Message()
 		if (!this._asyncInfo.sending)
 			if (_WantTranslation(who)) this.Translate(); endif
 			var msgSplitted := this._SplitMessages(MSG_MAXSIZE::PRINTTEXT);
-			print("Sending message...");
 
 			foreach part in (msgSplitted)
-				print("Sending message part...");
-				print("Text: " + part);
 				PrintTextAbove(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
-			print("Sending async message...");
 			return this._SendAsync(struct{
 				who := who,
 				msg_type := MSG_TYPE::PRINTTEXT
