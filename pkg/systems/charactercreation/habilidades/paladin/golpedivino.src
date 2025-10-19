@@ -19,7 +19,7 @@ program habilidade(params)
 	var religiao := chardata.religion;
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 10);
 
-	PrintText(who, "*Canaliza energia divina*");
+	PrintTextAbove(who, "*Canaliza energia divina*");
 	PlayObjectCenteredEffect(who, 0x376A, 1, 32);
 
 	case (religiao)
@@ -42,7 +42,7 @@ program habilidade(params)
 									2, 2740);
 			PlaySoundEffect(targ, 0x1F8);
 			SetCooldown(targ, "blinded", theology_bonus);
-			PrintText(targ, "*cegueira*");
+			PrintTextAbove(targ, "*cegueira*");
 
 		ELUITHORTH:
 			PlayStationaryEffect(targ.x, targ.y, targ.z, 0x3789, 0x0A, 0x1E);

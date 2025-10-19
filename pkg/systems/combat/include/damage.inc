@@ -1022,7 +1022,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
-			PrintText(attacker, "*enfurecido*");
+			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 	endif
 
@@ -1032,7 +1032,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
-			PrintText(attacker, "*enfurecido*");
+			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)
@@ -1112,14 +1112,21 @@ function CalcDamageHabs(attacker, defender, damage)
 endfunction
 
 function CalcDamageSpecial(attacker, defender, damage)
-	if (GetCooldown(attacker.weapon, "blessweapon"))
+	// Check for blessed weapon (spell cooldown or priest rune)
+	var hasPriestRune := GetObjProperty(attacker.weapon, "priestrune");
+	if (hasPriestRune)
 		var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Category;
-		var cursed_creatures := {"undead", "demon"};
+		var cursed_creatures := {"undead", "demons"};
 		if (defender.npctemplate)
 			if (lower(categoriaDefender) in cursed_creatures)
 				var damagemod := CInt(GetObjProperty(attacker.weapon, "blessedbonus"));
 				damage += damagemod;
-				DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Bless Weapon]: " + CInt(damagemod));
+
+				if (hasPriestRune)
+					DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Holy Weapon Rune]: " + CInt(damagemod));
+				else
+					DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Bless Weapon]: " + CInt(damagemod));
+				endif
 			endif
 		endif
 	endif

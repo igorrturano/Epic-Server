@@ -14,7 +14,7 @@ const GUMPID_CLERICSPELL := 0x00001C;
 program clericPowerWords(who)
 	detach();
 	var magia := GetObjProperty(who, "chardata").magia;
-	if (magia != "Shaman" && magia != "Sacerdote")
+	if (magia != "Shaman" && magia != "Sacerdote" && magia != "Druid")
 		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
 		return;
 	endif
@@ -28,9 +28,12 @@ program clericPowerWords(who)
 		if (!shaman_list)
 			shaman_list := array{};
 		endif
+
 		var slots_used := 0;
 		foreach spell in shaman_list
-			slots_used += cint(spell.circle);
+			if (spell.circle > 0)
+				slots_used += cint(spell.circle);
+			endif
 		endforeach
 		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
@@ -42,10 +45,17 @@ program clericPowerWords(who)
 			elseif (input[0] >= 200)
 				var slot := input[0] - 200;
 				shaman_list := GetObjProperty(who, "shaman_list");
-				shaman_list.Erase(slot);
-				SetObjProperty(who, "shaman_list", shaman_list);
-				SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
-				canceled := 1;
+				var spell := shaman_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					shaman_list.Erase(slot);
+					SetObjProperty(who, "shaman_list", shaman_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
 			endif
 		endwhile
 	elseif (magia == "Sacerdote")
@@ -53,9 +63,12 @@ program clericPowerWords(who)
 		if (!priest_list)
 			priest_list := array{};
 		endif
+
 		var slots_used := 0;
 		foreach spell in priest_list
-			slots_used += cint(spell.circle);
+			if (spell.circle > 0)
+				slots_used += cint(spell.circle);
+			endif
 		endforeach
 		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
@@ -67,10 +80,52 @@ program clericPowerWords(who)
 			elseif (input[0] >= 200)
 				var slot := input[0] - 200;
 				priest_list := GetObjProperty(who, "priest_list");
-				priest_list.Erase(slot);
-				SetObjProperty(who, "priest_list", priest_list);
-				SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+				var spell := priest_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					priest_list.Erase(slot);
+					SetObjProperty(who, "priest_list", priest_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
+			endif
+		endwhile
+	elseif (magia == "Druid")
+		var druid_list := GetObjProperty(who, "druid_list");
+		if (!druid_list)
+			druid_list := array{};
+		endif
+
+		var slots_used := 0;
+		foreach spell in druid_list
+			if (spell.circle > 0)
+				slots_used += cint(spell.circle);
+			endif
+		endforeach
+		var available_slots := cleric_slots - slots_used;
+		var canceled := 0;
+		while (!canceled)
+			var input := CreateClericGump(who, druid_list, available_slots);
+
+			if (!input[0])
 				canceled := 1;
+			elseif (input[0] >= 200)
+				var slot := input[0] - 200;
+				druid_list := GetObjProperty(who, "druid_list");
+				var spell := druid_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					druid_list.Erase(slot);
+					SetObjProperty(who, "druid_list", druid_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
 			endif
 		endwhile
 	endif
@@ -89,15 +144,13 @@ function CreateClericGump(who, shaman_list, available_slots)
 
 	GFSetId(gump, GUMPID_CLERICSPELL);
 	GFClosable(gump, 1);
-	GFResizePic(gump, 10, 26, 9390, 476, 140 + size);
-	GFHTMLArea(gump, 180, 65, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0); // shadow
-	GFHTMLArea(gump, 182, 67, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0);
-	GFHTMLArea(gump, 181, 66, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Rituais", 0, 0); // shadow
-	GFGumpPic(gump, 139, 84, 1469);
-	// GFTextLine(gump, 187, 66, 0, "Lista de Bençãos");
+	GFResizePic(gump, 10, 26, 9390, 400, 140 + size);
+	GFHTMLArea(gump, 140, 65, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0); // shadow
+	GFHTMLArea(gump, 142, 67, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0);
+	GFHTMLArea(gump, 141, 66, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Rituais", 0, 0); // shadow
+	GFGumpPic(gump, 99, 84, 1469);
 	GFGumpPic(gump, 31, 98, 9773, 0);
-	GFTextLine(gump, 56, 95, 1445, "Ritos");
-	GFTextLine(gump, 255, 96, 1445, "Palavras de Poder");
+	GFTextLine(gump, 56, 95, 1445, "Rituais Memorizados");
 
 	// for i := 1 to available_slots
 	//      shaman_list.append(struct{});
@@ -105,45 +158,39 @@ function CreateClericGump(who, shaman_list, available_slots)
 
 	var y := 116;
 	foreach spell in shaman_list
-		var not_empty := isNotEmpty(spell);
-		var spellname := "<basefont Size= 1>Empty";
-		var powerwords := "";
-
-		if (spell)
-			spellname := spell.name;
-			powerwords := ", ".join(splitwords(spell.powerwords));
-		endif
-
+		var spellname := spell.name;
+		var desc := spell.desc;
 		var color := "";
-		if (not_empty == 3 || not_empty == 1)
-			color := "<BASEFONT color=#b20000>";
-			powerwords := "{}Rito usado.".format(color);
+
+		// Cantrips shown in a different color (green)
+		if (spell.cantrip)
+			color := "<BASEFONT color=#8B7500>";
+		elseif (spell.used)
+			color := "<BASEFONT color=#BDB76B>";
+		else 
+			color := "<BASEFONT color=#665D1E>";
 		endif
 
-		GFHTMLArea(gump, 52, y, 192, 24, "{}{}".format(color, spellname), 1, 0);
-		GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format("A020F0",
-																						 spell.flavortext));
-		if (spell.time)
-			var time := GetTimeBetween(polcore().systime, spell.time, "minutes");
-			if (time > 0)
-				GFToolTipText(gump, "<BASEFONT color=#{}>Pode esquecer em: {} minuto(s)".format("b20000", time));
-			endif
-		endif
+		GFHTMLArea(gump, 52, y, 300, 24, "{}{}".format(color, spellname), 1, 0);
+		// Build tooltip
+		var tooltip := "<BASEFONT color=#BDB76B>{}".format(spell.description);
+		GFToolTipText(gump, tooltip);
 
-		GFHTMLArea(gump, 253, y, 185, 24, "{}".format(powerwords), 1, 0);
-
-		if (not_empty == 0 || not_empty == 3)
-			GFAddButton(gump, 442, y + 2, 22150, 22151, GF_CLOSE_BTN, SPELL_BTN + _spell_iter);
+		// Allow forgetting non-cantrip spells that are used or expired
+		var not_empty := isNotEmpty(spell);
+		if (!spell.cantrip && (not_empty == 0 || not_empty == 3))
+			GFAddButton(gump, 360, y + 2, 22150, 22151, GF_CLOSE_BTN, SPELL_BTN + _spell_iter);
 			GFToolTipText(gump, "Esquecer ritual");
-		endif
-		var shaman_souls := GetObjProperty(who, "shaman_souls");
-		if (shaman_souls)
-			GFTextLine(gump, 52, y + 35, 1445, "Colheita: {} almas".format(shaman_souls));
 		endif
 
 		y += 26;
 		sleepms(2);
 	endforeach
+
+	var shaman_souls := GetObjProperty(who, "shaman_souls");
+	if (shaman_souls)
+		GFTextLine(gump, 52, y + 10, 1445, "Colheita: {} almas".format(shaman_souls));
+	endif
 
 	return GFSendGump(who, gump);
 endfunction

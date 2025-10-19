@@ -8,8 +8,7 @@ use util;
 include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
-include ":ghaia:include/ghaia";
-
+include ":epicAI:epicai";
 program DeathScript(params)
 	var corpse := params[1];
 	var npc := params[2];
@@ -48,7 +47,7 @@ program DeathScript(params)
 			RestartScript(npc);
 			num := num - 1;
 		endif
-		PrintText(corpse, txt);
+		PrintTextAbove(corpse, txt);
 	endwhile
 
 	return 1;

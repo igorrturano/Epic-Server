@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+include ":npcs:NPCUtilities";
 
 const MAX_Z_DIFF := 18;
 
@@ -834,7 +835,7 @@ endfunction
 function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
   //  if ("FleeStealth" in custombehaviors)
   //     if (!GetCooldown(me, "fleestealth"))
-  //        PrintText(me, "*esconde*");
+  //        PrintTextAbove(me, "*esconde*");
   //        sleep(1);
   //        me.hidden := 1;
   //        me.stealthsteps := 30;
@@ -1411,13 +1412,22 @@ function HandleIdleState()
         return;
     endif
 
-    while (!hasPlayerNear(me))    
-        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+    if (!hasPlayerNear(me))
+        var attempts := 0;
+        while (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
             WalkTowardLocation(home_x, home_y);
+            sleepms(100);
+            attempts += 1;
+        endwhile
+        
+        // If still not home after 20 attempts, just teleport
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+            PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+            sleep(3);
+            MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
         endif
-    endwhile
+    endif
     
-    // No need for event checking here since MonsterBrain already does it
     return 1;
 endfunction
 
@@ -1430,7 +1440,7 @@ function FleeFrom(opponent)
     while (opponent && Distance(me, opponent) < 16 && runs < 20)
         TryToRunAway(opponent);
         if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintText(me, "*Exausto*");
+            PrintTextAbove(me, "*Exausto*");
             break;
         endif
         runs += 1;
@@ -1732,7 +1742,7 @@ function shouldKeepPursuing(opponent, dist)
                 var flee_chance := (npcState == "dying") ? 40 : 15;
                 
                 if (RandomInt(100) < flee_chance)
-                    PrintText(me, "*"+me.name+" recua*");
+                    PrintTextAbove(me, "*"+me.name+" recua*");
                     FleeFrom(opponent);
                     return 0;  // Added return 0 after fleeing
                 endif
@@ -1785,7 +1795,7 @@ function LootCorpse(corpse)
     
     // Loot items
     while (looted < max_loot)
-        PrintText(me, "*revira o corpo*");
+        PrintTextAbove(me, "*revira o corpo*");
         if (!LootSomething(me, corpse))
             break;
         endif
@@ -1895,7 +1905,7 @@ function LootItem(npc, item)
         EquipItem(npc, backpack);
     endif
 
-    PrintText(npc, "*pega " + item.desc + "*");
+    PrintTextAbove(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);
 
     return MoveItemToContainer(item, npc.backpack);
@@ -2121,6 +2131,11 @@ function ShouldFlee(me)
             return 1;
         endif
     endif
+     // if mob is neutral alignment, alaways flee
+    if (GetAlignment(me) == ALIGN_NEUTRAL)
+        return 1;
+    endif
+
     return 0;
 endfunction
 
@@ -2398,7 +2413,7 @@ function DetectAklatsThreats(npc)
     // Verifica se foi alertado por som (taunt_opponent)
     var taunt_opponent := GetObjProperty(npc, "#taunt_opponent");
     if (taunt_opponent)
-        PrintText(npc, "*Alertado pelo som!*");
+        PrintTextAbove(npc, "*Alertado pelo som!*");
         return 1;
     endif
     
@@ -2416,7 +2431,7 @@ function DetectAklatsThreats(npc)
     
     // Verifica se há pegadas suficientes e alinhadas
     if (footsteps.size() >= 3 && CheckAlinhadas(footsteps))
-        PrintText(npc, "*Alertado pelas vibrações!*");
+        PrintTextAbove(npc, "*Alertado pelas vibrações!*");
         return 1;
     endif
     

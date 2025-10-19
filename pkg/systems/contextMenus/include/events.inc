@@ -71,7 +71,7 @@ function ContextMenu_SendMerchantNodeEvent( byref mobile, byref npc, byref str )
 
     var node_serial := GetObjProperty( npc, "MerchantNode" );
     if( node_serial.errortext )
-        PrintText( npc, "Context Menus are broken for me.", 0x3, 0x22 );
+        PrintTextAbove( npc, "Context Menus are broken for me.", 0x3, 0x22 );
         return 0;
     endif
 

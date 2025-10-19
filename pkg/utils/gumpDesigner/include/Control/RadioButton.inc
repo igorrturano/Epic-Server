@@ -26,14 +26,17 @@ class RadioButton(Control)
 
 	function SetUnpressedImage(this, unpressedImage)
 		this._unpressedImage := unpressedImage;
+		return this;
 	endfunction
 
 	function SetPressedImage(this, pressedImage)
 		this._pressedImage := pressedImage;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function ToString(this)

@@ -73,14 +73,76 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         
         chest.locked := 1;
         chest.movable := 0;
-                    // Adiciona armadilhas com tratamento de erro
-                    var trap := RandomInt(3)+1;
-                    var trap_result := 0;
-                    case(trap)
-                        1: trap_result := AddTrap(chest, "Needle", lvl);
-                        2: trap_result := AddTrap(chest, "Explosion", lvl);
-                        3: trap_result := AddTrap(chest, "PoisonGas", lvl);
-                    endcase
+
+                    // Add traps based on level
+                    if (lvl <= 3)
+                        // Levels 1-3: 1 trap
+                        var trap := RandomInt(3) + 1;
+                        case(trap)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                    elseif (lvl == 4)
+                        // Level 4: 1 trap, 50% chance for 2nd trap
+                        var trap := RandomInt(3) + 1;
+                        case(trap)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                        if (RandomInt(100) < 50)
+                            var trap2 := RandomInt(3) + 1;
+                            case(trap2)
+                                1: AddTrap(chest, "Needle", lvl);
+                                2: AddTrap(chest, "Explosion", lvl);
+                                3: AddTrap(chest, "PoisonGas", lvl);
+                            endcase
+                        endif
+                    elseif (lvl == 5)
+                        // Level 5: 2 traps, 50% chance for 3rd trap
+                        var trap1 := RandomInt(3) + 1;
+                        case(trap1)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                        var trap2 := RandomInt(3) + 1;
+                        case(trap2)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                        if (RandomInt(100) < 50)
+                            var trap3 := RandomInt(3) + 1;
+                            case(trap3)
+                                1: AddTrap(chest, "Needle", lvl);
+                                2: AddTrap(chest, "Explosion", lvl);
+                                3: AddTrap(chest, "PoisonGas", lvl);
+                            endcase
+                        endif
+                    else
+                        // Level 6+: 3 traps always
+                        var trap1 := RandomInt(3) + 1;
+                        case(trap1)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                        var trap2 := RandomInt(3) + 1;
+                        case(trap2)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                        var trap3 := RandomInt(3) + 1;
+                        case(trap3)
+                            1: AddTrap(chest, "Needle", lvl);
+                            2: AddTrap(chest, "Explosion", lvl);
+                            3: AddTrap(chest, "PoisonGas", lvl);
+                        endcase
+                    endif
+
                     Loot_Generate(chest, lootname);
                 else
                     checker := 0;
@@ -92,7 +154,9 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                 var players := EnumerateOnlineCharacters();
                 foreach player in players
                     if (player.cmdlevel > 2)
-                        SendSysMessageEx(player, "Chestspawner em x " + x + " y " + y + " z " + z + " esta consumindo muito a CPU, delete-o ou recrie-o", SSM_FAIL);
+                        SendSysMessageEx(player, "Chestspawner em x " + x + " y " + y + " z " + z + " esta consumindo muito a CPU, e sera destruido", SSM_FAIL);
+                        DestroyItem(chest);
+                        sleepms(20);
                     endif
                 endforeach
             endif

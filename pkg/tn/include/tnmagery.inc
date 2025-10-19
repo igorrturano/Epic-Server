@@ -350,7 +350,7 @@ function EncantoCurar(mobile, alvos, spellinfo)
 	else
 		foreach mob in alvos
 			mob.hits := mob.hits + dmg;
-			PrintText(mob, "*consertado*");
+			PrintTextAbove(mob, "*consertado*");
 		endforeach
 	endif
 

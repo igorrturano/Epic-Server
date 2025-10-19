@@ -27,7 +27,7 @@ program CurandeiroMenu(params)
 	var grade_valour;
 
 	if (!diseases_system)
-		PrintText(npc, "Você não está doente!");
+		PrintTextAbove(npc, "Você não está doente!");
 		return;
 	endif
 
@@ -47,7 +47,7 @@ program CurandeiroMenu(params)
 		SendSysMessage(player, "O custo final vai ser de " + valor_final + " com desconto.");
 	endif
 
-	PrintText(npc, "Meu custo para cura são " + custo_cura + " moedas de cobre por sintoma e gravidade. No seu caso o valor é "
+	PrintTextAbove(npc, "Meu custo para cura são " + custo_cura + " moedas de cobre por sintoma e gravidade. No seu caso o valor é "
 		   + valor_final + " moedas de cobre.");
 
 	// Verificar se tem recursos suficientes
@@ -57,7 +57,7 @@ program CurandeiroMenu(params)
 	SendSysMessage(player, "Recursos disponíveis: " + totalRecursos + " moedas de cobre (equivalente).");
 
 	if (totalRecursos < valor_final)
-		PrintText(npc, "Você não tem moedas suficientes para o tratamento.");
+		PrintTextAbove(npc, "Você não tem moedas suficientes para o tratamento.");
 		return;
 	endif
 
@@ -77,7 +77,7 @@ program CurandeiroMenu(params)
 	var result := GFSendGump(player, gump);
 
 	if (!result || result[0] != 1)
-		PrintText(npc, "Tratamento cancelado.");
+		PrintTextAbove(npc, "Tratamento cancelado.");
 		return;
 	endif
 
@@ -86,9 +86,9 @@ program CurandeiroMenu(params)
 		// Curar o jogador
 		TS_LowerDuration(player, "disease", -1);
 		SendSysMessageEx(player, "Todas as doenças foram removidas", SSM_INFO);
-		PrintText(npc, "Tratamento concluído com sucesso!");
+		PrintTextAbove(npc, "Tratamento concluído com sucesso!");
 	else
-		PrintText(npc, "Erro no processamento do pagamento.");
+		PrintTextAbove(npc, "Erro no processamento do pagamento.");
 	endif
 
 	return 1;

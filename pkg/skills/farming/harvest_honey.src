@@ -44,7 +44,7 @@ program harvest_honey(character, beehive)
 									COLMEIA_FONT_COLOR_BAD);
 					return 1;
 				// Testa a skill para retirar a cera de abelha e o mel
-				elseif (SkillCheck(character, Domestic_Work, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
+				elseif (SkillCheck(character, DOMESTIC_WORK, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
 					if (!already_harvested_amount)
 						SetObjProperty(beehive, "#harvested", 1);
 					else
@@ -74,10 +74,10 @@ program harvest_honey(character, beehive)
 							SendSysMessage(character, "Voce enfureceu as abelhas!", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
 							if (character.graphic == 401)
 								PlaySoundEffect(character, 0x32F);
-								PrintText(character, "*Gritando*");
+								PrintTextAbove(character, "*Gritando*");
 							else
 								PlaySoundEffect(character, 0x441);
-								PrintText(character, "*Gritando*");
+								PrintTextAbove(character, "*Gritando*");
 							endif
 							return 0;
 						endif

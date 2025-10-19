@@ -97,6 +97,10 @@ exported function Attack(attacker, defender)
 
 		ExecuteMasteryAbility(attacker, defender, attackInfo);
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
+
+		if (attacker.acctname)
+			updateTooltip(attacker.weapon);
+		endif
 	else
 		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 
@@ -175,7 +179,7 @@ function CanAttack(attacker, defender)
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
 	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		PrintText(attacker, "*hipnotizado*");
+		PrintTextAbove(attacker, "*hipnotizado*");
 		return 0;
 	endif
 
@@ -197,6 +201,7 @@ function EpicAttack(attacker, defender, weaponHand)
 		dmg := Start_Script(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
 															armor, dmg, dmg, OFFHAND_DELAY });
 	endif
+	updateTooltip(armor);
 endfunction
 
 // Arqueiros
@@ -335,17 +340,6 @@ function ThrowerNPC(attacker, defender)
 	PlayMovingEffectXYZHued(attacker, defender, throwItem, 10, 10, 0, 0);
 
 	return 1;
-endfunction
-
-function CombatDbgMsg(mobile, text)
-	SendSysMessage(mobile, "CombatHook:" + text);
-endfunction
-
-function CombatMsg(mobile, type, text, ssm_type := 0)
-	// This is done just to prevent spam from would-be repetetive messages.
-	if (GetObjProperty(mobile, "#CH" + type))
-		SendSysMessage(mobile, text);
-	endif
 endfunction
 
 function FacingChecks(attacker, defender)

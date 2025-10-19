@@ -94,7 +94,7 @@ program InitScript(params)
 
 	result := NPC_SetupRandomEquipment(npc);
 	if (result.errortext)
-		PrintText(npc, result.errortext);
+		PrintTextAbove(npc, result.errortext);
 		return 0;
 	endif
 

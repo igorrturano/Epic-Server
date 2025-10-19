@@ -223,7 +223,7 @@ function ProcessCreateNpcsEvent(npc, event)
 			TS_StartTimer(new_npc, "summon", duration);
 
 			if (event.summontext)
-				PrintText(new_npc, event.summontext);
+				PrintTextAbove(new_npc, event.summontext);
 			endif
 			fail_count := 0;
 		else

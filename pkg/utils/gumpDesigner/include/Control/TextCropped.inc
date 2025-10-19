@@ -22,10 +22,12 @@ class TextCropped(Text)
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)

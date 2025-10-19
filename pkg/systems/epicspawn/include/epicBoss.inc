@@ -18,6 +18,12 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
+
+    // IMPORTANT: Set EpicBossStruct BEFORE customizeNpc to prevent race condition
+    // The NPC brain may start during customizeNpc and needs this property
+    SetObjProperty(npc, "EpicBossStruct", boss);
+    SetObjProperty(npc, "IsBoss", 1);
+
     var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
     // Set basic properties
@@ -84,86 +90,86 @@ function CreateEpicBoss(boss, x, y, z, realm)
         AP_RefreshVitals(npc);
     endif
     
-    // Set skill modifiers
-    if (boss.wrestling)
-        AP_SetSkillMod(npc, WRESTLING, CInt(boss.wrestling));
+    // Set skill modifiers - Read from nested skills_mod structure
+    if (boss.skills_mod.wrestling)
+        AP_SetSkillMod(npc, WRESTLING, CInt(boss.skills_mod.wrestling));
     endif
-    
-    if (boss.tactics)
-        AP_SetSkillMod(npc, TACTICS, CInt(boss.tactics));
+
+    if (boss.skills_mod.tactics)
+        AP_SetSkillMod(npc, TACTICS, CInt(boss.skills_mod.tactics));
     endif
-    
-    if (boss.magery)
-        AP_SetSkillMod(npc, MAGERY, CInt(boss.magery));
+
+    if (boss.skills_mod.magery)
+        AP_SetSkillMod(npc, MAGERY, CInt(boss.skills_mod.magery));
     endif
-    
-    if (boss.awareness)
-        AP_SetSkillMod(npc, AWARENESS, CInt(boss.awareness));
+
+    if (boss.skills_mod.awareness)
+        AP_SetSkillMod(npc, AWARENESS, CInt(boss.skills_mod.awareness));
     endif
-    
+
     // Add all other skills from attributeConstants.inc
-    if (boss.alchemy)
-        AP_SetSkillMod(npc, ALCHEMY, CInt(boss.alchemy));
+    if (boss.skills_mod.alchemy)
+        AP_SetSkillMod(npc, ALCHEMY, CInt(boss.skills_mod.alchemy));
     endif
-    
-    if (boss.parry)
-        AP_SetSkillMod(npc, PARRY, CInt(boss.parry));
+
+    if (boss.skills_mod.parry)
+        AP_SetSkillMod(npc, PARRY, CInt(boss.skills_mod.parry));
     endif
-    
-    if (boss.onehanded)
-        AP_SetSkillMod(npc, ONEHANDED, CInt(boss.onehanded));
+
+    if (boss.skills_mod.one_handed)
+        AP_SetSkillMod(npc, ONEHANDED, CInt(boss.skills_mod.one_handed));
     endif
-    
-    if (boss.twohanded)
-        AP_SetSkillMod(npc, TWOHANDED, CInt(boss.twohanded));
+
+    if (boss.skills_mod.two_handed)
+        AP_SetSkillMod(npc, TWOHANDED, CInt(boss.skills_mod.two_handed));
     endif
-    
-    if (boss.dualwield)
-        AP_SetSkillMod(npc, DUALWIELD, CInt(boss.dualwield));
+
+    if (boss.skills_mod.dual_wield)
+        AP_SetSkillMod(npc, DUALWIELD, CInt(boss.skills_mod.dual_wield));
     endif
-    
-    if (boss.ranged)
-        AP_SetSkillMod(npc, RANGED, CInt(boss.ranged));
+
+    if (boss.skills_mod.ranged)
+        AP_SetSkillMod(npc, RANGED, CInt(boss.skills_mod.ranged));
     endif
-    
-    if (boss.sneak)
-        AP_SetSkillMod(npc, SNEAK, CInt(boss.sneak));
+
+    if (boss.skills_mod.sneak)
+        AP_SetSkillMod(npc, SNEAK, CInt(boss.skills_mod.sneak));
     endif
-    
-    if (boss.pickpocketing)
-        AP_SetSkillMod(npc, PICKPOCKETING, CInt(boss.pickpocketing));
+
+    if (boss.skills_mod.pickpocketing)
+        AP_SetSkillMod(npc, PICKPOCKETING, CInt(boss.skills_mod.pickpocketing));
     endif
-    
-    if (boss.mechanics)
-        AP_SetSkillMod(npc, MECHANICS, CInt(boss.mechanics));
+
+    if (boss.skills_mod.mechanics)
+        AP_SetSkillMod(npc, MECHANICS, CInt(boss.skills_mod.mechanics));
     endif
-    
-    if (boss.medicine)
-        AP_SetSkillMod(npc, MEDICINE, CInt(boss.medicine));
+
+    if (boss.skills_mod.medicine)
+        AP_SetSkillMod(npc, MEDICINE, CInt(boss.skills_mod.medicine));
     endif
-    
-    if (boss.survival)
-        AP_SetSkillMod(npc, SURVIVAL, CInt(boss.survival));
+
+    if (boss.skills_mod.survival)
+        AP_SetSkillMod(npc, SURVIVAL, CInt(boss.skills_mod.survival));
     endif
-    
-    if (boss.metalworking)
-        AP_SetSkillMod(npc, METALWORKING, CInt(boss.metalworking));
+
+    if (boss.skills_mod.metal_working)
+        AP_SetSkillMod(npc, METALWORKING, CInt(boss.skills_mod.metal_working));
     endif
-    
-    if (boss.woodworking)
-        AP_SetSkillMod(npc, WOODWORKING, CInt(boss.woodworking));
+
+    if (boss.skills_mod.wood_working)
+        AP_SetSkillMod(npc, WOODWORKING, CInt(boss.skills_mod.wood_working));
     endif
     
     if (boss.domestic_work)
-        AP_SetSkillMod(npc, Domestic_Work, CInt(boss.domestic_work));
+        AP_SetSkillMod(npc, DOMESTIC_WORK, CInt(boss.domestic_work));
     endif
-    
-    if (boss.gathering)
-        AP_SetSkillMod(npc, GATHERING, CInt(boss.gathering));
+
+    if (boss.skills_mod.gathering)
+        AP_SetSkillMod(npc, GATHERING, CInt(boss.skills_mod.gathering));
     endif
-    
-    if (boss.handleanimal)
-        AP_SetSkillMod(npc, HANDLEANIMAL, CInt(boss.handleanimal));
+
+    if (boss.skills_mod.handle_animal)
+        AP_SetSkillMod(npc, HANDLEANIMAL, CInt(boss.skills_mod.handle_animal));
     endif
     
     // Set special abilities
@@ -218,10 +224,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "descricao", boss.detailed_description);
     endif
 
-    SetObjProperty(npc, "IsBoss", 1); // Mark this NPC as a boss
-    // Set the boss structure on the NPC for reference
-    SetObjProperty(npc, "EpicBossStruct", boss);
-
     // Set combat events
     if (boss.combatevents && boss.combatevents.size() > 0)
         // Create a clean array with consistent structure
@@ -252,7 +254,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "CombatEvents", cleaned_events);
         var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
         if(res == error)
-            PrintText(npc, "Combat Events script error: " + res.errortext);
+            PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
         endif
     endif
 

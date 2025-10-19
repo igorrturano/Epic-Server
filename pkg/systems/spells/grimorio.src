@@ -107,7 +107,7 @@ function copyrecipe(who, recipe)
 
 			setobjproperty(item, "spellinfo", recipe);
 			SendSysMessageEx(who, "Voce fez uma copia do pergaminho.", SSM_INFO);
-			printtext(who, "*escrevendo pergaminho*");
+			PrintTextAbove(who, "*escrevendo pergaminho*");
 		else
 			SendSysMessageEx(who, "Voce copiou o pergaminho sem cuidados e ela esta ilegivel.", SSM_FAIL);
 		endif

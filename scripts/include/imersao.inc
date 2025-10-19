@@ -562,7 +562,7 @@ function Imersao(who, tipoimersao, qtdloops:=1, tempoloop:=0, saisom:=1, saiemot
 	var i;
 	for (i:=0; i<qtdloops; i++) //EXECUTAR IMERSÃO
 		if (saisom == 1) PlaySoundEffect(who, whosound); endif
-		if (saiemote == 1) PrintText(who, whoemote); endif
+		if (saiemote == 1) PrintTextAbove(who, whoemote); endif
 		if (saianim == 1) PerformAction(who, whoanim); endif
 
 		if (saiefeito == 1)

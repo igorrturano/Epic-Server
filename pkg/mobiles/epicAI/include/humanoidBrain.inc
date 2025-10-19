@@ -11,6 +11,7 @@ include "include/epicLoggerUtils";
 function HumanoidBrain()
     var ev;
     var wanders := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
@@ -30,10 +31,19 @@ function HumanoidBrain()
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
+        
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
@@ -50,23 +60,25 @@ function HumanoidBrain()
             endif
         endif
         
-        if (ev)
+        if (ev)            
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -79,29 +91,31 @@ function HumanoidBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.opponent))
-                        HandleHumanoidCombatEvent(ev.opponent, is_ranged);
+                    last_activity_time := polcore().systime;
+                    if (CanFight(me, ev.source))
+                        // Taunt forces a target switch - clear current opponent first
+                        SetOpponent(0);
+                        HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    if (me.isShaman()   )
+                    if (me.isShaman())
                         HumanoidShamanBehavior(me, ev.source);
                     endif
                     if (me.isPriest())
                         HumanoidPriestBehavior(me, ev.source);
                     endif
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                HumanoidIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)           
+            HumanoidIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
                     HandleIdleState();
                 endif
@@ -130,7 +144,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintText(me, "*"+me.name+" se acovarda*");
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -203,9 +217,34 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    SetOpponent(opponent);
-    opponent := CheckForIdealTarget();
-    SetOpponent(opponent);
+    // Check if NPC is taunted - if so, only fight the taunter
+    if (GetCooldown(me, "taunted") > 0)
+        var taunter_serial := GetObjProperty(me, "#taunter");
+        if (taunter_serial)
+            var taunter := SystemFindObjectBySerial(taunter_serial);
+            if (taunter && CanFight(me, taunter))
+                // Forced to fight the taunter, ignore all other targets
+                opponent := taunter;
+                SetOpponent(opponent);
+            else
+                // Taunter is no longer valid, clear taunt
+                EraseObjProperty(me, "#taunter");
+                SetCooldown(me, "taunted", 0);
+            endif
+        endif
+    else
+        // Not taunted - use normal target selection logic
+        // Only check for ideal target if we don't have a valid opponent already
+        // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
+        if (!me.opponent || !CanFight(me, me.opponent))
+            SetOpponent(opponent);
+            opponent := CheckForIdealTarget();
+            SetOpponent(opponent);
+        else
+            // We already have a valid opponent, stick with them
+            opponent := me.opponent;
+        endif
+    endif
 
     if (ShouldFlee(me))
         FleeFrom(opponent);
@@ -251,17 +290,17 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isMage())
-        PrintText(me, "Mage Behavior");
+        PrintTextAbove(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        PrintText(me, "Shaman Behavior");
+        PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
-        PrintText(me, "Priest Behavior");
+        PrintTextAbove(me, "Priest Behavior");
         HumanoidPriestBehavior(me, opponent);
     endif
 
@@ -305,7 +344,7 @@ function HumanoidIdle(wanders, is_ranged)
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif

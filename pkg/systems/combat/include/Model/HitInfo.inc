@@ -29,5 +29,7 @@ class HitInfo(IHitInfo)
 		if (!this._abilitiesToExecute[combatAbility.GetMomentum()]) this._abilitiesToExecute[combatAbility.GetMomentum()] := array{}; endif
 
 		this._abilitiesToExecute[combatAbility.GetMomentum()].append(combatAbility);
+
+		return this;
 	endfunction
 endclass

@@ -29,9 +29,9 @@ program SpellScript(params)
 	foreach mobile in targets
 		random := RandomInt(100);
 		if (random <= skill) // acerto
-			PrintText(mobile, "acertou");
+			PrintTextAbove(mobile, "acertou");
 		else // erro
-			PrintText(mobile, "errou");
+			PrintTextAbove(mobile, "errou");
 		endif
 	endforeach
 

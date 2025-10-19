@@ -10,18 +10,13 @@ include "include/say";
 include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
-// include ":ghaia:generic";
-include ":ghaia:objective";
-include ":ghaia:ghaiaInit";
-// include ":ghaia:habs";
 include ":faccao:npc";
 include ":combat:combat";
-include ":ghaia:combatevents";
 include ":faccao:faccao";
 include "include/dungeons";
-include "include/ghaia";
 include "include/utils";
 include "include/epicNPCUtils";
+include "include/eventID";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
@@ -161,7 +156,7 @@ function CheckPlayer(who)
 
 				break;
 			"userban":
-				// printtext(me, "O userban ta batendo aqui " + law.opt + " vamo ver");
+				// PrintTextAbove(me, "O userban ta batendo aqui " + law.opt + " vamo ver");
 				if (who.name == law.opt)
 					warning := who;
 					warn_type := 2;
@@ -258,7 +253,7 @@ program NPCMonitor()
 	SetAnchor(0, 0, 0, 0);
 	while (me)
 		if (GetObjProperty(me, "objloc") != error)
-			DoObjectiveGuard();
+			// DoObjectiveGuard();
 		endif
 
 		if (warning)
@@ -340,7 +335,7 @@ program NPCMonitor()
 			PICKPOCKET_EVENT:
 				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
 					AddReport(guild, "{} percebeu {} tentando cometer um furto".format(me.name, ev.source.name));
-					PrintText(me, "Ei! O que pensa que esta fazendo?");
+					PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
 					FightADV(ev.source);
 					disableWarn();
 				endif
@@ -348,7 +343,7 @@ program NPCMonitor()
 			REVELADO_EVENT:
 				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
 					AddReport(guild, "{} encontrou {} tentando se esconder".format(me.name, ev.source.name));
-					PrintText(me, "Ei! O que pensa que esta fazendo?");
+					PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
 					FightADV(ev.source);
 					disableWarn();
 				endif
@@ -357,7 +352,7 @@ program NPCMonitor()
 				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
 					if (FindInArray(guild_laws, struct{ "type" := "nolockpick" })) // && InGuildRect(guild, ev.source))
 						AddReport(guild, "{} alertou {} sobre arrombar fechaduras".format(me.name, ev.source.name));
-						PrintText(me, "Ei! O que pensa que esta fazendo?");
+						PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
 						FightADV(ev.source);
 						disableWarn();
 					endif
@@ -367,7 +362,7 @@ program NPCMonitor()
 				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
 					if (FindInArray(guild_laws, struct{ "type" := "nocerca" }))
 						AddReport(guild, "{} alertou {} sobre pular cercas".format(me.name, ev.source.name));
-						PrintText(me, "Ei! O que pensa que esta fazendo?");
+						PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
 						var storeloc := struct{ "x" := ev.source.x, "z" := ev.source.z, "y" := ev.source.y };
 						PetGoTo(ev.last_loc, 2);
 						MoveObjectToLocation(me, storeloc.x, storeloc.y, storeloc.z, me.realm, MOVEOBJECT_FORCELOCATION);
@@ -379,7 +374,7 @@ program NPCMonitor()
 				break;
 			EVID_DISARM:
 				AddReport(guild, "{} Tentou ser desarmado por {}".format(me.name, ev.source.name));
-				PrintText(me, "Ei! O que pensa que esta fazendo?");
+				PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
 				FightADV(ev.source);
 				disableWarn();
 			SYSEVENT_ENTEREDAREA:
@@ -471,14 +466,14 @@ function ResolveSpeech(ev, source := 0, order := 0)
 
 	/// Attack command
 	if (text["mate"] || text["ataque"] || text["prenda"])
-		PrintText(me, "Falou a lei...");
+		PrintTextAbove(me, "Falou a lei...");
 		targ := target(ev.source, TGTOPT_HARMFUL + TGTOPT_CHECK_LOS);
 		disableWarn();
 		FightADV(targ);
 		allevent := struct{ targ := targ, type := ATTACK_CMD };
 	/// Stop Command
 	elseif (text["pare"])
-		PrintText(me, "Sim senhor");
+		PrintTextAbove(me, "Sim senhor");
 		disableWarn();
 		following := 0;
 		fighting := 0;
@@ -487,7 +482,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		SetWarMode(0);
 	/// Follow Command
 	elseif (text["siga"])
-		PrintText(me, "As suas ordens");
+		PrintTextAbove(me, "As suas ordens");
 		disableWarn();
 		if (!targ)
 			targ := target(ev.source);
@@ -495,13 +490,13 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		PetFollow(targ);
 		allevent := struct{ targ := targ, type := FOLLOW_CMD };
 	elseif (text["parar"] && text["patrulha"])
-		PrintText(me, "Sim senhor.");
+		PrintTextAbove(me, "Sim senhor.");
 		patrolling := 0;
 		standing := 0;
 		EraseObjProperty(me, "patrolling");
 
 	elseif (text["patrulha"])
-		PrintText(me, "Informe a rota senhor");
+		PrintTextAbove(me, "Informe a rota senhor");
 		disableWarn();
 		following := 0;
 		fighting := 0;
@@ -527,9 +522,9 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		standing := 0;
 		EraseObjProperty(me, "fix_loc");
 		SetObjProperty(me, "patrolling", patrolling);
-		PrintText(me, "Irei iniciar minha patrulha");
+		PrintTextAbove(me, "Irei iniciar minha patrulha");
 	elseif (text["mant"] && text["posicao"])
-		PrintText(me, "Sim senhor.");
+		PrintTextAbove(me, "Sim senhor.");
 		patrolling := 0;
 		standing := 0;
 		fix_location := struct{ "x" := ev.source.x, "z" := ev.source.z,
@@ -540,14 +535,14 @@ function ResolveSpeech(ev, source := 0, order := 0)
 	elseif (text["assum"] && text["posto"])
 		EraseObjProperty(me, "#patrol_stand");
 		EraseObjProperty(me, "#patrol_next");
-		PrintText(me, "Sim senhor.");
+		PrintTextAbove(me, "Sim senhor.");
 		following := 0;
 		fighting := 0;
 		standing := 0;
 		disableWarn();
 	elseif (text["ir"] && text["at"])
 		var where := TargetCoordinates(ev.source);
-		PrintText(me, "Sim senhor");
+		PrintTextAbove(me, "Sim senhor");
 		disableWarn();
 		following := 0;
 		fighting := 0;
@@ -659,27 +654,27 @@ function WarnPlayer()
 		return;
 	endif
 
-	// PrintText(me, "Looking what to warn");
+	// PrintTextAbove(me, "Looking what to warn");
 	case (warn_type)
 		1: // nofight
 			if (!warning.warmode)
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} alertou {} sobre combate nao permitido".format(me.name, warning.name));
 				disableWarn();
 				return;
 			endif
 			if (warn_tries == 0)
-				PrintText(me, "Nao e permitido brigar aqui");
-				PrintText(me, "Pare com esta atitude agora mesmo!");
+				PrintTextAbove(me, "Nao e permitido brigar aqui");
+				PrintTextAbove(me, "Pare com esta atitude agora mesmo!");
 			else
 				var rand_msg := RandomInt(4);
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, pare com isso");
+						PrintTextAbove(me, "Vamos la, pare com isso");
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, sem combate aqui!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, sem combate aqui!"); break;
 				endcase
 			endif
 
@@ -689,7 +684,7 @@ function WarnPlayer()
 			if (Distance(me, warning) > 5) // (warn_rect)
 				//            if ((warning.x >= cint(warn_rect[1]) && warning.x <= cint(warn_rect[3]) && warning.y >= cint(warn_rect[2]) && warning.y <= cint(warn_rect[4])))
 				me.frozen := 0;
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} alertou {} sobre presenca nao permitida na area".format(me.name,
 			  warning.name));
 				disableWarn();
@@ -697,7 +692,7 @@ function WarnPlayer()
 			//            endif
 			/*
         elseif (!InGuildRect(guild, warning))
-            PrintText(me, "Muito bem.");
+            PrintTextAbove(me, "Muito bem.");
             AddReport(guild, "{} alertou {} sobre presenca nao permitida na area".format(me.name, warning.name));
             disableWarn();
             return;
@@ -705,32 +700,32 @@ function WarnPlayer()
 			endif
 
 			if (warn_tries == 0)
-				PrintText(me, "Voce nao e bem vindo aqui");
-				PrintText(me, "Saia desta area agora mesmo!");
+				PrintTextAbove(me, "Voce nao e bem vindo aqui");
+				PrintTextAbove(me, "Saia desta area agora mesmo!");
 				SendSystemReport(warning, "*{} parece estar falando com voce*".format(me.name), SSM_FAIL);
 			else
 				var rand_msg := RandomInt(4);
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, retire-se ou as coisas ficarao pior");
+						PrintTextAbove(me, "Vamos la, retire-se ou as coisas ficarao pior");
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, saia daqui!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, saia daqui!"); break;
 				endcase
 			endif
 			break;
 		3: // noweapon
 			if (warning.weapon.objtype in tools)
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} alertou {} sobre uso de armas".format(me.name, warning.name));
 				disableWarn();
 				return;
 			endif
 
 			if (warn_tries == 0)
-				PrintText(me, "Nao e permitido usar armas aqui");
-				PrintText(me, "Guarde-a agora mesmo!");
+				PrintTextAbove(me, "Nao e permitido usar armas aqui");
+				PrintTextAbove(me, "Guarde-a agora mesmo!");
 			/* if ( warning.isA(POLCLASS_NPC) )
                return FightADV(warning);
             endif */
@@ -739,47 +734,47 @@ function WarnPlayer()
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, guarde esta arma");
+						PrintTextAbove(me, "Vamos la, guarde esta arma");
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, guarde esta arma!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, guarde esta arma!"); break;
 				endcase
 			endif
 			break;
 		4: // noitem
 			if (!CheckItem(warning, warn_opt))
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} alertou {} sobre item equipavel nao permitido".format(me.name, warning.name));
 				disableWarn();
 				return;
 			endif
 
 			if (warn_tries == 0)
-				PrintText(me, "Nao e permitido usar {} aqui".format(warn_opt.name));
-				PrintText(me, "Guarde agora mesmo!");
+				PrintTextAbove(me, "Nao e permitido usar {} aqui".format(warn_opt.name));
+				PrintTextAbove(me, "Guarde agora mesmo!");
 			else
 				var rand_msg := RandomInt(4);
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, guarde {}".format(warn_opt.name));
+						PrintTextAbove(me, "Vamos la, guarde {}".format(warn_opt.name));
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, guarde isso agora mesmo!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, guarde isso agora mesmo!"); break;
 				endcase
 			endif
 			break;
 		5: // nohood
 			if (warning.name != "Desconhecido")
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} alertou {} sobre cobrir o rosto".format(me.name, warning.name));
 				disableWarn();
 				return;
 			endif
 
 			if (warn_tries == 0)
-				PrintText(me, "Nao e permitido cobrir o rosto aqui");
-				PrintText(me, "Revele-se agora mesmo!");
+				PrintTextAbove(me, "Nao e permitido cobrir o rosto aqui");
+				PrintTextAbove(me, "Revele-se agora mesmo!");
 			/* if ( warning.isA(POLCLASS_NPC) )
                return FightADV(warning);
             endif */
@@ -788,24 +783,24 @@ function WarnPlayer()
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, deixe-me ver voce!");
+						PrintTextAbove(me, "Vamos la, deixe-me ver voce!");
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, me mostre sua verdadeira face agora!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, me mostre sua verdadeira face agora!"); break;
 				endcase
 			endif
 			break;
 		6: // nosneak
 			if (!GetProcess(CInt(GetObjProperty(warning, "#HidePid"))))
-				PrintText(me, "Muito bem.");
+				PrintTextAbove(me, "Muito bem.");
 				AddReport(guild, "{} flagrou {} tentando se esconder".format(me.name, warning.name));
 				disableWarn();
 				return;
 			endif
 
 			if (warn_tries == 0)
-				PrintText(me, "Nao e permitido esgueirar aqui");
-				PrintText(me, "Pare agora mesmo!");
+				PrintTextAbove(me, "Nao e permitido esgueirar aqui");
+				PrintTextAbove(me, "Pare agora mesmo!");
 			/* if ( warning.isA(POLCLASS_NPC) )
                return FightADV(warning);
             endif */
@@ -814,10 +809,10 @@ function WarnPlayer()
 				case (rand_msg)
 					0:
 					1:
-						PrintText(me, "Vamos la, pare se ser ridiculo!");
+						PrintTextAbove(me, "Vamos la, pare se ser ridiculo!");
 						break;
-					2: PrintText(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintText(me, "Estou falando serio, pare com isso!"); break;
+					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
+					3: PrintTextAbove(me, "Estou falando serio, pare com isso!"); break;
 				endcase
 			endif
 			break;
@@ -837,7 +832,7 @@ function WarnPlayer()
 		endforeach
 	endif
 
-	// PrintText(me, "warned");
+	// PrintTextAbove(me, "warned");
 	SetCooldown(me, "last_warn_{}".format(warning.serial), 3);
 	warn_tries += 1;
 endfunction
@@ -908,7 +903,7 @@ endfunction
 function FightADV(opponent := 0)
 	if (opponent)
 		me.frozen := 0;
-		// PrintText(me, "I will engage".format(opponent.name));
+		// PrintTextAbove(me, "I will engage".format(opponent.name));
 		if (opponent == me || opponent == fighting || !opponent.IsA(POLCLASS_MOBILE) ||
 	  guild_leader == opponent.serial || Distance(me, opponent) > 18)
 			return;
@@ -940,7 +935,7 @@ function FightADV(opponent := 0)
 		return;
 	endif
 
-	// PrintText(me, "Engaged");
+	// PrintTextAbove(me, "Engaged");
 	if (fighting.concealed || fighting.hidden || fighting.dead || Distance(me, fighting) > 15)
 		AddReport(guild, "{} entrou em combate com {}".format(me.name, fighting.name));
 		if (fighting.dead)
@@ -1218,9 +1213,9 @@ function Setup()
          me.trueobjtype := me.objtype+1;
          me.gender := 1;
       endif */
-		SetupColor(me);
-		SetupEquip(me);
-		SetupName(me);
+		// SetupColor(me);
+		// SetupEquip(me);
+		// SetupName(me);
 		SetObjProperty(me, "DaysOfService", polcore().systime);
 		SetObjProperty(me, "started", 1);
 	// SetupSpecials(me);
@@ -1378,7 +1373,7 @@ endfunction
 function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
 	if ("FleeStealth" in custombehaviors)
 		if (!GetCooldown(me, "fleestealth"))
-			PrintText(me, "*esconde*");
+			PrintTextAbove(me, "*esconde*");
 			sleep(1);
 			me.hidden := 1;
 			me.stealthsteps := 30;
@@ -1416,9 +1411,9 @@ function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
 
 		if (change_opponent && randomint(6) <= 2)
 			me.setAggro(opponent.serial, -100);
-			if (ChooseHighestOpponent(me, opponent))
-				break;
-			endif
+			// if (ChooseHighestOpponent(me, opponent))
+			// 	break;
+			// endif
 		endif
 
 		if (ev.type == SYSEVENT_DAMAGED)
@@ -1466,7 +1461,7 @@ function CalcPathAndMove(me, byref opponent, sleepdelay)
 		var last_msg := GetObjProperty(me, "#fatigue");
 		if (!last_msg || last_msg < ReadGameClock())
 			SetObjProperty(me, "#fatigue", ReadGameClock() + 15);
-			PrintText(me, "*fatigado*");
+			PrintTextAbove(me, "*fatigado*");
 		endif
 		sleep(1);
 	elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
@@ -1548,7 +1543,7 @@ function CalcPathAndMove(me, byref opponent, sleepdelay)
 					EraseObjProperty(me, "path"); // deleta o path atual
 					me.remAggro(opponent);
 					var old_opponent := opponent;
-					ChooseHighestOpponent(me, opponent);
+					// ChooseHighestOpponent(me, opponent);
 					if (old_opponent == opponent)
 						Flee(opponent, sleepdelay, 1);
 					endif
@@ -1572,15 +1567,21 @@ function procura_em_volta(me)
 		// Do Nothing
 		elseif (CInt(GetObjProperty(me, "IgnoreHidden")))
 		// Do Nothing
-		else
-			if (CheckLineOfSight(me, mobile))
-				var difficulty := CalculateDHDiff(me, mobile);
-				if (SkillCheck(me, AWARENESS, difficulty) > 0)
-					mobile.hidden := 0;
-					PrintText(mobile, "*aparece*");
-					SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
-				endif
-			endif
+		// else
+			// if (CheckLineOfSight(me, mobile))
+			// 	var difficulty := CalculateDHDiff(me, mobile);
+			// 	if (SkillCheck(me, AWARENESS, difficulty) > 0)
+			// 		mobile.hidden := 0;
+			// 		PrintText(mobile, "*aparece*");
+			// 		SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
+			// 	endif
+				// var difficulty := CalculateDHDiff(me, mobile);
+				// if (SkillCheck(me, AWARENESS, difficulty) > 0)
+				// 	mobile.hidden := 0;
+				// 	PrintText(mobile, "*aparece*");
+				// 	SendSysMessageEx(mobile, me.name + " te encontrou!", SSM_FAIL);
+				// endif
+			// endif
 		endif
 		sleepms(2);
 	endforeach
@@ -1591,10 +1592,10 @@ function Opendoors(me)
 	foreach door in (ListItemsNearLocation(me.x, me.y, me.z, 1))
 		if ((door.isa(POLCLASS_DOOR)) and (!door.locked)) // se nao ta trancada
 			if (cint(GetObjProperty(me, "ignoredoor")) == 1)
-				PrintText(me, "*atravessa a porta*");
+				PrintTextAbove(me, "*atravessa a porta*");
 				MoveObjectToLocation(me, door.x, door.y, door.z, door.realm, MOVEOBJECT_FORCELOCATION);
 			elseif (cint(GetObjProperty(me, "opendoor")) == 1)
-				PrintText(me, "*abre a porta*");
+				PrintTextAbove(me, "*abre a porta*");
 				door.Open();
 			endif
 		endif

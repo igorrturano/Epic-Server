@@ -1146,8 +1146,8 @@
 // 	endif
 
 // 	//SETA O KIT
-// 	//printtext(who, "ALCHEMY1");
-// 	//PrintText(who, " ALCHEMY"+ chardata.Skills + " " + chardata.Skills["Alchemy"] );
+// 	//PrintTextAbove(who, "ALCHEMY1");
+// 	//PrintTextAbove(who, " ALCHEMY"+ chardata.Skills + " " + chardata.Skills["Alchemy"] );
 
 // 	// Edmond - 15/02/2012
 // 	if (chardata.Skills["Alchemy"] == 2)

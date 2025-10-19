@@ -1,9 +1,13 @@
 use uo;
-use math;
+// use math;
 use os;
-include "include/say";
+
+// include "include/say";
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
+// include ":message:model/Message";
+include ":message:model/TranslatableText";
+// include ":message:Translator";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");
@@ -15,18 +19,23 @@ const TEXT_TYPE := 9;
 const NAME_ID := 18; // posição do Name de quem fala
 const SYS_MSG := 0x06;
 
+var msgTranslator := Translator();
+
 exported function handleUCOutgoing(character, byref packet)
-
 	var type := packet.GetInt8(TEXT_TYPE);
-
 	var serial := packet.GetInt32(ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
-
 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
-	if (GetObjProperty(source, "original_language"))
-		message_txt := TranslateText(message_txt, "pt_BR", GetObjProperty(source, "original_language"));
-	endif
+	var original_message := message_txt;
+
+	if (message_txt[1] == " ") return 0; endif // Para de aporrinhar com essa merda desse .......... nas traduções
+	
+	var params := struct{
+		who := source,
+		message := message_txt
+	};
+	if (Translate(params)) return 1; endif
 
 	var Object_Name;
 	if (source.IsA(POLCLASS_MOBILE))
@@ -244,7 +253,7 @@ exported function handleUCOrequest(character, byref packet)
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
 
 	if (GetObjProperty(source, "original_language"))
-		message_txt := TranslateText(message_txt, "pt_BR", "en_US");
+		// message_txt := TranslateText(message_txt, "pt_BR", "en_US");
 	endif
 
 	var type := packet.GetInt8(4);
@@ -267,4 +276,23 @@ function handleGhostVoice(source, message_txt, byref packet)
 
 	EraseObjProperty(source, "ghostvoice");
 	return 0;
+endfunction
+
+function Translate(byRef params)
+	var who := params.who;
+	var message := params.message;
+
+	var wantTranslation := CInt(GetObjProperty(who, "translation"));
+	if (wantTranslation > 0)
+		var dubbed := CInt(wantTranslation) == 2 ? true : false; // Temporário, depois fazer verificação se o char quer legenda ou não
+
+		if (message[1] != "[" && message[message.length()] != "]") // Evita loop de tradução
+			Message("[" + message + "]").SetAsync().SendAbove(who);
+			if (dubbed)
+				return true; // Impede o envio da mensagem original
+			endif
+		endif
+	endif
+
+	return false;
 endfunction

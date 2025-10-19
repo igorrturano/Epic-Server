@@ -3,13 +3,23 @@ use npc;
 function AnimalBrain()
     var ev;
     var wanders := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
     while (me)
-        ev := os::wait_for_event(0);
+        ev := os::wait_for_event(1);
+
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
 
         if (me.opponent)
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleAnimalLeftArea(me.opponent);
             else
@@ -17,20 +27,22 @@ function AnimalBrain()
             endif
         endif
 
-        if (ev)
+        if (ev)            
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleAnimalCombatEvent(ev.source);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
@@ -43,26 +55,26 @@ function AnimalBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.opponent))
-                        HandleAnimalCombatEvent(ev.opponent);
+                    last_activity_time := polcore().systime;
+                    SetOpponent(0);
+                    if (CanFight(me, ev.source))
+                        HandleAnimalCombatEvent(ev.source);
                     endif
-                EVID_BUDDYATTACKED:
-                    // Talvez nao precise usar
                 EVID_PEACEMADE:
-                    SetWarMode( 0 );
-                    SetOpponent( 0 );
+                    last_activity_time := polcore().systime;
+                    SetWarMode(0);
+                    SetOpponent(0);
                     sleep(1);
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        // If no events and no combat, do idle behavior
-        if (!ev && !me.opponent)
+        // Idle behavior when no events and no combat
+        if (!me.opponent)           
             AnimalIdle(wanders);
-            if (RandomInt(100) < 30) // 30% chance to wander
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
                     wanders := 0;
@@ -121,7 +133,23 @@ function HandleAnimalCombatEvent(opponent)
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos
     endif
- 
+
+    // Check if animal is taunted - if so, only fight the taunter
+    if (GetCooldown(me, "taunted") > 0)
+        var taunter_serial := GetObjProperty(me, "#taunter");
+        if (taunter_serial)
+            var taunter := SystemFindObjectBySerial(taunter_serial);
+            if (taunter && CanFight(me, taunter))
+                // Forced to fight the taunter, ignore all other targets
+                opponent := taunter;
+            else
+                // Taunter is no longer valid, clear taunt
+                EraseObjProperty(me, "#taunter");
+                SetCooldown(me, "taunted", 0);
+            endif
+        endif
+    endif
+
     SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks
@@ -226,7 +254,7 @@ function AnimalIdle(wanders)
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif

@@ -9,8 +9,8 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
-include ":ghaia:ghaia";
 include "include/epicMageryUtils";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];

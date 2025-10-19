@@ -63,7 +63,7 @@ program GerenteTratamentoProduto(parametros)
 
 				EV_ITEM_QUEBROU:
 					SendSysMessageEx(quem, "O Item se partiu.", SSM_FAIL);
-					PrintText(produto, "*O Item se parte*");
+					PrintTextAbove(produto, "*O Item se parte*");
 					Sleepms(200);
 					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
 					DestroyItem(produto);

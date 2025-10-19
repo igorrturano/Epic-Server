@@ -145,7 +145,7 @@ function CheckAllLevers(lever, lever_list, opts)
 
             if (GetObjProperty(item, "status") != "on")
                ChangeLeverStatus(lever.serial);
-               PrintText(lever, "*desativa*");
+               PrintTextAbove(lever, "*desativa*");
                return 0;
             endif
             sleepms(2);
@@ -198,9 +198,9 @@ function normalusage(who, item)
    endif
 
    if (status == "off")
-      PrintText(who, "*Ativa*");
+      PrintTextAbove(who, "*Ativa*");
    else
-      PrintText(who, "*Desativa*");
+      PrintTextAbove(who, "*Desativa*");
 			if ( GetObjProperty(item, "powerword"))
 				item.invisible := 1;
 			endif
@@ -226,7 +226,7 @@ function normalusage(who, item)
          SendSysMessageEx(who, "Você não percebe nada de diferente", SSM_FAIL);
          if (RunTraps(item, who)) //se estiver errado, vai cair no outro runtraps
             SetObjProperty(item, "trapSpoted", 1);
-            PrintText(who, "*dispara armadilha*"); 
+            PrintTextAbove(who, "*dispara armadilha*"); 
          endif
          return;
       endif
@@ -237,7 +237,7 @@ function normalusage(who, item)
    
    if (RunTraps(item, who))
       SetObjProperty(item, "trapSpoted", 1);
-      PrintText(who, "*dispara armadilha*");
+      PrintTextAbove(who, "*dispara armadilha*");
       ChangeLeverStatus(lever_list);
       return;
    endif
@@ -350,7 +350,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-			PrintText(creature,""+text_above);
+			PrintTextAbove(creature,""+text_above);
 			endif
 		else
 			var x := GetObjProperty(item, "x");
@@ -361,7 +361,7 @@ function spawnBoss(item, opts)
 			sleepms(20);
 			if (!text_above)
 			else
-				PrintText(creature,""+text_above);
+				PrintTextAbove(creature,""+text_above);
 			endif
 		endif
  SetObjProperty(item, "champ", creature.serial);
@@ -399,10 +399,6 @@ function changegraphici(item, opts)
   endforeach
 
   EraseObjProperty(item, "#inuse");
-endfunction
-
-function stobj(who, item)
-
 endfunction
 
 function moveObjects(item, opts)
@@ -654,6 +650,8 @@ function reset(item, force_reset := 0)
    
 	if ( cint(GetObjProperty(item, "level")) > 0 || GetObjProperty(item, "powerword"))
 		item.invisible := 1;
+	elseif (GetObjProperty(item, "nature_event"))
+		CheckNatureEvent(item);
 	endif
 
 	if ( GetObjProperty(item, "HaveTrap") && !ExistTrap(item))
@@ -717,4 +715,19 @@ endforeach
    if (opts.all_levers_order == 2)
       SetRandomOrder(item);
    endif
+endfunction
+
+function CheckNatureEvent(item)
+   var nature_event := GetObjProperty(item, "nature_event");
+   
+   var current_day := GetGlobalProperty("dia");
+   var current_moon := getMoonPhase();
+   var current_season := GetSeasonName(getSeason());
+   
+   var nature_global := {current_day, current_moon, current_season};
+	if (nature_event in nature_global)
+		item.invisible := 0;
+	else
+		item.invisible := 1;
+	endif
 endfunction

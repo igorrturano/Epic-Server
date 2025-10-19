@@ -72,10 +72,10 @@ program SpellScript(params)
 	var equip := GetObjProperty(the_weapon, "equip");
 	TS_StartTimer(targ, "desarmar", 60);
 	if (is_cursed)
-		var x := targ.x + RandomInt(2) + 1;
-		var y := targ.y + RandomInt(2) + 1;
+		var x := targ.x;
+		var y := targ.y;
 		EraseObjProperty(the_weapon, "equip").cursed;
-		MoveObjectToLocation(the_weapon, x, y, GetWorldHeight(x, y), who.realm,
+		MoveObjectToLocation(the_weapon, x, y, targ.z, who.realm,
 					   MOVEOBJECT_FORCELOCATION + MOVEITEM_IGNOREMOVABLE);
 		equip.+cursed := 1;
 		SetObjProperty(the_weapon, "equip", equip);

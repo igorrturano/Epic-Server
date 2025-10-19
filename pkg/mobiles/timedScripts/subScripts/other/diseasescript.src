@@ -52,7 +52,7 @@ program diseaseScript(params)
 		SetObjProperty(mobile, "Diseases_System", diseases_system);
 
 		if (attacker)
-			PrintText(attacker, "*Infecta " + mobile.name + "*");
+			PrintTextAbove(attacker, "*Infecta " + mobile.name + "*");
 		endif
 
 		ApplyDiseaseEffects(mobile, new_diseases, DISEASE_GRADES::LIGHT);

@@ -89,7 +89,7 @@ function MobileTracking(who)
 			return 0;
 		endif
 
-		PrintText(who, "*Estudando o local a sua volta*");
+		PrintTextAbove(who, "*Estudando o local a sua volta*");
 
 		if (len(mobiles) < 1)
 			SendSysMessage(who, "Nao ha nenhuma criatura ao seu redor para ser seguida", 3, 660);
@@ -114,7 +114,7 @@ function ItemTracking(who)
 		endif
 		var items := listitemsnearlocation(who.x, who.y, LIST_IGNORE_Z, range, who.realm);
 
-		PrintText(who, "*Estudando o local a sua volta*");
+		PrintTextAbove(who, "*Estudando o local a sua volta*");
 
 		if (len(items) < 1)
 			SendSysMessage(who, "Nao ha itens para serem rastreados", 3, 660);

@@ -10,23 +10,30 @@ include "NPCMageryUtils";
 function MonsterBrain()
     var ev;
     var wanders := 0;
+    var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get monster configuration
     var is_ranged := isMonsterRanged();
 
-    // Enable archer-specific abilities if needed
     if (is_ranged)
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
 
     while (me)
-        ev := os::wait_for_event(0);
-    
-        // If we have an opponent, maintain combat position regardless of events
+        ev := os::wait_for_event(1);
+        
+        // Check FORCE dormant FIRST - before anything else
+        var current_time := polcore().systime;
+        var time_since_activity := CInt(current_time - last_activity_time);
+        
+        if (time_since_activity >= 120)  // 2 minutes
+            return;
+        endif
+           
         if (me.opponent)
+            last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleMonsterLeftArea(me.opponent);
             else
@@ -38,20 +45,21 @@ function MonsterBrain()
         
         if (ev)
             case (ev.type)
-                SYSEVENT_ENGAGED: 
+                SYSEVENT_ENGAGED:
+                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
-                SYSEVENT_DAMAGED: 
+                SYSEVENT_DAMAGED:
+                    last_activity_time := polcore().systime;
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly(ev.source)) // Only process if it's a player
+                    if (!IsAlly(ev.source))
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
@@ -64,26 +72,27 @@ function MonsterBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    if (CanFight(me, ev.opponent))
-                        HandleMonsterCombatEvent(ev.opponent, is_ranged);
+                    last_activity_time := polcore().systime;
+                    if (CanFight(me, ev.source))
+                        // Taunt forces a target switch - clear current opponent first
+                        SetOpponent(0);
+                        HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
                 EVID_FLEE:
+                    last_activity_time := polcore().systime;
                     FleeFrom(ev.source);
-                default:
-                    // PrintText(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        if (!ev)
-            if (!me.opponent)
-                MonsterIdle(wanders, is_ranged);
+        // Idle behavior when no events and no combat
+        if (!me.opponent)
+            MonsterIdle(wanders, is_ranged);
+            if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
-                    ev := os::wait_for_event(10);
                     wanders := 0;
-                    HandleIdleState();
                 endif
             endif
         endif
@@ -110,7 +119,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
-            PrintText(me, "*"+me.name+" se acovarda*");
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
             FleeFrom(source);
             return 1;
         endif
@@ -179,9 +188,34 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    SetOpponent(opponent);
-    opponent := CheckForIdealTarget();
-    SetOpponent(opponent);
+    // Check if NPC is taunted - if so, only fight the taunter
+    if (GetCooldown(me, "taunted") > 0)
+        var taunter_serial := GetObjProperty(me, "#taunter");
+        if (taunter_serial)
+            var taunter := SystemFindObjectBySerial(taunter_serial);
+            if (taunter && CanFight(me, taunter))
+                // Forced to fight the taunter, ignore all other targets
+                opponent := taunter;
+                SetOpponent(opponent);
+            else
+                // Taunter is no longer valid, clear taunt
+                EraseObjProperty(me, "#taunter");
+                SetCooldown(me, "taunted", 0);
+            endif
+        endif
+    else
+        // Not taunted - use normal target selection logic
+        // Only check for ideal target if we don't have a valid opponent already
+        // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
+        if (!me.opponent || !CanFight(me, me.opponent))
+            SetOpponent(opponent);
+            opponent := CheckForIdealTarget();
+            SetOpponent(opponent);
+        else
+            // We already have a valid opponent, stick with them
+            opponent := me.opponent;
+        endif
+    endif
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
@@ -254,7 +288,7 @@ function MonsterIdle(wanders, is_ranged)
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
-      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
      endif
@@ -353,7 +387,7 @@ function handleMonsterInitialReaction(source)
                     Say(responseAI);
                 else
                     Say("Ahhh " + playerRaca + "!!!");
-                    PrintText(me, "*Aterrorizado*");
+                    PrintTextAbove(me, "*Aterrorizado*");
                 endif
                 FleeFrom(source);
                 return 1;

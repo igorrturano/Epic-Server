@@ -5,6 +5,7 @@ include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
+include ":brainAI:npcCommands";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -268,7 +269,7 @@ endfunction
 function RemoveItemForSale(merchant, item_num, removeInfinite :=0)
 	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
 	var selling_info := data_elem.GetProp(Cstr(item_num));
- 	// printtext(merchant, " " + selling_info);
+ 	// PrintTextAbove(merchant, " " + selling_info);
 	if (selling_info[3] == 1 && !removeInfinite)
 		return 1;
 	else

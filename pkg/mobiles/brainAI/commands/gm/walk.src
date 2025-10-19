@@ -22,7 +22,7 @@ program textcmd_attack(who)
 		// WalkTowardLocation(loc.x, loc.y);
 		AI_MoveXY(targ, loc.x, loc.y, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 10);
 		dist := CoordinateDistance(targ.x, targ.y, loc.x, loc.y);
-		PrintText(targ, "Testando");
+		PrintTextAbove(targ, "Testando");
 		sleep(1);
 	// sleepms(400);
 	endwhile

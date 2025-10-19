@@ -104,7 +104,7 @@ function SpecialAttack(npc, opponent, byref dist)
 
 	PerformAction(npc, 0x6);
 	sleepms(80);
-	PrintText(npc, "*" + npc.name + " spits a ball of fire*");
+	PrintTextAbove(npc, "*" + npc.name + " spits a ball of fire*");
 	PlayMovingEffect(npc, opponent, GFX_SMALL_FIREBALL, 10, 10, 1);
 
 	var coord_list := GetCoordsInLine(npc.x, npc.y, opponent.x, opponent.y);

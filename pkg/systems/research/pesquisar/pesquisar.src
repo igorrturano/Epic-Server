@@ -444,7 +444,7 @@ function InitiateResearch(who, recipe)
 			PlaySoundEffect(who, 0x43e);
 		endif
 
-		PrintText(who, "*inicia a pesquisa com determinação*");
+		PrintTextAbove(who, "*inicia a pesquisa com determinação*");
 
 		NotifyResearchResult(who, 1);
 		return 1;
@@ -486,7 +486,7 @@ function StartResearch(who, recipe, remainingTime := 0)
 			return 0;
 		endif
 
-		PrintText(who, research_actions[RandomInt(research_actions.size()) + 1]);
+		PrintTextAbove(who, research_actions[RandomInt(research_actions.size()) + 1]);
 		PlaySoundEffect(who, 0x24a); // Som de estudo
 
 		sleep(3);
@@ -718,7 +718,7 @@ function GetResearchSkills(who)
 	return struct{ "ferreiro" := AP_GetSkill(who, METALWORKING),
 			   	"costureiro" := AP_GetSkill(
 			   	who,
-			   	Domestic_Work),
+			   	DOMESTIC_WORK),
 			   	"alquimista" := AP_GetSkill(who, ALCHEMY),
 			   	"mago" := AP_GetSkill(who, MAGERY),
 			   	"carpenter" := AP_GetSkill(who, WOODWORKING) };
@@ -1080,7 +1080,7 @@ function PerformRapidResearch(who, recipe)
 						   			"metalworking" := AP_GetSkill(
 						   			who,
 						   			METALWORKING),
-						   			"domesticwork" := AP_GetSkill(who, Domestic_Work) };
+						   			"domesticwork" := AP_GetSkill(who, DOMESTIC_WORK) };
 			var highestSkill := Max(craftSkills.woodworking,
 									 Max(craftSkills.metalworking, craftSkills.domesticwork));
 			if (highestSkill == craftSkills.woodworking)
@@ -1088,7 +1088,7 @@ function PerformRapidResearch(who, recipe)
 			elseif (highestSkill == craftSkills.metalworking)
 				skillname := METALWORKING;
 			else
-				skillname := Domestic_Work;
+				skillname := DOMESTIC_WORK;
 			endif
 		"Receita Alquimica": skillname := ALCHEMY;
 		"Tinta":             skillname := ALCHEMY;
@@ -1114,7 +1114,7 @@ function PerformRapidResearch(who, recipe)
 			break;
 		endif
 
-		PrintText(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+		PrintTextAbove(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
 		PlaySoundEffect(who, 0x24a);
 
 		sleep(5);

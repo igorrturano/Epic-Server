@@ -19,7 +19,7 @@ program doubleattack(params)
 	var dist := distance(attacker, defender);
 	CheckDistance(attacker, defender, dist);
 
-	PrintText(attacker, "Voce achou um ponto fraco!", SSM_INFO);
+	PrintTextAbove(attacker, "Voce achou um ponto fraco!", SSM_INFO);
 	SetObjProperty(attacker, "#tiropenetrante", 1);
 endprogram
 

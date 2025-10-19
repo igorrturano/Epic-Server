@@ -2,6 +2,7 @@
 use uo;
 use util;
 use cfgfile;
+use datafile;
 
 include ":combat:damage";
 include ":debug:Controller/DebugController";
@@ -223,21 +224,29 @@ function SeasonRotate()
         SUMMER:
             Broadcast("O sol é mais forte nesta época do ano...");
             SetGlobalProperty("season", SUMMER);
+			sleepms(5);
+			UpdateGlobalEventLevers("Verão");
             break;
 
         AUTUMN:
             Broadcast("As folhas das arvores começam a cair...");
             SetGlobalProperty("season", AUTUMN);
+			sleepms(5);
+			UpdateGlobalEventLevers("Outono");
             break;
 
         WINTER:
             Broadcast("O vento sopra gelado e a neve comeca a cair...");
             SetGlobalProperty("season", WINTER);
+			sleepms(5);
+			UpdateGlobalEventLevers("Inverno");
             break;
 
         SPRING:
             Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante...");
             SetGlobalProperty("season", SPRING);
+			sleepms(5);
+			UpdateGlobalEventLevers("Primavera");
             break;
     endcase
 endfunction
@@ -251,10 +260,10 @@ function GetMoonLightMod()
     var fase := GetGlobalProperty("moonfase");
 
     case (fase)
-       "Kalendae":    return 24;
-       "Nonae":       return 21;
-       "Idus":        return 16;
-       "Decrescens":  return 21;
+       "Kalendae":    return 24; sleepms(5); UpdateGlobalEventLevers("Kalendae");
+       "Nonae":       return 21; sleepms(5); UpdateGlobalEventLevers("Nonae");
+       "Idus":        return 16; sleepms(5); UpdateGlobalEventLevers("Idus");
+       "Decrescens":  return 21; sleepms(5); UpdateGlobalEventLevers("Decrescens");
     endcase
 endfunction
 // function output(msgtext)
@@ -425,7 +434,7 @@ function wetPowder(who)
     var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
     foreach item in items
         if (item.objtype == 0x9092)
-            PrintText(item, "*Molhada*");
+            PrintTextAbove(item, "*Molhada*");
             SubtractAmount(item, RandomInt(5) + 1);
         endif
     endforeach
@@ -794,4 +803,74 @@ function resistPenaltyByClimate(temp)
     else
         return 5;  // Extreme/deadly conditions (-50 to -26°C or 66-80°C)
     endif
+endfunction
+
+function UpdateGlobalEventLevers(event_type)
+   var ds := OpenDataFile(":itemutils:lever_events2");
+   
+   var keys_ds := ds.Keys();
+   
+   if (keys_ds.size() == 0)
+      print("ERRO: DataFile está vazio! Verificar arquivo físico.");
+      return;
+   endif
+   
+   // Percorre TODOS os eventos do DS
+   foreach event in keys_ds
+      var elem := ds.FindElement(event);
+      if (elem)
+         var lever_string := elem.GetProp("levers");
+         if (lever_string)
+            // Separa a string por espaços para obter os seriais individuais
+            var lever_list := SplitWords(lever_string);
+            var valid_levers := array{};
+            var needs_cleanup := 0;
+            
+            foreach serial_str in lever_list
+               var lever_serial := CInt("0x" + serial_str);
+               var lever := SystemFindObjectBySerial(lever_serial);
+               
+               if (lever)
+                  // Se é o evento atual, mostra. Se não é, esconde.
+                  if (event == event_type)
+                     lever.invisible := 0;
+                  else
+                     lever.invisible := 1;
+                  endif
+                  valid_levers.append(serial_str);
+               else 
+                  //needs_cleanup := 1;
+                  //print("DEBUG: needs_cleanup marcado como 1");
+               endif
+               sleepms(2);
+            endforeach
+                        
+            // Limpeza se necessário
+            if (needs_cleanup)
+               print("DEBUG: EXECUTANDO LIMPEZA!");
+               if (valid_levers.size() > 0)
+                  // Reconstrói a string com os seriais válidos
+                  var new_lever_string := "";
+                  foreach valid_serial in valid_levers
+                     if (new_lever_string != "")
+                        new_lever_string += " ";
+                     endif
+                     new_lever_string += valid_serial;
+                  endforeach
+                  print("DEBUG: Nova string construída: '" + new_lever_string + "'");
+                  elem.SetProp("levers", new_lever_string);
+                  print("DEBUG: Propriedade atualizada no elemento");
+               else
+                  print("DEBUG: Nenhum lever válido restou - removendo propriedade");
+                  elem.EraseProp("levers");
+               endif
+               print("DEBUG: Salvando arquivo DS...");
+               ds.SaveFile();
+               print("DEBUG: Arquivo DS salvo!");
+            else
+               print("DEBUG: Nenhuma limpeza necessária");
+            endif
+         endif
+      endif
+   endforeach
 endfunction

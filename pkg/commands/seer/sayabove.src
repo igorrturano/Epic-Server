@@ -8,6 +8,6 @@ program textcmd_sayabove(who, text)
 
 	var what := Target(who);
 	if (what)
-		PrintText(what, text);
+		PrintTextAbove(what, text);
 	endif
 endprogram

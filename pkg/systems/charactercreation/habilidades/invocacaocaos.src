@@ -53,10 +53,10 @@ program summonSkeletaSteed(params)
 	if (dice_roll == 9)
 		PlayObjectCenteredEffect(mount, 0x6D1D, 10, 20);
 		sleep(1);
-		PrintText(mount, "Teu chamado ressoou pelos planos, invocador ousado. Estou aqui para servir.");
+		PrintTextAbove(mount, "Teu chamado ressoou pelos planos, invocador ousado. Estou aqui para servir.");
 		duracao := Cint(AP_GetSkill(who, ARCANA));
 	elseif (dice_roll == 1)
-		PrintText(mount, "Beeh");
+		PrintTextAbove(mount, "Beeh");
 	endif
 
 	SetObjProperty(mount, "anchor", array{ who.x, who.y, who.z + 2 });

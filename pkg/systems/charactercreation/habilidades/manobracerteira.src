@@ -18,7 +18,7 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
-	PrintText(attacker, "*manobra certeira*");
+	PrintTextAbove(attacker, "*manobra certeira*");
 
 	// TODO colocar isso em uma funcao depois
 	var dmgList := dictionary;

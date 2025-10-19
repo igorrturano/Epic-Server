@@ -19,15 +19,15 @@ program drink_blue(who, potion)
 	endif
 
 	if (!targ.isA(POLCLASS_WEAPON))
-		SendSysMessageEx(who, "Isto não pode ser polido.", SSM_FAIL);
+		SendSysMessageEx(who, "Apenas armas podem ser amoladas.", SSM_FAIL);
 		return;
 	endif
+	
+	var damage_type := GetObjProperty(targ, "atributos").SlashMainDamage 
+		|| GetObjProperty(targ, "atributos").SlashOffDamage;
 
-	var craft_config := ReadConfigFile(":metalworking:blacksmithy");
-	var elem := craft_config[targ.objtype];
-
-	if (elem.principalMaterial != "metal")
-		SendSysMessageEx(who, "Isto não pode ser polido.", SSM_FAIL);
+	if (!damage_type)
+		SendSysMessageEx(who, "Apenas armas de corte podem ser amoladas.", SSM_FAIL);
 		return;
 	endif
 

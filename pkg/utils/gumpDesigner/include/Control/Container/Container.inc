@@ -54,52 +54,62 @@ class Container(Control)
 
 	function _SetName(this, name)
 		this._name := name;
+		return this;
 	endfunction
 
 	function SetX(this, x)
 		this._x := x;
+		return this;
 	endfunction
 
 	function SetY(this, y)
 		this._y := y;
+		return this;
 	endfunction
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SetVisible(this, isVisible)
 		this._isVisible := isVisible;
+		return this;
 	endfunction
 	
 	function AddControl(this, byRef control)
+		control.SetX(control.GetX() + this.GetX());
+		control.SetY(control.GetY() + this.GetY());
+		if (control.GetWidth() > this.GetWidth()) control.SetWidth(this.GetWidth()); endif // Ajusta a largura do controle se ela for maior que o container
+		if (control.GetHeight() > this.GetHeight()) control.SetHeight(this.GetHeight()); endif // Ajusta a altura do controle se ela for maior que o container
 		this._controls.append(control);
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
 		if (this._isVisible)
 			var bg := array{0x5B8, 0xBBC, 0xE14, 0x13C2, 0x1414, 0x1436};
-			GFGumpPicTiled(gump, this._x, this._y, this._width, this._height, bg[RandomInt(bg.size() + 1)]);
+			GFGumpPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), bg[RandomInt(bg.size() + 1)]); // Desenha um background aleatório para o container, só para visualização
 		endif
 
 		foreach control in (this._controls)
-			control.SetX(control.GetX() + this._x);
-			control.SetY(control.GetY() + this._y);
 			control.SelfCreate(gump);
 		endforeach
 	endfunction
 
 	function ToString(this)
-	return "Container (name=" + this.GetName()
+		return "Container (name=" + this.GetName()
 			+ ", x=" + CStr(this.GetX())
 			+ ", y=" + CStr(this.GetY())
 			+ ", width=" + CStr(this.GetWidth())
 			+ ", height=" + CStr(this.GetHeight())
-			+ ", controlsCount=" + CStr(this.GetControls().count());
+			+ ", controlsCount=" + CStr(this.GetControls().size())
+			+ ", isVisible=" + CStr(this._isVisible)
 			+ ")";
 	endfunction
 endclass

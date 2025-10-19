@@ -5,14 +5,13 @@ use util;
 
 include ":attributes:attributes";
 include "include/sysEvent";
-include "include/eventid";
 include "include/say";
 include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
-include ":ghaia:ghaia";
 include "include/produzTeia";
 include ":tn:include/cooldown";
+include "include/eventID";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
@@ -212,7 +211,7 @@ function ProcessSpeech(ev)
 
 	var text := lower(ev.text);
 	var name := lower(me.name);
-	// printtext(me, "meu nome " + name );
+	// PrintTextAbove(me, "meu nome " + name );
 	var todos;
 	if ((ev.source).serial != (me.master).serial)
 
@@ -459,7 +458,7 @@ function TakeItem(ev)
 		endif
 		var tameinfo := "";
 		tameinfo := "* " + me.name + " " + GetHappy(happy) + "*";
-		PrintText(me, tameinfo);
+		PrintTextAbove(me, tameinfo);
 		return;
 	elseif (ev.item.graphic == 3701 || ev.item.graphic == 2482)
 		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
@@ -470,12 +469,12 @@ function TakeItem(ev)
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 291;
 			DestroyItem(ev.item);
-			PrintText(ev.source, "*prende uma mochila no cavalo*");
+			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
 		elseif (me.graphic == 220)
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 292;
 			DestroyItem(ev.item);
-			PrintText(ev.source, "*prende uma mochila na llama*");
+			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
 		endif
 	else
 		SendSysMessage(ev.source, "Nao pode comer isso!");
@@ -665,13 +664,13 @@ function UnTame()
 
 	if (!orig_script)
 
-		PrintText(me, "*doesnt have an original script to use now that taming is done?!*");
+		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(me.name + " doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif (orig_script["tamed"])
 
-		PrintText(me, "*my original script was tamed.src ?!*");
+		PrintTextAbove(me, "*my original script was tamed.src ?!*");
 		SysLog(me.name + " my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
@@ -725,7 +724,7 @@ function ProcessDoubleClick(ev)
 					SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
 					return;
 				endif
-				PrintText(ev.source, "*remove a mochila de " + me.name + "*");
+				PrintTextAbove(ev.source, "*remove a mochila de " + me.name + "*");
 				me.graphic := GetObjProperty(me, "beforepack");
 				CreateItemInBackpack(ev.source, "backpack");
 				EraseObjProperty(me, "beforepack");
@@ -911,7 +910,7 @@ endfunction
 
 function CastFaerieHeal(me, owner)
 
-	PrintText(me, "*bate as asas*");
+	PrintTextAbove(me, "*bate as asas*");
 	PlaysoundEffect(me, 1137);
 	PlayObjectCenteredEffect(owner, 0x373a, 7, 0x10);
 
