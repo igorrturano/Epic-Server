@@ -2,6 +2,8 @@ use uo;
 
 include "IMobileWrapper";
 include ":attributes:skills";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 class MobileWrapper(IMobileWrapper)
 	var _mobRef; // mobRef
@@ -210,34 +212,42 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetCurrentHP(this)
+		this._hp.current := AP_GetVital(this._mobRef, HITS);
 		return this._hp.current;
 	endfunction
 
 	function GetCurrentStamina(this)
+		this._stamina.current := AP_GetVital(this._mobRef, STAMINA);
 		return this._stamina.current;
 	endfunction
 
 	function GetCurrentMana(this)
+		this._mana.current := AP_GetVital(this._mobRef, MANA);
 		return this._mana.current;
 	endfunction
 
 	function GetCurrentHunger(this)
+		this._hunger.current := AP_GetVital(this._mobRef, HUNGER);
 		return this._hunger.current;
 	endfunction
 
 	function GetMaxHP(this)
+		this._hp.max := AP_GetVitalMaximumValue(this._mobRef, HITS);
 		return this._hp.max;
 	endfunction
 
 	function GetMaxStamina(this)
+		this._stamina.max := AP_GetVitalMaximumValue(this._mobRef, STAMINA);
 		return this._stamina.max;
 	endfunction
 
 	function GetMaxMana(this)
+		this._mana.max := AP_GetVitalMaximumValue(this._mobRef, MANA);
 		return this._mana.max;
 	endfunction
 
 	function GetMaxHunger(this)
+		this._hunger.max := AP_GetVitalMaximumValue(this._mobRef, HUNGER);
 		return this._hunger.max;
 	endfunction
 
@@ -250,15 +260,18 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetSkill(this, skillName)
-		return AP_GetSkill(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetSkill(this._mobRef, skillName);
+		return this._skills[skillName];
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		return AP_GetTrueSkill(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetTrueSkill(this._mobRef, skillName);
+		return this._skills[skillName].base;
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		return AP_GetSkillMod(this._mobRef, skillName);
+		this._skills[skillName] := AP_GetSkillMod(this._mobRef, skillName);
+		return this._skills[skillName].mod;
 	endfunction
 
 	function IsNPC(this)
@@ -266,17 +279,17 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].base := AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
-		AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].mod := AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
-		if (!itemWrapped.GetTemplate())
+		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
@@ -289,7 +302,7 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
-		if (!itemWrapped.GetTemplate())
+		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
 			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
 		endif
 
@@ -299,5 +312,20 @@ class MobileWrapper(IMobileWrapper)
 		endforeach
 
 		return this;
+	endfunction
+
+	function Dispose(this)
+		this._mobRef := 0;
+		this._name := "";
+		this._str := 0;
+		this._dex := 0;
+		this._int := 0;
+		this._hp := 0;
+		this._stamina := 0;
+		this._mana := 0;
+		this._hunger := 0;
+		this._gold := 0;
+		this._weight := 0;
+		this._skills := 0;
 	endfunction
 endclass
