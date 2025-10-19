@@ -13,38 +13,7 @@ include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 
-
-const CHANCE_FABRICACAO_MAX := 80.0;
 var itemsConfig := ReadConfigFile(":*:itemdesc");
-
-enum ESTADOS_FABRICACAO
-	ITEM_PRONTO,
-	ITEM_MONTADO,
-	ITEM_GERADO
-endenum
-
-enum COMPONENTES_ENCAIXE_ORDEM
-	DESC_ENCAIXE_CLASSE := 1,
-	DESC_ENCAIXE_CARACTERISTICA := 2,
-	DESC_ENCAIXE_ENCAIXE := 3,
-	DESC_ENCAIXE_QTD_NECESSARIA := 4,
-	DESC_ENCAIXE_CONDICIONAL := 5,
-endenum
-
-var CATALOGO_LOG_PRA_TABUA := dictionary {
-        "0xee36" -> 0xee66,
-        "0xee37" -> 0xee67,
-        "0xee38" -> 0xee68,
-        "0xee39" -> 0xee69,
-        "0xee3a" -> 0xee70,
-        "0xee3b" -> 0xff05,
-        "0xee3c" -> 0xee65,
-        "0xee3f" -> 0xee64,
-        "0xee40" -> 0xef2a,
-        "0xee3d" -> 0xee73,
-        "0xee3e" -> 0x615b,
-        "0x1bdd" -> 0x1bd7 //madeira
-        };
 
 function ClassificaNomeReceita(nomeReceita)
 	var dividido := SplitWords(nomeReceita,"-");
