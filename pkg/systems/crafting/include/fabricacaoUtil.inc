@@ -218,6 +218,8 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 		endif
 
+		item.hp := item.maxhp;
+		
 		if(!item)
 			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
 			return;
