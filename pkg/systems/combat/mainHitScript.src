@@ -487,9 +487,9 @@ function ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamag
 			array{ attacker, defender, weapon, armor, basedamage, rawdamage }
 		);
 		if (script.errortext)
-			Message("*Defender* armor script error starting [" + hitscript + "] :" + script.errortext)
-				.SendSys(attacker)
-				.SendSys(defender);
+			// Message("*Defender* armor script error starting [" + hitscript + "] :" + script.errortext)
+			// 	.SendSys(attacker)
+			// 	.SendSys(defender);
 		endif
 		sleepms(2);
 	endforeach
