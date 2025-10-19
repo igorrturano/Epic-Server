@@ -62,12 +62,23 @@ program infectar(who)
 	endif
 
 	// Verificar qual gravidade foi selecionada
-	if (input[10] && input[10] == 1)
+	if (input[100] && input[100] == 1)
 		disease_grade := DISEASE_GRADES::LIGHT;
-	elseif (input[11] && input[11] == 1)
+	elseif (input[101] && input[101] == 1)
 		disease_grade := DISEASE_GRADES::MODERATE;
-	elseif (input[12] && input[12] == 1)
+	elseif (input[102] && input[102] == 1)
 		disease_grade := DISEASE_GRADES::SERIOUS;
+	endif
+
+	// Ler o valor digitado no campo de texto (ID 50)
+	var level_text := GFExtractData(input, 50);
+	var level := CInt(level_text);
+
+	// Validar o nível
+	if (!level || level < 1)
+		level := 1;
+	elseif (level > 5)
+		level := 5;
 	endif
 
 	// Se nenhum sintoma foi selecionado, remover doenças
@@ -85,7 +96,7 @@ program infectar(who)
 		return 0;
 	endif
 
-	var isInfectado := InfectMobile(subject,65000,1, 1, diseases, disease_grade);
+	var isInfectado := InfectMobile(subject,65000,1, level, diseases, disease_grade);
 	if(isInfectado)
 		SendSysMessageEx(who, "Você infectou " + subject.name + " com os sintomas selecionados: "
 					+ diseases, SSM_INFO);
@@ -99,8 +110,8 @@ endprogram
 
 function CreateDiseaseGump()
 	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 450); // Aumentei a altura
-	GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 380, 430); // Aumentei a altura
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 520);
+	GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 380, 500);
 
 	GFTextMid(gump, 10, 20, 380, 2100, "Infectar Personagem");
 
@@ -149,12 +160,17 @@ function CreateDiseaseGump()
 	GFRadioButton(gump, 30, 340, 210, 211, 0, 12);
 	GFTextLine(gump, 60, 340, 2100, "Grave");
 
+	// Nível (campo de texto)
+	GFTextLine(gump, 200, 250, 2100, "Nível (1-5):");
+	GFResizePic(gump, 200, 280, 3500, 80, 30);
+	GFTextEntry(gump, 205, 285, 70, 20, 2100, "1", 50);
+
 	// Texto informativo
-	GFTextLine(gump, 30, 380, 2100, "Nota: Selecione sintomas e gravidade, ou nenhum sintoma para curar.");
+	GFTextLine(gump, 30, 440, 2100, "Nota: Selecione sintomas e gravidade, ou nenhum sintoma para curar.");
 
 	// Botões
-	GFAddButton(gump, 150, 350, 2128, 2129, GF_CLOSE_BTN, 100); // OK
-	GFAddButton(gump, 250, 350, 2119, 2120, GF_CLOSE_BTN, 0); // Cancelar
+	GFAddButton(gump, 150, 460, 2128, 2129, GF_CLOSE_BTN, 100); // OK
+	GFAddButton(gump, 250, 460, 2119, 2120, GF_CLOSE_BTN, 0); // Cancelar
 
 	return gump;
 endfunction

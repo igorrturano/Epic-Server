@@ -6,7 +6,7 @@ enum class DISEASE_GRADES
 endenum
 
 enum class DISEASES
-	FEVER := "Leve",
+	FEVER := "Febre",
 	THROMBOSIS := "Trombo",
 	PUSTULES := "Pustulas",
 	LACERATION := "Laceracao",
