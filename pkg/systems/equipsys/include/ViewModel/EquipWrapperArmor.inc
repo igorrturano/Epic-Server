@@ -19,7 +19,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._resists := this._GetArmorResist();
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
-		this._AddModifiers();
+		this._InitModifiers();
 
 		if (this._prop)
 			this._resistsMod := ArmorResist(
@@ -73,12 +73,7 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		this._prop.+ColdResist := this._resists.GetColdResist();
 		this._prop.+EnergyResist := this._resists.GetEnergyResist();
 		this._prop.+PoisonResist := this._resists.GetPoisonResist();
-		this._AddModifiers();
-		foreach modifier in (this._modifiers)
-			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
-		endforeach
-
-		this._AddModifiers();
+		this._InitModifiers();
 		foreach modifier in (this._modifiers)
 			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
@@ -136,8 +131,10 @@ class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
 		);
 	endfunction
 
-	function _AddModifiers(this)
-		if (this._prop.Modifiers.size() > 1)
+	function _InitModifiers(this)
+		this._modifiers := dictionary{};
+		
+		if (this._prop.Modifiers.size() >= 1)
 			foreach modifier in (this._prop.Modifiers.keys())
 				this.AddModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
 			endforeach
