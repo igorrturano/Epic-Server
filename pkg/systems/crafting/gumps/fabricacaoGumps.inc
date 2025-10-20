@@ -293,7 +293,6 @@ function MontaEsquemaGump(byref gump,byref sessao)
 endfunction
 
 function MontaComponentesGump(byref gump,byref parametros,byref sessao)
-	//TODO tabela com todos os componentes.
 	gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
 
 	var larguraPainelEntrada := DefineLarguraPainel(12);

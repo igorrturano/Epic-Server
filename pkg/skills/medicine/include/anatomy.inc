@@ -520,18 +520,3 @@ function CopyProps(origin, destiny)
 		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
 	endforeach
 endfunction
-
-function UpdateDiseaseProperty(mobile, property_name, new_value)
-    var diseases_system := GetObjProperty(mobile, "Diseases_System");
-    if (!diseases_system)
-        diseases_system := struct{};
-    endif
-    
-    // Atualiza apenas a propriedade especificada
-    diseases_system[property_name] := new_value;
-    
-    // Salva de volta
-    SetObjProperty(mobile, "Diseases_System", diseases_system);
-    
-    return 1;
-endfunction

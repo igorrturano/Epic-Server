@@ -1,4 +1,5 @@
 include ":crafting:controladoraComplexos";
+include ":crafting:include/util/fabricacaoConstants";
 
 function FabricaItensComplexos(quem,profissao, modoGm := false)
 	EnviaItensComplexosGump(quem,profissao, modoGm);

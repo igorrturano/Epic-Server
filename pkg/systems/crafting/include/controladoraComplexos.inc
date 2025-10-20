@@ -12,12 +12,9 @@ include ":gumps:/include/dropDownGump";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
+include ":crafting:include/util/fabricacaoConstants";
 
-const NR_MAXIMO_ESQUEMAS := 6;
-const LARGURA_DROPDOWN := 350;
-const NR_MAXIMO_RECEITAS_POR_PAGINA := 8;
-const OBJTYPE_ITEM_MONTADO := 0xe72;
-const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
+ //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
 var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 
