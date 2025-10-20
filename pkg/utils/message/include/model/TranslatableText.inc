@@ -47,12 +47,16 @@ class TranslatableText(ITranslatable)
 		return this;
 	endfunction
 
-	function SetLanguage(this, langSource, langTarget)
-		this._source.lang := langSource;
-		this._target.lang := langTarget;
+	function SetSourceLanguage(this, lang)
+		this._source.lang := lang;
 		return this;
 	endfunction
 
+	function SetTargetLanguage(this, lang)
+		this._target.lang := lang;
+		return this;
+	endfunction
+	
 	function ToString(this)
 		return $"Texto original ({this._source.lang}): {this._source.text} -> Texto traduzido ({this._target.lang}): {this._target.text}";
 	endfunction

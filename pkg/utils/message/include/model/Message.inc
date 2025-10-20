@@ -1,11 +1,12 @@
 use math;
 use os;
 
-include "include/say";
+include "IMessage";
 include "TranslatableText";
 include ":message:Translator";
+include "include/say";
 
-class Message()
+class Message(IMessage)
 	var _asyncInfo := struct{
 		sending := false, // Em situações de script critico precisa ser assincrono. Definir isso com SetAsync().
 		translation := false // Se ele é assincrono, a tradução também, e é feita no processo do sender.
@@ -59,9 +60,17 @@ class Message()
 		return this;
 	endfunction
 
-	function SetLanguage(this, langSource, langTarget)
+	function SetSourceLanguage(this, lang)
 		foreach msg in (this._messages)
-			msg.text.SetLanguage(langSource, langTarget);
+			msg.text.SetSourceLanguage(lang);
+		endforeach
+
+		return this;
+	endfunction
+
+	function SetTargetLanguage(this, lang)
+		foreach msg in (this._messages)
+			msg.text.SetTargetLanguage(lang);
 		endforeach
 
 		return this;
