@@ -45,6 +45,7 @@ function PegaListaTipoMateriais()
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 	var materiaisChaves :=  GetConfigStringKeys(configRecursos);
 	var dictRetorno := Dictionary;
+	
 	foreach chave in materiaisChaves
 		Sleepms(2);
 		var elementoCfg := configRecursos[chave];
@@ -330,11 +331,23 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 							corFinal,
 							propFabricadoMontado.esquema.classe,
 							componentesRefatorado,
-							propFabricadoMontado.fabricante ? propFabricadoMontado.fabricante : 0 
+							propFabricadoMontado.fabricante ? propFabricadoMontado.fabricante : 0,
+							propFabricadoMontado.esquema.material
 							);
 endfunction
 
-function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes, fabricante)
+function CriaObjetoPropFabricado(
+									estado, 
+									isCompletamenteComum,
+									qualidade, 
+									modificadorHpTotal,
+									modificadorPesoTotal,
+									cor, 
+									classe, 
+									componentes, 
+									fabricante,
+									material
+									)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,
@@ -344,7 +357,8 @@ function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modific
 				cor := cor,
 				classe := classe,
 				componentes := componentes,
-				fabricante := fabricante};
+				fabricante := fabricante,
+				materialPrincipal := material};
 endfunction
 
 function CriaObjetoPosicao(quem)

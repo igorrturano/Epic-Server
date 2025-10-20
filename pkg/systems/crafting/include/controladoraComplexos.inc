@@ -4,11 +4,10 @@ include "/include/epicConstants";
 include "/include/epicPropNames";
 include "/include/math";
 include "include/epicUtils";
-include ":crafting:craftingUtil";
-include ":crafting:crafting";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
+include ":crafting:include/craftGumps";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
@@ -1088,7 +1087,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	var propriedades := struct {};
 	propriedades.+caracteristica := caracteristica;
-	var valorEfeitos := InterpretaMaterialEfeitos(caracteristica,chaveMaterial, tierProduto);
+	var valorEfeitos := InterpretaMaterialEfeitos(caracteristica,chaveMaterial);
 
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
@@ -1110,12 +1109,15 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	if(valorEfeitos.valorPrincipal)
 		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
+		if(Upper(caracteristica) != "VAZIO")
+			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
+		endif
 	endif
 	
 	return propriedades; 
 endfunction
 
-function InterpretaMaterialEfeitos(caracteristica, chaveMaterial, tier)
+function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 	var retornoEfeitos := struct;
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var efeitosMaterialString := efeitosMaterial[caracteristica];
@@ -1125,6 +1127,7 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial, tier)
 	if(efeitosMaterialString)
 		subEfeitosMaterial := SplitWords(efeitosMaterialString);
 		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
+		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
 		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
 		
 		if(subEfeitosMaterial.size() > 1)
@@ -1140,9 +1143,7 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial, tier)
 		endif 
 	endif
 	
-	if(Upper(caracteristica) != "VAZIO")
-		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial + Cint(tier.valor);
-	endif
+	return retornoEfeitos;
 endfunction
 
 function IsAlvoValido(quem, alvo)
@@ -1478,7 +1479,13 @@ function ClassificaRetornoComplexos(retorno,sessao)
 	endif
 endfunction
 
-function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
+function CriaPropFabricadoGerada(
+									objtype, 
+									tier, 
+									deveGerarComponentesOpcionais, 
+									modoEscolhaMaterial, 
+									classe := 1
+								)
 	var itemDescConfig := ReadConfigFile(":*:itemdesc");
 	var fabricacaoDescConfig := ReadConfigFile(":*:fabricacaoDesc");
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
@@ -1492,35 +1499,63 @@ function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
 
 	foreach componenteNecessario in (receita.componentesNecessarios)
 		Sleepms(2);
-		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size())];
+
+		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
+
+		var indice := 1;
+		if(componenteNecessario.itens.size() > 1)
+			indice :=  RandomIntMinMax(1,componenteNecessario.itens.size());
+		endif
+
+		var componenteAleatorio := componenteNecessario.itens[indice];
 		var materialComponente;
-		
-		if(componenteNecessario.isPrincipal)
-			if(!material)
-				var tipoMaterial := componenteDescConfig[componenteAleatorio].principalMaterial;
-				var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
+		var arrayMateriais := array;
+		var materialNome;
+		var tipoMaterial := componenteDescConfig[hex(componenteAleatorio)].principalMaterial;
+		var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
 
-				foreach materialPossivel in materiaisPossiveis
-					var efeitosmaterial := InterpretaMaterialEfeitos(componenteDescConfig[componenteAleatorio].caracteristica, materialPossivel.chave, tierInfo);
-					var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
+		foreach materialPossivel in materiaisPossiveis
+			sleepms(2);
+			var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
+			var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
 
-					if(tierMaterial == tier )
-						materialComponente := recursosConfig[materialPossivel.chave];
-						break;
-					endif
-				endforeach
-			else
-				materialComponente := recursosConfig[material];
+			if(tierMaterial == tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
+				materialComponente := materialPossivel.chave;
+				materialNome := recursosConfig[hex(materialPossivel.chave)].name;
+				break;
 			endif
-		else
-			materialComponente := PegaTipoMaterialAleatorio(componenteDescConfig[componenteAleatorio].principalMaterial);
+
+			if(tierMaterial <= tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
+				arrayMateriais.append(
+					struct{
+						materialComponente := materialPossivel.chave,
+						materialNome := recursosConfig[hex(materialPossivel.chave)].name
+					}
+				);
+			endif
+
+			if(tierMaterial < tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
+				arrayMateriais.append(
+					struct{
+						materialComponente := materialPossivel.chave,
+						materialNome := recursosConfig[hex(materialPossivel.chave)].name
+					}
+				);
+			endif
+		endforeach
+
+		if( modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+			|| modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
+			var escolhido := arrayMateriais[RandomIntMinMax(1,arrayMateriais.size())];
+			materialNome := escolhido.materialNome;
+			materialComponente := escolhido.materialComponente;
 		endif
 
 		var opcaoEncontrada := struct{ 
-				itemRef := 0,
+				itemRef := struct{ objtype := componenteAleatorio, name := componenteDescConfig[hex(componenteAleatorio)].name},
 				componenteTier :=  tierInfo,
-				nomeMaterial := "",
-				chaveMaterial := materialComponente.principalMaterial,
+				nomeMaterial := materialNome,
+				chaveMaterial := hex(materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
 
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
