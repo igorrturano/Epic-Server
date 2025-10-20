@@ -39,12 +39,12 @@ enum DAMAGETAG
 	THROWING_MID := "THROWING_MID",
 	THROWING_HIGH := "THROWING_HIGH"
 endenum
-enum WEAPONTYPE
+enum WEAPONCATEGORY
 	UNARMED := "Unarmed",
 
 	DAGGER := "Dagger",
 	SWORD := "Sword",
-	GREATSWORD := "GreatSword",
+	GREATSWORD := "Greatsword",
 	AXE := "Axe",
 	SPEAR := "Spear",
 	MACE := "Mace",
