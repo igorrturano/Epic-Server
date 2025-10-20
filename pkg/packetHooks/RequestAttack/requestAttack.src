@@ -19,6 +19,8 @@ use polsys;
 
 include "include/say";
 include ":mastery:Abilities";
+include ":charsys:ViewModel/MobileWrapper";
+include ":combat:Model/AttackInfo";
 
 const BYTE_DEFENDER := 1;
 
@@ -52,7 +54,7 @@ exported function HandleAttackRequest(who, byref packet)
 		return 1;
 	endif
 
-	ExecuteMasteryAbility(who, defender, 0);
+	ExecuteMasteryAbility(AttackInfo(MobileWrapper(who), MobileWrapper(defender), ATTACKMOMENT::ENGAGING));
 
 	return 0;
 endfunction
