@@ -4,7 +4,7 @@ function FabricaItensComplexos(quem,profissao, modoGm := false)
 	EnviaItensComplexosGump(quem,profissao, modoGm);
 endfunction
 
-function GeraItemComplexo( material, objtype, tier, isDispensavel, classe := 1)
+function GeraItemComplexo( objtype, tier, isDispensavel, material := 0 , classe := 1)
 	
 	var fabricadoProp := CriaPropFabricadoGerada(objtype, material, tier, classe);
 

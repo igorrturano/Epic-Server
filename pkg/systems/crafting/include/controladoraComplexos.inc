@@ -121,7 +121,6 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 		endif
 
 		retorno := GFSendGump(quem,gump);
-		Print("Retorno === > " + retorno[0]);
 
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
@@ -371,7 +370,6 @@ function TrataGMEscolhaComponente(quem, byref sessao)
 														qualidadeEscolhida);
 	
 	var objetoOpcaoEscolhida := MontaObetoOpcaoComponente(componenteEncontrado,encaixeEscolhido.indice);
-	Print("objetoOpcaoEscolhida: " + objetoOpcaoEscolhida);
 	
 	TrataComponenteEncontrado(
 									sessao,
@@ -1093,13 +1091,10 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	var propriedades := struct {};
 	propriedades.+caracteristica := caracteristica;
+	var valorEfeitos := InterpretaMaterialEfeitos(caracteristica,chaveMaterial, tierProduto);
 
-	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
-	var efeitosMaterialString := efeitosMaterial[propriedades.caracteristica];
-	var subEfeitosMaterial;
-	var valorEfeitoMaterial := 0;
 	
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
@@ -1112,11 +1107,28 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 		propriedades.modificadorHp := 0;
 	endif
 
+	if(valorEfeitos.efeitosAdicionais)
+		propriedades.+efeitosAdicionais := valorEfeitos.efeitosAdicionais;
+	endif
+
+	if(valorEfeitos.valorPrincipal)
+		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
+	endif
 	
+	return propriedades; 
+endfunction
+
+function InterpretaMaterialEfeitos(caracteristica, chaveMaterial, tier)
+	var retornoEfeitos := struct;
+	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
+	var efeitosMaterialString := efeitosMaterial[caracteristica];
+	var subEfeitosMaterial;
+	var valorEfeitoMaterial := 0;
+
 	if(efeitosMaterialString)
 		subEfeitosMaterial := SplitWords(efeitosMaterialString);
 		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
-		
+		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
 		
 		if(subEfeitosMaterial.size() > 1)
 			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
@@ -1127,15 +1139,13 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 				Sleepms(2);
 			endfor
-			propriedades.+efeitosAdicionais := subefeitosDict;
+			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
 		endif 
 	endif
 	
 	if(Upper(caracteristica) != "VAZIO")
-		propriedades.+valorPrincipal := valorEfeitoMaterial + Cint(tierProduto.valor);
+		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial + Cint(tier.valor);
 	endif
-	
-	return propriedades; 
 endfunction
 
 function IsAlvoValido(quem, alvo)
@@ -1477,6 +1487,7 @@ function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
 	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
 	var objetoDesc := itemDescConfig[objtype];
+	var tierInfo := PegaComponenteTierDesc(cint(tier));
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
@@ -1488,14 +1499,29 @@ function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
 		var materialComponente;
 		
 		if(componenteNecessario.isPrincipal)
-			materialComponente := recursosConfig[material];
+			if(!material)
+				var tipoMaterial := componenteDescConfig[componenteAleatorio].principalMaterial;
+				var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
+
+				foreach materialPossivel in materiaisPossiveis
+					var efeitosmaterial := InterpretaMaterialEfeitos(componenteDescConfig[componenteAleatorio].caracteristica, materialPossivel.chave, tierInfo);
+					var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
+
+					if(tierMaterial == tier )
+						materialComponente := recursosConfig[materialPossivel.chave];
+						break;
+					endif
+				endforeach
+			else
+				materialComponente := recursosConfig[material];
+			endif
 		else
 			materialComponente := PegaTipoMaterialAleatorio(componenteDescConfig[componenteAleatorio].principalMaterial);
 		endif
 
 		var opcaoEncontrada := struct{ 
 				itemRef := 0,
-				componenteTier :=  PegaComponenteTierDesc(cint(tier)),
+				componenteTier :=  tierInfo,
 				nomeMaterial := "",
 				chaveMaterial := materialComponente.principalMaterial,
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
