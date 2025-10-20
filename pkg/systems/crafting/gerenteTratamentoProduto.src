@@ -8,13 +8,7 @@ include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/tratamentoProduto";
 include ":crafting:/include/fabricacaoUtil";
 include ":gumps:/include/posicaoGump";
-
-enum ESTADOS_GERENCIAMENTO
-	CICLANDO,
-	SEMELHANTE_ENCONTRADO,
-	CANCELADO,
-	FINALIZADO
-endenum
+include ":crafting:include/util/fabricacaoConstants";
 
 program GerenteTratamentoProduto(parametros)
 	var quem := parametros[1];

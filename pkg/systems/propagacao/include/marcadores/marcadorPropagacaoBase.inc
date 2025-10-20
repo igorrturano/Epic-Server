@@ -1,11 +1,10 @@
 
 use util;
 include ":propagacao:include/propagacao";
+include ":propagacao:include/marcadores/IMarcadorPropagacao";
 
-const PROPAGACAO_TEMPERATURA_BASE := 20;
-
-class MarcadorPropagacaoBase()
-	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento)
+class MarcadorPropagacaoBase(IMarcadorPropagacao)
+	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento, descansoMinimo := 0)
 		var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 		if(propPropagacao.geracao == 0)
 			
@@ -20,6 +19,8 @@ class MarcadorPropagacaoBase()
 		else
 			this.isMarcadorCoberto := propPropagacao.isMarcadorCoberto;
 		endif
+		this.geracao := propPropagacao.geracao;
+		this.marcadorOrigem := propPropagacao.marcadorOrigem;
 		this.esteItemMarcador := esteItemMarcador;
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
@@ -27,21 +28,39 @@ class MarcadorPropagacaoBase()
 		this.isAcumulando := false;
 		this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
 		this.fatorMudancaEstado := 1; //divede o medidor de estimulo. limite
-		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50 
-		this.descansoControleDormente := cint(propagacaoConfig["sistema"].descansoMinimo) * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
+		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50
+		this.descasoMinimo := descansoMinimo ? descansoMinimo : cint(propagacaoConfig["sistema"].descansoMinimo);
+		this.descansoControleDormente := this.descasoMinimo * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 
-	//@abstract 
-	function EfetuarCiclo() endfunction
-  	//@abstract 
-	function RecebeEstimulo( valorEstimulo , isAcumulando ) endfunction
-  	//@abstract 
-	function EnviaEstimulo(valorEstimulo) endfunction
-  	//@abstract 
-	function InjetaCombustivel(deveResetarEstado) endfunction
+	uninit function Iniciar(this);
+	uninit function EfetuarCiclo(this);
+	uninit function EnviaEstimulo(this, valorEstimulo);
+	uninit function RecebeEstimulo(this, valorEstimulo, isAcumulando);
+	uninit function InjetaCombustivel(this, deveResetarEstado);
+	uninit function GanchoAntesAtualizaEstado(this, estado);
+	uninit function AtualizaComportamentoMarcador(this);
 
-	
+	function Propagar( this )
+	  return this.MarcarAdjacentes();
+	endfunction
+
+	function AtualizaEstado(this, estado, forcaAtualizar := false)
+	  var novoEstado := this.GanchoAntesAtualizaEstado(estado);
+	  var valorAntigo := this.estado;
+	  var prop := this.PegaPropPropagacao();
+
+	  novoEstado := TypeOfInt(novoEstado) == OT_LONG? novoEstado : estado;
+	  
+      prop.lerEstadoAtual := novoEstado;
+      SetObjProperty(this.esteItemMarcador,PROPNAME_PROP_PROPAGACAO,prop);
+	  this.estado := novoEstado;
+
+	  if(valorAntigo != this.estado || forcaAtualizar)
+	  	this.AtualizaComportamentoMarcador();
+	  endif
+	endfunction
 
 	function MarcarAdjacentes(this)
 		for deslocamentoX := -1 to 1
@@ -58,30 +77,30 @@ class MarcadorPropagacaoBase()
 				var marcadorPropagacaoEncontrado := this.marcadoresAdjacentes[chaveDicionario];
 				
 				if(!marcadorPropagacaoEncontrado)
-					Sleepms(RandomIntMinMax(25,120));//Marreta pra diminuir a condição de corrida nr 1. kkkk
-					var posicaoAvaliada := this.AvaliarPosicao(
+					Sleepms(RandomIntMinMax(25,90));//Marreta pra diminuir a condição de corrida nr 1. kkkk
+					var posicaoMarcador := this.BuscaPosicaoMarcador(
 													adjacenteX, 
 													adjacenteY, 
 													this.esteItemMarcador.z, 
 													this.esteItemMarcador.realm,
 													this.PegaPropPropagacao().tipoPropagacao
 												);
-					marcadorPropagacaoEncontrado := posicaoAvaliada.marcadorEncontrado;
+					marcadorPropagacaoEncontrado := posicaoMarcador.marcadorEncontrado;
 
 					if(DeveCriarMarcadorPropagacaoAdjacente(
 															marcadorPropagacaoEncontrado,
-															this.PegaPropPropagacao().geracao,
+															this.geracao,
 															this.estado
 														))
 
 						var propPropagacao := this.PegaPropPropagacao();
-						propPropagacao.isMarcadorCoberto := posicaoAvaliada.temTeto;
+						propPropagacao.isMarcadorCoberto := posicaoMarcador.temTeto;
 						
 						marcadorPropagacaoEncontrado := CriaMarcadorPropagacaoAdjacente(
 																this.esteItemMarcador,
 																adjacenteX, 
 																adjacenteY, 
-																posicaoAvaliada.zMaisProximo,
+																posicaoMarcador.zMaisProximo,
 																this.esteItemMarcador.realm, 
 																propPropagacao);
 					endif
@@ -97,17 +116,16 @@ class MarcadorPropagacaoBase()
 		endfor
 	endfunction
 
-	function AvaliarPosicao(this,x, y, z, realm, tipoPropagacao)
+	function BuscaPosicaoMarcador(this,x, y, z, realm, tipoPropagacao)
 		
 		var posicaoAvaliada := struct {zMaisProximo := z, temTeto := false, marcadorEncontrado := 0};
 		var menorDistancia := 4000;
 		var alturaMaxima := 19;
-		var tileProspectado := TileProspectado(
-									ListItemsNearLocation( x, y, LIST_IGNORE_Z , 0,realm),
-									ListStaticsNearLocation(x, y, LIST_IGNORE_Z ,0,0,realm ),
-									0,
-									GetMapInfo( x, y, realm )
-								);
+		var tileProspectado := TileScanner(x,y,z,realm)
+								.AdicionaManipulador(TILE_SCANNER::ITENS, true)
+								.AdicionaManipulador(TILE_SCANNER::STATICOS, true)
+								.AdicionaManipulador(TILE_SCANNER::TERRENO)
+								.Prospectar();
 		
 		var mapa := tileProspectado.PegaTerrenoInfo();
 
@@ -177,19 +195,25 @@ class MarcadorPropagacaoBase()
 		
 	endfunction
 
-	function Prospectar(this, tileProspectadoAtual := 0)
-		
-		if(!tileProspectadoAtual)
-			return TileProspectado(
-				ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm),
-				ListStaticsNearLocation(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,0,0, this.esteItemMarcador.realm ),
-				ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.esteItemMarcador.realm),
-				GetMapInfo( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.realm )
-			);
+	function Prospectar(this, opcoes := array, tileProspectado := 0)
+		var tileScanner := TileScanner(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z,this.esteItemMarcador.realm); 
+		if(opcoes && opcoes.size() > 0)
+			foreach opcao in (opcoes)
+				Sleepms(2);
+				tileScanner.AdicionaManipulador(opcao);
+			endforeach
+
+			if(tileProspectado)
+				tileScanner.AtribuiTileProspectado(tileProspectado);
+			endif
+
+			return tileScanner.Prospectar();
 		else
-			tileProspectadoAtual.AtribuiItensEncontrados(ListItemsNearLocation( this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,this.esteItemMarcador.realm));
-			tileProspectadoAtual.AtribuiMobilesEncontrados(ListMobilesNearLocationEx(this.esteItemMarcador.x, this.esteItemMarcador.y, this.esteItemMarcador.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.esteItemMarcador.realm));
-			return tileProspectadoAtual;
+			return  tileScanner.AdicionaManipulador(TILE_SCANNER::ITENS)
+						.AdicionaManipulador(TILE_SCANNER::STATICOS)
+						.AdicionaManipulador(TILE_SCANNER::MOBILES)
+						.AdicionaManipulador(TILE_SCANNER::TERRENO)
+						.Prospectar();
 		endif
 	endfunction
 
@@ -223,12 +247,121 @@ class MarcadorPropagacaoBase()
 
 endclass
 
+class TileScanner()
+	function TileScanner(this,x,y,z,realm)
+		this.x := x;
+		this.y := y;
+		this.z := z;
+		this.realm := realm;
+		this.manipuladores := dictionary;
+		this.tileProspectado := 0;
+	endfunction
+
+	function AtribuiTileProspectado(this, tileProspectado)
+		this.tileProspectado := tileProspectado;
+
+		return this;
+	endfunction
+
+	function AdicionaManipulador(this,  tipo, deveIgnorarZ := false)
+		case(tipo)
+			TILE_SCANNER::ITENS:
+				this.manipuladores.insert(tipo,ProspectoItensManipulador(this.x,this.y,this.z,this.realm, deveIgnorarZ));
+			TILE_SCANNER::STATICOS:
+				this.manipuladores.insert(tipo,ProspectoStaticosManipulador(this.x,this.y,this.z,this.realm, deveIgnorarZ));
+			TILE_SCANNER::MOBILES:
+				this.manipuladores.insert(tipo,ProspectoMobilesManipulador(this.x,this.y,this.z,this.realm, deveIgnorarZ));
+			TILE_SCANNER::TERRENO:
+				this.manipuladores.insert(tipo,ProspectoTerrenoManipulador(this.x,this.y,this.z,this.realm));
+		endcase
+
+		return this;
+	endfunction
+
+	function RemoveManipulador(this,  tipo)
+		this.manipuladores.erase(tipo);
+		return this;
+	endfunction
+
+	function Prospectar(this)
+		if(!this.tileProspectado)
+			this.tileProspectado := TileProspectado();
+		endif
+		
+		foreach manipulador in (this.manipuladores)
+			Sleepms(2);
+			manipulador.Executar(this.tileProspectado);
+		endforeach
+
+		return this.tileProspectado;
+	endfunction
+
+endclass
+
+class IManipuladorTileScanner()
+	uninit function Executar(this, byref tileProspectado);
+endclass
+
+class ProspectoItensManipulador(IManipuladorTileScanner)
+	function ProspectoItensManipulador(this,x,y,z,realm, deveIgnorarZ)
+		this.x := x;
+		this.y := y;
+		this.z := deveIgnorarZ ? LIST_IGNORE_Z : z;
+		this.realm := realm;
+		this.deveIgnorarZ := deveIgnorarZ;
+	endfunction
+
+	function Executar(this,byref tileProspectado)
+		tileProspectado.AtribuiItensEncontrados(ListItemsNearLocation( this.x, this.y, this.z, 0,this.realm));
+	endfunction
+endclass
+
+class ProspectoStaticosManipulador(IManipuladorTileScanner)
+	function ProspectoStaticosManipulador(this,x,y,z,realm, deveIgnorarZ)
+		this.x := x;
+		this.y := y;
+		this.z := deveIgnorarZ ? LIST_IGNORE_Z : z;
+		this.realm := realm;
+	endfunction
+
+	function Executar(this,byref tileProspectado)
+		tileProspectado.AtribuiEstaticosEncontrados(ListStaticsNearLocation(this.x, this.y, this.z,0,0, this.realm ));
+	endfunction
+endclass
+
+class ProspectoMobilesManipulador(IManipuladorTileScanner)
+	function ProspectoMobilesManipulador(this,x,y,z,realm, deveIgnorarZ)
+		this.x := x;
+		this.y := y;
+		this.z := deveIgnorarZ ? LIST_IGNORE_Z : z;
+		this.realm := realm;
+		this.deveIgnorarZ := deveIgnorarZ;
+	endfunction
+
+	function Executar(this,byref tileProspectado)
+		tileProspectado.AtribuiMobilesEncontrados(ListMobilesNearLocationEx(this.x, this.y, this.z, 0,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN , this.realm));
+	endfunction
+endclass
+
+class ProspectoTerrenoManipulador(IManipuladorTileScanner)
+	function ProspectoTerrenoManipulador(this,x,y,z,realm)
+		this.x := x;
+		this.y := y;
+		this.z := z;
+		this.realm := realm;
+	endfunction
+
+	function Executar(this,byref tileProspectado)
+		tileProspectado.AtribuiTerrenoInfo(GetMapInfo( this.x, this.y, this.realm ));
+	endfunction
+endclass
+
 class TileProspectado()
-	function TileProspectado( this, itensEncontrados, estaticosEncontrados, mobilesEncontrados, terrenoInfo)
-		this.itensEncontrados := itensEncontrados;
-		this.estaticosEncontrados := estaticosEncontrados;
-		this.mobilesEncontrados := mobilesEncontrados;
-		this.terrenoInfo := terrenoInfo;
+	function TileProspectado( this)
+		this.itensEncontrados := 0;
+		this.estaticosEncontrados := 0;
+		this.mobilesEncontrados := 0;
+		this.terrenoInfo := 0;
 	endfunction
 
 	function PegaItensEncontrados(this)
