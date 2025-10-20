@@ -93,21 +93,13 @@ exported function Attack(attacker, defender)
 	if (attackInfo.Succeeded())
 		DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "***ACERTOU!***");
 		SkillChecks(attackInfo.GetAttacker(), attackInfo.GetDefender(), attackInfo.GetAttackerWeapon(), 1);
-
-		CheckAbilities(attackInfo);
-		CheckAttackerHabsOnHit(attackInfo);
-		CheckDefenderHabsOnHit(attackInfo);
-
+		CheckAbilities(COMBATABILITY_MOMENT::ONHIT, attackInfo);
 		ExecuteMasteryAbility(attackInfo);
 		EpicAttack(attackInfo, DAMAGE_MAINHAND);
-
 	else
-		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
-
-		CheckAttackerHabsOnMiss(attacker, defender, attackInfo);
-		CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
-
-		PlayMissSound(attacker, defender);
+		DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "***ERROU!***");
+		CheckAbilities(COMBATABILITY_MOMENT::ONMISS, attackInfo);
+		PlayMissSound(attackInfo.GetAttacker(), attackInfo.GetDefender());
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
@@ -202,12 +194,26 @@ function EpicAttack(attacker, defender, weaponHand)
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 
 	if (weaponHand != DAMAGE_OFFHAND)
-		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
-																		armor, dmg, dmg });
+		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{
+			attacker,
+			defender,
+			attacker.weapon, 
+			armor,
+			dmg,
+			dmg
+		});
 	else // Se for ataque da segunda arma, tem delay
-		dmg := Start_Script(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
-															armor, dmg, dmg, OFFHAND_DELAY });
+		dmg := Start_Script(":combat:mainHitScript", array{
+			attacker,
+			defender,
+			attacker.weapon, 
+			armor,
+			dmg,
+			dmg,
+			OFFHAND_DELAY
+		});
 	endif
+
 	updateTooltip(armor);
 endfunction
 
