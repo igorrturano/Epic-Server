@@ -5,6 +5,7 @@ include "CombatAbility";
 include ":diceroll:model/Dice";
 
 class AttackInfo(IAttackInfo)
+	var _moment := ATTACKMOMENT::COMBATING;
 	var _attacker; // MobileWrapper
 	var _attackerWeapon; // EquipWrapper
 	var _defender; // MobileWrapper
@@ -13,20 +14,28 @@ class AttackInfo(IAttackInfo)
 
 	var _damage := Damage();
 	var _hitChance := 100;
+	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
 
-	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENTUM e contém arrays de CombatAbility()
-	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENTUM e contém arrays de CombatAbility()
+	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
+	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 
-	function AttackInfo(this, attacker, defender)
-		this._damage := AttackInfo::_damage;
-		this._attackerAbilities := AttackInfo::_attackerAbilities;
-		this._defenderAbilities := AttackInfo::_defenderAbilities;
-
+	function AttackInfo(this, attacker, defender, moment := ATTACKMOMENT::COMBATING)
+		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
+		this._hitChancePenalty := 0;
+		this._hitChanceResult := 0;
+		this._damage := AttackInfo::_damage;
+
+		this._attackerAbilities := AttackInfo::_attackerAbilities;
+		this._defenderAbilities := AttackInfo::_defenderAbilities;
 	endfunction
 
+	function GetMoment(this)
+		return this._moment;
+	endfunction
+	
 	function GetAttacker(this)
 		return this._attacker;
 	endfunction
@@ -51,8 +60,8 @@ class AttackInfo(IAttackInfo)
 		return this._hitChance;
 	endfunction
 
-	function GetHitChanceDice(this)
-		return this._hitChanceDice;
+	function GetHitChancePenalty(this)
+		return this._hitChancePenalty;
 	endfunction
 
 	function GetHitChanceResult(this)
@@ -69,6 +78,11 @@ class AttackInfo(IAttackInfo)
 
 	function GetDefenderAbilities(this)
 		return this._defenderAbilities;
+	endfunction
+
+	function SetMoment(this, moment)
+		this._moment := moment;
+		return this;
 	endfunction
 
 	function SetAttacker(this, attacker)
@@ -101,8 +115,8 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetHitChanceDice(this, dice)
-		this._hitChanceDice := dice;
+	function SetHitChancePenalty(this, penalty)
+		this._hitChancePenalty := penalty;
 		return this;
 	endfunction
 
@@ -143,4 +157,13 @@ class AttackInfo(IAttackInfo)
 			endforeach
 		endif
 	endfunction
+
+	function ToString(this)
+		// TODO: Implementar uma representação em string do AttackInfo
+	endfunction
 endclass
+
+enum class ATTACKMOMENT
+	ENGAGING,
+	COMBATING
+ endenum
