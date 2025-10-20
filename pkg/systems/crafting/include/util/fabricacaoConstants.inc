@@ -36,6 +36,14 @@ enum COMPONENTES_ENCAIXE_ORDEM
 	DESC_ENCAIXE_CONDICIONAL := 5,
 endenum
 
+enum class COMPONENTE_TIERS
+	MEDIOCRE := 1,
+	COMUM := 2,
+	NOTAVEL := 3,
+	SUPERIOR := 4,
+	EXCEPCIONAL := 5,
+endenum
+
 var CATALOGO_LOG_PRA_TABUA := dictionary {
         "0xee36" -> 0xee66,
         "0xee37" -> 0xee67,

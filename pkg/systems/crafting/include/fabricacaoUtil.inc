@@ -12,6 +12,7 @@ include "/include/epicPropNames";
 include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/util/fabricacaoConstants";
 
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
