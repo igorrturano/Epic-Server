@@ -809,7 +809,7 @@ function MontaFabricacaoAjudaGump(byref gump, parametros)
 endfunction
 
 function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
-	gump := GFECreateGump("Escolha de componente no modo GM",G_LARGURA,G_ALTURA,array{BORDER_GOLDEN});
+	gump := GFECreateGump("Escolha de componente no modo GM",300,300,array{BORDER_GOLDEN});
 
 	var margemEsquerda := espacamentoAplicado;
 	var alturaBarraMenu := 80;
@@ -831,12 +831,12 @@ function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
 	dropDownMateriais.AtribuiY(alturaBarraMenu + 100);
 	
 	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu,252,253,GF_CLOSE_BTN,dropDownComponetes.PegaIdBottao());
-	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 20,52,componenteNome);
+	GFTextLine(gump, Cint(larguraCelula * 1.5) , alturaBarraMenu,369,componenteNome);
 	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 40,252,253,GF_CLOSE_BTN,dropDownQualidade.PegaIdBottao());
-	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 60,52,qualidadeDesc);
+	GFTextLine(gump,  Cint(larguraCelula * 1.5) , alturaBarraMenu + 40,369,qualidadeDesc);
 	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 80,252,253,GF_CLOSE_BTN,dropDownMateriais.PegaIdBottao());
-	GFTextLine(gump, larguraCelula * 1 , alturaBarraMenu + 100,52,materialNome);
+	GFTextLine(gump,  Cint(larguraCelula * 1.5) , alturaBarraMenu + 80,369,materialNome);
 
-	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 120,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
+	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
 endfunction
