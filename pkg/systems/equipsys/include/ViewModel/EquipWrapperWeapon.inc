@@ -10,6 +10,7 @@ include ":diceroll:model/Dice";
 class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _attackType := "";
+	var _category := "";
 	var _speedTier := ""; // TODO: Transformar pra struct
 	var _speed := 0; // TODO: Transformar pra struct
 	var _speedModTier := ""; // TODO: Transformar pra struct
@@ -31,6 +32,7 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		
 		this._attribute := this._template.Attribute;
 		this._attackType := this._template.TipoAtaque;
+		this._category := this._template.Category;
 		this._speedTier := this._template.EpicSpeed;
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
@@ -76,6 +78,10 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._attackType;
 	endfunction
 
+	function GetCategory(this)
+		return this._category;
+	endfunction
+
 	function GetSpeedTier(this)
 		return this._speedTier;
 	endfunction
@@ -114,38 +120,6 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function GetMaxRange(this)
 		return this._maxRange;
-	endfunction
-
-	function IsMelee(this)
-		return Upper(this._attribute) != Upper(RANGED);
-	endfunction
-	
-	function IsRanged(this)
-		return Upper(this._attribute) == Upper(RANGED);
-	endfunction
-
-	function IsBow(this)
-		return this._template.ProjectileType == 0xf3f;
-	endfunction
-
-	function IsCrossBow(this)
-		return this._template.ProjectileType == 0x1bfb;
-	endfunction
-
-	function IsDualWield(this)
-		return Upper(this._attribute) == Upper(DUALWIELD);
-	endfunction
-
-	function IsOneHanded(this)
-		return Upper(this._attribute) == Upper(ONEHANDED);
-	endfunction
-	
-	function IsTwoHanded(this)
-		return Upper(this._attribute) == Upper(TWOHANDED);
-	endfunction
-
-	function IsThrowable(this)
-		return Upper(this._attribute) == Upper(THROWING);
 	endfunction
 
 	function IsMontante(this)
@@ -215,12 +189,6 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
 		$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
 		$"\nRange: {this._minRange}-{this._maxRange}";
-	endfunction
-
-	function IsDualWield(this)
-		return this._offDamageTier.GetSlashDamage() == DAMAGE_NONE &&
-		       this._offDamageTier.GetPiercingDamage() == DAMAGE_NONE &&
-		       this._offDamageTier.GetBluntDamage() == DAMAGE_NONE;
 	endfunction
 
 	// Private functions
