@@ -4,34 +4,22 @@ include ":debug:Controller/DebugController";
 include ":equipsys:utils/consts";
 include ":tn:cooldown";
 include ":attributes:attributes";
+include ":combat:Model/AttackInfo";
 
-// Verificador de armas para situações especiais
-var compatibleWeapons := struct{
-	montante := array{0x26CF, 0xF9EA, 0xF9F7}
-};
-
-function ExecuteMasteryAbility(attacker, defender, attackInfo)
-	var cooldown := GetCooldown(attacker, "MasteryAbilityCooldown");
+function ExecuteMasteryAbility(attackInfo)
+	var cooldown := GetCooldown(attackInfo.GetAttacker(), "MasteryAbilityCooldown");
 	if (cooldown > 0)
-		DebugMsg(attacker, DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
+		DebugMsg(attackInfo.GetAttacker(), DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
 		return false;
 	endif
 
-	if (!attackInfo) // Se não tem attackInfo, é um ataque anormal (especial, de engaging, etc.) [pré-combate]
-		var combatInfo := struct{};
-		combatInfo.+attacker := attacker;
-		combatInfo.+defender := defender;
-		
-		ExecuteBeforeEngage(combatInfo);
-	else // Aqui o combate já começou, então é um ataque normal
-		var combatInfo := attackInfo;
-		combatInfo.+attacker := attacker;
-		combatInfo.+defender := defender;
-
-		ExecuteAfterEngage(combatInfo);
+	if (attackInfo.GetMoment() == ATTACKMOMENT::ENGAGING) // Algumas habilidades são aplicadas no engaging
+		ExecuteBeforeEngage(attackInfo);
+	else
+		ExecuteAfterEngage(attackInfo);
 	endif
 
-	SetCooldown(attacker, "MasteryAbilityCooldown", CalculateCooldown(attackInfo));
+	SetCooldown(attackInfo.GetAttacker(), "MasteryAbilityCooldown", CalculateCooldown(attackInfo.GetAttacker()));
 	return true;
 endfunction
 
@@ -45,78 +33,70 @@ endfunction
  * @param attacker Referência ao personagem atacante que possui a arma
  * @param defender Referência ao personagem defensor que receberá o ataque
  */
-function ExecuteBeforeEngage(byRef combatInfo)
-	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := weapon.getCfgElem();
-
-	if (weapon.objtype in compatibleWeapons.montante)
-		Run_Script(":combat:specialAttackScripts/downwardcut", combatInfo);
-	endif
-	if (!weapon.isRanged())
-		if (Upper(weaponCfg.Type) == Upper(SWORD))
-			if (weapon.isDualWield())
-				ExecuteMasteryAbility_Charge(combatInfo);
-			endif
+function ExecuteBeforeEngage(byRef attackInfo)
+	if (attackInfo.GetAttackerWeapon().IsMelee()) // Armas melee
+		if (attackInfo.GetAttackerWeapon().IsMontante())
+			ExecuteMasteryAbility_DownwardCut(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(SWORD))
+			ExecuteMasteryAbility_Charge(attackInfo);
 		endif
+	else // Armas ranged
+		// TODO
 	endif
-
 endfunction
 
-function ExecuteAfterEngage(byRef combatInfo)
-	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := weapon.getCfgElem();
-
-	if (weapon.isRanged())
-		if (weapon.isBow())
-			ExecuteMasteryAbility_DoubleShot(combatInfo);
-		elseif (weapon.isCrossbow())
-			ExecuteMasteryAbility_Lame(combatInfo);
+function ExecuteAfterEngage(byRef attackInfo)
+	if (attackInfo.GetAttackerWeapon().IsRanged())
+		if (attackInfo.GetAttackerWeapon().IsBow())
+			ExecuteMasteryAbility_DoubleShot(attackInfo);
+		elseif (attackInfo.GetAttackerWeapon().IsCrossbow())
+			ExecuteMasteryAbility_Lame(attackInfo);
 		endif
-	else
-		if (Upper(weaponCfg.Type) == Upper(UNARMED))
-		elseif (weapon.objtype in compatibleWeapons.montante)
-			ExecuteMasteryAbility_DownwardCut(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
-			ExecuteMasteryAbility_Cutthroat(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_SwordBlock(combatInfo); // TODO: Implementar
-			else
-				ExecuteMasteryAbility_CounterAttack(combatInfo); // TODO: Implementar
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(AXE))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Cleave(combatInfo);
-			elseif (weapon.isDualWield())
-				
-			else
-				ExecuteMasteryAbility_KneeBreaker(combatInfo);
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			ExecuteMasteryAbility_SpearPush(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(MACE))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Knockdown(combatInfo);
-			else
-				ExecuteMasteryAbility_BoneBreaker(combatInfo);
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
-			ExecuteMasteryAbility_Whirlwind(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(THROWING))
-			ExecuteMasteryAbility_Pillum(combatInfo);
+	elseif (attackInfo.GetAttackerWeapon().IsTwoHanded())
+		if (attackInfo.GetAttackerWeapon().IsMontante())
+			ExecuteMasteryAbility_DownwardCut(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(SWORD))
+			ExecuteMasteryAbility_SwordBlock(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(AXE))
+			ExecuteMasteryAbility_Cleave(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(SPEAR))
+			ExecuteMasteryAbility_SpearPush(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(MACE))
+			ExecuteMasteryAbility_Knockdown(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(POLEARM))
+			ExecuteMasteryAbility_Whirlwind(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(THROWING))
+			ExecuteMasteryAbility_Pillum(attackInfo);
+		endif
+	elseif (attackInfo.GetAttackerWeapon().IsOneHanded())
+		if (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(DAGGER))
+			ExecuteMasteryAbility_Cutthroat(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(SWORD))
+			ExecuteMasteryAbility_CounterAttack(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(AXE))
+			ExecuteMasteryAbility_KneeBreaker(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(SPEAR))
+			ExecuteMasteryAbility_SpearPush(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(MACE))
+			ExecuteMasteryAbility_BoneBreaker(attackInfo);
+		endif
+	elseif (attackInfo.GetAttackerWeapon().IsDualWield())
+		if (Upper(attackInfo.GetAttackerWeapon().GetType()) == Upper(AXE))
+			// TODO: Habilidade de maestria para machados em dual wield
 		endif
 	endif
 endfunction
 
-function CalculateCooldown(byRef combatInfo)
-	var weaponSkill := AP_GetSkill(combatInfo.attacker, combatInfo.attacker.weapon.attribute);
+function CalculateCooldown(byRef attackInfo)
+	var weaponSkill := AP_GetSkill(attackInfo.GetAttacker(), attackInfo.GetAttackerWeapon().GetAttribute());
 	var cooldown := CInt(160) - (weaponSkill / 1); // TODO: Ajustar a fórmula de cooldown
 	return cooldown;
 endfunction
 
-function CalculateEffectTime(attacker)
+function CalculateEffectTime(byRef attackInfo)
 	// var effectTime := CInt(5);
-	var effectTime := CInt(AP_GetSkill(attacker, TACTICS) / 20);
+	var effectTime := CInt(attackInfo.GetAttacker().GetAttribute(TACTICS) / 20);
+	// var effectTime := CInt(AP_GetSkill(attackInfo.GetAttacker(), TACTICS) / 20);
 	return effectTime;
 endfunction
 
