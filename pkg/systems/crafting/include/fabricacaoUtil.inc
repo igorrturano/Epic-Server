@@ -218,6 +218,8 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 		endif
 
+		item.hp := item.maxhp;
+		
 		if(!item)
 			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
 			return;
@@ -321,6 +323,7 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
 			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
 				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+				return 0;
 			endif
 		endif
 	else
