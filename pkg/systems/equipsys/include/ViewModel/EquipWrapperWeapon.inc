@@ -23,8 +23,8 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _criticalChance := 0; // TODO: Transformar pra struct
 	var _criticalChanceMod := 0;
 	var _strRequired := 0;
-	var _minRange := 0; // TODO: Transformar pra struct
-	var _maxRange := 0; // TODO: Transformar pra struct
+	var _minRange := 1; // TODO: Transformar pra struct
+	var _maxRange := 1; // TODO: Transformar pra struct
 
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
@@ -114,6 +114,42 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function GetMaxRange(this)
 		return this._maxRange;
+	endfunction
+
+	function IsMelee(this)
+		return Upper(this._attribute) != Upper(RANGED);
+	endfunction
+	
+	function IsRanged(this)
+		return Upper(this._attribute) == Upper(RANGED);
+	endfunction
+
+	function IsBow(this)
+		return this._template.ProjectileType == 0xf3f;
+	endfunction
+
+	function IsCrossBow(this)
+		return this._template.ProjectileType == 0x1bfb;
+	endfunction
+
+	function IsDualWield(this)
+		return Upper(this._attribute) == Upper(DUALWIELD);
+	endfunction
+
+	function IsOneHanded(this)
+		return Upper(this._attribute) == Upper(ONEHANDED);
+	endfunction
+	
+	function IsTwoHanded(this)
+		return Upper(this._attribute) == Upper(TWOHANDED);
+	endfunction
+
+	function IsThrowable(this)
+		return Upper(this._attribute) == Upper(THROWING);
+	endfunction
+
+	function IsMontante(this)
+		return this._item.objtype in array{0x26CF, 0xF9EA, 0xF9F7};
 	endfunction
 
 	function SetSpeed(this, value)
