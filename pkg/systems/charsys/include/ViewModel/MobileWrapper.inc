@@ -2,6 +2,8 @@ use uo;
 
 include "IMobileWrapper";
 include ":attributes:skills";
+include ":attributes:vitals";
+include ":attributes:stats";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 
@@ -9,9 +11,18 @@ class MobileWrapper(IMobileWrapper)
 	var _mobRef; // mobRef
 
 	var _name := "";
-	var _str := 0;
-	var _dex := 0;
-	var _int := 0;
+	var _str := struct{
+		base := 0,
+		mod := 0
+	};
+	var _dex := struct{
+		base := 0,
+		mod := 0
+	};
+	var _int := struct{
+		base := 0,
+		mod := 0
+	};
 
 	var _hp := struct{
 		current := 0,
@@ -142,37 +153,43 @@ class MobileWrapper(IMobileWrapper)
 			this._mobRef := mobRef;
 
 			this._name := mobRef.name;
-			this._str := mobRef.str;
-			this._dex := mobRef.dex;
-			this._int := mobRef.int;
+			this._str := MobileWrapper::_str;
+			this._str.base := this.GetStrBase();
+			this._str.mod := this.GetStrMod();
+			this._dex := MobileWrapper::_dex;
+			this._dex.base := this.GetDexBase();
+			this._dex.mod := this.GetDexMod();
+			this._int := MobileWrapper::_int;
+			this._int.base := this.GetIntBase();
+			this._int.mod := this.GetIntMod();
 
 			this._hp := MobileWrapper::_hp;
-			this._hp.current := AP_GetVital(mobRef, HITS);
-			this._hp.max := AP_GetVitalMaximumValue(mobRef, HITS);
-			this._hp.regen := AP_GetVitalRegenRate(mobRef, HITS);
+			this._hp.current := this.GetCurrentHP();
+			this._hp.max := this.GetMaxHP();
+			this._hp.regen := this.GetRegenHP();
 
 			this._stamina := MobileWrapper::_stamina;
-			this._stamina.current := AP_GetVital(mobRef, STAMINA);
-			this._stamina.max := AP_GetVitalMaximumValue(mobRef, STAMINA);
-			this._stamina.regen := AP_GetVitalRegenRate(mobRef, STAMINA);
+			this._stamina.current := this.GetCurrentStamina();
+			this._stamina.max := this.GetMaxStamina();
+			this._stamina.regen := this.GetRegenStamina();
 
 			this._mana := MobileWrapper::_mana;
-			this._mana.current := AP_GetVital(mobRef, MANA);
-			this._mana.max := AP_GetVitalMaximumValue(mobRef, MANA);
-			this._mana.regen := AP_GetVitalRegenRate(mobRef, MANA);
+			this._mana.current := this.GetCurrentMana();
+			this._mana.max := this.GetMaxMana();
+			this._mana.regen := this.GetRegenMana();
 
 			this._hunger := MobileWrapper::_hunger;
-			this._hunger.current := AP_GetVital(mobRef, HUNGER);
-			this._hunger.max := AP_GetVitalMaximumValue(mobRef, HUNGER);
-			this._hunger.regen := AP_GetVitalRegenRate(mobRef, HUNGER);
+			this._hunger.current := this.GetCurrentHunger();
+			this._hunger.max := this.GetMaxHunger();
+			this._hunger.regen := this.GetRegenHunger();
 
 			this._gold := mobRef.gold;
 			this._weight := mobRef.weight;
 
 			this._skills := MobileWrapper::_skills;
 			foreach skillName in (this._skills.keys())
-				this._skills[skillName].base := AP_GetTrueSkill(mobRef, skillName);
-				this._skills[skillName].mod := AP_GetSkillMod(mobRef, skillName);
+				this._skills[skillName].base := this.GetSkillBase(skillName);
+				this._skills[skillName].mod := this.GetSkillMod(skillName);
 			endforeach
 		else
 			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
@@ -200,15 +217,45 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetStr(this)
-		return this._str;
+		return this.GetStrBase() + this.GetStrMod();
+	endfunction
+
+	function GetStrBase(this)
+		this._str.base := AP_GetTrueStat(this._mobRef, STRENGTH);
+		return this._str.base;
+	endfunction
+
+	function GetStrMod(this)
+		this._str.mod := AP_GetStatMod(this._mobRef, STRENGTH);
+		return this._str.mod;
 	endfunction
 
 	function GetDex(this)
-		return this._dex;
+		return this.GetDexBase() + this.GetDexMod();
+	endfunction
+
+	function GetDexBase(this)
+		this._dex.base := AP_GetTrueStat(this._mobRef, DEXTERITY);
+		return this._dex.base;
+	endfunction
+
+	function GetDexMod(this)
+		this._dex.mod := AP_GetStatMod(this._mobRef, DEXTERITY);
+		return this._dex.mod;
 	endfunction
 
 	function GetInt(this)
-		return this._int;
+		return this.GetIntBase() + this.GetIntMod();
+	endfunction
+
+	function GetIntBase(this)
+		this._int.base := AP_GetTrueStat(this._mobRef, INTELLIGENCE);
+		return this._int.base;
+	endfunction
+
+	function GetIntMod(this)
+		this._int.mod := AP_GetStatMod(this._mobRef, INTELLIGENCE);
+		return this._int.mod;
 	endfunction
 
 	function GetCurrentHP(this)
@@ -251,6 +298,26 @@ class MobileWrapper(IMobileWrapper)
 		return this._hunger.max;
 	endfunction
 
+	function GetRegenHP(this)
+		this._hp.regen := AP_GetVitalRegenRate(this._mobRef, HITS);
+		return this._hp.regen;
+	endfunction
+
+	function GetRegenStamina(this)
+		this._stamina.regen := AP_GetVitalRegenRate(this._mobRef, STAMINA);
+		return this._stamina.regen;
+	endfunction
+
+	function GetRegenMana(this)
+		this._mana.regen := AP_GetVitalRegenRate(this._mobRef, MANA);
+		return this._mana.regen;
+	endfunction
+
+	function GetRegenHunger(this)
+		this._hunger.regen := AP_GetVitalRegenRate(this._mobRef, HUNGER);
+		return this._hunger.regen;
+	endfunction
+
 	function GetGold(this)
 		return this._gold;
 	endfunction
@@ -260,17 +327,16 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetSkill(this, skillName)
-		this._skills[skillName] := AP_GetSkill(this._mobRef, skillName);
-		return this._skills[skillName];
+		return this.GetSkillBase(skillName) + this.GetSkillMod(skillName);
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		this._skills[skillName] := AP_GetTrueSkill(this._mobRef, skillName);
+		this._skills[skillName].base := AP_GetTrueSkill(this._mobRef, skillName);
 		return this._skills[skillName].base;
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		this._skills[skillName] := AP_GetSkillMod(this._mobRef, skillName);
+		this._skills[skillName].mod := AP_GetSkillMod(this._mobRef, skillName);
 		return this._skills[skillName].mod;
 	endfunction
 
