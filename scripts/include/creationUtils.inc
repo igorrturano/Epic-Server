@@ -1517,6 +1517,10 @@ function pathOfWisdomGump(who, culture_pic)
         wisdomPaths.append("Augur");
     elseif (culture == HAROLOTH && who.graphic == 1831)
         wisdomPaths.append("Clériga de Idrith");
+    elseif (culture == BJORSKA || culture == LESTE)
+        wisdomPaths.append("Clérigo");
+    elseif (culture != HAROLOTH)
+        wisdomPaths.append("Druida");
     endif
     foreach path in wisdomPaths
         var color := "#000000";

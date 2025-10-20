@@ -29,6 +29,7 @@ program orderSpells(who, item)
 			if (handleReligionConversion(who, item))
 				return;
 			endif
+			return;
 		endif
 	endif
 
@@ -51,6 +52,11 @@ program orderSpells(who, item)
 		return;
 	endif
 
+	if (magia == "Sacerdote" && religiao != altar)
+		SendSysMessageEx(who, "Você não pode ordenar bênçãos de uma religião que não segue.", SSM_FAIL);
+		return;
+	endif
+
 	var mlore := cint(AP_GetSkill(who, THEOLOGY));
 	var cfg := ReadConfigFile(":spells:config/priestspells");
 	var priest_slots := Cint(mlore / 5);
@@ -60,24 +66,49 @@ program orderSpells(who, item)
 		priest_list := array{};
 	endif
 
+	// Auto-grant cantrips on first visit (circle 0 spells)
+	if (!GetObjProperty(who, "cantrips_granted"))
+		foreach spell in (GetConfigIntKeys(cfg))
+			spell := FindConfigElem(cfg, spell);
+			WriteSpellInfo(spell, ":spells:config/priestspells");
+			sleepms(2);
+			if (spell.circle == 0)
+				var cantrip := struct{
+					"id" := spell.SpellId,
+					"name" := spell.name,
+					"circle" := 0,
+					"description" := spell.desc, // funciona
+					"cantrip" := 1  // Flag to prevent removal
+				};
+				priest_list.Append(cantrip);
+			endif
+		endforeach
+		SetObjProperty(who, "priest_list", priest_list);
+		SetObjProperty(who, "cantrips_granted", 1);
+	endif
+
 	var spell_list := array{};
 	var slots_used := 0;
 
+	// Count slots used (excluding cantrips)
+	foreach spell in priest_list
+		if (spell.circle > 0)
+			slots_used += cint(spell.circle);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Build list of available spells to memorize
 	foreach spell in (GetConfigIntKeys(cfg))
 		spell := FindConfigElem(cfg, spell);
 		sleepms(2);
 		WriteSpellInfo(spell, ":spells:config/priestspells");
-		var spell_found := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
-		if (spell_found)
-			slots_used += cint(spell.circle * spell_found.size());
-			foreach i in spell_found
-				priest_list[spell_found].circle := spell.circle;
-				sleepms(2);
-			endforeach
-		endif
+
 		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
 			continue;
 		elseif (spell.type == "Auto")
+			continue;
+		elseif (spell.circle == 0) // Skip cantrips - they're auto-granted
 			continue;
 		endif
 		spell_list.append(spell);
@@ -88,7 +119,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, priest_list, available_slots);
-		var input := CreateClericGump(who, spell_list, available_slots);
+		var input := CreateClericGump(who, spell_list, available_slots, priest_list);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -98,7 +129,7 @@ program orderSpells(who, item)
 			var spell := spell_list[input[0] - 200];
 			var ret := StoreSpell(who, spell, priest_list, available_slots);
 			if (ret)
-				playAltarAnimations(who, altar);
+				playAltarAnimations(who, item);
 			endif
 		elseif (!input[0])
 			canceled := 1;
@@ -106,22 +137,29 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateClericGump(who, spell_list, available_slots)
+function CreateClericGump(who, spell_list, available_slots, priest_list)
 	var gump := GFCreateGump();
-	var size := spell_list.Size();
-	if (size >= 1)
-		size := size * 40 - (8 * 40); // Cantrips
-	else
-		size := 0;
+	// Count only non-cantrip spells (circle != 0) for gump sizing
+	var non_cantrip_count := 0;
+	foreach spell in spell_list
+		if (spell.circle != 0)
+			non_cantrip_count += 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	var size := 0;
+	if (non_cantrip_count > 0)
+		size := non_cantrip_count * 26;
 	endif
 	GFResizePic(gump, 17, 31, 9390, 359, 125 + size);
 	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
-	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); // shadow
-	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); // shadow
-	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Augur", 0, 0);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Divinismo", 0, 0); // shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Divinismo", 0, 0); // shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Divinismo", 0, 0);
 	GFGumpPic(gump, 63, 91, 1469);
 	GFGumpPic(gump, 80, 91, 1469);
-	GFTextLine(gump, 63, 100, 0, "Rituais Augures");
+	GFTextLine(gump, 63, 100, 0, "Rituais Divinos");
 	GFTextLine(gump, 259, 100, 0, "Slots");
 	GFTextLine(gump, 304, 100, 0, "Receber");
 	GFGumpPic(gump, 38, 103, 9773, 0);
@@ -135,7 +173,11 @@ function CreateClericGump(who, spell_list, available_slots)
 			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
 				 spell.desc));
 			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
-			if (available_slots >= spell.circle)
+
+			// Check if spell already exists in priest_list
+			var spell_exists := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
+
+			if (available_slots >= spell.circle && !spell_exists)
 				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
 			else
 				GFGumpPic(gump, 319, y + 5, 10006, 1891);
@@ -157,15 +199,12 @@ function StoreSpell(who, spellinfo, byref priest_list, byref available_slots)
 		sleep(2);
 		return 0;
 	endif
-
 	var new_spell := struct{ "id" := spellinfo.SpellId,
 						 	"name" := spellinfo.name,
-						 	"powerwords" := spellinfo.powerwords,
 						 	"circle" := spellinfo.circle,
 						 	"time" := AddTimeTo(polcore().systime, 20, "minutes"),
-						 	"flavortext" := spellinfo.flavortext,
+						 	"description" := spellinfo.desc,
 						 	"used" := 0 };
-
 	available_slots -= spellinfo.circle;
 	priest_list.append(new_spell);
 	SetObjProperty(who, "priest_list", priest_list);
@@ -267,7 +306,7 @@ function handleReligionConversion(who, altar)
 
 	// Play conversion animations
 	playAltarAnimations(who, altar);
-
+	PerformAction(who, 0x0020); // Bow
 	if (current_religion && current_religion != "")
 		SendSysMessageEx(who, "Você abandonou {} e se converteu a {}.".format(current_name, target_name),
 				   SSM_INFO);
