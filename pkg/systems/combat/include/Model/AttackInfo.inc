@@ -13,6 +13,7 @@ class AttackInfo(IAttackInfo)
 	var _defenderArmor; // EquipWrapper
 
 	var _damage := Damage();
+	var _damageHand := DAMAGEHAND::MAINHAND; 
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
@@ -27,6 +28,7 @@ class AttackInfo(IAttackInfo)
 		this._hitChancePenalty := 0;
 		this._hitChanceResult := 0;
 		this._damage := AttackInfo::_damage;
+		this._damageHand := AttackInfo::_damageHand;
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -70,6 +72,10 @@ class AttackInfo(IAttackInfo)
 
 	function GetDamage(this)
 		return this._damage;
+	endfunction
+
+	function GetDamageHand(this)
+		return this._damageHand;
 	endfunction
 
 	function GetAttackerAbilities(this)
@@ -125,6 +131,11 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	function SetDamageHand(this, damageHand)
+		this._damageHand := damageHand;
+		return this;
+	endfunction
+
 	function AddAttackerAbility(this, combatAbility)
 		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
 
@@ -166,4 +177,9 @@ endclass
 enum class ATTACKMOMENT
 	ENGAGING,
 	COMBATING
- endenum
+endenum
+
+enum class DAMAGEHAND
+	MAINHAND,
+	OFFHAND
+endenum

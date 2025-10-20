@@ -1,16 +1,32 @@
 class IAttackInfo()
-	uninit function IAttackInfo(this);
+	uninit function IAttackInfo(this, attacker, defender, default moment);
 
+	uninit function GetMoment(this);
+	uninit function GetAttacker(this);
+	uninit function GetAttackerWeapon(this);
+	uninit function GetDefender(this);
+	uninit function GetDefenderWeapon(this);
+	uninit function GetDefenderArmor(this);
+	uninit function GetHitChance(this);
+	uninit function GetHitChancePenalty(this);
+	uninit function GetHitChanceResult(this);
+	uninit function GetDamage(this);
+	uninit function GetAttackerAbilities(this);
+	uninit function GetDefenderAbilities(this);
+
+	uninit function SetMoment(this, moment);
 	uninit function SetAttacker(this, attacker);
+	uninit function SetAttackerWeapon(this, weapon);
 	uninit function SetDefender(this, defender);
-	uninit function SetArmorHit(this, armor);
-	uninit function SetSlotHit(this, slot);
-
-	uninit function SetWeapon(this, weapon);
+	uninit function SetDefenderWeapon(this, weapon);
+	uninit function SetDefenderArmor(this, armor);
+	uninit function SetHitChance(this, hitChance);
+	uninit function SetHitChancePenalty(this, penalty);
 	uninit function SetDamage(this, damage);
+	uninit function AddAttackerAbility(this, combatAbility);
+	uninit function AddDefenderAbility(this, combatAbility);
 
-	uninit function AddCombatAbility_BeforeDamage(this, target, combatAbility);
-	uninit function AddCombatAbility_AfterDamage(this, target, combatAbility);
-	uninit function AddCombatAbility_OnHit(this, target, combatAbility);
-	uninit function AddCombatAbility_OnMiss(this, target, combatAbility);
+	uninit function RollHitChance(this);
+	uninit function Succeeded(this);
+	uninit function ExecuteAbilitesOnMomentum(this, momentum);
 endclass
