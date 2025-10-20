@@ -49,6 +49,7 @@ include ":charsys:ViewModel/MobileWrapper";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":diceroll:model/Dice";
+include ":message:Model/Message";
 
 var item_cfg := ReadConfigFile(":combat:itemdesc");
 var strat_cfg := ReadConfigFile("combatlevel");
@@ -71,10 +72,13 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
+	var attackInfo;
+	attacker := MobileWrapper(attacker);
+	defender := MobileWrapper(defender);
+	attackInfo := AttackInfo(attacker, defender);
 	attackInfo.SetAttackerWeapon(EquipWrapperWeapon(attacker.weapon)).SetDefenderWeapon(EquipWrapperWeapon(defender.weapon));
 
-	if (!CanAttack(attackInfo.GetAttacker(), attackInfo.GetDefender()))
+	if (!CanAttack(attackInfo))
 		return 1;
 	endif
 
@@ -138,10 +142,10 @@ exported function Attack(attacker, defender)
 
 endfunction
 
-function CanAttack(attacker, defender)
-	attacker := attacker.GetMobRef();
-	defender := defender.GetMobRef();
-	
+function CanAttack(attackInfo)
+	var attacker := attackInfo.GetAttacker().GetMobRef();
+	var defender := attackInfo.GetDefender().GetMobRef();
+
 	if (attacker == defender)
 		ApplyRawDamage(attacker, 5000);
 		return 0;
@@ -152,8 +156,9 @@ function CanAttack(attacker, defender)
 	if (attacker.acctname)
 		if (!attacker.warmode)
 			if (GetObjProperty(attacker, "attackmsg") <= polcore().systime)
-				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.",
-								  SSM_FAIL);
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL)
+					.SetSourceLanguage(LANGUAGE::PORTUGUESE)
+					.SendSys(attacker);
 				SetObjProperty(attacker, "attackmsg", polcore().systime + 15);
 			endif
 			return 0;
@@ -161,7 +166,9 @@ function CanAttack(attacker, defender)
 	endif
 
 	if ((attacker.paralyzed) || (attacker.frozen))
-		SendSysMessageEx(attacker, "Você não consegue atacar.");
+		Message("Você não consegue atacar.")
+			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
+			.SendSys(attacker);
 		return 0;
 	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
 		attacker.concealed := 0;
@@ -178,22 +185,24 @@ function CanAttack(attacker, defender)
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
 	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		PrintTextAbove(attacker, "*hipnotizado*");
+		Message("*hipnotizado*")
+			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
+			.SendAbove(attacker);
 		return 0;
 	endif
 
 	return 1;
 endfunction
 
-function EpicAttack(attacker, defender, weaponHand)
-	if (defender.frozen)
-		defender.frozen := 0;
+function EpicAttack(attackInfo, weaponHand)
+	if (attackInfo.GetDefender().GetMobRef().frozen)
+		attackInfo.GetDefender().GetMobRef().frozen := 0;
 	endif
 
-	var armor := GetArmorToHit(defender);
-	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
+	var armor := GetArmorToHit(attackInfo);
+	var dmg := CalculateRawDamage(attackInfo);
 
-	if (weaponHand != DAMAGE_OFFHAND)
+	if (weaponHand == DAMAGE_MAINHAND)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{
 			attacker,
 			defender,
@@ -218,7 +227,7 @@ function EpicAttack(attacker, defender, weaponHand)
 endfunction
 
 // Arqueiros
-function AmmoCheckCombatHook(attacker, defender)
+function AmmoCheckCombatHook(attackInfo)
 	const STONE_OBJTYPE := 20481;
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
 
