@@ -29,6 +29,9 @@ enum HAB_TAGS
 	HAB_COOLDOWN := "EM RECARGA!",
 endenum
 
+function CheckAbilities(momentum, byRef attackInfo)
+endfunction
+
 function CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo)
 endfunction
 
