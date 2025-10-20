@@ -88,12 +88,11 @@ function PegaListaTipoMateriais()
 		var elementoCfg := configRecursos[chave];
 		var tipo := elementoCfg.Type;
 		tipo := Upper(tipo);
-
-		if(!dictRetorno.contains())
+		if(!dictRetorno.exists(tipo))
 			dictRetorno.insert(tipo, array);
 		endif
 
-		dictRetorno[tipo].append(struct{chave := chave, nome := elementoCfg.Name});
+		dictRetorno[tipo].append(struct{chave := chave, name := elementoCfg.Name});
 
 	endforeach
 
@@ -247,9 +246,15 @@ function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, co
 		return descriptor;
 endfunction
 
-function CriaItemFabricado(quem, produto, quantidade := 1)
+function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
+	var propFabricadoMontado;
 
-	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	if(propFabricado)
+		propFabricadoMontado := propFabricado;
+	else
+		propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	endif
+
 	if(propFabricadoMontado)
 		var descriptor;
 
@@ -290,7 +295,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 
 		if(!item)
 			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return;
+			return 0;
 		endif
 
 		AplicaFechadura(quem, item);
@@ -299,9 +304,10 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
+		return 0;
 	endif
 	
-
+	return 1;
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -334,7 +340,6 @@ function AplicaFechadura(quem, item)
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
-
 	var componentesRefatorado := dictionary;
 	if(estado != ITEM_GERADO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
@@ -360,11 +365,12 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 							propFabricadoMontado.esquema.modificadorPesoTotal,
 							corFinal,
 							propFabricadoMontado.esquema.classe,
-							componentesRefatorado
+							componentesRefatorado,
+							propFabricadoMontado.fabricante ? propFabricadoMontado.fabricante : 0 
 							);
 endfunction
 
-function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
+function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes, fabricante)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,
@@ -373,7 +379,8 @@ function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modific
 				modificadorPesoTotal := modificadorPesoTotal,
 				cor := cor,
 				classe := classe,
-				componentes := componentes};
+				componentes := componentes,
+				fabricante := fabricante};
 endfunction
 
 function CriaObjetoPosicao(quem)
