@@ -8,7 +8,7 @@ include ":IO:CFGFile";
 class CombatAbility(ICombatAbility)
 	var _name := "";
 	var _description := "";
-	var _momentum := COMBATABILITY_MOMENTUM::ONHIT;
+	var _moment := COMBATABILITY_MOMENT::ONHIT;
 	var _cooldown := 0; // em segundos
 	var _cost := struct{
 		hp := 0,
@@ -24,7 +24,7 @@ class CombatAbility(ICombatAbility)
 		
 		this._name := cfgFile.SetKeyName("name").GetKeyValue();
 		this._description := cfgFile.SetKeyName("description").GetKeyValue();
-		this._momentum := cfgFile.SetKeyName("momentum").GetKeyValue();
+		this._moment := cfgFile.SetKeyName("moment").GetKeyValue();
 		this._cooldown := cfgFile.SetKeyName("cooldown").GetKeyValue();
 		this._cost := CombatAbility::_cost;
 		this._cost.hp := cfgFile.SetKeyName("hp").GetKeyValue();
@@ -83,7 +83,7 @@ enum class COMBATABILITY_NAME
 	DIVINEAUTHORITY
 endenum
 
-enum class COMBATABILITY_MOMENTUM
+enum class COMBATABILITY_MOMENT
 	BEFOREDAMAGE,
 	AFTERDAMAGE,
 	ONMISS,
