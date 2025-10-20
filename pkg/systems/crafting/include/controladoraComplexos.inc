@@ -1017,7 +1017,7 @@ function MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier, quant
 					chaveMaterial := chaveMat,
 					material := material,
 					tier := tier,
-					quantidade := quantidade ? item.amount : quantidade
+					quantidade := quantidade ? quantidade : item.amount
 				};
 endfunction
 
