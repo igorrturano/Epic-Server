@@ -1488,15 +1488,20 @@ function CriaPropFabricadoGerada(
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
 	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
 	var objetoDesc := itemDescConfig[objtype];
+	var janelaTier := SplitWords(tier, ">");
 	tier := cint(tier);
-	var tierInfo := PegaComponenteTierDesc(tier);
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
 	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0);
+	var tierInfo := PegaComponenteTierDesc(tier);
 
 	foreach componenteNecessario in (receita.componentesNecessarios)
 		Sleepms(2);
+		if(janelaTier.size() > 1)
+			tier := RandomIntMinMax(cint(janelaTier[1]), cint(janelaTier[2]) + 1);
+			tierInfo := PegaComponenteTierDesc(tier);
+		endif
 
 		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
 

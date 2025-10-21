@@ -2602,10 +2602,14 @@ function GetSkillTooltipDescriptionFromName(name)
 endfunction
 
 function CreateItemInicial(who, objtype, qtd)
-    var itemtemplate :=  GeraItemComplexo(objtype,
-                                            RandomIntMinMax(1,3),
-                                            isDispensavel := 1, 
-                                            modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
-                                        );
-    var erro := CreateItemInBackpack(who, itemtemplate, qtd);
+
+    
+    var item :=  GeraItemComplexo(
+                                    who,
+                                    objtype,
+                                    qtd,
+                                    RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
+                                    isDispensavel := 1, 
+                                    modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+                                );
 endfunction
