@@ -240,8 +240,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 		endif
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
-		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
@@ -258,6 +256,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 		endif
 
+		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
 		item.hp := item.maxhp;
 		
 		if(!item)
