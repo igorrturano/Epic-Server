@@ -62,7 +62,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 	var gump;
 
 	while(retorno)
-		FechaTodosDropdowns(quem,gerenciador.dropDowns);
+		GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
 			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos);
@@ -72,7 +72,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		MontaComponentesGump(gump, parametros,sessao);
 		retorno := GFSendGump(quem,gump);
 
-		
 		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
 			sessao.quantidade := GFExtractData(retorno,COMPONENTES_INPT_QTD)[1,3];
 		endif
@@ -81,15 +80,11 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
-				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
-				var objetoDropDown := gerenciador.dropDowns[indice];
+				var indice := retorno[0] - gerenciador.PegaAdicionalIdDropDown();
+				var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(indice);
 
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
-				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-				
-				if(process)
-					objetoDropDown.pid := process.pid;
-				endif
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				objetoDropDown.SendGump(quem,GetPid());
 				break;
 
 			RT_ESCOLHA_DD_OPCOES:
@@ -97,7 +92,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				break;
 			
 			RT_ESCOLHA_COMPONENTE:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				GerenciadorDropDown::LimpaDropDowns(gerenciador);
 				sessao.devePopularDropDown := true;
 				sessao.componenteSelecionado := sessao.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
@@ -161,19 +156,19 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				endif
 				
 			RT_BTN_FABRICAR:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 
 				var materiaisEscolhidos := array;
 				var isValidado := true;
-				foreach dropDown in (gerenciador.dropDowns)
-					var escolhido := dropDown.valorEscolhido;
+				foreach dropDown in (gerenciador.PegaDropDowns())
+					var escolhido := dropDown.PegaValorEscolhido();
 					if(!escolhido || escolhido.size() == 0)
 						SendSysMessageEX(quem,"Você não escolheu todos os materiais necessários.",SSM_FAIL);
 						isValidado := false;
 						break;
 					endif
 
-					foreach itemEncontrado in (sessao.materiaisEncontrados[dropDown.valorEscolhido.tipoMaterial][dropDown.valorEscolhido.objtype].itensEncontrados)
+					foreach itemEncontrado in (sessao.materiaisEncontrados[escolhido.tipoMaterial][escolhido.objtype].itensEncontrados)
 						if(!itemEncontrado || !Accessible(quem,itemEncontrado, 1) )
 							SendSysMessageEX(quem,"Você não esta mais em posse do material {}.".format(itemEncontrado.desc),SSM_FAIL);
 							isValidado := false;
@@ -181,7 +176,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 						endif
 						Sleepms(2);
 					endforeach
-					materiaisEscolhidos.append(dropDown.valorEscolhido);
+					materiaisEscolhidos.append(escolhido);
 					Sleepms(2);
 				endforeach
 				
@@ -228,7 +223,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 			RT_CANCELADO:
 			default:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 0;
 				break;
 
@@ -312,7 +307,12 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
 		var quantidadeRestante := quantidadeConsumo;
 
-		foreach itemEncontrado in (materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].itensEncontrados)			
+		foreach itemEncontrado in (
+							materiaisEncontrados
+								[Lower(materialEscolhido.tipoMaterial)]
+								[materialEscolhido.objtype]
+								.itensEncontrados
+							)			
 
 			If(quantidadeRestante <= 0) 
 				break; 
@@ -333,7 +333,6 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 endfunction
 
-
 function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
 	var materiaisNecessarios := sessao.componenteSelecionado.selecione.materiais;
 	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(
@@ -346,13 +345,7 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 
 	foreach materialNecessario in (materiaisNecessariosInvertidos)
 		
-		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_materialNecessario_iter);
-		
-		if(!dropDown) 
-			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_materialNecessario_iter);
-		else
-			DropDown::ResetaValores(dropDown);
-		endif
+		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_materialNecessario_iter);
 
 		var tipo := materiaisNecessariosInvertidos[_materialNecessario_iter];
 		var qtd := materiaisNecessarios[materialNecessario];
@@ -360,12 +353,11 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 		var materiaisEncontrados := sessao.materiaisEncontrados[Lower(materialNecessario)].keys();
 
 		if(materiaisEncontrados)
-
 			var isValorEscolhidoPresente := false;
 
 			foreach chave in (materiaisEncontrados)
 				Sleepms(2); 
-				if (dropDown.valorEscolhido.objtype == chave)
+				if (dropDown.PegaValorEscolhido().objtype == chave)
 					isValorEscolhidoPresente := true;
 				endif
 
@@ -380,12 +372,6 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 				endif;
 				++indiceOpcoes;
 			endforeach
-
-			if(!isValorEscolhidoPresente)
-				DropDown::LimpaValorEscolhido(dropDown);
-			endif
-		else
-			DropDown::LimpaValorEscolhido(dropDown);
 		endif
 		
 		Sleepms(2);
@@ -540,7 +526,9 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 			var isMemorizadoEncontrado := false;
 			foreach encaixeMemorizado in encaixesMemorizados
 				Sleepms(2);
-				isMemorizadoEncontrado := encaixesConfig[configProfissao[chave].encaixe].Desc == encaixesConfig[encaixeMemorizado].Desc;
+				isMemorizadoEncontrado :=  encaixesConfig[configProfissao[chave].encaixe].Desc 
+											== encaixesConfig[encaixeMemorizado].Desc;
+
 				if(isMemorizadoEncontrado) break; endif
 			endforeach
 			if(!isMemorizadoEncontrado) continue; endif
