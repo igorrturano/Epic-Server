@@ -8,7 +8,10 @@
 include "habilidades";
 include ":crafting:/include/caracteristicasFabricacao";
 
-function CalculateHitChance(attacker, defender)
+function CalculateHitChance(attackInfo)
+	 // TODO: Revisar função para uso de classes
+	var attacker := attackInfo.GetAttacker().GetMobRef();
+	var defender := attackInfo.GetDefender().GetMobRef();
 	var skill_a;
 	var skill_d;
 

@@ -76,16 +76,15 @@ exported function Attack(attacker, defender)
 	attacker := MobileWrapper(attacker);
 	defender := MobileWrapper(defender);
 	attackInfo := AttackInfo(attacker, defender);
-	attackInfo.SetAttackerWeapon(EquipWrapperWeapon(attacker.weapon)).SetDefenderWeapon(EquipWrapperWeapon(defender.weapon));
+	attackInfo.SetAttackerWeapon(attacker.GetEquipBySlot(EQUIPSLOT::WEAPON))
+			  .SetDefenderWeapon(defender.GetEquipBySlot(EQUIPSLOT::WEAPON));
 
-	if (!CanAttack(attackInfo))
-		return 1;
-	endif
+	if (!CanAttack(attackInfo))	return 1; endif
 
 	Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef() });
 	Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef() });
 
-	attackInfo.SetHitChance(CalculateHitChance(attackInfo.GetAttacker(), attackInfo.GetDefender())); // TODO: Revisar função CalculateHitChance() INTEIRA
+	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 	attackInfo.RollHitChance();
 	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "=================");
 	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "ATAQUE INICIADO!");
@@ -123,7 +122,7 @@ exported function Attack(attacker, defender)
 
 			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
-			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
+			EpicAttack(attackInfo, DAMAGE_OFFHAND);
 		else
 			DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 
