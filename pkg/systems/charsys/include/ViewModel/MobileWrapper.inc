@@ -300,6 +300,10 @@ class MobileWrapper(IMobileWrapper)
 		return this;
 	endfunction
 
+	function IsDead(this)
+		return this._mobRef.dead;
+	endfunction
+
 	function Dispose(this)
 		this._mobRef := 0;
 		this._name := "";
