@@ -529,6 +529,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var posYcaracteristicas := y + (componenteEscolhido ? 120 : 100);
 	var posYSetasDeslocamento := 2;
+	
 	if(TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_UNINIT
 	   && TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_ERROR)
 		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;

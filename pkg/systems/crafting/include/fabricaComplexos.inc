@@ -13,10 +13,6 @@ function GeraItemComplexo(
 							deveGerarOpcionais := false, 
 							classe := 1
 						)
-	
-	if(FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER && tier == 1)
-		return error{"errortext" := "Para a opção menor que o tier, o tier informado não pode ser 1."};
-	endif
 
 	var fabricadoProp := CriaPropFabricadoGerada(objtype, tier,deveGerarOpcionais,modoEscolhaMaterial, classe);
 

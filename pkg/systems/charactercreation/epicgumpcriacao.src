@@ -17,6 +17,7 @@ include "include/sounds";
 include "include/epicConstants";
 include ":charactercreation:include/RPTraits";
 include ":nature:nature";
+include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);

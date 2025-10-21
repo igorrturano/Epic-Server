@@ -1092,11 +1092,8 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
 	
-	if(modificadorHp)
-		propriedades.+modificadorHp := modificadorHp;
-	else
-		propriedades.modificadorHp := 0;
-	endif
+	propriedades.+modificadorHp := modificadorHp ? modificadorHp : 0;
+
 	if(modificadorPeso)
 		propriedades.+modificadorPeso := Round(modificadorPeso / (quantidadeComponentesNecessaria - quantidadeOpicionais));
 	else
@@ -1107,7 +1104,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 		propriedades.+efeitosAdicionais := valorEfeitos.efeitosAdicionais;
 	endif
 
-	if(valorEfeitos.valorPrincipal)
+	if(TypeOfInt(valorEfeitos.valorPrincipal) != OT_UNINIT || TypeOfInt(valorEfeitos.valorPrincipal) != OT_ERROR)
 		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
 		if(Upper(caracteristica) != "VAZIO")
 			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
@@ -1491,7 +1488,8 @@ function CriaPropFabricadoGerada(
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
 	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
 	var objetoDesc := itemDescConfig[objtype];
-	var tierInfo := PegaComponenteTierDesc(cint(tier));
+	tier := cint(tier);
+	var tierInfo := PegaComponenteTierDesc(tier);
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
@@ -1502,60 +1500,48 @@ function CriaPropFabricadoGerada(
 
 		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
 
-		var indice := 1;
-		if(componenteNecessario.itens.size() > 1)
-			indice :=  RandomIntMinMax(1,componenteNecessario.itens.size());
-		endif
-
-		var componenteAleatorio := componenteNecessario.itens[indice];
+		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size() + 1)];
 		var materialComponente;
 		var arrayMateriais := array;
 		var materialNome;
 		var tipoMaterial := componenteDescConfig[hex(componenteAleatorio)].principalMaterial;
 		var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
+		var materiaisPossiveisPorTier := dictionary;
 
 		foreach materialPossivel in materiaisPossiveis
 			sleepms(2);
 			var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
 			var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
 
-			if(tierMaterial == tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
-				materialComponente := materialPossivel.chave;
-				materialNome := recursosConfig[hex(materialPossivel.chave)].name;
-				break;
+			if( DeveEscreverMaterial(materiaisPossiveisPorTier,tier))
+				materiaisPossiveisPorTier.insert(
+													tierMaterial,
+													struct{
+															materialComponente := materialPossivel.chave,
+															materialNome := recursosConfig[hex(materialPossivel.chave)].name
+														}
+												);
 			endif
-
-			if(tierMaterial <= tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
-				arrayMateriais.append(
-					struct{
-						materialComponente := materialPossivel.chave,
-						materialNome := recursosConfig[hex(materialPossivel.chave)].name
-					}
-				);
-			endif
-
-			if(tierMaterial < tier &&  modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
-				arrayMateriais.append(
-					struct{
-						materialComponente := materialPossivel.chave,
-						materialNome := recursosConfig[hex(materialPossivel.chave)].name
-					}
-				);
-			endif
+			
 		endforeach
 
-		if( modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
-			|| modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
-			var escolhido := arrayMateriais[RandomIntMinMax(1,arrayMateriais.size())];
-			materialNome := escolhido.materialNome;
-			materialComponente := escolhido.materialComponente;
+		var materialStruct;
+		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
+			materialStruct := materiaisPossiveisPorTier[tier];
+		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
+			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tier + 1)];
+		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
+			var tierValidado := tier > 1 ? tier : 2;// achei melhor só reajustar ao invés de mandar msg de erro.
+			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tierValidado)];
+		else
+			return error{"errorText" := "parâmetro modoEscolhaMaterial inválido."};
 		endif
 
 		var opcaoEncontrada := struct{ 
 				itemRef := struct{ objtype := componenteAleatorio, name := componenteDescConfig[hex(componenteAleatorio)].name},
 				componenteTier :=  tierInfo,
-				nomeMaterial := materialNome,
-				chaveMaterial := hex(materialComponente),
+				nomeMaterial := materialStruct.materialNome,
+				chaveMaterial := hex(materialStruct.materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
 
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
@@ -1563,4 +1549,10 @@ function CriaPropFabricadoGerada(
 	endforeach
 
 	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
+endfunction
+
+function DeveEscreverMaterial(materiaisPossiveisPorTier, tierMaterial)
+	return !materiaisPossiveisPorTier.exists(tierMaterial) 
+						|| ( materiaisPossiveisPorTier.exists(tierMaterial) 
+							&& RandomIntMinMax(1,1) > 0 );
 endfunction
