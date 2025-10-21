@@ -78,13 +78,15 @@ function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
 endfunction
 
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -0.7) 
 	
 	if(quantidade == error || quantidade.size() == 0)
 		return error{"errortext":="O parâmetro quantidade é obrigatório."};
 	endif
 
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
+	//quanto menor o declinio, mais espalhado fica o resultado.
+	//o pico é o equivalente a qual valor bate o pico no eixo y.
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1); 
 	var retorno := dictionary;
 
 	//Print("Chances: "  + chancesPorTier);
