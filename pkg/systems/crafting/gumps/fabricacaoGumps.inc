@@ -15,7 +15,7 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
 	COMPLEXOS_RECEITAS := 100,
 	COMPLEXOS_ESQUEMAS := 300,
-	COMPLEXOS_ESQUEMAS_CPNT := 330,
+	COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT := 360,
 	COMPLEXOS_DROPDOWN_INICIAL := 2000,
 	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	3000,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
@@ -24,7 +24,7 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 endenum
 
 enum MAXIMO_BTN_IDS // Valores máixmos dos ids.
-	COMPLEXOS_DROPDOWN_MAX := 20,
+	COMPLEXOS_DROPDOWN_MAX := 80,
 	COMPONENTES_DROPDOWN_MAX := 10,
 endenum
 
@@ -49,6 +49,8 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_BTN_MEMORIZAR_COMPONENTES := 8,
 	COMPLEXOS_BTN_LIMPAR_MEMORIA := 9,
 	COMPLEXOS_BTN_CANCELAR := 10,
+	COMPLEXOS_BTN_OKAY_GM_CMPNT := 11,
+	COMPLEXOS_BTN_FABRICAR_GM_CMPNT := 12,
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -58,9 +60,13 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESQUEMAS,
 	RT_ESQUEMAS_SALVAR,
 	RT_CANCELADO_ESQUEMA_COMPLX,
+	RT_CANCELADO_GUMP_GM_COMPONENTE,
 	RT_CANCELADO_COMPLX,
 	RT_ESCOLHA_DROPDOWN_CPX,
 	RT_ESCOLHA_DD_OPCOES_CPX,
+	RT_GM_COMPONENTE_SELECIONADO,
+	RT_GM_ESQUEMA_FABRICAR,
+	RT_ABRE_GM_COMPONENT,
 	RT_RCT_PROX_PAGINA,
 	RT_RCT_ANT_PAGINA,
 	RT_MEMORIZAR_COMPONENTES,
@@ -85,7 +91,8 @@ endenum
 
 enum GUMP_ATUAL_COMPLEXOS //Definição do Gump atual da sessão no gump de itens complexos.
 	COMPLEXOS,
-	ESQUEMAS
+	ESQUEMAS,
+	GM_COMPONENTE
 endenum
 
 enum ACAO_COMPLEXOS //Definição do Gump atual da sessão no gump de itens complexos.
@@ -152,6 +159,9 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelCategoria, alturaPainelRodape);// Rodapé Categorias
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + (larguraPainelCategoria / 2) - 31,alturaCelula * 11 + 14,241,242, GF_CLOSE_BTN, COMPLEXOS_BTN_CANCELAR);
+	if(sessao.modoGm)
+		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO +  cint(larguraCelula * 3),alturaCelula * 11 + 14,149,"*Modo GM*");
+	endif
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.8),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 0.9), alturaPainelRodape);	
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.9) - 2, alturaCelula * 11 + 17,1533,1534, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
@@ -248,6 +258,10 @@ function MontaEsquemaGump(byref gump,byref sessao)
 	 
 	if(sessao.acao == ADICIONAR)
 		GFTextEntry(gump,margemEsquerdaLocal  + (larguraCelula * 2), margemSuperiorLocal + Cint(alturaCelula), 120, 17, 1153, sessao.receitaSelecionada.esquemaSelecionado.nome, 2,40);
+		if(sessao.modoGm)
+			GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + Cint(larguraCelula * 10.4),Cint(alturaCelula * 3),2311,2312,GF_CLOSE_BTN,COMPLEXOS_BTN_FABRICAR_GM_CMPNT);
+			GFTooltipText(gump,"Fabricar item Pronto sem salvar.");
+		endif
 	elseif(sessao.acao == EDITAR)
 		GFTextLine(gump,margemEsquerdaLocal  + (larguraCelula * 2), margemSuperiorLocal + Cint(alturaCelula),1153,sessao.receitaSelecionada.esquemaSelecionado.nome);
 	endif
@@ -372,11 +386,12 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessa
 		return 0;
 	endif
 	var gerenciador := sessao.gerenciadorDropDown;
-	gerenciador.dropDowns[indice].x := x;
-	gerenciador.dropDowns[indice].y := y + 20;
-	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
+	var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
+	dropDownAtual.AtribuiX(x);
+	dropDownAtual.AtribuiY(y + 20);
+	var nome := dropDownAtual.PegaValorEscolhido().nome ? dropDownAtual.PegaValorEscolhido().nome : "";
 
-	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
+	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, dropDownAtual.PegaIdBottao());
 	GFTextLine(gump,x + 20,y, (Find(material,materialPrincipal,1) ? 253 : 1111), Trim(material) + ": " + nome);
 endfunction
 
@@ -484,11 +499,18 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var xBotao := x + 5;
 	var yBotao := y + 60;
-	var gerenciador := sessao.gerenciadorDropDown;
-	gerenciador.dropDowns[indice].x := xBotao;
-	gerenciador.dropDowns[indice].y := yBotao + 20;
-	
-	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,gerenciador.dropDowns[indice].idBottao);
+
+	if(!sessao.modoGm)
+		var gerenciador := sessao.gerenciadorDropDown;
+		var dropDownAtual := gerenciador.BuscaDropDownPorPosicao(indice);
+		
+		dropDownAtual.AtribuiX(xBotao);
+		dropDownAtual.AtribuiY(yBotao + 20);
+		
+		GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,dropDownAtual.PegaIdBottao());
+	else
+		GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT + indice);
+	endif
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)
@@ -507,15 +529,18 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var posYcaracteristicas := y + (componenteEscolhido ? 120 : 100);
 	var posYSetasDeslocamento := 2;
-	if(componenteEscolhido.propriedades.valorPrincipal)
+	if(TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_UNINIT
+	   && TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_ERROR)
 		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;
 		GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
 	endif
 	
 	if(quantidadeEfeitosAdicionais > 0)
-		foreach efeitoAdicional in (componenteEscolhido.propriedades.efeitosAdicionais)
-			GFTextLine(gump,x + 5,posYcaracteristicas +  alturaLinha * _efeitoAdicional_iter,1153," + {}".format(efeitoAdicional.efeito)); // caracteristica;
-			GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento + alturaLinha * _efeitoAdicional_iter,efeitoAdicional.valor);
+		var efeitosAdicionais := componenteEscolhido.propriedades.efeitosAdicionais; 
+		
+		foreach efeitoAdicional in (efeitosAdicionais.keys())
+			GFTextLine(gump,x + 5,cint(posYcaracteristicas +  alturaLinha * _efeitoAdicional_iter),1153," + {}".format(efeitoAdicional)); // caracteristica;
+			GeraSetas(gump, x + 205,cint(posYcaracteristicas + posYSetasDeslocamento + alturaLinha * _efeitoAdicional_iter),efeitosAdicionais[efeitoAdicional]);
 			Sleepms(2);
 		endforeach
 	endif
@@ -728,8 +753,10 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	GFTooltipText(gump,"Selecionar Receita.");
 	GFAddButton(gump,x + 45,y + 120,4029,4030,GF_CLOSE_BTN,baseIdBotao + 2);
 	GFTooltipText(gump,"Criar novo esquema.");
-	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
-	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
+	if(!sessao.modoGm)
+		GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
+		GFTooltipText(gump,"Montar usando melhores opções de componentes.");
+	endif
 endfunction
 
 function isReceitaVisualizada( receita)
@@ -777,5 +804,38 @@ function MontaFabricacaoAjudaGump(byref gump, parametros)
 	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.profissao.textoTratamento);
 
 	gump.cur_page := cint(parametros.pagina);
+	return gump;
+endfunction
+
+function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
+	gump := GFECreateGump("Escolha de componente no modo GM",300,300,array{BORDER_GOLDEN});
+
+	var margemEsquerda := espacamentoAplicado;
+	var alturaBarraMenu := 80;
+
+	var gerenciador := sessao.gerenciadorDropDown;
+	var dropDownComponetes := gerenciador.BuscaDropDownPorPosicao(1);
+	var dropDownQualidade := gerenciador.BuscaDropDownPorPosicao(2);
+	var dropDownMateriais := gerenciador.BuscaDropDownPorPosicao(3);
+
+	var componenteNome := sessao.modoGm.componenteEscolhido.name ? sessao.modoGm.componenteEscolhido.name : "Escolha o componente";
+	var qualidadeDesc := sessao.modoGm.qualidadeEscolhida.desc ? sessao.modoGm.qualidadeEscolhida.desc : "Escolha a qualidade";
+	var materialNome := sessao.modoGm.materialEscolhido.name ? sessao.modoGm.materialEscolhido.name : "Escolha o material";
+
+	dropDownComponetes.AtribuiX(larguraCelula * 1);
+	dropDownComponetes.AtribuiY(alturaBarraMenu + 20);
+	dropDownQualidade.AtribuiX(larguraCelula * 1);
+	dropDownQualidade.AtribuiY(alturaBarraMenu + 60);
+	dropDownMateriais.AtribuiX(larguraCelula * 1);
+	dropDownMateriais.AtribuiY(alturaBarraMenu + 100);
+	
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu,252,253,GF_CLOSE_BTN,dropDownComponetes.PegaIdBottao());
+	GFTextLine(gump, Cint(larguraCelula * 1.5) , alturaBarraMenu,369,componenteNome);
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 40,252,253,GF_CLOSE_BTN,dropDownQualidade.PegaIdBottao());
+	GFTextLine(gump,  Cint(larguraCelula * 1.5) , alturaBarraMenu + 40,369,qualidadeDesc);
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu + 80,252,253,GF_CLOSE_BTN,dropDownMateriais.PegaIdBottao());
+	GFTextLine(gump,  Cint(larguraCelula * 1.5) , alturaBarraMenu + 80,369,materialNome);
+
+	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
 endfunction

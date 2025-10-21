@@ -12,6 +12,7 @@ include "/include/epicPropNames";
 include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/util/fabricacaoConstants";
 
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
@@ -38,6 +39,27 @@ endfunction
 function PegaMaterialConfig(materialObjtype)
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 	return configRecursos[hex(materialObjtype)];
+endfunction
+
+function PegaListaTipoMateriais()
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+	var materiaisChaves :=  GetConfigStringKeys(configRecursos);
+	var dictRetorno := Dictionary;
+	
+	foreach chave in materiaisChaves
+		Sleepms(2);
+		var elementoCfg := configRecursos[chave];
+		var tipo := elementoCfg.Type;
+		tipo := Upper(tipo);
+		if(!dictRetorno.exists(tipo))
+			dictRetorno.insert(tipo, array);
+		endif
+
+		dictRetorno[tipo].append(struct{chave := chave, name := elementoCfg.Name});
+
+	endforeach
+
+	return dictRetorno;
 endfunction
 
 function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
@@ -103,14 +125,24 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		1 : return struct {desc := "Mediocre" , valor := -1}; break;
-		2 : return struct {desc := "Comum" , valor := 0}; break;
-		3 : return struct {desc := "Notável" , valor := 1}; break;
-		4 : return struct {desc := "Superior" , valor := 2}; break;
-		5 : return struct {desc := "Excepcional" , valor := 3}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Mediocre" , valor := -1}; break;
+		COMPONENTE_TIERS::COMUM : return struct {desc := "Comum" , valor := 0}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 1}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 2}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 3}; break;
 		default:
 			return struct {desc := "Erro!" , valor := 0}; break;
 	endcase
+endfunction
+
+function PegaComponenteTiers()
+	return array{
+				COMPONENTE_TIERS::MEDIOCRE,
+				COMPONENTE_TIERS::COMUM,
+				COMPONENTE_TIERS::NOTAVEL,
+				COMPONENTE_TIERS::SUPERIOR,
+				COMPONENTE_TIERS::EXCEPCIONAL
+			};
 endfunction
 
 function CalculaValorPico(quem, pericia)
@@ -177,9 +209,15 @@ function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, co
 		return descriptor;
 endfunction
 
-function CriaItemFabricado(quem, produto, quantidade := 1)
+function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
+	var propFabricadoMontado;
 
-	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	if(propFabricado)
+		propFabricadoMontado := propFabricado;
+	else
+		propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	endif
+
 	if(propFabricadoMontado)
 		var descriptor;
 
@@ -222,7 +260,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 		
 		if(!item)
 			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return;
+			return 0;
 		endif
 
 		AplicaFechadura(quem, item);
@@ -231,9 +269,10 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
+		return 0;
 	endif
 	
-
+	return 1;
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -266,7 +305,6 @@ function AplicaFechadura(quem, item)
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
-
 	var componentesRefatorado := dictionary;
 	if(estado != ITEM_GERADO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
@@ -292,11 +330,24 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 							propFabricadoMontado.esquema.modificadorPesoTotal,
 							corFinal,
 							propFabricadoMontado.esquema.classe,
-							componentesRefatorado
+							componentesRefatorado,
+							propFabricadoMontado.fabricante ? propFabricadoMontado.fabricante : 0,
+							propFabricadoMontado.esquema.material
 							);
 endfunction
 
-function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
+function CriaObjetoPropFabricado(
+									estado, 
+									isCompletamenteComum,
+									qualidade, 
+									modificadorHpTotal,
+									modificadorPesoTotal,
+									cor, 
+									classe, 
+									componentes, 
+									fabricante,
+									material
+									)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,
@@ -305,7 +356,9 @@ function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modific
 				modificadorPesoTotal := modificadorPesoTotal,
 				cor := cor,
 				classe := classe,
-				componentes := componentes};
+				componentes := componentes,
+				fabricante := fabricante,
+				materialPrincipal := material};
 endfunction
 
 function CriaObjetoPosicao(quem)
