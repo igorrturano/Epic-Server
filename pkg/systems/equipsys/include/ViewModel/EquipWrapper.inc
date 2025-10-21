@@ -9,7 +9,7 @@ const PROPNAME := "atributos";
 
 class EquipWrapper(IEquipWrapper)
 	var _template; // CfgElem
-	var _item; // ItemRef
+	var _itemRef; // ItemRef
 	var _prop;
 
 	var _name := "";
@@ -23,7 +23,7 @@ class EquipWrapper(IEquipWrapper)
 	function EquipWrapper(this, byRef item)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
-			this._item := item;
+			this._itemRef := item;
 			this._prop := item.GetProp(PROPNAME) ?: error{"errortext" := "This item has no attributes Property!"};
 			
 			if (this._prop)
@@ -42,7 +42,7 @@ class EquipWrapper(IEquipWrapper)
 			
 		else // Caso seja apenas um template
 			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
-			this._item := error{"errortext" := "This item is just a template!"};
+			this._itemRef := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
 
 			this._name := this._template.name;
@@ -61,8 +61,8 @@ class EquipWrapper(IEquipWrapper)
 		return this._template;
 	endfunction
 
-	function GetItem(this)
-		return this._item ?: error{"errortext" := "This item is just a template!"};
+	function GetItemRef(this)
+		return this._itemRef ?: error{"errortext" := "This item is just a template!"};
 	endfunction
 
 	function GetProp(this)
@@ -103,49 +103,49 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function _SetName(this, name)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._name := name;
 		return this;
 	endfunction
 
 	function SetDesc(this, desc)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._desc := desc;
 		return this;
 	endfunction
 
 	function SetGraphic(this, graphic)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._graphic := graphic;
 		return this;
 	endfunction
 
 	function SetWeight(this, weight)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._weight := weight;
 		return this;
 	endfunction
 
 	function SetMaxHP(this, maxHP)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._maxHP := maxHP;
 		return this;
 	endfunction
 
 	function SetMaterial(this, material)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._material := material;
 		return this;
 	endfunction
 
 	function AddModifier(this, modifier) // modifier is of type AttributeModifier
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 		this._modifiers[modifier.GetAttribute()] := modifier;
 		return this;
 	endfunction
 
 	function Update(this)
-		if (this._item == error) return this._item; endif
+		if (this._itemRef == error) return this._itemRef; endif
 
 		this._prop := struct{};
 		this._prop.+Name := this._name;
@@ -154,9 +154,9 @@ class EquipWrapper(IEquipWrapper)
 		this._prop.+MaxHP := this._maxHP;
 
 		this._SetName(this._name);
-		this._item.graphic := this._graphic;
-		this._item.weight := this._weight;
-		this._item.maxHP := this._maxHP;
+		this._itemRef.graphic := this._graphic;
+		this._itemRef.weight := this._weight;
+		this._itemRef.maxHP := this._maxHP;
 
 		this._prop.+Modifiers := dictionary{};
 	endfunction
