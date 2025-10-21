@@ -1,11 +1,13 @@
 use uo;
 
 include "IMobileWrapper";
+
 include ":attributes:skills";
 include ":attributes:vitals";
 include ":attributes:stats";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":combat:armorZones";
 
 class MobileWrapper(IMobileWrapper)
 	var _mobRef; // mobRef
@@ -45,108 +47,6 @@ class MobileWrapper(IMobileWrapper)
 		regen := 0
 	};
 
-	var _gold := 0;
-	var _weight := 0;
-
-	var _skills := dictionary{ // Dictionary of skills (string) and their base value (double)
-		ALCHEMY := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		MAGERY := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		ARCANA := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		SCIENCE := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		THEOLOGY := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-
-		PARRY := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		ONEHANDED := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		TWOHANDED := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		DUALWIELD := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		RANGED := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		TACTICS := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-
-		SNEAK := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		PICKPOCKETING := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		AWARENESS := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		MECHANICS := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-
-		MEDICINE := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		SURVIVAL := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-
-		METALWORKING := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		WOODWORKING := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		DOMESTIC_WORK := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		GATHERING := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		HANDLEANIMAL := struct{
-			base := 0.0,
-			mod := 0.0
-		},
-		WRESTLING := struct{
-			base := 0.0,
-			mod := 0.0
-		}
-	};
-
 	function MobileWrapper(this, byRef mobRef)
 		if (mobRef.isA(POLCLASS_MOBILE)) // Caso o mobile exista
 			// TODO: Checar os atributos corretos, aqui é só um exemplo
@@ -167,30 +67,19 @@ class MobileWrapper(IMobileWrapper)
 			this._hp.current := this.GetCurrentHP();
 			this._hp.max := this.GetMaxHP();
 			this._hp.regen := this.GetRegenHP();
-
 			this._stamina := MobileWrapper::_stamina;
 			this._stamina.current := this.GetCurrentStamina();
 			this._stamina.max := this.GetMaxStamina();
 			this._stamina.regen := this.GetRegenStamina();
-
 			this._mana := MobileWrapper::_mana;
 			this._mana.current := this.GetCurrentMana();
 			this._mana.max := this.GetMaxMana();
 			this._mana.regen := this.GetRegenMana();
-
 			this._hunger := MobileWrapper::_hunger;
 			this._hunger.current := this.GetCurrentHunger();
 			this._hunger.max := this.GetMaxHunger();
 			this._hunger.regen := this.GetRegenHunger();
 
-			this._gold := mobRef.gold;
-			this._weight := mobRef.weight;
-
-			this._skills := MobileWrapper::_skills;
-			foreach skillName in (this._skills.keys())
-				this._skills[skillName].base := this.GetSkillBase(skillName);
-				this._skills[skillName].mod := this.GetSkillMod(skillName);
-			endforeach
 		else
 			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
 			this._mobRef := err;
@@ -324,6 +213,37 @@ class MobileWrapper(IMobileWrapper)
 
 	function GetWeight(this)
 		return this._weight;
+	endfunction
+
+	function GetEquipBySlot(this, slotEnum)
+		var equipsInSlot;
+		if (slotEnum == EQUIPSLOT::WEAPON)
+			return EquipWrapperWeapon(this._mobRef.weapon);
+		elseif (slotEnum == EQUIPSLOT::SHIELD)
+			return EquipWrapperArmor(this._mobRef.shield);
+		elseif (slotEnum == EQUIPSLOT::HEAD)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Head");
+		elseif (slotEnum == EQUIPSLOT::NECK)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Neck");
+		elseif (slotEnum == EQUIPSLOT::BACK)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Back");
+		elseif (slotEnum == EQUIPSLOT::CHEST)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Chest");
+		elseif (slotEnum == EQUIPSLOT::HANDS)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Hands");
+		elseif (slotEnum == EQUIPSLOT::LEGS)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Legs");
+		elseif (slotEnum == EQUIPSLOT::FEET)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Feet");
+		else
+			return error {"errortext" := "Wrong slot specified!"};
+		endif
+
+		foreach equip in (equipsInSlot)
+			equip := EquipWrapperArmor(equip);
+		endforeach
+
+		return equipsInSlot;
 	endfunction
 
 	function GetSkill(this, skillName)
