@@ -775,7 +775,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 				esquemaSelecionado,
 				esquemaSelecionado.modificadorCache.qualidade,
 				indiceEncaixe,
-				componenteEscolhido.Tier);
+				componenteEscolhido.tier);
 
 	AtualizaModificadorTotal(
 				componenteEscolhido.propriedades.modificadorHp,
@@ -790,6 +790,8 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 				esquemaSelecionado.modificadorCache.Peso,
 				indiceEncaixe
 				);
+
+				Print("esquemaSelecionado.modificadorCache: " + esquemaSelecionado.modificadorCache);
 
 	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
 		esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
@@ -810,16 +812,17 @@ function DefineTagQualidade(byref esquemaSelecionado, byref cache, indice, tier)
 		if(hasAntigo)
 			qualidadeAntiga := cache[indice];
 		endif
+		Print("Tier : " + tier);
 
-		if(tier.valor < 0)
+		if(tier.valor <= PegaComponenteTierDesc(COMPONENTE_TIERS::MEDIOCRE).valor)
 			esquemaSelecionado.qualidade := -1;
 			!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 		else
-			if(tier.valor == 3  && qualidadeAntiga != 1) // Se não tem nenhum componente mediocre, mas tem algum exepcional. considere o item excepcional.
+			if(tier.valor >= PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valor  && qualidadeAntiga != 1) // Se não tem nenhum componente mediocre, mas tem algum exepcional. considere o item excepcional.
 				esquemaSelecionado.qualidade := 1;
 				!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 			else
-				if(tier.valor < 3  && qualidadeAntiga == 1)
+				if(tier.valor < PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valorL  && qualidadeAntiga == -1)
 					esquemaSelecionado.qualidade := 0;
 					!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 				endif
