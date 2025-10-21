@@ -7,10 +7,11 @@ include ":commands:create";
 include ":gumps:gumps_ex";
 include "/include/gms";
 include "/include/epicPropNames";
+include ":crafting:fabricaComplexos";
 
 program create_textcmd(mobile, search_string)
 
-	var gump := 0, result := 0, page := 0, amount := 1, search_results := dictionary;
+	var gump := 0, result := 0, page := 0, amount := 1, search_results := dictionary, tier := -1;
 
 	var split := SplitWords(search_string, " ", -1);
 	if (split.Size() == 1)
@@ -22,6 +23,14 @@ program create_textcmd(mobile, search_string)
 		else
 			amount := 1;
 		endif
+	elseif (split.Size() == 3)
+		search_string := Trim(split[1], TRIM_BOTH);
+		if (CInt(split[2]) >= 1)
+			amount := CInt(split[2]);
+		else
+			amount := 1;
+		endif
+		tier := cint(Trim(split[3], TRIM_BOTH));
 	endif
 
 	if (search_string == "?")
@@ -38,11 +47,11 @@ program create_textcmd(mobile, search_string)
 	// and get hit with tons of items in the list.
 	if (CInt(search_string))
 		CreateItem(mobile, GetItemInfo(CInt(search_string), GetItemDescriptor(CInt(search_string))),
-					amount);
+					amount, tier);
 		return 1;
 	elseif (GetObjtypeByName(search_string))
 		CreateItem(mobile, GetItemInfo(GetObjtypeByName(search_string),
-										GetItemDescriptor(GetObjtypeByName(search_string))), amount);
+										GetItemDescriptor(GetObjtypeByName(search_string))), amount,tier);
 		return 1;
 	elseif (search_string.Length())
 		if (search_string.Length() > 2)
@@ -91,7 +100,7 @@ program create_textcmd(mobile, search_string)
 		elseif (result[0] == 5)
 			page += 1;
 		elseif (result[0] >= 6 && result[0] <= 5006)
-			CreateItem(mobile, search_results[search_results.Keys()[result[0] - 5]], amount);
+			CreateItem(mobile, search_results[search_results.Keys()[result[0] - 5]], amount, tier);
 			amount := -1;
 		endif
 	endwhile
@@ -99,7 +108,7 @@ program create_textcmd(mobile, search_string)
 	return 1;
 endprogram
 
-function CreateItem(byref mobile, byref item_entry, byref amount)
+function CreateItem(byref mobile, byref item_entry, byref amount,byref tier)
 
 	if (amount == -1)
 		amount := CInt(RequestInput(mobile, mobile.backpack, "How many of this object do you want to create?"));
@@ -114,18 +123,30 @@ function CreateItem(byref mobile, byref item_entry, byref amount)
 			amount == 10;
 		endif
 	endif
+	
 
 	var created := array;
+	var finalObjtype;
+	var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
+	var isIndispensavel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
+
+	if(tier > 0)
+		finalObjtype := GeraItemComplexo(item_entry.Objtype, tier);
+	else
+		finalObjtype := item_entry.Objtype;
+	endif
+
 	if (!item_entry.Stackable)
-		created := CreateItemUnstackableInContainer(mobile, item_entry.Objtype, amount, mobile.backpack);
+		created := CreateItemUnstackableInContainer(mobile, finalObjtype, amount, mobile.backpack);
 	elseif (item_entry.Stackable)
-		created := CreateItemStacksInContainer(mobile, item_entry.Objtype, amount, mobile.backpack);
+		created := CreateItemStacksInContainer(mobile, finalObjtype, amount, mobile.backpack);
+	endif
+
+	if(created.size() == 0 && tier > 0)
+		SendSysMessageEx(mobile,"É possível que não exista um material configurado para este tier, por favor verifique.",SSM_INFO_IC);
 	endif
 
 	foreach obj in (created)
-
-		var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
-		var isIndispensavel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
 
 		if (!isIndispensavel || isIndestrutivel)
 			var objRef := SystemFindObjectBySerial(obj.Serial);
