@@ -172,3 +172,17 @@ class EquipWrapper(IEquipWrapper)
 	uninit function _GetWeight(this);
 	uninit function _GetSTRRequired(this);
 endclass
+
+enum class EQUIPSLOT
+	HEAD,
+	NECK,
+	BACK,
+	CHEST,
+	HANDS,
+	LEGS,
+	FEET,
+	WEAPON,
+	SHIELD,
+	ACCESSORY_1,
+	ACCESSORY_2
+endenum
