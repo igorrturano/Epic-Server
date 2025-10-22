@@ -12,10 +12,7 @@ include ":diceroll:model/Dice";
 class AttackInfo(IAttackInfo)
 	var _moment := ATTACKMOMENT::COMBATING;
 	var _attacker; // MobileWrapper
-	var _attackerWeapon; // EquipWrapper
 	var _defender; // MobileWrapper
-	var _defenderWeapon; // EquipWrapper
-	var _defenderArmor; // EquipWrapper
 
 	var _damage := Damage();
 	var _damageHand := DAMAGEHAND::MAINHAND; 
@@ -44,20 +41,8 @@ class AttackInfo(IAttackInfo)
 		return this._attacker;
 	endfunction
 
-	function GetAttackerWeapon(this)
-		return this._attackerWeapon;
-	endfunction
-
 	function GetDefender(this)
 		return this._defender;
-	endfunction
-
-	function GetDefenderWeapon(this)
-		return this._defenderWeapon;
-	endfunction
-
-	function GetDefenderArmor(this)
-		return this._defenderArmor;
 	endfunction
 
 	function GetHitChance(this)
