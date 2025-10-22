@@ -1,16 +1,16 @@
 class IMessage()
-	uninit function Message(text, default color, default font_number, default langSource, default langTarget);
+	uninit function IMessage(this, text, default color, default font_number, default langSource, default langTarget);
 	
-	uninit function AddMessage(text, default color, default font, default langSource, default langTarget);
-	uninit function SetColor(color);
-	uninit function SetFont(font);
-	uninit function SetSourceLanguage(lang);
-	uninit function SetTargetLanguage(lang);
+	uninit function AddMessage(this, text, default color, default font, default langSource, default langTarget);
+	uninit function SetColor(this, color);
+	uninit function SetFont(this, font);
+	uninit function SetSourceLanguage(this, lang);
+	uninit function SetTargetLanguage(this, lang);
 	
-	uninit function Translate();
+	uninit function Translate(this);
 	
-	uninit function SendSys(who);
-	uninit function SendSysAll();
-	uninit function SendAbove(who);
-	uninit function SendAbovePrivate(who, default whoSee);
+	uninit function SendSys(this, who);
+	uninit function SendSysAll(this);
+	uninit function SendAbove(this, who);
+	uninit function SendAbovePrivate(this, who, default whoSee);
 endclass
