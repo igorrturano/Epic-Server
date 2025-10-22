@@ -1,0 +1,35 @@
+include ":message:model/Message";
+include ":diceroll:model/DiceRoll";
+
+program diceroll(who, params)
+	if (!params || params == "")
+		Message("Uso correto: .diceroll <rolagem de dados>", SSM_FAIL)
+			.AddMessage("Exemplo: .diceroll 1d6, 1d20, 2d8+3, etc. [múltiplos dados são aceitos]", SSM_FAIL)
+			.SendSys(who);
+		return 0;
+	endif
+
+	Message("Quem vai ver a rolagem de dados?").SendSys(who);
+	var targ := Target(who);
+
+	if (!targ)
+		Message("Cancelado.", SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	var diceStr := SplitWords(params, " ");
+	var diceRoll := DiceRoll(diceStr).Roll().GetResult(DICE_RESULT::ALL);
+	print("diceRoll: " + diceRoll);
+
+	foreach roll in (diceRoll)
+		PlaySoundEffect(targ, 738);
+		PlaySoundEffect(targ, 739);
+		Sleep(1);
+		Message($"*Rolou dado: {roll}*").SendAbove(targ);
+	endforeach
+endprogram
+
+function RollDice(params)
+
+	return diceRoll;
+endfunction
