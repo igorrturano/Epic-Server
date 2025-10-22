@@ -8,6 +8,8 @@ include ":charsys:ViewModel/MobileWrapper";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 include ":diceroll:model/Dice";
+include ":message:model/Message";
+// include "include/packets";
 
 class AttackInfo(IAttackInfo)
 	var _moment := ATTACKMOMENT::COMBATING;
@@ -85,31 +87,10 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetAttackerWeapon(this, weapon)
-		if (!(weapon is @EquipWrapperWeapon)) return error{ errortext := "Parameter must be an EquipWrapperWeapon class!" }; endif
-
-		this._attackerWeapon := weapon;
-		return this;
-	endfunction
-
 	function SetDefender(this, defender)
 		if (!(defender is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
 
 		this._defender := defender;
-		return this;
-	endfunction
-
-	function SetDefenderWeapon(this, weapon)
-		if (!(weapon is @EquipWrapperWeapon)) return error{ errortext := "Parameter must be an EquipWrapperWeapon class!" }; endif
-
-		this._defenderWeapon := weapon;
-		return this;
-	endfunction
-
-	function SetDefenderArmor(this, armor)
-		if (!(armor is @EquipWrapperArmor)) return error{ errortext := "Parameter must be an EquipWrapperArmor class!" }; endif
-
-		this._defenderArmor := armor;
 		return this;
 	endfunction
 
@@ -174,6 +155,73 @@ class AttackInfo(IAttackInfo)
 			endforeach
 		endif
 	endfunction
+
+	function ApplyDamage(this)
+		var slash := this.GetDamage().GetSlashDamage(),
+			piercing := this.GetDamage().GetPierceDamage(),
+			blunt := this.GetDamage().GetBluntDamage(),
+			fire := this.GetDamage().GetFireDamage(),
+			cold := this.GetDamage().GetColdDamage(),
+			poison := this.GetDamage().GetPoisonDamage(),
+			energy := this.GetDamage().GetEnergyDamage();
+
+		if (slash > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), slash);
+			Message(slash + " [SLASH]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), slash, this.GetAttacker().GetMobRef());
+		endif
+
+		if (piercing > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), piercing);
+			Message(piercing + " [PIERCING]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), piercing, this.GetAttacker().GetMobRef());
+		endif
+
+		if (blunt > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), blunt);
+			Message(blunt + " [BLUNT]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), blunt, this.GetAttacker().GetMobRef());
+		endif
+
+		if (fire > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), fire);
+			Message(fire + " [FIRE]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), fire, this.GetAttacker().GetMobRef());
+		endif
+
+		if (cold > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), cold);
+			Message(cold + " [COLD]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), cold, this.GetAttacker().GetMobRef());
+		endif
+
+		if (poison > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), poison);
+			Message(poison + " [POISON]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), poison, this.GetAttacker().GetMobRef());
+		endif
+
+		if (energy > 0)
+			ApplyRawDamage(this.GetDefender().GetMobRef(), energy);
+			Message(energy + " [ENERGY]")
+				.SendAbovePrivate(this.GetDefender().GetMobRef())
+				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
+			// DisplayDamage(this.GetDefender().GetMobRef(), energy, this.GetAttacker().GetMobRef());
+		endif
+	endfunction
+
 
 	function ToString(this)
 		// TODO: Implementar uma representação em string do AttackInfo
