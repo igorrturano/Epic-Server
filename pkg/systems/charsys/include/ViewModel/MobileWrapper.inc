@@ -215,7 +215,7 @@ class MobileWrapper(IMobileWrapper)
 		return this._weight;
 	endfunction
 
-	function GetEquipBySlot(this, slotEnum)
+	function GetEquipBySlot(this, slotEnum) // Os enum estão em EquipWrapper::EQUIPSLOT
 		var equipsInSlot;
 		if (slotEnum == EQUIPSLOT::WEAPON)
 			return EquipWrapperWeapon(this._mobRef.weapon);
@@ -246,6 +246,10 @@ class MobileWrapper(IMobileWrapper)
 		return equipsInSlot;
 	endfunction
 
+	function GetEquipByLayer(this, layerEnum) // Os enum estão em EquipWrapper::EQUIPLAYER
+		return EquipWrapperArmor(GetEquipmentByLayer(this._mobRef, layerEnum));
+	endfunction
+
 	function GetSkill(this, skillName)
 		return this.GetSkillBase(skillName) + this.GetSkillMod(skillName);
 	endfunction
@@ -258,10 +262,6 @@ class MobileWrapper(IMobileWrapper)
 	function GetSkillMod(this, skillName)
 		this._skills[skillName].mod := AP_GetSkillMod(this._mobRef, skillName);
 		return this._skills[skillName].mod;
-	endfunction
-
-	function IsNPC(this)
-		return this._mobRef.isA(POLCLASS_NPC);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
@@ -300,8 +300,22 @@ class MobileWrapper(IMobileWrapper)
 		return this;
 	endfunction
 
+	function IsNPC(this)
+		return this._mobRef.isA(POLCLASS_NPC);
+	endfunction
+
 	function IsDead(this)
 		return this._mobRef.dead;
+	endfunction
+
+	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
+		if (isPrivate)
+			PlaySoundEffectPrivate(this._mobRef, soundId, soundOrigin ?: this._mobRef);
+		else
+			PlaySoundEffect(this._mobRef, soundId);
+		endif
+
+		return this;
 	endfunction
 
 	function Dispose(this)
