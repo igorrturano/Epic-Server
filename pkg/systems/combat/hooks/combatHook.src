@@ -25,25 +25,13 @@ use uo;
 use cfgfile;
 
 // Internos
-// include ":combat:armorZones";
-// include ":combat:combat";
 include ":combat:habilidades";
-// include ":combat:hitchance";
-// include ":combat:damage";
-// include ":combat:mainHitScript";
-// include ":combat:combatFX";
 include ":combat:Model/AttackInfo";
 
 // Externos
-// include "include/packets";
-// include "include/facings";
-// include "include/epicConstants";
-// include "include/epicMageryUtils";
-// include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
-// include ":fls_magery:spellSounds";
 include ":mastery:Abilities";
 include ":charsys:ViewModel/MobileWrapper";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
@@ -51,19 +39,6 @@ include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":diceroll:model/Dice";
 include ":message:Model/Message";
 
-var item_cfg := ReadConfigFile(":combat:itemdesc");
-var strat_cfg := ReadConfigFile("combatlevel");
-var npc_cfg := ReadConfigFile(":*:npcdesc");
-
-// Global because they're important, and it keeps the function
-// prototypes shorter and easier to read.
-// var wpn_a, wpn_d;
-// var wpn_a_elem, wpn_d_elem;
-
-enum DAMAGEHAND
-	DAMAGE_MAINHAND,
-	DAMAGE_OFFHAND
-endenum
 const OFFHAND_DELAY := 500; // Delay da offhand weapon em ms
 
 program Install()
@@ -81,62 +56,63 @@ exported function Attack(attacker, defender)
 
 	if (!CanAttack(attackInfo))	return 1; endif
 
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "ATAQUE INICIADO!");
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> MainHand");
 	Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef() });
 	Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef() });
 
 	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 	attackInfo.RollHitChance();
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "=================");
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "=================");
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Mão -> MainHand");
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Chance de acerto: " + attackInfo.GetHitChance());
-	DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Chance de acerto: " + attackInfo.GetHitChance());
+	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
 
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "***ACERTOU!***");
-		SkillChecks(attackInfo.GetAttacker(), attackInfo.GetDefender(), attackInfo.GetAttackerWeapon(), 1);
-		CheckAbilities(COMBATABILITY_MOMENT::ONHIT, attackInfo);
+		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
+		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetItemRef(), 1);
+		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::BOTH);
 		ExecuteMasteryAbility(attackInfo);
-		EpicAttack(attackInfo, DAMAGE_MAINHAND);
+		EpicAttack(attackInfo, EQUIPLAYER::HAND1);
 	else
-		DebugMsg(attackInfo.GetAttacker(), DEBUG_HIT, "***ERROU!***");
-		CheckAbilities(COMBATABILITY_MOMENT::ONMISS, attackInfo);
-		PlayMissSound(attackInfo.GetAttacker(), attackInfo.GetDefender());
+		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
+		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
+		PlayMissSound(attackInfo);
 	endif
 
-	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attacker, OFFHAND_DELAY });
-		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
+	// Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
+	if (attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetAttribute() == DUALWIELD && !attackInfo.GetDefender().IsDead())
+		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef(), OFFHAND_DELAY });
+		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> OffHand");
 
-		var hitchancePenalty := DualWieldPenalty(attacker);
-		attackInfo.hitchance -= hitchancePenalty;
-		attackInfo.dice := RandomDiceRoll("1d100");
-		DebugMsg(attacker, DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.hitchance}(-{hitchancePenalty})");
-		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: " + attackInfo.dice);
+		var attackInfo2 := AttackInfo(attacker, defender);
+		attackInfo2.SetDamageHand(DAMAGEHAND::OFFHAND)
+				   .SetAttackerWeapon(attackInfo2.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON))
+				   .SetDefenderWeapon(attackInfo2.GetDefender().GetEquipBySlot(EQUIPSLOT::WEAPON))
+				   .SetHitChance(attackInfo.GetHitChance())
+				   .SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo2))
+				   .RollHitChance();
+		
+		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo2.GetHitChance()}(-{attackInfo2.GetHitChancePenalty()})");
+		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo2.GetDiceRoll());
 
-		// No segundo hit só checa novamente as habilidades do defensor
-		if (attackInfo.dice < attackInfo.hitchance)
-			DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+		if (attackInfo2.Succeeded()) // No segundo hit só checa novamente as habilidades do defensor
+			DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
 			SkillChecks(attacker, defender, attacker.weapon, 1);
 
-			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
+			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::DEFENDER);
 
-			EpicAttack(attackInfo, DAMAGE_OFFHAND);
+			EpicAttack(attackInfo, EQUIPLAYER::HAND2);
 		else
-			DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
+			DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
 
-			CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
+			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::DEFENDER);
 
-			PlayMissSound(attacker, defender);
+			PlayMissSound(attackInfo2);
 		endif
 	endif
 
-	if (attacker.acctname)
-		updateTooltip(attacker.weapon);
-	endif
-
-	playSoundAndEffectForThroiwingWeapons(attacker, defender);
+	playSoundAndEffectForThroiwingWeapons(attacker, defender); // TODO: Ver o que diabo dá pra fazer com isso aqui.....
 	return 1;
 
 endfunction
@@ -201,7 +177,7 @@ function EpicAttack(attackInfo, weaponHand)
 	var armor := GetArmorToHit(attackInfo);
 	var dmg := CalculateRawDamage(attackInfo);
 
-	if (weaponHand == DAMAGE_MAINHAND)
+	if (weaponHand == EQUIPLAYER::HAND1)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{
 			attacker,
 			defender,
