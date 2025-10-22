@@ -18,6 +18,8 @@ function AnimalBrain()
             return;
         endif
 
+        HandleAnimalChanges(me);
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
@@ -285,4 +287,12 @@ function AnimalIdle(wanders)
             LayEggSac(me);
         endif
     endif
+endfunction
+
+function HandleAnimalChanges(me)
+    	if (me.graphic == 223)
+			if (GetCooldown(me, "wool") == 0)
+				me.graphic := 207;
+			endif
+		endif
 endfunction
