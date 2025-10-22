@@ -553,7 +553,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 			var tipoEQuantidade := SplitWords(material);
 			dicionarioMateriais.insert(tipoEQuantidade[1],tipoEQuantidade[2]);
-			materiaisConcatenados += material;
+			materiaisConcatenados += tipoEQuantidade[2] + " " + tipoEQuantidade[1];
 			Sleepms(2);
 		endforeach
 
