@@ -791,7 +791,6 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 				indiceEncaixe
 				);
 
-				Print("esquemaSelecionado.modificadorCache: " + esquemaSelecionado.modificadorCache);
 
 	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
 		esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
@@ -812,7 +811,6 @@ function DefineTagQualidade(byref esquemaSelecionado, byref cache, indice, tier)
 		if(hasAntigo)
 			qualidadeAntiga := cache[indice];
 		endif
-		Print("Tier : " + tier);
 
 		if(tier.valor <= PegaComponenteTierDesc(COMPONENTE_TIERS::MEDIOCRE).valor)
 			esquemaSelecionado.qualidade := -1;
