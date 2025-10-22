@@ -5,7 +5,7 @@ use math;
 include "Dice";
 
 class DiceRoll()
-	var _dice := array{}; // Array de Dice()
+	var _dice := array{}; // Array of Dice()
 
 	function DiceRoll(this, dice) // dice pode ser string ou array de strings
 		this._dice := array{};
@@ -27,7 +27,8 @@ class DiceRoll()
 
 			return this;
 		else
-			return error { errortext := "Parameter must be a string or array of strings in a valid dice format like '1d6+5'!" };
+			this._dice := error { errortext := "Parameter must be a string or array of strings in a valid dice format like '1d6+5'!" };
+			return this._dice;
 		endif
 
 		this._dice.append(dice);
@@ -72,7 +73,7 @@ class DiceRoll()
 	endfunction
 
 	function Roll(this)
-		if (this._dice.size() < 1) return error { errortext := "No dice to roll" }; endif
+		if (this._dice == error || this._dice.size() < 1) return error { errortext := "No dice to roll" }; endif
 
 		foreach dice in (this._dice)
 			dice.Roll();

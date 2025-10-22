@@ -21,11 +21,19 @@ program diceroll(who, params)
 	var diceRoll := DiceRoll(diceStr).Roll().GetResult(DICE_RESULT::ALL);
 	print("diceRoll: " + diceRoll);
 
+	var i := 0;
 	foreach roll in (diceRoll)
+		i++;
 		PlaySoundEffect(targ, 738);
 		PlaySoundEffect(targ, 739);
 		Sleep(1);
-		Message($"*Rolou dado: {roll}*").SendAbove(targ);
+		
+		if (roll == error)
+			Message($"Erro ao rolar dado {i}: {roll.errortext}", SSM_FAIL).SendAbove(targ);
+			continue;
+		else
+			Message($"*Rolou dado: {roll}*").SendAbove(targ);
+		endif
 	endforeach
 endprogram
 
