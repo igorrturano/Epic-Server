@@ -60,12 +60,12 @@ class Dice()
 
 	function Roll(this)
 		if (this._amount < 1)
-			return error { errortext := "Amount of dice less than 1 or invalid" };
+			this._result := error { errortext := "Amount of dice less than 1 or invalid" };
 		elseif (this._sides < 2)
-			return error { errortext := "Sides of dice less than 2 or invalid" };
+			this._result := error { errortext := "Sides of dice less than 2 or invalid" };
+		else
+			this._result := CInt(RandomDiceRoll(this._diceString));
 		endif
-		
-		this._result := CInt(RandomDiceRoll(this._diceString));
 
 		return this;
 	endfunction
