@@ -410,10 +410,10 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var materialDetalhe := configRecursos[chaveMaterial];
 
 	var tipoMaterial := Lower(materialDetalhe.type);
-	var materialPrincipal := Lower(componente.materialPrincipal);
+	var materialPrincipal := Lower(componente.selecione.materialPrincipal);
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
-
-	if(materialPrincipal == tipoMaterial)
+	
+	if(lower(materialPrincipal) == lower(tipoMaterial))
 		return materialDetalhe.Skill <= AP_GetSkill(quem,pericia);
 	else
 		return tipoMaterial in (componente.selecione.materiais.keys());
@@ -423,7 +423,7 @@ endfunction
 
 function MontaMaterialEncontrado(byref categorias, tipo, item)
 	var dictitemsEncontrados;
-
+	tipo := lower(tipo);
 	if( !categorias.exists(tipo)) // garante que o dictionary do tipo exista nas categorias de materiais.
 		categorias.insert(tipo, dictionary);
 	endif
