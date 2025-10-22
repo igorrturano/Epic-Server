@@ -164,7 +164,6 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 endfunction
 
 function PlayHitSounds(attacker, defender)
-	// var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
 	var wpn_a_elem2 := attacker.weapon.getCfgElem();
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
@@ -202,14 +201,14 @@ function PlayHitSounds(attacker, defender)
 	PlaySoundEffect(defender, damaged_sound);
 endfunction
 
-function PlayMissSound(attacker, defender)
-	PlaySoundEffect(attacker, getSound(MISS_FX));
+function PlayMissSound(attackInfo)
+	attackInfo.GetAttacker().PlaySound(getSound(MISS_FX));
 endfunction
 
 function getAnim(fxs, isCriticalAttack := 0)
-	return !isCriticalAttack ? fxs.ANIM[RandomInt(fxs.ANIM.Size())+1] : fxs.ANIM_CRITICAL[RandomInt(fxs.ANIM_CRITICAL.Size())+1];
+	return !isCriticalAttack ? fxs.ANIM[RandomInt(fxs.ANIM.Size()) + 1] : fxs.ANIM_CRITICAL[RandomInt(fxs.ANIM_CRITICAL.Size()) + 1];
 endfunction
 
 function getSound(fxs, isCriticalAttack := 0)
-	return !isCriticalAttack ? fxs.SFX[RandomInt(fxs.SFX.Size())+1] : fxs.SFX_CRITICAL[RandomInt(fxs.SFX_CRITICAL.Size())+1];
+	return !isCriticalAttack ? fxs.SFX[RandomInt(fxs.SFX.Size()) + 1] : fxs.SFX_CRITICAL[RandomInt(fxs.SFX_CRITICAL.Size()) + 1];
 endfunction
