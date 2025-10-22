@@ -344,12 +344,17 @@ function CalculateHitChance(attackInfo)
 	return hit_chance;
 endfunction
 
-function DualWieldPenalty(attacker)
-	var weaponElem := GetWpnCfgInfo(attacker, attacker.weapon);
-	var penalty := (100-AP_GetSkill(attacker, weaponElem.Attribute))/2;
-		if (penalty < 10)
-			penalty := 10;
-		endif
+function DualWieldPenalty(attackInfo)
+	// var weaponElem := GetWpnCfgInfo(attacker, attacker.weapon);
+	var attacker := attackInfo.GetAttacker();
+
+	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttackerWeapon().GetAttribute());
+
+	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttackerWeapon().GetAttribute())) / 2;
+	
+	if (penalty < 10)
+		penalty := 10;
+	endif
 	
 	return penalty;
 endfunction
