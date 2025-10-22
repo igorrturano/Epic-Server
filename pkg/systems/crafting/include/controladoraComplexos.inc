@@ -1319,8 +1319,10 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	if(lote > 0)
 		labelQuantidade := lote + "x ";
 	endif
+
+	var nomeReceita := definicaoItem.desc == "pocao" ? definicaoItem.type : TruncatePlural(objtype);
 	
-	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + TruncatePlural(objtype) + "</BASEFONT><br>";
+	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + nomeReceita + "</BASEFONT><br>";
 	desc := MontaDescricaoItem(definicaoItem,quem,desc);
 	
 	if(materiaisNecessarios && materiaisNecessarios.size() > 0)
@@ -1328,7 +1330,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Materiais Necessários</BASEFONT><br>";
 		foreach material in materiaisNecessarios
 			var materialInfo := SplitWords(material);
-			desc +=  cint(materialInfo[2]) * lote + " " + GetMaterialName(materialInfo[1])  + "<br>";
+			desc +=  cint(materialInfo[2]) * lote + " " + GetMaterialName( materialInfo[1])  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif
