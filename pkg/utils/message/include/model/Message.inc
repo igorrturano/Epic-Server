@@ -210,8 +210,8 @@ class Message(IMessage)
 		return Start_Script(":message:sender", params);
 	endfunction
 
-	function _WantTranslation(who)
-		return true; // Temporário, depois fazer verificação se o char quer tradução ou não
+	function _WantTranslation(this)
+		return false; // Temporário, depois fazer verificação se o char quer tradução ou não
 	endfunction
 endclass
 
@@ -225,4 +225,48 @@ endenum
 enum class MSG_MAXSIZE
 	SYSMSG := 200,
 	PRINTTEXT := 60
+endenum
+
+enum class FONT
+	FONT_UO := 0,
+
+	FONT_ARIAL := 2,
+	FONT_ARIAL_BOLD := 1,
+	
+	FONT_FIXEDSYS := 3,
+	FONT_FIXEDSYS_BIG := 4,
+
+	FONT_THIN := 5,
+	FONT_THIN_BIG := 6,
+	
+	FONT_SYMBOLS := 7,
+	FONT_SYMBOLS_BOLD := 8,
+	FONT_SYMBOLS_BOLD_BIG := 9,
+
+	FONT_RUNE := 10,
+	FONT_RUNE_BOLD := 11,
+	FONT_RUNE_BOLD_BIG := 12,
+
+	FONT_DEFAULT := FONT_UO
+endenum
+
+enum class FONTCOLOR
+	COLOR_DEFAULT := COLOR_BLUE,
+
+	COLOR_BLACK := 1,
+	COLOR_RED := 38,
+	COLOR_GREEN := 68,
+	COLOR_BLUE := 90,
+	COLOR_MAUVE := 30,
+	COLOR_LAVENDER := 20,
+	COLOR_BROWN := 46,
+	COLOR_YELLOW := 53,
+	
+	COLOR_FIRE := 1160,
+	COLOR_COLD := 1151,
+	COLOR_POISON := 1271,
+	COLOR_ENERGY := 1274,
+
+	COLOR_ERROR := COLOR_RED,
+	COLOR_ALERT := COLOR_YELLOW
 endenum
