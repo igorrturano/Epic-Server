@@ -341,7 +341,7 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 																sessao.componenteSelecionado);
 	
 	var materiaisNecessariosInvertidos :=  materiaisNecessarios.keys();
-	materiaisNecessariosInvertidos.reverse();//Foi preciso inverter para ficar de acordo com a ordem na string da tabela.
+	//materiaisNecessariosInvertidos.reverse();//Foi preciso inverter para ficar de acordo com a ordem na string da tabela.
 
 	foreach materialNecessario in (materiaisNecessariosInvertidos)
 		
@@ -385,7 +385,7 @@ function MontaValorOpcaoComponente(chave,qtd,tipo,sessao)
 					nome := configRecursos[chave].name,
 					quantidadeNecessaria := qtd,
 					tipoMaterial := Lower(tipo),
-					isPrincipal := Lower(tipo) == Trim(Lower(sessao.componenteSelecionado.materialPrincipal))
+					isPrincipal := Lower(tipo) == Trim(Lower(sessao.componenteSelecionado.selecione.materialPrincipal))
 					};
 endfunction
 
@@ -468,8 +468,8 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3.5};
-		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3};
+		colCfg["pericia"] := struct{titulo := "Perícia", ordem := 3,largura := 2};
 		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 3};
 		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
 
@@ -561,10 +561,14 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 		var componente := struct;
 		componente.+nome :=  quantidadeLotePrefixo + configProfissao[chave].name;
-		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
+		componente.+pericia :=  StrReplace(configProfissao[chave].pericia,"_", " ");
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := encaixesConfig[configProfissao[chave].encaixe].Desc;
-		componente.+selecione := struct{isColunaBotao := true, objtype := chave, materiais := dicionarioMateriais};
+		componente.+selecione := struct{
+									isColunaBotao := true, 
+									objtype := chave, 
+									materiais := dicionarioMateriais, 
+									materialPrincipal := configProfissao[chave].principalMaterial};
 
 		componentes.append(componente);
 	endforeach
