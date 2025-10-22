@@ -90,15 +90,15 @@ exported function Attack(attacker, defender)
 				   .SetAttackerWeapon(attackInfo2.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON))
 				   .SetDefenderWeapon(attackInfo2.GetDefender().GetEquipBySlot(EQUIPSLOT::WEAPON))
 				   .SetHitChance(attackInfo.GetHitChance())
-				   .SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo2))
-				   .RollHitChance();
+				   .SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo2));
+		attackInfo2.RollHitChance();
 		
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo2.GetHitChance()}(-{attackInfo2.GetHitChancePenalty()})");
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo2.GetDiceRoll());
 
 		if (attackInfo2.Succeeded()) // No segundo hit só checa novamente as habilidades do defensor
 			DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
-			SkillChecks(attacker, defender, attacker.weapon, 1);
+		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetItemRef(), 1);
 
 			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::DEFENDER);
 
