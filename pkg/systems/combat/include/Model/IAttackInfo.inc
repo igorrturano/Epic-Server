@@ -16,10 +16,7 @@ class IAttackInfo()
 
 	uninit function SetMoment(this, moment);
 	uninit function SetAttacker(this, attacker);
-	uninit function SetAttackerWeapon(this, weapon);
 	uninit function SetDefender(this, defender);
-	uninit function SetDefenderWeapon(this, weapon);
-	uninit function SetDefenderArmor(this, armor);
 	uninit function SetHitChance(this, hitChance);
 	uninit function SetHitChancePenalty(this, penalty);
 	uninit function SetDamage(this, damage);
@@ -29,4 +26,6 @@ class IAttackInfo()
 	uninit function RollHitChance(this);
 	uninit function Succeeded(this);
 	uninit function ExecuteAbilitesOnMomentum(this, momentum);
+
+	uninit function ApplyDamage(this, damageObj);
 endclass
