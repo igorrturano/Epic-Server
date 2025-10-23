@@ -12,6 +12,7 @@ include ":traps:traps";
 //include "include/packets";
 include ":architect:architect";
 include ":crafting:/include/fabricacaoUtil";
+include "/include/packets";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -634,7 +635,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	if(!IsDestroco(item))
-		PrintTextPrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
+		DisplayDamageOnItem(item,danoCalculado.dano,quemDanificou);
 		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
 	endif
 
