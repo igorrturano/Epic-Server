@@ -211,3 +211,21 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return CInt(this._weight * 7.5);
 	endfunction
 endclass
+
+enum class WEAPON_CATEGORY
+	UNARMED := "Unarmed",
+
+	DAGGER := "Dagger",
+	SWORD := "Sword",
+	GREATSWORD := "GreatSword",
+	AXE := "Axe",
+	SPEAR := "Spear",
+	MACE := "Mace",
+	STAFF := "Staff",
+	THROWING := "Throwing",
+	POLEARM := "Polearm",
+
+	BOW := "Bow",
+	CROSSBOW := "Crossbow"
+
+endenum
