@@ -13,7 +13,9 @@ class EquipWrapper(IEquipWrapper)
 	var _prop;
 
 	var _name := "";
+	var _objType := 0x0;
 	var _graphic := 0;
+	var _color := 0;
 	var _weight := 0;
 	var _maxHP := 0;
 	var _material := "";
@@ -25,28 +27,26 @@ class EquipWrapper(IEquipWrapper)
 			this._template := item.getCfgElem();
 			this._itemRef := item;
 			this._prop := item.GetProp(PROPNAME) ?: error{"errortext" := "This item has no attributes Property!"};
+			this._objType := item.objtype;
+			this._graphic := this._template.graphic;
+			this._color := this._template.color;
 			
 			if (this._prop)
 				this._name := this._prop.Name;
 				this._weight := this._prop.Weight;
 				this._maxHP := this._prop.MaxHP;
-				this._graphic := this._prop.Graphic;
 			else
 				this._name := item.name;
 				this._weight := item.weight;
 				this._maxHP := item.maxHP;
-				this._graphic := item.graphic;
 			endif
-
-			this._material := this._template.Material ?: error{"errortext" := "The item have no Material!"};
 			
 		else // Caso seja apenas um template
 			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
 			this._itemRef := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
 
-			this._name := this._template.name;
-			this._desc := this._template.desc;
+			this._name := this._template.desc;
 			this._weight := this._template.weight;
 			this._maxHP := this._template.maxHP;
 			this._graphic := this._template.graphic;
@@ -62,7 +62,7 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function GetItemRef(this)
-		return this._itemRef ?: error{"errortext" := "This item is just a template!"};
+		return this._itemRef;
 	endfunction
 
 	function GetProp(this)
@@ -71,10 +71,6 @@ class EquipWrapper(IEquipWrapper)
 
 	function GetName(this)
 		return this._name;
-	endfunction
-
-	function GetDesc(this)
-		return this._desc;
 	endfunction
 
 	function GetGraphic(this)
@@ -105,12 +101,6 @@ class EquipWrapper(IEquipWrapper)
 	function _SetName(this, name)
 		if (this._itemRef == error) return this._itemRef; endif
 		this._name := name;
-		return this;
-	endfunction
-
-	function SetDesc(this, desc)
-		if (this._itemRef == error) return this._itemRef; endif
-		this._desc := desc;
 		return this;
 	endfunction
 
@@ -173,7 +163,7 @@ class EquipWrapper(IEquipWrapper)
 	uninit function _GetSTRRequired(this);
 endclass
 
-enum class EQUIPSLOT
+enum class EQUIP_SLOT
 	HEAD,
 	NECK,
 	BACK,
@@ -189,7 +179,7 @@ enum class EQUIPSLOT
 	ACCESSORY_2
 endenum
 
-enum class EQUIPLAYER
+enum class EQUIP_LAYER
 	NONE,
 	HAND1,
 	HAND2,
