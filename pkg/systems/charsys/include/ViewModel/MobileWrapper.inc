@@ -105,6 +105,15 @@ class MobileWrapper(IMobileWrapper)
 		return this._name;
 	endfunction
 
+	function GetPosition(this)
+		return struct{
+			x := this._mobRef.x,
+			y := this._mobRef.y,
+			z := this._mobRef.z,
+			realm := this._mobRef.realm
+		};
+	endfunction
+
 	function GetStr(this)
 		return this.GetStrBase() + this.GetStrMod();
 	endfunction
@@ -215,25 +224,25 @@ class MobileWrapper(IMobileWrapper)
 		return this._weight;
 	endfunction
 
-	function GetEquipBySlot(this, slotEnum) // Os enum estão em EquipWrapper::EQUIPSLOT
+	function GetEquipBySlot(this, slotEnum) // Os enum estão em EquipWrapper::EQUIP_SLOT
 		var equipsInSlot;
-		if (slotEnum == EQUIPSLOT::WEAPON)
+		if (slotEnum == EQUIP_SLOT::WEAPON)
 			return EquipWrapperWeapon(this._mobRef.weapon);
-		elseif (slotEnum == EQUIPSLOT::SHIELD)
+		elseif (slotEnum == EQUIP_SLOT::SHIELD)
 			return EquipWrapperArmor(this._mobRef.shield);
-		elseif (slotEnum == EQUIPSLOT::HEAD)
+		elseif (slotEnum == EQUIP_SLOT::HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Head");
-		elseif (slotEnum == EQUIPSLOT::NECK)
+		elseif (slotEnum == EQUIP_SLOT::NECK)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Neck");
-		elseif (slotEnum == EQUIPSLOT::BACK)
+		elseif (slotEnum == EQUIP_SLOT::BACK)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Back");
-		elseif (slotEnum == EQUIPSLOT::CHEST)
+		elseif (slotEnum == EQUIP_SLOT::CHEST)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Chest");
-		elseif (slotEnum == EQUIPSLOT::HANDS)
+		elseif (slotEnum == EQUIP_SLOT::HANDS)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Hands");
-		elseif (slotEnum == EQUIPSLOT::LEGS)
+		elseif (slotEnum == EQUIP_SLOT::LEGS)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Legs");
-		elseif (slotEnum == EQUIPSLOT::FEET)
+		elseif (slotEnum == EQUIP_SLOT::FEET)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Feet");
 		else
 			return error {"errortext" := "Wrong slot specified!"};
@@ -246,7 +255,7 @@ class MobileWrapper(IMobileWrapper)
 		return equipsInSlot;
 	endfunction
 
-	function GetEquipByLayer(this, layerEnum) // Os enum estão em EquipWrapper::EQUIPLAYER
+	function GetEquipByLayer(this, layerEnum) // Os enum estão em EquipWrapper::EQUIP_LAYER
 		return EquipWrapperArmor(GetEquipmentByLayer(this._mobRef, layerEnum));
 	endfunction
 
@@ -301,11 +310,11 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function IsNPC(this)
-		return this._mobRef.isA(POLCLASS_NPC);
+		return this._mobRef.npctemplate != false;
 	endfunction
 
 	function IsDead(this)
-		return this._mobRef.dead;
+		return this._mobRef.dead == true;
 	endfunction
 
 	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
