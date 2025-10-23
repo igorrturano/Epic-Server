@@ -635,7 +635,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	if(!IsDestroco(item))
-		DisplayDamageOnItem(item,danoCalculado.dano,quemDanificou);
+		DisplayDamage(item,danoCalculado.dano,quemDanificou);
 		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
 	endif
 
