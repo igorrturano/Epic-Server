@@ -51,8 +51,8 @@ exported function Attack(attacker, defender)
 	attacker := MobileWrapper(attacker);
 	defender := MobileWrapper(defender);
 	attackInfo := AttackInfo(attacker, defender);
-	attackInfo.SetAttackerWeapon(attacker.GetEquipBySlot(EQUIPSLOT::WEAPON))
-			  .SetDefenderWeapon(defender.GetEquipBySlot(EQUIPSLOT::WEAPON));
+	attackInfo.SetAttackerWeapon(attacker.GetEquipBySlot(EQUIP_SLOT::WEAPON))
+			  .SetDefenderWeapon(defender.GetEquipBySlot(EQUIP_SLOT::WEAPON));
 
 	if (!CanAttack(attackInfo))	return 1; endif
 
@@ -70,10 +70,10 @@ exported function Attack(attacker, defender)
 
 	if (attackInfo.Succeeded())
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
-		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetItemRef(), 1);
+		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(), 1);
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::BOTH);
 		ExecuteMasteryAbility(attackInfo);
-		EpicAttack(attackInfo, EQUIPLAYER::HAND1);
+		EpicAttack(attackInfo, EQUIP_LAYER::HAND1);
 	else
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
@@ -81,14 +81,14 @@ exported function Attack(attacker, defender)
 	endif
 
 	// Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-	if (attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetAttribute() == DUALWIELD && !attackInfo.GetDefender().IsDead())
+	if (attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetAttribute() == DUALWIELD && !attackInfo.GetDefender().IsDead())
 		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef(), OFFHAND_DELAY });
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> OffHand");
 
 		var attackInfo2 := AttackInfo(attacker, defender);
 		attackInfo2.SetDamageHand(DAMAGEHAND::OFFHAND)
-				   .SetAttackerWeapon(attackInfo2.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON))
-				   .SetDefenderWeapon(attackInfo2.GetDefender().GetEquipBySlot(EQUIPSLOT::WEAPON))
+				   .SetAttackerWeapon(attackInfo2.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON))
+				   .SetDefenderWeapon(attackInfo2.GetDefender().GetEquipBySlot(EQUIP_SLOT::WEAPON))
 				   .SetHitChance(attackInfo.GetHitChance())
 				   .SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo2));
 		attackInfo2.RollHitChance();
@@ -98,11 +98,11 @@ exported function Attack(attacker, defender)
 
 		if (attackInfo2.Succeeded()) // No segundo hit só checa novamente as habilidades do defensor
 			DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
-		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIPSLOT::WEAPON).GetItemRef(), 1);
+		SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(), 1);
 
 			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::DEFENDER);
 
-			EpicAttack(attackInfo, EQUIPLAYER::HAND2);
+			EpicAttack(attackInfo, EQUIP_LAYER::HAND2);
 		else
 			DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
 
@@ -177,7 +177,7 @@ function EpicAttack(attackInfo, weaponHand)
 	var armor := GetArmorToHit(attackInfo);
 	var dmg := CalculateRawDamage(attackInfo);
 
-	if (weaponHand == EQUIPLAYER::HAND1)
+	if (weaponHand == EQUIP_LAYER::HAND1)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{
 			attacker,
 			defender,
@@ -206,23 +206,25 @@ function AmmoCheckCombatHook(attackInfo)
 	const STONE_OBJTYPE := 20481;
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
 
-	if (!wpn_a_elem.ProjectileType)
+	if (!attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetTemplate().ProjectileType)
 		return 1;
 	endif
 
-	if (GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjType() in arcane_bows)
 		return 1;
 	endif
 
-	if (attacker.npctemplate)
-		ArqueiroNPC(attacker, defender);
+	if (attackInfo.GetAttacker().IsNPC())
+		ArqueiroNPC(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef());
 		return 1;
 	endif
 
 	// Get saved ammo reference
-	var ammo := GetObjProperty(attacker.weapon, "ammo");
+	var ammo := GetObjProperty(attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(), "ammo");
 	if (!ammo)
-		SendSysMessage(attacker, "Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR::COLOR_ERROR)
+			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
+			.SendSys(attackInfo.GetAttacker().GetMobRef());
 		return 0;
 	endif
 	var obj := SystemFindObjectBySerial(ammo);
@@ -231,10 +233,12 @@ function AmmoCheckCombatHook(attackInfo)
 
 	if (needs_aljava)
 		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::CAPE);
+		// var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
 
 		if (!(aljava.objtype in aljavas))
-			aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::WAIST);
+			// aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
 		endif
 
 		// Check if ammo is in aljava
@@ -256,35 +260,55 @@ function AmmoCheckCombatHook(attackInfo)
 		var cfg := ReadConfigFile(":woodworking:itemdesc");
 		var elem := FindConfigElem(cfg, GetObjType(ammo));
 		var ammo_color := elem.color;
-		PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
+		PlayMovingEffectXYZHued(
+			attackInfo.GetAttacker().GetMobRef(),
+			attackInfo.GetDefender().GetMobRef(),
+			attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetTemplate().ProjectileAnim,
+			10, 10, 0, ammo_color
+		);
 		return 1;
 	endif
 
 	return 0;
 endfunction
 
-function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
-	if (attacker.npctemplate)
-		ThrowerNPC(attacker, defender);
+function playSoundAndEffectForThroiwingWeapons(attackInfo)
+	if (attackInfo.GetAttacker().IsNPC())
+		ThrowerNPC(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef());
 		return;
 	endif
 
-	if (!wpn_a_elem.Throwable)
+	if (attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetCategory() != WEAPON_CATEGORY::THROWING)
 		return;
 	endif
 
-	if (!AP_ConsumeVital(attacker, STAMINA, 10))
-		SendSysMessageEx(attacker, "Você está exausto!");
+	if (!AP_ConsumeVital(attackInfo.GetAttacker().GetMobRef(), STAMINA, 10))
+		Message("Você está exausto!", FONTCOLOR::COLOR_ERROR)
+			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
+			.SendSys(attackInfo.GetAttacker().GetMobRef());
 		return;
 	endif
 
-	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, wpn_a_elem.color);
+	PlayMovingEffectXYZHued(
+		attackInfo.GetAttacker().GetMobRef(),
+		attackInfo.GetDefender().GetMobRef(),
+		attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetTemplate().ProjectileAnim,
+		10, 10, 0,
+		attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetColor()
+	);
 
-	PlayAttackAnimation(attacker); // 0x9
+	PlayAttackAnimation(attackInfo.GetAttacker().GetMobRef()); // 0x9
 	// PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
 
-	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm,
-					  MOVEOBJECT_FORCELOCATION);
+	var defenderPos := attackInfo.GetDefender().GetPosition();
+	MoveObjectToLocation(
+		attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(),
+		defenderPos.x,
+		defenderPos.y,
+		defenderPos.z,
+		defenderPos.realm,
+		MOVEOBJECT_FORCELOCATION
+	);
 
 endfunction
 
