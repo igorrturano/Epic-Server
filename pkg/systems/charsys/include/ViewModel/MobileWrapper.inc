@@ -317,6 +317,10 @@ class MobileWrapper(IMobileWrapper)
 		return this._mobRef.dead == true;
 	endfunction
 
+	function IsWarMode(this)
+		return this._mobRef.warmode == true;
+	endfunction
+
 	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
 		if (isPrivate)
 			PlaySoundEffectPrivate(this._mobRef, soundId, soundOrigin ?: this._mobRef);
@@ -340,5 +344,13 @@ class MobileWrapper(IMobileWrapper)
 		this._gold := 0;
 		this._weight := 0;
 		this._skills := 0;
+	endfunction
+
+	function Equals(this, byRef otherMobileWrapper)
+		if (!(otherMobileWrapper is @MobileWrapper))
+			return error{ "errortext" := "The param must be a MobileWrapper!" };
+		endif
+
+		return this._mobRef == otherMobileWrapper.GetMobRef();
 	endfunction
 endclass
