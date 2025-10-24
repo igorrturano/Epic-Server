@@ -131,7 +131,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount,byref tier)
 	var isIndispensavel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
 
 	if(tier > 0)
-		finalObjtype := GeraItemComplexo(item_entry.Objtype, tier);
+		finalObjtype := GeraDescriptorComplexo(item_entry.Objtype, tier);
 	else
 		finalObjtype := item_entry.Objtype;
 	endif
@@ -148,6 +148,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount,byref tier)
 
 	foreach obj in (created)
 
+		obj.hp := obj.maxhp;
 		if (!isIndispensavel || isIndestrutivel)
 			var objRef := SystemFindObjectBySerial(obj.Serial);
 			SetObjProperty(objRef, PROPNAME_INDESTRUTIVEL, isIndestrutivel);

@@ -135,7 +135,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 	var finalObjtype;
 
 	if(tier > 0)
-		finalObjtype := GeraItemComplexo(item_entry.Objtype, tier);
+		finalObjtype := GeraDescriptorComplexo(item_entry.Objtype, tier);
 	else
 		finalObjtype := item_entry.Objtype;
 	endif
@@ -159,6 +159,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 
 		if (!isIndispensavel || isIndestrutivel)
 			var objRef := SystemFindObjectBySerial(obj.Serial);
+			obj.hp := obj.maxhp;
 			if (isIndispensavel || isIndestrutivel)
 				var objRef := SystemFindObjectBySerial(obj.Serial);
 				SetObjProperty(objRef, PROPNAME_INDESTRUTIVEL, isIndestrutivel);
