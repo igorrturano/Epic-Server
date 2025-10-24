@@ -724,7 +724,7 @@ function pathOfWisdom(who, culture_pic)
 			foreach spell in chosenSpells
 				var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
 				spellinfo.id := spell.id;
-				spellinfo.school := spell.School;
+				spellinfo.school := spell.school;
 				SetObjProperty(scroll, "spellinfo", spellinfo);
 			endforeach
 			break;
