@@ -338,7 +338,7 @@ endfunction
 
 function FailTransformation(who)
 	who.frozen := 0;
-	PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 	PlaySoundEffect(who, SFX_SPELL_FAIL);
 	return 1;
 endfunction

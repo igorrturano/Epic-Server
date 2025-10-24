@@ -46,7 +46,7 @@ program SpellScript(params)
 	fruit.usescript := ":tn:fruta_curativa";
 
 	// Visual effects
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, who, SFX_SPELL_HEAL);
 
 	SendSysMessageEx(who, "Voce criou uma fruta curativa magica.", SSM_INFO);

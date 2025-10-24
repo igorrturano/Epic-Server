@@ -15,7 +15,7 @@ program soulstone(who, item)
 	endif
 
 	PlaySoundEffect(who, 898);
-	PlayObjectCenteredEffect(who, GFX_RED_SPARKLES, 7, 7);
+	PlayObjectCenteredEffect(who, FX_RED_SPARKLES, 7, 7);
 
 	DestroyItem(item);
 

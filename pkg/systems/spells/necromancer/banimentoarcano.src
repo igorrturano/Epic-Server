@@ -44,7 +44,7 @@ program SpellScript(params)
 	var location := { targ.x, targ.y, targ.z };
 
 	PlayMovingEffectXYZEx(targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm,
-					   GFX_LARGE_FIREBALL, 1, 10, 2320);
+					   FX_LARGE_FIREBALL, 1, 10, 2320);
 	Corromper(who, 27, targ);
 
 	MoveObjectToLocation(targ, 10, 10, 10, targ.realm, MOVEOBJECT_FORCELOCATION);

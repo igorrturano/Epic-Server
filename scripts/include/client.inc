@@ -2,21 +2,9 @@
 ////////////////////////////////////////////////////////////////////////////
 //  CLIENT.INC - defines client releated constants.
 //
-//  This include file is designed to hold all the client lowlevel constants.
-//  Not all constants might be usable as of now, but in the future, they
-//  might be.
+//  Agora isso aqui é do Epic! Shard!!!!!
 //
-//  Author: Ignatius 1999/01/20
-//
-//  Recent Modifications
-//      1999/01/25 Ignatius added animations/actions/sounds.
-//      1999/01/26 Ignatius moved skillids/constants into this file and
-//                 added a lot of more sounds.
-//      1999/01/27 Ignatius found out that I got the sounds all wrong
-//                 it seems, fixed up a lot of things there. Started
-//                 to map out the T2A sounds. Added some creature IDs.
-//      2017/06/25 Yukiko added skill ids for ToL compliance.
-//		2025/10/24 Adicionado customização para o Epic! Shard.
+//  Porque nós queremos, e nosso client é custom!!!
 //
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -772,69 +760,86 @@ const ANIM_EAT					:= 0x0022; // Eat.
 // Graphicaleffects (itemIDs) //
 ////////////////////////////////
 // * general *
-const FX_POISON_GAS				:= 0x113A;
-const FX_MAGICAL_SPARKLES_EW	:= 0x1153; //
-const FX_MAGICAL_SPARKLES_NS	:= 0x1159; //
-const FX_SPLASH					:= 0x352d; //
-const FX_EXPLODE_1				:= 0x36ca; //
-const FX_EXPLODE_2				:= 0x36bd; //
-const FX_EXPLODE_3				:= 0x36b0; //
-const FX_EXPLODE_4				:= 0x36CB; //
-const FX_FIREBALL				:= 0x36d4; //
-const FX_MAGIC_ARROW			:= 0x36e4; //
-const FX_FIRE_BOLT				:= 0x36f4; // Firesnake. (pagan?)
-const FX_EXPLODE_BALL			:= 0x36fe; // Not used.
-const FX_FLAMESTRIKE			:= 0x3709; //
-const FX_SMOKE					:= 0x3728;
-const FX_TELE_VANISH			:= 0x372a; // Teleport vanish.
-const FX_SPELL_FAIL				:= 0x3735; //
-const FX_BLESS_EFFECT			:= 0x373a; //
-const FX_CURSE_EFFECT			:= 0x374a; //
-const FX_SPARK_EFFECT			:= 0x375a; //
-const FX_HEAL_EFFECT			:= 0x376a; //
-const FX_MARK_EFFECT			:= 0x3779;
-const FX_BLUEMOONSTART			:= 0x3789; // Deathvortex?
-const FX_ENERGY_BOLT			:= 0x379f; //
-const FX_BLADES_EMERGE			:= 0x37a0; // Not used.
-const FX_GLOW					:= 0x37b9; // Not used.
-const FX_GLOW_SPIKE				:= 0x37c3; // Not used.
-const FX_DEATH_FUNNEL			:= 0x37cc; //
-const FX_BLADES					:= 0x37eb; //
-const FX_STATIC					:= 0x3818; // Not used. (pink static)
-const FX_POISON_F_EW			:= 0x3914; // Poison field.
-const FX_POISON_F_NS			:= 0x3920; // Poison field.
-const FX_ENERGY_F_EW			:= 0x3947; // Energy field.
-const FX_ENERGY_F_NS			:= 0x3956; // Energy field.
-const FX_PARA_F_EW				:= 0x3967; // Paralyze field.
-const FX_PARA_F_NS				:= 0x3979; // Paralyze field.
-const FX_FIRE_F_EW				:= 0x398c; // Fire field.
-const FX_FIRE_F_NS				:= 0x3996; // Fire field.
-const FX_SLEEP_EFFECT			:= 0x3C1F; //Sleeping effect
-const FX_BIRDS_EFFECT			:= 0x3C27; //Birds moving around effect
-const FX_HEALING_EFFECT			:= 0x3C2B; //Healing effect
-const FX_PWINGS_EFFECT			:= 0x3C3B; //Phoenix wing effect
-const FX_PUFF_SMOKE				:= 0x9DAC;
-const FX_HEARTS					:= 0x4AA4;
+enum EFFECTS
+	FX_POISON_GAS			:= 0x113A,
+	FX_MAGICAL_SPARKLES_EW	:= 0x1153, //
+	FX_MAGICAL_SPARKLES_NS	:= 0x1159, //
+	FX_SPLASH				:= 0x352d, //
+	FX_EXPLODE_1			:= 0x36ca, //
+	FX_EXPLODE_2			:= 0x36bd, //
+	FX_EXPLODE_3			:= 0x36b0, //
+	FX_EXPLODE_4			:= 0x36CB, //
+	FX_FIREBALL				:= 0x36d4, //
+	FX_MAGIC_ARROW			:= 0x36e4, //
+	FX_FIRE_BOLT			:= 0x36f4, // Firesnake. (pagan?)
+	FX_EXPLODE_BALL			:= 0x36fe, // Not used.
+	FX_FLAMESTRIKE			:= 0x3709, //
+	FX_SMOKE				:= 0x3728,
+	FX_TELE_VANISH			:= 0x372a, // Teleport vanish.
+	FX_SPELL_FAIL			:= 0x3735, //
+	FX_BLESS_EFFECT			:= 0x373a, //
+	FX_CURSE_EFFECT			:= 0x374a, //
+	FX_SPARK_EFFECT			:= 0x375a, //
+	FX_HEAL_EFFECT			:= 0x376a, //
+	FX_MARK_EFFECT			:= 0x3779,
+	FX_BLUEMOONSTART		:= 0x3789, // Deathvortex?
+	FX_ENERGY_BOLT			:= 0x379f, //
+	FX_BLADES_EMERGE		:= 0x37a0, // Not used.
+	FX_GLOW					:= 0x37b9, // Not used.
+	FX_GLOW_SPIKE			:= 0x37c3, // Not used.
+	FX_DEATH_FUNNEL			:= 0x37cc, //
+	FX_BLADES				:= 0x37eb, //
+	FX_STATIC				:= 0x3818, // Not used. (pink static)
+	FX_POISON_F_EW			:= 0x3914, // Poison field.
+	FX_POISON_F_NS			:= 0x3920, // Poison field.
+	FX_ENERGY_F_EW			:= 0x3947, // Energy field.
+	FX_ENERGY_F_NS			:= 0x3956, // Energy field.
+	FX_PARA_F_EW			:= 0x3967, // Paralyze field.
+	FX_PARA_F_NS			:= 0x3979, // Paralyze field.
+	FX_FIRE_F_EW			:= 0x398c, // Fire field.
+	FX_FIRE_F_NS			:= 0x3996, // Fire field.
+	FX_SLEEP_EFFECT			:= 0x3C1F, //Sleeping effect
+	FX_BIRDS_EFFECT			:= 0x3C27, //Birds moving around effect
+	FX_HEALING_EFFECT		:= 0x3C2B, //Healing effect
+	FX_PWINGS_EFFECT		:= 0x3C3B, //Phoenix wing effect
+	FX_PUFF_SMOKE			:= 0x9DAC,
+	FX_HEARTS				:= 0x4AA4,
 
-const GFX_DEATH_VORTEX_BIRTH	:= 0x3789;
-const GFX_DEATH_VORTEX			:= 0x37CC;
-const GFX_FIELD_OF_BLADES		:= 0x37A0;
-//const GFX_GLOW				:= 0x37B9;
-const GFX_BLACK_GLOW			:= 0x37C3;
-//const GFX_SMOKE				:= 0x3728;
-const GFX_FIZZLE				:= 0x3735;
+	FX_DEATH_VORTEX_BIRTH	:= 0x3789,
+	FX_DEATH_VORTEX			:= 0x37CC,
+	FX_FIELD_OF_BLADES		:= 0x37A0,
+	// FX_GLOW				:= 0x37B9,
+	FX_BLACK_GLOW			:= 0x37C3,
+	// FX_SMOKE				:= 0x3728,
+	FX_FIZZLE				:= 0x3735,
 
-const GFX_POISON_GAS			:= 0x113A;
-const GFX_POISON_FIELD_EW		:= 0x3915;
-const GFX_POISON_FIELD_NS		:= 0x3920;
-const GFX_ENERGY_FIELD_EW		:= 0x3946;
-const GFX_ENERGY_FIELD_NS		:= 0x3956;
-const GFX_PARALYSIS_FIELD_EW	:= 0x3967;
-const GFX_PARALYSIS_FIELD_NS	:= 0x3979;
-const GFX_FIRE_FIELD_EW			:= 0x398C;
-const GFX_FIRE_FIELD_NS			:= 0x3996;
-const GFX_ENERGY				:= 0x3818;
+	FX_POISON_FIELD_EW		:= 0x3915,
+	FX_POISON_FIELD_NS		:= 0x3920,
+	FX_ENERGY_FIELD_EW		:= 0x3946,
+	FX_ENERGY_FIELD_NS		:= 0x3956,
+	FX_PARALYSIS_FIELD_EW	:= 0x3967,
+	FX_PARALYSIS_FIELD_NS	:= 0x3979,
+	FX_FIRE_FIELD_EW		:= 0x398C,
+	FX_FIRE_FIELD_NS		:= 0x3996,
+	FX_ENERGY				:= 0x3818,
 
+	FX_MAGICAL_SPARKLES_EW	:= 0x1153,
+	FX_MAGICAL_SPARKLES_NS	:= 0x1159,
+	FX_BLUE_SPARKLES		:= 0x373A,
+	FX_RED_SPARKLES			:= 0x374A,
+	FX_BLUE_SPARKLE_SWIRL	:= 0x375A,
+	FX_BLUE_SPARKLE_BORDER	:= 0x376A,
+	FX_BLUE_SPARKLE_GROUND	:= 0x3779,
+
+	FX_SMALL_FIREBALL		:= 0x36E4,
+	FX_LARGE_FIREBALL		:= 0x36D4,
+	FX_WAVY_FIREBALL		:= 0x36F4,
+	FX_EXPLOSION_BALL		:= 0x36FE,
+	FX_FIRE_COLUMN			:= 0x3709,
+	FX_EXPLODE_1			:= 0x36CB,
+	FX_EXPLODE_2			:= 0x36BD,
+	FX_EXPLODE_3			:= 0x36B0
+endenum
 
 
 ////
@@ -1044,14 +1049,16 @@ const CID_GM					:= 0x3db;
 ////
 // Directions
 ///
-const DIR_N				:= 0x00; // North.
-const DIR_NE			:= 0x01; // Northeast.
-const DIR_E				:= 0x02; // East.
-const DIR_SE			:= 0x03; // Southeast.
-const DIR_S				:= 0x04; // South.
-const DIR_SW			:= 0x05; // Southwest.
-const DIR_W				:= 0x06; // West.
-const DIR_NW			:= 0x07; // Northwest.
+enum DIRECTIONS
+	DIR_N,	// North.
+	DIR_NE,	// Northeast.
+	DIR_E,	// East.
+	DIR_SE,	// Southeast.
+	DIR_S,	// South.
+	DIR_SW,	// Southwest.
+	DIR_W,	// West.
+	DIR_NW	// Northwest.
+endenum
 
 ///////////////////////////////////////////
 // Colors (For more color see in Fiddle) //
@@ -1103,58 +1110,54 @@ endenum
 ////
 // SPEECH_TYPES
 ////
-const SPEECH_REGULAR	:= 0x0;
-const SPEECH_BROADCAST	:= 0x1;
-const SPEECH_EMOTE		:= 0x2;
-const SPEECH_LABEL		:= 0x6;
-const SPEECH_EMPHASIS	:= 0x7;
-const SPEECH_WHISPER	:= 0x8;
-const SPEECH_YELL		:= 0x9;
-const SPEECH_SPELL		:= 0xA;
+enum SPEECH_TYPES
+	SPEECH_TYPE_REGULAR,	// Regular speech.
+	SPEECH_TYPE_BROADCAST,	// Broadcast speech.
+	SPEECH_TYPE_EMOTE,		// Emote speech.
+	SPEECH_TYPE_LABEL,		// Label speech.
+	SPEECH_TYPE_EMPHASIS,	// Emphasis speech.
+	SPEECH_TYPE_WHISPER,	// Whisper speech.
+	SPEECH_TYPE_YELL,		// Yell speech.
+	SPEECH_TYPE_SPELL		// Spell speech.
+endenum
 
 /////////////////
 // Fonts ASCII //
 /////////////////
 enum FONT_ASCII
-	FONT_MAX			:=  0x09,	// Highest font.
-	FONT_MIN			:=  0x00,	// Lowest font.
+	FONT_BOLD,				// Bold text.
+	FONT_SHADOW,			// Text with shadow.
+	FONT_BOLD_SHAD,			// Bold text with shadow.
+	FONT_NORMAL,			// Normal (default).
+	FONT_GOTHIC,			// Gothic.
+	FONT_ITALIC,			// Italic
+	FONT_SMALL_DARK,		// Small dark letters.
+	FONT_COLOR,				// Colorful font.
+	FONT_RUNE,				// Rune font (only capitals).
+	FONT_SMALL_LIGHT,		// Small light letters.
 
-	FONT_BOLD			:=  0x00,	// Bold text.
-	FONT_SHADOW			:=  0x01,	// Text with shadow.
-	FONT_BOLD_SHAD		:=  0x02,	// Bold text with shadow.
-	FONT_NORMAL			:=  0x03,	// Normal (default).
-	FONT_GOTHIC			:=  0x04,	// Gothic.
-	FONT_ITALIC			:=  0x05,	// Italic
-	FONT_SMALL_DARK		:=  0x06,	// Small dark letters.
-	FONT_COLOR			:=  0x07,	// Colorful font.
-	FONT_RUNE			:=  0x08,	// Rune font (only capitals).
-	FONT_SMALL_LIGHT	:=  0x09,	// Small light letters.
-
-	FONT_DEFAULT		:= FONT_NORMAL
+	FONT_MIN		:= 0,	// Lowest font.
+	FONT_MAX		:= 9,	// Highest font.
+	FONT_DEFAULT	:= FONT_NORMAL
 endenum
 
 ///////////////////
 // Fonts UNICODE //
 ///////////////////
 enum FONT_UNICODE
-	FONT_UNICODE_UO := 0x0,
-
-	FONT_UNICODE_ARIAL := 0x2,
-	FONT_UNICODE_ARIAL_BOLD := 0x1,
-	
-	FONT_UNICODE_FIXEDSYS := 0x3,
-	FONT_UNICODE_FIXEDSYS_BIG := 0x4,
-
-	FONT_UNICODE_THIN := 0x5,
-	FONT_UNICODE_THIN_BIG := 0x6,
-	
-	FONT_UNICODE_SYMBOLS := 0x7,
-	FONT_UNICODE_SYMBOLS_BOLD := 0x8,
-	FONT_UNICODE_SYMBOLS_BOLD_BIG := 0x9,
-
-	FONT_UNICODE_RUNE := 0xA,
-	FONT_UNICODE_RUNE_BOLD := 0xB,
-	FONT_UNICODE_RUNE_BOLD_BIG := 0xC,
+	FONT_UNICODE_UO,
+	FONT_UNICODE_ARIAL_BOLD,
+	FONT_UNICODE_ARIAL,
+	FONT_UNICODE_FIXEDSYS,
+	FONT_UNICODE_FIXEDSYS_BIG,
+	FONT_UNICODE_THIN,
+	FONT_UNICODE_THIN_BIG,
+	FONT_UNICODE_RUNE,
+	FONT_UNICODE_RUNE_BOLD,
+	FONT_UNICODE_RUNE_BOLD_BIG,
+	FONT_UNICODE_RUNE_WITHNUMBER,
+	FONT_UNICODE_RUNE_WITHNUMBER_BOLD,
+	FONT_UNICODE_RUNE_WITHNUMBER_BOLD_BIG2,
 
 	FONT_UNICODE_DEFAULT := FONT_UNICODE_UO
 endenum
@@ -1196,65 +1199,67 @@ const MESSAGE_COLOR_MESSAGE	:= 1320;
 ////
 // SkillIDs
 ///
-const SKILLID_ALCHEMY					:= 0;
-const SKILLID_ANATOMY					:= 1;
-const SKILLID_ANIMALLORE				:= 2;
-const SKILLID_ITEM_IDENTIFICATION		:= 3;
-const SKILLID_ARMSLORE					:= 4;
-const SKILLID_PARRYING					:= 5;
-const SKILLID_BEGGING					:= 6;
-const SKILLID_BLACKSMITHY				:= 7;
-const SKILLID_BOWCRAFT					:= 8;
-const SKILLID_PEACEMAKING				:= 9;
-const SKILLID_CAMPING					:= 10;
-const SKILLID_CARPENTRY					:= 11;
-const SKILLID_CARTOGRAPHY				:= 12;
-const SKILLID_COOKING					:= 13;
-const SKILLID_DETECTING_HIDDEN			:= 14;
-const SKILLID_DISCORDANCE				:= 15;
-const SKILLID_EVALUATING_INTELLIGENCE	:= 16;
-const SKILLID_HEALING					:= 17;
-const SKILLID_FISHING					:= 18;
-const SKILLID_FORENSIC_EVALUATION		:= 19;
-const SKILLID_HERDING					:= 20;
-const SKILLID_HIDING					:= 21;
-const SKILLID_PROVOCATION				:= 22;
-const SKILLID_INSCRIPTION				:= 23;
-const SKILLID_LOCKPICKING				:= 24;
-const SKILLID_MAGERY					:= 25;
-const SKILLID_RESISTING_SPELLS			:= 26;
-const SKILLID_TACTICS					:= 27;
-const SKILLID_SNOOPING					:= 28;
-const SKILLID_MUSICIANSHIP				:= 29;
-const SKILLID_POISONING					:= 30;
-const SKILLID_ARCHERY					:= 31;
-const SKILLID_SPIRITSPEAK				:= 32;
-const SKILLID_STEALING					:= 33;
-const SKILLID_TAILORING					:= 34;
-const SKILLID_TAMING					:= 35;
-const SKILLID_TASTE_IDENTIFICATION		:= 36;
-const SKILLID_TINKERING					:= 37;
-const SKILLID_TRACKING					:= 38;
-const SKILLID_VETERINARY				:= 39;
-const SKILLID_SWORDSMANSHIP				:= 40;
-const SKILLID_MACEFIGHTING				:= 41;
-const SKILLID_FENCING					:= 42;
-const SKILLID_WRESTLING					:= 43;
-const SKILLID_LUMBERJACKING				:= 44;
-const SKILLID_MINING					:= 45;
-const SKILLID_MEDITATION				:= 46;
-const SKILLID_STEALTH					:= 47;
-const SKILLID_REMOVETRAP				:= 48;
-const SKILLID_NECROMANCY				:= 49;
-const SKILLID_FOCUS						:= 50;
-const SKILLID_CHIVALRY					:= 51;
-const SKILLID_BUSHIDO					:= 52;
-const SKILLID_NINJITSU					:= 53;
-const SKILLID_SPELLWEAVING				:= 54;
-const SKILLID_MYSTICISM					:= 55;
-const SKILLID_IMBUING					:= 56;
-const SKILLID_THROWING					:= 57;
-const SKILLID__HIGHEST					:= 57;
+enum SKILLIDS
+	SKILLID_ALCHEMY,
+	SKILLID_ANATOMY,
+	SKILLID_ANIMALLORE,
+	SKILLID_ITEM_IDENTIFICATION,
+	SKILLID_ARMSLORE,
+	SKILLID_PARRYING,
+	SKILLID_BEGGING,
+	SKILLID_BLACKSMITHY,
+	SKILLID_BOWCRAFT,
+	SKILLID_PEACEMAKING,
+	SKILLID_CAMPING,
+	SKILLID_CARPENTRY,
+	SKILLID_CARTOGRAPHY,
+	SKILLID_COOKING,
+	SKILLID_DETECTING_HIDDEN,
+	SKILLID_DISCORDANCE,
+	SKILLID_EVALUATING_INTELLIGENCE,
+	SKILLID_HEALING,
+	SKILLID_FISHING,
+	SKILLID_FORENSIC_EVALUATION,
+	SKILLID_HERDING,
+	SKILLID_HIDING,
+	SKILLID_PROVOCATION,
+	SKILLID_INSCRIPTION,
+	SKILLID_LOCKPICKING,
+	SKILLID_MAGERY,
+	SKILLID_RESISTING_SPELLS,
+	SKILLID_TACTICS,
+	SKILLID_SNOOPING,
+	SKILLID_MUSICIANSHIP,
+	SKILLID_POISONING,
+	SKILLID_ARCHERY,
+	SKILLID_SPIRITSPEAK,
+	SKILLID_STEALING,
+	SKILLID_TAILORING,
+	SKILLID_TAMING,
+	SKILLID_TASTE_IDENTIFICATION,
+	SKILLID_TINKERING,
+	SKILLID_TRACKING,
+	SKILLID_VETERINARY,
+	SKILLID_SWORDSMANSHIP,
+	SKILLID_MACEFIGHTING,
+	SKILLID_FENCING,
+	SKILLID_WRESTLING,
+	SKILLID_LUMBERJACKING,
+	SKILLID_MINING,
+	SKILLID_MEDITATION,
+	SKILLID_STEALTH,
+	SKILLID_REMOVETRAP,
+	SKILLID_NECROMANCY,
+	SKILLID_FOCUS,
+	SKILLID_CHIVALRY,
+	SKILLID_BUSHIDO,
+	SKILLID_NINJITSU,
+	SKILLID_SPELLWEAVING,
+	SKILLID_MYSTICISM,
+	SKILLID_IMBUING,
+	SKILLID_THROWING,
+	SKILLID__HIGHEST := SKILLID_THROWING // Sempre alterar para o último antes desse, para informar o maior valor
+endenum
 
 //////////////////////////////////////
 // Realm constants                  //
@@ -1265,30 +1270,3 @@ const ILSHENAR_REALM            := "ilshenar";
 const MALAS_REALM               := "malas";
 const TOKUNO_REALM              := "tokuno";
 const TERMUR_REALM              := "termur";
-
-/////////////////////////////////////////////
-// Added from 098 Distro for compatibility
-// with pkgs added from it. There will be
-// duplication of values.
-////////////////////////////////////////////
-const	GFX_MAGICAL_SPARKLES_EW	:= 0x1153;
-const	GFX_MAGICAL_SPARKLES_NS	:= 0x1159;
-const	GFX_BLUE_SPARKLES	:= 0x373A;
-const	GFX_RED_SPARKLES	:= 0x374A;
-const	GFX_BLUE_SPARKLE_SWIRL	:= 0x375A;
-const	GFX_BLUE_SPARKLE_BORDER	:= 0x376A;
-const	GFX_BLUE_SPARKLE_GROUND	:= 0x3779;
-
-
-
-////
-//GRAPHIC_FIRE
-////
-const	GFX_SMALL_FIREBALL	:= 0x36E4;
-const	GFX_LARGE_FIREBALL	:= 0x36D4;
-const	GFX_WAVY_FIREBALL	:= 0x36F4;
-const	GFX_EXPLOSION_BALL	:= 0x36FE;
-const	GFX_FIRE_COLUMN		:= 0x3709;
-const	GFX_EXPLODE_1		:= 0x36CB;
-const	GFX_EXPLODE_2		:= 0x36BD;
-const	GFX_EXPLODE_3		:= 0x36B0;

@@ -63,7 +63,7 @@ program spell_fireball(params)
 
 	Set_Critical(0);
 
-	PlayMovingEffect(who, targ, GFX_LARGE_FIREBALL, 10, 10, 1);
+	PlayMovingEffect(who, targ, FX_LARGE_FIREBALL, 10, 10, 1);
 	PlaySoundEffect(targ, 0x208);
 
 	var allMobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, range, targ.realm);

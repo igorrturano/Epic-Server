@@ -36,7 +36,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	PlaySoundEffect(mobile, SFX_BLESS);
-	PlayObjectCenteredEffectEx(mobile, GFX_BLUE_SPARKLE_BORDER, 7, 16, 13);
+	PlayObjectCenteredEffectEx(mobile, FX_BLUE_SPARKLE_BORDER, 7, 16, 13);
 
 	// SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
 

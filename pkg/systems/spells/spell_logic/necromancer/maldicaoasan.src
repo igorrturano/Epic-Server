@@ -74,8 +74,8 @@ program SpellScript(params)
 		endif
 
 		PerformAction(who, ANIM_CAST_AREA);
-		PlayObjectCenteredEffect(who, GFX_RED_SPARKLES, 7, 7);
-		PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+		PlayObjectCenteredEffect(who, FX_RED_SPARKLES, 7, 7);
+		PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 		time := time + 1;
 		sleep(1);
 	endwhile

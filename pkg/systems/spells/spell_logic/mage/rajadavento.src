@@ -27,7 +27,7 @@ program SpellScript(params)
 	var newxloc := (targ.x - kickbackx);
 	var newyloc := (targ.y + kickbacky);
 	PlaySoundEffect(targ, SFX_108);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(targ, SFX_109);
 
 	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, THEOLOGY))*2;

@@ -31,7 +31,7 @@ program SpellScript(params)
 	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
 
 	PlayMovingEffectXYZEx(targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm,
-					   GFX_LARGE_FIREBALL, 1, 10, 2320);
+					   FX_LARGE_FIREBALL, 1, 10, 2320);
 
 	MoveObjectToLocation(targ, 10, 10, 10, targ.realm, MOVEOBJECT_FORCELOCATION);
 
