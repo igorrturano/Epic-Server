@@ -5,6 +5,7 @@ include "IMessage";
 include "TranslatableText";
 include ":message:Translator";
 include "include/say";
+include "include/client";
 
 class Message(IMessage)
 	var _asyncInfo := struct{
@@ -13,12 +14,12 @@ class Message(IMessage)
 	}; 
 	var _messages := array{ struct{ // Array de structs com as informações de cada mensagem: string, cor, fonte, lingua
 		text := TranslatableText(),
-		color := _DEFAULT_TEXT_COLOR,
-		font := _DEFAULT_TEXT_FONT
+		color := FONTCOLOR_BLUE,
+		font := FONT_UNICODE_DEFAULT
 	}};
 	var _translator := Translator(); // Objeto tradutor
 
-	function Message(this, text, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._asyncInfo := struct{
 			sending := false,
 			translation := false
@@ -34,7 +35,7 @@ class Message(IMessage)
 		return this;
 	endfunction
 
-	function AddMessage(this, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+	function AddMessage(this, text, color := FONTCOLOR_BLUE, font := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._messages.append(struct{
 			text := TranslatableText(text, langSource, langTarget),
 			color := color,
@@ -225,48 +226,4 @@ endenum
 enum class MSG_MAXSIZE
 	SYSMSG := 200,
 	PRINTTEXT := 60
-endenum
-
-enum class FONT
-	FONT_UO := 0,
-
-	FONT_ARIAL := 2,
-	FONT_ARIAL_BOLD := 1,
-	
-	FONT_FIXEDSYS := 3,
-	FONT_FIXEDSYS_BIG := 4,
-
-	FONT_THIN := 5,
-	FONT_THIN_BIG := 6,
-	
-	FONT_SYMBOLS := 7,
-	FONT_SYMBOLS_BOLD := 8,
-	FONT_SYMBOLS_BOLD_BIG := 9,
-
-	FONT_RUNE := 10,
-	FONT_RUNE_BOLD := 11,
-	FONT_RUNE_BOLD_BIG := 12,
-
-	FONT_DEFAULT := FONT_UO
-endenum
-
-enum class FONTCOLOR
-	COLOR_DEFAULT := COLOR_BLUE,
-
-	COLOR_BLACK := 1,
-	COLOR_RED := 38,
-	COLOR_GREEN := 68,
-	COLOR_BLUE := 90,
-	COLOR_MAUVE := 30,
-	COLOR_LAVENDER := 20,
-	COLOR_BROWN := 46,
-	COLOR_YELLOW := 53,
-	
-	COLOR_FIRE := 1160,
-	COLOR_COLD := 1151,
-	COLOR_POISON := 1271,
-	COLOR_ENERGY := 1274,
-
-	COLOR_ERROR := COLOR_RED,
-	COLOR_ALERT := COLOR_YELLOW
 endenum
