@@ -78,13 +78,15 @@ function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
 endfunction
 
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -0.7) 
 	
 	if(quantidade == error || quantidade.size() == 0)
 		return error{"errortext":="O parâmetro quantidade é obrigatório."};
 	endif
 
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
+	//quanto menor o declinio, mais espalhado fica o resultado.
+	//o pico é o equivalente a qual valor bate o pico no eixo y.
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1); 
 	var retorno := dictionary;
 
 	//Print("Chances: "  + chancesPorTier);
@@ -125,11 +127,11 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Mediocre" , valor := -1}; break;
-		COMPONENTE_TIERS::COMUM : return struct {desc := "Comum" , valor := 0}; break;
-		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 1}; break;
-		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 2}; break;
-		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 3}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 4}; break;
 		default:
 			return struct {desc := "Erro!" , valor := 0}; break;
 	endcase
@@ -270,6 +272,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 		endif
 
+		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
 		item.hp := item.maxhp;
 		
 		if(!item)

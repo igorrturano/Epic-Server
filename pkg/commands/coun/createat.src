@@ -135,7 +135,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 	var finalObjtype;
 
 	if(tier > 0)
-		finalObjtype := GeraItemComplexo(item_entry.Objtype, tier);
+		finalObjtype := GeraDescriptorComplexo(item_entry.Objtype, tier);
 	else
 		finalObjtype := item_entry.Objtype;
 	endif
@@ -148,10 +148,6 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 		created := CreateItemStacksAtLocation(mobile, finalObjtype, amount, loc.x, loc.y, loc.z,
 											   loc.realm);
 	endif
-	
-	if(created.size() == 0 && tier > 0)
-		SendSysMessageEx(mobile,"É possível que não exista um material configurado para este tier, por favor verifique.",SSM_INFO_IC);
-	endif
 
 	foreach obj in (created)
 		var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
@@ -159,6 +155,7 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 
 		if (!isIndispensavel || isIndestrutivel)
 			var objRef := SystemFindObjectBySerial(obj.Serial);
+			obj.hp := obj.maxhp;
 			if (isIndispensavel || isIndestrutivel)
 				var objRef := SystemFindObjectBySerial(obj.Serial);
 				SetObjProperty(objRef, PROPNAME_INDESTRUTIVEL, isIndestrutivel);
