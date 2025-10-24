@@ -333,26 +333,42 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 		GFTooltipText(gump,"Filtrar por encaixes memorizados. {Desligado}");
 	endif
 	
-	GFTextLine(gump, margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 27,1254,"Quantidade:");
-	GFTextEntry( gump, margemBaseEsquerda + 85, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 27 , 25, 17, 1254, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
-	GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2  + 7,1254,"Selecionado: " + (componenteSelecionado.nome ? componenteSelecionado.nome : "Nenhum"));
+	GFTextLine(gump, margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 24,1254,"Quantidade:");
+	GFTextEntry( gump, margemBaseEsquerda + 85, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 24 , 25, 17, 1254, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
+	GFPicTiled( gump, margemBaseEsquerda + 85, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 40 , 49, 3, 9101);
+	GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2  + 6,1254,"Selecionado: " + (componenteSelecionado.nome ? componenteSelecionado.nome : "Nenhum"));
 
 	if(componenteSelecionado)
+		
 		GFAddButton(gump,margemBaseEsquerda +  10 + larguraCelula * 3.5,G_MARGEM_SUPERIOR + 10 + G_ESPACAMENTO + CInt(alturaCelula * 1.5) ,2311,2312,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
-		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 47,1254,"Esforço:  " + AvaliaEsforço(sessao));
-		GFAddButton(gump,margemBaseEsquerda + 64,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 47,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
+		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,687,"Esforço:  " + AvaliaEsforço(sessao));
+		GFAddButton(gump,margemBaseEsquerda + 64,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
 		GFTooltipText(gump,"Aumentar o esforço produz componentes de melhor qualidade.");
-		GFAddButton(gump,margemBaseEsquerda + 64 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 57,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
+		GFAddButton(gump,margemBaseEsquerda + 64 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 54,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
 		GFAddButton(gump, margemEsquerdaBotoesFiltro + 100,margemTopoBotoesFiltro,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
 		GFTooltipText(gump,"Avaliar Material.");
+		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 64,687,"Perícia Usada: " + componenteSelecionado.pericia);
+		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 83,687,"Principal Material: " + componenteSelecionado.selecione.materialPrincipal);
 
-		foreach material in (SplitWords(componenteSelecionado.materiais,","))
+		var dictMateriais := componenteSelecionado.selecione.materiais;
+		
+		var margemXMateriais := G_MARGEM_ESQUERDA+ G_ESPACAMENTO + CINT(larguraCelula * 5.2) - 1;
+		var margemYMateriais := G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 16;
+
+		GFTextLine(gump,margemXMateriais + 17,margemYMateriais,904,"Qtd");
+		GFGumpPic(gump,margemXMateriais + 10,margemYMateriais + 18,96);
+		GFTextLine(gump,margemXMateriais + 57,margemYMateriais,904,"Tipo");
+		GFGumpPic(gump,margemXMateriais + 27,margemYMateriais + 18,96);
+		
+		foreach material in (dictMateriais.keys())
+
 			DefinirMateriais(gump,
-							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + CINT(larguraCelula * 5.2) - 1,
-							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter,
+							margemXMateriais,
+							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter + 20,
 							material,
-							componenteSelecionado.materialPrincipal,
+							componenteSelecionado.selecione.materialPrincipal,
+							dictMateriais[material],
 							sessao,
 							_material_iter);
 			Sleepms(2);
@@ -381,7 +397,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	return gump;
 endfunction
 
-function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessao,indice)
+function DefinirMateriais(byref gump,x,y,material, materialPrincipal, quantidade,byref sessao,indice)
 	if(indice < 1 || indice > 10 )
 		return 0;
 	endif
@@ -390,9 +406,16 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal,byref sessa
 	dropDownAtual.AtribuiX(x);
 	dropDownAtual.AtribuiY(y + 20);
 	var nome := dropDownAtual.PegaValorEscolhido().nome ? dropDownAtual.PegaValorEscolhido().nome : "";
-
+	var isPrincipal := material == materialPrincipal;
+	var corTexto := isPrincipal ? "<basefont size=55 color=#FFD336>" : "<basefont size=55 color=#B7B7B8>";
+	var corValor := "<basefont size=55 color=#83C542>";
+	
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, dropDownAtual.PegaIdBottao());
-	GFTextLine(gump,x + 20,y, (Find(material,materialPrincipal,1) ? 253 : 1111), Trim(material) + ": " + nome);
+	GFHTMLArea(gump,x + 25,y,300,20,"{}{}".format(corTexto,quantidade));
+	GFHTMLArea(gump,x + 50,y,300,20,"{}{}: {}{}".format(corTexto,material,corValor,nome));
+	if(isPrincipal)
+		GFTooltipText(gump,"Material principal do componente.");
+	endif
 endfunction
 
 function MontaTratamentoGump(x, y, byref sessao)
@@ -529,6 +552,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var posYcaracteristicas := y + (componenteEscolhido ? 120 : 100);
 	var posYSetasDeslocamento := 2;
+	
 	if(TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_UNINIT
 	   && TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_ERROR)
 		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;

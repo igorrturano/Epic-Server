@@ -207,7 +207,7 @@ class GerenciadorDropDown()
 		this.maxDropDown := CInt(maxDropDown);
 		this.adicionalIdDropDown := CInt(adicionalIdDropDown);
 		this.adicionalIdOpcoes := CInt(adicionalIdOpcoes);
-		this.idOpcoesMaximo := this.maxOpcoes * this.maxDropDown + this.adicionalIdDropDown;
+		this.idOpcoesMaximo := this.maxOpcoes * this.maxDropDown + this.adicionalIdOpcoes;
 		this.dropDowns := dictionary;
 	endfunction
 
