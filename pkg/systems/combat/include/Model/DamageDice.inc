@@ -52,9 +52,8 @@ class DamageDice(IDamageDice)
 
 	function SetSlashDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._slash := err;
-			return err;
+			this._slash := error{ errortext := "Parameter must be a Dice object!" };
+			return this._slash;
 		endif
 
 		this._slash := dice;
@@ -64,9 +63,8 @@ class DamageDice(IDamageDice)
 
 	function SetPiercingDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._piercing := err;
-			return err;
+			this._piercing := error{ errortext := "Parameter must be a Dice object!" };
+			return this._piercing;
 		endif
 
 		this._piercing := dice;
@@ -76,9 +74,8 @@ class DamageDice(IDamageDice)
 
 	function SetBluntDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._blunt := err;
-			return err;
+			this._blunt := error{ errortext := "Parameter must be a Dice object!" };
+			return this._blunt;
 		endif
 
 		this._blunt := dice;
@@ -88,9 +85,8 @@ class DamageDice(IDamageDice)
 
 	function SetFireDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._fire := err;
-			return err;
+			this._fire := error{ errortext := "Parameter must be a Dice object!" };
+			return this._fire;
 		endif
 
 		this._fire := dice;
@@ -100,9 +96,8 @@ class DamageDice(IDamageDice)
 
 	function SetColdDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._cold := err;
-			return err;
+			this._cold := error{ errortext := "Parameter must be a Dice object!" };
+			return this._cold;
 		endif
 
 		this._cold := dice;
@@ -112,9 +107,8 @@ class DamageDice(IDamageDice)
 
 	function SetPoisonDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._poison := err;
-			return err;
+			this._poison := error{ errortext := "Parameter must be a Dice object!" };
+			return this._poison;
 		endif
 
 		this._poison := dice;
@@ -124,9 +118,8 @@ class DamageDice(IDamageDice)
 
 	function SetEnergyDamage(this, dice)
 		if (!(dice is @Dice))
-			var err := error{ errortext := "Parameter must be a Dice object!" };
-			this._energy := err;
-			return err;
+			this._energy := error{ errortext := "Parameter must be a Dice object!" };
+			return this._energy;
 		endif
 
 		this._energy := dice;
