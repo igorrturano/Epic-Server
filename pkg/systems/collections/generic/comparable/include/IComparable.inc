@@ -1,0 +1,2 @@
+class IComparable()
+endclass
