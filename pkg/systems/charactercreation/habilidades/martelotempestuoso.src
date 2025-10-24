@@ -37,9 +37,9 @@ program vacuodemana(params)
 	endif
 	// PlayAttackAnimation(attacker); // animacao de overhead 2h
 	PerformAction(attacker, 12);
-	PlaymovingEffect(attacker, defender, EPIC_FX_HAMMER_THROW, 0, 40);
+	PlaymovingEffect(attacker, defender, FX_HAMMER_THROW, 0, 40);
 	sleep(2);
-	PlaymovingEffect(defender, attacker, EPIC_FX_HAMMER_THROW, 0, 40);
+	PlaymovingEffect(defender, attacker, FX_HAMMER_THROW, 0, 40);
 
 	var duration := cint(AP_GetSkill(attacker, THEOLOGY) / 10);
 	TS_StartTimer(defender, "paralysis", duration);

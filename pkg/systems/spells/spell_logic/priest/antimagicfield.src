@@ -17,13 +17,13 @@ program SpellScript(params)
 	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
 
 	for i := 0 to Cint(duration/10)
-		PlayObjectCenteredEffect(who, EPIC_FX_MAGIC_IMMUNITY, 10, 255);
+		PlayObjectCenteredEffect(who, FX_MAGIC_IMMUNITY, 10, 255);
 
 		foreach mobile in nearby
 		if (mobile != who)
 			SetCooldown(mobile, "silence", Cint(duration/10));
 			PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
-			PlayObjectCenteredEffect(mobile, EPIC_FX_MAGIC_IMMUNITY, 10, 255);
+			PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
 
 			SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
 

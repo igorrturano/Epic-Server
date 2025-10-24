@@ -41,7 +41,7 @@ program SpellScript(params)
 	endif
 
 	// Visual effect - barkskin texture
-	PlayObjectCenteredEffect(targ, EPIC_FX_PELE_DE_ARVORE, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_PELE_DE_ARVORE, 10, 10);
 	handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);
 
 	// Store the armor bonus
