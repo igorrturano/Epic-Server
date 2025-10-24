@@ -31,13 +31,13 @@ program doubleattack(who)
 		PrintTextAbove(who, "*Conjurando*");
 		if (i == 1)
 			sound := 0x5cb;
-			color := FOGO;
+			color := COLOR_ELEMENTAL_FIRE;
 		elseif (i == 2)
 			sound := 0x5c8;
-			color := GELO;
+			color := COLOR_ELEMENTAL_ICE;
 		elseif (i == 3)
 			sound := 0x666;
-			color := RAIO;
+			color := COLOR_ELEMENTAL_ENERGY;
 		endif
 		PlaySoundEffect(who, sound);
 		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, color);
