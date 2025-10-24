@@ -4,13 +4,13 @@ include ":diceroll:model/Dice";
 include ":equipsys:utils/consts";
 
 class DamageDice(IDamageDice)
-	var _slash := Dice("1d6+2");
-	var _piercing := Dice("1d6+2");
-	var _blunt := Dice("1d6+2");
-	var _fire := Dice("1d6+2");
-	var _cold := Dice("1d6+2");
-	var _poison := Dice("1d6+2");
-	var _energy := Dice("1d6+2");
+	var _slash; // Dice class
+	var _piercing; // Dice class
+	var _blunt; // Dice class
+	var _fire; // Dice class
+	var _cold; // Dice class
+	var _poison; // Dice class
+	var _energy; // Dice class
 
 	function DamageDice(this, slash := DAMAGE_NONE, piercing := DAMAGE_NONE, blunt := DAMAGE_NONE, fire := DAMAGE_NONE, cold := DAMAGE_NONE, poison := DAMAGE_NONE, energy := DAMAGE_NONE)
 		this.SetSlashDamage(slash);
