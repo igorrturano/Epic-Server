@@ -618,7 +618,7 @@ function CheckHab_ArmaduraArcana(byref attacker, byref defender, byRef attackInf
 	if (GetCooldown(defender, "freeze_enemy") && dist == 1 )
 		var HAB_TYPE := "Congelamento";
 		PlaySoundEffect(attacker, 0x65b);
-		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
+		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
 		TS_Starttimer(attacker, "congelamento", 5);
 		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
 		return 1;

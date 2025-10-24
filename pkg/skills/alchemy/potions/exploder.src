@@ -197,12 +197,12 @@ function ExplosionEffect(who, potion, dmg)
 	var color := 0;
 	var dmg_type := DMG_FIRE;
 	if (GetObjProperty(who, "Infusão Ígnea"))
-		color := FOGO;
+		color := COLOR_ELEMENTAL_FIRE;
 	elseif (GetObjProperty(who, "Infusão Gélida"))
-		color := GELO;
+		color := COLOR_ELEMENTAL_ICE;
 		dmg_type := DMG_COLD;
 	elseif (GetObjProperty(who, "Infusão Elétrica"))
-		color := RAIO;
+		color := COLOR_ELEMENTAL_ENERGY;
 		dmg_type := DMG_ENERGY;
 	endif
 	// PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)

@@ -24,7 +24,7 @@ program doubleattack(who)
 		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
 		return;
 	endif
-	var enchantmentColors := array{ FOGO, GELO, RAIO };
+	var enchantmentColors := array{ COLOR_ELEMENTAL_FIRE, COLOR_ELEMENTAL_ICE, COLOR_ELEMENTAL_ENERGY };
 	if (!(who.weapon.color in enchantmentColors))
 		SendSysMessageEx(who, "Sua arma não está encantada!", SSM_FAIL);
 		return;
@@ -48,18 +48,18 @@ function grantBonus(who, targ)
 	var effect_color := 0;
 	var sound;
 	var armor_drain := Cint(AP_GetSkill(who, ARCANA) * 0.3);
-	if (weapon.color == FOGO)
-		effect_color := FOGO;
+	if (weapon.color == COLOR_ELEMENTAL_FIRE)
+		effect_color := COLOR_ELEMENTAL_FIRE;
 		targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
 		who.resist_fire_mod := who.resist_fire_mod + armor_drain;
 		sound := 0x5cb;
-	elseif (weapon.color == GELO)
-		effect_color := GELO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+		effect_color := COLOR_ELEMENTAL_ICE;
 		targ.resist_cold_mod := targ.resist_cold_mod - armor_drain;
 		who.resist_cold_mod := who.resist_cold_mod + armor_drain;
 		sound := 0x5c8;
-	elseif (weapon.color == RAIO)
-		effect_color := RAIO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+		effect_color := COLOR_ELEMENTAL_ENERGY;
 		targ.resist_energy_mod := targ.resist_energy_mod - armor_drain;
 		who.resist_energy_mod := who.resist_energy_mod + armor_drain;
 		sound := 0x666;
@@ -73,16 +73,16 @@ function revokeBonus(who, targ)
 	var weapon := who.weapon;
 	var effect_color := 0;
 	var armor_drain := Cint(AP_GetSkill(who, ARCANA) * 0.3);
-	if (weapon.color == FOGO)
-		effect_color := FOGO;
+	if (weapon.color == COLOR_ELEMENTAL_FIRE)
+		effect_color := COLOR_ELEMENTAL_FIRE;
 		targ.resist_fire_mod := targ.resist_fire_mod + armor_drain;
 		who.resist_fire_mod := who.resist_fire_mod - armor_drain;
-	elseif (weapon.color == GELO)
-		effect_color := GELO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+		effect_color := COLOR_ELEMENTAL_ICE;
 		targ.resist_cold_mod := targ.resist_cold_mod + armor_drain;
 		who.resist_cold_mod := who.resist_cold_mod - armor_drain;
-	elseif (weapon.color == RAIO)
-		effect_color := RAIO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+		effect_color := COLOR_ELEMENTAL_ENERGY;
 		targ.resist_energy_mod := targ.resist_energy_mod + armor_drain;
 		who.resist_energy_mod := who.resist_energy_mod - armor_drain;
 	endif

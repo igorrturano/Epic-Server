@@ -23,13 +23,13 @@ program potionWalkOn(mobile, potion)
 		if (GetObjProperty(potion, "trap_inativa"))
 			return;
 		endif
-		var color := FOGO;
+		var color := COLOR_ELEMENTAL_FIRE;
 		var dmg_type := DMG_FIRE;
 		if (GetObjProperty(Potion, "Infusão Gélida"))
-			color := GELO;
+			color := COLOR_ELEMENTAL_ICE;
 			dmg_type := DMG_COLD;
 		elseif (GetObjProperty(Potion, "Infusão Elétrica"))
-			color := RAIO;
+			color := COLOR_ELEMENTAL_ENERGY;
 			dmg_type := DMG_ENERGY;
 		endif
 		var dmg := GetObjProperty(potion, "damage");
