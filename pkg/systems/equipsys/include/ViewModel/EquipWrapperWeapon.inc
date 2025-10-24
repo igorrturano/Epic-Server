@@ -11,21 +11,22 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 	var _attribute := "";
 	var _attackType := "";
 	var _category := "";
-	var _speedTier := ""; // TODO: Transformar pra struct
-	var _speed := 0; // TODO: Transformar pra struct
-	var _speedModTier := ""; // TODO: Transformar pra struct
-	var _speedMod := 0; // TODO: Transformar pra struct
-	var _mainDamageTier := DamageDice(); // TODO: Transformar pra struct
-	var _offDamageTier := DamageDice(); // TODO: Transformar pra struct
-	var _mainDamage := DamageDice(); // TODO: Transformar pra struct
-	var _offDamage := DamageDice(); // TODO: Transformar pra struct
-	var _damageMod := DamageDice(); // TODO: Transformar pra struct
-	var _criticalChanceTier := ""; // TODO: Transformar pra struct
-	var _criticalChance := 0; // TODO: Transformar pra struct
+	var _animation := 0x0;
+	var _speedTier := "";
+	var _speed := 0;
+	var _speedModTier := "";
+	var _speedMod := 0;
+	var _mainDamageTier; // DamageDice class
+	var _offDamageTier; // DamageDice class
+	var _mainDamage; // DamageDice class
+	var _offDamage; // DamageDice class
+	var _damageMod; // DamageDice class
+	var _criticalChanceTier := "";
+	var _criticalChance := 0;
 	var _criticalChanceMod := 0;
 	var _strRequired := 0;
-	var _minRange := 1; // TODO: Transformar pra struct
-	var _maxRange := 1; // TODO: Transformar pra struct
+	var _minRange := 1;
+	var _maxRange := 1;
 
 	function EquipWrapperWeapon(this, byRef item)
 		Super(item);
@@ -80,6 +81,10 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 
 	function GetCategory(this)
 		return this._category;
+	endfunction
+
+	function GetAnimation(this)
+		return this._animation;
 	endfunction
 
 	function GetSpeedTier(this)

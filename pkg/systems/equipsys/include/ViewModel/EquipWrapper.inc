@@ -65,8 +65,8 @@ class EquipWrapper(IEquipWrapper)
 		return this._itemRef;
 	endfunction
 
-	function GetProp(this)
-		return this._prop ?: error{"errortext" := "This item has no attributes Property or is just a template!"};
+	function GetItemProp(this)
+		return this._prop;
 	endfunction
 
 	function GetName(this)
@@ -149,6 +149,14 @@ class EquipWrapper(IEquipWrapper)
 		this._itemRef.maxHP := this._maxHP;
 
 		this._prop.+Modifiers := dictionary{};
+	endfunction
+
+	function Equals(this, otherEquipWrapper)
+		// if (!(otherEquipWrapper is @EquipWrapper))
+		// 	return error {"errortext" := "The param must be an EquipWrapper!"};
+		// endif
+
+		return this._itemRef == otherEquipWrapper.GetItemRef();
 	endfunction
 
 	function ToString(this)

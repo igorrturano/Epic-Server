@@ -1,7 +1,7 @@
 class IEquipWrapper()
 	uninit function GetTemplate(this);
-	uninit function GetItem(this);
-	uninit function GetProp(this);
+	uninit function GetItemRef(this);
+	uninit function GetItemProp(this);
 	uninit function GetName(this);
 	uninit function GetDesc(this);
 	uninit function GetGraphic(this);
