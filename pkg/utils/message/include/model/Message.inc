@@ -17,7 +17,7 @@ class Message(IMessage)
 		color := FONTCOLOR_BLUE,
 		font := FONT_UNICODE_DEFAULT
 	}};
-	var _translator := Translator(); // Objeto tradutor
+	var _translator; // Translator class
 
 	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._asyncInfo := struct{

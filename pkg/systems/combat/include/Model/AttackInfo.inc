@@ -9,14 +9,14 @@ include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 include ":diceroll:model/Dice";
 include ":message:model/Message";
-// include "include/packets";
+include "include/packets";
 
 class AttackInfo(IAttackInfo)
 	var _moment := ATTACKMOMENT::COMBATING;
-	var _attacker; // MobileWrapper
-	var _defender; // MobileWrapper
+	var _attacker; // MobileWrapper class
+	var _defender; // MobileWrapper class
 
-	var _damage := Damage();
+	var _damage; // Damage class
 	var _damageHand := DAMAGEHAND::MAINHAND; 
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
@@ -167,58 +167,37 @@ class AttackInfo(IAttackInfo)
 
 		if (slash > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), slash);
-			Message(slash + " [SLASH]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), slash, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), slash, this.GetAttacker().GetMobRef());
 		endif
 
 		if (piercing > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), piercing);
-			Message(piercing + " [PIERCING]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), piercing, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), piercing, this.GetAttacker().GetMobRef());
 		endif
 
 		if (blunt > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), blunt);
-			Message(blunt + " [BLUNT]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), blunt, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), blunt, this.GetAttacker().GetMobRef());
 		endif
 
 		if (fire > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), fire);
-			Message(fire + " [FIRE]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), fire, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), fire, this.GetAttacker().GetMobRef());
 		endif
 
 		if (cold > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), cold);
-			Message(cold + " [COLD]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), cold, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), cold, this.GetAttacker().GetMobRef());
 		endif
 
 		if (poison > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), poison);
-			Message(poison + " [POISON]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), poison, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), poison, this.GetAttacker().GetMobRef());
 		endif
 
 		if (energy > 0)
 			ApplyRawDamage(this.GetDefender().GetMobRef(), energy);
-			Message(energy + " [ENERGY]")
-				.SendAbovePrivate(this.GetDefender().GetMobRef())
-				.SendAbovePrivate(this.GetDefender().GetMobRef(), this.GetAttacker().GetMobRef());
-			// DisplayDamage(this.GetDefender().GetMobRef(), energy, this.GetAttacker().GetMobRef());
+			DisplayDamage(this.GetDefender().GetMobRef(), energy, this.GetAttacker().GetMobRef());
 		endif
 	endfunction
 
