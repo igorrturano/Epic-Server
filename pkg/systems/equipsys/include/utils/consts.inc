@@ -39,27 +39,20 @@ enum DAMAGETAG
 	THROWING_MID := "THROWING_MID",
 	THROWING_HIGH := "THROWING_HIGH"
 endenum
-enum WEAPONCATEGORY
-	// Melee
-	SPEAR := "Spear",
-	POLEARM := "Polearm",
+enum WEAPONTYPE
+	UNARMED := "Unarmed",
 	DAGGER := "Dagger",
-	SWORD_1H := "Sword_1H",
-	SWORD_2H := "Sword_2H",
+	SWORD := "Sword",
 	GREATSWORD := "GreatSword",
-	AXE_1H := "Axe_1H",
-	AXE_2H := "Axe_2H",
-	BLUNT_1H := "Blunt_1H",
-	BLUNT_2H := "Blunt_2H",
-	DUAL_BLADES := "Dual_blades",
-	DUAL_AXES := "Dual_axes",
-
-	// Ranged
-	BOW := "Bow",
-	CROSSBOW := "Crossbow",
+	AXE := "Axe",
+	SPEAR := "Spear",
+	MACE := "Mace",
+	STAFF := "Staff",
 	THROWING := "Throwing",
+	POLEARM := "Polearm",
 
-	UNARMED := "Unarmed"
+	BOW := "Bow",
+	CROSSBOW := "Crossbow"
 endenum
 enum DAMAGETYPE
 	SLASHDAMAGE := "Cortante",
