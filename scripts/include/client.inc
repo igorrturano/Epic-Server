@@ -878,23 +878,6 @@ const LAYER_VENDORBUY   :=  0x1c;   // This vendor can buy from players but does
 const LAYER_BANKBOX     :=  0x1d;   // Contents of bankbox
 const LAYER_TRADE       :=  0x1e;   // Can be multiple of these, do not use directly.
 
-////
-// Fonts
-///
-const FONT_MAX          :=  0x09;   // Highest font.
-const FONT_MIN          :=  0x00;   // Lowest font.
-
-const FONT_BOLD         :=  0x00;   // Bold text.
-const FONT_SHADOW       :=  0x01;   // Text with shadow.
-const FONT_BOLD_SHAD    :=  0x02;   // Bold text with shadow.
-const FONT_NORMAL       :=  0x03;   // Normal (default).
-const FONT_GOTHIC       :=  0x04;   // Gothic.
-const FONT_ITALIC       :=  0x05;   // Italic
-const FONT_SMALL_DARK   :=  0x06;   // Small dark letters.
-const FONT_COLOR        :=  0x07;   // Colorful font.
-const FONT_RUNE         :=  0x08;   // Rune font (only capitals).
-const FONT_SMALL_LIGHT  :=  0x09;   // Small light letters.
-
 //////////////////////////////
 //htmlgumpcolor Color-values
 //////////////////////////////
@@ -1076,49 +1059,51 @@ const DIR_SW            :=  0x05;   // Southwest.
 const DIR_W             :=  0x06;   // West.
 const DIR_NW            :=  0x07;   // Northwest.
 
-// * Colors *
-// This is not supposed to be a "complete" colorchart, but a
-// quick way to access normal colors.
-const COLOR_DEFAULT         := 0x0000;
-const COLOR_BLACK           := 0x0001;
-const COLOR_INDIGO_DARK     := 0x0007;
-const COLOR_INDIGO          := 0x0008;
-const COLOR_INDIGO_LIGHT    := 0x0009;
+///////////////////////////////////////////
+// Colors (For more color see in Fiddle) //
+///////////////////////////////////////////
+enum COLORS
+	COLOR_DEFAULT		:= 0x0000,
+	COLOR_BLACK			:= 0x0001,
+	COLOR_INDIGO_DARK	:= 0x0007,
+	COLOR_INDIGO		:= 0x0008,
+	COLOR_INDIGO_LIGHT	:= 0x0009,
 
-const COLOR_VIOLET_DARK     := 0x000c;
-const COLOR_VIOLET          := 0x000d;
-const COLOR_VIOLET_LIGHT    := 0x000e;
-const COLOR_MAGENTA_DARK    := 0x0011;
-const COLOR_MAGENTA         := 0x0012;
-const COLOR_MAGENTA_LIGHT   := 0x0013;
-const COLOR_RED_DARK        := 0x0020;
-const COLOR_RED             := 0x0022;
-const COLOR_RED_LIGHT       := 0x0023;
-const COLOR_ORANGE_DARK     := 0x002a;
-const COLOR_ORANGE          := 0x002b;
-const COLOR_ORANGE_LIGHT    := 0x002c;
-const COLOR_YELLOW_DARK     := 0x0034;
-const COLOR_YELLOW          := 0x0035;
-const COLOR_YELLOW_LIGHT    := 0x0036;
-const COLOR_GREEN_DARK      := 0x003e;
-const COLOR_GREEN           := 0x003f;
-const COLOR_GREEN_LIGHT     := 0x0040;
-const COLOR_CYAN_DARK       := 0x0057;
-const COLOR_CYAN            := 0x0058;
-const COLOR_CYAN_LIGHT      := 0x0059;
-const COLOR_BLUE_DARK       := 0x0061;
-const COLOR_BLUE            := 0x0062;
-const COLOR_BLUE_LIGHT      := 0x0063;
-const COLOR_GRAY_DARK       := 0x0386;
-const COLOR_GRAY            := 0x0387;
-const COLOR_GRAY_LIGHT      := 0x0388;
-const COLOR_BLACKMETAL      := 0x044e;
-const COLOR_GOLDMETAL       := 0x046e;
-const COLOR_BSHIMMER        := 0x0480;	// T2A Only : Waterelemental color.
-const COLOR_WHITE           := 0x0481;	// T2A Only : True white.
-const COLOR_STONE           := 0x0482;	// T2A Only : Rock ( stoneharpy?)
-const COLOR_SPECTRAL        := 0x4631;  // Spectral
-const COLOR_TRANSLUCENT     := 0x7cf8;  // Translucent
+	COLOR_VIOLET_DARK	:= 0x000c,
+	COLOR_VIOLET		:= 0x000d,
+	COLOR_VIOLET_LIGHT	:= 0x000e,
+	COLOR_MAGENTA_DARK	:= 0x0011,
+	COLOR_MAGENTA		:= 0x0012,
+	COLOR_MAGENTA_LIGHT	:= 0x0013,
+	COLOR_RED_DARK		:= 0x0020,
+	COLOR_RED			:= 0x0022,
+	COLOR_RED_LIGHT		:= 0x0023,
+	COLOR_ORANGE_DARK	:= 0x002a,
+	COLOR_ORANGE		:= 0x002b,
+	COLOR_ORANGE_LIGHT	:= 0x002c,
+	COLOR_YELLOW_DARK	:= 0x0034,
+	COLOR_YELLOW		:= 0x0035,
+	COLOR_YELLOW_LIGHT	:= 0x0036,
+	COLOR_GREEN_DARK	:= 0x003e,
+	COLOR_GREEN			:= 0x003f,
+	COLOR_GREEN_LIGHT	:= 0x0040,
+	COLOR_CYAN_DARK		:= 0x0057,
+	COLOR_CYAN			:= 0x0058,
+	COLOR_CYAN_LIGHT	:= 0x0059,
+	COLOR_BLUE_DARK		:= 0x0061,
+	COLOR_BLUE			:= 0x0062,
+	COLOR_BLUE_LIGHT	:= 0x0063,
+	COLOR_GRAY_DARK		:= 0x0386,
+	COLOR_GRAY			:= 0x0387,
+	COLOR_GRAY_LIGHT	:= 0x0388,
+	COLOR_BLACKMETAL	:= 0x044e,
+	COLOR_GOLDMETAL		:= 0x046e,
+	COLOR_BSHIMMER		:= 0x0480,	// T2A Only : Waterelemental color.
+	COLOR_WHITE			:= 0x0481,	// T2A Only : True white.
+	COLOR_STONE			:= 0x0482,	// T2A Only : Rock ( stoneharpy?)
+	COLOR_SPECTRAL		:= 0x4631,	// Spectral
+	COLOR_TRANSLUCENT	:= 0x7cf8	// Translucent
+endenum
 
 
 ////
@@ -1133,24 +1118,77 @@ const SPEECH_WHISPER      := 0x8;
 const SPEECH_YELL         := 0x9;
 const SPEECH_SPELL        := 0xA;
 
+/////////////////
+// Fonts ASCII //
+/////////////////
+enum FONT_ASCII
+	FONT_MAX			:=  0x09,	// Highest font.
+	FONT_MIN			:=  0x00,	// Lowest font.
 
+	FONT_BOLD			:=  0x00,	// Bold text.
+	FONT_SHADOW			:=  0x01,	// Text with shadow.
+	FONT_BOLD_SHAD		:=  0x02,	// Bold text with shadow.
+	FONT_NORMAL			:=  0x03,	// Normal (default).
+	FONT_GOTHIC			:=  0x04,	// Gothic.
+	FONT_ITALIC			:=  0x05,	// Italic
+	FONT_SMALL_DARK		:=  0x06,	// Small dark letters.
+	FONT_COLOR			:=  0x07,	// Colorful font.
+	FONT_RUNE			:=  0x08,	// Rune font (only capitals).
+	FONT_SMALL_LIGHT	:=  0x09,	// Small light letters.
 
-////
-// Font Colours.
-////
-const FONTCOLOR_RED := 38;
-const FONTCOLOR_GREEN :=68;
-const FONTCOLOR_BLUE := 90;
-const FONTCOLOR_MAUVE := 30;
-const FONTCOLOR_LAVENDER := 20;
-const FONTCOLOR_BLACK := 1;
-const FONTCOLOR_BROWN := 46;
-const FONTCOLOR_YELLOW := 53;
-const MSG_ERROR         := 33;
-const MSG_FAIL          := MSG_ERROR;
-const MSG_SUCCESS       := 66;
-const MSG_GOOD          := MSG_SUCCESS;
-const MSG_NEUTRAL       := 88;
+	FONT_DEFAULT		:= FONT_NORMAL
+endenum
+
+///////////////////
+// Fonts UNICODE //
+///////////////////
+enum FONT_UNICODE
+	FONT_UNICODE_UO := 0x0,
+
+	FONT_UNICODE_ARIAL := 0x2,
+	FONT_UNICODE_ARIAL_BOLD := 0x1,
+	
+	FONT_UNICODE_FIXEDSYS := 0x3,
+	FONT_UNICODE_FIXEDSYS_BIG := 0x4,
+
+	FONT_UNICODE_THIN := 0x5,
+	FONT_UNICODE_THIN_BIG := 0x6,
+	
+	FONT_UNICODE_SYMBOLS := 0x7,
+	FONT_UNICODE_SYMBOLS_BOLD := 0x8,
+	FONT_UNICODE_SYMBOLS_BOLD_BIG := 0x9,
+
+	FONT_UNICODE_RUNE := 0xA,
+	FONT_UNICODE_RUNE_BOLD := 0xB,
+	FONT_UNICODE_RUNE_BOLD_BIG := 0xC,
+
+	FONT_UNICODE_DEFAULT := FONT_UNICODE_UO
+endenum
+
+//////////////////
+// Font Colours //
+//////////////////
+enum FONTCOLOR
+	FONTCOLOR_RED			:= 38,
+	FONTCOLOR_GREEN			:= 68,
+	FONTCOLOR_BLUE			:= 90,
+	FONTCOLOR_MAUVE			:= 30,
+	FONTCOLOR_LAVENDER		:= 20,
+	FONTCOLOR_BLACK			:= 1,
+	FONTCOLOR_BROWN			:= 46,
+	FONTCOLOR_YELLOW		:= 53,
+	FONTCOLOR_MSG_ERROR		:= 33,
+	FONTCOLOR_MSG_FAIL		:= FONTCOLOR_MSG_ERROR,
+	FONTCOLOR_MSG_SUCCESS	:= 66,
+	FONTCOLOR_MSG_GOOD		:= FONTCOLOR_MSG_SUCCESS,
+	FONTCOLOR_MSG_NEUTRAL	:= 88,
+
+	MSG_ERROR				:= 33,			// NÃO USAR, USAR OS DE CIMA!!! DEIXADO AQUI APENAS PRA NÃO QUEBRAR OS SCRIPTS ANTIGOS
+	MSG_FAIL				:= MSG_ERROR,	// NÃO USAR, USAR OS DE CIMA!!! DEIXADO AQUI APENAS PRA NÃO QUEBRAR OS SCRIPTS ANTIGOS
+	MSG_SUCCESS				:= 66,			// NÃO USAR, USAR OS DE CIMA!!! DEIXADO AQUI APENAS PRA NÃO QUEBRAR OS SCRIPTS ANTIGOS
+	MSG_GOOD				:= MSG_SUCCESS,	// NÃO USAR, USAR OS DE CIMA!!! DEIXADO AQUI APENAS PRA NÃO QUEBRAR OS SCRIPTS ANTIGOS
+	MSG_NEUTRAL				:= 88,			// NÃO USAR, USAR OS DE CIMA!!! DEIXADO AQUI APENAS PRA NÃO QUEBRAR OS SCRIPTS ANTIGOS
+endenum
 
 //////////////////////////////////////
 // Canned colours
