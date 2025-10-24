@@ -192,7 +192,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					var lotes := Ceil(CDBL(quantidade) / quantidadePorLote);
 					var resto := quantidade % quantidadePorLote;
 					lotes := lotes < 1 ? 1 : lotes;
-					var posicaoInicial :=  CriaObjetoPosicao(quem);
+					var posicaoInicial :=  BuildPositionStruct(quem);
 					var vidaInicial := AP_GetVital(quem, "Hits");
 
 					for i := 1 to lotes
