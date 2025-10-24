@@ -112,57 +112,48 @@ exported function Attack(attacker, defender)
 		endif
 	endif
 
-	playSoundAndEffectForThroiwingWeapons(attacker, defender); // TODO: Ver o que diabo dá pra fazer com isso aqui.....
+	// playSoundAndEffectForThrowingWeapons(attackInfo); // TODO: Transferir isso daqui para o AttackAnimation
 	return 1;
 
 endfunction
 
 function CanAttack(attackInfo)
-	var attacker := attackInfo.GetAttacker().GetMobRef();
-	var defender := attackInfo.GetDefender().GetMobRef();
-
-	if (attacker == defender)
-		ApplyRawDamage(attacker, 5000);
+	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
+		ApplyRawDamage(attackInfo.GetAttacker().GetMobRef(), 5000);
 		return 0;
-	elseif (!CheckLineOfSight(attacker, defender))
+	elseif (!CheckLineOfSight(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef()))
 		return 0;
 	endif
 
-	if (attacker.acctname)
-		if (!attacker.warmode)
-			if (GetObjProperty(attacker, "attackmsg") <= polcore().systime)
-				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL)
-					.SetSourceLanguage(LANGUAGE::PORTUGUESE)
-					.SendSys(attacker);
-				SetObjProperty(attacker, "attackmsg", polcore().systime + 15);
+	if (!attackInfo.GetAttacker().IsNPC())
+		if (!attackInfo.GetAttacker().IsWarMode())
+			if (attackInfo.GetAttacker().GetMobRef().GetProp("attackmsg") <= polcore().systime)
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetMobRef());
+				attackInfo.GetAttacker().GetMobRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
 			return 0;
 		endif
 	endif
 
-	if ((attacker.paralyzed) || (attacker.frozen))
-		Message("Você não consegue atacar.")
-			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
-			.SendSys(attacker);
+	if ((attackInfo.GetAttacker().GetMobRef().paralyzed) || (attackInfo.GetAttacker().GetMobRef().frozen))
+		Message("Você não consegue atacar.").SendSys(attackInfo.GetAttacker().GetMobRef());
 		return 0;
-	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
-		attacker.concealed := 0;
+	elseif ((attackInfo.GetAttacker().GetMobRef().concealed) && (attackInfo.GetAttacker().GetMobRef().cmdlevel == 0))
+		attackInfo.GetAttacker().GetMobRef().concealed := 0;
 	elseif (!DistanceChecks(attacker, defender))
 		return 0;
 	elseif (!FacingChecks(attacker, defender))
 		return 0;
-	elseif (!AmmoCheckCombatHook(attacker, defender))
+	elseif (!AmmoCheckCombatHook(attackInfo))
 		return 0;
-	elseif (GetCooldown(attacker, "defesatotal") > 0)
+	elseif (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesatotal") > 0)
 		return 0;
-	elseif (!arcane_shooting(attacker, defender))
+	elseif (!arcane_shooting(attackInfo))
 		return 0;
-	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
+	elseif (attackInfo.GetAttacker().GetMobRef().npctemplate == ":brainai:GolemMartelo")
 		return 0;
-	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		Message("*hipnotizado*")
-			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
-			.SendAbove(attacker);
+	elseif (CInt(attackInfo.GetAttacker().GetMobRef().GetProp("charmed_by")) == attackInfo.GetDefender().GetMobRef().serial)
+		Message("*hipnotizado*").SendAbove(attackInfo.GetAttacker().GetMobRef());
 		return 0;
 	endif
 
@@ -215,16 +206,14 @@ function AmmoCheckCombatHook(attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().IsNPC())
-		ArqueiroNPC(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef());
+		ArqueiroNPC(attackInfo);
 		return 1;
 	endif
 
 	// Get saved ammo reference
 	var ammo := GetObjProperty(attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(), "ammo");
 	if (!ammo)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR::COLOR_ERROR)
-			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
-			.SendSys(attackInfo.GetAttacker().GetMobRef());
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		return 0;
 	endif
 	var obj := SystemFindObjectBySerial(ammo);
@@ -272,9 +261,9 @@ function AmmoCheckCombatHook(attackInfo)
 	return 0;
 endfunction
 
-function playSoundAndEffectForThroiwingWeapons(attackInfo)
+function playSoundAndEffectForThrowingWeapons(attackInfo) // TODO: Transferir isso daqui para o AttackAnimation
 	if (attackInfo.GetAttacker().IsNPC())
-		ThrowerNPC(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef());
+		ThrowerNPC(attackInfo);
 		return;
 	endif
 
@@ -283,9 +272,7 @@ function playSoundAndEffectForThroiwingWeapons(attackInfo)
 	endif
 
 	if (!AP_ConsumeVital(attackInfo.GetAttacker().GetMobRef(), STAMINA, 10))
-		Message("Você está exausto!", FONTCOLOR::COLOR_ERROR)
-			.SetSourceLanguage(LANGUAGE::PORTUGUESE)
-			.SendSys(attackInfo.GetAttacker().GetMobRef());
+		Message("Você está exausto!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		return;
 	endif
 
@@ -312,72 +299,72 @@ function playSoundAndEffectForThroiwingWeapons(attackInfo)
 
 endfunction
 
-function arcane_shooting(attacker, defender)
-	if (!wpn_a_elem.ProjectileType)
+function arcane_shooting(attackInfo)
+	if (!attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetTemplate().ProjectileType)
 		return 1;
 	endif
 
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (!GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows))
+	if (!GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && !(attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjType() in arcane_bows))
 		return 1;
 	endif
 
-	if (!DamageMANA(attacker, 4))
-		SendSysMessage(attacker, "Você está sem mana!");
+	if (!DamageMANA(attackInfo.GetAttacker().GetMobRef(), 4))
+		Message("Você está sem mana!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		return 0;
 	endif
+	
 	var ammo_color := 0;
-	if (GetObjProperty(attacker.weapon, "fire_arrow"))
-		ammo_color := FOGO;
-	elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
-		ammo_color := RAIO;
-	elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
-		ammo_color := GELO;
+	if (attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef().GetProp("fire_arrow"))
+		ammo_color := COLOR_ELEMENTAL_FIRE;
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef().GetProp("energy_arrow"))
+		ammo_color := COLOR_ELEMENTAL_ENERGY;
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef().GetProp("cold_arrow"))
+		ammo_color := COLOR_ELEMENTAL_ICE;
 	endif
 
-	PlayMovingEffectXYZHued(attacker, defender, 0xf42, 10, 10, 0, ammo_color);
+	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), 0xf42, 10, 10, 0, ammo_color);
 	return 1;
 endfunction
 
-function ArqueiroNPC(attacker, defender)
-	var anim := wpn_a_elem.ProjectileAnim;
+function ArqueiroNPC(attackInfo)
+	var anim := attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetTemplate().ProjectileAnim;
+	
 	if (!anim)
 		anim := 0xF79;
 	endif
-	PlayMovingEffectXYZHued(attacker, defender, anim, 10, 10, 0, 0); // ammo_color);
+
+	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), anim, 10, 10);
 
 	return 1;
 endfunction
 
-function ThrowerNPC(attacker, defender)
-	var throwItem := GetObjProperty(attacker, "throwItem");
+function ThrowerNPC(attackInfo)
+	var throwItem := attackInfo.GetAttacker().GetMobRef().GetProp("throwItem");
 	if (!throwItem)
 		return 0;
 	endif
 
-	PerformAction(attacker, 4);
+	PerformAction(attackInfo.GetAttacker().GetMobRef(), 4);
 
 	// Play the throw effect
-	PlayMovingEffectXYZHued(attacker, defender, throwItem, 10, 10, 0, 0);
+	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), throwItem, 10, 10);
 
 	return 1;
 endfunction
 
 function FacingChecks(attacker, defender)
 	var retval := 1;
-	if (!IsFacing(attacker, defender.x, defender.y))
-		if (attacker.npctemplate)
-			TurnObjectToward(attacker, defender.x, defender.y);
+
+	if (!IsFacing(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y))
+		if (attacker.IsNPC())
+			TurnObjectToward(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y);
 		else
-			if (IsBehind(attacker, defender.x, defender.y) && !(getcooldown(attacker, "deathdance")))
-				SendSysMessage(attacker, "Voce esta de costas para o inimigo!");
+			if (IsBehind(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y) && !(getcooldown(attacker, "deathdance")))
+				Message("Você está de costas para o inimigo!", FONTCOLOR_ERROR).SendSys(attacker);
 				retval := 0;
 			endif
 		endif
-	elseif (!IsFacing(defender, attacker.x, attacker.y))
-	// if ( defender.npctemplate )
-	// 	TurnObjectToward(defender, attacker.x, attacker.y);
-	// endif
 	endif
 
 	return retval;
