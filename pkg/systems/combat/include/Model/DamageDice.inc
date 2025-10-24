@@ -13,13 +13,13 @@ class DamageDice(IDamageDice)
 	var _energy := Dice("1d6+2");
 
 	function DamageDice(this, slash := DAMAGE_NONE, piercing := DAMAGE_NONE, blunt := DAMAGE_NONE, fire := DAMAGE_NONE, cold := DAMAGE_NONE, poison := DAMAGE_NONE, energy := DAMAGE_NONE)
-		this._slash := slash == DAMAGE_NONE ? Dice(DAMAGE_NONE) : slash;
-		this._piercing := piercing == DAMAGE_NONE ? Dice(DAMAGE_NONE) : piercing;
-		this._blunt := blunt == DAMAGE_NONE ? Dice(DAMAGE_NONE) : blunt;
-		this._fire := fire == DAMAGE_NONE ? Dice(DAMAGE_NONE) : fire;
-		this._cold := cold == DAMAGE_NONE ? Dice(DAMAGE_NONE) : cold;
-		this._poison := poison == DAMAGE_NONE ? Dice(DAMAGE_NONE) : poison;
-		this._energy := energy == DAMAGE_NONE ? Dice(DAMAGE_NONE) : energy;
+		this.SetSlashDamage(slash);
+		this.SetPiercingDamage(piercing);
+		this.SetBluntDamage(blunt);
+		this.SetFireDamage(fire);
+		this.SetColdDamage(cold);
+		this.SetPoisonDamage(poison);
+		this.SetEnergyDamage(energy);
 	endfunction
 
 	function GetSlashDamage(this)
@@ -50,42 +50,98 @@ class DamageDice(IDamageDice)
 		return this._energy;
 	endfunction
 
-	function SetSlashDamage(this, value)
-		this._slash := value;
+	function SetSlashDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._slash := err;
+			return err;
+		endif
+
+		this._slash := dice;
+
 		return this;
 	endfunction
 
-	function SetPiercingDamage(this, value)
-		this._piercing := value;
+	function SetPiercingDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._piercing := err;
+			return err;
+		endif
+
+		this._piercing := dice;
+
 		return this;
 	endfunction
 
-	function SetBluntDamage(this, value)
-		this._blunt := value;
+	function SetBluntDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._blunt := err;
+			return err;
+		endif
+
+		this._blunt := dice;
+
 		return this;
 	endfunction
 
-	function SetFireDamage(this, value)
-		this._fire := value;
+	function SetFireDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._fire := err;
+			return err;
+		endif
+
+		this._fire := dice;
+
 		return this;
 	endfunction
 
-	function SetColdDamage(this, value)
-		this._cold := value;
+	function SetColdDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._cold := err;
+			return err;
+		endif
+
+		this._cold := dice;
+
 		return this;
 	endfunction
 
-	function SetPoisonDamage(this, value)
-		this._poison := value;
+	function SetPoisonDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._poison := err;
+			return err;
+		endif
+
+		this._poison := dice;
+
 		return this;
 	endfunction
 
-	function SetEnergyDamage(this, value)
-		this._energy := value;
+	function SetEnergyDamage(this, dice)
+		if (!(dice is @Dice))
+			var err := error{ errortext := "Parameter must be a Dice object!" };
+			this._energy := err;
+			return err;
+		endif
+
+		this._energy := dice;
+
 		return this;
 	endfunction
 
 	function ToString(this)
-		return $"Weapon Damage: Slash={this._slash}, Piercing={this._piercing}, Blunt={this._blunt}, Fire={this._fire}, Cold={this._cold}, Poison={this._poison}, Energy={this._energy}";
+		return $"Weapon Damage: " +
+			$"Slash={this._slash.ToString()}, " +
+			$"Piercing={this._piercing.ToString()}, " +
+			$"Blunt={this._blunt.ToString()}, " +
+			$"Fire={this._fire.ToString()}, " +
+			$"Cold={this._cold.ToString()}, " +
+			$"Poison={this._poison.ToString()}, " +
+			$"Energy={this._energy.ToString()}";
 	endfunction
 endclass
