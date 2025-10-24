@@ -148,6 +148,10 @@ function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
 		created := CreateItemStacksAtLocation(mobile, finalObjtype, amount, loc.x, loc.y, loc.z,
 											   loc.realm);
 	endif
+	
+	if(created.size() == 0 && tier > 0)
+		SendSysMessageEx(mobile,"É possível que não exista um material configurado para este tier, por favor verifique.",SSM_INFO_IC);
+	endif
 
 	foreach obj in (created)
 		var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
