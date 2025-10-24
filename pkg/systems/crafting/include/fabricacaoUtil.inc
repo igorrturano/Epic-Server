@@ -222,24 +222,40 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 
 	if(propFabricadoMontado)
 		var descriptor;
+		var receitaObjtype :=  CInt(propFabricadoMontado.receita.objtype);
 
 		if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
 			var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
 			
 			descriptor := CriaComponenteDescriptor(
-											propFabricadoMontado.receita.objtype,
+											receitaObjtype,
 											propFabricadoMontado.esquema.material,
 											qualidades.keys()[1],
 											propFabricadoMontado.receita.complexoComponente.encaixe,
 											ReadConfigFile(RECURSOS_CONFIG_PATH)
 											);
 		else
-			descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+			descriptor := GetItemDescriptor(receitaObjtype);
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
+		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
+		//TODO trecho a seguir foi trazido do antigo sistema de Alchemy. remover uma vez que o novo sistema estiver UP.
+		var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
+		var science := (alchemyRecipes[receitaObjtype].science);
+		if(science)
+			var tier := (alchemyRecipes[receitaObjtype].tier);
+			var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
+			var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
+			var bonus := (((crafterInt-50)/10)+(crafterskill));
+			descriptor.CProps.insert("bonus",bonus);
+			descriptor.CProps.insert("tier",tier);
+			descriptor.CProps.insert("crafterskill",crafterskill*10);
+			descriptor.CProps.insert("science",science);
+		endif
+
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
@@ -267,6 +283,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 		AplicaFechadura(quem, item);
 		item.setAttrBase();
 		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
+	
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
