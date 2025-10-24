@@ -67,7 +67,7 @@ function SwampDruid(who, mobs)
 		foreach mob in mobs
 			if (randomint(100) < 100)
 				PlaySoundEffect(mob, 0x208);
-				PlayStationaryEffect(mob.x, mob.y, mob.z, GFX_POISON_GAS, 10, 10, 0, mob.realm);
+				PlayStationaryEffect(mob.x, mob.y, mob.z, FX_POISON_GAS, 10, 10, 0, mob.realm);
 				ApplyDamageEX(mob, RandomDiceRoll("1d10") + 15, DMG_POISON);
 				PrintTextAbove(mob, "Um fogo-fatuo explode proximo de voce!");
 			endif

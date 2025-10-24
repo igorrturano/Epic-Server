@@ -23,7 +23,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlayMovingEffect(who, targ, GFX_SMALL_FIREBALL, 5, 1);
+	PlayMovingEffect(who, targ, FX_SMALL_FIREBALL, 5, 1);
 	PlaySoundEffect(who, SFX_MAGIC_ARROW);
 
 	// To-Do:

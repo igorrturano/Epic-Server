@@ -22,7 +22,7 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_BLESS);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_BORDER, 7, 16);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_BORDER, 7, 16);
 
 	var level := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + 5;
 	if (temHabilidade(who, "Ultimo Milagre"))
