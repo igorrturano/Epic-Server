@@ -428,7 +428,7 @@ function PegaDescEfeitosComponente(componente, xDesc)
 			descValor := RED_FIRE + propriedades.valorPrincipal + " <br>";
 		endif
 
-		if(componente.tier.valor == 3)
+		if(componente.tier.valor >= PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valor)
 			corLinha := AMARELO_CLARO;
 		endif
 
