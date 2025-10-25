@@ -6,4 +6,31 @@ include ":message:model/Message";
 
 
 program MainHitScript(attackInfo)
+	// Define attacker como o originador do ataque
+	SetScriptController(attackInfo.GetAttacker().GetMobRef());
+
+	if (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
+		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
+	endif
+
+	PlayAttackSound(attackInfo);
+	ArrowRecovery(attackInfo); // Calcula a chance do projétil não quebrar
+
+	// Verifica se o defesor está em modo guerra, se o ataque foi realizado de uma posição onde bloquear é possível  e, sendo, processa o teste de bloaqueio
+	if ((!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y) && defender.warmode)
+		if (ParryCheck(attacker, defender, rawdamage, weapon)) // Calcula o bloqueio e os danos no escudo do defensor
+			basedamage := 0;
+		endif
+	endif
+
+	WeaponHitScripts(attackInfo);
+	ArmorHitScripts(attackInfo);
+	PoisonChecks(attackInfo);
+
+	ApplyDamage(attackInfo); // TODO: Aplicar dano físico e elemental
+
+	MasteryCombat_Advance(attackInfo.GetAttacker().GetMobRef(), struct{ hits := 1, damage := basedamage });
+	AchievementCombat_Advance(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), struct{ hits := 1, damage := basedamage });
+
+	return 1;
 endprogram
