@@ -1482,7 +1482,8 @@ endfunction
 function CriaPropFabricadoGerada(
 									objtype, 
 									tier, 
-									deveGerarComponentesOpcionais, 
+									deveGerarComponentesOpcionais,
+									listaDeMateriaisIgnorados, 
 									modoEscolhaMaterial, 
 									classe := 1
 								)
@@ -1518,6 +1519,9 @@ function CriaPropFabricadoGerada(
 
 		foreach materialPossivel in materiaisPossiveis
 			sleepms(2);
+			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
+				continue;	
+			endif
 			var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
 			var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
 
