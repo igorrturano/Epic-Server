@@ -5,7 +5,7 @@ function FabricaItensComplexos(quem,profissao, modoGm := false)
 	EnviaItensComplexosGump(quem,profissao, modoGm);
 endfunction
 
-function GeraItemComplexo( 
+function GeraDescriptorComplexo( 
 							objtype,
 							tier,
 							isDispensavel := 1, 
@@ -13,10 +13,6 @@ function GeraItemComplexo(
 							deveGerarOpcionais := false, 
 							classe := 1
 						)
-	
-	if(FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER && tier == 1)
-		return error{"errortext" := "Para a opção menor que o tier, o tier informado não pode ser 1."};
-	endif
 
 	var fabricadoProp := CriaPropFabricadoGerada(objtype, tier,deveGerarOpcionais,modoEscolhaMaterial, classe);
 
@@ -25,8 +21,32 @@ function GeraItemComplexo(
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,isDispensavel);
 	descriptor.CProps.insert(PROPNAME_FABRICADO, fabricadoProp);
 	descriptor.maxhp := fabricadoProp.modificadorHpTotal? descriptor.maxhp + fabricadoProp.modificadorHpTotal : descriptor.maxhp;
-	descriptor.hp := descriptor.maxhp;
 	descriptor.color := fabricadoProp.cor;
+
+	return descriptor;
+endfunction
+
+function GeraItemComplexo( 
+							quem,
+							objtype,
+							quantidade,
+							tier,
+							isDispensavel := 1, 
+							modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MESMO_TIER,
+							deveGerarOpcionais := false, 
+							classe := 1
+						)
+
+	var descriptor :=  GeraDescriptorComplexo(
+							objtype,
+							tier,
+							isDispensavel, 
+							modoEscolhaMaterial,
+							deveGerarOpcionais, 
+							classe);
+
+	var item := CreateItemInContainer( quem.backpack, descriptor, quantidade );
+	item.hp := item.maxhp;
 
 	return descriptor;
 endfunction

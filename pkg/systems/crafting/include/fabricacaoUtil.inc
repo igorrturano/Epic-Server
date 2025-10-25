@@ -78,13 +78,15 @@ function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
 endfunction
 
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -0.7) 
 	
 	if(quantidade == error || quantidade.size() == 0)
 		return error{"errortext":="O parâmetro quantidade é obrigatório."};
 	endif
 
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
+	//quanto menor o declinio, mais espalhado fica o resultado.
+	//o pico é o equivalente a qual valor bate o pico no eixo y.
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1); 
 	var retorno := dictionary;
 
 	//Print("Chances: "  + chancesPorTier);
@@ -125,11 +127,11 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Mediocre" , valor := -1}; break;
-		COMPONENTE_TIERS::COMUM : return struct {desc := "Comum" , valor := 0}; break;
-		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 1}; break;
-		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 2}; break;
-		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 3}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 4}; break;
 		default:
 			return struct {desc := "Erro!" , valor := 0}; break;
 	endcase
@@ -220,26 +222,40 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 
 	if(propFabricadoMontado)
 		var descriptor;
+		var receitaObjtype :=  CInt(propFabricadoMontado.receita.objtype);
 
 		if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
 			var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
 			
 			descriptor := CriaComponenteDescriptor(
-											propFabricadoMontado.receita.objtype,
+											receitaObjtype,
 											propFabricadoMontado.esquema.material,
 											qualidades.keys()[1],
 											propFabricadoMontado.receita.complexoComponente.encaixe,
 											ReadConfigFile(RECURSOS_CONFIG_PATH)
 											);
 		else
-			descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+			descriptor := GetItemDescriptor(receitaObjtype);
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		
+		//TODO trecho a seguir foi trazido do antigo sistema de Alchemy. remover uma vez que o novo sistema estiver UP.
+		var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
+		var science := (alchemyRecipes[receitaObjtype].science);
+		if(science)
+			var tier := (alchemyRecipes[receitaObjtype].tier);
+			var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
+			var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
+			var bonus := (((crafterInt-50)/10)+(crafterskill));
+			descriptor.CProps.insert("bonus",bonus);
+			descriptor.CProps.insert("tier",tier);
+			descriptor.CProps.insert("crafterskill",crafterskill*10);
+			descriptor.CProps.insert("science",science);
+		endif
+
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
@@ -256,6 +272,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 		endif
 
+		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
 		item.hp := item.maxhp;
 		
 		if(!item)
@@ -266,6 +283,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 		AplicaFechadura(quem, item);
 		item.setAttrBase();
 		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
+	
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");

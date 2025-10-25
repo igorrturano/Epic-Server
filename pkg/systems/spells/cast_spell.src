@@ -437,6 +437,8 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 	var attribute := MAGERY;
 	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
 		attribute := ARCANA;
+	elseif (spellinfo.Type == "Divine")
+		attribute := THEOLOGY;
 	endif
 
 	var difficulty := CInt(spellinfo.Difficulty);

@@ -372,20 +372,19 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
             	hit_chance -= 10;
-            	SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
+				Message("A baixa luminosidade faz você lutar com dificuldade.").SendSys(attacker);
 			else
 				hit_chance -= 20;
-				SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
+				Message("A baixa luminosidade faz você lutar com extrema dificuldade.").SendSys(attacker);
 			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
-		SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 		if (GetCooldown(attacker, "lightvision") > 0)
 			hit_chance -= 10;
-			SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
+			Message("A luz intensa faz você lutar com dificuldade.").SendSys(attacker);
 		else
 			hit_chance -= 20;
-			SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
+			Message("A luz intensa faz você lutar com extrema dificuldade.").SendSys(attacker);
 		endif
     endif
 endfunction
