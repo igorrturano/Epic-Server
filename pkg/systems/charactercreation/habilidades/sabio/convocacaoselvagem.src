@@ -1,0 +1,278 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":taming:taming";
+include "include/client";
+include "include/say";
+include "include/sounds";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":tn:boss";
+include ":spells:summon";
+include ":timedScripts:timedScripts";
+include "include/epicConstants";
+
+program convocacaoselvagem(who)
+	// Check if player has any bonded creatures
+	var bonded_creatures := GetObjProperty(who, "spirit_bonds");
+
+	if (!bonded_creatures || bonded_creatures.size() == 0)
+		// No bonded creatures, allow bonding with a new one
+		return BondWithCreature(who);
+	else
+		// Has bonded creatures, show gump to select which one to summon
+		return SummonBondedCreature(who, bonded_creatures);
+	endif
+endprogram
+
+// Function to bond with a new creature
+function BondWithCreature(who)
+	SendSysMessageEx(who, "Escolha uma criatura selvagem para criar um vinculo espiritual.", SSM_REQUEST);
+	var targ := Target(who);
+
+	// Check validity of the target
+	if (!IsValidBondTarget(who, targ))
+		return 0;
+	endif
+
+	// Get player's Theology skill
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var max_tier := CInt(theology / 20);
+
+	if (max_tier < 1)
+		max_tier := 1;
+	elseif (max_tier > 5)
+		max_tier := 5;
+	endif
+
+	// Get creature's tier
+	var creature_tier := CInt(targ.getTier());
+	if (!creature_tier)
+		creature_tier := 1;
+	endif
+
+	// Check if the player's skill is high enough
+	if (creature_tier > max_tier)
+		SendSysMessageEx(who, "A criatura " + targ.name + " e poderosa demais para voce criar um vinculo. (Tier " + creature_tier + " requer " + (creature_tier * 20) + " de Theology)", SSM_FAIL);
+		return 0;
+	endif
+
+	// Set a cooldown property to prevent spamming attempts
+	SetObjProperty(who, "#bondwait", ReadGameClock() + 5);
+
+	// Begin the bonding attempt loop
+	var info := struct;
+	info.+x := who.x;
+	info.+y := who.y;
+	info.+facing := who.facing;
+	info.+difficulty := creature_tier * 20;
+
+	while (BondLoop(who, targ, info))
+		SetObjProperty(who, "#bondwait", ReadGameClock() + 5);
+		sleep(3);
+
+		// Check if the bonding attempt is successful based on the player's skill
+		if (SkillCheck(who, THEOLOGY, CInt(info.difficulty)) > 0)
+			SendSysMessageEx(who, "Voce criou um vinculo espiritual com " + targ.name + ".", SSM_INFO);
+
+			// Store the creature bond
+			StoreBond(who, targ);
+
+			break; // Exit the loop after successful bond
+		else
+			SendSysMessageEx(who, "Voce falhou em criar um vinculo espiritual com " + targ.name + ".", SSM_FAIL);
+			return 0;
+		endif
+	endwhile
+
+	return 1;
+endfunction
+
+// Function to summon a bonded creature
+function SummonBondedCreature(who, bonded_creatures)
+	var input := CreateSummonGump(who, bonded_creatures);
+
+	if (!input[0] || input[0] == 0)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Get the selected creature
+	var selected_index := input[0] - 200;
+	if (selected_index < 1 || selected_index > bonded_creatures.size())
+		return 0;
+	endif
+
+	var selected_creature := bonded_creatures[selected_index];
+
+	// Ask for target location
+	SendSysMessageEx(who, "Escolha o local para invocar " + selected_creature.name + ".", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Visual and sound effects
+	PerformAction(who, ANIM_CAST_AREA);
+	PlaySoundEffect(who, SFX_SPELL_SUMMON_CREATURE);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SMOKE, 10, 10, 0, who.realm);
+
+	// Summon the creature
+	var creature := summon(selected_creature.template, targ, who);
+
+	if (!creature)
+		SendSysMessageEx(who, "Falha ao invocar o espirito.", SSM_FAIL);
+		return 0;
+	endif
+
+	PrintTextAbove(who, "*invocando " + selected_creature.name + "*");
+	SendSysMessageEx(who, "Voce invocou " + selected_creature.name + "!", SSM_INFO);
+
+	// Set summon duration based on Theology skill
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var duration := 60 + (theology * 3);
+	var level := CInt(theology / 5) + 5;
+
+	TS_StartTimer(creature, "summon", duration, level);
+
+	return 1;
+endfunction
+
+// Function to create the summon selection gump
+function CreateSummonGump(who, bonded_creatures)
+	var gump := GFCreateGump();
+
+	var size := bonded_creatures.size() * 26;
+
+	GFResizePic(gump, 17, 31, 9390, 359, 125 + size);
+	GFHTMLArea(gump, 94, 69, 232, 20, "<BASEFONT Size=5 Color=#999999 >Convocacao Selvagem", 0, 0); // shadow
+	GFHTMLArea(gump, 96, 71, 232, 20, "<BASEFONT Size=5 Color=#999999 >Convocacao Selvagem", 0, 0); // shadow
+	GFHTMLArea(gump, 95, 70, 232, 20, "<BASEFONT Size=5 Color=#2d8a2d >Convocacao Selvagem", 0, 0);
+	GFGumpPic(gump, 63, 91, 1469);
+	GFGumpPic(gump, 80, 91, 1469);
+	GFTextLine(gump, 63, 100, 0, "Espiritos Vinculados");
+	GFTextLine(gump, 259, 100, 0, "Tier");
+	GFTextLine(gump, 304, 100, 0, "Invocar");
+	GFGumpPic(gump, 38, 103, 9773, 0);
+	GFGumpPic(gump, 296, 0, 9000, 0);
+
+	var y := 121;
+	foreach creature in bonded_creatures
+		var color := "2d8a2d";
+		GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, creature.name), 1, 0);
+		GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(creature.tier), 1, 0);
+		GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _creature_iter);
+		sleepms(2);
+		y += 26;
+	endforeach
+
+	return GFSendGump(who, gump);
+endfunction
+
+// Function to check if the target is valid for bonding
+function IsValidBondTarget(who, targ)
+	if (!targ.IsA(POLCLASS_NPC))
+		SendSysMessageEx(who, "Essa nao e uma criatura valida.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Check if it's an animal
+	if (!targ.isAnimalBrain())
+		SendSysMessageEx(who, "Voce so pode criar vinculos com animais selvagens.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (targ.script[":ghaia:tamed"])
+		SendSysMessageEx(who, "Voce so pode criar vinculos com criaturas selvagens.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLineOfSight(who, targ))
+		SendSysMessageEx(who, "Voce nao pode ver claramente a criatura!", SSM_FAIL);
+		return 0;
+	endif
+
+	if (isTrueBoss(targ))
+		SendSysMessageEx(who, "Essa criatura poderosa nao pode ser vinculada.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+// Function to store the creature bond
+function StoreBond(who, targ)
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var max_bonds := CInt(theology / 20);
+
+	if (max_bonds < 1)
+		max_bonds := 1;
+	elseif (max_bonds > 5)
+		max_bonds := 5;
+	endif
+
+	// Create a new struct to store the bond details
+	var bond := struct;
+	bond.+name := targ.name;
+	bond.+template := targ.npctemplate;
+	bond.+tier := CInt(targ.getTier());
+
+	// Check if the player already has a list of bonds
+	var bond_list := GetObjProperty(who, "spirit_bonds");
+
+	if (bond_list == error)
+		bond_list := array;
+	endif
+
+	// Check if a bond with the same template already exists
+	foreach old_bond in bond_list
+		if (old_bond.template == targ.npctemplate)
+			SendSysMessageEx(who, "Voce ja tem um vinculo com " + targ.name + ". O vinculo foi renovado.", SSM_INFO);
+			bond_list.erase(_old_bond_iter);
+			break;
+		endif
+	endforeach
+
+	// Remove the oldest entry if the list exceeds the max bonds allowed
+	if (bond_list.size() >= max_bonds)
+		var old_bond := bond_list[1];
+		SendSysMessageEx(who, "Ao criar um novo vinculo com " + targ.name + ", voce perde o vinculo com " + old_bond.name + ".", SSM_FAIL);
+		bond_list.erase(1);
+	endif
+
+	// Add the new bond to the end of the list
+	bond_list.append(bond);
+
+	SetObjProperty(who, "spirit_bonds", bond_list);
+
+	SendSysMessageEx(who, "Voce agora tem " + bond_list.size() + " vinculo(s) espiritual(is).", SSM_INFO);
+endfunction
+
+// Function to check bonding conditions
+function BondLoop(who, targ, byref info)
+	var my_hostiles := ListHostiles(who, 15);
+	var targ_hostiles := ListHostiles(targ, 15);
+
+	if (targ.master)
+		SendSysMessageEx(who, "Voce so pode criar vinculos com criaturas selvagens.", SSM_FAIL);
+		return 0;
+	elseif (targ_hostiles.size() > 0)
+		SendSysMessageEx(who, "O animal " + targ.name + " esta sob ataque e nao pode ser vinculado agora.", SSM_FAIL);
+		return 0;
+	elseif (my_hostiles.size() > 0)
+		SendSysMessageEx(who, "Voce nao pode criar um vinculo com " + targ.name + " enquanto esta sendo atacado.", SSM_FAIL);
+		return 0;
+	elseif (Distance(who, targ) > 2)
+		SendSysMessageEx(who, "Voce esta muito longe da criatura para criar um vinculo.", SSM_FAIL);
+		return 0;
+	endif
+
+	PrintTextAbove(who, "*criando um vinculo espiritual com " + targ.name + "*");
+
+	return 1;
+endfunction
