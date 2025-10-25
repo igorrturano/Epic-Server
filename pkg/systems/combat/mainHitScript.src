@@ -77,33 +77,33 @@ program MainHitScript(params)
 	return 1;
 endprogram
 
-function CanAttack(attacker, defender)
-	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
-		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attacker);
-		return 0;
-	endif
+// function CanAttack(attacker, defender)
+// 	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
+// 		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attacker);
+// 		return 0;
+// 	endif
 
-	if (attacker == defender) // Impede de atacar-se
-		Message("Você não pode atacar você mesmo.", FONTCOLOR_ERROR).SendSys(attacker);
-		return 0;
-	endif
+// 	if (attacker == defender) // Impede de atacar-se
+// 		Message("Você não pode atacar você mesmo.", FONTCOLOR_ERROR).SendSys(attacker);
+// 		return 0;
+// 	endif
 
-	if (defender.hidden) // Impede de atacar gente escondida
-		return 0;
-	elseif (attacker.hidden) // Calcula se o atacante escondido revela ou não
-		if (GetObjProperty(attacker, "ataquefurtivoaprimorado") == 1) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
-			EraseObjProperty(attacker, "ataquefurtivoaprimorado");
-		else // Revela o atacante
-			attacker.hidden := 0;
-		endif
-	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
-		LogToFile(":fls_core:pets.log", attacker.acctname + " atacou " + defender.name + " (" + defender.npctemplate + ")", LOG_DATETIME);
-	elseif (defender.npctemplate == ":brainai:GolemMartelo")
-		return 0;
-	endif
+// 	if (defender.hidden) // Impede de atacar gente escondida
+// 		return 0;
+// 	elseif (attacker.hidden) // Calcula se o atacante escondido revela ou não
+// 		if (GetObjProperty(attacker, "ataquefurtivoaprimorado") == 1) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
+// 			EraseObjProperty(attacker, "ataquefurtivoaprimorado");
+// 		else // Revela o atacante
+// 			attacker.hidden := 0;
+// 		endif
+// 	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+// 		LogToFile(":fls_core:pets.log", attacker.acctname + " atacou " + defender.name + " (" + defender.npctemplate + ")", LOG_DATETIME);
+// 	elseif (defender.npctemplate == ":brainai:GolemMartelo")
+// 		return 0;
+// 	endif
 
-	return 1;
-endfunction
+// 	return 1;
+// endfunction
 
 function DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var move := GetObjProperty(attacker, "movement");

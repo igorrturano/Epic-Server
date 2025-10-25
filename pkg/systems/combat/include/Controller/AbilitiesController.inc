@@ -24,10 +24,10 @@ include "SkillController";
 include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
-enum HAB_TAGS
-	HAB_SUCCESS := "ATIVADA!",
-	HAB_FAIL := "FALHOU!",
-	HAB_COOLDOWN := "EM RECARGA!",
+enum class HAB_STATUS
+	SUCCESS := "ATIVADA!",
+	FAIL := "FALHOU!",
+	COOLDOWN := "EM RECARGA!",
 endenum
 
 enum class TARGET
@@ -226,7 +226,7 @@ function CheckHab_Martir(byref attacker, byref defender, byRef attackInfo)
 		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
 		if (martir && !martir.dead)
 			defender := martir;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			return 1;
 		endif
 	endif
@@ -238,7 +238,7 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byRef attackInfo)
 	var HAB_NAME := "Manto de Rothen";
 	
 	if (GetObjProperty(defender, "#mantorothen"))
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 		var healed := CInt(attackInfo.damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
 		attackInfo.damage := attackInfo.damage - healed;
 		var party := defender.party;
@@ -265,7 +265,7 @@ function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byRef att
 		if (getObjProperty(defender, "#recuperacaosalvadora"))
 			EraseObjProperty(defender, "#recuperacaosalvadora");
 			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			HealDamage(defender, CInt(GetPH(defender)/2));
 			return 1;
 		endif
@@ -277,7 +277,7 @@ endfunction
 function CheckHab_Vinganca(byref attacker, defender, byRef attackInfo)
 	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + attackInfo.damage));
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
 		return 1;
 	endif
 
@@ -334,7 +334,7 @@ function CheckHab_TaticasArcanas(byref attacker, byref defender, byRef attackInf
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			attackInfo.damage += damagemod;
-			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
 		endif
@@ -349,7 +349,7 @@ function CheckHab_BrigadorDeTaverna(byref attacker, defender, byRef attackInfo)
 	if (TemHabilidade(attacker, HAB_NAME) && attacker.weapon.objtype == 0x1F020)
 		var damagemod := 2;
 		attackInfo.damage += damagemod;
-		DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+		DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 		DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 		return 1;
 	endif
@@ -364,7 +364,7 @@ function CheckHab_KaniNoSutairu(byref attacker, defender, byRef attackInfo)
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
@@ -380,7 +380,7 @@ function CheckHab_Exoesqueleto(byref attacker, byref defender, byRef attackInfo)
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 2;
 			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
@@ -396,7 +396,7 @@ function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef atta
 		if (TemHabilidade(defender, HAB_NAME) && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
@@ -427,7 +427,7 @@ function CheckHab_Furia(byref attacker, byref defender, byRef attackInfo)
 		if (GetCooldown(attacker, "furia"))
 			var damagemod := RandomDiceRoll("1d4");
 			attackInfo.damage += damagemod;
-			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
 		endif
@@ -443,12 +443,12 @@ function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byRef attac
 		if (CheckHab_Furia(defender, 0, attackInfo) && TemHabilidade(defender, HAB_NAME)) // Antigo Pele de Rocha
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
 	else
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_FAIL}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::FAIL}!");
 	endif
 
 	return 0;
@@ -504,7 +504,7 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byRef attackI
 			endif
 
 			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 
 			return 1;
@@ -523,7 +523,7 @@ function CheckHab_KenNoTatsujin(byref attacker, byref defender, byRef attackInfo
 			PlaySoundEffect(defender, 0x51f);
 			defender.attack_once(attacker);
 
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
 
 			return 1;
 		else
@@ -621,21 +621,21 @@ function CheckHab_ArmaduraArcana(byref attacker, byref defender, byRef attackInf
 		PlaySoundEffect(attacker, 0x65b);
 		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
 		TS_Starttimer(attacker, "congelamento", 5);
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!");
 		return 1;
 	elseif (GetCooldown(defender, "incinerate_enemy") && dist == 1)
 		var HAB_TYPE := "Incinerar";
 		PlaySoundEffect(attacker, 0x5D0);
 		PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
 		TS_Starttimer(attacker, "queimar", 5, 1, defender);
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!");
 		return 1;
 	elseif (GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
 		var HAB_TYPE := "SEI LA QUE NOME E ESSE... PRINTA ISSO PRO GM AI!";
 		PlaySoundEffect(attacker, 0x5CF);
 		PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
 		TS_StartTimer(defender, "velocidade", 5);
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!");
 		return 1;
 	endif
 
@@ -675,7 +675,7 @@ function CheckHab_Ainalaith(byref attacker, byref defender, byRef attackInfo)
 			SetObjProperty( attacker, "#shooting_effects", arrow_effects );
 		endif
 
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!");
 
 		return 1;
 	endif
@@ -914,7 +914,7 @@ function CheckHab_DivineAuthority(byref attacker, byref defender, byRef attackIn
     if (IsPhysicalDamage(attackInfo.type))
         if (GetCooldown(defender, "mountains_strength") > 0)
             attackInfo.damage := 1; // Reduce physical damage to 1
-            DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+            DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
             DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: Dano reduzido para 1");
             return 1;
         endif
