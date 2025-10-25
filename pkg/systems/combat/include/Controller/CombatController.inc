@@ -9,6 +9,7 @@ include ":tn:cooldown";
 // include ":combat:Controller/FXController";
 include ":faccao:faccao";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":message:model/Message";
 
 function checkGender(object)
 	var gender := 0;
@@ -54,16 +55,15 @@ function PlayHurtSound(defender)
 	endif
 endfunction
 
-
 function CanBackStab(who, weapon)
-
 	var can_back_stab := 0;
+
 	if ((weapon.attribute) != "Two_Handed")
 		can_back_stab := 1;
 	endif
 
-	if ( !can_back_stab )
-		SendSysMessage(who, "Esta arma nao e apropriada para um ataque furtivo.");
+	if (!can_back_stab)
+		Message("Esta arma não é apropriada para um ataque furtivo.").SendSys(who);
 		return 0;
 	endif
 
@@ -93,7 +93,7 @@ function AmmoCheck(attacker, defender)
 		endif
 	var ammo := GetObjProperty(attacker.weapon, "ammo");
 	if (!ammo)
-		SendSysMessage(attacker, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]").SendSys(attacker);
 		return 0;
 	endif
 
