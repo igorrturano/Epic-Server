@@ -83,13 +83,13 @@ function CanAttack(attackInfo)
 		return 0;
 	endif
 
-	if (attackInfo.GetDefender().GetMobRef().GetProp("#PrisaoGelida") == 1)
+	if (attackInfo.GetDefender().GetMobRef().GetProp("#PrisaoGelida"))
 		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		return 0;
 	endif
 
 	if (attackInfo.GetAttacker().GetMobRef().hidden) // Checa se o atacante escondido revela ou não
-		if (attackInfo.GetAttacker().GetMobRef().GetProp("ataquefurtivoaprimorado") == 1) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
+		if (attackInfo.GetAttacker().GetMobRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
 			attackInfo.GetAttacker().GetMobRef().EraseProp("ataquefurtivoaprimorado");
 		else // Revela o atacante
 			attackInfo.GetAttacker().GetMobRef().hidden := 0;
@@ -145,7 +145,7 @@ function TryToAttack(attackInfo)
 	else
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
-		PlayCombatSound(attackInfo);
+		PlayAttackSound(attackInfo);
 	endif
 endfunction
 
@@ -155,24 +155,9 @@ function DoAttack(attackInfo)
 	var armorsInZone := attackInfo.GetAttacker().GetEquipBySlot(CS_GetRandomArmorZone());
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
-		dmg := Run_Script(":combat:mainHitScript", array{
-			attacker,
-			defender,
-			attacker.weapon, 
-			armor,
-			dmg,
-			dmg
-		});
-	else // Se for ataque da segunda arma, executa com delay
-		dmg := Start_Script(":combat:mainHitScript", array{
-			attacker,
-			defender,
-			attacker.weapon, 
-			armor,
-			dmg,
-			dmg,
-			OFFHAND_DELAY
-		});
+		Run_Script(":combat:attackHitScript", attackInfo);
+	else // Se for ataque da segunda arma, executa async com delay
+		Start_Script(":combat:attackHitScript", attackInfo);
 	endif
 endfunction
 
