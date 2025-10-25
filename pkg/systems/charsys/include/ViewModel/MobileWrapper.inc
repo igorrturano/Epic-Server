@@ -101,6 +101,10 @@ class MobileWrapper(IMobileWrapper)
 		return this._mobRef;
 	endfunction
 
+	function GetSerial(this)
+		return this._mobRef.serial;
+	endfunction
+
 	function GetName(this)
 		return this._name;
 	endfunction
@@ -224,26 +228,46 @@ class MobileWrapper(IMobileWrapper)
 		return this._weight;
 	endfunction
 
-	function GetEquipBySlot(this, slotEnum) // Os enum estão em EquipWrapper::EQUIP_SLOT
+	function GetGender(this)
+		if (this._mobRef.gender == 0)
+			return MOBILE_GENDER::MALE;
+		elseif (this._mobRef.gender == 1)
+			return MOBILE_GENDER::FEMALE;
+		else
+			return MOBILE_GENDER::UNDEFINED;
+		endif
+	endfunction
+
+	function GetNPCTemplate(this)
+		if (!this.IsNPC())
+			return error{ "errortext" := "This mobile is not an NPC!" };
+		else
+			return this._mobRef.npctemplate;
+		endif
+	endfunction
+
+	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
 		var equipsInSlot;
-		if (slotEnum == EQUIP_SLOT::WEAPON)
+
+		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
+		if (equipSlot == WEAPON)
 			return EquipWrapperWeapon(this._mobRef.weapon);
-		elseif (slotEnum == EQUIP_SLOT::SHIELD)
+		elseif (equipSlot == SHIELD)
 			return EquipWrapperArmor(this._mobRef.shield);
-		elseif (slotEnum == EQUIP_SLOT::HEAD)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Head");
-		elseif (slotEnum == EQUIP_SLOT::NECK)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Neck");
-		elseif (slotEnum == EQUIP_SLOT::BACK)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Back");
-		elseif (slotEnum == EQUIP_SLOT::CHEST)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Chest");
-		elseif (slotEnum == EQUIP_SLOT::HANDS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Hands");
-		elseif (slotEnum == EQUIP_SLOT::LEGS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Legs");
-		elseif (slotEnum == EQUIP_SLOT::FEET)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, "Feet");
+		elseif (equipSlot == HEAD)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, HEAD);
+		elseif (equipSlot == NECK)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, NECK);
+		elseif (equipSlot == ARMS)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, ARMS);
+		elseif (equipSlot == BODY)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, BODY);
+		elseif (equipSlot == HANDS)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, HANDS);
+		elseif (equipSlot == LEGS)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, LEGS);
+		elseif (equipSlot == FEET)
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, FEET);
 		else
 			return error {"errortext" := "Wrong slot specified!"};
 		endif
@@ -351,6 +375,13 @@ class MobileWrapper(IMobileWrapper)
 			return error{ "errortext" := "The param must be a MobileWrapper!" };
 		endif
 
-		return this._mobRef == otherMobileWrapper.GetMobRef();
+		return this.GetMobRef() == otherMobileWrapper.GetMobRef() &&
+			   this.GetSerial() == otherMobileWrapper.GetSerial();
 	endfunction
 endclass
+
+enum class MOBILE_GENDER
+	MALE := "Male",
+	FEMALE := "Female",
+	UNDEFINED := "Undefined"
+endenum

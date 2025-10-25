@@ -90,6 +90,9 @@ function PlayAttackAnimation(who)
 	PerformAction(who, attackAnim);
 endfunction
 
+function PlayCombatSound(attackInfo)
+endfunction
+
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
 	var attackType := EquipWrapperWeapon(weapon).GetAttackType();

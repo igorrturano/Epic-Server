@@ -29,7 +29,7 @@ class AttackInfo(IAttackInfo)
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
-		this._damageHand := AttackInfo::_damageHand;
+		this._damageHand := DAMAGEHAND::MAINHAND;
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;

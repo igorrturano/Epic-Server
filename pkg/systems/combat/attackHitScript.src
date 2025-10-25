@@ -1,0 +1,9 @@
+include ":combat:Controller/DamageController";
+include ":mastery:CombatController";
+include ":achievements:CombatController";
+include ":IO:CFGFile";
+include ":message:model/Message";
+
+
+program MainHitScript(attackInfo)
+endprogram

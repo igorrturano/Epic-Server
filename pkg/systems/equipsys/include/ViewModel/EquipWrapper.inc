@@ -2,6 +2,7 @@ use uo;
 
 include "IEquipWrapper";
 include ":IO:CFGFile";
+include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
 
@@ -171,21 +172,17 @@ class EquipWrapper(IEquipWrapper)
 	uninit function _GetSTRRequired(this);
 endclass
 
-enum class EQUIP_SLOT
-	HEAD,
-	NECK,
-	BACK,
-	CHEST,
-	HANDS,
-	LEGS,
-	FEET,
-	WEAPON,
-	SHIELD,
-	MAINHAND,
-	OFFHAND,
-	ACCESSORY_1,
-	ACCESSORY_2
-endenum
+// enum class EQUIP_SLOT
+// 	HEAD := "Head",
+// 	NECK := "Neck",
+// 	BACK := "Back",
+// 	CHEST := "Chest",
+// 	HANDS := "Hands",
+// 	LEGS := "Legs",
+// 	FEET := "Feet",
+// 	WEAPON := "Weapon",
+// 	SHIELD := "Shield",
+// endenum
 
 enum class EQUIP_LAYER
 	NONE,
