@@ -80,12 +80,12 @@ endprogram
 
 function CanAttack(attacker, defender)
 	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
-		Message("Você não pode atacar o alvo.", SSM_FAIL).SendSys(attacker);
+		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attacker);
 		return 0;
 	endif
 
 	if (attacker == defender) // Impede de atacar-se
-		Message("Você não pode atacar a si mesmo.", SSM_FAIL).SendSys(attacker);
+		Message("Você não pode atacar você mesmo.", FONTCOLOR_ERROR).SendSys(attacker);
 		return 0;
 	endif
 
