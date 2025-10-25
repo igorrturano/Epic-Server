@@ -84,6 +84,26 @@ endprogram
 
 function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance,
 						 is_puzzle, puzzle_limit_count)
+	// Print configuration details to console
+	print("=== EPIC CHEST SPAWNER CONFIGURATION ===");
+	print("Spawner Serial: " + spawner.serial);
+	print("Location: X=" + spawner.x + " Y=" + spawner.y + " Z=" + spawner.z + " Realm=" + spawner.realm);
+	print("Nivel: " + level + " | Quantidade: " + amount + " | Raio: " + range_val);
+	print("Tipo: " + chest_type);
+	print("Tem Mimic: " + (is_mimic ? "Sim (" + mimic_chance + "% chance)" : "Não"));
+	print("Tem Puzzle: " + (is_puzzle ? "Sim (limite: " + (puzzle_limit_count == -1 ? "ilimitado" : puzzle_limit_count) + ")" : "Não"));
+	
+	var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+	if (custom_graphics && custom_graphics.size() > 0)
+		print("Tipos de Bau Customizados (" + custom_graphics.size() + " tipos):");
+		foreach gfx in custom_graphics
+			print("  - 0x" + Hex(gfx));
+		endforeach
+	else
+		print("Tipos de Bau: Todos (110 tipos - aleatorio completo)");
+	endif
+	print("========================================");
+	
 	var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
 	if (!current_chests_serials)
 		current_chests_serials := array;
@@ -151,16 +171,42 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					endif
 
 					if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
-						// Create puzzle chest with random appearance
-						var type := RandomInt(4) + 1;
-						var gfx, material;
-						case (type) // Same chest types as in treasurechest.inc
-							1: gfx := 3650; material := 0x1bd7; // Wooden E
-							2: gfx := 3651; material := 0x1bd7; // Wooden S
-							3: gfx := 3703; material := 0x1bd7; // Barrel
-							4: gfx := 3648; material := 0x6995; // Metal E
-							5: gfx := 3708; material := 0x6995; // Metal S
-						endcase
+						// Check if custom chest graphics were selected
+						var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+						var chest_graphics;
+						
+						if (custom_graphics && custom_graphics.size() > 0)
+							// Use the custom selected graphics
+							chest_graphics := custom_graphics;
+						else
+							// Use default full list
+							chest_graphics := array{
+								// Original types
+								3650, 3651, 3703, 3648, 3708,
+								// Extended chest types
+								0xFC45, 0xF977, 0xF976, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
+								0xD53E, 0xC45B, 0xC45A, 0xC45C, 0xC45D, 0xC460, 0xC461, 0xC2A3, 0xC2A2,
+								0xC299, 0xC29B, 0xC29C, 0xC29D, 0xC29F, 0xC2A0, 0xC292, 0xC291, 0xC290,
+								0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289, 0xC288, 0xC287,
+								0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280, 0xC27D, 0xC27E,
+								0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274, 0xC275, 0xC273,
+								0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B, 0xC269, 0xC266,
+								0xC265, 0xC264, 0xC263, 0xC235, 0xC236, 0xC233, 0xAFCA, 0xAFCB, 0xAFCE,
+								0xAFCF, 0xC26A, 0xC29A, 0x3CC8, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3C78,
+								0x1C60, 0x1C22, 0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90, 0x1CA7,
+								0x1C77, 0x3CC9, 0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C,
+								0xFE9D, 0xFF0B, 0xFF0C
+							};
+						endif
+						
+						var gfx := chest_graphics[RandomInt(chest_graphics.size()) + 1];
+						var material := 0x1bd7; // Default wooden material
+						
+						// Assign metal material to metal-looking chests
+						if (gfx == 3648 || gfx == 3708 || gfx == 0xEC40 || gfx == 0xEC3F || 
+							gfx == 0xEC3E || gfx == 0xEC3D || gfx == 0xEC3C || gfx == 0xEC3B)
+							material := 0x6995;
+						endif
 
 						new_chest := CreateItemAtLocation(new_x, new_y, new_z, 0xf022, 1, spawner.realm);
 						if (new_chest)
@@ -196,6 +242,21 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					chests := CreateTreasureChests(level, 1, 1, new_x, new_y, new_z, spawner.realm, lootname);
 					if (chests.size() > 0)
 						new_chest := chests[1];
+						
+						// Apply custom chest graphics to regular chests too
+						var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+						if (custom_graphics && custom_graphics.size() > 0)
+							var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+							new_chest.graphic := gfx;
+							
+							// Update material based on chest type
+							var material := 0x1bd7; // Default wooden
+							if (gfx == 3648 || gfx == 3708 || gfx == 0xEC40 || gfx == 0xEC3F || 
+								gfx == 0xEC3E || gfx == 0xEC3D || gfx == 0xEC3C || gfx == 0xEC3B)
+								material := 0x6995; // Metal
+							endif
+							SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
+						endif
 					endif
 				endif
 
@@ -209,6 +270,20 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
 					new_chest.movable := 0;
 					new_chest.locked := 1;
+
+					// Print chest creation details
+					var chest_info := "Bau criado: ";
+					if (GetObjProperty(new_chest, "IsPuzzleChest"))
+						chest_info := chest_info + "PUZZLE ";
+					elseif (GetObjProperty(new_chest, "IsMimic"))
+						chest_info := chest_info + "MIMIC ";
+					else
+						chest_info := chest_info + "NORMAL ";
+					endif
+					chest_info := chest_info + "| Hex: 0x" + Hex(new_chest.graphic);
+					chest_info := chest_info + " | Pos: (" + new_x + "," + new_y + "," + new_z + ")";
+					chest_info := chest_info + " | Nivel: " + level + " | Tipo: " + chest_type;
+					print(chest_info);
 
 					// Traps are already added by CreateTreasureChests() in treasurechest.inc
 					// No need to add traps here for regular chests
@@ -233,6 +308,10 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 			current_chests_serials.append(CInt(serial_val));
 		endforeach
 		SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
+		
+		print(">>> " + created_chests_this_cycle.size() + " baus criados com sucesso! <<<");
+	else
+		print(">>> NENHUM bau foi criado neste ciclo! <<<");
 	endif
 endfunction
 
