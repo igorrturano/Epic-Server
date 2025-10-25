@@ -216,3 +216,5 @@ enum class DAMAGEHAND
 	MAINHAND,
 	OFFHAND
 endenum
+
+const OFFHAND_DELAY := 500; // em milissegundos

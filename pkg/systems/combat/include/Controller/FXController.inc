@@ -14,10 +14,12 @@ include ":attributes:attributeConstants";
 include ":equipsys:utils/consts";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 
-enum WEAPONFX
-	WEAPON_FX_SOUND, WEAPON_FX_ANIM
+enum class WEAPON_FX
+	SOUND,
+	ANIM
 endenum
 
+// TODO: Pra economizar memória, jogar essas vars em uma função com return
 var MISS_FX := struct {
 	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
 };
@@ -90,7 +92,8 @@ function PlayAttackAnimation(who)
 	PerformAction(who, attackAnim);
 endfunction
 
-function PlayCombatSound(attackInfo)
+function PlayAttackSound(attackInfo)
+	// TODO: Checar se é erro, acerto ou crítico
 endfunction
 
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
