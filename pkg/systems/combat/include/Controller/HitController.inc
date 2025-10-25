@@ -5,7 +5,7 @@
  */
 
 // include "combat";
-include "habilidades";
+include "AbilitiesController";
 include ":crafting:/include/caracteristicasFabricacao";
 
 function CalculateHitChance(attackInfo)
@@ -446,4 +446,22 @@ function HasLightNearby(defender)
 	endforeach
     
 	return 0;
+endfunction
+
+function DistanceChecks(attacker, defender)
+	var cur_range := Distance(attacker, defender);
+	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	var weapon_max_range := wpn_a_elem2.MaxRange;
+	var weapon_min_range := wpn_a_elem2.MinRange;
+	if ( wpn_a_elem2.MaxRange == error )
+		return 1;
+	endif
+	
+	if ( cur_range > weapon_max_range )
+		return 0;
+	elseif ( cur_range < weapon_min_range )
+		return 0;
+	else
+		return 1;
+	endif
 endfunction

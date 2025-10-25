@@ -1,54 +1,14 @@
 
 use uo;
+
+
+include "include/packets";
 include ":brainai:npcUtil";
-include ":combat:weaponInfo";
-include ":combat:combatFX";
+include ":tn:cooldown";
+// include ":combat:weaponInfo";
+// include ":combat:Controller/FXController";
 include ":faccao:faccao";
-
-function DistanceChecks(attacker, defender)
-	var cur_range := Distance(attacker, defender);
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	var weapon_max_range := wpn_a_elem2.MaxRange;
-	var weapon_min_range := wpn_a_elem2.MinRange;
-	if ( wpn_a_elem2.MaxRange == error )
-		return 1;
-	endif
-	
-	if ( cur_range > weapon_max_range )
-		return 0;
-	elseif ( cur_range < weapon_min_range )
-		return 0;
-	else
-		return 1;
-	endif
-endfunction
-
-function GetWpnCfgInfo(mobile, weapon)
-	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
-	var item_cfg2	:= ReadConfigFile(":*:itemdesc");
-
-	if ( mobile.IsA(POLCLASS_NPC) && weapon.objtype == 0x1F020 )
-		var npctemplate := mobile.npctemplate;
-		npctemplate := npctemplate[10, len(npctemplate)-9];
-		return npc_cfg2[npctemplate];
-	else
-		return item_cfg2[weapon.objtype];
-	endif
-
-endfunction
-
-function GetRawDmg(attacker)
-
-    if (attacker.npctemplate)
-      var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
-      var dmg := GetConfigString(npcelem, "AttackDamage");
-      return RandomDiceRoll(dmg);
-    else
-      var dmg := CS_GetWeaponInfo(attacker.weapon, "Damage");
-      return RandomDiceRoll(dmg);
-    endif
-
-endfunction
+include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 function checkGender(object)
 	var gender := 0;
@@ -111,14 +71,14 @@ function CanBackStab(who, weapon)
 endfunction
 
 function AmmoCheck(attacker, defender)
-	var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
+	var attackerWeapon := EquipWrapperWeapon(attacker.weapon);
 
-	if ( !wpn_a_elem.ProjectileType )
+	if (!attackerWeapon.GetTemplate().ProjectileType)
 		return 1;
 	endif
     var arcane_bows := array{0xFA6D, 0XF997};
 
-	if ( !GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows) && !wpn_a_elem.ProjectileType)
+	if (!GetCooldown(attacker, "arcane_bow") && !(attackerWeapon.GetObjType() in arcane_bows) && !attackerWeapon.GetTemplate().ProjectileType)
 		return 1;
 	endif
 	var has_ammo := 0;
@@ -152,7 +112,7 @@ function AmmoCheck(attacker, defender)
 		var cfg:=ReadConfigFile(":woodworking:itemdesc");
 		var elem := FindConfigElem(cfg, GetObjType( ammo ));
 		var ammo_color := elem.color;
-		PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
+		PlayMovingEffectXYZHued(attacker, defender, !attackerWeapon.GetTemplate().ProjectileType, 10, 10, 0, ammo_color);
 		return 1;
 	else
 		return 0;
