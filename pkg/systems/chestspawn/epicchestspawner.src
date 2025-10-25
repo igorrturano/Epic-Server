@@ -84,26 +84,6 @@ endprogram
 
 function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance,
 						 is_puzzle, puzzle_limit_count)
-	// Print configuration details to console
-	print("=== EPIC CHEST SPAWNER CONFIGURATION ===");
-	print("Spawner Serial: " + spawner.serial);
-	print("Location: X=" + spawner.x + " Y=" + spawner.y + " Z=" + spawner.z + " Realm=" + spawner.realm);
-	print("Nivel: " + level + " | Quantidade: " + amount + " | Raio: " + range_val);
-	print("Tipo: " + chest_type);
-	print("Tem Mimic: " + (is_mimic ? "Sim (" + mimic_chance + "% chance)" : "Não"));
-	print("Tem Puzzle: " + (is_puzzle ? "Sim (limite: " + (puzzle_limit_count == -1 ? "ilimitado" : puzzle_limit_count) + ")" : "Não"));
-	
-	var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
-	if (custom_graphics && custom_graphics.size() > 0)
-		print("Tipos de Bau Customizados (" + custom_graphics.size() + " tipos):");
-		foreach gfx in custom_graphics
-			print("  - 0x" + Hex(gfx));
-		endforeach
-	else
-		print("Tipos de Bau: Todos (110 tipos - aleatorio completo)");
-	endif
-	print("========================================");
-	
 	var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
 	if (!current_chests_serials)
 		current_chests_serials := array;
@@ -271,20 +251,6 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					new_chest.movable := 0;
 					new_chest.locked := 1;
 
-					// Print chest creation details
-					var chest_info := "Bau criado: ";
-					if (GetObjProperty(new_chest, "IsPuzzleChest"))
-						chest_info := chest_info + "PUZZLE ";
-					elseif (GetObjProperty(new_chest, "IsMimic"))
-						chest_info := chest_info + "MIMIC ";
-					else
-						chest_info := chest_info + "NORMAL ";
-					endif
-					chest_info := chest_info + "| Hex: 0x" + Hex(new_chest.graphic);
-					chest_info := chest_info + " | Pos: (" + new_x + "," + new_y + "," + new_z + ")";
-					chest_info := chest_info + " | Nivel: " + level + " | Tipo: " + chest_type;
-					print(chest_info);
-
 					// Traps are already added by CreateTreasureChests() in treasurechest.inc
 					// No need to add traps here for regular chests
 
@@ -294,8 +260,6 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					endif
 
 					created_chests_this_cycle.append(new_chest.serial);
-				else
-					print("Failed to create epic chest item at " + new_x + "," + new_y);
 				endif
 			endif
 			placement_tries += 1;
@@ -308,10 +272,6 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 			current_chests_serials.append(CInt(serial_val));
 		endforeach
 		SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
-		
-		print(">>> " + created_chests_this_cycle.size() + " baus criados com sucesso! <<<");
-	else
-		print(">>> NENHUM bau foi criado neste ciclo! <<<");
 	endif
 endfunction
 
