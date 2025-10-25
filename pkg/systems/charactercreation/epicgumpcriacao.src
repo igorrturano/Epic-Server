@@ -710,7 +710,19 @@ function pathOfWisdom(who, culture_pic)
 			btn_value := key;
 		endforeach
 
-		if (btn_value == 201)
+		// Get the wisdom paths array using the helper function
+		var wisdomPaths := getWisdomPathsByCulture(who);
+
+		// Get the selected path name based on the button value
+		var selectedIndex := btn_value - 200;
+		if (selectedIndex < 1 || selectedIndex > wisdomPaths.size())
+			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
+			continue;
+		endif
+		var selectedPath := wisdomPaths[selectedIndex];
+
+		// Handle each path by name
+		if (selectedPath == "Mago")
 			chardata.+wisdom_path := "Mago";
 			chardata.+magia := "spellcaster";
 			var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
@@ -729,21 +741,21 @@ function pathOfWisdom(who, culture_pic)
 				SetObjProperty(scroll, "spellinfo", spellinfo);
 			endforeach
 			break;
-		elseif (btn_value == 202)
+		elseif (selectedPath == "Alquimista")
 			chardata.+wisdom_path := "Alquimista";
 			break;
-		elseif (btn_value == 203 && chardata.culture == GULTHRAK)
+		elseif (selectedPath == "Xamã")
 			chardata.+wisdom_path := "Xamã";
 			chardata.+magia := "Shaman";
 			break;
-		elseif (btn_value == 203 && chardata.culture != GULTHRAK)
+		elseif (selectedPath == "Clérigo" || selectedPath == "Clériga de Idrith")
 			chardata.magia := "Sacerdote";
 			if (chardata.culture == HAROLOTH)
 				CreateItemInBackpack(who, 0x166E, 1);
 			endif
-			chardata.+wisdom_path := "Clérigo";
+			chardata.+wisdom_path := selectedPath;
 			CreateItemInBackPack(who, "chisels", 1);
-			var gems := array{ 
+			var gems := array{
 				"rawstarsapphire",
 				"rawemerald",
 				"rawsapphire",
@@ -757,7 +769,7 @@ function pathOfWisdom(who, culture_pic)
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			break;
-		elseif (btn_value == 204)
+		elseif (selectedPath == "Engenheiro")
 			chardata.+wisdom_path := "Engenheiro";
 			CreateItemInBackPack(who, "ammo", 20);
 			CreateItemInBackPack(who, "powder", 20);
@@ -768,9 +780,45 @@ function pathOfWisdom(who, culture_pic)
 			SetObjProperty(pistol1, "serialid", who.serial);
 			SetObjProperty(pistol2, "serialid", who.serial);
 			break;
-		elseif (btn_value == 205)
+		elseif (selectedPath == "Druida")
 			chardata.+wisdom_path := "Druida";
 			chardata.+magia := "Druid";
+			break;
+		elseif (selectedPath == "Martelo Divino")
+			chardata.+wisdom_path := "Martelo Divino";
+			chardata.+magia := "Sacerdote";
+			CreateItemInBackPack(who, "chisels", 1);
+			var gems := array{
+				"rawstarsapphire",
+				"rawemerald",
+				"rawsapphire",
+				"rawruby",
+				"rawcitrine",
+				"rawamethyst",
+				"rawtourmaline",
+				"rawamber",
+				"rawdiamond"
+			};
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			break;
+		elseif (selectedPath == "Augur")
+			chardata.+wisdom_path := "Augur";
+			chardata.+magia := "Sacerdote";
+			CreateItemInBackPack(who, "chisels", 1);
+			var gems := array{
+				"rawstarsapphire",
+				"rawemerald",
+				"rawsapphire",
+				"rawruby",
+				"rawcitrine",
+				"rawamethyst",
+				"rawtourmaline",
+				"rawamber",
+				"rawdiamond"
+			};
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			break;
 		else
 			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
