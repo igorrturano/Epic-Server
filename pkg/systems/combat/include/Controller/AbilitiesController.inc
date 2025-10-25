@@ -17,9 +17,10 @@
 // TODO: Usar o Copilot pra completar os CheckHab_ que faltando, passando o habilidades.cfg como leitura
 
 
-include "damage";
-include "hitchance";
-include "mainHitScript";
+include "DamageController";
+include "HitController";
+include "SkillController";
+
 include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 

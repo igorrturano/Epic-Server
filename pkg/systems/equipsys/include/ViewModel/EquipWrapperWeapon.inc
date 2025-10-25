@@ -127,10 +127,6 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		return this._maxRange;
 	endfunction
 
-	function IsMontante(this)
-		return this._item.objtype in array{0x26CF, 0xF9EA, 0xF9F7};
-	endfunction
-
 	function SetSpeed(this, value)
 		if (this._item == error) return this._item; endif
 		this._speed := value;
@@ -194,6 +190,14 @@ class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
 		$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
 		$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
 		$"\nRange: {this._minRange}-{this._maxRange}";
+	endfunction
+
+	function IsMontante(this)
+		return this._item.objtype in array{0x26CF, 0xF9EA, 0xF9F7};
+	endfunction
+
+	function IsRanged(this)
+		return this._maxRange > 1;
 	endfunction
 
 	// Private functions

@@ -2,8 +2,7 @@
  * $Id
  *
 */
-include ":combat:damage";
-include ":combat:critical";
+include ":combat:Controller/DamageController";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
 include ":IO:CFGFile";
