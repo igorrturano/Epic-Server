@@ -8,49 +8,73 @@ include "include/say";
 
 program epicchest(who)
 
-	var res := CreateEpicChestGump(who);
-	if (res && res[99]) // Check if res is not empty and Create button (ID 99) was pressed
-		var level := 1;
-		if (res[12])
-			level := 2;
-		elseif (res[13])
-			level := 3;
-		elseif (res[14])
-			level := 4;
-		elseif (res[15])
-			level := 5;
+	var selected_chest_graphics := array{}; // Store selected chest graphics from viewchests
+	
+	while (1)
+		var res := CreateEpicChestGump(who, selected_chest_graphics);
+		if (!res)
+			SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
+			break;
 		endif
+		
+		// Check if the "Select Chest Types" button was clicked (ID 200)
+		if (res[200])
+			// Open the viewchests gump with previously selected chests
+			var new_selection := OpenChestGallery(who, selected_chest_graphics);
+			selected_chest_graphics := new_selection;
+			// Continue the loop to reopen the epicchest gump with updated selection
+			continue;
+		endif
+		
+		if (res[99]) // Create button pressed
+			// Level (radio buttons IDs 11-15)
+			var level := 1;
+			if (res[12])
+				level := 2;
+			elseif (res[13])
+				level := 3;
+			elseif (res[14])
+				level := 4;
+			elseif (res[15])
+				level := 5;
+			endif
 
-		var amount := 1;
-		if (res[22])
-			amount := 2;
-		elseif (res[23])
-			amount := 3;
-		elseif (res[24])
-			amount := 4;
-		elseif (res[25])
-			amount := 5;
-		endif
+			// Amount (radio buttons IDs 21-25)
+			var amount := 1;
+			if (res[22])
+				amount := 2;
+			elseif (res[23])
+				amount := 3;
+			elseif (res[24])
+				amount := 4;
+			elseif (res[25])
+				amount := 5;
+			endif
 
-		var range_val := 2;
-		if (res[32])
-			range_val := 3;
-		elseif (res[33])
-			range_val := 4;
-		elseif (res[34])
-			range_val := 5;
-		elseif (res[35])
-			range_val := 6;
-		endif
+			// Range (radio buttons IDs 31-35)
+			var range_val := 2;
+			if (res[32])
+				range_val := 3;
+			elseif (res[33])
+				range_val := 4;
+			elseif (res[34])
+				range_val := 5;
+			elseif (res[35])
+				range_val := 6;
+			endif
+			
+			// Debug: Show what was selected
+			SendSysMessageEx(who, "[DEBUG] Nivel: " + level + " | Quantidade: " + amount + " | Raio: " + range_val);
 
-		var chest_type := "Warrior";
-		if (res[42])
-			chest_type := "Thief";
-		elseif (res[43])
-			chest_type := "Artifice";
-		elseif (res[44])
-			chest_type := "Mage";
-		endif
+			// Chest Type (radio buttons IDs 41-44)
+			var chest_type := "Warrior";
+			if (res[42])
+				chest_type := "Thief";
+			elseif (res[43])
+				chest_type := "Artifice";
+			elseif (res[44])
+				chest_type := "Mage";
+			endif
 
 		var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
 		var mimic_chance := 0;
@@ -88,6 +112,11 @@ program epicchest(who)
 			SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
 			SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
 			SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
+			
+			// Save selected chest graphics
+			if (selected_chest_graphics.size() > 0)
+				SetObjProperty(spawner, "epic_chest_graphics", selected_chest_graphics);
+			endif
 
 			// Handle rest period (convert minutes to seconds)
 			var rest_period := CInt(GFExtractData(res, 36));
@@ -108,13 +137,200 @@ program epicchest(who)
 		else
 			SendSysMessageEx(who, "Falha ao criar o item gerador.");
 		endif
-	else
-		SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
-	endif
+		break; // Exit after creating
+		else
+			SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
+			break;
+		endif
+	endwhile
 endprogram
 
-function CreateEpicChestGump(who)
-	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 600); // Adjusted size
+function OpenChestGallery(who, previous_selected_graphics)
+	// All chest graphics array
+	var chest_graphics := array{
+		3650, 3651, 3703, 3648, 3708,
+		0xFC45, 0xF977, 0xF976, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
+		0xD53E, 0xC45B, 0xC45A, 0xC45C, 0xC45D, 0xC460, 0xC461, 0xC2A3, 0xC2A2,
+		0xC299, 0xC29B, 0xC29C, 0xC29D, 0xC29F, 0xC2A0, 0xC292, 0xC291, 0xC290,
+		0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289, 0xC288, 0xC287,
+		0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280, 0xC27D, 0xC27E,
+		0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274, 0xC275, 0xC273,
+		0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B, 0xC269, 0xC266,
+		0xC265, 0xC264, 0xC263, 0xC235, 0xC236, 0xC233, 0xAFCA, 0xAFCB, 0xAFCE,
+		0xAFCF, 0xC26A, 0xC29A, 0x3CC8, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3C78,
+		0x1C60, 0x1C22, 0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90, 0x1CA7,
+		0x1C77, 0x3CC9, 0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C,
+		0xFE9D, 0xFF0B, 0xFF0C
+	};
+	
+	var page := 1;
+	var continue_viewing := 1;
+	var selected_chests := array{}; // Store indices
+	var max_selection := 5;
+	
+	// Convert previous_selected_graphics to indices
+	if (previous_selected_graphics && previous_selected_graphics.size() > 0)
+		foreach gfx in previous_selected_graphics
+			for i := 1 to chest_graphics.size()
+				if (chest_graphics[i] == gfx)
+					selected_chests.append(i);
+					break;
+				endif
+			endfor
+		endforeach
+	endif
+	
+	while (continue_viewing)
+		var res := CreateChestGalleryGump(who, page, selected_chests, max_selection);
+		if (!res)
+			break;
+		endif
+		
+		// Extract selections from CURRENT page before processing navigation
+		var chests_per_page := 12;
+		var start_index := ((page - 1) * chests_per_page) + 1;
+		var end_index := start_index + chests_per_page - 1;
+		if (end_index > chest_graphics.size())
+			end_index := chest_graphics.size();
+		endif
+		
+		// First, REMOVE all selections from current page
+		var temp_selection := array{};
+		foreach chest_idx in selected_chests
+			// Keep only selections that are NOT from current page
+			if (chest_idx < start_index || chest_idx > end_index)
+				temp_selection.append(chest_idx);
+			endif
+		endforeach
+		selected_chests := temp_selection;
+		
+		// Now ADD new selections from current page based on checkboxes
+		for i := start_index to end_index
+			var checkbox_id := 100 + i;
+			if (res[checkbox_id]) // If checkbox is checked
+				// Only add if there's still space (max 5 selections)
+				if (selected_chests.size() < max_selection)
+					selected_chests.append(i);
+				endif
+			endif
+		endfor
+		
+		// Process navigation AFTER updating selections
+		// With GF_CLOSE_BTN, check res[0] for button ID
+		if (res[0] == 99) // Confirm button
+			// Convert selected indices to actual graphic values
+			var selected_graphics := array{};
+			foreach chest_idx in selected_chests
+				selected_graphics.append(chest_graphics[chest_idx]);
+			endforeach
+			return selected_graphics;
+		elseif (res[0] == 10) // Previous page
+			if (page > 1)
+				page := page - 1;
+			endif
+		elseif (res[0] == 11) // Next page
+			page := page + 1;
+		elseif (res[0] == 0) // Close button (X)
+			break;
+		endif
+	endwhile
+	
+	// Return empty if cancelled
+	return array{};
+endfunction
+
+function CreateChestGalleryGump(who, page, selected_chests, max_selection)
+	var chest_graphics := array{
+		3650, 3651, 3703, 3648, 3708,
+		0xFC45, 0xF977, 0xF976, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
+		0xD53E, 0xC45B, 0xC45A, 0xC45C, 0xC45D, 0xC460, 0xC461, 0xC2A3, 0xC2A2,
+		0xC299, 0xC29B, 0xC29C, 0xC29D, 0xC29F, 0xC2A0, 0xC292, 0xC291, 0xC290,
+		0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289, 0xC288, 0xC287,
+		0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280, 0xC27D, 0xC27E,
+		0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274, 0xC275, 0xC273,
+		0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B, 0xC269, 0xC266,
+		0xC265, 0xC264, 0xC263, 0xC235, 0xC236, 0xC233, 0xAFCA, 0xAFCB, 0xAFCE,
+		0xAFCF, 0xC26A, 0xC29A, 0x3CC8, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3C78,
+		0x1C60, 0x1C22, 0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90, 0x1CA7,
+		0x1C77, 0x3CC9, 0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C,
+		0xFE9D, 0xFF0B, 0xFF0C
+	};
+	
+	var chests_per_page := 12;
+	var total_pages := CInt((chest_graphics.size() + chests_per_page - 1) / chests_per_page);
+	
+	if (page < 1)
+		page := 1;
+	endif
+	if (page > total_pages)
+		page := total_pages;
+	endif
+	
+	var start_index := ((page - 1) * chests_per_page) + 1;
+	var end_index := start_index + chests_per_page - 1;
+	if (end_index > chest_graphics.size())
+		end_index := chest_graphics.size();
+	endif
+	
+	var gump := GFECreateGump("", 600, 520);
+	
+	GFTextLine(gump, 30, 35, 53, "Galeria de Baús - Página " + page + " de " + total_pages);
+	
+	var counter_text := "Selecionados: " + selected_chests.size() + "/" + max_selection;
+	GFTextLine(gump, 420, 35, 53, counter_text);
+	
+	var x_start := 60;
+	var y_start := 90;
+	var col_spacing := 160;
+	var row_spacing := 95;
+	var cols := 3;
+	
+	var current_col := 0;
+	var current_row := 0;
+	
+	for i := start_index to end_index
+		var gfx := chest_graphics[i];
+		var x_pos := x_start + (current_col * col_spacing);
+		var y_pos := y_start + (current_row * row_spacing);
+		
+		var is_selected := 0;
+		foreach selected_idx in selected_chests
+			if (selected_idx == i)
+				is_selected := 1;
+				break;
+			endif
+		endforeach
+		
+		GFCheckBox(gump, x_pos + 10, y_pos + 25, 210, 211, is_selected, 100 + i);
+		GFTilePic(gump, x_pos + 35, y_pos, gfx, 0);
+		
+		current_col := current_col + 1;
+		if (current_col >= cols)
+			current_col := 0;
+			current_row := current_row + 1;
+		endif
+	endfor
+	
+	var info_y := 480;
+	var btn_y := 480;
+	var center_x := 250;
+	
+	if (page > 1)
+		GFAddButton(gump, center_x, btn_y, 4014, 4016, GF_CLOSE_BTN, 10);
+	endif
+	
+	if (page < total_pages)
+		GFAddButton(gump, center_x + 50, btn_y, 4005, 4007, GF_CLOSE_BTN, 11);
+	endif
+	
+	GFAddButton(gump, center_x + 120, btn_y, 2450, 2451, GF_CLOSE_BTN, 99);
+	GFAddButton(gump, 520, btn_y, 2453, 2454, GF_CLOSE_BTN, 0);
+	
+	return GFSendGump(who, gump);
+endfunction
+
+function CreateEpicChestGump(who, selected_chest_graphics)
+	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 650); // Increased height by 50px
 
 	var y_pos := 80;
 	var x_label := 30;
@@ -194,6 +410,24 @@ function CreateEpicChestGump(who)
 	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
 	y_pos += 20;
 
+	// --- Chest Graphics Selection ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Selecionar tipos de Baú:");
+	GFAddButton(gump, x_label + 165, y_pos + 1, 2117, 2118, GF_CLOSE_BTN, 200); // Button moved down 3px (from -2 to +1)
+	y_pos += 30;
+	
+	// Display selection count instead of images
+	if (selected_chest_graphics.size() > 0)
+		var count_text := selected_chest_graphics.size() + " tipos de baús foram selecionados";
+		GFTextLine(gump, x_label + 20, y_pos, 1153, count_text);
+		y_pos += 30;
+	else
+		GFTextLine(gump, x_label + 20, y_pos, 1153, "(Nenhum baú selecionado - usará aleatório)");
+		y_pos += 30;
+	endif
+	
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
 	// --- Mimic Options ---
 	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 50);
 	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Mímico?");
@@ -217,8 +451,8 @@ function CreateEpicChestGump(who)
 	y_pos += 20;
 
 	// --- Buttons ---
-	GFAddButton(gump, x_label + 80, y_pos + 20, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99
-	GFAddButton(gump, x_label + 250, y_pos + 20, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0
+	GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99 (moved up 20px)
+	GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0 (moved up 20px)
 
 	return GFSendGump(who, gump);
 endfunction
