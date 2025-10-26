@@ -8,12 +8,8 @@
 include "AbilitiesController";
 include ":crafting:/include/caracteristicasFabricacao";
 
-function CalculateHitChance(attackInfo)
+function CalculateHitChance(byRef attackInfo)
 	 // TODO: Revisar função para uso de classes
-	var attacker := attackInfo.GetAttacker().GetMobRef();
-	var defender := attackInfo.GetDefender().GetMobRef();
-	var skill_a;
-	var skill_d;
 
 	if ( !attacker.npctemplate )
 		skill_a := CDbl(AP_GetSkill(attacker, attacker.weapon.attribute));

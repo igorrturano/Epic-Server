@@ -50,8 +50,7 @@ program MainHitScript(params)
 	elementalDamages := CalculateDamageElemental(attacker, defender, weapon, armor);
 
 	// Verifica se o defesor está em modo guerra, se o ataque foi realizado de uma posição onde bloquear é possível  e, sendo, processa o teste de bloaqueio
-	if ((!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y) &&
-	 defender.warmode)
+	if ((!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y) && defender.warmode)
 		if (ParryCheck(attacker, defender, rawdamage, weapon)) // Calcula o bloqueio e os danos no escudo do defensor
 			basedamage := 0;
 		endif
