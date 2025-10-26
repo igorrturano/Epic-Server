@@ -379,10 +379,6 @@ function CriaObjetoPropFabricado(
 				materialPrincipal := material};
 endfunction
 
-function CriaObjetoPosicao(quem)
-	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
-endfunction
-
 function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
