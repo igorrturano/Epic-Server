@@ -1,9 +1,9 @@
 use uo;
 use os;
 program createChar(who)
-    var chardata := GetObjProperty(who, "chardata");
+    var has_created_character := GetObjProperty(who, "creation_completed");
 
-    if (!chardata)
+    if (!has_created_character)
         Start_Script(":charactercreation:epicgumpcriacao", who);
     endif
 endprogram
