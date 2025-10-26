@@ -2602,8 +2602,6 @@ function GetSkillTooltipDescriptionFromName(name)
 endfunction
 
 function CreateItemInicial(who, objtype, qtd)
-
-    
     var item :=  GeraItemComplexo(
                                     who,
                                     objtype,
