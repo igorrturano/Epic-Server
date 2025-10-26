@@ -421,7 +421,7 @@ function MontaMelhorEsquema(quem, sessao)
 endfunction
 
 function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)

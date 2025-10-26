@@ -2,6 +2,10 @@
 include "include/say";
 include ":attributes:vitals";
 
+function BuildPositionStruct(quem)
+	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
+endfunction
+
 function CheckCanWork(who, startingHealth := 0, initialPosStruct := 0)
 
 	startingHealth := !startingHealth ? AP_GetVital(who, "Hits") : startingHealth;
