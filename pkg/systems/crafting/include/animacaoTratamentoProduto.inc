@@ -29,7 +29,7 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 		return false;
 	endif
 	if(ferramentaNecessaria.objtype != 0x13e3) //Martelo de ferreiro.
-		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+		SendSysMessageEx(quem,"Você não tem um martelo de ferreiro para executar esta ação.",SSM_FAIL);
 		return false;
 	endif
 	
@@ -45,7 +45,9 @@ function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoIn
 
 	if(profissaoConfig[profissao].Ferramenta)
 		if(ferramentaNecessaria.objtype != profissaoConfig[profissao].Ferramenta)
-			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+			var item_cfg := ReadConfigFile(":*:itemdesc");
+			var nomeFerramenta := item_cfg[cint(profissaoConfig[profissao].Ferramenta)];
+			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação. [{}]".format(nomeFerramenta.name),SSM_FAIL);
 			return false;
 		endif
 	endif
