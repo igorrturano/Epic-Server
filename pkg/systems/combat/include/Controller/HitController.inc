@@ -6,160 +6,75 @@
 
 // include "combat";
 include "AbilitiesController";
+include ":combat:Model/CombatAbility";
 include ":crafting:/include/caracteristicasFabricacao";
 
 function CalculateHitChance(byRef attackInfo)
-	 // TODO: Revisar função para uso de classes
+	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
+	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
+	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
 
-	if ( !attacker.npctemplate )
-		skill_a := CDbl(AP_GetSkill(attacker, attacker.weapon.attribute));
+	hit_chance += attackInfo.GetAttacker().GetMobRef().hitchance_mod - attackInfo.GetDefender().GetMobRef().evasionchance_mod;
+	hit_chance += CInt(attackInfo.GetAttacker().GetMobRef().GetProp("#attackbonus"));
 
-		if ( GetEquipmentByLayer(attacker, LAYER_MOUNT) && GetObjProperty(attacker, "chardata").trait != "Cavalaria de Escaramuça")
-			skill_a := skill_a / 2;
-		endif
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "evasion_chance")) hit_chance -= 10; endif
+    if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "blinded") > 0) hit_chance -= 20; endif
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "exposed") > 0) hit_chance += 10;	endif // Defender is exposed, easier to hit
 
-		if (attacker.weapon.attribute == WRESTLING) // Ajustar se for soco pra melhor melee combat
-			if (AP_GetSkill(attacker, ONEHANDED) > AP_GetSkill(attacker, TWOHANDED))
-				skill_a := AP_GetSkill(attacker, ONEHANDED);
-			else
-				skill_a := AP_GetSkill(attacker, TWOHANDED);
-			endif
-		endif
+	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::POSTURA_OFENSIVA)) hit_chance += 10; endif
+	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::POSTURA_OFENSIVA)) hit_chance += 10; endif
+	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::POSTURA_DEFENSIVA)) hit_chance -= 10; endif
+	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::POSTURA_DEFENSIVA)) hit_chance -= 10; endif
+	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::PRESERVAR_ORGAOS)) hit_chance -= 10; endif
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "posturadecombate") > 0) hit_chance += 10; endif
 
-	else
-		skill_a := CDbl(AP_GetSkill(attacker, WRESTLING));
-	endif
-
-	if ( GetObjProperty(attacker, "metamorfose") != error)
-		skill_a := cint(GetObjProperty(attacker, "skill_a"));
-	endif
-
-	// Piloto de Golem
-	if ( GetObjProperty(attacker, "pilotando") != error)
-		skill_a := cint(GetObjProperty(attacker, "skill_a"));
-	endif
-
-	if ( !defender.npctemplate )
-		skill_d := CDbl(AP_GetSkill(defender, defender.weapon.attribute));
-		if ( GetEquipmentByLayer(defender, LAYER_MOUNT) && GetObjProperty(defender, "chardata").trait != "Cavalaria de Escaramuça")
-			skill_d := skill_d / 2;
-		endif
-		if (defender.weapon.attribute == WRESTLING)
-			if (AP_GetSkill(defender, ONEHANDED) > AP_GetSkill(defender, TWOHANDED))
-				skill_d := AP_GetSkill(defender, ONEHANDED);
-			else
-				skill_d := AP_GetSkill(defender, TWOHANDED);
-			endif
-		endif
-	else
-		skill_d := CDbl(AP_GetSkill(defender, WRESTLING));
-	endif
-
-	if ( GetObjProperty(defender, "metamorfose") != error)
-		skill_d := CInt(GetObjProperty(defender, "skill_d"));
-	endif
-
-	// Piloto de Golem
-	if ( GetObjProperty(defender, "pilotando") != error)
-		skill_d := CInt(GetObjProperty(defender, "skill_d"));
-	endif
-
-	var hit_chance := 50.0 + ((skill_a - skill_d) / 1.5);
-
-	hit_chance += attacker.hitchance_mod - defender.evasionchance_mod;
-	hit_chance += CInt( GetObjProperty(attacker, "#attackbonus" ));
-
-
-	if (getcooldown(defender, "evasion_chance"))
-		hit_chance -= 10;
-	endif
-
-    if (getcooldown(attacker, "blinded") > 0)
-		hit_chance -= 20;
-	endif
-
-	if (GetCooldown(defender, "exposed") > 0)
-		hit_chance += 10; // Defender is exposed, easier to hit
-	endif
-
-	if (TemHabilidade(attacker, "Postura Ofensiva"))
-		hit_chance += 10;
-	endif
-	if (TemHabilidade(defender, "Postura Ofensiva"))
-		hit_chance += 10;
-	endif
-	if (TemHabilidade(attacker, "Postura Defensiva"))
-		hit_chance -= 10;
-	endif
-	if (TemHabilidade(defender, "Postura Defensiva"))
-		hit_chance -= 10;
-	endif
-	if (TemHabilidade(defender, "Preservar Orgaos"))
-		hit_chance -= 10;
-	endif
-	if (GetCooldown(attacker, "posturadecombate") > 0)
-		hit_chance += 10;
-	endif
-
-    var challenged_by := GetObjProperty(attacker, "#DuelChallenge");
-    if (challenged_by && attacker.acctname) // Only affects players
+    var challenged_by := attackInfo.GetAttacker().GetMobRef().GetProp("#DuelChallenge");
+    if (challenged_by && !attackInfo.GetAttacker().IsNPC) // Only affects players
         if (challenged_by.time < ReadGameClock()) // Challenge expired
-            EraseObjProperty(attacker, "#DuelChallenge");
+            attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge");
         else
             var challenger := SystemFindObjectBySerial(challenged_by.challenger);
             if (challenger && challenger.connected)
-                if (defender.serial != challenger.serial) // If attacking someone other than the challenger
+                if (attackInfo.GetDefender().GetSerial() != challenger.serial) // If attacking someone other than the challenger
                     hit_chance -= 10;
                     if (RandomInt(100) < 20) // 20% chance to remind
-                        SendSysMessageEx(attacker, "Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", SSM_FAIL);
+                        Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
                     endif
                 endif
             else
-                EraseObjProperty(attacker, "#DuelChallenge"); // Clean up if challenger disconnected
+                attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge"); // Clean up if challenger disconnected
             endif
         endif
     endif
 
-	if (TemHabilidade(attacker, "Aura de Fe"))
-		hit_chance += attacker.party.members.size()/*  * 2 */;
-	endif
+	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::AURA_DE_FE)) hit_chance += attackInfo.GetAttacker().GetMobRef().party.members.size(); endif
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType()) hit_chance += 5; endif
+	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetItemRef(), CARACTERISTICA_FABRICACAO_PRECISAO)) * 3;
 
-	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )
-		hit_chance += 5;
-	endif
-
-	var bonusFabricacao := Cint(PegaValorFabricacao(attacker.weapon,CARACTERISTICA_FABRICACAO_PRECISAO));
-	bonusFabricacao := bonusFabricacao * 3;
-	hit_chance += bonusFabricacao;
-
-	if(bonusFabricacao != 0)
-		DebugMsg(attacker, DEBUG_HIT, "Bonus Fabricacao: " + bonusFabricacao);
-	endif
-
-	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
-		if (!TemHabilidade(defender, "Fortitudo Impia"))
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "furia") && TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::FURIA_INDOMAVEL))
+		if (!TemHabilidade(attackInfo.GetDefender().GetMobRef(), "Fortitudo Impia"))
 			hit_chance += 10;
 		endif
 	endif
 
-	if ( cint(GetObjProperty(attacker, "#attackbonus")) != 0 )
-		EraseObjProperty(attacker, "#attackbonus");
+	if (CInt(attackInfo.GetAttacker().GetMobRef().GetProp("#attackbonus"))) // TODO: Isso aqui não é pra estar aqui. Ver em qual função colocar.
+		EraseObjProperty(attackInfo.GetAttacker().GetMobRef(), "#attackbonus");
 	endif
 
-	if ( IsRaging(attacker) )
-		if (TemHabilidade(defender, "Iludir o Fraco") )
+	if (IsRaging(attackInfo.GetAttacker().GetMobRef()))
+		if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::ILUDIR_O_FRACO))
 			hit_chance -= 10;
 		endif
-		if (GetCooldown(attacker, "Ataques Enlouquecidos") > 0 )
+		if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "Ataques Enlouquecidos") > 0 )
 			hit_chance += 100;
 		endif
 	endif
-    
-	if ( IsRaging(defender) )
-		if (TemHabilidade(defender, "Esquiva Instintiva") )
+
+	if (IsRaging(attackInfo.GetDefender().GetMobRef()))
+		if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
 			hit_chance -= 10;
 		endif
-		if (GetCooldown(defender, "Ataques Enlouquecidos") > 0 )
+		if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "Ataques Enlouquecidos") > 0 )
 			hit_chance += 100;
 		endif
 	endif
@@ -340,12 +255,42 @@ function CalculateHitChance(byRef attackInfo)
 	return hit_chance;
 endfunction
 
+function _GetSkillForCombat(mobile)
+	var skill;
+
+	if (mobile.IsNPC()) // Se for NPC, a skill é wrestling
+		skill := mobile.GetSkill(WRESTLING);
+	else // Se não for, o bicho pega....
+		var attribute := mobile.GetEquipBySlot(WEAPON).GetAttribute();
+
+		if ((mobile.GetMobRef().GetProp("metamorfose") != error) ||
+			(mobile.GetMobRef().GetProp("pilotando") != error)) // Se é Metamorfo ou Piloto de Golem, a skill tá na prop
+			skill := mobile.GetMobRef().GetProp("skill_a");
+		elseif (attribute == WRESTLING) // Se é melee desarmado, pega a maior entre as skills de melee
+			skill := Max(array{
+				mobile.GetSkill(ONEHANDED),
+				mobile.GetSkill(TWOHANDED),
+				mobile.GetSkill(DUALWIELD)
+			});
+		else
+			skill := mobile.GetSkill(attribute);
+		endif
+
+		if (mobile.IsMounted() && // Se estiver montado
+			mobile.GetMobRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
+			skill := skill / 2;
+		endif
+	endif
+
+	return skill;
+endfunction
+
 function CalculateDualWieldPenalty(attackInfo)
 	var attacker := attackInfo.GetAttacker();
 
-	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetAttribute());
+	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
 
-	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetAttribute())) / 2;
+	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute())) / 2;
 
 	if (penalty < 10)
 		penalty := 10;
@@ -524,4 +469,180 @@ function AmmoCheck(attacker, defender)
 		return 0;
 	endif
 
+endfunction
+
+function GetParryChance(byRef attackInfo)
+	// Verifica se o atacante já pode ser bloqueado novamente.
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "parrydelay") > 0) return 0; endif
+
+	// var usingWeapon := 0;
+	// var parryBonus := 0;
+	// var shield := defender.shield;
+	// var shieldAttr := shield.getAttrBase();
+	var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR);
+	var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR);
+
+	var blocker;
+	// Verifica se o defensor está sob efeito da a hab esudo do martir
+	var wall := attackInfo.GetDefender().GetMobRef().party.getProp("BarreiraDeEscudos");
+	var wallChance := 0;
+	if (wall)
+		blocker := SystemFindObjectBySerial(wall.blocker);
+		if (GetCooldown(blocker, "BarreiraDeEscudos") > 0)
+			if (Distance(attackInfo.GetDefender().GetMobRef(), blocker) < 2)
+				wallChance := CInt(wall.chance);
+			endif
+		else
+			attackInfo.GetDefender().GetMobRef().party.eraseProp("BarreiraDeEscudos");
+			blocker := 0;
+		endif
+	endif
+
+	// Verifica se vai tentar bloquear usando uma armda
+	if (!(shield.IsA(POLCLASS_ARMOR)))
+		usingweapon := 1;
+		shield := defender.weapon;
+		// Não bloqueia se estivem sem arma equipada ou utilizando arma de Ranged (Arcos e bestas)
+		if (shield.objtype == 0x1F020 || shield.Attribute == RANGED)
+			return 0;
+		endif
+	endif
+
+	parryBonus := attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetItemRef().GetProp("parry_mod_percentual");
+	if (parryBonus)
+		parryBonus := 1.0 + parryBonus;
+	else
+		parryBonus := 0;
+	endif
+	// Calcula o Bonus basico de parry do escudo, Bonus de parry específico da CProp do escudo, Bonus de parry especifico da CProp do personagem
+	// parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+	parryBonus := CInt(
+		CInt(shieldAttr.ParryBonus) +					// Parry Bônus Básico do escudo
+		CInt(GetObjProperty(shield, "parrybonus")) +	// Parry Bônus Extra do escudo
+		Cint(fabricacaoApararBonus) +					// Parry Bônus Extra da Fabricação do escudo
+		CInt(GetObjProperty(defender, "parrybonus"))	// Parry Bônus Extra do defensor
+	);
+
+	// Calcula o Bonus temporário de parry, se houver
+	var tempParryBonus := CInt(getObjProperty(defender, "#tempparrybonus"));
+	if (tempParryBonus)
+		parryBonus := parryBonus + tempParryBonus;
+		EraseObjPRoperty(defender, "#tempparrybonus");
+	endif
+
+	var skill := CInt(AP_GetSkill(defender, PARRY));
+
+	if (TemHabilidade(defender, "Reflexo Estrategico"))
+		skill := CInt(AP_GetSkill(defender, TACTICS));
+	endif
+
+	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
+	// var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+	var parryDelay := CInt(
+		-(CInt(shieldAttr.ParryDelay)) +					// Parry Delay Básico do escudo
+		-(CInt(GetObjProperty(shield, "parrydelay_mod"))) +	// Parry Delay Extra do escudo
+		-(Cint(fabricacaoApararAtraso)) +					// Parry Delay Extra da fabricação do escudo
+		-(CInt(skill / 20)) +								// Parry Delay Bônus de acordo com a skill
+		8 													// Fator de balanceamento
+	);
+
+	// Faz com que os bloqueios garantidos por cauda de habilidade resetem o delay de bloqueio
+	if (tempParryBonus == 100)
+		parryDelay := 0;
+	endif
+
+	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
+	if (TemHabilidade(defender.party.leader, "Inspirar Defesas"))
+		parryDelay := parryDelay - 1;
+	endif
+
+	// Calcula o bonus de bloqueio com base no parry usando escudo
+	var parry_chance := CInt(skill / 3);
+
+	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
+	if (usingweapon && !TemHabilidade(defender, "Tabibito no Michi"))
+		parry_chance := CInt(parry_chance * 0.7);
+	endif
+
+	if (usingweapon && TemHabilidade(defender, "Tabibito no Michi"))
+		parry_chance := CInt(parry_chance * 1.3);
+	endif
+	// Calcula a chance TOTAL de bloqueio
+	parry_chance := parry_chance + parryBonus;
+
+	// A habilidade do companheiro de party do defensor tentar bloquear em seu lugar só ativa se a chance de bloqueio dele for melhor que do defensor
+	if (wallChance > parry_chance)
+		parry_chance := wallChance;
+	endif
+
+	// Diminui a chance de bloqueio se estiver usando foices
+	if ((attacker.weapon.graphic == 0x26C4) || (attacker.weapon.graphic == 0x26C5)) // foice grande e foice pequena
+		parry_chance := parry_chance * 0.7; // diminui 30% da chance
+	endif
+
+	// Aplica o efeito da habilidade que deixa o defensor bloquear sempre
+	if (CheckHab_BarreiraIndestrutivel(attacker, defender))
+		parry_chance := 100;
+		parryDelay := 2;
+	endif
+
+	// Calcula se defendeu ou não
+	var defendeu := 0;
+	if (RandomInt(100) < parry_chance)
+		// Verifica habilidade Defesas Gloriosas e, se cabível, aplica seu efeito
+		defendeu := 1;
+
+		// Pike desarma defensor que bloquear sem escudo
+		if ((attacker.weapon.graphic == 0x26BE) && (usingWeapon))
+			var defweapon := defender.weapon;
+			if (defweapon.objtype != 0x1F020)
+				var x := defender.x + RandomInt(2) + 1;
+				var y := defender.y + RandomInt(2) + 1;
+				MoveObjectToLocation(
+					defweapon,
+					x,
+					y,
+					GetWorldHeight(x, y),
+					attacker.realm,
+					MOVEOBJECT_FORCELOCATION
+				);
+			endif
+		endif
+
+		CheckHab_KenNoTatsujin(attacker, defender);
+	endif
+
+	// sobe a skill
+	if (attacker.npctemplate && defender.connected)
+		if (defendeu)
+			SkillCheck(defender, PARRY, -1);
+		else
+			if (RandomInt(5) == 1)
+				SkillCheck(defender, PARRY, -1);
+			endif
+		endif
+	endif
+
+	if (!defendeu)
+		return 0;
+	endif
+
+	// Exibe o efeito visual do bloqueio
+	PerformAction(defender, ANIM_TWIST_DODGE);
+
+	if (blocker)
+		PerformAction(defender, 13);
+		PrintTextAbove(blocker, "*defende o golpe pelo aliado*");
+		SetCooldown(attacker, "parrydelay", parryDelay * 2);
+	else
+		PerformAction(defender, 13);
+		PrintTextAbove(defender, "*defende o golpe*");
+		SetCooldown(attacker, "parrydelay", parryDelay);
+	endif
+
+	// Aplica dano no shield
+	WearDownShield(defender, shield, rawdamage, weapon);
+
+	rawdamage := 0;
+	return 1;
 endfunction

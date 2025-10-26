@@ -43,9 +43,16 @@ class CombatAbility(ICombatAbility)
 	// Private methods
 endclass
 
-enum class COMBATABILITY_NAME
+enum class COMBAT_ABILITY
+	POSTURA_OFENSIVA := "Postura Ofensiva",
+	POSTURA_DEFENSIVA := "Postura Defensiva",
+	PRESERVAR_ORGAOS := "Preservar Orgaos",
+	AURA_DE_FE := "Aura de Fe",
+	ILUDIR_O_FRACO := "Iludir o Fraco",
+	ESQUIVA_INSTINTIVA := "Esquiva Instintiva",
+	FURIA_INDOMAVEL := "Fúria Indomável",
 	MARTIR,
-	MANTOROTHEN,
+	MANTO_ROTHEN,
 	RECUPERACAOSALVADORA,
 	VINGANCA,
 	CHAINOFPAIN,
