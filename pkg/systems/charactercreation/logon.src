@@ -1,0 +1,9 @@
+use uo;
+use os;
+program createChar(who)
+    var chardata := GetObjProperty(who, "chardata");
+
+    if (!chardata)
+        Start_Script(":charactercreation:epicgumpcriacao", who);
+    endif
+endprogram
