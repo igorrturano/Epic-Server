@@ -81,7 +81,6 @@ program GerenteTratamentoProduto(parametros)
 			if (fazerSemelhantes)
 				
 				var produtoAntigo := produto;
-				var novoProduto := EncontraNovoProduto(quem, receitaAntigaObjtype);
 
 				if (produtoAntigo.stackable)
 					SubtractAmount(produtoAntigo, 1);
@@ -92,7 +91,7 @@ program GerenteTratamentoProduto(parametros)
 				if(produtoAntigo.amount > 0)
 					produto := produtoAntigo;
 				else
-					produto := novoProduto;
+					produto := EncontraNovoProduto(quem, receitaAntigaObjtype, produto);
 				endif
 
 				if (produto)
@@ -177,12 +176,12 @@ function LimpaProcessosGerenciados(quem, processosGerenciados)
 	Clear_Event_Queue();
 endfunction
 
-function EncontraNovoProduto(quem, receitaAntigaObjtype)
+function EncontraNovoProduto(quem, receitaAntigaObjtype,produtoAtual)
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
 		if (item.objtype == OBJTYPE_ITEM_MONTADO) // ambos são produtos montados.
 			var itemProp := GetObjProperty(item, PROPNAME_FABRICADO);
-			if (itemProp.receita.objtype == receitaAntigaObjtype)
+			if (cint(itemProp.receita.objtype) == receitaAntigaObjtype && produtoAtual.serial != item.serial)
 				return item;
 			endif
 		endif
