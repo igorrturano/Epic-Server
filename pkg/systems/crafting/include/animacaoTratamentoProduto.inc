@@ -38,7 +38,9 @@ endfunction
 
 function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	if(!CoordinateDistanceEuclidean(quem.x, quem.y, estacao.x, estacao.y) || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
+	
+	var verificaLos := !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm)  && TypeOfInt(estacao.item) != OT_ITEMREF;
+	if(CoordinateDistance(quem.x, quem.y, estacao.x, estacao.y) > 1 || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
 		SendSysMessageEx(quem,"Você não alcança a estação escolhida",SSM_FAIL);
 		return false;
 	endif
