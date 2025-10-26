@@ -59,10 +59,10 @@ function ConverterMoeda(quantidade,moedaDe,moedaPara := MOEDA_MENOR_VALOR)
 endfunction
 
 //Conta a quantidade de pilhas e moedas que tem na mochila e as guarda. retorno struct.quantidade,struct.[array]items
-function GetVariosObjetosMochila(mobile, obj_type_array, color:=0)
+function GetVariosObjetosMochila(container, obj_type_array, color:=0)
 	var quantidade := 0;
 	var retorno :=  dictionary;
-	var items := EnumerateItemsInContainer(mobile.backpack);
+	var items := EnumerateItemsInContainer(container);
 
 	foreach obj_type in obj_type_array//varre os tipos
 		var props := struct;
@@ -99,11 +99,10 @@ function ContaCapital(who, moedasDict := dictionary)
 	return totalMoedaMenorValor;
 endfunction
 
-function EfetuaDebito( who, debito, tipoMoeda:= MOEDA_MENOR_VALOR)
-
+function EfetuaDebito( debito, container := 0, tipoMoeda:= MOEDA_MENOR_VALOR)
 	var tiposMoedas := array {AUREUS,DENARIUS,SESTERTIUS};
-	var moedasDict := GetVariosObjetosMochila(who,tiposMoedas);
-	var capital := ContaCapital(who, moedasDict);
+	var moedasDict := GetVariosObjetosMochila(container,tiposMoedas);
+	var capital := ContaCapital(container, moedasDict);
 	var carteiraDebito := ConverterMoeda(debito,tipoMoeda);
 	
 	if(capital >= carteiraDebito.valorConvertido)
@@ -111,13 +110,13 @@ function EfetuaDebito( who, debito, tipoMoeda:= MOEDA_MENOR_VALOR)
 		 //se tiver o valor suficiente com moedas baixas, consome-as direto.
 		if(carteiraDebito.valorConvertido <= moedasDict[MOEDA_MENOR_VALOR].quantidade  && carteiraDebito.resto == 0)
 			CriarMoedas(
-						who,
+						container,
 						MOEDA_MENOR_VALOR,
 						moedasDict[MOEDA_MENOR_VALOR].quantidade - carteiraDebito.valorConvertido,
 						moedasDict[MOEDA_MENOR_VALOR].items
 						);
 		else
-			TrocarMoedas(who,valorRestante,tiposMoedas,moedasDict);
+			TrocarMoedas(container,valorRestante,tiposMoedas,moedasDict);
 		endif
 		return 1;
 	endif
@@ -126,7 +125,7 @@ endfunction
 
 //Troca todas as moedas por moedas da maior para a menor.
 function TrocarMoedas(
-						who,
+						container,
 						quantidade,
 						tiposMoedas,
 						moedasDict
@@ -141,9 +140,9 @@ function TrocarMoedas(
 		var items := moedasDict[tiposMoedas[indice]].items;
 		
 		if(carteira != error)
-			CriarMoedas(who,tiposMoedas[indice],carteira.valorConvertido,items);
+			CriarMoedas(container,tiposMoedas[indice],carteira.valorConvertido,items);
 		else
-			CriarMoedas(who,moedaDe,valorRestante,items);
+			CriarMoedas(container,moedaDe,valorRestante,items);
 		endif
 
 		valorRestante := carteira.resto;
@@ -155,12 +154,12 @@ function TrocarMoedas(
 	
 endfunction
 
-function CriarMoedas(who,tipo, valor,items := array)
+function CriarMoedas(container,tipo, valor,items := array)
 	foreach item in items
 		DestroyItem(item);
 	endforeach
 	if(valor > 0)
-		CreateItemInBackpack( who, tipo, valor);
+		var retorno := CreateItemInContainer( container, tipo, valor);
 	endif
 endfunction
 
