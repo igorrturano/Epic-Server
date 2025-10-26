@@ -60,7 +60,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	var contadorInterno := 0;
 	var deveMudarEstagio;
 	var ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
 	var espera := craftConfig["Blacksmithy"].CraftDelay;
@@ -175,7 +175,7 @@ endfunction
 function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabricado)
 	var ferramentaNecessaria := BuscaFerramenta(quem,propFabricado.receita.profissao);
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var skill := craftConfig[propFabricado.receita.profissao].Attribute;
 	var espera := craftConfig[propFabricado.receita.profissao].CraftDelay;
