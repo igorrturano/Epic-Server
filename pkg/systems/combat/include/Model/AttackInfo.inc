@@ -17,12 +17,15 @@ class AttackInfo(IAttackInfo)
 	var _defender; // MobileWrapper class
 	
 	var _bodyRegion := ""; // Região do corpo a ser atingida
-	var _direction := 0;
+	var _direction := ATTACK_DIRECTION::FRONT;
 	var _damage; // Damage class
 	var _damageHand := DAMAGEHAND::MAINHAND; 
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
+	var _parryChance := 0;
+	var _parryChancePenalty := 0;
+	var _parryChanceResult := 0; // Resultado da rolagem do dado de parry chance
 
 	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
@@ -31,13 +34,17 @@ class AttackInfo(IAttackInfo)
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
+		
 		this._bodyRegion := error{ errortext := "Body region not set yet!" };
-		this._damageHand := DAMAGEHAND::MAINHAND;
-
+		this._direction := ATTACK_DIRECTION::FRONT;
 		this._damage := error{ errortext := "Damage not set yet!" };
+		this._damageHand := DAMAGEHAND::MAINHAND;
 		this._hitChance := error{ errortext := "Hit chance not set yet!" };
 		this._hitChancePenalty := 0;
 		this._hitChanceResult := error{ errortext := "Hit chance not rolled yet!" };
+		this._parryChance := error{ errortext := "Parry chance not set yet!" };
+		this._parryChancePenalty := 0;
+		this._parryChanceResult := error{ errortext := "Parry chance not rolled yet!" };
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -69,6 +76,18 @@ class AttackInfo(IAttackInfo)
 
 	function GetHitChanceResult(this)
 		return this._hitChanceDiceResult;
+	endfunction
+
+	function GetParryChance(this)
+		return this._parryChance;
+	endfunction
+
+	function GetParryChancePenalty(this)
+		return this._parryChancePenalty;
+	endfunction
+
+	function GetParryChanceResult(this)
+		return this._parryChanceResult;
 	endfunction
 
 	function GetDamage(this)
@@ -123,6 +142,16 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	function SetParryChance(this, parryChance)
+		this._parryChance := parryChance;
+		return this;
+	endfunction
+
+	function SetParryChancePenalty(this, penalty)
+		this._parryChancePenalty := penalty;
+		return this;
+	endfunction
+
 	function SetDamage(this, damage)
 		if (!(damage is @Damage)) return error{ errortext := "Parameter must be a Damage class!" }; endif
 
@@ -160,11 +189,25 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	function RollParryChance(this)
+		if (!this._parryChance) return error{ errortext := "Parry chance not set!" }; endif
+		
+		this._parryChanceResult := Dice("1d" + this._parryChance).Roll();
+		return this;
+	endfunction
+
 	function Succeeded(this)
 		if (!this._hitChance) return error{ errortext := "Hitchance not set!" }; endif
 		if (!this._hitChanceResult) return error{ errortext := "Hitchance Dice not rolled yet!" }; endif
 
 		return this._hitChanceResult <= this._hitChance;
+	endfunction
+
+	function Parried(this)
+		if (!this._parryChance) return error{ errortext := "Parry chance not set!" }; endif
+		if (!this._parryChanceResult) return error{ errortext := "Parry chance Dice not rolled yet!" }; endif
+
+		return this._parryChanceResult <= this._parryChance;
 	endfunction
 
 	function ExecuteAbilitesOnMomentum(this, momentum) // TODO: Jogar para combat::CombatController
@@ -188,6 +231,12 @@ endenum
 enum class DAMAGEHAND
 	MAINHAND,
 	OFFHAND
+endenum
+
+enum class ATTACK_DIRECTION
+	FRONT,
+	BACK,
+	SIDE
 endenum
 
 const OFFHAND_DELAY := 500; // em milissegundos

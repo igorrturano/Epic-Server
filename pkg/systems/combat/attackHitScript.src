@@ -15,7 +15,7 @@ program MainHitScript(attackInfo)
 		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
 	endif
 
-	PlayAttackSound(attackInfo);
+	if (attackInfo.GetDefender().IsDead()) return 1; endif
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	CheckParry(attackInfo); // Verifica se o ataque foi parado
@@ -26,6 +26,7 @@ program MainHitScript(attackInfo)
 	ArmorHitScripts(attackInfo);
 
 	ApplyCombatDamage(attackInfo);
+	PlayAttackSound(attackInfo);
 
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetMobRef(), struct{ hits := 1, damage := basedamage });
 	AchievementCombat_Advance(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), struct{ hits := 1, damage := basedamage });
@@ -36,20 +37,21 @@ endprogram
 function CheckBodyRegionToHit(byRef attackInfo)
 	var zoneToHit := CS_GetRandomArmorZone();
 	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
-	var equipsInZone := attackInfo.GetDefender().GetEquipBySlot(zoneToHit);
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Equipamentos atingidos: {equipsInZone}");
-	// TOOD: concluir
-
 endfunction
 
 function CheckParry(byRef attackInfo)
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	if (!(attackInfo.GetAttacker().GetMobRef().GetProp("backstab")) && !IsBehind(attackInfo.GetDefender().GetMobRef(), attackerPos.x, attackerPos.y) && attackInfo.GetDefender().IsWarMode())
-		DoParry(attackInfo);
-	endif
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("backstab") ||
+		IsBehind(attackInfo.GetDefender().GetMobRef(), attackerPos.x, attackerPos.y) ||
+		!attackInfo.GetDefender().IsWarMode()) return false; endif
 
-	// TODO: Verificar se o ataque foi parado
+	TryToParry(attackInfo);
 
+	return true;
+endfunction
+
+function TryToParry(byRef attackInfo)
+	attackInfo.SetParryChance();
 endfunction
 
 function CheckRecoverArrows(byRef attackInfo)

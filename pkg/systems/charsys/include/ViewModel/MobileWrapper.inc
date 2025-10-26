@@ -345,6 +345,10 @@ class MobileWrapper(IMobileWrapper)
 		return this._mobRef.warmode == true;
 	endfunction
 
+	function IsMounted(this)
+		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+	endfunction
+
 	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
 		if (isPrivate)
 			PlaySoundEffectPrivate(this._mobRef, soundId, soundOrigin ?: this._mobRef);
