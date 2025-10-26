@@ -38,12 +38,27 @@ program SpellScript(params)
 		healed := 20;
 	endif
 
-	// recalcvitals(targ);
+	// Split healing: half instant, half over time
+	var instant_heal := cint(healed / 2);
+	var hot_total := healed - instant_heal;
+	var hot_ticks := 5; // 5 ticks over time
+	var hot_per_tick := cint(hot_total / hot_ticks);
+
+	// Apply instant heal
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
-	healFLS(targ, healed);
+	HealFLS(targ, instant_heal);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	// Apply heal over time
+	var hot_params := struct{
+		"target" := targ,
+		"heal_amount" := hot_per_tick,
+		"remaining_ticks" := hot_ticks
+	};
+
+	start_script(":spells:spell_logic/druid/druidheal_hot", hot_params);
 
 	return 1;
 endprogram
