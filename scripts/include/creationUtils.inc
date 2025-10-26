@@ -2609,7 +2609,8 @@ function CreateItemInicial(who, objtype, qtd)
                                     objtype,
                                     qtd,
                                     RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                    isDispensavel := 1, 
-                                    modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+                                    1, 
+                                    array {0x630e}, //ouro
+                                    FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                 );
 endfunction
