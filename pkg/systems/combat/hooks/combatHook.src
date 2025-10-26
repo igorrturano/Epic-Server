@@ -46,7 +46,7 @@ exported function Attack(attacker, defender)
 	return 1;
 endfunction
 
-function CanAttack(attackInfo)
+function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
 		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		ApplyRawDamage(attackInfo.GetAttacker().GetMobRef(), 5000);
@@ -88,33 +88,10 @@ function CanAttack(attackInfo)
 		return 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().hidden) // Checa se o atacante escondido revela ou não
-		if (attackInfo.GetAttacker().GetMobRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
-			attackInfo.GetAttacker().GetMobRef().EraseProp("ataquefurtivoaprimorado");
-		else // Revela o atacante
-			attackInfo.GetAttacker().GetMobRef().hidden := 0;
-		endif
-	endif
-	
-	if (!attackInfo.GetAttacker().IsNPC() &&
-		attackInfo.GetAttacker().IsWarMode() &&
-		attackInfo.GetDefender().IsNPC() &&
-		attackInfo.GetDefender().GetMobRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
-			LogToFile(
-				":fls_core:pets.log",
-				attackInfo.GetDefender().GetMobRef().acctname + " atacou " + attackInfo.GetDefender().GetMobRef().name + " (" + attackInfo.GetDefender().GetNPCTemplate() + ")",
-				LOG_DATETIME
-			);
-	endif
-
-	if (attackInfo.GetAttacker().GetMobRef().cmdlevel == 0)
-		attackInfo.GetAttacker().GetMobRef().concealed := 0;
-	endif
-
 	return 1;
 endfunction
 
-function TryToAttack(attackInfo)
+function TryToAttack(byRef attackInfo)
 	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
@@ -149,10 +126,31 @@ function TryToAttack(attackInfo)
 	endif
 endfunction
 
-function DoAttack(attackInfo)
+function DoAttack(byRef attackInfo)
 	attackInfo.GetDefender().GetMobRef().frozen := 0;
 
-	var armorsInZone := attackInfo.GetAttacker().GetEquipBySlot(CS_GetRandomArmorZone());
+	if (attackInfo.GetAttacker().GetMobRef().cmdlevel == 0)
+		attackInfo.GetAttacker().GetMobRef().concealed := 0;
+	endif
+
+	if (attackInfo.GetAttacker().GetMobRef().hidden) // Checa se o atacante escondido revela ou não
+		if (attackInfo.GetAttacker().GetMobRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
+			attackInfo.GetAttacker().GetMobRef().EraseProp("ataquefurtivoaprimorado");
+		else // Revela o atacante
+			attackInfo.GetAttacker().GetMobRef().hidden := 0;
+		endif
+	endif
+	
+	if (!attackInfo.GetAttacker().IsNPC() &&
+		attackInfo.GetAttacker().IsWarMode() &&
+		attackInfo.GetDefender().IsNPC() &&
+		attackInfo.GetDefender().GetMobRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+			LogToFile(
+				":fls_core:pets.log",
+				attackInfo.GetDefender().GetMobRef().acctname + " atacou " + attackInfo.GetDefender().GetMobRef().name + " (" + attackInfo.GetDefender().GetNPCTemplate() + ")",
+				LOG_DATETIME
+			);
+	endif
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
 		Run_Script(":combat:attackHitScript", attackInfo);
@@ -162,7 +160,7 @@ function DoAttack(attackInfo)
 endfunction
 
 // Arqueiros
-function AmmoCheckCombatHook(attackInfo)
+function AmmoCheckCombatHook(byRef attackInfo)
 	const STONE_OBJTYPE := 20481;
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
 
@@ -171,11 +169,6 @@ function AmmoCheckCombatHook(attackInfo)
 	endif
 
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
-		return 1;
-	endif
-
-	if (attackInfo.GetAttacker().IsNPC())
-		ArqueiroNPC(attackInfo);
 		return 1;
 	endif
 
@@ -192,11 +185,9 @@ function AmmoCheckCombatHook(attackInfo)
 	if (needs_aljava)
 		var aljavas := array{ 0x791c, 0x2fb7 };
 		var aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::CAPE);
-		// var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
 
 		if (!(aljava.objtype in aljavas))
 			aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::WAIST);
-			// aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
 		endif
 
 		// Check if ammo is in aljava
@@ -268,7 +259,7 @@ endfunction
 
 // endfunction
 
-function arcane_shooting(attackInfo)
+function arcane_shooting(byRef attackInfo)
 	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType)
 		return 1;
 	endif

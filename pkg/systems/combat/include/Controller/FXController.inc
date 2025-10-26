@@ -11,7 +11,6 @@ use cfgfile;
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-include ":equipsys:utils/consts";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 enum class WEAPON_FX

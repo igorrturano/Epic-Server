@@ -15,7 +15,9 @@ class AttackInfo(IAttackInfo)
 	var _moment := ATTACKMOMENT::COMBATING;
 	var _attacker; // MobileWrapper class
 	var _defender; // MobileWrapper class
-
+	
+	var _bodyRegion := ""; // Região do corpo a ser atingida
+	var _direction := 0;
 	var _damage; // Damage class
 	var _damageHand := DAMAGEHAND::MAINHAND; 
 	var _hitChance := 100;
@@ -29,7 +31,13 @@ class AttackInfo(IAttackInfo)
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
+		this._bodyRegion := error{ errortext := "Body region not set yet!" };
 		this._damageHand := DAMAGEHAND::MAINHAND;
+
+		this._damage := error{ errortext := "Damage not set yet!" };
+		this._hitChance := error{ errortext := "Hit chance not set yet!" };
+		this._hitChancePenalty := 0;
+		this._hitChanceResult := error{ errortext := "Hit chance not rolled yet!" };
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -45,6 +53,10 @@ class AttackInfo(IAttackInfo)
 
 	function GetDefender(this)
 		return this._defender;
+	endfunction
+
+	function GetBodyRegion(this)
+		return this._bodyRegion;
 	endfunction
 
 	function GetHitChance(this)
@@ -91,6 +103,13 @@ class AttackInfo(IAttackInfo)
 		if (!(defender is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
 
 		this._defender := defender;
+		return this;
+	endfunction
+
+	function SetDefenderZoneToHit(this, zoneToHit)
+		if (!(zoneToHit in CS_GetArmorZones())) return error{ errortext := "Parameter must be a valid armor zone!" }; endif
+		
+		this._defenderZoneToHit := zoneToHit;
 		return this;
 	endfunction
 
@@ -148,59 +167,13 @@ class AttackInfo(IAttackInfo)
 		return this._hitChanceResult <= this._hitChance;
 	endfunction
 
-	function ExecuteAbilitesOnMomentum(this, momentum)
+	function ExecuteAbilitesOnMomentum(this, momentum) // TODO: Jogar para combat::CombatController
 		if (this._abilitiesToExecute[momentum])
 			foreach ability in (this._abilitiesToExecute[momentum])
 				ability.ExecuteOn(this._attacker, this._defender);
 			endforeach
 		endif
 	endfunction
-
-	function ApplyDamage(this)
-		var slash := this.GetDamage().GetSlashDamage(),
-			piercing := this.GetDamage().GetPierceDamage(),
-			blunt := this.GetDamage().GetBluntDamage(),
-			fire := this.GetDamage().GetFireDamage(),
-			cold := this.GetDamage().GetColdDamage(),
-			poison := this.GetDamage().GetPoisonDamage(),
-			energy := this.GetDamage().GetEnergyDamage();
-
-		if (slash > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), slash);
-			DisplayDamage(this.GetDefender().GetMobRef(), slash, this.GetAttacker().GetMobRef());
-		endif
-
-		if (piercing > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), piercing);
-			DisplayDamage(this.GetDefender().GetMobRef(), piercing, this.GetAttacker().GetMobRef());
-		endif
-
-		if (blunt > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), blunt);
-			DisplayDamage(this.GetDefender().GetMobRef(), blunt, this.GetAttacker().GetMobRef());
-		endif
-
-		if (fire > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), fire);
-			DisplayDamage(this.GetDefender().GetMobRef(), fire, this.GetAttacker().GetMobRef());
-		endif
-
-		if (cold > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), cold);
-			DisplayDamage(this.GetDefender().GetMobRef(), cold, this.GetAttacker().GetMobRef());
-		endif
-
-		if (poison > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), poison);
-			DisplayDamage(this.GetDefender().GetMobRef(), poison, this.GetAttacker().GetMobRef());
-		endif
-
-		if (energy > 0)
-			ApplyRawDamage(this.GetDefender().GetMobRef(), energy);
-			DisplayDamage(this.GetDefender().GetMobRef(), energy, this.GetAttacker().GetMobRef());
-		endif
-	endfunction
-
 
 	function ToString(this)
 		// TODO: Implementar uma representação em string do AttackInfo

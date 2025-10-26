@@ -808,16 +808,6 @@ function CalculateDamageElemental(attacker, defender, weapon, armor)
 	return damages;
 endfunction
 
-// function getElementalDamageNPC(npc, type)
-// 	var damages := struct;
-// 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
-// 	var cfg := ReadConfigFile(":*:npcdesc");
-
-
-
-// 	return damages;
-// endfunction
-
 function CalcDamageStats(attacker, damage)
 	var stat;
 	var elem := attacker.weapon.getCfgElem();
@@ -1208,48 +1198,6 @@ function ApplyDamageHabElementalWeapon( attacker, defender, damageDice, elementa
   ApplyRawDamage( defender, totalDamage );
 endfunction
 
-function GetArmorInZone(mobile, zone_name, type)
-    var result := struct{
-        "items" := array{},
-        "total_resist" := 0
-    };
-    
-    var cfg_file := ReadConfigFile("::armrzone");
-    if(!cfg_file)
-        return result;
-    endif
-    
-    var zone_elem := cfg_file[zone_name];
-    if(!zone_elem)
-        return result;
-    endif
-    
-    var layers := GetConfigStringArray(zone_elem, "Layer");
-    var layer_numbers := array{};
-    foreach layer in layers
-        layer_numbers.append(CInt(layer));
-    endforeach
-    
-    var equipped_items := ListEquippedItems(mobile);
-    
-    foreach item in equipped_items
-        if(item.layer in layer_numbers)
-            result.items.append(item);
-            var item_resist := getResistArmorByType(item, type);
-            result.total_resist += item_resist;
-        endif
-        sleepms(2);
-    endforeach
-    
-    return result;
-endfunction
-
-function IsPhysicalDamage(type)
-	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
-	else return 0;
-	endif
-endfunction
-
 function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdamage)
 	if (attacker.GetProp("critdelay") > ReadGameClock())
 		return 0;
@@ -1321,4 +1269,50 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 			Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext).SendSys(defender);
 		endif
 	endforeach
+endfunction
+
+function ApplyCombatDamage(byRef attackInfo)
+	// TODO: Aplicar dano físico e elemental
+	var slash := attackInfo.GetDamage().GetSlashDamage(),
+			piercing := attackInfo.GetDamage().GetPierceDamage(),
+			blunt := attackInfo.GetDamage().GetBluntDamage(),
+			fire := attackInfo.GetDamage().GetFireDamage(),
+			cold := attackInfo.GetDamage().GetColdDamage(),
+			poison := attackInfo.GetDamage().GetPoisonDamage(),
+			energy := attackInfo.GetDamage().GetEnergyDamage();
+	
+	if (slash > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), slash);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), slash, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (piercing > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), piercing);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), piercing, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (blunt > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), blunt);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), blunt, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (fire > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), fire);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), fire, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (cold > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), cold);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), cold, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (poison > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), poison);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), poison, attackInfo.GetAttacker().GetMobRef());
+	endif
+
+	if (energy > 0)
+		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), energy);
+		DisplayDamage(attackInfo.GetDefender().GetMobRef(), energy, attackInfo.GetAttacker().GetMobRef());
+	endif
 endfunction
