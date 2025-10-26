@@ -1492,19 +1492,7 @@ function gameModeDescriptionByPictureId(gameModeId)
     endcase
 endfunction
 
-function pathOfWisdomGump(who, culture_pic)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-
-    var x := 63;
-    var y := 100;
-    var i := 1;
-    showPreviousGumpInformation(gump, who, culture_pic, x, y);
-    x := 555;
-    y := 100;
-    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
-    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
-
+function getWisdomPathsByCulture(who)
     var wisdomPaths := array{"Mago", "Alquimista"};
     var chardata := GetObjProperty(who, "chardata");
     var culture := chardata.culture;
@@ -1519,9 +1507,29 @@ function pathOfWisdomGump(who, culture_pic)
         wisdomPaths.append("Clériga de Idrith");
     elseif (culture == BJORSKA || culture == LESTE)
         wisdomPaths.append("Clérigo");
-    elseif (culture != HAROLOTH)
+    endif
+    
+    if (culture != HAROLOTH)
         wisdomPaths.append("Druida");
     endif
+    
+    return wisdomPaths;
+endfunction
+
+function pathOfWisdomGump(who, culture_pic)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    var i := 1;
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+    x := 555;
+    y := 100;
+    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
+
+    var wisdomPaths := getWisdomPathsByCulture(who);
     foreach path in wisdomPaths
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
