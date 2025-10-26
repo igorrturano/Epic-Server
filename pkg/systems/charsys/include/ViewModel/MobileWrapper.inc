@@ -279,7 +279,7 @@ class MobileWrapper(IMobileWrapper)
 		return equipsInSlot;
 	endfunction
 
-	function GetEquipByLayer(this, layerEnum) // Os enum estão em EquipWrapper::EQUIP_LAYER
+	function GetEquipByLayer(this, layerEnum)
 		return EquipWrapperArmor(GetEquipmentByLayer(this._mobRef, layerEnum));
 	endfunction
 
@@ -295,6 +295,10 @@ class MobileWrapper(IMobileWrapper)
 	function GetSkillMod(this, skillName)
 		this._skills[skillName].mod := AP_GetSkillMod(this._mobRef, skillName);
 		return this._skills[skillName].mod;
+	endfunction
+
+	function GetAbility(this, abilityName)
+		// TODO: Implementar retorno de CombatAbility
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
@@ -331,6 +335,10 @@ class MobileWrapper(IMobileWrapper)
 		endforeach
 
 		return this;
+	endfunction
+
+	function HasAbility(this, abilityName)
+		return TemHabilidade(this._mobRef, abilityName);
 	endfunction
 
 	function IsNPC(this)

@@ -17,16 +17,41 @@ function CalculateHitChance(byRef attackInfo)
 	hit_chance += attackInfo.GetAttacker().GetMobRef().hitchance_mod - attackInfo.GetDefender().GetMobRef().evasionchance_mod;
 	hit_chance += CInt(attackInfo.GetAttacker().GetMobRef().GetProp("#attackbonus"));
 
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "evasion_chance")) hit_chance -= 10; endif
-    if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "blinded") > 0) hit_chance -= 20; endif
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "exposed") > 0) hit_chance += 10;	endif // Defender is exposed, easier to hit
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "evasion_chance"))
+		hit_chance -= 10;
+	endif
+    
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "blinded") > 0)
+		hit_chance -= 20;
+	endif
+	
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "exposed") > 0) // Defender is exposed, easier to hit
+		hit_chance += 10;
+	endif
 
-	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::POSTURA_OFENSIVA)) hit_chance += 10; endif
-	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::POSTURA_OFENSIVA)) hit_chance += 10; endif
-	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::POSTURA_DEFENSIVA)) hit_chance -= 10; endif
-	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::POSTURA_DEFENSIVA)) hit_chance -= 10; endif
-	if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::PRESERVAR_ORGAOS)) hit_chance -= 10; endif
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "posturadecombate") > 0) hit_chance += 10; endif
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
+		hit_chance += 10;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
+		hit_chance += 10;
+	endif
+
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
+		hit_chance -= 10;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
+		hit_chance -= 10;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::PRESERVAR_ORGAOS))
+		hit_chance -= 10;
+	endif
+
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "posturadecombate") > 0)
+		hit_chance += 10;
+	endif
 
     var challenged_by := attackInfo.GetAttacker().GetMobRef().GetProp("#DuelChallenge");
     if (challenged_by && !attackInfo.GetAttacker().IsNPC) // Only affects players
@@ -47,12 +72,18 @@ function CalculateHitChance(byRef attackInfo)
         endif
     endif
 
-	if (TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::AURA_DE_FE)) hit_chance += attackInfo.GetAttacker().GetMobRef().party.members.size(); endif
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType()) hit_chance += 5; endif
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::AURA_DE_FE))
+		hit_chance += attackInfo.GetAttacker().GetMobRef().party.members.size();
+	endif
+	
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType())
+		hit_chance += 5;
+	endif
+	
 	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetItemRef(), CARACTERISTICA_FABRICACAO_PRECISAO)) * 3;
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "furia") && TemHabilidade(attackInfo.GetAttacker().GetMobRef(), COMBAT_ABILITY::FURIA_INDOMAVEL))
-		if (!TemHabilidade(attackInfo.GetDefender().GetMobRef(), "Fortitudo Impia"))
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "furia") && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::FURIA_INDOMAVEL))
+		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
 			hit_chance += 10;
 		endif
 	endif
@@ -62,69 +93,69 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	if (IsRaging(attackInfo.GetAttacker().GetMobRef()))
-		if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::ILUDIR_O_FRACO))
+		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ILUDIR_O_FRACO))
 			hit_chance -= 10;
 		endif
-		if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "Ataques Enlouquecidos") > 0 )
+		
+		if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "Ataques Enlouquecidos") > 0)
 			hit_chance += 100;
 		endif
 	endif
 
 	if (IsRaging(attackInfo.GetDefender().GetMobRef()))
-		if (TemHabilidade(attackInfo.GetDefender().GetMobRef(), COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
+		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
 			hit_chance -= 10;
 		endif
-		if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "Ataques Enlouquecidos") > 0 )
+
+		if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "Ataques Enlouquecidos") > 0)
 			hit_chance += 100;
 		endif
 	endif
 
-    var swash_debuff := cint(AP_GetSkill(defender, TACTICS)/5);
-	if (GetCooldown(attacker, "desafioheroico") > 0 )
-        hit_chance -= swash_debuff;
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "desafioheroico") > 0)
+		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
+	endif
+	
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesapersistente") > 0)
+		hit_chance -= CInt(attackInfo.GetAttacker().GetSkill(PARRY) / 5);
+	endif
+	
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "defesapersistente") > 0)
+		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(PARRY) / 5);
 	endif
 
-    
-	if (GetCooldown(attacker, "defesapersistente") > 0) //penaliza ataque
-        var parry_bonus_sem_dor := Cint(Ap_GetSkill(attacker, PARRY) / 5);
-		hit_chance -= parry_bonus_sem_dor;
-	endif
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "resistenciaheroica") > 0)
+		var hostiles := ListHostiles(attackInfo.GetDefender().GetMobRef(), 3);
 
-	if (GetCooldown(defender, "defesapersistente") > 0) //beneficia defesa
-        var parry_bonus_sem_dor := Cint(Ap_GetSkill(defender, PARRY) / 5);
-		hit_chance -= parry_bonus_sem_dor;
-	endif
-
-	if (GetCooldown(defender, "resistenciaheroica") > 0)
-		var hostiles := ListHostiles(defender, 3);
-		if ( hostiles.size() >= 5)
+		if (hostiles.size() >= 5)
 			hit_chance -= 15;
-        elseif ( hostiles.size() >= 3)
-            hit_chance -= 10;
-        elseif ( hostiles.size() >= 1)
-            hit_chance -= 5;
+        elseif (hostiles.size() >= 3)
+			hit_chance -= 10;
+        elseif (hostiles.size() >= 1)
+			hit_chance -= 5;
 		endif
 	endif
 
-	if (temhabilidade(attacker, "Lobo Solitario") )
-		var hostiles := ListHostiles(attacker, 3);
-		if ( hostiles.size() > 1)
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::LOBO_SOLITARIO))
+		if (ListHostiles(attackInfo.GetAttacker().GetMobRef(), 3).size() > 1)
 			hit_chance += 15;
 		endif
 	endif
 
-	var tiroCerteiro := Cint(getObjProperty(attacker.weapon, "tirocerteiro"));
-	if ( tiroCerteiro > 0)
-		tiroCerteiro := tiroCerteiro - 1;
+	var tiroCerteiro := CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("tirocerteiro"));
+	if (tiroCerteiro > 0)
+		tiroCerteiro--;
+
 		if (tiroCerteiro == 0)
-			EraseObjProperty(attacker.weapon, "tirocerteiro");
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().EraseProp("tirocerteiro");
 		else
-			SetObjProperty(attacker.weapon, "tirocerteiro", tiroCerteiro);
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().SetProp("tirocerteiro", tiroCerteiro);
 		endif
+
 		hit_chance += 100.0;
 	endif
 
-	if (TemHabilidade(defender, "Budōka"))
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::BUDOKA))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var tactics_bonus := CInt(AP_GetSkill(defender, TACTICS) / 5);
 		if ( defender.weapon.objtype in monk_weapons )
