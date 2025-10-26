@@ -14,10 +14,10 @@ const G_ESPACAMENTO := 10;
 enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
 	COMPLEXOS_RECEITAS := 100,
-	COMPLEXOS_ESQUEMAS := 300,
-	COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT := 360,
-	COMPLEXOS_DROPDOWN_INICIAL := 2000,
-	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	3000,
+	COMPLEXOS_ESQUEMAS := 600,
+	COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT := 660,
+	COMPLEXOS_DROPDOWN_INICIAL := 3000,
+	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	5000,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
 	COMPONENTES_DROPDOWN_OPCOES_INICIAL :=	200,
 	COMPONENTES_TABELA_INICIAL := 1000
@@ -724,6 +724,9 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		deslocamentoGraphicY := 15; //Fix - alguns graphics estão saindo da janela.
 	else
 		deslocamentoGraphicY := 0;
+	endif
+	if(receita.receitaClassificada.nome == "drowsaber")
+		Print("Montando receita: {} na posicao baseIdBotao: {} indice: {}".format(receita.receitaClassificada.nome, baseIdBotao, indice));
 	endif
 
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
