@@ -184,19 +184,17 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 
 	while (processoGerente.state && isAnimacaoPadraoPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial,propFabricado.receita.profissao))
 		
-		var alturaAlvo := estacao.height;
+		var alturaAlvo := estacao.z;
 		if(estacao.mobile)
 			return true;
 		else
 			if(estacao.item)
-				
 				alturaAlvo := estacao.item.height;
-
 			endif
 		endif
 
 		produto.movable := 0;
-		quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_CALOR].x,estacao[FONTE_CALOR].y);
+		quem.facing := GetFacing(quem.x,quem.y,estacao.x,estacao.y);
 		MoveObjectToLocation( 
 						produto,
 						estacao.x,
@@ -205,13 +203,14 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 						estacao.realm, 
 						MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 		
-		PrintTextAbove(quem,"*Trabalhando*");
-		PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+		if(RandomInt(10) <= 3 )
+			PrintTextAbove(quem,"*Trabalhando*");
+		endif
+		PerformAction( quem, ANIM_ATTACK_BOW ); 
 		PlaySoundEffect(quem, SFX_56);
 		CheckToolWear(quem,ferramentaNecessaria,skill);
 		Sleep(Cint(espera));
 
-		
 	endwhile
 
 	return true;
