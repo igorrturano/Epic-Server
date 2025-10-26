@@ -41,18 +41,8 @@ program SpellScript(params)
 	if (poison_info)
 		// Remove the poison property
 		EraseObjProperty(targ, "poisonInfo");
-
-		// Success message
-		SendSysMessageEx(who, "As impurezas desaparecem como sombras a luz do sol.", SSM_INFO);
-		SendSysMessageEx(who, "O item " + targ.desc + " foi purificado.", SSM_INFO);
-
-		// Visual effect to indicate purification
-		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x376A, 3, 3);
-		PlaySoundEffect(targ, 0x1F2);
-	else
-		// Item was already pure
-		SendSysMessageEx(who, "Este item ja esta puro.", SSM_INFO);
 	endif
 
+	SendSysMessageEx(who, "O item " + targ.desc + " foi purificado.", SSM_INFO);
 	return 1;
 endprogram
