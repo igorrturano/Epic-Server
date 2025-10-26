@@ -51,6 +51,7 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
+	SetObjProperty(who, "creation_completed", 1);
 	who.frozen := 0;
 endprogram
 
