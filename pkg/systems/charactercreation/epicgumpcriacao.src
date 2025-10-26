@@ -21,7 +21,7 @@ include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);
-
+	who.frozen := 1;
 	var culture_pic := culturalSelection(who);
 	racialSelection(who, culture_pic);
 	classSelection(who, culture_pic);
@@ -51,6 +51,7 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
+	who.frozen := 0;
 endprogram
 
 function culturalSelection(who)
