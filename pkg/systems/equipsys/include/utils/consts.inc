@@ -41,7 +41,6 @@ enum DAMAGETAG
 endenum
 enum WEAPONTYPE
 	UNARMED := "Unarmed",
-
 	DAGGER := "Dagger",
 	SWORD := "Sword",
 	GREATSWORD := "GreatSword",

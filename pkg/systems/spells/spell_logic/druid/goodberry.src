@@ -24,7 +24,7 @@ program SpellScript(params)
 	endif
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (Temhabilidade(who, "Coração da Matilha"))
 		healing_bonus := Cint(healing_bonus * 1.2);
 	endif
 

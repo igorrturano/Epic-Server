@@ -196,10 +196,8 @@ function TrocarMoedas(
 endfunction
 
 function ConsomeMoedas(items)
-	Print("items: " + items);
 	foreach item in items
-		Print("item a ser destruido: " + item.desc);
-		Print("Tesntando Destruir: " + DestroyItem(item));
+		 DestroyItem(item);
 	endforeach
 endfunction
 
