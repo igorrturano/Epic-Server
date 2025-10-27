@@ -1,4 +1,4 @@
-class IEquipWrapperWeapon()
+class IWeaponWrapper()
 	uninit function GetAttribute(this);
 	uninit function GetAttackType(this);
 	uninit function GetSpeed(this);

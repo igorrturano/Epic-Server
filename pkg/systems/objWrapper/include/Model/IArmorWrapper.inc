@@ -1,4 +1,4 @@
-class IEquipWrapperArmor()
+class IArmorWrapper()
 	uninit function GetTipoProtecao(this);
 	uninit function GetCoverage(this);
 	uninit function GetResists(this);

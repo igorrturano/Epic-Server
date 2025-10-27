@@ -6,8 +6,6 @@ include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
 
-const PROPNAME := "atributos";
-
 class EquipWrapper(IEquipWrapper)
 	var _template; // CfgElem
 	var _itemRef; // ItemRef
@@ -27,7 +25,7 @@ class EquipWrapper(IEquipWrapper)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
 			this._itemRef := item;
-			this._prop := item.GetProp(PROPNAME) ?: error{"errortext" := "This item has no attributes Property!"};
+			this._prop := item.GetProp("atributos") ?: error{"errortext" := "This item has no attributes Property!"};
 			this._objType := item.objtype;
 			this._graphic := this._template.graphic;
 			this._color := this._template.color;
