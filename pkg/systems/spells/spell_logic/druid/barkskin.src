@@ -1,0 +1,77 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Calculate armor bonus based on skill
+	var magiclore_skill := HandleSpellSkill(who);
+	var armor_bonus := CInt(magiclore_skill / 10); // 10 AR at 100 skill
+	if (armor_bonus < 3)
+		armor_bonus := 3; // Minimum 3 AR
+	endif
+
+	var duration := CInt(120 + (magiclore_skill * 3)); // Base 120 + up to 300 seconds
+
+	// Bonus de especialização
+	if (Temhabilidade(who, "Treinamento Druídico"))
+		duration := Cint(duration * 1.2);
+		armor_bonus := Cint(armor_bonus * 1.2);
+	endif
+
+	// Visual effect - barkskin texture
+	PlayObjectCenteredEffect(targ, EPIC_FX_PELE_DE_ARVORE, 10, 10);
+	handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);
+
+	// Store the armor bonus
+	var current_bonus := CInt(GetObjProperty(targ, "barkskin_ar"));
+	if (current_bonus)
+		// Remove old bonus before applying new one
+		targ.ar_mod := targ.ar_mod - current_bonus;
+	endif
+	var original_color := targ.color;
+	var barkskin_color := 2826;
+	targ.color := barkskin_color;
+	// Apply new armor bonus
+	targ.ar_mod := targ.ar_mod + armor_bonus;
+	SetObjProperty(targ, "barkskin_ar", armor_bonus);
+	SetCooldown(targ, "barkskin", duration);
+
+	SendSysMessageEx(who, "A casca de arvore protege " + targ.name + ".", SSM_INFO);
+	SendSysMessageEx(targ, "Sua pele endurece como casca de arvore.", SSM_INFO);
+
+	// Sleep for duration then remove bonus
+	sleep(duration);
+
+	// Remove armor bonus
+	var stored_bonus := CInt(GetObjProperty(targ, "barkskin_ar"));
+	if (stored_bonus)
+		targ.ar_mod := targ.ar_mod - stored_bonus;
+		EraseObjProperty(targ, "barkskin_ar");
+	endif
+	targ.color := original_color;
+	SendSysMessageEx(targ, "A casca de arvore se desfaz.", SSM_INFO);
+
+	return 1;
+endprogram
