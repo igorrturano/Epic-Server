@@ -19,7 +19,11 @@ class AttackInfo(IAttackInfo)
 	var _bodyRegion := ""; // Região do corpo a ser atingida
 	var _direction := ATTACK_DIRECTION::FRONT;
 	var _damage; // Damage class
-	var _damageHand := DAMAGEHAND::MAINHAND; 
+	var _damageHand := DAMAGEHAND::MAINHAND;
+	var _ammo := struct{
+		itemRef := 0x0,
+		amount := 0
+	};
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
@@ -98,6 +102,14 @@ class AttackInfo(IAttackInfo)
 		return this._damageHand;
 	endfunction
 
+	function GetAmmo(this)
+		return this._ammo.itemRef;
+	endfunction
+
+	function GetAmmoAmount(this)
+		return this._ammo.amount;
+	endfunction
+
 	function GetAttackerAbilities(this)
 		return this._attackerAbilities;
 	endfunction
@@ -108,6 +120,7 @@ class AttackInfo(IAttackInfo)
 
 	function SetMoment(this, moment)
 		this._moment := moment;
+
 		return this;
 	endfunction
 
@@ -115,6 +128,7 @@ class AttackInfo(IAttackInfo)
 		if (!(attacker is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
 		
 		this._attacker := attacker;
+
 		return this;
 	endfunction
 
@@ -122,6 +136,7 @@ class AttackInfo(IAttackInfo)
 		if (!(defender is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
 
 		this._defender := defender;
+
 		return this;
 	endfunction
 
@@ -129,26 +144,31 @@ class AttackInfo(IAttackInfo)
 		if (!(zoneToHit in CS_GetArmorZones())) return error{ errortext := "Parameter must be a valid armor zone!" }; endif
 		
 		this._defenderZoneToHit := zoneToHit;
+
 		return this;
 	endfunction
 
 	function SetHitChance(this, hitChance)
 		this._hitChance := hitChance;
+
 		return this;
 	endfunction
 
 	function SetHitChancePenalty(this, penalty)
 		this._hitChancePenalty := penalty;
+
 		return this;
 	endfunction
 
 	function SetParryChance(this, parryChance)
 		this._parryChance := parryChance;
+
 		return this;
 	endfunction
 
 	function SetParryChancePenalty(this, penalty)
 		this._parryChancePenalty := penalty;
+
 		return this;
 	endfunction
 
@@ -156,11 +176,22 @@ class AttackInfo(IAttackInfo)
 		if (!(damage is @Damage)) return error{ errortext := "Parameter must be a Damage class!" }; endif
 
 		this._damage := damage;
+
 		return this;
 	endfunction
 
 	function SetDamageHand(this, damageHand)
 		this._damageHand := damageHand;
+
+		return this;
+	endfunction
+
+	function SetAmmo(this, ammoItemRef, amount)
+		if (amount < 1) return error{ errortext := "Amount used must be at least 1!" }; endif
+
+		this._ammo.itemRef := ammoItemRef;
+		this._ammo.amount := amount;
+
 		return this;
 	endfunction
 
