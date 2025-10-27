@@ -1120,7 +1120,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	if(TypeOfInt(valorEfeitos.valorPrincipal) != OT_UNINIT || TypeOfInt(valorEfeitos.valorPrincipal) != OT_ERROR)
 		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
-		if(Upper(caracteristica) != "VAZIO")
+		if(Find(Upper(caracteristica), "VAZIO",1) <= 0)
 			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
 		endif
 	endif
@@ -1535,17 +1535,31 @@ function CriaPropFabricadoGerada(
 			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
 				continue;	
 			endif
-			var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
-			var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
 
-			if( DeveEscreverMaterial(materiaisPossiveisPorTier,tier))
-				materiaisPossiveisPorTier.insert(
-													tierMaterial,
-													struct{
-															materialComponente := materialPossivel.chave,
-															materialNome := recursosConfig[hex(materialPossivel.chave)].name
-														}
-												);
+			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
+				if(cint(recursosConfig[materialPossivel.chave].tier) == tier )
+					materiaisPossiveisPorTier.insert(
+														tier,
+														struct{
+																materialComponente := materialPossivel.chave,
+																materialNome := recursosConfig[hex(materialPossivel.chave)].name
+															}
+													);
+				endif
+			else
+				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
+				var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
+				
+				if( DeveEscreverMaterial(materiaisPossiveisPorTier,tier))
+					materiaisPossiveisPorTier.insert(
+														tierMaterial,
+														struct{
+																materialComponente := materialPossivel.chave,
+																materialNome := recursosConfig[hex(materialPossivel.chave)].name
+															}
+													);
+			
+				endif
 			endif
 			
 		endforeach
@@ -1569,9 +1583,14 @@ function CriaPropFabricadoGerada(
 				chaveMaterial := hex(materialStruct.materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
 
+		if(TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_ERROR || TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_UNINIT)
+			return error{"errorText" := "Não foi possível encontrar material para este tier."};
+		endif
+
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
 		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
 	endforeach
+	//Print("objetoEsquema: " + objetoEsquema);
 
 	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
 endfunction

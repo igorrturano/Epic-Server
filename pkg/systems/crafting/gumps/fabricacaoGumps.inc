@@ -536,6 +536,14 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	endif
 	GFTooltipText(gump,"Escolher Componente.");
 
+	var textoCaracteristica;
+
+	if(Find(UPPER(encaixeComponente.caracteristica),"VAZIO",1) > 0)
+		textoCaracteristica := "Vazio";
+	else
+		textoCaracteristica := UCFirst(encaixeComponente.caracteristica);;
+	endif
+
 	if(componenteEscolhido)
 		GFTextLine(gump,x + 22 ,y + 60,1153,"{}".format(
 		componenteEscolhido.item.nome,
@@ -545,7 +553,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		var materialQualidadeFormatado := "[{}] [{}]".format( componenteEscolhido.material.nome, componenteEscolhido.tier.desc);
 		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,materialQualidadeFormatado,3.7) ,y + 85,89,materialQualidadeFormatado);
 	else
-		var caracteristica := "*" + UCFirst(encaixeComponente.caracteristica) + "*";
+		var caracteristica := "*" + textoCaracteristica + "*";
 		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,caracteristica,3.7) ,y + 103,915,caracteristica);
 		GFTextLine(gump,x + 22 ,y + 60,1153,"Escolha um componente.");
 	endif
@@ -555,7 +563,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	
 	if(TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_UNINIT
 	   && TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_ERROR)
-		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,textoCaracteristica); // caracteristica;
 		GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
 	endif
 	
