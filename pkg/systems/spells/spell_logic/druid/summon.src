@@ -100,7 +100,7 @@ program summontotem(params)
 	var duracao := 120 + 180 * AP_GetSkill(who, THEOLOGY) / 100;
 	var fator := (AP_GetSkill(who, THEOLOGY) - 20.0) / 4; // skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
 
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (Temhabilidade(who, "Coração da Matilha"))
 		espirito.resist_physical_mod := 25 * 1.2;
 		espirito.resist_cold_mod := 25 * 1.2;
 		espirito.resist_poison_mod := 25 * 1.2;

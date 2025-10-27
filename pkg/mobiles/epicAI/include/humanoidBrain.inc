@@ -777,7 +777,7 @@ function ChooseSageAbility(npc, state, habs)
         foreach hab in habs
             case (hab)
                 "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
-                "Treinamento Druídico": return hab; // controlar a besta
+                "Coração da Matilha": return hab; // controlar a besta
             endcase
         endforeach
     endif

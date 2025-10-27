@@ -153,7 +153,7 @@ function ApplyAttributeModifiers(who, form, duration)
 	// SendSysMessageEx( who, "Form Dexterity: " + form.dexterity, SSM_INFO );
 	// SendSysMessageEx( who, "Form Intelligence: " + form.intelligence, SSM_INFO );
 
-	if (TemHabilidade(who, "Treinamento Druídico"))
+	if (TemHabilidade(who, "Coração da Matilha"))
 		skill_a_calc := CINT(skill_a_calc * 1.2);
 		skill_d_calc := CINT(skill_d_calc * 1.2);
 		hitsmod_calc := CINT(hitsmod_calc * 1.2);
@@ -311,7 +311,7 @@ endfunction
 
 function CalculateTransformationDuration(who)
 	var duration := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
-	if (TemHabilidade(who, "Treinamento Druídico"))
+	if (TemHabilidade(who, "Coração da Matilha"))
 		duration := duration * 2;
 	endif
 	// Print for debugging

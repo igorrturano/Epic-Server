@@ -178,7 +178,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 	  duration := Cint(duration * bonus);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 	  duration := Cint(duration * bonus);
-   elseif(Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
+   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
 	  duration := Cint(duration * bonus);
    endif
 
