@@ -23,10 +23,7 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	var attackInfo;
-	attacker := MobileWrapper(attacker);
-	defender := MobileWrapper(defender);
-	attackInfo := AttackInfo(attacker, defender);
+	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
 	attackInfo.SetAttackerWeapon(attacker.GetEquipBySlot(WEAPON))
 			  .SetDefenderWeapon(defender.GetEquipBySlot(WEAPON));
 
@@ -37,9 +34,8 @@ exported function Attack(attacker, defender)
 	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "=================");
 	TryToAttack(attackInfo);
 
-	// Se é DualWield tenta atacar de novo
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD)
-		attackInfo.SetDamageHand(DAMAGEHAND::OFFHAND);
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
+		attackInfo.SetDamageHand(DAMAGEHAND::OFFHAND); // Troca a mão para a secundária
 		TryToAttack(attackInfo);
 	endif
 
@@ -50,11 +46,17 @@ function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
 		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
 		ApplyRawDamage(attackInfo.GetAttacker().GetMobRef(), 5000);
-		return 0;
+		return false;
 	endif
 	
-	if (!CheckLineOfSight(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef())) return 0; endif
-	if (attackInfo.GetDefender().GetMobRef().hidden) return 0; endif // Impede de atacar gente escondida
+	if (!CheckLineOfSight(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef()))
+		Message("Você não enxerga o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		return false;
+	endif
+
+	if (attackInfo.GetDefender().GetMobRef().hidden) // Impede de atacar gente escondida
+		return false;
+	endif
 
 	if (!attackInfo.GetAttacker().IsNPC())
 		if (!attackInfo.GetAttacker().IsWarMode())
@@ -62,33 +64,53 @@ function CanAttack(byRef attackInfo)
 				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetMobRef());
 				attackInfo.GetAttacker().GetMobRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
-			return 0;
+			return false;
 		endif
 	endif
 
 	if ((attackInfo.GetAttacker().GetMobRef().paralyzed) || (attackInfo.GetAttacker().GetMobRef().frozen))
-		Message("Você não consegue atacar.").SendSys(attackInfo.GetAttacker().GetMobRef());
-		return 0;
+		Message("Você não consegue se mover.").SendSys(attackInfo.GetAttacker().GetMobRef());
+		return false;
 	endif
 
-	if (!DistanceChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef())) return 0; endif
-	if (!FacingChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef())) return 0; endif
-	if (!AmmoCheckCombatHook(attackInfo)) return 0; endif
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesatotal") > 0) return 0; endif
-	if (!arcane_shooting(attackInfo)) return 0; endif
-	if (attackInfo.GetAttacker().GetMobRef().npctemplate == ":brainai:GolemMartelo") return 0; endif
+	if (!CheckDistance(attackInfo.GetAttacker(), attackInfo.GetDefender()))
+		Message("O alvo está fora do alcance.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		return false;
+	endif
+
+	if (!CheckFacing(attackInfo.GetAttacker(), attackInfo.GetDefender()))
+		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		return false;
+	endif
+
+	if (!CheckAmmo(attackInfo))
+		return false;
+	endif
+	
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesatotal") > 0)
+		Message("Você está totalmente concentrado na defesa.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		return false;
+	endif
+	
+	if (!arcane_shooting(attackInfo))
+		return false;
+	endif
+	
+	if (attackInfo.GetAttacker().GetMobRef().npctemplate == ":brainai:GolemMartelo")
+		return false;
+	endif
 
 	if (CInt(attackInfo.GetAttacker().GetMobRef().GetProp("charmed_by")) == attackInfo.GetDefender().GetSerial())
 		Message("*hipnotizado*").SendAbove(attackInfo.GetAttacker().GetMobRef());
-		return 0;
+		return false;
 	endif
 
 	if (attackInfo.GetDefender().GetMobRef().GetProp("#PrisaoGelida"))
 		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
-		return 0;
+		return false;
 	endif
 
-	return 1;
+	return true;
 endfunction
 
 function TryToAttack(byRef attackInfo)
@@ -96,11 +118,9 @@ function TryToAttack(byRef attackInfo)
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
 		Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef() });
-		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef() });
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> MainHand");
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
 	elseif (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
-		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attackInfo.GetAttacker().GetMobRef(), 500 }); // Delay pro offhand
 		attackInfo.SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo));
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> OffHand");
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
@@ -122,7 +142,7 @@ function TryToAttack(byRef attackInfo)
 	else
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
-		PlayAttackSound(attackInfo);
+		PlayAttackSound(attackInfo); // Se errou, toca o som de MISS aqui
 	endif
 endfunction
 
@@ -159,66 +179,63 @@ function DoAttack(byRef attackInfo)
 	endif
 endfunction
 
-// Arqueiros
-function AmmoCheckCombatHook(byRef attackInfo)
+function CheckAmmo(byRef attackInfo)
 	const STONE_OBJTYPE := 20481;
+
+	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType) // Não tem projétil
+		return true;
+	endif
+
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
-
-	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType)
-		return 1;
-	endif
-
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
-		return 1;
+		return true;
 	endif
 
-	// Get saved ammo reference
-	var ammo := GetObjProperty(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef(), "ammo");
+	var ammo := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("ammo");
 	if (!ammo)
 		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
-		return 0;
+		return false;
 	endif
-	var obj := SystemFindObjectBySerial(ammo);
-	// Handle stones differently - they don't need aljava check
-	var needs_aljava := (obj.objtype != STONE_OBJTYPE);
 
+	// Handle stones differently - they don't need aljava check
+	var obj := SystemFindObjectBySerial(ammo);
+	attackInfo.SetAmmo(obj, 1);
+	var needs_aljava := (obj.objtype != STONE_OBJTYPE);
 	if (needs_aljava)
 		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::CAPE);
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE);
 
 		if (!(aljava.objtype in aljavas))
-			aljava := attackInfo.GetAttacker().GetEquipByLayer(EQUIP_LAYER::WAIST);
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
 		endif
 
 		// Check if ammo is in aljava
-		var found_in_aljava := 0;
+		var found_in_aljava := false;
 		foreach arrow in (EnumerateItemsInContainer(aljava))
 			if (arrow.serial == ammo)
-				found_in_aljava := 1;
+				found_in_aljava := true;
 				break;
 			endif
 		endforeach
 
 		if (!found_in_aljava)
-			return 0;
+			return false;
 		endif
 	endif
 
-	// Handle the ammunition consumption and effect
-	if (SubtractAmount(ammo, 1))
-		var cfg := ReadConfigFile(":woodworking:itemdesc");
-		var elem := FindConfigElem(cfg, GetObjType(ammo));
-		var ammo_color := elem.color;
-		PlayMovingEffectXYZHued(
-			attackInfo.GetAttacker().GetMobRef(),
-			attackInfo.GetDefender().GetMobRef(),
-			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
-			10, 10, 0, ammo_color
-		);
-		return 1;
-	endif
+	// TODO: Jogar essa parte para função lá no FXController
+	// var cfg := ReadConfigFile(":woodworking:itemdesc");
+	// var elem := FindConfigElem(cfg, GetObjType(ammo));
+	// var ammo_color := elem.color;
+	// PlayMovingEffectXYZHued(
+	// 	attackInfo.GetAttacker().GetMobRef(),
+	// 	attackInfo.GetDefender().GetMobRef(),
+	// 	attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
+	// 	10, 10, 0, ammo_color
+	// );
+	// return true;
 
-	return 0;
+	return false; // False por segurança, mas não deveria chegar aqui. Se chegar, vai travar o ataque e facilita encontrar o bug.
 endfunction
 
 // function playSoundAndEffectForThrowingWeapons(attackInfo) // TODO: Transferir isso daqui para o AttackAnimation
@@ -313,7 +330,7 @@ endfunction
 // 	return 1;
 // endfunction
 
-function FacingChecks(attacker, defender)
+function CheckFacing(attacker, defender)
 	var retval := 1;
 
 	if (!IsFacing(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y))
