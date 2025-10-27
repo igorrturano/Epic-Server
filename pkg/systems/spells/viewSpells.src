@@ -173,7 +173,7 @@ function CreateClericGump(who, shaman_list, available_slots)
 
 		GFHTMLArea(gump, 52, y, 300, 24, "{}{}".format(color, spellname), 1, 0);
 		// Build tooltip
-		var tooltip := "<BASEFONT color=#BDB76B>{}".format(spell.description);
+		var tooltip := "<BASEFONT color=#BDB76B>{}".format(spell.flavortext);
 		GFToolTipText(gump, tooltip);
 
 		// Allow forgetting non-cantrip spells that are used or expired
