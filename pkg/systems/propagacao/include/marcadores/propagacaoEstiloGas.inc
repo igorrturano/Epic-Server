@@ -136,10 +136,6 @@ class PropagacaoEstiloGas( MarcadorPropagacaoBase )
   endfunction
 
   function _TratarParametrosInvalidos(this)
-    Print("Marcador de propagação no estilo Gás [ serial {}] criado com parâmetros inválidos {}".format(
-        this.esteItemMarcador.serial,
-          "[" + this.ciclosExpancao + " - " + this.duracaoCiclos + "]"
-        ));
     if(this.mobileOrigem)
       SendSysMessageEX(this.mobileOrigem,"Erro ao criar Propagação de Gás, por favor comunique a staff.");
     endif
