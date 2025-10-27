@@ -7,7 +7,7 @@ include ":equipsys:Controller/WeaponController";
 include ":combat:Model/DamageDice";
 include ":diceroll:model/Dice";
 
-class EquipWrapperWeapon(EquipWrapper, IWeaponWrapper)
+class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _attribute := "";
 	var _attackType := "";
 	var _category := "";
@@ -28,7 +28,7 @@ class EquipWrapperWeapon(EquipWrapper, IWeaponWrapper)
 	var _minRange := 1;
 	var _maxRange := 1;
 
-	function EquipWrapperWeapon(this, byRef item)
+	function WeaponWrapper(this, byRef item)
 		Super(item);
 		
 		this._attribute := this._template.Attribute;

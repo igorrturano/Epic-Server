@@ -7,9 +7,9 @@ include ":tn:cooldown";
 include "include/say";
 include "include/client";
 include ":message:model/Message";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":charsys:ViewModel/MobileWrapper";
+include ":objWrapper:Model/ArmorWrapper";
+include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 
 program equipweapon(who, item)

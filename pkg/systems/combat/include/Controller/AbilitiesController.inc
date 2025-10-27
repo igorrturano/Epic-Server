@@ -590,7 +590,7 @@ function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byRef attackInfo
 	endif
 
 	if ( IsBehind(defender, attacker.x, attacker.y) )
-		if ( !CanBackStab(attacker, weapon) )
+		if ( !CanBackStab(attackInfo.GetAttacker()) )
 			return 0;
 		else
 			sleepms(100);

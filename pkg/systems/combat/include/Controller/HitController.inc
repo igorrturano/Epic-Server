@@ -415,9 +415,9 @@ function HasLightNearby(defender)
 	return 0;
 endfunction
 
-function DistanceChecks(attacker, defender)
+function CheckDistance(attacker, defender)
 	var attackerDistance := Distance(attacker, defender);
-	var weapon := EquipWrapperWeapon(attacker.weapon);
+	var weapon := WeaponWrapper(attacker.weapon);
 
 	if (attackerDistance < weapon.GetMinRange() || attackerDistance > weapon.GetMaxRange())
 		return false;
@@ -426,23 +426,17 @@ function DistanceChecks(attacker, defender)
 	return true;
 endfunction
 
-function CanBackStab(who, weapon)
-	var can_back_stab := 0;
-
-	if ((weapon.attribute) != "Two_Handed")
-		can_back_stab := 1;
+function CanBackStab(attacker) // attacker: MobileWrapper
+	if (attacker.GetEquipBySlot(WEAPON).GetAttribute() == TWOHANDED ||
+		attacker.GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
+		return false;
 	endif
 
-	if (!can_back_stab)
-		Message("Esta arma não é apropriada para um ataque furtivo.").SendSys(who);
-		return 0;
-	endif
-
-	return can_back_stab;
+	return true;
 endfunction
 
 function AmmoCheck(attacker, defender)
-	var attackerWeapon := EquipWrapperWeapon(attacker.weapon);
+	var attackerWeapon := WeaponWrapper(attacker.weapon);
 
 	if (!attackerWeapon.GetTemplate().ProjectileType)
 		return 1;

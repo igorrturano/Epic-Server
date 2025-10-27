@@ -218,9 +218,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return EquipWrapperWeapon(this._objRef.weapon);
+			return WeaponWrapper(this._objRef.weapon);
 		elseif (equipSlot == SHIELD)
-			return EquipWrapperArmor(this._objRef.shield);
+			return ArmorWrapper(this._objRef.shield);
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
 		elseif (equipSlot == NECK)
@@ -240,14 +240,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		foreach equip in (equipsInSlot)
-			equip := EquipWrapperArmor(equip);
+			equip := ArmorWrapper(equip);
 		endforeach
 
 		return equipsInSlot;
 	endfunction
 
 	function GetEquipByLayer(this, layerEnum)
-		return EquipWrapperArmor(GetEquipmentByLayer(this._objRef, layerEnum));
+		return ArmorWrapper(GetEquipmentByLayer(this._objRef, layerEnum));
 	endfunction
 
 	function GetSkill(this, skillName)
@@ -279,8 +279,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
-		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
-			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
+		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
+			return error {"errortext" := "The param must be an ArmorWrapper or WeaponWrapper!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -292,8 +292,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
-		if (!(itemWrapped is @EquipWrapperArmor) && !(itemWrapped is @EquipWrapperWeapon))
-			return error {"errortext" := "The param must be an EquipWrapperArmor or EquipWrapperWeapon!"};
+		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
+			return error {"errortext" := "The param must be an ArmorWrapper or WeaponWrapper!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())

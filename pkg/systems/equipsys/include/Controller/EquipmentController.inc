@@ -7,8 +7,8 @@ use cfgfile;
 use math;
 
 include ":equipsys:utils/consts";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/ArmorWrapper";
 include ":equipsys:Controller/ArmorController";
 include ":equipsys:Controller/WeaponController";
 
@@ -46,7 +46,7 @@ function getWeaponStats(weapon)
 endfunction
 
 function addDamagePhysical(stats, weapon)
-	var wrapped := EquipWrapperWeapon(weapon);
+	var wrapped := WeaponWrapper(weapon);
 	var mainDamage := wrapped.getMainDamage();
 	var offDamage := wrapped.getOffDamage();
 

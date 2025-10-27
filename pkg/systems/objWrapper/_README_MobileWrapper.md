@@ -117,9 +117,9 @@ function EquiparItem(player, item)
     // Verificar se é uma arma ou armadura
     var item_wrapper;
     if (item.isArmor())
-        item_wrapper := EquipWrapperArmor(item);
+        item_wrapper := ArmorWrapper(item);
     elseif (item.isWeapon())
-        item_wrapper := EquipWrapperWeapon(item);
+        item_wrapper := WeaponWrapper(item);
     else
         SendSysMessage(player, "Item não é equipável!");
         return 0;
@@ -143,9 +143,9 @@ function DesequiparItem(player, item)
     
     var item_wrapper;
     if (item.isArmor())
-        item_wrapper := EquipWrapperArmor(item);
+        item_wrapper := ArmorWrapper(item);
     elseif (item.isWeapon())
-        item_wrapper := EquipWrapperWeapon(item);
+        item_wrapper := WeaponWrapper(item);
     endif
     
     wrapper.RemoveItemModifiers(item_wrapper);
