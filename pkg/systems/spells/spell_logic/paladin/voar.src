@@ -49,7 +49,7 @@ program voar(params)
 	endif
 
 	// Execute jump/flight - passing who directly, not as an array
-	var jump_script := Start_Script(":spells:spell_logic/druid/jump", who);
+	var jump_script := Start_Script(":spells:spell_logic/druid/jump", {who});
 	if (jump_script.errortext)
 		SendSysMessage(who, "Erro ao executar salto: " + jump_script.errortext);
 		return 0;
