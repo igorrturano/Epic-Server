@@ -432,7 +432,7 @@ function DoPurchase(npc, player, input)
 	var cost_desc := AddArticle(GetName(cost.cost_type));
 	var pay_list := array{};
 
-	if (!player.spendgold(owed))
+	if (!player.spendgold(owed, GetObjProperty(npc,"City")))
 		SendSysMessageEx(player, "Você não tem as {} m.o necessárias.".format(owed), SSM_INFO);
 		return 0;
 	else
@@ -579,9 +579,9 @@ function AddItemToSell(npc, player, item)
 			return;
 		endif
 
-		if (!player.spendgold(total_imposto))
+		if (!player.spendgold(total_imposto, GetObjProperty(npc,"City")))
 			SendSysMessageEx(player, "Você precisa de {} moedas para colocar o item a venda".format(total_imposto),
-							  SSM_INFO);
+							  SSM_INFO_IC);
 			return 0;
 		else
 			SendSysMessageEx(player, "Você pagou {} moedas de imposto.".format(total_imposto), SSM_INFO);

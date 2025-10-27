@@ -40,6 +40,8 @@ scripts/leftovers.txt
 scripts/orphans.txt
 *.exe
 servers.cfg
+leftovers.txt
+orphans.txt
 
 # UOConvert Files
 config/multis.cfg

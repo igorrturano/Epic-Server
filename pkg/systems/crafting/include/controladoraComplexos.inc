@@ -402,26 +402,22 @@ function MontaMelhorEsquema(quem, sessao)
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		if(opcaoEncontrada.itemRef)
-			var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-			
-			AcrescentaComponenteEscolhido(
-					sessao.receitaSelecionada.esquemaSelecionado,
-					componenteNecessario,
-					componenteEscolhido, 
-					opcaoEncontrada.indiceEncaixeComponente, 
-					sessao.receitaSelecionada.receita.receitaClassificada.classe);
-		else
-			//marreta básica pra não ter que ficar contando tudo varias vezes.
-			SendSysMessageEX(quem, "Dificuldades para encontrar melhor componente para {}, componente ignorado. Por favor tente empilhar todos materiais juntos".format(componenteNecessario.encaixe), SSM_INFO_IC);
-		endif
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
+		
+		AcrescentaComponenteEscolhido(
+				sessao.receitaSelecionada.esquemaSelecionado,
+				componenteNecessario,
+				componenteEscolhido, 
+				opcaoEncontrada.indiceEncaixeComponente, 
+				sessao.receitaSelecionada.receita.receitaClassificada.classe);
+
 	endforeach
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
 function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
@@ -452,11 +448,12 @@ endfunction
 
 function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
-	
+	Print("Contagem de requisitos: {}" .format(contagem));
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
 		if(!deveIgnorarRequisitos)
 			ConsomeRequisitos(contagem, quantidade);
 		endif
+
 		if(deveIgnorarRequisitos)
 			var retorno := CriaItemFabricado(quem,0,quantidade, DefinePropFabricado(esquema,receita, quem));
 
@@ -645,8 +642,8 @@ function ConsomeRequisitos(contagem, quantidade := 1)
 			endif;
 			
 			if(itemEncontrado.stackable)
-				SubtractAmount(itemEncontrado, quantidadeRestante);
-				quantidadeRestante -= itemEncontrado.amount;
+				var quantidadeItem := itemEncontrado.amount;
+				quantidadeRestante -= quantidadeItem;
 			else
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
@@ -933,23 +930,24 @@ function CarregaDropDownNormal(quem, byref sessao,byref gerenciador, configRecur
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
 			var indiceOpcoes := 1;
-			
-			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe].conjunto)
+			var envelopesEncontrados := componentesEncontrados[componenteNecessario.encaixe].conjunto;
+			foreach chaveEnvelope in (envelopesEncontrados.keys())
 				Sleepms(2);
-				var quantidadeFormatada :=  componenteEncontrado.quantidade <= 99 ? 
-												cstr(componenteEncontrado.quantidade) :
-												cstr(componenteEncontrado.quantidade)[1,2] + "..";
+				var quantidadeFormatada :=  envelopesEncontrados[chaveEnvelope].quantidade <= 99 ? 
+												cstr(envelopesEncontrados[chaveEnvelope].quantidade) :
+												cstr(envelopesEncontrados[chaveEnvelope].quantidade)[1,2] + "..";
 				var nomeOpcao := "{} {} [{}] [{}]".format(
 														quantidadeFormatada,
-														componenteEncontrado.itemRef.name,
-														componenteEncontrado.material.name,
-														componenteEncontrado.tier.desc);
+														envelopesEncontrados[chaveEnvelope].itemRef.name,
+														envelopesEncontrados[chaveEnvelope].material.name,
+														envelopesEncontrados[chaveEnvelope].tier.desc);
 				
 				var retorno := DropDown::AdicionaOpcao(
 														dropDown,
 														nomeOpcao,
 														indiceOpcoes,
-														MontaObetoOpcaoComponente(componenteEncontrado, _componenteNecessario_iter)
+														MontaObetoOpcaoComponente(envelopesEncontrados[chaveEnvelope], 
+														_componenteNecessario_iter)
 													);
 
 				if(!retorno) 
@@ -989,22 +987,32 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 			Sleepms(2);
 			if( CStr(item.objtype) in componenteNecessario.itens)
 				if(!retorno.exists(componenteNecessario.encaixe))
-					var envelopeRetorno := struct{ conjunto := array, melhor := 0, indiceEncaixe := _componenteNecessario_iter};
+					var envelopeRetorno := struct{ conjunto := dictionary, melhor := 0, indiceEncaixe := _componenteNecessario_iter};
 					retorno.insert(componenteNecessario.encaixe, envelopeRetorno);
 
 				endif
 
+
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
+				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.valor);
+				var envelope ;
 
-				var envelope := MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier);
+				if(!retorno[componenteNecessario.encaixe].conjunto.exists(chaveUnica))
+					envelope := MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier);
+					retorno[componenteNecessario.encaixe].conjunto.insert(chaveUnica, envelope);
+				else
+					envelope := retorno[componenteNecessario.encaixe].conjunto[chaveUnica];
+					envelope.quantidade += item.amount;
+				endif
 
 				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe],
 										envelope,
-										componenteNecessario.caracteristica);
+										componenteNecessario.caracteristica, 
+										componenteNecessario.qtdNecessaria);
 
-				retorno[componenteNecessario.encaixe].conjunto.append(envelope);
+				retorno[componenteNecessario.encaixe].conjunto.insert(chaveUnica, envelope);
 			endif
 		endforeach
 	endforeach 
@@ -1022,13 +1030,8 @@ function MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier, quant
 				};
 endfunction
 
-function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica)
+function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica, qtdNecessaria)
 
-	if(componentesEncontrados.melhor == 0)
-		componentesEncontrados.melhor := envelopeNovo;
-		return;
-	endif
-	
 	//TODO [futuras versoes] Talvez deixar o poder do atual já guardado, pra nao ter que avaliar toda vez.
 	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,
 											componentesEncontrados.melhor.chaveMaterial,
@@ -1036,22 +1039,30 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 											configRecursos);
 											
 	var poderNovo := AvaliaPoderComponente(envelopeNovo.tier,envelopeNovo.chaveMaterial, caracteristica, configRecursos);
+	
+	var envelopeMelhor := ComparaMelhorComponente(poderAtual, poderNovo, envelopeNovo, componentesEncontrados.melhor);
 
+	if(envelopeMelhor.quantidade >= cint(qtdNecessaria))
+		componentesEncontrados.melhor := envelopeMelhor;
+	endif
+
+endfunction
+
+function ComparaMelhorComponente(poderAtual,poderNovo, envelopeNovo, envelopeVelho)
 	if( poderAtual.poderContado < poderNovo.poderContado)
-		componentesEncontrados.melhor := envelopeNovo;
+		return envelopeNovo;
 	else
 		if(poderAtual.poderContado == poderNovo.poderContado) //Empatou
 			if(poderAtual.modificadorHp < poderNovo.poderContado) //Prioridade do desempate é o bônus no HP
-				componentesEncontrados.melhor := envelopeNovo;
+				return envelopeNovo;
 			else
 				if(poderAtual.modificadorPeso < poderNovo.modificadorPeso) // Depois o bônus no peso
-					componentesEncontrados.melhor := envelopeNovo;
+					return envelopeNovo;
 				endif
 			endif
 		endif
 	endif
-
-
+	return envelopeVelho;
 endfunction
 
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
@@ -1482,7 +1493,8 @@ endfunction
 function CriaPropFabricadoGerada(
 									objtype, 
 									tier, 
-									deveGerarComponentesOpcionais, 
+									deveGerarComponentesOpcionais,
+									listaDeMateriaisIgnorados, 
 									modoEscolhaMaterial, 
 									classe := 1
 								)
@@ -1518,6 +1530,9 @@ function CriaPropFabricadoGerada(
 
 		foreach materialPossivel in materiaisPossiveis
 			sleepms(2);
+			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
+				continue;	
+			endif
 			var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
 			var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
 
