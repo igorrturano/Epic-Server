@@ -50,7 +50,9 @@ program SpellScript(params)
 		// Remove old bonus before applying new one
 		targ.ar_mod := targ.ar_mod - current_bonus;
 	endif
-
+	var original_color := targ.color;
+	var barkskin_color := 2826;
+	targ.color := barkskin_color;
 	// Apply new armor bonus
 	targ.ar_mod := targ.ar_mod + armor_bonus;
 	SetObjProperty(targ, "barkskin_ar", armor_bonus);
@@ -68,7 +70,7 @@ program SpellScript(params)
 		targ.ar_mod := targ.ar_mod - stored_bonus;
 		EraseObjProperty(targ, "barkskin_ar");
 	endif
-
+	targ.color := original_color;
 	SendSysMessageEx(targ, "A casca de arvore se desfaz.", SSM_INFO);
 
 	return 1;

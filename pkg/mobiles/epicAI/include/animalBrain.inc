@@ -181,9 +181,13 @@ function HandleAnimalCombatEvent(opponent)
     if (me.CanClimbWall())
         WallClimb(me);
     endif
-
+    // TODO, add dragons here
     if (me.CanFrighten())
         frightenOpponent(me, opponent);
+    endif
+
+    if (me.canPetrify())
+        petrify(me, opponent);
     endif
 
     if (ShouldFlee(me))

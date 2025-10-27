@@ -29,7 +29,6 @@ program HealOverTime(params)
 
 		// Visual and sound feedback
 		PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
-		PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
 		remaining_ticks := remaining_ticks - 1;
 	endwhile
