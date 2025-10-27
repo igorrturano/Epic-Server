@@ -5,7 +5,8 @@ include "include/client";
 include "include/facings";
 include "include/sounds";
 
-program flyprocess(who)
+program flyprocess(params)
+	var who := params[1];
 	if (!who)
 		return 0;
 	endif

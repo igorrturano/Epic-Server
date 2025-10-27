@@ -58,7 +58,7 @@ function taming(who)
 		SendSysMessage(who, "Você não consegue ver " + targ.name + " claramente.");
 		return;
 	endif
-	if (isBoss(targ))
+	if (isTrueBoss(targ))
 		SendSysMessageEx(who, "Essa criatura nao aceita ser domesticada.", SSM_FAIL);
 		return 0;
 	endif
