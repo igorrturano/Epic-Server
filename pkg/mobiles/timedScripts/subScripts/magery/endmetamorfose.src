@@ -65,6 +65,9 @@ program cureScript(params)
 	// Call the new function to handle werewolf buffs removal
 	removeWerewolfBuffs(who);
 
+	// Clean up primordial form elemental properties
+	ClearPrimordialProperties(who);
+
 	// Clean up transformation properties
 	TS_LowerDuration(who, "velocidade", -1);
 	TS_LowerDuration(who, "lentidao", -1);
@@ -90,10 +93,44 @@ program cureScript(params)
 
 	PlaySoundEffect(who, SFX_SPELL_POLYMORPH);
 endprogram
+
 function removeWerewolfBuffs(who)
 	var bonus := GetObjProperty(who, "polymorphbonus_moon");
 	if (bonus != error)
 		AP_SetSkillMod(who, TACTICS, AP_GetSkillMod(who, TACTICS) - bonus);
 		EraseObjProperty(who, "polymorphbonus_moon");
+	endif
+endfunction
+
+function ClearPrimordialProperties(who)
+	// Clear primordial element flags
+	EraseObjProperty(who, "primordial_fire");
+	EraseObjProperty(who, "primordial_cold");
+	EraseObjProperty(who, "primordial_energy");
+	EraseObjProperty(who, "primordial_poison");
+
+	// Clear elemental resistances from primordial form
+	var fireResist := GetObjProperty(who, "primordial_resist_fire");
+	if (fireResist)
+		who.resist_fire_mod := who.resist_fire_mod - fireResist;
+		EraseObjProperty(who, "primordial_resist_fire");
+	endif
+
+	var coldResist := GetObjProperty(who, "primordial_resist_cold");
+	if (coldResist)
+		who.resist_cold_mod := who.resist_cold_mod - coldResist;
+		EraseObjProperty(who, "primordial_resist_cold");
+	endif
+
+	var energyResist := GetObjProperty(who, "primordial_resist_energy");
+	if (energyResist)
+		who.resist_energy_mod := who.resist_energy_mod - energyResist;
+		EraseObjProperty(who, "primordial_resist_energy");
+	endif
+
+	var poisonResist := GetObjProperty(who, "primordial_resist_poison");
+	if (poisonResist)
+		who.resist_poison_mod := who.resist_poison_mod - poisonResist;
+		EraseObjProperty(who, "primordial_resist_poison");
 	endif
 endfunction

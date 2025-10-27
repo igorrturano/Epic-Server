@@ -23,7 +23,7 @@ program SpellScript(params)
 	var duration := CInt(120 + (magiclore_skill * 5));
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (Temhabilidade(who, "Coração da Matilha"))
 		duration := Cint(duration * 1.2);
 	endif
 
