@@ -180,16 +180,16 @@ class EquipWrapperWeapon(EquipWrapper, IWeaponWrapper)
 
 		this._item.speed_mod := CInt(this._speed) - this._item.speed;
 		
-		this._item.SetProp(PROPNAME, this._prop);
+		this._item.SetProp("atributos", this._prop);
 	endfunction
 
 	function ToString(this)
-		return "Weapon " + {EquipWrapper::ToString(this)} +
-		$"\nAttribute: {this._attribute}, Attack Type: {this._attackType}" +
-		$"\nMainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()})" +
-		$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
-		$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
-		$"\nRange: {this._minRange}-{this._maxRange}";
+		return Super::ToString(this) + "Weapon: " +
+			$"\nAttribute: {this._attribute}, Attack Type: {this._attackType}" +
+			$"\nMainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()})" +
+			$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
+			$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
+			$"\nRange: {this._minRange}-{this._maxRange}";
 	endfunction
 
 	function IsMontante(this)

@@ -78,17 +78,17 @@ class EquipWrapperArmor(EquipWrapper, IArmorWrapper)
 			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
 
-		this._item.SetProp(PROPNAME, this._prop);
+		this._item.SetProp("atributos", this._prop);
 	endfunction
 
 	function ToString(this)
-		var str := $"Armor {EquipWrapper::ToString(this)}" +
-		$"\nCoverage: {this._coverage}, Protection Type: {this._tipoProtecao}" +
-		$"\nSlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()})" +
-		$"\nPiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()})" +
-		$"\nBluntResist: {this._resists.GetBluntResist()} (+{this._resistsMod.GetBluntResist()})" +
-		
-		"\n\nModifiers:";
+		var str := Super::ToString(this) + "Armor:" +
+			$"\nCoverage: {this._coverage}, Protection Type: {this._tipoProtecao}" +
+			$"\nSlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()})" +
+			$"\nPiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()})" +
+			$"\nBluntResist: {this._resists.GetBluntResist()} (+{this._resistsMod.GetBluntResist()})" +
+			
+			"\n\nModifiers:";
 
 		foreach modifier in (this._modifiers.values())
 			str += $"\n{modifier.ToString()}, ";
