@@ -56,6 +56,7 @@ enum class COMBAT_ABILITY
 	DANCA_DAS_SOMBRAS := "Danca das Sombras",
 	MOVIMENTACAO_GRACIOSA := "Movimentacao Graciosa",
 	MANCHA_DA_CORRUPCAO := "Mancha da Corrupcao",
+	TIROTHAN := "Tirothan",
 
 
 
