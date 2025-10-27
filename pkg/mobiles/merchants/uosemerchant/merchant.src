@@ -216,7 +216,6 @@ function DoPurchaseCmd(npc, player)
 			RemoveItemMerchant(npc, player, serial);
 		else
 			DoPurchase(npc, player, input[0]);
-			break;
 		endif
 
 	endwhile
