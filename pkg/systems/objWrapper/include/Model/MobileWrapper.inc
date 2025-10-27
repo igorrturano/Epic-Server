@@ -11,6 +11,10 @@ include ":attributes:stats";
 include ":combat:armorZones";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
+	var _race := "";
+	var _culture := "";
+	var _religion := "";
+
 	var _str := struct{
 		base := 0,
 		mod := 0
@@ -49,6 +53,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		Super(mobRef);
 
 		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
+			this._race := this.objRef.GetProp("chardata").race;
+			this._culture := this.objRef.GetProp("chardata").culture;
+			this._religion := this.objRef.GetProp("chardata").religion;
+			
 			// TODO: Checar os atributos corretos, aqui é só um exemplo
 			this._str := MobileWrapper::_str;
 			this._str.base := this.GetStrBase();
@@ -93,6 +101,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
+	function GetRace(this)
+		return this._race;
+	endfunction
+
+	function GetCulture(this)
+		return this._culture;
+	endfunction
+
+	function GetReligion(this)
+		return this._religion;
+	endfunction
+	
 	function GetStr(this)
 		return this.GetStrBase() + this.GetStrMod();
 	endfunction
@@ -326,16 +346,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function DistanceTo(this, other) // other: ObjRef
 		return Distance(this._objRef, other);
-	endfunction
-
-	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
-		if (isPrivate)
-			PlaySoundEffectPrivate(this._objRef, soundId, soundOrigin ?: this._objRef);
-		else
-			PlaySoundEffect(this._objRef, soundId);
-		endif
-
-		return this;
 	endfunction
 
 	function Dispose(this)
