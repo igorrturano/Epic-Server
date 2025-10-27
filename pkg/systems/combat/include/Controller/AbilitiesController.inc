@@ -902,10 +902,10 @@ endfunction
 function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo)
 	if (TemHabilidade(attacker, "Recuperar Flechas"))
 		attackInfo += 35;
-		return 1;
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_DivineAuthority(byref attacker, byref defender, byRef attackInfo)
