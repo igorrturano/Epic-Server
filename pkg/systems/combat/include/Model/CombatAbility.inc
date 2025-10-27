@@ -53,6 +53,9 @@ enum class COMBAT_ABILITY
 	FURIA_INDOMAVEL := "Fúria Indomável",
 	LOBO_SOLITARIO := "Lobo Solitário",
 	BUDOKA := "Budōka",
+	DANCA_DAS_SOMBRAS := "Danca das Sombras",
+	MOVIMENTACAO_GRACIOSA := "Movimentacao Graciosa",
+	MANCHA_DA_CORRUPCAO := "Mancha da Corrupcao",
 
 
 

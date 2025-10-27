@@ -10,6 +10,36 @@ include ":combat:Model/CombatAbility";
 include ":crafting:/include/caracteristicasFabricacao";
 
 function CalculateHitChance(byRef attackInfo)
+	// Condições especiais (que já retornam valor fixo) aqui em cima, pra economizar processamento
+	if (!attackInfo.GetAttacker().IsNPC())
+		if (!attackInfo.GetDefender().IsWarMode())
+			return 100.0;
+		endif
+	endif
+
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetMobRef(), "Desviar Disparos") > 0)
+		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetMobRef());
+		return 0;
+	endif
+
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("#attackfail"))
+		attackInfo.GetAttacker().GetMobRef().EraseProp("#attackfail");
+		return 0;
+	endif
+
+	if (attackInfo.GetDefender().GetMobRef().GetProp("#defensefail"))
+		attackInfo.GetDefender().GetMobRef().EraseProp("#defensefail");
+		return 100;
+	endif
+
+	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "ataquetotal"))
+		return 100;
+	endif
+	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "ataquetotal"))
+		return 100;
+	endif
+
+	// As condições que precisam de cálculo, começam aqui
 	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
@@ -20,11 +50,11 @@ function CalculateHitChance(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "evasion_chance"))
 		hit_chance -= 10;
 	endif
-    
+
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "blinded") > 0)
 		hit_chance -= 20;
 	endif
-	
+
 	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "exposed") > 0) // Defender is exposed, easier to hit
 		hit_chance += 10;
 	endif
@@ -53,33 +83,33 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance += 10;
 	endif
 
-    var challenged_by := attackInfo.GetAttacker().GetMobRef().GetProp("#DuelChallenge");
-    if (challenged_by && !attackInfo.GetAttacker().IsNPC) // Only affects players
-        if (challenged_by.time < ReadGameClock()) // Challenge expired
-            attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge");
-        else
-            var challenger := SystemFindObjectBySerial(challenged_by.challenger);
-            if (challenger && challenger.connected)
-                if (attackInfo.GetDefender().GetSerial() != challenger.serial) // If attacking someone other than the challenger
-                    hit_chance -= 10;
-                    if (RandomInt(100) < 20) // 20% chance to remind
-                        Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
-                    endif
-                endif
-            else
-                attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge"); // Clean up if challenger disconnected
-            endif
-        endif
-    endif
+	var challenged_by := attackInfo.GetAttacker().GetMobRef().GetProp("#DuelChallenge");
+	if (challenged_by && !attackInfo.GetAttacker().IsNPC) // Only affects players
+		if (challenged_by.time < ReadGameClock()) // Challenge expired
+			attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge");
+		else
+			var challenger := SystemFindObjectBySerial(challenged_by.challenger);
+			if (challenger && challenger.connected)
+				if (attackInfo.GetDefender().GetSerial() != challenger.serial) // If attacking someone other than the challenger
+					hit_chance -= 10;
+					if (RandomInt(100) < 20) // 20% chance to remind
+						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+					endif
+				endif
+			else
+				attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge"); // Clean up if challenger disconnected
+			endif
+		endif
+	endif
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::AURA_DE_FE))
 		hit_chance += attackInfo.GetAttacker().GetMobRef().party.members.size();
 	endif
-	
+
 	if (attackInfo.GetAttacker().GetMobRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType())
 		hit_chance += 5;
 	endif
-	
+
 	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetItemRef(), CARACTERISTICA_FABRICACAO_PRECISAO)) * 3;
 
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "furia") && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::FURIA_INDOMAVEL))
@@ -115,11 +145,11 @@ function CalculateHitChance(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "desafioheroico") > 0)
 		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 	endif
-	
+
 	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesapersistente") > 0)
 		hit_chance -= CInt(attackInfo.GetAttacker().GetSkill(PARRY) / 5);
 	endif
-	
+
 	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "defesapersistente") > 0)
 		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(PARRY) / 5);
 	endif
@@ -129,9 +159,9 @@ function CalculateHitChance(byRef attackInfo)
 
 		if (hostiles.size() >= 5)
 			hit_chance -= 15;
-        elseif (hostiles.size() >= 3)
+		elseif (hostiles.size() >= 3)
 			hit_chance -= 10;
-        elseif (hostiles.size() >= 1)
+		elseif (hostiles.size() >= 1)
 			hit_chance -= 5;
 		endif
 	endif
@@ -156,123 +186,76 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::BUDOKA))
-		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
-        var tactics_bonus := CInt(AP_GetSkill(defender, TACTICS) / 5);
-		if ( defender.weapon.objtype in monk_weapons )
-			hit_chance -= tactics_bonus;
+		if (attackInfo.GetDefender().GetWeapon().GetAttribute() == WRESTLING)
+			hit_chance -= attackInfo.GetDefender().GetSkill(TACTICS) / 5;
 		endif
 	endif
 
-    var dancer_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 5);
-    if (TemHabilidade(attacker, "Danca das Sombras"))
-        hit_chance += dancer_bonus;
-	endif
-    if (GetCooldown(defender, "shadowdancer_blur") > 0)
-        hit_chance -= dancer_bonus;
-    endif
-
-    if (TemHabilidade(attacker, "Movimentacao Graciosa"))
-	    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
-        hit_chance += swash_bonus;
-    endif
-
-    if (TemHabilidade(defender, "Movimentacao Graciosa"))
-		var swash_bonus := CInt(AP_GetSkill(defender, TACTICS) / 10);
-        hit_chance -= swash_bonus;
-    endif
-
-	if (TemHabilidade(attacker, "Mancha da Corrupcao"))
-		var demon_hunter_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 10);
-		hit_chance += demon_hunter_bonus;
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DANCA_DAS_SOMBRAS) && GetCooldown(attackInfo.GetDefender().GetMobRef(), "shadowdancer_blur") > 0)
+		hit_chance += CInt(attackInfo.GetAttacker().GetSkill(ARCANA) / 5);
 	endif
 
-	if (TemHabilidade(defender, "Mancha da Corrupcao"))
-		var demon_hunter_bonus := CInt(AP_GetSkill(defender, THEOLOGY) / 10);
-		hit_chance -= demon_hunter_bonus;
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MOVIMENTACAO_GRACIOSA))
+		hit_chance += CInt(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
 	endif
 
-	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
-	if (TemHabilidade(attacker, "Oleo do Cacador"))
-		hit_chance += witcher_bonus;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MOVIMENTACAO_GRACIOSA))
+		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
 	endif
 
-    var attacker_weapon := attacker.weapon.objtype;
-    var ranged_weapons := array{ 0x13B2, 0xe137, 0x26CC, 0xe139, 0x2d2b, 0x2d2a, 0x27A5, 0x0f4f, 0x13fd };
-
-    if (GetCooldown(defender, "Desviar Disparos") > 0 && attacker_weapon in ranged_weapons)
-        PrintTextAbove(defender, "*desviar disparos*");
-        return 0.0;
-    endif
-
-	if (defender.acctname)
-		if (!defender.warmode)
-			return 100.0;
-		endif
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MANCHA_DA_CORRUPCAO))
+		hit_chance += CInt(attackInfo.GetAttacker().GetSkill(THEOLOGY) / 10);
 	endif
 
-	if (GetObjProperty(attacker, "#attackfail") == 1)
-		EraseObjProperty(attacker, "#attackfail");
-		return 0.0;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MANCHA_DA_CORRUPCAO))
+		hit_chance -= CInt(attackInfo.GetDefender().GetSkill(THEOLOGY) / 10);
 	endif
 
-	if (GetObjProperty(defender, "#defensefail") == 1)
-		EraseObjProperty(defender, "#defensefail");
-		return 100.0;
+	if (attackInfo.GetAttacker().HasAbility("Oleo do Cacador"))
+		hit_chance += CInt(attackInfo.GetAttacker().GetSkill(SCIENCE) / 5);
 	endif
 
-	if (GetCooldown(attacker, "ataquetotal"))
-		return 100.0;
-	endif
-	if (GetCooldown(defender, "ataquetotal"))
-		return 100.0;
-	endif
-
-	// Verifica acerto na escuridão
-	if (!attacker.npctemplate)
-		DarknessHitModifier(attacker, defender, hit_chance);
+	if (!attackInfo.GetAttacker().IsNPC())
+		DarknessHitModifier(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), hit_chance);
 	endif
 	
-	if ( cint( GetObjProperty(attacker, "#ataqueinesperado") ) == 1 )
-		if ( GetObjProperty(defender, "lastHit") != error)
-			var def := GetObjProperty(defender, "lastHit");
-			def := def.serial;
-			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
-				hit_chance += 50;
-				PrintTextAbove(attacker, "*ataque inesperado*");
-			endif
-		endif
-		EraseObjPRoperty(attacker, "#ataqueinesperado");
-	endif
-
-	if ( cint(GetObjProperty(attacker, "#bomcomeco")) == 1)
-		var attackers := GetObjProperty(defender, "#bomcomecoserials");
-		if (attackers == error)
-			attackers := array;
-		endif
-		if ( !(attacker.serial in attackers))
-			SendSysMessageEx(attacker, "Voce comecou bem.", SSM_INFO);
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("#ataqueinesperado"))
+		if (attackInfo.GetDefender().GetMobRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
 			hit_chance += 50;
-			attackers.append(attacker.serial);
-			SetObjProperty(defender,  "#bomcomecoserials", attackers);
+			Message("*ataque inesperado*", FONTCOLOR_ERROR).SendAbove(attackInfo.GetAttacker().GetMobRef());
 		endif
-		EraseObjProperty(attacker, "#bomcomeco");
+		attackInfo.GetAttacker().GetMobRef().EraseProp("#ataqueinesperado");
 	endif
 
-	if (GetObjProperty(defender, "#mobilidade") == 1)
-		hit_chance -= 15.0;
-		AP_ConsumeVital(defender, STAMINA, 3);
-	endif
-	if ( GetObjProperty(attacker, "#mobilidade") == 1)
-		hit_chance -= 15.0;
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("#bomcomeco"))
+		var attackers := attackInfo.GetDefender().GetMobRef().GetProp("#bomcomecoserials");
+		if (attackers == error) attackers := array{}; endif
+
+		if (!(attackInfo.GetAttacker().GetSerial() in attackers))
+			hit_chance += 50;
+			attackers.append(attackInfo.GetAttacker().GetSerial());
+			attackInfo.GetDefender().GetMobRef().SetProp("#bomcomecoserials", attackers);
+			Message("Você começou bem.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetMobRef());
+		endif
+		attackInfo.GetAttacker().GetMobRef().EraseProp("#bomcomeco");
 	endif
 
-	if (defender.npctemplate == ":epicai:spiderling")
+	if (attackInfo.GetDefender().GetMobRef().GetProp("#mobilidade"))
+		hit_chance -= 15;
+		AP_ConsumeVital(attackInfo.GetDefender().GetMobRef(), STAMINA, 3);
+	endif
+
+	if (attackInfo.GetAttacker().GetMobRef().GetProp("#mobilidade"))
+		hit_chance -= 15;
+	endif
+
+	if (attackInfo.GetDefender().GetNPCTemplate() == ":epicai:spiderling")
 		hit_chance -= 20;
 	endif
 
-	EraseObjProperty(attacker, "insistencia");
+	attackInfo.GetAttacker().GetMobRef().EraseProp("insistencia");
 
-	if (TemHabilidade(attacker, "Tirothan"))
+	if (attackInfo.GetAttacker().HasAbility("Tirothan"))
 		var mlore_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 10);
 		hit_chance += mlore_bonus;
 	endif
