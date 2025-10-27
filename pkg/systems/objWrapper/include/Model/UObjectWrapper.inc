@@ -1,3 +1,5 @@
+use uo;
+
 include "IUObjectWrapper";
 
 class UObjectWrapper(IUObjectWrapper)
@@ -62,6 +64,18 @@ class UObjectWrapper(IUObjectWrapper)
 			z := this._objRef.z,
 			realm := this._objRef.realm
 		};
+	endfunction
+
+	function PlaySound(this, soundId)
+		PlaySoundEffect(this._objRef, soundId);
+
+		return this;
+	endfunction
+
+	function PlaySoundPrivate(this, soundId, soundSource := false)
+		PlaySoundEffectPrivate(this._objRef, soundId, soundSource ?: this._objRef);
+
+		return this;
 	endfunction
 
 	function ToString(this)
