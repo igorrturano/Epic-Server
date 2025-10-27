@@ -448,7 +448,8 @@ endfunction
 
 function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
-	Print("Contagem de requisitos: {}" .format(contagem));
+	
+
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
 		if(!deveIgnorarRequisitos)
 			ConsomeRequisitos(contagem, quantidade);
@@ -642,8 +643,9 @@ function ConsomeRequisitos(contagem, quantidade := 1)
 			endif;
 			
 			if(itemEncontrado.stackable)
-				var quantidadeItem := itemEncontrado.amount;
-				quantidadeRestante -= quantidadeItem;
+				var quantidadeSubtraida :=  quantidadeRestante - itemEncontrado.amount;
+				SubtractAmount(itemEncontrado, quantidadeRestante);
+				quantidadeRestante :=  quantidadeSubtraida;
 			else
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
@@ -1324,12 +1326,12 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 
 	var desc := struct;
 	var labelQuantidade := "";
-	//TODO Lembrar de lidar com as diferenças de nomenclatura para Alchemy.
+	
 	if(lote > 0)
 		labelQuantidade := lote + "x ";
 	endif
 
-	var nomeReceita := definicaoItem.desc == "pocao" ? definicaoItem.type : TruncatePlural(objtype);
+	var nomeReceita := definicaoItem.desc == "pocao" ? definicaoItem.type : TruncatePlural(objtype);// adaptação pro sistema de poções antigo.
 	
 	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + nomeReceita + "</BASEFONT><br>";
 	desc := MontaDescricaoItem(definicaoItem,quem,desc);
