@@ -1,10 +1,10 @@
 include "EquipWrapper";
-include "IEquipWrapperArmor";
+include "IArmorWrapper";
 include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
 
-class EquipWrapperArmor(EquipWrapper, IEquipWrapperArmor)
+class EquipWrapperArmor(EquipWrapper, IArmorWrapper)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 

@@ -1,0 +1,2 @@
+class UObjectWrapper(IUObjectWrapper)
+endclass

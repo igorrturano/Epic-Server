@@ -1,13 +1,13 @@
 use math;
 
 include "EquipWrapper";
-include "IEquipWrapperWeapon";
+include "IWeaponWrapper";
 include ":equipsys:Controller/WeaponController";
 
 include ":combat:Model/DamageDice";
 include ":diceroll:model/Dice";
 
-class EquipWrapperWeapon(EquipWrapper, IEquipWrapperWeapon)
+class EquipWrapperWeapon(EquipWrapper, IWeaponWrapper)
 	var _attribute := "";
 	var _attackType := "";
 	var _category := "";
