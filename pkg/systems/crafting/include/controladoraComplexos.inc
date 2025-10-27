@@ -451,7 +451,6 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 	
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
-		Print("deveIgnorarRequisitos fora: {}".format(deveIgnorarRequisitos));
 		if(!deveIgnorarRequisitos)
 			ConsomeRequisitos(contagem, quantidade);
 		endif
@@ -634,7 +633,6 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 endfunction
 
 function ConsomeRequisitos(contagem, quantidade := 1)
-	Print("Consumindo requisitos contagem: {}".format( contagem));
 	foreach contado in contagem
 		Sleepms(2);
 		var quantidadeRestante := contado.quantidadeNecessaria * contado.lote * quantidade;
