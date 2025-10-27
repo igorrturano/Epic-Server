@@ -158,6 +158,7 @@ function StoreSpell(who, spellinfo, byref druid_list, byref available_slots)
 						 	"circle" := spellinfo.circle,
 						 	"time" := AddTimeTo(polcore().systime, 20, "minutes"),
 						 	"flavortext" := spellinfo.flavortext,
+							"description" := spellinfo.desc,
 						 	"used" := 0 };
 
 	available_slots -= spellinfo.circle;

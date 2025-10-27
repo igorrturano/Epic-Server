@@ -866,9 +866,6 @@ function languageSelection(who, culture_pic)
 			total_amount += cint(((AP_GetTrueStat(who, INTELLIGENCE) - 40) / 30) + 1);
 			known_languages.append("Comum");
 		endif
-		if (GetObjProperty(who, "chardata").magia == "Druid")
-			known_languages.append("Sylovir");
-		endif
 		var input := languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount);
 
 		foreach key in (input.keys)
@@ -888,6 +885,10 @@ function languageSelection(who, culture_pic)
 		endif
 
 	endwhile
+	
+	if (GetObjProperty(who, "chardata").magia == "Druid")
+		known_languages.append("Sylovir");
+	endif
 
 	SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
 	SetObjProperty(who, "linguas_conhecidas", known_languages);

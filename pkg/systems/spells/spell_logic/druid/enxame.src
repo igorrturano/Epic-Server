@@ -10,11 +10,7 @@ include ":charactercreation:habilidades";
 
 program SpellScript(params)
 	var caster := params[1];
-
-	var targ := Target(caster);
-	if (caster.npctemplate)
-		targ := caster;
-	endif
+	var targ := params[2];
 
 	if (!targ)
 		return;
@@ -29,21 +25,15 @@ program SpellScript(params)
 	var theology := AP_GetSkill(caster, THEOLOGY);
 
 	// Duração: theology/5 segundos (ticks a cada 2 segundos)
-	var duration_seconds := CInt(theology / 5);
-	if (duration_seconds < 10)
-		duration_seconds := 10;
-	elseif (duration_seconds > 30)
-		duration_seconds := 30;
+	var total_ticks := CInt(theology / 10);
+	if (total_ticks < 4)
+		total_ticks := 4;
+	elseif (total_ticks > 10)
+		total_ticks := 10;
 	endif
 
-	var total_ticks := CInt(duration_seconds / 2);
-
 	// Dano por tick baseado em THEOLOGY
-	var damage_per_tick := CInt(theology / 10) + RandomDiceRoll("1d6");
-
-	// Efeito visual inicial - enxame de insetos
-	PlayObjectCenteredEffect(targ, 0x91B, 10, 20); // Efeito de nuvem/enxame
-	PlaySoundEffect(targ, 0x1E1); // Som de insetos/zumbido
+	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d6");
 
 	SendSysMessageEx(caster, "Um enxame de insetos ataca " + targ.name + "!", SSM_INFO);
 	SendSysMessageEx(targ, "Você está sendo atacado por um enxame de insetos!", SSM_FAIL);
@@ -57,7 +47,7 @@ program SpellScript(params)
 		"remaining_ticks" := total_ticks,
 		"theology" := theology
 	};
-
+	PlayMovingEffect(caster, targ, 0x91B, 20);
 	start_script(":spells:spell_logic/druid/enxame_dot", dot_params);
 
 	return 1;
