@@ -1,6 +1,8 @@
 include "IDamage";
 
 class Damage(IDamage)
+	var _criticalDamage := false;
+
 	var _slash := 0;
 	var _piercing := 0;
 	var _blunt := 0;
@@ -10,6 +12,8 @@ class Damage(IDamage)
 	var _energy := 0;
 
 	function Damage(this, slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0)
+		this._criticalDamage := false;
+
 		this._slash := CInt(slash);
 		this._piercing := CInt(piercing);
 		this._blunt := CInt(blunt);
@@ -47,6 +51,10 @@ class Damage(IDamage)
 		return this._energy;
 	endfunction
 
+	function GetTotalDamage(this)
+		return this._slash + this._piercing + this._blunt + this._fire + this._cold + this._poison + this._energy;
+	endfunction
+
 	function SetSlashDamage(this, value)
 		this._slash := CInt(value);
 		return this;
@@ -79,6 +87,11 @@ class Damage(IDamage)
 
 	function SetEnergyDamage(this, value)
 		this._energy := CInt(value);
+		return this;
+	endfunction
+
+	function SetCritical(this)
+		this._criticalDamage := true;
 		return this;
 	endfunction
 
@@ -152,8 +165,19 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function IsCritical(this)
+		return this._criticalDamage;
+	endfunction
+
 	function ToString(this)
-		return $"Damage: Slash={this._slash}, Piercing={this._piercing}, Blunt={this._blunt}, Fire={this._fire}, Cold={this._cold}, Poison={this._poison}, Energy={this._energy}";
+		return "Damage " + (this._criticalDamage ? "(CRITICAL)" : "") + ":" +
+			$"Slash={this._slash}, " +
+			$"Piercing={this._piercing}, " +
+			$"Blunt={this._blunt}, " +
+			$"Fire={this._fire}, " +
+			$"Cold={this._cold}, " +
+			$"Poison={this._poison}, " +
+			$"Energy={this._energy}";
 	endfunction
 endclass
 
