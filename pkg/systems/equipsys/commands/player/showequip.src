@@ -1,5 +1,5 @@
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/ArmorWrapper";
 
 program cmd_showequip(who, args)
 	var item, type;
@@ -14,18 +14,18 @@ program cmd_showequip(who, args)
 
 	if (!type)
 		if (item.isA(POLCLASS_WEAPON))
-			item := EquipWrapperWeapon(item);
+			item := WeaponWrapper(item);
 		elseif (item.isA(POLCLASS_ARMOR))
-			item := EquipWrapperArmor(item);
+			item := ArmorWrapper(item);
 		else
 			SendSysMessage(who, "O item não é uma arma ou armadura.");
 			return;
 		endif
 	else
 		if (type == "weapon")
-			item := EquipWrapperWeapon(item);
+			item := WeaponWrapper(item);
 		elseif (type == "armor")
-			item := EquipWrapperArmor(item);
+			item := ArmorWrapper(item);
 		else
 			SendSysMessage(who, "Tipo inválido. Use 'weapon' ou 'armor'.");
 			return;

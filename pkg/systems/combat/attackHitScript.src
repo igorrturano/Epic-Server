@@ -1,7 +1,7 @@
 include ":combat:Controller/DamageController";
 include ":combat:Model/AttackInfo";
-include ":charsys:ViewModel/MobileWrapper";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":objWrapper:Model/MobileWrapper";
+include ":objWrapper:Model/WeaponWrapper";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
 include ":IO:CFGFile";

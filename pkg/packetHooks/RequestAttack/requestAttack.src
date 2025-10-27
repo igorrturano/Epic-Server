@@ -19,8 +19,9 @@ use polsys;
 
 include "include/say";
 include ":mastery:Abilities";
-include ":charsys:ViewModel/MobileWrapper";
+include ":objWrapper:Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
+include ":message:model/Message";
 
 const BYTE_DEFENDER := 1;
 
@@ -35,14 +36,12 @@ exported function HandleAttackRequest(who, byref packet)
 	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
 		if (who.weapon.attribute == "Ranged")
 			if (Distance(who, defender) > 18)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
-
+				Message("Você está muito distante.", FONTCOLOR_ERROR).SendSys(who);
 				return 1;
 			endif
 		else
 			if (Distance(who, defender) > 6)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
-
+				Message("Você está muito distante.", FONTCOLOR_ERROR).SendSys(who);
 				return 1;
 			endif
 
@@ -50,7 +49,7 @@ exported function HandleAttackRequest(who, byref packet)
 	endif
 
 	if (!CheckLineOfSight(who, defender))
-		SendSysMessage(who, "Voce nao enxerga esse inimigo para ameaca-lo.");
+		Message("Você não enxerga esse inimigo para ameaçá-lo.", FONTCOLOR_ERROR).SendSys(who);
 		return 1;
 	endif
 

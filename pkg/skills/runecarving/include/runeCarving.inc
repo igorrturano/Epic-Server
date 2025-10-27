@@ -1,8 +1,8 @@
 use uo;
 
 include "include/say";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":objWrapper:Model/ArmorWrapper";
+include ":objWrapper:Model/WeaponWrapper";
 
 // Gem objtype constants
 const GEM_DIAMOND := 0xF30;
@@ -80,7 +80,7 @@ function applyRuneBonus(item, runeType, bonus, charges)
 	case (runeType)
 		RuneType::PROTECTION:
 			// Physical resist boost for armor
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetSlashResist(resistsMod.GetSlashResist() + bonus);
 			resistsMod.SetPiercingResist(resistsMod.GetPiercingResist() + bonus);
@@ -90,7 +90,7 @@ function applyRuneBonus(item, runeType, bonus, charges)
 			SetObjProperty(item, "runePhysBonus", bonus);
 
 		RuneType::FIRE_RESIST:
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetFireResist(resistsMod.GetFireResist() + bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -98,7 +98,7 @@ function applyRuneBonus(item, runeType, bonus, charges)
 			SetObjProperty(item, "runeFireBonus", bonus);
 
 		RuneType::COLD_RESIST:
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetColdResist(resistsMod.GetColdResist() + bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -106,7 +106,7 @@ function applyRuneBonus(item, runeType, bonus, charges)
 			SetObjProperty(item, "runeColdBonus", bonus);
 
 		RuneType::ENERGY_RESIST:
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetEnergyResist(resistsMod.GetEnergyResist() + bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -114,7 +114,7 @@ function applyRuneBonus(item, runeType, bonus, charges)
 			SetObjProperty(item, "runeEnergyBonus", bonus);
 
 		RuneType::POISON_RESIST:
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetPoisonResist(resistsMod.GetPoisonResist() + bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -136,7 +136,7 @@ function removeRuneBonus(item, runeType)
 	case (runeType)
 		RuneType::PROTECTION:
 			var bonus := CInt(GetObjProperty(item, "runePhysBonus"));
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetSlashResist(resistsMod.GetSlashResist() - bonus);
 			resistsMod.SetPiercingResist(resistsMod.GetPiercingResist() - bonus);
@@ -147,7 +147,7 @@ function removeRuneBonus(item, runeType)
 
 		RuneType::FIRE_RESIST:
 			var bonus := CInt(GetObjProperty(item, "runeFireBonus"));
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetFireResist(resistsMod.GetFireResist() - bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -156,7 +156,7 @@ function removeRuneBonus(item, runeType)
 
 		RuneType::COLD_RESIST:
 			var bonus := CInt(GetObjProperty(item, "runeColdBonus"));
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetColdResist(resistsMod.GetColdResist() - bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -165,7 +165,7 @@ function removeRuneBonus(item, runeType)
 
 		RuneType::ENERGY_RESIST:
 			var bonus := CInt(GetObjProperty(item, "runeEnergyBonus"));
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetEnergyResist(resistsMod.GetEnergyResist() - bonus);
 			wrapper.SetResistsMod(resistsMod);
@@ -174,7 +174,7 @@ function removeRuneBonus(item, runeType)
 
 		RuneType::POISON_RESIST:
 			var bonus := CInt(GetObjProperty(item, "runePoisonBonus"));
-			var wrapper := EquipWrapperArmor(item);
+			var wrapper := ArmorWrapper(item);
 			var resistsMod := wrapper.GetResistsMod();
 			resistsMod.SetPoisonResist(resistsMod.GetPoisonResist() - bonus);
 			wrapper.SetResistsMod(resistsMod);

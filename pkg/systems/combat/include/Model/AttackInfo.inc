@@ -4,9 +4,9 @@ include "IAttackInfo";
 
 include "Damage";
 include "CombatAbility";
-include ":charsys:ViewModel/MobileWrapper";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":objWrapper:Model/MobileWrapper";
+include ":objWrapper:Model/ArmorWrapper";
+include ":objWrapper:Model/WeaponWrapper";
 include ":diceroll:model/Dice";
 include ":message:model/Message";
 include "include/packets";

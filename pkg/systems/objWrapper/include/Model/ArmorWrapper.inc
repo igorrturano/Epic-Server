@@ -4,14 +4,14 @@ include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
 
-class EquipWrapperArmor(EquipWrapper, IArmorWrapper)
+class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
 	var _resists := ArmorResist();
 	var _resistsMod := ArmorResist();
 
-	function EquipWrapperArmor(this, byRef item)
+	function ArmorWrapper(this, byRef item)
 		Super(item);
 
 		this._coverage := GetConfigStringArray(this._template, "Coverage");

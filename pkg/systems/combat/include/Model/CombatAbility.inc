@@ -57,6 +57,7 @@ enum class COMBAT_ABILITY
 	MOVIMENTACAO_GRACIOSA := "Movimentacao Graciosa",
 	MANCHA_DA_CORRUPCAO := "Mancha da Corrupcao",
 	TIROTHAN := "Tirothan",
+	INSTINTO_ASSASSINO := "Instinto Assassino",
 
 
 

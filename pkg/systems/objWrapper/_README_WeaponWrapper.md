@@ -1,15 +1,15 @@
 # Novo Sistema de Equipamentos para o Epic! Shard
 
-## Classe EquipWrapperWeapon
+## Classe WeaponWrapper
 
 ### Visão Geral
-A classe `EquipWrapperWeapon` é um wrapper especializado para itens de arma dentro do sistema de equipamentos Epic. Ela estende a classe base `EquipWrapper` e implementa a interface `IEquipWrapperWeapon`, fornecendo uma camada de abstração abrangente para gerenciamento de armas.
+A classe `WeaponWrapper` é um wrapper especializado para itens de arma dentro do sistema de equipamentos Epic. Ela estende a classe base `EquipWrapper` e implementa a interface `IWeaponWrapper`, fornecendo uma camada de abstração abrangente para gerenciamento de armas.
 
 ### Hierarquia da Classe
 ```
 EquipWrapper (classe base)
-└── EquipWrapperWeapon
-    └── implementa IEquipWrapperWeapon
+└── WeaponWrapper
+    └── implementa IWeaponWrapper
 ```
 
 ### Funcionalidades
@@ -96,7 +96,7 @@ Quando inicializada com uma configuração de template:
 
 ```escript
 // Inicializar com um item de arma existente
-var weapon := EquipWrapperWeapon(weaponItem);
+var weapon := WeaponWrapper(weaponItem);
 
 // Obter valores de dano atuais
 var mainDamage := weapon.GetMainDamage();
@@ -112,16 +112,16 @@ weapon.Update();
 // Saída de debug
 print(weapon.ToString());
 ```
-## Classe EquipWrapperArmor
+## Classe ArmorWrapper
 
 ### Visão Geral
-A classe `EquipWrapperArmor` é um wrapper especializado para itens de armadura dentro do sistema de equipamentos Epic. Ela estende a classe base `EquipWrapper` e implementa a interface `IEquipWrapperArmor`, fornecendo gerenciamento completo de propriedades de proteção.
+A classe `ArmorWrapper` é um wrapper especializado para itens de armadura dentro do sistema de equipamentos Epic. Ela estende a classe base `EquipWrapper` e implementa a interface `IArmorWrapper`, fornecendo gerenciamento completo de propriedades de proteção.
 
 ### Hierarquia da Classe
 ```
 EquipWrapper (classe base)
-└── EquipWrapperArmor
-    └── implementa IEquipWrapperArmor
+└── ArmorWrapper
+    └── implementa IArmorWrapper
 ```
 
 ### Funcionalidades
@@ -177,7 +177,7 @@ Armaduras aplicam penalidades baseadas no tipo e slot:
 
 ```escript
 // Inicializar com item de armadura
-var armor := EquipWrapperArmor(armorItem);
+var armor := ArmorWrapper(armorItem);
 
 // Verificar cobertura
 var coverage := armor.GetCoverage();

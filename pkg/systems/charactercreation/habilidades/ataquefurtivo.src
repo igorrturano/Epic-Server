@@ -3,7 +3,7 @@ use uo;
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
 include ":message:model/Message";
-include ":charsys:ViewModel/MobileWrapper";
+include ":objWrapper:Model/MobileWrapper";
 
 program backstab(who)
 	who := MobileWrapper(who);

@@ -11,7 +11,7 @@ use cfgfile;
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":objWrapper:Model/WeaponWrapper";
 
 enum class WEAPON_FX
 	SOUND,
@@ -97,7 +97,7 @@ endfunction
 
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
-	var attackType := EquipWrapperWeapon(weapon).GetAttackType();
+	var attackType := WeaponWrapper(weapon).GetAttackType();
 
 	if (weapon.objtype == FIST)
 		if (FX == WEAPON_FX_ANIM)

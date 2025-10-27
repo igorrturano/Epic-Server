@@ -12,9 +12,9 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
 include ":mastery:Abilities";
-include ":charsys:ViewModel/MobileWrapper";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":objWrapper:Model/MobileWrapper";
+include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/ArmorWrapper";
 include ":message:Model/Message";
 
 program Install()
