@@ -415,9 +415,9 @@ function HasLightNearby(defender)
 	return 0;
 endfunction
 
-function CheckDistance(attacker, defender)
-	var attackerDistance := Distance(attacker, defender);
-	var weapon := WeaponWrapper(attacker.weapon);
+function CheckDistance(attacker, defender) // attacker: MobileWrapper, defender: MobileWrapper
+	var attackerDistance := Distance(attacker.GetMobRef(), defender.GetMobRef());
+	var weapon := attacker.GetEquipBySlot(WEAPON);
 
 	if (attackerDistance < weapon.GetMinRange() || attackerDistance > weapon.GetMaxRange())
 		return false;
@@ -451,11 +451,11 @@ function AmmoCheck(attacker, defender)
 	var aljavas := array{0x791c, 0x2fb7};
 	var aljava := GetEquipmentByLayer(attacker, 0x14);
 
-		if (aljava.objtype in aljavas)
-			aljava := GetEquipmentByLayer(attacker, 0x14);
-		else
-			aljava := GetEquipmentByLayer(attacker, 0xc);
-		endif
+	if (aljava.objtype in aljavas)
+		aljava := GetEquipmentByLayer(attacker, 0x14);
+	else
+		aljava := GetEquipmentByLayer(attacker, 0xc);
+	endif
 	var ammo := GetObjProperty(attacker.weapon, "ammo");
 	if (!ammo)
 		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]").SendSys(attacker);
@@ -492,8 +492,8 @@ function GetParryChance(byRef attackInfo)
 	// var parryBonus := 0;
 	// var shield := defender.shield;
 	// var shieldAttr := shield.getAttrBase();
-	var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR);
-	var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR);
+	var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
+	var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
 
 	var blocker;
 	// Verifica se o defensor está sob efeito da a hab esudo do martir
