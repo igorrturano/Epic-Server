@@ -357,6 +357,10 @@ class MobileWrapper(IMobileWrapper)
 		return this.GetEquipByLayer(LAYER_MOUNT) == true;
 	endfunction
 
+	function DistanceTo(this, other) // other: ObjRef
+		return Distance(this._mobRef, other);
+	endfunction
+
 	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
 		if (isPrivate)
 			PlaySoundEffectPrivate(this._mobRef, soundId, soundOrigin ?: this._mobRef);
