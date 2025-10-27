@@ -416,21 +416,14 @@ function HasLightNearby(defender)
 endfunction
 
 function DistanceChecks(attacker, defender)
-	var cur_range := Distance(attacker, defender);
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	var weapon_max_range := wpn_a_elem2.MaxRange;
-	var weapon_min_range := wpn_a_elem2.MinRange;
-	if ( wpn_a_elem2.MaxRange == error )
-		return 1;
+	var attackerDistance := Distance(attacker, defender);
+	var weapon := EquipWrapperWeapon(attacker.weapon);
+
+	if (attackerDistance < weapon.GetMinRange() || attackerDistance > weapon.GetMaxRange())
+		return false;
 	endif
-	
-	if ( cur_range > weapon_max_range )
-		return 0;
-	elseif ( cur_range < weapon_min_range )
-		return 0;
-	else
-		return 1;
-	endif
+
+	return true;
 endfunction
 
 function CanBackStab(who, weapon)
