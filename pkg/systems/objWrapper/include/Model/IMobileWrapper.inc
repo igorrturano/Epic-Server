@@ -1,7 +1,6 @@
 class IMobileWrapper()
 	uninit function IMobileWrapper(this, byRef mobRef);
 
-	uninit function GetMobRef(this);
 	uninit function GetName(this);
 	uninit function GetStr(this);
 	uninit function GetDex(this);
@@ -12,8 +11,6 @@ class IMobileWrapper()
 	uninit function GetMaxHP(this);
 	uninit function GetMaxStamina(this);
 	uninit function GetMaxMana(this);
-	uninit function GetGold(this);
-	uninit function GetWeight(this);
 	uninit function GetSkill(this, skillName);
 	uninit function GetSkillBase(this, skillName);
 	uninit function GetSkillMod(this, skillName);

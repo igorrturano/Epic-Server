@@ -1,18 +1,16 @@
 use uo;
 
 include "IMobileWrapper";
+include "UObjectWrapper";
+include "ArmorWrapper";
+include "WeaponWrapper";
 
 include ":attributes:skills";
 include ":attributes:vitals";
 include ":attributes:stats";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
 include ":combat:armorZones";
 
-class MobileWrapper(IMobileWrapper)
-	var _mobRef; // mobRef
-
-	var _name := "";
+class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _str := struct{
 		base := 0,
 		mod := 0
@@ -48,11 +46,10 @@ class MobileWrapper(IMobileWrapper)
 	};
 
 	function MobileWrapper(this, byRef mobRef)
-		if (mobRef.isA(POLCLASS_MOBILE)) // Caso o mobile exista
-			// TODO: Checar os atributos corretos, aqui é só um exemplo
-			this._mobRef := mobRef;
+		Super(mobRef);
 
-			this._name := mobRef.name;
+		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
+			// TODO: Checar os atributos corretos, aqui é só um exemplo
 			this._str := MobileWrapper::_str;
 			this._str.base := this.GetStrBase();
 			this._str.mod := this.GetStrMod();
@@ -79,10 +76,9 @@ class MobileWrapper(IMobileWrapper)
 			this._hunger.current := this.GetCurrentHunger();
 			this._hunger.max := this.GetMaxHunger();
 			this._hunger.regen := this.GetRegenHunger();
-
 		else
 			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
-			this._mobRef := err;
+			this._objRef := err;
 			this._name := err;
 			this._str := err;
 			this._dex := err;
@@ -97,38 +93,17 @@ class MobileWrapper(IMobileWrapper)
 		endif
 	endfunction
 
-	function GetMobRef(this)
-		return this._mobRef;
-	endfunction
-
-	function GetSerial(this)
-		return this._mobRef.serial;
-	endfunction
-
-	function GetName(this)
-		return this._name;
-	endfunction
-
-	function GetPosition(this)
-		return struct{
-			x := this._mobRef.x,
-			y := this._mobRef.y,
-			z := this._mobRef.z,
-			realm := this._mobRef.realm
-		};
-	endfunction
-
 	function GetStr(this)
 		return this.GetStrBase() + this.GetStrMod();
 	endfunction
 
 	function GetStrBase(this)
-		this._str.base := AP_GetTrueStat(this._mobRef, STRENGTH);
+		this._str.base := AP_GetTrueStat(this._objRef, STRENGTH);
 		return this._str.base;
 	endfunction
 
 	function GetStrMod(this)
-		this._str.mod := AP_GetStatMod(this._mobRef, STRENGTH);
+		this._str.mod := AP_GetStatMod(this._objRef, STRENGTH);
 		return this._str.mod;
 	endfunction
 
@@ -137,12 +112,12 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetDexBase(this)
-		this._dex.base := AP_GetTrueStat(this._mobRef, DEXTERITY);
+		this._dex.base := AP_GetTrueStat(this._objRef, DEXTERITY);
 		return this._dex.base;
 	endfunction
 
 	function GetDexMod(this)
-		this._dex.mod := AP_GetStatMod(this._mobRef, DEXTERITY);
+		this._dex.mod := AP_GetStatMod(this._objRef, DEXTERITY);
 		return this._dex.mod;
 	endfunction
 
@@ -151,87 +126,79 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetIntBase(this)
-		this._int.base := AP_GetTrueStat(this._mobRef, INTELLIGENCE);
+		this._int.base := AP_GetTrueStat(this._objRef, INTELLIGENCE);
 		return this._int.base;
 	endfunction
 
 	function GetIntMod(this)
-		this._int.mod := AP_GetStatMod(this._mobRef, INTELLIGENCE);
+		this._int.mod := AP_GetStatMod(this._objRef, INTELLIGENCE);
 		return this._int.mod;
 	endfunction
 
 	function GetCurrentHP(this)
-		this._hp.current := AP_GetVital(this._mobRef, HITS);
+		this._hp.current := AP_GetVital(this._objRef, HITS);
 		return this._hp.current;
 	endfunction
 
 	function GetCurrentStamina(this)
-		this._stamina.current := AP_GetVital(this._mobRef, STAMINA);
+		this._stamina.current := AP_GetVital(this._objRef, STAMINA);
 		return this._stamina.current;
 	endfunction
 
 	function GetCurrentMana(this)
-		this._mana.current := AP_GetVital(this._mobRef, MANA);
+		this._mana.current := AP_GetVital(this._objRef, MANA);
 		return this._mana.current;
 	endfunction
 
 	function GetCurrentHunger(this)
-		this._hunger.current := AP_GetVital(this._mobRef, HUNGER);
+		this._hunger.current := AP_GetVital(this._objRef, HUNGER);
 		return this._hunger.current;
 	endfunction
 
 	function GetMaxHP(this)
-		this._hp.max := AP_GetVitalMaximumValue(this._mobRef, HITS);
+		this._hp.max := AP_GetVitalMaximumValue(this._objRef, HITS);
 		return this._hp.max;
 	endfunction
 
 	function GetMaxStamina(this)
-		this._stamina.max := AP_GetVitalMaximumValue(this._mobRef, STAMINA);
+		this._stamina.max := AP_GetVitalMaximumValue(this._objRef, STAMINA);
 		return this._stamina.max;
 	endfunction
 
 	function GetMaxMana(this)
-		this._mana.max := AP_GetVitalMaximumValue(this._mobRef, MANA);
+		this._mana.max := AP_GetVitalMaximumValue(this._objRef, MANA);
 		return this._mana.max;
 	endfunction
 
 	function GetMaxHunger(this)
-		this._hunger.max := AP_GetVitalMaximumValue(this._mobRef, HUNGER);
+		this._hunger.max := AP_GetVitalMaximumValue(this._objRef, HUNGER);
 		return this._hunger.max;
 	endfunction
 
 	function GetRegenHP(this)
-		this._hp.regen := AP_GetVitalRegenRate(this._mobRef, HITS);
+		this._hp.regen := AP_GetVitalRegenRate(this._objRef, HITS);
 		return this._hp.regen;
 	endfunction
 
 	function GetRegenStamina(this)
-		this._stamina.regen := AP_GetVitalRegenRate(this._mobRef, STAMINA);
+		this._stamina.regen := AP_GetVitalRegenRate(this._objRef, STAMINA);
 		return this._stamina.regen;
 	endfunction
 
 	function GetRegenMana(this)
-		this._mana.regen := AP_GetVitalRegenRate(this._mobRef, MANA);
+		this._mana.regen := AP_GetVitalRegenRate(this._objRef, MANA);
 		return this._mana.regen;
 	endfunction
 
 	function GetRegenHunger(this)
-		this._hunger.regen := AP_GetVitalRegenRate(this._mobRef, HUNGER);
+		this._hunger.regen := AP_GetVitalRegenRate(this._objRef, HUNGER);
 		return this._hunger.regen;
 	endfunction
 
-	function GetGold(this)
-		return this._gold;
-	endfunction
-
-	function GetWeight(this)
-		return this._weight;
-	endfunction
-
 	function GetGender(this)
-		if (this._mobRef.gender == 0)
+		if (this._objRef.gender == 0)
 			return MOBILE_GENDER::MALE;
-		elseif (this._mobRef.gender == 1)
+		elseif (this._objRef.gender == 1)
 			return MOBILE_GENDER::FEMALE;
 		else
 			return MOBILE_GENDER::UNDEFINED;
@@ -242,7 +209,7 @@ class MobileWrapper(IMobileWrapper)
 		if (!this.IsNPC())
 			return error{ "errortext" := "This mobile is not an NPC!" };
 		else
-			return this._mobRef.npctemplate;
+			return this._objRef.npctemplate;
 		endif
 	endfunction
 
@@ -251,23 +218,23 @@ class MobileWrapper(IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return EquipWrapperWeapon(this._mobRef.weapon);
+			return EquipWrapperWeapon(this._objRef.weapon);
 		elseif (equipSlot == SHIELD)
-			return EquipWrapperArmor(this._mobRef.shield);
+			return EquipWrapperArmor(this._objRef.shield);
 		elseif (equipSlot == HEAD)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, HEAD);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
 		elseif (equipSlot == NECK)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, NECK);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, NECK);
 		elseif (equipSlot == ARMS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, ARMS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, ARMS);
 		elseif (equipSlot == BODY)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, BODY);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, BODY);
 		elseif (equipSlot == HANDS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, HANDS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HANDS);
 		elseif (equipSlot == LEGS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, LEGS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, LEGS);
 		elseif (equipSlot == FEET)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._mobRef, FEET);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, FEET);
 		else
 			return error {"errortext" := "Wrong slot specified!"};
 		endif
@@ -280,7 +247,7 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetEquipByLayer(this, layerEnum)
-		return EquipWrapperArmor(GetEquipmentByLayer(this._mobRef, layerEnum));
+		return EquipWrapperArmor(GetEquipmentByLayer(this._objRef, layerEnum));
 	endfunction
 
 	function GetSkill(this, skillName)
@@ -288,12 +255,12 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		this._skills[skillName].base := AP_GetTrueSkill(this._mobRef, skillName);
+		this._skills[skillName].base := AP_GetTrueSkill(this._objRef, skillName);
 		return this._skills[skillName].base;
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		this._skills[skillName].mod := AP_GetSkillMod(this._mobRef, skillName);
+		this._skills[skillName].mod := AP_GetSkillMod(this._objRef, skillName);
 		return this._skills[skillName].mod;
 	endfunction
 
@@ -302,12 +269,12 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		this._skills[skillName].base := AP_SetTrueSkill(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].base := AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
-		this._skills[skillName].mod := AP_SetSkillMod(this._mobRef, skillName, CDbl(value));
+		this._skills[skillName].mod := AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
@@ -317,7 +284,7 @@ class MobileWrapper(IMobileWrapper)
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
-			mod.ApplyOn(this._mobRef);
+			mod.ApplyOn(this._objRef);
 			SleepMS(2);
 		endforeach
 
@@ -330,7 +297,7 @@ class MobileWrapper(IMobileWrapper)
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
-			mod.RemoveFrom(this._mobRef);
+			mod.RemoveFrom(this._objRef);
 			SleepMS(2);
 		endforeach
 
@@ -338,19 +305,19 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function HasAbility(this, abilityName)
-		return TemHabilidade(this._mobRef, abilityName);
+		return TemHabilidade(this._objRef, abilityName);
 	endfunction
 
 	function IsNPC(this)
-		return this._mobRef.npctemplate != false;
+		return this._objRef.npctemplate != false;
 	endfunction
 
 	function IsDead(this)
-		return this._mobRef.dead == true;
+		return this._objRef.dead == true;
 	endfunction
 
 	function IsWarMode(this)
-		return this._mobRef.warmode == true;
+		return this._objRef.warmode == true;
 	endfunction
 
 	function IsMounted(this)
@@ -358,21 +325,21 @@ class MobileWrapper(IMobileWrapper)
 	endfunction
 
 	function DistanceTo(this, other) // other: ObjRef
-		return Distance(this._mobRef, other);
+		return Distance(this._objRef, other);
 	endfunction
 
 	function PlaySound(this, soundId, isPrivate := false, soundOrigin := false)
 		if (isPrivate)
-			PlaySoundEffectPrivate(this._mobRef, soundId, soundOrigin ?: this._mobRef);
+			PlaySoundEffectPrivate(this._objRef, soundId, soundOrigin ?: this._objRef);
 		else
-			PlaySoundEffect(this._mobRef, soundId);
+			PlaySoundEffect(this._objRef, soundId);
 		endif
 
 		return this;
 	endfunction
 
 	function Dispose(this)
-		this._mobRef := 0;
+		this._objRef := 0;
 		this._name := "";
 		this._str := 0;
 		this._dex := 0;
@@ -391,7 +358,7 @@ class MobileWrapper(IMobileWrapper)
 			return error{ "errortext" := "The param must be a MobileWrapper!" };
 		endif
 
-		return this.GetMobRef() == otherMobileWrapper.GetMobRef() &&
+		return this.GetObjRef() == otherMobileWrapper.GetObjRef() &&
 			   this.GetSerial() == otherMobileWrapper.GetSerial();
 	endfunction
 endclass

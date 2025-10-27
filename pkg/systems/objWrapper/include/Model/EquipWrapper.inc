@@ -1,20 +1,16 @@
 use uo;
 
 include "IEquipWrapper";
+include "UObjectWrapper";
 include ":IO:CFGFile";
 include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
 
-class EquipWrapper(IEquipWrapper)
+class EquipWrapper(UObjectWrapper, IEquipWrapper)
 	var _template; // CfgElem
-	var _itemRef; // ItemRef
 	var _prop;
 
-	var _name := "";
-	var _objType := 0x0;
-	var _graphic := 0;
-	var _color := 0;
 	var _weight := 0;
 	var _maxHP := 0;
 	var _material := "";
@@ -22,11 +18,11 @@ class EquipWrapper(IEquipWrapper)
 	var _modifiers := dictionary{}; // Dictionary of AttributeModifier()
 
 	function EquipWrapper(this, byRef item)
+		Super(item);
+
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
-			this._itemRef := item;
 			this._prop := item.GetProp("atributos") ?: error{"errortext" := "This item has no attributes Property!"};
-			this._objType := item.objtype;
 			this._graphic := this._template.graphic;
 			this._color := this._template.color;
 			
@@ -42,7 +38,7 @@ class EquipWrapper(IEquipWrapper)
 			
 		else // Caso seja apenas um template
 			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
-			this._itemRef := error{"errortext" := "This item is just a template!"};
+			this._objType := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
 
 			this._name := this._template.desc;
@@ -60,20 +56,8 @@ class EquipWrapper(IEquipWrapper)
 		return this._template;
 	endfunction
 
-	function GetItemRef(this)
-		return this._itemRef;
-	endfunction
-
 	function GetItemProp(this)
 		return this._prop;
-	endfunction
-
-	function GetName(this)
-		return this._name;
-	endfunction
-
-	function GetGraphic(this)
-		return this._graphic;
 	endfunction
 
 	function GetWeight(this)
@@ -98,43 +82,43 @@ class EquipWrapper(IEquipWrapper)
 	endfunction
 
 	function _SetName(this, name)
-		if (this._itemRef == error) return this._itemRef; endif
-		this._name := name;
+		if (this._objType == error) return this._objType; endif
+		Super::_SetName(this, name);
 		return this;
 	endfunction
 
 	function SetGraphic(this, graphic)
-		if (this._itemRef == error) return this._itemRef; endif
-		this._graphic := graphic;
+		if (this._objType == error) return this._objType; endif
+		Super::SetGraphic(this, graphic);
 		return this;
 	endfunction
 
 	function SetWeight(this, weight)
-		if (this._itemRef == error) return this._itemRef; endif
+		if (this._objType == error) return this._objType; endif
 		this._weight := weight;
 		return this;
 	endfunction
 
 	function SetMaxHP(this, maxHP)
-		if (this._itemRef == error) return this._itemRef; endif
+		if (this._objType == error) return this._objType; endif
 		this._maxHP := maxHP;
 		return this;
 	endfunction
 
 	function SetMaterial(this, material)
-		if (this._itemRef == error) return this._itemRef; endif
+		if (this._objType == error) return this._objType; endif
 		this._material := material;
 		return this;
 	endfunction
 
 	function AddModifier(this, modifier) // modifier is of type AttributeModifier
-		if (this._itemRef == error) return this._itemRef; endif
+		if (this._objType == error) return this._objType; endif
 		this._modifiers[modifier.GetAttribute()] := modifier;
 		return this;
 	endfunction
 
 	function Update(this)
-		if (this._itemRef == error) return this._itemRef; endif
+		if (this._objType == error) return this._objType; endif
 
 		this._prop := struct{};
 		this._prop.+Name := this._name;
@@ -143,70 +127,26 @@ class EquipWrapper(IEquipWrapper)
 		this._prop.+MaxHP := this._maxHP;
 
 		this._SetName(this._name);
-		this._itemRef.graphic := this._graphic;
-		this._itemRef.weight := this._weight;
-		this._itemRef.maxHP := this._maxHP;
+		this._objType.graphic := this._graphic;
+		this._objType.weight := this._weight;
+		this._objType.maxHP := this._maxHP;
 
 		this._prop.+Modifiers := dictionary{};
 	endfunction
 
 	function Equals(this, otherEquipWrapper)
-		// if (!(otherEquipWrapper is @EquipWrapper))
-		// 	return error {"errortext" := "The param must be an EquipWrapper!"};
-		// endif
+		if (!(otherEquipWrapper is @EquipWrapper))
+			return error {"errortext" := "The param must be an EquipWrapper!"};
+		endif
 
-		return this._itemRef == otherEquipWrapper.GetItemRef();
+		return this._objType == otherEquipWrapper.GetObjType();
 	endfunction
 
 	function ToString(this)
-		return $"Equipment:
-		Name: {this._name},
-		Graphic: {this._graphic} ({Hex(this._graphic)}),
-		Weight: {this._weight},
-		MaxHP: {this._maxHP}";
+		return Super::ToString(this) + " >>> Equipment: " +
+			$"Name: {this._name}, " +
+			$"Graphic: {this._graphic} ({Hex(this._graphic)}), " +
+			$"Weight: {this._weight}, " +
+			$"MaxHP: {this._maxHP}";
 	endfunction
-
-	uninit function _GetWeight(this);
-	uninit function _GetSTRRequired(this);
 endclass
-
-// enum class EQUIP_SLOT
-// 	HEAD := "Head",
-// 	NECK := "Neck",
-// 	BACK := "Back",
-// 	CHEST := "Chest",
-// 	HANDS := "Hands",
-// 	LEGS := "Legs",
-// 	FEET := "Feet",
-// 	WEAPON := "Weapon",
-// 	SHIELD := "Shield",
-// endenum
-
-// enum class EQUIP_LAYER
-// 	NONE,
-// 	HAND1,
-// 	HAND2,
-// 	SHOES,
-// 	PANTS,
-// 	SHIRT,
-// 	HELM,
-// 	GLOVES,
-// 	RING,
-// 	UNUSED9,
-// 	NECK,
-// 	HAIR,
-// 	WAIST,
-// 	CHEST,
-// 	WRIST,
-// 	PACK2,
-// 	BEARD,
-// 	TUNIC,
-// 	EARS,
-// 	ARMS,
-// 	CAPE,
-// 	PACK,
-// 	ROBE,
-// 	SKIRT,
-// 	LEGS,
-// 	MOUNT
-// endenum
