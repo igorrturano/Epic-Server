@@ -11,10 +11,7 @@ include ":taming:taming";
 
 program SpellScript(params)
 	var caster := params[1];
-
-	SendSysMessage(caster, "Escolha o corpo do animal para ressuscitar");
-	var corpse := Target(caster);
-
+	var corpse := params[2];
 	if (!corpse)
 		SendSysMessageEx(caster, "Cancelado.", SSM_FAIL);
 		return 0;
@@ -33,10 +30,11 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	// Verifica se o animal era do caster ou se ele pode ressuscitá-lo
-	var owner := GetObjProperty(corpse, "master");
+	// Verifica se o animal tinha um dono (só pode ressuscitar pets domesticados)
+	var owner := GetObjProperty(corpse, "owner");
 	if (!owner)
-		owner := caster.serial;
+		SendSysMessageEx(caster, "A natureza já reclamou este ser.", SSM_FAIL);
+		return 0;
 	endif
 
 	// Converte serial se necessário
@@ -50,11 +48,6 @@ program SpellScript(params)
 	if (owner_obj && owner_obj != caster)
 		SendSysMessageEx(caster, "Você não pode ressuscitar o animal de outra pessoa.", SSM_FAIL);
 		return 0;
-	endif
-
-	// Se não tinha dono, o caster vira o dono
-	if (!owner_obj)
-		owner_obj := caster;
 	endif
 
 	// Verifica se o corpo ainda pode ser ressuscitado (cooldown)

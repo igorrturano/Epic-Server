@@ -26,24 +26,18 @@ program SwarmDamageOverTime(params)
 
 	// Array de efeitos visuais de insetos variados
 	var insect_effects := array{
-		0x91B,  // Nuvem/enxame
-		0x3728, // Poison field (visual de nuvem)
-		0x374A  // Outro efeito de partículas
+		0x91B  // Nuvem/enxame
 	};
 
 	// Array de sons de insetos
 	var insect_sounds := array{
-		0x1E1,  // Zumbido
-		0x1E0,  // Insetos
-		0x1E2   // Variação de zumbido
+		0x5CD  // Zumbido
 	};
 
 	var tick_count := 0;
 
 	// Aplica dano ao longo do tempo
 	while (remaining_ticks > 0)
-		sleep(2);
-
 		// Verifica se o alvo ainda é válido
 		if (!targ || targ.dead)
 			EraseObjProperty(targ, "#swarm_active");
@@ -66,7 +60,7 @@ program SwarmDamageOverTime(params)
 		var effect_idx := (tick_count % insect_effects.size()) + 1;
 		var sound_idx := (tick_count % insect_sounds.size()) + 1;
 
-		PlayObjectCenteredEffect(targ, insect_effects[effect_idx], 7, 10);
+		PlayObjectCenteredEffect(targ, insect_effects[effect_idx], 70, 50);
 		PlaySoundEffect(targ, insect_sounds[sound_idx]);
 
 		// Mensagens periódicas
@@ -80,14 +74,13 @@ program SwarmDamageOverTime(params)
 		endif
 
 		remaining_ticks := remaining_ticks - 1;
+		sleep(2);
 	endwhile
 
 	// Remove a marca de enxame ativo
 	EraseObjProperty(targ, "#swarm_active");
 
 	// Efeito final - enxame se dispersa
-	PlayObjectCenteredEffect(targ, 0x3728, 10, 20);
-	PlaySoundEffect(targ, 0x1E0);
 	SendSysMessageEx(targ, "O enxame finalmente se dispersa.", SSM_INFO);
 	PrintTextAbove(targ, "*Os insetos se dispersam*");
 

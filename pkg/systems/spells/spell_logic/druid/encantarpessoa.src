@@ -28,6 +28,11 @@ program SpellScript(params)
 		return;
 	endif
 
+	if (!targ.isHumanoidBrain())
+		Message("Voce so consegue encantar humanoides").SendSys(who);
+		return;
+	endif
+
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 

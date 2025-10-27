@@ -474,3 +474,11 @@ exported function getTameDifficulty(who)
 	endif
 	return Cint(AP_GetSkill(who, WRESTLING));
 endfunction
+
+exported function canPetrify(who)
+	var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+	if (template == "basilisk")
+		return 1;
+	endif
+	return 0;
+endfunction

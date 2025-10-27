@@ -18,9 +18,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	// Efeito visual e sonoro no druida
 	PlaySoundEffect(who, 0x1E9);
-	PlayObjectCenteredEffect(who, 0x375A, 10, 15);
 
 	// Calcula o range baseado no theology do druida
 	var range := CInt(AP_GetSkill(who, THEOLOGY) / 10);
