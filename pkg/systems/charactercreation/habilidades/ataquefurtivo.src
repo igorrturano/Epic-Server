@@ -1,38 +1,29 @@
 use uo;
-use util;
-use os;
 
-include ":fls_core:packets";
-include ":attributes:attributeConstants";
-include ":attributes:attributes";
-include ":attributes:skillCheck";
-include ":attributes:stats";
-include ":fls_core:fls_combat";
-include ":blood:blood";
-include ":combat:damage";
-include ":fls_core:fls_characters";
-include ":fls_core:packets";
-include ":combat:combat";
-include "include/packets";
-include "include/epicCombatUtils";
+include ":combat:Controller/DamageController";
+include ":combat:Controller/HitController";
+include ":message:model/Message";
+include ":charsys:ViewModel/MobileWrapper";
 
 program backstab(who)
-	if (!CanBackStab(who, who.weapon))
+	who := MobileWrapper(who);
+
+	if (!CanBackStab(who) || !isAssassinWeapon(who.GetMobRef()))
+		Message("Esta arma não é apropriada para um ataque furtivo.", FONTCOLOR_ERROR).SendSys(who.GetMobRef());
 		return;
 	endif
-	if (!isAssassinWeapon(who))
-		SendSysMessageEx(who, "Voce nao pode usar esta arma para ataque furtivo", SSM_FAIL);
-		return;
-	endif
-	SetObjProperty(who, "backstab", 1);
-	SetObjProperty(who.weapon, "backstab", 1);
+
+	who.GetMobRef().SetProp("backstab", 1);
+	who.GetEquipBySlot(WEAPON).GetItemRef().SetProp("backstab", 1);
+	
 	if (who.hidden)
-		SetObjProperty(who, "#attackbonus", 100);
-		if (TemHabilidade(who, "Instinto Assassino"))
-			SetObjProperty(who, "#nextcritical", 1);
+		who.GetMobRef().SetProp("#attackbonus", 100);
+		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))
+			who.GetMobRef().SetProp("#nextcritical", 1);
 		endif
 	endif
-	GrantPrivilege(who, "hiddenattack");
-	who.enable("hiddenattack");
-	SendSysMessageEx(who, "Voce está preparado para um ataque furtivo", SSM_INFO);
+
+	GrantPrivilege(who.GetMobRef(), "hiddenattack");
+	who.GetMobRef().enable("hiddenattack");
+	Message("Você está preparado para um ataque furtivo!", FONTCOLOR_SUCCESS).SendSys(who.GetMobRef());
 endprogram
