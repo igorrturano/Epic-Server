@@ -5,18 +5,18 @@ use basic;
 include "include/say";
 
 program bonusrecriar(who)
-	if(who.cmdlevel)
+	if (who.cmdlevel)
 		SendSysMessageEx(who, "Quem recebera +20 ao recriar?", SSM_REQUEST);
 		var alvo := Target(who, TGTOPT_NOCHECK_LOS);
 		if (!alvo)
 			SendSysMessage(who, "Cancelado", SSM_FAIL);
 			return 0;
-		elseif(alvo.acctname)
+		elseif (alvo.acctname)
 			var mortelog := FindAccount(alvo.acctname).getprop("mortelog");
 			if (mortelog > 3888000)
 				SendSysMessageEx(who, "O alvo ja tem +20 pra recriar.", SSM_INFO);
 			else
-				FindAccount(alvo.acctname).setprop("mortelog",3888001);
+				FindAccount(alvo.acctname).setprop("mortelog", 3888001);
 				SendSysMessageEx(who, "O alvo tera +20 de bonus ao recriar.", SSM_INFO);
 			endif
 			return 1;

@@ -10,16 +10,18 @@ include ":tn:boss";
 
 program motherbrain(who)
 
-	var motherdata := OpenDataFile( ":tn:motherbrain" );
+	var motherdata := OpenDataFile(":tn:motherbrain");
 	if (motherdata == error)
-		motherdata := CreateDataFile( ":tn:motherbrain", DF_KEYTYPE_STRING );
+		motherdata := CreateDataFile(":tn:motherbrain", DF_KEYTYPE_STRING);
 	endif
 
 	var society := struct;
 
-	society.+nome := RequestGump(who, "Escreva o nome da sociedade/tribo (o nome nao pode ser o mesmo que as existentes):", "", "", 1);
+	society.+nome := RequestGump(who, "Escreva o nome da sociedade/tribo (o nome nao pode ser o mesmo que as existentes):",
+							  "", "", 1);
 
-	var base := YesNo(who, "Voce deve escolher a base principal da sociedade, é la onde serao spawnados os npcs. Um target vai aparecer caso queira adicionar um base.");
+	var base := YesNo(who,
+				   "Voce deve escolher a base principal da sociedade, é la onde serao spawnados os npcs. Um target vai aparecer caso queira adicionar um base.");
 	if (!base)
 		SendSysMessage(who, "Cancelado");
 		return;
@@ -31,10 +33,13 @@ program motherbrain(who)
 		return;
 	endif
 	society.+base := loc;
-	society.base.+spawn := Cint(RequestGump(who, "Digite a quantidade inicial que vai spawnar na base", "", "", 1));
-	society.+type := RadioGump(who, 400, 380, "Escolha o tipo de npcs.", array{"Undeads", "Ratmans", "Orcs", "Lizardmans", "Ratmans", "Humanos"});
+	society.base.+spawn := Cint(RequestGump(who, "Digite a quantidade inicial que vai spawnar na base",
+											 "", "", 1));
+	society.+type := RadioGump(who, 400, 380, "Escolha o tipo de npcs.", array{ "Undeads", "Ratmans", "Orcs",
+																				"Lizardmans", "Ratmans",
+																				"Humanos" });
 
-	var objdata := OpenDataFile( ":tn:objetivos" );
+	var objdata := OpenDataFile(":tn:objetivos");
 	if (!objdata)
 		SendSysMessage(who, "Arquivo de objetivos nao encontrado.");
 		return;

@@ -4,13 +4,12 @@ include ":blood:blood";
 include ":combat:damage";
 include ":timedScripts:timedScripts";
 
-
 program doubleattack(attacker)
-	
+
 	PrintTextAbove(attacker, "*distraindo os inimigos*");
 
-	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm ))
-		if ( !(mobile in attacker.party.members )) 
+	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
+		if (!(mobile in attacker.party.members))
 			PlayAttackAnimation(attacker);
 			PlayHitSounds(attacker, mobile);
 			sleepms(250);
@@ -18,6 +17,5 @@ program doubleattack(attacker)
 			TS_StartTimer(mobile, "paralysis", 5);
 		endif
 	endforeach
-	
 
-endprogram 
+endprogram

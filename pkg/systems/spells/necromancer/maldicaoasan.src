@@ -41,9 +41,9 @@ program SpellScript(params)
 
 	targ.frozen := 1;
 
-	while  (time < 10)
+	while (time < 10)
 
-		if ( (who.x != oldx) || (who.y != oldy))
+		if ((who.x != oldx) || (who.y != oldy))
 			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
 			break;
 		endif
@@ -53,23 +53,23 @@ program SpellScript(params)
 			break;
 		endif
 
-		var mydmg := cint(AP_GetVital(who, HITS)/10); //O calculo eh baseado somente no hp do caster
+		var mydmg := cint(AP_GetVital(who, HITS) / 10); // O calculo eh baseado somente no hp do caster
 
-        if((AP_GetVital(who, HITS) - mydmg) <= 1)
-            mydmg := AP_GetVital(who, HITS) - (AP_GetVital(who, HITS)-1);
+		if ((AP_GetVital(who, HITS) - mydmg) <= 1)
+			mydmg := AP_GetVital(who, HITS) - (AP_GetVital(who, HITS) - 1);
 
-            //Da o ultimo dano antes de parar o spell
-            ApplyDamageEX(targ, mydmg, DMG_POISON);
-            ApplyDamageEX(who, mydmg, DMG_POISON);
+			// Da o ultimo dano antes de parar o spell
+			ApplyDamageEX(targ, mydmg, DMG_POISON);
+			ApplyDamageEX(who, mydmg, DMG_POISON);
 
-            SendSysMessageEx(who, "Voce usou toda sua forca vital.", SSM_FAIL);
-            break;
-        endif
+			SendSysMessageEx(who, "Voce usou toda sua forca vital.", SSM_FAIL);
+			break;
+		endif
 
 		ApplyDamageEX(targ, mydmg, DMG_POISON);
-        ApplyDamageEX(who, mydmg, DMG_POISON);
+		ApplyDamageEX(who, mydmg, DMG_POISON);
 
-		if(targ.dead)
+		if (targ.dead)
 			break;
 		endif
 

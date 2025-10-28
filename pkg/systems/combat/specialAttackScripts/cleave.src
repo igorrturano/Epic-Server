@@ -1,0 +1,49 @@
+use uo;
+
+program SpecialAttack_Cleave(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var potentialTargets := ListMobilesInLineOfSight(attacker, 1);
+	var facing := attacker.facing;
+
+	foreach mobile in potentialTargets
+		if (mobile.serial == attacker.serial)
+			continue;
+		endif // Não vai se atacar, né?!
+		if (defender && mobile.serial == defender.serial)
+			continue;
+		endif // Defender já tomou dano. PULA!
+
+		// Calculate if the mobile is in front of the attacker
+		var dx := mobile.x - attacker.x;
+		var dy := mobile.y - attacker.y;
+
+		var inFront := 0;
+		case (facing)
+			0: // North
+				inFront := (dy < 0);
+			1: // Northeast
+				inFront := (dx > 0 && dy < 0);
+			2: // East
+				inFront := (dx > 0);
+			3: // Southeast
+				inFront := (dx > 0 && dy > 0);
+			4: // South
+				inFront := (dy > 0);
+			5: // Southwest
+				inFront := (dx < 0 && dy > 0);
+			6: // West
+				inFront := (dx < 0);
+			7: // Northwest
+				inFront := (dx < 0 && dy < 0);
+		endcase
+
+		if (!inFront)
+			continue;
+		endif // Alvo não está na frente do atacante. PULA!
+
+		attacker.attack_once(mobile);
+	endforeach
+
+	return 1;
+endprogram

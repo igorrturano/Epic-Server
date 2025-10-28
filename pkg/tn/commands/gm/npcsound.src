@@ -1,11 +1,13 @@
 use uo;
+
+include "include/say";
 include ":tn:actions_sounds_tools";
 
-program setsound( who, text )
+program setsound(who, text)
 
 	SendSysMessage(who, "Escolha o npc que deseja ativar o som.");
 
-	var npc :=  Target(who);
+	var npc := Target(who);
 
 	if (!npc)
 		SendSysMessage(who, "Cancelado.");
@@ -14,10 +16,9 @@ program setsound( who, text )
 
 	var resultado := GetSound(npc, text);
 
-	PlaySoundEffect( npc, resultado[1] );
+	PlaySoundEffect(npc, resultado[1]);
 	if (resultado[2])
-		PrintTextAbove(npc, resultado[2] );
+		PrintTextAbove(npc, resultado[2]);
 	endif
-
 
 endprogram

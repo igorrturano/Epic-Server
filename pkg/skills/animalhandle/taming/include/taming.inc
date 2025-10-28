@@ -1,10 +1,11 @@
 use uo;
 
 include ":timedScripts:timedScripts";
+include ":mounts:mounts";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 
 	var mobs := array;
 	foreach mob in ListMobilesNearLocation( x, y, z, range, realm);
@@ -14,7 +15,7 @@ function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 			var npctemplate := mob.npctemplate;
 			npctemplate := npctemplate[10, len(npctemplate)-9];
 
-			if ( cfg[npctemplate].TameDifficulty )
+			if ( mob.getTameDifficulty() )
 				//if (!mob.script["tamed"])
 					mobs.append(mob);
 				//endif
@@ -30,15 +31,10 @@ endfunction
 
 //ve quantos slots custa o npc
 function GetPetCost(pet)
-
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
-	var npctemplate := pet.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-	cfg := cfg[npctemplate];
-	if (!Cint(cfg.petslot))
+	if (!Cint(pet.getTier()))
 		return 1;
 	else
-		return Cint(cfg.petslot);
+		return Cint(pet.getTier());
 	endif
 
 endfunction
@@ -54,14 +50,10 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
-			var npctemplate := pet.npctemplate;
-			npctemplate := npctemplate[10, len(npctemplate)-9];
-			cfg := cfg[npctemplate];
-			if (!Cint(cfg.petslot))
+				if (!Cint(pet.getTier()))
 				num_tamed := num_tamed+1;
 			else
-				num_tamed := num_tamed + Cint(cfg.petslot);
+				num_tamed := num_tamed + Cint(pet.getTier());
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -90,13 +82,7 @@ function GetNumSummons(who)
 
         // Check if the pet is still a valid summon
         if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
-            // Read the npcdesc configuration file
-            var cfg := ReadConfigFile(":brainAI:npcdesc");
-            var npctemplate := pet.npctemplate[10, len(pet.npctemplate)-9];  // Trim the template name
-            var pet_config := cfg[npctemplate];  // Retrieve pet config for the template
-
-            // Check if there is a petslot configuration
-            var pet_slot := CInt(pet_config.petslot);
+			var pet_slot := CInt(pet.getTier());
             if (!pet_slot)
                 pet_slot := 1;  // Default to 1 if no pet slot is set
             endif
@@ -197,7 +183,7 @@ function GetMaxSummons(who)
 	var maxpets := 1;
 
 	//Influência da skill na quantidade
-	var skill := cint(AP_GetSkill(who, MAGICLORE));
+	var skill := cint(AP_GetSkill(who, THEOLOGY));
 	if (skill >= 45 && skill < 75)
 		maxpets := maxpets + 1;
 	elseif (skill >= 75 && skill < 90)
@@ -346,17 +332,15 @@ function isTamable(mob)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
-	var npctemplate := mob.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-	cfg := cfg[npctemplate];
-	if ( !cfg.TameDifficulty )
+	if (mob.isAnimalBrain())
+		return 1;
+	endif
+
+	if ( !mob.getTameDifficulty() )
 		return 0;
 	else
 		return 1;
 	endif
-
-
 endfunction
 
 
@@ -369,7 +353,7 @@ function SetPetMods(pet)
 	healdamage(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;
@@ -384,7 +368,7 @@ function ErasePetMods(pet)
 	recalcvitals(pet);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;

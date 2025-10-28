@@ -1,0 +1,67 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include "/include/epicPropNames";
+include ":propagacao:include/propagacao";
+
+program install()
+	return 1;
+endprogram
+
+exported function Estimular(marcadorPropagacao, valorEstimulo, isPrioritario := false)
+
+	var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
+	if (processoMarcador)
+		if (isPrioritario)
+			processoMarcador.clear_event_queue();
+		endif
+
+		return processoMarcador.sendevent(struct{ id := EV_PROPAGACAO::ESTIMULO,
+										  		valor := valorEstimulo, isAcumulando := true });
+
+	endif
+	return error{ error_text := "Processo do marcador não foi encontrado." };
+endfunction
+
+exported function EnviaEventoPisado(marcadorPropagacao)
+
+	var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
+	if (processoMarcador)
+		processoMarcador.clear_event_queue();
+
+		return processoMarcador.sendevent(struct{ id := EV_PROPAGACAO::PISAO });
+	endif
+	return error{ error_text := "Processo do marcador não foi encontrado." };
+endfunction
+
+exported function IsMarcadorTipo(marcadorPropagacao, tipo)
+	var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
+	return propPropagacao.tipoPropagacao == tipo;
+endfunction
+
+exported function PegaGeracao(marcadorPropagacao)
+	var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
+	return propPropagacao.geracao;
+endfunction
+
+exported function LerEstado(marcadorPropagacao)
+	var propPropagacao := GetObjProperty(marcadorPropagacao, PROPNAME_PROP_PROPAGACAO);
+	return propPropagacao.lerEstadoAtual;
+endfunction
+
+exported function Abastecer(marcadorPropagacao, deveResetarEstado := false)
+	var processoMarcador := PegaProcessoMarcador(marcadorPropagacao);
+
+	if (processoMarcador)
+		processoMarcador.clear_event_queue();
+		processoMarcador.sendevent(struct{ id := EV_PROPAGACAO::COMBUSTIVEL,
+								   		deveResetarEstado := deveResetarEstado });
+	endif
+
+	return error{ error_text := "Processo do marcador não foi encontrado." };
+
+endfunction

@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -14,7 +14,7 @@ program manobra(attacker)
 		return;
 	endif
 
-	PrintText(attacker, "*ordena os aliados*");
+	PrintTextAbove(attacker, "*ordena os aliados*");
 
 	foreach member in (festa.members)
 		if (member.serial != attacker.serial)
@@ -22,23 +22,19 @@ program manobra(attacker)
 				var timer_list := TS_GetTimerList(member);
 				var names := array;
 
-
-				foreach timer in ( timer_list.keys() )
+				foreach timer in (timer_list.keys())
 					timer := lower(timer);
-					if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" 
-					|| timer == "desarmar" || timer == "desmontar" || timer == "polymorph" 
-					|| timer == "apodrecer" || timer == "clumsy" || timer == "atrasarmagias"
-					|| timer == "feebleMind" || timer == "dmgreduction" || timer == "sleep")
+					if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" ||
+		 timer == "desarmar" || timer == "desmontar" || timer == "polymorph" || timer == "apodrecer" ||
+		 timer == "clumsy" || timer == "atrasarmagias" || timer == "feebleMind" || timer == "dmgreduction" ||
+		 timer == "sleep")
 						TS_LowerDuration(member, timer, -1);
 					endif
-		
-				endforeach
 
+				endforeach
 
 			endif
 		endif
 	endforeach
 
-
-endprogram  
-
+endprogram

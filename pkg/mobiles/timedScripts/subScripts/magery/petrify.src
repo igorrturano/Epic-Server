@@ -1,0 +1,28 @@
+use uo;
+use os;
+use util;
+include "include/epicConstants";
+
+program TimedScript_Petrify(params)
+	var mobile := params[1];
+
+	PlaySoundEffect(mobile, 0x1F8); // Som de petrificação
+	PlayObjectCenteredEffectEx(mobile, 51851, 10, 30,0x0835 ); // Efeito visual de pedra
+
+	PrintTextAbove(mobile, "*Petrificado*");
+	SendSysMessage(mobile, "Voce foi transformado em pedra!");
+
+	// Salva a cor original
+	SetObjProperty(mobile, "#originalcolor", mobile.color);
+
+	// Muda a cor para cinza pedra
+	mobile.color := 0x0835;
+
+	// Paralisa o alvo
+	mobile.paralyzed := 1;
+
+	// Marca como petrificado
+	SetObjProperty(mobile, "#petrified", 1);
+
+	return 1;
+endprogram

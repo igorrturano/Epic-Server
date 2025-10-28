@@ -4,17 +4,19 @@ use os;
 include ":attributes:attributes";
 include ":combat:settings";
 include ":spells:include/swordmage";
+include ":runecarving:runeCarving";
 
 function WearDownArmor(defender, armor, rawdamage, weapon)
-
 	var bonus;
 	//Amplia o dano na armadura se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
 		bonus := RandomDiceRoll("1d4");
 	endif
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, armor.objtype);
 
-	if (!GetObjProperty(armor, "encerada"))
-		bonus := RandomDiceRoll("1d4");
+	if (!GetObjProperty(armor, "encerada") && elem.TipoProtecao)
+		bonus := 1;
 	endif
 
 	if (armor)
@@ -60,6 +62,30 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 			SetName(armor, nome);
 		endif
 		//endif
+
+		// Check for priest rune charges
+		var hasRune := GetObjProperty(armor, "priestrune");
+		if (hasRune)
+			var charges := CInt(GetObjProperty(armor, "runecharges"));
+			if (charges > 0)
+				charges := charges - 1;
+				SetObjProperty(armor, "runecharges", charges);
+
+				if (charges <= 0)
+					// Rune blessing worn out
+					SendSysMessageEx(defender, "A benção divina da " + hasRune.name + " em " + armor.desc + " se esvaiu.", SSM_INFO);
+					PlaySoundEffect(defender, SFX_SPELL_DISPEL);
+
+					// Remove rune bonuses
+					removeRuneBonus(armor, hasRune);
+
+					// Update item name to remove [Rúnico]
+					var currentName := armor.name;
+					currentName := SubStrReplace(currentName, " [Rúnico]", "");
+					SetName(armor, currentName);
+				endif
+			endif
+		endif
 	endif
 
 	return 1;
@@ -114,7 +140,7 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 	return 1;
 endfunction
 
-function WearDownWeapon(attacker, weapon)
+function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 	if (weapon.IsA(POLCLASS_WEAPON))
 		//Se está desarmado não danifique a arma natural
 		if (weapon.objtype == 0x1F020)
@@ -133,7 +159,7 @@ function WearDownWeapon(attacker, weapon)
 			endif
 
 			if ( RandomDiceRoll("1d100") <= wearchance )
-				var weaponhp := weapon.hp - 1;
+				var weaponhp := weapon.hp - 1 * wearRateMlt;
 
 				if ( weaponhp <= 0 )
 					SendSysMessage(attacker, weapon.desc+" quebrou.");
@@ -155,6 +181,31 @@ function WearDownWeapon(attacker, weapon)
 				sleepms(30);
 				SetName(weapon, nome);
 			endif
+
+			// Check for priest rune charges (Holy Weapon rune)
+			var hasRune := GetObjProperty(weapon, "priestrune");
+			if (hasRune)
+				var charges := CInt(GetObjProperty(weapon, "runecharges"));
+				if (charges > 0)
+					charges := charges - 1;
+					SetObjProperty(weapon, "runecharges", charges);
+
+					if (charges <= 0)
+						// Rune blessing worn out
+						SendSysMessageEx(attacker, "A benção divina da " + hasRune.name + " em " + weapon.desc + " se esvaiu.", SSM_INFO);
+						PlaySoundEffect(attacker, SFX_SPELL_DISPEL);
+
+						// Remove rune bonuses
+						removeRuneBonus(weapon, hasRune);
+
+						// Update item name to remove [Rúnico]
+						var currentName := weapon.name;
+						currentName := SubStrReplace(currentName, " [Rúnico]", "");
+						SetName(weapon, currentName);
+					endif
+				endif
+			endif
+
 			return 1;
 		endif
 	else

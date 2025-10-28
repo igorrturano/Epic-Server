@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -21,34 +21,34 @@ program SpellScript(params)
 
 	if (GetObjProperty(targ, "FarolEspiritos"))
 		if (skill >= 60)
-		var items := ListItemsAtLocation( targ.x, targ.y, LIST_IGNORE_Z , targ.realm  );
-		foreach item in items
-			if (item.objtype == 41985)
-				Destroyitem ( item);
-			endif
-			if (item.objtype == 14154)
-				Destroyitem ( item);
-			endif
-			if (item.objtype == 7401)
-				EraseObjProperty(item, "FarolEspiritos");
-				item.movable := 1;
-			endif
-		endforeach
-		SendSysMessageEx(who, "Voce removeu a maldicao do Farol de Espiritos", SSM_INFO);
-		MoveObjectToLocation( targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION );
-		sleepms(300);
-		MoveObjectToLocation( targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION );
-		sleepms(300);
-		MoveObjectToLocation( targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION );
-		sleepms(300);
-		MoveObjectToLocation( targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION );
-		sleepms(300);
-		return 0;
+			var items := ListItemsAtLocation(targ.x, targ.y, LIST_IGNORE_Z, targ.realm);
+			foreach item in items
+				if (item.objtype == 41985)
+					Destroyitem(item);
+				endif
+				if (item.objtype == 14154)
+					Destroyitem(item);
+				endif
+				if (item.objtype == 7401)
+					EraseObjProperty(item, "FarolEspiritos");
+					item.movable := 1;
+				endif
+			endforeach
+			SendSysMessageEx(who, "Voce removeu a maldicao do Farol de Espiritos", SSM_INFO);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(300);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(300);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(300);
+			MoveObjectToLocation(targ, targ.x, targ.y, targ.z - 2, targ.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(300);
+			return 0;
 		else
-		SendSysMessageEx(who, "Voce nao tem capacidade para remover esta maldicao", SSM_INFO);
+			SendSysMessageEx(who, "Voce nao tem capacidade para remover esta maldicao", SSM_INFO);
 		endif
 	endif
-	
+
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
@@ -58,19 +58,18 @@ program SpellScript(params)
 	var names := array;
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 
-
-	foreach timer in ( timer_list.keys() )
+	foreach timer in (timer_list.keys())
 		timer := lower(timer);
-		if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" 
-			|| timer == "desarmar" || timer == "desmontar" || timer == "polymorph" 
-			|| timer == "apodrecer" || timer == "clumsy" || timer == "atrasarmagias"
-			|| timer == "feebleMind" || timer == "dmgreduction" || timer == "sleep")
+		if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" ||
+	  timer == "desarmar" || timer == "desmontar" || timer == "polymorph" || timer == "apodrecer" ||
+	  timer == "clumsy" || timer == "atrasarmagias" || timer == "feebleMind" || timer == "dmgreduction" ||
+	  timer == "sleep")
 			TS_LowerDuration(targ, timer, -1);
 		endif
-		
+
 	endforeach
-	
+
 	SendSysMessageEx(targ, "Sua maldicao foi removida.", SSM_INFO);
-	
+
 	return 1;
-endprogram  
+endprogram

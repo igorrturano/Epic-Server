@@ -3,10 +3,10 @@ use uo;
 use os;
 
 program seasonaleffects()
-	while(1)
+	while (1)
 		var season := cint(getglobalproperty("season"));
 		foreach player in enumerateonlinecharacters()
-			SendPacket(player, "BC0"+season+"01");
+			SendPacket(player, "BC0" + season + "01");
 		endforeach
 		sleep(60);
 	endwhile

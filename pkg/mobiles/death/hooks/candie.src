@@ -2,6 +2,7 @@ use uo;
 use os;
 include "include/say";
 include ":merchants:pcconversation";
+include ":epicAI:epicai";
 
 exported function CanDie(mobile)
 	if (mobile.template == ":merchants:conversation")
@@ -9,18 +10,60 @@ exported function CanDie(mobile)
 		pcdata.DeleteElement(mobile.serial);
 	endif
 
-	if (GetObjProperty(mobile, "morrendo") == 1)
-		return 0;
+	// Restore doppelganger appearance before death (while still alive)
+	if (GetObjProperty(mobile, "#doppelganger_transformed"))
+		RestoreDoppelgangerAppearance(mobile);
 	endif
 
-	if (GetObjProperty(mobile, "Ultimas Palavras") != error)
-		start_script(":death:hooks/speaklastwords", mobile);
-		//if (e == error)
-		//	printtextabove(mobile, "error "+ e);
-		//endif
-		return 0;
-	else
+	if (GetObjProperty(mobile, "allowdeath") == 1)
 		return 1;
 	endif
+	var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+	if (!isBoss)
+		return 1;
+	endif
+	var death_events := GetObjProperty(mobile, "DeathEvents");
+	if (death_events.size() > 0)
+		// Check if already processing to avoid duplicate calls
+		if (GetObjProperty(mobile, "ProcessingDeathEvents"))
+			var last_words := GetObjProperty(mobile, "Ultimas Palavras");
+			if (!last_words)
+				var call_stack := GetEnvironmentVariable("CALL_STACK");
+				if (call_stack && "speaklastwords" in call_stack)
+					return 1;
+				endif
 
+				var processed := GetObjProperty(mobile, "DeathEventsProcessed");
+				if (processed)
+					return 1;
+				endif
+			endif
+
+			print("TRACE: candie - Still processing events, preventing death");
+			return 0;
+		endif
+
+		print("TRACE: candie - Found " + death_events.size() + " death events");
+		var i := 1;
+		foreach event in (death_events)
+			print("TRACE: candie - Event " + i + " Type: " + event.type);
+			i += 1;
+		endforeach
+
+		// Set processing flag to prevent duplicate processing
+		SetObjProperty(mobile, "ProcessingDeathEvents", 1);
+		var process := start_script(":epicspawn:scripts/deathEventsControl", array{ mobile });
+
+		if (process.errortext)
+			print("TRACE: candie - Error starting death events controller: " + process.errortext);
+			EraseObjProperty(mobile, "ProcessingDeathEvents");
+			SetObjProperty(mobile, "allowdeath", 1);
+			return 1; // Allow death anyway if script fails to start
+		else
+			print("TRACE: candie - Death events controller started with PID: " + process.pid);
+			return 0; // Prevent death until events are processed
+		endif
+	endif
+
+	return 1;
 endfunction

@@ -8,9 +8,9 @@ include "include/say";
 include ":food:include/hunger";
 
 program HungerCounter(chr)
-	Sleep(1); //pra evitar bug no start do server
+	Sleep(1); // pra evitar bug no start do server
 
-	while( chr )
+	while (chr)
 		Erase(chr);
 		CalcHunger(chr);
 		RecalcVitals(chr);
@@ -20,7 +20,7 @@ program HungerCounter(chr)
 endprogram
 
 function CalcHunger(chr)
-	var hunger_mod := Cint(chr.luck_mod) + CInt(AP_GetVital(chr, "Hunger")/10);
+	var hunger_mod := Cint(chr.luck_mod) + CInt(AP_GetVital(chr, "Hunger") / 10);
 	chr.luck_mod := hunger_mod;
 
 endfunction

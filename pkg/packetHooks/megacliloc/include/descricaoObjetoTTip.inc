@@ -29,6 +29,8 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	var isArmadura := tipoObjeto == ITEM_ARMADURA || tipoObjeto == TEMPLATE_ARMADURA;
 
 	xDesc := PegaDescMagica(objeto,xDesc);
+	xDesc := PegaDescComponente(objeto,xDesc);
+	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	xDesc := PegaDescDosesVeneno(objeto,xDesc);
 	
 	if (isFireWeapon(objeto))
@@ -36,12 +38,15 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	endif
 
 	xDesc := PegaDescArtefato(objeto,who,xDesc);
+	xDesc := PegaDescEmperrado(objeto,xDesc);
+	xDesc := PegaDescComum(objeto,xDesc);
 
+	xDesc := PegaDescCargasRunicas(objeto,who,xDesc);
+
+	
 	if (isArma || isArmadura)
-		var cfgObj := MontaObjCfgArmaArmadura(objeto,xDesc);
 		
-		cfgObj.desc := PegaDescAAComum(objeto,cfgObj.desc);//Pega a descricao comum entre arma e armadura.
-			
+		var cfgObj := MontaObjCfgArmaArmadura(objeto,xDesc);
 		if(isArma)
 			XDesc := PegaDescArmas(objeto,who,cfgObj);//o config já leva a desc
 		elseif (isArmadura)

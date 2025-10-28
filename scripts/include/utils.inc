@@ -1,5 +1,6 @@
 use uo;
 use os;
+use util;
 use math;
 use cfgfile;
 
@@ -92,7 +93,7 @@ function GetPointsInRadius(mid_x, mid_y, radius)
 	return point_list;
 endfunction
 
-function PushBack(who, dist, delay, invert := 0)
+function PushBack(who, dist, delay := 0, invert := 0)
    var mod := GetModByFacing(who.facing);
 	var x := mod[1];
 	var y := mod[2];
@@ -111,7 +112,7 @@ function PushBack(who, dist, delay, invert := 0)
 		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm, MOVEITEM_IGNOREMOVABLE );
 		sleepms(delay);
 		if (err == error)
-		//	PrintText(who, "*bate no obstaculo*");
+		//	PrintTextAbove(who, "*bate no obstaculo*");
 			return 0;
 		endif
 	endfor
@@ -142,7 +143,7 @@ function PushMobile(who, dist, delay, targ, invert := 0)
 		var err := MoveObjectToLocation( targ, finalx, finaly, targ.z, targ.realm, MOVEITEM_IGNOREMOVABLE );
 		sleepms(delay);
 		if (err == error)
-		//	PrintText(who, "*bate no obstaculo*");
+		//	PrintTextAbove(who, "*bate no obstaculo*");
 			break;
 		endif
 	endfor
@@ -261,3 +262,12 @@ function EncontraChavePorValor(valor, dict)
 		endif
 	endforeach
 endfunction;
+
+function PositivoNegativo(angulo)
+	return Sin(angulo) * 1 >= 0 ? 1 : -1;
+endfunction
+
+function FormatarData(timestamp)
+    var time := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
+    return time;
+endfunction

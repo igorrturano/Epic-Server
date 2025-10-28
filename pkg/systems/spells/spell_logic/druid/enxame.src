@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var caster := params[1];
+	var targ := params[2];
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(caster, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Calcula parâmetros baseados em THEOLOGY
+	var theology := AP_GetSkill(caster, THEOLOGY);
+
+	// Duração: theology/5 segundos (ticks a cada 2 segundos)
+	var total_ticks := CInt(theology / 10);
+	if (total_ticks < 4)
+		total_ticks := 4;
+	elseif (total_ticks > 10)
+		total_ticks := 10;
+	endif
+
+	// Dano por tick baseado em THEOLOGY
+	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d6");
+
+	SendSysMessageEx(caster, "Um enxame de insetos ataca " + targ.name + "!", SSM_INFO);
+	SendSysMessageEx(targ, "Você está sendo atacado por um enxame de insetos!", SSM_FAIL);
+	PrintTextAbove(targ, "*Coberto por insetos*");
+
+	// Inicia o script de damage over time
+	var dot_params := struct{
+		"target" := targ,
+		"caster" := caster,
+		"damage_per_tick" := damage_per_tick,
+		"remaining_ticks" := total_ticks,
+		"theology" := theology
+	};
+	PlayMovingEffect(caster, targ, 0x91B, 20);
+	start_script(":spells:spell_logic/druid/enxame_dot", dot_params);
+
+	return 1;
+endprogram

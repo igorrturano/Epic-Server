@@ -12,9 +12,7 @@ program settooltip(who)
 		return;
 	endif
 
-	
 	AddItemDescription(who, item);
 	SetName(item, item.desc);
-
 
 endprogram

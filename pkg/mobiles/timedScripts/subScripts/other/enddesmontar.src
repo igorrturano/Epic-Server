@@ -9,4 +9,4 @@ program cureScript(params)
 
 	EraseObjProperty(mobile, "#desmontar");
 	return 1;
-endprogram  
+endprogram

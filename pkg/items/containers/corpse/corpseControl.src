@@ -5,13 +5,13 @@ use util;
 include ":containers:settings";
 
 program control_Corpse(corpse)
-	if ( corpse.NPCTemplate() )
+	if (corpse.NPCTemplate())
 		return 0;
 	endif
 
 	var settings := CP_GetSettingsCfgElem("Corpse");
 	var decay_wait := CInt(settings.CorpseDecay);
-	if ( !decay_wait )
+	if (!decay_wait)
 		return 0;
 	endif
 

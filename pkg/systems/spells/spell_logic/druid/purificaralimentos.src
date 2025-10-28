@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Escolha um alvo para purificar.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	// Check if target is an item
+	if (!targ.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Voce so pode purificar alimentos e agua.", SSM_FAIL);
+		return;
+	endif
+
+	// Visual and audio feedback
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_BLESS);
+
+	PrintTextAbove(who, "*sussurrando cantico druidico*");
+
+	// Check if the item has poison
+	var poison_info := GetObjProperty(targ, "poisonInfo");
+
+	if (poison_info)
+		// Remove the poison property
+		EraseObjProperty(targ, "poisonInfo");
+	endif
+
+	SendSysMessageEx(who, "O item " + targ.desc + " foi purificado.", SSM_INFO);
+	return 1;
+endprogram

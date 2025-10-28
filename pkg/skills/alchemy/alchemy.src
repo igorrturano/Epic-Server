@@ -6,13 +6,13 @@ include ":attributes:attributes";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":loot:magicLoot";
-//include ":combat:damage";
+// include ":combat:damage";
 include ":charactercreation:habilidades";
 include "include/epicConstants";
 
 program skill_alchemy(who)
 
-    SendSysMessageEx(who, "Escolha uma pocao para avaliar.", SSM_REQUEST);
+	SendSysMessageEx(who, "Escolha uma pocao para avaliar.", SSM_REQUEST);
 	var item := Target(who, TGTOPT_CHECK_LOS);
 
 	if (!item)
@@ -20,8 +20,8 @@ program skill_alchemy(who)
 		return;
 	endif
 
-    if (item.graphic == 3849)
-		PrintText(who, "*analisando um frasco*");
+	if (item.graphic == 3849)
+		PrintTextAbove(who, "*analisando um frasco*");
 
 		var identificado := GetObjProperty(item, "magicwho");
 
@@ -31,7 +31,8 @@ program skill_alchemy(who)
 			if (entry.Name == "extrato")
 				var objtype := GetObjProperty(item, "extrato");
 				var pot := cfg[objtype];
-				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: Extrato de " + pot.Type, SSM_INFO);
+				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: Extrato de " + pot.Type,
+								  SSM_INFO);
 			else
 				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: " + entry.Type, SSM_INFO);
 			endif
@@ -56,16 +57,16 @@ program skill_alchemy(who)
 			if (whos == error)
 				whos := array;
 			endif
-			if ( !(who.serial in whos))
-				whos.append(who.serial) ;
+			if (!(who.serial in whos))
+				whos.append(who.serial);
 				SetObjProperty(item, "magicwho", whos);
 			endif
 			var backup := GetAmount(item);
-			SubtractAmount(item, backup-1);
+			SubtractAmount(item, backup - 1);
 			SetName(item, item.desc);
-			AddAmount(item, backup-1);
+			AddAmount(item, backup - 1);
 		else
 			SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
 		endif
-    endif
+	endif
 endprogram

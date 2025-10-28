@@ -1,4 +1,4 @@
-     use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -23,21 +23,21 @@ program SpellScript(params)
 
 	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
 
-	foreach timer in ( timer_list.keys() )
+	foreach timer in (timer_list.keys())
 		timer := lower(timer);
-		if (timer == "agility" )
+		if (timer == "agility")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "strength");
+		elseif (timer == "strength")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "intelligence")
+		elseif (timer == "intelligence")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "velocidade")
+		elseif (timer == "velocidade")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "PhysicalResist")
+		elseif (timer == "PhysicalResist")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "bless")
+		elseif (timer == "bless")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "phmod")
+		elseif (timer == "phmod")
 			TS_LowerDuration(targ, timer, -1);
 		elseif (timer == "fimod")
 			TS_LowerDuration(targ, timer, -1);
@@ -45,21 +45,21 @@ program SpellScript(params)
 			TS_LowerDuration(targ, timer, -1);
 		elseif (timer == "enmod")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "pomod")
+		elseif (timer == "pomod")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "disfarce")
+		elseif (timer == "disfarce")
 			TS_LowerDuration(targ, timer, -1);
-		elseif ( timer == "gloria")
+		elseif (timer == "gloria")
 			TS_LowerDuration(targ, timer, -1);
 		elseif (timer == "desviarprojetil")
 			TS_LowerDuration(targ, timer, -1);
 		endif
-		
+
 	endforeach
-	
+
 	EraseObjProperty(targ, "tirocerteiro");
 	EraseObjProperty(targ, "evasao");
 	SendSysMessageEx(targ, "Seus encantamentos nao funcionam mais.", SSM_INFO);
 	Corromper(who, 26, targ);
 	return 1;
-endprogram  
+endprogram

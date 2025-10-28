@@ -102,7 +102,7 @@ endfunction
  */
 function ApplySkillModifiers(mobile, attrib_name, base_skill)
     if (TemHabilidade(mobile, "Visao Verdadeira") && attrib_name == AWARENESS)
-        base_skill += AP_GetSkill(mobile, MAGICLORE) / 3;  
+        base_skill += AP_GetSkill(mobile, THEOLOGY) / 3;  
     endif
 
     var chardata := GetObjProperty(mobile, "chardata");

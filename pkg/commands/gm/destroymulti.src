@@ -1,24 +1,24 @@
 /*
  * $Id: destroymulti.src 388 2006-06-21 10:44:59Z austinheilman $
  *
- */
-
+*/
 use uo;
 
+include "include/say";
 include ":gumps:yesNo";
 
 program textcmd_DestroyMulti(who, serial)
 	serial := CInt(serial);
 	var multi;
 
-	if ( !serial )
+	if (!serial)
 		SendSysMessage(who, "Target an item in the multi.");
 		var targ := target(who);
 
-		if ( targ.multi )
+		if (targ.multi)
 			multi := targ.multi;
 		else
-			PrintTextAbovePrivate(targ, "I dont have a multi property.", who);
+			PrintTextPrivate(targ, "I dont have a multi property.", who);
 			return 0;
 		endif
 	else
@@ -26,15 +26,15 @@ program textcmd_DestroyMulti(who, serial)
 	endif
 
 	if (multi.has_offline_mobiles)
-		if ( YesNo(who, "Existem jogadores deslogados no barco, deseja move-los para outro lugar?"))
+		if (YesNo(who, "Existem jogadores deslogados no barco, deseja move-los para outro lugar?"))
 			var lugar := TargetCoordinates(who);
 			multi.move_offline_mobiles(lugar.x, lugar.y, lugar.z);
 		endif
 	endif
 	var destroyed := DestroyMulti(multi);
 
-	if ( destroyed.errortext )
-		SendSysMessage(who, "Error: "+destroyed.errortext);
+	if (destroyed.errortext)
+		SendSysMessage(who, "Error: " + destroyed.errortext);
 	endif
 
 	return destroyed;

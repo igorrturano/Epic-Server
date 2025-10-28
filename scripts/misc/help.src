@@ -1,21 +1,19 @@
 /*
  * $Id: help.src 1404 2006-05-14 03:19:35Z austin $
  *
- */
-
+*/
 use uo;
 use os;
 
 program Help(who)
 	var script := Start_Script(":help:help", who);
-	if ( script.errortext )
-		SendSysMessage(who, "Error starting help system ->"+script.errortext);
+	if (script.errortext)
+		SendSysMessage(who, "Error starting help system ->" + script.errortext);
 		return 0;
 	endif
-	
+
 	return 1;
 endprogram
-
 
 /*
 include "include/help";

@@ -1,6 +1,8 @@
+use os;
+
+include "client";
 include "include/epicConstants";
 include ":combat:damage";
-
 
 function playAltarAnimations(who, item)
    var altar := altarByObjtype(who, item);
@@ -10,7 +12,7 @@ function playAltarAnimations(who, item)
    item.graphic := item.objtype;
    var effect := effectByAltar(altar);
    PlaySoundEffect(who, SFX_SPELL_HEAL);
-   PlayStationaryEffectEx(who.x, who.y, who.z,who.realm, effect, 255, 80, 0, 0);
+   PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, effect, 255, 80, 0, 0);
 endfunction
 
 function effectByAltar(altar)
@@ -31,7 +33,9 @@ function effectByAltar(altar)
 	  CETICOS:
 		 effect := 0;
 	  HALLEUAD:
-		 effect := 0x6CEB; //
+		 effect := 0x6CEB;
+	  ARADALORE:
+		 effect := 0xA2CC;
    endcase
 
    return effect;
@@ -57,13 +61,14 @@ function altarByObjtype(who, altar)
 		 religion := CETICOS;
 	  0xA060:
 		 religion := HALLEUAD;
+	  0xA49E:
+		 religion := ARADALORE;
    endcase
 
    return religion;
 endfunction
 
 function graphicByAltar(altar)
-	print(altar);
    var graphic := 0;
    case (altar)
 	  ELUITHORTH:
@@ -82,46 +87,12 @@ function graphicByAltar(altar)
 		 graphic := 0xA061;
 	  CETICOS:
 		 graphic := 0xA262;
+	  ARADALORE:
+		 graphic := 0xA49F;
 	  default:
 		 graphic := 0;
    endcase
    return graphic;
-endfunction
-
-function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ == 0)
-	  targ := who;
-   endif
-
-   var mobiles := array{};
-   var allies := who.party;
-	var alreadydamaged := array{};
-
-   var party_members := who.party.members;
-	  if (who.party)
-	  foreach member in party_members
-		 if (member != who)
-			   var memberObj := SystemFindObjectBySerial(member.serial);
-			   var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
-			   foreach pet in allPetsAndSummonedPets
-				  mobiles.append(pet);
-			   endforeach
-		 endif
-	  endforeach
-   endif
-
-   var nearby := ListMobilesNearLocation( targ.x ,targ.y, targ.z, range, targ.realm);
-   foreach char in nearby
-	  var char_owner := GetObjProperty(char, "owner");
-	  if (!(char in (allies.members) || char == who))
-		 if (!(char.serial in alreadydamaged) && !(char in mobiles) && !(char in who.party.members) && !(char_owner == who.serial))
-			alreadydamaged.Append(char.serial);
-			mobiles.append(char);
-		 endif
-	  endif
-   endforeach
-
-   return mobiles;
 endfunction
 
 function distanceAllowedForSpells(who, mlore, school)
@@ -133,6 +104,8 @@ function distanceAllowedForSpells(who, mlore, school)
 	  dist_allowed := dist_allowed + (mlore * 2);
    elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
 	  dist_allowed := dist_allowed + (mlore * 2);
+	elseif(who.npctemplate)
+      dist_allowed := dist_allowed + (mlore * 2);
    endif
 
    return dist_allowed;
@@ -177,9 +150,11 @@ function handleSilentMagic(who, targ := 0, sound := 0)
 		PlaySoundEffect(targ, sound);
 		return 0;
 	endif
+	if (GetObjProperty(who, "#magiasilenciosa"))
+		SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
+		EraseObjProperty(who, "#magiasilenciosa");
+	endif
 
-	SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
-	EraseObjProperty(who, "#magiasilenciosa");
 	return 0;
 endfunction
 
@@ -203,7 +178,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 	  duration := Cint(duration * bonus);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 	  duration := Cint(duration * bonus);
-   elseif(Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
+   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
 	  duration := Cint(duration * bonus);
    endif
 
@@ -226,8 +201,8 @@ function checkForElementalWeapons(who, targ)
 endfunction
 
 function epicWisdomPathBonus(who)
-   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
-   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
+	var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
+	var mlore := Cint(HandleSpellSkill(who) / 10);
 
    return (int_bonus + mlore);
 endfunction
@@ -254,7 +229,7 @@ function ApplyElementalWeaponProperties( who, elemento )
   var jaEncantada := elementalPropAtual != error;
 
   var dmgdice := DefineElementalWeaponDice( who );
-  var cargas := Floor( AP_GetSkill( who, MAGICLORE ) / 4 );
+  var cargas := Floor( AP_GetSkill( who, ARCANA ) / 4 );
   cargas := cargas <= 0 ? 1 : cargas; // no minimo uma carga.
 
   var elementalWeapon := struct;
@@ -300,7 +275,7 @@ endfunction
 */
 function DefineElementalWeaponDice( who )
 
-  var faixaMLore := AP_GetSkill( who, MAGICLORE );
+  var faixaMLore := AP_GetSkill( who, ARCANA );
   var dmgdice := "0";
 
   if ( faixaMLore < 40 )
@@ -423,4 +398,14 @@ function ApplyChargesCalculation( weapon, dmg, chargesAmount )
   var cargasRetorno := ConsumeItemArcaneCharges( weapon, chargesAmount );
   var damage := Floor( dmg / cargasRetorno.divisor );
   return damage;
+endfunction
+
+function HandleSpellSkill (who)
+	var chardata := getobjProperty(who, "chardata");
+	var skill := Cint(AP_GetSkill(who, ARCANA));
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(who, "Sensibilidade Arcana")))
+		skill := Cint(AP_GetSkill(who, THEOLOGY));
+	endif
+
+	return skill;
 endfunction

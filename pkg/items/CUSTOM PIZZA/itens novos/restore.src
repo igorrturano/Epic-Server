@@ -2,9 +2,9 @@ use uo;
 
 program restorative(user, item)
 
-	PlaySoundEffect( user, 0x51 );
+	PlaySoundEffect(user, 0x51);
 	user.hp := user.maxhp;
 	SubtractAmount(item, 1);
 	SendSysMessage(user, "Your health has been restored!");
-	
+
 endprogram

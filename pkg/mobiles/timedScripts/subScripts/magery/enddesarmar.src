@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -10,7 +10,6 @@ program TimedScript_Clumsy(params)
 	var level := params[3];
 	params := 0; // Not needed anymore.
 
-	
 	EraseObjProperty(who, "desarmar");
 	var arma := GetObjProperty(who, "arma_desarmada");
 
@@ -25,8 +24,6 @@ program TimedScript_Clumsy(params)
 		EquipItem(who, arma);
 		EraseObjProperty(who, "arma_desarmada");
 	endif
-	
+
 	return 1;
 endprogram
-
-  

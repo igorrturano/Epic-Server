@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -12,17 +12,17 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-    var tempo := cint(AP_GetSkill(who, MAGICLORE)/10);
+	var tempo := cint(AP_GetSkill(who, ARCANA) / 10);
 
-    //Bonus de especialização
-    if(Temhabilidade(who, "Evocator"))
-        tempo := Cint(tempo * 1.2);
-    endif
+	// Bonus de especialização
+	if (Temhabilidade(who, "Evocator"))
+		tempo := Cint(tempo * 1.2);
+	endif
 
 	TS_StartTimer(who, "velocidade", tempo);
 
 	PlaySoundEffect(who, SFX_SPELL_AGILITY);
 	SendSysMessageEx(who, "Voce esta muito veloz.", SSM_INFO);
-	
+
 	return 1;
-endprogram 
+endprogram

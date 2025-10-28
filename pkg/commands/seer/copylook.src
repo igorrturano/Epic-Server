@@ -1,8 +1,6 @@
 /* $Id: copylook.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
-
-
+*/
 use uo;
 use os;
 use polsys;
@@ -10,8 +8,7 @@ use datafile;
 include ":datafile:datafile";
 program command_CopyLook(who)
 
-	
-	var chardata:=dictionary;
+	var chardata := dictionary;
 	SendSysMessage(who, "Select mobile to be changed.");
 	var newlook := Target(who);
 
@@ -49,44 +46,44 @@ program command_CopyLook(who)
 		y.desc := x.desc;
 		EquipItem(newlook, y);
 	endforeach
-	
-	var desc_oldlook:=GetObjProperty(oldlook,"description");
 
-	if (desc_oldlook!=error) 
-		SetObjProperty(newlook,"description",desc_oldlook);
+	var desc_oldlook := GetObjProperty(oldlook, "description");
+
+	if (desc_oldlook != error)
+		SetObjProperty(newlook, "description", desc_oldlook);
 	else
-		EraseObjProperty(newlook,"description");
+		EraseObjProperty(newlook, "description");
 	endif
 
-	if(newlook.ip)
-		SetObjProperty(newlook,"raca",oldlook.title_race);
+	if (newlook.ip)
+		SetObjProperty(newlook, "raca", oldlook.title_race);
 	endif
 
 	newlook.gender := oldlook.gender;
 	newlook.graphic := oldlook.graphic;
 	newlook.color := oldlook.color;
-	newlook.title_race:=oldlook.title_race;
-	newlook.title_suffix:=oldlook.title_suffix;
-	newlook.title_prefix:=oldlook.title_prefix;
+	newlook.title_race := oldlook.title_race;
+	newlook.title_suffix := oldlook.title_suffix;
+	newlook.title_prefix := oldlook.title_prefix;
 	newlook.name := oldlook.name;
 	newlook.TrueColor := oldlook.TrueColor;
 	newlook.trueobjtype := oldlook.trueobjtype;
 
 	if (newlook.ip)
-		chardata:=GetObjProperty(newlook,"chardata");
-		chardata["raca"]:=newlook.title_race;
+		chardata := GetObjProperty(newlook, "chardata");
+		chardata["raca"] := newlook.title_race;
 	endif
-	//Copia o profile do npc.
-	var cp_data_file_oldlook  := DFOpenDataFile(":charprofile:CPFile", DF_CREATE);
-	var cp_elem_oldlook       := DFFindElement(cp_data_file_oldlook, oldlook.serial, DF_CREATE);
-	var cp_profile_oldlook    := DFGetProp(cp_elem_oldlook, "Profile", DF_CREATE);
+	// Copia o profile do npc.
+	var cp_data_file_oldlook := DFOpenDataFile(":charprofile:CPFile", DF_CREATE);
+	var cp_elem_oldlook := DFFindElement(cp_data_file_oldlook, oldlook.serial, DF_CREATE);
+	var cp_profile_oldlook := DFGetProp(cp_elem_oldlook, "Profile", DF_CREATE);
 
-	var cp_data_file_newlook  := DFOpenDataFile(":charprofile:CPFile", DF_CREATE);
-	var cp_elem_newlook       := DFFindElement(cp_data_file_newlook, newlook.serial, DF_CREATE);
-	var cp_profile_newlook    := DFGetProp(cp_elem_newlook, "Profile", DF_CREATE);
-	
+	var cp_data_file_newlook := DFOpenDataFile(":charprofile:CPFile", DF_CREATE);
+	var cp_elem_newlook := DFFindElement(cp_data_file_newlook, newlook.serial, DF_CREATE);
+	var cp_profile_newlook := DFGetProp(cp_elem_newlook, "Profile", DF_CREATE);
+
 	cp_elem_newlook.SetProp("Profile", cp_profile_oldlook);
-	
+
 	var newpack := GetEquipmentByLayer(newlook, 0x15);
 	if (newpack)
 		DestroyItem(newpack);
@@ -98,5 +95,5 @@ endprogram
 
 function prof(params)
 
-print(params[1]);
+	print(params[1]);
 endfunction

@@ -30,7 +30,7 @@ program spell_unlock(parms)
     PlaySoundEffect(caster, SFX_SPELL_UNLOCK);
     if(diff <= 25)
       castOn.locked := 0;
-      PrintTextAbovePrivate(castOn, "*Unlocked!*", caster);
+      PrintTextPrivate(castOn, "*Unlocked!*", caster);
       EraseObjProperty(castOn, "MLockPickDiff");
       return;
     else
@@ -43,7 +43,7 @@ program spell_unlock(parms)
       PlaySoundEffect(caster, SFX_SPELL_UNLOCK);
       if(diffi <= 25)
         castOn.locked := 0;
-        PrintTextAbovePrivate(castOn, "*Unlocked!*", caster);
+        PrintTextPrivate(castOn, "*Unlocked!*", caster);
         return;
       else
         SendSysMessage(caster, "Your spell doesn't seem to work on that lock.");
@@ -75,7 +75,7 @@ function PickTreasureChest(me, chest)
   var diff := (lvl * 25) - 10;
   if(diff <= 25)
     PlaySoundEffect(chest,SFX_200);
-    PrintTextAbovePrivate(chest, "*Unlocked!*", me);
+    PrintTextPrivate(chest, "*Unlocked!*", me);
     chest.locked := 0;
   else
     SendSysMessage(me, "Your spell doesn't seem to work on that lock.");

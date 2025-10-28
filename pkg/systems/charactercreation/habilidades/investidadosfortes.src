@@ -1,4 +1,4 @@
-  use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -13,7 +13,7 @@ program manobra(attacker)
 		return;
 	endif
 
-	PrintText(attacker, "*ordena os aliados*");
+	PrintTextAbove(attacker, "*ordena os aliados*");
 
 	foreach member in (festa.members)
 		if (member.serial != attacker.serial)
@@ -24,5 +24,4 @@ program manobra(attacker)
 		endif
 	endforeach
 
-
-endprogram    
+endprogram

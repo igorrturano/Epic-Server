@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -6,8 +6,8 @@ include "include/say";
 include ":combat:combat";
 
 program manobra(params)
-var attacker := params[1];
-var defender := params[2];
+	var attacker := params[1];
+	var defender := params[2];
 
 	var festa := attacker.party;
 
@@ -16,7 +16,7 @@ var defender := params[2];
 		return;
 	endif
 
-	PrintText(attacker, "*ordena os aliados*");
+	PrintTextAbove(attacker, "*ordena os aliados*");
 
 	var testes := array;
 
@@ -28,11 +28,10 @@ var defender := params[2];
 		endif
 	endforeach
 
-	var selected := testes[RandomInt(testes.size()+1)];
+	var selected := testes[RandomInt(testes.size() + 1)];
 
 	SetObjProperty(selected, "#CriticalChance", 100);
 	sleep(5);
 	EraseObjProperty(selected, "CriticalChance");
 
-
-endprogram  
+endprogram

@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -11,11 +11,10 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	params := 0; // Not needed anymore.
-	
+
 	var amt := cdbl(getObjProperty(who, "#dmgreductionspell"));
 	EraseObjProperty(who, "#dmgreductionspell");
 	SetObjProperty(who, "dmgreduction", cdbl(GetObjProperty(who, "dmgreduction")) - amt);
-	
+
 	return 1;
 endprogram
-  

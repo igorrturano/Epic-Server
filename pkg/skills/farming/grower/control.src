@@ -1,10 +1,9 @@
 use uo;
 use os;
 
-
 program UpdateGrower(grower)
-	//Update old plants to the new system.
-	if ( GetObjProperty(grower, "seed") )
+	// Update old plants to the new system.
+	if (GetObjProperty(grower, "seed"))
 		grower.SetGrowerType(GetObjProperty(grower, "seed"));
 		grower.SetWaterAmount(GetObjProperty(grower, "water"));
 		grower.SetProduceAmount(GetObjProperty(grower, "amount"));
@@ -15,8 +14,8 @@ program UpdateGrower(grower)
 		EraseObjProperty(grower, "water");
 		EraseObjProperty(grower, "amount");
 		EraseObjProperty(grower, "phase");
-		EraseObjProperty(grower, "harvestable");		
-	elseif ( grower.IsDead() )
+		EraseObjProperty(grower, "harvestable");
+	elseif (grower.IsDead())
 		grower.SetWaterAmount(0);
 	endif
 endprogram

@@ -1,0 +1,64 @@
+
+include ":medicine:disease";
+include ":medicine:util/diseaseConstants";
+
+program diseaseScript(params)
+	var mobile := params[1];
+	var attacker := params[2]; // Pode ser null quando chamado de outro script
+	var level := params[3]; // Level 1-5
+
+	// Verifica se é uma falha de cura
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+	var falhou_cura := diseases_system.falhou_cura;
+
+	// Se falhou na tentativa de cura
+	if (falhou_cura)
+		// Remove a flag de falha na cura
+		UpdateDiseaseProperty(mobile, "falhou_cura", 0);
+		// Reseta o timer
+		return 1;
+	else
+		// Primeira infecção ou nova infecção
+		// Verifica se já está infectado
+		if (!diseases_system)
+			diseases_system := struct{};
+		endif
+		var current_diseases := diseases_system.diseases;
+
+		if (current_diseases.size() > 0)
+			// Já está infectado, não faz nada
+			SendSysMessageEx(mobile, "Você já está doente e seu corpo resiste a nova infecção.",
+							  SSM_INFO);
+			return 0;
+		endif
+
+		// Gera sintomas aleatórios baseados no nível
+		var new_diseases := GenerateRandomDiseases(level);
+
+		diseases_system.diseases := new_diseases;
+		diseases_system.grade := DISEASE_GRADES::LIGHT; // Adiciona outras propriedades necessárias
+		diseases_system.falhou_cura := 0;
+
+		SendSysMessageEx(mobile, "Você começa a se sentir doente!", SSM_FAIL);
+		var corpo_peste := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x2FB7, 1);
+		EquipItem(mobile, corpo_peste);
+		diseases_system.serial_peste_corpse := corpo_peste.serial;
+
+		diseases_system.RegenDiseaseMod := -50;
+		AP_SetVitalRegenRateMod(mobile, "Stamina", -50);
+		AP_SetVitalRegenRateMod(mobile, "Mana", -50);
+		RecalcVitals(mobile);
+
+		SetObjProperty(mobile, "Diseases_System", diseases_system);
+
+		if (attacker)
+			PrintTextAbove(attacker, "*Infecta " + mobile.name + "*");
+		endif
+
+		ApplyDiseaseEffects(mobile, new_diseases, DISEASE_GRADES::LIGHT);
+		ScheduleNextDiseaseEffect(mobile, current_diseases);
+	endif
+
+	return 1;
+endprogram
+
