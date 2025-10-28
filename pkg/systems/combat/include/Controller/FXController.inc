@@ -12,6 +12,7 @@ include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
 include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/MobileWrapper";
 
 enum class WEAPON_FX
 	SOUND := "SOUND",
@@ -33,78 +34,68 @@ endfunction
 function PlayAttackSound(byRef attackInfo)
 	var weaponSound;
 	var attackerSound;
+	var defenderSound; // TODO: Buscar o som de gemido/grito do defensor, ao ser atingido
 
-	if (attackInfo.Succeded())
-		if (attackInfo.GetDamage().IsCritical())
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON), true); // Passa true para indicar que é CRÍTICO
-			if (attackInfo.GetDefender().IsDead())
-				if (attackInfo.GetAttacker().GetRace() == ANAO)
-					attackerSound := 0; // Som de grito Anão
-				elseif (attackInfo.GetAttacker().GetRace() == DROW)
-					attackerSound := 0; // Som de grito Drow
-				elseif (attackInfo.GetAttacker().GetRace() == ELFO)
-					attackerSound := 0; // Som de grito Elfo
-				elseif (attackInfo.GetAttacker().GetRace() == ORC)
-					attackerSound := 0; // Som de grito Orc
-				elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
-					attackerSound := 0; // Som de grito Humano
-				elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
-					attackerSound := 0; // Som de grito Polski
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
+		if (attackInfo.Succeded())
+			if (attackInfo.GetDamage().IsCritical())
+				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), true); // Passa true para indicar que é CRÍTICO
+				if (attackInfo.GetDefender().IsDead())
+					if (attackInfo.GetAttacker().GetRace() == ANAO)
+						attackerSound := 0; // Som de grito Anão
+					elseif (attackInfo.GetAttacker().GetRace() == DROW)
+						attackerSound := 0; // Som de grito Drow
+					elseif (attackInfo.GetAttacker().GetRace() == ELFO)
+						attackerSound := 0; // Som de grito Elfo
+					elseif (attackInfo.GetAttacker().GetRace() == ORC)
+						attackerSound := 0; // Som de grito Orc
+					elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
+						attackerSound := 0; // Som de grito Humano
+					elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
+						attackerSound := 0; // Som de grito Polski
+					endif
 				endif
+			else
+				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			endif
+		else // Se errou o golpe
+			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false); // Passa falso para indicar que é MISS
+		endif
+	else
+		if (attackInfo.Succeded())
+			if (attackInfo.GetAttacker().IsNPC())
+				weaponSound := attackInfo.GetAttacker().GetNPCTemplateCfg().AttackSound;
+			else
+				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
 			endif
 		else
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
+			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false);
 		endif
-	else // Se errou o golpe
-		weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false); // Passa falso para indicar que é MISS
 	endif
 
+	if (attackInfo.GetDefender().IsNPC())
+		defenderSound := attackInfo.GetDefender().GetNPCTemplateCfg().DamagedSound;
+	else
+		if (attackInfo.GetDefender().GetGender() == MOBILE_GENDER::MALE)
+			defenderSound := array{341, 342, 343, 345, 346};
+		elseif (attackInfo.GetDefender().GetGender() == MOBILE_GENDER::FEMALE)
+			defenderSound := array{332, 333, 334, 335, 336};
+		endif
+	endif
+
+	weaponSound := RandomIntMinMax(1, weaponSound.Size() + 1);
 	attackInfo.GetAttacker().PlaySound(weaponSound);
 	
 	if (attackerSound)
+		attackerSound := RandomIntMinMax(1, attackerSound.Size() + 1);
 		attackInfo.GetAttacker().PlaySound(attackerSound);
 	endif
+	
+	if (defenderSound)
+		defenderSound := RandomIntMinMax(1, defenderSound.Size() + 1);
+		attackInfo.GetDefender().PlaySound(defenderSound);
+	endif
 endfunction
-
-
-
-// function PlayHitSounds(attacker, defender)
-// 	var wpn_a_elem2 := attacker.weapon.getCfgElem();
-// 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
-
-// 	var attack_sound;
-// 	if ( wpn_a_elem2.HitSound )
-// 		attack_sound := wpn_a_elem2.HitSound;
-// 	else
-// 		//NPC intrinsic weapon
-// 		attack_sound := wpn_a_elem2.AttackHitSound;
-// 	endif
-
-// 	if (attacker.weapon)
-// 		attack_sound := getWeaponFX(WEAPON_FX::SOUND, attacker.weapon);
-// 	endif
-
-// 	PlaySoundEffect(attacker, attack_sound);
-
-// 	var damaged_sound;
-// 	if ( defender.npctemplate )
-// 		var npctemplate := defender.npctemplate;
-// 		npctemplate := npctemplate[10, len(npctemplate)-9];
-// 		damaged_sound := npc_cfg2[npctemplate].DamageSound;
-// 	else
-// 		var sounds;
-// 		if ( defender.gender == 0 )
-// 			// Male
-// 			sounds := array(341, 342, 343, 345, 346);
-// 		else
-// 			// Female
-// 			sounds := array(332, 333, 334, 335, 336);
-// 		endif
-// 		damaged_sound := sounds[RandomInt(sounds.size())+1];
-// 	endif
-
-// 	PlaySoundEffect(defender, damaged_sound);
-// endfunction
 
 function GetWeaponFX(FX, weapon, isCriticalAttack := false)
 	var attackFX;
@@ -115,10 +106,9 @@ function GetWeaponFX(FX, weapon, isCriticalAttack := false)
 		return error{ errortext := "Invalid FX type!" };
 	endif
 
-	// O primeiro array é para ataques normais, o segundo para críticos
-	if (weapon == error) // Se não foi possível obter a arma ou tá errado ou é MISS
-		// TODO: Pensar se separa o som de MISS de acordo com a arma ou deixa genérico
-		return array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+	if (weapon == error)
+		// TODO: Pensar se separa o som de MISS de acordo com a arma ou deixa genérico mesmo
+		attackFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 	elseif (weapon.GetCategory() == UNARMED)
 		if (FX == WEAPON_FX::ANIM)
 			attackFX := !isCriticalAttack ? array{0xA, 0x1F} : array{}; // Ajeitar essa animação do 0xA, tá diferente do Fiddler e não estou achando o soco
