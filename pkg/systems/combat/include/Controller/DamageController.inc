@@ -7,7 +7,7 @@
 
 // Internal
 include ":combat:armorZones";
-include ":combat:combat";
+// include ":combat:combat";
 include ":combat:Controller/AbilitiesController";
 include ":combat:weardown";
 
@@ -1315,4 +1315,123 @@ function ApplyCombatDamage(byRef attackInfo)
 		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), energy);
 		DisplayDamage(attackInfo.GetDefender().GetMobRef(), energy, attackInfo.GetAttacker().GetMobRef());
 	endif
+endfunction
+
+function CheckPoison(byRef attackInfo)
+	// TODO: Tem várias melhorias que podem ser feitas aqui. Vou deixar pra depois,se der algum bug no combate com veneno. Por enquanto vai tomar muito tempo.
+	// TODO: Sugestão de melhoria: Criar um CanPoison() e depois um TryToPoison(), separando a lógica de verificação da aplicação do veneno em si.
+	if (attackInfo.GetDamage().GetTotalDamage() < 1)
+		return false;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::SENSO_DA_NATUREZA))
+		Message("Você é imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		return false;
+	endif
+
+	if (attackInfo.GetAttacker().IsNPC()) // Se for NPC, checa pela skill dele
+		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetNPCTemplateCfg(), "Poisoning");
+		if (poisonChance > 0)
+			if (RandomInt(100) < poisonChance)
+				var poisonName := GetConfigString(attackInfo.GetAttacker().GetNPCTemplateCfg(), "PoisonType");
+				var level := Cint(GetConfigInt(attackInfo.GetAttacker().GetNPCTemplateCfg(), "PoisonLevel"));
+
+				if (!level)
+					level := 1;
+				endif
+
+				if (poisonName == error)
+					return false;
+				endif
+
+				var time := level * 15;
+				if (poisonName == "paralyzePoison")
+					time := 10;
+				endif
+
+				if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonName))
+					Message("Você está imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+					return false;
+				endif
+
+				if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, RESIST_EASY, -2 * level))
+					Message("Você resistiu ao veneno.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+					return false;
+				else
+					TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonName, time, level, attackInfo.GetAttacker().GetObjRef());
+				endif
+			endif
+		else
+			return false;
+		endif
+	else // Se for player, checa pela arma/munição
+		var sourcePoison := attackInfo.GetAmmo() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var poisonInfo := sourcePoison.GetProp("poisonInfo");
+
+		if (poisonInfo == error)
+			return false;
+		endif
+
+		if (poisonInfo.dosage != "infinito")
+			poisonInfo.dosage := poisonInfo.dosage - 1;
+			if (poisonInfo.dosage <= 0) // TODO: Talvez dê bug na aplicação do veneno se a dosagem for 1, prestar atenção nisso aqui quando o combate estiver pronto
+				Message("Sua carga de veneno acabou.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				sourcePoison.EraseProp("poisonInfo");
+				return false;
+			else
+				Message($"Restam {poisonInfo.dosage} doses de {poisonInfo.name}.", FONTCOLOR_ALERT).SendSys(attackInfo.GetAttacker().GetObjRef());
+				sourcePoison.SetProp("poisonInfo", poisonInfo);
+			endif
+		endif
+
+		if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonInfo.name))
+			Message("Seu veneno parece não ter surtido efeito no alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você está imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			return false;
+		endif
+
+		if (poisonInfo.name == "paralyzePoison")
+			var duration := CInt(attackInfo.GetAttacker().GetSkill(SCIENCE) / 20);
+
+			if (duration < 2)
+				duration := 2;
+			endif
+
+			if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::VENENO_PURO))
+				duration := duration * 2;
+			endif
+
+			poisonInfo.time := duration;
+		endif
+
+		if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, poisonInfo.difficulty, -poisonInfo.difficulty_mod))
+			Message("Seu veneno parece não ter surtido efeito no alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você resistiu ao veneno.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			return false;
+		else
+			if (TS_GetTimerInfo(attackInfo.GetDefender().GetObjRef(), "defaultPoison")) // confere se está sob default poison para estabelecer o mais forte
+				var defaultpoison := cint(TS_GetTimerLevel(attackInfo.GetDefender().GetObjRef(), "defaultPoison"));
+				attackInfo.GetDefender().GetObjRef().SetProp("#poisontier", defaultpoison);
+			endif
+			
+			if (attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"))
+				var poison := TS_GetTimerNames(attackInfo.GetDefender().GetObjRef(), type := "P");
+				var teste := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"));
+
+				if (teste <= poisonInfo.tier)
+					// compara o poison atual com o novo, substituindo caso o novo seja maior
+					TS_LowerDuration(attackInfo.GetDefender().GetObjRef(), poison, -1);
+					TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonInfo.Name, poisonInfo.time, poisonInfo.level, attackInfo.GetAttacker().GetObjRef());
+				endif
+			else
+				attackInfo.GetDefender().GetObjRef().SetProp("#poisontier", poisonInfo.tier);
+				attackInfo.GetDefender().GetObjRef().SetProp("#poisonbonus", poisonInfo.difficulty_mod);
+				TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonInfo.name, poisonInfo.time, poisonInfo.level, attackInfo.GetAttacker().GetObjRef());
+			endif
+		endif
+	endif
+
+	Message("Seu veneno surtir efeito no alvo!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
+	Message("Você foi envenenado.", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
+	return true;
 endfunction

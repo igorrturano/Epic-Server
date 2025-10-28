@@ -2,6 +2,7 @@
 include ":combat:Controller/DamageController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
+include ":combat:Model/CombatAbility";
 
 // External
 include ":objWrapper:Model/MobileWrapper";
@@ -19,22 +20,21 @@ program MainHitScript(attackInfo)
 		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
 	endif
 
-	if (attackInfo.GetDefender().IsDead()) return 1; endif
+	if (attackInfo.GetDefender().IsDead()) return 1; endif // Se já estiver morto, não aplica outro dano (principal utilidade pra danos offHand)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	CheckParry(attackInfo); // Verifica se o ataque foi parado // TODO: Falta fazer
 	
 	if (ConsumeAmmo(attackInfo)) // Consome munição, se aplicável
-		CheckAmmoRecover(attackInfo); // Se consumiu, tenta recuperar
+		TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
 	endif
-
-	CheckPoison(attackInfo);
 
 	WeaponHitScripts(attackInfo);
 	ArmorHitScripts(attackInfo);
 
 	PlayAttackAnimation(attackInfo);
 	ApplyCombatDamage(attackInfo);
+	CheckPoison(attackInfo); // TODO: Talvez seja melhor verificar dentro do cálculo de dano
 	PlayAttackSound(attackInfo);
 
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetMobRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
@@ -70,7 +70,7 @@ function ConsumeAmmo(byRef attackInfo)
 	return SubtractAmount(attackInfo.GetAmmo(), attackInfo.GetAmmoAmount());
 endfunction
 
-function CheckAmmoRecover(byRef attackInfo)
+function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
@@ -83,131 +83,6 @@ function CheckAmmoRecover(byRef attackInfo)
 			if (ammo)
 				CreateItemInBackPack(attackInfo.GetDefender().GetMobRef(), ammo, attackInfo.GetAmmoAmount());
 			endif
-		endif
-	endif
-endfunction
-
-function CheckPoison(byRef attackInfo)
-	if (attackInfo.GetDamage().GetTotalDamage() < 1)
-		return 0;
-	endif
-
-	if (GetObjProperty(weapon, "ammo"))
-		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
-
-		if (aljava.objtype in aljavas)
-			var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
-		else
-			aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
-		endif
-		var ammo := GetObjProperty(weapon, "ammo");
-		foreach arrow in (EnumerateItemsInContainer(aljava))
-			if (arrow.serial == ammo)
-				weapon := arrow;
-			endif
-		endforeach
-	endif
-
-	if (!attacker.npctemplate) // se nao for npc checa se tem poison na arma
-		if (attacker.graphic == 21)
-			if (IsPoisonImune(defender, "defaultPoison"))
-				return 0;
-			endif
-			if (randomint(100) < 20)
-				if (CheckResist(defender, FORTITUDE, RESIST_EASY, -2 * 2))
-					Message("Você resistiu ao veneno.", SSM_INFO).SendSys(defender);
-				else
-					TS_StartTimer(defender, "defaultPoison", 60, 2, attacker);
-				endif
-			endif
-		else
-			var poisonInfo := GetObjProperty(weapon, "poisonInfo");
-			if (poisonInfo == error)
-				return 0;
-				updateToolTip(weapon);
-			endif
-			if (poisonInfo.dosage != "infinito")
-				poisonInfo.dosage := poisonInfo.dosage - 1;
-			endif
-			if (poisonInfo.dosage <= 0 && poisonInfo.dosage != "infinito") // se nao tiver mais cargas de veneno, deleta
-				EraseObjProperty(weapon, "poisonInfo");
-				updateToolTip(weapon);
-				return 0;
-			else // se ainda tiver atualiza na arma
-				SetObjProperty(weapon, "poisonInfo", poisonInfo);
-			endif
-			updateToolTip(weapon);
-
-			if (IsPoisonImune(defender, poisonInfo.name))
-				return 0;
-			endif
-			// Sempre que for mexer nesse timer, mexer também  no .arremessar ou criar funcao e chamar em ambos
-			if (poisonInfo.name == "paralyzePoison")
-				var duration := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
-				if (duration < 2)
-					duration := 2;
-				endif
-				if (temHabilidade(attacker, "Veneno Puro"))
-					duration := duration * 2;
-				endif
-				poisonInfo.time := duration;
-			endif
-
-			if (CheckResist(defender, FORTITUDE, poisonInfo.difficulty, -poisonInfo.difficulty_mod))
-				Message("Você resistiu ao veneno.", SSM_INFO).SendSys(defender);
-			else
-				if (TS_GetTimerInfo(defender, "defaultPoison")) // confere se está sob default poison para estabelecer o mais forte
-					var defaultpoison := cint(TS_GetTimerLevel(defender, "defaultPoison"));
-					setobjproperty(defender, "#poisontier", defaultpoison);
-				endif
-				if (getobjProperty(defender, "#poisontier"))
-					var poison := ts_gettimernames(defender, type := "P");
-					var teste := cint(getobjProperty(defender, "#poisontier"));
-					if (teste <= poisoninfo.tier)
-						// compara o poison atual com o novo, substituindo caso o novo seja maior
-						TS_LowerDuration(defender, poison, -1);
-						TS_StartTimer(defender, poisonInfo.Name, poisonInfo.time, poisonInfo.level, attacker);
-					endif
-				else
-					setobjproperty(defender, "#poisontier", poisonInfo.tier);
-					setobjproperty(defender, "#poisonbonus", poisonInfo.difficulty_mod);
-					TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
-				endif
-			endif
-		endif
-	else // se for npc checa a skill
-		if (temhabilidade(defender, "Senso da Natureza"))
-			return 0;
-		endif
-
-		var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
-		var poisonchance := GetConfigInt(npcelem, "Poisoning");
-		if (poisonChance > 0)
-			if (RandomInt(100) < poisonChance)
-				var poisonName := GetConfigString(npcelem, "PoisonType");
-				var level := Cint(GetConfigInt(npcelem, "PoisonLevel"));
-				if (!level)
-					level := 1;
-				endif
-				if (poisonName == error)
-					return 0;
-				endif
-				if (IsPoisonImune(defender, poisonName))
-					return 0;
-				endif
-				var time := level * 15;
-				if (poisonName == "paralyzePoison")
-					time := 10;
-				endif
-				if (CheckResist(defender, FORTITUDE, RESIST_EASY, -2 * level))
-					Message("Você resistiu ao veneno.", SSM_INFO).SendSys(defender);
-				else
-					TS_StartTimer(defender, poisonName, time, level, attacker);
-				endif
-			endif
-		else
-			return 0;
 		endif
 	endif
 endfunction
