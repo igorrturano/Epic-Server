@@ -238,9 +238,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return WeaponWrapper(this._objRef.weapon);
+			return this._objRef.weapon ? WeaponWrapper(this._objRef.weapon) : error{ errortext := "Empty slot!" };
 		elseif (equipSlot == SHIELD)
-			return ArmorWrapper(this._objRef.shield);
+			return this._objRef.shield ? ArmorWrapper(this._objRef.shield) : error{ errortext := "Empty slot!" };
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
 		elseif (equipSlot == NECK)
