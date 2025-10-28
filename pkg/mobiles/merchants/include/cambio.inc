@@ -3,14 +3,24 @@
 use os;
 
 include "include/epicConstants";
+include ":containers:storageAreas";
 
 CONST MOEDA_MENOR_VALOR := SESTERTIUS;
+
+enum class TIPO_CARTEIRA_MOEDA
+	PLAYER := "jogador",
+	BANCO := "banco",
+endenum
 
 function ConverterMoeda(quantidade,moedaDe,moedaPara := MOEDA_MENOR_VALOR)
 
 	var retorno := struct;
 	retorno.+valorConvertido := 0;
 	retorno.+resto :=0;
+
+	if(TypeOfInt(quantidade) != OT_LONG)
+		return error{"errortext" := "Parâmetro quantidade com tipo errado."};
+	endif
 
 	if(moedaDe == moedaPara)
 		retorno.valorConvertido := quantidade;
@@ -59,68 +69,99 @@ function ConverterMoeda(quantidade,moedaDe,moedaPara := MOEDA_MENOR_VALOR)
 endfunction
 
 //Conta a quantidade de pilhas e moedas que tem na mochila e as guarda. retorno struct.quantidade,struct.[array]items
-function GetVariosObjetosMochila(container, obj_type_array, color:=0)
+function ContaMoedas(arrayItens, tiposAProcurar, color:=0)
 	var quantidade := 0;
-	var retorno :=  dictionary;
-	var items := EnumerateItemsInContainer(container);
+	var envelopeMoedas := struct {totalMoedaMenorValor := 0, moedas := dictionary, container := 0};
 
-	foreach obj_type in obj_type_array//varre os tipos
+	foreach obj_type in tiposAProcurar//varre os tipos
+		sleepms(2);
 		var props := struct;
 		props.+quantidade := 0;
 		props.+items := array;
-		foreach item in items
+
+		foreach item in arrayItens
+			sleepms(2);
 			if( item.objtype == obj_type )
 				if ( !color || item.color == color )
+					if(!envelopeMoedas.container)
+						envelopeMoedas.container := item.container;
+					endif
 					props.quantidade := quantidade + item.amount; // soma tudo.
 					props.items.append(item); // guarda todas as pilhas de moedas
 				endif
 			endif
-			sleepms(2);
 		endforeach
-		retorno.insert(obj_type,props);
+
+		envelopeMoedas.totalMoedaMenorValor += ConverterMoeda(props.quantidade, obj_type, MOEDA_MENOR_VALOR).valorConvertido;  
+		envelopeMoedas.moedas.insert(cstr(obj_type),props);
 	endforeach
-	return retorno;
+
+	return envelopeMoedas;
 endfunction
 
-function ContaCapital(who, moedasDict := dictionary)
+function ContaCapital(quem, regiaoBanco)
 
-	if(moedasDict.size() <= 0)
-		moedasDict := GetVariosObjetosMochila(who,array {SESTERTIUS,DENARIUS,AUREUS} );
-	endif
+	var objetoRetorno := struct;
+	var tiposMoedas := array {SESTERTIUS,DENARIUS,AUREUS};
+	var containerBanco := CP_GetStorageContainerForMobile(quem, regiaoBanco, CP_NOCREATE);
+	var itensNoBanco := EnumerateItemsInContainer(containerBanco);
+	var itensNoJogador := EnumerateItemsInContainer(quem.backpack);
+	var carteiras := dictionary;
+
+	carteiras.insert(TIPO_CARTEIRA_MOEDA::BANCO,ContaMoedas(itensNoBanco,tiposMoedas));
+	carteiras.insert(TIPO_CARTEIRA_MOEDA::PLAYER,ContaMoedas(itensNoJogador,tiposMoedas));
 
 	var totalMoedaMenorValor := 0;
-	var keys := moedasDict.keys();
 
-	foreach tipo in keys;
-	 	var carteira := ConverterMoeda(moedasDict[tipo].quantidade,tipo,MOEDA_MENOR_VALOR);
-		totalMoedaMenorValor := totalMoedaMenorValor + carteira.valorConvertido;
+	foreach tipoCarteira in (carteiras.keys())
+		Sleepms(2);
+			totalMoedaMenorValor += carteiras[tipoCarteira].totalMoedaMenorValor;
 	endforeach
-	
-	return totalMoedaMenorValor;
+
+	objetoRetorno.+carteiras := carteiras;
+	objetoRetorno.+valorTotal := totalMoedaMenorValor;
+
+	return objetoRetorno;
 endfunction
 
-function EfetuaDebito( debito, container := 0, tipoMoeda:= MOEDA_MENOR_VALOR)
+function EfetuaDebito( quem, debito, regiaoBanco := CP_DEFAULT_AREA , tipoMoeda:= MOEDA_MENOR_VALOR)
 	var tiposMoedas := array {AUREUS,DENARIUS,SESTERTIUS};
-	var moedasDict := GetVariosObjetosMochila(container,tiposMoedas);
-	var capital := ContaCapital(container, moedasDict);
-	var carteiraDebito := ConverterMoeda(debito,tipoMoeda);
+	var capital := ContaCapital(quem, regiaoBanco);
+	var debitoConvertido := ConverterMoeda(debito,tipoMoeda);
 	
-	if(capital >= carteiraDebito.valorConvertido)
-		var valorRestante := capital - carteiraDebito.valorConvertido;
-		 //se tiver o valor suficiente com moedas baixas, consome-as direto.
-		if(carteiraDebito.valorConvertido <= moedasDict[MOEDA_MENOR_VALOR].quantidade  && carteiraDebito.resto == 0)
-			CriarMoedas(
-						container,
-						MOEDA_MENOR_VALOR,
-						moedasDict[MOEDA_MENOR_VALOR].quantidade - carteiraDebito.valorConvertido,
-						moedasDict[MOEDA_MENOR_VALOR].items
-						);
-		else
-			TrocarMoedas(container,valorRestante,tiposMoedas,moedasDict);
-		endif
-		return 1;
+	if(capital.valorTotal >= debitoConvertido.valorConvertido)
+		var chavesCarteiras := capital.carteiras.keys();
+		chavesCarteiras.reverse(); //inverto para a carteira do jogador vir primeiro.
+		foreach carteira in (chavesCarteiras)
+			Sleepms(2);
+			var carteiraAtual := capital.carteiras[carteira];
+			var valorRestante := carteiraAtual.totalMoedaMenorValor - debitoConvertido.valorConvertido;
+
+			if(debitoConvertido.valorConvertido > 0)
+				var envelopeMoeda := carteiraAtual.moedas[cstr(MOEDA_MENOR_VALOR)];
+				if(debitoConvertido.valorConvertido <= envelopeMoeda.quantidade && debitoConvertido.resto == 0) // se tem valor suficiente de moeda baixa, já cria debitando delas.
+					CriarMoedas(
+								capital.carteiras[carteira].container,
+								MOEDA_MENOR_VALOR,
+								envelopeMoeda.quantidade - debitoConvertido.valorConvertido,
+								envelopeMoeda.items
+								);
+				else
+					if(valorRestante <= 0) // se negativo, não há dinheiro suficiente na carteira, deleta todas moedas e segue em frente.
+						var todasMoedas := carteiraAtual.moedas[cstr(SESTERTIUS)].items
+											+ carteiraAtual.moedas[cstr(DENARIUS)].items
+											+ carteiraAtual.moedas[cstr(AUREUS)].items;
+						ConsomeMoedas(todasMoedas);
+					else //valor restante positivo, mas chegou ate aqui, significa que não tem valor suficiente em moeda baixa, destroi todas e cria o restante variado.
+						TrocarMoedas(carteiraAtual.container,valorRestante,tiposMoedas,carteiraAtual.moedas);
+					endif
+				endif
+				debitoConvertido.valorConvertido := valorRestante * -1;
+			endif
+		endforeach
+		return true;
 	endif
-	return 0;
+	return error{"errortext" := "Moedas insuficientes."};
 endfunction
 
 //Troca todas as moedas por moedas da maior para a menor.
@@ -137,7 +178,7 @@ function TrocarMoedas(
 
 	foreach tipos in tiposMoedas
 		var carteira := ConverterMoeda(valorRestante,moedaDe,tiposMoedas[indice]);
-		var items := moedasDict[tiposMoedas[indice]].items;
+		var items := moedasDict[cstr(tiposMoedas[indice])].items;
 		
 		if(carteira != error)
 			CriarMoedas(container,tiposMoedas[indice],carteira.valorConvertido,items);
@@ -154,10 +195,14 @@ function TrocarMoedas(
 	
 endfunction
 
-function CriarMoedas(container,tipo, valor,items := array)
+function ConsomeMoedas(items)
 	foreach item in items
-		DestroyItem(item);
+		 DestroyItem(item);
 	endforeach
+endfunction
+
+function CriarMoedas(container,tipo, valor,items := array)
+	ConsomeMoedas(items);
 	if(valor > 0)
 		var retorno := CreateItemInContainer( container, tipo, valor);
 	endif
