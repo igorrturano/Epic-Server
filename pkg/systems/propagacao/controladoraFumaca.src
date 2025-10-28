@@ -1,0 +1,26 @@
+use os;
+use cfgfile;
+use uo;
+use math;
+
+// FIZ SAPORRA NA PREGUIÇA, REFAZER!!!! ass: Deiro
+program controladoraFumaca(nuvemFumaca)
+	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+	var graphics := array{ 0x3CFF, 0x3D00, 0x3D01 };
+	var loops := 0;
+	while (nuvemFumaca)
+		sleep(1);
+		nuvemFumaca.graphic := graphics[(loops % 3) + 1];
+
+		var sinal := 1 - 2 * (loops % 2);
+		var deslocamentoZ := 10 * sinal;
+
+		MoveObjectToLocation(nuvemFumaca, nuvemFumaca.x, nuvemFumaca.y, nuvemFumaca.z + deslocamentoZ,
+					   nuvemFumaca.realm, MOVEOBJECT_FORCELOCATION + MOVEITEM_IGNOREMOVABLE);
+		if (cint(propagacaoConfig["incendio"].tempoFumaca) <= loops)
+			DestroyItem(nuvemFumaca);
+		endif
+
+		loops++;
+	endwhile
+endprogram

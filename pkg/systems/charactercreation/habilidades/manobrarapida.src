@@ -1,5 +1,5 @@
- use uo;
- use os;
+use uo;
+use os;
 
 include "include/say";
 include "include/string";
@@ -7,11 +7,11 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 
 program manobra(who)
-	
-	PrintText(who, "*manobra rapida*");
+
+	PrintTextAbove(who, "*manobra rapida*");
 	var bonus := cint((AP_GetVitalMaximumValue(who, STAMINA) - AP_GetVital(who, STAMINA)) - 10);
 	if (bonus < 10)
 		bonus := 10;
 	endif
 	TS_StartTimer(who, "agility", 10, bonus);
-endprogram  
+endprogram

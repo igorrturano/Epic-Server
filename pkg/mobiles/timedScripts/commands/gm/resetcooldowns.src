@@ -15,9 +15,8 @@ program reset(who)
 	var list := TS_GetCooldownList(targ);
 
 	foreach key in (list.keys())
-		SendSysMessage(who, " " + key + " resetado." );
+		SendSysMessage(who, " " + key + " resetado.");
 		TS_LowerDuration(targ, key, 10000, 1);
 	endforeach
-	
 
-endprogram 
+endprogram

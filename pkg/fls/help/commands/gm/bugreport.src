@@ -18,7 +18,7 @@ function GMBugGump(who)
 	var input;
 
 	GFDisposable(pagegump, 0);
-	GFResizePic(pagegump, 0, 25, 3600, 450, 480);	
+	GFResizePic(pagegump, 0, 25, 3600, 450, 480);
 	GFResizePic(pagegump, 15, 40, 0x13BE, 420, 450);
 	GFTextMid(pagegump, 20, 50, 370, 1153, "Menu de Bugs");
 
@@ -37,29 +37,27 @@ function GMBugGump(who)
 	foreach page in pages
 		pagenum := pagenum + 1;
 		GFPage(pagegump, i);
-		elem := df.FindElement( Cint(page) );
+		elem := df.FindElement(Cint(page));
 		player := elem.GetProp("Title");
-		GFTextLine(pagegump, 20, y, fontcolor, player); 
+		GFTextLine(pagegump, 20, y, fontcolor, player);
 		GFAddButton(pagegump, 320, y, 2117, 2118, 1, 800 + pagenum);
 		GFAddButton(pagegump, 380, y, 2117, 2118, 1, 1000 + pagenum);
 		y := y + 20;
-		if ( Cdbl(pagenum/18) == i)
-			i := i +1;
+		if (Cdbl(pagenum / 18) == i)
+			i := i + 1;
 			y := 90;
 			GFAddButton(pagegump, 380, 460, 2648, 2649, GF_PAGE_BTN, i);
 			GFPage(pagegump, i);
-			GFAddButton(pagegump, 380, 50, 2650, 2651, GF_PAGE_BTN, i-1);
+			GFAddButton(pagegump, 380, 50, 2650, 2651, GF_PAGE_BTN, i - 1);
 		endif
 	endforeach
-	
 
 	input := GFSendGump(who, pagegump);
 	input := input[0];
 
-
-	if ( (input > 800)  && (input < 1000) )
+	if ((input > 800) && (input < 1000))
 		var serial := GetPageIndexByPageNum(input - 800, "bugs");
-		if ( serial )
+		if (serial)
 			var df := DFOpenDataFile("bugs", DF_CREATE, DF_KEYTYPE_INTEGER);
 			var elem := df.FindElement(serial);
 			if (elem == error)
@@ -69,11 +67,11 @@ function GMBugGump(who)
 			endif
 		else
 			SendSysMessage(who, "Esse bug foi deletado.");
-		endif	
+		endif
 		GMBugGump(who);
-	elseif ( (input > 1000) )
+	elseif ((input > 1000))
 		var serial := GetPageIndexByPageNum(input - 1000, "bugs");
-		DeletePage( serial, "bugs");	
+		DeletePage(serial, "bugs");
 		GMBugGump(who);
 	endif
 

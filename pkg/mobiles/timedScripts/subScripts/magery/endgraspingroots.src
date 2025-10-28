@@ -8,8 +8,8 @@ program cureScript(params)
 	var attacker := params[2];
 	var level := params[3];
 	params := 0; // Not needed anymore.
-	var roots := GetObjProperty (who, "roots");
-	SendSysMessage (who, CStr (roots));
+	var roots := GetObjProperty(who, "roots");
+	SendSysMessage(who, CStr(roots));
 	DestroyItem(roots);
 	return 1;
 endprogram

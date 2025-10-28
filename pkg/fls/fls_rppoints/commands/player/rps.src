@@ -15,11 +15,10 @@ program CheckAllRpPoints(mobile, params)
 		var dia := params[1];
 		var mes := params[2];
 		var ano := params[3];
-		today := StrFormatTime(dia+" - "+mes+" - "+ano, POLCore().systime);
+		today := StrFormatTime(dia + " - " + mes + " - " + ano, POLCore().systime);
 	else
 		today := StrFormatTime("%d - %m - %Y", POLCore().systime);
 	endif
-
 
 	today := "Logs/" + today + ".log";
 
@@ -27,11 +26,11 @@ program CheckAllRpPoints(mobile, params)
 	var text := "";
 
 	foreach line in text_lines
-		text := text+line+"\n\n";
+		text := text + line + "\n\n";
 		sleepms(5);
 	endforeach
 
-	if ( !text )
+	if (!text)
 		text := "Nenhum Ponto RP foi concedido neste dia.";
 	endif
 
@@ -42,17 +41,16 @@ program CheckAllRpPoints(mobile, params)
 	GFTextLine(gump, 130, 17, 2100, "Log de Pontos RP");
 
 	GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
-	GFHTMLArea(gump, 22, 53, 322, 375, text , 0, 1);
+	GFHTMLArea(gump, 22, 53, 322, 375, text, 0, 1);
 
-	GFResizePic(gump, 15, 438,GFCfgConst("Defaults", "ForeGround"), 330, 30);
-
+	GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
 
 	GFAddButton(gump, 280, 443, 2128, 2129, GF_CLOSE_BTN);
-//	GFTextLine(gump, 290, 443, 2100, "Fechar");
+	// 	GFTextLine(gump, 290, 443, 2100, "Fechar");
 
 	var input := GFSendGump(mobile, gump);
 
-	if ( input[1] )
+	if (input[1])
 		return;
 
 	endif

@@ -5,6 +5,7 @@ use vitals;
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 include ":combat:damage";
+include ":nature:nature";
 
 function EfeitosTremor(item, danobase, danoale, dif, range)
     //  if( who.cmdlevel > 0)
@@ -15,7 +16,8 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
 
     var chars := ListmobilesNearLocation(item.x, item.y, item.z, range, item.realm);
     foreach char in chars
-        PlaySoundEffect(char, 0x222);
+		sleepms(3);
+		PlaySoundEffect(char, 0x222);
         SendSysMessageEx(char, "O solo nas proximidades treme violentamente.", SSM_INFO);
         if (char.npctemplate == "Zombie")
             DamageFLS(char, 1000);
@@ -31,14 +33,14 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
             var pedra;
 
             for (pedra := 1; pedra <= (RandomInt(5) + 1); pedra := pedra + 1)
+				sleepms(3);
                 var tempx := char.x + RandomIntMinMax(-4, 4);
                 var tempy := char.y + RandomIntMinMax(-4, 4);
-
                 //SendSysMessageEx(who, "p2", SSM_INFO);
 
                 if (CheckLosAt(char, tempx, tempy, char.z) != 0 || !char.dead)
                     PlayMovingEffectXYZ(tempx, tempy, char.z + 60, tempx, tempy, char.z, 0x1773, 0x9, 0xA1);
-                    CreateItemAtLocation(tempx, tempy, char.z, 0xBD11);
+                    CreateItemAtLocation(tempx, tempy, char.z, 0xBD11, 1, char.realm);
                 endif
             endfor
         endif
@@ -80,12 +82,20 @@ function EfeitosClima(item, options, duration, range)
         chars := (ListmobilesNearLocation(item.x - origx, item.y - origy, item.z - origz, range, item.realm));
     endif
     while (i < duration)
+        // se tiver polvora, destruir
+        var items := ListItemsNearLocation(item.x, item.y, item.z, 20, item.realm);
+        foreach item in items
+            if (item.objtype == 0x9092)
+                PrintTextAbove(item, "*Molhada*");
+                SubtractAmount(item, RandomInt(5) + 1);
+            endif
+        endforeach
+        
         if (som)
             windsound(item);
         endif
         var fuga;
         var bolts := RandomInt(5);
-        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         SetWeatherForPlayer(chars, type, 50);
         foreach char in chars
             if (distance(char, item) > range + 10)
@@ -94,23 +104,11 @@ function EfeitosClima(item, options, duration, range)
                 break;
             endif
 			if (!char.isUnderRoof())
-            	SetObjProperty(char, "molhado", 1);
-				SendSysMessageEx(char, "Você está molhado!", SSM_INFO);
+				wetPowder(char);
+            	SetWeatherForPlayer(char, type, 50);
 			endif
-            var itemsinbag := EnumerateItemsInContainer(char.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(char, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
-                    endif
-                endif
-            endforeach
-            SetWeatherForPlayer(char, type, 50);
 
+            SetWeatherForPlayer(char, type, 50);
             if (distance(char, item) < 20)
                 SetWeatherForPlayer(char, type, 50);
                 if (bolt)
@@ -161,26 +159,4 @@ function windsound(person)
     if (randomdiceroll("1d4") == 2)
         playsoundeffect(person, wind[randomint(3) + 1]);
     endif
-endfunction
-
-function DoBolt(who)
-    if (who.multi)
-        return;
-    endif
-    var lightning := {41, 42, 519};
-    var xpos := who.x;
-    var ypos := who.y;
-    var xrand := RandomInt(20);
-    var yrand := RandomInt(20);
-    xpos := ((xpos - xrand) + 10);
-    ypos := ((ypos - yrand) + 10);
-    var zpos := GetMapInfo(xpos, ypos).z;
-    var mob := CreateNpcFromTemplate(":brainai:rabbit", xpos, ypos, zpos);
-    mob.cmdlevel := 2;
-    mob.concealed := 1;
-    setobjproperty(mob, "guardkill", 1);
-    PlayLightningBoltEffect(mob);
-    playsoundeffect(mob, lightning[randomint(3) + 1]);
-    MoveObjectToLocation(mob, 10, 10, 10, mob.realm, MOVEOBJECT_FORCELOCATION);
-    mob.kill();
 endfunction

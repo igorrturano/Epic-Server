@@ -1,8 +1,7 @@
 /*
  * $Id: weaken.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
- 
+*/
 use uo;
 use os;
 
@@ -13,21 +12,21 @@ program TimedScript_Weaken(params)
 	var attacker := params[2];
 	var level := (-1) * params[3];
 	var teste := GetObjProperty(mobile, "#WeakenMod");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(level < teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (level < teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(mobile, "#WeakenMod", level);
-			AP_ModifyStatMod(mobile, STRENGTH, (level-teste));
+			AP_ModifyStatMod(mobile, STRENGTH, (level - teste));
 			Set_Critical(0);
 			return 1;
 		else
 			return 0;
 		endif
-	else	
-	
-	SetObjProperty(mobile, "#WeakenMod", level);
-	AP_ModifyStatMod(mobile, STRENGTH, level);
-	
-	return 1;
+	else
+
+		SetObjProperty(mobile, "#WeakenMod", level);
+		AP_ModifyStatMod(mobile, STRENGTH, level);
+
+		return 1;
 	endif
 endprogram

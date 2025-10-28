@@ -26,7 +26,7 @@ program spell_magicLock( parms )
   endif
   if(((castOn.graphic<=0x9ab) &&(castOn.graphic>=0x9a8)) ||((castOn.graphic<=0xe43) &&(castOn.graphic>=0xe3c)) ||((castOn.graphic<=0xe80) &&(castOn.graphic>=0xe7c)) ||(checkfordoors(castOn)))
     PlaySoundEffect(caster, SFX_SPELL_MAGIC_LOCK);
-    PrintTextAbovePrivate(castOn, "*Locked!*", caster);
+    PrintTextPrivate(castOn, "*Locked!*", caster);
     var magery := CInt(AP_GetSkill(caster, MAGERY) / 4);
     SetObjProperty(castOn, "MLockPickDiff", magery);
     castOn.locked := 1;

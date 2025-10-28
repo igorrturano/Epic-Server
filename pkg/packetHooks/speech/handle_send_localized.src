@@ -5,19 +5,19 @@ use basicio;
 include "include/say";
 include ":charactercreation:habilidades";
 program speech_hooks()
-  Print( "Hooking Unicode Outgoing..." );
-  return 1;
+	Print("Hooking Unicode Outgoing...");
+	return 1;
 endprogram
 
 const ITEM_ID := 3;
 const TEXT_TYPE := 9;
-const NAME_ID := 19; //posição do Name de quem fala
+const NAME_ID := 19; // posição do Name de quem fala
 const SYS_MSG := 0x06;
 
-exported function handleSendLocalized( character, byref packet )
+exported function handleSendLocalized(character, byref packet)
 	var clilocID := packet.GetInt32(14);
 
-	if(clilocID == 1008087)
+	if (clilocID == 1008087)
 		SendSysMessage(character, "Alguem voltou para party.");
 		return 1;
 	elseif (clilocID == 1008091)
@@ -28,7 +28,7 @@ exported function handleSendLocalized( character, byref packet )
 		return 1;
 	endif
 
-/*
+	/*
 	print("Localized:"+packet.GetString(NAME_ID,20));
 	print("Localized id body:" + packet.GetInt32(3) + " " + packet.GetInt16(7));
 	packet.SetInt32(3,0xfff);

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -29,16 +29,16 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (CheckResist(targ, VONTADE, diff, -bonus))
-		dmg := dmg/2;
+		dmg := dmg / 2;
 	endif
 
 	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))
-			dmg := CInt(dmg*1.5);
+			dmg := CInt(dmg * 1.5);
 		endif
 	endif
 	DamageFLS(targ, dmg, DMG_FORCED, who);
-	PrintTextAbovePrivate(targ, "-"+dmg + " Vida", who, 3, 38); // vermelho
+	PrintTextPrivate(targ, "-" + dmg + " Vida", who, 3, 38); // vermelho
 
 	handleSilentMagic(who, who, 385);
 

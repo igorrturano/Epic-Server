@@ -1,7 +1,5 @@
- 
- 
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -20,14 +18,14 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	// SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
+	var targ := who.weapon; // Spell_Target(who, TGTOPT_CHECK_LOS);
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );	
+	var time := GetSpellDuration(AP_GetSkill(who, ARCANA));
 
 	if (targ.isA(POLCLASS_WEAPON))
 
@@ -37,34 +35,32 @@ program SpellScript(params)
 			return 1;
 		endif
 
-		if (!GetCooldown(targ, "circulodevas") )
+		if (!GetCooldown(targ, "circulodevas"))
 			SendSysMessageEx(who, "Esta arma precisa estar encantada com Circulo de Devastacao.", SSM_FAIL);
 			return 1;
 		endif
 
 		releasegems(who, targ);
 		targ.hp := 0;
-		SendSysMessage(who, targ.desc+" quebrou.");
+		SendSysMessage(who, targ.desc + " quebrou.");
 		MoveObjectToLocation(targ, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
 		SetObjProperty(targ, "broken", 1);
 		SetObjProperty(targ, "realdesc", targ.desc);
 		eraseobjproperty(targ, "gems");
-		SetName(targ, targ.desc+" [danificado]");
+		SetName(targ, targ.desc + " [danificado]");
 		MoveItemToContainer(targ, who.backpack);
-		var cargasRetorno := ConsumeItemArcaneCharges( targ, 5 );
+		var cargasRetorno := ConsumeItemArcaneCharges(targ, 5);
 
-		//DestroyItem(targ);
+		// DestroyItem(targ);
 
 		foreach coord in GetCoordsInSquare(who.x, who.y, 12)
 
-			if ( RandomInt(2) != 1 ) // Don't place a fire field
+			if (RandomInt(2) != 1) // Don't place a fire field
 				continue;
 			endif
 
-			case( RandomInt(3) )
-				default:
-					PlayStationaryEffect(coord.x, coord.y, who.z, GFX_EXPLODE_1, 10, 10, 0);
-					break;
+			case (RandomInt(3))
+				default: PlayStationaryEffect(coord.x, coord.y, who.z, GFX_EXPLODE_1, 10, 10, 0); break;
 
 				1:
 					PlayStationaryEffect(coord.x, coord.y, who.z, GFX_EXPLODE_2, 10, 10, 0);
@@ -76,7 +72,7 @@ program SpellScript(params)
 			endcase
 
 			var field;
-			if ( RandomInt(2) )
+			if (RandomInt(2))
 				field := CreateItemAtLocation(coord.x, coord.y, who.z, "FireFieldNS", 1);
 			else
 				field := CreateItemAtLocation(coord.x, coord.y, who.z, "FireFieldEW", 1);
@@ -86,31 +82,32 @@ program SpellScript(params)
 			sleepms(5);
 		endforeach
 
-    		var i := 30;
-    		while(i > 0)
-		      var x := who.x + RandomInt(15) - 7;
-      			var y := who.y + RandomInt(15) - 7;
-      			var newtarg := CreateItemAtLocation(x, y, who.z, 0xeed, 1);
-      			newtarg.graphic := 1;
-      			PlayMovingEffectXYZ( newtarg.x, newtarg.y,(newtarg.z + 80), newtarg.x, newtarg.y, newtarg.z, 0x36d4, 0x18, 0x10, 0);
-      			i := i - 1;
-      			DestroyItem(newtarg);
-      			sleepms(200);
-    		endwhile
+		var i := 30;
+		while (i > 0)
+			var x := who.x + RandomInt(15) - 7;
+			var y := who.y + RandomInt(15) - 7;
+			var newtarg := CreateItemAtLocation(x, y, who.z, 0xeed, 1);
+			newtarg.graphic := 1;
+			PlayMovingEffectXYZ(newtarg.x, newtarg.y, (newtarg.z + 80), newtarg.x, newtarg.y, newtarg.z,
+								 0x36d4, 0x18, 0x10, 0);
+			i := i - 1;
+			DestroyItem(newtarg);
+			sleepms(200);
+		endwhile
 
-		foreach defender in (ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm ))
-			if ( !(defender in who.party.members ) )
+		foreach defender in (ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm))
+			if (!(defender in who.party.members))
 				if (defender.serial != who.serial)
-      					PlayObjectCenteredEffect(defender, 0x36cb, 7, 0x10);
-      					PlaySoundEffect(defender, 0x228);
-					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
-					dmg := Floor( dmg / cargasRetorno.divisor);
+					PlayObjectCenteredEffect(defender, 0x36cb, 7, 0x10);
+					PlaySoundEffect(defender, 0x228);
+					var dmg := cint(AP_GetSkill(who, ARCANA)) / 2;
+					dmg := Floor(dmg / cargasRetorno.divisor);
 					DamageFLS(defender, cint(dmg), DMG_FIRE, who);
-      					//ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
+				// ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
 				endif
 			endif
-    		endforeach
-	
+		endforeach
+
 		return 1;
 	endif
 

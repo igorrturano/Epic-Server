@@ -16,11 +16,11 @@
  */
 use uo;
 use os;
+use math;
 use polsys;
 use cfgfile;
 
 include ":gumps:gumps";
-
 
 enum GUMP_CONSTANTS
 	G_DIVISOR_DEFAULT := 0x1, 
@@ -294,12 +294,12 @@ function GFTextWidth(gump_text)
 	"||||||||||||||"+	//  2
 	"`',.;:::::::::"+	//  3
 	"!!!!!!!!!!!!!!"+	//  4
-	"il1[]]]]]]]]]\""+	//  5
+	"iíl1[]]]]]]]]]\""+	//  5
 	"bcejot”(){}==="+	//  6
-	"adfpqrszI„~~~~"+	//  7
+	"aáãdfpqrszI„~~~~"+	//  7
 	"ghnuvy <>-----"+	//  8
 	"xJ578$?++++++ "+	//  9
-	"kCE2369^/*****"+	// 10
+	"kCEÊ2369^/*****"+	// 10
 	"mwABDFOPŽ™40%%"+	// 11
 	"GLNQSZ@#######"+	// 12
 	"HRT&__________"+	// 13
@@ -576,7 +576,7 @@ function SelectWindowPosition(who)
       sleepms(2);
    endwhile
 
-	GFTextLine(gump, 341, 25, DEFAULT_FONT_COLOR, "Clique em um bot�o para reposicionar");
+	GFTextLine(gump, 341, 25, 1153, "Clique em um botão para reposicionar");
 
 	var input := GFSendGump(who, gump);
 

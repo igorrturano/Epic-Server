@@ -12,49 +12,49 @@ program default_poison(params)
 
 	var who := params[1];
 	var attacker := params[2];
-	
-	if(GetObjProperty(who, "bleed"))
- 		SendSysMessageEx(who, "O alvo ja esta sangrando", SSM_FAIL);
- 		return;
+
+	if (GetObjProperty(who, "bleed"))
+		SendSysMessageEx(who, "O alvo ja esta sangrando", SSM_FAIL);
+		return;
 	endif
 
-	if ( attacker )
+	if (attacker)
 		SetScriptController(attacker);
 	endif
 
-	var dmg := 8;
+	var dmg := CInt(AP_GetSkill(attacker, TACTICS) / 8) ? CInt(AP_GetSkill(attacker, TACTICS) / 8) : 3;
 	var i;
-	var loops := 6;
-	
+	var loops := CInt(AP_GetSkill(attacker, TACTICS) / 10) ? CInt(AP_GetSkill(attacker, TACTICS) / 10)
+				   : 5;
+
 	var poisonedmsg := "";
 	var viewermsg := "";
 	poisonedmsg := "Voce esta com uma grave hemorragia!";
 	viewermsg := "* - " + who.name + " esta sangrando muito! - *";
-		
-			for ( i := 0; i < loops; i := i+1)
-				PrintTextAbovePrivate(who, poisonedmsg, who);
-					foreach mobile in ( ListMobilesInLineOfSight(who, 8) )
-						if( mobile.ip && mobile != who )
-							PrintTextAbovePrivate(who, viewermsg, mobile);
-						endif
-					sleepms(2);
-					endforeach		
-	
-			damageFLS(who, cint(dmg), DMG_FORCED, attacker);
-			MakeBleed(who);
 
-				if (who.dead)
-				break;
-				endif
+	for (i := 0; i < loops; i := i + 1)
+		PrintTextPrivate(who, poisonedmsg, who);
+		foreach mobile in (ListMobilesInLineOfSight(who, 8))
+			if (mobile.ip && mobile != who)
+				PrintTextPrivate(who, viewermsg, mobile);
+			endif
+			sleepms(2);
+		endforeach
 
-		
-			sleep(4);
-			endfor
+		damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+		MakeBleed(who);
 
-//	TS_CurePoison(who, 120,"P", 5);
+		if (who.dead)
+			break;
+		endif
+
+		sleep(4);
+	endfor
+
+	// 	TS_CurePoison(who, 120,"P", 5);
 	TS_LowerDuration(who, "bleed", -1);
 	var script := GetProcess(GetPid());
 	script.kill();
-	
+
 	return;
 endprogram

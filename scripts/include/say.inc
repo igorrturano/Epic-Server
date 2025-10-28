@@ -22,14 +22,25 @@ function SendSysMessageUNI(above_object, uc_text, color:=_DEFAULT_UCCOLOR, font:
   return SendSysMessageUC(above_object, UC(uc_text), langcode, font, color);
 endfunction
 
-function PrintText(above_object, uc_text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
+function PrintText(above_object, uc_text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG", journal_print := JOURNAL_UC_PRINT_NAME)
   if (uc_text == error)
 	return;
   endif
+
   if (above_object.concealed || above_object.hidden)
-	return 1;
+	return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, font, color);
   endif
-  return PrintTextAboveUC(above_object, UC(uc_text), langcode, font, color);
+
+  return PrintTextAboveUC(above_object, UC(uc_text), langcode, font, color, journal_print);
+endfunction
+
+function PrintTextPrivate(above_object, uc_text, character, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, journal_print := JOURNAL_UC_PRINT_NAME, langcode := "ENG")
+	if (uc_text == error)
+		return;
+	endif
+
+	return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, character, font, color, journal_print);
+	// return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, font, color, journal_print);
 endfunction
 
 function UC(strs)

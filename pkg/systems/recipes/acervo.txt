@@ -1589,9 +1589,9 @@ Recipes poltronavaniria
 }
 
 
-Recipes Bastao do Morcego
+Recipes batstaff
 {
-	name Bastao do Morcego
+	name batstaff
 	level 3
 	text (WW) Um detalhado e longo bastão de combate.
 }

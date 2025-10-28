@@ -14,25 +14,25 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);	
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, who, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
 
-	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
-    var duration := CInt( 120 + (magiclore_skill * 5));
+	var magiclore_skill := HandleSpellSkill(who);
+	var duration := CInt(120 + (magiclore_skill * 5));
 
-    //Bonus de especialização
-    if(Temhabilidade(who, "Treinamento Druídico"))
-        duration := Cint(duration * 1.2);
-    endif
+	// Bonus de especialização
+	if (Temhabilidade(who, "Coração da Matilha"))
+		duration := Cint(duration * 1.2);
+	endif
 
 	who.setlightlevel(24, duration); // TODO: Voltar pra 15 pro def
 	if (GetObjProperty(who, "chardata").raca != DROW)
-    	SetCooldown(who, "nightvision", duration);
+		SetCooldown(who, "nightvision", duration);
 	else
 		SetCooldown(who, "lightvision", duration);
 	endif
-	
+
 	return 1;
-endprogram 
+endprogram

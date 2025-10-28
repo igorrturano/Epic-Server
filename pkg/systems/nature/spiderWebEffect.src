@@ -2,27 +2,30 @@ use os;
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
+include "include/epicNPCUtils";
+include "include/sysEvent";
 
 program spiderWebEffect(who)
-    SetObjProperty(who, "spiderWebArea", 1);
-    while (GetObjProperty(who, "spiderWebArea"))
-        var webs := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
-       
-        var is_on_web := 0;
+	SetObjProperty(who, "spiderWebArea", 1);
+	while (GetObjProperty(who, "spiderWebArea"))
+		var webs := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
 
-        foreach web in webs
-            if (Cint(web.objtype) >= 4280 && Cint(web.objtype) <= 4304)
-                is_on_web := 1;
-                break;
-            endif
-        endforeach
+		var is_on_web := 0;
 
-        if (is_on_web && !GetCooldown(who, "paralysis"))
-            SendSysMessageEx(who, "Você ficou preso na teia de aranha!", SSM_FAIL);
-            TS_StartTimer(who, "paralysis", 5);
-            SetCooldown(who, "paralysis", 6);
-        endif
+		foreach web in webs
+			if (Cint(web.objtype) >= 4280 && Cint(web.objtype) <= 4304)
+				is_on_web := 1;
+				break;
+			endif
+		endforeach
 
-        sleepms(200);
-    endwhile
+		if (is_on_web && !GetCooldown(who, "paralysis"))
+			SendSysMessageEx(who, "Você ficou preso na teia de aranha!", SSM_FAIL);
+			TS_StartTimer(who, "paralysis", 5);
+			SetCooldown(who, "paralysis", 6);
+			AlertNearbySpiders(who);
+		endif
+
+		sleepms(200);
+	endwhile
 endprogram

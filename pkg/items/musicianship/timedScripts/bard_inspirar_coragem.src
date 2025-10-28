@@ -7,18 +7,19 @@ include ":musicianship:bardmusic";
 program TimedScript_bard_inspirar_coragem(params)
 	var alvo := params[1];
 	var caster := params[2];
-	var modificador := CInt(params[3]/2);
+	var modificador := CInt(params[3] / 2);
 	var teste := GetObjProperty(alvo, "#Bard_inspirar_coragem");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(modificador > teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (modificador > teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(alvo, "#Bard_inspirar_coragem", modificador);
-			modificador := modificador-teste;
+			modificador := modificador - teste;
 			SetObjProperty(alvo, "#FortitudeMod", modificador + GetObjProperty(alvo, "#FortitudeMod"));
 			SetObjProperty(alvo, "#ReflexosMod", modificador + GetObjProperty(alvo, "#ReflexosMod"));
 			SetObjProperty(alvo, "#VontadeMod", modificador + GetObjProperty(alvo, "#VontadeMod"));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+			PrintTextPrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
+							  BARD_FONT_COLOR_GOOD);
 			SendSysMessage(alvo, "Fortitude, Reflexos e Vontade melhorados.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 			return 1;
 		else
@@ -31,7 +32,8 @@ program TimedScript_bard_inspirar_coragem(params)
 		SetObjProperty(alvo, "#ReflexosMod", modificador + GetObjProperty(alvo, "#ReflexosMod"));
 		SetObjProperty(alvo, "#VontadeMod", modificador + GetObjProperty(alvo, "#VontadeMod"));
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		PrintTextPrivate(alvo, "+" + modificador + " nas resistencias", caster, BARD_FONT,
+				   BARD_FONT_COLOR_GOOD);
 		SendSysMessage(alvo, "Fortitude, Reflexos e Vontade melhorados.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 		return 1;
 	endif

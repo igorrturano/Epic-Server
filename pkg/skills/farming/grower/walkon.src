@@ -1,9 +1,10 @@
 use uo;
 
+include "include/say";
 
 program WalkOn(mobile, plant)
-	
-	if ( mobile.concealed < 1 )
+
+	if (mobile.concealed < 1)
 		if ((mobile.objtype == 0x06) || (mobile.objtype == 0xFE) || (mobile.objtype == 0x95))
 			PrintTextAbove(mobile, "*come as frutinhas e sementes*");
 			plant.SetProduceAmount(0);

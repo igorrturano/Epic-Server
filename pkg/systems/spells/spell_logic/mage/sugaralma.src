@@ -24,34 +24,34 @@ program SpellScript(params)
 	var oldx := who.x;
 	var oldy := who.y;
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)/ 10);
+	var amt := Cint(AP_GetSkill(who, THEOLOGY) / 10);
 
-	SetObjProperty(who, "#Casting",1);
+	SetObjProperty(who, "#Casting", 1);
 
-	while  (time < 10)
-		if ( (who.x != oldx) || (who.y != oldy))
-			time:=10;
+	while (time < 10)
+		if ((who.x != oldx) || (who.y != oldy))
+			time := 10;
 			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
-		elseif ( who.frozen )
-			time:=10;
+		elseif (who.frozen)
+			time := 10;
 			SendSysMessageEx(who, "Voce esta incapaz de se mover.", SSM_FAIL);
 		elseif (Distance(who, targ) >= 16)
-			time:=10;
+			time := 10;
 			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
-		elseif(AP_GetVital(targ, HITS)<=0)
-			time:=10;
+		elseif (AP_GetVital(targ, HITS) <= 0)
+			time := 10;
 		else
 			PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
 			PerformAction(who, ANIM_CAST_AREA);
-			ConsumeMana( targ, amt );
+			ConsumeMana(targ, amt);
 			targ.setAggro(who.serial, 150);
-			if(GetObjProperty(targ, "#sleep"))
+			if (GetObjProperty(targ, "#sleep"))
 				EraseObjProperty(targ, "#sleep");
 			endif
-			PrintTextAbovePrivate(who, "+"+amt + " Vida", who, 3, 568); // verde
-			HealDamage( who, amt);
-            DamageMana(targ, amt);
-			PrintTextAbovePrivate(targ, "-"+amt + " Mana", who, 3, 38); // vermelho
+			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
+			HealDamage(who, amt);
+			DamageMana(targ, amt);
+			PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
 			time := time + 1;
 			sleep(1);
 		endif

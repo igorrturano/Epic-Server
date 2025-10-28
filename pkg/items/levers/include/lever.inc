@@ -1,10 +1,15 @@
 const ONLY_ON := 0x11;
-
+use uo;
+use os;
+use cfgfile;
 include ":traps:traps";
 include "include/arrays";
 include ":tn:boss";
 include ":combat:hitscripts";
 include ":levers:efeitos";
+include ":tn:cooldown";
+include "include/say";
+include ":destroyable:include/destroyItem";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -50,6 +55,10 @@ function ChangeLeverStatus(la, only_on_levers := 0)
       if(mid == 0)
          mid := fin;
       endif
+var som := Cint(GetObjProperty(obj, "som_inicial"));
+	if(som) //ADICIONADO SOM 1
+		snd := som;
+	endif
 
       sleepms(500);
       PlaySoundEffect( obj, snd);
@@ -85,25 +94,65 @@ endfunction
 
 function CheckAllLevers(lever, lever_list, opts)
    ChangeLeverStatus(lever.serial);
-   if (opts.all_levers_order)
+   // Se há ordem específica (tanto selecionada quanto random)
+   if (opts.all_levers_order == 1 || opts.all_levers_order == 2)
       var order := GetObjProperty(opts.item_ref, "leverorder");
-      foreach serial in order
-         var item := SystemFindObjectBySerial(serial);
-         if (item.serial == lever.serial)
-            if (_serial_iter == order.size())
-               break;
+      if (!order)
+         // Se não há ordem definida, tratar como sem ordem
+         var all_levers := 0;
+         foreach item in (lever_list)
+            item := SystemFindObjectBySerial(item);
+            if (GetObjProperty(item, "status") == "on")
+               all_levers += 1;
             endif
+            sleepms(2);
+         endforeach
+
+         if (GetObjProperty(lever, "status") == "off" && all_levers == lever_list.size()-1)
+            return 1;
+         elseif (all_levers != lever_list.size())
             return 0;
+         endif
+      else
+	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         if (GetObjProperty(lever, "status") == "off")
+            var first_lever_serial := order[1];
+            if (lever.serial == first_lever_serial)
+               // Se a primeira alavanca da ordem foi desativada, reseta todas
+               foreach serial in order
+                  var item := SystemFindObjectBySerial(serial);
+                  if (GetObjProperty(item, "status") == "on")
+                     ChangeLeverStatus(serial);
+                  endif
+                  sleepms(2);
+               endforeach
+               return 1; // Permite que os efeitos sejam executados para reset
+            else
+               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
+               return 0;
+            endif
          endif
 
-         if (GetObjProperty(item, "status") != "on")
-            ChangeLeverStatus(lever.serial);
-            PrintText(lever, "*desativa*");
-            return 0;
-         endif
-         sleepms(2);
-      endforeach
+         // Verificar ordem específica
+         foreach serial in order
+            var item := SystemFindObjectBySerial(serial);
+            if (item.serial == lever.serial)
+               if (_serial_iter == order.size())
+                  break;
+               endif
+               return 0;
+            endif
+
+            if (GetObjProperty(item, "status") != "on")
+               ChangeLeverStatus(lever.serial);
+               PrintTextAbove(lever, "*desativa*");
+               return 0;
+            endif
+            sleepms(2);
+         endforeach
+      endif
    else
+      // Sem ordem específica - funcionalidade original
       var all_levers := 0;
       foreach item in (lever_list)
          item := SystemFindObjectBySerial(item);
@@ -140,6 +189,14 @@ function normalusage(who, item)
       return;
    endif
 
+   // Verificar se a alavanca requer entrega de itens
+   var requires_items := GetObjProperty(item, "requires_item_delivery");
+   if (requires_items && status == "off")
+      if (!CheckItemDelivery(who, item))
+         return; // Entrega falhou ou foi cancelada
+      endif
+   endif
+
    if (status == "off")
       PrintTextAbove(who, "*Ativa*");
    else
@@ -169,7 +226,7 @@ function normalusage(who, item)
          SendSysMessageEx(who, "Você não percebe nada de diferente", SSM_FAIL);
          if (RunTraps(item, who)) //se estiver errado, vai cair no outro runtraps
             SetObjProperty(item, "trapSpoted", 1);
-            PrintText(who, "*dispara armadilha*"); 
+            PrintTextAbove(who, "*dispara armadilha*"); 
          endif
          return;
       endif
@@ -180,7 +237,7 @@ function normalusage(who, item)
    
    if (RunTraps(item, who))
       SetObjProperty(item, "trapSpoted", 1);
-      PrintText(who, "*dispara armadilha*");
+      PrintTextAbove(who, "*dispara armadilha*");
       ChangeLeverStatus(lever_list);
       return;
    endif
@@ -191,6 +248,7 @@ function normalusage(who, item)
    endif
    var chars := ListmobilesNearLocation(item.x, item.y, item.z, 10, item.realm);
 	foreach char in chars
+		sleepms(2);
 		SendSysMessageEx(char, msg, SSM_INFO);
 	endforeach
 
@@ -207,15 +265,32 @@ function normalusage(who, item)
    if (opts.doorstatus)
       changedoorstatuses(item, opts);
    endif
-   if (opts.moveitems)
-      moveObjects(item, opts);
-   endif
-   if (opts.teleport_to)
-      teleporter(who, item, opts);
-   endif
-   	if (opts.graphicarraysitem)
-		changegraphici(item, opts);
+   
+   var sequence_gr_mov_items := Cint(GetObjProperty(item, "sequence"));
+	if (sequence_gr_mov_items == 2)
+		if (opts.moveitems)
+			moveObjects(item, opts);
+		endif
+		if (opts.graphicarraysitem)
+			changegraphici(item, opts);
+		endif
+	else
+		if (opts.graphicarraysitem)
+			changegraphici(item, opts);
+		endif
+		if (opts.moveitems)
+			moveObjects(item, opts);
+		endif
 	endif
+   
+	if(opts.somfim)//ADICIONADO PARA SIM 2 (FINAL)
+		var snd := Cint(GetObjProperty(item, "Som_fim"));
+		foreach char in chars
+			sleepms(2);
+			PlaySoundEffect( char, snd);
+		endforeach
+	endif
+
 	if (opts.spawn_boss)
 		if (status == "off")
 			spawnBoss(item, opts);
@@ -235,6 +310,22 @@ function normalusage(who, item)
 			EfeitosTremor(item,danobase,danoale,dif,range);
 		endif
 	endif
+   if (opts.teleport_to)
+      if (status == "off")
+	  var tp_all:= Cint(GetObjProperty(item, "teleport_all"));
+		if (tp_all != 0)
+			foreach mobile in ListMobilesNearLocation(item.x, item.y, item.z, tp_all, item.realm)
+				if(!mobile.acctname)
+					continue;
+				endif
+				teleporter(mobile, item, opts);
+				sleepms(2);
+			endforeach
+		else
+			teleporter(who, item, opts);
+		endif
+	  endif
+   endif
    if (opts.clima) //SEMPRE deixar essa opção para ativar por último, ela é mais longa
 		if (status == "off")
 			var config_clima := GetObjProperty(item, "clima_cfg");
@@ -286,25 +377,28 @@ function changegraphici(item, opts)
   SetObjProperty(item, "#inuse", 1);
 
   var serial;
-  
   foreach serial in  (opts.graphicarraysitem)
      serial := SystemFindObjectBySerial(CInt(serial));
+   var name_novo := GetObjProperty(serial, "new_name");
+  var name_antigo := GetObjProperty(serial, "old_name");
      var stat :=  GetObjProperty(item, "status");
      if ( (stat == error) || (stat == "on"))
         serial.graphic := GetObjProperty(serial, "graphicto");
-        //setobjproperty(item, "status", "unreleased");
+        if (name_novo)
+			serial.name := name_novo;
+		endif
+		//setobjproperty(item, "status", "unreleased");
      else
         serial.graphic := GetObjProperty(serial, "originalgraphic");
+		if (name_antigo)
+			serial.name := name_antigo;
+		endif
         //setobjproperty(item, "status", "released");
      endif
     
   endforeach
 
   EraseObjProperty(item, "#inuse");
-endfunction
-
-function stobj(who, item)
-
 endfunction
 
 function moveObjects(item, opts)
@@ -339,11 +433,12 @@ function teleporter(who, item, opts)
    SetObjProperty(item, "#inuse", 1);
    Detach();
  
-   		var x := GetObjProperty(item, "x_tp");
+      var x := GetObjProperty(item, "x_tp");
 		var y := GetObjProperty(item, "y_tp");
 		var z := GetObjProperty(item, "z_tp");
+      var realm := GetObjProperty(item, "realm_tp");
    
-   MoveObjectToLocation(who, Cint(x), Cint(y), Cint(z), item.realm, MOVEOBJECT_FORCELOCATION);
+   MoveObjectToLocation(who, Cint(x), Cint(y), Cint(z), realm, MOVEOBJECT_FORCELOCATION);
    //ChangeLeverStatus(opts.linked_to);
    EraseObjProperty(item, "#inuse");
 endfunction
@@ -371,16 +466,24 @@ endfunction
 
 function openthedoors(item, opts)
    SetObjProperty(item, "#inuse", 1);
-   Detach();
-   
+   Detach();    
+   var set_prop := 1;
    var snd_effect := 0x1f5;
+   var door_open := 0;
    if (GetObjProperty(item, "status") == "on")
-      snd_effect := 0x200;
+      set_prop := 0;
+	  door_open := 1;
+	  snd_effect := 0x200;
    endif
 
    foreach item in (opts.opendoors)
       item := SystemFindObjectBySerial(cint(item));
-      item.doToggle();
+	  if (door_open == 1)
+		item.Open();
+	  else
+		item.close();
+	  endif
+	  item.locked := set_prop;
       PlaySoundEffect(item, snd_effect);
       sleepms(2);
    endforeach
@@ -389,12 +492,151 @@ function openthedoors(item, opts)
 endfunction
 
 function lightswitch(item, opts)
-   SetObjProperty(item, "#inuse", 1);
+  SetObjProperty(item, "#inuse", 1);
    Detach();
-   
+
+
+  foreach serial in (opts.lights)
+  serial := SystemFindObjectBySerial(cint(serial));
+    var cfg := ReadConfigFile(":*:itemdesc");
+  var elem := FindConfigElem(cfg, serial.objtype);
+  if(serial.graphic == serial.objtype)
+	var chan := elem.change;
+    serial.graphic := chan;
+    setobjproperty(serial, "graphic", chan);
+  else
+	serial.graphic := serial.objtype;
+    setobjproperty(serial, "graphic", serial.graphic);
+  endif
+  endforeach
+  
    EraseObjProperty(item, "#inuse");
 endfunction
 
+function CheckItemDelivery(who, item)
+   var required_items := GetObjProperty(item, "required_items");
+   if (!required_items || !required_items.size())
+      return 0; // Não tem itens configurados
+   endif
+   
+   // MUDANÇA 1: Verificar se tem todos os itens ANTES de iniciar o processo
+   var missing_items := array{};
+   foreach req_item in required_items
+      var found_amount := 0;
+      foreach backpack_item in EnumerateItemsInContainer(who.backpack)
+         if (backpack_item.objtype == req_item.objtype)
+            found_amount += backpack_item.amount;
+         endif
+         sleepms(2);
+      endforeach
+      
+      if (found_amount < req_item.amount)
+         missing_items.append("" + req_item.amount + "x " + req_item.desc + " (você tem " + found_amount + ")");
+      endif
+   endforeach
+   
+   // Se faltam itens, para aqui
+   if (missing_items.size() > 0)
+      SendSysMessageEx(who, "Você não possui todos os itens necessários:", SSM_FAIL);
+      foreach missing in missing_items
+         SendSysMessage(who, "- " + missing);
+         sleepms(2);
+      endforeach
+      return 0;
+   endif
+   
+   var selected_items := array{}; // MUDANÇA 2: Guarda itens selecionados SEM consumir
+   var required_copy := array{};
+   
+   // Criar uma cópia dos itens necessários para controle
+   foreach req_item in required_items
+      required_copy.append(struct{
+         "objtype" := req_item.objtype,
+         "amount" := req_item.amount,
+         "desc" := req_item.desc,
+         "delivered" := 0
+      });
+   endforeach
+   
+   var continue_delivery := 1;
+   while (continue_delivery)
+      SendSysMessage(who, "Selecione um item para entregar ou ESC para cancelar:");
+      var target_item := Target(who);
+      
+      if (!target_item)
+         SendSysMessage(who, "Entrega cancelada.");
+         return 0;
+      endif
+      
+      if (target_item.container != who.backpack)
+         SendSysMessage(who, "O item deve estar no seu inventário.");
+         continue;
+      endif
+      
+      // Verificar se o item é um dos necessários
+      var item_found := 0;
+      foreach req_item in required_copy
+         if (req_item.objtype == target_item.objtype && req_item.delivered < req_item.amount)
+            var amount_needed := req_item.amount - req_item.delivered;
+            var amount_to_take := target_item.amount;
+            
+            if (amount_to_take > amount_needed)
+               amount_to_take := amount_needed;
+            endif
+            
+            // Verificar se o jogador tem quantidade suficiente
+            if (target_item.amount >= amount_to_take)
+               // MUDANÇA 3: NÃO consome ainda, apenas guarda para consumir depois
+               selected_items.append(struct{
+                  "item" := target_item,
+                  "amount" := amount_to_take
+               });
+               
+               req_item.delivered += amount_to_take;
+               SendSysMessage(who, "Selecionou " + amount_to_take + "x " + target_item.desc);
+               item_found := 1;
+               break;
+            else
+               SendSysMessage(who, "Quantidade insuficiente.");
+               item_found := 1;
+               break;
+            endif
+         endif
+      endforeach
+      
+      if (!item_found)
+         SendSysMessageEx(who, "Este item não parece funcionar aqui", SSM_FAIL);
+         continue;
+      endif
+      
+      // Verificar se todos os itens foram selecionados
+      var all_selected := 1;
+      foreach req_item in required_copy
+         if (req_item.delivered < req_item.amount)
+            all_selected := 0;
+            SendSysMessage(who, "Ainda falta: " + (req_item.amount - req_item.delivered) + "x de determinado item");
+         endif
+      endforeach
+      
+      if (all_selected)
+         // MUDANÇA 4: Confirma ANTES de consumir
+         var confirm := YesNo(who, "Confirma a entrega de todos os itens selecionados?");
+         if (confirm)
+            // Só agora consome os itens
+            foreach selected in selected_items
+               SubtractAmount(selected.item, selected.amount);
+            endforeach
+            SendSysMessage(who, "Todos os itens foram usados com sucesso!");
+            return 1;
+         else
+            SendSysMessage(who, "Entrega cancelada.");
+            return 0;
+         endif
+      endif
+   endwhile
+   
+   return 0; // Não deveria chegar aqui
+endfunction
 
 function reset(item, force_reset := 0)
    var opts := item.GetLeverOpts();
@@ -408,6 +650,8 @@ function reset(item, force_reset := 0)
    
 	if ( cint(GetObjProperty(item, "level")) > 0 || GetObjProperty(item, "powerword"))
 		item.invisible := 1;
+	elseif (GetObjProperty(item, "nature_event"))
+		CheckNatureEvent(item);
 	endif
 
 	if ( GetObjProperty(item, "HaveTrap") && !ExistTrap(item))
@@ -452,12 +696,6 @@ function reset(item, force_reset := 0)
    if (opts.doorstatus)
       changedoorstatuses(item, opts);
    endif
-   if (opts.moveitems)
-      moveObjects(item, opts);
-   endif
-//   	if (opts.spawn_boss)
-	//	spawnBoss(item, opts);
-	//endif
 	if (opts.graphicarraysitem)
 		  var serial;
   foreach serial in  (opts.graphicarraysitem)
@@ -465,10 +703,31 @@ function reset(item, force_reset := 0)
          serial.graphic := GetObjProperty(serial, "originalgraphic");
 endforeach
 	endif
+   if (opts.moveitems)
+      moveObjects(item, opts);
+   endif
 	if (opts.spawn_boss)
 		  var boss :=  SystemFindObjectBySerial( GetObjProperty(item, "champ") );
 			ApplyDamage( boss, 20000);
 			EraseObjProperty(item, "champ");
 	endif
-   SetRandomOrder(item);
+   // Resetar ordem se for random
+   if (opts.all_levers_order == 2)
+      SetRandomOrder(item);
+   endif
+endfunction
+
+function CheckNatureEvent(item)
+   var nature_event := GetObjProperty(item, "nature_event");
+   
+   var current_day := GetGlobalProperty("dia");
+   var current_moon := getMoonPhase();
+   var current_season := GetSeasonName(getSeason());
+   
+   var nature_global := {current_day, current_moon, current_season};
+	if (nature_event in nature_global)
+		item.invisible := 0;
+	else
+		item.invisible := 1;
+	endif
 endfunction

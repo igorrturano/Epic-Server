@@ -4,6 +4,8 @@ include ":merchants:item_template";
 include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
+include ":megacliloc:/include/gettersTTipUtils";
+include ":brainAI:npcCommands";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -267,7 +269,7 @@ endfunction
 function RemoveItemForSale(merchant, item_num, removeInfinite :=0)
 	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
 	var selling_info := data_elem.GetProp(Cstr(item_num));
- 	// printtextabove(merchant, " " + selling_info);
+ 	// PrintTextAbove(merchant, " " + selling_info);
 	if (selling_info[3] == 1 && !removeInfinite)
 		return 1;
 	else
@@ -1344,7 +1346,9 @@ function GetTooltipText(item_template, who)
 
 		var cond := GetConditionTemplate(item_template);
 		xDesc := xDesc + "Condição: " + GetConditionTemplate(item_template) + "<br>";
-		xDesc := xDesc + "Força Exigida: " + elem.strrequired + "<br>";
+		if(GetObjProperty(item_template, "atributos").STRRequired > 0)
+			xDesc := xDesc + "Força exigida: " + GetObjProperty(item_template, "atributos").STRRequired + "<br>";
+		endif
 
 		if(elem.TipoAtaque)
 			xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item_template) + "<br>";
@@ -1509,37 +1513,6 @@ endfunction
 // 	*/
 
 // endfunction
-
-function GetDmgStringDesc(elem, item)
-	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.Damage);
-	if (dmg_mod>0)
-		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
-	elseif (dmg_mod<0)
-		resultado := resultado + " (" + CSTR(dmg_mod) +")";
-	endif
-	return resultado;
-	/*
-	var avgdmg := cint(elem.MinDam + elem.MaxDam)/2;
-
-	if(avgdmg >= 20)
-		return "Letal";
-	elseif(avgdmg >= 18)
-		return "Muito";
-	elseif(avgdmg >= 16)
-		return "Bom";
-	elseif(avgdmg >= 14)
-		return "Mediano";
-	elseif(avgdmg >= 12)
-		return "Pouco";
-	elseif(avgdmg >= 10)
-		return "Pouquissimo ";
-	else
-		return "Inofensivo";
-	endif
-	*/
-
-endfunction
 
 function getQualityTemplate(num)
 	var rank;

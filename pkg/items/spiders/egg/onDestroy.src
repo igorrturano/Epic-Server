@@ -1,0 +1,10 @@
+use uo;
+
+program onDestroyEgg(egg)
+	PlaySoundEffect(egg, 402);
+
+	// Create destroyed egg remains
+	var burnedEgg := CreateItemAtLocation(egg.x, egg.y, egg.z, "DestroyedEgg", 1, egg.realm);
+	burnedEgg.color := 912;
+	return 1;
+endprogram

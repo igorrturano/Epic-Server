@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -19,7 +19,6 @@ program SpellScript(params)
 
 	Corromper(who, 30, targ);
 
-
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (CheckResist(targ, VONTADE, diff, -bonus))
@@ -29,11 +28,11 @@ program SpellScript(params)
 		return;
 	endif
 
-	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, MAGICLORE)/2), 1, who, 0);
+	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, ARCANA) / 2), 1, who, 0);
 	Detach();
 	Attach(targ);
 	if (e == error)
-		printtextabove(who, "sonho " + e);
+		PrintTextAbove(who, "sonho " + e);
 	endif
 
 	handleSilentMagic(who, targ, 0x658);
@@ -42,11 +41,11 @@ program SpellScript(params)
 	PlayObjectCenteredEffect(targ, 0xB8FB, 3, 56);
 	sleep(3);
 
-	while ( GetObjProperty(targ, "#sleep") )
+	while (GetObjProperty(targ, "#sleep"))
 		PlayObjectCenteredEffect(targ, 0xB8FB, 3, 56);
 		sleep(3);
 	endwhile
-	printtextabove(targ, "*desperta*");
+	PrintTextAbove(targ, "*desperta*");
 	targ.paralyzed := 0;
 
 	return 1;

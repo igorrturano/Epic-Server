@@ -11,9 +11,9 @@ include ":tn:cooldown";
 program doubleattack(who)
 	if (IsRaging(who))
 		SendSysMessageEx(who, "O deserto recompensa os audazes.", SSM_INFO);
-        SetCooldown(who, "lobosolitario", 60);
+		SetCooldown(who, "lobosolitario", 60);
 		SetCooldown(who, "FuriaPrimordial", 60);
 	else
-        SendSysMessageEx(who, "Você precisa dar mais sangue", SSM_INFO);
+		SendSysMessageEx(who, "Você precisa dar mais sangue", SSM_INFO);
 	endif
 endprogram

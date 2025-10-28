@@ -1,8 +1,7 @@
 /*
  * $Id: endFeebleMind.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
- 
+*/
 use uo;
 use os;
 
@@ -10,11 +9,10 @@ include ":attributes:attributes";
 
 program TimedScript_EndFeebleMind(params)
 	var mobile := params[1];
-	
-	var points := CInt(GetObjProperty(mobile, "#FeebleMindMod"));	
-	AP_ModifyStatMod(mobile, INTELLIGENCE, (-1*points));
+
+	var points := CInt(GetObjProperty(mobile, "#FeebleMindMod"));
+	AP_ModifyStatMod(mobile, INTELLIGENCE, (-1 * points));
 	EraseObjProperty(mobile, "#FeebleMindMod");
-	
+
 	return 1;
 endprogram
-

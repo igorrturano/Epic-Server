@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -14,11 +14,11 @@ program TimedScript_Clumsy(params)
 		bonus := 5;
 	endif
 	var teste := GetObjProperty(mobile, "#InvisMod");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(bonus > teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (bonus > teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(mobile, "#InvisMod", bonus);
-			AP_ModifySkillMod(mobile, SNEAK, (bonus-teste));
+			AP_ModifySkillMod(mobile, SNEAK, (bonus - teste));
 			Set_Critical(0);
 			return 1;
 		else
@@ -26,9 +26,8 @@ program TimedScript_Clumsy(params)
 		endif
 	else
 
-	SetObjProperty(mobile, "#InvisMod", bonus);
-	AP_ModifySkillMod(mobile, SNEAK, bonus);
-	return 1;
+		SetObjProperty(mobile, "#InvisMod", bonus);
+		AP_ModifySkillMod(mobile, SNEAK, bonus);
+		return 1;
 	endif
 endprogram
-

@@ -9,13 +9,14 @@ program TimedScript_bard_dex_up(params)
 	var caster := params[2];
 	var modificador := params[3];
 	var teste := GetObjProperty(alvo, "#Bard_dex_up");
-	if(teste) //verifica se ja esta sob efeito similar
-		if(modificador > teste) //se o novo efeito é maior, aplica a diferença
+	if (teste) // verifica se ja esta sob efeito similar
+		if (modificador > teste) // se o novo efeito é maior, aplica a diferença
 			Set_Critical(1);
 			SetObjProperty(alvo, "#Bard_dex_up", modificador);
-			AP_ModifyStatMod(alvo, DEXTERITY, (modificador-teste));
+			AP_ModifyStatMod(alvo, DEXTERITY, (modificador - teste));
 			Set_Critical(0);
-			PrintTextAbovePrivate(alvo, "+" + (modificador-teste) + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+			PrintTextPrivate(alvo, "+" + (modificador - teste) + " Dex", caster, BARD_FONT,
+							  BARD_FONT_COLOR_GOOD);
 			return 1;
 		else
 			return 0;
@@ -25,7 +26,7 @@ program TimedScript_bard_dex_up(params)
 		SetObjProperty(alvo, "#Bard_dex_up", modificador);
 		AP_ModifyStatMod(alvo, DEXTERITY, modificador);
 		Set_Critical(0);
-		PrintTextAbovePrivate(alvo, "+" + modificador + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		PrintTextPrivate(alvo, "+" + modificador + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
 		return 1;
 	endif
 endprogram

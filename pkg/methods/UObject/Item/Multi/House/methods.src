@@ -1,0 +1,4 @@
+program Install()
+	print("INSTALLING: Methods for House... OK!");
+	return 1;
+endprogram

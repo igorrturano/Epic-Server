@@ -3,14 +3,14 @@ use datafile;
 
 program registerspawn(item)
 
-	var df := OpenDataFile( ":tn:spawns" );
+	var df := OpenDataFile(":tn:spawns");
 	if (!df)
-		df := CreateDataFile( ":tn:spawns", DF_KEYTYPE_INTEGER );
+		df := CreateDataFile(":tn:spawns", DF_KEYTYPE_INTEGER);
 	endif
-	
+
 	var elem := df.FindElement(item.serial);
 	if (!elem)
-		elem := df.CreateElement( item.serial ) ;
+		elem := df.CreateElement(item.serial);
 	endif
 
 endprogram

@@ -1,4 +1,4 @@
-  
+
 use uo;
 use os;
 
@@ -15,12 +15,11 @@ program TimedScript_Clumsy(params)
 
 	SendSysMessageEx(who, "Voce esta protegido contra projeteis.", SSM_INFO);
 
-	if ( GetObjProperty(who, "#desviarprojetil") )
+	if (GetObjProperty(who, "#desviarprojetil"))
 		return 0;
 	endif
-	
+
 	SetObjProperty(who, "#desviarprojetil", 1);
-	
+
 	return 1;
 endprogram
-  

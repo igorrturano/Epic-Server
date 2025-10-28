@@ -1,0 +1,420 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+include ":medicine:anatomy";
+
+program read_autopsy_report(who, report)
+	if (!report)
+		return 0;
+	endif
+
+	// Recupera as informações armazenadas no laudo
+	var results := GetObjProperty(report, "autopsy_results");
+	var victim_name := GetObjProperty(report, "victim_name");
+	var examiner := GetObjProperty(report, "examiner");
+	var exam_time := GetObjProperty(report, "exam_time");
+
+	// Cria o gump do laudo com scrollbar
+	var gump := GFCreateGump(100, 50);
+
+	// Decoração e fundo
+	GFResizePic(gump, 0, 0, 9380, 650, 570);
+	GFGumpPic(gump, 460, 50, 293); // Símbolo médico no topo
+
+	// Título
+	GFTextMid(gump, 0, 0, 750, 2212, "LAUDO DE AUTÓPSIA " + report.name);
+
+	// SEÇÃO 1: DADOS BÁSICOS DA INVESTIGAÇÃO
+	var y_pos := 15;
+	// GFAddAlphaRegion(gump, 25, y_pos, 600, 2);
+	y_pos += 18;
+	GFTextLine(gump, 30, y_pos, 38, "DADOS BÁSICOS DA INVESTIGAÇÃO");
+	y_pos += 30;
+
+	// Informações básicas
+	GFTextLine(gump, 30, y_pos, 2100, "Vítima:");
+	GFTextLine(gump, 120, y_pos, 2103, victim_name);
+	y_pos += 25;
+
+	GFTextLine(gump, 30, y_pos, 2100, "Examinador:");
+	GFTextLine(gump, 120, y_pos, 2103, examiner);
+	y_pos += 25;
+
+	GFTextLine(gump, 30, y_pos, 2100, "Hora da Morte:");
+	GFTextLine(gump, 125, y_pos, 2103, exam_time);
+	y_pos += 25;
+
+	// Exibir informações técnicas obrigatórias
+	if (results)
+		// Dano (tipo de lastdamage)
+		if (results.exists("lastdamage_type"))
+			GFTextLine(gump, 30, y_pos, 2100, "Tipo de Dano:");
+			GFTextLine(gump, 120, y_pos, 2103, FormatDamageType(results["lastdamage_type"]));
+			y_pos += 25;
+		endif
+
+		// Registrar props em uma investigação
+		GFTextLine(gump, 195, y_pos, 2100, "Apensar Laudo a uma Investigação");
+		GFAddButton(gump, 158, y_pos, 4005, 4007, GF_CLOSE_BTN, 2);
+
+		// Taxonomy
+		if (results.exists("taxonomy"))
+			GFTextLine(gump, 260, 63, 2100, "Taxonomia:");
+			GFTextLine(gump, 340, 63, 2103, results["taxonomy"]);
+		endif
+
+		// Rastros
+		if (results.exists("rastros"))
+			GFTextLine(gump, 260, 88, 2100, "Rastros:");
+			GFTextLine(gump, 340, 88, 2103, results["rastros"]);
+		endif
+
+		// Tipo de objeto da arma
+		if (results.exists("objtype") && results["objtype"] != "desconhecido")
+			GFTextLine(gump, 260, 113, 2100, "Arma Crime:");
+			GFTextLine(gump, 340, 113, 2103, GetWeaponName(results["objtype"]));
+			Setobjproperty(report, "weaponName", GetWeaponName(results["objtype"]));
+		endif
+
+		// Serial da arma (se houver)
+		if (results.exists("serial_weapon") && results["serial_weapon"] != "desconhecido")
+			GFTextLine(gump, 260, 138, 2108, "Desenho da Arma realizado!");
+		// GFTextLine(gump, 380, 230, 2103, results["serial_weapon"]);
+		endif
+	endif
+
+	// SEÇÃO 2: RELATÓRIO CONCLUSIVO (com scrollbar)
+	y_pos += 35;
+	GFTextLine(gump, 30, y_pos, 38, "RELATÓRIO CONCLUSIVO");
+	y_pos += 30;
+
+	// Área do texto com scrollbar
+	var scroll_area_y := y_pos;
+	var scroll_area_height := 280;
+
+	// Background da área de scroll
+	GFResizePic(gump, 25, scroll_area_y, 9350, 580, scroll_area_height);
+
+	// Criar o relatório médico completo
+	var medical_report := CreateMedicalReport(results);
+	var lines := SplitTextIntoLines(medical_report, 68);
+
+	// Adicionar área de texto com scroll
+	GFHTMLArea(gump, 35, scroll_area_y + 10, 540, scroll_area_height - 20, medical_report, 1, 1);
+
+	// Botão para fechar
+	GFAddButton(gump, 300, 520, 2130, 2129, GF_CLOSE_BTN, 1);
+
+	var input := GFSendGump(who, gump);
+	if (input[0] == 2)
+		var target_lupa := Target(who, TGTOPT_CHECK_LOS);
+		if (target_lupa.objtype != 0xee00)
+			SendSysMessageEx(who, "Isso não é uma investigação em andamento", SSM_FAIL);
+			return;
+		else
+			CopyProps(report, target_lupa);
+			SendSysMessageEx(who, "Laudo adicionado a " + target_lupa.GetProp("CaseName"));
+		endif
+	endif
+
+	return 1;
+endprogram
+
+// Obtém o nome do tipo da arma baseado no objtype
+function GetWeaponName(objtype)
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, CInt(objtype));
+	if (elem)
+		return elem.Desc;
+	else
+		return "Arma não identificada";
+	endif
+endfunction
+
+// Cria um relatório médico narrativo profissional
+function CreateMedicalReport(results)
+	var report := "Após minucioso exame post-mortem realizado no espécime, procedemos às seguintes observações técnicas e conclusões médico-legais:\n\n";
+
+	// ANÁLISE FÍSICA E CONSTITUCIONAL
+	report += "ANÁLISE CONSTITUCIONAL:\n";
+	var constitutional_findings := array{};
+
+	if (results.exists("stats_STR"))
+		constitutional_findings.append("O desenvolvimento da musculatura esquelética apresenta características "
+										+ getStreng(results["stats_STR"], 0, 1)
+										+ ", evidenciando um padrão de atividade física correspondente");
+	endif
+
+	if (results.exists("stats_DEX"))
+		constitutional_findings.append("A análise dos tendões, ligamentos e estruturas articulares revela coordenação motora "
+										+ getDext(results["stats_DEX"], 0, 1) + ", sugerindo grau específico de treinamento corporal");
+	endif
+
+	if (results.exists("stats_INT"))
+		constitutional_findings.append("O exame do tecido cerebral e estruturas neurais indica desenvolvimento cognitivo "
+										+ getInt(results["stats_INT"]) + " em comparação aos padrões estabelecidos");
+	endif
+
+	// Adicionar achados constitucionais
+	if (constitutional_findings.size() > 0)
+		foreach finding in constitutional_findings
+			report += finding + ". ";
+		endforeach
+		report += "\n\n";
+		Sleepms(2);
+	endif
+
+	// CAPACIDADES VITAIS
+	var vital_analysis := "";
+	if (results.exists("vitals_HIT") || results.exists("vitals_STA") || results.exists("vitals_MAN"))
+		vital_analysis += "ANÁLISE DOS SISTEMAS VITAIS:\n";
+
+		if (results.exists("vitals_HIT"))
+			vital_analysis += "A resistência estrutural do organismo demonstra " + getHit(results["vitals_HIT"])
+																		 + ". ";
+		endif
+
+		if (results.exists("vitals_STA"))
+			vital_analysis += "O sistema cardiopulmonar apresenta capacidade " + getSta(results["vitals_STA"])
+																	  + ". ";
+		endif
+
+		if (results.exists("vitals_MAN"))
+			vital_analysis += "A capacidade de concentração mental revela potencial " + getMana(results["vitals_MAN"])
+																			   + ". ";
+		endif
+
+		vital_analysis += "\n\n";
+	endif
+
+	if (vital_analysis != "")
+		report += vital_analysis;
+	endif
+
+	// ANÁLISE DE HABILIDADES E ESPECIALIZAÇÕES
+	var skills_found := array{};
+	foreach key in (results.keys())
+		if (key[1, 7] == "skills_")
+			var skill_name := key[8, len(key)];
+			skills_found.append(FormatSkillAnalysis(skill_name, results[key]));
+		endif
+		Sleepms(2);
+	endforeach
+
+	if (skills_found.size() > 0)
+		report += "ESPECIALIZAÇÕES IDENTIFICADAS:\n";
+		report += "Durante a análise, foram identificados indícios de treinamento especializado: ";
+
+		for i := 1 to skills_found.size()
+			if (i == skills_found.size() && skills_found.size() > 1)
+				report += " e " + skills_found[i];
+			elseif (i > 1)
+				report += ", " + skills_found[i];
+			else
+				report += skills_found[i];
+			endif
+			Sleepms(2);
+		endfor
+
+		report += ". Estas evidências sugerem uma dedicação específica ao desenvolvimento dessas capacidades durante a vida do indivíduo.\n\n";
+	endif
+
+	// RESISTÊNCIAS E ADAPTAÇÕES CORPORAIS (apenas se relevantes)
+	var resistance_analysis := GetResistanceAnalysis(results);
+	if (resistance_analysis != "")
+		report += "ADAPTAÇÕES FISIOLÓGICAS:\n";
+		report += resistance_analysis + "\n\n";
+	endif
+
+	// CAPACIDADES DE COMBATE (apenas se relevantes)
+	var combat_analysis := GetCombatAnalysis(results);
+	if (combat_analysis != "")
+		report += "ANÁLISE DE CAPACIDADES OFENSIVAS:\n";
+		report += combat_analysis + "\n\n";
+	endif
+
+	// CONCLUSÃO SOBRE A CAUSA MORTIS
+	report += "CONCLUSÃO MÉDICO-LEGAL:\n";
+
+	if (results.exists("lastdamage_spell"))
+		report += "A causa mortis foi determinada como resultado de trauma mágico, especificamente causado pela manifestação do encantamento denominado '"
+																																						+ results["lastdamage_spell"] + "'. ";
+	elseif (results.exists("lastdamage_amount") && CInt(results["lastdamage_amount"]) > 0)
+		report += "O exame revelou lesões compatíveis com trauma de alta intensidade. ";
+	endif
+
+	if (results.exists("dano_principal"))
+		report += "O padrão predominante das lesões é consistente com ferimentos de natureza " + FormatDamageType(
+																							results["dano_principal"]) + ". ";
+	endif
+
+	// Observações especiais do GM
+	if (results.exists("observação") && results["observação"] != "")
+		report += "\n\nOBSERVAÇÕES ESPECIAIS:\n";
+		report += results["observação"];
+	endif
+
+	report += "\n\nO presente laudo foi elaborado segundo os protocolos estabelecidos para exames post-mortem, constituindo documento oficial para fins investigativos.";
+
+	return report;
+endfunction
+
+// Analisa resistências (só inclui se forem significativas)
+function GetResistanceAnalysis(results)
+	var significant_resistances := array{};
+
+	foreach key in (results.keys())
+		if (key[1, 8] == "resists_")
+			var resist_value := CInt(results[key]);
+			if (resist_value > 0) // Só inclui resistências relevantes
+				var resist_type := key[9, len(key)];
+				significant_resistances.append(FormatResistanceDescription(resist_type, resist_value));
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+	if (significant_resistances.size() == 0)
+		return "";
+	endif
+
+	var analysis := "O organismo apresenta adaptações fisiológicas notáveis: ";
+
+	for i := 1 to significant_resistances.size()
+		if (i == significant_resistances.size() && significant_resistances.size() > 1)
+			analysis += " e " + significant_resistances[i];
+		elseif (i > 1)
+			analysis += ", " + significant_resistances[i];
+		else
+			analysis += significant_resistances[i];
+		endif
+		Sleepms(2);
+	endfor
+
+	analysis += ". Estas características sugerem exposição prolongada ou condicionamento específico a tais elementos.";
+
+	return analysis;
+endfunction
+
+// Analisa capacidades de combate (só inclui se forem relevantes)
+function GetCombatAnalysis(results)
+	var combat_capabilities := array{};
+
+	foreach key in (results.keys())
+		if (key[1, 11] == "elemdamage_")
+			var damage_value := CInt(results[key]);
+			if (damage_value > 0) // Só inclui danos relevantes
+				var elem_type := key[12, len(key)];
+				if (elem_type != "NONE") // Ignora DAMAGE_NONE
+					combat_capabilities.append(FormatCombatCapability(elem_type, damage_value));
+				endif
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+	if (combat_capabilities.size() == 0)
+		return "";
+	endif
+
+	var analysis := "Foram identificadas evidências de capacidades ofensivas especializadas: ";
+
+	for i := 1 to combat_capabilities.size()
+		if (i == combat_capabilities.size() && combat_capabilities.size() > 1)
+			analysis += " e " + combat_capabilities[i];
+		elseif (i > 1)
+			analysis += ", " + combat_capabilities[i];
+		else
+			analysis += combat_capabilities[i];
+		endif
+		Sleepms(2);
+	endfor
+
+	analysis += ". Tais características indicam treinamento avançado em técnicas de combate especializado.";
+
+	return analysis;
+endfunction
+
+// Formata análise de habilidades de forma narrativa
+function FormatSkillAnalysis(skill_name, skill_value)
+	var level := CInt(skill_value);
+	var proficiency;
+
+	if (level >= 90)
+		proficiency := "maestria excepcional";
+	elseif (level >= 75)
+		proficiency := "alta proficiência";
+	elseif (level >= 50)
+		proficiency := "competência moderada";
+	elseif (level >= 25)
+		proficiency := "conhecimento básico";
+	else
+		proficiency := "familiaridade limitada";
+	endif
+
+	return proficiency + " em " + skill_name;
+endfunction
+
+// Formata descrição de resistências
+function FormatResistanceDescription(resist_type, value)
+	var level;
+	if (value >= 75)
+		level := "alta resistência";
+	elseif (value >= 50)
+		level := "resistência moderada";
+	elseif (value >= 25)
+		level := "resistência baixa";
+	else
+		level := "leve resistência";
+	endif
+
+	return level + " a " + FormatDamageType(resist_type);
+endfunction
+
+// Formata capacidades de combate
+function FormatCombatCapability(elem_type, value)
+	var intensity;
+	if (value >= 20)
+		intensity := "potencial ofensivo elevado";
+	elseif (value >= 10)
+		intensity := "capacidade ofensiva moderada";
+	else
+		intensity := "capacidade ofensiva básica";
+	endif
+
+	return intensity + " com elementos de " + FormatDamageType(elem_type);
+endfunction
+
+// Divide um texto longo em múltiplas linhas (mantido para compatibilidade)
+function SplitTextIntoLines(text, max_length)
+	var lines := array{};
+	var words := SplitWords(text);
+	var current_line := "";
+
+	foreach word in words
+		if (len(current_line + " " + word) > max_length)
+			if (current_line != "")
+				lines.append(current_line);
+			endif
+			current_line := word;
+		else
+			if (current_line != "")
+				current_line += " " + word;
+			else
+				current_line := word;
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+	if (current_line != "")
+		lines.append(current_line);
+	endif
+
+	return lines;
+endfunction

@@ -8,8 +8,9 @@ program TimedScript_bard_contagiante(params)
 	var modificador := params[3];
 	SetObjProperty(alvo, "#Bard_contagiante", modificador);
 	while (GetObjProperty(alvo, "#Bard_contagiante"))
-		PerformAction(alvo, RandomInt(35), 5, 1, RandomInt(2), ACTION_NOREPEAT, 1); //o segundo parametro é o identificador da acao
-		Sleepms(3000-(modificador*5));
+		PerformAction(alvo, RandomInt(35), 5, 1, RandomInt(2), ACTION_NOREPEAT,
+					   1); // o segundo parametro é o identificador da acao
+		Sleepms(3000 - (modificador * 5));
 	endwhile
 	return 1;
 endprogram

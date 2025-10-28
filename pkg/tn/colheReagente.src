@@ -27,7 +27,7 @@ program colheReagente(who, item)
 		newitem := CreateItemInBackpack(who, 0x18DE, 1);
 	elseif (item.objtype == 6370)
 		newitem := CreateItemInBackpack(who, 0x18E4, 1);
-	elseif (item.objtype == 6373 )
+	elseif (item.objtype == 6373)
 		newitem := CreateItemInBackpack(who, 0x18E8, 1);
 	elseif (item.objtype == 6378)
 		newitem := CreateItemInBackpack(who, 0x18EC, 1);
@@ -37,10 +37,9 @@ program colheReagente(who, item)
 		newitem := CreateItemInBackpack(who, 0xF84, amt);
 	elseif (item.objtype == 6376)
 		newitem := CreateItemInBackpack(who, 0xF88, amt);
-	elseif ( item.objtype == 6380)
+	elseif (item.objtype == 6380)
 		newitem := CreateItemInBackpack(who, 0xF85, amt);
 	endif
-
 
 	if (!item)
 		SendSysMessage(who, "Voce nao tem espaço na sua mochila.");

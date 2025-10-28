@@ -14,6 +14,7 @@
 const EVID_TAUNT			:= 0x2222;
 const EVID_FLEE				:= 0x3333;
 const EVID_COMBAT_MOVE		:= 0x4444;
+const EVID_BUDDYATTACKED     := 0x5555;
 
 //PADRAO
 const EVID_SPEECH           := 0x0001;
@@ -83,5 +84,5 @@ const EVID_RESERVED_80000000    := 0x80000000;
 
 /* FIXME: these need to be renumbered, one clashes with a reserved event */
 const EVID_SPELL_ATTACK     := 0x0800;
-const EVID_BUDDYATTACKED     := 0x1600;
+// const EVID_BUDDYATTACKED     := 0x1600;
 const EVID_PEACEMADE         := 0x90000000;

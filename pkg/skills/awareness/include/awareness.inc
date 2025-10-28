@@ -64,19 +64,32 @@ function ExaminarObjeto(who,targ)
 			var diff;
 			var lvl := Cint(GetObjProperty(targ, "level"));
 			case (lvl)
-				1: diff := 15;
+				1: diff := 20;
 				2: diff := 40;
 				3: diff := 60;
-				4: diff := 86;
-				5: diff := 90;
-				6: diff := 110;
-				default: diff := 40;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
+				default: diff := 1000; // Telepads e afins
 			endcase
 			sleep(1);
 			if ( SkillCheck(who, AWARENESS, diff) > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
-				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+
+				// Check how many traps the chest has
+				var traps := GetObjProperty(targ, "TrapList");
+				var trap_count := 0;
+				if (traps)
+					trap_count := traps.size();
+				endif
+
+				if (trap_count > 1)
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+				else
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+				endif
+
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
 					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
@@ -151,28 +164,28 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,258);
-		        	PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
+		        	PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
 	        	endif
 	        elseif (!mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra PJ escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,36);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
 				endif
 	        elseif (mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra NPC escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,37);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
 				endif
 			else //Revela todo mundo que deveria
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif
@@ -182,34 +195,26 @@ function ExaminarArea(who)
 	endforeach
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
-		if ( item.invisible )
-			if ( item.isTrap())
-				lvl := Cint(GetObjProperty(item, "level"));
-				case (lvl)
-					1: diff := 15;
-					2: diff := 40;
-					3: diff := 60;
-					4: diff := 86;
-					5: diff := 90;
-					6: diff := 110;
-					default: diff := -1; //testa contra a propria skill
-				endcase
-				if ( SkillCheck(who, AWARENESS, diff) > 0 )
-					found := found+1;
-					item.invisible := 0;
-					SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-					PrintTextAbovePrivate(item, "*!*", who);
-				endif
-			else
-				var diff := CInt(GetObjProperty(item, "FindDiff"));
-				if ( diff )
-					if ( SkillCheck(who, AWARENESS, diff) > 0 )
-						found := found+1;
-						item.invisible := 0;
-						SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-						PrintTextAbovePrivate(item, "*!*", who);
-					endif
-				endif
+		// Ignore spawners and other system items
+		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807 || item.objtype == 0x6203)
+			continue;
+		endif
+		lvl := Cint(GetObjProperty(item, "level"));
+		if ( item.invisible && lvl != error)
+			case (lvl)
+				1: diff := 20;
+				2: diff := 40;
+				3: diff := 60;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
+				default: diff := -1; //testa contra a propria skill
+			endcase
+			if ( SkillCheck(who, AWARENESS, diff) > 0 )
+				found := found+1;
+				item.invisible := 0;
+				SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
+				PrintTextPrivate(item, "*!*", who);
 			endif
 		endif
 		sleepms(2);

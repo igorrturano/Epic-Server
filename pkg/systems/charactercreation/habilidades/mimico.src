@@ -14,5 +14,4 @@ program mimico(who)
 
 	SetObjProperty(targ, "#mimico", who.serial);
 
-
-endprogram 
+endprogram

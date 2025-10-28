@@ -6,7 +6,5 @@ include ":charactercreation:resists";
 include ":combat:damage";
 
 program calor(who, regioname)
-    start_script(":nature:caloreffect", {who});
+	start_script(":nature:caloreffect", { who });
 endprogram
-
-

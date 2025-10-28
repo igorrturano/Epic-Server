@@ -1,5 +1,5 @@
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -14,20 +14,19 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	var time :=  AP_GetSkill(who, MAGICLORE);
-	
+	var time := AP_GetSkill(who, THEOLOGY);
+
 	if (targ.isA(POLCLASS_WEAPON))
 		SetCooldown(targ, "blessweapon", time);
-		start_script( ":spells:shared/armasagrada", {targ, time} );
+		start_script(":spells:shared/armasagrada", { targ, time });
 	else
 		SetCooldown(targ.weapon, "blessweapon", time);
-		start_script( ":spells:shared/armasagrada", {targ.weapon, time} );
+		start_script(":spells:shared/armasagrada", { targ.weapon, time });
 	endif
 
-        PlaySoundEffect(targ, SFX_BLESS);
+	PlaySoundEffect(targ, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce consagrou a arma.", SSM_INFO);
 
-	
 	return 1;
-endprogram    
+endprogram

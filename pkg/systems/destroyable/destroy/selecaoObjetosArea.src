@@ -1,0 +1,38 @@
+use uo;
+use os;
+include ":destroyable:include/destroyItem";
+include ":attributes:attributes";
+include "include/imersao";
+include "include/say";
+include "/include/epicPropNames";
+
+program SelecaoObjetosArea(parms)
+
+	var quem := parms[1];
+	var objetos := parms[2];
+	var pid := parms[3];
+
+	while (true)
+		Sleepms(600);
+		if (!GetProcess(pid))
+			foreach objeto in objetos
+				var isCorOriginalAlterada := GetObjProperty(objeto, PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
+				if (!isCorOriginalAlterada)
+					objeto.color := GetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);
+				endif
+				LimpaProps(objeto);
+				Sleepms(2);
+			endforeach
+
+			break;
+		endif
+	endwhile
+
+	return 1;
+endprogram
+
+function LimpaProps(objeto)
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_PID_SELECIONADOR);
+	EraseObjProperty(objeto, PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA);
+endfunction

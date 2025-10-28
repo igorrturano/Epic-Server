@@ -25,7 +25,7 @@ include ":brainAI:npcUtil";
 function MakeBleed(object, blood_color:=0)
 	// These checks are for players or individual NPCs.
 	var blood_type := "blood";
-	if ( GetObjProperty(object, "NoBlood") )
+	if ( object.isBloodless())
 		return 0;
 	elseif ( !blood_color )
 		blood_color := CInt(GetObjProperty(object, "BloodColor"));

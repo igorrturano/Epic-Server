@@ -1,4 +1,4 @@
- 
+
 use uo;
 use os;
 
@@ -12,17 +12,16 @@ program TimedScript_Clumsy(params)
 	params := 0; // Not needed anymore.
 
 	params := 0; // Not needed anymore.
-	
-	if ( GetObjProperty(mobile, "#stammod") )
+
+	if (GetObjProperty(mobile, "#stammod"))
 		// Condition is met if the mobile logs out and back in.
 		// Prevents mod from being applied twice.
 		return 0;
 	endif
-       var roots:= CreateItemAtLocation(mobile.x, mobile.y, mobile.z , 3392, 1, mobile.realm);
+	var roots := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 3392, 1, mobile.realm);
 	var planta := roots.serial;
 	roots.color := 1367;
-       SetObjProperty (mobile, "roots", planta);
-	
+	SetObjProperty(mobile, "roots", planta);
+
 	return 1;
 endprogram
-

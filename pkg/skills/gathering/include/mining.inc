@@ -4,8 +4,9 @@ use cfgfile;
 include ":attributes:attributes";
 include "include/client";
 include "include/say";
-include ":chestspawn:treasurechest";
 include ":timedScripts:timedScripts";
+include ":treasurehunting:treasuredigging";
+
 
 const MAX_RESOURCE_AMOUNT := 10;
 
@@ -35,240 +36,18 @@ function EncontraGema(who)
 endfunction
 
 function GetMapsInBackpack(who)
-	var items := EnumerateItemsInContainer(who.backpack);
-	var maps := array;
-    	foreach item in items
-			//sendsysmessage(who, " " + isTreasureMap(item) + " " + item.objtype);
-			if ( isTreasureMap(item) )
-				if ( !isSolved(item) )
-					maps.append(item);
-				endif
-			endif
-			
-		endforeach
-
-	return maps;
-
-endfunction
-
-function isTreasureMap(item)
-
-	if ( GetObjProperty(item, "chestx") != error )
-		return 1;
-	endif
-
-	return 0;
-
-endfunction
-
-function isSolved(map)
-    if(GetObjProperty(map, "Solved") == error)
-
-	return 0;
-    else
-	return 1;
-
-    endif
-endfunction
-
-function DigForMap(who, targ, map)
-
-	if (!reserveItem(map))
-		return;
-	endif
-
-	var chestx := Cint(GetObjProperty( map, "chestx" ));
-	var chesty := Cint(GetObjProperty( map, "chesty" ));
-var chestz := who.z;
-
-	if((!chestx) || (!chesty))
-		SendSysMessage( who, "Este não parece ser um mapa de tesouro.", SSM_FAIL );
-		return;
-	endif
-
-	if(!CheckLosAt( who, targ.x, targ.y, targ.z ) );
-		SendSysMessageEx( who, "Você não ve o alvo.", SSM_FAIL );
-		return;
-	endif
-
-	PerformAction(who, 0x0b);
-	PlaySoundEffect(who, 0x126);
-
-	var range := 5; //GetRange( who );
-	var distn := coordinatedistance( targ.x, targ.y, chestx, chesty );
-	var maxrange := 20;
-	var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 0, who.realm);
-
-	if(distn > maxrange)
-		SendSysMessageEx(who,"Você parece muito distante.", SSM_INFO);
-		return;
-
-	elseif((distn > range) && (distn <= maxrange))
-		SendSysMessage(who,"Você cavou e cavou mas não encontrou nenhum tesouro.", SSM_INFO);
-		return;
-
-	elseif((distn < range) && (len(mobiles) > 0))
-		SendSysMessageEx(who,"você parou de cavar porque algo esta sobre o tesouro.");
-		return;
-	else
-		who.frozen := 1;
-		PrintTextAbove(who, "*Começa a cavar o tesouro*");
-		SendSysMessageEx(who, "NÃO DESLOGUE, A ANIM DEMORA UM POUCO, aguarde o boneco terminar de cavar!", SSM_INFO);
-		var i := 1;
-		var mex := who.x;
-		var mey := who.y;
-		var parts := {};
-		var maplevel := CInt(GetObjProperty(map, "level") );
-		var loot := "treasuremap" + maplevel;
-
-		var chest;
-		chestz := who.z;
-		sendsysmessage(who, " " + who.z);
-		var chests := CreateTreasureChests(maplevel, 1, 0, chestx, chesty, who.z, who.realm, loot);
-		chest := chests[1];
-/*		if (GetObjProperty(map, "tesouroescondido") == 1)
-			Loot_Generate(chest, loot);
-		endif  	*/
-
-		var ret := MoveObjectToLocation(chest, chest.x, chest.y, chest.z, who.realm,  MOVEOBJECT_FORCELOCATION);
-//		sendsysmessage(who, " " + ret);
-
-		chest.movable := 0;
-
-		while((i <= 9) && (who.x == mex) && (who.y == mey))
-			if((who.x != mex) && (who.y != mey))
-				foreach thing in parts
-					DestroyItem(thing);
-				endforeach
-				break;
-			endif
-
-			PrintTextAbove(who, "*Cavando*");
-			PerformAction(who, 0x0b);
-			PlaySoundEffect(who, 0x126);
-			sleep(1);
-
-			if(i == 2)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2321, 1, who.realm);
-          			patch.movable := 0;
-		          	parts.append(patch);
-        		elseif(i == 3)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2322, 1, who.realm);
-          			patch.movable := 0;
-          			parts.append(patch);
-        		elseif(i == 4)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2323, 1, who.realm);
-          			patch.movable := 0;
-          			parts.append(patch);
-        		elseif(i == 5)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2324, 1, who.realm);
-          			patch.movable := 0;
-          			parts.append(patch);
-          			chest.movable := 1;
-          			MoveObjectToLocation(chest, chest.x, chest.y, (chest.z+2), who.realm,  MOVEOBJECT_FORCELOCATION);
-          			chest.movable := 0;
-        		elseif(i == 6)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2324, 1, who.realm);
-          			patch.movable := 0;
-          			parts.append(patch);
-          			chest.movable := 1;
-          			MoveObjectToLocation(chest, chest.x, chest.y, (chest.z+2), who.realm,  MOVEOBJECT_FORCELOCATION);
-          			chest.movable := 0;
-        		elseif(i == 7)
-          			var patch := CreateItemAtLocation(chestx, chesty, chestz, 2324, 1, who.realm);
-          			patch.movable := 0;
-          			parts.append(patch);
-          			chest.movable := 1;
-          			MoveObjectToLocation(chest, chest.x, chest.y,( chest.z+2), who.realm,  MOVEOBJECT_FORCELOCATION);
-          			chest.movable := 0;
-        		elseif(i == 8)
-          			chest.movable := 1;
-          			MoveObjectToLocation(chest, chest.x, chest.y, (chest.z+2), who.realm,  MOVEOBJECT_FORCELOCATION);
-          			chest.movable := 0;
-          			foreach thing in parts
-            				DestroyItem(thing);
-          			endforeach
-        		endif
-			if((who.x != mex) || (who.y != mey))
-				SendSysMessageEx(who,"Você deve ficar parado enquanto cava.", SSM_FAIL);
-				DestroyItem(chest);
-		        	return;
-		      	endif
-
-        		i := i + 1;
-
-		endwhile
-
-		who.frozen := 0;
-		PrintTextAbove(who, "*Termina de cavar*");
-		sleep(5);
-
-		// Para implementar basta compilar o mining.src depois colocar mais mobs para maplevels diferentes há um bug no z, o chest sai voando mas da pra pegar
-
-		if (maplevel == 1)
-            PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte já fizeram!");
-			sleep(2);
-            createnpcfromtemplate(":brainai:bandoleiro", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:roguearcher", who.x, who.y, who.z +5, 0 , who.realm);
-			createnpcfromtemplate(":brainai:trapaceiro", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:saqueadortumulo", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:saqueadortumulo", who.x, who.y, who.z +5, 0 , who.realm);
-			sleep(15);
-			PrintTextAbove(who, "*O ataque continua e o lider se aproxima*");
-			createnpcfromtemplate(":brainai:mercenario", who.x, who.y, who.z +5, 0 , who.realm);
-      	elseif (maplevel == 2)
-		 	PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte já fizeram!");
-			sleep(2);
-            createnpcfromtemplate(":brainai:mercenario", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:roguearcher", who.x, who.y, who.z +5, 0 , who.realm);
-			createnpcfromtemplate(":brainai:trapaceiro", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:roguearcher", who.x, who.y, who.z +5, 0 , who.realm);
-            createnpcfromtemplate(":brainai:mercenario", who.x, who.y, who.z +5, 0 , who.realm);
-			createnpcfromtemplate(":brainai:mercenario", who.x, who.y, who.z +5, 0 , who.realm);
-        elseif (maplevel == 3)
-			PrintTextAbove(who, "*Gritos e lamurias de almas atormendas* Juntem-se a nos...");
-			sleep(5);
-			CreateNpcFromTemplate(":brainai:Ghost", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Ghost", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Ghost", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Spectre", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Spectre", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Spectre", who.x, who.y, who.z, 0, who.realm);
-			sleep(15);
-			PrintTextAbove(who, "*Vozes Fantasmagoricas* Deliciosa ganancia...");
-			CreateNpcFromTemplate(":brainai:espectroanciao", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:espectroanciao", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:espectroanciao", who.x, who.y, who.z, 0, who.realm);
-		elseif (maplevel == 4)
-			PrintTextAbove(who, "*Criaturas gigantescas guardam o local*");
-			sleep(5);
-			CreateNpcFromTemplate(":brainai:Wyvern", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Wyvern", who.x, who.y, who.z, 0, who.realm);
-			CreateNpcFromTemplate(":brainai:Wyvern", who.x, who.y, who.z, 0, who.realm);
-			sleep(15);
-			CreateNpcFromTemplate(":brainai:RedDragon", who.x, who.y, who.z, 0, who.realm);
-		elseif (maplevel == 5)
-			CreateNpcFromTemplate(":brainai:Dracolich", who.x, who.y, who.z, 0, who.realm);
+    var items := EnumerateItemsInContainer(who.backpack);
+    var maps := array;
+    foreach item in items
+        if (IsTreasureMap(item))
+            if (!IsMapSolved(item))
+                maps.append(item);
+            endif
         endif
-		chest.movable := 0;
-			//SetObjProperty(item, "#DestroyAt", ReadGameClock() + 60); 
-      		EraseObjProperty(map, "level");
-      		EraseObjProperty(map, "chestx");
-      		EraseObjProperty(map, "chesty");
-      		SetObjProperty(map, "Solved", 1);
-      		map.name := "Mapa de tesouro [Completado por " + who.name + "]";
-			//TS_StartTimer(chest, "treasure_chest_destroy", 600);
-			detach();
-			ChestDestroy (chest);
-    endif
-
+    endforeach
+    return maps;
 endfunction
 
-function ChestDestroy( chest )
-sleep(600);
-DestroyItem(chest);
-print("o chest foi destruído");
-endfunction
 
 function GetRange( who );
 
@@ -281,7 +60,7 @@ function GetRange( who );
   elseif( skill >= 60 )
     return 3;
   elseif( skill >= 40 )
-    return 2;;
+    return 2;
   elseif( skill >= 20 )
     return 1;
   else
@@ -327,53 +106,36 @@ function GetOreAmount(realm, x_pos, y_pos)
 endfunction
 
 function GetResourceId(oreToSearch)
+	// If the oreToSearch is already an objtype in string format (starts with 0x),
+	// just return the integer value of it
+	if (oreToSearch[1, 2] == "0x")
+		return CInt(oreToSearch);
+	endif
 
+	// For backward compatibility, keep the name-based mapping
 	case (oreToSearch)
-
 		"areia": return 0x6075;
-
 		"cobre": return 0x6450;
-
 		"bronze": return 0x699c;
-
 		"argila": return 0x6074;
-
 		"ferro": return 0x6300; //TN USED
-
 		"litan": return 0x6301;
-
-		"Fulmetium ": return 0x6302;
-
+		"Fulmetium": return 0x6302;
 		"Venetium": return 0x6303;
-
 		"Ignium": return 0x6304;
-
 		"ouro": return 0x6305;
-
 		//"durang": return 0x6306;
-
 		"galvorn": return 0x6307; //TN USED
-
 		"mithril": return 0x6308; //TN USED
-
 		"frigutium": return 0x6451; //TN USED
-
         "illyra": return 0x6314;
-
 		//"gromril": return 0x6452; //TN USED
-
 		"prata": return 0x6992; //TN USED
-
 		"estanho": return 0x6990; //TN USED
-
 		//"ario": return 0x6312;
-
 		"pedras": return 0x6666;
-
 		"marmore": return 0x8850;
-
 		"arenito": return 0x8852;
-
 	endcase
 
 endfunction
@@ -692,7 +454,6 @@ function getAllOres()
 		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
 		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
 
-		// toStruct(ORE_LITAN, "Minério de Litan", "Barra de Litan", 0x6301, {}, 1801),
 		toStruct(ORE_ILLYRA, "Minério de Illyra", "Barra de Illyra", 0x6314, {}, 2278),
 		toStruct(ORE_MITHRIL, "Minério de Mithril", "Barra de Mithril", 0x6308, {}, 2448),
 
@@ -763,3 +524,29 @@ endenum
 enum INGOT
 	INGOT_CHARCOAL := "INGOT_CHARCOAL"
 endenum
+
+// Get ore name based on object ID for display purposes
+function GetOreNameById(ore_id)
+    case (ore_id)
+        "0x6075": return "Areia";
+        "0x6450": return "Cobre";
+        "0x699c": return "Bronze";
+        "0x6074": return "Argila";
+        "0x6300": return "Ferro";
+        "0x6301": return "Litan";
+        "0x6302": return "Fulmetium";
+        "0x6303": return "Venetium";
+        "0x6304": return "Ignium";
+        "0x6305": return "Ouro";
+        "0x6307": return "Galvorn";
+        "0x6308": return "Mithril";
+        "0x6451": return "Frigutium";
+        "0x6314": return "Illyra";
+        "0x6992": return "Prata";
+        "0x6990": return "Estanho";
+        "0xBD11": return "Pedras";
+        "0x8850": return "Mármore";
+        "0x8852": return "Arenito";
+        default: return "Desconhecido ("+ore_id+")";
+    endcase
+endfunction;
