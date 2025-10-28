@@ -216,7 +216,6 @@ function DoPurchaseCmd(npc, player)
 			RemoveItemMerchant(npc, player, serial);
 		else
 			DoPurchase(npc, player, input[0]);
-			break;
 		endif
 
 	endwhile
@@ -412,7 +411,7 @@ function DoPurchase(npc, player, input)
 		cost.lote := 1;
 	endif
 
-	if (ContaCapital(player) < CInt(cost.cost_amt))
+	if (ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < CInt(cost.cost_amt)) 
 		SendSysMessageEx(player, "Você não tem moedas o suficiente para comprar isto.");
 		return 0;
 	endif
@@ -555,7 +554,7 @@ function AddItemToSell(npc, player, item)
 		SendSysMessageEx(player, "Com essa quantidade de items por lote, alguns ficarão incompletos e issõ não é permitido.",
 				   SSM_FAIL);
 		return;
-	elseif (player.cmdlevel < 3 && ContaCapital(player) < total_imposto)
+	elseif (player.cmdlevel < 3 && ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < total_imposto)
 		SendSysMessageEx(player, "Você não tem moedas suficiente para pagar o vendedor pelo seu servico.",
 				   SSM_FAIL);
 		return 0;
