@@ -14,81 +14,20 @@ include ":attributes:attributeConstants";
 include ":objWrapper:Model/WeaponWrapper";
 
 enum class WEAPON_FX
-	SOUND,
-	ANIM
+	SOUND := "SOUND",
+	ANIM := "ANIMATION"
 endenum
-
-// TODO: Pra economizar memória, jogar essas vars em uma função com return
-var MISS_FX := struct {
-	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
-};
-var UNARMED_FX := struct {
-	ANIM := array{0xA, 0x1F}, // Ajeitar essa animação do 0xA, tá diferente do Fiddler e não estou achano o soco
-	SFX := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var BOW_FX := struct {
-	ANIM := array{0x12},
-	SFX := array{0x235, 0x4C9, 0x4CA},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var CROSSBOW_FX := struct {
-	ANIM := array{0x13},
-	SFX := array{0x235, 0x4C9, 0x4CA},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var SLASH_1H_FX := struct {
-	ANIM := array{0xD},
-	SFX := array{0x23C,0x23D},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var SLASH_2H_FX := struct {
-	ANIM := array{0xC},
-	SFX := array{0x237,0x238},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var PIERCING_1H_FX := struct {
-	ANIM := array{0xA},
-	SFX := array{0x23C,0x23D},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var PIERCING_2H_FX := struct {
-	ANIM := array{0xE},
-	SFX := array{0x23D, 0x23D},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var BLUNT_1H_FX := struct {
-	ANIM := array{0xB},
-	SFX := array{0x3AC},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
-var BLUNT_2H_FX := struct {
-	ANIM := array{0xB},
-	SFX := array{0x3AE},
-	ANIM_CRITICAL := array{},
-	SFX_CRITICAL := array{}
-};
 
 function PlayAttackAnimation(byRef attackInfo)
 	var attackAnim;
 
-	if (who.weapon)
-		attackAnim := getWeaponFX(WEAPON_FX::ANIM, who.weapon);
-	endif
-
-	if (!attackInfo.GetAttacker().IsNPC())
+	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
 		attackAnim := 0x0c;
+	else
+		attackAnim := getWeaponFX(WEAPON_FX::ANIM, attackInfo.GetAttacker().GetEquipBySlot(WEAPON), attackInfo.GetDamage().IsCritical());
 	endif
 
-	PerformAction(attackInfo.GetAttacker().GetObjRef(), attackAnim);
+	attackInfo.GetAttacker().PlayAnimation(attackAnim);
 endfunction
 
 function PlayAttackSound(byRef attackInfo)
@@ -97,25 +36,27 @@ function PlayAttackSound(byRef attackInfo)
 
 	if (attackInfo.Succeded())
 		if (attackInfo.GetDamage().IsCritical())
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), true);
-			if (attackInfo.GetAttacker().GetRace() == ANAO)
-				attackerSound := 0; // Som de grito Anão
-			elseif (attackInfo.GetAttacker().GetRace() == DROW)
-				attackerSound := 0; // Som de grito Drow
-			elseif (attackInfo.GetAttacker().GetRace() == ELFO)
-				attackerSound := 0; // Som de grito Elfo
-			elseif (attackInfo.GetAttacker().GetRace() == ORC)
-				attackerSound := 0; // Som de grito Orc
-			elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
-				attackerSound := 0; // Som de grito Humano
-			elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
-				attackerSound := 0; // Som de grito Polski
+			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON), true); // Passa true para indicar que é CRÍTICO
+			if (attackInfo.GetDefender().IsDead())
+				if (attackInfo.GetAttacker().GetRace() == ANAO)
+					attackerSound := 0; // Som de grito Anão
+				elseif (attackInfo.GetAttacker().GetRace() == DROW)
+					attackerSound := 0; // Som de grito Drow
+				elseif (attackInfo.GetAttacker().GetRace() == ELFO)
+					attackerSound := 0; // Som de grito Elfo
+				elseif (attackInfo.GetAttacker().GetRace() == ORC)
+					attackerSound := 0; // Som de grito Orc
+				elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
+					attackerSound := 0; // Som de grito Humano
+				elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
+					attackerSound := 0; // Som de grito Polski
+				endif
 			endif
 		else
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
 		endif
-	else
-		attackInfo.GetAttacker().PlaySound();
+	else // Se errou o golpe
+		weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false); // Passa falso para indicar que é MISS
 	endif
 
 	attackInfo.GetAttacker().PlaySound(weaponSound);
@@ -127,109 +68,114 @@ endfunction
 
 
 
-function PlayHitSounds(attacker, defender)
-	var wpn_a_elem2 := attacker.weapon.getCfgElem();
-	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
+// function PlayHitSounds(attacker, defender)
+// 	var wpn_a_elem2 := attacker.weapon.getCfgElem();
+// 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
-	var attack_sound;
-	if ( wpn_a_elem2.HitSound )
-		attack_sound := wpn_a_elem2.HitSound;
-	else
-		//NPC intrinsic weapon
-		attack_sound := wpn_a_elem2.AttackHitSound;
-	endif
+// 	var attack_sound;
+// 	if ( wpn_a_elem2.HitSound )
+// 		attack_sound := wpn_a_elem2.HitSound;
+// 	else
+// 		//NPC intrinsic weapon
+// 		attack_sound := wpn_a_elem2.AttackHitSound;
+// 	endif
 
-	if (attacker.weapon)
-		attack_sound := getWeaponFX(WEAPON_FX::SOUND, attacker.weapon);
-	endif
+// 	if (attacker.weapon)
+// 		attack_sound := getWeaponFX(WEAPON_FX::SOUND, attacker.weapon);
+// 	endif
 
-	PlaySoundEffect(attacker, attack_sound);
+// 	PlaySoundEffect(attacker, attack_sound);
 
-	var damaged_sound;
-	if ( defender.npctemplate )
-		var npctemplate := defender.npctemplate;
-		npctemplate := npctemplate[10, len(npctemplate)-9];
-		damaged_sound := npc_cfg2[npctemplate].DamageSound;
-	else
-		var sounds;
-		if ( defender.gender == 0 )
-			// Male
-			sounds := array(341, 342, 343, 345, 346);
-		else
-			// Female
-			sounds := array(332, 333, 334, 335, 336);
-		endif
-		damaged_sound := sounds[RandomInt(sounds.size())+1];
-	endif
+// 	var damaged_sound;
+// 	if ( defender.npctemplate )
+// 		var npctemplate := defender.npctemplate;
+// 		npctemplate := npctemplate[10, len(npctemplate)-9];
+// 		damaged_sound := npc_cfg2[npctemplate].DamageSound;
+// 	else
+// 		var sounds;
+// 		if ( defender.gender == 0 )
+// 			// Male
+// 			sounds := array(341, 342, 343, 345, 346);
+// 		else
+// 			// Female
+// 			sounds := array(332, 333, 334, 335, 336);
+// 		endif
+// 		damaged_sound := sounds[RandomInt(sounds.size())+1];
+// 	endif
 
-	PlaySoundEffect(defender, damaged_sound);
-endfunction
+// 	PlaySoundEffect(defender, damaged_sound);
+// endfunction
 
 function GetWeaponFX(FX, weapon, isCriticalAttack := false)
 	var attackFX;
-	var attackType := WeaponWrapper(weapon).GetAttackType();
+	weapon := weapon ? WeaponWrapper(weapon) : error{ errortext := "No weapon provided!" };
+	var attackType := weapon.GetAttackType().Upper();
 
-	if (weapon.objtype == FIST)
+	if (FX != WEAPON_FX::ANIM && FX != WEAPON_FX::SOUND)
+		return error{ errortext := "Invalid FX type!" };
+	endif
+
+	// O primeiro array é para ataques normais, o segundo para críticos
+	if (weapon == error) // Se não foi possível obter a arma ou tá errado ou é MISS
+		// TODO: Pensar se separa o som de MISS de acordo com a arma ou deixa genérico
+		return array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+	elseif (weapon.GetCategory() == UNARMED)
 		if (FX == WEAPON_FX::ANIM)
-			attackFX := _GetAnim(UNARMED_FX, isCriticalAttack);
+			attackFX := !isCriticalAttack ? array{0xA, 0x1F} : array{}; // Ajeitar essa animação do 0xA, tá diferente do Fiddler e não estou achando o soco
+		elseif (FX == WEAPON_FX::SOUND)
+			attackFX := !isCriticalAttack ? array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B} : array{};
+		endif
+	elseif (weapon.GetCategory() == BOW)
+		if (FX == WEAPON_FX::ANIM)
+			attackFX := !isCriticalAttack ? array{0x12} : array{};
 		else
-			attackFX := _GetSound(UNARMED_FX, isCriticalAttack);
+			attackFX := !isCriticalAttack ? array{0x235, 0x4C9, 0x4CA} : array{};
+		endif
+	elseif (weapon.GetCategory() == CROSSBOW)
+		if (FX == WEAPON_FX::ANIM)
+			attackFX := !isCriticalAttack ? array{0x13} : array{};
+		else
+			attackFX := !isCriticalAttack ? array{0x235, 0x4C9, 0x4CA} : array{};
 		endif
 	else
-		if (weapon.isRanged())
-			if (weapon.isBow())
+		if (Upper(weapon.GetAttribute()) == Upper(TWOHANDED))
+			if (attackType == Upper(SLASHDAMAGE))
 				if (FX == WEAPON_FX::ANIM)
-					attackFX := _GetAnim(BOW_FX, isCriticalAttack);
+					attackFX := !isCriticalAttack ? array{0xC} : array{};
 				else
-					attackFX := _GetSound(BOW_FX, isCriticalAttack);
+					attackFX := !isCriticalAttack ? array{0x237, 0x238} : array{};
 				endif
-			else
+			elseif (attackType == Upper(PIERCINGDAMAGE))
 				if (FX == WEAPON_FX::ANIM)
-					attackFX := _GetAnim(CROSSBOW_FX, isCriticalAttack);
+					attackFX := !isCriticalAttack ? array{0xE} : array{};
 				else
-					attackFX := _GetSound(CROSSBOW_FX, isCriticalAttack);
+					attackFX := !isCriticalAttack ? array{0x23D, 0x23D} : array{};
+				endif
+			elseif (attackType == Upper(BLUNTDAMAGE))
+				if (FX == WEAPON_FX::ANIM)
+					attackFX := !isCriticalAttack ? array{0xB} : array{};
+				else
+					attackFX := !isCriticalAttack ? array{0x3AE} : array{};
 				endif
 			endif
 		else
-			if (weapon.getType().Upper() == TWOHANDED.Upper())
-				if (attackType.Upper() == SLASHDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(SLASH_2H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(SLASH_2H_FX, isCriticalAttack);
-					endif
-				elseif (attackType.Upper() == PIERCINGDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(PIERCING_2H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(PIERCING_2H_FX, isCriticalAttack);
-					endif
-				elseif (attackType.Upper() == BLUNTDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(BLUNT_2H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(BLUNT_2H_FX, isCriticalAttack);
-					endif
+			if (attackType == Upper(SLASHDAMAGE))
+				if (FX == WEAPON_FX::ANIM)
+					attackFX := !isCriticalAttack ? array{0xD} : array{};
+				else
+					attackFX := !isCriticalAttack ? array{0x23C, 0x23D} : array{};
 				endif
-			else
-				if (attackType.Upper() == SLASHDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(SLASH_1H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(SLASH_1H_FX, isCriticalAttack);
-					endif
-				elseif (attackType.Upper() == PIERCINGDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(PIERCING_1H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(PIERCING_1H_FX, isCriticalAttack);
-					endif
-				elseif (attackType.Upper() == BLUNTDAMAGE.Upper())
-					if (FX == WEAPON_FX::ANIM)
-						attackFX := _GetAnim(BLUNT_1H_FX, isCriticalAttack);
-					else
-						attackFX := _GetSound(BLUNT_1H_FX, isCriticalAttack);
-					endif
+			elseif (attackType == Upper(PIERCINGDAMAGE))
+				if (FX == WEAPON_FX::ANIM)
+					attackFX := !isCriticalAttack ? array{0xA} : array{};
+				else
+					attackFX := !isCriticalAttack ? array{0x23C, 0x23D} : array{};
+				endif
+			elseif (attackType == Upper(BLUNTDAMAGE))
+				if (FX == WEAPON_FX::ANIM)
+					attackFX := !isCriticalAttack ? array{0xB} : array{};
+				else
+					attackFX := !isCriticalAttack ? array{0x3AC} : array{};
 				endif
 			endif
 		endif

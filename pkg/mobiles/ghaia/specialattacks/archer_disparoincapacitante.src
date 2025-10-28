@@ -12,6 +12,7 @@ program VacuoDeMana(attacker)
 
 endprogram */
 use uo;
+use math;
 
 include ":fls_core:packets";
 include ":combat:combat";

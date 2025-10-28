@@ -58,6 +58,8 @@ enum class COMBAT_ABILITY
 	MANCHA_DA_CORRUPCAO := "Mancha da Corrupcao",
 	TIROTHAN := "Tirothan",
 	INSTINTO_ASSASSINO := "Instinto Assassino",
+	SENSO_DA_NATUREZA := "Senso da Natureza",
+	VENENO_PURO := "Veneno Puro",
 
 
 

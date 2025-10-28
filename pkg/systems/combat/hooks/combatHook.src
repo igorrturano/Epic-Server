@@ -141,8 +141,8 @@ function TryToAttack(byRef attackInfo)
 		DoAttack(attackInfo);
 	else
 		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
+		PlayAttackSound(attackInfo); // Se errou, chama o som aqui
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
-		PlayAttackSound(attackInfo); // Se errou, toca o som de MISS aqui
 	endif
 endfunction
 
