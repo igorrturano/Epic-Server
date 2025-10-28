@@ -339,7 +339,6 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 	endif
 
 	var corFinal :=  propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
-	
 	return CriaObjetoPropFabricado(
 							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
