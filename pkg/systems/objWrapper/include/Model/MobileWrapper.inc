@@ -226,11 +226,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetNPCTemplate(this)
-		if (!this.IsNPC())
-			return error{ "errortext" := "This mobile is not an NPC!" };
-		else
-			return this._objRef.npctemplate;
-		endif
+		return this.IsNPC() ? this._objRef.npctemplate : error{ errortext := "This mobile is not an NPC!" };
+	endfunction
+
+	function GetNPCTemplateCfg(this)
+		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{ errortext := "This mobile is not an NPC or has no template configured!" };
 	endfunction
 
 	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
@@ -256,7 +256,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		elseif (equipSlot == FEET)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, FEET);
 		else
-			return error {"errortext" := "Wrong slot specified!"};
+			return error { errortext := "Wrong slot specified!" };
 		endif
 
 		foreach equip in (equipsInSlot)
@@ -300,7 +300,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error {"errortext" := "The param must be an ArmorWrapper or WeaponWrapper!"};
+			return error{ errortext := "The param must be an ArmorWrapper or WeaponWrapper!" };
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -313,7 +313,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error {"errortext" := "The param must be an ArmorWrapper or WeaponWrapper!"};
+			return error{ errortext := "The param must be an ArmorWrapper or WeaponWrapper!" };
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -329,7 +329,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function IsNPC(this)
-		return this._objRef.npctemplate != false;
+		return this._objRef.npctemplate != error;
 	endfunction
 
 	function IsDead(this)
@@ -346,6 +346,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function DistanceTo(this, other) // other: ObjRef
 		return Distance(this._objRef, other);
+	endfunction
+
+	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
+		PerformAction(this._objRef, animID, repeatcount, framecount, backward, repeatflag, delay);
+		return this;
 	endfunction
 
 	function Dispose(this)
@@ -365,12 +370,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function Equals(this, byRef otherMobileWrapper)
 		if (!(otherMobileWrapper is @MobileWrapper))
-			return error{ "errortext" := "The param must be a MobileWrapper!" };
+			return error{ errortext := "The param must be a MobileWrapper!" };
 		endif
 
 		return this.GetObjRef() == otherMobileWrapper.GetObjRef() &&
 			   this.GetSerial() == otherMobileWrapper.GetSerial();
 	endfunction
+
+	function ToString(this)
+	enfunction
 endclass
 
 enum class MOBILE_GENDER
