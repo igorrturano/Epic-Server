@@ -197,35 +197,6 @@ program core_npcDeath(params)
 		endif
 	endif
 
-	if (GetObjProperty(corpse, "soulharvest"))
-		var shamanserial := getobjProperty(corpse, "soulharvest");
-		if (shamanserial && !shamanserial.errortext)
-			var shaman := SystemFindObjectBySerial(shamanserial);
-			if (shaman)
-				var shaman_reap_bonus := Cint(AP_GetSkill(shaman, THEOLOGY));
-
-				var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
-				if (!shaman_souls)
-					var shaman_souls := 0;
-				endif
-
-				if (shaman_souls < Cint(shaman_reap_bonus / 5))
-					shaman_souls := shaman_souls + 1;
-					PerformAction(shaman, ANIM_SALUTE);
-					sleep(1);
-					PlayStationaryEffectEx(corpse.x, corpse.y, corpse.z, shaman.realm, 0x6C6F, 0, 60, 2676, 5, 0);
-					PlaySoundEffect(shaman, 0x653);
-
-					SendSysMessage(shaman, "Voce colhe uma alma.");
-				else
-					SendSysMessage(shaman, "Voce nao consegue conduzir mais almas.");
-				endif
-
-				SetobjProperty(shaman, "shaman_souls", shaman_souls);
-			endif
-		endif
-	endif
-
 	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
 		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
@@ -242,11 +213,11 @@ program core_npcDeath(params)
 			endif
 		endif
 
-		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY));
+		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY) / 10);
 
 		// HABILIDADES SHAMAN
-		if (TemHabilidade(mob, "Sede de sangue"))
-			HealFLS(mob, Cint(shaman_reap_bonus / 10));
+		if (TemHabilidade(mob, "Sede de Sangue"))
+			HealFLS(mob, shaman_reap_bonus);
 		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN

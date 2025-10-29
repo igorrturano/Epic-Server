@@ -12,7 +12,12 @@ function playAltarAnimations(who, item)
    item.graphic := item.objtype;
    var effect := effectByAltar(altar);
    PlaySoundEffect(who, SFX_SPELL_HEAL);
-   PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, effect, 255, 80, 0, 0);
+   var z := who.z;
+   if (GetObjProperty(who, "chardata").magia == "Shaman")
+	  z := z + 15;
+   endif
+
+	PlayStationaryEffectEx(who.x, who.y, z, who.realm, effect, 255, 60, 0, 0);
 endfunction
 
 function effectByAltar(altar)
@@ -29,7 +34,7 @@ function effectByAltar(altar)
 	  KAI:
 		 effect := 0x6d57;
 	  USHKRAR:
-		 effect := 0X6C91;
+		 effect := EPIC_FX_BLOOD_DROP;
 	  CETICOS:
 		 effect := 0;
 	  HALLEUAD:
