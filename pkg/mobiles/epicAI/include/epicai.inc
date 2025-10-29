@@ -1307,17 +1307,6 @@ function PursueTarget(opponent)
         return 0;
     endif
 
-    // Store last known position whenever we can see the target
-    if (CheckLineOfSight(me, opponent))
-        var last_loc := struct{
-            "x" := opponent.x,
-            "y" := opponent.y,
-            "z" := opponent.z,
-            "time" := ReadGameClock()
-        };
-        SetObjProperty(me, "#enemy_last_loc", last_loc);
-    endif
-
     // Calculate ideal engagement distance once
     var ideal_distance := CalculateIdealPursuitDistance();
 
@@ -1373,6 +1362,7 @@ function PursueTarget(opponent)
     var has_los := CheckLineOfSight(me, opponent);
 
     if (has_los)
+        PrintTextAbove(me, "*LOS=true, dist=" + dist + "*", 3, 66);
         // Direct line of sight - but verify we can actually move toward target
         var movement_attempts := 0;
         var stuck_count := 0;
@@ -1381,6 +1371,7 @@ function PursueTarget(opponent)
         while (Distance(me, opponent) > ideal_distance && movement_attempts < 10)
             // Re-check if we should keep pursuing
             if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                PrintTextAbove(me, "*break:shouldKeep=false*", 3, 33);
                 break;
             endif
 
@@ -1400,14 +1391,19 @@ function PursueTarget(opponent)
             var moved := (me.x != old_x || me.y != old_y);
             var got_closer := (new_dist < old_dist);
 
+            // Debug: show position and distance changes
+            PrintTextAbove(me, "*moved:" + moved + " closer:" + got_closer + " d:" + CInt(new_dist) + "*", 3, 88);
+
             // Check if we actually made progress (moved AND got closer)
             if (!moved || !got_closer)
                 stuck_count += 1;
+                PrintTextAbove(me, "*STUCK:" + stuck_count + " attempts:" + movement_attempts + "*", 3, 38);
 
                 // If stuck after 2 attempts, use TacticalReposition to find alternative path
                 if (stuck_count >= 2)
                     // We have LOS but can't move directly - probably a wall
                     // Use TacticalReposition to find an alternative location
+                    PrintTextAbove(me, "*REPOSITION!*", 3, 53);
                     EraseObjProperty(me, "#pursuit_path_cache");
                     TacticalReposition(opponent, 1);
                     use_pathfinding := 1; // Then try pathfinding from new position
@@ -1417,23 +1413,35 @@ function PursueTarget(opponent)
                 stuck_count := 0; // Reset counter if we made progress
             endif
         endwhile
+
+        if (movement_attempts >= 10)
+            PrintTextAbove(me, "*MAX ATTEMPTS REACHED*", 3, 38);
+        endif
     endif
 
     // Use pathfinding if: no LOS OR stuck with LOS
     if (!has_los || use_pathfinding)
+        if (!has_los)
+            PrintTextAbove(me, "*NO LOS - pathfinding*", 3, 88);
+        else
+            PrintTextAbove(me, "*STUCK - force pathfinding*", 3, 53);
+        endif
         // Use cached pathfinding
         var path := GetOrCreatePursuitPath(opponent);
         if (path)
+            PrintTextAbove(me, "*Path found: " + path.size() + " steps*", 3, 88);
             var path_step := 0;
             foreach coord in path
                 path_step += 1;
                 // Re-check distance in case target moved
                 if (Distance(me, opponent) <= ideal_distance)
+                    PrintTextAbove(me, "*Path: reached ideal dist*", 3, 66);
                     break;
                 endif
 
                 // Re-check if we should keep pursuing
                 if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                    PrintTextAbove(me, "*Path: shouldKeep=false*", 3, 33);
                     break;
                 endif
 
@@ -1445,35 +1453,10 @@ function PursueTarget(opponent)
                 endif
                 sleepms(100);
             endforeach
+            PrintTextAbove(me, "*Path done: " + path_step + "/" + path.size() + "*", 3, 88);
         else
-            // Path failed - try to move to last known position
-            var last_loc := GetObjProperty(me, "#enemy_last_loc");
-            if (last_loc)
-                var time_since := ReadGameClock() - last_loc.time;
-
-                // Only use last known position if it's recent (within 30 seconds)
-                if (time_since < 30)
-
-                    // Try to path to last known position
-                    var last_loc_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
-                    if (last_loc_path)
-                        foreach coord in last_loc_path
-                            if (CheckLineOfSight(me, opponent))
-                                break; // Found the target again!
-                            endif
-
-                            if (should_run)
-                                RunTowardLocation(coord.x, coord.y);
-                            else
-                                WalkTowardLocation(coord.x, coord.y);
-                            endif
-                            sleepms(100);
-                        endforeach
-                    endif
-                endif
-            endif
-
-            // Check if it's due to height difference
+            PrintTextAbove(me, "*PATH FAILED!*", 3, 38);
+            // Path failed - check if it's due to height difference
             var z_diff := Abs(me.z - opponent.z);
 
             if (z_diff > 15)
