@@ -490,8 +490,8 @@ function DoPurchase(npc, player, input)
 								npcType := "vendedor";
 							endif
 							
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -520,8 +520,8 @@ function DoPurchase(npc, player, input)
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -553,8 +553,8 @@ function DoPurchase(npc, player, input)
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -580,8 +580,8 @@ function DoPurchase(npc, player, input)
 						else
 							npcType := "vendedor";
 						endif
-						var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-						AI_Speak(npc, responseAI);
+						// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+						// AI_Speak(npc, responseAI);
 
 						//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 						break;

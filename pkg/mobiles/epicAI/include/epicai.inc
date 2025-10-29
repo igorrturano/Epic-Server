@@ -9,7 +9,7 @@ include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 
-const MAX_Z_DIFF := 18;
+const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -1144,7 +1144,7 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    if ( GetCooldown(me, "peacemade") > 0 )
+    if ( GetCooldown(attacker, "peacemade") > 0 )
         return 0;
     endif
 
@@ -1152,20 +1152,24 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // if (!CheckLineOfSight(attacker, defender))
+    //     return 0;
+    // endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
         // Allow combat if defender initiated it
-        if (me.opponent == defender) return 1; endif
+        if (attacker.opponent == defender) return 1; endif
         // Otherwise prevent attacking during cooldown
         return 0;
     endif
 
-    var npc_elem := NPC_GetNPCConfig(me);
+    var npc_elem := NPC_GetNPCConfig(attacker);
 	var category := GetConfigString(npc_elem, "Category");
 
    if (category == "Aklats")
         // Usa função dedicada para detectar ameaças
-        var aklat_threat_detected := DetectAklatsThreats(me);
+        var aklat_threat_detected := DetectAklatsThreats(attacker);
         
         // Se não detectou ameaça, não pode atacar
         if (!aklat_threat_detected)
@@ -1217,13 +1221,134 @@ function CanFight(attacker, defender)
     return 1;
 endfunction
 
-function PursueTarget(opponent)
-    var dist := Distance(me, opponent);
-    
-    if (!shouldKeepPursuing(opponent, dist)) 
-        return 0; 
+// Pursuit behavior configuration constants
+const PURSUIT_PROGRESS_CHECK_INTERVAL := 3;  // seconds between progress checks
+const PURSUIT_MAX_NO_PROGRESS_COUNT := 3;    // failed checks before repositioning
+const PURSUIT_DISTANCE_TOLERANCE := 2;       // extra tiles before pursuing
+const PURSUIT_PATH_CACHE_DURATION := 8;      // seconds to cache pathfinding results
+const PURSUIT_TARGET_MOVE_THRESHOLD := 3;    // tiles moved before recalculating path
+
+// Helper: Calculate the ideal engagement distance based on weapon/brain type
+function CalculateIdealPursuitDistance()
+    var range_info := GetWeaponRangeInfo();
+
+    if (me.isHumanoidBrain())
+        if (me.weapon.isRanged() || range_info.max_range > 1)
+            return range_info.max_range;
+        elseif (me.isSage() && me.weapon.objtype == FIST)
+            return 6;
+        endif
+    else
+        // For monsters and animals, check if they're ranged
+        if (isMonsterRanged())
+            // Ranged monsters should maintain distance
+            return 8; // Safe distance for acid spit, web, etc.
+        endif
     endif
 
+    return 1; // Default melee distance
+endfunction
+
+// Helper: Check if we're already at the desired distance
+function IsWithinEngagementRange(opponent, ideal_distance)
+    var dist := Distance(me, opponent);
+
+    // Add tolerance to prevent micro-adjustments
+    if (dist <= (ideal_distance + PURSUIT_DISTANCE_TOLERANCE))
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+// Helper: Get cached path or calculate new one
+function GetOrCreatePursuitPath(opponent)
+    var path_cache := GetObjProperty(me, "#pursuit_path_cache");
+
+    // Check if we have a valid cached path
+    if (path_cache)
+        var cache_age := ReadGameClock() - path_cache.created_time;
+        var target_moved := CoordinateDistance(opponent.x, opponent.y, path_cache.target_x, path_cache.target_y);
+
+        // Use cached path if:
+        // 1. Cache is fresh (not expired)
+        // 2. Target hasn't moved significantly
+        // 3. We still have path steps remaining
+        if (cache_age < PURSUIT_PATH_CACHE_DURATION &&
+            target_moved < PURSUIT_TARGET_MOVE_THRESHOLD &&
+            path_cache.path && path_cache.path.size() > 0)
+            return path_cache.path;
+        endif
+    endif
+
+    // Cache invalid or expired - calculate new path
+    // Use searchskirt=15 to handle complex paths (L-shapes, long detours, etc.)
+    var new_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
+
+    if (new_path)
+        // Store new path in cache
+        path_cache := struct{
+            "path" := new_path,
+            "target_x" := opponent.x,
+            "target_y" := opponent.y,
+            "created_time" := ReadGameClock()
+        };
+        SetObjProperty(me, "#pursuit_path_cache", path_cache);
+    endif
+
+    return new_path;
+endfunction
+
+function PursueTarget(opponent)
+    var dist := Distance(me, opponent);
+
+    // Early validation check
+    if (!shouldKeepPursuing(opponent, dist))
+        return 0;
+    endif
+
+    // Store last known position whenever we can see the target
+    if (CheckLineOfSight(me, opponent))
+        var last_loc := struct{
+            "x" := opponent.x,
+            "y" := opponent.y,
+            "z" := opponent.z,
+            "time" := ReadGameClock()
+        };
+        SetObjProperty(me, "#enemy_last_loc", last_loc);
+    endif
+
+    // Calculate ideal engagement distance once
+    var ideal_distance := CalculateIdealPursuitDistance();
+
+    // Check if we need to retreat (too close for ranged)
+    if (dist < ideal_distance)
+        // Too close! Back away for ranged creatures
+        if (ideal_distance > 1)
+            // Ranged creature - run away in a loop until at safe distance
+            var should_run := !(me.hidden || me.concealed);
+            while (Distance(me, opponent) < ideal_distance)
+                if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                    break;
+                endif
+
+                if (should_run)
+                    RunAwayFrom(opponent);
+                else
+                    WalkAwayFrom(opponent);
+                endif
+                sleepms(100);
+            endwhile
+            return 1;
+        endif
+    endif
+
+    // Check if we're already at the desired distance - if so, we're done pursuing
+    if (IsWithinEngagementRange(opponent, ideal_distance))
+        return 1;
+    endif
+
+    // Execute special abilities at appropriate ranges
     if (dist >= 2 && dist <= 6)
         if (me.canSpitAcid())
             AcidSpray(me, opponent);
@@ -1231,7 +1356,7 @@ function PursueTarget(opponent)
 
         if (me.canShootWeb())
             WebShot(me, opponent);
-        endif 
+        endif
     endif
 
     if (me.canThrow())
@@ -1240,48 +1365,145 @@ function PursueTarget(opponent)
         endif
     endif
 
-    var range_info := GetWeaponRangeInfo();
-    if (me.isHumanoidBrain())
-        if (me.weapon.isRanged() || range_info.max_range > 1)
-            // Don't get closer than max_range
-            if (dist <= range_info.max_range)
-                return 1;
-            else
-                if (me.hidden || me.concealed)
-                    WalkToward(opponent);
-                else
-                    RunToward(opponent);
-                endif
+    // Determine movement speed based on stealth status
+    var should_run := !(me.hidden || me.concealed);
+
+    // Main movement logic - unified section (no more duplicates)
+    var use_pathfinding := 0;
+    var has_los := CheckLineOfSight(me, opponent);
+
+    if (has_los)
+        // Direct line of sight - but verify we can actually move toward target
+        var movement_attempts := 0;
+        var stuck_count := 0;
+        var last_dist := dist;
+
+        while (Distance(me, opponent) > ideal_distance && movement_attempts < 10)
+            // Re-check if we should keep pursuing
+            if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                break;
             endif
-        elseif (me.isSage() && me.weapon.objtype == FIST)
-            // Don't get closer than 6 tiles
-            if (dist <= 6)
-                return 1;
+
+            var old_x := me.x;
+            var old_y := me.y;
+            var old_dist := Distance(me, opponent);
+
+            if (should_run)
+                RunToward(opponent);
             else
-                if (me.hidden || me.concealed)
-                    WalkToward(opponent);
-                else
-                    RunToward(opponent);
-                endif
+                WalkToward(opponent);
             endif
+            sleepms(100);
+            movement_attempts += 1;
+
+            var new_dist := Distance(me, opponent);
+            var moved := (me.x != old_x || me.y != old_y);
+            var got_closer := (new_dist < old_dist);
+
+            // Check if we actually made progress (moved AND got closer)
+            if (!moved || !got_closer)
+                stuck_count += 1;
+
+                // If stuck after 2 attempts, use TacticalReposition to find alternative path
+                if (stuck_count >= 2)
+                    // We have LOS but can't move directly - probably a wall
+                    // Use TacticalReposition to find an alternative location
+                    EraseObjProperty(me, "#pursuit_path_cache");
+                    TacticalReposition(opponent, 1);
+                    use_pathfinding := 1; // Then try pathfinding from new position
+                    break;
+                endif
+            else
+                stuck_count := 0; // Reset counter if we made progress
+            endif
+        endwhile
+    endif
+
+    // Use pathfinding if: no LOS OR stuck with LOS
+    if (!has_los || use_pathfinding)
+        // Use cached pathfinding
+        var path := GetOrCreatePursuitPath(opponent);
+        if (path)
+            var path_step := 0;
+            foreach coord in path
+                path_step += 1;
+                // Re-check distance in case target moved
+                if (Distance(me, opponent) <= ideal_distance)
+                    break;
+                endif
+
+                // Re-check if we should keep pursuing
+                if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                    break;
+                endif
+
+                // Move to next waypoint
+                if (should_run)
+                    RunTowardLocation(coord.x, coord.y);
+                else
+                    WalkTowardLocation(coord.x, coord.y);
+                endif
+                sleepms(100);
+            endforeach
         else
-            if (me.hidden || me.concealed)
-                WalkToward(opponent);
-            else
-                RunToward(opponent);
+            // Path failed - try to move to last known position
+            var last_loc := GetObjProperty(me, "#enemy_last_loc");
+            if (last_loc)
+                var time_since := ReadGameClock() - last_loc.time;
+
+                // Only use last known position if it's recent (within 30 seconds)
+                if (time_since < 30)
+
+                    // Try to path to last known position
+                    var last_loc_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
+                    if (last_loc_path)
+                        foreach coord in last_loc_path
+                            if (CheckLineOfSight(me, opponent))
+                                break; // Found the target again!
+                            endif
+
+                            if (should_run)
+                                RunTowardLocation(coord.x, coord.y);
+                            else
+                                WalkTowardLocation(coord.x, coord.y);
+                            endif
+                            sleepms(100);
+                        endforeach
+                    endif
+                endif
             endif
-        endif
-    else
-        if (dist > 1)
-            if (me.hidden || me.concealed)
-                WalkToward(opponent);
-            else
-                RunToward(opponent);
+
+            // Check if it's due to height difference
+            var z_diff := Abs(me.z - opponent.z);
+
+            if (z_diff > 15)
+                // Significant height difference - try to find stairs/ramps by moving toward target
+                // Move in the general direction even without a perfect path
+                var attempts := 0;
+                while (attempts < 5 && !CheckLineOfSight(me, opponent))
+                    if (should_run)
+                        RunToward(opponent);
+                    else
+                        WalkToward(opponent);
+                    endif
+                    sleepms(200);
+                    attempts += 1;
+
+                    // Check if we found a path now
+                    if (CheckLineOfSight(me, opponent))
+                        break;
+                    endif
+                endwhile
+            endif
+
+            // Try tunnel tactics if available
+            if (me.hasTunnelTactics())
+                TunnelTactics(me, opponent);
             endif
         endif
     endif
 
-    // Track progress towards target
+    // Track progress towards target (moved to end, after movement attempt)
     var progress := GetObjProperty(me, "#pursue_progress");
     if (!progress)
         progress := struct{
@@ -1293,12 +1515,13 @@ function PursueTarget(opponent)
         };
     endif
 
-    // Only check progress every 2 seconds
-    if (ReadGameClock() >= progress.last_check_time + 2)
+    // Only check progress every PURSUIT_PROGRESS_CHECK_INTERVAL seconds
+    if (ReadGameClock() >= progress.last_check_time + PURSUIT_PROGRESS_CHECK_INTERVAL)
+        var current_dist := Distance(me, opponent);
         var moved := (me.x != progress.last_pos.x || me.y != progress.last_pos.y);
-        var got_closer := (dist < progress.last_dist);
-        
-        // No progress if we haven't moved OR haven't gotten closer in 2 seconds
+        var got_closer := (current_dist < progress.last_dist);
+
+        // No progress if we haven't moved OR haven't gotten closer
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
         else
@@ -1306,73 +1529,22 @@ function PursueTarget(opponent)
         endif
 
         // Update tracking info
-        progress.last_dist := dist;
+        progress.last_dist := current_dist;
         progress.last_pos.x := me.x;
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
-    endif
-    
-    // If we're not making progress after several checks, force a reposition
-    if (progress.no_progress_count >= 1)
-        EraseObjProperty(me, "path");
-        EraseObjProperty(me, "#enemy_last_loc");
-        TacticalReposition(opponent, 1);
-        progress.no_progress_count := 0;
-        progress.last_check_time := ReadGameClock();
-        SetObjProperty(me, "#pursue_progress", progress);
-        return 1;
+
+        // If we're not making progress after PURSUIT_MAX_NO_PROGRESS_COUNT checks, force a reposition
+        if (progress.no_progress_count >= PURSUIT_MAX_NO_PROGRESS_COUNT)
+            EraseObjProperty(me, "path");
+            EraseObjProperty(me, "#enemy_last_loc");
+            EraseObjProperty(me, "#pursuit_path_cache"); // Clear cached path when stuck
+            TacticalReposition(opponent, 1);
+            progress.no_progress_count := 0;
+        endif
     endif
 
     SetObjProperty(me, "#pursue_progress", progress);
-
-    // Normal pursuit logic
-    if (CheckLineOfSight(me, opponent))
-        var min_distance := 1;
-        if (me.weapon.isRanged() || range_info.max_range > 1)
-            min_distance := range_info.max_range;
-        elseif (me.isSage() && me.weapon.objtype == FIST)
-            min_distance := 6;
-        endif
-
-        if (Distance(me, opponent) > min_distance)
-            if (me.hidden || me.concealed)
-                WalkToward(opponent);
-            else
-                RunToward(opponent);
-            endif
-        endif
-        sleepms(100);
-    else
-        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
-        if (path)
-            foreach coord in path
-                var min_distance := 1;
-                if (me.weapon.isRanged() || range_info.max_range > 1)
-                    min_distance := range_info.max_range;
-                elseif (me.isSage() && me.weapon.objtype == FIST)
-                    min_distance := 6;
-                endif
-
-                if (Distance(me, opponent) <= min_distance)
-                    break;
-                endif
-                if (!shouldKeepPursuing(opponent, dist)) 
-                    break; 
-                endif
-                if (me.hidden || me.concealed)
-                    WalkTowardLocation(coord.x, coord.y);
-                else
-                    RunTowardLocation(coord.x, coord.y);
-                endif
-                sleepms(100);
-            endforeach
-        else
-            progress.no_progress_count += 1;
-            if (me.hasTunnelTactics())
-                TunnelTactics(me, opponent);
-            endif
-        endif
-    endif
 
     return 1;
 endfunction

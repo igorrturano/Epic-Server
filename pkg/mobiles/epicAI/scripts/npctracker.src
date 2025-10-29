@@ -1,6 +1,7 @@
 use uo;
 use os;
-
+include ":epicAI:epicai";
+include "include/sysEvent";
 const ACTIVATION_RANGE := 30;
 const CHECK_INTERVAL := 3;
 
@@ -12,6 +13,11 @@ program Logon(player)
             // Skip players
             if (mobile.acctname)
                 continue;
+            endif
+
+            if (mobile.alignment == 1 && CanFight(player, mobile)) // evil
+                var event := struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := player };
+		        SendEvent(mobile, event);
             endif
             
             // Check if NPC is dormant
