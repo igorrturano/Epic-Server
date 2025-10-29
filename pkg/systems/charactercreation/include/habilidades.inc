@@ -461,16 +461,6 @@ function comprarHabilidade(who, item, nv:=-1)
 			who.resist_cold_mod  := who.resist_cold_mod + 25;
 			who.resist_poison_mod  := who.resist_poison_mod + 25;
 			who.resist_energy_mod  := who.resist_energy_mod + 25;
-		elseif(escolhida == "Aura Mortis" || escolhida == "Dominatio Animae" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
-            var equips := EnumeratePhysicalItems(who);
-            //foreach para pegar todos os equips no corpo e remover as penalidades
-            foreach equip in equips
-                if ((equip.isa(POLCLASS_ARMOR)) && equip.resist_physical > 0)
-                    //Quando comprar a habilidade de Aura de Corrupca ou Dominatio Animae, a penalidade eh removida
-                    var penalty := CInt(itemdesc[equip.objtype].MageryPenalty);
-                    AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
-                endif
-            endforeach
         elseif(escolhida == "Artilheiro Preparado")
 			if (chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
