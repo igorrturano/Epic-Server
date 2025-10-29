@@ -9,7 +9,7 @@ include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 
-const MAX_Z_DIFF := 18;
+const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
