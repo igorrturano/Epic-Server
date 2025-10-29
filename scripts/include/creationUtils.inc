@@ -1509,7 +1509,7 @@ function getWisdomPathsByCulture(who)
         wisdomPaths.append("Clérigo");
     endif
     
-    if (culture != HAROLOTH)
+    if (culture != HAROLOTH && culture != GULTHRAK)
         wisdomPaths.append("Druida");
     endif
     

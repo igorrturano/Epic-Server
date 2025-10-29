@@ -33,7 +33,7 @@ program SpellScript(params)
 	endif
 
 	// Dano por tick baseado em THEOLOGY
-	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d6");
+	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d4");
 
 	SendSysMessageEx(caster, "Um enxame de insetos ataca " + targ.name + "!", SSM_INFO);
 	SendSysMessageEx(targ, "Você está sendo atacado por um enxame de insetos!", SSM_FAIL);
