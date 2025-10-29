@@ -39,7 +39,8 @@ function MonsterBrain()
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 is_ranged := isMonsterRanged();
-                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
+                // PursueTarget now handles ideal distance for both melee and ranged
+                PursueTarget(me.opponent);
             endif
         endif
         
@@ -125,13 +126,13 @@ function HandleMonsterSpeech(text, source, is_ranged)
         endif
     endif
 
-    // Gera e processa resposta
-    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
-    if (response == error)
-        return Say(handle_error_combat_AI_speech());
-    endif
+    // // Gera e processa resposta
+    // // var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    // if (response == error)
+    //     return Say(handle_error_combat_AI_speech());
+    // endif
 
-    Say(response);
+    // Say(response);
     SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
@@ -218,12 +219,9 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     endif
 
     // Let the combat hook handle the actual attacks
-    if (is_ranged)
-        MaintainRange(opponent);
-    else
-        TurnToward(opponent);
-        PursueTarget(opponent);
-    endif
+    // PursueTarget now handles positioning for both melee and ranged
+    TurnToward(opponent);
+    PursueTarget(opponent);
     
     if (me.isMyrkonid())
         SporeSpecial(me, opponent);
@@ -348,7 +346,7 @@ function HandleMonsterEnteredArea(source, is_ranged)
         me.hidden := 0;
     endif
 
-    handleMonsterInitialReaction(source);
+    // handleMonsterInitialReaction(source);
     if (me.canCharge())
         StartCharge(me, source);
     endif
@@ -370,29 +368,29 @@ function HandleMonsterEnteredArea(source, is_ranged)
     return 1;
 endfunction
 
-function handleMonsterInitialReaction(source)
-    var npc_elem := NPC_GetNPCConfig(me);
-    var category := GetConfigString(npc_elem, "Category");
+// function handleMonsterInitialReaction(source)
+//     var npc_elem := NPC_GetNPCConfig(me);
+//     var category := GetConfigString(npc_elem, "Category");
 
-    if (category == "Goblin")
-        var playerRaca := source.getRace();
-        var name_mob := GetConfigString(npc_elem, "Name");
-        if (playerRaca == ORC || playerRaca == DROW)
-            // High chance to flee from these races
-            var randomDice := RandomInt(100);
-            if (randomDice < 30)
-                var playerinput := "*raça " + playerRaca + " assusta*";
-                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-                if (responseAI)
-                    Say(responseAI);
-                else
-                    Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
-                endif
-                FleeFrom(source);
-                return 1;
-            endif
-        endif
-    endif
-endfunction
+//     if (category == "Goblin")
+//         var playerRaca := source.getRace();
+//         var name_mob := GetConfigString(npc_elem, "Name");
+//         if (playerRaca == ORC || playerRaca == DROW)
+//             // High chance to flee from these races
+//             var randomDice := RandomInt(100);
+//             if (randomDice < 30)
+//                 var playerinput := "*raça " + playerRaca + " assusta*";
+//                 var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+//                 if (responseAI)
+//                     Say(responseAI);
+//                 else
+//                     Say("Ahhh " + playerRaca + "!!!");
+//                     PrintTextAbove(me, "*Aterrorizado*");
+//                 endif
+//                 FleeFrom(source);
+//                 return 1;
+//             endif
+//         endif
+//     endif
+// endfunction
 
