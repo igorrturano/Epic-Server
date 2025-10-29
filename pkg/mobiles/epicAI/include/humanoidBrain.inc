@@ -49,14 +49,10 @@ function HumanoidBrain()
             else
                 var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                
-                var range_info := GetWeaponRangeInfo();
-                // Only pursue if we're significantly out of range
-                if (dist > (range_info.max_range + 1))
-                    PursueTarget(me.opponent);
-                else
-                    MaintainRange(me.opponent);
-                endif
+
+                // PursueTarget now handles ideal distance calculation internally
+                // Let it decide when to stop based on weapon type
+                PursueTarget(me.opponent);
             endif
         endif
         
@@ -151,12 +147,12 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     endif
 
     // Gera e processa resposta
-    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
-    if (response == error)
-        return Say(handle_error_combat_AI_speech());
-    endif
+    // var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    // if (response == error)
+    //     return Say(handle_error_combat_AI_speech());
+    // endif
 
-    Say(response);
+    // Say(response);
     SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
@@ -268,17 +264,10 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
             reachForMeleeWeapon(opponent);
         endif
 
-        var range_info := GetWeaponRangeInfo();
-        // Always try to maintain maximum range for ranged attackers
-        if (Distance(me, opponent) < range_info.max_range)
-            RunAwayFrom(opponent);
-        else
-            // Only move closer if we're too far to shoot
-            if (Distance(me, opponent) > range_info.max_range)
-                PursueTarget(opponent);
-            endif
-        endif
-        
+        // PursueTarget now handles positioning for ranged attackers
+        // It will maintain ideal distance internally with tolerance
+        PursueTarget(opponent);
+
         // Continuously try to shoot while in combat
         if (me.isShooter())
             ShooterBehavior(me);
