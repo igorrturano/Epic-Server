@@ -8,22 +8,22 @@ include ":objWrapper:Model/MobileWrapper";
 program backstab(who)
 	who := MobileWrapper(who);
 
-	if (!CanBackStab(who) || !isAssassinWeapon(who.GetMobRef()))
-		Message("Esta arma não é apropriada para um ataque furtivo.", FONTCOLOR_ERROR).SendSys(who.GetMobRef());
+	if (!CanBackStab(who) || !isAssassinWeapon(who.GetObjRef()))
+		Message("Esta arma não é apropriada para um ataque furtivo.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
 		return;
 	endif
 
-	who.GetMobRef().SetProp("backstab", 1);
-	who.GetEquipBySlot(WEAPON).GetItemRef().SetProp("backstab", 1);
+	who.GetObjRef().SetProp("backstab", 1);
+	who.GetEquipBySlot(WEAPON).GetObjRef().SetProp("backstab", 1);
 	
 	if (who.hidden)
-		who.GetMobRef().SetProp("#attackbonus", 100);
+		who.GetObjRef().SetProp("#attackbonus", 100);
 		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))
-			who.GetMobRef().SetProp("#nextcritical", 1);
+			who.GetObjRef().SetProp("#nextcritical", 1);
 		endif
 	endif
 
-	GrantPrivilege(who.GetMobRef(), "hiddenattack");
-	who.GetMobRef().enable("hiddenattack");
-	Message("Você está preparado para um ataque furtivo!", FONTCOLOR_SUCCESS).SendSys(who.GetMobRef());
+	GrantPrivilege(who.GetObjRef(), "hiddenattack");
+	who.GetObjRef().enable("hiddenattack");
+	Message("Você está preparado para um ataque furtivo!", FONTCOLOR_SUCCESS).SendSys(who.GetObjRef());
 endprogram
