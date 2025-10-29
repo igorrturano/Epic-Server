@@ -9,7 +9,7 @@ include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 
-const MAX_Z_DIFF := 18;
+const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -1225,6 +1225,8 @@ endfunction
 const PURSUIT_PROGRESS_CHECK_INTERVAL := 3;  // seconds between progress checks
 const PURSUIT_MAX_NO_PROGRESS_COUNT := 3;    // failed checks before repositioning
 const PURSUIT_DISTANCE_TOLERANCE := 2;       // extra tiles before pursuing
+const PURSUIT_PATH_CACHE_DURATION := 8;      // seconds to cache pathfinding results
+const PURSUIT_TARGET_MOVE_THRESHOLD := 3;    // tiles moved before recalculating path
 
 // Helper: Calculate the ideal engagement distance based on weapon/brain type
 function CalculateIdealPursuitDistance()
@@ -1257,6 +1259,44 @@ function IsWithinEngagementRange(opponent, ideal_distance)
     endif
 
     return 0;
+endfunction
+
+// Helper: Get cached path or calculate new one
+function GetOrCreatePursuitPath(opponent)
+    var path_cache := GetObjProperty(me, "#pursuit_path_cache");
+
+    // Check if we have a valid cached path
+    if (path_cache)
+        var cache_age := ReadGameClock() - path_cache.created_time;
+        var target_moved := CoordinateDistance(opponent.x, opponent.y, path_cache.target_x, path_cache.target_y);
+
+        // Use cached path if:
+        // 1. Cache is fresh (not expired)
+        // 2. Target hasn't moved significantly
+        // 3. We still have path steps remaining
+        if (cache_age < PURSUIT_PATH_CACHE_DURATION &&
+            target_moved < PURSUIT_TARGET_MOVE_THRESHOLD &&
+            path_cache.path && path_cache.path.size() > 0)
+            return path_cache.path;
+        endif
+    endif
+
+    // Cache invalid or expired - calculate new path
+    // Use searchskirt=15 to handle complex paths (L-shapes, long detours, etc.)
+    var new_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
+
+    if (new_path)
+        // Store new path in cache
+        path_cache := struct{
+            "path" := new_path,
+            "target_x" := opponent.x,
+            "target_y" := opponent.y,
+            "created_time" := ReadGameClock()
+        };
+        SetObjProperty(me, "#pursuit_path_cache", path_cache);
+    endif
+
+    return new_path;
 endfunction
 
 function PursueTarget(opponent)
@@ -1318,13 +1358,26 @@ function PursueTarget(opponent)
     var should_run := !(me.hidden || me.concealed);
 
     // Main movement logic - unified section (no more duplicates)
-    if (CheckLineOfSight(me, opponent))
-        // Direct line of sight - move straight toward target in a loop
-        while (Distance(me, opponent) > ideal_distance)
+    var use_pathfinding := 0;
+    var has_los := CheckLineOfSight(me, opponent);
+
+    if (has_los)
+        PrintTextAbove(me, "*LOS=true, dist=" + dist + "*", 3, 66);
+        // Direct line of sight - but verify we can actually move toward target
+        var movement_attempts := 0;
+        var stuck_count := 0;
+        var last_dist := dist;
+
+        while (Distance(me, opponent) > ideal_distance && movement_attempts < 10)
             // Re-check if we should keep pursuing
             if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                PrintTextAbove(me, "*break:shouldKeep=false*", 3, 33);
                 break;
             endif
+
+            var old_x := me.x;
+            var old_y := me.y;
+            var old_dist := Distance(me, opponent);
 
             if (should_run)
                 RunToward(opponent);
@@ -1332,19 +1385,63 @@ function PursueTarget(opponent)
                 WalkToward(opponent);
             endif
             sleepms(100);
+            movement_attempts += 1;
+
+            var new_dist := Distance(me, opponent);
+            var moved := (me.x != old_x || me.y != old_y);
+            var got_closer := (new_dist < old_dist);
+
+            // Debug: show position and distance changes
+            PrintTextAbove(me, "*moved:" + moved + " closer:" + got_closer + " d:" + CInt(new_dist) + "*", 3, 88);
+
+            // Check if we actually made progress (moved AND got closer)
+            if (!moved || !got_closer)
+                stuck_count += 1;
+                PrintTextAbove(me, "*STUCK:" + stuck_count + " attempts:" + movement_attempts + "*", 3, 38);
+
+                // If stuck after 2 attempts, use TacticalReposition to find alternative path
+                if (stuck_count >= 2)
+                    // We have LOS but can't move directly - probably a wall
+                    // Use TacticalReposition to find an alternative location
+                    PrintTextAbove(me, "*REPOSITION!*", 3, 53);
+                    EraseObjProperty(me, "#pursuit_path_cache");
+                    TacticalReposition(opponent, 1);
+                    use_pathfinding := 1; // Then try pathfinding from new position
+                    break;
+                endif
+            else
+                stuck_count := 0; // Reset counter if we made progress
+            endif
         endwhile
-    else
-        // No line of sight - use pathfinding
-        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
+
+        if (movement_attempts >= 10)
+            PrintTextAbove(me, "*MAX ATTEMPTS REACHED*", 3, 38);
+        endif
+    endif
+
+    // Use pathfinding if: no LOS OR stuck with LOS
+    if (!has_los || use_pathfinding)
+        if (!has_los)
+            PrintTextAbove(me, "*NO LOS - pathfinding*", 3, 88);
+        else
+            PrintTextAbove(me, "*STUCK - force pathfinding*", 3, 53);
+        endif
+        // Use cached pathfinding
+        var path := GetOrCreatePursuitPath(opponent);
         if (path)
+            PrintTextAbove(me, "*Path found: " + path.size() + " steps*", 3, 88);
+            var path_step := 0;
             foreach coord in path
+                path_step += 1;
                 // Re-check distance in case target moved
                 if (Distance(me, opponent) <= ideal_distance)
+                    PrintTextAbove(me, "*Path: reached ideal dist*", 3, 66);
                     break;
                 endif
 
                 // Re-check if we should keep pursuing
                 if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
+                    PrintTextAbove(me, "*Path: shouldKeep=false*", 3, 33);
                     break;
                 endif
 
@@ -1356,8 +1453,33 @@ function PursueTarget(opponent)
                 endif
                 sleepms(100);
             endforeach
+            PrintTextAbove(me, "*Path done: " + path_step + "/" + path.size() + "*", 3, 88);
         else
-            // Path failed - try tunnel tactics if available
+            PrintTextAbove(me, "*PATH FAILED!*", 3, 38);
+            // Path failed - check if it's due to height difference
+            var z_diff := Abs(me.z - opponent.z);
+
+            if (z_diff > 15)
+                // Significant height difference - try to find stairs/ramps by moving toward target
+                // Move in the general direction even without a perfect path
+                var attempts := 0;
+                while (attempts < 5 && !CheckLineOfSight(me, opponent))
+                    if (should_run)
+                        RunToward(opponent);
+                    else
+                        WalkToward(opponent);
+                    endif
+                    sleepms(200);
+                    attempts += 1;
+
+                    // Check if we found a path now
+                    if (CheckLineOfSight(me, opponent))
+                        break;
+                    endif
+                endwhile
+            endif
+
+            // Try tunnel tactics if available
             if (me.hasTunnelTactics())
                 TunnelTactics(me, opponent);
             endif
@@ -1399,6 +1521,7 @@ function PursueTarget(opponent)
         if (progress.no_progress_count >= PURSUIT_MAX_NO_PROGRESS_COUNT)
             EraseObjProperty(me, "path");
             EraseObjProperty(me, "#enemy_last_loc");
+            EraseObjProperty(me, "#pursuit_path_cache"); // Clear cached path when stuck
             TacticalReposition(opponent, 1);
             progress.no_progress_count := 0;
         endif
