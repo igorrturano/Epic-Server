@@ -29,9 +29,9 @@ exported function Attack(attacker, defender)
 
 	if (!CanAttack(attackInfo))	return 1; endif
 
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "=================");
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "ATAQUE INICIADO!");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
 	TryToAttack(attackInfo);
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
@@ -44,42 +44,42 @@ endfunction
 
 function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
-		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
-		ApplyRawDamage(attackInfo.GetAttacker().GetMobRef(), 5000);
+		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetAttacker().GetObjRef(), 5000);
 		return false;
 	endif
 	
-	if (!CheckLineOfSight(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef()))
-		Message("Você não enxerga o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+	if (!CheckLineOfSight(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()))
+		Message("Você não enxerga o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
-	if (attackInfo.GetDefender().GetMobRef().hidden) // Impede de atacar gente escondida
+	if (attackInfo.GetDefender().GetObjRef().hidden) // Impede de atacar gente escondida
 		return false;
 	endif
 
 	if (!attackInfo.GetAttacker().IsNPC())
 		if (!attackInfo.GetAttacker().IsWarMode())
-			if (attackInfo.GetAttacker().GetMobRef().GetProp("attackmsg") <= polcore().systime)
-				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetMobRef());
-				attackInfo.GetAttacker().GetMobRef().SetProp("attackmsg", polcore().systime + 15);
+			if (attackInfo.GetAttacker().GetObjRef().GetProp("attackmsg") <= polcore().systime)
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				attackInfo.GetAttacker().GetObjRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
 			return false;
 		endif
 	endif
 
-	if ((attackInfo.GetAttacker().GetMobRef().paralyzed) || (attackInfo.GetAttacker().GetMobRef().frozen))
-		Message("Você não consegue se mover.").SendSys(attackInfo.GetAttacker().GetMobRef());
+	if ((attackInfo.GetAttacker().GetObjRef().paralyzed) || (attackInfo.GetAttacker().GetObjRef().frozen))
+		Message("Você não consegue se mover.").SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	if (!CheckDistance(attackInfo.GetAttacker(), attackInfo.GetDefender()))
-		Message("O alvo está fora do alcance.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		Message("O alvo está fora do alcance.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	if (!CheckFacing(attackInfo.GetAttacker(), attackInfo.GetDefender()))
-		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -87,8 +87,8 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 	
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesatotal") > 0)
-		Message("Você está totalmente concentrado na defesa.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesatotal") > 0)
+		Message("Você está totalmente concentrado na defesa.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 	
@@ -96,17 +96,17 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 	
-	if (attackInfo.GetAttacker().GetMobRef().npctemplate == ":brainai:GolemMartelo")
+	if (attackInfo.GetAttacker().GetObjRef().npctemplate == ":brainai:GolemMartelo")
 		return false;
 	endif
 
-	if (CInt(attackInfo.GetAttacker().GetMobRef().GetProp("charmed_by")) == attackInfo.GetDefender().GetSerial())
-		Message("*hipnotizado*").SendAbove(attackInfo.GetAttacker().GetMobRef());
+	if (CInt(attackInfo.GetAttacker().GetObjRef().GetProp("charmed_by")) == attackInfo.GetDefender().GetSerial())
+		Message("*hipnotizado*").SendAbove(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
-	if (attackInfo.GetDefender().GetMobRef().GetProp("#PrisaoGelida"))
-		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#PrisaoGelida"))
+		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -117,21 +117,21 @@ function TryToAttack(byRef attackInfo)
 	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
-		Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef() });
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> MainHand");
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
+		Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef() });
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
 	elseif (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
 		attackInfo.SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo));
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Mão -> OffHand");
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> OffHand");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
 	endif
 
 	attackInfo.RollHitChance();
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
 
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ACERTOU!***");
-		// SkillChecks(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetItemRef(), 1); // TODO: Checar apenas quando executar o dano de fato...
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
+		// SkillChecks(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjRef(), 1); // TODO: Checar apenas quando executar o dano de fato...
 		
 		if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
 			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::BOTH);
@@ -140,34 +140,34 @@ function TryToAttack(byRef attackInfo)
 
 		DoAttack(attackInfo);
 	else
-		DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, "***ERROU!***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
 		PlayAttackSound(attackInfo); // Se errou, chama o som aqui
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
 	endif
 endfunction
 
 function DoAttack(byRef attackInfo)
-	attackInfo.GetDefender().GetMobRef().frozen := 0;
+	attackInfo.GetDefender().GetObjRef().frozen := 0;
 
-	if (attackInfo.GetAttacker().GetMobRef().cmdlevel == 0)
-		attackInfo.GetAttacker().GetMobRef().concealed := 0;
+	if (attackInfo.GetAttacker().GetObjRef().cmdlevel == 0)
+		attackInfo.GetAttacker().GetObjRef().concealed := 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().hidden) // Checa se o atacante escondido revela ou não
-		if (attackInfo.GetAttacker().GetMobRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
-			attackInfo.GetAttacker().GetMobRef().EraseProp("ataquefurtivoaprimorado");
+	if (attackInfo.GetAttacker().GetObjRef().hidden) // Checa se o atacante escondido revela ou não
+		if (attackInfo.GetAttacker().GetObjRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
+			attackInfo.GetAttacker().GetObjRef().EraseProp("ataquefurtivoaprimorado");
 		else // Revela o atacante
-			attackInfo.GetAttacker().GetMobRef().hidden := 0;
+			attackInfo.GetAttacker().GetObjRef().hidden := 0;
 		endif
 	endif
 	
 	if (!attackInfo.GetAttacker().IsNPC() &&
 		attackInfo.GetAttacker().IsWarMode() &&
 		attackInfo.GetDefender().IsNPC() &&
-		attackInfo.GetDefender().GetMobRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+		attackInfo.GetDefender().GetObjRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
 			LogToFile(
 				":fls_core:pets.log",
-				attackInfo.GetDefender().GetMobRef().acctname + " atacou " + attackInfo.GetDefender().GetMobRef().name + " (" + attackInfo.GetDefender().GetNPCTemplate() + ")",
+				attackInfo.GetDefender().GetObjRef().acctname + " atacou " + attackInfo.GetDefender().GetObjRef().name + " (" + attackInfo.GetDefender().GetNPCTemplate() + ")",
 				LOG_DATETIME
 			);
 	endif
@@ -187,13 +187,13 @@ function CheckAmmo(byRef attackInfo)
 	endif
 
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
 		return true;
 	endif
 
-	var ammo := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("ammo");
+	var ammo := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammo)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -228,8 +228,8 @@ function CheckAmmo(byRef attackInfo)
 	// var elem := FindConfigElem(cfg, GetObjType(ammo));
 	// var ammo_color := elem.color;
 	// PlayMovingEffectXYZHued(
-	// 	attackInfo.GetAttacker().GetMobRef(),
-	// 	attackInfo.GetDefender().GetMobRef(),
+	// 	attackInfo.GetAttacker().GetObjRef(),
+	// 	attackInfo.GetDefender().GetObjRef(),
 	// 	attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
 	// 	10, 10, 0, ammo_color
 	// );
@@ -248,25 +248,25 @@ endfunction
 // 		return;
 // 	endif
 
-// 	if (!AP_ConsumeVital(attackInfo.GetAttacker().GetMobRef(), STAMINA, 10))
-// 		Message("Você está exausto!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+// 	if (!AP_ConsumeVital(attackInfo.GetAttacker().GetObjRef(), STAMINA, 10))
+// 		Message("Você está exausto!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 // 		return;
 // 	endif
 
 // 	PlayMovingEffectXYZHued(
-// 		attackInfo.GetAttacker().GetMobRef(),
-// 		attackInfo.GetDefender().GetMobRef(),
+// 		attackInfo.GetAttacker().GetObjRef(),
+// 		attackInfo.GetDefender().GetObjRef(),
 // 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
 // 		10, 10, 0,
 // 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetColor()
 // 	);
 
-// 	PlayAttackAnimation(attackInfo.GetAttacker().GetMobRef()); // 0x9
+// 	PlayAttackAnimation(attackInfo.GetAttacker().GetObjRef()); // 0x9
 // 	// PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
 
 // 	var defenderPos := attackInfo.GetDefender().GetPosition();
 // 	MoveObjectToLocation(
-// 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef(),
+// 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 // 		defenderPos.x,
 // 		defenderPos.y,
 // 		defenderPos.z,
@@ -282,25 +282,25 @@ function arcane_shooting(byRef attackInfo)
 	endif
 
 	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (!GetCooldown(attackInfo.GetAttacker().GetMobRef(), "arcane_bow") && !(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows))
+	if (!GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && !(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows))
 		return 1;
 	endif
 
-	if (!DamageMANA(attackInfo.GetAttacker().GetMobRef(), 4))
-		Message("Você está sem mana!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+	if (!DamageMANA(attackInfo.GetAttacker().GetObjRef(), 4))
+		Message("Você está sem mana!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return 0;
 	endif
 	
 	var ammo_color := 0;
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("fire_arrow"))
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("fire_arrow"))
 		ammo_color := COLOR_ELEMENTAL_FIRE;
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("energy_arrow"))
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("energy_arrow"))
 		ammo_color := COLOR_ELEMENTAL_ENERGY;
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("cold_arrow"))
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("cold_arrow"))
 		ammo_color := COLOR_ELEMENTAL_ICE;
 	endif
 
-	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), 0xf42, 10, 10, 0, ammo_color);
+	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), 0xf42, 10, 10, 0, ammo_color);
 	return 1;
 endfunction
 
@@ -311,21 +311,21 @@ endfunction
 // 		anim := 0xF79;
 // 	endif
 
-// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), anim, 10, 10);
+// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), anim, 10, 10);
 
 // 	return 1;
 // endfunction
 
 // function ThrowerNPC(attackInfo)
-// 	var throwItem := attackInfo.GetAttacker().GetMobRef().GetProp("throwItem");
+// 	var throwItem := attackInfo.GetAttacker().GetObjRef().GetProp("throwItem");
 // 	if (!throwItem)
 // 		return 0;
 // 	endif
 
-// 	PerformAction(attackInfo.GetAttacker().GetMobRef(), 4);
+// 	PerformAction(attackInfo.GetAttacker().GetObjRef(), 4);
 
 // 	// Play the throw effect
-// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), throwItem, 10, 10);
+// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), throwItem, 10, 10);
 
 // 	return 1;
 // endfunction
@@ -333,11 +333,11 @@ endfunction
 function CheckFacing(attacker, defender)
 	var retval := 1;
 
-	if (!IsFacing(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y))
+	if (!IsFacing(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y))
 		if (attacker.IsNPC())
-			TurnObjectToward(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y);
+			TurnObjectToward(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y);
 		else
-			if (IsBehind(attacker.GetMobRef(), defender.GetMobRef().x, defender.GetMobRef().y) && !(getcooldown(attacker, "deathdance")))
+			if (IsBehind(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y) && !(getcooldown(attacker, "deathdance")))
 				Message("Você está de costas para o inimigo!", FONTCOLOR_ERROR).SendSys(attacker);
 				retval := 0;
 			endif

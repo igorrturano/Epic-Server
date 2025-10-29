@@ -1282,38 +1282,38 @@ function ApplyCombatDamage(byRef attackInfo)
 			energy := attackInfo.GetDamage().GetEnergyDamage();
 	
 	if (slash > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), slash);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), slash, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), slash);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), slash, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (piercing > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), piercing);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), piercing, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), piercing);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), piercing, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (blunt > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), blunt);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), blunt, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), blunt);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), blunt, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (fire > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), fire);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), fire, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), fire);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), fire, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (cold > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), cold);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), cold, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), cold);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), cold, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (poison > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), poison);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), poison, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), poison);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), poison, attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (energy > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetMobRef(), energy);
-		DisplayDamage(attackInfo.GetDefender().GetMobRef(), energy, attackInfo.GetAttacker().GetMobRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), energy);
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), energy, attackInfo.GetAttacker().GetObjRef());
 	endif
 endfunction
 

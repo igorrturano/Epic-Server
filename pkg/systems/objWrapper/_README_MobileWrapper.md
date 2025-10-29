@@ -16,7 +16,7 @@ function ExemploBasico(player)
     var wrapper := MobileWrapper(player);
     
     // Sempre verificar se a criação foi bem-sucedida
-    if (wrapper.GetMobRef().errortext)
+    if (wrapper.GetObjRef().errortext)
         SendSysMessage(player, "Erro ao criar wrapper do personagem!");
         return 0;
     endif
@@ -33,7 +33,7 @@ endfunction
 // Função para exibir status completo do personagem
 function ExibirStatus(player)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return; endif
+    if (wrapper.GetObjRef().errortext) return; endif
     
     SendSysMessage(player, "=== STATUS DO PERSONAGEM ===");
     SendSysMessage(player, "Nome: " + wrapper.GetName());
@@ -51,7 +51,7 @@ endfunction
 // Verificar se o jogador tem habilidade suficiente para uma ação
 function VerificarHabilidade(player, skill_name, valor_minimo)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return 0; endif
+    if (wrapper.GetObjRef().errortext) return 0; endif
     
     var skill_atual := wrapper.GetSkill(skill_name);
     
@@ -76,7 +76,7 @@ endif
 // Função para treinar habilidade com bônus temporário
 function TreinarHabilidade(player, skill_name, bonus_temporario)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return 0; endif
+    if (wrapper.GetObjRef().errortext) return 0; endif
     
     // Aplicar bônus temporário
     wrapper.SetSkillMod(skill_name, bonus_temporario);
@@ -99,7 +99,7 @@ program RemoveBonus(params)
     sleep(tempo);
     
     var wrapper := MobileWrapper(player);
-    if (!wrapper.GetMobRef().errortext)
+    if (!wrapper.GetObjRef().errortext)
         wrapper.SetSkillMod(skill_name, 0.0);
         SendSysMessage(player, "Bônus de treinamento expirou.");
     endif
@@ -112,7 +112,7 @@ endprogram
 // Equipar item e aplicar modificadores
 function EquiparItem(player, item)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return 0; endif
+    if (wrapper.GetObjRef().errortext) return 0; endif
     
     // Verificar se é uma arma ou armadura
     var item_wrapper;
@@ -139,7 +139,7 @@ endfunction
 // Desequipar item e remover modificadores
 function DesequiparItem(player, item)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return 0; endif
+    if (wrapper.GetObjRef().errortext) return 0; endif
     
     var item_wrapper;
     if (item.isArmor())
@@ -160,7 +160,7 @@ endfunction
 // Função para NPCs reagirem baseado nas habilidades do jogador
 function NPCInteracao(npc, player)
     var wrapper := MobileWrapper(player);
-    if (wrapper.GetMobRef().errortext) return; endif
+    if (wrapper.GetObjRef().errortext) return; endif
     
     var magery := wrapper.GetSkill(MAGERY);
     var combat := wrapper.GetSkill(TACTICS);
@@ -184,7 +184,7 @@ endfunction
 // Função para administradores diagnosticarem problemas
 function DiagnosticarPersonagem(admin, target)
     var wrapper := MobileWrapper(target);
-    if (wrapper.GetMobRef().errortext)
+    if (wrapper.GetObjRef().errortext)
         SendSysMessage(admin, "Erro: Personagem inválido!");
         return;
     endif
@@ -210,7 +210,7 @@ endfunction
 #### 1. Sempre Verificar Erros
 ```javascript
 var wrapper := MobileWrapper(player);
-if (wrapper.GetMobRef().errortext)
+if (wrapper.GetObjRef().errortext)
     // Tratar erro apropriadamente
     return 0;
 endif
@@ -229,7 +229,7 @@ wrapper.SetSkillBase(MAGERY, 75.0)
 // Criar funções específicas para cada funcionalidade
 function PodeUsarMagia(player, nivel_necessario)
     var wrapper := MobileWrapper(player);
-    return (!wrapper.GetMobRef().errortext && wrapper.GetSkill(MAGERY) >= nivel_necessario);
+    return (!wrapper.GetObjRef().errortext && wrapper.GetSkill(MAGERY) >= nivel_necessario);
 endfunction
 ```
 

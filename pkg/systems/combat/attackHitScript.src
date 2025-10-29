@@ -14,7 +14,7 @@ include ":message:model/Message";
 
 program MainHitScript(attackInfo)
 	// Define attacker como o originador do ataque
-	SetScriptController(attackInfo.GetAttacker().GetMobRef());
+	SetScriptController(attackInfo.GetAttacker().GetObjRef());
 
 	if (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
 		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
@@ -37,21 +37,21 @@ program MainHitScript(attackInfo)
 	CheckPoison(attackInfo); // TODO: Talvez seja melhor verificar dentro do cálculo de dano
 	PlayAttackSound(attackInfo);
 
-	MasteryCombat_Advance(attackInfo.GetAttacker().GetMobRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
-	AchievementCombat_Advance(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
+	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
+	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
 
 	return 1;
 endprogram
 
 function CheckBodyRegionToHit(byRef attackInfo)
 	var zoneToHit := CS_GetRandomArmorZone();
-	DebugMsg(attackInfo.GetAttacker().GetMobRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
 endfunction
 
 function CheckParry(byRef attackInfo)
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("backstab") ||
-		IsBehind(attackInfo.GetDefender().GetMobRef(), attackerPos.x, attackerPos.y) ||
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") ||
+		IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y) ||
 		!attackInfo.GetDefender().IsWarMode())
 		
 		return false;
@@ -74,14 +74,14 @@ function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
-		if (CheckHab_ArrowRecovery(attackInfo.GetAttacker().GetMobRef(), 0, chance))
+		if (CheckHab_ArrowRecovery(attackInfo.GetAttacker().GetObjRef(), 0, chance))
 			chance += 15;
 		endif
 
 		if (RandomInt(100 + 1) <= chance)
 			var ammo := attackInfo.GetAmmo();
 			if (ammo)
-				CreateItemInBackPack(attackInfo.GetDefender().GetMobRef(), ammo, attackInfo.GetAmmoAmount());
+				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
 			endif
 		endif
 	endif
@@ -89,9 +89,9 @@ endfunction
 
 function WeaponHitScripts(byRef attackInfo)
 	// Script mantido como o anterior, modificado apenas a entrada dos parâmetros
-	var attacker := attackInfo.GetAttacker().GetMobRef(),
-		defender := attackInfo.GetDefender().GetMobRef(),
-		weapon	 := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef();
+	var attacker := attackInfo.GetAttacker().GetObjRef(),
+		defender := attackInfo.GetDefender().GetObjRef(),
+		weapon	 := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 
 	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(weapon.objtype);
 	var weapon_scripts := array{};
@@ -255,9 +255,9 @@ endfunction
 
 function ArmorHitScripts(byRef attackInfo)
 	// Script mantido como o anterior, modificado apenas a entrada dos parâmetros
-	var attacker := attackInfo.GetAttacker().GetMobRef(),
-		defender := attackInfo.GetDefender().GetMobRef(),
-		weapon	 := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef();
+	var attacker := attackInfo.GetAttacker().GetObjRef(),
+		defender := attackInfo.GetDefender().GetObjRef(),
+		weapon	 := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 
 	var itemCfg := CFGFile("*", "itemdesc").SetElementName(armor.objtype);
 	
