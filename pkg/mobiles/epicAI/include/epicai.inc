@@ -1335,7 +1335,7 @@ function PursueTarget(opponent)
         endwhile
     else
         // No line of sight - use pathfinding
-        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
+        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
         if (path)
             foreach coord in path
                 // Re-check distance in case target moved
