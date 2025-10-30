@@ -2,6 +2,7 @@ use uo;
 
 include "IMobileWrapper";
 include ":attributes:skills";
+include ":merchants:cambio";
 include ":equipsys:ViewModel/EquipWrapperArmor";
 include ":equipsys:ViewModel/EquipWrapperWeapon";
 
@@ -29,6 +30,11 @@ class MobileWrapper(IMobileWrapper)
 		regen := 0
 	};
 	var _hunger := struct{
+		current := 0,
+		max := 0,
+		regen := 0
+	};
+	var _dp := struct{
 		current := 0,
 		max := 0,
 		regen := 0
@@ -166,6 +172,10 @@ class MobileWrapper(IMobileWrapper)
 			this._hunger.max := AP_GetVitalMaximumValue(mobRef, HUNGER);
 			this._hunger.regen := AP_GetVitalRegenRate(mobRef, HUNGER);
 
+			this._dp := MobileWrapper::_dp;
+			this._dp.current := AP_GetVital(mobRef, DEATH_POINTS);
+			this._dp.max := AP_GetVitalMaximumValue(mobRef, DEATH_POINTS);
+
 			this._gold := mobRef.gold;
 			this._weight := mobRef.weight;
 
@@ -231,6 +241,11 @@ class MobileWrapper(IMobileWrapper)
 		return this._hunger.current;
 	endfunction
 
+	function GetCurrentDp(this)
+		this._dp.current := AP_GetVital(this._mobRef, DEATH_POINTS);
+		return this._dp.current;
+	endfunction
+
 	function GetMaxHP(this)
 		this._hp.max := AP_GetVitalMaximumValue(this._mobRef, HITS);
 		return this._hp.max;
@@ -251,8 +266,13 @@ class MobileWrapper(IMobileWrapper)
 		return this._hunger.max;
 	endfunction
 
+	function GetMaxDp(this)
+		this._dp.max := AP_GetVitalMaximumValue(this._mobRef, DEATH_POINTS);
+		return this._dp.max;
+	endfunction
+
 	function GetGold(this)
-		return this._gold;
+		return ContaCapital(this._mobRef).valorTotal;
 	endfunction
 
 	function GetWeight(this)
@@ -327,5 +347,6 @@ class MobileWrapper(IMobileWrapper)
 		this._gold := 0;
 		this._weight := 0;
 		this._skills := 0;
+		this._dp := 0;
 	endfunction
 endclass

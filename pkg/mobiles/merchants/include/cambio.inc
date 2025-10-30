@@ -99,17 +99,20 @@ function ContaMoedas(arrayItens, tiposAProcurar, color:=0)
 	return envelopeMoedas;
 endfunction
 
-function ContaCapital(quem, regiaoBanco)
+function ContaCapital(quem, regiaoBanco := 0)
 
 	var objetoRetorno := struct;
-	var tiposMoedas := array {SESTERTIUS,DENARIUS,AUREUS};
-	var containerBanco := CP_GetStorageContainerForMobile(quem, regiaoBanco, CP_NOCREATE);
-	var itensNoBanco := EnumerateItemsInContainer(containerBanco);
-	var itensNoJogador := EnumerateItemsInContainer(quem.backpack);
 	var carteiras := dictionary;
+	var tiposMoedas := array {SESTERTIUS,DENARIUS,AUREUS};
 
-	carteiras.insert(TIPO_CARTEIRA_MOEDA::BANCO,ContaMoedas(itensNoBanco,tiposMoedas));
+	var itensNoJogador := EnumerateItemsInContainer(quem.backpack);
 	carteiras.insert(TIPO_CARTEIRA_MOEDA::PLAYER,ContaMoedas(itensNoJogador,tiposMoedas));
+
+	if(regiaoBanco)
+		var containerBanco := CP_GetStorageContainerForMobile(quem, regiaoBanco, CP_NOCREATE);
+		var itensNoBanco := EnumerateItemsInContainer(containerBanco);
+		carteiras.insert(TIPO_CARTEIRA_MOEDA::BANCO,ContaMoedas(itensNoBanco,tiposMoedas));
+	endif
 
 	var totalMoedaMenorValor := 0;
 
