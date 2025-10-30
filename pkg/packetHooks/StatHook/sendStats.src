@@ -25,12 +25,13 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 use polsys;
 
-include ":taming:taming";
-include ":attributes:attributeConstants";
-include ":attributes:attributes";
+
 include "include/client";
-include ":combat:damage";
-include ":charactercreation:resists";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":charsys:ViewModel/MobileWrapper";
+include "include/math";
+include ":expbar:expbar";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");
@@ -42,16 +43,37 @@ const BIT_MASK := 0x00000003;
 var STATCAP := 225;
 var MODE := 0;
 var STATLOCK := 0;
+var ARMOR_RESISTENCE_PACKET_ARRAY := array{LAYER_SHOES,LAYER_HELM,LAYER_GLOVES,LAYER_NECK,LAYER_CHEST,LAYER_ARMS,LAYER_LEGS};
+const QTD_RESISTENCIAS := 7;
 
-const PLAYER_ID := 3;
-const NAME_ID := 7;
+enum class SEND_STATUS_INDEX_PKT
+	SOURCE_SERIAL := 3,
+	NAME := 7,
+	MOBILE_LAST_INDEX := 43,
+	GOLD := 58,
+	MIN_DAMAGE_OFFH := 80,
+	MAX_DAMAGE_OFFH := 82,
+	FORTITUDE := 121,
+	REFLEXES := 123,
+	WILL := 125,
+	DEATH_POINTS := 127,
+	DEATH_POINTS_MAX := 129,
+	ADDICTION := 131,
+	HUNGER := 133,
+	XP_CURRENT := 134,
+	XP_NEXT := 138,
+	LEVEL := 142,
+	AMOR_RESISTENCES_START := 144,
+	//PICTURE_URL := 121,
+endenum
+
 
 exported function HandleSendStats(character, byref packet)
-	var serial := packet.GetInt32(PLAYER_ID);
+	var serial := packet.GetInt32(SEND_STATUS_INDEX_PKT::SOURCE_SERIAL);
 	var source := SystemFindObjectBySerial(serial);
 	var Object_Name;
 	var url;
-
+	
 	url := GetObjProperty(source, "url");
 	if (!url || url.errortext)
 		url := ""; // Set to empty string if property doesn't exist or has an error
@@ -91,11 +113,65 @@ exported function HandleSendStats(character, byref packet)
 					Object_Name := Object_Name + " [" + nome_inicial + "]";
 				endif
 			endif
-			packet.SetString(NAME_ID, Object_Name, 1);
+			packet.SetString(SEND_STATUS_INDEX_PKT::NAME, Object_Name, 1);
+
+			if(character.serial == serial)
+				var envelopeMobile := MobileWrapper(character);
+				var weapon := GetEquipmentByLayer(character,LAYER_HAND2);
+				var envelopeArma := EquipWrapperWeapon(weapon);
+				var dps_current := Trunc(AP_GetVital(character, "DP"),2);
+   				var levelAtual := CInt(GetObjProperty(character, "Level")) ? CInt(GetObjProperty(character, "Level")) : 0;
+				var xpAtual := CInt(GetObjProperty(character, "Experience"));
+				var xpProximoLevel := CalculateNextLevelXP(levelAtual);
+
+				//TODO Inserir dano da offhand uma vez que o combat esteja terminado.
+				//packet.SetInt16(SEND_STATUS_INDEX_PKT::MIN_DAMAGE, envelopeArma);
+				//packet.SetInt16(SEND_STATUS_INDEX_PKT::MAX_DAMAGE, envelopeArma);
+
+				packet.SetInt32(SEND_STATUS_INDEX_PKT::GOLD, envelopeMobile.GetGold());
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::FORTITUDE,  10);
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::REFLEXES,  10);
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::WILL,  10);
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::DEATH_POINTS,  cint(envelopeMobile.GetCurrentDp() * 100) );
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::DEATH_POINTS_MAX,  cint(envelopeMobile.GetMaxDp()  * 100));
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::ADDICTION,  cint(GetObjProperty(character, "vicio")));
+				packet.SetInt8(SEND_STATUS_INDEX_PKT::HUNGER,  CInt( envelopeMobile.GetCurrentHunger() / 60));
+
+				packet.SetInt32(SEND_STATUS_INDEX_PKT::XP_CURRENT,  xpAtual);
+				packet.SetInt32(SEND_STATUS_INDEX_PKT::XP_NEXT,  xpProximoLevel);
+				packet.SetInt16(SEND_STATUS_INDEX_PKT::LEVEL,  levelAtual);
+
+				foreach camadaArmadura in ARMOR_RESISTENCE_PACKET_ARRAY
+					Sleepms(2);
+					var itemEquipado := GetEquipmentByLayer(character,camadaArmadura);
+					var envelopeArmadura := EquipWrapperArmor(itemEquipado); 
+					var resistencias := envelopeArmadura.GetResists();
+					var indiceLote := (_camadaArmadura_iter - 1) * QTD_RESISTENCIAS;
+					var indiceInicial := SEND_STATUS_INDEX_PKT::AMOR_RESISTENCES_START;
+
+					packet.SetInt8(indiceInicial + indiceLote,resistencias.GetSlashResist());
+					packet.SetInt8(indiceInicial + indiceLote + 1,resistencias.GetPiercingResist());
+					packet.SetInt8(indiceInicial + indiceLote + 2,resistencias.GetBluntResist());
+					packet.SetInt8(indiceInicial + indiceLote + 3,resistencias.GetFireResist());
+					packet.SetInt8(indiceInicial + indiceLote + 4,resistencias.GetColdResist());
+					packet.SetInt8(indiceInicial + indiceLote + 5,resistencias.GetPoisonResist());
+					packet.SetInt8(indiceInicial + indiceLote + 6,resistencias.GetEnergyResist());
+				endforeach
+
+				packet.SetString(
+							SEND_STATUS_INDEX_PKT::AMOR_RESISTENCES_START + ARMOR_RESISTENCE_PACKET_ARRAY.size() * QTD_RESISTENCIAS, 
+							url, 
+							1);
+			else
+				packet.SetString(
+								SEND_STATUS_INDEX_PKT::MOBILE_LAST_INDEX, 
+								url, 
+								1);
+			endif
+
 		endif
 
 		// Envia a url do portrait junto com o status
-		packet.SetString(121, url, 1);
 
 	// Process extended stats
 	// HandleExtended(source, packet);

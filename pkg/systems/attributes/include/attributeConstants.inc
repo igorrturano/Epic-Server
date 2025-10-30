@@ -10,7 +10,8 @@ enum VITALS
 	HITS			:= "Hits",
 	MANA			:= "Mana",
 	STAMINA			:= "Stamina",
-	HUNGER			:= "Hunger"
+	HUNGER			:= "Hunger",
+	DEATH_POINTS 	:= "DP",
 endenum
 
 enum STATS
