@@ -114,8 +114,12 @@ function ReloadWeapon(who, item, weapon_info)
 		endfor
 
 		PlaySoundEffect(who, SFX_HIT_11);
-		SetObjProperty(item, "balas", 1);
-		PrintTextAbove(who, "*Arma recarregada*");
+		var shots := 10; // Base 10 shots per munition
+		if (TemHabilidade(who, "Municiador Experiente"))
+			shots := 15; // 50% more shots
+		endif
+		SetObjProperty(item, "balas", shots);
+		PrintTextAbove(who, "*Arma recarregada com {} tiros*".format(shots));
 		updateToolTip(item);
 
 		return 1;
@@ -197,8 +201,14 @@ function ReloadWeapon(who, item, weapon_info)
 	endfor
 
 	PlaySoundEffect(who, SFX_HIT_11);
-	SetObjProperty(item, "balas", 1);
-	PrintTextAbove(who, "*Arma recarregada*");
+	var shots := 10; // Base 10 shots per munition
+	
+	if (TemHabilidade(who, "Municiador Experiente"))
+		shots := 15; // 50% more shots
+	endif
+	
+	SetObjProperty(item, "balas", shots);
+	PrintTextAbove(who, "*Arma recarregada com {} tiros*".format(shots));
 	updateToolTip(item);
 
 	return 1;
@@ -289,15 +299,27 @@ function AimAndShoot(who, item, targ, weapon_info)
 	PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, weapon_info.shot_sound);
 
-	DamageFLS(targ, dmg, DMG_FORCED, who);
+	// Use elemental damage type if available
+	var dmg_type := GetObjProperty(item, "temp_dmg_type");
+	if (!dmg_type)
+		dmg_type := DMG_FORCED;
+	endif
+	
+	DamageFLS(targ, dmg, dmg_type, who);
+	
+	// Clean up temporary damage type
+	EraseObjProperty(item, "temp_dmg_type");
+	
 	return 1;
 endfunction
 
 function CalculateWeaponDamage(who, item, targ, weapon_info, dist)
 	var dmg := RandomDiceRoll(weapon_info.dmg_dice);
 
+	// Elemental munition system (from Quinquilharias ability)
 	if (GetObjProperty(who, "Municao Explosiva"))
 		dmg += RandomDiceRoll("4d6");
+		SetObjProperty(item, "temp_dmg_type", DMG_FIRE);
 	endif
 
 	var max_range := weapon_info.max_range;
