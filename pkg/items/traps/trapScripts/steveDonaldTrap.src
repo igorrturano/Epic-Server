@@ -8,7 +8,7 @@ use uo;
 use util;
 
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program trapScript(params)
 	var mobile := params[1];

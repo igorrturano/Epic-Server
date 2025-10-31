@@ -2,7 +2,7 @@ use os;
 
 include "client";
 include "include/epicConstants";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 function playAltarAnimations(who, item)
 	var altar := altarByObjtype(who, item);

@@ -20,7 +20,7 @@ program MainHitScript(attackInfo)
 		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
 	endif
 
-	if (attackInfo.GetDefender().IsDead()) return 1; endif // Se já estiver morto, não aplica outro dano (principal utilidade pra danos offHand)
+	if (attackInfo.GetDefender().IsDead()) return 1; endif // Se já estiver morto, não aplica outro dano (impede erro de dano em mobile que não existe, caso haja condição de corrida)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	CheckParry(attackInfo); // Verifica se o ataque foi parado // TODO: Falta fazer
@@ -63,7 +63,9 @@ function CheckParry(byRef attackInfo)
 endfunction
 
 function TryToParry(byRef attackInfo)
-	attackInfo.SetParryChance();
+	attackInfo.SetParryChance(CalculateParryChance(attackInfo));
+
+
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)

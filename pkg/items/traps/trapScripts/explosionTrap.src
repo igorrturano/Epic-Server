@@ -6,7 +6,7 @@ use util;
 
 include "include/client";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicConstants";

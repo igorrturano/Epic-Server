@@ -484,11 +484,9 @@ function AmmoCheck(attacker, defender)
 
 endfunction
 
-function GetParryChance(byRef attackInfo)
-	// TODO: Aqui vou mexer pouco. Se o parry estiver estranho, refatorar completamente.
-	
+function CalculateParryChance(byRef attackInfo)
 	// Verifica se o atacante já pode ser bloqueado novamente.
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) return false; endif
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) return 0; endif
 
 	var usingWeapon := 0;
 	var parryBonus := 0;
@@ -643,7 +641,7 @@ function GetParryChance(byRef attackInfo)
 	endif
 
 	// Exibe o efeito visual do bloqueio
-	PlayDefenseAnimation(attackInfo);
+	PlayDefenseFX(attackInfo);
 	PerformAction(defender, ANIM_TWIST_DODGE);
 
 	if (blocker)

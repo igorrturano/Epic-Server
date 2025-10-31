@@ -49,7 +49,7 @@ function PlayAttackSFX(byRef attackInfo)
 	if (defenderSound) attackInfo.GetDefender().PlaySound(defenderSound); endif
 endfunction
 
-function PlayDefenseAnimation(byRef attackInfo)
+function PlayDefenseFX(byRef attackInfo)
 	var defenseAnim := GetDefenseFX(attackInfo.GetDefender(), attackInfo.GetDamage().IsCritical());
 
 	attackInfo.GetDefender().PlayAnimation(defenseAnim);

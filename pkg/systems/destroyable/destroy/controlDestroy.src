@@ -8,7 +8,7 @@ include ":combat:combat";
 
 include ":fls_core:packets";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 
 program controlDestroy(item)

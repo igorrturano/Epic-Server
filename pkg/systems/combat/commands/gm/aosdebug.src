@@ -4,7 +4,7 @@ use os;
 use math;
 use file;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program command_showmyresists(who)
 
