@@ -10,7 +10,7 @@ program doubleattack(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
 		if (!(mobile in attacker.party.members))
-			PlayAttackAnimation(attacker);
+			PlayAttackFX(attacker);
 			PlayHitSounds(attacker, mobile);
 			sleepms(250);
 			attacker.facing := attacker.facing + 1;

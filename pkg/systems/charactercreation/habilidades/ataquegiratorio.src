@@ -24,7 +24,7 @@ program doubleattack(params)
 		ApplyRawDamage(mobile, total);
 		MostraDano(attacker, mobile, total);
 		MakeBleed(defender);
-		PlayAttackAnimation(attacker);
+		PlayAttackFX(attacker);
 		PlayHitSounds(attacker, defender);
 		sleepms(250);
 		attacker.facing := attacker.facing + 1;

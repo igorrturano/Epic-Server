@@ -14,170 +14,265 @@ include ":attributes:attributeConstants";
 include ":objWrapper:Model/WeaponWrapper";
 include ":objWrapper:Model/MobileWrapper";
 
-enum class WEAPON_FX
-	SOUND := "SOUND",
-	ANIM := "ANIMATION"
-endenum
+function PlayAttackFX(byRef attackInfo)
+	var attackerAnim := GetAttackerFX(attackInfo.GetAttacker(), attackInfo.GetAttackType(), attackInfo.GetDamage().IsCritical());
+	var defenderAnim := GetDefenderFX(attackInfo.GetDefender(), attackInfo.Succeded());
 
-function PlayAttackAnimation(byRef attackInfo)
-	var attackAnim;
-
-	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		attackAnim := 0x0c;
-	else
-		attackAnim := getWeaponFX(WEAPON_FX::ANIM, attackInfo.GetAttacker().GetEquipBySlot(WEAPON), attackInfo.GetDamage().IsCritical());
-	endif
-
-	attackInfo.GetAttacker().PlayAnimation(attackAnim);
+	attackInfo.GetAttacker().PlayAnimation(attackerAnim);
+	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
 endfunction
 
-function PlayAttackSound(byRef attackInfo)
+function PlayAttackSFX(byRef attackInfo)
 	var weaponSound;
 	var attackerSound;
-	var defenderSound; // TODO: Buscar o som de gemido/grito do defensor, ao ser atingido
+	var defenderSound;
 
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		if (attackInfo.Succeded())
-			if (attackInfo.GetDamage().IsCritical())
-				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), true); // Passa true para indicar que é CRÍTICO
-				if (attackInfo.GetDefender().IsDead())
-					if (attackInfo.GetAttacker().GetRace() == ANAO)
-						attackerSound := 0; // Som de grito Anão
-					elseif (attackInfo.GetAttacker().GetRace() == DROW)
-						attackerSound := 0; // Som de grito Drow
-					elseif (attackInfo.GetAttacker().GetRace() == ELFO)
-						attackerSound := 0; // Som de grito Elfo
-					elseif (attackInfo.GetAttacker().GetRace() == ORC)
-						attackerSound := 0; // Som de grito Orc
-					elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
-						attackerSound := 0; // Som de grito Humano
-					elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
-						attackerSound := 0; // Som de grito Polski
-					endif
-				endif
-			else
-				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
-			endif
-		else // Se errou o golpe
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false); // Passa falso para indicar que é MISS
-		endif
-	else
-		if (attackInfo.Succeded())
-			if (attackInfo.GetAttacker().IsNPC())
-				weaponSound := attackInfo.GetAttacker().GetNPCTemplateCfg().AttackSound;
-			else
-				weaponSound := GetWeaponFX(WEAPON_FX::SOUND, attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
-			endif
+	if (attackInfo.Succeded())
+		if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON) && attackInfo.GetAttacker().IsNPC())
+			weaponSound := attackInfo.GetAttacker().GetNPCTemplateCfg().AttackSound;
 		else
-			weaponSound := GetWeaponFX(WEAPON_FX::SOUND, false);
+			attackerSound := GetAttackerSFX(attackInfo.GetAttacker(), attackInfo.GetDamage().IsCritical(), attackInfo.GetDefender().IsDead());
+			weaponSound := GetWeaponSFX(attackInfo.GetAttacker().GetEquipBySlot(WEAPON), attackInfo.GetDamage().IsCritical());
 		endif
-	endif
-
-	if (attackInfo.GetDefender().IsNPC())
-		defenderSound := attackInfo.GetDefender().GetNPCTemplateCfg().DamagedSound;
+		
+		defenderSound := GetDefenderSFX(attackInfo.GetDefender(), attackInfo.GetDamage().IsCritical());
 	else
-		if (attackInfo.GetDefender().GetGender() == MOBILE_GENDER::MALE)
-			defenderSound := array{341, 342, 343, 345, 346};
-		elseif (attackInfo.GetDefender().GetGender() == MOBILE_GENDER::FEMALE)
-			defenderSound := array{332, 333, 334, 335, 336};
+		if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
+			weaponSound := attackInfo.GetAttacker().GetNPCTemplateCfg().AttackMissSound;
+		else
+			weaponSound := GetWeaponSFX(attackInfo.GetAttacker().GetEquipBySlot(WEAPON), attackInfo.GetAttackType(), attackInfo.GetDamage().IsCritical(), true);
 		endif
 	endif
 
-	weaponSound := RandomIntMinMax(1, weaponSound.Size() + 1);
 	attackInfo.GetAttacker().PlaySound(weaponSound);
-	
-	if (attackerSound)
-		attackerSound := RandomIntMinMax(1, attackerSound.Size() + 1);
-		attackInfo.GetAttacker().PlaySound(attackerSound);
-	endif
-	
-	if (defenderSound)
-		defenderSound := RandomIntMinMax(1, defenderSound.Size() + 1);
-		attackInfo.GetDefender().PlaySound(defenderSound);
-	endif
+	if (attackerSound) attackInfo.GetAttacker().PlaySound(attackerSound); endif
+	if (defenderSound) attackInfo.GetDefender().PlaySound(defenderSound); endif
 endfunction
 
-function GetWeaponFX(FX, weapon, isCriticalAttack := false)
-	var attackFX;
-	weapon := weapon ? WeaponWrapper(weapon) : error{ errortext := "No weapon provided!" };
-	var attackType := weapon.GetAttackType().Upper();
+function PlayDefenseAnimation(byRef attackInfo)
+	var defenseAnim := GetDefenseFX(attackInfo.GetDefender(), attackInfo.GetDamage().IsCritical());
 
-	if (FX != WEAPON_FX::ANIM && FX != WEAPON_FX::SOUND)
-		return error{ errortext := "Invalid FX type!" };
+	attackInfo.GetDefender().PlayAnimation(defenseAnim);
+endfunction
+
+function GetAttackerFX(attacker, attackType, isCriticalAttack := false)
+	var attackerFX := struct{
+		hit := array{},
+		critical := array{}
+	};
+	
+	if (attacker.IsNPC() && !attacker.GetEquipBySlot(WEAPON))
+		attackerFX.hit := array{ 0x0c };
+		attackerFX.critical := array{ 0x0c };
+	else
+		if (attacker.GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+			attackerFX.hit := array{ 0x9, 0xA, 0xB };
+			attackerFX.critical := array{ 0x1F };
+		elseif (attacker.GetEquipBySlot(WEAPON).GetCategory() == BOW)
+			attackerFX.hit := array{ 0x12 };
+			attackerFX.critical := array{ 0x12 };
+		elseif (attacker.GetEquipBySlot(WEAPON).GetCategory() == CROSSBOW)
+			attackerFX.hit := array{ 0x13 };
+			attackerFX.critical := array{ 0x13 };
+		else
+			if (Upper(attacker.GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
+				if (attackType == Upper(SLASHDAMAGE))
+					attackerFX.hit := array{ 0xC };
+					attackerFX.critical := array{ 0xC };
+				elseif (attackType == Upper(PIERCINGDAMAGE))
+					attackerFX.hit := array{ 0xE };
+					attackerFX.critical := array{ 0xE };
+				elseif (attackType == Upper(BLUNTDAMAGE))
+					attackerFX.hit := array{ 0xB };
+					attackerFX.critical := array{ 0xB };
+				endif
+			else
+				if (attackType == Upper(SLASHDAMAGE))
+					attackerFX.hit := array{ 0xD };
+					attackerFX.critical := array{ 0xD };
+				elseif (attackType == Upper(PIERCINGDAMAGE))
+					attackerFX.hit := array{ 0xA };
+					attackerFX.critical := array{ 0xA };
+				elseif (attackType == Upper(BLUNTDAMAGE))
+					attackerFX.hit := array{ 0xB };
+					attackerFX.critical := array{ 0xB };
+				endif
+			endif
+		endif
 	endif
 
+	if (isCriticalAttack)
+		attackerFX := attackerFX.critical;
+	else
+		attackerFX := attackerFX.hit;
+	endif
+
+	attackerFX := attackerFX.Size() > 1 ? attackerFX[RandomIntMinMax(1, attackerFX.Size() + 1)] : attackerFX[1];
+
+	return CInt(attackerFX);
+endfunction
+
+function GetDefenderFX(defender, isMiss := false)
+	var defenderFX := struct{
+		hit := array{},
+		miss := array{}
+	};
+
+	if (defender.IsNPC())
+		defenderFX.hit := array{ 0x0C };
+		defenderFX.miss := array{};
+	else
+		defenderFX.hit := array{ 20 };
+		defenderFX.miss := array{};
+	endif
+
+	if (isMiss)
+		defenderFX := defenderFX.miss;
+	else
+		defenderFX := defenderFX.hit;
+	endif
+
+	defenderFX := defenderFX.Size() > 1 ? defenderFX[RandomIntMinMax(1, defenderFX.Size() + 1)] : defenderFX[1];
+
+	return CInt(defenderFX);
+endfunction
+
+function GetWeaponSFX(weapon, attackType := false, isCriticalAttack := false, isMiss := false)
+	var weaponSFX := struct{
+		hit := array{},
+		miss := array{},
+		critical := array{}
+	};
+
 	if (weapon == error)
-		// TODO: Pensar se separa o som de MISS de acordo com a arma ou deixa genérico mesmo
-		attackFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+		weaponSFX.hit := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+		weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+		weaponSFX.critical := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
 	elseif (weapon.GetCategory() == UNARMED)
-		if (FX == WEAPON_FX::ANIM)
-			attackFX := !isCriticalAttack ? array{0xA, 0x1F} : array{}; // Ajeitar essa animação do 0xA, tá diferente do Fiddler e não estou achando o soco
-		elseif (FX == WEAPON_FX::SOUND)
-			attackFX := !isCriticalAttack ? array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B} : array{};
-		endif
+		weaponSFX.hit := array{ 0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B };
+		weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+		weaponSFX.critical := array{};
 	elseif (weapon.GetCategory() == BOW)
-		if (FX == WEAPON_FX::ANIM)
-			attackFX := !isCriticalAttack ? array{0x12} : array{};
-		else
-			attackFX := !isCriticalAttack ? array{0x235, 0x4C9, 0x4CA} : array{};
-		endif
+		weaponSFX.hit := array{ 0x235, 0x4C9, 0x4CA };
+		weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+		weaponSFX.critical := array{};
 	elseif (weapon.GetCategory() == CROSSBOW)
-		if (FX == WEAPON_FX::ANIM)
-			attackFX := !isCriticalAttack ? array{0x13} : array{};
-		else
-			attackFX := !isCriticalAttack ? array{0x235, 0x4C9, 0x4CA} : array{};
-		endif
+		weaponSFX.hit := array{ 0x235, 0x4C9, 0x4CA };
+		weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+		weaponSFX.critical := array{};
 	else
 		if (Upper(weapon.GetAttribute()) == Upper(TWOHANDED))
 			if (attackType == Upper(SLASHDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xC} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x237, 0x238} : array{};
-				endif
+				weaponSFX.hit := array{ 0x237, 0x238 };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			elseif (attackType == Upper(PIERCINGDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xE} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x23D, 0x23D} : array{};
-				endif
+				weaponSFX.hit := array{ 0x23D, 0x23D };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			elseif (attackType == Upper(BLUNTDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xB} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x3AE} : array{};
-				endif
+				weaponSFX.hit := array{ 0x3AE };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			endif
 		else
 			if (attackType == Upper(SLASHDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xD} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x23C, 0x23D} : array{};
-				endif
+				weaponSFX.hit := array{ 0x23C, 0x23D };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			elseif (attackType == Upper(PIERCINGDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xA} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x23C, 0x23D} : array{};
-				endif
+				weaponSFX.hit := array{ 0x23C, 0x23D };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			elseif (attackType == Upper(BLUNTDAMAGE))
-				if (FX == WEAPON_FX::ANIM)
-					attackFX := !isCriticalAttack ? array{0xB} : array{};
-				else
-					attackFX := !isCriticalAttack ? array{0x3AC} : array{};
-				endif
+				weaponSFX.hit := array{ 0x3AC };
+				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
+				weaponSFX.critical := array{};
 			endif
 		endif
 	endif
 
-	return attackFX;
+	if (isMiss)
+		weaponSFX := weaponSFX.miss;
+	elseif (isCriticalAttack)
+		weaponSFX := weaponSFX.critical;
+	else
+		weaponSFX := weaponSFX.hit;
+	endif
+
+	weaponSFX := weaponSFX.Size() > 1 ? weaponSFX[RandomIntMinMax(1, weaponSFX.Size() + 1)] : weaponSFX[1];
+
+	return CInt(weaponSFX);
 endfunction
 
-function _GetAnim(fxs, isCriticalAttack := 0)
-	return !isCriticalAttack ? fxs.ANIM[RandomInt(fxs.ANIM.Size()) + 1] : fxs.ANIM_CRITICAL[RandomInt(fxs.ANIM_CRITICAL.Size()) + 1];
+function GetDefenseFX(defender, isCritical := false)
+	var defenseFX := struct{
+		hit := array{},
+		critical := array{}
+	};
+	
+	if (defender.IsNPC())
+		defenseFX.hit := array{ 15, 16 };
+		defenseFX.critical := array{ 15, 16 };
+	else
+		defenseFX.hit := array{ 30 };
+		defenseFX.critical := array{ 30 };
+	endif
+
+	if (isCritical)
+		defenseFX := defenseFX.critical;
+	else
+		defenseFX := defenseFX.hit;
+	endif
+
+	defenseFX := defenseFX.Size() > 1 ? defenseFX[RandomIntMinMax(1, defenseFX.Size() + 1)] : defenseFX[1];
+
+	return CInt(defenseFX);
 endfunction
 
-function _GetSound(fxs, isCriticalAttack := 0)
-	return !isCriticalAttack ? fxs.SFX[RandomInt(fxs.SFX.Size()) + 1] : fxs.SFX_CRITICAL[RandomInt(fxs.SFX_CRITICAL.Size()) + 1];
+function GetAttackerSFX(attacker, isCritical := false, defenderIsDead := false)
+	if (isCritical)
+		if (defenderIsDead)
+			if (attacker.GetRace() == ANAO)
+				return 0;
+			elseif (attacker.GetRace() == DROW)
+				return 0;
+			elseif (attacker.GetRace() == ELFO)
+				return 0;
+			elseif (attacker.GetRace() == ORC)
+				return 0;
+			elseif (attacker.GetRace() == HUMANO)
+				return 0;
+			elseif (attacker.GetRace() == POLSKI)
+				return 0;
+			endif
+		endif
+	endif
+endfunction
+
+function GetDefenderSFX(defender, isCritical := false, isDead := false)
+	if (defender.IsNPC())
+		if (isDead)
+			return defender.GetNPCTemplateCfg().DeathSound;
+		else
+			return defender.GetNPCTemplateCfg().DamagedSound;
+		endif
+	else
+		if (isDead)
+			if (defender.GetRace() == ANAO)
+				return 0;
+			elseif (defender.GetRace() == DROW)
+				return 0;
+			elseif (defender.GetRace() == ELFO)
+				return 0;
+			elseif (defender.GetRace() == ORC)
+				return 0;
+			elseif (defender.GetRace() == HUMANO)
+				return 0;
+			elseif (defender.GetRace() == POLSKI)
+				return 0;
+			endif
+		else
+		endif
+	endif
 endfunction

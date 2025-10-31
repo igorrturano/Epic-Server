@@ -17,7 +17,7 @@ program doubleattack(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	PrintTextAbove(attacker, "*ricochetear ataque*");

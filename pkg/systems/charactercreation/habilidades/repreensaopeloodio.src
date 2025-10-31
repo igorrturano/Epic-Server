@@ -64,7 +64,7 @@ program aura_of_hate(params)
 	SetObjProperty(defender, "#FeebleMindMod", points);
 	AP_ModifyStatMod(defender, INTELLIGENCE, points);
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	if (!GetObjProperty(attacker, "#magiasilenciosa"))
 		PlayObjectCenteredEffectEx(defender, 0x3789, 7, 32, 2485, 1);
 		PlaySoundEffect(defender, 0x58E);

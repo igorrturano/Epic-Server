@@ -32,10 +32,10 @@ program MainHitScript(attackInfo)
 	WeaponHitScripts(attackInfo);
 	ArmorHitScripts(attackInfo);
 
-	PlayAttackAnimation(attackInfo);
+	PlayAttackFX(attackInfo);
 	ApplyCombatDamage(attackInfo);
 	CheckPoison(attackInfo); // TODO: Talvez seja melhor verificar dentro do cálculo de dano
-	PlayAttackSound(attackInfo);
+	PlayAttackSFX(attackInfo);
 
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
 	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
@@ -138,6 +138,7 @@ function WeaponHitScripts(byRef attackInfo)
 
 		if (!script || script.errortext)
 			Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext)
+				.SetLanguageSource(LANGUAGE::ENGLISH)
 				.SendSys(attacker)
 				.SendSys(defender);
 		endif
@@ -250,7 +251,7 @@ function WeaponHitScripts(byRef attackInfo)
 		endif
 	endif
 
-	return 1;
+	return true;
 endfunction
 
 function ArmorHitScripts(byRef attackInfo)

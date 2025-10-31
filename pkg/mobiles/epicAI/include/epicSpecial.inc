@@ -526,7 +526,7 @@ function Bite(me, opponent)
     
     PrintTextAbove(me, "*morde*");
     PlaySoundEffect(me, 0x28a);
-    PlayAttackAnimation(me);
+    PlayAttackFX(me);
     
     var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
     if (!resist)
@@ -643,7 +643,7 @@ function TongueGrab(toad, opponent)
     
     // Animation and sound effects
     PrintTextAbove(toad, "*dispara a língua*");
-    PlayAttackAnimation(toad);
+    PlayAttackFX(toad);
     PlaySoundEffect(toad, 0x2b2); //slurp sound
     
     // Create tongue effect from toad to player
@@ -784,7 +784,7 @@ endfunction
 
 function PlayThrowAnimation(attacker)
    PrintTextAbove(attacker, "*arremessa*");
-   PlayAttackAnimation(attacker);
+   PlayAttackFX(attacker);
    if (attacker.isLizardMan()) 
       attacker.graphic := 0x21;
    endif
@@ -833,7 +833,7 @@ function WebWrapCorpse(spider)
          PlayStationaryEffect(item.x, item.y, item.z, 0xCCA1, 5, 80);
          for i:= 0 to 3
             PlaySoundEffect(spider, 0x5A); // Web sound
-            PlayAttackAnimation(spider);
+            PlayAttackFX(spider);
             sleep(1);
          endfor
          sleep(1);
