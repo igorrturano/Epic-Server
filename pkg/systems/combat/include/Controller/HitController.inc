@@ -29,25 +29,25 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetMobRef(), "Desviar Disparos") > 0)
-		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetMobRef());
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
+		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("#attackfail"))
-		attackInfo.GetAttacker().GetMobRef().EraseProp("#attackfail");
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#attackfail"))
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackfail");
 		return 0;
 	endif
 
-	if (attackInfo.GetDefender().GetMobRef().GetProp("#defensefail"))
-		attackInfo.GetDefender().GetMobRef().EraseProp("#defensefail");
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#defensefail"))
+		attackInfo.GetDefender().GetObjRef().EraseProp("#defensefail");
 		return 100;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "ataquetotal"))
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "ataquetotal"))
 		return 100;
 	endif
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "ataquetotal"))
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "ataquetotal"))
 		return 100;
 	endif
 
@@ -56,25 +56,25 @@ function CalculateHitChance(byRef attackInfo)
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
 
-	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetItemRef(), CARACTERISTICA_FABRICACAO_PRECISAO) * 3);
-	hit_chance += attackInfo.GetAttacker().GetMobRef().hitchance_mod - attackInfo.GetDefender().GetMobRef().evasionchance_mod;
-	hit_chance += CInt(attackInfo.GetAttacker().GetMobRef().GetProp("#attackbonus"));
+	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetObjRef(), CARACTERISTICA_FABRICACAO_PRECISAO) * 3);
+	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
+	hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"));
 
-	if (CInt(attackInfo.GetAttacker().GetMobRef().GetProp("#attackbonus"))) // TODO: Isso aqui não é pra estar aqui. Colocar em alguma função do dano/combate.
-		attackInfo.GetAttacker().GetMobRef().EraseProp("#attackbonus");
+	if (CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"))) // TODO: Isso aqui não é pra estar aqui. Colocar em alguma função do dano/combate.
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackbonus");
 	endif
 
-	attackInfo.GetAttacker().GetMobRef().EraseProp("insistencia"); // Mesma coisa do ataque bonus, isso não é pra estar aqui
+	attackInfo.GetAttacker().GetObjRef().EraseProp("insistencia"); // Mesma coisa do ataque bonus, isso não é pra estar aqui
 
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "evasion_chance"))
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "evasion_chance"))
 		hit_chance -= 10.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "blinded") > 0)
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "blinded") > 0)
 		hit_chance -= 20.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "exposed") > 0)
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "exposed") > 0)
 		hit_chance += 10.0;
 	endif
 
@@ -98,77 +98,77 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance -= 10.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "posturadecombate") > 0)
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "posturadecombate") > 0)
 		hit_chance += 10.0;
 	endif
 
-	var challenged_by := attackInfo.GetAttacker().GetMobRef().GetProp("#DuelChallenge");
+	var challenged_by := attackInfo.GetAttacker().GetObjRef().GetProp("#DuelChallenge");
 	if (challenged_by && !attackInfo.GetAttacker().IsNPC)
 		if (challenged_by.time < ReadGameClock())
-			attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge");
+			attackInfo.GetAttacker().GetObjRef().EraseProp("#DuelChallenge");
 		else
 			var challenger := SystemFindObjectBySerial(challenged_by.challenger);
 			if (challenger && challenger.connected)
 				if (attackInfo.GetDefender().GetSerial() != challenger.serial)
 					hit_chance -= 10.0;
 					if (RandomInt(100 + 1) < 20.0)
-						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetMobRef());
+						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 					endif
 				endif
 			else
-				attackInfo.GetAttacker().GetMobRef().EraseProp("#DuelChallenge");
+				attackInfo.GetAttacker().GetObjRef().EraseProp("#DuelChallenge");
 			endif
 		endif
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::AURA_DE_FE))
-		hit_chance += CDbl(attackInfo.GetAttacker().GetMobRef().party.members.size());
+		hit_chance += CDbl(attackInfo.GetAttacker().GetObjRef().party.members.size());
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType())
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("armapreferida") == attackInfo.GetAttacker().GetWeapon().GetObjType())
 		hit_chance += 5.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "furia") && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::FURIA_INDOMAVEL))
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::FURIA_INDOMAVEL))
 		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
 			hit_chance += 10.0;
 		endif
 	endif
 
-	if (IsRaging(attackInfo.GetAttacker().GetMobRef()))
+	if (IsRaging(attackInfo.GetAttacker().GetObjRef()))
 		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ILUDIR_O_FRACO))
 			hit_chance -= 10.0;
 		endif
 		
-		if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "Ataques Enlouquecidos") > 0)
+		if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "Ataques Enlouquecidos") > 0)
 			return 100;
 		endif
 	endif
 
-	if (IsRaging(attackInfo.GetDefender().GetMobRef()))
+	if (IsRaging(attackInfo.GetDefender().GetObjRef()))
 		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
 			hit_chance -= 10.0;
 		endif
 
-		if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "Ataques Enlouquecidos") > 0)
+		if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "Ataques Enlouquecidos") > 0)
 			return 100;
 		endif
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "desafioheroico") > 0)
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "desafioheroico") > 0)
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "defesapersistente") > 0)
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesapersistente") > 0)
 		hit_chance -= CDbl(attackInfo.GetAttacker().GetSkill(PARRY) / 5);
 	endif
 
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "defesapersistente") > 0)
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "defesapersistente") > 0)
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(PARRY) / 5);
 	endif
 
-	if (GetCooldown(attackInfo.GetDefender().GetMobRef(), "resistenciaheroica") > 0)
-		var hostiles := ListHostiles(attackInfo.GetDefender().GetMobRef(), 3);
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "resistenciaheroica") > 0)
+		var hostiles := ListHostiles(attackInfo.GetDefender().GetObjRef(), 3);
 
 		if (hostiles.size() >= 5)
 			hit_chance -= 15.0;
@@ -180,19 +180,19 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::LOBO_SOLITARIO))
-		if (ListHostiles(attackInfo.GetAttacker().GetMobRef(), 3).size() > 1)
+		if (ListHostiles(attackInfo.GetAttacker().GetObjRef(), 3).size() > 1)
 			hit_chance += 15.0;
 		endif
 	endif
 
-	var tiroCerteiro := CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().GetProp("tirocerteiro"));
+	var tiroCerteiro := CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("tirocerteiro"));
 	if (tiroCerteiro > 0)
 		tiroCerteiro--;
 
 		if (tiroCerteiro == 0)
-			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().EraseProp("tirocerteiro");
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("tirocerteiro");
 		else
-			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetItemRef().SetProp("tirocerteiro", tiroCerteiro);
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().SetProp("tirocerteiro", tiroCerteiro);
 		endif
 
 		return 100;
@@ -204,7 +204,7 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DANCA_DAS_SOMBRAS) && GetCooldown(attackInfo.GetDefender().GetMobRef(), "shadowdancer_blur") > 0)
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DANCA_DAS_SOMBRAS) && GetCooldown(attackInfo.GetDefender().GetObjRef(), "shadowdancer_blur") > 0)
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 5);
 	endif
 
@@ -229,38 +229,38 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	if (!attackInfo.GetAttacker().IsNPC())
-		DarknessHitModifier(attackInfo.GetAttacker().GetMobRef(), attackInfo.GetDefender().GetMobRef(), hit_chance);
+		DarknessHitModifier(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), hit_chance);
 	endif
 	
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("#ataqueinesperado"))
-		if (attackInfo.GetDefender().GetMobRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#ataqueinesperado"))
+		if (attackInfo.GetDefender().GetObjRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
 			hit_chance += 50.0;
-			Message("*ataque inesperado*", FONTCOLOR_ERROR).SendAbove(attackInfo.GetAttacker().GetMobRef());
+			Message("*ataque inesperado*", FONTCOLOR_ERROR).SendAbove(attackInfo.GetAttacker().GetObjRef());
 		endif
 
-		attackInfo.GetAttacker().GetMobRef().EraseProp("#ataqueinesperado");
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#ataqueinesperado");
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("#bomcomeco"))
-		var attackers := attackInfo.GetDefender().GetMobRef().GetProp("#bomcomecoserials");
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#bomcomeco"))
+		var attackers := attackInfo.GetDefender().GetObjRef().GetProp("#bomcomecoserials");
 		if (attackers == error) attackers := array{}; endif
 
 		if (!(attackInfo.GetAttacker().GetSerial() in attackers))
 			hit_chance += 50.0;
 			attackers.append(attackInfo.GetAttacker().GetSerial());
-			attackInfo.GetDefender().GetMobRef().SetProp("#bomcomecoserials", attackers);
-			Message("Você começou bem.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetMobRef());
+			attackInfo.GetDefender().GetObjRef().SetProp("#bomcomecoserials", attackers);
+			Message("Você começou bem.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
 		endif
 
-		attackInfo.GetAttacker().GetMobRef().EraseProp("#bomcomeco");
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
 	endif
 
-	if (attackInfo.GetDefender().GetMobRef().GetProp("#mobilidade"))
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#mobilidade"))
 		hit_chance -= 15.0;
-		AP_ConsumeVital(attackInfo.GetDefender().GetMobRef(), STAMINA, 3);
+		AP_ConsumeVital(attackInfo.GetDefender().GetObjRef(), STAMINA, 3);
 	endif
 
-	if (attackInfo.GetAttacker().GetMobRef().GetProp("#mobilidade"))
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#mobilidade"))
 		hit_chance -= 15.0;
 	endif
 
@@ -289,9 +289,9 @@ function _GetSkillForCombat(mobile)
 	else // Se não for, o bicho pega....
 		var attribute := mobile.GetEquipBySlot(WEAPON).GetAttribute();
 
-		if ((mobile.GetMobRef().GetProp("metamorfose") != error) ||
-			(mobile.GetMobRef().GetProp("pilotando") != error)) // Se é Metamorfo ou Piloto de Golem, a skill tá na prop
-			skill := mobile.GetMobRef().GetProp("skill_a");
+		if ((mobile.GetObjRef().GetProp("metamorfose") != error) ||
+			(mobile.GetObjRef().GetProp("pilotando") != error)) // Se é Metamorfo ou Piloto de Golem, a skill tá na prop
+			skill := mobile.GetObjRef().GetProp("skill_a");
 		elseif (attribute == WRESTLING) // Se é melee desarmado, pega a maior entre as skills de melee
 			skill := Max(array{
 				mobile.GetSkill(ONEHANDED),
@@ -303,7 +303,7 @@ function _GetSkillForCombat(mobile)
 		endif
 
 		if (mobile.IsMounted() && // Se estiver montado
-			mobile.GetMobRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
+			mobile.GetObjRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
 			skill := skill / 2;
 		endif
 	endif
@@ -416,7 +416,7 @@ function HasLightNearby(defender)
 endfunction
 
 function CheckDistance(attacker, defender) // attacker: MobileWrapper, defender: MobileWrapper
-	var attackerDistance := Distance(attacker.GetMobRef(), defender.GetMobRef());
+	var attackerDistance := Distance(attacker.GetObjRef(), defender.GetObjRef());
 	var weapon := attacker.GetEquipBySlot(WEAPON);
 
 	if (attackerDistance < weapon.GetMinRange() || attackerDistance > weapon.GetMaxRange())
@@ -485,43 +485,45 @@ function AmmoCheck(attacker, defender)
 endfunction
 
 function GetParryChance(byRef attackInfo)
+	// TODO: Aqui vou mexer pouco. Se o parry estiver estranho, refatorar completamente.
+	
 	// Verifica se o atacante já pode ser bloqueado novamente.
-	if (GetCooldown(attackInfo.GetAttacker().GetMobRef(), "parrydelay") > 0) return 0; endif
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) return false; endif
 
-	// var usingWeapon := 0;
-	// var parryBonus := 0;
-	// var shield := defender.shield;
+	var usingWeapon := 0;
+	var parryBonus := 0;
+	var shield := attackInfo.GetDefender().GetEquipBySlot(SHIELD);
 	// var shieldAttr := shield.getAttrBase();
-	var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
-	var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
+	// var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
+	// var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
 
 	var blocker;
 	// Verifica se o defensor está sob efeito da a hab esudo do martir
-	var wall := attackInfo.GetDefender().GetMobRef().party.getProp("BarreiraDeEscudos");
+	var wall := attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos");
 	var wallChance := 0;
 	if (wall)
 		blocker := SystemFindObjectBySerial(wall.blocker);
 		if (GetCooldown(blocker, "BarreiraDeEscudos") > 0)
-			if (Distance(attackInfo.GetDefender().GetMobRef(), blocker) < 2)
+			if (Distance(attackInfo.GetDefender().GetObjRef(), blocker) < 2)
 				wallChance := CInt(wall.chance);
 			endif
 		else
-			attackInfo.GetDefender().GetMobRef().party.eraseProp("BarreiraDeEscudos");
+			attackInfo.GetDefender().GetObjRef().party.EraseProp("BarreiraDeEscudos");
 			blocker := 0;
 		endif
 	endif
 
 	// Verifica se vai tentar bloquear usando uma armda
-	if (!(shield.IsA(POLCLASS_ARMOR)))
+	if (!(shield.GetObjRef().IsA(POLCLASS_ARMOR)))
 		usingweapon := 1;
-		shield := defender.weapon;
+		shield := attackInfo.GetDefender().GetEquipBySlot(WEAPON);
 		// Não bloqueia se estivem sem arma equipada ou utilizando arma de Ranged (Arcos e bestas)
-		if (shield.objtype == 0x1F020 || shield.Attribute == RANGED)
-			return 0;
+		if (shield.GetObjType() == 0x1F020 || shield.GetAttribute() == RANGED)
+			return false;
 		endif
 	endif
 
-	parryBonus := attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetItemRef().GetProp("parry_mod_percentual");
+	parryBonus := shield.GetObjRef().GetProp("parry_mod_percentual");
 	if (parryBonus)
 		parryBonus := 1.0 + parryBonus;
 	else
@@ -637,10 +639,11 @@ function GetParryChance(byRef attackInfo)
 	endif
 
 	if (!defendeu)
-		return 0;
+		return false;
 	endif
 
 	// Exibe o efeito visual do bloqueio
+	PlayDefenseAnimation(attackInfo);
 	PerformAction(defender, ANIM_TWIST_DODGE);
 
 	if (blocker)
@@ -657,5 +660,5 @@ function GetParryChance(byRef attackInfo)
 	WearDownShield(defender, shield, rawdamage, weapon);
 
 	rawdamage := 0;
-	return 1;
+	return true;
 endfunction
