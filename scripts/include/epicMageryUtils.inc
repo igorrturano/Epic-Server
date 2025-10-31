@@ -414,3 +414,9 @@ function HandleSpellSkill (who)
 
 	return skill;
 endfunction
+
+function handleSpellResistDiffForDivineCasters(who, school)
+   var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
+    
+   return diff;
+endfunction
