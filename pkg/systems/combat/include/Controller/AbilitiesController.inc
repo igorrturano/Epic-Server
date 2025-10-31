@@ -11,12 +11,6 @@
  *
  **********************************/
 
-// TODO: Ver futuramente se vai precisar criar um .inc para cada habilidade
-// TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
-	// TODO: Talvez seja melhor passar um struct como byRef. Dessa forma, cada função acessa o que lhe convém (e receber).
-// TODO: Usar o Copilot pra completar os CheckHab_ que faltando, passando o habilidades.cfg como leitura
-
-
 include "DamageController";
 include "HitController";
 include "SkillController";

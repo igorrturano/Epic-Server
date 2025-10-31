@@ -1,7 +1,7 @@
 // Internal
 include ":combat:armorZones";
 // include ":combat:combat";
-include ":combat:Controller/AbilitiesController";
+// include ":combat:Controller/AbilitiesController";
 include ":combat:weardown";
 
 // External
@@ -15,6 +15,26 @@ include ":timedScripts:timedScripts";
 // include ":debug:Controller/DebugController";
 // include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
+
+/*
+ * http://uo.stratics.com/content/guides/resistance.shtml
+ * These could be attributes, but not every shard will want to
+ * follow OSI. This gives more freedom to make custom resistances
+ * and remove existing ones more easily.
+ */
+enum DAMAGE_TYPES
+	DMG_FORCED		:= -1, // Ignores resistance
+	DMG_PHYSICAL	:= "Physical",
+	
+	DMG_SLASH		:= "Slash",
+	DMG_PIERCING	:= "Piercing",
+	DMG_BLUNT		:= "Blunt",
+
+	DMG_FIRE		:= "Fire",
+	DMG_COLD		:= "Cold",
+	DMG_POISON		:= "Poison",
+	DMG_ENERGY		:= "Energy"
+endenum
 
 function HealFLS(targ, amt)
 	if (!GetObjProperty(targ, "nocure"))
@@ -333,7 +353,7 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
-function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") // Mantido, apesar de criar o CombatDamageEPIC(), para não dar conflito com os demais danos do shard após criar o novo sistema de danos por região
+function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	var totaldmg;
 	var attackInfo := struct{};
 
@@ -352,8 +372,8 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 	attackInfo.+type := type;
 	
 	// Checa as habilidades antes do dano
-	CheckHab_Martir(0, defender, attackInfo);
-	CheckHab_MantoRothen(0, defender, attackInfo);
+	// CheckHab_Martir(0, defender, attackInfo);
+	// CheckHab_MantoRothen(0, defender, attackInfo);
 
 	// Aplica o dano
 	DisplayDamage(defender, totaldmg, source);
@@ -361,8 +381,8 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
 	// Checa as habilidades depois do dano
-	CheckHab_RecuperacaoSalvadora(0, defender, attackInfo);
-	CheckHab_Vinganca(0, defender, attackInfo);
+	// CheckHab_RecuperacaoSalvadora(0, defender, attackInfo);
+	// CheckHab_Vinganca(0, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;

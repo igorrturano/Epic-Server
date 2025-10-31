@@ -3,51 +3,53 @@ use math;
 
 include ":equipsys:utils/consts";
 include ":combat:Model/ArmorResist";
+include ":combat:Model/ShieldResist";
 include ":combat:Model/AttributeModifier";
 
-function getResistPhysicalByProtection(tier)
-	var resists := array{};
-	
+function GetResistPhysicalByProtection(tier)
 	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
-	case(Upper(tier))
-		//TIER 1
-		ARMOR_LOWLOW: resists := {0,0,0}; break;
-		ARMOR_LOWMID: resists := {1,1,1}; break;
-		ARMOR_LOWHIGH: resists := {2,2,2}; break;
+	if (Upper(tier) == Upper(ARMOR_LOWLOW))
+		return ArmorResist(0, 0, 0);
+	elseif (Upper(tier) == Upper(ARMOR_LOWMID))
+		return ArmorResist(1, 1, 1);
+	elseif (Upper(tier) == Upper(ARMOR_LOWHIGH))
+		return ArmorResist(2, 2, 2);
+	elseif (Upper(tier) == Upper(ARMOR_MIDLOW))
+		return ArmorResist(3, 3, 3);
+	elseif (Upper(tier) == Upper(ARMOR_MIDMID))
+		return ArmorResist(4, 4, 4);
+	elseif (Upper(tier) == Upper(ARMOR_MIDHIGH))
+		return ArmorResist(5, 5, 5);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHLOW))
+		return ArmorResist(6, 6, 6);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHMID))
+		return ArmorResist(7, 7, 7);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHHIGH))
+		return ArmorResist(8, 8, 8);
+	endif
 
-		//TIER 2
-		ARMOR_MIDLOW: resists := {3,3,3}; break;
-		ARMOR_MIDMID: resists := {4,4,4}; break;
-		ARMOR_MIDHIGH: resists := {5,5,5}; break;
-
-		//TIER 3
-		ARMOR_HIGHLOW: resists := {6,6,6}; break;
-		ARMOR_HIGHMID: resists := {7,7,7}; break;
-		ARMOR_HIGHHIGH: resists := {8,8,8}; break;
-
-		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
-		default: resists := {0,0,0}; break;
-	endcase
-
-	return ArmorResist(resists[1], resists[2], resists[3]);
+	// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos nos IFs.
+	return ArmorResist(0, 0, 0);
 endfunction
 
-function getResistPhysicalBySlot(slot)
-	var resists := array{};
-	
-	case(Upper(slot[1])) // {SlashResist, PiercingResist, BluntResist}
-			HEAD: resists := {2,2,2}; break;
-			NECK: resists := {1,1,1}; break;
-			BODY: resists := {4,4,4}; break;
-			ARMS: resists := {2,2,2}; break;
-			HANDS: resists := {1,1,1}; break;
-			LEGS: resists := {3,3,3}; break;
-			FEET: resists := {2,2,2}; break;
-
-			default: resists := {0,0,0}; break;
-		endcase
-
-	return ArmorResist(resists[1], resists[2], resists[3]);
+function GetResistPhysicalBySlot(slot)
+	if (Upper(slot) == Upper(HEAD))
+		return ArmorResist(2, 2, 2);
+	elseif (Upper(slot) == Upper(NECK))
+		return ArmorResist(1, 1, 1);
+	elseif (Upper(slot) == Upper(BODY))
+		return ArmorResist(4, 4, 4);
+	elseif (Upper(slot) == Upper(ARMS))
+		return ArmorResist(2, 2, 2);
+	elseif (Upper(slot) == Upper(HANDS))
+		return ArmorResist(1, 1, 1);
+	elseif (Upper(slot) == Upper(LEGS))
+		return ArmorResist(3, 3, 3);
+	elseif (Upper(slot) == Upper(FEET))
+		return ArmorResist(2, 2, 2);
+	endif
+		
+	return ArmorResist(0, 0, 0);
 endfunction
 
 function getResistPhysicalByMaterial(ID)
@@ -123,7 +125,7 @@ endfunction
 
 function GetModifiersBySlot(slot)
 	var modifiers := array{};
-	case(Upper(slot[1]))
+	case(Upper(slot))
 		HEAD: modifiers := {-1,0,0,-1,0}; break;
 		NECK: modifiers := {-1,0,0,-1,0}; break;
 		BODY: modifiers := {-4,0,0,-12,0}; break;
@@ -241,21 +243,18 @@ function getWeightModByMaterial(material)
 	return CDbl(modifier);
 endfunction
 
-function getShieldModsByProtection(type)
-	var mods := array{}; // {ParryDelay, ParryBonus}
+function getShieldModsByProtection(tier)
+	if (Upper(tier) == Upper(SHIELD_BUCKLER))
+		return ShieldResist(-1, 0);
+	elseif (Upper(tier) == Upper(SHIELD_SMALL))
+		return ShieldResist(4, 8);
+	elseif (Upper(tier) == Upper(SHIELD_MEDIUM))
+		return ShieldResist(5, 10);
+	elseif (Upper(tier) == Upper(SHIELD_LARGE))
+		return ShieldResist(6, 12);
+	elseif (Upper(tier) == Upper(SHIELD_TOWER))
+		return ShieldResist(7, 14);
+	endif
 
-	case(Upper(type))
-		SHIELD_BUCKLER: mods := {-1,0}; break;
-		SHIELD_SMALL: mods := {4,8}; break;
-		SHIELD_MEDIUM: mods := {5,10}; break;
-		SHIELD_LARGE: mods := {6,12}; break;
-		SHIELD_TOWER: mods := {7,14}; break;
-
-		default: mods := {0,0}; break;
-	endcase
-
-	return struct{
-		ParryDelay := mods[1],
-		ParryBonus := mods[2]
-	};
+	return error{ errortext := "Value not found for this Shield Protection Tier!"};
 endfunction

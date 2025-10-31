@@ -3,13 +3,16 @@ include "IArmorWrapper";
 include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
+include ":combat:Model/ShieldResist";
 
 class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	var _coverage := array{};
 	var _tipoProtecao := "";
 
-	var _resists := ArmorResist();
-	var _resistsMod := ArmorResist();
+	var _resists; // ArmorResist class
+	var _resistsMod; // ArmorResist class
+	var _shieldResists; // ShieldResist class
+	var _shieldResistsMod; // ShieldResist class
 
 	function ArmorWrapper(this, byRef item)
 		Super(item);
@@ -140,7 +143,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			endforeach
 		else
 			if (this._tipoProtecao)
-				var modifiersSlot := GetModifiersBySlot(this._coverage);
+				var modifiersSlot := GetModifiersBySlot(this._coverage[1]);
 				var modifiersProt := GetModifiersByProtection(this._tipoProtecao);
 				this.AddModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
 				this.AddModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
