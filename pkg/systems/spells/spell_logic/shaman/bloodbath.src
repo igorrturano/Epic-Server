@@ -1,72 +1,159 @@
 use uo;
+use util;
 
 include ":attributes:attributes";
 include "include/epicCombatUtils";
+include "include/epicConstants";
+include "include/client";
 include ":message:model/Message";
+include ":death:death";
 
 program spell_bloodbath(params)
     var who := params[1];
     var info := params[2];
-    
     SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
+    if (who.gender == 0)
+        PlaySoundEffect(who, 0x697); // blood laughter
+    endif
     
     var theology := AP_GetSkill(who, THEOLOGY);
     var hp_threshold := CInt(theology);
     
     // Get all mobiles nearby except pets and party
     var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);
-    
-    var kills := 0;
-    
-    foreach mobile in mobiles
-        // Play initial animation on creature
-        PlayObjectCenteredEffect(mobile, 0xD139, 10, 10);
-        
-        // Check if current HP is less than theology
-        if (AP_GetVital(mobile, "Hits") < hp_threshold)
-            // Paralyze for 4 seconds
-            mobile.SetParalyzed(1);
-            Message("AAAAAHH!!").SendAbove(mobile);
-            
-            sleepms(500);
-            
-            // Drop all items
-            foreach item in EnumerateItemsInContainer(mobile.backpack)
-                MoveObjectToLocation(item, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
-                sleepms(20);
-            endforeach
-            
-            // Play explosion animation
-            PlayObjectCenteredEffect(mobile, EPIC_FX_BODY_EXPLOSION, 10, 10);
-            
-            sleepms(500);
 
-            // Create blood pools around the area
-            var blood_count := RandomInt(3) + 2; // 2-4 blood pools
-            for i := 1 to blood_count
+    // First pass: identify eligible creatures and store their data
+    var victims := array{};
+    foreach mobile in mobiles
+        var is_eligible := 0;
+
+        // Check HP threshold
+        if (AP_GetVital(mobile, "Hits") < hp_threshold)
+            // If it's a player, also check DP
+            if (mobile.acctname)
+                if (AP_GetVital(mobile, "DP") < 10)
+                    is_eligible := 1;
+                endif
+            else
+                // NPCs only need HP check
+                is_eligible := 1;
+            endif
+        endif
+
+        if (is_eligible)
+            // Store victim data (position, items, reference)
+            var victim_data := struct{
+                mobile := mobile,
+                x := mobile.x,
+                y := mobile.y,
+                z := mobile.z,
+                realm := mobile.realm
+            };
+            victims.append(victim_data);
+
+            // Paralyze immediately
+            mobile.SetParalyzed(1);
+        endif
+    endforeach
+
+    // Second pass: Play initial haunting animation (face from ground)
+    foreach victim_data in victims
+        PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
+        PrintTextAbove(victim_data.mobile, "AAAAAHH!!");
+    endforeach
+
+    // Dramatic pause before the explosion
+    sleepms(2650);
+
+    // Fourth pass: Kill creatures and let loot generate, then scatter items
+    var kills := 0;
+    var corpse_data := array{};
+
+    foreach victim_data in victims
+        var mobile := victim_data.mobile;
+        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!)
+        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+
+        kills := kills + 1;
+    endforeach
+
+    // Wait for death processing to complete
+    sleepms(500);
+    SetCooldown(who, "#PickPid", 5); // Prevent item pickup during scatter
+    // Fifth pass: Find corpses and scatter their items
+    foreach victim_data in victims
+        // Find the corpse at the victim's location (works for both humanoids and monsters)
+        var corpse := 0;
+        foreach item in ListItemsNearLocation(victim_data.x, victim_data.y, victim_data.z, 2, victim_data.realm)
+            if (item.isA(POLCLASS_CORPSE))
+                var item_pos := struct{ x := item.x, y := item.y };
+                var victim_pos := struct{ x := victim_data.x, y := victim_data.y };
+                if ((item_pos.x == victim_pos.x) && (item_pos.y == victim_pos.y))
+                    corpse := item;
+                    break;
+                endif
+            endif
+        endforeach
+
+        if (!corpse)
+            continue;
+        endif
+
+        // Drop all items from corpse with random scatter
+        var items_to_drop := array{};
+        foreach item in EnumerateItemsInContainer(corpse)
+            items_to_drop.append(item);
+        endforeach
+
+        foreach item in items_to_drop
+            var x_offset := RandomInt(3) - 1; // -1, 0, or 1
+            var y_offset := RandomInt(3) - 1; // -1, 0, or 1
+            MoveObjectToLocation(item, victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, victim_data.realm, MOVEOBJECT_FORCELOCATION);
+        endforeach
+
+        // Destroy the corpse
+        DestroyItem(corpse);
+    endforeach
+
+    sleepms(200);
+
+    // Fifth pass: Simultaneous explosions at original positions
+    foreach victim_data in victims
+        // Play explosion at original location
+        PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, EPIC_FX_BODY_EXPLOSION, 10, 10, 0, victim_data.realm);
+    endforeach
+
+    sleepms(500);
+
+    // Sixth pass: Slowly spawn blood pools - gore aftermath
+    var max_blood := 0;
+    foreach victim_data in victims
+        var blood_count := RandomInt(3) + 2; // 2-4 blood pools per victim
+        if (blood_count > max_blood)
+            max_blood := blood_count;
+        endif
+    endforeach
+
+    // Spawn blood pools one at a time across all victims for dramatic effect
+    for blood_index := 1 to max_blood
+        foreach victim_data in victims
+            var blood_count := RandomInt(3) + 2;
+            if (blood_index <= blood_count)
                 var x_offset := RandomInt(3) - 1;
                 var y_offset := RandomInt(3) - 1;
-                CreateItemAtLocation(mobile.x + x_offset, mobile.y + y_offset, mobile.z, "blood", 1, who.realm);
-            endfor
-            
-            // Kill the creature
-            MoveObjectToLocation(mobile, 10, 10, 10, who.realm, MOVEOBJECT_FORCELOCATION);
-            SetObjProperty(mobile, "GuardKill", 1);
-            ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
-            
-            // Grant 2 shaman souls
-            var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
-            shaman_souls := shaman_souls + 2;
-            SetObjProperty(who, "shaman_souls", shaman_souls);
-            
-            kills := kills + 1;
-        endif
-        
-        sleepms(200);
-    endforeach
+                CreateItemAtLocation(victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, "blood", 1, victim_data.realm);
+            endif
+        endforeach
+        sleepms(1500); // Slow blood drip effect
+    endfor
+
+    // Grant shaman souls (done once at the end)
+    var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
+    shaman_souls := shaman_souls + (kills * 2);
+    SetObjProperty(who, "shaman_souls", shaman_souls);
     
     if (kills > 0)
-        Message("Você colheu " + kills + " almas no Banho de Sangue!").SendSys(who);
+        Message("Você colheu " + (kills * 2) + " almas no Banho de Sangue!").SendSys(who);
     else
         Message("Nenhuma criatura estava fraca o suficiente.").SendSys(who);
     endif
