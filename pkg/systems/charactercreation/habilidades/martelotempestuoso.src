@@ -35,7 +35,7 @@ program vacuodemana(params)
 		SendSysMessage(attacker, "Voce precisa utilizar armas contusivas");
 		return 1;
 	endif
-	// PlayAttackAnimation(attacker); // animacao de overhead 2h
+	// PlayAttackFX(attacker); // animacao de overhead 2h
 	PerformAction(attacker, 12);
 	PlaymovingEffect(attacker, defender, FX_HAMMER_THROW, 0, 40);
 	sleep(2);
@@ -48,7 +48,7 @@ program vacuodemana(params)
 	dmgList := getNewDamageList(attacker);
 
 	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 	DamageFLS(defender, total, DMG_FORCED, attacker);
 	DamageFLS(defender, dano_mlore, DMG_FORCED, attacker);

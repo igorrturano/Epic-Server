@@ -33,7 +33,7 @@ program tironojoelho(params)
 	var dist := distance(attacker, defender);
 	CheckDistance(attacker, defender, dist);
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 	PrintTextAbove(attacker, "Mira no joelho do alvo!");
 	TS_StartTimer(defender, "paralysis", 6);

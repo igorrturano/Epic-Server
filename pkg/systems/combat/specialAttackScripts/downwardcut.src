@@ -12,7 +12,7 @@ program SpecialAttack_DownwardCut(combatInfo)
 	// Salta 15 tiles
 	MoveObjectToLocation(attacker, attacker.x, attacker.y, attacker.z + 15, defender.realm,
 					  MOVEOBJECT_FORCELOCATION);
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 
 	// Move o atacante step por step até o alvo
 	while (moveTo_x != defender.x || moveTo_y != defender.y)
@@ -28,14 +28,14 @@ program SpecialAttack_DownwardCut(combatInfo)
 			moveTo_y--;
 		endif
 
-		PlayAttackAnimation(attacker); // Re-executa a animação pra poder ficar travado na postura.
+		PlayAttackFX(attacker); // Re-executa a animação pra poder ficar travado na postura.
 		MoveObjectToLocation(attacker, moveTo_x, moveTo_y, attacker.z, defender.realm,
 					   MOVEOBJECT_FORCELOCATION);
 		SleepMS(100);
 	endwhile
 
 	// Desce os tiles que pulou
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm,
 					  MOVEOBJECT_FORCELOCATION);
 

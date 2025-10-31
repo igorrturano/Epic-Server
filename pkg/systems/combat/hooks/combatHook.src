@@ -141,7 +141,7 @@ function TryToAttack(byRef attackInfo)
 		DoAttack(attackInfo);
 	else
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
-		PlayAttackSound(attackInfo); // Se errou, chama o som aqui
+		PlayAttackSFX(attackInfo); // Se errou, chama o som aqui
 		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
 	endif
 endfunction
@@ -261,7 +261,7 @@ endfunction
 // 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetColor()
 // 	);
 
-// 	PlayAttackAnimation(attackInfo.GetAttacker().GetObjRef()); // 0x9
+// 	PlayAttackFX(attackInfo.GetAttacker().GetObjRef()); // 0x9
 // 	// PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
 
 // 	var defenderPos := attackInfo.GetDefender().GetPosition();

@@ -722,7 +722,7 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo)
 			//defender.attack_once(attacker);
 			var new_hit_chance := CalculateHitChance(defender, attacker);
 			var new_random := RandomInt(100);
-			PlayAttackAnimation(defender);
+			PlayAttackFX(defender);
 			if ( new_random < new_hit_chance )
 				var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
 				armor := armor[ RandomInt( len( armor ) ) + 1];
@@ -788,7 +788,7 @@ function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byRef 
 				//defender.attack_once(attacker);
 				var new_hit_chance := CalculateHitChance(defender, attacker);
 				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
+				PlayAttackFX(defender);
 				if ( new_random < new_hit_chance )
 					var armor := CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
 					armor := armor[ RandomInt( len( armor ) ) + 1];

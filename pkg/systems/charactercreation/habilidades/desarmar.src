@@ -24,7 +24,7 @@ program doubleattack(params)
 		endif
 	endif
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	PrintTextAbove(attacker, "*desarmar*");

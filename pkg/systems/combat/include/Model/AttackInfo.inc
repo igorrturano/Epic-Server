@@ -20,6 +20,7 @@ class AttackInfo(IAttackInfo)
 	var _direction := ATTACK_DIRECTION::FRONT;
 	var _damage; // Damage class
 	var _damageHand := DAMAGEHAND::MAINHAND;
+	var _attackType := DAMAGE_TYPE::SLASHDAMAGE; // enum da postura que o atacante está usando no ataque
 	var _ammo := struct{
 		itemRef := 0x0,
 		amount := 0
@@ -102,6 +103,10 @@ class AttackInfo(IAttackInfo)
 		return this._damageHand;
 	endfunction
 
+	function GetAttackType(this)
+		return this._attackType;
+	endfunction
+
 	function GetAmmo(this)
 		return this._ammo.itemRef;
 	endfunction
@@ -182,6 +187,12 @@ class AttackInfo(IAttackInfo)
 
 	function SetDamageHand(this, damageHand)
 		this._damageHand := damageHand;
+
+		return this;
+	endfunction
+
+	function SetAttackType(this, attackType)
+		this._attackType := attackType;
 
 		return this;
 	endfunction

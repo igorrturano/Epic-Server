@@ -100,7 +100,7 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 endfunction
 
 function RodaEfeitosAnim(quem, arma, alvo)
-	PlayAttackAnimation(quem);
+	PlayAttackFX(quem);
 	sleepms(600);
 	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
 	PlaySoundEffect(quem, somAtaque);

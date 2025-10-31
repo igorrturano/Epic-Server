@@ -32,7 +32,7 @@ program doubleattack(params)
 	GrantPrivilege(attacker, "hiddenattack");
 	attacker.enable("hiddenattack");
 	sleep(5);
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	PrintTextAbove(attacker, "*golpe furtivo*");

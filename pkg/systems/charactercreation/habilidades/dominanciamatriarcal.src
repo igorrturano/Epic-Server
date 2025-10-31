@@ -47,13 +47,13 @@ program vacuodemana(params)
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);
 	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	DamageFLS(defender, total, DMG_FORCED, attacker);
 	DamageFLS(defender, dano_mlore, DMG_COLD, attacker);
 	if (attacker.hidden || attacker.concealed)
-		PlayAttackAnimation(attacker);
+		PlayAttackFX(attacker);
 		PlayHitSounds(attacker, defender);
 		DamageFLS(defender, total, DMG_PHYSICAL, attacker);
 		DamageFLS(defender, dano_mlore, DMG_COLD, attacker);

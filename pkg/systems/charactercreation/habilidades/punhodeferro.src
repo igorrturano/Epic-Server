@@ -21,7 +21,7 @@ program SpellScript(params)
 	//    return;
 	// endif
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	PrintTextAbove(attacker, "*punho de ferro*");

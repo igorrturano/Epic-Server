@@ -34,7 +34,7 @@ program tironojoelho(params)
 		return 1;
 	endif
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(attacker);
 	PlayHitSounds(attacker, defender);
 
 	TS_StartTimer(defender, "paralysis", 6);
