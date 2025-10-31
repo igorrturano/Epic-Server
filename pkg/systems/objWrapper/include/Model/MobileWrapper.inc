@@ -378,7 +378,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function ToString(this)
-	enfunction
+	endfunction
 endclass
 
 enum class MOBILE_GENDER
