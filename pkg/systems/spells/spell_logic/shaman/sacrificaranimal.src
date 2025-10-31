@@ -1,0 +1,12 @@
+use uo;
+include ":message:model/Message";
+
+program sacrifice(params)
+    var who := params[1];
+    var targ := params[2];
+
+    SetObjProperty(targ, "animal_sacrifice", who.serial);
+    SetObjProperty(who, "death_protection", 1);
+
+    Message("Sacrificio aceito.").SendSys(who);
+endprogram
