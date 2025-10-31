@@ -8,7 +8,7 @@ include ":IO:CFGFile";
 class CombatAbility(ICombatAbility)
 	var _name := "";
 	var _description := "";
-	var _moment := COMBATABILITY_MOMENT::ONHIT;
+	var _moment := COMBATABILITY_MOMENT::ON_HIT;
 	var _cooldown := 0; // em segundos
 	var _cost := struct{
 		hp := 0,

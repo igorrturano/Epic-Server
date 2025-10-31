@@ -11,7 +11,6 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _attribute := "";
 	var _attackType := "";
 	var _category := "";
-	var _animation := 0x0;
 	var _speedTier := "";
 	var _speed := 0;
 	var _speedModTier := "";
@@ -49,14 +48,14 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			Dice(SplitWords(this._template.EpicOffDamage)[3])
 		);
 		this._mainDamage := DamageDice(
-			Dice(getDamageByTier(this._mainDamageTier.GetSlashDamage())),
-			Dice(getDamageByTier(this._mainDamageTier.GetPiercingDamage())),
-			Dice(getDamageByTier(this._mainDamageTier.GetBluntDamage()))
+			Dice(GetDamageByTier(this._mainDamageTier.GetSlashDamage())),
+			Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
+			Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
 		);
 		this._offDamage := DamageDice(
-			Dice(getDamageByTier(this._offDamageTier.GetSlashDamage())),
-			Dice(getDamageByTier(this._offDamageTier.GetPiercingDamage())),
-			Dice(getDamageByTier(this._offDamageTier.GetBluntDamage()))
+			Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
+			Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
+			Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
 		);
 		this._speed := getSpeedByTier(this._speedTier);
 		this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);

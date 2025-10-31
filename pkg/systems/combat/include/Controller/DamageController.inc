@@ -31,9 +31,6 @@ include ":crafting:/include/caracteristicasFabricacao";
  * and remove existing ones more easily.
  */
 enum DAMAGE_TYPES
-	DMG_FORCED		:= -1, // Ignores resistance
-	DMG_PHYSICAL	:= "Physical",
-	
 	DMG_SLASH		:= "Slash",
 	DMG_PIERCING	:= "Piercing",
 	DMG_BLUNT		:= "Blunt",
@@ -44,15 +41,11 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
+function DamageEPIC(byRef attackInfo, isForced := false)
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano Base {attackInfo.GetAttackType()}: {attackInfo.GetDamage()}");
 
-
-function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
-	var totaldamage;
-	var attackInfo := struct{};
-	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
-
-	if (type == DMG_FORCED)
-		totaldamage := CInt(damage);
+	if (isForced)
+		totaldamage := CInt(attackInfo.GetDamage());
 	else
 		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
 	endif
@@ -919,14 +912,17 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
+	// TODO: Calcular o dano
 	// TODO: Aplicar dano físico e elemental
+
+
 	var slash := attackInfo.GetDamage().GetSlashDamage(),
-			piercing := attackInfo.GetDamage().GetPierceDamage(),
-			blunt := attackInfo.GetDamage().GetBluntDamage(),
-			fire := attackInfo.GetDamage().GetFireDamage(),
-			cold := attackInfo.GetDamage().GetColdDamage(),
-			poison := attackInfo.GetDamage().GetPoisonDamage(),
-			energy := attackInfo.GetDamage().GetEnergyDamage();
+		piercing := attackInfo.GetDamage().GetPierceDamage(),
+		blunt := attackInfo.GetDamage().GetBluntDamage(),
+		fire := attackInfo.GetDamage().GetFireDamage(),
+		cold := attackInfo.GetDamage().GetColdDamage(),
+		poison := attackInfo.GetDamage().GetPoisonDamage(),
+		energy := attackInfo.GetDamage().GetEnergyDamage();
 	
 	if (slash > 0)
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), slash);
