@@ -13,7 +13,7 @@ include "include/say";
 include ":taming:taming";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 var MIN_SKILL_FOR_BLOODIED := 40;
 

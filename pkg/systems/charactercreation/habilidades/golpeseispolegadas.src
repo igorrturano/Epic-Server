@@ -2,11 +2,11 @@ use uo;
 use vitals;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":taming:taming";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 function golpeseispolegadas(who, dist, delay, attacker)
 

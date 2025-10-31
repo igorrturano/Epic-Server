@@ -4,7 +4,7 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/epicNPCUtils";
 

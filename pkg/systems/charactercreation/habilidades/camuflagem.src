@@ -1,6 +1,6 @@
 include ":combat:combat";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 
 program camuflagem(who)

@@ -6,7 +6,7 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":destroyable:include/destroyItem";
 
 function PlayLightningSoundEffect(mobile)

@@ -2,7 +2,7 @@ use uo;
 use util;
 include "/include/epicPropNames";
 include ":propagacao:include/propagacao";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program onPisarIncendio(quem, item, lastx, lasty, lastz, lastrealm)
 	lastx == 0;

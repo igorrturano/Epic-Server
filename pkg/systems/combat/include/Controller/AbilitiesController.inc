@@ -20,6 +20,7 @@
 include "DamageController";
 include "HitController";
 include "SkillController";
+include "FXController";
 
 include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar

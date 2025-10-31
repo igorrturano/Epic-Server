@@ -8,8 +8,8 @@ use os;
 include ":attributes:attributes";
 include ":combat:combat";
 include "include/say";
-include ":combat:damage";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
 
 program aura_of_hate(params)
 	var attacker := params[1];
