@@ -1,0 +1,75 @@
+use uo;
+
+include ":attributes:attributes";
+include "include/epicCombatUtils";
+include ":message:model/Message";
+
+program spell_bloodbath(params)
+    var who := params[1];
+    var info := params[2];
+    
+    SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
+    
+    var theology := AP_GetSkill(who, THEOLOGY);
+    var hp_threshold := CInt(theology);
+    
+    // Get all mobiles nearby except pets and party
+    var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);
+    
+    var kills := 0;
+    
+    foreach mobile in mobiles
+        // Play initial animation on creature
+        PlayObjectCenteredEffect(mobile, 0xD139, 10, 10);
+        
+        // Check if current HP is less than theology
+        if (AP_GetVital(mobile, "Hits") < hp_threshold)
+            // Paralyze for 4 seconds
+            mobile.SetParalyzed(1);
+            Message("AAAAAHH!!").SendAbove(mobile);
+            
+            sleepms(500);
+            
+            // Drop all items
+            foreach item in EnumerateItemsInContainer(mobile.backpack)
+                MoveObjectToLocation(item, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
+                sleepms(20);
+            endforeach
+            
+            // Play explosion animation
+            PlayObjectCenteredEffect(mobile, EPIC_FX_BODY_EXPLOSION, 10, 10);
+            
+            sleepms(500);
+
+            // Create blood pools around the area
+            var blood_count := RandomInt(3) + 2; // 2-4 blood pools
+            for i := 1 to blood_count
+                var x_offset := RandomInt(3) - 1;
+                var y_offset := RandomInt(3) - 1;
+                CreateItemAtLocation(mobile.x + x_offset, mobile.y + y_offset, mobile.z, "blood", 1, who.realm);
+            endfor
+            
+            // Kill the creature
+            MoveObjectToLocation(mobile, 10, 10, 10, who.realm, MOVEOBJECT_FORCELOCATION);
+            SetObjProperty(mobile, "GuardKill", 1);
+            ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+            
+            // Grant 2 shaman souls
+            var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
+            shaman_souls := shaman_souls + 2;
+            SetObjProperty(who, "shaman_souls", shaman_souls);
+            
+            kills := kills + 1;
+        endif
+        
+        sleepms(200);
+    endforeach
+    
+    if (kills > 0)
+        Message("Você colheu " + kills + " almas no Banho de Sangue!").SendSys(who);
+    else
+        Message("Nenhuma criatura estava fraca o suficiente.").SendSys(who);
+    endif
+    
+    return 1;
+endprogram
