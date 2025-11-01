@@ -948,6 +948,12 @@ endfunction
  */
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
+		// Protege artifacts roubáveis do sistema de destruíveis
+		if (GetObjProperty(alvo, "PropStealable"))
+			SendSysMessageEx(quem, "Este item é um artifact roubável e não pode ser configurado como destrutível.", SSM_FAIL);
+			return 0;
+		endif
+		
 		var material := configRecursos[cfgselecao.material];
 
 		if(cfgselecao.durabTotal)

@@ -127,6 +127,9 @@ function SpawnArtifact(spawner, objtype, color, name, desc, rarity)
 	SetObjProperty(artifact, "StealableRarity", rarity);
 	SetObjProperty(artifact, "StealableSpawnerSerial", spawner.serial);
 	
+	// Protege o artifact do sistema de destruíveis
+	SetObjProperty(artifact, "isIndestrutivel", 1);
+	
 	// Adiciona armadilha usando o sistema existente
 	var trap_enabled := CInt(GetObjProperty(spawner, "TrapEnabled"));
 	if (trap_enabled)
