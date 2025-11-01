@@ -63,6 +63,14 @@ function ExaminarObjeto(who,targ)
 		else
 			var diff;
 			var lvl := Cint(GetObjProperty(targ, "level"));
+			
+			// DEBUG: Print informações do item
+			Print("[AWARENESS DEBUG] Tentando encontrar armadilha:");
+			Print("  - Item: " + targ.name + " (Serial: " + targ.serial + ")");
+			Print("  - Level da armadilha: " + lvl);
+			Print("  - Jogador: " + who.name);
+			Print("  - Skill Awareness do jogador: " + AP_GetSkill(who, AWARENESS));
+			
 			case (lvl)
 				1: diff := 20;
 				2: diff := 40;
@@ -72,8 +80,15 @@ function ExaminarObjeto(who,targ)
 				6: diff := 120;
 				default: diff := 1000; // Telepads e afins
 			endcase
+			
+			Print("  - Dificuldade calculada: " + diff);
+			
 			sleep(1);
-			if ( SkillCheck(who, AWARENESS, diff) > 0 )
+			var check_result := SkillCheck(who, AWARENESS, diff);
+			
+			Print("  - Resultado do SkillCheck: " + check_result);
+			
+			if ( check_result > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
 
