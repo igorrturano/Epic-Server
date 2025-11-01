@@ -1,0 +1,111 @@
+use uo;
+use util;
+use os;
+use cfgfile;
+
+include ":nature:nature";
+include "include/epicConstants";
+
+program daynightClocksystem(parameters)
+
+	var dayCycleSystemPid := parameters[0]; 
+	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+	var daynightStartingTime := cint(GetGlobalProperty("daynightStartingTime"));
+	var config := readconfigfile(":nature:config/daynight");
+	config := config["settings"];
+	var maxSystemDarkness := cint(config.maxSystemDarkness);
+	var maxHoursDayCycle := cint(config.maxHoursDayCycle);
+	var midDayRewind := 6;
+	var lightLevel := maxSystemDarkness;
+	var previousLightLevel := lightLevel;
+	var clockDelay := 6 * 60; //atraso para que o calculo da luz no pico bata com o meio dia.  
+	var direction := -1;
+	setregionlightlevel("Umbraeterna", cint(config.umbraeternaDarkness)); // é semrpe a mesma lightlevel.
+	PRINT("*** Clock Counting ****");
+	PRINT("*** Clock Counting ****");
+	PRINT("*** Clock Counting ****");
+
+	var dayManager := struct{ previousDay := 0, day := 1, isDayDone := false, isNightDone := false};
+
+	while(1)
+		var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+		var tempestade := GetGlobalProperty("tempestade");
+		var maxAllowedDarkness := GeTMoonLightMod();
+		var currentHour := getCurrentHour();
+		var currentMinute := getCurrentMinute();
+		var timeInMinutes := currentHour * 60 + currentMinute;
+		var wholeDayInMinutes := maxHoursDayCycle * 60 ;
+		var halfHourAmountInADay := wholeDayInMinutes / 30;
+		//var timeDelay := halfHourAmountInADay / 4;
+		var halfHourAmountElapsed := timeInMinutes / 30;
+		//var lightLevelHalfhours := halfHourAmountElapsed - timeDelay;
+
+		//if(halfHourAmountElapsed < 0)
+		//	lightLevelHalfhours *= -1;
+		//endif
+
+		var midDay := halfHourAmountInADay / 2;
+
+		var LightIncrementDecrement := halfHourAmountElapsed % midDay;
+		
+		if(halfHourAmountElapsed >= midDay )
+			var addition := 0 + LightIncrementDecrement;
+			lightLevel := addition > maxSystemDarkness ? maxSystemDarkness : addition ;
+		else
+			var subtraction := maxSystemDarkness - LightIncrementDecrement;
+			lightLevel := subtraction < 0 ? 0 : subtraction ;
+		endif
+
+		var finalLightLevel :=  lightLevel > maxAllowedDarkness ? maxAllowedDarkness : lightLevel;
+
+		Print("midDay: " + midDay + " halfHourAmountElapsed: " + halfHourAmountElapsed + " lightLevel: " + lightLevel + " finalLightLevel: " + finalLightLevel);
+		Print(" halfHourAmountInADay: " + halfHourAmountInADay);
+		Print("timeInMinutes: " + timeInMinutes + " currentHour: " + currentHour + " wholeDayInMinutes: " + wholeDayInMinutes);
+		Print("day: " + dayManager.day);
+		if(finalLightLevel != previousLightLevel)
+			setregionlightlevel("Superficie", finalLightLevel);
+			ApllyLightLevel();//Reverte o lightlevel para drows.
+			previousLightLevel := finalLightLevel;
+		endif
+
+		if(currentHour >= 6 && currentHour < 18)
+			if(!dayManager.isNightDone)
+				Broadcast("O sol esta nascendo.");
+				if(dayManager.previousDay != 0)
+					Print("*** FIZ O QUE NAO DIVIA ***");
+					SetGlobalProperty("halfdaytime", ReadGameClock());
+					SetGlobalProperty("dia", "dia");
+					UpdateGlobalEventLevers("dia");
+				endif
+				dayManager.isNightDone := true;
+			endif
+		else
+			if(currentHour >= 18  || currentHour < 6)
+				if(!dayManager.isDayDone)
+					broadcast("O sol esta se pondo.");
+					SetGlobalProperty("halfdaytime", ReadGameClock());
+					SetGlobalProperty("dia", "noite");
+					UpdateGlobalEventLevers("noite");
+					dayManager.isDayDone := true;
+				endif
+			endif
+		endif
+		 
+		 Print(" dayManager ----- > " + dayManager);
+		 if(dayManager.isDayDone && dayManager.isNightDone && dayManager.previousDay != dayManager.day)
+			 
+		 	var system := GetProcess(dayCycleSystemPid);
+			if(!system)
+				break;
+			endif
+			system.sendEvent(struct { id :=  DAYNIGHT_EVTS::EV_ADVANCE_DAY_ID });
+			dayManager.previousDay := dayManager.day;
+			dayManager.day := dayManager.day + 1;
+			dayManager.isNightDone := false;
+			dayManager.isDayDone := false;
+			Print("Passou o dia!");
+		 endif
+
+		Sleepms(60000 / gmAcceleration);//roda todo minuto, pra não perder sincronia.
+	endwhile
+endprogram
