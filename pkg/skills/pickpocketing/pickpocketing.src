@@ -16,6 +16,8 @@ include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:boss";
 include "include/epicNPCUtils";
+include ":stealables:stealables";
+include ":traps:traps";
 
 program skill_Stealing(mobile)
 	if (GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))))
@@ -45,6 +47,12 @@ program skill_Stealing(mobile)
 
 	SendSysMessageEx(mobile, "Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST);
 	var targ := Target(mobile);
+	
+	// Verifica se é um artefato roubável
+	if (targ && targ.IsA(POLCLASS_ITEM) && IsStealableArtifact(targ))
+		return HandleStealableArtifact(mobile, targ);
+	endif
+	
 	var difbonus := 0;
 	if (targ == mobile)
 		SendSysMessageEx(mobile, "Espertao voce hein..?", SSM_FAIL);
@@ -259,3 +267,269 @@ program skill_Stealing(mobile)
 		endif
 	endif
 endprogram
+
+/*
+ * HandleStealableArtifact(mobile, artifact)
+ * 
+ * Lida com a tentativa de roubo de um artefato roubável
+ * 
+ * Parâmetros:
+ *   mobile - Jogador tentando roubar
+ *   artifact - Artefato a ser roubado
+ * 
+ * Retorno:
+ *   1 se bem-sucedido, 0 caso contrário
+ */
+function HandleStealableArtifact(mobile, artifact)
+	// Verifica distância
+	if (Distance(mobile, artifact) > 2)
+		SendSysMessageEx(mobile, "O artefato está muito longe.", SSM_FAIL);
+		return 0;
+	endif
+	
+	// Verifica cooldown global de tentativas (10 segundos)
+	var last_attempt := CInt(GetObjProperty(mobile, "#StealableLastAttempt"));
+	if (last_attempt && (ReadGameClock() - last_attempt) < 10)
+		var time_left := 10 - (ReadGameClock() - last_attempt);
+		SendSysMessageEx(mobile, "Você precisa esperar " + time_left + " segundos antes de tentar roubar novamente.", SSM_FAIL);
+		return 0;
+	endif
+	
+	// Pega a raridade do artefato
+	var rarity := CInt(GetObjProperty(artifact, "StealableRarity"));
+	if (!rarity)
+		rarity := 1; // Default
+	endif
+	
+	// Verifica se o jogador está bloqueado neste artefato específico
+	var artifact_key := "StealableBlock_" + artifact.serial;
+	var block_until := CInt(GetObjProperty(mobile, artifact_key));
+	if (block_until && ReadGameClock() < block_until)
+		SendSysMessageEx(mobile, "Uma barreira invisível impede sua aproximação...", SSM_FAIL);
+		SendSysMessageEx(mobile, "O artefato ainda rejeita sua presença.", SSM_FAIL);
+		SendSysMessageEx(mobile, "Você sente que deve esperar antes de tentar novamente.", 38);
+		return 0;
+	endif
+	
+	// Calcula a dificuldade baseada na raridade e peso
+	var difficulty := CalculateStealingDifficulty(rarity, artifact.weight);
+	
+	// Pega o valor da skill do jogador (sempre Pickpocketing)
+	var player_skill := AP_GetSkill(mobile, PICKPOCKETING);
+	
+	// Verifica se o jogador quer tentar
+	if (difficulty > 1.5 * player_skill)
+		SendSysMessageEx(mobile, "Suas mãos tremem ao tocar o artefato...", SSM_FAIL);
+		SendSysMessageEx(mobile, "Você não possui a habilidade necessária para tentar isso.", SSM_FAIL);
+		SendSysMessageEx(mobile, "Seria loucura tentar, você certamente será pego.", 38);
+		return 0;
+	endif
+	
+	// Define o cooldown global de tentativas (10 segundos)
+	SetObjProperty(mobile, "#StealableLastAttempt", ReadGameClock());
+	
+	// Animação de tentativa de roubo (3 vezes)
+	var i;
+	for (i := 1; i <= 3; i := i + 1)
+		PrintTextAbove(mobile, "*Tenta roubar*");
+		PerformAction(mobile, 0x0020); // ACTION_BOW
+		PlaySoundEffect(mobile, 0x58); // SOUND_SCRUNCH
+		Sleep(2);
+	endfor
+	
+	// Tenta roubar usando Pickpocketing
+	var check := SkillCheck(mobile, PICKPOCKETING, difficulty);
+	
+	if (check > 0)
+		// Sucesso! Mas verifica se há armadilha não desarmada
+		var trap_list := GetObjProperty(artifact, "TrapList");
+		
+		if (trap_list != error && trap_list.size() > 0)
+			// Verifica se a armadilha foi desarmada
+			var trap_disarmed := GetObjProperty(artifact, "trapDesarmada");
+			
+			if (!trap_disarmed)
+				// ARMADILHA NÃO FOI DESARMADA! Dispara ao roubar
+				var trap_last_triggered := CInt(GetObjProperty(artifact, "TrapLastTriggered"));
+				var time_since_trigger := ReadGameClock() - trap_last_triggered;
+				
+				if (!trap_last_triggered || time_since_trigger >= 21600)
+					// Registra quando a armadilha foi ativada
+					SetObjProperty(artifact, "TrapLastTriggered", ReadGameClock());
+					
+					// Executa as armadilhas usando o sistema existente
+					RunTraps(artifact, mobile);
+					
+					SendSysMessageEx(mobile, "Você roubou o artefato, mas ativou uma armadilha!", SSM_FAIL);
+					PrintTextAbove(mobile, "*Ativa uma armadilha ao roubar*");
+				else
+					var time_remaining := 21600 - time_since_trigger;
+					var hours := CInt(time_remaining / 3600);
+					SendSysMessageEx(mobile, "A armadilha está recarregando (" + hours + " horas).", SSM_INFO);
+				endif
+				
+				// Continua com o roubo mesmo após a armadilha
+			endif
+		endif
+		
+		// Limpa contadores de falha
+		var fail_key := "StealableFails_" + artifact.serial;
+		var attempts_key := "StealableAttempts_" + artifact.serial;
+		EraseObjProperty(mobile, fail_key);
+		EraseObjProperty(mobile, attempts_key);
+		
+		SendSysMessageEx(mobile, "Você conseguiu roubar " + artifact.desc + "!", SSM_INFO);
+		
+		// Mensagem overhead visível para todos
+		PrintTextAbove(mobile, "Você roubou um item sem ser pego, fuja rapidamente antes que alguém denuncie o item como roubado.");
+		
+		// Pega o spawner
+		var spawner := GetArtifactSpawner(artifact);
+		
+		if (spawner)
+			// Define o próximo tempo de spawn baseado na raridade
+			var respawn_time := GetRespawnTimeByRarity(rarity);
+			var next_spawn := ReadGameClock() + respawn_time;
+			SetObjProperty(spawner, "NextSpawnTime", next_spawn);
+			
+			// Limpa o artefato atual do spawner
+			EraseObjProperty(spawner, "CurrentArtifactSerial");
+			
+			// ATUALIZA AS ESTATÍSTICAS DE ROUBO NO DATAFILE
+			IncrementStealCount(spawner);
+		endif
+		
+		// Desfixa e move para o inventário
+		artifact.movable := 1;
+		EraseObjProperty(artifact, "PropStealable");
+		EraseObjProperty(artifact, "StealableRarity");
+		EraseObjProperty(artifact, "StealableSpawnerSerial");
+		
+		if (!MoveItemToContainer(artifact, mobile.backpack))
+			// Se não couber na mochila, cai no chão
+			MoveObjectToLocation(artifact, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
+			SendSysMessageEx(mobile, "O artefato caiu no chão pois sua mochila está cheia.", SSM_INFO);
+		endif
+		
+		// Treina Pickpocketing
+		SkillCheck(mobile, PICKPOCKETING, -1);
+		
+		// Log do roubo
+		var region := GetRegionName(mobile);
+		var coords := array{mobile.x, mobile.y};
+		var nome := GetObjProperty(mobile, "nome_inicial");
+		if (!nome)
+			nome := mobile.name;
+		endif
+		
+		LogToFile("stealables.log", "[" + polcore().systime + "] " + nome + " roubou " + 
+				  artifact.desc + " (Raridade " + rarity + ") em " + region + " " + coords);
+		
+		return 1;
+	else
+		// Falha
+		SendSysMessageEx(mobile, "Você falhou ao tentar roubar " + artifact.desc + ".", SSM_FAIL);
+		
+		// Treina Pickpocketing mesmo em falha (você aprende tentando!)
+		SkillCheck(mobile, PICKPOCKETING, -1);
+		
+		// Incrementa contador de tentativas
+		var attempts_key := "StealableAttempts_" + artifact.serial;
+		var total_attempts := CInt(GetObjProperty(mobile, attempts_key)) + 1;
+		SetObjProperty(mobile, attempts_key, total_attempts);
+		
+		// Feedback sutil sobre o progresso
+		var fail_key := "StealableFails_" + artifact.serial;
+		var current_critical_fails := CInt(GetObjProperty(mobile, fail_key));
+		
+		if (current_critical_fails > 0)
+			SendSysMessageEx(mobile, "Você sente que o artefato está ficando mais difícil de manipular...", 2100);
+		endif
+		
+		// Reseta contador após 10 tentativas sem acumular 3 críticas
+		if (total_attempts > 10)
+			EraseObjProperty(mobile, "StealableFails_" + artifact.serial);
+			SetObjProperty(mobile, attempts_key, 1);
+			total_attempts := 1;
+			SendSysMessageEx(mobile, "Você sente que pode tentar novamente com mais cuidado.", SSM_INFO);
+		endif
+		
+		// Falha crítica
+		if (check < -25)
+			SendSysMessageEx(mobile, "Suas mãos escorregam desajeitadamente no artefato!", SSM_FAIL);
+			PrintTextAbove(mobile, "*Movimento brusco*");
+			
+			// Verifica se tem armadilha configurada
+			var trap_list := GetObjProperty(artifact, "TrapList");
+			
+			if (trap_list != error && trap_list.size() > 0)
+				// Verifica se a armadilha já disparou recentemente (6 horas = 21600 segundos)
+				var trap_last_triggered := CInt(GetObjProperty(artifact, "TrapLastTriggered"));
+				var time_since_trigger := ReadGameClock() - trap_last_triggered;
+				
+				if (!trap_last_triggered || time_since_trigger >= 21600)
+					// Registra quando a armadilha foi ativada
+					SetObjProperty(artifact, "TrapLastTriggered", ReadGameClock());
+					
+					// Executa as armadilhas usando o sistema existente
+					RunTraps(artifact, mobile);
+					
+					SendSysMessageEx(mobile, "Você ativou uma armadilha!", SSM_FAIL);
+				else
+					var time_remaining := 21600 - time_since_trigger;
+					var hours := CInt(time_remaining / 3600);
+					SendSysMessageEx(mobile, "A armadilha ainda está recarregando (" + hours + " horas restantes).", SSM_INFO);
+				endif
+			endif
+			
+			// Cooldown adicional de 60 segundos em falha crítica
+			SetObjProperty(mobile, "#StealableLastAttempt", ReadGameClock() + 60);
+			
+			// Incrementa contador de falhas críticas
+			var fail_key := "StealableFails_" + artifact.serial;
+			var critical_fails := CInt(GetObjProperty(mobile, fail_key)) + 1;
+			SetObjProperty(mobile, fail_key, critical_fails);
+			
+			// Feedback sobre falhas críticas
+			if (critical_fails == 1)
+				SendSysMessageEx(mobile, "O artefato parece ter notado sua presença...", 38);
+				SendSysMessageEx(mobile, "Você sente que não deveria falhar assim novamente.", 38);
+			elseif (critical_fails == 2)
+				SendSysMessageEx(mobile, "O artefato parece resistir ativamente às suas tentativas!", 53);
+				SendSysMessageEx(mobile, "Um erro a mais e você não poderá mais tocá-lo...", 53);
+			endif
+			
+			// Verifica se atingiu 3 falhas críticas dentro de 10 tentativas
+			if (critical_fails >= 3 && total_attempts <= 10)
+				// Bloqueia o jogador deste artefato por 24 horas (86400 segundos)
+				var block_key := "StealableBlock_" + artifact.serial;
+				var block_time := ReadGameClock() + 86400; // 24 horas
+				SetObjProperty(mobile, block_key, block_time);
+				
+				// Feedback de bloqueio
+				SendSysMessageEx(mobile, "═══════════════════════════════════════════", 33);
+				SendSysMessageEx(mobile, "O artefato queima em suas mãos!", 33);
+				SendSysMessageEx(mobile, "Uma força mística o repele violentamente!", 33);
+				SendSysMessageEx(mobile, "Você não consegue mais se aproximar dele...", 33);
+				SendSysMessageEx(mobile, "Talvez amanhã suas energias se alinhem novamente.", 33);
+				SendSysMessageEx(mobile, "═══════════════════════════════════════════", 33);
+				PrintTextAbove(mobile, "*Repelido pelo artefato*");
+				
+				// Limpa contadores
+				EraseObjProperty(mobile, fail_key);
+				EraseObjProperty(mobile, attempts_key);
+				
+				// Log do bloqueio
+				var nome := GetObjProperty(mobile, "nome_inicial");
+				if (!nome)
+					nome := mobile.name;
+				endif
+				LogToFile("stealables.log", "[" + polcore().systime + "] " + nome + 
+						  " foi bloqueado do artefato " + artifact.desc + " (Serial: " + artifact.serial + ") por 24 horas");
+			endif
+		endif
+		
+		return 0;
+	endif
+endfunction
+
