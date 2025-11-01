@@ -21,15 +21,29 @@ program destruiveis(quem, texto)
 		var cfgselecao := EnviaConfigDesGump(quem);
 
 		if (cfgselecao.tipoAlvo == "cadeiaUnica")
-			while (true)
+			var max_iterations := 0;
+			while (max_iterations < 500)  // Proteção contra loop infinito
+				max_iterations := max_iterations + 1;
+				
 				var alvo := Target(quem, TGTOPT_NOCHECK_LOS);
 				if (!alvo)
 					SendSysMessageEx(quem, "Alvo Cancelado.", SSM_FAIL);
 					break;
 				endif
-				ConfiguraAlvo(quem, alvo, cfgselecao);
+				
+				var result := ConfiguraAlvo(quem, alvo, cfgselecao);
+				if (!result)
+					// ConfiguraAlvo retornou 0 (ex: artifact roubável bloqueado)
+					// Continua o loop para permitir nova seleção
+					continue;
+				endif
+				
 				Sleepms(2);
 			endwhile
+			
+			if (max_iterations >= 500)
+				SendSysMessageEx(quem, "Limite de iterações atingido. Comando encerrado.", SSM_FAIL);
+			endif
 		elseif (cfgselecao.tipoAlvo == "retanguloSelecao")
 
 			SendSysMessageEx(quem, "Selecione o vertice superior esquerdo.", SSM_INFO);

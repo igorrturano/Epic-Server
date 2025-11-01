@@ -117,13 +117,18 @@ program skill_Stealing(mobile)
 		endif
 
 		SendSysMessageEx(mobile, "Voce conseguiu abrir a mochila de " + targ.name + ".", SSM_INFO);
-		SendOpenSpecialContainer(mobile, targ.backpack);
-		SendSysMessageEx(mobile, "Se desejar parar de roubar, pressione Esc no momento da escolha do item.",
-				   SSM_INFO);
+	SendOpenSpecialContainer(mobile, targ.backpack);
+	SendSysMessageEx(mobile, "Se desejar parar de roubar, pressione Esc no momento da escolha do item.",
+			   SSM_INFO);
 
-		while (1)
-			SendSysMessageEx(mobile, "Escolha um item para roubar.", SSM_REQUEST);
-			var steal := Target(mobile); // , TGTOPT_NOCHECK_LOS);
+	var steal_attempts := 0;
+	var max_steal_attempts := 50;  // Proteção: máximo 50 tentativas por sessão
+	
+	while (steal_attempts < max_steal_attempts)
+		steal_attempts := steal_attempts + 1;
+		
+		SendSysMessageEx(mobile, "Escolha um item para roubar.", SSM_REQUEST);
+		var steal := Target(mobile); // , TGTOPT_NOCHECK_LOS);
 			if (!steal)
 				SendSysMessageEx(mobile, "Voce parou de roubar.", SSM_INFO);
 				break;
@@ -241,6 +246,12 @@ program skill_Stealing(mobile)
 				break;
 			endif
 		endwhile
+		
+		// Aviso se atingiu o limite de tentativas
+		if (steal_attempts >= max_steal_attempts)
+			SendSysMessageEx(mobile, "Voce atingiu o limite de tentativas de roubo. Tente novamente.", SSM_FAIL);
+		endif
+		
 		mobile.facing := mobile.facing; // Pra fechar o container! ;D
 	else
 		SendSysMessageEx(mobile, "Voce nota que o alvo percebeu algo.", SSM_FAIL);
