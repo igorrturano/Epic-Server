@@ -1007,7 +1007,11 @@ function weaponsByClassAndCulture(who)
             CreateItemInicial(who, 0x1B78, 1); // shield
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x0F4E, 1); // bardiche
+            if( chardata.magia == "Shaman")
+                CreateItemInicial(who, 0x26C4, 1); // scythe
+            else
+                CreateItemInicial(who, 0x0F4E, 1); // bardiche
+            endif
         endif
         if (skills[DUALWIELD] >= 1)
             CreateItemInicial(who, 0x8fd, 1);

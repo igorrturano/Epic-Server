@@ -65,7 +65,7 @@ program SpellStarter(params)
 			mobile.frozen := 1;
 		endif
 	endif
-	var battlemageHabs := array{ "Concentracao Macabra", "Consagracao Divina", "Dominatio Animae", "Vínculo Elemental",
+	var battlemageHabs := array{ "Concentracao Macabra", "Consagracao Divina", "Vínculo Elemental",
 							 	"Colheita de Almas", "Campeao das Montanhas" };
 	var tem_hab := 0;
 	foreach hab in battlemageHabs

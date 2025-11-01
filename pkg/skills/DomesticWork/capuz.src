@@ -12,15 +12,21 @@ program textcmd_openPack(who, robe)
 		SendSysMessageEx(who, "Voce precisa esta vestindo o robe.", SSM_FAIL);
 		return 0;
 	endif
-	MoveItemToContainer(robe, who.backpack);
+
+	// Toggle between hood up (0x2684) and hood down (0x1f03)
+	var new_graphic;
 	if (robe.graphic == 0x1f03)
-		robe.graphic := 0x2684;
+		new_graphic := 0x2684;
 		PrintText(who, "*veste o capuz*");
 	else
-		robe.graphic := 0x1f03;
+		new_graphic := 0x1f03;
 		PrintText(who, "*remove o capuz*");
 	endif
+
+	// Unequip, re-equip, THEN change graphic (EquipItem resets graphic to original)
+	MoveItemToContainer(robe, who.backpack);
 	EquipItem(who, robe);
+	robe.graphic := new_graphic;
 
 	return 1;
 endprogram
