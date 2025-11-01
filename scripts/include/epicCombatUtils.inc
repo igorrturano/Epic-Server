@@ -162,3 +162,68 @@ function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
    return mobiles;
 endfunction
 
+//pega os pets e summons da pessoa na area
+function ListAllPetsAndSummonedPetsNear(who,  range)
+
+	var pets := array;
+	var tamedPets := ListPetsNear(who,  range);
+	var summonedPets := ListSummonedPetsNear(who,  range);
+
+	if ( !tamedPets && !summonedPets)
+		return pets;
+	endif
+
+	foreach pet in tamedPets
+		pets.append(pet);
+	endforeach
+
+	foreach pet in summonedPets
+		pets.append(pet);
+	endforeach
+
+	return pets;
+
+endfunction
+
+//pega os Summoned Pets da pessoa na area
+function ListSummonedPetsNear(who,  range)
+
+	var pets := array;
+	var tamed := GetObjProperty(who, "SummonedPets");
+	if ( !tamed )
+		return pets;
+	endif
+
+	foreach serial in tamed
+		var pet := SystemFindObjectBySerial(serial);
+		var owner := GetObjProperty(pet, "owner");
+		if ( (owner == who || owner == who.serial || cstr(owner) == cstr(who.serial))  && (Distance(pet, who) <= range))
+			pets.append(pet);
+		endif
+		sleepms(2);
+	endforeach
+
+	return pets;
+
+endfunction
+
+//pega os pets da pessoa na area
+function ListPetsNear(who,  range)
+
+	var pets := array;
+	var tamed := GetObjProperty(who, "TamedPets");
+	if ( !tamed )
+		return pets;
+	endif
+
+	foreach serial in tamed
+		var pet := SystemFindObjectBySerial(serial);
+		if ( (pet.master == who)  && (Distance(pet, who) <= range))
+			pets.append(pet);
+		endif
+		sleepms(2);
+	endforeach
+
+	return pets;
+
+endfunction
