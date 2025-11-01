@@ -167,7 +167,7 @@ function GetRespawnTimeByRarity(rarity)
 		4: return 43200;    // 12 horas
 		5: return 86400;    // 1 dia
 		6: return 172800;   // 2 dias
-		7: return 30;   // 4 dias
+		7: return 345600;   // 4 dias
 		8: return 691200;   // 8 dias
 		9: return 1382400;  // 16 dias
 		10: return 2764800; // 32 dias
