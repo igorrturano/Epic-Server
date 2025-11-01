@@ -3,6 +3,11 @@ use uo;
 const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
 const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
 
+enum class DAYNIGHT_EVTS
+    EV_ADVANCE_DAY_ID,
+    EV_DAY_ACCELATARION_CHANGE_ID
+endenum
+
 enum CULTURA
     AIGLANA := "Aiglana",
     HAROLOTH := "Har'oloth",
