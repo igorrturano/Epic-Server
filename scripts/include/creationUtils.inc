@@ -6,6 +6,7 @@ include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
+include ":message:include/model/Message";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -2623,4 +2624,9 @@ function CreateItemInicial(who, objtype, qtd)
                                     array {0x630e}, //ouro
                                     FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                 );
+
+    if(!item)
+        Print("Erro ao criar item incial {}".format(objtype));
+        Message("Erro ao criar item incial {}".format(objtype), SSM_FAIL).SendSys(who);
+    endif
 endfunction

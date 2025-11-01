@@ -51,6 +51,8 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_BTN_CANCELAR := 10,
 	COMPLEXOS_BTN_OKAY_GM_CMPNT := 11,
 	COMPLEXOS_BTN_FABRICAR_GM_CMPNT := 12,
+	COMPLEXOS_BTN_ESQ_PROX_PAGINA := 13,
+	COMPLEXOS_BTN_ESQ_ANT_PAGINA := 14,
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -69,6 +71,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ABRE_GM_COMPONENT,
 	RT_RCT_PROX_PAGINA,
 	RT_RCT_ANT_PAGINA,
+	RT_ESQ_PROX_PAGINA,
+	RT_ESQ_ANT_PAGINA,
 	RT_MEMORIZAR_COMPONENTES,
 	RT_LIMPAR_MEMORIA,
 	RT_AJUDA_CPX
@@ -202,7 +206,7 @@ function PreencheEsquemas(byref gump, x,y, sessao)
 	endforeach
 endfunction
 
-function MontaEsquemaGump(byref gump,byref sessao)
+function MontaEsquemaGump(byref gump,byref sessao,byref parametros)
 	gump := GFECreateGump("GumpEsquema",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO;
@@ -269,27 +273,27 @@ function MontaEsquemaGump(byref gump,byref sessao)
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + Cint(larguraCelula * 10.4),Cint(alturaCelula * 4),2460,2461,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_BTN_SALVAR);
 	GFTooltipText(gump,"Salvar Receita.");
 	//Print("Componentes: " + sessao);
-	var pagina :=  1;
 	var posx := 1;
-	GFPage(gump,pagina);
-	foreach componente in (sessao.receitaSelecionada.receita.componentesNecessarios)
-		PreencheEncaixes(gump, margemEsquerdaLocal + (larguraCelula * 4) * ((_componente_iter - 1) % 3), margemSuperiorLocal + Cint(alturaCelula * 5.3), _componente_iter,componente,sessao);
-		
-		//Gerencia Paginação.
-		if(_componente_iter % 3 == 0)
-			var calculoProxPagona := (pagina + 1) - 0.6;
-			if(calculoProxPagona < 1)
-				GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 11 + 10,Cint(alturaCelula * 4.9) + 5,4005,4006,GF_PAGE_BTN,gump.cur_page + 1);
-			endif
-			++pagina;
-			GFPage(gump,pagina);
-			if(pagina > 1)
-				GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 5,CInt(alturaCelula * 4.9) + 5,4014,4015,GF_PAGE_BTN,gump.cur_page - 1);
-			endif
-		endif
+	var paginador := MontaPaginador( sessao.paginador.esquemas.pagina,parametros.encaixesPorPagina);
+	var componentesNecessarios := sessao.receitaSelecionada.receita.componentesNecessarios;
 
+	for indice := paginador.indicePaginaAtual to (paginador.indicePaginaSeguinte - 1)
+		if(indice > componentesNecessarios.size())
+			break;
+		endif
+		
+		var componente :=  componentesNecessarios[indice];
+		
+		PreencheEncaixes(gump, margemEsquerdaLocal + (larguraCelula * 4) * ((indice - 1) % parametros.encaixesPorPagina), margemSuperiorLocal + Cint(alturaCelula * 5.3), indice,componente,sessao);
+		
+		if(componentesNecessarios.size() >= paginador.indicePaginaSeguinte)
+			GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 11 + 10,Cint(alturaCelula * 4.9) + 5,4005,4006,GF_CLOSE_BTN,COMPLEXOS_BTN_ESQ_PROX_PAGINA);
+		endif
+		if(1 >= paginador.indicePaginaAnterior)
+			GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 5,CInt(alturaCelula * 4.9) + 5,4014,4015,GF_CLOSE_BTN,COMPLEXOS_BTN_ESQ_ANT_PAGINA);
+		endif
 		Sleepms(2);
-	endforeach
+	endfor
 endfunction
 
 function MontaComponentesGump(byref gump,byref parametros,byref sessao)
@@ -536,6 +540,14 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	endif
 	GFTooltipText(gump,"Escolher Componente.");
 
+	var textoCaracteristica;
+
+	if(Find(UPPER(encaixeComponente.caracteristica),"VAZIO",1) > 0)
+		textoCaracteristica := "Vazio";
+	else
+		textoCaracteristica := UCFirst(encaixeComponente.caracteristica);;
+	endif
+
 	if(componenteEscolhido)
 		GFTextLine(gump,x + 22 ,y + 60,1153,"{}".format(
 		componenteEscolhido.item.nome,
@@ -545,7 +557,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		var materialQualidadeFormatado := "[{}] [{}]".format( componenteEscolhido.material.nome, componenteEscolhido.tier.desc);
 		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,materialQualidadeFormatado,3.7) ,y + 85,89,materialQualidadeFormatado);
 	else
-		var caracteristica := "*" + UCFirst(encaixeComponente.caracteristica) + "*";
+		var caracteristica := "*" + textoCaracteristica + "*";
 		GFTextLine(gump,x + CentralizaEixoX(larguraCelula,caracteristica,3.7) ,y + 103,915,caracteristica);
 		GFTextLine(gump,x + 22 ,y + 60,1153,"Escolha um componente.");
 	endif
@@ -555,7 +567,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	
 	if(TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_UNINIT
 	   && TypeOfInt(componenteEscolhido.propriedades.valorPrincipal) != OT_ERROR)
-		GFTextLine(gump,x + 5,posYcaracteristicas,1153,UCFirst(encaixeComponente.caracteristica)); // caracteristica;
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,textoCaracteristica); // caracteristica;
 		GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
 	endif
 	
@@ -635,13 +647,11 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 
 	//GFPage(gump,page);
 	if(receitas != error && receitas.size() > 0)
-		var indiceReceitasPaginaAtual := (sessao.paginaAtual * receitasPorPagina) + 1;
-		var indiceReceitasPaginaSeguinte := ((1 + sessao.paginaAtual) * receitasPorPagina) + 1;
-		var indiceReceitasPaginaAnterior := ((1 - sessao.paginaAtual) * receitasPorPagina) + 1;
-		var receitasPaginaAtual := sessao.paginaAtual * receitasPorPagina;
+
+		var paginador := MontaPaginador( sessao.paginador.complexos.pagina,receitasPorPagina);
 		var linha := 0;
 
-		for indice := indiceReceitasPaginaAtual to (indiceReceitasPaginaSeguinte - 1)
+		for indice := paginador.indicePaginaAtual to (paginador.indicePaginaSeguinte - 1)
 			if(indice > receitas.size())
 				break;
 			endif
@@ -650,10 +660,10 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 			
 			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (indice - 1) % colunasLinha,receita,indice,sessao);
 
-			if(receitas.size() > indiceReceitasPaginaSeguinte)
+			if(receitas.size() > paginador.indicePaginaSeguinte)
 				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_PROX_PAGINA);
 			endif
-			if(1 >= indiceReceitasPaginaAnterior)
+			if(1 >= paginador.indicePaginaAnterior)
 				GFAddButton(gump,x + 13, y + altura / 2 ,4014,4015,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_ANT_PAGINA);
 			endif
 
@@ -865,4 +875,13 @@ function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
 
 	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
+endfunction
+
+function MontaPaginador(paginaAtual, itensPorPagina)
+
+	return struct {
+					indicePaginaAtual := (paginaAtual * itensPorPagina) + 1,
+					indicePaginaSeguinte := ((1 + paginaAtual) * itensPorPagina) + 1,
+					indicePaginaAnterior := ((1 - paginaAtual) * itensPorPagina) + 1
+				};
 endfunction
