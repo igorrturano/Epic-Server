@@ -15,9 +15,10 @@ program spell_bloodbath(params)
     if (who.gender == 0)
         PlaySoundEffect(who, 0x697); // blood laughter
     endif
-    
+
+    var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
     var theology := AP_GetSkill(who, THEOLOGY);
-    var hp_threshold := CInt(theology);
+    var hp_threshold := CInt((theology / 2) + (shaman_souls * 2));
     
     // Get all mobiles nearby except pets and party
     var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);
@@ -56,10 +57,10 @@ program spell_bloodbath(params)
         endif
     endforeach
 
-    // Second pass: Play initial haunting animation (face from ground)
+    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, EPIC_FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
     foreach victim_data in victims
         // PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
-        PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);
+        // PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);
         PrintTextAbove(victim_data.mobile, "AAAAAHH!!");
     endforeach
 
@@ -72,11 +73,9 @@ program spell_bloodbath(params)
 
     foreach victim_data in victims
         var mobile := victim_data.mobile;
-        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!)
-        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")/2));
-        PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, 0xE2A4 , 125, 10, 0, victim_data.realm);
 
-        kills := kills + 1;
+        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!)
+        ApplyRawDamage(mobile, hp_threshold);
     endforeach
 
     // Wait for death processing to complete
@@ -98,7 +97,10 @@ program spell_bloodbath(params)
         endforeach
 
         if (corpse)
+            // Play explosion effect only for creatures that actually died
+            PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, 0xE2A4 , 125, 10, 0, victim_data.realm);
             corpse.graphic := 0xC9DE;
+            kills := kills + 1;
         endif
     endforeach
 
@@ -114,25 +116,23 @@ program spell_bloodbath(params)
         endif
     endforeach
 
-    // Spawn blood pools one at a time across all victims for dramatic effect
-    for blood_index := 1 to max_blood
-        foreach victim_data in victims
-            var blood_count := RandomInt(3) + 2;
-            if (blood_index <= blood_count)
-                var x_offset := RandomInt(3) - 1;
-                var y_offset := RandomInt(3) - 1;
-                CreateItemAtLocation(victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, "blood", 1, victim_data.realm);
-            endif
-        endforeach
-        sleepms(1500); // Slow blood drip effect
-    endfor
-
     // Grant shaman souls (done once at the end)
-    var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
-    shaman_souls := shaman_souls + (kills * 2);
+    shaman_souls := shaman_souls + kills;
     SetObjProperty(who, "shaman_souls", shaman_souls);
     
     if (kills > 0)
+        for blood_index := 1 to max_blood
+            foreach victim_data in victims
+                var blood_count := RandomInt(3) + 2;
+                if (blood_index <= blood_count)
+                    var x_offset := RandomInt(3) - 1;
+                    var y_offset := RandomInt(3) - 1;
+                    CreateItemAtLocation(victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, "blood", 1, victim_data.realm);
+                endif
+            endforeach
+            sleepms(1500); // Slow blood drip effect
+        endfor
+
         Message("Você colheu " + (kills * 2) + " almas no Banho de Sangue!").SendSys(who);
     else
         Message("Nenhuma criatura estava fraca o suficiente.").SendSys(who);
