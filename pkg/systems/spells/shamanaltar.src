@@ -52,6 +52,7 @@ program orderSpells(who, item)
 					"powerwords" := spell.powerwords,
 					"circle" := 0,
 					"desc" := spell.desc,
+					"flavortext" := spell.flavortext,
 					"cantrip" := 1  // Flag to prevent removal
 				};
 				shaman_list.Append(cantrip);
