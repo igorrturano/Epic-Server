@@ -58,7 +58,8 @@ program spell_bloodbath(params)
 
     // Second pass: Play initial haunting animation (face from ground)
     foreach victim_data in victims
-        PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
+        // PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
+        PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);
         PrintTextAbove(victim_data.mobile, "AAAAAHH!!");
     endforeach
 
@@ -72,15 +73,16 @@ program spell_bloodbath(params)
     foreach victim_data in victims
         var mobile := victim_data.mobile;
         // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!)
-        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")/2));
+        PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, 0xE2A4 , 125, 10, 0, victim_data.realm);
 
         kills := kills + 1;
     endforeach
 
     // Wait for death processing to complete
     sleepms(500);
-    SetCooldown(who, "#PickPid", 5); // Prevent item pickup during scatter
-    // Fifth pass: Find corpses and scatter their items
+
+    // Fifth pass: Find corpses, change graphic, and play explosion effect
     foreach victim_data in victims
         // Find the corpse at the victim's location (works for both humanoids and monsters)
         var corpse := 0;
@@ -95,35 +97,13 @@ program spell_bloodbath(params)
             endif
         endforeach
 
-        if (!corpse)
-            continue;
+        if (corpse)
+            corpse.graphic := 0xC9DE;
         endif
-
-        // Drop all items from corpse with random scatter
-        var items_to_drop := array{};
-        foreach item in EnumerateItemsInContainer(corpse)
-            items_to_drop.append(item);
-        endforeach
-
-        foreach item in items_to_drop
-            var x_offset := RandomInt(3) - 1; // -1, 0, or 1
-            var y_offset := RandomInt(3) - 1; // -1, 0, or 1
-            MoveObjectToLocation(item, victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, victim_data.realm, MOVEOBJECT_FORCELOCATION);
-        endforeach
-
-        // Destroy the corpse
-        DestroyItem(corpse);
     endforeach
 
-    sleepms(200);
 
-    // Fifth pass: Simultaneous explosions at original positions
-    foreach victim_data in victims
-        // Play explosion at original location
-        PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, EPIC_FX_BODY_EXPLOSION, 10, 10, 0, victim_data.realm);
-    endforeach
-
-    sleepms(500);
+    sleepms(700);
 
     // Sixth pass: Slowly spawn blood pools - gore aftermath
     var max_blood := 0;
