@@ -109,7 +109,7 @@ program equipweapon(who, item)
 	var is_bone_armor_and_shields := array{ 0x144e, 0x144f, 0x1450, 0x1451, 0xF0C9, 0xF0CC, 0xF0CB, 0xF0CD,
 											0x1452, 0x1B73, 0x1B72, 0x1B74, 0x1B75, 0x1B76, 0x1B77, 0x1B78,
 											0x1B79, 0x1B7B, 0x1bc4, 0x1bc3, 0x1B7A, 0x1f0b };
-	if (GetObjProperty(who, "chardata").magia == "Shaman" && item.isA(POLCLASS_ARMOR))
+	if (who.isShaman() && item.isA(POLCLASS_ARMOR))
 		var cfg := ReadConfigFile(":combat:itemdesc");
 		var elem := FindConfigElem(cfg, item.objtype);
 		if (!(item.objtype in is_bone_armor_and_shields) && elem.TipoProtecao)
