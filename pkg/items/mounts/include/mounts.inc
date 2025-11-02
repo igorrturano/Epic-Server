@@ -207,6 +207,62 @@ function MP_Mount(mobile, npc)
 		endif
 	endif
 
+	//check do Pavao - apenas elfos podem montar
+	if (npc.graphic == 0x5A0)
+		if (chardata.povo != "Elfo")
+			SendSysMessage(mobile, "Apenas elfos podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	//check do War Boar - apenas anoes podem montar
+	if (npc.graphic == 0x5F6)
+		if (chardata.povo != "Anão")
+			SendSysMessage(mobile, "Apenas anoes podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	//check do Hell Hound - apenas orcs podem montar
+	if (npc.graphic == 0x42D)
+		if (chardata.povo != "Orc")
+			SendSysMessage(mobile, "Apenas orcs podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	//check do Cavalo Marrom com Cela - apenas races com cultura Bjorska podem montar
+	if (npc.graphic == 0x80F)
+		if (chardata.cultura != "Björska")
+			SendSysMessage(mobile, "Apenas povos do Björska podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	//check do Capybara - apenas polskis podem montar
+	if (npc.graphic == 0x5F7)
+		if (chardata.povo != "Polski")
+			SendSysMessage(mobile, "Apenas polskis podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	//check do Kirin - apenas povos do Leste podem montar
+	if (npc.graphic == 0x84)
+		if (chardata.cultura != "Povos do Leste")
+			SendSysMessage(mobile, "Apenas povos do Leste podem montar esse Kirin.");
+			return 0;
+		endif
+	endif
+
+	//check do Raptalon - apenas Aiglanos podem montar
+	if (npc.graphic == 0x114)
+		if (chardata.cultura != "Aiglana")
+			SendSysMessage(mobile, "Apenas aiglanos podem montar esse Raptalon.");
+			return 0;
+		endif
+	endif
+
 	npc.hidden := 1;
 
 
