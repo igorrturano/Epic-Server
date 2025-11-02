@@ -17,7 +17,7 @@ function playAltarAnimations(who, item)
 	  z := z + 15;
    endif
 
-	PlayStationaryEffectEx(who.x, who.y, z, who.realm, effect, 255, 60, 0, 0);
+	PlayStationaryEffectEx(who.x, who.y, z, who.realm, effect, 255, 20, 0, 0);
 endfunction
 
 function effectByAltar(altar)
@@ -28,7 +28,7 @@ function effectByAltar(altar)
 	  LORE:
 		 effect := 0xB462;
 	  VENERATIO:
-		 effect := 0x54B3;
+		 effect := EPIC_FX_MORALE_UP; // 0x54B3 
 	  BOKK_BHARAZ:
 		 effect := 0x6DF1;
 	  KAI:
