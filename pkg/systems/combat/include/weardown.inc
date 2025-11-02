@@ -103,7 +103,6 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 		var armr_elem := CS_GetSettingsCfgElem("Parry");
 
 		// Verifica a poncentagem de manter equipado o item
-		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(shield.hp) / 100);
 		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(shield.hp)) / 100.0;
 
 		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento

@@ -15,40 +15,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _culture := "";
 	var _religion := "";
 
-	var _str := struct{
-		base := 0,
-		mod := 0
-	};
-	var _dex := struct{
-		base := 0,
-		mod := 0
-	};
-	var _int := struct{
-		base := 0,
-		mod := 0
-	};
-
-	var _hp := struct{
-		current := 0,
-		max := 0,
-		regen := 0
-	};
-	var _stamina := struct{
-		current := 0,
-		max := 0,
-		regen := 0
-	};
-	var _mana := struct{
-		current := 0,
-		max := 0,
-		regen := 0
-	};
-	var _hunger := struct{
-		current := 0,
-		max := 0,
-		regen := 0
-	};
-
 	function MobileWrapper(this, byRef mobRef)
 		Super(mobRef);
 
@@ -57,47 +23,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._culture := this.objRef.GetProp("chardata").culture;
 			this._religion := this.objRef.GetProp("chardata").religion;
 			
-			// TODO: Checar os atributos corretos, aqui é só um exemplo
-			this._str := MobileWrapper::_str;
-			this._str.base := this.GetStrBase();
-			this._str.mod := this.GetStrMod();
-			this._dex := MobileWrapper::_dex;
-			this._dex.base := this.GetDexBase();
-			this._dex.mod := this.GetDexMod();
-			this._int := MobileWrapper::_int;
-			this._int.base := this.GetIntBase();
-			this._int.mod := this.GetIntMod();
-
-			this._hp := MobileWrapper::_hp;
-			this._hp.current := this.GetCurrentHP();
-			this._hp.max := this.GetMaxHP();
-			this._hp.regen := this.GetRegenHP();
-			this._stamina := MobileWrapper::_stamina;
-			this._stamina.current := this.GetCurrentStamina();
-			this._stamina.max := this.GetMaxStamina();
-			this._stamina.regen := this.GetRegenStamina();
-			this._mana := MobileWrapper::_mana;
-			this._mana.current := this.GetCurrentMana();
-			this._mana.max := this.GetMaxMana();
-			this._mana.regen := this.GetRegenMana();
-			this._hunger := MobileWrapper::_hunger;
-			this._hunger.current := this.GetCurrentHunger();
-			this._hunger.max := this.GetMaxHunger();
-			this._hunger.regen := this.GetRegenHunger();
 		else
 			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
 			this._objRef := err;
 			this._name := err;
-			this._str := err;
-			this._dex := err;
-			this._int := err;
-			this._hp := err;
-			this._stamina := err;
-			this._mana := err;
-			this._hunger := err;
-			this._gold := err;
-			this._weight := err;
-			this._skills := err;
 		endif
 	endfunction
 
@@ -118,13 +47,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetStrBase(this)
-		this._str.base := AP_GetTrueStat(this._objRef, STRENGTH);
-		return this._str.base;
+		return AP_GetTrueStat(this._objRef, STRENGTH);
 	endfunction
 
 	function GetStrMod(this)
-		this._str.mod := AP_GetStatMod(this._objRef, STRENGTH);
-		return this._str.mod;
+		return AP_GetStatMod(this._objRef, STRENGTH);
 	endfunction
 
 	function GetDex(this)
@@ -132,13 +59,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetDexBase(this)
-		this._dex.base := AP_GetTrueStat(this._objRef, DEXTERITY);
-		return this._dex.base;
+		return AP_GetTrueStat(this._objRef, DEXTERITY);
 	endfunction
 
 	function GetDexMod(this)
-		this._dex.mod := AP_GetStatMod(this._objRef, DEXTERITY);
-		return this._dex.mod;
+		return AP_GetStatMod(this._objRef, DEXTERITY);
 	endfunction
 
 	function GetInt(this)
@@ -146,73 +71,59 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetIntBase(this)
-		this._int.base := AP_GetTrueStat(this._objRef, INTELLIGENCE);
-		return this._int.base;
+		return AP_GetTrueStat(this._objRef, INTELLIGENCE);
 	endfunction
 
 	function GetIntMod(this)
-		this._int.mod := AP_GetStatMod(this._objRef, INTELLIGENCE);
-		return this._int.mod;
+		return AP_GetStatMod(this._objRef, INTELLIGENCE);
 	endfunction
 
 	function GetCurrentHP(this)
-		this._hp.current := AP_GetVital(this._objRef, HITS);
-		return this._hp.current;
+		return AP_GetVital(this._objRef, HITS);
 	endfunction
 
 	function GetCurrentStamina(this)
-		this._stamina.current := AP_GetVital(this._objRef, STAMINA);
-		return this._stamina.current;
+		return AP_GetVital(this._objRef, STAMINA);
 	endfunction
 
 	function GetCurrentMana(this)
-		this._mana.current := AP_GetVital(this._objRef, MANA);
-		return this._mana.current;
+		return AP_GetVital(this._objRef, MANA);
 	endfunction
 
 	function GetCurrentHunger(this)
-		this._hunger.current := AP_GetVital(this._objRef, HUNGER);
-		return this._hunger.current;
+		return AP_GetVital(this._objRef, HUNGER);
 	endfunction
 
 	function GetMaxHP(this)
-		this._hp.max := AP_GetVitalMaximumValue(this._objRef, HITS);
-		return this._hp.max;
+		return AP_GetVitalMaximumValue(this._objRef, HITS);
 	endfunction
 
 	function GetMaxStamina(this)
-		this._stamina.max := AP_GetVitalMaximumValue(this._objRef, STAMINA);
-		return this._stamina.max;
+		return AP_GetVitalMaximumValue(this._objRef, STAMINA);
 	endfunction
 
 	function GetMaxMana(this)
-		this._mana.max := AP_GetVitalMaximumValue(this._objRef, MANA);
-		return this._mana.max;
+		return AP_GetVitalMaximumValue(this._objRef, MANA);
 	endfunction
 
 	function GetMaxHunger(this)
-		this._hunger.max := AP_GetVitalMaximumValue(this._objRef, HUNGER);
-		return this._hunger.max;
+		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
 	endfunction
 
 	function GetRegenHP(this)
-		this._hp.regen := AP_GetVitalRegenRate(this._objRef, HITS);
-		return this._hp.regen;
+		return AP_GetVitalRegenRate(this._objRef, HITS);
 	endfunction
 
 	function GetRegenStamina(this)
-		this._stamina.regen := AP_GetVitalRegenRate(this._objRef, STAMINA);
-		return this._stamina.regen;
+		return AP_GetVitalRegenRate(this._objRef, STAMINA);
 	endfunction
 
 	function GetRegenMana(this)
-		this._mana.regen := AP_GetVitalRegenRate(this._objRef, MANA);
-		return this._mana.regen;
+		return AP_GetVitalRegenRate(this._objRef, MANA);
 	endfunction
 
 	function GetRegenHunger(this)
-		this._hunger.regen := AP_GetVitalRegenRate(this._objRef, HUNGER);
-		return this._hunger.regen;
+		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
 	function GetGender(this)
