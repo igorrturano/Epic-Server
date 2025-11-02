@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -7,10 +7,9 @@ include ":combat:damage";
 
 program manobra(attacker)
 	if (IsRaging(attacker) || TemHabilidade(attacker, "Budōka") || GetCooldown(attacker, "furia") > 0)
-    	SendSysMessageEx(attacker, "Voce sente seus sangramentos diminuirem.", SSM_INFO);
+		SendSysMessageEx(attacker, "Voce sente seus sangramentos diminuirem.", SSM_INFO);
 		TS_StartTimer(attacker, "recuperacaoaligera", 60);
 	else
-        SendSysMessageEx(attacker, "Voce precisa estar em furia.", SSM_INFO);
+		SendSysMessageEx(attacker, "Voce precisa estar em furia.", SSM_INFO);
 	endif
 endprogram
-

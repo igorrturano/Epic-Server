@@ -1,4 +1,4 @@
- 
+
 use uo;
 
 include "include/say";
@@ -13,7 +13,7 @@ program ataque(who)
 		return;
 	endif
 
-	PrintText(targ, "*baixou a guarda*");
+	PrintTextAbove(targ, "*baixou a guarda*");
 	SetCooldown(targ, "parrydelay", 60);
 
 endprogram

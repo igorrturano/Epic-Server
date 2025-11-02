@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":combat:damage";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Selecione o alvo do Flame Strike.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Perform casting animation
+	PerformAction(who, ANIM_CAST_DIR);
+
+	// Play visual effect on target (Holy Flame Strike effect)
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 0xAFED, 7, 10);
+
+	// Play sound effect
+	PlaySoundEffect(targ, 0x358);
+
+	// Calculate damage: 8d6 holy fire damage
+	var dmg := RandomDiceRoll("8d6");
+
+	// Apply damage with fire type
+	DamageFLS(targ, cint(dmg), DMG_FIRE, who, "flamestrike");
+
+	SendSysMessageEx(who, "Voce invoca chamas sagradas sobre " + targ.name + "!", SSM_INFO);
+
+	return 1;
+endprogram

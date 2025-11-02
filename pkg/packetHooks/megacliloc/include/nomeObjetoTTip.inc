@@ -5,6 +5,7 @@ include ":custompizza:/itemrp/include/lore_items";
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/gettersTTipUtils";
 
+
 function PreencheNome(objeto,quem)
 	var nomeObjeto;
 
@@ -98,15 +99,15 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 endfunction
 
 function PreencheNomeItem(objeto)
-	if(!objeto.IsA(POLCLASS_ITEM)) return error{"errortext":="Object passed was not an POLCLASS_ITEM."}; endif
-	var nomeObjeto := "";
-	nomeObjeto := recuperaNomeItemMaterial(objeto);
+    if(!objeto.IsA(POLCLASS_ITEM)) return error{"errortext":="Object passed was not an POLCLASS_ITEM."}; endif
+    var nomeObjeto := "";
+    nomeObjeto := recuperaNomeItemMaterial(objeto);
 
-	if(IsLoreItem(objeto))
-		nomeObjeto := AdicionaLore(objeto,nomeObjeto);
-	endif
-	return nomeObjeto;
-
+    if(IsLoreItem(objeto))
+        nomeObjeto := AdicionaLore(objeto,nomeObjeto);
+    endif
+    
+    return nomeObjeto;
 endfunction
 
 function recuperaNomeItemMaterial(objeto)
@@ -156,4 +157,31 @@ function AdicionaLore(objeto,nomeObjeto)
 		endif
 	endif
 	return nomeObjeto;
+endfunction
+
+function AddSpecialBookshelfDescription(item, xDesc)
+    case (item.objtype)
+        0xA9D:
+        0xA9E:
+            xDesc += "<BASEFONT COLOR=#FFFFFF>Estante de Pesquisa com Livros Comuns<BR>";
+            break;
+        0xEA08:
+        0xEA07:
+        0x2DEF:
+        0x2DF0:
+            xDesc += "<BASEFONT COLOR=#FFD700>Estante de Pesquisa com Livros Raros<BR>";
+            break;
+        0x6A94:
+        0x6A95:
+        0x6A96:
+        0x6A97:
+        0x0C15:
+        0x0C14:
+            xDesc += "<BASEFONT COLOR=#C56252>Estante de Pesquisa com Livros Ancestrais<BR>";
+            break;
+        default:
+            return xDesc;
+    endcase
+
+    return xDesc;
 endfunction

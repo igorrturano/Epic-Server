@@ -7,6 +7,7 @@ include "include/client";
 include "include/sounds";
 include "include/facings";
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 function PlayLightningSoundEffect(mobile)
 
@@ -28,6 +29,8 @@ function FireballEffect(npc, opponent, skill)
 		
 		var field := CreateItemAtLocation(coord.x, coord.y, npc.z, "FireField_NS", 1);
 		field.SetDuration(2);
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		sleepms(105);
 	endforeach
 
@@ -55,11 +58,14 @@ function FireballEffect(npc, opponent, skill)
 				break;
 		endcase
 		var field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldNS", 1);
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(5);
 		sleepms(5);
 	endforeach
 
 	ApplyDamageEX(opponent, (RandomDiceRoll(dice) + skill/2), DMG_FIRE);
+	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := (RandomDiceRoll(dice) + skill/2), desc := "Bola de Fogo." },range,GFX_EXPLODE_3);
 
 	foreach mobile in ListMobilesInLineOfSight(opponent, range)
 		ApplyDamageEX(mobile, (RandomDiceRoll(dice) + skill/2), DMG_FIRE);

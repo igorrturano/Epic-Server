@@ -19,10 +19,10 @@ program do_empty(who)
 	SendSysMessageEx(who, "Escolha a pocao que deseja esvaziar.", SSM_REQUEST);
 	var the_potion := Target(who);
 
-	if(!the_potion)
+	if (!the_potion)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;
-	elseif(!can_access(who, the_potion))
+	elseif (!can_access(who, the_potion))
 		SendSysMessageEx(who, " Voce nao pode usar isto!", SSM_FAIL);
 		return;
 	elseif (Distance(who, the_potion) > 1)
@@ -32,12 +32,12 @@ program do_empty(who)
 		SendSysMessageEx(who, "Isso nao parece ser uma pocao!", SSM_FAIL);
 		return;
 
-    else 
-        SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
-        PlaySoundEffect(who, 0x241);
+	else
+		SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
+		PlaySoundEffect(who, 0x241);
 		CreateItemInBackpack(who, 0xf0e, the_potion.amount);
-        DestroyItem(the_potion);
-        return;
-    endif
+		DestroyItem(the_potion);
+		return;
+	endif
 
 endprogram

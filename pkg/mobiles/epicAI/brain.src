@@ -5,31 +5,45 @@ include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
+include "include/genericBrain";
+include "include/eventID";
 
 var brain_type;
+var me := Self();
+const AREA_SIZE := 18;
 
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-    set_critical(1);
-    InitializeEpicNPC(me);
+    // Only initialize if not already done
+    var already_started := GetObjProperty(me, "started");
+    if (!already_started)
+        set_critical(1);
+        InitializeEpicNPC(me);
+        set_critical(0);
+        SetObjProperty(me, "dormant", 1);
+    endif
+    
+    // Check if dormant - if so, just exit
+    if (GetObjProperty(me, "dormant"))
+        return;
+    endif
+    
     DetermineBrainType();
-    set_critical(0);
-
     SetWarMode(0);
 
-    while (1)
-        var hasPlayerNearMe := HasPlayerNear(me);
-        if (hasPlayerNearMe)
-            case (brain_type)
-                "monster": MonsterBrain();
-                "animal":  AnimalBrain();
-                "humanoid": HumanoidBrain();
-                // default: GenericBrain(); // chamar o ghaia:generic
-            endcase
-        endif
-        sleep(20);
-    endwhile
+    // Run the active brain
+    case (brain_type)
+        "monster":  MonsterBrain();
+        "animal":   AnimalBrain();
+        "humanoid": HumanoidBrain();
+        default:    GenericBrain();
+    endcase
+    
+    // Brain returned (went idle) - go back to dormant
+    SetObjProperty(me, "dormant", 1);
+    SetWarMode(0);
+    SetOpponent(0);
 endprogram
 
 function DetermineBrainType()
@@ -39,4 +53,3 @@ function DetermineBrainType()
         brain_type := "generic";
     endif
 endfunction
-

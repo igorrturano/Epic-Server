@@ -11,6 +11,6 @@ program TimedScript_Clumsy(params)
 		EraseObjProperty(mobile, "poMod");
 		mobile.resist_poison_mod := mobile.resist_poison_mod - mod;
 	endif
-	
+
 	return 1;
 endprogram

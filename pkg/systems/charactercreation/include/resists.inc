@@ -84,13 +84,15 @@ function GetResist(who, resist)
 		if ((GetObjProperty(who, "chardata")).culture == ALURIEL)
 			valor := valor + 2;
 		endif
-
+		var paladin_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 20);
 		if ( GetCooldown(who, "VontadeIndomavel"))
 			valor := valor + 5;
-		elseif (temHabilidade(who, "Dominatio Animae"))
+		elseif (temHabilidade(who, "Sigilo de Protecao"))
 			valor := valor + 5;
-        elseif (TemHabilidade(who, "Campeao das Montanhas"))
-            valor := valor + 2;
+        elseif (TemHabilidade(who, "Conexao Divina"))
+            valor := valor + 8;
+		elseif (TemHabilidade(who, "Consagracao Divina"))
+			valor := valor + paladin_bonus;
 		endif
 	endif
 
@@ -124,14 +126,16 @@ function CheckResist(defender, resist_type, dif, mod := 0)
 
     if (dado == 1)
         SendSysMessageEx(defender, "Falha crítica no teste de resistência", SSM_FAIL);
-        return 0;
+        return -1;
     elseif (dado == 20)
         SendSysMessageEx(defender, "Sucesso crítico no teste de resistência", SSM_INFO);
         return 1;
     endif
 
-    SendSysMessageEx(defender, "Chance: " + chance + " Dif: " + dif, SSM_INFO);
-    
+	if (defender.cmdlevel > 2)
+    	SendSysMessageEx(defender, "Chance: " + chance + " Dif: " + dif, SSM_INFO);
+    endif
+
     if (chance >= dif)
         return 1;
     else
@@ -144,16 +148,18 @@ function CheckResist(defender, resist_type, dif, mod := 0)
             endif
         endif
         
-        SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_INFO);
+        SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_FAIL);
         return 0;
     endif
+
+	return 0;
 endfunction
 
 function ShouldGetSecondChance(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     return (
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
-        (TemHabilidade(defender, "Fortitudo Impia") && resist_type == FORTITUDE) ||
+        (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == VONTADE) ||
         (chardata.culture == POLKINEA)
     );
@@ -163,8 +169,8 @@ function GetSecondChanceMessage(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     if (chardata.culture == HAROLOTH && resist_type == FORTITUDE)
         return "Seu organismo drow expurga o veneno";
-    elseif (TemHabilidade(defender, "Fortitudo Impia") && resist_type == FORTITUDE)
-        return "Sua resiliência ímpia expurga o veneno";
+    elseif (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE)
+        return "Sua aura divina expurga o veneno";
     elseif (chardata.raca == ANAO && resist_type == VONTADE)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)

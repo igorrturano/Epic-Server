@@ -1,5 +1,5 @@
 
-     use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -24,19 +24,19 @@ program SpellScript(params)
 		return;
 	endif
 
-
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 
-	foreach mobile in (ListMobilesNearLocation( targ.x ,targ.y, targ.z, 6, targ.realm))
+	foreach mobile in (ListMobilesNearLocation(targ.x, targ.y, targ.z, 6, targ.realm))
 
 		if (mobile.npctemplate)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
 			var category := lower(GetConfigString(elem, "Category"));
-		
-			if (category == "undead" || category == "demons")
-				PlayMovingEffectXYZEx( mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60, mobile.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
 
-				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm,  MOVEOBJECT_FORCELOCATION );
+			if (category == "undead" || category == "demons")
+				PlayMovingEffectXYZEx(mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60,
+									   mobile.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+
+				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm, MOVEOBJECT_FORCELOCATION);
 
 				ApplyRawDamage(mobile, 200);
 				ApplyRawDamage(mobile, 200);
@@ -45,10 +45,10 @@ program SpellScript(params)
 				ApplyRawDamage(mobile, 200);
 
 			endif
-		
+
 		endif
 
 	endforeach
 
 	return 1;
-endprogram 
+endprogram

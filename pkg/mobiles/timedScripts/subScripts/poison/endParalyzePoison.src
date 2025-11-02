@@ -3,7 +3,6 @@ use os;
 
 program poisonScript(mobile)
 	mobile.frozen := 0;
-	
+
 	return 1;
 endprogram
-

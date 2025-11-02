@@ -6,14 +6,14 @@ include "include/client";
 include "include/sounds";
 
 program HitScript(params)
-	var attacker	:= params[1];
-	var defender	:= params[2];
-	//var weapon	:= params[3];
-	//var armor	:= params[4];
-	//var basedamage	:= params[5];
-	var rawdamage	:= params[6];
+	var attacker := params[1];
+	var defender := params[2];
+	// var weapon	:= params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
-	
+
 	// Makes the defender emit static-electricity.
 	// PlayMovingEffectXYZHued(attacker, defender, GFX_ENERGY, 5, 1, 1, RAIO, 0);
 	PlayObjectCenteredEffectEx(defender, GFX_ENERGY, 7, 16, RAIO);
@@ -23,10 +23,10 @@ program HitScript(params)
 	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y+1, defender.z+15, GFX_ENERGY, 5, 25);
 	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y-1, defender.z+15, GFX_ENERGY, 5, 25);
 	PlaySoundEffect(defender, SFX_LIGHTNING);
-	
-	//ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_ENERGY);
-	//ApplyDamageEX(defender, (rawdamage*0.5)+1, DMG_COLD);
-	DamageFLS(defender, cint((rawdamage*0.5)+1), DMG_ENERGY, attacker);
-	
+
+	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_ENERGY);
+	// ApplyDamageEX(defender, (rawdamage*0.5)+1, DMG_COLD);
+	DamageFLS(defender, cint((rawdamage * 0.5) + 1), DMG_ENERGY, attacker);
+
 	return 1;
 endprogram

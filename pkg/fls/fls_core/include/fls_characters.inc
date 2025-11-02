@@ -86,16 +86,6 @@ function AwardClassSkill(who, diff, chance, classe)
 
 endfunction
 
-function IsInDungeon(player)
-
-	if (player.x >= 3749 && player.y >= 0 && player.x <= 6141 && player.y <= 4000)
-		return 1;
-	endif
-
-	return 0;
-
-endfunction
-
 function HaveReverseVision(who)
 
 	if (GetObjProperty(who, "chardata").raca == DROW)
@@ -122,36 +112,39 @@ function ReverseLight(player)
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var darkness := cint(config.darkness);
+	var chardata := GetObjProperty(player, "chardata");
+	var playerRace := "unknown";
+	if (chardata)
+		playerRace := chardata.raca;
+	endif
 
-	var light := cint(getglobalproperty("lightlevel"));
-	if (player.realm == "britannia" && !GetCooldown(player, "lightvision"))
-		player.setlightlevel(20, 9000); // Is in a dungeon
-	elseif(player.x >= 4390 && player.y >= 0 && player.x <= 6100 && player.y <= 4095)
-		player.setlightlevel(20, 9000); // Is in a dungeon
+	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
+		player.setlightlevel(20, 9000); // Dungeons are moderately lit for drows (20)
 	else
+		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);
-		player.setlightlevel(newlight, 9000);
-	endif
-
-endfunction
-
-function GetClass(who)
-	var classe := GetObjProperty(who, "classe");
-	if (!classe)
-		return 0;
-	else
-		return classe;
+		player.setlightlevel(newlight, 9000); // Reverse surface light (0-28 becomes 28-0)
 	endif
 endfunction
 
-function GetRace(who)
-	var raca := GetObjProperty(who, "raca");
-	if (!raca)
-		return 0;
-	else
-		return raca;
-	endif
-endfunction
+//RETIRADO por estar redundante com methods/char
+//function GetClass(who)
+//	var classe := GetObjProperty(who, "classe");
+//	if (!classe)
+//		return 0;
+//	else
+//		return classe;
+//	endif
+//endfunction
+
+//function GetRace(who)
+//	var raca := GetObjProperty(who, "raca");
+//	if (!raca)
+//		return 0;
+//	else
+//		return raca;
+//	endif
+//endfunction
 
 function GetRaceCfgElem(race_name)
 	var cfg := GetRaceCfg();
@@ -166,7 +159,6 @@ function GetRaceCfg()
 
 	return cfg;
 endfunction
-
 
 function GetTitleRace(racename)
 
@@ -254,7 +246,6 @@ function FLS_GetSkillCap(who, skillname)
 endfunction
 
 function FLS_GetSkills(who, category)
-
 	var grad := 0;
 	if (category == "primarias")
 		grad := 3;
@@ -355,3 +346,102 @@ function destroyIllyraOutsideDungeons(who)
 
     return 1;
 endfunction
+
+function ProccessHab(who, txt)
+	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var found := 0;
+    var habelem;
+
+    // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
+    foreach elem in GetConfigStringKeys(habcfg)
+        var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
+        if (NormalizeString(txt) == normalized_hab)
+            habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
+            found := 1;
+            break;
+        endif
+    endforeach
+
+    if (!found)
+        SendSysMessageEx(who, "Habilidade não encontrada.", SSM_FAIL);
+        return 0;
+    endif
+
+	var uso := GetConfigString(habelem, "uso");
+	var hab := GetConfigString(habelem, "nome");
+
+	if (uso != "Ativa")
+		SendSysMessageEx(who, "Esta habilidade nao pode ser ativada.");
+		return 0;
+	endif
+
+
+//	sendsysmessage(who, " " + TS_GetCooldown(who, hab) );
+	if ( TS_GetCooldown(who, hab) != error && who.cmdlevel < 3)
+		SendSysMessageEx(who, "Voce nao pode usar essa habilidade agora.", SSM_FAIL);
+		return 0;
+	endif
+
+	var stam := cint(GetConfigInt(habelem, "stam"));
+	if (stam != error)
+		if (!AP_ConsumeVital(who, STAMINA, stam))
+			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			HealStamina(who, stam);
+			return 0;
+		endif
+	endif
+
+	var mana := cint(GetConfigInt(habelem, "mana"));
+	if (mana != error)
+		if (!AP_ConsumeVital(who, MANA, mana))
+			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			HealMana(who, mana);
+			return 0;
+		endif
+	endif
+
+	var script := GetConfigString(habelem, "script");
+	var duracao := GetConfigString(habelem, "duracao");
+
+	var delay := Cint(GetConfigInt(habelem, "delay"));
+
+	var mimic := 0;
+	if (GetObjProperty(who, "#mimico"))
+		mimic := SystemFindObjectBySerial(GetObjProperty(who, "#mimico"));
+		if (mimic && (Distance(mimic, who) < 12))
+			PrintTextAbove(mimic, "*copia a habilidade " + hab);
+		endif
+		EraseObjProperty(who, "#mimico");
+	endif
+
+	if (duracao == "1 ataque")
+		if (!script)
+			SendSysMessageEx(who, "Nao foi encontrado o script da habilidade: " + hab, SSM_FAIL);
+			return 0;
+		endif
+        if (hab == "lamina da escuridao")
+            PlayObjectCenteredEffectHuefx(who, 0x5487, 10, 20, 2296, 1);
+            PlaySoundEffect(who, 0x56e);
+        endif
+
+		SendSysMessageEx(who, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
+		SetObjProperty(who, "movement",  script);
+		SetObjProperty(who, "#movtime", ReadGameClock());
+		if (mimic)
+			SendSysMessageEx(mimic, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
+			SetObjProperty(mimic, "movement",  script);
+			SetObjProperty(mimic, "#movtime", ReadGameClock());
+		endif
+	else
+		var e := start_script(script, who );
+		if (mimic)
+			start_script(script, mimic );
+		endif
+		//sendsysmessage(who, " " + e );
+	endif
+
+	TS_StartCooldown(who, hab, delay);
+
+	return 1;
+endfunction
+

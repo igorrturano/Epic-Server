@@ -12,34 +12,30 @@ program manobra(who)
 	var targ := who;
 	var undead;
 	var template;
-	var element ;
-	element := 	GetObjProperty(who.weapon, "#elementalweapon");
+	var element;
+	element := GetObjProperty(who.weapon, "#elementalweapon");
 	element := element.type;
-	var duracao := AP_GetSkill(who, MAGICLORE);
-    duracao := duracao*2;
-	case(element)
+	var duracao := AP_GetSkill(who, ARCANA);
+	duracao := duracao * 2;
+	case (element)
 		"Fire":
-		//SendSysMessageEx(who, "Voce conjura um elemental do fogo a partir da gema da sua arma.", SSM_INFO);
-		template := ":brainai:fireelemental";
+			// SendSysMessageEx(who, "Voce conjura um elemental do fogo a partir da gema da sua arma.", SSM_INFO);
+			template := ":brainai:fireelemental";
 		"Cold":
-		//SendSysMessageEx(who, "Voce conjura um elemental do gelo a partir da gema da sua arma.", SSM_INFO);
-		template := ":brainai:iceelemental";
+			// SendSysMessageEx(who, "Voce conjura um elemental do gelo a partir da gema da sua arma.", SSM_INFO);
+			template := ":brainai:iceelemental";
 		"Energy":
-		//SendSysMessageEx(who, "Voce conjura um elemental do energia a partir da gema da sua arma.", SSM_INFO);
-		template := ":brainai:elementaldeenergia";
+			// SendSysMessageEx(who, "Voce conjura um elemental do energia a partir da gema da sua arma.", SSM_INFO);
+			template := ":brainai:elementaldeenergia";
 	endcase
-    
+
 	undead := summon(template, targ, who);
-    if (undead)
+	if (undead)
 		SendSysMessageEx(who, "Voce conjura um elemental a partir da gema da sua arma.", SSM_INFO);
 	endif
-    
+
 	TS_Starttimer(undead, "summon", duracao);
-    
-    return 1;
-	
+
+	return 1;
+
 endprogram
-	
-	
-	
- 

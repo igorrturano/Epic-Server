@@ -5,7 +5,7 @@
  * players off their dying mount, playing death sounds, etc. This script is common for all NPCs,
  * and is called for each.
  *
- */
+*/
 use uo;
 use os;
 use util;
@@ -26,204 +26,254 @@ include ":tn:npcutil";
 include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
-
-//include ":spawnnet:spawnnet";
-//include ":spawnregion:spawn";
+include ":expbar:expbar";
+include ":achievements:CombatController";
+include ":epicAI:epicai";
+// include ":kingdom:conquest";
+// include ":spawnnet:spawnnet";
+// include ":spawnregion:spawn";
 
 program core_npcDeath(params)
 	var corpse := params[1];
 
-	var lastHit := GetObjProperty(corpse, "lastHit"); 
+	// Check if this is a conquest NPC
+	// if (corpse.GetProp("conquest_totem"))
+	// 	CNQST_OnNPCDeath(corpse);
+	// endif
+
+	// Clean up doppelganger equipment and storage (appearance was already restored in candie.src)
+	if (GetObjProperty(corpse, "#doppelganger_transformed"))
+		CleanupDoppelgangerEquipment(corpse);
+	endif
+
+	var lastHit := GetObjProperty(corpse, "lastHit");
 	if (":combat:weaponHitScripts/generic" in lastHit.hitscript)
-		var attacker := SystemFindObjectBySerial(lastHit.attacker);
-		if (attacker != error)
-			execonkill(attacker, corpse);
+		if (lastHit.attacker && !lastHit.attacker.errortext)
+			var attacker := SystemFindObjectBySerial(lastHit.attacker);
+			if (attacker != error)
+				execonkill(attacker, corpse);
+			endif
 		endif
 	endif
 
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
+	handleExpGain(corpse);
 
 	foreach item in (EnumerateItemsInContainer(corpse))
-	    //Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
-	    //var lista_itens := {
-        //    0x1415, //Plate
-        //    0x1416, //Plate
-        //    0x1410, //Plate
-        //    0x1417, //Plate
-        //    0x1411, //Plate
-        //    0x141A, //Plate
-        //    0x1414, //Plate
-        //    0x1418, //Plate
-        //    0x1413  //Plate
-	    //};
+		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
+		// var lista_itens := {
+		//    0x1415, //Plate
+		//    0x1416, //Plate
+		//    0x1410, //Plate
+		//    0x1417, //Plate
+		//    0x1411, //Plate
+		//    0x141A, //Plate
+		//    0x1414, //Plate
+		//    0x1418, //Plate
+		//    0x1413  //Plate
+		// };
 
-	    //foreach item_lista in lista_itens
-	    //    if (item.objtype == item_lista)
-        //        SetObjProperty(item, "restrito_mob", 1);
-        //        break;
-        //    endif
-        //endforeach
-		var colored_lanterns := {0x40FE, 0x40FF, 0x4100, 0x4101};
+		// foreach item_lista in lista_itens
+		//    if (item.objtype == item_lista)
+		//        SetObjProperty(item, "restrito_mob", 1);
+		//        break;
+		//    endif
+		// endforeach
+		var colored_lanterns := { 0x40FE, 0x40FF, 0x4100, 0x4101 };
 		if (item.objtype in colored_lanterns)
 			DestroyItem(item);
 		endif
 
-        if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-            if (!GetObjProperty(item, "itemunico"))
-                item.hp -= Cint(item.hp * 0.8);
-            endif
-        endif
-    endforeach
+		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
+			if (!GetObjProperty(item, "itemunico"))
+				item.hp -= Cint(item.hp * 0.8);
+			endif
+		endif
+	endforeach
 
-	if (getObjProperty(corpse, "owner")) //se for tamed, atualiza a prop tamedpets do master
-        var lastDamage := GetObjProperty(corpse, "LastDamage");
-        var region := GetRegionName(corpse);
+	HandleEpicBossLoot(corpse);
+
+	if (getObjProperty(corpse, "owner")) // se for tamed, atualiza a prop tamedpets do master
+		var lastDamage := GetObjProperty(corpse, "LastDamage");
+		var region := GetRegionName(corpse);
 		var char_name := lastDamage.serial;
-        var tipo := "morreu";
-		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
-		var nome := GetObjProperty(fin, "nome_inicial");
+		var tipo := "morreu";
+		var fin, nome;
+		if (char_name && !char_name.errortext)
+			fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (fin)
+				nome := GetObjProperty(fin, "nome_inicial");
+			endif
+		endif
 		var coords := GetObjProperty(corpse, "anchor");
 		var trueBoss := GetObjProperty(corpse, "true_boss");
-        Start_script(":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse.desc, region, coords, 0});
+		if (fin && nome)
+			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse.desc,
+										  			region, coords, 0 });
+		endif
 
 		var masterserial := getObjProperty(corpse, "owner");
-		var master := SystemFindObjectBySerial(masterserial);
-		var summon := GetObjProperty(corpse, "summoned");
-		if(summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot
-			var masterseriali := getObjProperty(corpse, "owneri");
-			var masteri := SystemFindObjectBySerial(masterseriali);
-			var timer_num := GetObjProperty(corpse, "slot");
-			var timer := "summon_"+timer_num;
-			TS_LowerDuration(masteri, timer, -1);													   
-		elseif(!getobjproperty(corpse, "Necro"))
-			GetNumPets(master);
-			var teste := GetObjProperty(corpse, "LastDP");
-			if ( GetObjProperty(corpse, "NeverRelease")) //&& 
-				//if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
+		if (masterserial && !masterserial.errortext)
+			var master := SystemFindObjectBySerial(masterserial);
+			if (!master)
+				return;
+			endif
+
+			var summon := GetObjProperty(corpse, "summoned");
+			if (summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot
+				var masterseriali := getObjProperty(corpse, "owneri");
+				if (masterseriali && !masterseriali.errortext)
+					var masteri := SystemFindObjectBySerial(masterseriali);
+					if (masteri)
+						var timer_num := GetObjProperty(corpse, "slot");
+						var timer := "summon_" + timer_num;
+						TS_LowerDuration(masteri, timer, -1);
+					endif
+				endif
+			elseif (!getobjproperty(corpse, "Necro"))
+				GetNumPets(master);
+				var teste := GetObjProperty(corpse, "LastDP");
+				if (GetObjProperty(corpse, "NeverRelease")) // &&
+					// if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
 					SendSysMessageEx(master, "Seu pet fiel irá acordar em 3 minutos", SSM_INFO);
 					sleep(180);
 					RessuscitarPet(corpse, master);
 					return;
-				//else
-					//SendSysMessageEx(master, "Seu pet fiel precisa ser reanimado!", SSM_FAIL);
-				//endif
+				// else
+				// SendSysMessageEx(master, "Seu pet fiel precisa ser reanimado!", SSM_FAIL);
+				// endif
+				endif
+			else
+				var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+				SetObjProperty(master, "NecroSummons", (numbersummons - 1));
 			endif
-		else
-			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
-			SetObjProperty(master, "NecroSummons", (numbersummons - 1));
-		endif				
+		endif // Close the masterserial check				
 	endif
 
 	if (getObjProperty(corpse, "oldbodydominio"))
 		var masterserial := getObjProperty(corpse, "oldbodydominio");
-		var master := SystemFindObjectBySerial(masterserial);
-		SetObjProperty(master, "oldbodymorto", 1);
-		EraseObjProperty(master, "oldbodyserial");
+		if (masterserial && !masterserial.errortext)
+			var master := SystemFindObjectBySerial(masterserial);
+			if (master)
+				SetObjProperty(master, "oldbodymorto", 1);
+				EraseObjProperty(master, "oldbodyserial");
+			endif
+		endif
 	endif
 
 	var pilot := GetObjProperty(corpse, "golem_maker");
-	if (pilot)
-		var who := SystemFindObjectBySerial(pilot);
-		EraseObjProperty(who, "golem_maker");
-        EraseObjProperty(who, "pilotando");
-        leaveGolem(who);
-		sleep(1);
-		printtextabove(corpse, "*EJETAR*");
-        who.concealed := 0;
-		sleep(1);
-		PushBackEX(who, 3, 300);
-		printtextabove(corpse, "*Iniciar auto destruição*");
-		var i := 1;
-		while (i <= 3)
-			sleep(1);
-			printtextabove(corpse, Cstr(i));
-			i++;
-		endwhile
-		AP_SetTrueSkill(corpse, MAGICLORE, 100);
-		Run_Script(":spells:spell_logic:mage:fireball", {corpse, corpse});
-    endif
+	if (pilot != error && pilot != 0)
+		if (CInt(pilot) && !CInt(pilot).errortext)
+			var who := SystemFindObjectBySerial(CInt(pilot));
+			if (who)
+				// NPC-specific handling
+				if (who.npctemplate)
+					SetObjProperty(who, "anchor", array{ corpse.x, corpse.y, corpse.z });
+					MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
+				else
+					leaveGolem(who);
+				endif
 
-    if (GetObjProperty(corpse, "soulharvest"))
-        var shamanserial := getobjProperty(corpse, "soulharvest");
-        var shaman := SystemFindObjectBySerial(shamanserial);
-        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, MAGICLORE));
+				EraseObjProperty(who, "golem_maker");
+				EraseObjProperty(who, "pilotando");
+				who.concealed := 0;
+				PrintTextAbove(corpse, "*EJETAR*");
+				sleep(1);
+				PushBackEX(who, 3, 300);
+				PrintTextAbove(corpse, "*Iniciar auto destruição*");
 
-        var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
-        if (!shaman_souls)
-            var shaman_souls := 0;
-        endif
+				var i := 1;
+				while (i <= 3)
+					sleep(1);
+					PrintTextAbove(corpse, Cstr(i));
+					i++;
+				endwhile
 
-        if (shaman_souls < Cint(shaman_reap_bonus / 5))
-            shaman_souls := shaman_souls + 1;
-            PerformAction (shaman, ANIM_SALUTE);
-            sleep(1);
-            PlayStationaryEffectEx(corpse.x,corpse.y,corpse.z, shaman.realm, 0x6C6F, 0, 60, 2676 , 5, 0);
-            PlaySoundEffect(shaman, 0x653);
+				AP_SetTrueSkill(corpse, ARCANA, 100);
+				Run_Script(":spells:spell_logic/mage/fireball", { corpse, corpse });
+			endif
+		endif
+	endif
 
-            SendSysMessage(shaman, "Voce colhe uma alma.");
-        else
-            SendSysMessage(shaman, "Voce nao consegue conduzir mais almas.");
-        endif
+	if (GetObjProperty(corpse, "soulharvest"))
+		var shamanserial := getobjProperty(corpse, "soulharvest");
+		if (shamanserial && !shamanserial.errortext)
+			var shaman := SystemFindObjectBySerial(shamanserial);
+			if (shaman)
+				var shaman_reap_bonus := Cint(AP_GetSkill(shaman, THEOLOGY));
 
-        SetobjProperty(shaman, "shaman_souls", shaman_souls);
-    endif
+				var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
+				if (!shaman_souls)
+					var shaman_souls := 0;
+				endif
+
+				if (shaman_souls < Cint(shaman_reap_bonus / 5))
+					shaman_souls := shaman_souls + 1;
+					PerformAction(shaman, ANIM_SALUTE);
+					sleep(1);
+					PlayStationaryEffectEx(corpse.x, corpse.y, corpse.z, shaman.realm, 0x6C6F, 0, 60, 2676, 5, 0);
+					PlaySoundEffect(shaman, 0x653);
+
+					SendSysMessage(shaman, "Voce colhe uma alma.");
+				else
+					SendSysMessage(shaman, "Voce nao consegue conduzir mais almas.");
+				endif
+
+				SetobjProperty(shaman, "shaman_souls", shaman_souls);
+			endif
+		endif
+	endif
 
 	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
-		//printtextabove(corpse, "procurando mobs " + mob.name);
+		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
-		//	printtextabove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
+			// 	PrintTextAbove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
 			if (cint(GetObjProperty(mob, "#satisfacaosadica")) > readgameclock())
-		//		printtextabove(corpse, "ta no time ");
-		//		var souls := Cint(getobjProperty(mob, "souls"));
-		//		souls := souls + 1;
-		//		SetobjProperty(mob, "souls", souls);
-				PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
+				// 		PrintTextAbove(corpse, "ta no time ");
+				// 		var souls := Cint(getobjProperty(mob, "souls"));
+				// 		souls := souls + 1;
+				// 		SetobjProperty(mob, "souls", souls);
+				PlayMovingEffect(corpse, mob, 14202, 5, 1, 0);
 				PlaySoundEffect(mob, 383);
 				HealFLS(mob, 5);
 				recalcvitals(mob);
 			endif
 		endif
-        
-        var shaman_reap_bonus := Cint(AP_GetSkill(mob, MAGICLORE));
 
-        // HABILIDADES SHAMAN
-        if (TemHabilidade(mob, "Sede de sangue"))
-            HealFLS(mob, Cint(shaman_reap_bonus / 10));
-            // colocar o efeito roxinho
-       endif
-        // FIM HABILIDADES SHAMAN
+		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY));
 
-        // GOLEM MAKER
-        if (Getobjproperty(mob, "golem_maker"))
-            EraseObjProperty(mob, "golem_maker");
-        endif
-        // FIM GOLEM MAKER
+		// HABILIDADES SHAMAN
+		if (TemHabilidade(mob, "Sede de sangue"))
+			HealFLS(mob, Cint(shaman_reap_bonus / 10));
+		// colocar o efeito roxinho
+		endif
+		// FIM HABILIDADES SHAMAN
 
-		if ( (GetObjProperty(mob, "#presenteespiritual") != error) )
+		// GOLEM MAKER
+		if (Getobjproperty(mob, "golem_maker"))
+			EraseObjProperty(mob, "golem_maker");
+		endif
+		// FIM GOLEM MAKER
+
+		if ((GetObjProperty(mob, "#presenteespiritual") != error))
 			if (GetObjProperty(mob, "#presenteespiritual") > readgameclock())
 				var souls := Cint(getobjProperty(mob, "souls"));
 				souls := souls + 1;
 				SetobjProperty(mob, "souls", souls);
-				PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
+				PlayMovingEffect(corpse, mob, 14202, 5, 1, 0);
 				PlaySoundEffect(mob, 383);
 				HealMana(mob, 10);
-				//var mymana := AP_GetVital(mob, MANA) + 10;
-				//var maxmana := AP_GetVitalMaximumValue(mob, MANA);
+			// var mymana := AP_GetVital(mob, MANA) + 10;
+			// var maxmana := AP_GetVitalMaximumValue(mob, MANA);
 
-				//if (mymana > maxmana)
-				//	mymana := maxmana;
-				//endif
+			// if (mymana > maxmana)
+			// 	mymana := maxmana;
+			// endif
 
-				//AP_SetVital(mob, MANA, mymana);
+			// AP_SetVital(mob, MANA, mymana);
 			endif
-		endif
-
-		if (TemHabilidade(mob, "Valm Oloth") && InDarkness(mob))
-			PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
-			PlaySoundEffect(mob, 383);
-			HealMana(mob, 10);
 		endif
 	endforeach
 
@@ -233,91 +283,111 @@ program core_npcDeath(params)
 	SetObjProperty(corpse, "originalname", corpse_name);
 	corpse_name["A corpse of"] := "corpo de";
 	SetName(corpse, corpse_name);
-	
+
 	var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
 	var npc_cfg := NPC_GetNPCConfig(template);
-	var death_script := npc_cfg.DeathScript;
+	var death_script;
 
-	var speech := GetConfigStringArray( npc_cfg[template], "diespeech" );
-	if (speech.size() > 0)
-		if (RandomInt(100)  < 30) //sempre 30% de chance de falar
-			printtextabove(corpse, speech[RandomInt(speech.size()+1)]);
-		endif
-	endif
+	if (npc_cfg && !npc_cfg.errortext)
+		death_script := npc_cfg.DeathScript;
 
-	var spawnpoint := SystemFindObjectBySerial(GetObjProperty(corpse, "spawnpoint"));	
-	//printtextabove(corpse, "spawnpoint " + spawnpoint);
-	if (GetObjProperty(corpse, "spawnkill") == error)
-	if (spawnpoint)
-		if (GetObjProperty(spawnpoint, "unique") == 1)
-			var boss := GetObjProperty(spawnpoint, "uniquestat");
-			if (boss.deathevent)
-				foreach nevent in (boss.deathevent)
-				//	printtextabove(corpse, " " + nevent.type);
-					if ( (nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) && (cint(nevent.z) == 6)  )
-						nevent.x := corpse.x;
-						nevent.y := corpse.y;
-						nevent.z := corpse.z;
-						//printtextabove(corpse, "mudei o evento");
-					endif
-					ExecuteEvent(nevent);				
-				endforeach
+		var speech := GetConfigStringArray(npc_cfg, "diespeech");
+		if (speech && speech.size() > 0)
+			if (RandomInt(100) < 30) // sempre 30% de chance de falar
+				PrintTextAbove(corpse, speech[RandomInt(speech.size() + 1)]);
 			endif
 		endif
 	endif
+
+	var spawnpoint_serial := GetObjProperty(corpse, "spawnpoint");
+	var spawnpoint;
+	if (spawnpoint_serial && !spawnpoint_serial.errortext)
+		spawnpoint := SystemFindObjectBySerial(spawnpoint_serial);
+	endif
+	// PrintTextAbove(corpse, "spawnpoint " + spawnpoint);
+	if (GetObjProperty(corpse, "spawnkill") == error)
+		if (spawnpoint)
+			if (GetObjProperty(spawnpoint, "unique") == 1)
+				var boss := GetObjProperty(spawnpoint, "uniquestat");
+				if (boss.deathevent)
+					foreach nevent in (boss.deathevent)
+						// 	PrintTextAbove(corpse, " " + nevent.type);
+						if ((nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) &&
+		  (cint(nevent.z) == 6))
+							nevent.x := corpse.x;
+							nevent.y := corpse.y;
+							nevent.z := corpse.z;
+						// PrintTextAbove(corpse, "mudei o evento");
+						endif
+						ExecuteEvent(nevent);
+					endforeach
+				endif
+			endif
+		endif
 	endif
 
 	if (GetObjProperty(corpse, "spawnkill") == error)
-		if ( death_script )
+		if (death_script)
 			params.Append(npc_cfg);
-			var result := Start_Script("deathscripts/"+death_script, params);
-			if ( result.errortext )
-				PrintTextAbove(corpse, "Error::Death Script -"+result.errortext);
-				SysLog("Error::Death Script Tmplt:["+template+"] Desc:["+corpse.desc+"] Ser:["+Hex(corpse.serial)+"] - "+result.errortext);
+			var result := Start_Script("deathscripts/" + death_script, params);
+			if (result.errortext)
+				PrintTextAbove(corpse, "Error::Death Script -" + result.errortext);
+				SysLog("Error::Death Script Tmplt:[" + template + "] Desc:[" + corpse.desc + "] Ser:[" + Hex(corpse.serial)
+						+ "] - " + result.errortext);
 			endif
 		endif
 	endif
 
-//	if (GetObjProperty(corpse, "spawnnet")) //se for spawnado pelo spawnet
-//		SpawnNet_Clear(corpse);
-//	elseif (GetObjProperty(corpse, "SpawnRegion") )//se for spawnado pelo regionspawn
-//		SpawnRegionDeath(corpse);
-//	endif		
+	// 	if (GetObjProperty(corpse, "spawnnet")) //se for spawnado pelo spawnet
+	// 		SpawnNet_Clear(corpse);
+	// 	elseif (GetObjProperty(corpse, "SpawnRegion") )//se for spawnado pelo regionspawn
+	// 		SpawnRegionDeath(corpse);
+	// 	endif		
 
 	DP_PlayDeathSound(corpse);
 	CPM_DeleteContainers(corpse);
 
-	//printtextabove(corpse, " " + corpse);	
+	// PrintTextAbove(corpse, " " + corpse);	
 
 	if (corpse)
 		var loot := NoLootCheck(corpse, npc_cfg);
 		var corp := NoCorpseCheck(corpse, npc_cfg);
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
-		
-	if(!lastDamage)
-        // Do nothing
-	else
-		var region := GetRegionName(corpse);
-		var char_name := lastDamage.serial;
-		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
-		var nome := GetObjProperty(fin, "nome_inicial");
-		var coords := GetObjProperty(corpse, "anchor");
-		var trueBoss := GetObjProperty(corpse, "true_boss");
-		if ( isBoss(corpse) )
-			if (fin.cmdlevel <= 0 && trueBoss == 1)//Para acionar o DiscordWebhook
-				var tipo := "boss"; 
-				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, 0});
-			elseif (fin.cmdlevel == 4 && trueBoss == 1)
-				var finOwner := Cint(GetObjProperty(fin, "owner"));
-				var fin_owner := SystemFindObjectBySerial(finOwner);
-				if (!finOwner)
-				else
-				var tipo := "boss"; 
-				Start_script (":DiscordWebhook:discord", {tipo, nome, fin_owner.acctname, corpse_name, region, coords, 0});
+
+		if (!lastDamage)
+		// Do nothing
+		else
+			var region := GetRegionName(corpse);
+			var char_name := lastDamage.serial;
+			var fin, nome;
+			if (char_name && !char_name.errortext)
+				fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+				if (fin)
+					nome := GetObjProperty(fin, "nome_inicial");
 				endif
 			endif
-		ENDIF
-	endif
+			var coords := GetObjProperty(corpse, "anchor");
+			var trueBoss := GetObjProperty(corpse, "true_boss");
+			if (isBoss(corpse))
+				coords.append(corpse.realm);
+				SetObjProperty(corpse, "coords", coords);
+				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
+					var tipo := "boss";
+					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse_name,
+										  					region, coords, corpse });
+				elseif (fin && fin.cmdlevel == 4 && trueBoss == 1)
+					var finOwner := Cint(GetObjProperty(fin, "owner"));
+					if (finOwner && !finOwner.errortext)
+						var fin_owner := SystemFindObjectBySerial(finOwner);
+						if (fin_owner)
+							var tipo := "boss";
+							Start_script(":DiscordWebhook:discord", { tipo, nome, fin_owner.acctname, corpse_name,
+										  							region, coords, 0 });
+						endif
+					endif
+				endif
+			endif
+		endif
 
 		if (!(corp || loot))
 			MP_DeathUnmount(corpse);
@@ -326,68 +396,69 @@ program core_npcDeath(params)
 endprogram
 
 function NoLootCheck(corpse, npc_cfg)
-	if ( GetObjProperty(corpse, "GuardKill") );
-		// Nothing
-	elseif ( GetObjProperty(corpse, "guardkill") ); 
-		// Nothing - Old CProp
-	elseif ( npc_cfg.NoLoot );
-		// Nothing
-	elseif ( GetObjProperty(corpse, "NoCorpse") );
-		// Nothing
-	elseif ( GetObjProperty(corpse, "nocorpse") );
-		// Nothing - Old Cprop
-	elseif ( GetObjProperty(corpse, "summoned") );
-		// Nothing;
+	if (GetObjProperty(corpse, "GuardKill"))
+	// Nothing
+	elseif (GetObjProperty(corpse, "guardkill"))
+	// Nothing - Old CProp
+	elseif (npc_cfg.NoLoot)
+	// Nothing
+	elseif (GetObjProperty(corpse, "NoCorpse"))
+	// Nothing
+	elseif (GetObjProperty(corpse, "nocorpse"))
+	// Nothing - Old Cprop
+	elseif (GetObjProperty(corpse, "summoned"))
+	// Nothing;
 	else
 		return 0;
 	endif
-	
+
 	// No corpse. Don't drop backpack contents.
-	//PrintTextAbove(corpse, "*guardkilling*");
+	// PrintTextAbove(corpse, "*guardkilling*");
 	foreach item in (EnumerateItemsInContainer(corpse))
-		if ( item.container == corpse )
+		if (item.container == corpse)
 			DestroyItem(item);
 		endif
 		sleepms(2);
 	endforeach
-	//printtextabove(corpse, "no loot check");
-	//no loot  nao destroi o corpo, so NoCorpse
-	//DestroyItem(corpse);
-	
+	// PrintTextAbove(corpse, "no loot check");
+	// no loot  nao destroi o corpo, so NoCorpse
+	// DestroyItem(corpse);
+
 	return 1;
 endfunction
 
 function NoCorpseCheck(corpse, npc_cfg)
-	if ( npc_cfg.NoCorpse );
-		// Nothing
-	elseif ( GetObjProperty(corpse, "NoCorpse") );
-		// Nothing
-	elseif ( GetObjProperty(corpse, "nocorpse") );
-		// Nothing - Old Cprop
-	elseif ( GetObjProperty(corpse, "summoned") );
-		// Nothing;
+	if (npc_cfg.NoCorpse)
+	// Nothing
+	elseif (GetObjProperty(corpse, "NoCorpse"))
+	// Nothing
+	elseif (GetObjProperty(corpse, "nocorpse"))
+	// Nothing - Old Cprop
+	elseif (GetObjProperty(corpse, "summoned"))
+	// Nothing;
 	else
 		return 0;
 	endif
-	
+
 	// No corpse. Place backpack contents where the corpse is.
-	//printtextabove(corpse, "no corpse");
+	// PrintTextAbove(corpse, "no corpse");
 	foreach item in (EnumerateItemsInContainer(corpse))
-		//if ( item.container == corpse )
-			var itm := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, item.realm, MOVEOBJECT_FORCELOCATION);
-			
-		//endif
-		//printtextabove(corpse, " " + item + " " + itm);
+		// if ( item.container == corpse )
+		var itm := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, item.realm,
+										 MOVEOBJECT_FORCELOCATION);
+
+		// endif
+		// PrintTextAbove(corpse, " " + item + " " + itm);
 		sleepms(2);
 	endforeach
-	//printtextabove(corpse, "no corpse check");
+	// PrintTextAbove(corpse, "no corpse check");
 	DestroyItem(corpse);
-	
+
 	return 1;
 endfunction
 
 function PushBackEX(who, dist, delay, invert := 0)
-   var mod := GetModByFacing(who.facing);
+	var mod := GetModByFacing(who.facing);
 	var x := mod[1];
 	var y := mod[2];
 
@@ -396,28 +467,60 @@ function PushBackEX(who, dist, delay, invert := 0)
 		y := y * -1;
 	endif
 
-   var finalx := who.x + (dist*x);
-   var finaly := who.y + (dist*y);
-   var world_z := GetStandingHeight( finalx, finaly, who.z-15, who.realm );
-   var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION, MOVEOBJECT_NORMAL);   
-   for i:= 1 to dist
+	var finalx := who.x + (dist * x);
+	var finaly := who.y + (dist * y);
+	var world_z := GetStandingHeight(finalx, finaly, who.z - 15, who.realm);
+	var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION,
+					  MOVEOBJECT_NORMAL);
+	for i := 1 to dist
 		var finalx := (who.x + x);
 		var finaly := (who.y + y);
 		if (!CheckLosAt(who, finalx, finaly, who.z))
 			return 0;
 		endif
-      var world_z := GetStandingHeight( who.x, who.y, who.z, who.realm );
-      if (world_z.z > who.z)
-         return 0;
-      endif
+		var world_z := GetStandingHeight(who.x, who.y, who.z, who.realm);
+		if (world_z.z > who.z)
+			return 0;
+		endif
 
-		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm, force );
+		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-		//	PrintText(who, "*bate no obstaculo*");
+			// 	PrintTextAbove(who, "*bate no obstaculo*");
 			return 0;
 		endif
 		sleepms(delay);
 	endfor
 
-   return 1;
+	return 1;
+endfunction
+
+function HandleEpicBossLoot(corpse)
+	var boss_struct := GetObjProperty(corpse, "EpicBossStruct");
+	if (!boss_struct)
+		return 0;
+	endif
+
+	if (!boss_struct.loot || boss_struct.loot.size() < 1)
+		return 0;
+	endif
+
+	foreach loot_item in (boss_struct.loot)
+		if (!loot_item.on_death)
+			continue; // Skip non-death items
+		endif
+
+		var roll := RandomInt(100);
+		if (roll >= loot_item.drop_chance)
+			continue; // Failed drop roll
+		endif
+
+		var item := CreateItemInContainerFromTemplate(corpse, loot_item.template);
+		if (!item)
+			continue;
+		endif
+
+		item.movable := 1;
+	endforeach
+
+	return 1;
 endfunction

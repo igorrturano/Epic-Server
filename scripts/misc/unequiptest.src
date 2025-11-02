@@ -7,7 +7,7 @@ include ":tn:equipment";
 program UnequipTest(mobile, item)
 	var retval := 1;
 
-	if ( (mobile.frozen) || (mobile.paralyzed))
+	if ((mobile.frozen) || (mobile.paralyzed))
 		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
 		retval := 0;
 	elseif ("cursed" in (GetObjProperty(item, "equip")))
@@ -17,14 +17,14 @@ program UnequipTest(mobile, item)
 	if (mobile.hidden)
 		var zones := CS_GetArmorZone(item);
 		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
-			SendSysMessage(mobile, "Voce apareceu ao colocar "+item.desc+".");
+			SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
 			mobile.hidden := 0;
-			PrintText(mobile, "*aparece*");
+			PrintTextAbove(mobile, "*aparece*");
 		endif
 	endif
 
-	if ( retval )
-		//RemoveEquipmentMods(mobile, item);
+	if (retval)
+		// RemoveEquipmentMods(mobile, item);
 		EraseObjProperty(item, "#EquippedOn");
 		if (coverFace(item))
 			mobile.name := GetObjProperty(mobile, "realname");

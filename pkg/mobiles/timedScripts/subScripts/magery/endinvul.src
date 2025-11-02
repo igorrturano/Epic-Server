@@ -7,10 +7,7 @@ program TimedScript_EndClumsy(params)
 	var mobile := params[1];
 
 	RevokePrivilege(mobile, "invul");
-	mobile.disable("invul");	
-
+	mobile.disable("invul");
 
 	return 1;
 endprogram
-   
- 

@@ -1,20 +1,18 @@
 use os;
 use uo;
 
-
-
-program use_gamepiece (gamepiece)
+program use_gamepiece(gamepiece)
 	var gameboard := gamepiece.container;
-	var contserial := GetObjProperty (gamepiece, "sole_container_serial");
+	var contserial := GetObjProperty(gamepiece, "sole_container_serial");
 	if (gameboard and gameboard.serial and contserial)
 		if (gameboard.serial == contserial)
 			return 1;
 		endif
 	endif
-	
-	var realgameboard := SystemFindObjectBySerial (contserial);
+
+	var realgameboard := SystemFindObjectBySerial(contserial);
 	if (realgameboard)
-		MoveItemToContainer (gamepiece, realgameboard);
+		MoveItemToContainer(gamepiece, realgameboard);
 		return 0;
 	endif
 	return 1;

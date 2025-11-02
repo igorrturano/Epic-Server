@@ -80,7 +80,7 @@ function DealAcidDamage(npc, mobile, acid_pool, acid_damage:=0)
 			var armor_damage := RandomInt(4) + 1;
 			if( acid_burned.hp > armor_damage )
 				acid_burned.hp := acid_burned.hp - armor_damage;
-				PrintTextAbovePrivate( mobile, "*Acido danificou seu equipamento*", mobile, _DEFAULT_TEXT_FONT, 72);
+				PrintTextPrivate( mobile, "*Acido danificou seu equipamento*", mobile, _DEFAULT_TEXT_FONT, 72);
 			else
 				DestroyItem(acid_burned);
 			endif

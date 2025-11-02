@@ -1,0 +1,9 @@
+use os;
+use uo;
+
+include "/include/epicPropNames";
+
+program equipItemMontado(who, item, startup)
+	var propTratamento := GetObjProperty(item, PROPNAME_FABRICADO_TRATAMENTO);
+	return propTratamento.isTratando;
+endprogram

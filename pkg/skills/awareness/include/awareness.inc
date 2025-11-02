@@ -6,49 +6,41 @@ include ":traps:traps";
 include ":charactercreation:habilidades";
 
 
-function examinarAlvo(who)
-	SendSysMessageEx(who, "Selecione um alvo.", SSM_REQUEST);
-	var targ := Target(who);
-	if( !targ )
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	elseif ( !targ.isA(POLCLASS_MOBILE) && !targ.isA(POLCLASS_CONTAINER) && !targ.isA(POLCLASS_DOOR) )
-		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
-		return 0;
+function ExaminarMobile(who,targ)
+	if (GetObjProperty(targ, "disfarce") )
+		if (SkillCheck(who, AWARENESS, AP_GetSkill(who, SNEAK)))
+			var char := GetObjProperty(targ, "chardata");
+			var name := char.FirstName;
+			var last_name := char.LastName;
+			if (last_name)
+				name := name+" "+last_name;
+			endif
+			sleep(1);
+			SendSysMessageEx(who, "Você descobriu disfarce de "+name+" em "+targ.name+".", SSM_INFO);
+			SendSysMessageEx(who, "ATENCAO: Se você não conhece esse personagem, ignore o fato de saber o nome dele.", SSM_INFO);
+			return 1;
+		endif
 	endif
+	SendSysMessageEx(who, "Você não encontrou nada de diferente.", SSM_FAIL);
+	return 0;
+endfunction
+
+function ExaminarObjeto(who,targ)
 
 	var armadilhaRevelada := 0;
 	var acharamArmadilha := array;
-	var found := 0;
-	if(targ.isA(POLCLASS_MOBILE))
-		if (GetObjProperty(targ, "disfarce") )
-			if (SkillCheck(who, AWARENESS, AP_GetSkill(who, SNEAK)))
-				found:=1;
-				var char := GetObjProperty(targ, "chardata");
-				var name := char.FirstName;
-				var last_name := char.LastName;
-				if (last_name)
-					name := name+" "+last_name;
-				endif
-				sleep(1);
-				SendSysMessageEx(who, "Voce descobriu disfarce de "+name+" em "+targ.name+".", SSM_INFO);
-				SendSysMessageEx(who, "ATENCAO: Se voce nao conhece esse personagem, ignore o fato de saber o nome dele.", SSM_INFO);
-				return 1;
-			endif
-			return 0;
-		endif
-	elseif ( GetObjProperty(targ, "TrapList") )
+	if ( GetObjProperty(targ, "TrapList") )
 		sleep(1);
 		if(!ReserveItem(targ)) //Apenas um personagem examina o bau por vez.
-			SendSysMessageEx(who, "Alguem ja esta examinando "+targ.name+".", SSM_FAIL);
-	  		return 0;
-	  	else
-	  		if(who.hidden)
-	  			SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
+			SendSysMessageEx(who, "Alguém já esta examinando "+targ.name+".", SSM_FAIL);
+			return 0;
+		else
+			if(who.hidden)
+				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
 				PrintTextAbove(who, "*Examinando "+targ.name+"*");
 			endif
-	  		sleep(1);
+			sleep(1);
 		endif
 		if(GetObjProperty(targ, "trapSpoted"))
 			armadilhaRevelada := GetObjProperty(targ, "trapSpoted"); //CPROP que diz quem revelou a trap pra todos
@@ -57,8 +49,8 @@ function examinarAlvo(who)
 			acharamArmadilha := GetObjProperty(targ, "acharamArmadilha"); //Lista de pessoas que revelaram a armadilha só para si
 		endif
 		if ((!armadilhaRevelada) && (who.serial in acharamArmadilha)) //Quando você achou ela mas não revelou pra todos
-			SendSysMessageEx(who, "Armadilha ja foi encontrada e esta obvia para voce.", SSM_INFO);
-			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Nao, deixa so pra mim."))
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
+			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
 				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
 				PrintTextAbove(targ, "*!*");
@@ -66,26 +58,39 @@ function examinarAlvo(who)
 			endif
 			return 1;
 		elseif(armadilhaRevelada)
-			SendSysMessageEx(who, "Armadilha ja foi encontrada e esta obvia para todos.", SSM_INFO);
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos.", SSM_INFO);
 			return 1;
 		else
 			var diff;
 			var lvl := Cint(GetObjProperty(targ, "level"));
 			case (lvl)
-				1: diff := 15;
+				1: diff := 20;
 				2: diff := 40;
 				3: diff := 60;
-				4: diff := 86;
-				5: diff := 90;
-				6: diff := 110;
-				default: diff := 40;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
+				default: diff := 1000; // Telepads e afins
 			endcase
 			sleep(1);
 			if ( SkillCheck(who, AWARENESS, diff) > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
-				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
-				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Nao, deixa so pra mim."))
+
+				// Check how many traps the chest has
+				var traps := GetObjProperty(targ, "TrapList");
+				var trap_count := 0;
+				if (traps)
+					trap_count := traps.size();
+				endif
+
+				if (trap_count > 1)
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+				else
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+				endif
+
+				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
 					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
 					PrintTextAbove(targ, "*!*");
@@ -93,15 +98,11 @@ function examinarAlvo(who)
 				endif
 				return 1;
 			else
-				SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_FAIL);
+				SendSysMessageEx(who, "Você nao encontrou nada de diferente.", SSM_FAIL);
 				return 0;
 			endif
 		endif
-	else
-		SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_INFO);
-		return 0;
 	endif
-	return 0;
 endfunction
 
 function CalculateDHDiff(who, mobile)
@@ -143,7 +144,8 @@ function CalculateDHDiff(who, mobile)
 
 endfunction
 
-function examinarArea(who)
+function ExaminarArea(who)
+
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
 	if ( TemHabilidade(who, "Sempre Alerta") )
@@ -162,29 +164,29 @@ function examinarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,258);
-		        	PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
+		        	PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,258); //Se esta na mesma party nao revela
 	        	endif
 	        elseif (!mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra PJ escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,36);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
 				endif
 	        elseif (mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra NPC escondidos sem revelar
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
 		        	exibeCharEscondido(who,mobile,37);
-					PrintTextAbovePrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
+					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
 				endif
 			else //Revela todo mundo que deveria
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
-					SendSysMessageEx(who, "Voce encontrou "+mobile.name+".", SSM_INFO);
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
+					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif
 			endif
@@ -193,34 +195,26 @@ function examinarArea(who)
 	endforeach
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
-		if ( item.invisible )
-			if ( item.isTrap())
-				lvl := Cint(GetObjProperty(item, "level"));
-				case (lvl)
-					1: diff := 15;
-					2: diff := 40;
-					3: diff := 60;
-					4: diff := 86;
-					5: diff := 90;
-					6: diff := 110;
-					default: diff := -1; //testa contra a propria skill
-				endcase
-				if ( SkillCheck(who, AWARENESS, diff) > 0 )
-					found := found+1;
-					item.invisible := 0;
-					SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-					PrintTextAbovePrivate(item, "*!*", who);
-				endif
-			else
-				var diff := CInt(GetObjProperty(item, "FindDiff"));
-				if ( diff )
-					if ( SkillCheck(who, AWARENESS, diff) > 0 )
-						found := found+1;
-						item.invisible := 0;
-						SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-						PrintTextAbovePrivate(item, "*!*", who);
-					endif
-				endif
+		// Ignore spawners and other system items
+		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807 || item.objtype == 0x6203)
+			continue;
+		endif
+		lvl := Cint(GetObjProperty(item, "level"));
+		if ( item.invisible && lvl != error)
+			case (lvl)
+				1: diff := 20;
+				2: diff := 40;
+				3: diff := 60;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
+				default: diff := -1; //testa contra a propria skill
+			endcase
+			if ( SkillCheck(who, AWARENESS, diff) > 0 )
+				found := found+1;
+				item.invisible := 0;
+				SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
+				PrintTextPrivate(item, "*!*", who);
 			endif
 		endif
 		sleepms(2);
@@ -252,6 +246,17 @@ function ConvertIntToHex(astring, alength)
         astring := "0" + astring;
     endwhile
     return astring;
+endfunction
+
+function AtivaDesativaPassivo(who)
+	var ignore := GetObjProperty(who, "IgnoreHidden");
+	if (ignore)
+		SendSysMessageEx(who, "Modo Passivo Ligado. Procura e revela passivamente!", SSM_INFO);
+		EraseObjProperty(who, "IgnoreHidden");
+	else
+		SendSysMessageEx(who, "Modo Passivo Desligado. Percebe, mas não revela passivamente!", SSM_FAIL);
+		SetObjProperty(who, "IgnoreHidden", 1);
+	endif
 endfunction
 
 function DrawObject(ktowhom, kobj, kgraphic, kcolor)

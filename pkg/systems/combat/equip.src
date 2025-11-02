@@ -6,24 +6,29 @@ include ":tn:equipment";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
+include ":message:model/Message";
+include ":equipsys:ViewModel/EquipWrapperArmor";
+include ":equipsys:ViewModel/EquipWrapperWeapon";
+include ":charsys:ViewModel/MobileWrapper";
+include ":debug:Controller/DebugController";
 
 program equipweapon(who, item)
 
-	var descmod_item:=GetObjProperty(item,"descmod");
-	var descmod:=array;
-	var aux:=array;
+	var descmod_item := GetObjProperty(item, "descmod");
+	var descmod := array;
+	var aux := array;
 
-	descmod:=GetObjProperty(who,"descmod");
+	descmod := GetObjProperty(who, "descmod");
 
-	if(descmod_item != error)
+	if (descmod_item != error)
 		var add := 1;
-		if(descmod != error)
+		if (descmod != error)
 			foreach desc in descmod
 				if (descmod_item == desc)
 					add := 0;
 				endif
 			endforeach
-			if(add)
+			if (add)
 				aux := descmod;
 				aux.append(descmod_item);
 			else
@@ -33,33 +38,34 @@ program equipweapon(who, item)
 			aux.append(descmod_item);
 		endif
 	endif
-	if(aux.size() == 0)
-		if(!GetObjProperty(who, "descmod"))
-			EraseObjProperty(who,"descmod");
+	if (aux.size() == 0)
+		if (!GetObjProperty(who, "descmod"))
+			EraseObjProperty(who, "descmod");
 		endif
 	else
-		SetObjProperty(who,"descmod",aux);
+		SetObjProperty(who, "descmod", aux);
 	endif
-	var ori_name:=who.name;
+	var ori_name := who.name;
 	SetName(who, " ");
 	SetName(who, ori_name);
 
-    //Nao deixa o player equipar itens que sao restritos a mobs
-	if (GetObjProperty(item,"restrito_mob"))
-        SendSysMessageEx(who, "Voce nao pode equipar esse item.", SSM_FAIL);
-        return 0;
-    endif
+	// Nao deixa o player equipar itens que sao restritos a mobs
+	if (GetObjProperty(item, "restrito_mob"))
+		SendSysMessageEx(who, "Voce nao pode equipar esse item.", SSM_FAIL);
+		return 0;
+	endif
 
-    var dual_weapons := Array{0x27a9, 0x27ab, 0x8fd, 0x27af};
-    var left_hand := GetEquipmentByLayer(who, LAYER_HAND2);
-    var right_hand := GetEquipmentByLayer(who, LAYER_HAND1);
-    if (item.isA(POLCLASS_WEAPON) && ((left_hand && left_hand.isA(POLCLASS_WEAPON)) || (right_hand && right_hand.isA(POLCLASS_WEAPON))))
-        SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
-        return 0;
-    //elseif (item.isA(POLCLASS_WEAPON) && (left_hand.objtype in dual_weapons || right_hand.objtype in dual_weapons))
-    //       SendSysMessageEx(who, "Malandrinho :p", SSM_FAIL);
-    //       return 0;
-    endif
+	var dual_weapons := array{ 0x27a9, 0x27ab, 0x8fd, 0x27af };
+	var left_hand := GetEquipmentByLayer(who, LAYER_HAND2);
+	var right_hand := GetEquipmentByLayer(who, LAYER_HAND1);
+	if (item.isA(POLCLASS_WEAPON) && ((left_hand && left_hand.isA(POLCLASS_WEAPON)) || (right_hand &&
+	 right_hand.isA(POLCLASS_WEAPON))))
+		SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
+		return 0;
+	// elseif (item.isA(POLCLASS_WEAPON) && (left_hand.objtype in dual_weapons || right_hand.objtype in dual_weapons))
+	//       SendSysMessageEx(who, "Malandrinho :p", SSM_FAIL);
+	//       return 0;
+	endif
 	if (who.npctemplate)
 		return 1;
 	endif
@@ -85,31 +91,53 @@ program equipweapon(who, item)
 		SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
 		return 0;
 	endif
-	
+
 	if (TemHabilidade(who, "Fúria"))
-			if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee || item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 || item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 || item.objtype == 0x13BE || item.objtype == 0x13C3 || item.objtype == 0x13BF || item.objtype == 0xFFE6 || item.objtype == 0x13C4 || item.objtype == 0x1415 || item.objtype == 0x1416 || item.objtype == 0x1410 || item.objtype == 0x1417 || item.objtype == 0x1411 || item.objtype == 0x141A || item.objtype == 0x1414 || item.objtype == 0x1418 || item.objtype == 0x1413) 
-				SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras de metal", SSM_FAIL);
-				return 0;
-			endif
+		if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee ||
+	  item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 ||
+	  item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 ||
+	  item.objtype == 0x13BE || item.objtype == 0x13C3 || item.objtype == 0x13BF ||
+	  item.objtype == 0xFFE6 || item.objtype == 0x13C4 || item.objtype == 0x1415 ||
+	  item.objtype == 0x1416 || item.objtype == 0x1410 || item.objtype == 0x1417 ||
+	  item.objtype == 0x1411 || item.objtype == 0x141A || item.objtype == 0x1414 ||
+	  item.objtype == 0x1418 || item.objtype == 0x1413)
+			SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras de metal", SSM_FAIL);
+			return 0;
+		endif
 	endif
 
-    var is_bone_armor_and_shields := array{0x144e, 0x144f, 0x1450, 0x1451, 0xF0C9, 0xF0CC, 0xF0CB, 0xF0CD, 0x1452, 0x1B73, 0x1B72, 0x1B74, 0x1B75, 0x1B76, 0x1B77, 0x1B78, 0x1B79, 0x1B7B, 0x1bc4, 0x1bc3, 0x1B7A, 0x1f0b};
-    if (TemHabilidade(who, "Colheita de Almas") && item.isA(POLCLASS_ARMOR))
-        var cfg := ReadConfigFile(":combat:itemdesc");
-	    var elem := FindConfigElem(cfg, item.objtype);
-        if (!(item.objtype in is_bone_armor_and_shields) && elem.TipoProtecao) 
-            SendSysMessageEx(who, "Como Shaman voce se recusa a usar armaduras que nao sejam de ossos", SSM_FAIL);
-            return 0;
-        endif
+	var is_bone_armor_and_shields := array{ 0x144e, 0x144f, 0x1450, 0x1451, 0xF0C9, 0xF0CC, 0xF0CB, 0xF0CD,
+											0x1452, 0x1B73, 0x1B72, 0x1B74, 0x1B75, 0x1B76, 0x1B77, 0x1B78,
+											0x1B79, 0x1B7B, 0x1bc4, 0x1bc3, 0x1B7A, 0x1f0b };
+	if (TemHabilidade(who, "Colheita de Almas") && item.isA(POLCLASS_ARMOR))
+		var cfg := ReadConfigFile(":combat:itemdesc");
+		var elem := FindConfigElem(cfg, item.objtype);
+		if (!(item.objtype in is_bone_armor_and_shields) && elem.TipoProtecao)
+			SendSysMessageEx(who, "Como Shaman voce se recusa a usar armaduras que nao sejam de ossos",
+							  SSM_FAIL);
+			return 0;
+		endif
 	endif
 
-	if ( !GetCooldown(item, "blessweapon") && GetObjProperty(item, "armaSagradaOriginalColor") != error )
+	// STR Required check
+	var str_required := GetObjProperty(item, "atributos").STRRequired;
+	if (str_required > 0)
+		var who_str := AP_GetStat(who, STRENGTH);
+		var str_mod := AP_GetStatMod(who, STRENGTH);
+		var total_str := who_str + str_mod;
+		if (total_str < str_required)
+			SendSysMessageEx(who, "Voce nao tem forca suficiente para equipar este item.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (!GetCooldown(item, "blessweapon") && GetObjProperty(item, "armaSagradaOriginalColor") != error)
 		item.color := Cint(GetObjProperty(item, "armaSagradaOriginalColor"));
 		EraseObjProperty(item, "armaSagradaOriginalColor");
 	endif
 
 	var elementalWeapon := GetObjProperty(item, "#elementalweapon");
-	if ( elementalWeapon != error)
+	if (elementalWeapon != error)
 		if (ReadGameClock() > elementalWeapon.endtime)
 			item.color := cint(elementalWeapon.originalColor);
 			EraseObjProperty(item, "#elementalweapon");
@@ -129,18 +157,15 @@ program equipweapon(who, item)
 			var script := GetProcess(pid);
 			script.kill();
 		endif
-		start_script (":spells:spell_logic:swordmage", {who, item});
+		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
-	set_critical(1);
-	Run_Script_To_Completion(":equipsys:equipsys", {who, item});
-	var ret := SetEquipmentMods(who, item);
+	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 
 	var cfg := readconfigfile(":combat:itemdesc");
-	if ( cint(cfg[item.objtype].parrybonus) > 0 )
+	if (cint(cfg[item.objtype].parrybonus) > 0)
 		EraseObjProperty(who, "twohanded");
 	endif
-	set_critical(0);
 
-	return ret;
+	return 1;
 endprogram

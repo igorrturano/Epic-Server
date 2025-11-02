@@ -17,10 +17,10 @@ program useScroll(who, scroll)
 		destroyitem(scroll);
 		return;
 	else
-	
-		var script := Start_Script("spellStarter", {who, spell_id, scroll});
-		if ( script.errortext )
-			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+
+		var script := Start_Script("spellStarter", { who, spell_id, scroll });
+		if (script.errortext)
+			SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
 			return 0;
 		endif
 	endif

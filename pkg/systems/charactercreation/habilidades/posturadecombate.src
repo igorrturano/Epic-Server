@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";

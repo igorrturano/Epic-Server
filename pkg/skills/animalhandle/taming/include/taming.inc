@@ -1,10 +1,11 @@
 use uo;
 
 include ":timedScripts:timedScripts";
+include ":mounts:mounts";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 
 	var mobs := array;
 	foreach mob in ListMobilesNearLocation( x, y, z, range, realm);
@@ -14,7 +15,7 @@ function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 			var npctemplate := mob.npctemplate;
 			npctemplate := npctemplate[10, len(npctemplate)-9];
 
-			if ( cfg[npctemplate].TameDifficulty )
+			if ( mob.getTameDifficulty() )
 				//if (!mob.script["tamed"])
 					mobs.append(mob);
 				//endif
@@ -30,15 +31,10 @@ endfunction
 
 //ve quantos slots custa o npc
 function GetPetCost(pet)
-
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
-	var npctemplate := pet.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-	cfg := cfg[npctemplate];
-	if (!Cint(cfg.petslot))
+	if (!Cint(pet.getTier()))
 		return 1;
 	else
-		return Cint(cfg.petslot);
+		return Cint(pet.getTier());
 	endif
 
 endfunction
@@ -54,14 +50,10 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
-			var npctemplate := pet.npctemplate;
-			npctemplate := npctemplate[10, len(npctemplate)-9];
-			cfg := cfg[npctemplate];
-			if (!Cint(cfg.petslot))
+				if (!Cint(pet.getTier()))
 				num_tamed := num_tamed+1;
 			else
-				num_tamed := num_tamed + Cint(cfg.petslot);
+				num_tamed := num_tamed + Cint(pet.getTier());
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -78,34 +70,39 @@ function GetNumPets(who)
 endfunction
 
 function GetNumSummons(who)
-	var num_tamed := 0;
-	var tamed := GetObjProperty(who, "SummonedPets");
-	if ( !tamed )
-		return 0;
-	endif
+    var num_summoned := 0;
+    var summoned_pets := GetObjProperty(who, "SummonedPets");
 
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( pet.master == who && GetObjProperty(pet, "summoned")) //se é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
-			var npctemplate := pet.npctemplate;
-			npctemplate := npctemplate[10, len(npctemplate)-9];
-			cfg := cfg[npctemplate];
-			if (!Cint(cfg.petslot))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(cfg.petslot);
-			endif
-		else
-			tamed.erase(_serial_iter);
-		endif
-		sleepms(2);
-	endforeach
-	if(!tamed)
-		tamed := array;
-	endif
-	SetObjProperty(who, "SummonedPets", tamed);
-	return num_tamed;
+    if (!summoned_pets)  // If no summoned pets, return 0
+        return 0;
+    endif
+
+    foreach serial in summoned_pets
+        var pet := SystemFindObjectBySerial(serial);
+
+        // Check if the pet is still a valid summon
+        if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
+			var pet_slot := CInt(pet.getTier());
+            if (!pet_slot)
+                pet_slot := 1;  // Default to 1 if no pet slot is set
+            endif
+
+            // Accumulate the number of summoned pets
+            num_summoned := num_summoned + pet_slot;
+        else
+            summoned_pets.erase(_serial_iter);  // Remove invalid pets from the list
+        endif
+
+        sleepms(2);  // Prevent performance issues with large lists
+    endforeach
+
+    if (!summoned_pets)  // Ensure the array is still initialized properly
+        summoned_pets := array;
+    endif
+
+    SetObjProperty(who, "SummonedPets", summoned_pets);  // Update the property with valid pets
+
+    return num_summoned;
 endfunction
 
 //deleta o serial da lista de seriais do char (quando o npc morre ou eh transferido)
@@ -176,12 +173,6 @@ function GetMaxPets(who)
 	if(TemHabilidade(who, "Espreita Selvagem"))
 		maxpets := maxpets + 1;
 	endif
-	if(TemHabilidade(who, "Boiadeiro"))
-		maxpets := maxpets + 2;
-	endif
-	if(TemHabilidade(who, "Rei do Gado"))
-		maxpets := maxpets * 2;
-	endif
 
 	maxpets := maxpets + cint( GetObjProperty(who, "extrapets") );
 
@@ -192,7 +183,7 @@ function GetMaxSummons(who)
 	var maxpets := 1;
 
 	//Influência da skill na quantidade
-	var skill := cint(AP_GetSkill(who, MAGICLORE));
+	var skill := cint(AP_GetSkill(who, THEOLOGY));
 	if (skill >= 45 && skill < 75)
 		maxpets := maxpets + 1;
 	elseif (skill >= 75 && skill < 90)
@@ -341,17 +332,15 @@ function isTamable(mob)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
-	var npctemplate := mob.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-	cfg := cfg[npctemplate];
-	if ( !cfg.TameDifficulty )
+	if (mob.isAnimalBrain())
+		return 1;
+	endif
+
+	if ( !mob.getTameDifficulty() )
 		return 0;
 	else
 		return 1;
 	endif
-
-
 endfunction
 
 
@@ -364,7 +353,7 @@ function SetPetMods(pet)
 	healdamage(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;
@@ -379,7 +368,7 @@ function ErasePetMods(pet)
 	recalcvitals(pet);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;

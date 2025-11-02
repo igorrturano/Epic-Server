@@ -6,13 +6,13 @@ include ":brainAI:npcInit";
 include ":brainAI:npcCommands";
 
 program BrainCriticalScript(params)
-	var npc		:= params[1];
-	//var settings	:= params[2];
-	//var scripts	:= params[3];
+	var npc := params[1];
+	// var settings	:= params[2];
+	// var scripts	:= params[3];
 	params := 0; // Not needed anymore.
-	
+
 	npc.color := RandomDiceRoll("1d100");
 	NPC_SetupBackPack(npc);
-	
+
 	return 1;
 endprogram

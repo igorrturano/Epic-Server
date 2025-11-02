@@ -5,7 +5,7 @@ include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
 
-program soltar (me)
+program soltar(me)
 	if (!GetObjProperty(me, "corda"))
 		SendSysMessage(me, "Esse comando nao ira lhe ajudar em nada.");
 		return;
@@ -18,28 +18,28 @@ program soltar (me)
 	endif
 	var chance;
 	if (temhabilidade(me, "Movimento Livre"))
-		chance := ( 30 + GetAttribute(me,"Dexterity") ) - (GetObjProperty(me, "corda") / 2);
+		chance := (30 + GetAttribute(me, "Dexterity")) - (GetObjProperty(me, "corda") / 2);
 	elseif (GetObjProperty(me, "classe") == "Ladino")
-		chance := GetAttribute(me,"Dexterity") - GetObjProperty(me, "corda");
+		chance := GetAttribute(me, "Dexterity") - GetObjProperty(me, "corda");
 	else
-		chance := GetAttribute(me,"Strength") - GetObjProperty(me, "corda");
+		chance := GetAttribute(me, "Strength") - GetObjProperty(me, "corda");
 	endif
 	if (RandomInt(100) < chance)
-		if (RandomInt(100) > GetAttribute(me,"Dexterity"))
-			PrintText(me, "*consegue se soltar*");
+		if (RandomInt(100) > GetAttribute(me, "Dexterity"))
+			PrintTextAbove(me, "*consegue se soltar*");
 		else
-			SendSysMessage (me, "Voce conseguiu se soltar discretamente...");
-			var corda := CreateItemInBackpack (me, "rope");
+			SendSysMessage(me, "Voce conseguiu se soltar discretamente...");
+			var corda := CreateItemInBackpack(me, "rope");
 			SetObjProperty(corda, "diff", GetObjProperty(me, "corda"));
 		endif
-		EraseObjProperty (me, "corda");
+		EraseObjProperty(me, "corda");
 		me.frozen := 0;
-	elseif (RandomInt(100) > GetAttribute(me,"Dexterity"))
-		PrintText(me, "*tentando se soltar*");
+	elseif (RandomInt(100) > GetAttribute(me, "Dexterity"))
+		PrintTextAbove(me, "*tentando se soltar*");
 	else
-		SendSysMessage (me, "Voce falhou...");
+		SendSysMessage(me, "Voce falhou...");
 	endif
 
-	ConsumeVital (me, "Stamina", 2500);
+	ConsumeVital(me, "Stamina", 2500);
 
 endprogram

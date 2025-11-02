@@ -1,0 +1,64 @@
+use uo;
+use os;
+
+program textcmd_cleanai(who, unused text)
+
+	SendSysMessage(who, "Starting AI cleanup for serials 760000 to 810000...");
+	SendSysMessage(who, "Looking for NPCs with :brainai: or :ghaia: scripts...");
+
+	var deleted_count := 0;
+	var checked_count := 0;
+	var npc_count := 0;
+	var ai_found_count := 0;
+	var serial := 760000;
+
+	while (serial <= 810000)
+		var a := SystemFindObjectBySerial(serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		checked_count := checked_count + 1;
+
+		if (a)
+			// Check if it's an NPC - if not, skip
+			if (a.npctemplate)
+				npc_count := npc_count + 1;
+
+				// Check if script starts with :brainai: or :ghaia:
+				if (a.script && (a.script[1, 9] == ":brainai:" || a.script[1, 7] == ":ghaia:"))
+					ai_found_count := ai_found_count + 1;
+					SendSysMessage(who, "Found AI NPC serial: " + serial + " (" + a.name + ") - Script: " + a.script);
+
+					// Attempt to delete
+					if (a.Kill())
+						deleted_count := deleted_count + 1;
+						SendSysMessage(who, "Deleted AI NPC serial: " + serial);
+					else
+						// Try alternative deletion method
+						if (DestroyItem(a))
+							deleted_count := deleted_count + 1;
+							SendSysMessage(who, "Destroyed AI NPC serial: " + serial);
+						else
+							SendSysMessage(who, "Failed to delete AI NPC serial: " + serial);
+						endif
+					endif
+				endif
+			endif
+		endif
+
+		// Small delay to prevent overloading
+		sleepms(2);
+
+		// Progress update every 1000 serials
+		if (checked_count % 1000 == 0)
+			SendSysMessage(who, "Progress: " + checked_count + "/50000 checked, " +
+							npc_count + " NPCs, " + ai_found_count + " AI NPCs found, " + deleted_count + " deleted");
+		endif
+
+		serial := serial + 1;
+	endwhile
+
+	SendSysMessage(who, "=== AI Cleanup Complete ===");
+	SendSysMessage(who, "Total checked: " + checked_count);
+	SendSysMessage(who, "NPCs found: " + npc_count);
+	SendSysMessage(who, "AI NPCs found: " + ai_found_count);
+	SendSysMessage(who, "AI NPCs deleted: " + deleted_count);
+
+endprogram

@@ -6,10 +6,45 @@ include ":charactercreation:resists";
 include ":combat:damage";
 include ":attributes:attributes";
 include "include/epicConstants";
+include ":nature:nature";
+include ":crafting:/include/caracteristicasFabricacao";
 
-var ironArmors := {0x1c04, 0x1408, 0x1409, 0x140A, 0x140B, 0x140C, 0x140D, 0x140E, 0x140F, 0x1412, 0x1419, 0x13ec, 0x13ed, 0x13ee, 0x13ef,
-                    0x13f0, 0x13f1, 0x13f2, 0x1415, 0x1416, 0x1410, 0x1417, 0x1411, 0x141A, 0x1414, 0x1418, 0x1413, 0x13BB, 0x13C0, 0x13BE, 0x13C3,
-                    0x13BF, 0x13C4, 0xF04A, 0xF04B, 0xF04C};
+var ironArmors := { 0x1c04,
+					0x1408,
+					0x1409,
+					0x140A,
+					0x140B,
+					0x140C,
+					0x140D,
+					0x140E,
+					0x140F,
+					0x1412,
+					0x1419,
+					0x13ec,
+					0x13ed,
+					0x13ee,
+					0x13ef,
+					0x13f0,
+					0x13f1,
+					0x13f2,
+					0x1415,
+					0x1416,
+					0x1410,
+					0x1417,
+					0x1411,
+					0x141A,
+					0x1414,
+					0x1418,
+					0x1413,
+					0x13BB,
+					0x13C0,
+					0x13BE,
+					0x13C3,
+					0x13BF,
+					0x13C4,
+					0xF04A,
+					0xF04B,
+					0xF04C };
 
 var chitinArmor := { 0xF990, 0xF991, 0xF992, 0xF993, 0xF994, 0xF995 };
 
@@ -17,191 +52,214 @@ program calor(params)
 
 	var who := params[1];
 
-    SetObjProperty(who, "calor", 1);
-    detach();
+	SetObjProperty(who, "calor", 1);
+	detach();
 
-    if (GetObjProperty(who, "teste_de_calor") == error)
-        while (1)
-            SetObjProperty(who, "teste_de_calor", 1);
-            sleep(300);
+	if (GetObjProperty(who, "teste_de_calor") == error)
+		while (1)
+			SetObjProperty(who, "teste_de_calor", 1);
+			sleep(300);
 
-            if ( GetObjProperty(who, "calor") == error)
-                var p := cint(GetObjProperty(who, "penalidadeclima"));
-                if (p > 0)
-                    RemoveHeatMod(who, 1);
-                endif
-                EraseObjProperty(who, "penalidadeclima");
-                EraseObjProperty(who, "teste_de_calor");
-                return;
-            endif
+			if (GetObjProperty(who, "calor") == error)
+				var p := cint(GetObjProperty(who, "penalidadeclima"));
+				if (p > 0)
+					if (p == 1)
+						RemoveHeatMod(who, 1);
+					elseif (p >= 2)
+						RemoveHeatMod(who, 1);
+						RemoveHeatMod(who, 2);
+					endif
+				endif
+				EraseObjProperty(who, "penalidadeclima");
+				EraseObjProperty(who, "teste_de_calor");
+				return;
+			endif
 
-            var dif := RESIST_ALMOST_IMPOSSIBLE;
+			var dif := RESIST_ALMOST_IMPOSSIBLE;
 
-            if (GetGlobalProperty("dia") == "dia")
-                 dif := dif + 1;
-            endif
+			if (GetGlobalProperty("dia") == "dia")
+				dif := dif + 1;
+			endif
 
-            if ( cint( GetGlobalProperty("season")) == 1) // if verão
-                dif := dif + 1;
-            endif
+			if (cint(GetGlobalProperty("season")) == 1) // if verão
+				dif := dif + 1;
+			endif
 
-            if ( cint( GetGlobalProperty("season")) == 3) // if inverno
-                dif := dif -1;
-            endif
+			if (cint(GetGlobalProperty("season")) == 3) // if inverno
+				dif := dif - 1;
+			endif
 
-            if ( GetGlobalProperty("weather") != error) //ta chovendo ou nevando
-                dif := dif - 1;
-            endif
+			if (GetGlobalProperty("weather") != error) // ta chovendo ou nevando
+				dif := dif - 1;
+			endif
 
-            if ( GetObjProperty(who, "chardata").trait == "Cria do Deserto")
-                dif := dif - 10;
-            endif
+			if (GetObjProperty(who, "chardata").trait == "Cria do Deserto")
+				dif := dif - 10;
+			endif
 
-            if ( GetObjProperty(who, "chardata").trait == "Adaptável")
-                dif := dif - 2;
-            endif
-            
-            if (GetObjProperty(who, "chardata").culture == BJORSKA)
-                dif := dif + 2;
-            endif
+			if (GetObjProperty(who, "chardata").trait == "Adaptável")
+				dif := dif - 2;
+			endif
 
-            if ( GetObjProperty(who, "chardata").culture == GULTHRAK)
-                dif := dif - 5;
-            endif
+			if (GetObjProperty(who, "chardata").culture == BJORSKA)
+				dif := dif + 2;
+			endif
 
-            if (GetObjProperty(who, "chardata").culture == LESTE)
-                dif := dif - 2;
-            endif
+			if (GetObjProperty(who, "chardata").culture == GULTHRAK)
+				dif := dif - 5;
+			endif
 
-            if ( TemHabilidade(who, "Kani no Sutairu"))
-                dif := dif - 2;
-            endif
+			if (GetObjProperty(who, "chardata").culture == LESTE)
+				dif := dif - 2;
+			endif
 
-            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
-            dif := dif - survivalBonus;
+			if (TemHabilidade(who, "Kani no Sutairu"))
+				dif := dif - 2;
+			endif
 
-            foreach item in (ListEquippedITems(who))
-                // Manto de Aquil facilita a resistência contra calor
-                if (item.objtype == 0xA35e)
-                    dif := dif - 1;
-                endif
-                // Itens de couro draconiano facilitam a resistência contra calor
-                if ( (GetObjProperty(item, "material") == 0xed29) )
-                    dif := dif - 2;
-                elseif (item in chitinArmor)
-                    dif := dif - 1;
-                elseif (item in ironArmors)
-                    dif := dif + 2;
-                endif
-            endforeach
+			var survivalBonus := cint(AP_GetSkill(who, SURVIVAL) / 20);
+			dif := dif - survivalBonus;
 
-            foreach item in ( ListItemsNearLocation( who.x, who.y, who.z, 8, who.realm ) )
-                 //Oasis facilita a resistência ao calor em três níveis de dificuldade
-                 if ((item.objtype == 0xa5a))
-                    dif := dif - 3;
-                    break;
-                endif
-                sleepms(20);
-            endforeach
+			foreach item in (ListEquippedITems(who))
+				// Manto de Aquil facilita a resistência contra calor
+				if (item.objtype == 0xA35e)
+					dif := dif - 1;
+				endif
 
-            // Modificador de dificuldade baseado em regions
-            var cfg := ReadConfigFile("::regions/regions");
-	        var elems := GetconfigStringKeys(cfg);
-            foreach elem in elems
-                var region := FindConfigElem(cfg, elem);
-                var rect := GetConfigString(region, "Range");
-                if ( InRect(who, who.x, who.y, rect) )
-                    var tempmod := cint(GetConfigString(region, "TempMod"));
-                    if (tempmod > 0)
-                        dif := dif + tempmod;
-                    endif
-                    break;
-                endif
-            endforeach
+				dif -= PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR);
+				dif += PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO);
+			// Itens de couro draconiano facilitam a resistência contra calor
+			endforeach
 
-            var resistcheck;
-            var resistchecked;
-            foreach mobile in ( ListMobilesNearLocation( who.x, who.y, who.z, 10, who.realm ) )
-                if (mobile.npctemplate == ":brainai:protetordeclima")
-                    SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
-                    dif := dif - 5;
-                endif
-                if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party && (who.party.leader == mobile.party.leader))
-                    resistchecked := mobile;
-                endif
-                sleepms(20);
-            endforeach
+			foreach item in (ListItemsNearLocation(who.x, who.y, who.z, 8, who.realm))
+				// Oasis facilita a resistência ao calor em três níveis de dificuldade
+				if ((item.objtype == 0xa5a))
+					dif := dif - 3;
+					break;
+				endif
+				sleepms(20);
+			endforeach
 
-            var penalty := cint(GetObjProperty(who, "penalidadeclima"));
+			// Modificador de dificuldade baseado em regions
+			var cfg := ReadConfigFile("::regions/regions");
+			var elems := GetconfigStringKeys(cfg);
+			foreach elem in elems
+				var region := FindConfigElem(cfg, elem);
+				var rect := GetConfigString(region, "Range");
+				if (InRect(who, who.x, who.y, rect))
+					var tempmod := cint(GetConfigString(region, "TempMod"));
+					if (tempmod > 0)
+						dif := dif + tempmod;
+					endif
+					break;
+				endif
+			endforeach
 
-            if (!resistchecked)
-                resistcheck := CheckResist(who,  FORTITUDE, dif);
-            else
-                resistcheck := CheckResist(resistchecked,  FORTITUDE, dif);
-            endif
+			var resistcheck;
+			var resistchecked;
+			foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 10, who.realm))
+				if (mobile.npctemplate == ":brainai:protetordeclima")
+					SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
+					dif := dif - 5;
+				endif
+				if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party &&
+		(who.party.leader == mobile.party.leader))
+					resistchecked := mobile;
+				endif
+				sleepms(20);
+			endforeach
 
-            if (resistcheck)
-                SendSysMessageEx(who, "Voce resiste aos efeito do calor.", SSM_INFO);
-                if (penalty == 1)
-                    penalty := 0;
-                    RemoveHeatMod(who, 1);
-                elseif (penalty == 2)
-                    penalty := 1;
-                endif
-            else
-                SendSysMessageEx(who, "Voce nao resiste aos efeito do calor.", SSM_FAIL);
-                if (penalty == 0)
-                    penalty := 1;
-                    ApplyHeatMod(who, 1);
-                elseif (penalty >= 1)
-                    penalty := 2;
-                    ApplyHeatMod(who, 2);
-                endif
-            endif
-            SetObjProperty(who, "penalidadeclima", penalty);
-        endwhile
-    endif
+			var penalty := cint(GetObjProperty(who, "penalidadeclima"));
+
+			if (!resistchecked)
+				resistcheck := CheckResist(who, FORTITUDE, dif);
+			else
+				resistcheck := CheckResist(resistchecked, FORTITUDE, dif);
+			endif
+
+			if (resistcheck)
+				SendSysMessageEx(who, "Voce resiste aos efeito do calor.", SSM_INFO);
+				if (penalty == 1)
+					penalty := 0;
+					RemoveHeatMod(who, 1);
+				elseif (penalty == 2)
+					penalty := 1;
+					RemoveHeatMod(who, 2);
+				endif
+			else
+				SendSysMessageEx(who, "Voce nao resiste aos efeito do calor.", SSM_FAIL);
+				if (penalty == 0)
+					penalty := 1;
+					ApplyHeatMod(who, 1);
+				elseif (penalty >= 1)
+					penalty := 2;
+					ApplyHeatMod(who, 2);
+				endif
+			endif
+			SetObjProperty(who, "penalidadeclima", penalty);
+		endwhile
+	endif
 endprogram
 
 function RemoveHeatMod(who, mod)
-Set_Critical(1);
-	if ( GetObjProperty(who, "penalidadedeserto") != error )
-		var stammod := cint(GetObjProperty(who, "stammod"));
-		var manamod := cint(GetObjProperty(who, "manamod"));
-		var penalidade := GetObjProperty(who, "penalidadedeserto");
-		var penalidade2 := GetObjProperty(who, "penalidadedeserto2");
-		SetObjProperty(who, "stammod",  stammod +  (0-penalidade) );
-		SetObjProperty(who, "manamod",  manamod +  (0-penalidade2) );
-        EraseObjProperty(who, "penalidadedeserto");
-		EraseObjProperty(who, "penalidadedeserto2");
-		RecalcVitals(who);
+	Set_Critical(1);
+
+	if (mod == 1)
+		// Remove fortitude penalty
+		if (GetObjProperty(who, "climate_penalty") != error)
+			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
+			if (fortitudeMod != error)
+				var climatePenalty := GetObjProperty(who, "climate_penalty");
+				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
+			endif
+			EraseObjProperty(who, "climate_penalty");
+		endif
+	elseif (mod == 2)
+		// Remove stamina/mana penalties
+		if (GetObjProperty(who, "stam_penalty") != error)
+			var stammod := cint(GetObjProperty(who, "stammod"));
+			var manamod := cint(GetObjProperty(who, "manamod"));
+			var stam_penalty := GetObjProperty(who, "stam_penalty");
+			var mana_penalty := GetObjProperty(who, "mana_penalty");
+			SetObjProperty(who, "stammod", stammod - stam_penalty);
+			SetObjProperty(who, "manamod", manamod - mana_penalty);
+			EraseObjProperty(who, "stam_penalty");
+			EraseObjProperty(who, "mana_penalty");
+			RecalcVitals(who);
+		endif
 	endif
-Set_Critical(0);
+
+	Set_Critical(0);
 endfunction
 
 function ApplyHeatMod(who, mod)
-	if (mod == 1)
-		var stammod := cint(GetObjProperty(who, "stammod"));
-		var manamod := cint(GetObjProperty(who, "manamod"));
-		SetObjProperty(who, "stammod",  stammod + (0 - cint(AP_GetVitalMaximumValue(who, STAMINA)/2) ));
-		SetObjProperty(who, "manamod",  manamod + (0 - cint(AP_GetVitalMaximumValue(who, MANA)/2) ));
-		SetObjProperty(who, "penalidadedeserto", (0 - cint(AP_GetVitalMaximumValue(who, STAMINA)/2)));
-		SetObjProperty(who, "penalidadedeserto2", (0 - cint(AP_GetVitalMaximumValue(who, MANA)/2)));
-		RecalcVitals(who);
-	elseif ( mod == 2)
-		var dmg := AP_GetVital(who, HITS) -  GetHP(who);
-        DamageFLS(who, dmg);
-		RecalcVitals(who);
+	Set_Critical(1);
+	if (who.gender == 1)
+		PlaySoundEffect(who, 0x31A);
+	else
+		PlaySoundEffect(who, 0x42A);
 	endif
-endfunction
 
-function InRect(who, x_pos, y_pos, rect)
+	if (mod == 1)
+		var temp := getTemperature(who);
+		var fortitudePenalty := resistPenaltyByClimate(temp) * -1; // Invert the penalty for heat
+		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
+		if (currentFortitudeMod == error)
+			currentFortitudeMod := 0;
+		endif
+		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
+		SetObjProperty(who, "climate_penalty", fortitudePenalty);
+	// elseif (mod == 2)
+	//     var stammod := cint(GetObjProperty(who, "stammod"));
+	//     var manamod := cint(GetObjProperty(who, "manamod"));
+	//     var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
+	//     var manaPenalty := cint(AP_GetVitalMaximumValue(who, MANA)/2);
+	//     SetObjProperty(who, "stammod", stammod - stamPenalty);
+	//     SetObjProperty(who, "manamod", manamod - manaPenalty);
+	//     SetObjProperty(who, "stam_penalty", -stamPenalty);
+	//     SetObjProperty(who, "mana_penalty", -manaPenalty);
+	//     RecalcVitals(who);
+	endif
 
-	rect := SplitWords(rect);
-	var x1 := CInt(rect[1]);
-	var y1 := CInt(rect[2]);
-	var x2 := CInt(rect[3]);
-	var y2 := CInt(rect[4]);
-
-	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
+	Set_Critical(0);
 endfunction

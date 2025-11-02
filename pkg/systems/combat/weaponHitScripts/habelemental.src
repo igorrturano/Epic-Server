@@ -11,12 +11,12 @@ include ":spells:puremage";
 include "include/epicMageryUtils";
 
 program HitScript(params)
-	var attacker	:= params[1];
-	var defender	:= params[2];
-	var weapon	:= params[3];
-	//var armor	:= params[4];
-	//var basedamage	:= params[5];
-	var rawdamage	:= params[6];
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
 	var dmgtype := params[7];
 	var range := params[8];
 
@@ -30,31 +30,30 @@ program HitScript(params)
 
 	params := 0; // Not needed anymore.
 
-	//gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
-	if (GetCooldown(weapon, "romperencantamento") )
+	// gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
+	if (GetCooldown(weapon, "romperencantamento"))
 		ApplyChargesCalculation(weapon, 1, 4);
 		dispel(defender);
 		EraseObjProperty(weapon, "#romperencantamento");
 	endif
-	if (GetCooldown(weapon, "ataqueespiritual")  )
+	if (GetCooldown(weapon, "ataqueespiritual"))
 		EraseObjProperty(weapon, "#ataqueespiritual");
-		var manadmg := cint(AP_GetSkill(attacker, MAGICLORE)/3);
+		var manadmg := cint(AP_GetSkill(attacker, ARCANA) / 3);
 		manadmg := ApplyChargesCalculation(weapon, manadmg, 3);
 		AP_ConsumeVital(defender, MANA, manadmg);
 	endif
-	if (GetCooldown(weapon, "ataquefadiga")  )
+	if (GetCooldown(weapon, "ataquefadiga"))
 		EraseObjProperty(weapon, "#ataquefadiga");
-		var stamdmg := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+		var stamdmg := cint(AP_GetSkill(attacker, ARCANA) / 2);
 		stamdmg := ApplyChargesCalculation(weapon, stamdmg, 3);
 		AP_ConsumeVital(defender, STAMINA, stamdmg);
 	endif
 
-	
-	if ( dmgtype == DMG_COLD )
+	if (dmgtype == DMG_COLD)
 
 		if (GetObjProperty(weapon, "prisaogelida") == 1)
 			EraseObjProperty(weapon, "prisaogelida");
-			var time := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+			var time := cint(AP_GetSkill(attacker, ARCANA) / 2);
 			time := ApplyChargesCalculation(weapon, time, 4);
 			TS_StartTimer(defender, "prisaogelida", time);
 		else
@@ -73,7 +72,3 @@ program HitScript(params)
 	endif
 	return 1;
 endprogram
-
-
- 
- 

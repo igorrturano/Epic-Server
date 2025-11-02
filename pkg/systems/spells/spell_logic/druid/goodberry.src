@@ -1,0 +1,55 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/epicMageryUtils";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	// Calculate healing power based on skill
+	var magiclore_skill := HandleSpellSkill(who);
+	var healing_bonus := CInt(magiclore_skill);
+
+	if (healing_bonus < 20)
+		healing_bonus := 20; // Minimum healing
+	endif
+
+	// Bonus de especialização
+	if (Temhabilidade(who, "Coração da Matilha"))
+		healing_bonus := Cint(healing_bonus * 1.2);
+	endif
+
+	// Create the magical fruit item (using dates/fruit graphic)
+	var fruit := CreateItemInBackpack(who, 0x0c74, 1); // Dates
+
+	if (!fruit)
+		SendSysMessageEx(who, "Voce nao tem espaco na mochila.", SSM_FAIL);
+		return;
+	endif
+
+	// Set properties on the fruit
+	fruit.name := "Fruta Curativa";
+	fruit.color := 1152; // Green color for magical fruit
+	SetObjProperty(fruit, "bonus", healing_bonus);
+	SetObjProperty(fruit, "created_by", who.serial);
+
+	// Set the script to use when consumed
+	fruit.usescript := ":tn:fruta_curativa";
+
+	// Visual effects
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	handleSilentMagic(who, who, SFX_SPELL_HEAL);
+
+	SendSysMessageEx(who, "Voce criou uma fruta curativa magica.", SSM_INFO);
+
+	return 1;
+endprogram

@@ -2,8 +2,7 @@
  *
  * http://uo.stratics.com/content/skills/healing.php
  *
- */
-
+*/
 use uo;
 use os;
 use math;
@@ -19,39 +18,40 @@ include ":combat:damage";
 var MIN_SKILL_FOR_BLOODIED := 40;
 
 program UseBandage(mobile, bandage)
-	if ( !(bandage in EnumerateItemsInContainer(mobile.backpack)) )
+	if (!(bandage in EnumerateItemsInContainer(mobile.backpack)))
 		SendSysMessageEx(mobile, "As ataduras devem estar na sua mochila para serem usadas.", SSM_FAIL);
 		return 0;
 	endif
 
-  	var cfg := ReadConfigFile(":combat:itemdesc");
+	var cfg := ReadConfigFile(":combat:itemdesc");
 	var equippedright := GetEquipmentByLayer(mobile, 0x01);
 	var equippedleft := GetEquipmentByLayer(mobile, 0x02);
 	var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
 	if (equippedright || equippedleft || twohanded)
-	  SendSysMessageEx(mobile, "Voce precisa das duas maos livres para usar as ataduras!", SSM_FAIL);
-	  return 0;
+		SendSysMessageEx(mobile, "Voce precisa das duas maos livres para usar as ataduras!", SSM_FAIL);
+		return 0;
 	endif
 
 	SendSysMessageEx(mobile, "Onde voce deseja usar as ataduras?", SSM_REQUEST);
-	var targ := Target(mobile, TGTOPT_CHECK_LOS+TGTOPT_HELPFUL);
+	var targ := Target(mobile, TGTOPT_CHECK_LOS + TGTOPT_HELPFUL);
 
 	var heal_skill := AP_GetSkill(mobile, MEDICINE);
-	var quantidade := min( max(1, CInt((heal_skill)/4)), min(targ.amount, bandage.amount));
+	var quantidade := min(max(1, CInt((heal_skill) / 4)), min(targ.amount, bandage.amount));
 	var bandagem_especial;
-	if (targ.objtype == 0xF85 && (heal_skill >= 70 || temHabilidade(mobile,"Ervas Curativas")) ) //se for ginseng
+	if (targ.objtype == 0xF85 && (heal_skill >= 70 || temHabilidade(mobile, "Ervas Curativas"))) // se for ginseng
 		SendSysMessageEx(mobile, "Tentando passar o extrato de ginseng nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile,"Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile, "Ervas Curativas"))
 			SendSysMessageEx(mobile, "Voce passou o extrato de ginseng nas ataduras.", SSM_INFO);
 			Set_Critical(1);
-			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z+5, "bandages", quantidade); //cria as bandagens especiais
+			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
+													   quantidade); // cria as bandagens especiais
 			SetObjProperty(bandagem_especial, "ginseng", 1);
 			bandagem_especial.color := 2007;
-			SubtractAmount(bandage,quantidade);
+			SubtractAmount(bandage, quantidade);
 			SubtractAmount(targ, quantidade);
-			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); //Empilha quando já tem algum
+			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); // Empilha quando já tem algum
 			Set_Critical(1);
 			return;
 		else
@@ -60,19 +60,20 @@ program UseBandage(mobile, bandage)
 			SubtractAmount(targ, quantidade);
 			return;
 		endif
-	elseif (targ.objtype == 0xF84 && (heal_skill >= 70 || temHabilidade(mobile,"Ervas Curativas")) ) //se for garlic
+	elseif (targ.objtype == 0xF84 && (heal_skill >= 70 || temHabilidade(mobile, "Ervas Curativas"))) // se for garlic
 		SendSysMessageEx(mobile, "Tentando passar o extrato de alho nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile,"Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile, "Ervas Curativas"))
 			SendSysMessageEx(mobile, "Voce passou o extrato de alho nas ataduras.", SSM_INFO);
 			Set_Critical(1);
-			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z+5, "bandages", quantidade); //cria as bandagens especiais
+			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
+													   quantidade); // cria as bandagens especiais
 			SetObjProperty(bandage, "garlic", 1);
 			bandagem_especial.color := 2001;
-			SubtractAmount(bandage,quantidade);
+			SubtractAmount(bandage, quantidade);
 			SubtractAmount(targ, quantidade);
-			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); //Empilha quando já tem algum
+			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); // Empilha quando já tem algum
 			Set_Critical(1);
 			return;
 		else
@@ -81,19 +82,21 @@ program UseBandage(mobile, bandage)
 			SubtractAmount(targ, quantidade);
 			return;
 		endif // Antes tava esse aqui que nao tem drop: 0x26b7
-	elseif (targ.objtype == 0xd16 && (heal_skill >= 84 || temHabilidade(mobile,"Ervas Curativas")) ) //se for cogumelo
+	elseif (targ.objtype == 0xd16 && (heal_skill >= 84 ||
+		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de cogumelos nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 85) > 0) || temHabilidade(mobile,"Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 85) > 0) || temHabilidade(mobile, "Ervas Curativas"))
 			SendSysMessageEx(mobile, "Voce passou o extrato de cogumelos nas ataduras.", SSM_INFO);
 			Set_Critical(1);
-			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z+5, "bandages", quantidade); //cria as bandagens especiais
+			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
+													   quantidade); // cria as bandagens especiais
 			SetObjProperty(bandage, "cogumelo", 1);
 			bandagem_especial.color := 2220;
-			SubtractAmount(bandage,quantidade);
+			SubtractAmount(bandage, quantidade);
 			SubtractAmount(targ, quantidade);
-			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); //Empilha quando já tem algum
+			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); // Empilha quando já tem algum
 			Set_Critical(1);
 			return;
 		else
@@ -102,19 +105,21 @@ program UseBandage(mobile, bandage)
 			SubtractAmount(targ, quantidade);
 			return;
 		endif
-	elseif (targ.objtype == 0xF83 && (heal_skill >= 90 || temHabilidade(mobile,"Ervas Curativas")) ) //se for cogumelo
+	elseif (targ.objtype == 0xF83 && (heal_skill >= 90 ||
+		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de cogumelos nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 100) > 0) || temHabilidade(mobile,"Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 100) > 0) || temHabilidade(mobile, "Ervas Curativas"))
 			SendSysMessageEx(mobile, "Voce passou o extrato de cogumelos nas ataduras.", SSM_INFO);
 			Set_Critical(1);
-			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z+5, "bandages", quantidade); //cria as bandagens especiais
+			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
+													   quantidade); // cria as bandagens especiais
 			SetObjProperty(bandage, "cap", 1);
 			bandagem_especial.color := 972;
-			SubtractAmount(bandage,quantidade);
+			SubtractAmount(bandage, quantidade);
 			SubtractAmount(targ, quantidade);
-			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); //Empilha quando já tem algum
+			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); // Empilha quando já tem algum
 			Set_Critical(1);
 			return;
 		else
@@ -123,19 +128,21 @@ program UseBandage(mobile, bandage)
 			SubtractAmount(targ, quantidade);
 			return;
 		endif
-	elseif (targ.objtype == 0xF7B && (heal_skill >= 60 || temHabilidade(mobile,"Ervas Curativas")) ) //se for cogumelo
+	elseif (targ.objtype == 0xF7B && (heal_skill >= 60 ||
+		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de musgo nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 60) > 0) || temHabilidade(mobile,"Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 60) > 0) || temHabilidade(mobile, "Ervas Curativas"))
 			SendSysMessageEx(mobile, "Voce passou o extrato de musgo nas ataduras.", SSM_INFO);
 			Set_Critical(1);
-			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z+5, "bandages", quantidade); //cria as bandagens especiais
+			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
+													   quantidade); // cria as bandagens especiais
 			SetObjProperty(bandage, "blood", 1);
 			bandagem_especial.color := 1229;
-			SubtractAmount(bandage,quantidade);
+			SubtractAmount(bandage, quantidade);
 			SubtractAmount(targ, quantidade);
-			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); //Empilha quando já tem algum
+			MoveItemToContainer(bandagem_especial, mobile.backpack, -1, -1, 2); // Empilha quando já tem algum
 			Set_Critical(1);
 			return;
 		else
@@ -146,46 +153,46 @@ program UseBandage(mobile, bandage)
 		endif
 	endif
 
-	if ( !targ.IsA(POLCLASS_MOBILE) && !targ.IsA(POLCLASS_CORPSE) )
+	if (!targ.IsA(POLCLASS_MOBILE) && !targ.IsA(POLCLASS_CORPSE))
 		SendSysMessageEx(mobile, "Cancelado.", SSM_FAIL);
 		return 0;
-	elseif ( targ.IsA(POLCLASS_MOBILE) && AP_GetVital(targ, "hits") >= AP_GetVitalMaximumValue(targ, "hits") )
+	elseif (targ.IsA(POLCLASS_MOBILE) && AP_GetVital(targ, "hits") >= AP_GetVitalMaximumValue(targ, "hits"))
 		SendSysMessageEx(mobile, "Alvo ja esta completamente curado.", SSM_INFO);
 		return 0;
 	endif
 
-	if(GetObjProperty(targ, "CannotHeal"))
-		SendSysMessageEx(mobile, "Nao ha nada que voce possa fazer pelo alvo nas atuais circunstacias", 3, SSM_FAIL);
+	if (GetObjProperty(targ, "CannotHeal"))
+		SendSysMessageEx(mobile, "Nao ha nada que voce possa fazer pelo alvo nas atuais circunstacias",
+				   3, SSM_FAIL);
 		return 0;
 	endif
 
-	if ( targ.warmode )
+	if (targ.warmode)
 		SendSysMessageEx(mobile, "Voce nao pode tratar um alvo que esta muito agitado", SSM_INFO);
 		return 0;
 	endif
-	//adicionada verificação de se eu não estou aplicando a bandagem em alguem
-	if ( GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting" > ReadGameClock()))
+	// adicionada verificação de se eu não estou aplicando a bandagem em alguem
+	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting" > ReadGameClock()))
 		SendSysMessageEx(mobile, "O alvo ja esta enfaixado", SSM_INFO);
 		return 0;
 	else
 		EraseObjProperty(targ, "curando");
 	endif
 
-
 	var aux_skill := MEDICINE;
 	var elem := NPC_GetNPCConfig(targ.npctemplate);
-	var npcdesc := ReadConfigFile(":brainAI:npcdesc");
+	var npcdesc := ReadConfigFile(":*:npcdesc");
 	var npctemplate := targ.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
+	npctemplate := npctemplate[10, len(npctemplate) - 9];
 	npcdesc := npcdesc[npctemplate];
-	if ( npcdesc.TameDifficulty || GetObjProperty(targ, "npctemplate") )
+	if (targ.isAnimalBrain() || GetObjProperty(targ, "npctemplate"))
 		aux_skill := HANDLEANIMAL;
 	endif
 
 	aux_skill := AP_GetSkill(mobile, aux_skill);
 
 	var valor;
-	if ( targ.IsA(POLCLASS_CORPSE) )
+	if (targ.IsA(POLCLASS_CORPSE))
 		if (aux_skill < 40.0 || heal_skill < 40.0)
 			SendSysMessageEx(mobile, "Voce nao tem conhecimento suficiente para acordar alguem.", SSM_FAIL);
 			return 0;
@@ -195,16 +202,16 @@ program UseBandage(mobile, bandage)
 		elseif (GetObjProperty(targ, "curado") && aux_skill >= 30)
 			SendSysMessageEx(mobile, "Alvo ja foi curado.", SSM_INFO);
 			return 0;
-		elseif (bandage.amount < 5);
+		elseif (bandage.amount < 5)
 			SendSysMessageEx(mobile, "Voce precisa de 5 bandagens.", SSM_FAIL);
 			return 0;
 		endif
 
 		var restauraDP := 0;
-		if (GetObjProperty(bandage , "cap") == 1)
+		if (GetObjProperty(bandage, "cap") == 1)
 			valor := 100;
-			if(temHabilidade(mobile,"Ervas Curativas"))
-				valor := valor-20;
+			if (temHabilidade(mobile, "Ervas Curativas"))
+				valor := valor - 20;
 			endif
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				restauraDP := 1;
@@ -212,14 +219,14 @@ program UseBandage(mobile, bandage)
 		endif
 
 		SubtractAmount(bandage, 5);
-		if ( !GetObjProperty(targ, "npctemplate"))
+		if (!GetObjProperty(targ, "npctemplate"))
 			HealCorpse(mobile, targ, aux_skill, restauraDP);
 		else
-			if ( !GetObjProperty(targ, "owner") )
+			if (!GetObjProperty(targ, "owner"))
 				SendSysMessageEx(mobile, "O alvo esta morto.", SSM_FAIL);
 				return 0;
 			endif
-			if (GetCooldown(targ, "resurrect") > 0 )
+			if (GetCooldown(targ, "resurrect") > 0)
 				if (!GetObjProperty(targ, "NeverRelease"))
 					SendSysMessageEx(mobile, "O alvo esta morto.", SSM_FAIL);
 					SetObjProperty(targ, "morto", 1);
@@ -230,20 +237,21 @@ program UseBandage(mobile, bandage)
 		endif
 	else
 		if (targ.npctemplate && aux_skill < 10.0)
-			SendSysMessageEX(mobile, "Voce nao tem conhecimento suficiente para curar esse paciente.", SSM_FAIL);
+			SendSysMessageEX(mobile, "Voce nao tem conhecimento suficiente para curar esse paciente.",
+							  SSM_FAIL);
 			return 0;
 		endif
 
 		if (isBloodied(targ) && heal_skill < MIN_SKILL_FOR_BLOODIED)
-			SendSysMessageEx(mobile, "Voce nao tem conhecimento suficiente para curar esse paciente.", SSM_FAIL);
+			SendSysMessageEx(mobile, "Voce nao tem conhecimento suficiente para curar esse paciente.",
+							  SSM_FAIL);
 			return 0;
 		endif
-
 
 		var bonus := 0;
 		var poison := 0;
 		valor := 0;
-		if(temHabilidade(mobile,"Ervas Curativas"))
+		if (temHabilidade(mobile, "Ervas Curativas"))
 			valor := valor - 20;
 		endif
 
@@ -252,37 +260,36 @@ program UseBandage(mobile, bandage)
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				bonus := 10;
 			endif
-		elseif (getObjProperty(bandage, "ginseng") == 1 )
+		elseif (getObjProperty(bandage, "ginseng") == 1)
 			valor := valor + 70;
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				bonus := 10;
 			endif
-		elseif ( getObjProperty(bandage, "garlic") == 1 )
+		elseif (getObjProperty(bandage, "garlic") == 1)
 			valor := valor + 70;
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				poison := 1;
 			endif
-		elseif ( getObjProperty(bandage, "cogumelo") == 1)
+		elseif (getObjProperty(bandage, "cogumelo") == 1)
 			valor := valor + 60;
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				bonus := 15;
 			endif
-		elseif ( getObjProperty(bandage, "blood") == 1)
+		elseif (getObjProperty(bandage, "blood") == 1)
 			valor := valor + 60;
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
 				poison := 2;
 			endif
 		endif
 
-
 		SubtractAmount(bandage, 1);
-		if ( !HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison) )
+		if (!HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison))
 			SendSysMessage(mobile, "Voce parou de usar ataduras.");
 		endif
 		EraseObjProperty(targ, "curando");
 		var chance := 30;
-		//deixa isso pode ser util
-		if ( temHabilidade(mobile, "Conservar Bandagens") )
+		// deixa isso pode ser util
+		if (temHabilidade(mobile, "Conservar Bandagens"))
 			chance := 90;
 		endif
 		if (RandomInt(100) < chance)
@@ -301,18 +308,18 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	endif
 	if (mobile == targ)
 		heal_amt := heal_amt / 2;
-		PrintText(mobile, "*tratando a si mesmo*");
-	elseif ( Distance(mobile, targ) > 2 )
+		PrintTextAbove(mobile, "*tratando a si mesmo*");
+	elseif (Distance(mobile, targ) > 2)
 		SendSysMessage(mobile, "Seu paciente esta muito distante.");
 		return 1;
 	else
-		PrintText(mobile, "*tratando o paciente*");
+		PrintTextAbove(mobile, "*tratando o paciente*");
 	endif
 	if (!WaitCura(mobile, 5))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
 		return 0;
 	endif
-	if ( Distance(mobile, targ) > 2 )
+	if (Distance(mobile, targ) > 2)
 		SendSysMessage(mobile, "Seu paciente esta muito distante.");
 		return 0;
 	endif
@@ -326,7 +333,7 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 		return 0;
 	endif
 	if (GetObjProperty(targ, "kit") == "pele rija")
-		heal_amt := heal_amt*0.75;
+		heal_amt := heal_amt * 0.75;
 		if (heal_amt < 5)
 			heal_amt := 5;
 		endif
@@ -336,12 +343,12 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	detach();
 	SendSysMessage(targ, "Aguarde enquanto a cura faz efeito.");
 	var i;
-	var q := 20 - Floor(heal_skill/10);
-	var resto := heal_amt/q - CInt(heal_amt/q);
+	var q := 20 - Floor(heal_skill / 10);
+	var resto := heal_amt / q - CInt(heal_amt / q);
 	var r := 0;
-	SetObjProperty(targ, "curando", ReadGameClock()+q);
-  //PrintText(targ, "Loops: "+q+" | Cura: "+heal_amt/q+" | Total: "+heal_amt);
-	for ( i := 0 ; i < q ; i := i + 1 )
+	SetObjProperty(targ, "curando", ReadGameClock() + q);
+	// PrintTextAbove(targ, "Loops: "+q+" | Cura: "+heal_amt/q+" | Total: "+heal_amt);
+	for (i := 0; i < q; i := i + 1)
 		Sleep(1);
 		if (x != targ.x || y != targ.y)
 			SendSysMessage(targ, "Voce interrompeu a cura.");
@@ -350,23 +357,23 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 			SendSysMessage(targ, "Voce esta completamente curado.");
 			return 1;
 		endif
-		//HealDamage(targ, CInt(heal_amt/5));
-	    HealFLS(targ, CInt(heal_amt/q));
-	    r := r + resto;
-	    if (r > 1)
-	      HealFLS(targ, 1);
-	      r := r - 1;
-	    endif
+		// HealDamage(targ, CInt(heal_amt/5));
+		HealFLS(targ, CInt(heal_amt / q));
+		r := r + resto;
+		if (r > 1)
+			HealFLS(targ, 1);
+			r := r - 1;
+		endif
 		RecalcVitals(targ);
 	endfor
 	SendSysMessage(targ, "Acabou o efeito das bandagens.");
-	//PrintText(targ, "*acabou bandagem*");
+	// PrintTextAbove(targ, "*acabou bandagem*");
 
-	//bandagens com garlic
-	if ((poison == 1) )
+	// bandagens com garlic
+	if ((poison == 1))
 		// Should be enough to cure all poison.
 		TS_CurePoison(targ, 10000, "P", 10);
-	elseif((poison == 2))
+	elseif ((poison == 2))
 		TS_LowerDuration(targ, "bleed", -1);
 	endif
 	return 1;
@@ -374,26 +381,26 @@ endfunction
 function HealCorpse(mobile, targ, aux_skill, restauraDP)
 	var name := targ.desc;
 	name["corpo de "] := "";
-	PrintText(mobile, "*tentando estabilizar o paciente*");
-	if ( !WaitCura(mobile, 10) )
+	PrintTextAbove(mobile, "*tentando estabilizar o paciente*");
+	if (!WaitCura(mobile, 10))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
 		return 0;
 	endif
 	var diff := CInt(80 - aux_skill);
 	if (diff < 15)
 		diff := 15;
-	elseif (diff > 75);
+	elseif (diff > 75)
 		diff := 75;
 	endif
 
-	if (  !GetObjProperty(targ,"morto") )
-		if ( SkillCheck(mobile, MEDICINE, diff) > 0 )
+	if (!GetObjProperty(targ, "morto"))
+		if (SkillCheck(mobile, MEDICINE, diff) > 0)
 			SendSysMessage(mobile, "Voce estabilizou o paciente");
 			SetObjProperty(targ, "curado", 1);
 			if (restauraDP)
 				var owner := SystemFindObjectBySerial(targ.ownerserial);
 				if (owner)
-					AP_SetVital(owner, "DP", AP_GetVital(owner, "DP")+10);
+					AP_SetVital(owner, "DP", AP_GetVital(owner, "DP") + 10);
 					SendSysMessageEx(mobile, "Consegue aplicar efeito vivificante do Cap.", SSM_INFO);
 					SendSysMessageEx(mobile, "Um efeito vivificante circula em seu corpo.", SSM_INFO);
 				endif
@@ -404,7 +411,7 @@ function HealCorpse(mobile, targ, aux_skill, restauraDP)
 		endif
 	endif
 
-	CreateItemInBackpack(mobile, 0xE20, RandomInt(5)+1);
+	CreateItemInBackpack(mobile, 0xE20, RandomInt(5) + 1);
 
 	return 1;
 endfunction
@@ -412,51 +419,51 @@ endfunction
 function HealNpcCorpse(mobile, targ, aux_skill)
 	var name := targ.desc;
 	name["corpo de "] := "";
-	PrintText(mobile, "*tentando estabilizar o paciente*");
-	if ( !Wait(mobile, 10) )
+	PrintTextAbove(mobile, "*tentando estabilizar o paciente*");
+	if (!Wait(mobile, 10))
 		SendSysMessage(mobile, "Você interrompeu a cura.");
 		return 0;
 	endif
-	var diff := CInt(100 - CInt(aux_skill/1.2));
+	var diff := CInt(100 - CInt(aux_skill / 1.2));
 	if (diff < 20)
 		diff := 20;
-	elseif (diff >= 80);
+	elseif (diff >= 80)
 		diff := 80;
 	endif
 
-	if (  !GetObjProperty(targ,"morto") )
-		if ( SkillCheck(mobile, MEDICINE, diff) > 0 )
+	if (!GetObjProperty(targ, "morto"))
+		if (SkillCheck(mobile, MEDICINE, diff) > 0)
 			var ownerserial := GetObjProperty(targ, "owner");
 			var master := SystemFindObjectBySerial(ownerserial);
 			SendSysMessage(mobile, "Voce estabilizou o paciente.");
 			RessuscitarPet(targ, master, 1);
 		else
-			SendSysMessage(mobile, "Voce nao conseguiu estabilizar "+name+".");
+			SendSysMessage(mobile, "Voce nao conseguiu estabilizar " + name + ".");
 		endif
 	endif
 
-	CreateItemInBackpack(mobile, 0xE20, RandomInt(5)+1);
+	CreateItemInBackpack(mobile, 0xE20, RandomInt(5) + 1);
 
 	return 1;
 endfunction
 
 function GetHealingAmt(heal_skill, aux_skill)
-	var amt := Ceil(heal_skill + (aux_skill/2.0));
+	var amt := Ceil(heal_skill + (aux_skill / 2.0));
 	return amt;
 endfunction
 
 function WaitCura(who, segundos)
 	var seconds := segundos;
-	if(temHabilidade(who,"Procedimento Veloz"))
+	if (temHabilidade(who, "Procedimento Veloz"))
 		seconds := seconds - 3;
 	endif
 
 	var stopByDmg := 1;
-	if(temHabilidade(who,"Poder da Empatia"))
+	if (temHabilidade(who, "Poder da Empatia"))
 		stopByDmg := 0;
 	endif
 
-	if ( GetObjProperty(who, "#IsWaiting") > ReadGameClock() )
+	if (GetObjProperty(who, "#IsWaiting") > ReadGameClock())
 		return 0; // Já está esperando
 	else
 		EraseObjProperty(who, "#IsWaiting");
@@ -465,15 +472,12 @@ function WaitCura(who, segundos)
 	var x := who.x;
 	var y := who.y;
 	var hp := AP_GetVital(who, "Hits");
-	SetObjProperty(who, "#IsWaiting", ReadGameClock()+seconds+1);
+	SetObjProperty(who, "#IsWaiting", ReadGameClock() + seconds + 1);
 	while (seconds)
 		sleep(1);
-		if (x != who.x || y != who.y ||
-		    (stopByDmg && ((AP_GetVital(who, "Hits") < hp) || who.warmode ))||
-		    !CInt(GetObjProperty(who, "#IsWaiting")) ||
-		    GetEquipmentByLayer(who, 0x01) ||
-		    GetEquipmentByLayer(who, 0x02)
-		   )
+		if (x != who.x || y != who.y || (stopByDmg && ((AP_GetVital(who, "Hits") < hp) || who.warmode)) ||
+	  !CInt(GetObjProperty(who, "#IsWaiting")) || GetEquipmentByLayer(who, 0x01) ||
+	  GetEquipmentByLayer(who, 0x02))
 			EraseObjProperty(who, "#IsWaiting");
 			return 0;
 		endif

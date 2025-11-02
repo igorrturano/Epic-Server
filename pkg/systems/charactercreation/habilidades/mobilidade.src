@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -18,4 +18,4 @@ program manobra(attacker)
 		EraseObjProperty(attacker, "#mobilidade");
 	endif
 
-endprogram   
+endprogram

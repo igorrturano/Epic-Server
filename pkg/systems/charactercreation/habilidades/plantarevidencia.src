@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -38,9 +38,9 @@ program manobra(who)
 		MoveObjectToLocation(itm, 0, 0, 0, who.realm);
 		MoveItemToContainer(itm, targ.backpack);
 
-		SendSysMessageEx(who, "Voce guardou o item na mochila do alvo." , SSM_INFO);
+		SendSysMessageEx(who, "Voce guardou o item na mochila do alvo.", SSM_INFO);
 	else
-		SendSysMessageEx(who, "Voce falhou ao por item na mochila do alvo." , SSM_FAIL);
+		SendSysMessageEx(who, "Voce falhou ao por item na mochila do alvo.", SSM_FAIL);
 	endif
 
-endprogram  
+endprogram

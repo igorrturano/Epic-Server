@@ -32,11 +32,21 @@ const CPM_HOLDING	:= "Merchant - Holding";
  *
  */
 function CPM_DeleteContainers(npc)
+	if (!npc)
+		return 0;
+	endif
+	
 	var container_id := CP_GetMobileContainerID(npc);
+	if (!container_id || container_id.errortext)
+		return 0;
+	endif
+	
 	CP_RemoveStorageAreaContainer(container_id, CPM_FORSALE);
 	CP_RemoveStorageAreaContainer(container_id, CPM_BUYING);
 	CP_RemoveStorageAreaContainer(container_id, CPM_SHOPPINGCART);
 	CP_RemoveStorageAreaContainer(container_id, CPM_HOLDING);
+	
+	return 1;
 endfunction
 
 /*

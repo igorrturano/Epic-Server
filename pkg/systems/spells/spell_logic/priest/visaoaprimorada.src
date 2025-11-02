@@ -15,25 +15,25 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	if (!targ)
-        return;
-    endif
+		return;
+	endif
 
-    if (!targ.isa(POLCLASS_MOBILE))
-        SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
-        return;
-    endif
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
 
 	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, targ, SFX_BLESS);
 
 	SendSysMessageEx(targ, "Voce passa a enxergar melhor", SSM_INFO);
 
-	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
-    var duration := CInt(magiclore_skill * 5);
+	var magiclore_skill := AP_GetSkill(who, THEOLOGY);
+	var duration := CInt(magiclore_skill * 5);
 
 	targ.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def
 	if (GetObjProperty(targ, "chardata").raca != DROW)
-    	SetCooldown(targ, "nightvision", duration);
+		SetCooldown(targ, "nightvision", duration);
 	else
 		SetCooldown(targ, "lightvision", duration);
 	endif

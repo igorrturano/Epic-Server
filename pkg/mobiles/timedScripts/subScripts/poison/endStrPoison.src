@@ -5,8 +5,8 @@ include ":attributes:attributes";
 
 program cureScript(params)
 	var mobile := params[1];
-	
-	var points := CInt(GetObjProperty(mobile, "#StrPoisonMod"));	
+
+	var points := CInt(GetObjProperty(mobile, "#StrPoisonMod"));
 	points := points * (-1);
 	AP_ModifyStatMod(mobile, STRENGTH, points);
 	EraseObjProperty(mobile, "#StrPoisonMod");
