@@ -28,7 +28,7 @@ class AttackInfo(IAttackInfo)
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
-	var _parryItem := 0x0; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
+	var _parryEquip := 0x0; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
 	var _parryChancePenalty := 0;
 	var _parryChanceResult := 0; // Resultado da rolagem do dado de parry chance
@@ -108,8 +108,8 @@ class AttackInfo(IAttackInfo)
 		return this._hitChanceResult;
 	endfunction
 
-	function GetParryItem(this)
-		return this._parryItem;
+	function GetParryEquip(this)
+		return this._parryEquip;
 	endfunction
 
 	function GetParryChance(this)
@@ -209,12 +209,12 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetParryItem(this, parryItem)
-		if (!(parryItem is @ArmorWrapper) && !(parryItem is @WeaponWrapper))
+	function SetParryEquip(this, equip)
+		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
 			return error{ errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!" };
 		endif
-		
-		this._parryItem := parryItem;
+
+		this._parryEquip := equip;
 
 		return this;
 	endfunction
