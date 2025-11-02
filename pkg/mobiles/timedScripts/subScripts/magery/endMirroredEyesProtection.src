@@ -1,7 +1,10 @@
 use uo;
 use os;
+use util;
 
-program TimedScript_EndMirroredEyesProtection(mobile)
+program TimedScript_EndMirroredEyesProtection(params)
+	var mobile := params[1];
+	
 	// Remove the protection property
 	EraseObjProperty(mobile, "#mirroredEyesProtection");
 
