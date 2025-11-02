@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+program TimedScript_EndMirroredEyesProtection(mobile)
+	// Remove the protection property
+	EraseObjProperty(mobile, "#mirroredEyesProtection");
+
+	// Visual effect of protection fading
+	PlayObjectCenteredEffect(mobile, 0x37B9, 10, 10);
+	PlaySoundEffect(mobile, 0x207);
+
+	SendSysMessage(mobile, "A proteção de seus olhos espelhados se desvanece.");
+	PrintTextAbove(mobile, "*proteção expirada*");
+
+	return 1;
+endprogram
