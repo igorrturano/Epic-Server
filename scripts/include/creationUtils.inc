@@ -6,9 +6,143 @@ include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
-include ":message:include/model/Message";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
+
+/*Character Creation System - Atomic Approach
+========================================================
+All character creation choices are stored in temporary containers (chardata + creation_choices)
+and only applied to the player when the entire creation process completes successfully.
+*/
+
+/**
+ * Initializes character data struct with default values
+ * Should be called at the START of character creation
+ * @param who - Player character
+ * @return struct - Initialized chardata
+ */
+function InitializeCharacterData(who)
+    var chardata := struct{
+        "raca" := "",
+        "culture" := "",
+        "classe" := "",
+        "background" := "",
+        "trait" := "",
+        "caracteristicas_rp" := dictionary{},
+        "Skills" := dictionary{},
+        "str" := 40,
+        "dex" := 40,
+        "int" := 40,
+        "attribute_points" := 30,
+        "points" := 20,
+        "Primarias" := 0,
+        "sign" := "",
+        "birthdate" := struct{ "day" := 0, "month" := 0 },
+        "gameMode" := "",
+        "hair" := 0,
+        "beard" := 0,
+        "hair_color" := 0,
+        "beard_color" := 0,
+        "skin_color" := 0,
+        "bgBonus" := "",
+        "idade_escolhida" := 0,
+        "idade_aparente" := 0,
+        "idade_real" := 0
+    };
+    
+    SetObjProperty(who, "chardata", chardata);
+    return chardata;
+endfunction
+
+/**
+ * Initializes temporary container for all creation choices
+ * Stores items, appearance, stats, skills, and metadata separately
+ * @param who - Player character
+ * @return dictionary - Creation choices container
+ */
+function InitializeCreationChoices(who)
+    var choices := dictionary{
+        "items" := array{},
+        "appearance" := dictionary{},
+        "stats" := dictionary{},
+        "skills" := dictionary{},
+        "metadata" := dictionary{}
+    };
+    
+    SetObjProperty(who, "creation_choices", choices);
+    return choices;
+endfunction
+
+/**
+ * Adds a choice to the temporary container WITHOUT modifying the player
+ * This prevents orphaned items and properties
+ * @param who - Player character
+ * @param category - "items", "appearance", "stats", "skills", or "metadata"
+ * @param key - Item graphic or property name
+ * @param value - Item amount or property value
+ * @return integer - 1 if successful, 0 if failed
+ */
+function AddCreationChoice(who, category, key, value)
+    var choices := GetObjProperty(who, "creation_choices");
+    
+    if (!choices)
+        SendSysMessageEX(who, "Erro: Container de escolhas não inicializado", SSM_FAIL);
+        return 0;
+    endif
+    
+    case (category)
+        "items":
+            choices["items"].append(dictionary{ "graphic" := key, "amount" := value });
+        "appearance":
+            choices["appearance"][key] := value;
+        "stats":
+            choices["stats"][key] := value;
+        "skills":
+            choices["skills"][key] := value;
+        "metadata":
+            choices["metadata"][key] := value;
+        default:
+            SendSysMessageEX(who, "Erro: Categoria de escolha inválida: " + category, SSM_FAIL);
+            return 0;
+    endcase
+    
+    SetObjProperty(who, "creation_choices", choices);
+    return 1;
+endfunction
+
+/**
+ * Removes a choice from the temporary container
+ * Used when player changes their mind during creation
+ * @param who - Player character
+ * @param category - "items", "appearance", "stats", "skills", or "metadata"
+ * @param key - Item graphic or property name
+ * @return integer - 1 if successful, 0 if failed
+ */
+function RemoveCreationChoice(who, category, key)
+    var choices := GetObjProperty(who, "creation_choices");
+    
+    if (!choices)
+        return 0;
+    endif
+    
+    if (category == "items")
+        var index := 1;
+        foreach item in (choices["items"])
+            if (item["graphic"] == key)
+                choices["items"].Erase(index);
+                break;
+            endif
+            index++;
+        endforeach
+    elseif (category in choices)
+        if (key in choices[category])
+            choices[category].Erase(key);
+        endif
+    endif
+    
+    SetObjProperty(who, "creation_choices", choices);
+    return 1;
+endfunction
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -130,7 +264,211 @@ const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+
+/**
+ * ATOMIC FINALIZATION - Applies all character creation choices at once
+ * This ensures transactional safety: either ALL choices apply or NONE do
+ * Called ONLY at the end of character creation, after all gumps complete
+ * @param who - Player character
+ * @return integer - 1 if successful, 0 if failed
+ */
+function FinalizeCharacterCreation(who)
+    var choices := GetObjProperty(who, "creation_choices");
+    var chardata := GetObjProperty(who, "chardata");
+    
+    if (!choices || !chardata)
+        SendSysMessageEX(who, "Erro crítico: dados de criação inválidos", SSM_FAIL);
+        return 0;
+    endif
+    
+    // 1. Apply metadata first
+    if ("metadata" in choices)
+        foreach key in (choices["metadata"].keys())
+            chardata[key] := choices["metadata"][key];
+        endforeach
+    endif
+    
+    // 2. Apply stats from choices
+    if ("stats" in choices)
+        if ("str" in choices["stats"])
+            chardata.str := choices["stats"]["str"];
+        endif
+        if ("dex" in choices["stats"])
+            chardata.dex := choices["stats"]["dex"];
+        endif
+        if ("int" in choices["stats"])
+            chardata.int := choices["stats"]["int"];
+        endif
+    endif
+    
+    // 3. Apply attribute bonuses (race + trait)
+    ApplyAttributeBonusAtomically(who, chardata);
+    
+    // 4. Apply appearance (NO INTERMEDIATE DELETIONS - all at once)
+    if ("appearance" in choices && choices["appearance"].size() > 0)
+        ApplyAppearanceAtomically(who, choices["appearance"]);
+    endif
+    
+    // 5. Apply skills (with validation)
+    if ("skills" in choices)
+        foreach skill in (choices["skills"].keys())
+            var skill_value := choices["skills"][skill];
+            if (skill_value >= 0 && skill_value <= 100)
+                var skill_id := GetSkillIdFromName(skill);
+                if (skill_id != error && skill_id > 0)
+                    AP_SetTrueSkill(who, skill_id, skill_value);
+                    sleepms(10);
+                endif
+            endif
+        endforeach
+    endif
+    
+    // 6. Apply items (ONE BATCH - no deletions)
+    if ("items" in choices && choices["items"].size() > 0)
+        ApplyItemsAtomically(who, choices["items"]);
+    endif
+    
+    // 7. Apply alchemy items (special handling with properties)
+    var alchemy_skill := 0;
+    if ("skills" in choices && "Alchemy" in choices["skills"])
+        alchemy_skill := CInt(choices["skills"]["Alchemy"]);
+    endif
+    if (alchemy_skill >= 1)
+        ApplyAlchemyItemsAtomically(who, alchemy_skill);
+    endif
+    
+    // 8. Save finalized chardata
+    SetObjProperty(who, "chardata", chardata);
+    
+    // 9. Cleanup temporary storage
+    EraseObjProperty(who, "creation_choices");
+    
+    SendSysMessageEX(who, "Personagem criado com sucesso! Bem-vindo ao servidor!", SSM_INFO);
+    return 1;
+endfunction
+
+/**
+ * Applies appearance choices atomically (no intermediate deletions)
+ * @param who - Player character
+ * @param appearance - Dictionary with hair, beard, hair_color, beard_color, skin_color
+ */
+function ApplyAppearanceAtomically(who, byref appearance)
+    // 1. REMOVE old equipment FIRST
+    var old_hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    var old_beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    
+    if (old_hair)
+        DestroyItem(old_hair);
+        sleepms(10);
+    endif
+    if (old_beard)
+        DestroyItem(old_beard);
+        sleepms(10);
+    endif
+    
+    // 2. NOW create NEW equipment
+    if ("hair" in appearance && appearance["hair"] != 0)
+        var new_hair := CreateItemAtLocation(who.x, who.y, who.z, appearance["hair"], 1, who.realm);
+        if (new_hair)
+            if ("hair_color" in appearance)
+                new_hair.color := appearance["hair_color"];
+            endif
+            EquipItem(who, new_hair);
+            sleepms(20);
+        endif
+    endif
+    
+    if ("beard" in appearance && appearance["beard"] != 0)
+        var new_beard := CreateItemAtLocation(who.x, who.y, who.z, appearance["beard"], 1, who.realm);
+        if (new_beard)
+            if ("beard_color" in appearance)
+                new_beard.color := appearance["beard_color"];
+            endif
+            EquipItem(who, new_beard);
+            sleepms(20);
+        endif
+    endif
+    
+    // 3. Apply skin color
+    var skin := 0;
+    if ("skin_color" in appearance)
+        skin := appearance["skin_color"];
+    endif
+    if (skin > 0)
+        who.color := skin;
+        who.truecolor := skin;
+    endif
+endfunction
+
+/**
+ * Applies all items in a single batch operation
+ * No intermediate deletions or modifications
+ * @param who - Player character
+ * @param items - Array of item dictionaries with "graphic" and "amount" keys
+ */
+function ApplyItemsAtomically(who, byref items)
+    foreach item_choice in items
+        var item := CreateItemInBackpack(who, item_choice["graphic"], item_choice["amount"]);
+        if (!item)
+            SendSysMessageEX(who, "Aviso: Falha ao criar item " + CStr(item_choice["graphic"]), SSM_FAIL);
+        endif
+        sleepms(5);
+    endforeach
+endfunction
+
+/**
+ * Applies attribute bonuses with race and trait calculations
+ * Uses normalized race constants for consistency
+ * @param who - Player character
+ * @param chardata - Character data struct
+ */
+function ApplyAttributeBonusAtomically(who, byref chardata)
+    var final_str := chardata.str;
+    var final_dex := chardata.dex;
+    var final_int := chardata.int;
+    
+    // Apply race bonuses (chardata.raca should be an enum constant from epicConstants)
+    case (chardata.raca)
+        ANAO:
+            final_str += 10;
+        ELFO:
+            final_int += 10;
+        DROW:
+            final_dex += 5;
+            final_int += 5;
+        ORC:
+            final_str += 5;
+            final_int += 5;
+        POLSKI:
+            final_dex += 10;
+    endcase
+    
+    // Apply trait bonuses
+    case (chardata.trait)
+        "Corpulento":
+            final_str += 10;
+            final_dex -= 5;
+            final_int -= 5;
+        "Genio":
+            final_int += 10;
+            final_str -= 5;
+            final_dex -= 5;
+        "Agil":
+            final_dex += 10;
+            final_str -= 5;
+            final_int -= 5;
+        "Robusto":
+            final_str += 15;
+            final_int -= 5;
+            final_dex -= 5;
+    endcase
+    
+    // Set attributes
+    AP_SetTrueStat(who, STRENGTH, final_str);
+    AP_SetTrueStat(who, DEXTERITY, final_dex);
+    AP_SetTrueStat(who, INTELLIGENCE, final_int);
+endfunction
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -449,8 +787,8 @@ function ClassGump(who, culture_pic)
 		"Caminho do Subterfúgio",
 		"Caminho da Sabedoria"
     };
-    foreach classe in (all_classes)
-        GFHTMLArea(gump, x, y+65, 192, 24, "<BASEFONT color=#000000>{}".format(classe), 1, 0);
+    foreach class in (all_classes)
+        GFHTMLArea(gump, x, y+65, 192, 24, "<BASEFONT color=#000000>{}".format(class), 1, 0);
         GFRadioButton(gump, x+201, y+65, 0x9C4E, 0x9C4F, 0, 200+i);
 
         sleepms(2);
@@ -596,7 +934,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     chardata.+Primarias;
     var race := chardata.raca;
     var color := "#FFD700";
-    var classe := chardata.classe;
+    var class := chardata.classe;
     var bg := chardata.background;
     var trait := chardata.trait;
     var skills := chardata.Skills;
@@ -612,10 +950,10 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFGumpPic(gump, 298, 100, culture_pic);
     endif
 
-    if (classe)
+    if (class)
         GFHTMLArea(gump, x+81, y+29, 192, 40, "<BASEFONT Size=55 Color=#999999 > Classe", 0, 0); //shadow
         GFHTMLArea(gump, x+80, y+30, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Classe", 0, 0);
-        GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, classe), 1, 0);
+        GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, class), 1, 0);
     endif
 
     if (bg)
@@ -694,7 +1032,6 @@ function skillGump(who, culture_pic, byref chardata)
             continue;
         endif
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#0000CC >{}".format(StrReplace(skill, "_", " ")), 1, 0);
-        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 100+btn_value);
         endif
@@ -713,7 +1050,6 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
-        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
         endif
@@ -724,39 +1060,15 @@ function skillGump(who, culture_pic, byref chardata)
         y += 26;
         i++;
     endforeach
-    // Cavar buraco
-    if (chardata.trait == "Cavar Buracos")
-        var gathering := GATHERING;
-
-        btn_value := GetSkillIdFromName(gathering);
-        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(gathering, "_", " ")), 1, 0);
-        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(gathering));
-        if (chardata.Skills[gathering] >= 1)
-            GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
-        endif
-        if ((chardata.points - value >= 0) && (chardata.Skills[gathering] < 3) && ((chardata.Primarias < pri_allowed) || (chardata.Skills[gathering] < 2 && chardata.points - value >= 0))) 
-            GFAddButton(gump, x+158, y-2, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 230+btn_value);
-        endif
-        sleepms(2);
-        y += 26;
-        i++;
-
-        y+=10;
-        value := 3;
-    endif
-    // End Cavar Buraco
+    y+=10;
+    value := 3;
     foreach skill in terciarias
         if (skill == chardata.bgBonus)
             continue;
         endif
 
-        if (chardata.trait == "Cavar Buracos" && skill == GATHERING)
-            continue;
-        endif
-
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#FFE700 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
-        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 300+btn_value);
         endif
@@ -776,7 +1088,6 @@ function skillGump(who, culture_pic, byref chardata)
 
         btn_value := GetSkillIdFromName(skill);
         GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#CC0000 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
-        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 400+btn_value);
         endif
@@ -834,9 +1145,9 @@ function culturalTraitBonus(who, byref chardata)
         return chardata.+bgBonus := AWARENESS;
     elseif (culturalBg == "Pés Leves")
         return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Cavalaria Nórdica")
+    elseif (culturalBg == "Aliança natural")
         return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Precisão Élfica")
+    elseif (culturalBg == "Escaramuçador")
         return chardata.+bgBonus := RANGED;
     elseif (culturalBg == "Brutamontes")
         return chardata.+bgBonus := TWOHANDED;
@@ -961,355 +1272,443 @@ endfunction
 
 function itemInheritance(who)
     var chardata := GetObjProperty(who, "chardata");
+    var choices := GetObjProperty(who, "creation_choices");
+    
+    if (!choices)
+        choices := InitializeCreationChoices(who);
+    endif
 
-    genericItems(who);
-    armorsByCulture(who);
-    weaponsByClassAndCulture(who);
-    workingItems(who);
+    // Store all items in creation_choices for atomic application
+    var generic_items := GetGenericItems(chardata);
+    foreach item in generic_items
+        choices["items"].append(dictionary{ "graphic" := item["graphic"], "amount" := item["amount"] });
+    endforeach
+    
+    var culture_armor := GetArmorsByCulture(chardata);
+    foreach item in culture_armor
+        choices["items"].append(dictionary{ "graphic" := item["graphic"], "amount" := item["amount"] });
+    endforeach
+    
+    var class_weapons := GetWeaponsByClassAndCulture(chardata);
+    foreach item in class_weapons
+        choices["items"].append(dictionary{ "graphic" := item["graphic"], "amount" := item["amount"] });
+    endforeach
+    
+    var working := GetWorkingItems(chardata);
+    foreach item in working
+        choices["items"].append(dictionary{ "graphic" := item["graphic"], "amount" := item["amount"] });
+    endforeach
+    
+    SetObjProperty(who, "creation_choices", choices);
 endfunction
 
-function genericItems(who)
-    var chardata := GetObjProperty(who, "chardata");
-    var skills := chardata.Skills;
-    
-    var robe := CreateItemInicial(who, 0x1F03, 1); // Roupa
-    EquipItem(who, robe);
+function GetGenericItems(chardata)
+    var items := array;
     var moedas := "1d4";
     if (chardata.classe == GUERREIRO)
         moedas := "1d8";
     elseif (chardata.classe == LADINO)
         moedas := "1d12";
     endif
-	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
-    if (chardata.culture == BADURAN)
-        CreateItemInicial(who, "boots", 1); 
-    else
-        CreateItemInicial(who, 0x170D, 1); // Sandals
-    endif
-    CreateItemInicial(who, 0x152e, 1); // short pants
-    CreateItemInicial(who, 0x1517, 1); // shirt
-    CreateItemInBackpack(who, 3940, 1); // torch
-    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
-    SetObjProperty(oleo, "descmod", "Óleo de polir armaduras" + "<br>");
+    
+    items.append(dictionary{ "graphic" := 0x1F03, "amount" := 1 });  // Roupa
+    items.append(dictionary{ "graphic" := 0xba63, "amount" := RandomDiceRoll(moedas) });  // Moedas
+    items.append(dictionary{ "graphic" := 0x170D, "amount" := 1 });  // Sandals
+    items.append(dictionary{ "graphic" := 0x152e, "amount" := 1 });  // Short pants
+    items.append(dictionary{ "graphic" := 0x1517, "amount" := 1 });  // Shirt
+    items.append(dictionary{ "graphic" := 3940, "amount" := 1 });    // Torch
+    return items;
 endfunction
 
-function weaponsByClassAndCulture(who)
-    var chardata := GetObjProperty(who, "chardata");
+function GetArmorsByCulture(chardata)
+    return GetArmorsByCultureImpl(chardata);
+endfunction
+
+function GetWeaponsByClassAndCulture(chardata)
+    return GetWeaponsByClassAndCultureImpl(chardata);
+endfunction
+
+function GetWorkingItems(chardata)
+    return GetWorkingItemsImpl(chardata);
+endfunction
+
+function GetWeaponsByClassAndCultureImpl(chardata)
+    var items := array;
     var skills := chardata.Skills;
 
     if (chardata.culture == GULTHRAK)
-        CreateItemInicial(who, 0xF9FC, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0xF9FC, "amount" := 1 });  // Adaga
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x26C6, 1); // scepter
+            items.append(dictionary{ "graphic" := 0x26C6, "amount" := 1 });  // Scepter
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B78, 1); // shield
+            items.append(dictionary{ "graphic" := 0x1B78, "amount" := 1 });  // Shield
         endif
         if (skills[TWOHANDED] >= 1)
-            if( chardata.magia == "Shaman")
-                CreateItemInicial(who, 0x26C4, 1); // scythe
-            else
-                CreateItemInicial(who, 0x0F4E, 1); // bardiche
-            endif
+            items.append(dictionary{ "graphic" := 0x0F4E, "amount" := 1 });  // Bardiche
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0x8fd, 1);
+            items.append(dictionary{ "graphic" := 0x8fd, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == AIGLANA)
-        CreateItemInicial(who, 0xF99F, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0xF99F, "amount" := 1 });  // Adaga
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x0f63, 1); // Hasta
+            items.append(dictionary{ "graphic" := 0x0f63, "amount" := 1 });  // Hasta
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0xD1A1, 1); // Caetra
+            items.append(dictionary{ "graphic" := 0xD1A1, "amount" := 1 });  // Caetra
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0xF9E2, 1); // two handed sword aigla
-        endif
-        if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0xF9CA, 1);
+            items.append(dictionary{ "graphic" := 0x1402, "amount" := 1 });  // Short spear
         endif
     endif
-
+    
     if (chardata.culture == HAROLOTH)
-        CreateItemInicial(who, 0x0f51, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0x0f51, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x1401, 1); //kryss
+            items.append(dictionary{ "graphic" := 0x1401, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B73, 1); // buckler
+            items.append(dictionary{ "graphic" := 0x1B73, "amount" := 1 });
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x26CB, 1); //crescent
+            items.append(dictionary{ "graphic" := 0x26CB, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0xFA4D, 1);
+            items.append(dictionary{ "graphic" := 0xFA4D, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == POLKINEA)
-        CreateItemInicial(who, 0xF998, 1); // Adaga
-
-    
+        items.append(dictionary{ "graphic" := 0xF998, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x1440, 1); //cutlass
+            items.append(dictionary{ "graphic" := 0x1440, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B73, 1); // buckler
+            items.append(dictionary{ "graphic" := 0x1B73, "amount" := 1 });
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x0e87, 1); //crescent
+            items.append(dictionary{ "graphic" := 0x0e87, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0xFA4E, 1);
+            items.append(dictionary{ "graphic" := 0xFA4E, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == BJORSKA)
-        CreateItemInicial(who, 0xF99B, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0xF99B, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x13AF, 1); // waraxe
+            items.append(dictionary{ "graphic" := 0x13AF, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B7A, 1); // wooden shield
+            items.append(dictionary{ "graphic" := 0x1B7A, "amount" := 1 });
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x0f49, 1); // axe
+            items.append(dictionary{ "graphic" := 0x0f49, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0xF9F4, 1);
+            items.append(dictionary{ "graphic" := 0xF9F4, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == LESTE)
-        CreateItemInicial(who, 0xF99A, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0xF99A, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x27EF, 1); // wakizashi
+            items.append(dictionary{ "graphic" := 0x27EF, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B72, 1); // round shield
+            items.append(dictionary{ "graphic" := 0x1B72, "amount" := 1 });
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x27A2, 1); // Katana
+            items.append(dictionary{ "graphic" := 0x27A2, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0x27af, 1);
+            items.append(dictionary{ "graphic" := 0x27af, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == BADURAN)
-        CreateItemInicial(who, 0xF999, 1); // Adaga
-    
+        items.append(dictionary{ "graphic" := 0xF999, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x143c, 1); // HAMMERPICK
+            items.append(dictionary{ "graphic" := 0x143c, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0xFA5E, 1); // escudo baduran
+            items.append(dictionary{ "graphic" := 0x1B74, "amount" := 1 });
         endif
-        if (skills[TWOHANDED ] >= 1)
-            CreateItemInicial(who, 0x1438, 1); // warhammer
+        if (skills[TWOHANDED] >= 1)
+            items.append(dictionary{ "graphic" := 0x1438, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0x8fd, 1);
+            items.append(dictionary{ "graphic" := 0x8fd, "amount" := 1 });
         endif
     endif
 
     if (chardata.culture == ALURIEL)
-        CreateItemInicial(who, 0xF99D, 1); // Adaga
-
+        items.append(dictionary{ "graphic" := 0xF99D, "amount" := 1 });
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x0f5f, 1); // rapiera
+            items.append(dictionary{ "graphic" := 0x0f5f, "amount" := 1 });
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B73, 1); // buckler
+            items.append(dictionary{ "graphic" := 0x1B73, "amount" := 1 });
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x26CB, 1); // crescent
+            items.append(dictionary{ "graphic" := 0x26CB, "amount" := 1 });
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInicial(who, 0xF9A0, 1);
+            items.append(dictionary{ "graphic" := 0xF9A0, "amount" := 1 });
         endif
     endif
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        CreateItemInBackpack(who, 0x13B2, 1); // bow
-        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-
-        CreateItemInicial(who, 0x2fb7, 1); // aljava
+        items.append(dictionary{ "graphic" := 0x13B2, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0xf3f, "amount" := ammo_amount });
+        items.append(dictionary{ "graphic" := 0x2fb7, "amount" := 1 });
     endif
+    
+    return items;
 endfunction
 
+// Legacy functions for backward compatibility
+function genericItems(who)
+    return;  // Now handled by GetGenericItems and atomic application
+endfunction
+
+// Legacy function - now uses GetArmorsByCulture for atomic application
 function armorsByCulture(who)
-    var chardata := GetObjProperty(who, "chardata");
+    return;
+endfunction
+
+function GetArmorsByCultureImpl(chardata)
+    var items := array;
 
     if (chardata.culture == GULTHRAK)
-        CreateItemInicial(who, 0x144e, 1); // Armadura de ossos
-        CreateItemInicial(who, 0x144f, 1); // Armadura de ossos
-        CreateItemInicial(who, 0x1450, 1); // Armadura de ossos
-        CreateItemInicial(who, 0x1451, 1); // Armadura de ossos
-        CreateItemInicial(who, 0x1452, 1); // Armadura de ossos
+        items.append(dictionary{ "graphic" := 0x144e, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x144f, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1450, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1451, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1452, "amount" := 1 });
     endif
 
     if (chardata.culture == BADURAN)
-        CreateItemInicial(who, 0xF98E, 1); // Armadura de aneis
-        CreateItemInicial(who, 0xF987, 1); // Armadura de aneis
-        CreateItemInicial(who, 0xF98C, 1); // Armadura de aneis
-        CreateItemInicial(who, 0xF98A, 1); // Armadura de aneis
-        CreateItemInicial(who, 0xF989, 1); // Armadura de aneis
+        items.append(dictionary{ "graphic" := 0x13ec, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13ee, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13f0, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13f2, "amount" := 1 });
     endif
 
     if (chardata.culture == AIGLANA)
-        CreateItemInicial(who, 0xc684, 1); // Lorica Squamata
-        CreateItemInicial(who, 0xc680, 1); // Lorica Squamata
-        CreateItemInicial(who, 0xc681, 1); // Lorica Squamata
-        CreateItemInicial(who, 0xc683, 1); // Lorica Squamata
-        CreateItemInicial(who, 0xc682, 1); // Lorica Squamata
+        items.append(dictionary{ "graphic" := 0xc684, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0xc680, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0xc681, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0xc683, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0xc682, "amount" := 1 });
     endif
 
     if (chardata.culture == HAROLOTH)
-        CreateItemInicial(who, 0x13D6, 1); // Studded Leather
-        CreateItemInicial(who, 0x13D5, 1); // Studded Leather
-        CreateItemInicial(who, 0x13D4, 1); // Studded Leather
-        CreateItemInicial(who, 0x13DA, 1); // Studded Leather
-        CreateItemInicial(who, 0x13DB, 1); // Studded Leather
+        items.append(dictionary{ "graphic" := 0x13D6, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13D5, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13D4, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13DA, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13DB, "amount" := 1 });
     endif
 
     if (chardata.culture == POLKINEA)
-        CreateItemInicial(who, 0x13C7, 1); // Armadura de couro simples
-        CreateItemInicial(who, 0x13CD, 1); // Armadura de couro simples
-        CreateItemInicial(who, 0x1DB9, 1); // Armadura de couro simples
-        CreateItemInicial(who, 0x13CB, 1); // Armadura de couro simples
-        CreateItemInicial(who, 0x13CC, 1); // Armadura de couro simples
+        items.append(dictionary{ "graphic" := 0x13C7, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13CD, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1DB9, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13CB, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13CC, "amount" := 1 });
     endif
 
     if (chardata.culture == ALURIEL)
-        CreateItemInicial(who, 0x13D6, 1); // Studded Leather
-        CreateItemInicial(who, 0x13D5, 1); // Studded Leather
-        CreateItemInicial(who, 0x13D4, 1); // Studded Leather
-        CreateItemInicial(who, 0x13DA, 1); // Studded Leather
-        CreateItemInicial(who, 0x13DB, 1); // Studded Leather
+        items.append(dictionary{ "graphic" := 0x13D6, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13D5, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13D4, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13DA, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13DB, "amount" := 1 });
     endif
 
     if (chardata.culture == BJORSKA)
-        CreateItemInicial(who, 0x13BB, 1); // Cota de malhas
-        CreateItemInicial(who, 0x13BE, 1); // Cota de malhas
-        CreateItemInicial(who, 0x13BF, 1); // Cota de malhas
+        items.append(dictionary{ "graphic" := 0x13BB, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13BE, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x13BF, "amount" := 1 });
     endif
 
     if (chardata.culture == LESTE)
-        CreateItemInicial(who, 0x27c6, 1); // Armadura de fibra
-        CreateItemInicial(who, 0x2786, 1); // Armadura de fibra
-        CreateItemInicial(who, 0x27c9, 1); // Armadura de fibra
-        CreateItemInicial(who, 0x277a, 1); // Armadura de fibra
+        items.append(dictionary{ "graphic" := 0x27c6, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x2786, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x27c9, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x277a, "amount" := 1 });
     endif
+    
+    return items;
 endfunction
 
 function workingItems(who)
-    var chardata := GetObjProperty(who, "chardata");
+    return;  // Legacy - now uses GetWorkingItems
+endfunction
+
+function GetWorkingItemsImpl(chardata)
+    var items := array;
     var skills := chardata.Skills;
 
     if (skills[WOODWORKING] >= 1)
-        CreateItemInicial(who, 0x1035, 1); // saw
-        CreateItemInicial(who, 0x1022, 1);
+        items.append(dictionary{ "graphic" := 0x1035, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1022, "amount" := 1 });
     endif
     if (skills[METALWORKING] >= 1)
-        CreateItemInicial(who, 0x13E3, 1); // smithhammer
-        CreateItemInicial(who, 0x5107, 1); // smelting pot
+        items.append(dictionary{ "graphic" := 0x13E3, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x5107, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x1ebc, "amount" := 1 });
     endif
     if (skills[GATHERING] >= 1)
-        CreateItemInicial(who, 0x0f43, 1); // hatchet
-        CreateItemInicial(who, 0x0e85, 1); // pickaxe
+        items.append(dictionary{ "graphic" := 0x0f43, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x0e85, "amount" := 1 });
     endif
     if (skills[SURVIVAL] >= 1)
-        CreateItemInicial(who, 0x13f6, 1); // butcher knife
-        CreateItemInicial(who, 0x0ec4, 1); // skinning knife
+        items.append(dictionary{ "graphic" := 0x13f6, "amount" := 1 });
+        items.append(dictionary{ "graphic" := 0x0ec4, "amount" := 1 });
     endif
-
     if (skills[MEDICINE] >= 1)
-        CreateItemInBackpack(who, 0xe21, (skills[MEDICINE] * 40)); // Bandages
+        items.append(dictionary{ "graphic" := 0xe21, "amount" := (skills[MEDICINE] * 40) });
     endif
-
     if (skills[MECHANICS] >= 1)
-        CreateItemInicial(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
+        items.append(dictionary{ "graphic" := 0x14FB, "amount" := (skills[MECHANICS] * 8) });
     endif
-
-    if (skills[DOMESTIC_WORK] >= 1)
-        CreateItemInicial(who, 0x0f9d, 1); // sewingkit
+    if (skills[Domestic_Work] >= 1)
+        items.append(dictionary{ "graphic" := 0x0f9d, "amount" := 1 });
     endif
-
-    if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
-        CreateItemInicial(who, 0xf9e, 1); // Scissors
+    if (skills[Domestic_Work] >= 1 || skills[MEDICINE] >= 1)
+        items.append(dictionary{ "graphic" := 0xf9e, "amount" := 1 });
     endif
     
+    // Alchemy items (kit + books + recipes handled separately due to property requirements)
     if (skills[ALCHEMY] >= 1)
-        CreateItemInBackpack(who, 0x0e9b, 1); // mortar
-        CreateItemInBackpack(who, 0x1832, 1); // balao
-        CreateItemInBackpack(who, 0x1830, 1); // beker
-        CreateItemInBackpack(who, 0x1849, 1); // aparato
-        CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
-        var book1 := CreateItemInBackpack(who, "alchemybook");
-            book1.newbie := 1;
-		    setobjproperty(book1, "serialid", who.serial);
-		    setobjproperty(book1, "marked",who.name + " - " + who.acctname);
-        var dyebook := CreateItemInBackpack(who, "dyebook");
-            setobjproperty(dyebook, "serialid", who.serial);
-		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
-        var recipe := struct;
-        var chosenRecipes := AlchChoices(who);
-        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.+recipe := chosenRecipes[1];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[2];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[3];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[4];
-        SetObjProperty(r1, "recipe", recipe);
-        var i := 0;
-        while(i != (skills[ALCHEMY])*2)
-            var tinta := randomint(1);
-            if(tinta == 0)
-                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
-            else
-                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
-            endif
-            i := ++i;
-        endwhile
-
-        if (skills[ALCHEMY] >= 2)
-		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[5];
-            SetObjProperty(r1, "recipe", recipe);
-            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[6];
-            SetObjProperty(r1, "recipe", recipe);
-            
-	        if (skills[ALCHEMY] == 3)
-		        var book2:= CreateItemInBackpack(who, "alchemybook");
-        		setobjproperty(book2, "serialid",who.serial);
-		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[7];
-                SetObjProperty(r1, "recipe", recipe);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[8];
-                SetObjProperty(r1, "recipe", recipe);
-            endif
+        items.append(dictionary{ "graphic" := 0x0e9b, "amount" := 1 }); // mortar
+        items.append(dictionary{ "graphic" := 0x1832, "amount" := 1 }); // balão
+        items.append(dictionary{ "graphic" := 0x1830, "amount" := 1 }); // beaker
+        items.append(dictionary{ "graphic" := 0x1849, "amount" := 1 }); // apparatus
+        items.append(dictionary{ "graphic" := 0x0F0E, "amount" := (skills[ALCHEMY] * 5) }); // frascos
+        items.append(dictionary{ "graphic" := "alchemybook", "amount" := 1, "newbie" := 1 }); // alchemy book (special)
+        items.append(dictionary{ "graphic" := "dyebook", "amount" := 1 }); // dye book (special)
+        
+        // Add recipe items (marked as special for batch creation with properties)
+        if (skills[ALCHEMY] >= 1)
+            items.append(dictionary{ "graphic" := "alchemyrecipe1", "amount" := 4, "special" := "recipe" }); // 4 base recipes
+            items.append(dictionary{ "graphic" := "tintasrecipe", "amount" := (skills[ALCHEMY] * 2), "special" := "dye_recipe" }); // dye recipes
         endif
-	endif
+        
+        if (skills[ALCHEMY] >= 2)
+            items.append(dictionary{ "graphic" := "alchemyrecipe1", "amount" := 2, "special" := "recipe_lvl2" }); // 2 more recipes at level 2
+        endif
+        
+        if (skills[ALCHEMY] >= 3)
+            items.append(dictionary{ "graphic" := "alchemybook", "amount" := 1 }); // second alchemy book
+            items.append(dictionary{ "graphic" := "alchemyrecipe1", "amount" := 2, "special" := "recipe_lvl3" }); // 2 more recipes at level 3
+        endif
+    endif
+    
+    return items;
 endfunction
 
+/**
+ * Handles special alchemy item creation with properties
+ * Alchemy items require SetObjProperty calls after creation
+ * @param who - Player character
+ * @param alchemy_level - Alchemy skill level (1-3)
+ */
+function ApplyAlchemyItemsAtomically(who, alchemy_level)
+    if (alchemy_level < 1)
+        return;
+    endif
+    
+    // Create alchemy books with newbie flag and ownership
+    var book1 := CreateItemInBackpack(who, "alchemybook", 1);
+    if (book1)
+        book1.newbie := 1;
+        SetObjProperty(book1, "serialid", who.serial);
+        SetObjProperty(book1, "marked", who.name + " - " + who.acctname);
+        sleepms(10);
+    endif
+    
+    // Create dye book with ownership
+    var dyebook := CreateItemInBackpack(who, "dyebook", 1);
+    if (dyebook)
+        SetObjProperty(dyebook, "serialid", who.serial);
+        SetObjProperty(dyebook, "marked", who.name + " - " + who.acctname);
+        sleepms(10);
+    endif
+    
+    // Create base recipes (4 recipes)
+    var recipe := struct;
+    var chosenRecipes := AlchChoices(who);
+    
+    var i;
+    for (i := 1; i <= 4; i := i + 1)
+        var r1 := CreateItemInBackpack(who, "alchemyrecipe1", 1);
+        if (r1 && i <= chosenRecipes.size())
+            recipe.+recipe := chosenRecipes[i];
+            SetObjProperty(r1, "recipe", recipe);
+            sleepms(5);
+        endif
+    endfor
+    
+    // Create dye recipes (random distribution based on skill level)
+    i := 0;
+    while (i < (alchemy_level * 2))
+        var tinta := RandomInt(2);
+        var recipe_type := (tinta == 0) ? "tintasrecipe1" : "tintasrecipe2";
+        var t1 := CreateItemInBackpack(who, recipe_type, 1);
+        if (t1)
+            sleepms(5);
+        endif
+        i := i + 1;
+    endwhile
+    
+    // Create additional recipes for level 2+
+    if (alchemy_level >= 2)
+        for (i := 5; i <= 6; i := i + 1)
+            if (i <= chosenRecipes.size())
+                var r1 := CreateItemInBackpack(who, "alchemyrecipe1", 1);
+                if (r1)
+                    recipe.recipe := chosenRecipes[i];
+                    SetObjProperty(r1, "recipe", recipe);
+                    sleepms(5);
+                endif
+            endif
+        endfor
+    endif
+    
+    // Create second alchemy book and final recipes for level 3
+    if (alchemy_level >= 3)
+        var book2 := CreateItemInBackpack(who, "alchemybook", 1);
+        if (book2)
+            SetObjProperty(book2, "serialid", who.serial);
+            SetObjProperty(book2, "marked", who.name + " - " + who.acctname);
+            sleepms(10);
+        endif
+        
+        for (i := 7; i <= 8; i := i + 1)
+            if (i <= chosenRecipes.size())
+                var r1 := CreateItemInBackpack(who, "alchemyrecipe1", 1);
+                if (r1)
+                    recipe.recipe := chosenRecipes[i];
+                    SetObjProperty(r1, "recipe", recipe);
+                    sleepms(5);
+                endif
+            endif
+        endfor
+    endif
+endfunction
+
+/**
+ * @deprecated Use ApplyAttributeBonusAtomically instead
+ * This function still exists for backward compatibility during the transition
+ * but should not be used for new character creation flows
+ */
 function attributeBonusByRaceAndTraits(who)
     var chardata := GetObjProperty(who, "chardata");
     
@@ -1424,28 +1823,31 @@ function looksGump(who, chardata)
 
     SkinGump(who, disfarce, chardata.raca, 1);
 
+    // Preview on character (temporary, will be applied atomically at end)
     who.color := disfarce.corpele;
     who.truecolor := disfarce.corpele;
 
-    var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
-    var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
-
-    newbarba.color := 1109;
-
-    newbarba.color := disfarce.corcabelo;
-    if (mybarba)
-        DestroyItem(mybarba);
+    // Store appearance in creation_choices for atomic application
+    var choices := GetObjProperty(who, "creation_choices");
+    if (!choices)
+        choices := InitializeCreationChoices(who);
     endif
-    var result := EquipItem(who, newbarba);
-
-    var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
-    var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
-
-    newhair.color := 1109;
-
-    newhair.color := disfarce.corcabelo;
-    var result2 := DestroyItem(myhair);
-    result := EquipItem(who, newhair);
+    
+    if (disfarce.cabelo != "")
+        AddCreationChoice(who, "appearance", "hair", disfarce.cabelo);
+    endif
+    if (disfarce.barba != "")
+        AddCreationChoice(who, "appearance", "beard", disfarce.barba);
+    endif
+    if (disfarce.corcabelo != -1)
+        AddCreationChoice(who, "appearance", "hair_color", disfarce.corcabelo);
+    endif
+    if (disfarce.corbarba != -1)
+        AddCreationChoice(who, "appearance", "beard_color", disfarce.corbarba);
+    endif
+    if (disfarce.corpele != -1)
+        AddCreationChoice(who, "appearance", "skin_color", disfarce.corpele);
+    endif
 
 	if (YesNo(who, "Deseja manter esta aparência?" , "Sim.", "Não."))
 		return 1;
@@ -1497,30 +1899,6 @@ function gameModeDescriptionByPictureId(gameModeId)
     endcase
 endfunction
 
-function getWisdomPathsByCulture(who)
-    var wisdomPaths := array{"Mago", "Alquimista"};
-    var chardata := GetObjProperty(who, "chardata");
-    var culture := chardata.culture;
-    if (culture == GULTHRAK)
-        wisdomPaths.append("Xamã");
-    elseif (culture == BADURAN)
-        wisdomPaths.append("Martelo Divino");
-        wisdomPaths.append("Engenheiro");
-    elseif (culture == AIGLANA)
-        wisdomPaths.append("Augur");
-    elseif (culture == HAROLOTH && who.graphic == 1831)
-        wisdomPaths.append("Clériga de Idrith");
-    elseif (culture == BJORSKA || culture == LESTE)
-        wisdomPaths.append("Clérigo");
-    endif
-    
-    if (culture != HAROLOTH && culture != GULTHRAK)
-        wisdomPaths.append("Druida");
-    endif
-    
-    return wisdomPaths;
-endfunction
-
 function pathOfWisdomGump(who, culture_pic)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
@@ -1534,7 +1912,19 @@ function pathOfWisdomGump(who, culture_pic)
     GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
     GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
 
-    var wisdomPaths := getWisdomPathsByCulture(who);
+    var wisdomPaths := array{"Mago", "Alquimista"};
+    var chardata := GetObjProperty(who, "chardata");
+    var culture := chardata.culture;
+    if (culture == GULTHRAK)
+        wisdomPaths.append("Xamã");
+    elseif (culture == BADURAN)
+        wisdomPaths.append("Martelo Divino");
+        wisdomPaths.append("Engenheiro");
+    elseif (culture == AIGLANA)
+        wisdomPaths.append("Augur");
+    elseif (culture == HAROLOTH && who.graphic == 1831)
+        wisdomPaths.append("Clériga de Idrith");
+    endif
     foreach path in wisdomPaths
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
@@ -2377,147 +2767,81 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
+    
     var spellcfg := ReadConfigFile(":spells:config/spellcaster");
     var keys := GetConfigIntKeys(spellcfg);
-    var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
-
-    // Get spells by circle
-    var spellsByCircle := dictionary;
-    spellsByCircle[1] := array;
-    spellsByCircle[2] := array;
-
+    var spells := array;
     foreach key in keys
         var elem := FindConfigElem(spellcfg, key);
         var spelllvl := GetConfigInt(elem, "Circle");
         var spelltype := GetConfigString(elem, "Type");
-        
-        if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := dictionary;
-            spell["id"] := key;
-            spell["circle"] := spelllvl;
-            spell["name"] := GetConfigString(elem, "Name");
-            spell["desc"] := GetConfigString(elem, "Desc");
-            spell["school"] := GetConfigString(elem, "School");
-            spellsByCircle[spelllvl].append(spell);
+        if (spelltype == "spellcaster" && spelllvl == 1)
+            var spell := dictionary{ 
+                "id" -> key,
+                "circle" -> spelllvl,
+                "name" -> GetConfigString(elem, "Name"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            spells.append(spell);
         endif
     endforeach
 
     var selected_spells := array;
     var btn_value;
-    var total_amount := 0;
-    
-    // Calculate how many spells they can choose
-    if (mageryLevel >= 1)
-        total_amount := 1;
-    endif
-    if (mageryLevel >= 2)
-        total_amount := 2;
-    endif
-    if (mageryLevel >= 3)
-        total_amount := 3; // 2 from circle 1 + 1 from circle 2
-    endif
-    
     while (1)
-        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
-
+        var input := spellSelectionGump(who, gump, spells, selected_spells, 2, x, y);
+        
         foreach key in (input.keys)
             btn_value := key;
-            if (btn_value > 200 && btn_value <= 200 + spellsByCircle[1].size())
-                var spell := spellsByCircle[1][btn_value-200];
-                selected_spells.append(spell);
-            elseif (btn_value > 300 && btn_value <= 300 + spellsByCircle[2].size())
-                var spell := spellsByCircle[2][btn_value-300];
-                selected_spells.append(spell);
+            if (btn_value > 200 && btn_value <= 200 + spells.size())
+                var spell_index := btn_value - 200;
+                var spell_id := spells[spell_index].id;
+                if (spell_id in selected_spells)
+                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
+                else
+                    selected_spells.append(spell_id);
+                endif
             endif
         endforeach
 
-        // Validate selection
-        if (mageryLevel < 3 && selected_spells.size() != total_amount)
+        if (selected_spells.size() != 2)
             selected_spells := array;
-            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magia(s) do círculo 1.", SSM_FAIL);
-        elseif (mageryLevel >= 3)
-            // Count circle 1 and 2 spells
-            var circle1_count := 0;
-            var circle2_count := 0;
-            foreach chosen_spell in (selected_spells)
-                foreach spell in (spellsByCircle[1])
-                    if (spell.id == chosen_spell.id)
-                        circle1_count += 1;
-                    endif
-                endforeach
-                foreach spell in (spellsByCircle[2])
-                    if (spell.id == chosen_spell.id)
-                        circle2_count += 1;
-                    endif
-                endforeach
-            endforeach
-            
-            if (circle1_count != 2 || circle2_count != 1)
-                selected_spells := array;
-                SendSysMessageEx(who, "Você deve escolher 2 magias do círculo 1 e 1 magia do círculo 2.", SSM_FAIL);
-            else
-                break;
-            endif
+            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
         else
             break;
         endif
     endwhile
 
-    SendSysMessageEX(who, "Você escolheu as magias: " + selected_spells, SSM_INFO);
+    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
     return selected_spells;
 endfunction
 
-function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-    
-    var x := 63;
-    var y := 100;
-    
-    GFGumpPic(gump, 17, 31, 0x9E6);
-    
-    // Circle 1 header
-    GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 1:", 1, 0);
-    y += 26;
-    
-    // Circle 1 spells
-    var i := 1;
-    foreach spell in (spellsByCircle[1])
-        var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
-        GFTooltipText(gump, spell.desc);
-        if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
-            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
-        endif
-        y += 26;
-        i += 1;
-    endforeach
-    
-    // Circle 2 spells if magery level 3
-    if (mageryLevel >= 3)
-        x += 300;
-        y := 50;
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
-        y += 26;
 
-        i := 1;
-        foreach spell in (spellsByCircle[2])
-            var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
-            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
-            GFTooltipText(gump, spell.desc);
-            if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
-                GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
-            endif
-            y += 26;
-            i += 1;
-        endforeach
-    endif
-    
-    var remaining := total_amount - selected_spells.size();
-    GFHTMLArea(gump, 115, 665, 192, 40, "<BASEFONT Size=5 Color=#999999>Escolha " + remaining + " magia(s)", 0, 0);
-    GFHTMLArea(gump, 116, 666, 192, 40, "<BASEFONT Size=5 Color=#ffffff>Escolha " + remaining + " magia(s)", 0, 0);
-    
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
+
+    GFPage(gump, 1);
+    y := 100;
+    foreach spell in spells
+        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFTooltipText(gump, spell.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        y += 26;
+    endforeach
+
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
     return GFSendGump(who, gump);
 endfunction
 
@@ -2555,7 +2879,7 @@ function AlchChoices(who)
     var btn_value;
     while (1)
         var qtd := (skill*2)+2;
-        var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2581,52 +2905,3 @@ function AlchChoices(who)
     return selected_recipes;
 endfunction
 
-function alchSelectionGump(who, gump, alchs, selected_alchs, qtd, x, y)
-    GFPage(gump, 1);
-    y := 100;
-    foreach alch in alchs
-        var color := (alch.id in selected_alchs) ? "#00FF00" : "#000000";
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, alch.name), 1, 0);
-        GFTooltipText(gump, alch.desc);
-        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (alch.id in selected_alchs), 200+_alch_iter);
-        y += 26;
-    endforeach
-
-    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
-    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
-
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
-    return GFSendGump(who, gump);
-endfunction
-
-function GetSkillTooltipDescriptionFromName(name)
-	var cfg := AP_GetAttributesCfgFile();
-	var elem := FindConfigElem(cfg, name);
-	if (elem == error)
-		return "Descrição não encontrada para: " + name;
-	endif
-
-	var tooltip := GetConfigString(elem, "TooltipDesc");
-	if (!tooltip || tooltip == error)
-		return "Habilidade: " + name;
-	endif
-
-	return tooltip;
-endfunction
-
-function CreateItemInicial(who, objtype, qtd)
-    var item :=  GeraItemComplexo(
-                                    who,
-                                    objtype,
-                                    qtd,
-                                    RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                    1, 
-                                    array {0x630e}, //ouro
-                                    FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
-                                );
-
-    if(!item)
-        Print("Erro ao criar item incial {}".format(objtype));
-        Message("Erro ao criar item incial {}".format(objtype), SSM_FAIL).SendSys(who);
-    endif
-endfunction
