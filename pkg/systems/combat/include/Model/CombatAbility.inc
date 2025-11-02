@@ -60,6 +60,7 @@ enum class COMBAT_ABILITY
 	INSTINTO_ASSASSINO := "Instinto Assassino",
 	SENSO_DA_NATUREZA := "Senso da Natureza",
 	VENENO_PURO := "Veneno Puro",
+	REFLEXO_ESTRATEGICO := "Reflexo Estrategico",
 
 
 
