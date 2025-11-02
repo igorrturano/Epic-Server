@@ -259,6 +259,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return error { errortext := "Wrong slot specified!" };
 		endif
 
+		if (equipsInSlot.size() == 0)
+			return error{ errortext := "Empty slot!" };
+		endif
+
 		foreach equip in (equipsInSlot)
 			equip := ArmorWrapper(equip);
 		endforeach
@@ -342,6 +346,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function IsMounted(this)
 		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+	endfunction
+
+	function IsConnected(this)
+		return this._objRef.connected == true;
 	endfunction
 
 	function DistanceTo(this, other) // other: ObjRef

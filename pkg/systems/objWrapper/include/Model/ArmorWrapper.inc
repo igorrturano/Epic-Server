@@ -3,7 +3,7 @@ include "IArmorWrapper";
 include ":equipsys:Controller/ArmorController";
 
 include ":combat:Model/ArmorResist";
-include ":combat:Model/ShieldResist";
+include ":combat:Model/ShieldAttributes";
 
 class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	var _coverage := array{};
@@ -11,8 +11,8 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	var _resists; // ArmorResist class
 	var _resistsMod; // ArmorResist class
-	var _shieldResists; // ShieldResist class
-	var _shieldResistsMod; // ShieldResist class
+	var _shieldAttributes; // ShieldAttributes class
+	var _shieldAttributesMod; // ShieldAttributes class
 
 	function ArmorWrapper(this, byRef item)
 		Super(item);
@@ -54,15 +54,36 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	function GetResistsMod(this)
 		return this._resistsMod ?: error{"errortext" := "The item have no Resists Modifier!"};
 	endfunction
-	
+
+	function GetShieldAttributes(this)
+		return this._shieldAttributes ?: error{"errortext" := "The item have no Shield Attributes!"};
+	endfunction
+
+	function GetShieldAttributesMod(this)
+		return this._shieldAttributesMod ?: error{"errortext" := "The item have no Shield Attributes Modifier!"};
+	endfunction
+
 	function SetResists(this, resists)
 		if (this._item == error) return this._item; endif
 		this._resists := resists;
+
+		return this;
 	endfunction
 
 	function SetResistsMod(this, resists)
 		if (this._item == error) return this._item; endif
 		this._resistsMod := resists;
+
+		return this;
+	endfunction
+
+	function SetShieldAttributes(this, shieldAttrs)
+		if (this._item == error) return this._item; endif
+		if (!(shieldAttrs is @ShieldAttributes)) return error{"errortext" := "Param must be a ShieldAttributes!"}; endif
+
+		this._shieldAttributes := shieldAttrs;
+
+		return this;
 	endfunction
 
 	function Update(this)

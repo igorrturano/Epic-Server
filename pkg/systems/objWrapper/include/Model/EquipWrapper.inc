@@ -1,13 +1,13 @@
 use uo;
 
 include "IEquipWrapper";
-include "UObjectWrapper";
+include "ItemWrapper";
 include ":IO:CFGFile";
 include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
 
-class EquipWrapper(UObjectWrapper, IEquipWrapper)
+class EquipWrapper(ItemWrapper, IEquipWrapper)
 	var _template; // CfgElem
 	var _prop;
 
@@ -111,7 +111,13 @@ class EquipWrapper(UObjectWrapper, IEquipWrapper)
 		return this;
 	endfunction
 
-	function AddModifier(this, modifier) // modifier is of type AttributeModifier
+	function SetModifiers(this, modifiers) // modifiers: dictionary of AttributeModifier
+		if (this._objType == error) return this._objType; endif
+		this._modifiers := modifiers;
+		return this;
+	endfunction
+
+	function AddModifier(this, modifier) // modifier: AttributeModifier
 		if (this._objType == error) return this._objType; endif
 		this._modifiers[modifier.GetAttribute()] := modifier;
 		return this;
