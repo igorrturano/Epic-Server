@@ -1,7 +1,9 @@
 use uo;
 use os;
 
-program TimedScript_EndPetrify(mobile)
+program TimedScript_EndPetrify(params)
+	var mobile := params[1];
+
 	// Remove paralisia
 	mobile.paralyzed := 0;
 
@@ -18,7 +20,9 @@ program TimedScript_EndPetrify(mobile)
 	// Remove marca de petrificado
 	EraseObjProperty(mobile, "#petrified");
 	EraseObjProperty(mobile, "noattack");
-	PlaySoundEffect(mobile, 0x1F1); // Som de despetrificação
+
+	// Visual and audio effects showing recovery
+	PlaySoundEffect(mobile, 0x1F1);  // Som de despetrificação
 	PlayObjectCenteredEffect(mobile, 0x373A, 10, 10); // Efeito visual
 
 	SendSysMessage(mobile, "Voce voltou ao normal!");
