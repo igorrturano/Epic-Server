@@ -64,33 +64,20 @@ program skillremoveTrap(who)
 			SendSysMessageEx(who, "Voce interrompeu o processo.", SSM_FAIL);
 			return;
 		endif
-		var dif;
-		var lvl := Cint(GetObjProperty(item, "level"));
-		
-		// DEBUG: Print informações do item
-		Print("[MECHANICS DEBUG] Tentando desarmar armadilha:");
-		Print("  - Item: " + item.name + " (Serial: " + item.serial + ")");
-		Print("  - Level da armadilha: " + lvl);
-		Print("  - Jogador: " + who.name);
-		Print("  - Skill Mechanics do jogador: " + AP_GetSkill(who, MECHANICS));
-		
-		case (lvl)
-			1: dif := 15;
-			2: dif := 40;
-			3: dif := 60;
-			4: dif := 86;
-			5: dif := 90;
-			6: dif := 110;
-			default: dif := 40;
-		endcase
-		
-		Print("  - Dificuldade calculada: " + dif);
-		
-		var check := SkillCheck(who, MECHANICS, dif);
-		
-		Print("  - Resultado do SkillCheck: " + check);
-		
-		if (check > 0)
+	var dif;
+	var lvl := Cint(GetObjProperty(item, "level"));
+	
+	case (lvl)
+		1: dif := 15;
+		2: dif := 40;
+		3: dif := 60;
+		4: dif := 86;
+		5: dif := 90;
+		6: dif := 110;
+		default: dif := 40;
+	endcase
+	
+	var check := SkillCheck(who, MECHANICS, dif);		if (check > 0)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce desarmou a armadilha com sucesso sem se revelar.", SSM_INFO);
 			else

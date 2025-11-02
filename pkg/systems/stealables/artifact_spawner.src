@@ -141,28 +141,11 @@ function SpawnArtifact(spawner, objtype, color, name, desc, rarity)
 			// Isso permite que armadilhas cresçam em dificuldade junto com a raridade do item
 			var final_trap_level := CalculateTrapLevel(rarity, trap_level);
 			
-			// DEBUG: Print informações da armadilha
-			Print("[STEALABLES DEBUG] Criando armadilha no artefato:");
-			Print("  - Item: " + artifact.desc + " (Serial: " + artifact.serial + ")");
-			Print("  - Raridade: " + rarity);
-			Print("  - Trap Level configurado pelo GM: " + trap_level);
-			Print("  - Trap Level FINAL calculado: " + final_trap_level);
-			Print("  - Tipo de armadilha: " + trap_type);
-			
 			// Define o level do item (necessário para awareness e mechanics)
 			SetObjProperty(artifact, "level", final_trap_level);
 			
-			Print("  - Propriedade 'level' setada no item: " + GetObjProperty(artifact, "level"));
-			
 			// Usa AddTrap() do sistema de armadilhas existente
 			AddTrap(artifact, trap_type, final_trap_level);
-			
-			var traplist := GetObjProperty(artifact, "TrapList");
-			if (traplist)
-				Print("  - TrapList criada com sucesso! Quantidade de traps: " + traplist.size());
-			else
-				Print("  - ERRO: TrapList NÃO foi criada!");
-			endif
 		endif
 	endif
 	
