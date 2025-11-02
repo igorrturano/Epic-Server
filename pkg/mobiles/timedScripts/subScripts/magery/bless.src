@@ -20,7 +20,7 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 
-	if (GetObjProperty(mobile, "chardata").magia == "Shaman")
+	if (mobile.isShaman())
 		attacker := mobile;
 	endif
 

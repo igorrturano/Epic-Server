@@ -87,7 +87,7 @@ program core_npcDeath(params)
 		endif
 
 		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-			if (!GetObjProperty(item, "itemunico"))
+			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "#LootedBy"))
 				item.hp -= Cint(item.hp * 0.8);
 			endif
 		endif
@@ -249,7 +249,7 @@ program core_npcDeath(params)
 	endforeach
 
 	var accepted_sacrifice := 0;
-	foreach item in ListItemsNearLocation(corpse.x, corpse.y, corpse.z, 3, corpse.realm)
+	foreach item in ListItemsNearLocation(corpse.x, corpse.y, corpse.z, 4, corpse.realm)
 		if (item.objtype == 0xA06A) // xamaaltar
 			if (GetObjProperty(corpse, "animal_sacrifice"))
 				accepted_sacrifice := 1;

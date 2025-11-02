@@ -162,18 +162,21 @@ function RegenDpStats(who, ratio)
 endfunction
 
 function ShamanSoulHarvest(mobile)
-	var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
-	var cfg := ReadConfigFile(":*:npcdesc");
+	var npc_elem := NPC_GetNPCConfig(mobile);
+	var category := npc_elem.Category;
 	var has_soul := 1;
 
 	// Check if NPC has no soul (undead, animal, giantanimal)
-	if (npctemplate && cfg[npctemplate.template])
-		var category := cfg[npctemplate.template].Category;
-		if (category == "Undead" || category == "Animal" || category == "GiantAnimal")
-			has_soul := 0;
-		elseif (mobile.acctname && AP_GetVital(mobile, "DP") >= 20) // Nao tem colheita em desmaios
-			has_soul := 0;
-		endif
+	if (Lower(category) == "undead")
+		has_soul := 0;
+	endif
+
+	if (mobile.isAnimalBrain())
+		has_soul := 0;
+	endif
+
+	if (mobile.acctname && AP_GetVital(mobile, "DP") >= 20) // Nao tem colheita em desmaios
+		has_soul := 0;
 	endif
 
 	if (has_soul)
