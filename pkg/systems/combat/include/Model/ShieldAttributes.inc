@@ -1,10 +1,10 @@
-include "IShieldResist";
+include "IShieldAttributes";
 
-class ShieldResist(IShieldResist)
+class ShieldAttributes(IShieldAttributes)
 	var _parryBonus := 0;
 	var _parryDelay := 0;
 
-	function ShieldResist(this, parryBonus := 0, parryDelay := 0)
+	function ShieldAttributes(this, parryBonus := 0, parryDelay := 0)
 		this._parryBonus := CInt(parryBonus);
 		this._parryDelay := CInt(parryDelay);
 	endfunction
