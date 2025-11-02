@@ -28,6 +28,7 @@ class AttackInfo(IAttackInfo)
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
+	var _parryItem := 0x0; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
 	var _parryChancePenalty := 0;
 	var _parryChanceResult := 0; // Resultado da rolagem do dado de parry chance
@@ -71,28 +72,8 @@ class AttackInfo(IAttackInfo)
 		return this._bodyRegion;
 	endfunction
 
-	function GetHitChance(this)
-		return this._hitChance;
-	endfunction
-
-	function GetHitChancePenalty(this)
-		return this._hitChancePenalty;
-	endfunction
-
-	function GetHitChanceResult(this)
-		return this._hitChanceDiceResult;
-	endfunction
-
-	function GetParryChance(this)
-		return this._parryChance;
-	endfunction
-
-	function GetParryChancePenalty(this)
-		return this._parryChancePenalty;
-	endfunction
-
-	function GetParryChanceResult(this)
-		return this._parryChanceResult;
+	function GetDirection(this)
+		return this._direction;
 	endfunction
 
 	function GetDamage(this)
@@ -113,6 +94,34 @@ class AttackInfo(IAttackInfo)
 
 	function GetAmmoAmount(this)
 		return this._ammo.amount;
+	endfunction
+
+	function GetHitChance(this)
+		return this._hitChance;
+	endfunction
+
+	function GetHitChancePenalty(this)
+		return this._hitChancePenalty;
+	endfunction
+
+	function GetHitChanceResult(this)
+		return this._hitChanceResult;
+	endfunction
+
+	function GetParryItem(this)
+		return this._parryItem;
+	endfunction
+
+	function GetParryChance(this)
+		return this._parryChance;
+	endfunction
+
+	function GetParryChancePenalty(this)
+		return this._parryChancePenalty;
+	endfunction
+
+	function GetParryChanceResult(this)
+		return this._parryChanceResult;
 	endfunction
 
 	function GetAttackerAbilities(this)
@@ -145,34 +154,16 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetDefenderZoneToHit(this, zoneToHit)
-		if (!(zoneToHit in CS_GetArmorZones())) return error{ errortext := "Parameter must be a valid armor zone!" }; endif
-		
-		this._defenderZoneToHit := zoneToHit;
+	function SetBodyRegion(this, bodyRegion)
+		if (!(bodyRegion in CS_GetArmorZones())) return error{ errortext := "Parameter must be a valid armor zone!" }; endif
+
+		this._bodyRegion := bodyRegion;
 
 		return this;
 	endfunction
 
-	function SetHitChance(this, hitChance)
-		this._hitChance := hitChance;
-
-		return this;
-	endfunction
-
-	function SetHitChancePenalty(this, penalty)
-		this._hitChancePenalty := penalty;
-
-		return this;
-	endfunction
-
-	function SetParryChance(this, parryChance)
-		this._parryChance := parryChance;
-
-		return this;
-	endfunction
-
-	function SetParryChancePenalty(this, penalty)
-		this._parryChancePenalty := penalty;
+	function SetDirection(this, direction)
+		this._direction := direction;
 
 		return this;
 	endfunction
@@ -202,6 +193,40 @@ class AttackInfo(IAttackInfo)
 
 		this._ammo.itemRef := ammoItemRef;
 		this._ammo.amount := amount;
+
+		return this;
+	endfunction
+
+	function SetHitChance(this, hitChance)
+		this._hitChance := hitChance;
+
+		return this;
+	endfunction
+
+	function SetHitChancePenalty(this, penalty)
+		this._hitChancePenalty := penalty;
+
+		return this;
+	endfunction
+
+	function SetParryItem(this, parryItem)
+		if (!(parryItem is @ArmorWrapper) && !(parryItem is @WeaponWrapper))
+			return error{ errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!" };
+		endif
+		
+		this._parryItem := parryItem;
+
+		return this;
+	endfunction
+
+	function SetParryChance(this, parryChance)
+		this._parryChance := parryChance;
+
+		return this;
+	endfunction
+
+	function SetParryChancePenalty(this, penalty)
+		this._parryChancePenalty := penalty;
 
 		return this;
 	endfunction
