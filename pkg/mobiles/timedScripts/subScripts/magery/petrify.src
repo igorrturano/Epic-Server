@@ -6,22 +6,32 @@ include "include/epicConstants";
 program TimedScript_Petrify(params)
 	var mobile := params[1];
 
-	PlaySoundEffect(mobile, 0x1F8); // Som de petrificação
-	PlayObjectCenteredEffectEx(mobile, 51851, 10, 30,0x0835 ); // Efeito visual de pedra
+	// CHECK FOR MIRRORED EYES PROTECTION - NEW INTEGRATION
+	if (GetObjProperty(mobile, "#mirroredEyesProtection"))
+		// Potion protects against petrification
+		PlaySoundEffect(mobile, 0x1F2);  // Magic protection sound
+		PlayObjectCenteredEffect(mobile, 0x37B9, 10, 15);  // Shimmer effect (mirrors)
+		SendSysMessage(mobile, "Seus olhos espelhados bloqueiam a petrificação!");
+		PrintTextAbove(mobile, "*proteção espelhada ativa*");
+		return 1;
+	endif
 
+	// CONTINUE WITH NORMAL PETRIFICATION IF NOT PROTECTED
+	PlaySoundEffect(mobile, 0x1F8);
+	PlayObjectCenteredEffectEx(mobile, 51851, 10, 30, 0x0835);
 	PrintTextAbove(mobile, "*Petrificado*");
 	SendSysMessage(mobile, "Voce foi transformado em pedra!");
 
-	// Salva a cor original
+	// Save original color for restoration
 	SetObjProperty(mobile, "#originalcolor", mobile.color);
 
-	// Muda a cor para cinza pedra
+	// Change to stone color (gray)
 	mobile.color := 0x0835;
 
-	// Paralisa o alvo
+	// Paralyze the target
 	mobile.paralyzed := 1;
 
-	// Marca como petrificado
+	// Mark as petrified
 	SetObjProperty(mobile, "#petrified", 1);
 
 	return 1;
