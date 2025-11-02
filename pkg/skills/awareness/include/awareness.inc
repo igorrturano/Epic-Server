@@ -60,35 +60,22 @@ function ExaminarObjeto(who,targ)
 		elseif(armadilhaRevelada)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos.", SSM_INFO);
 			return 1;
-		else
-			var diff;
-			var lvl := Cint(GetObjProperty(targ, "level"));
-			
-			// DEBUG: Print informações do item
-			Print("[AWARENESS DEBUG] Tentando encontrar armadilha:");
-			Print("  - Item: " + targ.name + " (Serial: " + targ.serial + ")");
-			Print("  - Level da armadilha: " + lvl);
-			Print("  - Jogador: " + who.name);
-			Print("  - Skill Awareness do jogador: " + AP_GetSkill(who, AWARENESS));
-			
-			case (lvl)
-				1: diff := 20;
-				2: diff := 40;
-				3: diff := 60;
-				4: diff := 80;
-				5: diff := 100;
-				6: diff := 120;
-				default: diff := 1000; // Telepads e afins
-			endcase
-			
-			Print("  - Dificuldade calculada: " + diff);
-			
-			sleep(1);
-			var check_result := SkillCheck(who, AWARENESS, diff);
-			
-			Print("  - Resultado do SkillCheck: " + check_result);
-			
-			if ( check_result > 0 )
+	else
+		var diff;
+		var lvl := Cint(GetObjProperty(targ, "level"));
+		
+		case (lvl)
+			1: diff := 20;
+			2: diff := 40;
+			3: diff := 60;
+			4: diff := 80;
+			5: diff := 100;
+			6: diff := 120;
+			default: diff := 1000; // Telepads e afins
+		endcase
+		
+		sleep(1);
+		var check_result := SkillCheck(who, AWARENESS, diff);			if ( check_result > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
 
