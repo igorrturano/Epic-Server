@@ -111,13 +111,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		return this;
 	endfunction
 
-	function SetModifiers(this, modifiers) // modifiers: dictionary of AttributeModifier
-		if (this._objType == error) return this._objType; endif
-		this._modifiers := modifiers;
-		return this;
-	endfunction
-
-	function AddModifier(this, modifier) // modifier: AttributeModifier
+	function SetModifier(this, modifier) // modifier: AttributeModifier
 		if (this._objType == error) return this._objType; endif
 		this._modifiers[modifier.GetAttribute()] := modifier;
 		return this;

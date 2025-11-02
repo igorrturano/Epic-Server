@@ -8,8 +8,8 @@ class IEquipWrapper()
 
 	uninit function SetWeight(this, weight);
 	uninit function SetMaxHP(this, maxHP);
-	
-	uninit function AddModifier(this, modifiers);
+
+	uninit function SetModifier(this, modifier);
 
 	uninit function Update(this);
 endclass

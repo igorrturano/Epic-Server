@@ -18,7 +18,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		Super(item);
 
 		this._coverage := GetConfigStringArray(this._template, "Coverage");
-		this._tipoProtecao := this._template.TipoProtecao ?: error{"errortext" := "The item have no Protection Type!"};
+		this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 		this._resists := this._GetArmorResist();
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
@@ -40,30 +40,71 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 	
 	function GetTipoProtecao(this)
-		return this._tipoProtecao ?: error{"errortext" := "The item have no Protection Type!"};
+		return this._tipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 	endfunction
 
 	function GetCoverage(this)
-		return this._coverage ?: error{"errortext" := "The item have no Coverage!"};
+		return this._coverage ?: error{ errortext := "The item have no Coverage!" };
 	endfunction
 
 	function GetResists(this)
-		return this._resists ?: error{"errortext" := "The item have no Resists!"};
+		var base := this.GetResistsBase();
+		var mod := this.GetResistsMod();
+
+		if (!base)
+			return error{ errortext := "The item have no Resists!" };
+		endif
+
+		if (!mod)
+			return base;
+		endif
+
+		return ArmorResist(
+			base.GetSlashResist() + mod.GetSlashResist(),
+			base.GetPiercingResist() + mod.GetPiercingResist(),
+			base.GetBluntResist() + mod.GetBluntResist(),
+			base.GetFireResist() + mod.GetFireResist(),
+			base.GetColdResist() + mod.GetColdResist(),
+			base.GetEnergyResist() + mod.GetEnergyResist(),
+			base.GetPoisonResist() + mod.GetPoisonResist()
+		);
+	endfunction
+
+	function GetResistsBase(this)
+		return this._resists ?: error{ errortext := "The item have no Resists!" };
 	endfunction
 
 	function GetResistsMod(this)
-		return this._resistsMod ?: error{"errortext" := "The item have no Resists Modifier!"};
+		return this._resistsMod ?: error{ errortext := "The item have no Resists Modifier!" };
 	endfunction
 
 	function GetShieldAttributes(this)
-		return this._shieldAttributes ?: error{"errortext" := "The item have no Shield Attributes!"};
+		var base := this.GetShieldAttributesBase();
+		var mod := this.GetShieldAttributesMod();
+
+		if (!base)
+			return error{ errortext := "The item have no Shield Attributes!" };
+		endif
+
+		if (!mod)
+			return base;
+		endif
+
+		return ShieldAttributes(
+			base.GetParryBonus() + mod.GetParryBonus(),
+			base.GetParryDelay() + mod.GetParryDelay()
+		);
+	endfunction
+	
+	function GetShieldAttributesBase(this)
+		return this._shieldAttributes ?: error{ errortext := "The item have no Shield Attributes!" };
 	endfunction
 
 	function GetShieldAttributesMod(this)
-		return this._shieldAttributesMod ?: error{"errortext" := "The item have no Shield Attributes Modifier!"};
+		return this._shieldAttributesMod ?: error{ errortext := "The item have no Shield Attributes Modifier!" };
 	endfunction
 
-	function SetResists(this, resists)
+	function SetResistsBase(this, resists)
 		if (this._item == error) return this._item; endif
 		this._resists := resists;
 
@@ -77,11 +118,20 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this;
 	endfunction
 
-	function SetShieldAttributes(this, shieldAttrs)
+	function SetShieldAttributesBase(this, shieldAttrs)
 		if (this._item == error) return this._item; endif
-		if (!(shieldAttrs is @ShieldAttributes)) return error{"errortext" := "Param must be a ShieldAttributes!"}; endif
+		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
 
 		this._shieldAttributes := shieldAttrs;
+
+		return this;
+	endfunction
+
+	function SetShieldAttributesMod(this, shieldAttrs)
+		if (this._item == error) return this._item; endif
+		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
+
+		this._shieldAttributesMod := shieldAttrs;
 
 		return this;
 	endfunction
@@ -160,17 +210,17 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		
 		if (this._prop.Modifiers.size() >= 1)
 			foreach modifier in (this._prop.Modifiers.keys())
-				this.AddModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
+				this.SetModifier(AttributeModifier(modifier, this._prop.Modifiers[modifier]));
 			endforeach
 		else
 			if (this._tipoProtecao)
 				var modifiersSlot := GetModifiersBySlot(this._coverage[1]);
 				var modifiersProt := GetModifiersByProtection(this._tipoProtecao);
-				this.AddModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
-				this.AddModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
-				this.AddModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
-				this.AddModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
-				this.AddModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + modifiersProt[AWARENESS].GetValue()));
+				this.SetModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
+				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
+				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
+				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
+				this.SetModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + modifiersProt[AWARENESS].GetValue()));
 			endif
 		endif
 	endfunction
