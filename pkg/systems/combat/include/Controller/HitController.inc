@@ -486,19 +486,19 @@ endfunction
 
 function CalculateParryChance(byRef attackInfo)
 	// Verifica se o atacante já pode ser bloqueado novamente.
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) return 0; endif
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0)
+		return 0;
+	endif
 
-	var usingWeapon := 0;
-	var parryBonus := 0;
-	var shield := attackInfo.GetDefender().GetEquipBySlot(SHIELD);
-	// var shieldAttr := shield.getAttrBase();
-	// var fabricacaoApararBonus := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_BONUSAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
-	// var fabricacaoApararAtraso := PegaValorFabricacao(shield, CARACTERISTICA_FABRICACAO_ATRASOAPARAR); // TODO: Jogar isso daqui pro ArmorWrapper
+	var shield := attackInfo.GetParryEquip(),
+		parryBonus := 0,
+		skill := 0,
+		blocker;
 
-	var blocker;
 	// Verifica se o defensor está sob efeito da a hab esudo do martir
-	var wall := attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos");
-	var wallChance := 0;
+	var wall := attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos"),
+		wallChance := 0;
+
 	if (wall)
 		blocker := SystemFindObjectBySerial(wall.blocker);
 		if (GetCooldown(blocker, "BarreiraDeEscudos") > 0)
@@ -511,22 +511,6 @@ function CalculateParryChance(byRef attackInfo)
 		endif
 	endif
 
-	// Verifica se vai tentar bloquear usando uma armda
-	if (!(shield.GetObjRef().IsA(POLCLASS_ARMOR)))
-		usingweapon := 1;
-		shield := attackInfo.GetDefender().GetEquipBySlot(WEAPON);
-		// Não bloqueia se estivem sem arma equipada ou utilizando arma de Ranged (Arcos e bestas)
-		if (shield.GetObjType() == 0x1F020 || shield.GetAttribute() == RANGED)
-			return false;
-		endif
-	endif
-
-	parryBonus := shield.GetObjRef().GetProp("parry_mod_percentual");
-	if (parryBonus)
-		parryBonus := 1.0 + parryBonus;
-	else
-		parryBonus := 0;
-	endif
 	// Calcula o Bonus basico de parry do escudo, Bonus de parry específico da CProp do escudo, Bonus de parry especifico da CProp do personagem
 	// parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
 	parryBonus := CInt(
@@ -543,10 +527,11 @@ function CalculateParryChance(byRef attackInfo)
 		EraseObjPRoperty(defender, "#tempparrybonus");
 	endif
 
-	var skill := CInt(AP_GetSkill(defender, PARRY));
-
-	if (TemHabilidade(defender, "Reflexo Estrategico"))
-		skill := CInt(AP_GetSkill(defender, TACTICS));
+	var skill;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::REFLEXO_ESTRATEGICO))
+		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+	else
+		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
 	endif
 
 	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
@@ -573,13 +558,14 @@ function CalculateParryChance(byRef attackInfo)
 	var parry_chance := CInt(skill / 3);
 
 	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
-	if (usingweapon && !TemHabilidade(defender, "Tabibito no Michi"))
+	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON) && !TemHabilidade(defender, "Tabibito no Michi"))
 		parry_chance := CInt(parry_chance * 0.7);
 	endif
 
-	if (usingweapon && TemHabilidade(defender, "Tabibito no Michi"))
+	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON) && TemHabilidade(defender, "Tabibito no Michi"))
 		parry_chance := CInt(parry_chance * 1.3);
 	endif
+
 	// Calcula a chance TOTAL de bloqueio
 	parry_chance := parry_chance + parryBonus;
 
@@ -588,52 +574,10 @@ function CalculateParryChance(byRef attackInfo)
 		parry_chance := wallChance;
 	endif
 
-	// Diminui a chance de bloqueio se estiver usando foices
-	if ((attacker.weapon.graphic == 0x26C4) || (attacker.weapon.graphic == 0x26C5)) // foice grande e foice pequena
-		parry_chance := parry_chance * 0.7; // diminui 30% da chance
-	endif
-
 	// Aplica o efeito da habilidade que deixa o defensor bloquear sempre
 	if (CheckHab_BarreiraIndestrutivel(attacker, defender))
 		parry_chance := 100;
 		parryDelay := 2;
-	endif
-
-	// Calcula se defendeu ou não
-	var defendeu := 0;
-	if (RandomInt(100) < parry_chance)
-		// Verifica habilidade Defesas Gloriosas e, se cabível, aplica seu efeito
-		defendeu := 1;
-
-		// Pike desarma defensor que bloquear sem escudo
-		if ((attacker.weapon.graphic == 0x26BE) && (usingWeapon))
-			var defweapon := defender.weapon;
-			if (defweapon.objtype != 0x1F020)
-				var x := defender.x + RandomInt(2) + 1;
-				var y := defender.y + RandomInt(2) + 1;
-				MoveObjectToLocation(
-					defweapon,
-					x,
-					y,
-					GetWorldHeight(x, y),
-					attacker.realm,
-					MOVEOBJECT_FORCELOCATION
-				);
-			endif
-		endif
-
-		CheckHab_KenNoTatsujin(attacker, defender);
-	endif
-
-	// sobe a skill
-	if (attacker.npctemplate && defender.connected)
-		if (defendeu)
-			SkillCheck(defender, PARRY, -1);
-		else
-			if (RandomInt(5) == 1)
-				SkillCheck(defender, PARRY, -1);
-			endif
-		endif
 	endif
 
 	if (!defendeu)
@@ -654,9 +598,5 @@ function CalculateParryChance(byRef attackInfo)
 		SetCooldown(attacker, "parrydelay", parryDelay);
 	endif
 
-	// Aplica dano no shield
-	WearDownShield(defender, shield, rawdamage, weapon);
-
-	rawdamage := 0;
-	return true;
+	return parry_chance;
 endfunction
