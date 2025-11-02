@@ -1,0 +1,12 @@
+# Conta exemplo login admin e senha admin
+
+Account
+{
+	Name	admin
+	PasswordHash	f6fdffe48c908deb0f4c3bd36c032e72
+	Enabled	1
+        DefaultCmdLevel admin
+	Banned	0
+	UOExpansion	SA
+	CProp	LastLogin i1752936315
+}

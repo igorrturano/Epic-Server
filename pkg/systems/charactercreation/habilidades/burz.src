@@ -13,6 +13,6 @@ program doubleattack(who)
 		SendSysMessageEx(who, "As hordas servirão de alimento para o Deserto", SSM_INFO);
 		SetCooldown(who, "golpesamplos", 60);
 	else
-        SendSysMessageEx(who, "Você precisa dar mais sangue para ser recompensado.", SSM_INFO);
+		SendSysMessageEx(who, "Você precisa dar mais sangue para ser recompensado.", SSM_INFO);
 	endif
 endprogram

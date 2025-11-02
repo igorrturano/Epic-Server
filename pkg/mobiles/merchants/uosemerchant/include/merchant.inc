@@ -3,8 +3,7 @@ use math;
 
 //include "include/bank";
 include ":datafile:include/datafile";
-include ":unicos:item_template";
-include ":uose:/include/item_template";
+include ":merchants:/include/item_template";
 include ":timeutils:time";
 
 function GetPaymentsDataFile()

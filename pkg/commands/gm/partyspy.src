@@ -1,14 +1,13 @@
 /*
  * $Id: kill.src 87 2006-05-23 19:04:43Z sroyalty $
  *
- */
+*/
 use uo;
 
 include ":attributes:attributes";
 
 program textcmd_partyspy(who, player)
 
-	
 	if (!GetObjProperty(who, "PartySpyOn"))
 		if (player)
 			var targ := Target(who);
@@ -21,11 +20,11 @@ program textcmd_partyspy(who, player)
 			return 1;
 		endif
 		SetObjProperty(who, "PartySpyOn", "on");
-		SendSysMessage(who, "Party Spy Ativado");		
+		SendSysMessage(who, "Party Spy Ativado");
 	else
 		EraseObjProperty(who, "PartySpyOn");
 		SendSysMessage(who, "Party Spy Desativado");
 	endif
-	
+
 	return 1;
 endprogram

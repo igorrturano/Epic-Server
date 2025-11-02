@@ -15,5 +15,5 @@ program subir(item)
 	sleep(60);
 	EraseObjProperty(item, "cooldown");
 	item.invisible := 1;
-		
+
 endprogram

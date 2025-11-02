@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -24,16 +24,16 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := cint(AP_GetSkill(who, MAGICLORE)/25);
+	var lvl := cint(AP_GetSkill(who, ARCANA) / 25);
 
 	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))
-			lvl := lvl+1;
+			lvl := lvl + 1;
 		endif
 	endif
 
-	Set_Critical( 1 );
-	if(GetObjProperty(targ, "defaultPoison"))
+	Set_Critical(1);
+	if (GetObjProperty(targ, "defaultPoison"))
 		SendSysMessageEx(who, "O alvo ja esta envenenado", SSM_FAIL);
 		return;
 	endif
@@ -47,8 +47,8 @@ program SpellScript(params)
 		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 	endif
-	Set_Critical( 0 );
-	PrintTextAbovePrivate(targ, "Veneno level "+lvl + ".", who, 3, 38); // vermelho
+	Set_Critical(0);
+	PrintTextPrivate(targ, "Veneno level " + lvl + ".", who, 3, 38); // vermelho
 
 	return 1;
 endprogram

@@ -22,9 +22,10 @@ program pet(who)
 	if (petAprimorado != error)
 		var yes := YesNo(who, "Voce ja tem um companheiro animal aprimorado, deseja liberta-lo?");
 		if (yes)
-			PlayMovingEffectXYZEx( pet.x, pet.y, pet.z, pet.x, pet.y, pet.z + 60, pet.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+			PlayMovingEffectXYZEx(pet.x, pet.y, pet.z, pet.x, pet.y, pet.z + 60, pet.realm, GFX_LARGE_FIREBALL,
+								   1, 10, 2320);
 
-			MoveObjectToLocation(pet, 10, 10, 10, pet.realm,  MOVEOBJECT_FORCELOCATION );
+			MoveObjectToLocation(pet, 10, 10, 10, pet.realm, MOVEOBJECT_FORCELOCATION);
 			ErasePet(who, petserial);
 			pet.kill();
 
@@ -35,7 +36,8 @@ program pet(who)
 			return 1;
 		endif
 	else
-		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal aprimorado.", SSM_REQUEST);
+		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal aprimorado.",
+				   SSM_REQUEST);
 		var targ := target(who);
 		if (!targ)
 			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
@@ -44,18 +46,19 @@ program pet(who)
 		endif
 
 		var tamed := GetObjProperty(who, "TamedPets");
-		if ( targ.serial in tamed )
+		if (targ.serial in tamed)
 
 			var pettemplate := selectpet(who);
 
-			var z := targ.z+60;
+			var z := targ.z + 60;
 			if (z > 100)
 				z := 100;
 			endif
 
-			PlayMovingEffectXYZEx( targ.x, targ.y, z, targ.x, targ.y, targ.z, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+			PlayMovingEffectXYZEx(targ.x, targ.y, z, targ.x, targ.y, targ.z, targ.realm, GFX_LARGE_FIREBALL,
+								   1, 10, 2320);
 			sleep(2);
-			var npc := CreateNpcFromTemplate(pettemplate, targ.x, targ.y, targ.z, 0, targ.realm );
+			var npc := CreateNpcFromTemplate(pettemplate, targ.x, targ.y, targ.z, 0, targ.realm);
 
 			if (npc)
 				SetObjProperty(npc, "owner", who.serial);
@@ -68,7 +71,7 @@ program pet(who)
 				npc.script := ":ghaia:tamed";
 				RestartScript(npc);
 
-				MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+				MoveObjectToLocation(targ, 10, 10, 10, targ.realm, MOVEOBJECT_FORCELOCATION);
 				targ.kill();
 				AddPet(who, npc.serial);
 			endif
@@ -81,13 +84,12 @@ program pet(who)
 
 	endif
 
-
 endprogram
 
 function selectpet(who)
 
 	var gump := GFCreateGump();
-        GFDisposable(gump, 0);
+	GFDisposable(gump, 0);
 	GFResizePic(gump, 0, 25, 3600, 220, 350);
 	GFResizePic(gump, 15, 40, 0x13BE, 190, 320);
 	GFTextLine(gump, 60, 50, 1153, "Companheiro Animal");
@@ -97,7 +99,7 @@ function selectpet(who)
 	GFTilePic(gump, 50, 190, 9654);
 	GFTilePic(gump, 50, 240, 11670);
 
-	GFAddButton(gump, 30, 100,  2103, 2104, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 30, 100, 2103, 2104, GF_CLOSE_BTN, 1);
 	GFAddButton(gump, 30, 150, 2103, 2104, GF_CLOSE_BTN, 2);
 	GFAddButton(gump, 30, 200, 2103, 2104, GF_CLOSE_BTN, 3);
 	GFAddButton(gump, 30, 250, 2103, 2104, GF_CLOSE_BTN, 4);
@@ -116,11 +118,10 @@ function selectpet(who)
 		return ":brainai:unicorn";
 	elseif (input == 3)
 		return ":brainai:fadinha";
-	elseif (input == 4 )
+	elseif (input == 4)
 		return ":brainai:cusidhe";
 	else
 		return 0;
 	endif
-
 
 endfunction

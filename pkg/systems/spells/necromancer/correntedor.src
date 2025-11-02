@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -15,17 +15,17 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	var targets := array;
-	var duration := +cint(AP_GetSkill(who, MAGICLORE));
+	var duration := +cint(AP_GetSkill(who, ARCANA));
 	if (duration < 20)
 		duration := 20;
 	endif
 
-	var range := Cint(AP_GetSKill(who, MAGICLORE)/20) + 2;
-	foreach mob in (ListMobilesNearLocation( targ.x, targ.y, targ.z, range, who.realm ))
+	var range := Cint(AP_GetSKill(who, ARCANA) / 20) + 2;
+	foreach mob in (ListMobilesNearLocation(targ.x, targ.y, targ.z, range, who.realm))
 		if (mob.serial != who.serial)
-			if (!(mob in who.party.members)) 
+			if (!(mob in who.party.members))
 				targets.append(mob.serial);
-				SetObjProperty(mob, "#chainofpain", ReadGameClock() + duration );
+				SetObjProperty(mob, "#chainofpain", ReadGameClock() + duration);
 				SetObjProperty(mob, "#mageserial", who.serial);
 			endif
 		endif
@@ -40,8 +40,8 @@ program SpellScript(params)
 			y := 1;
 		endif
 		var mob2 := SystemFindObjectBySerial(targets[y]);
-		PlayObjectCenteredEffectEx( mob, 14186, 0, 10, 2444, 0, 0, 0 );
-		PlayMovingEffectEx( mob, mob2, 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0 );
+		PlayObjectCenteredEffectEx(mob, 14186, 0, 10, 2444, 0, 0, 0);
+		PlayMovingEffectEx(mob, mob2, 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0);
 		SetObjProperty(mob, "#chainserials", targets);
 	endforeach
 
@@ -49,6 +49,6 @@ program SpellScript(params)
 
 	SendSysMessageEx(who, "Voce fez um corrente de dor", SSM_INFO);
 	Corromper(who, 27, targ);
-	
+
 	return 1;
-endprogram 
+endprogram

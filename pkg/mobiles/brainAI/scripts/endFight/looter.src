@@ -6,11 +6,11 @@ include ":brainAI:npcCommands";
 include ":attributes:attributes";
 
 program BrainNerve(params)
-	var npc		:= params[1];
-	var nerve_name	:= params[2];
-	var opponent	:= params[3];
-	var settings	:= params[4];
-	//var scripts	:= params[5];
+	var npc := params[1];
+	var nerve_name := params[2];
+	var opponent := params[3];
+	var settings := params[4];
+	// var scripts	:= params[5];
 	params := 0; // Not needed anymore.
 	var has_looted := 0;
 
@@ -19,13 +19,13 @@ program BrainNerve(params)
 	do
 		var dist := Distance(npc, corpse);
 		AI_Move(npc, corpse, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, dist);
-		sleep(dist-1);
-	dowhile( ShouldApproach(npc, opponent, corpse) );
+		sleep(dist - 1);
+	dowhile (ShouldApproach(npc, opponent, corpse));
 
 	if (has_looted == 0)
 
 		if (Distance(npc, corpse) <= 2)
-			var max_loot := AP_GetStat(npc, INTELLIGENCE)/10;
+			var max_loot := AP_GetStat(npc, INTELLIGENCE) / 10;
 			var i := 0;
 			while (i < max_loot)
 				LootSomething(npc, corpse);
@@ -39,13 +39,13 @@ program BrainNerve(params)
 endprogram
 
 function ShouldApproach(npc, opponent, corpse)
-	if ( !opponent )
+	if (!opponent)
 		return 0;
-	elseif ( !corpse )
+	elseif (!corpse)
 		return 0;
 	endif
 
-	if ( Distance(npc, corpse) > 1 )
+	if (Distance(npc, corpse) > 1)
 		return 1;
 	endif
 
@@ -53,49 +53,49 @@ function ShouldApproach(npc, opponent, corpse)
 endfunction
 
 function LootSomething(npc, corpse)
-	if ( !npc.backpack )
+	if (!npc.backpack)
 		EquipItem(npc, CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1));
 	endif
 
 	var contents := array;
 	foreach item in EnumerateItemsInContainer(corpse)
 		var inside := 0;
-		if ( item.IsA(POLCLASS_CONTAINER) )
+		if (item.IsA(POLCLASS_CONTAINER))
 			inside := EnumerateItemsInContainer(item).size();
 		endif
-		
-		if ( inside > 0 );
-			//PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
-			//Do nothing
-		elseif ( !item.movable );
-			//PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
-			//Do nothing
+
+		if (inside > 0)
+		// PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
+		// Do nothing
+		elseif (!item.movable)
+		// PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
+		// Do nothing
 		else
-			//PrintTextAbove(corpse, item.desc+" is lootable.");
+			// PrintTextAbove(corpse, item.desc+" is lootable.");
 			contents.append(item);
 		endif
 		sleepms(5);
 	endforeach
 
-	if ( contents.size() > 0 )
-		var item := contents[RandomInt(contents.size())+1];
+	if (contents.size() > 0)
+		var item := contents[RandomInt(contents.size()) + 1];
 		contents := 0;
-		
-		if ( item )
+
+		if (item)
 			PrintTextAbove(npc, "*revirando o corpo*");
 			MoveItemToContainer(item, npc.backpack);
-			
-			if ( item.layer )
+
+			if (item.layer)
 				var equip := GetEquipmentByLayer(npc, item.layer);
-				if ( !equip.IsA(POLCLASS_WEAPON) )
-					if ( item.ar > equip.ar )
+				if (!equip.IsA(POLCLASS_WEAPON))
+					if (item.ar > equip.ar)
 						MoveItemToContainer(equip, npc.backpack);
-						if ( !EquipItem(npc, item) )
+						if (!EquipItem(npc, item))
 							EquipItem(npc, equip);
 						endif
 					endif
 				endif
-			elseif ( item.IsA(POLCLASS_EQUIPMENT) )
+			elseif (item.IsA(POLCLASS_EQUIPMENT))
 				EquipItem(npc, item);
 			endif
 		endif

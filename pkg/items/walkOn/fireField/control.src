@@ -1,51 +1,59 @@
 /*
  * $Id: control.src 935 2005-11-07 00:34:53Z austin $
  *
- */
-
+*/
 use uo;
 use os;
 use util;
 
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 program controlScript(field)
 	SetObjProperty(field, "#PID", GetPid());
+	SetObjProperty(field, PROPNAME_INDESTRUTIVEL, 1);
 
 	var creator := field.GetOwner();
-	if ( creator )
+	if (creator)
 		SetScriptController(creator);
 	endif
 
+	var sumDesc := GetObjProperty(field, "SummonedField") ? "[Invoc]" : "";
 	var dmg_dice := GetObjProperty(field, "DamageDice");
-	if ( !dmg_dice )
+	if (!dmg_dice)
 		dmg_dice := "1d5";
 	endif
 
-	while ( field )
+	while (field)
 		BurnNearbyMobiles(field, dmg_dice);
+		DanificaObjetosProximos(creator, field.x, field.y, field.z, field.realm, struct{ dano := RandomDiceRoll(
+																				 		dmg_dice),
+																				 		desc := (
+																				 		"Campo Flamejante." + sumDesc) }, 0, 0, field.serial);
 
-		if ( ReadGameClock() % 3 == 0 )
+		if (ReadGameClock() % 3 == 0)
 			// Play once every 3 seconds.
 			PlaySoundEffect(field, 0x1DE);
 		endif
 
-		var event := Wait_For_Event(1);
-		if ( event )
-			//Someone just walked onto the tile.
+		var event := Wait_For_Event(0);
+		if (event)
+			// Someone just walked onto the tile.
 			BurnMobile(event, dmg_dice, creator);
 		endif
-		
-		if ( field.IsExpired() )
+
+		if (field.IsExpired())
 			DestroyItem(field);
 			return 1;
 		endif
+		sleepms(250);
 	endwhile
 endprogram
 
 function BurnNearbyMobiles(field, dmg_dice)
-	var nearby := ListMobilesNearLocationEX(field.x, field.y, field.z, 0, LISTEX_FLAG_NORMAL+LISTEX_FLAG_HIDDEN, field.realm);
-	foreach mobile in ( nearby )
+	var nearby := ListMobilesNearLocationEX(field.x, field.y, field.z, 0,
+											 LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, field.realm);
+	foreach mobile in (nearby)
 		BurnMobile(mobile, dmg_dice, field.GetOwner());
 
 		sleepms(2);
@@ -56,7 +64,7 @@ endfunction
 
 function BurnMobile(mobile, dmg_dice, field_owner)
 	var dmg := RandomDiceRoll(dmg_dice); // - resistance ?
-	ApplyDamageEX(mobile, dmg, DMG_FIRE);
+	DamageFLS(mobile, dmg, DMG_FIRE);
 	SetObjProperty(mobile, "affected_by_spell", field_owner.serial);
 	return 1;
 endfunction

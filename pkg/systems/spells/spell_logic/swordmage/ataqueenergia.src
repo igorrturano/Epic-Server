@@ -1,6 +1,5 @@
- 
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -17,33 +16,31 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	// SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
+	var targ := who.weapon; // Spell_Target(who, TGTOPT_CHECK_LOS);
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );
-	
+	var time := GetSpellDuration(AP_GetSkill(who, ARCANA));
+
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
 
-		if(checkForElementalWeapons(who, targ))
-	        return 0;
-        endif
+		if (checkForElementalWeapons(who, targ))
+			return 0;
+		endif
 
 		SetCooldown(targ, "ataqueelemental", 20);
 
-        	PlaySoundEffect(targ, SFX_BLESS);
+		PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "Os espiritos da tempestade estao inquietos na sua arma.", SSM_INFO);
-	
+
 		return 1;
 	endif
 
 	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
 
-endprogram    
- 
- 
+endprogram

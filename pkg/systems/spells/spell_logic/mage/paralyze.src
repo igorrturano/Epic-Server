@@ -17,9 +17,9 @@ program SpellScript(params)
 	var spell_school := spellinfo.School;
 
 	params := 0; // No longer needed
-	
+
 	SendSysMessage(who, "Selecione o alvo.");
-	if ( !targ.IsA(POLCLASS_MOBILE) )
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Cancelado.");
 		return 0;
 	endif
@@ -33,22 +33,20 @@ program SpellScript(params)
 		return 1;
 	endif
 
+	PrintTextAbove(targ, "*paralisado*");
 
-	printText(targ, "*paralisado*");
+	var duration := CINT(AP_GetSkill(who, ARCANA) / 5);
 
-	var duration := CINT(AP_GetSkill(who, MAGICLORE)/5);
-
-	//Bonus de especialização
-    if(Temhabilidade(who, "Valdruk"))
-        duration := duration * 1.2;
-    endif
+	// Bonus de especialização
+	if (Temhabilidade(who, "Valdruk"))
+		duration := duration * 1.2;
+	endif
 
 	TS_StartTimer(targ, "paralysis", duration, who);
-	
 
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);	
+	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
 	handleSilentMagic(who, targ, SFX_SPELL_REACTIVE_ARMOR);
 
-	SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+	SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
 	return 1;
 endprogram

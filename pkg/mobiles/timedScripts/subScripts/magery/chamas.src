@@ -11,17 +11,16 @@ include "include/client";
 program default_poison(params)
 	var who := params[1];
 
-
 	var dmg := 0;
-	//var stam := 0;
+	// var stam := 0;
 	var poisonedmsg := "";
 	var viewermsg := "";
 	var time := 15;
 	dmg := 7;
 	time := 5;
 
-	while(1)
-		
+	while (1)
+
 		SendSysMessageEx(who, "Voce esta queimando.", SSM_FAIL);
 		ApplyRawDamage(who, dmg);
 		PlayObjectCenteredEffect(who, GFX_EXPLODE_1, 7, 16);
@@ -30,5 +29,3 @@ program default_poison(params)
 
 	return;
 endprogram
-
- 

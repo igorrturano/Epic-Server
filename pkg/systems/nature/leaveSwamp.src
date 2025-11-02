@@ -2,6 +2,6 @@ use uo;
 use vitals;
 
 program leaveswamp(who)
-    EraseObjProperty(who, "swampArea");
+	EraseObjProperty(who, "swampArea");
 	RecalcVitals(who);
 endprogram

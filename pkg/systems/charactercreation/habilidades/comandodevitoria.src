@@ -1,4 +1,4 @@
- use uo;
+use uo;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
@@ -14,19 +14,17 @@ program manobra(attacker)
 		return;
 	endif
 
-	PrintText(attacker, "*ordena os aliados*");
+	PrintTextAbove(attacker, "*ordena os aliados*");
 
 	foreach member in (festa.members)
 		if (member.serial != attacker.serial)
 			if (Distance(attacker, member) < 8)
 				var cds := TS_GetCooldownList(member);
 				foreach cd in cds
-					TS_LowerDuration(member, cd, -1, 1);	
+					TS_LowerDuration(member, cd, -1, 1);
 				endforeach
 			endif
 		endif
 	endforeach
 
-
-endprogram  
-
+endprogram

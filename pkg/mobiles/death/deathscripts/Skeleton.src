@@ -1,27 +1,21 @@
 
-
 use uo;
 use os;
 use util;
 
 include ":death:death";
 
-CONST MAX_RANGE	:= 8;
+const MAX_RANGE := 8;
 
 program DeathScript(params)
 	var corpse := params[1];
-	//var npc_cfg := params[2];
+	// var npc_cfg := params[2];
 	var template := params[3];
 	params := 0; // Not needed anymore
 
-	var pieces := array
-	{
-		0x1AE1,
-		0x1B17,
-		0xF7E
-	};
+	var pieces := array{ 0x1AE1, 0x1B17, 0xF7E };
 
-	if ( RandomInt(3) )
+	if (RandomInt(3))
 		if (GetObjProperty(corpse, "#championspawn") == error)
 			ResZombie(corpse, pieces, template);
 		endif
@@ -44,8 +38,8 @@ function ResZombie(corpse, byref pieces, template)
 	var corpse_z := corpse.z;
 	var realm := corpse.realm;
 
-	foreach obj_type in ( pieces )
-		if ( RandomInt(50) )
+	foreach obj_type in (pieces)
+		if (RandomInt(50))
 			var piece := CreateItemAtLocation(corpse.x, corpse.y, corpse.z, obj_type, 1);
 			piece.color := corpse.color;
 			piece.movable := 1;
@@ -60,9 +54,9 @@ function ResZombie(corpse, byref pieces, template)
 
 	var recovered_pieces := array;
 
-	foreach item in ( ListItemsNearLocation(corpse_x, corpse_y, corpse_z, MAX_RANGE, realm) )
-		if ( (item.objtype in pieces) && (item.color == corpse_color) )
-			if ( !Recovered(item, recovered_pieces) )
+	foreach item in (ListItemsNearLocation(corpse_x, corpse_y, corpse_z, MAX_RANGE, realm))
+		if ((item.objtype in pieces) && (item.color == corpse_color))
+			if (!Recovered(item, recovered_pieces))
 				SetObjProperty(item, "#taken", GetPid());
 				recovered_pieces.Append(item);
 			endif
@@ -70,21 +64,21 @@ function ResZombie(corpse, byref pieces, template)
 		SleepMS(2);
 	endforeach
 
-	if ( recovered_pieces.Size() == pieces.Size() )
-		if ( !MoveItemsToCenter(corpse_x, corpse_y, recovered_pieces) )
+	if (recovered_pieces.Size() == pieces.Size())
+		if (!MoveItemsToCenter(corpse_x, corpse_y, recovered_pieces))
 			return 0;
 		endif
 
-		foreach item in ( recovered_pieces )
+		foreach item in (recovered_pieces)
 			DestroyItem(item);
 			SleepMS(2);
 		endforeach
 
 		var npc := CreateNPCFromTemplate(":brainAi:Skeleton1", corpse_x, corpse_y, corpse_z, 0, realm);
 		RestartScript(npc);
-		if ( npc.errortext )
-			SysLog("Error making npc ->"+npc.errortext);
-			SysLog("template-"+template+"     x-"+corpse_x+"   y-"+corpse_y+"   z-"+corpse_z+"     realm-"+realm);
+		if (npc.errortext)
+			SysLog("Error making npc ->" + npc.errortext);
+			SysLog("template-" + template + "     x-" + corpse_x + "   y-" + corpse_y + "   z-" + corpse_z + "     realm-" + realm);
 		endif
 	endif
 
@@ -96,10 +90,10 @@ function MoveItem(corpse, item)
 	var newx, newy;
 	var newz;
 	repeat
-		newx := RandomInt(MAX_RANGE)-CInt(MAX_RANGE/2);
-		newy := RandomInt(MAX_RANGE)-CInt(MAX_RANGE/2);
-		newx := newx+corpse.x;
-		newy := newy+corpse.y;
+		newx := RandomInt(MAX_RANGE) - CInt(MAX_RANGE / 2);
+		newy := RandomInt(MAX_RANGE) - CInt(MAX_RANGE / 2);
+		newx := newx + corpse.x;
+		newy := newy + corpse.y;
 
 		num_tries := num_tries + 1;
 		if (num_tries > 20)
@@ -107,21 +101,21 @@ function MoveItem(corpse, item)
 		endif
 		SleepMS(2);
 		newz := GetWorldHeight(newx, newy);
-	until ( CheckLOSAt(corpse, newx, newy, newz) );
+	until (CheckLOSAt(corpse, newx, newy, newz));
 
 	MoveObjectToLocation(item, newx, newy, newz, item.realm, MOVEOBJECT_FORCELOCATION);
 endfunction
 
 function MoveItemsToCenter(x, y, byref recovered_pieces)
 	var line_list := dictionary;
-	foreach item in ( recovered_pieces )
+	foreach item in (recovered_pieces)
 		line_list[item] := GetCoordsInLine(item.x, item.y, x, y);
 		SleepMS(2);
 	endforeach
 
-	while ( line_list.Size() > 0 )
-		foreach item in ( line_list.Keys() )
-			if ( !item )
+	while (line_list.Size() > 0)
+		foreach item in (line_list.Keys())
+			if (!item)
 				// Item was lost, it is no longer valid.
 				return 0;
 			endif
@@ -130,10 +124,10 @@ function MoveItemsToCenter(x, y, byref recovered_pieces)
 			MoveObjectToLocation(item, new_coord.x, new_coord.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
 			line_list[item].Erase(1);
 
-			if ( line_list[item].Size() <= 0 )
+			if (line_list[item].Size() <= 0)
 				// Successfully moved to the center.
 				line_list.Erase(item);
-			elseif ( item.container )
+			elseif (item.container)
 				// A player is holding the item, its no longer valid.
 				return 0;
 			endif
@@ -147,12 +141,12 @@ function MoveItemsToCenter(x, y, byref recovered_pieces)
 endfunction
 
 function Recovered(item, recovered_pieces)
-	if ( GetObjProperty(item, "#taken") )
+	if (GetObjProperty(item, "#taken"))
 		return 0;
 	endif
 
-	foreach thing in ( recovered_pieces )
-		if ( item.graphic == thing.graphic )
+	foreach thing in (recovered_pieces)
+		if (item.graphic == thing.graphic)
 			return 1;
 		endif
 

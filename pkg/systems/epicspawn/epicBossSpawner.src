@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include "include/say";
+
+program editBoss(who, item)
+	if (GetObjProperty(item, "form_data"))
+		// Pass the serial of the spawner to the epicboss command
+		start_script(":epicspawn:commands/gm/epicboss", array{ who, item });
+	else
+		SendSysMessage(who, "That is not an epic boss spawner.");
+	endif
+endprogram

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 use vitals;
 
@@ -26,7 +26,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
 
 	var traps := GetObjProperty(targ, "TrapList");
 	var i := 1;
@@ -38,4 +38,4 @@ program SpellScript(params)
 	endforeach
 
 	return 1;
-endprogram      
+endprogram

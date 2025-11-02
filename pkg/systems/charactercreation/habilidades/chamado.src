@@ -22,7 +22,7 @@ program chamado(who)
 	PerformAction(who, ANIM_CAST_AREA);
 	Playsoundeffect(who, 1482);
 
-	//sendsysmessage(who, "tamaveis " +tamable);
+	// sendsysmessage(who, "tamaveis " +tamable);
 
 	foreach mob in tamable
 		var holder := {};
@@ -34,16 +34,16 @@ program chamado(who)
 		if (RandomInt(2) == 1)
 			mod2 := mod2 * (-1);
 		endif
-                holder.append(who.x + mod1);
-                holder.append(who.y + mod2);
-		holder.append(1); //vai correndo
+		holder.append(who.x + mod1);
+		holder.append(who.y + mod2);
+		holder.append(1); // vai correndo
 		holder.append(1); // print text
-		holder.append(1); //animal toca som
-                var ev := struct;
+		holder.append(1); // animal toca som
+		var ev := struct;
 		ev.+source := who;
-                ev.+type := EVID_HERDING;
-                ev.+data := holder;
-                SendEvent(mob, ev);
+		ev.+type := EVID_HERDING;
+		ev.+data := holder;
+		SendEvent(mob, ev);
 	endforeach
 
 endprogram

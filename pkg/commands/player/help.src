@@ -3,7 +3,7 @@
  * Purpose:
  * Show help for a specific command.
  *
- */
+*/
 use uo;
 
 include ":gumps:htmlGump";
@@ -12,8 +12,8 @@ program command_help(who, command)
 	var help;
 
 	help := GetCommandHelp(who, command);
-	if ( help )
-		SendHTMLGump(who, command+" Help Text", help);
+	if (help)
+		SendHTMLGump(who, command + " Help Text", help);
 		return 1;
 	else
 		SendSysMessage(who, "No help available for that command.");

@@ -10,5 +10,5 @@ program doubleattack(who)
 
 	SendSysMessageEx(who, "Finalize a luta!", SSM_INFO);
 	SetObjProperty(who, "#finalizar", 1);
-	
+
 endprogram

@@ -1,4 +1,4 @@
-    use uo;
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -25,19 +25,19 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
+		amt := Cint(AP_GetSkill(who, ARCANA) * 0.5);
 	else
-		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
+		amt := Cint(AP_GetSkill(who, ARCANA) * 0.25);
 	endif
 
 	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))
-			amt := CInt(amt*1.5);
+			amt := CInt(amt * 1.5);
 		endif
 	endif
 
-	TS_StartTimer(targ, "feebleMind", cint(AP_GetSkill(who, MAGICLORE)), amt, who, 1);
-	PrintTextAbovePrivate(targ, "-"+amt + " Str", who, 3, 38); // vermelho
+	TS_StartTimer(targ, "feebleMind", cint(AP_GetSkill(who, ARCANA)), amt, who, 1);
+	PrintTextPrivate(targ, "-" + amt + " Str", who, 3, 38); // vermelho
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "Voce deixou o alvo mais burro.", SSM_INFO);

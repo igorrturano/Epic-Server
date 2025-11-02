@@ -1,5 +1,5 @@
- 
- use uo;
+
+use uo;
 use os;
 
 include ":spells:tnmagery";
@@ -22,22 +22,21 @@ program SpellScript(params)
 
 	var poisonInfo := struct;
 	poisonInfo.+name := "defaultPoison";
-	poisonInfo.+level := cint(AP_GetSKill(who, MAGICLORE)/30);
-	poisonInfo.+skill := AP_GetSkill(who, MAGICLORE);
+	poisonInfo.+level := cint(AP_GetSKill(who, ARCANA) / 30);
+	poisonInfo.+skill := AP_GetSkill(who, ARCANA);
 	poisonInfo.+dosage := 5;
 	poisonInfo.+acc := who.acctname;
 	poisonInfo.+time := 40;
 
 	if (targ.isA(POLCLASS_WEAPON))
-		SetObjProperty(targ, "poisonInfo", poisonInfo);		
+		SetObjProperty(targ, "poisonInfo", poisonInfo);
 	else
 		SetObjProperty(targ.weapon, "poisonInfo", poisonInfo);
 	endif
 
-        PlaySoundEffect(targ, SFX_SPELL_CURSE);
+	PlaySoundEffect(targ, SFX_SPELL_CURSE);
 
 	SendSysMessageEx(who, "Voce profanou a arma.", SSM_INFO);
 
-	
 	return 1;
-endprogram   
+endprogram

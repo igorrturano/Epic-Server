@@ -9,6 +9,9 @@
 ===============================================================*/
 
 use vitals;
+
+include "include/say";
+
 /*
  * FatalError(errmsg)
  *

@@ -6,7 +6,7 @@ include ":tn:cooldown";
 
 program usavarinha(who, wand)
 
-//	sendsysmessage(who, ""+ getCooldown(wand, "delay") );
+	// 	sendsysmessage(who, ""+ getCooldown(wand, "delay") );
 	if (getCooldown(wand, "delay") > 0)
 		SendSysMessageEx(who, "Voce nao pode usar este item agora.", SSM_FAIL);
 		return 0;
@@ -25,25 +25,24 @@ program usavarinha(who, wand)
 		cargas := cargas - 1;
 		SetObjProperty(wand, "description", "Cargas: " + cargas);
 		SetObjPRoperty(wand, "cargas", cargas);
-		SetName(wand, ""+wand.desc);
+		SetName(wand, "" + wand.desc);
 	endif
-
 
 	var spellinfo := GetObjProperty(wand, "spellinfo");
 	var delay := 30;
 
-	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
-	 var script2 := Start_Script(":spells:spell_logic:skulls:toggleSkull", {wand, delay});
-	 wand.color := 982;
-	 setCoolDown(wand, "delay", delay);
-         if ( script.errortext )
-	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
-	       return 0;
-	 endif  
+	var script := Start_Script(":spells:cast_spell", { who, spellinfo, 999 });
+	var script2 := Start_Script(":spells:spell_logic:skulls:toggleSkull", { wand, delay });
+	wand.color := 982;
+	setCoolDown(wand, "delay", delay);
+	if (script.errortext)
+		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
+		return 0;
+	endif
 
-         if ( script2.errortext )
-	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
-	       return 0;
-	 endif  
+	if (script2.errortext)
+		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
+		return 0;
+	endif
 
 endprogram

@@ -19,12 +19,12 @@ program OnInsert(who, container, movetype, insert_type, adding_item, existing_st
 	cfg := cfg[container.graphic];
 
 	var num_items := EnumerateItemsInContainer(container).size();
-	if ( num_items > 0 && GetConfigStringArray(cfg, "FilledGraphic") != error)
-		//Duh, we know it is >0 since its an onInsert script, but its good to be safe.
+	if (num_items > 0 && GetConfigStringArray(cfg, "FilledGraphic") != error)
+		// Duh, we know it is >0 since its an onInsert script, but its good to be safe.
 		var graphics := GetConfigStringArray(cfg, "FilledGraphic");
-		//Change the book shelf to a random compatable filled graphic.
-		//Ooo special effects.
-		var graphic := CInt(graphics[RandomInt(graphics.size())+1]);
+		// Change the book shelf to a random compatable filled graphic.
+		// Ooo special effects.
+		var graphic := CInt(graphics[RandomInt(graphics.size()) + 1]);
 		container.graphic := graphic;
 	endif
 

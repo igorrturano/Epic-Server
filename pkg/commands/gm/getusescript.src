@@ -1,7 +1,6 @@
 use uo;
 
-
-program textcmd_getusescript( who )
+program textcmd_getusescript(who)
 
 	SendSysMessage(who, "Select target.");
 	var targ := Target(who);
@@ -11,6 +10,6 @@ program textcmd_getusescript( who )
 		return;
 	endif
 
-	SendSysMessage(who, CStr(targ.usescript) );
-   
+	SendSysMessage(who, CStr(targ.usescript));
+
 endprogram
