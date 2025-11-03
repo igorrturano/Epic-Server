@@ -141,14 +141,12 @@ function HandleMonsterLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
-    // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleMonsterCombatEvent(mobile, is_ranged);
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
+    // Check for nearby threats first
+    var threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
+    endif
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
@@ -168,6 +166,13 @@ function HandleMonsterLeftArea(is_ranged)
             endif
             sleepms(100);
         endforeach
+    endif
+
+    // Re-check for threats after looting attempt (in case one appeared while looting)
+    threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
     endif
 
     // If nothing else to do, go idle
