@@ -1005,6 +1005,19 @@ function findAnotherPath()
     endif
 endfunction
 
+function CheckNearbyThreats()
+    // Scans area for hostile targets and returns the first one found
+    // Returns: mobile object if threat found, 0 if none found
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+        if (CanFight(me, mobile))
+            return mobile;
+        endif
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
 function CheckForIdealTarget()
    // Get the target priority
    var target_priority := GetObjProperty(me, "target_priority");
@@ -1977,11 +1990,20 @@ function LootCorpse(corpse)
         return 0;
     endif
 
-    // Approach the corpse
+    // Approach the corpse, but check for threats while approaching
     while (Distance(me, corpse) > 1)
+        // Check for nearby hostiles - combat takes priority over looting
+        foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+            if (CanFight(me, mobile))
+                // Hostile nearby - abort looting and engage
+                return 0;
+            endif
+            sleepms(20);
+        endforeach
+
         RunToward(corpse);
         sleepms(100);
-        
+
         // Break if corpse disappeared or too far
         if (!corpse || Distance(me, corpse) > 20)
             return 0;
@@ -1994,7 +2016,7 @@ function LootCorpse(corpse)
         max_loot := 1;
     endif
     var looted := 0;
-    
+
     // Ensure NPC has a backpack
     if (!me.backpack)
         var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
@@ -2002,9 +2024,18 @@ function LootCorpse(corpse)
             return 0;
         endif
     endif
-    
-    // Loot items
+
+    // Loot items, but check for threats between each item
     while (looted < max_loot)
+        // Check for nearby hostiles before looting each item
+        foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+            if (CanFight(me, mobile))
+                // Hostile nearby - abort looting and let the brain handle combat
+                return (looted > 0);
+            endif
+            sleepms(2);
+        endforeach
+
         PrintTextAbove(me, "*revira o corpo*");
         if (!LootSomething(me, corpse))
             break;
@@ -2012,7 +2043,7 @@ function LootCorpse(corpse)
         looted += 1;
         sleepms(1500);
     endwhile
-    
+
     return (looted > 0);
 endfunction
 
