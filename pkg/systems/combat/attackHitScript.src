@@ -2,6 +2,7 @@
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
 include ":combat:Controller/ParryController";
+include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":combat:Model/CombatAbility";

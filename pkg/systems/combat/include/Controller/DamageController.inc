@@ -7,8 +7,8 @@
 
 // Internal
 include ":combat:armorZones";
-// include ":combat:combat";
 include ":combat:Controller/AbilitiesController";
+include ":combat:Controller/SkillController";
 include ":combat:weardown";
 
 // External

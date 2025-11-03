@@ -24,7 +24,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._religion := this.objRef.GetProp("chardata").religion;
 			
 		else
-			var err := error{ errortext := "Param is not a mobRef or does not exist!" };
+			var err := error{errortext := "Param is not a mobRef or does not exist!"};
 			this._objRef := err;
 			this._name := err;
 		endif
@@ -137,11 +137,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetNPCTemplate(this)
-		return this.IsNPC() ? this._objRef.npctemplate : error{ errortext := "This mobile is not an NPC!" };
+		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not an NPC!"};
 	endfunction
 
 	function GetNPCTemplateCfg(this)
-		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{ errortext := "This mobile is not an NPC or has no template configured!" };
+		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not an NPC or has no template configured!"};
 	endfunction
 
 	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
@@ -149,9 +149,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return this._objRef.weapon ? WeaponWrapper(this._objRef.weapon) : error{ errortext := "Empty slot!" };
+			return this._objRef.weapon ? WeaponWrapper(this._objRef.weapon) : error{errortext := "Empty slot!"};
 		elseif (equipSlot == SHIELD)
-			return this._objRef.shield ? ArmorWrapper(this._objRef.shield) : error{ errortext := "Empty slot!" };
+			return this._objRef.shield ? ArmorWrapper(this._objRef.shield) : error{errortext := "Empty slot!"};
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
 		elseif (equipSlot == NECK)
@@ -167,11 +167,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		elseif (equipSlot == FEET)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, FEET);
 		else
-			return error { errortext := "Wrong slot specified!" };
+			return error{errortext := "Wrong slot specified!"};
 		endif
 
 		if (equipsInSlot.size() == 0)
-			return error{ errortext := "Empty slot!" };
+			return error{errortext := "Empty slot!"};
 		endif
 
 		foreach equip in (equipsInSlot)
@@ -215,7 +215,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{ errortext := "The param must be an ArmorWrapper or WeaponWrapper!" };
+			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -228,7 +228,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{ errortext := "The param must be an ArmorWrapper or WeaponWrapper!" };
+			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -289,7 +289,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function Equals(this, byRef otherMobileWrapper)
 		if (!(otherMobileWrapper is @MobileWrapper))
-			return error{ errortext := "The param must be a MobileWrapper!" };
+			return error{errortext := "The param must be a MobileWrapper!"};
 		endif
 
 		return this.GetObjRef() == otherMobileWrapper.GetObjRef() &&
