@@ -31,7 +31,7 @@ function HumanoidBrain()
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
-        ev := os::wait_for_event(1);
+        ev := os::wait_for_event(0);
         
         // Check FORCE dormant FIRST - before anything else
         var current_time := polcore().systime;

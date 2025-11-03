@@ -1253,12 +1253,9 @@ endfunction
 function IsWithinEngagementRange(opponent, ideal_distance)
     var dist := Distance(me, opponent);
 
-    // Add tolerance to prevent micro-adjustments
-    if (dist <= (ideal_distance + PURSUIT_DISTANCE_TOLERANCE))
-        return 1;
-    endif
-
-    return 0;
+    // No tolerance - NPCs should close to exactly the ideal distance
+    // Tolerance was causing NPCs to stop too far away (melee at 3 tiles, etc.)
+    return (dist <= ideal_distance);
 endfunction
 
 // Helper: Get cached path or calculate new one
@@ -1327,10 +1324,16 @@ function PursueTarget(opponent)
         if (ideal_distance > 1)
             // Ranged creature - run away in a loop until at safe distance
             var should_run := !(me.hidden || me.concealed);
-            while (Distance(me, opponent) < ideal_distance)
+            var retreat_attempts := 0;
+            var stuck_retreating := 0;
+
+            while (Distance(me, opponent) < ideal_distance && retreat_attempts < 10)
                 if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
                     break;
                 endif
+
+                var old_x := me.x;
+                var old_y := me.y;
 
                 if (should_run)
                     RunAwayFrom(opponent);
@@ -1338,6 +1341,28 @@ function PursueTarget(opponent)
                     WalkAwayFrom(opponent);
                 endif
                 sleepms(100);
+                retreat_attempts += 1;
+
+                // Check if we actually moved
+                if (me.x == old_x && me.y == old_y)
+                    stuck_retreating += 1;
+
+                    // If stuck for 3 attempts, try alternative locations
+                    if (stuck_retreating >= 3)
+                        var alternative_locations := GetAlternativeLocations(opponent);
+                        if (alternative_locations.size() > 0)
+                            // Try to move to the furthest location
+                            RunTowardLocation(alternative_locations[1].x, alternative_locations[1].y);
+                            sleepms(100);
+                        endif
+                        // Break out if we've tried alternatives and still stuck
+                        if (stuck_retreating >= 5)
+                            break;
+                        endif
+                    endif
+                else
+                    stuck_retreating := 0; // Reset if we moved
+                endif
             endwhile
             return 1;
         endif
@@ -1404,13 +1429,18 @@ function PursueTarget(opponent)
             if (!moved || !got_closer)
                 stuck_count += 1;
 
-                // If stuck after 2 attempts, use TacticalReposition to find alternative path
+                // If stuck after 2 attempts, try to find alternative path
                 if (stuck_count >= 2)
                     // We have LOS but can't move directly - probably a wall
-                    // Use TacticalReposition to find an alternative location
                     EraseObjProperty(me, "#pursuit_path_cache");
-                    TacticalReposition(opponent, 1);
-                    use_pathfinding := 1; // Then try pathfinding from new position
+
+                    // Only use TacticalReposition for ranged creatures
+                    // Melee creatures should just switch to pathfinding
+                    if (ideal_distance > 1)
+                        TacticalReposition(opponent, 1);
+                    endif
+
+                    use_pathfinding := 1; // Try pathfinding from current position
                     break;
                 endif
             else
@@ -1539,7 +1569,13 @@ function PursueTarget(opponent)
             EraseObjProperty(me, "path");
             EraseObjProperty(me, "#enemy_last_loc");
             EraseObjProperty(me, "#pursuit_path_cache"); // Clear cached path when stuck
-            TacticalReposition(opponent, 1);
+
+            // Only use TacticalReposition for ranged creatures
+            // Melee creatures should just retry with pathfinding instead
+            if (ideal_distance > 1)
+                TacticalReposition(opponent, 1);
+            endif
+
             progress.no_progress_count := 0;
         endif
     endif
@@ -1879,8 +1915,10 @@ function shouldKeepPursuing(opponent, dist)
         return 0;
     endif
 
-    // If we're in melee range and can see opponent, stop pursuing
-    if (dist <= 1 && CheckLineOfSight(me, opponent))
+    // If we're in melee range and can see opponent, stop pursuing (only for melee)
+    // Ranged creatures need to keep pursuing to retreat away
+    var ideal_distance := CalculateIdealPursuitDistance();
+    if (dist <= 1 && ideal_distance == 1 && CheckLineOfSight(me, opponent))
         return 0;
     endif
 
