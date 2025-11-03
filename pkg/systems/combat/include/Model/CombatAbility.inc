@@ -61,6 +61,7 @@ enum class COMBAT_ABILITY
 	SENSO_DA_NATUREZA := "Senso da Natureza",
 	VENENO_PURO := "Veneno Puro",
 	REFLEXO_ESTRATEGICO := "Reflexo Estrategico",
+	MAESTRIA_DE_DEVASTACAO := "Maestria de Devastacao",
 
 
 
