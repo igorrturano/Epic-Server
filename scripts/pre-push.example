@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+# Example pre-push hook for eScript linting
+#
+# This hook runs when you execute 'git push' and checks all commits
+# that are about to be pushed to the remote repository.
+#
+# To install:
+#   cp scripts/pre-push.example .git/hooks/pre-push
+#   chmod +x .git/hooks/pre-push
+#
+# To bypass (when needed):
+#   git push --no-verify
+
+# Read from stdin: local_ref local_sha remote_ref remote_sha
+while read local_ref local_sha remote_ref remote_sha
+do
+    # Get the remote branch name
+    remote_branch=$(echo "$remote_ref" | sed 's/refs\/heads\///')
+
+    echo "================================================"
+    echo "Running eScript linter before push to $remote_branch"
+    echo "================================================"
+    echo ""
+
+    # If pushing to main/master, be more strict
+    if [ "$remote_branch" = "main" ] || [ "$remote_branch" = "master" ]; then
+        echo "⚠️  Pushing to $remote_branch - Running strict checks"
+        echo ""
+
+        # Check all changes since remote branch
+        if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+            # New branch, check all commits
+            RANGE="$local_sha"
+        else
+            # Existing branch, check commits since remote
+            RANGE="$remote_sha..$local_sha"
+        fi
+
+        # Get list of changed .src and .inc files in the range
+        changed_files=$(git diff --name-only "$RANGE" | grep -E '\.(src|inc)$' || true)
+
+        if [ -z "$changed_files" ]; then
+            echo "✅ No eScript files changed in this push"
+            echo ""
+            continue
+        fi
+
+        echo "Changed files:"
+        echo "$changed_files" | sed 's/^/  - /'
+        echo ""
+
+        # Run linter on changes since remote
+        echo "Running linter on changes..."
+        echo ""
+
+        if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+            # New branch - lint all changes from common ancestor with main
+            ./scripts/lint-git-diff.sh origin/main 2>/dev/null || ./scripts/lint-git-diff.sh main 2>/dev/null || ./scripts/lint-git-diff.sh
+        else
+            # Existing branch - lint changes since remote
+            ./scripts/lint-git-diff.sh "$remote_sha"
+        fi
+
+        LINT_EXIT=$?
+
+        if [ $LINT_EXIT -ne 0 ]; then
+            echo ""
+            echo "=========================================="
+            echo "❌ Linting found issues in your changes."
+            echo "=========================================="
+            echo ""
+            echo "Please fix the issues above before pushing to $remote_branch."
+            echo ""
+            echo "Options:"
+            echo "  1. Fix the issues and commit: git add . && git commit --amend"
+            echo "  2. Fix in a new commit: git add . && git commit -m 'fix: linting issues'"
+            echo "  3. Skip this check (not recommended): git push --no-verify"
+            echo ""
+            exit 1
+        fi
+
+        echo ""
+        echo "✅ Linting passed for $remote_branch!"
+        echo ""
+
+    else
+        # For feature branches, just show a warning but don't block
+        echo "ℹ️  Pushing to feature branch: $remote_branch"
+        echo "   Tip: Run './scripts/lint-git-diff.sh origin/main' to check your changes"
+        echo ""
+    fi
+done
+
+echo "================================================"
+echo "✅ Pre-push checks complete. Proceeding with push."
+echo "================================================"
+echo ""
+
+exit 0
