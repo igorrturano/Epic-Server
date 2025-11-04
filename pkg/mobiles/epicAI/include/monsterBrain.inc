@@ -288,6 +288,20 @@ function MonsterIdle(wanders, is_ranged)
         sleepms(2);
     endforeach
 
+    // If didn't see anyone, try to hear footsteps (no LoS required)
+    var heard_mobile := NPCHearFootsteps(me);
+    if (heard_mobile)
+        Message("*!*").SendAbove(me);
+        // Check if we can see them now (might have moved into view)
+        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+            HandleMonsterCombatEvent(heard_mobile, is_ranged);
+            return;
+        endif
+
+        // Move toward the sound - NPC will investigate the last known position
+        PursueTarget(heard_mobile);
+    endif
+
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
