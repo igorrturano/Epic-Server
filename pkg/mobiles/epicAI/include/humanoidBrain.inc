@@ -345,6 +345,12 @@ function HumanoidIdle(wanders, is_ranged)
             return;
         endif
 
+        // Only show alert and investigate if not on cooldown (prevents spam)
+        if (GetCooldown(me, "heard_sound") == 0)
+            Message("*!*").SetColor(500).SendAbove(me);
+            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
+        endif
+
         // Move toward the sound - NPC will investigate the last known position
         PursueTarget(heard_mobile);
     endif

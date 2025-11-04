@@ -1189,6 +1189,11 @@ function NPCHearFootsteps(npc)
                 SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
                 continue;
             endif
+        else
+            // First time seeing this player - store position but don't detect yet
+            // Need to wait for next check to confirm they're actually moving
+            SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
+            continue;
         endif
 
         SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
