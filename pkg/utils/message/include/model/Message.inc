@@ -143,7 +143,7 @@ class Message(IMessage)
 			var msgSplitted := this._SplitMessages(MSG_MAXSIZE::PRINTTEXT);
 
 			foreach part in (msgSplitted)
-				PrintTextAbove(who, part.textTarget, part.color, part.font);
+				PrintText(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
 			return this._SendAsync(struct{
