@@ -483,4 +483,3 @@ function AmmoCheck(attacker, defender)
 	endif
 
 endfunction
-

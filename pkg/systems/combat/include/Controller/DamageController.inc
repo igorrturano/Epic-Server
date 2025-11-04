@@ -47,7 +47,7 @@ function CheckCombatDamage(byRef attackInfo)
 	ApplyCombatDamage(attackInfo);
 	CheckPoison(attackInfo);
 	CheckAbilitiesAfterHit(attackInfo);
-	ProgressSkills(attackInfo);
+	ProgressAttackSkills(attackInfo);
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)

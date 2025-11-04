@@ -15,7 +15,9 @@ include "DamageController";
 include "HitController";
 include "SkillController";
 include "FXController";
+include ":combat:Model/CombatAbility";
 
+include ":message:Model/Message";
 include ":charactercreation:resists";
 include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
@@ -509,32 +511,31 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byRef attackI
 	return 0;
 endfunction
 
-function CheckHab_KenNoTatsujin(byref attacker, byref defender, byRef attackInfo)
-	var HAB_NAME := "Ken no Tatsujin";
-	
-	if (TemHabilidade(defender, HAB_NAME))
-		if (!defender.shield)
-			PrintTextAbove(defender, $"*{HAB_NAME}*");
-			PlaySoundEffect(defender, 0x51f);
-			defender.attack_once(attacker);
-
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-
-			return 1;
-		else
-			SendSysMessageEX(defender, $"Você está usando escudo e falhou {HAB_NAME}", SSM_INFO);
-		endif;
+function CheckHab_KenNoTatsujin(byRef attackInfo)
+	if (!attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KEN_NO_TATSUJIN))
+		return false;
 	endif
 
-	return 0;
+	if (attackInfo.GetDefender().GetEquipBySlot(SHIELD))
+		Message($"Você está usando escudo e falhou {COMBAT_ABILITY::KEN_NO_TATSUJIN}", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::FAIL}!");
+		return false;
+	endif
+
+	Message($"*{COMBAT_ABILITY::KEN_NO_TATSUJIN}*").SendAbove(attackInfo.GetDefender().GetObjRef());
+	PlaySoundEffect(attackInfo.GetDefender().GetObjRef(), 0x51f);
+	attackInfo.GetDefender().GetObjRef().attack_once(attackInfo.GetAttacker().GetObjRef());
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::SUCCESS}!");
+
+	return true;
 endfunction
 
-function CheckHab_BarreiraIndestrutivel(byref attacker, byref defender, byRef attackInfo)
-	if (GetCooldown(defender, "barreiraindestrutivel"))
-		return 1;
+function CheckHab_BarreiraIndestrutivel(byRef attackInfo)
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "barreiraindestrutivel"))
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 // TODO: Preparar para migrar a função Trespassar que está no mainHitScript para cá.

@@ -62,6 +62,9 @@ enum class COMBAT_ABILITY
 	VENENO_PURO := "Veneno Puro",
 	REFLEXO_ESTRATEGICO := "Reflexo Estrategico",
 	MAESTRIA_DE_DEVASTACAO := "Maestria de Devastacao",
+	INSPIRAR_DEFESAS := "Inspirar Defesas",
+	KEN_NO_TATSUJIN := "Ken no Tatsujin",
+	TABIBITO_NO_MICHI := "Tabibito no Michi",
 
 
 
@@ -82,7 +85,6 @@ enum class COMBAT_ABILITY
 	SEMPRE_ALERTA := "Sempre Alerta",
 	CHARGE := "Charge",
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
-	KEN_NO_TATSUJIN := "Ken no Tatsujin",
 	BARREIRA_INDESTRUTIVEL := "Barreira Indestrutível",
 	TRESPASSAR := "Trespassar",
 	ATAQUE_FURTIVO := "Ataque Furtivo",
