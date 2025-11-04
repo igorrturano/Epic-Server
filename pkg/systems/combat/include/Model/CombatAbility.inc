@@ -1,5 +1,3 @@
-use cfgfile;
-
 include "ICombatAbility";
 
 include ":diceroll:model/DiceRoll";
@@ -9,15 +7,13 @@ class CombatAbility(ICombatAbility)
 	var _name := "";
 	var _description := "";
 	var _moment := COMBATABILITY_MOMENT::ON_HIT;
-	var _cooldown := 0; // em segundos
-	var _cost := struct{
-		hp := 0,
-		stam := 0,
-		mana := 0
-	};
-	var _effectDuration := 0; // em segundos
+	var _costHP := 0;
+	var _costSTAM := 0;
+	var _costMANA := 0;
+	var _cooldown := 0.0; // em segundos
+	var _effectDuration := 0.0; // em segundos
 	var _range := 1; // em tiles
-	var _damage := DiceRoll("1d1");
+	var _damage; // DamageDice class
 
 	function CombatAbility(this, abilityName)
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
@@ -26,10 +22,9 @@ class CombatAbility(ICombatAbility)
 		this._description := cfgFile.SetKeyName("description").GetKeyValue();
 		this._moment := cfgFile.SetKeyName("moment").GetKeyValue();
 		this._cooldown := cfgFile.SetKeyName("cooldown").GetKeyValue();
-		this._cost := CombatAbility::_cost;
-		this._cost.hp := cfgFile.SetKeyName("hp").GetKeyValue();
-		this._cost.stam := cfgFile.SetKeyName("stam").GetKeyValue();
-		this._cost.mana := cfgFile.SetKeyName("mana").GetKeyValue();
+		this._costHP := cfgFile.SetKeyName("hp").GetKeyValue();
+		this._costSTAM := cfgFile.SetKeyName("stam").GetKeyValue();
+		this._costMANA := cfgFile.SetKeyName("mana").GetKeyValue();
 		this._effectDuration := cfgFile.SetKeyName("effectDuration").GetKeyValue();
 		this._range := cfgFile.SetKeyName("range").GetKeyValue();
 		this._damage := cfgFile.SetKeyName("damage").GetKeyValue();

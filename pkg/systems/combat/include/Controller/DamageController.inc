@@ -7,8 +7,10 @@
 
 // Internal
 include ":combat:armorZones";
+include ":combat:Model/CombatAbility";
 include ":combat:Controller/AbilitiesController";
 include ":combat:Controller/SkillController";
+include ":combat:Controller/ParryController";
 include ":combat:weardown";
 
 // External
@@ -41,12 +43,18 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
-function CheckCombatDamage(byRef attackInfo)
+function ProccessCombatDamage(byRef attackInfo)
+	// Pre Hit
 	CalculateCombatDamage(attackInfo);
-	CheckAbilitiesBeforeHit(attackInfo);
+	CheckParry(attackInfo);
+	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
+	
+	// Hit
 	ApplyCombatDamage(attackInfo);
+	
+	// Post Hit
 	CheckPoison(attackInfo);
-	CheckAbilitiesAfterHit(attackInfo);
+	ExecuteCombatAbilitiesAfterDamage(attackInfo);
 	ProgressAttackSkills(attackInfo);
 endfunction
 
@@ -56,17 +64,24 @@ function CalculateCombatDamage(byRef attackInfo)
 	CalculateDefenderResist(attackInfo);
 endfunction
 
+function CalculateAttackerDamage(byRef attackInfo)
+endfunction
+
+function CalculateDefenderResist(byRef attackInfo)
+endfunction
+
 function CheckCriticalHit(byRef attackInfo)
 endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
-	var slash := attackInfo.GetDamage().GetSlashDamage(),
-		piercing := attackInfo.GetDamage().GetPierceDamage(),
-		blunt := attackInfo.GetDamage().GetBluntDamage(),
-		fire := attackInfo.GetDamage().GetFireDamage(),
-		cold := attackInfo.GetDamage().GetColdDamage(),
-		poison := attackInfo.GetDamage().GetPoisonDamage(),
-		energy := attackInfo.GetDamage().GetEnergyDamage();
+	var slash, piercing, blunt, fire, cold, poison, energy;
+	slash 	 := attackInfo.GetDamage().GetSlashDamage();
+	piercing := attackInfo.GetDamage().GetPierceDamage();
+	blunt 	 := attackInfo.GetDamage().GetBluntDamage();
+	fire 	 := attackInfo.GetDamage().GetFireDamage();
+	cold 	 := attackInfo.GetDamage().GetColdDamage();
+	poison 	 := attackInfo.GetDamage().GetPoisonDamage();
+	energy 	 := attackInfo.GetDamage().GetEnergyDamage();
 	
 	if (slash > 0)
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), slash);
@@ -107,7 +122,7 @@ endfunction
 function CheckPoison(byRef attackInfo)
 	// TODO: Tem várias melhorias que podem ser feitas aqui. Vou deixar pra depois,se der algum bug no combate com veneno. Por enquanto vai tomar muito tempo.
 	// TODO: Sugestão de melhoria: Criar um CanPoison() e depois um TryToPoison(), separando a lógica de verificação da aplicação do veneno em si.
-	if (attackInfo.GetDamage().GetTotalDamage() < 1)
+	if (attackInfo.GetDamage().GetTotalBaseDamage() < 1)
 		return false;
 	endif
 
