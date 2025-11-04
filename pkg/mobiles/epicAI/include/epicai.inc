@@ -1165,9 +1165,9 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    // if (!CheckLineOfSight(attacker, defender))
-    //     return 0;
-    // endif
+    if (!CheckLineOfSight(attacker, defender))
+        return 0;
+    endif
 
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
