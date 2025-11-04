@@ -6,6 +6,7 @@ include ":gumps:gumps";
 include ":gumps:epicGumps";
 include "include/say";
 include "include/client";
+include ":chestspawn:treasurechest";
 
 // Constantes para botões de categoria
 const BTN_BAUS := 201;
@@ -281,96 +282,6 @@ function OpenChestGallery(who, previous_selected_graphics)
 	
 	// Return empty if cancelled
 	return array{};
-endfunction
-
-function CreateChestGalleryGump(who, page, selected_chests, max_selection)
-	var chest_graphics := array{
-		3650, 3651, 3703, 3648, 3708,
-		0xFC45, 0xF977, 0xF976, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
-		0xD53E, 0xC45B, 0xC45A, 0xC45C, 0xC45D, 0xC460, 0xC461, 0xC2A3, 0xC2A2,
-		0xC299, 0xC29B, 0xC29C, 0xC29D, 0xC29F, 0xC2A0, 0xC292, 0xC291, 0xC290,
-		0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289, 0xC288, 0xC287,
-		0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280, 0xC27D, 0xC27E,
-		0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274, 0xC275, 0xC273,
-		0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B, 0xC269, 0xC266,
-		0xC265, 0xC264, 0xC263, 0xC235, 0xC236, 0xC233, 0xAFCA, 0xAFCB, 0xAFCE,
-		0xAFCF, 0xC26A, 0xC29A, 0x3CC8, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3C78,
-		0x1C60, 0x1C22, 0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90, 0x1CA7,
-		0x1C77, 0x3CC9, 0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C,
-		0xFE9D, 0xFF0B, 0xFF0C
-	};
-	
-	var chests_per_page := 12;
-	var total_pages := CInt((chest_graphics.size() + chests_per_page - 1) / chests_per_page);
-	
-	if (page < 1)
-		page := 1;
-	endif
-	if (page > total_pages)
-		page := total_pages;
-	endif
-	
-	var start_index := ((page - 1) * chests_per_page) + 1;
-	var end_index := start_index + chests_per_page - 1;
-	if (end_index > chest_graphics.size())
-		end_index := chest_graphics.size();
-	endif
-	
-	var gump := GFECreateGump("", 600, 520);
-	
-	GFTextLine(gump, 30, 35, 53, "Galeria de Baús - Página " + page + " de " + total_pages);
-	
-	var counter_text := "Selecionados: " + selected_chests.size() + "/" + max_selection;
-	GFTextLine(gump, 420, 35, 53, counter_text);
-	
-	var x_start := 60;
-	var y_start := 90;
-	var col_spacing := 160;
-	var row_spacing := 95;
-	var cols := 3;
-	
-	var current_col := 0;
-	var current_row := 0;
-	
-	for i := start_index to end_index
-		var gfx := chest_graphics[i];
-		var x_pos := x_start + (current_col * col_spacing);
-		var y_pos := y_start + (current_row * row_spacing);
-		
-		var is_selected := 0;
-		foreach selected_idx in selected_chests
-			if (selected_idx == i)
-				is_selected := 1;
-				break;
-			endif
-		endforeach
-		
-		GFCheckBox(gump, x_pos + 10, y_pos + 25, 210, 211, is_selected, 100 + i);
-		GFTilePic(gump, x_pos + 35, y_pos, gfx, 0);
-		
-		current_col := current_col + 1;
-		if (current_col >= cols)
-			current_col := 0;
-			current_row := current_row + 1;
-		endif
-	endfor
-	
-	var info_y := 480;
-	var btn_y := 480;
-	var center_x := 250;
-	
-	if (page > 1)
-		GFAddButton(gump, center_x, btn_y, 4014, 4016, GF_CLOSE_BTN, 10);
-	endif
-	
-	if (page < total_pages)
-		GFAddButton(gump, center_x + 50, btn_y, 4005, 4007, GF_CLOSE_BTN, 11);
-	endif
-	
-	GFAddButton(gump, center_x + 120, btn_y, 2450, 2451, GF_CLOSE_BTN, 99);
-	GFAddButton(gump, 520, btn_y, 2453, 2454, GF_CLOSE_BTN, 0);
-	
-	return GFSendGump(who, gump);
 endfunction
 
 function CreateEpicChestGump(who, selected_chest_graphics)
