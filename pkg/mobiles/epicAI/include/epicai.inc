@@ -1193,8 +1193,10 @@ function NPCHearFootsteps(npc)
         SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
 
         var difficulty := CalculateDHDiff(npc, mobile);
+        var npc_elem := NPC_GetNPCConfig(npc);
+        var npc_awareness := npc_elem.Tier * 10;
 
-        if (SkillCheck(npc, AWARENESS, difficulty) > 0)
+        if (SkillCheck(npc, npc_awareness, difficulty) > 0)
             return mobile;
         endif
 
