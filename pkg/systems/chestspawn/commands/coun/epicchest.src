@@ -5,6 +5,35 @@ use util;
 include ":gumps:gumps";
 include ":gumps:epicGumps";
 include "include/say";
+include "include/client";
+
+// Constantes para botões de categoria
+const BTN_BAUS := 201;
+const BTN_BOLSAS := 202;
+const BTN_CESTOS := 203;
+const BTN_ESTANTES := 204;
+const BTN_BARRIS := 205;
+const BTN_TUMBAS := 206;
+
+// Constantes para identificação de menus
+const MENU_BAUS := 0;
+const MENU_BOLSAS := 1;
+const MENU_CESTOS := 2;
+const MENU_ESTANTES := 3;
+const MENU_BARRIS := 4;
+const MENU_TUMBAS := 5;
+
+// Estado dos botões de categoria (1 = ativo, 0 = inativo)
+var category_button_states := array{ 1, 0, 0, 0, 0, 0 };
+
+// Cache de arrays de gráficos por categoria (otimização de memória)
+var CACHED_CATEGORY_GRAPHICS := dictionary;
+
+// Função helper para debug no console
+function DebugLog(msg)
+	Print("[EPICCHEST] " + msg);
+	SysLog("[EPICCHEST] " + msg);
+endfunction
 
 program epicchest(who)
 
@@ -146,92 +175,107 @@ program epicchest(who)
 endprogram
 
 function OpenChestGallery(who, previous_selected_graphics)
-	// All chest graphics array
-	var chest_graphics := array{
-		3650, 3651, 3703, 3648, 3708,
-		0xFC45, 0xF977, 0xF976, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
-		0xD53E, 0xC45B, 0xC45A, 0xC45C, 0xC45D, 0xC460, 0xC461, 0xC2A3, 0xC2A2,
-		0xC299, 0xC29B, 0xC29C, 0xC29D, 0xC29F, 0xC2A0, 0xC292, 0xC291, 0xC290,
-		0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289, 0xC288, 0xC287,
-		0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280, 0xC27D, 0xC27E,
-		0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274, 0xC275, 0xC273,
-		0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B, 0xC269, 0xC266,
-		0xC265, 0xC264, 0xC263, 0xC235, 0xC236, 0xC233, 0xAFCA, 0xAFCB, 0xAFCE,
-		0xAFCF, 0xC26A, 0xC29A, 0x3CC8, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3C78,
-		0x1C60, 0x1C22, 0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90, 0x1CA7,
-		0x1C77, 0x3CC9, 0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C,
-		0xFE9D, 0xFF0B, 0xFF0C
-	};
-	
 	var page := 1;
 	var continue_viewing := 1;
-	var selected_chests := array{}; // Store indices
+	var selected_chests := array{}; // Store { category, index, graphic } structs
 	var max_selection := 5;
+	var current_category := MENU_BAUS; // Começa na aba "Baús"
 	
-	// Convert previous_selected_graphics to indices
-	if (previous_selected_graphics && previous_selected_graphics.size() > 0)
-		foreach gfx in previous_selected_graphics
-			for i := 1 to chest_graphics.size()
-				if (chest_graphics[i] == gfx)
-					selected_chests.append(i);
-					break;
-				endif
-			endfor
-		endforeach
-	endif
+	// Não converte previous_selected_graphics pois vamos manter seleção vazia inicialmente
 	
 	while (continue_viewing)
-		var res := CreateChestGalleryGump(who, page, selected_chests, max_selection);
+		var res := CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_selection, current_category);
 		if (!res)
 			break;
 		endif
 		
-		// Extract selections from CURRENT page before processing navigation
-		var chests_per_page := 12;
-		var start_index := ((page - 1) * chests_per_page) + 1;
-		var end_index := start_index + chests_per_page - 1;
-		if (end_index > chest_graphics.size())
-			end_index := chest_graphics.size();
-		endif
-		
-		// First, REMOVE all selections from current page
-		var temp_selection := array{};
-		foreach chest_idx in selected_chests
-			// Keep only selections that are NOT from current page
-			if (chest_idx < start_index || chest_idx > end_index)
-				temp_selection.append(chest_idx);
-			endif
-		endforeach
-		selected_chests := temp_selection;
-		
-		// Now ADD new selections from current page based on checkboxes
-		for i := start_index to end_index
-			var checkbox_id := 100 + i;
-			if (res[checkbox_id]) // If checkbox is checked
-				// Only add if there's still space (max 5 selections)
-				if (selected_chests.size() < max_selection)
-					selected_chests.append(i);
-				endif
-			endif
-		endfor
-		
-		// Process navigation AFTER updating selections
-		// With GF_CLOSE_BTN, check res[0] for button ID
+		// Process navigation buttons FIRST (before processing checkboxes)
 		if (res[0] == 99) // Confirm button
-			// Convert selected indices to actual graphic values
+			// Convert selected structs to graphics array
 			var selected_graphics := array{};
-			foreach chest_idx in selected_chests
-				selected_graphics.append(chest_graphics[chest_idx]);
+			foreach selection in selected_chests
+				selected_graphics.append(selection.graphic);
 			endforeach
 			return selected_graphics;
-		elseif (res[0] == 10) // Previous page
+		elseif (res[0] == 100) // Cancel button
+			break;
+		elseif (res[0] == 0) // Close button (X)
+			break;
+		endif
+		
+		// ========================================
+		// PASSO 1: VERIFICA SE FOI NAVEGAÇÃO
+		// ========================================
+		var foi_navegacao := 0;
+		
+		// Verifica navegação de páginas
+		if (res[0] == 10 || res[0] == 11) // Previous ou Next
+			foi_navegacao := 1;
+		endif
+		
+		// Verifica mudança de categoria
+		if (res[0] >= BTN_BAUS && res[0] <= BTN_TUMBAS)
+			foi_navegacao := 1;
+		endif
+		
+		// ========================================
+		// PASSO 2: PROCESSA CLIQUE EM ITEM (BOTÕES 1000+)
+		// ========================================
+		if (!foi_navegacao && res[0] >= 1000)
+			var item_index := res[0] - 1000; // ID do botão - 1000 = index do item
+			
+			// Verifica se já está selecionado
+			var already_selected := 0;
+			var selected_pos := 0;
+			foreach selection in selected_chests
+				selected_pos := selected_pos + 1;
+				if (selection.category == current_category && selection.index == item_index)
+					already_selected := selected_pos;
+					break;
+				endif
+			endforeach
+			
+			if (already_selected)
+				// Item já selecionado - REMOVE
+				selected_chests.erase(already_selected);
+			else
+				// Item não selecionado - ADICIONA (se houver espaço)
+				if (selected_chests.size() < max_selection)
+					var chest_graphics := GetCategoryGraphics(current_category);
+					var graphic := chest_graphics[item_index];
+					
+					var selection := struct{
+						"category" := current_category,
+						"index" := item_index,
+						"graphic" := graphic
+					};
+					selected_chests.append(selection);
+				endif
+			endif
+		endif
+		
+		// ========================================
+		// PASSO 3: APLICA A NAVEGAÇÃO/CATEGORIA
+		// ========================================
+		
+		// Agora aplica a mudança de página/categoria
+		if (res[0] == 10) // Previous page
 			if (page > 1)
 				page := page - 1;
 			endif
 		elseif (res[0] == 11) // Next page
 			page := page + 1;
-		elseif (res[0] == 0) // Close button (X)
-			break;
+		endif
+		
+		// Verifica clique nos botões de categoria
+		if (res[0] >= BTN_BAUS && res[0] <= BTN_TUMBAS)
+			var new_category := UpdateCategoryState(res[0]);
+			
+			// Só muda se for categoria diferente
+			if (new_category != current_category)
+				current_category := new_category;
+				page := 1; // Reset para página 1 ao mudar de categoria
+			endif
 		endif
 	endwhile
 	
@@ -454,5 +498,234 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 	GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99 (moved up 20px)
 	GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0 (moved up 20px)
 
+	return GFSendGump(who, gump);
+endfunction
+
+// Retorna os gráficos de baús baseado na categoria selecionada (com cache)
+function GetCategoryGraphics(category)
+	// Verifica se já existe no cache
+	if (CACHED_CATEGORY_GRAPHICS.exists(category))
+		return CACHED_CATEGORY_GRAPHICS[category];
+	endif
+	
+	// Se não existe, cria o array
+	var graphics;
+	case (category)
+		MENU_BAUS:
+			// Categoria Baús (Metal + Madeira + Joias)
+			graphics := array{
+				// Baús de Metal
+				0xFF26, 0xFF25, 0xFF24, 0xFF23, 0xFF22, 0xFF21, 0xC2C4, 0xC2BB, 0xC2BA,
+				0xC285, 0xB934, 0xB933, 0xAE24, 0xAE23, 0xAE22, 0xAE21, 0xAE20, 0xAE1F,
+				0xA308, 0xA309, 0x9C18, 0x9C19,
+				0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C, 0xFE9D,
+				// Baús de Madeira (WoodenChest com Gump 0x49)
+				3650, 3651, 3648, 3708,
+				0xFF4F, 0xFF4E, 0xFF4D, 0xFF4C, 0xFF3E, 0xFF3D, 0xFF20, 0xFF1F, 0xFF1E,
+				0xC476, 0xC475, 0xC2C3, 0xC2C2, 0xC298, 0xC297, 0xC296, 0xC295,
+				0xC294, 0xC293, 0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289,
+				0xC288, 0xC287, 0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280,
+				0xC27D, 0xC27E, 0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274,
+				0xC275, 0xC273, 0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B,
+				0xC266, 0xC265, 0xC264, 0xC263, 0xC292, 0xC291, 0xC290, 0xC268, 0xC446,
+				0xC267, 0xC235, 0xC236, 0xC234, 0xC233, 0xAE2E, 0xAE2D, 0x74BD, 0x74BC,
+				0x74F1, 0x74F2, 0x2859, 0x285A, 0xC45C, 0xC45D, 0xC460, 0xC461,
+				0xC29F, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3, 0x3CC8,
+				// Caixas de Joias
+				0xC54C, 0xC54E, 0xC2BD, 0xC2BC, 0xC26F, 0xB60F, 0xB60E, 0xB56F, 0xB570,
+				0x407C, 0x407D,
+				// Adicionais
+				0xFF0B, 0xFF0C, 0x9FE7, 0x9FE8, 0xC2BE
+			};
+		MENU_BOLSAS:
+			// Categoria Bolsas (Mochilas + Bolsas)
+			graphics := array{
+				// Mochilas (Backpack)
+				0xFE99, 0xFE98, 0xFCA4, 0xF977, 0xF976,
+				// Bolsas
+				0xFF1D, 0xFF1C, 0xFD0C, 0xFD0B, 0xEB63, 0xEB62, 0xE9DD
+			};
+		MENU_CESTOS:
+			// Categoria Caixas (Caixas de Madeira e Crates)
+			graphics := array{
+				// Caixas de Madeira
+				0xFF67, 0xFF66, 0xEB7A, 0xEB79, 0xEAD0, 0xEACF, 0xD71F, 0xC2C0, 0xC2BF,
+				0xC248, 0xC247, 0xC246, 0xC245, 0xC244, 0xC243, 0xC242, 0xC241,
+				0xC240, 0xC23F, 0xC23E, 0xC23D, 0xC23C, 0xC23B, 0xC23A, 0xC239, 0xC238,
+				0xC237, 0xAFCD, 0xAFCC, 0x2DF2, 0x2DF1, 0x1FFF,
+				// Crates (MediumCrate/SmallCrate com Gump 0x44)
+				0xFC45, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3B,
+				0xD53E, 0xC45B, 0xC45A, 0xC2A3, 0xC2A2, 0xC2A0,
+				0xAFCA, 0xAFCB, 0xAFCE, 0xAFCF
+			};
+		MENU_ESTANTES:
+			// Categoria Estantes de Livros
+			graphics := array{
+				0xFEEA, 0xEA08, 0xEA07, 0xB912, 0xB911, 0xB4DB, 0xB4DA,
+				0x79FA, 0x79F6, 0x79F5, 0x79F2, 0x79ED, 0x79EC, 0x79FB, 0x0A9A, 0x0A9B,
+				0x6F23, 0x6F0D, 0x6F0C, 0x6F08, 0x6F07, 0x6F06, 0x6B40, 0x6B3F,
+				0x6B32, 0x6B31, 0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x6A98, 0x6A99, 0x0C14,
+				0x0C15, 0x0C16, 0x0A97, 0x0A98, 0x0A99, 0x0A9C, 0x6F22, 0x6F23,
+				0x6F98, 0x6F97
+			};
+		MENU_BARRIS:
+			// Categoria Barris (barrel)
+			graphics := array{
+				0x722C, 0x3C73, 0x0E7F, 0xC29B, 0xC29A, 0x3C78, 0xE9CD, 0xE9CC,
+				3703, 0xC299, 0xC29C, 0xC29D
+			};
+		MENU_TUMBAS:
+			// Categoria Túmulos e Urnas
+			graphics := array{
+				0xD456, 0xD457, 0x730D, 0x730E, 0xBE01, 0xBDFE, 0xB225,
+				0xB224, 0xB223, 0xB222, 0xB221, 0xB220, 0xB217, 0xAFBB, 0xAFBA, 0x7311,
+				0x7312, 0x7313, 0x0B45, 0x0B46, 0x0B47, 0x0B48, 0xBBB7,
+				0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90
+			};
+		default:
+			graphics := array{};
+	endcase
+	
+	// Armazena no cache antes de retornar
+	CACHED_CATEGORY_GRAPHICS[category] := graphics;
+	return graphics;
+endfunction
+
+// Atualiza o estado dos botões de categoria e retorna o menu correspondente
+function UpdateCategoryState(button_id)
+	case (button_id)
+		BTN_BAUS:     category_button_states := array{ 1, 0, 0, 0, 0, 0 }; return MENU_BAUS;
+		BTN_BOLSAS:   category_button_states := array{ 0, 1, 0, 0, 0, 0 }; return MENU_BOLSAS;
+		BTN_CESTOS:   category_button_states := array{ 0, 0, 1, 0, 0, 0 }; return MENU_CESTOS;
+		BTN_ESTANTES: category_button_states := array{ 0, 0, 0, 1, 0, 0 }; return MENU_ESTANTES;
+		BTN_BARRIS:   category_button_states := array{ 0, 0, 0, 0, 1, 0 }; return MENU_BARRIS;
+		BTN_TUMBAS:   category_button_states := array{ 0, 0, 0, 0, 0, 1 }; return MENU_TUMBAS;
+		default:      return MENU_BAUS;
+	endcase
+endfunction
+
+// Cria o gump de galeria com navegação por categorias
+function CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_selection, current_category)
+	var chest_graphics := GetCategoryGraphics(current_category);
+	
+	var chests_per_page := 12;
+	var total_pages := 1;
+	if (chest_graphics.size() > 0)
+		total_pages := CInt((chest_graphics.size() + chests_per_page - 1) / chests_per_page);
+	endif
+	
+	if (page < 1)
+		page := 1;
+	endif
+	if (page > total_pages)
+		page := total_pages;
+	endif
+	
+	var gump := GFECreateGump("", 700, 600);
+	
+	// Título principal (ajustado: +3px no x, -2px no y)
+	GFTextLine(gump, 33, 8, 53, "Galeria de Baús - Selecione até " + max_selection);
+	
+	// Botões de navegação por categoria (movido de y=50 para y=30)
+	var cat_texts := array{ "Baús", "Bolsas", "Caixas", "Estantes", "Barris", "Túmulos" };
+	var cat_buttons := array{ BTN_BAUS, BTN_BOLSAS, BTN_CESTOS, BTN_ESTANTES, BTN_BARRIS, BTN_TUMBAS };
+	
+	var cat_x := 30;
+	var cat_y := 30;
+	
+	for i := 1 to 6
+		var btn_gfx := 2151; // Botão normal (cinza)
+		var text_color := 53; // Texto normal (cinza escuro)
+		
+		if (category_button_states[i])
+			btn_gfx := 2153; // Botão ativo (dourado)
+			text_color := 230; // Texto ativo (amarelo)
+		endif
+		
+		GFAddButton(gump, cat_x, cat_y, btn_gfx, btn_gfx, 0x1, cat_buttons[i]); // Botão categoria
+		GFTextLine(gump, cat_x + 30, cat_y + 5, text_color, cat_texts[i]);
+		
+		cat_x := cat_x + 95;
+	endfor
+	
+	// Linha de informação da página e contador de seleção (descido 10 pixels: y=65 para y=75)
+	GFTextLine(gump, 30, 75, 53, "Página " + page + " de " + total_pages);
+	
+	var counter_text := "Selecionados: " + selected_chests.size() + "/" + max_selection;
+	GFTextLine(gump, 520, 75, 53, counter_text);
+	
+	// Área de exibição dos baús com melhor distribuição (grid 4x3)
+	var x_start := 70;
+	var y_start := 140;
+	var col_spacing := 150;
+	var row_spacing := 110;
+	var cols := 4;
+	
+	if (chest_graphics.size() > 0)
+		var start_index := ((page - 1) * chests_per_page) + 1;
+		var end_index := start_index + chests_per_page - 1;
+		if (end_index > chest_graphics.size())
+			end_index := chest_graphics.size();
+		endif
+		
+		var current_col := 0;
+		var current_row := 0;
+		
+		for i := start_index to end_index
+			var gfx := chest_graphics[i];
+			var x_pos := x_start + (current_col * col_spacing);
+			var y_pos := y_start + (current_row * row_spacing);
+			
+			// Verifica se este item está selecionado
+			var is_selected := 0;
+			foreach selection in selected_chests
+				if (selection.category == current_category && selection.index == i)
+					is_selected := 1;
+					break;
+				endif
+			endforeach
+			
+			// Desenha o número acima do item (numeração visual)
+			var item_number := i;
+			GFTextLine(gump, x_pos - 5, y_pos - 20, 1153, CStr(item_number)); // Sempre cinza
+			
+			// Desenha o item centralizado
+			GFTilePic(gump, x_pos + 20, y_pos, gfx, 0);
+			
+			// Botão de seleção ABAIXO do item: azul se não selecionado, verde se selecionado
+			if (is_selected)
+				// Botão verde (selecionado) - ID 2361
+				GFAddButton(gump, x_pos - 5, y_pos + 4, 2361, 2361, 0x1, 1000 + i);
+			else
+				// Botão azul (não selecionado) - ID 2362
+				GFAddButton(gump, x_pos - 5, y_pos + 4, 2362, 2362, 0x1, 1000 + i);
+			endif
+			
+			current_col := current_col + 1;
+			if (current_col >= cols)
+				current_col := 0;
+				current_row := current_row + 1;
+			endif
+		endfor
+	else
+		// Mensagem quando categoria está vazia
+		GFTextLine(gump, 280, 300, 33, "Categoria vazia");
+	endif
+	
+	// Botões de navegação de página e confirmação (movido de y=550 para y=530)
+	var btn_y := 530;
+	var center_x := 280;
+	
+	if (page > 1 && chest_graphics.size() > 0)
+		GFAddButton(gump, center_x, btn_y, 4014, 4016, 0x1, 10); // Botão "Anterior"
+	endif
+	
+	if (page < total_pages && chest_graphics.size() > 0)
+		GFAddButton(gump, center_x + 50, btn_y, 4005, 4007, 0x1, 11); // Botão "Próxima"
+	endif
+	
+	GFAddButton(gump, center_x + 120, btn_y, 2450, 2451, 0x1, 99); // Botão "Confirmar" (check verde)
+	GFAddButton(gump, 580, btn_y, 2453, 2454, 0x1, 100); // Botão "Cancelar" (X vermelho)
+	
 	return GFSendGump(who, gump);
 endfunction
