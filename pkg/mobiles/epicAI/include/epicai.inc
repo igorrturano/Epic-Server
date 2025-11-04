@@ -8,6 +8,7 @@ include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
+include ":fls_core:fls_skillCheck";
 
 const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
@@ -1196,7 +1197,7 @@ function NPCHearFootsteps(npc)
         var npc_elem := NPC_GetNPCConfig(npc);
         var npc_awareness := npc_elem.Tier * 10;
 
-        if (SkillCheck(npc, npc_awareness, difficulty) > 0)
+        if (SkillCheckMod(npc, AWARENESS, difficulty, npc_awareness) > 0)
             return mobile;
         endif
 
