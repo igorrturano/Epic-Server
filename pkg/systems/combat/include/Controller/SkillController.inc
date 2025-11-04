@@ -8,7 +8,7 @@ include ":debug:Controller/DebugController";
 
 include ":attributes:attributes";
 
-function ProgressSkills(byRef attackInfo)
+function ProgressAttackSkills(byRef attackInfo)
 	var skillUsedForCritical := TACTICS;
 
 	if (!attackInfo.GetAttacker().IsConnected()) // Se o atacante estiver offline, não upa

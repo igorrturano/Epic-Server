@@ -11,7 +11,7 @@ class Message(IMessage)
 	var _asyncInfo := struct{
 		sending := false, // Em situações de script critico precisa ser assincrono. Definir isso com SetAsync().
 		translation := false // Se ele é assincrono, a tradução também, e é feita no processo do sender.
-	}; 
+	};
 	var _messages := array{ struct{ // Array de structs com as informações de cada mensagem: string, cor, fonte, lingua
 		text := TranslatableText(),
 		color := FONTCOLOR_BLUE,

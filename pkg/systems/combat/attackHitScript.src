@@ -6,6 +6,7 @@ include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":combat:Model/CombatAbility";
+include ":combat:weardown";
 
 // External
 include ":objWrapper:Model/MobileWrapper";
@@ -29,7 +30,6 @@ program MainHitScript(attackInfo)
 	endif
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
-	 // Verifica se o ataque foi parado // TODO: Falta fazer
 	
 	if (ConsumeAmmo(attackInfo)) // Consome munição, se aplicável
 		TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
@@ -40,8 +40,11 @@ program MainHitScript(attackInfo)
 	DoMovement(attackInfo);
 
 	PlayAttackFX(attackInfo);
+	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+	CheckParry(attackInfo);
 	ProccessCombatDamage(attackInfo);
-	if (CheckParry(attackInfo))
+	
+	if ()
 	else
 		CheckCombatDamage(attackInfo);
 	endif
