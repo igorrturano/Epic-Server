@@ -1,0 +1,43 @@
+use uo;
+use os;
+
+include ":traps:traps";
+include ":keys:key";
+
+program use_treasurechest(who, container)
+    // GMs bypass all checks
+    if (who.cmdlevel)
+        SendSysMessage(who, "Command level is present - container is skipping locks, traps, etc.");
+        SendViewContainer(who, container);
+        return 1;
+    endif
+    
+    // CRITICAL: Check for traps FIRST (even if locked)
+    if (GetObjProperty(container, "TrapList") != error)
+        // Trap exists - trigger it!
+        RunTraps(container, who);
+        // After trap triggers, chest remains locked
+        return 0;
+    endif
+    
+    // No traps - check if locked
+    if (ContainerIsLocked(who, container))
+        return 0;
+    endif
+    
+    // Unlocked and no traps - open normally
+    SendViewContainer(who, container);
+    return 1;
+endprogram
+
+function ContainerIsLocked(mobile, container)
+    if (!container.locked)
+        return 0;
+    elseif (KP_HasKeyForLock(mobile, container))
+        PrintTextAbove(mobile, "*Usou uma chave em " + container.desc + "*");
+        return 0;
+    else
+        PrintTextAbove(container, "*Tentou abrir " + container.desc + " mas estava trancado*");
+        return 1;
+    endif
+endfunction
