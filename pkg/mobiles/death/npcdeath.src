@@ -258,7 +258,11 @@ program core_npcDeath(params)
 	endforeach
 	var shaman := SystemFindObjectBySerial(GetObjProperty(corpse, "animal_sacrifice"));
 	if (accepted_sacrifice == 1)
-		TS_StartTimer(shaman, "bless", 7200);
+		var time := 3600;
+		if (GetObjProperty(corpse, "aklat_sacrifice"))
+			time := 9800;
+		endif
+		TS_StartTimer(shaman, "bless", time);
     	PlayStationaryEffect(shaman.x, shaman.y, shaman.z, 0xD035, 10, 30, 0, shaman.realm);
     	PlaySoundEffect(shaman, 0x1F1); // Sacrifice sound effect
 	endif
