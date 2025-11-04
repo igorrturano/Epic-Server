@@ -291,11 +291,16 @@ function MonsterIdle(wanders, is_ranged)
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
     if (heard_mobile)
-        Message("*!*").SendAbove(me);
         // Check if we can see them now (might have moved into view)
         if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
             HandleMonsterCombatEvent(heard_mobile, is_ranged);
             return;
+        endif
+
+        // Only show alert and investigate if not on cooldown (prevents spam)
+        if (GetCooldown(me, "heard_sound") == 0)
+            Message("*!*").SetColor(500).SendAbove(me);
+            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
         endif
 
         // Move toward the sound - NPC will investigate the last known position
