@@ -33,10 +33,7 @@ enum class TARGET
 	DEFENDER
 endenum
 
-function ExecuteCombatAbilities(momentum, byRef attackInfo, targ := TARGET::BOTH)
-endfunction
-
-function CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo)
+function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 endfunction
 
 /**
@@ -54,7 +51,7 @@ endfunction
  * Retorna 1 após a execução das verificações e aplicações das habilidades.
  *
  */
-function CheckAttackerHabsOnHit(attacker, defender, attackInfo)
+function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	CheckHab_ArmaduraArcana(attacker, defender, attackInfo);
 	CheckHab_Ainalaith(attacker, defender, attackInfo);
 	CheckHab_DeathDance(attacker, defender, attackInfo);
@@ -73,7 +70,7 @@ function CheckAttackerHabsOnHit(attacker, defender, attackInfo)
 	return 1;
 endfunction
 
-function CheckAttackerHabsAfterDamage(attacker, defender, attackInfo)
+function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 endfunction
 
 /**
@@ -90,20 +87,14 @@ endfunction
  * Return
  * Retorna 1 após executar todas as verificações e efeitos.
  */
-function CheckAttackerHabsOnMiss(attacker, defender, attackInfo)
-	SkillChecks(attacker, defender, attacker.weapon, 1);
-	EraseObjProperty(attacker, "#shooting_effects");
-
+function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	CheckHab_AtaqueInfalivel(attacker, defender, attackInfo);
 	CheckHab_MestreDuelista(attacker, defender, attackInfo);
 	CheckHab_Insistencia(attacker, defender, attackInfo);
 
 	EraseObjProperty(attacker, "movement");
-
-	// TODO: Ver pra quê que serve esse troço
-	if (GetObjProperty(attacker, "charge_damage"))
-		EraseObjProperty(attacker, "charge_damage");
-	endif
+	EraseObjProperty(attacker, "#shooting_effects");
+	EraseObjProperty(attacker, "charge_damage"); // TODO: Ver pra quê que serve esse troço
 
 	return 1;
 endfunction
@@ -114,16 +105,16 @@ endfunction
  * Purpose
  * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
  * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
+ *
  * Parameters
  * attacker: Ref do atacante.
  * defender: Ref do alvo que recebe o dano.
  * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- * 
+ *
  * Return void
  *
  */
-function CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo)
+function CheckDefenderHabsBeforeDamage(byRef attackInfo)
 	CheckHab_Martir(attacker, defender, attackInfo);
 	CheckHab_MantoRothen(attacker, defender, attackInfo);
 	CheckHab_KaniNoSutairu(attacker, defender, attackInfo);
@@ -135,8 +126,6 @@ function CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo)
 	CheckHab_Backstab(attacker, defender, attackInfo);
 	CheckHab_Charge(attacker, defender, attackInfo);
     CheckHab_DivineAuthority(attacker, defender, attackInfo);
-
-	return attackInfo.damage < 1 ? 1 : attackInfo.damage; // Garante dano mínimo = 1.
 endfunction
 
 /**
@@ -155,7 +144,7 @@ endfunction
  * Return
  * Retorna 1 sempre que a função é executada.
  */
-function CheckDefenderHabsOnHit(attacker, defender, attackInfo)
+function CheckDefenderHabsOnHit(byRef attackInfo)
 	CheckHab_DesviarProjetil(attacker, defender, attackInfo);
 	CheckHab_DesviarDisparos(attacker, defender, attackInfo);
 	CheckHab_FerocidadeEnsanguentada(attacker, defender, attackInfo);
@@ -186,7 +175,7 @@ endfunction
  * Return void
  *
  */
-function CheckDefenderHabsAfterDamage(attacker, defender, attackInfo)
+function CheckDefenderHabsAfterDamage(byRef attackInfo)
 	CheckHab_RecuperacaoSalvadora(attacker, defender, attackInfo);
 	CheckHab_Vinganca(attacker, defender, attackInfo);
 	CheckHab_ChainOfPain(attacker, defender, attackInfo);
@@ -206,7 +195,7 @@ endfunction
  * Return
  * Retorna 1 sempre ao final da execução.
  */
-function CheckDefenderHabsOnMiss(attacker, defender, attackInfo)
+function CheckDefenderHabsOnMiss(byRef attackInfo)
 	// TODO: Adicionar habilidades que serão 
 
 	return 1;

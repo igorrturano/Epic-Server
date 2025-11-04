@@ -1,7 +1,6 @@
 // Internal
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
-include ":combat:Controller/ParryController";
 include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
@@ -41,18 +40,12 @@ program MainHitScript(attackInfo)
 
 	PlayAttackFX(attackInfo);
 	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
-	CheckParry(attackInfo);
 	ProccessCombatDamage(attackInfo);
-	
-	if ()
-	else
-		CheckCombatDamage(attackInfo);
-	endif
 	
 	PlayAttackSFX(attackInfo);
 
-	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
-	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalDamage() });
+	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
+	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
 
 	return 1;
 endprogram
@@ -95,8 +88,8 @@ function DoMovement(byRef attackInfo)
 					attackInfo.GetDefender().GetObjRef(),
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 					armor,
-					basedamage,
-					rawdamage
+					attackInfo.GetDamage().GetTotalBaseDamage(),
+					attackInfo.GetDamage().GetTotalRawDamage()
 				}
 			);
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");

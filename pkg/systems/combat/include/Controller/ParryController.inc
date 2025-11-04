@@ -69,7 +69,7 @@ function DoParry(byRef attackInfo)
 	WearDownShield(
 		attackInfo.GetDefender().GetObjRef(),
 		attackInfo.GetParryEquip().GetObjRef(),
-		attackInfo.GetDamage().GetTotalDamage(),
+		attackInfo.GetDamage().GetTotalBaseDamage(),
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef()
 	);
 
@@ -78,6 +78,8 @@ function DoParry(byRef attackInfo)
 	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsConnected())
 		SkillCheck(attackInfo.GetDefender().GetObjRef(), PARRY, -1);
 	endif
+
+	attackInfo.SetDamage(Damage().SetBluntDamage(1)); // Seta o dano pra 1 de blunt por causa do impacto do bloqueio
 
 	return true;
 endfunction
