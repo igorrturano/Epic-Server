@@ -1410,6 +1410,33 @@ function PursueTarget(opponent)
     var use_pathfinding := 0;
     var has_los := CheckLineOfSight(me, opponent);
 
+    // Track if NPC is stuck in same general area over time (handles oscillating movement)
+    var stuck_tracker := GetObjProperty(me, "#pursuit_stuck_tracker");
+    if (!stuck_tracker)
+        stuck_tracker := struct{
+            "start_time" := ReadGameClock(),
+            "start_pos" := struct{ "x" := me.x, "y" := me.y },
+            "start_distance" := dist,
+            "target_serial" := 0,
+            "failed_moves" := 0,
+            "total_moves" := 0,
+            "last_check_pos" := struct{ "x" := me.x, "y" := me.y }
+        };
+    endif
+
+    // Reset tracker if target changed
+    if (stuck_tracker.target_serial != opponent.serial)
+        stuck_tracker.start_time := ReadGameClock();
+        stuck_tracker.target_serial := opponent.serial;
+        stuck_tracker.start_pos.x := me.x;
+        stuck_tracker.start_pos.y := me.y;
+        stuck_tracker.start_distance := dist;
+        stuck_tracker.failed_moves := 0;
+        stuck_tracker.total_moves := 0;
+        stuck_tracker.last_check_pos.x := me.x;
+        stuck_tracker.last_check_pos.y := me.y;
+    endif
+
     if (has_los)
         // Direct line of sight - but verify we can actually move toward target
         var movement_attempts := 0;
@@ -1461,6 +1488,50 @@ function PursueTarget(opponent)
             endif
         endwhile
     endif
+
+    // Check if NPC has been stuck in same area for too long (handles oscillating movement)
+    var time_elapsed := ReadGameClock() - stuck_tracker.start_time;
+    var distance_from_start := CoordinateDistance(me.x, me.y, stuck_tracker.start_pos.x, stuck_tracker.start_pos.y);
+    var distance_improvement := stuck_tracker.start_distance - dist;
+
+    // Track if NPC is actually moving (not bumping into walls)
+    var moved_this_cycle := (me.x != stuck_tracker.last_check_pos.x || me.y != stuck_tracker.last_check_pos.y);
+    stuck_tracker.total_moves += 1;
+    if (!moved_this_cycle)
+        stuck_tracker.failed_moves += 1;
+    endif
+    stuck_tracker.last_check_pos.x := me.x;
+    stuck_tracker.last_check_pos.y := me.y;
+
+    // Calculate movement success rate
+    var movement_success_rate := 0;
+    if (stuck_tracker.total_moves > 0)
+        movement_success_rate := CInt((CDbl(stuck_tracker.total_moves - stuck_tracker.failed_moves) / CDbl(stuck_tracker.total_moves)) * 100);
+    endif
+
+    // Flee if: been trying 5+ seconds, in same area (<=6 tiles), AND failing to move (< 30% success rate)
+    // This distinguishes between stuck-on-wall vs successfully-kiting-in-circles
+    if (time_elapsed >= 5 && distance_from_start <= 6 && movement_success_rate < 30)
+        EraseObjProperty(me, "#pursuit_stuck_tracker");
+        EraseObjProperty(me, "#pursuit_path_cache");
+
+        // Use existing Flee() function - runs away and sets cooldown to prevent re-engagement
+        Flee(opponent, 100, 1);  // 100ms sleep, change_opponent = 1 (can switch targets)
+        return 0; // Abandon pursuit - target is unreachable
+    endif
+
+    // Reset timer if made significant progress (moved far from start or got much closer)
+    if (distance_from_start > 8 || distance_improvement > 3)
+        stuck_tracker.start_time := ReadGameClock();
+        stuck_tracker.start_pos.x := me.x;
+        stuck_tracker.start_pos.y := me.y;
+        stuck_tracker.start_distance := dist;
+        stuck_tracker.failed_moves := 0;
+        stuck_tracker.total_moves := 0;
+    endif
+
+    // Save stuck tracker
+    SetObjProperty(me, "#pursuit_stuck_tracker", stuck_tracker);
 
     // Use pathfinding if: no LOS OR stuck with LOS
     if (!has_los || use_pathfinding)
@@ -1636,6 +1707,9 @@ function HandleIdleState()
     if (!hasPlayerNear(me))
         var attempts := 0;
         while (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
+            if (CheckNearbyThreats())
+                return; // Abort returning home if threats are nearby
+            endif
             WalkTowardLocation(home_x, home_y);
             sleepms(100);
             attempts += 1;
