@@ -1152,6 +1152,58 @@ function isAlly(mobile)
     return 1;
 endfunction
 
+// Simplified NPC version of ExaminarArea for "hearing footsteps"
+// NPCs use this to detect nearby players without LoS and investigate
+// Only detects players who are actually MOVING (not standing still)
+// Returns: mobile reference if detected someone, 0 otherwise
+function NPCHearFootsteps(npc)
+    var hearing_range := 8;
+
+    foreach mobile in ListMobilesNearLocationEx(npc.x, npc.y, npc.z, hearing_range, LISTEX_FLAG_NORMAL, npc.realm)
+        if (mobile == npc)
+            continue;
+        endif
+
+        if (mobile.npctemplate)
+            continue;
+        endif
+
+        if (CheckLineOfSight(npc, mobile))
+            continue;
+        endif
+
+        if (abs(mobile.z - npc.z) >= 19)
+            continue;
+        endif
+
+        // Check if player is actually moving (not standing still)
+        var last_pos := GetObjProperty(npc, "#heard_" + mobile.serial);
+        var current_pos := struct{ "x" := mobile.x, "y" := mobile.y, "time" := polcore().systime };
+
+        if (last_pos)
+            var has_moved := (mobile.x != last_pos.x || mobile.y != last_pos.y);
+            var time_diff := current_pos.time - last_pos.time;
+
+            if (!has_moved || time_diff > 2)
+                SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
+                continue;
+            endif
+        endif
+
+        SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
+
+        var difficulty := CalculateDHDiff(npc, mobile);
+
+        if (SkillCheck(npc, AWARENESS, difficulty) > 0)
+            return mobile;
+        endif
+
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
 function CanFight(attacker, defender)
     if (!defender || defender.dead || defender.hidden || defender.concealed)
         return 0;
@@ -1343,6 +1395,10 @@ function PursueTarget(opponent)
             while (Distance(me, opponent) < ideal_distance && retreat_attempts < 10)
                 if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
                     break;
+                endif
+
+                if (!me.opponent && CheckNearbyThreats())
+                    opponent := CheckNearbyThreats();
                 endif
 
                 var old_x := me.x;
@@ -1590,7 +1646,7 @@ function PursueTarget(opponent)
             // Check if it's due to height difference
             var z_diff := Abs(me.z - opponent.z);
 
-            if (z_diff > 15)
+            if (z_diff >= 19)
                 // Significant height difference - try to find stairs/ramps by moving toward target
                 // Move in the general direction even without a perfect path
                 var attempts := 0;

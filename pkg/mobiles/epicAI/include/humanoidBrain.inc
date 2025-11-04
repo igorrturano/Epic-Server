@@ -336,6 +336,19 @@ function HumanoidIdle(wanders, is_ranged)
         sleepms(2);
     endforeach
 
+    // If didn't see anyone, try to hear footsteps (no LoS required)
+    var heard_mobile := NPCHearFootsteps(me);
+    if (heard_mobile)
+        // Check if we can see them now (might have moved into view)
+        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+            HandleHumanoidCombatEvent(heard_mobile, is_ranged);
+            return;
+        endif
+
+        // Move toward the sound - NPC will investigate the last known position
+        PursueTarget(heard_mobile);
+    endif
+
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
