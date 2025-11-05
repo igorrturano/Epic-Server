@@ -30,12 +30,6 @@ var category_button_states := array{ 1, 0, 0, 0, 0, 0 };
 // Cache de arrays de gráficos por categoria (otimização de memória)
 var CACHED_CATEGORY_GRAPHICS := dictionary;
 
-// Função helper para debug no console
-function DebugLog(msg)
-	Print("[EPICCHEST] " + msg);
-	SysLog("[EPICCHEST] " + msg);
-endfunction
-
 program epicchest(who)
 
 	var selected_chest_graphics := array{}; // Store selected chest graphics from viewchests
@@ -93,8 +87,7 @@ program epicchest(who)
 				range_val := 6;
 			endif
 			
-			// Debug: Show what was selected
-			SendSysMessageEx(who, "[DEBUG] Nivel: " + level + " | Quantidade: " + amount + " | Raio: " + range_val);
+
 
 			// Chest Type (radio buttons IDs 41-44)
 			var chest_type := "Warrior";
@@ -413,14 +406,17 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 endfunction
 
 // Retorna os gráficos de baús baseado na categoria selecionada (com cache)
+// Carrega gráficos de uma categoria - Lista curada manualmente
+// Categorização baseada no VISUAL dos itens, não apenas no material
+// Usa cache para performance (carrega apenas uma vez por categoria)
 function GetCategoryGraphics(category)
 	// Verifica se já existe no cache
 	if (CACHED_CATEGORY_GRAPHICS.exists(category))
 		return CACHED_CATEGORY_GRAPHICS[category];
 	endif
 	
-	// Se não existe, cria o array
-	var graphics;
+	var graphics := array{};
+	
 	case (category)
 		MENU_BAUS:
 			// Categoria Baús (Metal + Madeira + Joias)
@@ -432,7 +428,7 @@ function GetCategoryGraphics(category)
 				0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C, 0xFE9D,
 				// Baús de Madeira (WoodenChest com Gump 0x49)
 				3650, 3651, 3648, 3708,
-				0xFF4F, 0xFF4E, 0xFF4D, 0xFF4C, 0xFF3E, 0xFF3D, 0xFF20, 0xFF1F, 0xFF1E,
+				0xFF4F, 0xFF4E, 0xFF4D, 0xFF4C, 0xFF20, 0xFF1F, 0xFF1E,
 				0xC476, 0xC475, 0xC2C3, 0xC2C2, 0xC298, 0xC297, 0xC296, 0xC295,
 				0xC294, 0xC293, 0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289,
 				0xC288, 0xC287, 0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280,
@@ -465,9 +461,12 @@ function GetCategoryGraphics(category)
 				0xC240, 0xC23F, 0xC23E, 0xC23D, 0xC23C, 0xC23B, 0xC23A, 0xC239, 0xC238,
 				0xC237, 0xAFCD, 0xAFCC, 0x2DF2, 0x2DF1, 0x1FFF,
 				// Crates (MediumCrate/SmallCrate com Gump 0x44)
-				0xFC45, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3B,
-				0xD53E, 0xC45B, 0xC45A, 0xC2A3, 0xC2A2, 0xC2A0,
-				0xAFCA, 0xAFCB, 0xAFCE, 0xAFCF
+				// NOTA: 0xEC3B e 0xD53E removidos - não renderizam no gump do cliente
+				0xFC45, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D,
+				0xC45B, 0xC45A, 0xC2A3, 0xC2A2, 0xC2A0,
+				0xAFCA, 0xAFCB, 0xAFCE, 0xAFCF,
+				// Caixas especiais (movidas do final da lista de baús)
+				0xFF3E, 0xFF3D
 			};
 		MENU_ESTANTES:
 			// Categoria Estantes de Livros
@@ -582,8 +581,14 @@ function CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_se
 		var current_col := 0;
 		var current_row := 0;
 		
+		// Loop pelos itens da página atual
 		for i := start_index to end_index
-			var gfx := chest_graphics[i];
+			// Verifica se o índice existe no array antes de acessar
+			if (i > chest_graphics.size())
+				break; // Sai se ultrapassou o tamanho do array
+			endif
+			
+			var gfx := chest_graphics[i]; // Acessa pela posição absoluta
 			var x_pos := x_start + (current_col * col_spacing);
 			var y_pos := y_start + (current_row * row_spacing);
 			

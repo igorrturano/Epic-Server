@@ -1,5 +1,6 @@
 use uo;
 use os;
+use cfgfile;
 
 include ":loot:lootParser";
 include ":traps:traps";
@@ -7,66 +8,242 @@ include "include/client";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":destroyable:include/destroyItem";
+include ":IO:CFGFile";
 
 // ========================================
-// GLOBAL: Array com todos os 271 gráficos de baús organizados por categoria
+// CONFIG FUNCTIONS - Using CFGFile Class
+// ========================================
+
+// Cache global do dicionário de baús (carregado uma vez)
+var _chest_cache := 0;
+
+// Carrega e retorna o dicionário de baús do arquivo chests.cfg
+function LoadChestsConfig()
+    // Se já tiver em cache, retorna direto (performance)
+    if (_chest_cache)
+        return _chest_cache;
+    endif
+    
+    // Método tradicional: ReadConfigFile + GetConfigStringKeys
+    var cfg_file := ReadConfigFile(":chestspawn:config/chests");
+    if (!cfg_file)
+        SysLog("ERROR: Failed to load chests.cfg file");
+        return error;
+    endif
+    
+    var chest_names := GetConfigStringKeys(cfg_file);
+    if (!chest_names || chest_names.size() == 0)
+        SysLog("ERROR: No chest entries found in chests.cfg");
+        return error;
+    endif
+    
+    // Cria dictionary manualmente
+    var chests := dictionary;
+    foreach chest_name in chest_names
+        var elem := FindConfigElem(cfg_file, chest_name);
+        if (elem)
+            var chest_struct := struct{
+                "Graphic" := GetConfigInt(elem, "Graphic"),
+                "Material" := GetConfigInt(elem, "Material"),
+                "MaxHp" := GetConfigInt(elem, "MaxHp"),
+                "Name" := GetConfigString(elem, "Name")
+            };
+            chests[chest_name] := chest_struct;
+        endif
+    endforeach
+    
+    if (chests.size() == 0)
+        SysLog("ERROR: Empty chest dictionary after processing config");
+        return error;
+    endif
+    
+    // Armazena em cache para próximas chamadas
+    _chest_cache := chests;
+    return chests;
+endfunction
+
+// Retorna informações de um baú aleatório do arquivo de configuração
+function GetRandomChestFromConfig()
+    var chests := LoadChestsConfig();
+    if (chests == error)
+        // Fallback para baú padrão se config falhar
+        return struct{ 
+            "graphic" := 3650, 
+            "material" := 0x1bd7, 
+            "maxhp" := 30 
+        };
+    endif
+    
+    var chest_keys := chests.keys();
+    if (!chest_keys || chest_keys.size() == 0)
+        // Fallback se não houver tipos
+        return struct{ 
+            "graphic" := 3650, 
+            "material" := 0x1bd7, 
+            "maxhp" := 30 
+        };
+    endif
+    
+    var random_key := chest_keys[RandomInt(chest_keys.size()) + 1];
+    var chest_data := chests[random_key];
+    
+    return struct{
+        "graphic" := CInt(chest_data.Graphic),
+        "material" := CInt(chest_data.Material),
+        "maxhp" := CInt(chest_data.MaxHp),
+        "name" := CStr(chest_data.Name)
+    };
+endfunction
+
+// Retorna informações de um baú específico pelo gráfico
+function GetChestInfoByGraphic(graphic)
+    var chests := LoadChestsConfig();
+    if (chests == error)
+        // Fallback baseado no gráfico
+        var material := 0x1bd7; // madeira por padrão
+        if (graphic == 3648 || graphic == 3708)
+            material := 0x6995; // metal
+        endif
+        return struct{ 
+            "graphic" := graphic, 
+            "material" := material, 
+            "maxhp" := 30,
+            "name" := "Baú"
+        };
+    endif
+    
+    // Procura no dicionário pelo gráfico (acesso direto, sem loop!)
+    foreach key in (chests.keys())
+        var chest_data := chests[key];
+        if (CInt(chest_data.Graphic) == graphic)
+            return struct{
+                "graphic" := graphic,
+                "material" := CInt(chest_data.Material),
+                "maxhp" := CInt(chest_data.MaxHp),
+                "name" := CStr(chest_data.Name)
+            };
+        endif
+    endforeach
+    
+    // Se não encontrou, retorna fallback
+    var material := 0x1bd7; // madeira por padrão
+    if (graphic == 3648 || graphic == 3708)
+        material := 0x6995; // metal
+    endif
+    return struct{ 
+        "graphic" := graphic, 
+        "material" := material, 
+        "maxhp" := 30,
+        "name" := "Baú"
+    };
+endfunction
+
+// Retorna array de gráficos filtrados por prefixo de categoria
+function GetChestGraphicsByCategory(category_prefix)
+    var chests := LoadChestsConfig();
+    if (chests == error)
+        return array{}; // Return empty array on error
+    endif
+    
+    var graphics := array{};
+    var prefix_len := len(category_prefix);
+    
+    foreach key in (chests.keys())
+        // Filtra por prefixo do nome (ex: "Metal_", "Wooden_", "Barrel_")
+        // Verifica se a chave tem tamanho suficiente E começa com o prefixo
+        if (len(key) >= prefix_len)
+            var key_prefix := key[1, prefix_len];
+            if (key_prefix == category_prefix)
+                var chest_data := chests[key];
+                graphics.append(CInt(chest_data.Graphic));
+            endif
+        endif
+    endforeach
+    
+    return graphics;
+endfunction
+
+// Retorna todos os gráficos do cfg (para compatibilidade)
+function GetAllChestGraphicsFromConfig()
+    var chests := LoadChestsConfig();
+    if (chests == error)
+        return array{};
+    endif
+    
+    var graphics := array{};
+    foreach key in (chests.keys())
+        var chest_data := chests[key];
+        graphics.append(CInt(chest_data.Graphic));
+    endforeach
+    
+    return graphics;
+endfunction
+
+// ========================================
+// LEGACY FUNCTION: Wrapper para GetAllChestGraphicsFromConfig()
+// DEPRECATED: Use GetAllChestGraphicsFromConfig() diretamente
+// Mantido apenas para compatibilidade com código legado
 // ========================================
 function GetAllChestGraphics()
-    return array{
-    // MENU_BAUS - Baús (Metal + Madeira + Joias) - 127 items
-    // Baús de Metal
-    0xFF26, 0xFF25, 0xFF24, 0xFF23, 0xFF22, 0xFF21, 0xC2C4, 0xC2BB, 0xC2BA,
-    0xC285, 0xB934, 0xB933, 0xAE24, 0xAE23, 0xAE22, 0xAE21, 0xAE20, 0xAE1F,
-    0xA308, 0xA309, 0x9C18, 0x9C19,
-    0x1C60, 0x1C22, 0x1C77,
-    0xFE92, 0xFE93, 0xFE94, 0xFE95, 0xFE96, 0xFE97, 0xFE9C, 0xFE9D,
-    // Baús de Madeira (WoodenChest com Gump 0x49)
-    3650, 3651, 3648, 3708,
-    0xFF4F, 0xFF4E, 0xFF4D, 0xFF4C, 0xFF3E, 0xFF3D, 0xFF20, 0xFF1F, 0xFF1E,
-    0xC476, 0xC475, 0xC446, 0xC2C3, 0xC2C2, 0xC298, 0xC297, 0xC296, 0xC295,
-    0xC294, 0xC293, 0xC28F, 0xC28E, 0xC28D, 0xC28C, 0xC28B, 0xC28A, 0xC289,
-    0xC288, 0xC287, 0xC286, 0xC284, 0xC283, 0xC282, 0xC281, 0xC27F, 0xC280,
-    0xC27D, 0xC27E, 0xC27B, 0xC27C, 0xC27A, 0xC279, 0xC277, 0xC276, 0xC274,
-    0xC275, 0xC273, 0xC272, 0xC271, 0xC270, 0xC26E, 0xC26D, 0xC26C, 0xC26B,
-    0xC269, 0xC266, 0xC265, 0xC264, 0xC263, 0xC292, 0xC291, 0xC290, 0xC268,
-    0xC267, 0xC235, 0xC236, 0xC234, 0xC233, 0xAE2E, 0xAE2D, 0x74BD, 0x74BC,
-    0x74F1, 0x74F2, 0x3CC8, 0x2859, 0x285A, 0xC45C, 0xC45D, 0xC460, 0xC461,
-    0xC29F, 0x3CD0, 0x3CD1, 0x3CD2, 0x3CD3,
-    // Caixas de Joias
-    0xC54C, 0xC54E, 0xC2BD, 0xC2BC, 0xC26F, 0xB60F, 0xB60E, 0xB56F, 0xB570,
-    0x407C, 0x407D,
-    0xFF0B, 0xFF0C, 0x9FE7, 0x9FE8, 0xC2BE,
-    // MENU_BOLSAS - Bolsas (Mochilas + Bolsas) - 12 items
-    // Mochilas (Backpack)
-    0xFE99, 0xFE98, 0xFCA4, 0xF977, 0xF976,
-    // Bolsas
-    0xFF1D, 0xFF1C, 0xFD0C, 0xFD0B, 0xEB63, 0xEB62, 0xE9DD,
-    // MENU_CESTOS - Cestos (Caixas de Madeira e Crates) - 48 items
-    // Caixas de Madeira
-    0xFF67, 0xFF66, 0xEB7A, 0xEB79, 0xEAD0, 0xEACF, 0xD71F, 0xC2C0, 0xC2BF,
-    0xC248, 0xC247, 0xC246, 0xC245, 0xC244, 0xC243, 0xC242, 0xC241,
-    0xC240, 0xC23F, 0xC23E, 0xC23D, 0xC23C, 0xC23B, 0xC23A, 0xC239, 0xC238,
-    0xC237, 0xAFCD, 0xAFCC, 0x2DF2, 0x2DF1, 0x1FFF,
-    // Crates (MediumCrate/SmallCrate com Gump 0x44)
-    0xFC45, 0xEC40, 0xEC3F, 0xEC3E, 0xEC3D, 0xEC3C, 0xEC3B,
-    0xD53E, 0xC45B, 0xC45A, 0xC2A3, 0xC2A2, 0xC2A0,
-    0xAFCA, 0xAFCB, 0xAFCE, 0xAFCF,
-    // MENU_ESTANTES - Estantes de Livros - 43 items
-    0xFEEA, 0xEA08, 0xEA07, 0xE9CD, 0xE9CC, 0xB912, 0xB911, 0xB4DB, 0xB4DA,
-    0x79FA, 0x79F6, 0x79F5, 0x79F2, 0x79ED, 0x79EC, 0x79FB, 0x6F98, 0x6F97,
-    0x6F23, 0x6F22, 0x6F0D, 0x6F0C, 0x6F08, 0x6F07, 0x6F06, 0x6B40, 0x6B3F,
-    0x6B32, 0x6B31, 0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x6A98, 0x6A99, 0x0C14,
-    0x0C15, 0x0C16, 0x0A97, 0x0A98, 0x0A99, 0x0A9A, 0x0A9B, 0x0A9C,
-    // MENU_BARRIS - Barris (barrel) - 12 items
-    0x722C, 0x3C73, 0x0E7F, 0xC29B, 0xC29A, 0x3C78,
-    3703, 0xC299, 0xC29C, 0xC29D,
-    // MENU_TUMBAS - Túmulos e Urnas - 29 items
-    0x18C9, 0x18CA, 0x18CB, 0x18CC, 0x18CD, 0x1C61, 0x241C,
-    0xBBB7, 0xD456, 0xD457, 0x730D, 0x730E, 0xBE03, 0xBE01, 0xBDFE, 0xB225,
-    0xB224, 0xB223, 0xB222, 0xB221, 0xB220, 0xB217, 0xAFBB, 0xAFBA, 0x7311,
-    0x7312, 0x7313, 0x0B45, 0x0B46, 0x0B47, 0x0B48,
-    0x1C2F, 0x1C43, 0x1C46, 0x1C51, 0x1C54, 0x1C90
+    // Agora usa o cfg dinamicamente (291 tipos) ao invés de 271 hardcoded
+    return GetAllChestGraphicsFromConfig();
+endfunction
+
+// ========================================
+// Funções LEGACY (compatibilidade) - Agora usam CFGFile internamente
+// ========================================
+
+/*
+ * GetChestConfig()
+ * DEPRECATED: Use LoadChestsConfig() para acesso direto ao dictionary
+ * Mantido para compatibilidade com código legado
+ */
+function GetChestConfig()
+    return LoadChestsConfig();
+endfunction
+
+/*
+ * GetRandomChestType()
+ * Retorna um tipo de baú aleatório das 5 opções básicas
+ * DEPRECATED: Use GetRandomChestFromConfig() que retorna o struct completo
+ */
+function GetRandomChestType()
+    var chest_types := array{
+        "Wooden_0E42",  // WoodenChestEast
+        "Wooden_0E43",  // WoodenChestSouth
+        "Barrel_0E77",  // WoodenBarrel
+        "Metal_0E40",   // MetalChestEast
+        "Metal_0E7C"    // MetalChestSouth
     };
+    return chest_types[RandomInt(chest_types.size()) + 1];
+endfunction
+
+/*
+ * GetChestInfo(chest_type)
+ * Retorna informações de um tipo de baú pelo nome da chave no cfg
+ * Returns struct{ graphic, material, maxhp, name } ou error
+ * Agora usa CFGFile internamente
+ */
+function GetChestInfo(chest_type)
+    var chests := LoadChestsConfig();
+    if (chests == error)
+        return error{"errortext" := "Could not load chests.cfg"};
+    endif
+    
+    // Busca diretamente no dictionary
+    if (!chests.exists(chest_type))
+        return error{"errortext" := "Chest type '" + chest_type + "' not found in config"};
+    endif
+    
+    var chest_data := chests[chest_type];
+    
+    var info := struct;
+    info.+graphic := CInt(chest_data.Graphic);
+    info.+material := CInt(chest_data.Material);
+    info.+maxhp := CInt(chest_data.MaxHp);
+    info.+name := CStr(chest_data.Name);
+    
+    return info;
 endfunction
 
 /*
@@ -103,28 +280,24 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
             endif
             
             if(len(ListItemsNearLocation(newx, newy, newz, 0, realm)) == 0)
-                // Usa a função global para obter todos os 271 gráficos
-                var chest_graphics := GetAllChestGraphics();
+                // Get random chest type from config
+                var chest_type := GetRandomChestType();
+                var chestStruct := GetChestInfo(chest_type);
                 
-                // Randomly select a chest graphic from the full list
-                var gfx := chest_graphics[RandomInt(chest_graphics.size()) + 1];
-                
-                // Determine material and HP based on graphic type
-                var chestStruct := struct;
-                chestStruct.+gfx := gfx;
-                
-                // Metal chests (higher HP)
-                if (gfx == 3648 || gfx == 3708 || gfx == 0xEC40 || gfx == 0xEC3F || 
-                    gfx == 0xEC3E || gfx == 0xEC3D || gfx == 0xEC3C || gfx == 0xEC3B)
-                    chestStruct.+maxHp := 45;
-                    chestStruct.+material := 0x6995; // Metal
-                else
-                    // Wooden/other chests
-                    chestStruct.+maxHp := 30;
-                    chestStruct.+material := 0x1bd7; // Wood
+                // Fallback to hardcoded if config fails
+                if (chestStruct.errortext)
+                    chestStruct := struct;
+                    var type := RandomInt(4) + 1;
+                    case(type)
+                        1: chestStruct.+gfx := 3650; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
+                        2: chestStruct.+gfx := 3651; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
+                        3: chestStruct.+gfx := 3703; chestStruct.+maxHp := 22; chestStruct.+material := 0x1bd7;
+                        4: chestStruct.+gfx := 3648; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
+                        5: chestStruct.+gfx := 3708; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
+                    endcase
                 endif
                 
-                chest := CreateItemAtLocation(newx, newy, newz, chestStruct.gfx, 1, realm);
+                chest := CreateItemAtLocation(newx, newy, newz, chestStruct.graphic, 1, realm);
             if(chest)
         checker := 1;
         chest.movable := 0;
