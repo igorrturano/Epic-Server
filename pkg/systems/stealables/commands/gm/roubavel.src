@@ -21,10 +21,13 @@ include ":stealables:stealables";
 include ":traps:traps";
 include ":gumps:yesNo";
 include ":tn:cooldown";
+include ":message:model/Message";
+include "include/say";
+include "include/sysEvent";
 
 program roubavel(who, text)
 	if (!who.cmdlevel)
-		SendSysMessageEx(who, "Você não tem permissão para usar este comando.", SSM_FAIL);
+		Message("Você não tem permissão para usar este comando.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
@@ -35,27 +38,27 @@ program roubavel(who, text)
 		return 1;
 	endif
 
-	SendSysMessageEx(who, "Selecione o item que será o artefato roubável.", SSM_REQUEST);
+	Message("Selecione o item que será o artefato roubável.", SSM_REQUEST).SendSys(who);
 	var artifact := Target(who);
 	
 	if (!artifact)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		Message("Cancelado.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
 	if (!artifact.IsA(POLCLASS_ITEM))
-		SendSysMessageEx(who, "Você deve selecionar um item.", SSM_FAIL);
+		Message("Você deve selecionar um item.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
 	if (artifact.container)
-		SendSysMessageEx(who, "O item não pode estar em um container.", SSM_FAIL);
+		Message("O item não pode estar em um container.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
 	// Verifica se já é um artefato roubável
 	if (GetObjProperty(artifact, "PropStealable"))
-		SendSysMessageEx(who, "Este item já é um artefato roubável.", SSM_FAIL);
+		Message("Este item já é um artefato roubável.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
@@ -63,14 +66,14 @@ program roubavel(who, text)
 	var rarity := SelectRarityGump(who, artifact);
 	
 	if (!rarity)
-		SendSysMessageEx(who, "Criação cancelada.", SSM_FAIL);
+		Message("Criação cancelada.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
 	// Gump de confirmação
 	var trap_config := ConfirmArtifactCreation(who, artifact, rarity);
 	if (!trap_config)
-		SendSysMessageEx(who, "Criação cancelada.", SSM_FAIL);
+		Message("Criação cancelada.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
@@ -95,7 +98,7 @@ program roubavel(who, text)
 	var spawner := CreateItemAtLocation(artifact_x, artifact_y, artifact_z, 0x9F16, 1, artifact_realm);
 	
 	if (!spawner)
-		SendSysMessageEx(who, "Falha ao criar o spawner.", SSM_FAIL);
+		Message("Falha ao criar o spawner.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
@@ -122,7 +125,7 @@ program roubavel(who, text)
 	var script_result := Start_Script(":stealables:artifact_spawner", array{spawner});
 	
 	if (!script_result)
-		SendSysMessageEx(who, "Falha ao iniciar o script do spawner.", SSM_FAIL);
+		Message("Falha ao iniciar o script do spawner.", SSM_FAIL).SendSys(who);
 		DestroyItem(spawner);
 		return 0;
 	endif
@@ -143,9 +146,9 @@ program roubavel(who, text)
 	AddStealableToList(who, spawner, artifact_name, artifact_desc, objtype, artifact_color, rarity, artifact_x, artifact_y, artifact_z, artifact_realm);
 	
 	var rarity_name := GetRarityNameByLevel(rarity);
-	SendSysMessageEx(who, "Artefato roubável criado com sucesso!", SSM_INFO);
-	SendSysMessageEx(who, "Raridade: " + rarity_name, SSM_INFO);
-	SendSysMessageEx(who, "Spawner criado em: " + artifact_x + ", " + artifact_y + ", " + artifact_z, SSM_INFO);
+	Message("Artefato roubável criado com sucesso!", SSM_INFO).SendSys(who);
+	Message("Raridade: " + rarity_name, SSM_INFO).SendSys(who);
+	Message("Spawner criado em: " + artifact_x + ", " + artifact_y + ", " + artifact_z, SSM_INFO).SendSys(who);
 	
 	return 1;
 endprogram
@@ -462,7 +465,7 @@ function ShowStealablesListGump(who)
 	var stealables_list := GetStealablesList();
 	
 	if (!stealables_list || stealables_list.size() == 0)
-		SendSysMessageEx(who, "Não há artefatos roubáveis criados ainda.", SSM_INFO);
+		Message("Não há artefatos roubáveis criados ainda.", SSM_INFO).SendSys(who);
 		return 0;
 	endif
 	
@@ -764,7 +767,7 @@ function ShowStealableDetails(who, spawner)
 		100: // Teleportar
 			// Usa o realm diretamente (já é string)
 			MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
-			SendSysMessageEx(who, "Você se teleportou para o artefato.", SSM_INFO);
+			Message("Você se teleportou para o artefato.", SSM_INFO).SendSys(who);
 			return 1;
 			
 		200: // Deletar
@@ -783,7 +786,7 @@ function ShowStealableDetails(who, spawner)
 				// Destrói o spawner
 				DestroyItem(spawner);
 				
-				SendSysMessageEx(who, "Artefato deletado com sucesso!", SSM_INFO);
+				Message("Artefato deletado com sucesso!", SSM_INFO).SendSys(who);
 				
 				// Volta para lista
 				ShowStealablesListGump(who);
