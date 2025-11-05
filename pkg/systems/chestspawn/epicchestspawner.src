@@ -153,29 +153,22 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
 						// Check if custom chest graphics were selected
 						var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
-						var chest_graphics;
+						var chest_info;
 						
 						if (custom_graphics && custom_graphics.size() > 0)
-							// Use the custom selected graphics
-							chest_graphics := custom_graphics;
+							// Use custom graphics - pick random from selection
+							var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+							chest_info := GetChestInfoByGraphic(gfx);
 						else
-							// Use default full list from treasurechest.inc
-							chest_graphics := GetAllChestGraphics();
-						endif
-						
-						var gfx := chest_graphics[RandomInt(chest_graphics.size()) + 1];
-						var material := 0x1bd7; // Default wooden material
-						
-						// Assign metal material to metal-looking chests
-						if (gfx == 3648 || gfx == 3708 || gfx == 0xEC40 || gfx == 0xEC3F || 
-							gfx == 0xEC3E || gfx == 0xEC3D || gfx == 0xEC3C || gfx == 0xEC3B)
-							material := 0x6995;
+							// Use random chest from config
+							chest_info := GetRandomChestFromConfig();
 						endif
 
-						new_chest := CreateItemAtLocation(new_x, new_y, new_z, 0xf022, 1, spawner.realm);
+						new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
 						if (new_chest)
-							new_chest.graphic := gfx;
-							SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
+							new_chest.graphic := chest_info.graphic;
+							SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+							SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
 							current_puzzle_count := current_puzzle_count + 1;
 							SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
 							SetObjProperty(new_chest, "IsPuzzleChest", 1);
@@ -205,38 +198,31 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 				if (!new_chest)
 					// Check if custom graphics were selected
 					var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+					var chest_info;
+					
 					if (custom_graphics && custom_graphics.size() > 0)
-						// Use custom graphics - create chest directly with selected graphic
+						// Use custom graphics - pick random from selection
 						var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
-						var material := 0x1bd7; // Default wooden material
-						
-						// Assign metal material to metal-looking chests
-						if (gfx == 3648 || gfx == 3708 || gfx == 0xEC40 || gfx == 0xEC3F || 
-							gfx == 0xEC3E || gfx == 0xEC3D || gfx == 0xEC3C || gfx == 0xEC3B)
-							material := 0x6995;
-						endif
-						
-						// Create chest directly with the custom graphic
-						new_chest := CreateItemAtLocation(new_x, new_y, new_z, gfx, 1, spawner.realm);
-						if (new_chest)
-							new_chest.graphic := gfx;
-							SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
-							SetObjProperty(new_chest, "IsTreasureChest", 1);
-							SetObjProperty(new_chest, "level", level);
-							SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, 30 * level);
-							
-							// Add traps using the same logic from treasurechest.inc
-							AddRandomTraps(new_chest, level);
-							
-							// Generate loot
-							Loot_Generate(new_chest, lootname);
-						endif
+						chest_info := GetChestInfoByGraphic(gfx);
 					else
-						// No custom graphics - use default CreateTreasureChests
-						chests := CreateTreasureChests(level, 1, 1, new_x, new_y, new_z, spawner.realm, lootname);
-						if (chests.size() > 0)
-							new_chest := chests[1];
-						endif
+						// Use random chest from config
+						chest_info := GetRandomChestFromConfig();
+					endif
+					
+					// Create chest directly with info from config
+					new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
+					if (new_chest)
+						new_chest.graphic := chest_info.graphic;
+						SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+						SetObjProperty(new_chest, "IsTreasureChest", 1);
+						SetObjProperty(new_chest, "level", level);
+						SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
+						
+						// Add traps using the same logic from treasurechest.inc
+						AddRandomTraps(new_chest, level);
+						
+						// Generate loot
+						Loot_Generate(new_chest, lootname);
 					endif
 				endif
 
