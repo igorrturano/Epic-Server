@@ -19,7 +19,7 @@ include ":combat:Model/CombatAbility";
 
 include ":message:Model/Message";
 include ":charactercreation:resists";
-include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
+// include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum class HAB_STATUS
 	SUCCESS := "ATIVADA!",

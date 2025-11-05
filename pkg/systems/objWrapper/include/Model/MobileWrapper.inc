@@ -144,6 +144,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not an NPC or has no template configured!"};
 	endfunction
 
+	function GetNPCDamage(this)
+		if (!this.IsNPC())
+			return error{errortext := "This mobile is not an NPC!"};
+		endif
+
+		var npc_elem := NPC_GetNPCConfig(this._objRef.npctemplate);
+		return npc_elem.Damage;
+	endfunction
+
 	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
 		var equipsInSlot;
 

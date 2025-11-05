@@ -28,6 +28,8 @@ class AttackInfo(IAttackInfo)
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
+	var _criticalHitChance := 100;
+	var _criticalHitChanceResult := 0; // Resultado da rolagem do dado de dano crítico
 	var _parryEquip; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
 	var _parryChancePenalty := 0;

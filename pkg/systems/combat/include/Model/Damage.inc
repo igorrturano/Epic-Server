@@ -65,31 +65,31 @@ class Damage(IDamage)
 		return this._energyRaw;
 	endfunction
 
-	function GetSlashDamage(this)
+	function GetSlashBaseDamage(this)
 		return this._slashBase;
 	endfunction
 
-	function GetPiercingDamage(this)
+	function GetPiercingBaseDamage(this)
 		return this._piercingBase;
 	endfunction
 
-	function GetBluntDamage(this)
+	function GetBluntBaseDamage(this)
 		return this._bluntBase;
 	endfunction
 
-	function GetFireDamage(this)
+	function GetFireBaseDamage(this)
 		return this._fireBase;
 	endfunction
 
-	function GetColdDamage(this)
+	function GetColdBaseDamage(this)
 		return this._coldBase;
 	endfunction
 
-	function GetPoisonDamage(this)
+	function GetPoisonBaseDamage(this)
 		return this._poisonBase;
 	endfunction
 
-	function GetEnergyDamage(this)
+	function GetEnergyBaseDamage(this)
 		return this._energyBase;
 	endfunction
 
