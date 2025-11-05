@@ -52,7 +52,7 @@ class DamageDice(IDamageDice)
 
 	function SetSlashDamage(this, dice)
 		if (!(dice is @Dice))
-			this._slash := error{ errortext := "Parameter must be a Dice object!" };
+			this._slash := error{errortext := "Parameter must be a Dice object!"};
 			return this._slash;
 		endif
 
@@ -63,7 +63,7 @@ class DamageDice(IDamageDice)
 
 	function SetPiercingDamage(this, dice)
 		if (!(dice is @Dice))
-			this._piercing := error{ errortext := "Parameter must be a Dice object!" };
+			this._piercing := error{errortext := "Parameter must be a Dice object!"};
 			return this._piercing;
 		endif
 
@@ -74,7 +74,7 @@ class DamageDice(IDamageDice)
 
 	function SetBluntDamage(this, dice)
 		if (!(dice is @Dice))
-			this._blunt := error{ errortext := "Parameter must be a Dice object!" };
+			this._blunt := error{errortext := "Parameter must be a Dice object!"};
 			return this._blunt;
 		endif
 
@@ -85,7 +85,7 @@ class DamageDice(IDamageDice)
 
 	function SetFireDamage(this, dice)
 		if (!(dice is @Dice))
-			this._fire := error{ errortext := "Parameter must be a Dice object!" };
+			this._fire := error{errortext := "Parameter must be a Dice object!"};
 			return this._fire;
 		endif
 
@@ -96,7 +96,7 @@ class DamageDice(IDamageDice)
 
 	function SetColdDamage(this, dice)
 		if (!(dice is @Dice))
-			this._cold := error{ errortext := "Parameter must be a Dice object!" };
+			this._cold := error{errortext := "Parameter must be a Dice object!"};
 			return this._cold;
 		endif
 
@@ -107,7 +107,7 @@ class DamageDice(IDamageDice)
 
 	function SetPoisonDamage(this, dice)
 		if (!(dice is @Dice))
-			this._poison := error{ errortext := "Parameter must be a Dice object!" };
+			this._poison := error{errortext := "Parameter must be a Dice object!"};
 			return this._poison;
 		endif
 
@@ -118,13 +118,69 @@ class DamageDice(IDamageDice)
 
 	function SetEnergyDamage(this, dice)
 		if (!(dice is @Dice))
-			this._energy := error{ errortext := "Parameter must be a Dice object!" };
+			this._energy := error{errortext := "Parameter must be a Dice object!"};
 			return this._energy;
 		endif
 
 		this._energy := dice;
 
 		return this;
+	endfunction
+
+	function RollSlashDamage(this)
+		if (!this._slash)
+			return error{errortext := "Slash damage not set!"};
+		endif
+		
+		return this._slash.Roll();
+	endfunction
+
+	function RollPiercingDamage(this)
+		if (!this._piercing)
+			return error{errortext := "Piercing damage not set!"};
+		endif
+		
+		return this._piercing.Roll();
+	endfunction
+
+	function RollBluntDamage(this)
+		if (!this._blunt)
+			return error{errortext := "Blunt damage not set!"};
+		endif
+		
+		return this._blunt.Roll();
+	endfunction
+
+	function RollFireDamage(this)
+		if (!this._fire)
+			return error{errortext := "Fire damage not set!"};
+		endif
+		
+		return this._fire.Roll();
+	endfunction
+
+	function RollColdDamage(this)
+		if (!this._cold)
+			return error{errortext := "Cold damage not set!"};
+		endif
+		
+		return this._cold.Roll();
+	endfunction
+
+	function RollPoisonDamage(this)
+		if (!this._poison)
+			return error{errortext := "Poison damage not set!"};
+		endif
+		
+		return this._poison.Roll();
+	endfunction
+
+	function RollEnergyDamage(this)
+		if (!this._energy)
+			return error{errortext := "Energy damage not set!"};
+		endif
+		
+		return this._energy.Roll();
 	endfunction
 
 	function ToString(this)
