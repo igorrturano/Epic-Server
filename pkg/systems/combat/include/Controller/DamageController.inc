@@ -14,6 +14,7 @@ include ":combat:Controller/ParryController";
 include ":combat:weardown";
 
 // External
+include ":io:CFGFile";
 
 enum DAMAGE_TYPES
 	DMG_SLASH		:= "Slash",
@@ -53,17 +54,17 @@ function CalculateAttackerDamage(byRef attackInfo)
 	if (attackInfo.GetAttacker().IsNPC())
 		damageDice := attackInfo.GetAttacker().GetNPCDamage();
 	else
-		if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
-		elseif (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
+		elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
 		endif
 	endif
 
 	attackInfo.SetDamage(Damage(
-		damageDice.RollSlashDamage(),
-		damageDice.RollPiercingDamage(),
-		damageDice.RollBluntDamage(),
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::SLASH ? damageDice.RollSlashDamage() : 0,
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::PIERCING ? damageDice.RollPiercingDamage() : 0,
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::BLUNT ? damageDice.RollBluntDamage() : 0,
 		damageDice.RollFireDamage(),
 		damageDice.RollColdDamage(),
 		damageDice.RollPoisonDamage(),
@@ -72,12 +73,61 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
+	var equipsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
+	OrderEquipsByAttackDirection(equipsInBodyRegion, attackInfo.GetDirection());
+endfunction
+
+function OrderEquipsByAttackDirection(equipsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
+	var FRONT_TO_BACK := array{
+		LAYER_ROBE,
+		LAYER_TUNIC,
+		LAYER_SKIRT,
+		LAYER_HELM,
+		LAYER_GLOVES,
+		LAYER_NECK,
+		LAYER_WAIST,
+		LAYER_ARMS,
+		LAYER_CHEST,
+		LAYER_SHIRT,
+		LAYER_LEGS,
+		LAYER_PANTS,
+		LAYER_SHOES,
+		LAYER_CAPE
+	};
+	var BACK_TO_FRONT := array{
+		LAYER_CAPE,
+		LAYER_ROBE,
+		LAYER_TUNIC,
+		LAYER_SKIRT,
+		LAYER_HELM,
+		LAYER_ARMS,
+		LAYER_WAIST,
+		LAYER_CHEST,
+		LAYER_SHIRT,
+		LAYER_LEGS,
+		LAYER_PANTS,
+		LAYER_SHOES,
+		LAYER_NECK,
+		LAYER_GLOVES
+	};
+
+	var orderedEquips := array{};
+	var orderArray := attackDirection == ATTACK_DIRECTION::BACK ? BACK_TO_FRONT : FRONT_TO_BACK;
+
+	foreach layer in (orderArray)
+		foreach equip in (equipsInBodyRegion)
+			if (equip.GetLayer() == layer)
+				orderedEquips.Append(equip);
+			endif
+		endforeach
+	endforeach
 endfunction
 
 function CheckCriticalHit(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("critdelay") > ReadGameClock())
-		return false;
-	endif
+	// Testar primeiro sem delay. Se der errado, a gente ativa isso aqui de novo...
+	// if (attackInfo.GetAttacker().GetObjRef().GetProp("critdelay") > ReadGameClock())
+	// 	return false;
+	// endif
 
 	return true;
 endfunction
@@ -167,38 +217,38 @@ function ApplyCombatDamage(byRef attackInfo)
 	energy 	 := attackInfo.GetDamage().GetEnergyDamage();
 	
 	if (slash > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), slash);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), slash, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (piercing > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), piercing);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), piercing, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (blunt > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), blunt);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), blunt, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (fire > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), fire);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), fire, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (cold > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), cold);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), cold, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (poison > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), poison);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), poison, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison), attackInfo.GetAttacker().GetObjRef());
 	endif
 
 	if (energy > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), energy);
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), energy, attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy), attackInfo.GetAttacker().GetObjRef());
 	endif
 endfunction
 

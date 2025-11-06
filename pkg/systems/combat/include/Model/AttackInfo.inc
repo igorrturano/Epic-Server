@@ -12,14 +12,14 @@ include ":message:model/Message";
 include "include/packets";
 
 class AttackInfo(IAttackInfo)
-	var _moment := ATTACKMOMENT::COMBATING;
+	var _moment := ATTACK_MOMENT::COMBATING;
 	var _attacker; // MobileWrapper class
 	var _defender; // MobileWrapper class
 	
 	var _bodyRegion := ""; // Região do corpo a ser atingida
 	var _direction := ATTACK_DIRECTION::FRONT;
 	var _damage; // Damage class
-	var _damageHand := DAMAGEHAND::MAINHAND;
+	var _damageHand := DAMAGE_HAND::MAINHAND;
 	var _attackType := DAMAGE_TYPE::SLASHDAMAGE; // enum da postura que o atacante está usando no ataque
 	var _ammo := struct{
 		itemRef := 0x0,
@@ -28,7 +28,8 @@ class AttackInfo(IAttackInfo)
 	var _hitChance := 100;
 	var _hitChancePenalty := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
-	var _criticalHitChance := 100;
+	var _criticalHitChance := 0;
+	var _criticalHitChancePenalty := 0;
 	var _criticalHitChanceResult := 0; // Resultado da rolagem do dado de dano crítico
 	var _parryEquip; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
@@ -38,7 +39,7 @@ class AttackInfo(IAttackInfo)
 	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 
-	function AttackInfo(this, attacker, defender, moment := ATTACKMOMENT::COMBATING)
+	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING)
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
@@ -46,7 +47,7 @@ class AttackInfo(IAttackInfo)
 		this._bodyRegion := error{ errortext := "Body region not set yet!" };
 		this._direction := ATTACK_DIRECTION::FRONT;
 		this._damage := error{ errortext := "Damage not set yet!" };
-		this._damageHand := DAMAGEHAND::MAINHAND;
+		this._damageHand := DAMAGE_HAND::MAINHAND;
 		this._hitChance := error{ errortext := "Hit chance not set yet!" };
 		this._hitChancePenalty := 0;
 		this._hitChanceResult := error{ errortext := "Hit chance not rolled yet!" };
@@ -110,6 +111,18 @@ class AttackInfo(IAttackInfo)
 		return this._hitChanceResult;
 	endfunction
 
+	function GetCriticalHitChance(this)
+		return this._criticalHitChance;
+	endfunction
+
+	function GetCriticalHitChancePenalty(this)
+		return this._criticalHitChancePenalty;
+	endfunction
+	
+	function GetCriticalHitChanceResult(this)
+		return this._criticalHitChanceResult;
+	endfunction
+	
 	function GetParryEquip(this)
 		return this._parryEquip;
 	endfunction
@@ -211,6 +224,18 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	function SetCriticalHitChance(this, critChance)
+		this._criticalHitChance := critChance;
+
+		return this;
+	endfunction
+
+	function SetCriticalHitChancePenalty(this, penalty)
+		this._criticalHitChancePenalty := penalty;
+
+		return this;
+	endfunction
+
 	function SetParryEquip(this, equip)
 		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
 			return error{ errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!" };
@@ -292,12 +317,12 @@ class AttackInfo(IAttackInfo)
 	endfunction
 endclass
 
-enum class ATTACKMOMENT
+enum class ATTACK_MOMENT
 	ENGAGING,
 	COMBATING
 endenum
 
-enum class DAMAGEHAND
+enum class DAMAGE_HAND
 	MAINHAND,
 	OFFHAND
 endenum
