@@ -87,14 +87,17 @@ class CFGFile(IOFile)
 
 		if (TypeOf(this._key.name) == "String")
 			if (isDictionary)
-				this._key.value := GetConfigStringDictionary(this._file, this._key.name);
+				this._key.value := GetConfigStringDictionary(this._element.value, this._key.name);
 			else
-				this._key.value := GetConfigStringArray(this._file, this._key.name);
-				if (this._key.value.size() == 1) this._key.value := this._key.value[1]; endif
+				if (this._key.value.size() > 1)
+					this._key.value := GetConfigStringArray(this._element.value, this._key.name);
+				else
+					this._key.value := GetConfigString(this._element.value, this._key.name);
+				endif
 			endif
 		elseif (TypeOf(this._key.name) == "Integer")
 		else
-			return error{ errortext := "Key name must be a string or integer" };
+			return error{ errortext := "Key name must be a 'string' or 'integer'" };
 		endif
 
 		return this._key.value;
