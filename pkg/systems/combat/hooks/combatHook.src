@@ -35,7 +35,7 @@ exported function Attack(attacker, defender)
 	TryToAttack(attackInfo);
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
-		attackInfo.SetDamageHand(DAMAGEHAND::OFFHAND); // Troca a mão para a secundária
+		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND); // Troca a mão para a secundária
 		TryToAttack(attackInfo);
 	endif
 
@@ -116,11 +116,11 @@ endfunction
 function TryToAttack(byRef attackInfo)
 	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 
-	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef() });
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
-	elseif (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
+	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 		attackInfo.SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo));
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> OffHand");
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
@@ -133,7 +133,7 @@ function TryToAttack(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
 		// SkillChecks(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjRef(), 1); // TODO: Checar apenas quando executar o dano de fato...
 		
-		if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::BOTH);
 			ExecuteMasteryAbility(attackInfo);
 		endif
@@ -172,7 +172,7 @@ function DoAttack(byRef attackInfo)
 			);
 	endif
 
-	if (attackInfo.GetDamageHand() == DAMAGEHAND::MAINHAND)
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Run_Script(":combat:attackHitScript", attackInfo);
 	else // Se for ataque da segunda arma, executa async com delay
 		Start_Script(":combat:attackHitScript", attackInfo);

@@ -53,7 +53,7 @@ exported function HandleAttackRequest(who, byref packet)
 		return 1;
 	endif
 
-	ExecuteMasteryAbility(AttackInfo(MobileWrapper(who), MobileWrapper(defender), ATTACKMOMENT::ENGAGING));
+	ExecuteMasteryAbility(AttackInfo(MobileWrapper(who), MobileWrapper(defender), ATTACK_MOMENT::ENGAGING));
 
 	return 0;
 endfunction

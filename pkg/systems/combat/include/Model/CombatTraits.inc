@@ -13,8 +13,8 @@ class CombatTraits()
 		return this._posture;
 	endfunction
 
-	function SetPosture(this, postureName)
-		this._posture := postureName;
+	function SetPosture(this, posture) // posture: enum COMBAT_POSTURE
+		this._posture := posture;
 		return this;
 	endfunction
 

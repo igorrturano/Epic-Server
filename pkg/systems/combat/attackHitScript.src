@@ -20,7 +20,7 @@ program MainHitScript(attackInfo)
 	// Define attacker como o originador do ataque
 	SetScriptController(attackInfo.GetAttacker().GetObjRef());
 
-	if (attackInfo.GetDamageHand() == DAMAGEHAND::OFFHAND)
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
 	endif
 
@@ -52,6 +52,7 @@ endprogram
 
 function CheckBodyRegionToHit(byRef attackInfo)
 	var zoneToHit := CS_GetRandomArmorZone();
+	attackInfo.SetBodyRegion(zoneToHit);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
 endfunction
 

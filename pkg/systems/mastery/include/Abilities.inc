@@ -13,7 +13,7 @@ function ExecuteMasteryAbility(attackInfo)
 		return false;
 	endif
 
-	if (attackInfo.GetMoment() == ATTACKMOMENT::ENGAGING) // Algumas habilidades são aplicadas no engaging
+	if (attackInfo.GetMoment() == ATTACK_MOMENT::ENGAGING) // Algumas habilidades são aplicadas no engaging
 		ExecuteBeforeEngage(attackInfo);
 	else
 		ExecuteAfterEngage(attackInfo);
