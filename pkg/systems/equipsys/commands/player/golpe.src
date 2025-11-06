@@ -1,87 +1,68 @@
-include "include/client";
-include "include/say";
-include ":equipsys:utils/consts";
-include ":gumps:epicGumps";
+include ":objWrapper:Model/MobileWrapper";
+include ":objWrapper:Model/WeaponWrapper";
+include ":message:Model/Message";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/ImageGump";
 
 program cmd_golpe(who)
-	if (!canChangePostura(who, who.weapon))
-		return 0;
-	endif
-
-	OpenGump(who);
+	var newPosture;
+	who := MobileWrapper(who);
+	newPosture := ChoosePosture(who);
+	SetNewPosture(who, newPosture);
 endprogram
 
-function OpenGump(who)
-	while (1)
-		var weapon := who.weapon;
-		var weaponAttr := weapon.getAttrBase();
+function ChoosePosture(who)
+	var eventHandled, buttonSlash, buttonPiercing, buttonBlunt;
+	
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 225, 115);
+	var container := ContainerGridLayout("Container", 15, 40, 195, 35, 1, 3);
+	var imgSelector := ImageGump("Selector", 0, 0, 30062);
 
-		var gump := GFECreateGump("Postura de Combate", 225, 115, { HIDE_TITLE, HIDE_PAGE, BORDER_BLUE });
-		var x := 15;
-		var y := 40;
-
-		if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1004, COLOR_RED);
-			x += 70;
-			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
-			x += 70;
-			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
-			x += 70;
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1008, COLOR_RED);
-			x += 70;
-			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
-			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
-			x += 70;
-			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
-			x += 70;
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1009, COLOR_RED);
+	while (true)
+		if (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::SLASH)
+			container.AddControl(imgSelector, 1, 1);
+			buttonSlash := ImageGump("SlashDamage", 13, 23, 1004).SetColor(COLOR_RED);
+			buttonPiercing := Button("PiercingDamage", 13, 23, 1008, 1008);
+			buttonBlunt := Button("BluntDamage", 13, 23, 1009, 1009);
+		elseif (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::PIERCING)
+			container.AddControl(imgSelector, 1, 2);
+			buttonSlash := Button("SlashDamage", 13, 23, 1004, 1004);
+			buttonPiercing := ImageGump("PiercingDamage", 13, 23, 1008).SetColor(COLOR_RED);
+			buttonBlunt := Button("BluntDamage", 13, 23, 1009, 1009);
+		elseif (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::BLUNT)
+			container.AddControl(imgSelector, 1, 3);
+			buttonSlash := Button("SlashDamage", 13, 23, 1004, 1004);
+			buttonPiercing := Button("PiercingDamage", 13, 23, 1008, 1008);
+			buttonBlunt := ImageGump("BluntDamage", 13, 23, 1009).SetColor(COLOR_RED);
 		endif
 
-		var input := GFSendGump(who, gump);
+		container.AddControl(buttonSlash, 1, 1);
+		container.AddControl(buttonPiercing, 1, 2);
+		container.AddControl(buttonBlunt, 1, 3);
+		gump.AddControl(container);
 
-		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
-			weapon := who.weapon;
-			weaponAttr := weapon.getAttrBase();
+		eventHandled := gump.Show();
+
+		if (eventHandled.GetResult() == buttonSlash)
+			return COMBAT_POSTURE::SLASH;
+		elseif (eventHandled.GetResult() == buttonPiercing)
+			return COMBAT_POSTURE::PIERCING;
+		elseif (eventHandled.GetResult() == buttonBlunt)
+			return COMBAT_POSTURE::BLUNT;
 		endif
 
-		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
-			return 0;
-		endif
-
-		if (input[0] == 0)
-			return;
-		elseif (input[0] == 10)
-			weaponAttr.AttackType := SLASHDAMAGE;
-		elseif (input[0] == 11)
-			weaponAttr.AttackType := PIERCINGDAMAGE;
-		elseif (input[0] == 12)
-			weaponAttr.AttackType := BLUNTDAMAGE;
-		endif
-
-		weapon.setAttrBase(weaponAttr);
-		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
-		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}",
-				   SSM_INFO);
+		gump.Dispose();
 	endwhile
 endfunction
 
-function canChangePostura(who, weapon)
-	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) ||
-	 (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
-		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
-		return 0;
+function SetNewPosture(who, newPosture)
+	if (newPosture == COMBAT_POSTURE::SLASH ||
+		newPosture == COMBAT_POSTURE::PIERCING ||
+		newPosture == COMBAT_POSTURE::BLUNT
+		)
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+		Message($"*muda postura de combate para {newPosture}*").SendAbove(who.GetObjRef());
 	endif
-
-	if (weapon.isRanged())
-		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
-		return 0;
-	endif
-
-	return 1;
 endfunction
