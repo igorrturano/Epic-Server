@@ -208,6 +208,12 @@ class Gump(IGump)
 		return GFCloseGump(this._parent, this._pid);
 	endfunction
 
+	function Dispose(this)
+		this._gump := 0;
+		this._gumpResult := 0;
+		this._controls := dictionary{};
+	endfunction
+
 	// Private functions
 	function _CreateControls(this)
 		foreach controlGroup in (this._controls)
