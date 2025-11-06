@@ -11,6 +11,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	var _template; // CfgElem
 	var _prop;
 
+	var _layer := 0x0;
 	var _weight := 0;
 	var _maxHP := 0;
 	var _material := "";
@@ -23,6 +24,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			this._template := item.getCfgElem();
 			this._prop := item.GetProp("atributos") ?: error{"errortext" := "This item has no attributes Property!"};
+			this._layer := item.layer;
 			this._graphic := this._template.graphic;
 			this._color := this._template.color;
 			
@@ -58,6 +60,10 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 
 	function GetItemProp(this)
 		return this._prop;
+	endfunction
+
+	function GetLayer(this)
+		return this._layer;
 	endfunction
 
 	function GetWeight(this)
@@ -145,7 +151,9 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	function ToString(this)
 		return Super::ToString(this) + " >>> Equipment: " +
 			$"Name: {this._name}, " +
+			$"Layer: {this._layer} ({Hex(this._layer)}), " +
 			$"Graphic: {this._graphic} ({Hex(this._graphic)}), " +
+			$"Color: {this._color} ({this._color}), " +
 			$"Weight: {this._weight}, " +
 			$"MaxHP: {this._maxHP}";
 	endfunction
