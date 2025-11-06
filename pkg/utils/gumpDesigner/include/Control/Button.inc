@@ -30,8 +30,8 @@ class Button(Control)
 		return this._action;
 	endfunction
 
-	function SetImage(this, image)
-		this._image := image;
+	function SetUnpressedImage(this, unpressedImage)
+		this._unpressedImage := unpressedImage;
 		return this;
 	endfunction
 

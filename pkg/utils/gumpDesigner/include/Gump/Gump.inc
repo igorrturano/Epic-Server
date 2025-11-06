@@ -174,7 +174,7 @@ class Gump(IGump)
 		this._gumpResult := GFSendGump(this._parent, this._gump);
 
 		if (this._gumpResult[0] == 0)
-			eventHandled := EventHandler("CLOSED");
+			eventHandled := EventHandler(EVENT_ACTION::CLOSED);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][this._gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
