@@ -9,24 +9,29 @@ include ":attributes:skills";
 include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
+include ":combat:Model/CombatTraits";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _race := "";
 	var _culture := "";
 	var _religion := "";
+	var _combatTraits; // CombatTraits class
 
 	function MobileWrapper(this, byRef mobRef)
 		Super(mobRef);
 
 		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
-			this._race := this.objRef.GetProp("chardata").race;
-			this._culture := this.objRef.GetProp("chardata").culture;
-			this._religion := this.objRef.GetProp("chardata").religion;
-			
+			this._race := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
+			this._culture := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
+			this._religion := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
 		else
 			var err := error{errortext := "Param is not a mobRef or does not exist!"};
 			this._objRef := err;
 			this._name := err;
+			this._race := err;
+			this._culture := err;
+			this._religion := err;
+			this._combatTraits := err;
 		endif
 	endfunction
 
@@ -137,20 +142,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetNPCTemplate(this)
-		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not an NPC!"};
+		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
 	function GetNPCTemplateCfg(this)
-		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not an NPC or has no template configured!"};
+		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
 	endfunction
 
 	function GetNPCDamage(this)
-		if (!this.IsNPC())
-			return error{errortext := "This mobile is not an NPC!"};
-		endif
-
-		var npc_elem := NPC_GetNPCConfig(this._objRef.npctemplate);
-		return npc_elem.Damage;
+		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate).Damage : error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
 	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
@@ -200,11 +200,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetSkillBase(this, skillName)
 		this._skills[skillName].base := AP_GetTrueSkill(this._objRef, skillName);
+
 		return this._skills[skillName].base;
 	endfunction
 
 	function GetSkillMod(this, skillName)
 		this._skills[skillName].mod := AP_GetSkillMod(this._objRef, skillName);
+
 		return this._skills[skillName].mod;
 	endfunction
 
@@ -212,19 +214,43 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		// TODO: Implementar retorno de CombatAbility
 	endfunction
 
+	function GetCombatTraits(this)
+		var propData := this._objRef.GetProp(MOBILE_PROPNAME::COMBAT_TRAITS);
+		if (!propData)
+			propData := CombatTraits().Serialize();
+		endif
+
+		this._combatTraits := CombatTraits().Deserialize(propData);
+
+		return this._combatTraits;
+	endfunction
+
 	function SetSkillBase(this, skillName, value)
 		this._skills[skillName].base := AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
+
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
 		this._skills[skillName].mod := AP_SetSkillMod(this._objRef, skillName, CDbl(value));
+
+		return this;
+	endfunction
+
+	function SetCombatTraits(this, combatTrait) // combatTrait: CombatTraits
+		if (!(combatTrait is @CombatTraits))
+			return error{errortext := "The param must be a CombatTraits object!"};
+		endif
+		
+		this._combatTraits := combatTrait;
+		this._objRef.SetProp(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
+
 		return this;
 	endfunction
 
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper!"};
+			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -237,7 +263,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper!"};
+			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -272,8 +298,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.connected == true;
 	endfunction
 
-	function DistanceTo(this, other) // other: ObjRef
-		return Distance(this._objRef, other);
+	function DistanceTo(this, otherObj) // other: ObjRef
+		if (!otherObj.IsA(POLCLASS_UOBJECT))
+			return error{errortext := "The param must be an ObjRef!"};
+		endif
+
+		return Distance(this._objRef, otherObj);
 	endfunction
 
 	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
@@ -298,7 +328,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function Equals(this, byRef otherMobileWrapper)
 		if (!(otherMobileWrapper is @MobileWrapper))
-			return error{errortext := "The param must be a MobileWrapper!"};
+			return error{errortext := "The param must be a MobileWrapper object!"};
 		endif
 
 		return this.GetObjRef() == otherMobileWrapper.GetObjRef() &&
@@ -313,4 +343,9 @@ enum class MOBILE_GENDER
 	MALE := "Male",
 	FEMALE := "Female",
 	UNDEFINED := "Undefined"
+endenum
+
+enum class MOBILE_PROPNAME
+	CHARDATA := "chardata",
+	COMBAT_TRAITS := "combattraits"
 endenum
