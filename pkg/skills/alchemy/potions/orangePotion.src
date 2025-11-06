@@ -23,7 +23,7 @@ program drink_orange(who, potion)
 	var time := 120;
 	case (potion.objtype)
 		0xdc14: potion_strength := 2; time := 120;
-		0xdc15: potion_strength := 3; time := 240;
+		0xfa50: potion_strength := 3; time := 240;
 		0xdc16: potion_strength := 5; time := 480;
 	endcase
 	empty_bottle(who, potion);
