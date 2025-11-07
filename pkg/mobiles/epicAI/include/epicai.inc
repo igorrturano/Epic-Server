@@ -2787,14 +2787,15 @@ endfunction
 function DetectAklatsThreats(npc)
     // Verifica se já tem oponente ativo
     if (npc.opponent)
-        return 1;
+		return 1;
     endif
     
-    // Verifica se foi alertado por som (taunt_opponent)
+   // Verifica se foi alertado por som (taunt_opponent)
     var taunt_opponent := GetObjProperty(npc, "#taunt_opponent");
-    if (taunt_opponent)
+    if (taunt_opponent && !npc.warmode)
         PrintTextAbove(npc, "*Alertado pelo som!*");
         return 1;
+		endif
     endif
     
     // Detecção de pegadas alinhadas
