@@ -75,7 +75,8 @@ function ExaminarObjeto(who,targ)
 		endcase
 		
 		sleep(1);
-		var check_result := SkillCheck(who, AWARENESS, diff);			if ( check_result > 0 )
+		var check_result := SkillCheck(who, AWARENESS, diff);
+		if ( check_result > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
 
