@@ -7,7 +7,7 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 
 program SpellScript(params)
 	var attacker := params[1];

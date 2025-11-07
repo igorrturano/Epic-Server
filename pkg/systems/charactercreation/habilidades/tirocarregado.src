@@ -10,7 +10,7 @@ include "include/facings";
 include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":combat:armorZones";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var strat_cfg := ReadConfigFile("combatlevel");

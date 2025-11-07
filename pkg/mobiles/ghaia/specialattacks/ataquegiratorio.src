@@ -2,9 +2,9 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
-include ":blood:blood";
 include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":blood:blood";
 
 program doubleattack(params)
 	var attacker := params[1];

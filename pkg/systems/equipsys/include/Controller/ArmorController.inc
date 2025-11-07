@@ -3,7 +3,7 @@ use math;
 
 include ":equipsys:utils/consts";
 include ":combat:Model/ArmorResist";
-include ":combat:Model/ShieldResist";
+include ":combat:Model/ShieldAttributes";
 include ":combat:Model/AttributeModifier";
 
 function GetResistPhysicalByProtection(tier)

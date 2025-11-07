@@ -10,7 +10,7 @@ include ":timedscripts:timedScripts";
 include ":attributes:attributes";
 include "include/sounds";
 include "include/say";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":fls_core:fls_characters";
 
 function StartScript(mobile, attacker := 0, level := 0)
