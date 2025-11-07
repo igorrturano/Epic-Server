@@ -3,10 +3,7 @@ class IAttackInfo()
 
 	uninit function GetMoment(this);
 	uninit function GetAttacker(this);
-	uninit function GetAttackerWeapon(this);
 	uninit function GetDefender(this);
-	uninit function GetDefenderWeapon(this);
-	uninit function GetDefenderArmor(this);
 	uninit function GetHitChance(this);
 	uninit function GetHitChancePenalty(this);
 	uninit function GetHitChanceResult(this);

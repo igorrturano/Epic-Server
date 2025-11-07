@@ -4,6 +4,7 @@ include ":awareness:awareness";
 include ":nature:nature";
 include ":acid:acid";
 include "include/epicNPCUtils";
+include ":combat:Model/AttackInfo";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -784,7 +785,7 @@ endfunction
 
 function PlayThrowAnimation(attacker)
    PrintTextAbove(attacker, "*arremessa*");
-   PlayAttackFX(attacker);
+   PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(false)));
    if (attacker.isLizardMan()) 
       attacker.graphic := 0x21;
    endif
@@ -833,7 +834,7 @@ function WebWrapCorpse(spider)
          PlayStationaryEffect(item.x, item.y, item.z, 0xCCA1, 5, 80);
          for i:= 0 to 3
             PlaySoundEffect(spider, 0x5A); // Web sound
-            PlayAttackFX(spider);
+            PlayAttackFX(AttackInfo(MobileWrapper(spider), MobileWrapper(false)));
             sleep(1);
          endfor
          sleep(1);

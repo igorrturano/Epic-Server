@@ -8,6 +8,7 @@ include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
+include ":io:CFGFile";
 
 const MAX_Z_DIFF := 18;
 
@@ -1965,7 +1966,8 @@ function GetWeaponRangeInfo()
         return struct{ "min_range" := 1, "max_range" := 1 };
     endif
 
-    var wpn_elem := GetWpnCfgInfo(me, weapon);
+    // var wpn_elem := GetWpnCfgInfo(me, weapon);
+	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue(); 
     var min_range := 1;
     var max_range := 1;
     

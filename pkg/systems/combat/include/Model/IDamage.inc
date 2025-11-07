@@ -10,37 +10,35 @@ class IDamage()
 		default energy
 	);
 	
-	uninit function GetSlashDamage(this);
-	uninit function GetPiercingDamage(this);
-	uninit function GetBluntDamage(this);
-	uninit function GetFireDamage(this);
-	uninit function GetColdDamage(this);
-	uninit function GetPoisonDamage(this);
-	uninit function GetEnergyDamage(this);
+	uninit function GetSlashRawDamage(this);
+	uninit function GetPiercingRawDamage(this);
+	uninit function GetBluntRawDamage(this);
+	uninit function GetFireRawDamage(this);
+	uninit function GetColdRawDamage(this);
+	uninit function GetPoisonRawDamage(this);
+	uninit function GetEnergyRawDamage(this);
+	uninit function GetSlashBaseDamage(this);
+	uninit function GetPiercingBaseDamage(this);
+	uninit function GetBluntBaseDamage(this);
+	uninit function GetFireBaseDamage(this);
+	uninit function GetColdBaseDamage(this);
+	uninit function GetPoisonBaseDamage(this);
+	uninit function GetEnergyBaseDamage(this);
 
-	uninit function SetSlashDamage(this, value);
-	uninit function SetPiercingDamage(this, value);
-	uninit function SetBluntDamage(this, value);
-	uninit function SetFireDamage(this, value);
-	uninit function SetColdDamage(this, value);
-	uninit function SetPoisonDamage(this, value);
-	uninit function SetEnergyDamage(this, value);
-
-	uninit function IncreaseSlashDamage(this, value);
-	uninit function IncreasePiercingDamage(this, value);
-	uninit function IncreaseBluntDamage(this, value);
-	uninit function IncreaseFireDamage(this, value);
-	uninit function IncreaseColdDamage(this, value);
-	uninit function IncreasePoisonDamage(this, value);
-	uninit function IncreaseEnergyDamage(this, value);
-
-	uninit function DecreaseSlashDamage(this, value);
-	uninit function DecreasePiercingDamage(this, value);
-	uninit function DecreaseBluntDamage(this, value);
-	uninit function DecreaseFireDamage(this, value);
-	uninit function DecreaseColdDamage(this, value);
-	uninit function DecreasePoisonDamage(this, value);
-	uninit function DecreaseEnergyDamage(this, value);
+	uninit function SetSlashRawDamage(this, value);
+	uninit function SetPiercingRawDamage(this, value);
+	uninit function SetBluntRawDamage(this, value);
+	uninit function SetFireRawDamage(this, value);
+	uninit function SetColdRawDamage(this, value);
+	uninit function SetPoisonRawDamage(this, value);
+	uninit function SetEnergyRawDamage(this, value);
+	uninit function SetSlashBaseDamage(this, value);
+	uninit function SetPiercingBaseDamage(this, value);
+	uninit function SetBluntBaseDamage(this, value);
+	uninit function SetFireBaseDamage(this, value);
+	uninit function SetColdBaseDamage(this, value);
+	uninit function SetPoisonBaseDamage(this, value);
+	uninit function SetEnergyBaseDamage(this, value);
 
 	uninit function ToString(this);
 endclass
