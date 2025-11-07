@@ -8,10 +8,9 @@ include "include/client";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":destroyable:include/destroyItem";
-include ":IO:CFGFile";
 
 // ========================================
-// CONFIG FUNCTIONS - Using CFGFile Class
+// CONFIG FUNCTIONS - Using CFGFile with Category Support
 // ========================================
 
 // Cache global do dicionário de baús (carregado uma vez)
@@ -27,13 +26,11 @@ function LoadChestsConfig()
     // Método tradicional: ReadConfigFile + GetConfigStringKeys
     var cfg_file := ReadConfigFile(":chestspawn:config/chests");
     if (!cfg_file)
-        SysLog("ERROR: Failed to load chests.cfg file");
         return error;
     endif
     
     var chest_names := GetConfigStringKeys(cfg_file);
     if (!chest_names || chest_names.size() == 0)
-        SysLog("ERROR: No chest entries found in chests.cfg");
         return error;
     endif
     
@@ -46,14 +43,14 @@ function LoadChestsConfig()
                 "Graphic" := GetConfigInt(elem, "Graphic"),
                 "Material" := GetConfigInt(elem, "Material"),
                 "MaxHp" := GetConfigInt(elem, "MaxHp"),
-                "Name" := GetConfigString(elem, "Name")
+                "Name" := GetConfigString(elem, "Name"),
+                "Category" := GetConfigString(elem, "Category")
             };
             chests[chest_name] := chest_struct;
         endif
     endforeach
     
     if (chests.size() == 0)
-        SysLog("ERROR: Empty chest dictionary after processing config");
         return error;
     endif
     
@@ -112,7 +109,7 @@ function GetChestInfoByGraphic(graphic)
         };
     endif
     
-    // Procura no dicionário pelo gráfico (acesso direto, sem loop!)
+    // Procura no dicionário pelo gráfico
     foreach key in (chests.keys())
         var chest_data := chests[key];
         if (CInt(chest_data.Graphic) == graphic)
@@ -138,25 +135,21 @@ function GetChestInfoByGraphic(graphic)
     };
 endfunction
 
-// Retorna array de gráficos filtrados por prefixo de categoria
-function GetChestGraphicsByCategory(category_prefix)
+// Retorna array de gráficos filtrados pelo campo Category
+function GetChestGraphicsByCategory(category_name)
     var chests := LoadChestsConfig();
     if (chests == error)
-        return array{}; // Return empty array on error
+        return array{};
     endif
     
     var graphics := array{};
-    var prefix_len := len(category_prefix);
     
     foreach key in (chests.keys())
-        // Filtra por prefixo do nome (ex: "Metal_", "Wooden_", "Barrel_")
-        // Verifica se a chave tem tamanho suficiente E começa com o prefixo
-        if (len(key) >= prefix_len)
-            var key_prefix := key[1, prefix_len];
-            if (key_prefix == category_prefix)
-                var chest_data := chests[key];
-                graphics.append(CInt(chest_data.Graphic));
-            endif
+        var chest_data := chests[key];
+        var chest_category := CStr(chest_data.Category);
+        
+        if (chest_category == category_name)
+            graphics.append(CInt(chest_data.Graphic));
         endif
     endforeach
     
@@ -185,7 +178,6 @@ endfunction
 // Mantido apenas para compatibilidade com código legado
 // ========================================
 function GetAllChestGraphics()
-    // Agora usa o cfg dinamicamente (291 tipos) ao invés de 271 hardcoded
     return GetAllChestGraphicsFromConfig();
 endfunction
 
@@ -298,29 +290,29 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                 endif
                 
                 chest := CreateItemAtLocation(newx, newy, newz, chestStruct.graphic, 1, realm);
-            if(chest)
-        checker := 1;
-        chest.movable := 0;
-                
-        // Configurações do baú
-        SetObjProperty(chest, "IsTreasureChest", 1);
-        SetObjProperty(chest, "CreatedOn", ReadGameClock());
-        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, true);
-        SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
-        SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
-        SetObjProperty(chest, "level", lvl);
-        
-        if (GetObjProperty(chest, "link"))
-            SetObjProperty(chest, "IsSpawned", 1);
-        else
-            SetObjProperty(chest, "IsPlayerCreated", 1);
-        endif
-        
-        chest.locked := 1;
-        chest.movable := 0;
+                if(chest)
+                    checker := 1;
+                    chest.movable := 0;
+                    
+                    // Configurações do baú
+                    SetObjProperty(chest, "IsTreasureChest", 1);
+                    SetObjProperty(chest, "CreatedOn", ReadGameClock());
+                    SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, true);
+                    SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
+                    SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
+                    SetObjProperty(chest, "level", lvl);
+                    
+                    if (GetObjProperty(chest, "link"))
+                        SetObjProperty(chest, "IsSpawned", 1);
+                    else
+                        SetObjProperty(chest, "IsPlayerCreated", 1);
+                    endif
+                    
+                    chest.locked := 1;
+                    chest.movable := 0;
 
-        // Add traps using centralized function
-        AddRandomTraps(chest, lvl);
+                    // Add traps using centralized function
+                    AddRandomTraps(chest, lvl);
 
                     Loot_Generate(chest, lootname);
                 else
