@@ -2,7 +2,7 @@ use uo;
 use os;
 use basic;
 
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include ":destroyable:include/destroyItemPersist";
 include ":itemutils:itemInfo";

@@ -21,8 +21,9 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	function EquipWrapper(this, byRef item)
 		Super(item);
 
+		var cfgFile := CFGFile("*", "itemdesc");
 		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
-			this._template := item.getCfgElem();
+			this._template := cfgFile.SetElementName(item.objtype).GetElementValue();
 			this._prop := item.GetProp("atributos") ?: error{"errortext" := "This item has no attributes Property!"};
 			this._layer := item.layer;
 			this._graphic := this._template.graphic;
@@ -39,7 +40,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			endif
 			
 		else // Caso seja apenas um template
-			this._template := CFGFile("*", "itemdesc").SetElementName(item).GetElementValue();
+			this._template := cfgFile.SetElementName(item).GetElementValue();
 			this._objType := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
 

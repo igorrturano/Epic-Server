@@ -1,7 +1,7 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
 include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";

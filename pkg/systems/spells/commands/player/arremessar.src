@@ -12,7 +12,7 @@ include "include/client";
 include "include/sounds";
 include "include/facings";
 include ":combat:Controller/DamageController_legacy";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 

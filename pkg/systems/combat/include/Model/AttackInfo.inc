@@ -154,7 +154,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetAttacker(this, attacker)
-		if (!(attacker is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper class!"}; endif
+		if (!(attacker is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper object!"}; endif
 		
 		this._attacker := attacker;
 
@@ -162,7 +162,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetDefender(this, defender)
-		if (!(defender is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper class!"}; endif
+		if (!(defender is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper object!"}; endif
 
 		this._defender := defender;
 
@@ -238,7 +238,7 @@ class AttackInfo(IAttackInfo)
 
 	function SetParryEquip(this, equip)
 		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
-			return error{errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!"};
+			return error{errortext := "Parameter must be an ArmorWrapper or WeaponWrapper object!"};
 		endif
 
 		this._parryEquip := equip;
@@ -259,7 +259,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddAttackerAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility class!"}; endif
+		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility object!"}; endif
 		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
@@ -268,7 +268,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddDefenderAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility class!"}; endif
+		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility object!"}; endif
 		if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);

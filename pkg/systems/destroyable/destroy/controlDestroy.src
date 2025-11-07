@@ -4,7 +4,7 @@ use os;
 include "include/say";
 include "include/client";
 include ":tn:cooldown";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 
 include ":fls_core:packets";
 include ":blood:blood";
