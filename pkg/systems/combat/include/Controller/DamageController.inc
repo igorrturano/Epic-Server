@@ -8,6 +8,7 @@
 // Internal
 include ":combat:armorZones";
 include ":combat:Model/CombatAbility";
+include ":combat:Model/Damage";
 include ":combat:Controller/AbilitiesController";
 include ":combat:Controller/SkillController";
 include ":combat:Controller/ParryController";
@@ -15,17 +16,6 @@ include ":combat:weardown";
 
 // External
 include ":io:CFGFile";
-
-enum DAMAGE_TYPES
-	DMG_SLASH		:= "Slash",
-	DMG_PIERCING	:= "Piercing",
-	DMG_BLUNT		:= "Blunt",
-
-	DMG_FIRE		:= "Fire",
-	DMG_COLD		:= "Cold",
-	DMG_POISON		:= "Poison",
-	DMG_ENERGY		:= "Energy"
-endenum
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -73,11 +63,66 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
-	var equipsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
-	OrderEquipsByAttackDirection(equipsInBodyRegion, attackInfo.GetDirection());
+	var damage := attackInfo.GetDamage();
+	var armorsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
+	armorsInBodyRegion := OrderEquipsByAttackDirection(armorsInBodyRegion, attackInfo.GetDirection());
+
+	foreach equip in (armorsInBodyRegion)
+		var armorResist := equip.GetResists();
+		damage.SetSlashBaseDamage(damage.GetSlashBaseDamage() - armorResist.GetSlashResist());
+		damage.SetPiercingBaseDamage(damage.GetPiercingBaseDamage() - armorResist.GetPiercingResist());
+		damage.SetBluntBaseDamage(damage.GetBluntBaseDamage() - armorResist.GetBluntResist());
+		damage.SetFireBaseDamage(damage.GetFireBaseDamage() - armorResist.GetFireResist());
+		damage.SetColdBaseDamage(damage.GetColdBaseDamage() - armorResist.GetColdResist());
+		damage.SetPoisonBaseDamage(damage.GetPoisonBaseDamage() - armorResist.GetPoisonResist());
+		damage.SetEnergyBaseDamage(damage.GetEnergyBaseDamage() - armorResist.GetEnergyResist());
+		DebugMsg($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		DebugMsg($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}", DEBUG_HIT, attackInfo.GetDefender().GetObjRef());
+		DebugMsg($"Restou: {damage.ToString()}", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		DebugMsg($"Restou: {damage.ToString()}", DEBUG_HIT, attackInfo.GetDefender().GetObjRef());
+	endforeach
+
+	if (damage.GetSlashBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::SLASH)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetSlashBaseDamage(1);
+	endif
+
+	if (damage.GetPiercingBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::PIERCING)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetPiercingBaseDamage(1);
+	endif
+
+	if (damage.GetBluntBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::BLUNT)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetBluntBaseDamage(1);
+	endif
+
+	if (damage.GetFireBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::FIRE)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetFireBaseDamage(1);
+	endif
+
+	if (damage.GetColdBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::COLD)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetColdBaseDamage(1);
+	endif
+
+	if (damage.GetPoisonBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::POISON)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetPoisonBaseDamage(1);
+	endif
+
+	if (damage.GetEnergyBaseDamage() < 1)
+		DebugMsg($"Dano mínimo do tipo {Upper(DAMAGE_TYPE::ENERGY)} garantido em 1!", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+		damage.SetEnergyBaseDamage(1);
+	endif
+
+	DebugMsg($"Dano a ser aplicado: {damage.ToString()}", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
+	DebugMsg($"Dano a ser aplicado: {damage.ToString()}", DEBUG_HIT, attackInfo.GetDefender().GetObjRef());
+	attackInfo.SetDamage(damage);
 endfunction
 
-function OrderEquipsByAttackDirection(equipsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
+function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
 	var FRONT_TO_BACK := array{
 		LAYER_ROBE,
 		LAYER_TUNIC,
@@ -115,7 +160,7 @@ function OrderEquipsByAttackDirection(equipsInBodyRegion, attackDirection := ATT
 	var orderArray := attackDirection == ATTACK_DIRECTION::BACK ? BACK_TO_FRONT : FRONT_TO_BACK;
 
 	foreach layer in (orderArray)
-		foreach equip in (equipsInBodyRegion)
+		foreach equip in (armorsInBodyRegion)
 			if (equip.GetLayer() == layer)
 				orderedEquips.Append(equip);
 			endif
