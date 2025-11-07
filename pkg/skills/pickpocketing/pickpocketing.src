@@ -18,18 +18,20 @@ include ":tn:boss";
 include "include/epicNPCUtils";
 include ":stealables:stealables";
 include ":traps:traps";
+include ":message:model/Message";
+include ":tn:cooldown";
 
 program skill_Stealing(mobile)
 	if (GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))))
-		SendSysMessageEx(mobile, "Voce ja esta roubando alguem.", SSM_FAIL);
+		Message("Voce ja esta roubando alguem.", SSM_FAIL).SendSys(mobile);
 		return;
 	else
 		SetObjProperty(mobile, "#PickPid", GetPid());
 	endif
 
 	if (CInt(GetObjProperty(mobile, "#StealWait")) > ReadGameClock())
-		SendSysMessageEx(mobile, "Voce deve aguardar um pouco para usar essa pericia novamente.",
-				   SSM_INFO);
+		Message("Voce deve aguardar um pouco para usar essa pericia novamente.",
+				   SSM_INFO).SendSys(mobile);
 		return 0;
 	else
 		SetObjProperty(mobile, "#StealWait", ReadGameClock() + 5);
@@ -41,11 +43,11 @@ program skill_Stealing(mobile)
 
 	var metamorfose := GetObjProperty(mobile, "metamorfose");
 	if (metamorfose != error)
-		SendSysMessageEx(mobile, "Voce nao pode roubar enquanto estiver metamorfoseado.", SSM_FAIL);
+		Message("Voce nao pode roubar enquanto estiver metamorfoseado.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 
-	SendSysMessageEx(mobile, "Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST);
+	Message("Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST).SendSys(mobile);
 	var targ := Target(mobile);
 	
 	// Verifica se é um artefato roubável
@@ -55,32 +57,32 @@ program skill_Stealing(mobile)
 	
 	var difbonus := 0;
 	if (targ == mobile)
-		SendSysMessageEx(mobile, "Espertao voce hein..?", SSM_FAIL);
+		Message("Espertao voce hein..?", SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (targ.connected == 0)
-		SendSysMessageEx(mobile, "Voce nao pode roubar jogadores desconectados.", SSM_FAIL);
+		Message("Voce nao pode roubar jogadores desconectados.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	// elseif ( targ.npctemplate )
-	// 	SendSysMessageEx(mobile, "Voce so pode roubar jogadores.", SSM_FAIL);
+	// 	Message("Voce so pode roubar jogadores.", SSM_FAIL).SendSys(mobile);
 	// 	return 0;
 	// elseif ( targ.warmode && targ.npctemplate )
-	// 	SendSysMessageEx(mobile, "O alvo esta se movimentando demais lutando.", SSM_FAIL);
+	// 	Message("O alvo esta se movimentando demais lutando.", SSM_FAIL).SendSys(mobile);
 	// 	return 0;
 	elseif (!targ.IsA(POLCLASS_MOBILE))
-		SendSysMessageEx(mobile, "Voce so pode roubar jogadores.", SSM_FAIL);
+		Message("Voce so pode roubar jogadores.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (targ.npctemplate == ":merchants:estalagem")
-		SendSysMessageEx(mobile, "Voce nao pode roubar este tipo de NPC.", SSM_FAIL);
+		Message("Voce nao pode roubar este tipo de NPC.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (isBoss(targ))
-		SendSysMessageEx(mobile, "Voce nao pode roubar este tipo de NPC.", SSM_FAIL);
+		Message("Voce nao pode roubar este tipo de NPC.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (Distance(mobile, targ) > 2)
-		SendSysMessageEx(mobile, "O alvo esta muito longe.", SSM_FAIL);
+		Message("O alvo esta muito longe.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (!IsBehind(targ, mobile.x, mobile.y))
 		if (!temHabilidade(mobile, "Batedor de Carteira"))
-			SendSysMessageEx(mobile, "Voce precisa estar nas costas do alvo.", SSM_FAIL);
+			Message("Voce precisa estar nas costas do alvo.", SSM_FAIL).SendSys(mobile);
 			return 0;
 		else
 			difbonus := 10;
@@ -93,7 +95,7 @@ program skill_Stealing(mobile)
 		if (multidao > 4)
 			var bonus := 5 * (multidao - 4);
 			diff := diff - bonus;
-			SendSysMessageEx(mobile, "Bonus de Ladrão de Multidões: +" + bonus + ".", SSM_INFO);
+			Message("Bonus de Ladrão de Multidões: +" + bonus + ".", SSM_INFO).SendSys(mobile);
 		endif
 	endif
 
@@ -108,18 +110,18 @@ program skill_Stealing(mobile)
 				elseif (player == mobile)
 				elseif (player == targ)
 				elseif (!IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
-					SendSysMessageEx(mobile, "Voce nota que " + player.name + " percebeu algo.", SSM_FAIL);
-					SendSysMessageEx(player, "Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".",
-									  SSM_INFO);
+					Message("Voce nota que " + player.name + " percebeu algo.", SSM_FAIL).SendSys(mobile);
+					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".",
+									  SSM_INFO).SendSys(player);
 				endif
 				SleepMS(2);
 			endforeach
 		endif
 
-		SendSysMessageEx(mobile, "Voce conseguiu abrir a mochila de " + targ.name + ".", SSM_INFO);
+		Message("Voce conseguiu abrir a mochila de " + targ.name + ".", SSM_INFO).SendSys(mobile);
 	SendOpenSpecialContainer(mobile, targ.backpack);
-	SendSysMessageEx(mobile, "Se desejar parar de roubar, pressione Esc no momento da escolha do item.",
-			   SSM_INFO);
+	Message("Se desejar parar de roubar, pressione Esc no momento da escolha do item.",
+			   SSM_INFO).SendSys(mobile);
 
 	var steal_attempts := 0;
 	var max_steal_attempts := 50;  // Proteção: máximo 50 tentativas por sessão
@@ -127,21 +129,21 @@ program skill_Stealing(mobile)
 	while (steal_attempts < max_steal_attempts)
 		steal_attempts := steal_attempts + 1;
 		
-		SendSysMessageEx(mobile, "Escolha um item para roubar.", SSM_REQUEST);
+		Message("Escolha um item para roubar.", SSM_REQUEST).SendSys(mobile);
 		var steal := Target(mobile); // , TGTOPT_NOCHECK_LOS);
 			if (!steal)
-				SendSysMessageEx(mobile, "Voce parou de roubar.", SSM_INFO);
+				Message("Voce parou de roubar.", SSM_INFO).SendSys(mobile);
 				break;
 			elseif (Distance(mobile, targ) > 2)
-				SendSysMessageEx(mobile, "O alvo se afastou demais.", SSM_FAIL);
+				Message("O alvo se afastou demais.", SSM_FAIL).SendSys(mobile);
 				break;
 			elseif (!IsBehind(targ, mobile.x, mobile.y))
 				if (!temHabilidade(mobile, "Batedor de Carteira"))
-					SendSysMessageEx(mobile, "O alvo nao esta mais de costas para voce.", SSM_FAIL);
+					Message("O alvo nao esta mais de costas para voce.", SSM_FAIL).SendSys(mobile);
 					break;
 				endif
 			elseif (steal == targ)
-				SendSysMessageEx(mobile, "Alvo invalido.", SSM_FAIL);
+				Message("Alvo invalido.", SSM_FAIL).SendSys(mobile);
 				continue;
 			endif
 			var aux := steal;
@@ -149,14 +151,14 @@ program skill_Stealing(mobile)
 				aux := aux.container;
 			endwhile
 			if (aux != targ)
-				SendSysMessageEx(mobile, "Voce so pode roubar da bolsa que abriu.", SSM_FAIL);
+				Message("Voce so pode roubar da bolsa que abriu.", SSM_FAIL).SendSys(mobile);
 				continue;
 			elseif (steal.IsA(POLCLASS_CONTAINER) && steal.objtype != 0x1011)
 				if (steal.locked)
-					SendSysMessageEx(mobile, steal.desc + " esta trancado.", SSM_FAIL);
+					Message(steal.desc + " esta trancado.", SSM_FAIL).SendSys(mobile);
 				else
 					SendViewContainer(mobile, steal);
-					SendSysMessageEx(mobile, "Voce abriu " + steal.desc + ".", SSM_INFO);
+					Message("Voce abriu " + steal.desc + ".", SSM_INFO).SendSys(mobile);
 				endif
 				continue;
 			endif
@@ -186,8 +188,8 @@ program skill_Stealing(mobile)
 			diff := diff + difbonus;
 
 			if (diff > 1.5 * AP_GetSkill(mobile, PICKPOCKETING))
-				SendSysMessageEx(mobile, "Voce nao tentara roubar isso, pois tem certeza que falhara.",
-								  SSM_INFO);
+				Message("Voce nao tentara roubar isso, pois tem certeza que falhara.",
+								  SSM_INFO).SendSys(mobile);
 				continue;
 			endif
 
@@ -195,13 +197,13 @@ program skill_Stealing(mobile)
 			if (check > 0)
 				if (TemHabilidade(targ, "Vínculo Elemental"))
 					if (GetObjProperty(steal.weapon, "#elementalweapon"))
-						SendSysMessageEx(mobile, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
+						Message("O alvo tem uma ligacao magica com a arma.", SSM_FAIL).SendSys(mobile);
 						return 1;
 					endif
 				endif
 				MoveObjectToLocation(steal, 0, 0, 0, mobile.realm);
 				MoveItemToContainer(steal, mobile.backpack);
-				SendSysMessageEx(mobile, "Voce roubou " + steal.desc + ".", SSM_INFO);
+				Message("Voce roubou " + steal.desc + ".", SSM_INFO).SendSys(mobile);
 				SkillCheck(mobile, PICKPOCKETING, -1);
 
 				var region := GetRegionName(mobile);
@@ -231,9 +233,9 @@ program skill_Stealing(mobile)
 										  					region, coords, steal.desc });
 				endif
 			else
-				SendSysMessageEx(mobile, "Voce nao conseguiu roubar " + steal.desc + ".", SSM_FAIL);
+				Message("Voce nao conseguiu roubar " + steal.desc + ".", SSM_FAIL).SendSys(mobile);
 				if (TS_GetTimerInfo(targ, "sleep"))
-					SendSysMessageEx(mobile, "Voce acelerou o despertar do alvo!", SSM_FAIL);
+					Message("Voce acelerou o despertar do alvo!", SSM_FAIL).SendSys(mobile);
 					var tempo_faltante := TS_GetTimerDuration(targ, "sleep");
 					var tempo_metade := tempo_faltante / 2;
 					TS_LowerDuration(targ, "sleep", -1);
@@ -249,13 +251,13 @@ program skill_Stealing(mobile)
 		
 		// Aviso se atingiu o limite de tentativas
 		if (steal_attempts >= max_steal_attempts)
-			SendSysMessageEx(mobile, "Voce atingiu o limite de tentativas de roubo. Tente novamente.", SSM_FAIL);
+			Message("Voce atingiu o limite de tentativas de roubo. Tente novamente.", SSM_FAIL).SendSys(mobile);
 		endif
 		
 		mobile.facing := mobile.facing; // Pra fechar o container! ;D
 	else
-		SendSysMessageEx(mobile, "Voce nota que o alvo percebeu algo.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce sentiu algo na sua bolsa.", SSM_INFO);
+		Message("Voce nota que o alvo percebeu algo.", SSM_FAIL).SendSys(mobile);
+		Message("Voce sentiu algo na sua bolsa.", SSM_INFO).SendSys(targ);
 
 		if (!mobile.hidden)
 			var range := 13 - CInt(AP_GetSkill(mobile, PICKPOCKETING) / 7);
@@ -265,9 +267,9 @@ program skill_Stealing(mobile)
 				elseif (player == mobile)
 				elseif (player == targ)
 				elseif (!IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
-					SendSysMessageEx(mobile, "Voce nota que " + player.name + " percebeu algo.", SSM_FAIL);
-					SendSysMessageEx(player, "Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".",
-									  SSM_INFO);
+					Message("Voce nota que " + player.name + " percebeu algo.", SSM_FAIL).SendSys(mobile);
+					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".",
+									  SSM_INFO).SendSys(player);
 				endif
 				SleepMS(2);
 			endforeach
@@ -294,15 +296,14 @@ endprogram
 function HandleStealableArtifact(mobile, artifact)
 	// Verifica distância
 	if (Distance(mobile, artifact) > 2)
-		SendSysMessageEx(mobile, "O artefato está muito longe.", SSM_FAIL);
+		Message("O artefato está muito longe.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 	
 	// Verifica cooldown global de tentativas (10 segundos)
-	var last_attempt := CInt(GetObjProperty(mobile, "#StealableLastAttempt"));
-	if (last_attempt && (ReadGameClock() - last_attempt) < 10)
-		var time_left := 10 - (ReadGameClock() - last_attempt);
-		SendSysMessageEx(mobile, "Você precisa esperar " + time_left + " segundos antes de tentar roubar novamente.", SSM_FAIL);
+	var cooldown := setCooldown(mobile, "StealableLastAttempt", 10);
+	if (cooldown)
+		Message("Você precisa esperar " + cooldown + " segundos antes de tentar roubar novamente.", SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 	
@@ -316,9 +317,7 @@ function HandleStealableArtifact(mobile, artifact)
 	var artifact_key := "StealableBlock_" + artifact.serial;
 	var block_until := CInt(GetObjProperty(mobile, artifact_key));
 	if (block_until && ReadGameClock() < block_until)
-		SendSysMessageEx(mobile, "Uma barreira invisível impede sua aproximação...", SSM_FAIL);
-		SendSysMessageEx(mobile, "O artefato ainda rejeita sua presença.", SSM_FAIL);
-		SendSysMessageEx(mobile, "Você sente que deve esperar antes de tentar novamente.", 38);
+		Message("Você sente que deve esperar antes de tentar novamente.", 38).SendSys(mobile);
 		return 0;
 	endif
 	
@@ -330,14 +329,11 @@ function HandleStealableArtifact(mobile, artifact)
 	
 	// Verifica se o jogador quer tentar
 	if (difficulty > 1.5 * player_skill)
-		SendSysMessageEx(mobile, "Suas mãos tremem ao tocar o artefato...", SSM_FAIL);
-		SendSysMessageEx(mobile, "Você não possui a habilidade necessária para tentar isso.", SSM_FAIL);
-		SendSysMessageEx(mobile, "Seria loucura tentar, você certamente será pego.", 38);
+		Message("Suas mãos tremem ao tocar o artefato...", SSM_FAIL).SendSys(mobile);
+		Message("Você não possui a habilidade necessária para tentar isso.", SSM_FAIL).SendSys(mobile);
+		Message("Seria loucura tentar, você certamente será pego.", 38).SendSys(mobile);
 		return 0;
 	endif
-	
-	// Define o cooldown global de tentativas (10 segundos)
-	SetObjProperty(mobile, "#StealableLastAttempt", ReadGameClock());
 	
 	// Animação de tentativa de roubo (3 vezes)
 	var i;
@@ -371,12 +367,12 @@ function HandleStealableArtifact(mobile, artifact)
 					// Executa as armadilhas usando o sistema existente
 					RunTraps(artifact, mobile);
 					
-					SendSysMessageEx(mobile, "Você roubou o artefato, mas ativou uma armadilha!", SSM_FAIL);
+					Message("Você roubou o artefato, mas ativou uma armadilha!", SSM_FAIL).SendSys(mobile);
 					PrintTextAbove(mobile, "*Ativa uma armadilha ao roubar*");
 				else
 					var time_remaining := 21600 - time_since_trigger;
 					var hours := CInt(time_remaining / 3600);
-					SendSysMessageEx(mobile, "A armadilha está recarregando (" + hours + " horas).", SSM_INFO);
+					Message("A armadilha está recarregando (" + hours + " horas).", SSM_INFO).SendSys(mobile);
 				endif
 				
 				// Continua com o roubo mesmo após a armadilha
@@ -389,7 +385,7 @@ function HandleStealableArtifact(mobile, artifact)
 		EraseObjProperty(mobile, fail_key);
 		EraseObjProperty(mobile, attempts_key);
 		
-		SendSysMessageEx(mobile, "Você conseguiu roubar " + artifact.desc + "!", SSM_INFO);
+		Message("Você conseguiu roubar " + artifact.desc + "!", SSM_INFO).SendSys(mobile);
 		
 		// Mensagem overhead visível para todos
 		PrintTextAbove(mobile, "Você roubou um item sem ser pego, fuja rapidamente antes que alguém denuncie o item como roubado.");
@@ -416,11 +412,7 @@ function HandleStealableArtifact(mobile, artifact)
 		EraseObjProperty(artifact, "StealableRarity");
 		EraseObjProperty(artifact, "StealableSpawnerSerial");
 		
-		if (!MoveItemToContainer(artifact, mobile.backpack))
-			// Se não couber na mochila, cai no chão
-			MoveObjectToLocation(artifact, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
-			SendSysMessageEx(mobile, "O artefato caiu no chão pois sua mochila está cheia.", SSM_INFO);
-		endif
+		MoveItemToContainer(artifact, mobile.backpack);
 		
 		// Treina Pickpocketing
 		SkillCheck(mobile, PICKPOCKETING, -1);
@@ -439,7 +431,7 @@ function HandleStealableArtifact(mobile, artifact)
 		return 1;
 	else
 		// Falha
-		SendSysMessageEx(mobile, "Você falhou ao tentar roubar " + artifact.desc + ".", SSM_FAIL);
+		Message("Você falhou ao tentar roubar " + artifact.desc + ".", SSM_FAIL).SendSys(mobile);
 		
 		// Treina Pickpocketing mesmo em falha (você aprende tentando!)
 		SkillCheck(mobile, PICKPOCKETING, -1);
@@ -454,7 +446,7 @@ function HandleStealableArtifact(mobile, artifact)
 		var current_critical_fails := CInt(GetObjProperty(mobile, fail_key));
 		
 		if (current_critical_fails > 0)
-			SendSysMessageEx(mobile, "Você sente que o artefato está ficando mais difícil de manipular...", 2100);
+			Message("Você sente que o artefato está ficando mais difícil de manipular...", 2100).SendSys(mobile);
 		endif
 		
 		// Reseta contador após 10 tentativas sem acumular 3 críticas
@@ -462,12 +454,12 @@ function HandleStealableArtifact(mobile, artifact)
 			EraseObjProperty(mobile, "StealableFails_" + artifact.serial);
 			SetObjProperty(mobile, attempts_key, 1);
 			total_attempts := 1;
-			SendSysMessageEx(mobile, "Você sente que pode tentar novamente com mais cuidado.", SSM_INFO);
+			Message("Você sente que pode tentar novamente com mais cuidado.", SSM_INFO).SendSys(mobile);
 		endif
 		
 		// Falha crítica
 		if (check < -25)
-			SendSysMessageEx(mobile, "Suas mãos escorregam desajeitadamente no artefato!", SSM_FAIL);
+			Message("Suas mãos escorregam desajeitadamente no artefato!", SSM_FAIL).SendSys(mobile);
 			PrintTextAbove(mobile, "*Movimento brusco*");
 			
 			// Verifica se tem armadilha configurada
@@ -485,11 +477,11 @@ function HandleStealableArtifact(mobile, artifact)
 					// Executa as armadilhas usando o sistema existente
 					RunTraps(artifact, mobile);
 					
-					SendSysMessageEx(mobile, "Você ativou uma armadilha!", SSM_FAIL);
+					Message("Você ativou uma armadilha!", SSM_FAIL).SendSys(mobile);
 				else
 					var time_remaining := 21600 - time_since_trigger;
 					var hours := CInt(time_remaining / 3600);
-					SendSysMessageEx(mobile, "A armadilha ainda está recarregando (" + hours + " horas restantes).", SSM_INFO);
+					Message("A armadilha ainda está recarregando (" + hours + " horas restantes).", SSM_INFO).SendSys(mobile);
 				endif
 			endif
 			
@@ -503,11 +495,11 @@ function HandleStealableArtifact(mobile, artifact)
 			
 			// Feedback sobre falhas críticas
 			if (critical_fails == 1)
-				SendSysMessageEx(mobile, "O artefato parece ter notado sua presença...", 38);
-				SendSysMessageEx(mobile, "Você sente que não deveria falhar assim novamente.", 38);
+				Message("O artefato parece ter notado sua presença...", 38).SendSys(mobile);
+				Message("Você sente que não deveria falhar assim novamente.", 38).SendSys(mobile);
 			elseif (critical_fails == 2)
-				SendSysMessageEx(mobile, "O artefato parece resistir ativamente às suas tentativas!", 53);
-				SendSysMessageEx(mobile, "Um erro a mais e você não poderá mais tocá-lo...", 53);
+				Message("O artefato parece resistir ativamente às suas tentativas!", 53).SendSys(mobile);
+				Message("Um erro a mais e você não poderá mais tocá-lo...", 53).SendSys(mobile);
 			endif
 			
 			// Verifica se atingiu 3 falhas críticas dentro de 10 tentativas
@@ -517,13 +509,7 @@ function HandleStealableArtifact(mobile, artifact)
 				var block_time := ReadGameClock() + 86400; // 24 horas
 				SetObjProperty(mobile, block_key, block_time);
 				
-				// Feedback de bloqueio
-				SendSysMessageEx(mobile, "═══════════════════════════════════════════", 33);
-				SendSysMessageEx(mobile, "O artefato queima em suas mãos!", 33);
-				SendSysMessageEx(mobile, "Uma força mística o repele violentamente!", 33);
-				SendSysMessageEx(mobile, "Você não consegue mais se aproximar dele...", 33);
-				SendSysMessageEx(mobile, "Talvez amanhã suas energias se alinhem novamente.", 33);
-				SendSysMessageEx(mobile, "═══════════════════════════════════════════", 33);
+				Message("Talvez amanhã suas energias se alinhem novamente.", 33).SendSys(mobile);
 				PrintTextAbove(mobile, "*Repelido pelo artefato*");
 				
 				// Limpa contadores

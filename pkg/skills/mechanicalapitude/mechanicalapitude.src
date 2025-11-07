@@ -77,7 +77,8 @@ program skillremoveTrap(who)
 		default: dif := 40;
 	endcase
 	
-	var check := SkillCheck(who, MECHANICS, dif);		if (check > 0)
+	var check := SkillCheck(who, MECHANICS, dif);
+	if (check > 0)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce desarmou a armadilha com sucesso sem se revelar.", SSM_INFO);
 			else
