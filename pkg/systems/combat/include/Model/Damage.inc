@@ -217,7 +217,12 @@ enum class DAMAGE_TIER
 endenum
 
 enum class DAMAGE_TYPE
-	SLASHDAMAGE := "Cortante",
-	PIERCINGDAMAGE := "Perfurante",
-	BLUNTDAMAGE := "Contusivo"
+	SLASH := "Cortante",
+	PIERCING := "Perfurante",
+	BLUNT := "Contusivo",
+
+	FIRE := "Fogo",
+	COLD := "Gelo",
+	POISON := "Veneno",
+	ENERGY := "Energia"
 endenum

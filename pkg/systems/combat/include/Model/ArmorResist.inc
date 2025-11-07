@@ -78,7 +78,13 @@ class ArmorResist(IArmorResist)
 	endfunction
 
 	function ToString(this)
-		return "Slash: " + this._slash + ", Piercing: " + this._piercing + ", Blunt: " + this._blunt + ", Fire: " + this._fire + ", Cold: " + this._cold + ", Poison: " + this._poison + ", Energy: " + this._energy;
+		return $"Slash={this._slash}, " +
+			   $"Piercing={this._piercing}, " +
+			   $"Blunt={this._blunt}, " +
+			   $"Fire={this._fire}, " +
+			   $"Cold={this._cold}, " +
+			   $"Poison={this._poison}, " +
+			   $"Energy={this._energy}";
 	endfunction
 endclass
 

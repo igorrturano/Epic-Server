@@ -20,7 +20,7 @@ class AttackInfo(IAttackInfo)
 	var _direction := ATTACK_DIRECTION::FRONT;
 	var _damage; // Damage class
 	var _damageHand := DAMAGE_HAND::MAINHAND;
-	var _attackType := DAMAGE_TYPE::SLASHDAMAGE; // enum da postura que o atacante está usando no ataque
+	var _attackType := DAMAGE_TYPE::SLASH; // enum da postura que o atacante está usando no ataque
 	var _ammo := struct{
 		itemRef := 0x0,
 		amount := 0
@@ -44,16 +44,16 @@ class AttackInfo(IAttackInfo)
 		this._attacker := attacker;
 		this._defender := defender;
 		
-		this._bodyRegion := error{ errortext := "Body region not set yet!" };
+		this._bodyRegion := error{errortext := "Body region not set yet!"};
 		this._direction := ATTACK_DIRECTION::FRONT;
-		this._damage := error{ errortext := "Damage not set yet!" };
+		this._damage := Damage();
 		this._damageHand := DAMAGE_HAND::MAINHAND;
-		this._hitChance := error{ errortext := "Hit chance not set yet!" };
+		this._hitChance := error{errortext := "Hit chance not set yet!"};
 		this._hitChancePenalty := 0;
-		this._hitChanceResult := error{ errortext := "Hit chance not rolled yet!" };
-		this._parryChance := error{ errortext := "Parry chance not set yet!" };
+		this._hitChanceResult := error{errortext := "Hit chance not rolled yet!"};
+		this._parryChance := error{errortext := "Parry chance not set yet!"};
 		this._parryChancePenalty := 0;
-		this._parryChanceResult := error{ errortext := "Parry chance not rolled yet!" };
+		this._parryChanceResult := error{errortext := "Parry chance not rolled yet!"};
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -154,7 +154,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetAttacker(this, attacker)
-		if (!(attacker is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
+		if (!(attacker is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper class!"}; endif
 		
 		this._attacker := attacker;
 
@@ -162,7 +162,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetDefender(this, defender)
-		if (!(defender is @MobileWrapper)) return error{ errortext := "Parameter must be a MobileWrapper class!" }; endif
+		if (!(defender is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper class!"}; endif
 
 		this._defender := defender;
 
@@ -170,7 +170,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetBodyRegion(this, bodyRegion)
-		if (!(bodyRegion in CS_GetArmorZones())) return error{ errortext := "Parameter must be a valid armor zone!" }; endif
+		if (!(bodyRegion in CS_GetArmorZones())) return error{errortext := "Parameter must be a valid armor zone!"}; endif
 
 		this._bodyRegion := bodyRegion;
 
@@ -184,7 +184,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetDamage(this, damage)
-		if (!(damage is @Damage)) return error{ errortext := "Parameter must be a Damage class!" }; endif
+		if (!(damage is @Damage)) return error{errortext := "Parameter must be a Damage class!"}; endif
 
 		this._damage := damage;
 
@@ -204,7 +204,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetAmmo(this, ammoItemRef, amount)
-		if (amount < 1) return error{ errortext := "Amount used must be at least 1!" }; endif
+		if (amount < 1) return error{errortext := "Amount used must be at least 1!"}; endif
 
 		this._ammo.itemRef := ammoItemRef;
 		this._ammo.amount := amount;
@@ -238,7 +238,7 @@ class AttackInfo(IAttackInfo)
 
 	function SetParryEquip(this, equip)
 		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
-			return error{ errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!" };
+			return error{errortext := "Parameter must be an ArmorWrapper or WeaponWrapper class!"};
 		endif
 
 		this._parryEquip := equip;
@@ -259,7 +259,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddAttackerAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{ errortext := "Parameter must be a CombatAbility class!" }; endif
+		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility class!"}; endif
 		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
@@ -268,7 +268,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddDefenderAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{ errortext := "Parameter must be a CombatAbility class!" }; endif
+		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility class!"}; endif
 		if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);
@@ -277,29 +277,29 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function RollHitChance(this)
-		if (!this._hitChance) return error{ errortext := "Hit chance not set!" }; endif
+		if (!this._hitChance) return error{errortext := "Hit chance not set!"}; endif
 		
 		this._hitChanceResult := Dice("1d" + this._hitChance).Roll();
 		return this;
 	endfunction
 
 	function RollParryChance(this)
-		if (!this._parryChance) return error{ errortext := "Parry chance not set!" }; endif
+		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
 		
 		this._parryChanceResult := Dice("1d" + this._parryChance).Roll();
 		return this;
 	endfunction
 
 	function Succeeded(this)
-		if (!this._hitChance) return error{ errortext := "Hitchance not set!" }; endif
-		if (!this._hitChanceResult) return error{ errortext := "Hitchance Dice not rolled yet!" }; endif
+		if (!this._hitChance) return error{errortext := "Hitchance not set!"}; endif
+		if (!this._hitChanceResult) return error{errortext := "Hitchance Dice not rolled yet!"}; endif
 
 		return this._hitChanceResult <= this._hitChance;
 	endfunction
 
 	function Parried(this)
-		if (!this._parryChance) return error{ errortext := "Parry chance not set!" }; endif
-		if (!this._parryChanceResult) return error{ errortext := "Parry chance Dice not rolled yet!" }; endif
+		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
+		if (!this._parryChanceResult) return error{errortext := "Parry chance Dice not rolled yet!"}; endif
 
 		return this._parryChanceResult <= this._parryChance;
 	endfunction
