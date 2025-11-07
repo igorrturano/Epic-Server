@@ -13,12 +13,12 @@ include "include/packets";
 
 class AttackInfo(IAttackInfo)
 	var _moment := ATTACK_MOMENT::COMBATING;
-	var _attacker; // MobileWrapper class
-	var _defender; // MobileWrapper class
+	var _attacker; // MobileWrapper object
+	var _defender; // MobileWrapper object
 	
 	var _bodyRegion := ""; // Região do corpo a ser atingida
 	var _direction := ATTACK_DIRECTION::FRONT;
-	var _damage; // Damage class
+	var _damage; // Damage object
 	var _damageHand := DAMAGE_HAND::MAINHAND;
 	var _attackType := DAMAGE_TYPE::SLASH; // enum da postura que o atacante está usando no ataque
 	var _ammo := struct{
@@ -39,7 +39,7 @@ class AttackInfo(IAttackInfo)
 	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 
-	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING)
+	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
