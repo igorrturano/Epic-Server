@@ -637,7 +637,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	return damage;
 endfunction
 
-function DamageEPIC(byRef attackInfo, isForced := false)
+function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano Base {attackInfo.GetAttackType()}: {attackInfo.GetDamage()}");
 
 	if (isForced)
