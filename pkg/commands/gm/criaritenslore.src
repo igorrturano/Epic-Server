@@ -15,7 +15,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE346,                   // Maça Estrela Quebrada
 							
-							0xE347,                   // Martelo de Guerra Quebrado
+							0xf0d8,                   // Martelo de Guerra Quebrado
 							
 							0xE348,                   // Garfo de Guerra Quebrado
 							
@@ -41,7 +41,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE353,                   // Lorica Segmentata
 							
-							0xE354,                   // Gálea
+							0xf0d9,                   // Gálea
 							
 							0xE355,                   // Estátua de um Antigo Filósofo
 							
@@ -73,7 +73,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE363,                   // Placa de uma Taverna
 							
-							0xE364,                   // O Louco
+							0xf0da,                   // O Louco
 							
 							0xE365,                   // O Mago
 							
@@ -85,7 +85,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE369,                   // O Sacerdote
 							
-							0xE36A,                   // Os Enamorados
+							0x11018,                   // Os Enamorados
 							
 							0xE36B,                   // A Carruagem
 							
@@ -119,7 +119,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE37A,                   // Globo de Gelo de Colhesol
 							
-							0xE37B,                   // Globo de Gelo de Aldorathrim Ennorathel
+							0x11019,                   // Globo de Gelo de Aldorathrim Ennorathel
 							0xE37C                    // Globo de Gelo de Gulshur
 							
 							};
