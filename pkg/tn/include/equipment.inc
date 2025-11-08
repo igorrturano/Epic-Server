@@ -102,7 +102,7 @@ function SetEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
+		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
 			AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
 		endif
 	endif
@@ -301,7 +301,7 @@ function RemoveEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
+		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
 			AP_ModifySkillMod(who, MAGERY, penalty);
 		endif
 	endif

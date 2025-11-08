@@ -6,6 +6,7 @@ include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
+include ":message:include/model/Message";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -1006,7 +1007,11 @@ function weaponsByClassAndCulture(who)
             CreateItemInicial(who, 0x1B78, 1); // shield
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInicial(who, 0x0F4E, 1); // bardiche
+            if( chardata.magia == "Shaman")
+                CreateItemInicial(who, 0x26C4, 1); // scythe
+            else
+                CreateItemInicial(who, 0x0F4E, 1); // bardiche
+            endif
         endif
         if (skills[DUALWIELD] >= 1)
             CreateItemInicial(who, 0x8fd, 1);
@@ -1492,19 +1497,7 @@ function gameModeDescriptionByPictureId(gameModeId)
     endcase
 endfunction
 
-function pathOfWisdomGump(who, culture_pic)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-
-    var x := 63;
-    var y := 100;
-    var i := 1;
-    showPreviousGumpInformation(gump, who, culture_pic, x, y);
-    x := 555;
-    y := 100;
-    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
-    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
-
+function getWisdomPathsByCulture(who)
     var wisdomPaths := array{"Mago", "Alquimista"};
     var chardata := GetObjProperty(who, "chardata");
     var culture := chardata.culture;
@@ -1519,9 +1512,29 @@ function pathOfWisdomGump(who, culture_pic)
         wisdomPaths.append("Clériga de Idrith");
     elseif (culture == BJORSKA || culture == LESTE)
         wisdomPaths.append("Clérigo");
-    elseif (culture != HAROLOTH)
+    endif
+    
+    if (culture != HAROLOTH && culture != GULTHRAK)
         wisdomPaths.append("Druida");
     endif
+    
+    return wisdomPaths;
+endfunction
+
+function pathOfWisdomGump(who, culture_pic)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    var i := 1;
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+    x := 555;
+    y := 100;
+    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
+
+    var wisdomPaths := getWisdomPathsByCulture(who);
     foreach path in wisdomPaths
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
@@ -2602,14 +2615,18 @@ function GetSkillTooltipDescriptionFromName(name)
 endfunction
 
 function CreateItemInicial(who, objtype, qtd)
-
-    
     var item :=  GeraItemComplexo(
                                     who,
                                     objtype,
                                     qtd,
                                     RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                    isDispensavel := 1, 
-                                    modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+                                    1, 
+                                    array {0x630e}, //ouro
+                                    FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                 );
+
+    if(!item)
+        Print("Erro ao criar item incial {}".format(objtype));
+        Message("Erro ao criar item incial {}".format(objtype), SSM_FAIL).SendSys(who);
+    endif
 endfunction

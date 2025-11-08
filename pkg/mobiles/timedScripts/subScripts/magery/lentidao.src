@@ -20,17 +20,17 @@ program TimedScript_Clumsy(params)
 
 	Slowdown(who, info);
 
-	while (1)
-		if (RandomInt(4) == 1)
-			if (info.status)
-				Restore(who, info);
-			else
-				Slowdown(who, info);
-			endif
-		endif
+	// while (1)
+	// 	// if (RandomInt(4) == 1)
+	// 	if (info.status)
+	// 		Restore(who, info);
+	// 	else
+	// 		Slowdown(who, info);
+	// 	endif
+	// 	// endif
 
-		sleep(2);
-	endwhile
+	// 	sleep(2);
+	// endwhile
 
 endprogram
 
@@ -47,14 +47,14 @@ function Slowdown(who, byref info)
 	SetObjProperty(who, "#Slowness", info);
 endfunction
 
-function Restore(who, byref info)
-	SendSysMessage(who, "Voce consegue se mover normalmente.");
+// function Restore(who, byref info)
+// 	SendSysMessage(who, "Voce consegue se mover normalmente.");
 
-	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
-	// who.paralyzed := 0;
+// 	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
+// 	// who.paralyzed := 0;
 
-	info.status := 0;
-	info.dexmod := 0;
+// 	info.status := 0;
+// 	info.dexmod := 0;
 
-	EraseObjProperty(who, "#Slowness");
-endfunction
+// 	EraseObjProperty(who, "#Slowness");
+// endfunction

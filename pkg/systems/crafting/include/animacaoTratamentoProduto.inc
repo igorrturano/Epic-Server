@@ -29,7 +29,7 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 		return false;
 	endif
 	if(ferramentaNecessaria.objtype != 0x13e3) //Martelo de ferreiro.
-		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+		SendSysMessageEx(quem,"Você não tem um martelo de ferreiro para executar esta ação.",SSM_FAIL);
 		return false;
 	endif
 	
@@ -38,14 +38,18 @@ endfunction
 
 function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	if(!CoordinateDistanceEuclidean(quem.x, quem.y, estacao.x, estacao.y) || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
+	
+	var verificaLos := !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm)  && TypeOfInt(estacao.item) != OT_ITEMREF;
+	if(CoordinateDistance(quem.x, quem.y, estacao.x, estacao.y) > 1 || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
 		SendSysMessageEx(quem,"Você não alcança a estação escolhida",SSM_FAIL);
 		return false;
 	endif
 
 	if(profissaoConfig[profissao].Ferramenta)
 		if(ferramentaNecessaria.objtype != profissaoConfig[profissao].Ferramenta)
-			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+			var item_cfg := ReadConfigFile(":*:itemdesc");
+			var nomeFerramenta := item_cfg[cint(profissaoConfig[profissao].Ferramenta)];
+			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação. [{}]".format(nomeFerramenta.name),SSM_FAIL);
 			return false;
 		endif
 	endif
@@ -60,7 +64,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	var contadorInterno := 0;
 	var deveMudarEstagio;
 	var ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
 	var espera := craftConfig["Blacksmithy"].CraftDelay;
@@ -175,26 +179,24 @@ endfunction
 function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabricado)
 	var ferramentaNecessaria := BuscaFerramenta(quem,propFabricado.receita.profissao);
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var skill := craftConfig[propFabricado.receita.profissao].Attribute;
 	var espera := craftConfig[propFabricado.receita.profissao].CraftDelay;
 
 	while (processoGerente.state && isAnimacaoPadraoPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial,propFabricado.receita.profissao))
 		
-		var alturaAlvo := estacao.height;
+		var alturaAlvo := estacao.z;
 		if(estacao.mobile)
 			return true;
 		else
 			if(estacao.item)
-				
 				alturaAlvo := estacao.item.height;
-
 			endif
 		endif
 
 		produto.movable := 0;
-		quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_CALOR].x,estacao[FONTE_CALOR].y);
+		quem.facing := GetFacing(quem.x,quem.y,estacao.x,estacao.y);
 		MoveObjectToLocation( 
 						produto,
 						estacao.x,
@@ -203,13 +205,14 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 						estacao.realm, 
 						MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 		
-		PrintTextAbove(quem,"*Trabalhando*");
-		PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+		if(RandomInt(10) <= 3 )
+			PrintTextAbove(quem,"*Trabalhando*");
+		endif
+		PerformAction( quem, ANIM_ATTACK_BOW ); 
 		PlaySoundEffect(quem, SFX_56);
 		CheckToolWear(quem,ferramentaNecessaria,skill);
 		Sleep(Cint(espera));
 
-		
 	endwhile
 
 	return true;

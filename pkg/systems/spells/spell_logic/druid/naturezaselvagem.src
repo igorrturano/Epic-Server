@@ -28,7 +28,12 @@ program SpellScript(params)
 		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x38C8, 10, 100, 0, mobile.realm);
 		SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
 		TS_StartTimer(mobile, "paralysis", duration);
-		sleep(5);
+
+		sleepms(20);
+	endforeach
+	// Sleep porque o dano do bleed cancela o snare
+	sleep(5);
+	foreach mobile in allMobiles
 		SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
 		TS_StartTimer(mobile, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
 		sleepms(20);

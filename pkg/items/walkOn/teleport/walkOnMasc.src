@@ -6,7 +6,7 @@ use uo;
 use os;
 use polsys;
 include ":fls_core:fls_characters";
-include ":taming:taming";
+include "include/epicCombatUtils";
 
 program walkOn(mobile, tile)
 	if (JustTeleported(mobile))

@@ -19,7 +19,7 @@ program SpellScript(params)
 
 	// Bonus de especialização
 	var amt := 1;
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (Temhabilidade(who, "Coração da Matilha"))
 		amt := 2;
 	endif
 
