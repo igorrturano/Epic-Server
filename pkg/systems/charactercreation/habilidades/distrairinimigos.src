@@ -1,7 +1,8 @@
 include ":fls_core:packets";
 include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 
 program doubleattack(attacker)

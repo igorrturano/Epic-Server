@@ -273,6 +273,7 @@ function GetDefenderSFX(defender, isCritical := false, isDead := false)
 				return 0;
 			endif
 		else
+			// TODO: Add hurt sounds
 		endif
 	endif
 endfunction

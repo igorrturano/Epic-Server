@@ -4,8 +4,8 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:Controller/DamageController_legacy";
-include ":combat:Controller/DamageController_legacy";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program manobra(attacker)
 
@@ -37,7 +37,7 @@ program manobra(attacker)
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
 			MakeBleed(mobile);
-			PlayHitSounds(attacker, mobile);
+			PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(mobile)));
 			mobs.append(mobile.serial);
 		endif
 	endforeach
@@ -49,7 +49,7 @@ program manobra(attacker)
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
 			MakeBleed(mobile);
-			PlayHitSounds(attacker, mobile);
+			PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(mobile)));
 			mobs.append(mobile.serial);
 		endif
 	endforeach
@@ -61,7 +61,7 @@ program manobra(attacker)
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
 			MakeBleed(mobile);
-			PlayHitSounds(attacker, mobile);
+			PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(mobile)));
 			mobs.append(mobile.serial);
 		endif
 	endforeach

@@ -15,6 +15,7 @@ include ":timedScripts:timedScripts";
 // include ":debug:Controller/DebugController";
 // include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
+include ":combat:weaponInfo";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
