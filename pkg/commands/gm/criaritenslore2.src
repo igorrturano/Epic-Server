@@ -15,7 +15,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE383,                   // Crâneo de um Demônio Chifrudo
 							
-							0xE384,                   // Poste de Lâmpada de Óleo
+							0x1101a,                   // Poste de Lâmpada de Óleo
 							
 							0xE385,                   // Trevo de Quatro Folhas
 							
@@ -25,7 +25,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE388,                   // Barco Dentro de uma Garrafa
 							
-							0xE389,                   // Grande Colar de Ouro do Prefeito
+							0x1101b,                   // Grande Colar de Ouro do Prefeito
 							
 							0xE38A,                   // Vaso Aiglano Largo
 							
@@ -33,11 +33,11 @@ program faz_itenslore(who, quantos)
 							
 							0xE38C,                   // Grande Adaga Cerimonial
 							
-							0xE38D,                   // Pequeno Frasco de Veneno
+							0x1101c,                   // Pequeno Frasco de Veneno
 							
 							0xE38E,                   // Pequena Escala de Pesagem Alquímica
 							
-							0xE38F,                   // Boleadera (Bolas)
+							0x1101d,                   // Boleadera (Bolas)
 							
 							0xE390,                   // Capacete de Guerra Samurai
 							
@@ -65,7 +65,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE39C,                   // Display de Armadura de Cota de Malha
 							
-							0xE39D,                   // Miniatura de Navio Romano
+							0x1101e,                   // Miniatura de Navio Romano
 							
 							0xE39E,                   // Capacete com Asas de Anjo
 							
@@ -87,7 +87,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE3A7,                   // Escudo Élfico Azul com Brasão de Unicórnio Branco
 							
-							0xE3A8,                   // Livro de Necromancia de Capa de Couro e Caveira na Capa
+							0x1101f,                   // Livro de Necromancia de Capa de Couro e Caveira na Capa
 							
 							0xE3A9,                   // Livro de Leis do Senado de Capa Cinza
 							
@@ -107,7 +107,7 @@ program faz_itenslore(who, quantos)
 							
 							0xE3B1,                   // Handcannon Badûran
 							
-							0xE3B2,                   // Lança de Cavalaria de Justa
+							0x11026,                   // Lança de Cavalaria de Justa
 							
 							0xE3B3,                   // Sais Duplos
 							
