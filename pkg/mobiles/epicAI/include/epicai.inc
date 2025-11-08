@@ -2795,7 +2795,6 @@ function DetectAklatsThreats(npc)
     if (taunt_opponent && !npc.warmode)
         PrintTextAbove(npc, "*Alertado pelo som!*");
         return 1;
-		endif
     endif
     
     // Detecção de pegadas alinhadas
