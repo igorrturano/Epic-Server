@@ -1,5 +1,6 @@
 use uo;
 
+include "include/epicCombatUtils";
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
 include ":message:model/Message";

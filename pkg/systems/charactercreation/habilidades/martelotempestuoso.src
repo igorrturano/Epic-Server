@@ -3,11 +3,11 @@ use uo;
 include ":fls_core:packets";
 include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";
-include ":combat:Controller/DamageController_legacy";
 
 program vacuodemana(params)
 	var attacker := params[1];

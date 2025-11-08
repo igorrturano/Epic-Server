@@ -8,6 +8,8 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program SpellScript(params)
 	var attacker := params[1];
