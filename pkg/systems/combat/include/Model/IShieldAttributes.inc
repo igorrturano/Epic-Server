@@ -1,5 +1,5 @@
 class IShieldAttributes()
-	uninit function IShieldAttributes(this);
+	uninit function IShieldAttributes(this, default parryBonus, default parryDelay);
 
 	uninit function GetParryBonus(this);
 	uninit function GetParryDelay(this);

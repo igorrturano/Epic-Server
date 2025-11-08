@@ -21,8 +21,8 @@ program SpellScript(params)
 	//    return;
 	// endif
 
-	PlayAttackFX(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	PrintTextAbove(attacker, "*punho de ferro*");
 	TS_StartTimer(defender, "sleep", tactics_bonus, 1, attacker, 0);

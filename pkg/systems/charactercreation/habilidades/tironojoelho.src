@@ -34,8 +34,8 @@ program tironojoelho(params)
 		return 1;
 	endif
 
-	PlayAttackFX(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	TS_StartTimer(defender, "paralysis", 6);
 	Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, weapon, armor,

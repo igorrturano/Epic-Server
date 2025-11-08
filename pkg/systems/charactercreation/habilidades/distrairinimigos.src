@@ -10,8 +10,8 @@ program doubleattack(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
 		if (!(mobile in attacker.party.members))
-			PlayAttackFX(attacker);
-			PlayHitSounds(attacker, mobile);
+			PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+			PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 			sleepms(250);
 			attacker.facing := attacker.facing + 1;
 			TS_StartTimer(mobile, "paralysis", 5);
