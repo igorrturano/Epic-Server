@@ -4,10 +4,8 @@
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
 
-// include "combat";
 include "AbilitiesController";
 include ":combat:Model/CombatAbility";
-include ":crafting:/include/caracteristicasFabricacao";
 
 /**
  * Calcula a chance de acerto de um ataque baseado nos atributos do atacante e defensor,
