@@ -52,11 +52,11 @@ endfunction
  *
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
-	CheckHab_ArmaduraArcana(attacker, defender, attackInfo);
-	CheckHab_Ainalaith(attacker, defender, attackInfo);
-	CheckHab_DeathDance(attacker, defender, attackInfo);
-	CheckHab_ConhecimentoSobreInimigo(attacker, defender, attackInfo);
-	CheckHab_DisparoMistico(attacker, defender, attackInfo);
+	CheckHab_ArmaduraArcana(attackInfo);
+	CheckHab_Ainalaith(attackInfo);
+	CheckHab_DeathDance(attackInfo);
+	CheckHab_ConhecimentoSobreInimigo(attackInfo);
+	CheckHab_DisparoMistico(attackInfo);
 
 	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
 	var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
@@ -88,9 +88,9 @@ endfunction
  * Retorna 1 após executar todas as verificações e efeitos.
  */
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	CheckHab_AtaqueInfalivel(attacker, defender, attackInfo);
-	CheckHab_MestreDuelista(attacker, defender, attackInfo);
-	CheckHab_Insistencia(attacker, defender, attackInfo);
+	CheckHab_AtaqueInfalivel(attackInfo);
+	CheckHab_MestreDuelista(attackInfo);
+	CheckHab_Insistencia(attackInfo);
 
 	EraseObjProperty(attacker, "movement");
 	EraseObjProperty(attacker, "#shooting_effects");
@@ -115,17 +115,17 @@ endfunction
  *
  */
 function CheckDefenderHabsBeforeDamage(byRef attackInfo)
-	CheckHab_Martir(attacker, defender, attackInfo);
-	CheckHab_MantoRothen(attacker, defender, attackInfo);
-	CheckHab_KaniNoSutairu(attacker, defender, attackInfo);
-	CheckHab_Exoesqueleto(attacker, defender, attackInfo);
-	CheckHab_EspecialistaEscudos(attacker, defender, attackInfo);
-	CheckHab_Furia(attacker, defender, attackInfo);
-	CheckHab_ResilienciaBarbara(attacker, defender, attackInfo);
-	CheckHab_VinculoElemental(attacker, defender, attackInfo);
-	CheckHab_Backstab(attacker, defender, attackInfo);
-	CheckHab_Charge(attacker, defender, attackInfo);
-    CheckHab_DivineAuthority(attacker, defender, attackInfo);
+	CheckHab_Martir(attackInfo);
+	CheckHab_MantoRothen(attackInfo);
+	CheckHab_KaniNoSutairu(attackInfo);
+	CheckHab_Exoesqueleto(attackInfo);
+	CheckHab_EspecialistaEscudos(attackInfo);
+	CheckHab_Furia(attackInfo);
+	CheckHab_ResilienciaBarbara(attackInfo);
+	CheckHab_VinculoElemental(attackInfo);
+	CheckHab_Backstab(attackInfo);
+	CheckHab_Charge(attackInfo);
+    CheckHab_DivineAuthority(attackInfo);
 endfunction
 
 /**
@@ -145,12 +145,12 @@ endfunction
  * Retorna 1 sempre que a função é executada.
  */
 function CheckDefenderHabsOnHit(byRef attackInfo)
-	CheckHab_DesviarProjetil(attacker, defender, attackInfo);
-	CheckHab_DesviarDisparos(attacker, defender, attackInfo);
-	CheckHab_FerocidadeEnsanguentada(attacker, defender, attackInfo);
-	CheckHab_Evasao(attacker, defender, attackInfo);
-	CheckHab_ContraAtaque(attacker, defender, attackInfo);
-	CheckHab_Rebuke(attacker, defender, attackInfo);
+	CheckHab_DesviarProjetil(attackInfo);
+	CheckHab_DesviarDisparos(attackInfo);
+	CheckHab_FerocidadeEnsanguentada(attackInfo);
+	CheckHab_Evasao(attackInfo);
+	CheckHab_ContraAtaque(attackInfo);
+	CheckHab_Rebuke(attackInfo);
 
 	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
@@ -176,9 +176,9 @@ endfunction
  *
  */
 function CheckDefenderHabsAfterDamage(byRef attackInfo)
-	CheckHab_RecuperacaoSalvadora(attacker, defender, attackInfo);
-	CheckHab_Vinganca(attacker, defender, attackInfo);
-	CheckHab_ChainOfPain(attacker, defender, attackInfo);
+	CheckHab_RecuperacaoSalvadora(attackInfo);
+	CheckHab_Vinganca(attackInfo);
+	CheckHab_ChainOfPain(attackInfo);
 endfunction
 
 /**
@@ -201,11 +201,7 @@ function CheckDefenderHabsOnMiss(byRef attackInfo)
 	return 1;
 endfunction
 
-
-
-
-
-function CheckHab_Martir(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Martir(byRef attackInfo)
 	var HAB_NAME := "Martir";
 	
 	if (GetObjProperty(defender, "#martir"))
@@ -220,7 +216,7 @@ function CheckHab_Martir(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_MantoRothen(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_MantoRothen(byRef attackInfo)
 	var HAB_NAME := "Manto de Rothen";
 	
 	if (GetObjProperty(defender, "#mantorothen"))
@@ -242,7 +238,7 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_RecuperacaoSalvadora(byRef attackInfo)
 	var HAB_NAME := "Recuperacao Salvadora";
 	
 	if (isBloodied(defender))
@@ -260,7 +256,7 @@ function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byRef att
 	return 0;
 endfunction
 
-function CheckHab_Vinganca(byref attacker, defender, byRef attackInfo)
+function CheckHab_Vinganca(byRef attackInfo)
 	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + attackInfo.damage));
 		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
@@ -270,7 +266,7 @@ function CheckHab_Vinganca(byref attacker, defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_ChainOfPain(byref attacker, defender, byRef attackInfo)
+function CheckHab_ChainOfPain(byRef attackInfo)
 	if( GetObjProperty(defender, "#chainofpain") != error )
 		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
 			var copmobs := GetObjProperty(defender, "#chainserials");
@@ -311,7 +307,7 @@ function CheckHab_ChainOfPain(byref attacker, defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_TaticasArcanas(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_TaticasArcanas(byRef attackInfo)
 	var HAB_NAME := "Taticas Arcanas";
 	
 	if (TemHabilidade(attacker, HAB_NAME))
@@ -329,7 +325,7 @@ function CheckHab_TaticasArcanas(byref attacker, byref defender, byRef attackInf
 	return 0;
 endfunction
 
-function CheckHab_BrigadorDeTaverna(byref attacker, defender, byRef attackInfo)
+function CheckHab_BrigadorDeTaverna(byRef attackInfo)
 	var HAB_NAME := "Brigador de Taverna";
 	
 	if (TemHabilidade(attacker, HAB_NAME) && attacker.weapon.objtype == 0x1F020)
@@ -343,7 +339,7 @@ function CheckHab_BrigadorDeTaverna(byref attacker, defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_KaniNoSutairu(byref attacker, defender, byRef attackInfo)
+function CheckHab_KaniNoSutairu(byRef attackInfo)
 	var HAB_NAME := "Kani no Sutairu";
 	
 	if (IsPhysicalDamage(attackInfo.type))
@@ -359,7 +355,7 @@ function CheckHab_KaniNoSutairu(byref attacker, defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_Exoesqueleto(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Exoesqueleto(byRef attackInfo)
 	var HAB_NAME := "Exoesqueleto";
 
 	if (IsPhysicalDamage(attackInfo.type))
@@ -375,7 +371,7 @@ function CheckHab_Exoesqueleto(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_EspecialistaEscudos(byRef attackInfo)
 	var HAB_NAME := "Especialista em Escudos";
 	
 	if (IsPhysicalDamage(attackInfo.type))
@@ -391,7 +387,7 @@ function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef atta
 	return 0;
 endfunction
 
-function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Backstab(byRef attackInfo)
 	if (IsPhysicalDamage(attackInfo.type))
 		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
 			EraseObjProperty(attacker, "backstab");
@@ -406,7 +402,7 @@ function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_Furia(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Furia(byRef attackInfo)
 	var HAB_NAME := "Furia";
 	
 	if (IsPhysicalDamage(attackInfo.type))
@@ -422,7 +418,7 @@ function CheckHab_Furia(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_ResilienciaBarbara(byRef attackInfo)
 	var HAB_NAME := "Resiliência Bárbara";
 	
 	if (IsPhysicalDamage(attackInfo.type))
@@ -440,7 +436,7 @@ function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byRef attac
 	return 0;
 endfunction
 
-function CheckHab_SempreAlerta(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_SempreAlerta(byRef attackInfo)
 	if (TemHabilidade(defender, "Sempre Alerta"))
 		TS_StartTimer(attacker, "paralysis", 5);
 		PrintTextAbove(defender, "*Sempre Alerta*");
@@ -450,7 +446,7 @@ function CheckHab_SempreAlerta(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_Charge(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Charge(byRef attackInfo)
 	var HAB_NAME := "Charge";
 	
 	if (GetObjProperty(attacker, "charge_damage"))
@@ -473,7 +469,7 @@ function CheckHab_Charge(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_VinculoElemental(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_VinculoElemental(byRef attackInfo)
 	var HAB_NAME := "Vínculo Elemental";
 	
 	if (IsPhysicalDamage(attackInfo.type))
@@ -528,7 +524,7 @@ function CheckHab_BarreiraIndestrutivel(byRef attackInfo)
 endfunction
 
 // TODO: Preparar para migrar a função Trespassar que está no mainHitScript para cá.
-function CheckHab_Trespassar(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Trespassar(byRef attackInfo)
 	if (GetObjProperty(attacker, "#trespassando") == 1)
 		return 0;
 	endif
@@ -557,7 +553,7 @@ function CheckHab_Trespassar(byref attacker, byref defender, byRef attackInfo)
 	return 1;
 endfunction
 
-function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_AtaqueFurtivo(byRef attackInfo)
 	var weapon := attacker.weapon;
 	var weaponBow := 0;
 	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
@@ -596,7 +592,7 @@ function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byRef attackInfo
     attacker.disable("hiddenattack");
 endfunction
 
-function CheckHab_ArmaduraArcana(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_ArmaduraArcana(byRef attackInfo)
 	var HAB_NAME := "Armadura Arcana";
 	var HAB_TYPE;
 	var dist := Distance( attacker, defender );
@@ -627,7 +623,7 @@ function CheckHab_ArmaduraArcana(byref attacker, byref defender, byRef attackInf
 	return 0;
 endfunction
 
-function CheckHab_Ainalaith(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Ainalaith(byRef attackInfo)
 	var HAB_NAME := "Ainalaith";
 	var HAB_TYPE;
 	
@@ -668,7 +664,7 @@ function CheckHab_Ainalaith(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_ConhecimentoSobreInimigo(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_ConhecimentoSobreInimigo(byRef attackInfo)
 	if (TemHabilidade(attacker, "Conhecimento Sobre o Inimigo"))
 		SetObjProperty(defender, "#attackbonus", -20);
 		return 1;
@@ -677,7 +673,7 @@ function CheckHab_ConhecimentoSobreInimigo(byref attacker, byref defender, byRef
 	return 0;
 endfunction
 
-function CheckHab_DeathDance(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_DeathDance(byRef attackInfo)
 	if (getCooldown(attacker, "deathdance") > 0)
 		moveToBehind(attacker, defender);
 		return 1;
@@ -686,7 +682,7 @@ function CheckHab_DeathDance(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_DisparoMistico(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_DisparoMistico(byRef attackInfo)
 	var trickster_bonus := CInt( AP_GetSkill( attacker, ARCANA ) / 20 );
 	if ( getCooldown( attacker, "disparomistico" ) )
 		PrintTextPrivate( attacker, "*passo nebuloso*", attacker );
@@ -697,7 +693,7 @@ function CheckHab_DisparoMistico(byref attacker, byref defender, byRef attackInf
 	return 0;
 endfunction
 
-function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_ContraAtaque(byRef attackInfo)
 	// TODO: Revisar se esse código realmente precisar calcular toda a estrutura do dano aqui...
 	
 	if (GetCooldown(defender, "contraataque") > 0)
@@ -725,7 +721,7 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_DesviarProjetil(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_DesviarProjetil(byRef attackInfo)
 	if (getObjProperty(defender, "#desviarprojetil"))
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
@@ -740,7 +736,7 @@ function CheckHab_DesviarProjetil(byref attacker, byref defender, byRef attackIn
 	return 0;
 endfunction
 
-function CheckHab_DesviarDisparos(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_DesviarDisparos(byRef attackInfo)
 	if (getCooldown(defender, "desviardisparos") > 0)
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
@@ -754,7 +750,7 @@ function CheckHab_DesviarDisparos(byref attacker, byref defender, byRef attackIn
 	return 0;
 endfunction
 
-function CheckHab_MaoLivre(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_MaoLivre(byRef attackInfo)
 	if (GetObjProperty(defender, "maolivre") == 1)
 		EraseObjPRoperty(defender, "maolivre");
 		SetObjProperty(defender, "evasao", 1);
@@ -764,7 +760,7 @@ function CheckHab_MaoLivre(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_FerocidadeEnsanguentada(byRef attackInfo)
 	if (GetCooldown(defender, "FerocidadeEnsanguentada"))
 		// if (IsRaging(defender))
 			if (GetObjProperty(defender, "#contraatacando") == error)
@@ -792,7 +788,7 @@ function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byRef 
 	return 0;
 endfunction
 
-function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Evasao(byRef attackInfo)
 	// TODO: Passar rolldice e hitchance
 	// TODO: Talvez esse código não precise ser poluído desse jeito, calculando e executando toda a estrutura do ataque....
 		// TODO: Ver se dá pra executar o ataque através do Attack do combatHook...
@@ -837,7 +833,7 @@ function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_Rebuke(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Rebuke(byRef attackInfo)
 	if (GetObjProperty(defender, "#campeaodivino"))
         // Apply divine retaliation
         Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
@@ -847,7 +843,7 @@ function CheckHab_Rebuke(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_AtaqueInfalivel(byRef attackInfo)
 	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
 		PrintTextAbove(attacker, "*ataque infalivel*");
 		var armor := GetArmorToHit(defender);
@@ -861,7 +857,7 @@ function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byRef attackIn
 	return 0;
 endfunction
 
-function CheckHab_MestreDuelista(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_MestreDuelista(byRef attackInfo)
 	if (GetCooldown(attacker, "mestreduelista") > 0)
 		PrintTextAbove(attacker, "*mestre duelista*");
 		var armor := GetArmorToHit(defender);
@@ -875,7 +871,7 @@ function CheckHab_MestreDuelista(byref attacker, byref defender, byRef attackInf
 	return 0;
 endfunction
 
-function CheckHab_Insistencia(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_Insistencia(byRef attackInfo)
 	if (TemHabilidade(attacker, "Insistencia"))
 		SetObjProperty(attacker, "insistencia", 1);
 		return 1;
@@ -884,7 +880,7 @@ function CheckHab_Insistencia(byref attacker, byref defender, byRef attackInfo)
 	return 0;
 endfunction
 
-function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_ArrowRecovery(byRef attackInfo)
 	if (TemHabilidade(attacker, "Recuperar Flechas"))
 		attackInfo += 35;
 		return true;
@@ -893,7 +889,7 @@ function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo
 	return false;
 endfunction
 
-function CheckHab_DivineAuthority(byref attacker, byref defender, byRef attackInfo)
+function CheckHab_DivineAuthority(byRef attackInfo)
     var HAB_NAME := "Divine Authority - Mountain's Strength";
     
     if (IsPhysicalDamage(attackInfo.type))
@@ -908,27 +904,27 @@ function CheckHab_DivineAuthority(byref attacker, byref defender, byRef attackIn
     return 0;
 endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo)
+// function CheckHab_(byRef attackInfo)
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo)
+// function CheckHab_(byRef attackInfo)
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo)
+// function CheckHab_(byRef attackInfo)
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo)
+// function CheckHab_(byRef attackInfo)
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo)
+// function CheckHab_(byRef attackInfo)
 
 // 	return 0;
 // endfunction
