@@ -23,6 +23,4 @@ class IAttackInfo()
 	uninit function RollHitChance(this);
 	uninit function Succeeded(this);
 	uninit function ExecuteAbilitesOnMomentum(this, momentum);
-
-	uninit function ApplyDamage(this, damageObj);
 endclass

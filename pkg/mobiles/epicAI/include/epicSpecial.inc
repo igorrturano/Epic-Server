@@ -5,6 +5,7 @@ include ":nature:nature";
 include ":acid:acid";
 include "include/epicNPCUtils";
 include ":combat:Model/AttackInfo";
+include ":combat:Controller/FXController";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -527,7 +528,7 @@ function Bite(me, opponent)
     
     PrintTextAbove(me, "*morde*");
     PlaySoundEffect(me, 0x28a);
-    PlayAttackFX(me);
+    PlayAttackFX(AttackInfo(MobileWrapper(me), MobileWrapper(false)));
     
     var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
     if (!resist)
@@ -644,7 +645,7 @@ function TongueGrab(toad, opponent)
     
     // Animation and sound effects
     PrintTextAbove(toad, "*dispara a língua*");
-    PlayAttackFX(toad);
+    PlayAttackFX(AttackInfo(MobileWrapper(toad), MobileWrapper(false)));
     PlaySoundEffect(toad, 0x2b2); //slurp sound
     
     // Create tongue effect from toad to player
