@@ -20,8 +20,8 @@ endprogram
 function grantBonus(who, duration)
 	var weapon := who.weapon;
 	var effect_color := 0;
-	if (weapon.color == FOGO)
-		effect_color := FOGO;
+	if (weapon.color == COLOR_ELEMENTAL_FIRE)
+		effect_color := COLOR_ELEMENTAL_FIRE;
 		who.resist_fire_mod := who.resist_fire_mod + 100;
 		SetCooldown(who, "incinerate_enemy", duration);
 	elseif (weapon.color == COLOR_ELEMENTAL_ICE)
