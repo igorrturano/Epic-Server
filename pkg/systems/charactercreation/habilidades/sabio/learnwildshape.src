@@ -140,7 +140,7 @@ endfunction
 function StoreTransformation(who, targ)
 	// Calculate max transformations based on Magery/10
 	var max_transformations := CInt(AP_GetSkill(who, MAGERY) / 20);
-	if (TemHabilidade(who, "Treinamento Druídico"))
+	if (TemHabilidade(who, "Coração da Matilha"))
 		max_transformations := max_transformations * 2;
 	endif
 	// Use AP_GetStat to fetch strength, dexterity, intelligence from the NPC

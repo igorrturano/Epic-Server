@@ -305,6 +305,37 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 
 endfunction
 
+
+function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	var retornoEfeitos := struct;
+	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
+	var efeitosMaterialString := efeitosMaterial[caracteristica];
+	var subEfeitosMaterial;
+	var valorEfeitoMaterial := 0;
+
+	if(efeitosMaterialString)
+		subEfeitosMaterial := SplitWords(efeitosMaterialString);
+		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
+		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
+		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+		
+		if(subEfeitosMaterial.size() > 1)
+			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+			var subefeitosDict := dictionary{};
+
+			for indice := 1 to subEfeitosMaterial.size()
+				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
+				Sleepms(2);
+			endfor
+			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
+		endif 
+	endif
+	
+	return retornoEfeitos;
+endfunction
+
 function AplicaFechadura(quem, item)
 	var levelFechadura := PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_TRANCA);
 	
@@ -339,7 +370,6 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 	endif
 
 	var corFinal :=  propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
-	
 	return CriaObjetoPropFabricado(
 							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
@@ -377,10 +407,6 @@ function CriaObjetoPropFabricado(
 				componentes := componentes,
 				fabricante := fabricante,
 				materialPrincipal := material};
-endfunction
-
-function CriaObjetoPosicao(quem)
-	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
 endfunction
 
 function isEstacaoValida(quem, estacaoAlvo, profissao)

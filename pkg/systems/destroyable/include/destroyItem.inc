@@ -408,6 +408,11 @@ function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
 	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
 
+	if(!resistenciaFabricacao)
+		var efeito := InterpretaMaterialEfeitos(CARACTERISTICA_FABRICACAO_RESISTENCIA,materialId);
+		resistenciaFabricacao := efeito.valorPrincipal;
+	endif
+
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
 	if(propRes)
 		resFinal := resFinal * propRes;

@@ -12,7 +12,12 @@ function playAltarAnimations(who, item)
    item.graphic := item.objtype;
    var effect := effectByAltar(altar);
    PlaySoundEffect(who, SFX_SPELL_HEAL);
-   PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, effect, 255, 80, 0, 0);
+   var z := who.z;
+   if (GetObjProperty(who, "chardata").magia == "Shaman")
+	  z := z + 15;
+   endif
+
+	PlayStationaryEffectEx(who.x, who.y, z, who.realm, effect, 255, 20, 0, 0);
 endfunction
 
 function effectByAltar(altar)
@@ -23,13 +28,13 @@ function effectByAltar(altar)
 	  LORE:
 		 effect := 0xB462;
 	  VENERATIO:
-		 effect := 0x54B3;
+		 effect := EPIC_FX_MORALE_UP; // 0x54B3 
 	  BOKK_BHARAZ:
 		 effect := 0x6DF1;
 	  KAI:
 		 effect := 0x6d57;
 	  USHKRAR:
-		 effect := 0X6C91;
+		 effect := EPIC_FX_BLOOD_DROP;
 	  CETICOS:
 		 effect := 0;
 	  HALLEUAD:
@@ -178,7 +183,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 	  duration := Cint(duration * bonus);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 	  duration := Cint(duration * bonus);
-   elseif(Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
+   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
 	  duration := Cint(duration * bonus);
    endif
 
@@ -408,4 +413,10 @@ function HandleSpellSkill (who)
 	endif
 
 	return skill;
+endfunction
+
+function handleSpellResistDiffForDivineCasters(who, school)
+   var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
+    
+   return diff;
 endfunction

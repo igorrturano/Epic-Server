@@ -199,6 +199,14 @@ function MP_Mount(mobile, npc)
 		return error{"errortext":="Voce nao pode montar essa criatura"};
 	endif
 
+	//check da Tarantula - apenas drows femeas podem montar
+	if (npc.graphic == 0x579)
+		if (chardata.raca != "Drow" || mobile.gender != 1)
+			SendSysMessage(mobile, "Apenas drows femeas podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
 	npc.hidden := 1;
 
 
