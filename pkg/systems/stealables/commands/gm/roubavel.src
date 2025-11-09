@@ -7,23 +7,26 @@
  * 
  * O GM seleciona um item existente no mundo, escolhe a raridade (1-12),
  * e o sistema cria um spawner invisível que gerencia o respawn do artefato.
+ * 
+
  */
 
 use uo;
 use os;
-use cfgfile;
-use datafile;
 
 include ":gumps:gumps";
 include ":gumps:epicGumps";
+include ":gumps:yesNo";
+include ":message:model/Message";
 include "include/say";
 include ":stealables:stealables";
 include ":traps:traps";
-include ":gumps:yesNo";
-include ":tn:cooldown";
-include ":message:model/Message";
-include "include/say";
-include "include/sysEvent";
+
+// Constantes de UI
+const GUMP_BTN_CONFIRM := 99;
+const GUMP_BTN_TELEPORT := 100;
+const GUMP_BTN_DELETE := 200;
+const GUMP_BTN_BACK := 300;
 
 program roubavel(who, text)
 	if (!who.cmdlevel)
@@ -46,25 +49,13 @@ program roubavel(who, text)
 		return 0;
 	endif
 	
-	if (!artifact.IsA(POLCLASS_ITEM))
-		Message("Você deve selecionar um item.", SSM_FAIL).SendSys(who);
-		return 0;
-	endif
-	
-	if (artifact.container)
-		Message("O item não pode estar em um container.", SSM_FAIL).SendSys(who);
-		return 0;
-	endif
-	
-	// Verifica se já é um artefato roubável
-	if (GetObjProperty(artifact, "PropStealable"))
-		Message("Este item já é um artefato roubável.", SSM_FAIL).SendSys(who);
+	// Validações
+	if (!ValidateArtifact(who, artifact))
 		return 0;
 	endif
 	
 	// Abre gump para seleção de raridade
 	var rarity := SelectRarityGump(who, artifact);
-	
 	if (!rarity)
 		Message("Criação cancelada.", SSM_FAIL).SendSys(who);
 		return 0;
@@ -77,75 +68,36 @@ program roubavel(who, text)
 		return 0;
 	endif
 	
-	// Salva informações do artefato
-	var objtype := artifact.objtype;
+	// Salva informações do artefato antes de destruí-lo
 	var artifact_x := artifact.x;
 	var artifact_y := artifact.y;
 	var artifact_z := artifact.z;
+	var artifact_realm := artifact.realm ? artifact.realm : "britannia";
 	
-	// Pega o realm como string (não como objeto)
-	var artifact_realm := artifact.realm;
-	if (TypeOf(artifact_realm) != "String")
-		// Se vier como objeto, pega a propriedade name ou usa britannia
-		artifact_realm := "britannia";
-	endif
-	
-	var artifact_color := artifact.color;
-	var artifact_name := artifact.name;
-	var artifact_desc := artifact.desc;
-	
-	// Cria o spawner no local do artefato
-	var spawner := CreateItemAtLocation(artifact_x, artifact_y, artifact_z, 0x9F16, 1, artifact_realm);
-	
+	// Cria o spawner
+	var spawner := CreateArtifactSpawner(artifact, rarity, trap_config);
 	if (!spawner)
 		Message("Falha ao criar o spawner.", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 	
-	// Configura o spawner
-	spawner.invisible := 1;
-	spawner.movable := 0;
-	SetObjProperty(spawner, "Rarity", rarity);
-	SetObjProperty(spawner, "ArtifactObjtype", objtype);
-	SetObjProperty(spawner, "ArtifactColor", artifact_color);
-	SetObjProperty(spawner, "ArtifactName", artifact_name);
-	SetObjProperty(spawner, "ArtifactDesc", artifact_desc);
-	
-	// Salva configurações de armadilha se habilitada
-	if (trap_config.has_trap)
-		SetObjProperty(spawner, "TrapEnabled", 1);
-		SetObjProperty(spawner, "TrapType", trap_config.trap_type);
-		SetObjProperty(spawner, "TrapLevel", trap_config.trap_level);
-	endif
+	// Registra no sistema ANTES de destruir o artefato
+	var artifact_info := BuildArtifactInfo(who, artifact, rarity, trap_config);
+	AddStealableToList(who, spawner, artifact_info);
 	
 	// Destrói o item original
 	DestroyItem(artifact);
 	
 	// Inicia o script do spawner
 	var script_result := Start_Script(":stealables:artifact_spawner", array{spawner});
-	
 	if (!script_result)
 		Message("Falha ao iniciar o script do spawner.", SSM_FAIL).SendSys(who);
 		DestroyItem(spawner);
 		return 0;
 	endif
 	
-	// Registra o artefato no sistema de rastreamento
-	var artifact_info := struct;
-	artifact_info.+name := artifact_name;
-	artifact_info.+desc := artifact_desc;
-	artifact_info.+objtype := objtype;
-	artifact_info.+color := artifact_color;
-	artifact_info.+rarity := rarity;
-	artifact_info.+has_trap := trap_config.has_trap;
-	if (trap_config.has_trap)
-		artifact_info.+trap_type := trap_config.trap_type;
-		artifact_info.+trap_level := trap_config.trap_level;
-	endif
-	
-	AddStealableToList(who, spawner, artifact_name, artifact_desc, objtype, artifact_color, rarity, artifact_x, artifact_y, artifact_z, artifact_realm);
-	
-	var rarity_name := GetRarityNameByLevel(rarity);
+	// Mensagens de sucesso
+	var rarity_name := GetRarityName(rarity);
 	Message("Artefato roubável criado com sucesso!", SSM_INFO).SendSys(who);
 	Message("Raridade: " + rarity_name, SSM_INFO).SendSys(who);
 	Message("Spawner criado em: " + artifact_x + ", " + artifact_y + ", " + artifact_z, SSM_INFO).SendSys(who);
@@ -154,12 +106,112 @@ program roubavel(who, text)
 endprogram
 
 /*
+ * ValidateArtifact(who, artifact)
+ * 
+ * Valida se o item pode ser usado como artefato
+ * 
+ * NOVO: Extraído para função separada (KISS)
+ */
+function ValidateArtifact(who, artifact)
+	if (!artifact.IsA(POLCLASS_ITEM))
+		Message("Você deve selecionar um item.", SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+	
+	if (artifact.container)
+		Message("O item não pode estar em um container.", SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+	
+	if (GetObjProperty(artifact, "PropStealable"))
+		Message("Este item já é um artefato roubável.", SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+	
+	return 1;
+endfunction
+
+/*
+ * CreateArtifactSpawner(artifact, rarity, trap_config)
+ * 
+ * Cria e configura o spawner
+ * 
+ * NOVO: Extraído para função separada (KISS)
+ */
+function CreateArtifactSpawner(artifact, rarity, trap_config)
+	// REFATORADO: Realm já vem como string, verificação desnecessária removida
+	var realm := artifact.realm ? artifact.realm : "britannia";
+	
+	var spawner := CreateItemAtLocation(artifact.x, artifact.y, artifact.z, 0x9F16, 1, realm);
+	if (!spawner)
+		return 0;
+	endif
+	
+	// Configura o spawner
+	spawner.invisible := 1;
+	spawner.movable := 0;
+	SetObjProperty(spawner, "Rarity", rarity);
+	SetObjProperty(spawner, "ArtifactObjtype", artifact.objtype);
+	SetObjProperty(spawner, "ArtifactColor", artifact.color);
+	SetObjProperty(spawner, "ArtifactName", artifact.name);
+	SetObjProperty(spawner, "ArtifactDesc", artifact.desc);
+	
+	// Salva configurações de armadilha se habilitada
+	if (trap_config.has_trap)
+		SetObjProperty(spawner, "TrapEnabled", 1);
+		SetObjProperty(spawner, "TrapType", trap_config.trap_type);
+		SetObjProperty(spawner, "TrapLevel", trap_config.trap_level);
+	endif
+	
+	return spawner;
+endfunction
+
+/*
+ * BuildArtifactInfo(who, artifact, rarity, trap_config)
+ * 
+ * Constrói struct com informações do artefato
+ * 
+ * BUG FIX: Agora inclui TODOS os campos necessários
+ */
+function BuildArtifactInfo(who, artifact, rarity, trap_config)
+	var info := struct;
+	
+	// Informações básicas
+	info.+name := artifact.name;
+	info.+desc := artifact.desc;
+	info.+objtype := artifact.objtype;
+	info.+color := artifact.color;
+	info.+rarity := rarity;
+	
+	// Localização
+	info.+x := artifact.x;
+	info.+y := artifact.y;
+	info.+z := artifact.z;
+	info.+realm := artifact.realm ? artifact.realm : "britannia";
+	
+	// Armadilha
+	info.+has_trap := trap_config.has_trap;
+	info.+trap_type := trap_config.has_trap ? trap_config.trap_type : "";
+	info.+trap_level := trap_config.has_trap ? trap_config.trap_level : 0;
+	
+	// Criador (CAMPOS QUE ESTAVAM FALTANDO)
+	info.+creator := who.acctname;
+	info.+creator_name := who.name;
+	
+	// Timestamps (CAMPOS QUE ESTAVAM FALTANDO)
+	info.+time_created := PolCore().systime;
+	info.+times_stolen := 0;
+	info.+last_stolen := 0;
+	
+	return info;
+endfunction
+
+/*
  * SelectRarityGump(who, artifact)
  * 
  * Gump para seleção da raridade do artefato (1-12)
- * Estilo visual inspirado no EpicBoss
  * 
- * Retorna: Raridade selecionada (1-12) ou 0 se cancelado
+ * REFATORADO: Usa tabela centralizada de raridades (DRY)
  */
 function SelectRarityGump(who, artifact)
 	var gump_width := 600;
@@ -193,46 +245,33 @@ function SelectRarityGump(who, artifact)
 	
 	GFSetRadioGroup(gump, 1);
 	
-	// Lista de raridades com informações detalhadas
-	var rarities := array{
-		struct{level := 1, name := "Comum", time := "90 minutos", color := 2213},
-		struct{level := 2, name := "Incomum", time := "3 horas", color := 2213},
-		struct{level := 3, name := "Raro", time := "6 horas", color := 2125},
-		struct{level := 4, name := "Muito Raro", time := "12 horas", color := 2125},
-		struct{level := 5, name := "Épico", time := "1 dia", color := 1161},
-		struct{level := 6, name := "Lendário", time := "2 dias", color := 1161},
-		struct{level := 7, name := "Mítico", time := "4 dias", color := 1153},
-		struct{level := 8, name := "Supremo", time := "8 dias", color := 1153},
-		struct{level := 9, name := "Divino", time := "16 dias", color := 53},
-		struct{level := 10, name := "Celestial", time := "32 dias", color := 53},
-		struct{level := 11, name := "Primordial", time := "64 dias", color := 33},
-		struct{level := 12, name := "Transcendente", time := "128 dias", color := 33}
-	};
-	
+	// REFATORADO: Usa a tabela centralizada do stealables.inc
 	var col := 0;
-	foreach rarity in rarities
+	for i := 1 to 12
+		var rarity_data := GetRarityData(i);
 		var x_pos := (col == 0) ? x_left : x_right;
 		
 		// Background da opção
 		GFResizePic(gump, x_pos - 10, y_pos - 5, 9350, 240, 35);
 		
 		// Radio button
-		GFRadioButton(gump, x_pos, y_pos, 208, 209, (rarity.level == 1 ? 1 : 0), 10 + rarity.level);
+		GFRadioButton(gump, x_pos, y_pos, 208, 209, (i == 1 ? 1 : 0), 10 + i);
 		
 		// Nome da raridade com cor
-		GFTextLine(gump, x_pos + 25, y_pos, rarity.color, "R" + rarity.level + " - " + rarity.name);
+		GFTextLine(gump, x_pos + 25, y_pos, rarity_data.color, "R" + i + " - " + rarity_data.name);
 		
 		// Tempo de respawn
-		GFTextLine(gump, x_pos + 25, y_pos + 15, 2100, "   Respawn: " + rarity.time);
+		var time_str := FormatRespawnTime(rarity_data.time);
+		GFTextLine(gump, x_pos + 25, y_pos + 15, 2100, "   Respawn: " + time_str);
 		
-		col := col + 1;
+		col += 1;
 		if (col >= 2)
 			col := 0;
 			y_pos += 50;
 		endif
 		
 		sleepms(2);
-	endforeach
+	endfor
 	
 	// Linha separadora antes dos botões
 	y_pos += 20;
@@ -247,19 +286,14 @@ function SelectRarityGump(who, artifact)
 	var btn_y := y_pos;
 	
 	// Botão Confirmar (verde)
-	GFAddButton(gump, gump_width/2 - 120, btn_y, 2450, 2451, GF_CLOSE_BTN, 99);
+	GFAddButton(gump, gump_width/2 - 120, btn_y, 2450, 2451, GF_CLOSE_BTN, GUMP_BTN_CONFIRM);
 	
 	// Botão Cancelar (vermelho)
 	GFAddButton(gump, gump_width/2 + 30, btn_y, 2453, 2454, GF_CLOSE_BTN, 0);
 	
 	var res := GFSendGump(who, gump);
 	
-	if (!res || res[0] == 0)
-		return 0;
-	endif
-	
-	// Botão 99 foi clicado (Confirmar)
-	if (res[0] != 99)
+	if (!res || res[0] == 0 || res[0] != GUMP_BTN_CONFIRM)
 		return 0;
 	endif
 	
@@ -277,9 +311,6 @@ endfunction
  * ConfirmArtifactCreation(who, artifact, rarity)
  * 
  * Gump de confirmação final mostrando todos os detalhes
- * Estilo visual inspirado no EpicBoss
- * 
- * Retorna: struct com configurações ou 0 se cancelado
  */
 function ConfirmArtifactCreation(who, artifact, rarity)
 	var gump_width := 500;
@@ -317,11 +348,11 @@ function ConfirmArtifactCreation(who, artifact, rarity)
 	GFTextMid(gump, 0, box_y, gump_width, 1153, artifact.desc);
 	box_y += 25;
 	
-	// Raridade
-	var rarity_name := GetRarityNameByLevel(rarity);
+	// Raridade (REFATORADO: Usa funções centralizadas)
+	var rarity_data := GetRarityData(rarity);
 	GFTextMid(gump, 0, box_y, gump_width, 2100, "Raridade: ");
 	var rarity_x := center_x + 25;
-	GFTextLine(gump, rarity_x, box_y, GetRarityColor(rarity), rarity_name);
+	GFTextLine(gump, rarity_x, box_y, rarity_data.color, rarity_data.name);
 	
 	y_pos += box_height + 15;
 	
@@ -380,19 +411,19 @@ function ConfirmArtifactCreation(who, artifact, rarity)
 	
 	// Processa informações da armadilha
 	var trap_config := struct;
-	trap_config.+has_trap := CInt(res[100]); // Checkbox armadilha
+	trap_config.+has_trap := CInt(res[100]);
 	
 	if (trap_config.has_trap)
-		// Tipo de armadilha (radio buttons 101-103)
-		trap_config.+trap_type := "Needle"; // Padrão: Agulhas
+		// Tipo de armadilha
+		trap_config.+trap_type := "Needle"; // Padrão
 		if (res[102])
 			trap_config.trap_type := "PoisonGas";
 		elseif (res[103])
 			trap_config.trap_type := "Explosion";
 		endif
 		
-		// Nível da armadilha (radio buttons 111-115)
-		trap_config.+trap_level := 3; // Padrão: nível 3
+		// Nível da armadilha
+		trap_config.+trap_level := 3; // Padrão
 		if (res[111])
 			trap_config.trap_level := 1;
 		elseif (res[112])
@@ -409,57 +440,12 @@ function ConfirmArtifactCreation(who, artifact, rarity)
 	
 	return trap_config;
 endfunction
-
-/*
- * GetRarityColor(rarity)
- * 
- * Retorna a cor correspondente à raridade para exibição em gumps
- */
-function GetRarityColor(rarity)
-	case (CInt(rarity))
-		1:
-		2: return 2213; // Verde claro
-		3:
-		4: return 2125; // Azul
-		5:
-		6: return 1161; // Roxo
-		7:
-		8: return 1153; // Dourado
-		9:
-		10: return 53; // Laranja
-		11:
-		12: return 33; // Vermelho
-		default: return 1153;
-	endcase
-endfunction
-
-/*
- * GetRarityColorHex(rarity)
- * 
- * Retorna a cor em formato hexadecimal para uso em HTML
- */
-function GetRarityColorHex(rarity)
-	case (CInt(rarity))
-		1:
-		2: return "#00FF00"; // Verde claro
-		3:
-		4: return "#0080FF"; // Azul
-		5:
-		6: return "#A000FF"; // Roxo
-		7:
-		8: return "#FFD700"; // Dourado
-		9:
-		10: return "#FF8C00"; // Laranja
-		11:
-		12: return "#FF0000"; // Vermelho
-		default: return "#FFD700";
-	endcase
-endfunction
-
 /*
  * ShowStealablesListGump(who)
  * 
  * Mostra gump com lista de todos os artefatos roubáveis
+ * 
+ * REFATORADO: Usa GetArtifactStatus() para evitar duplicação (DRY)
  */
 function ShowStealablesListGump(who)
 	var stealables_list := GetStealablesList();
@@ -488,8 +474,6 @@ function ShowStealablesListGump(who)
 	GFPage(gump, page_count);
 	
 	foreach elem_name in stealables_list
-		// elem_name já vem como hex string (ex: "0x4001207A")
-		// Precisa converter diretamente para int
 		var spawner_serial := CInt(elem_name);
 		var spawner := SystemFindObjectBySerial(spawner_serial);
 		
@@ -501,44 +485,15 @@ function ShowStealablesListGump(who)
 		
 		var info := GetStealableDataElem(elem_name);
 		var artifact_name := info.GetProp("ArtifactName");
-		var creator_acct := info.GetProp("Creator"); // Mudado para conta
+		var creator_acct := info.GetProp("Creator");
 		var rarity := CInt(info.GetProp("Rarity"));
 		var x := CInt(info.GetProp("X"));
 		var y := CInt(info.GetProp("Y"));
 		var z := CInt(info.GetProp("Z"));
 		var times_stolen := CInt(info.GetProp("TimesStolen"));
 		
-		// Verifica se está disponível ou em respawn
-		var current_artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
-		var next_spawn_time := CInt(GetObjProperty(spawner, "NextSpawnTime"));
-		var status_text;
-		var status_color;
-		
-		if (current_artifact_serial)
-			var artifact := SystemFindObjectBySerial(current_artifact_serial);
-			if (artifact && !GetObjProperty(artifact, "PropStealable"))
-				status_text := "Roubado";
-				status_color := 53; // Laranja
-			elseif (artifact)
-				status_text := "Disponível";
-				status_color := 68; // Verde
-			else
-				status_text := "Respawn";
-				status_color := 33; // Vermelho
-			endif
-		elseif (next_spawn_time && ReadGameClock() < next_spawn_time)
-			var time_left := next_spawn_time - ReadGameClock();
-			var hours_left := CInt(time_left / 3600);
-			if (hours_left > 0)
-				status_text := hours_left + "h";
-			else
-				status_text := CInt(time_left / 60) + "m";
-			endif
-			status_color := 2100; // Cinza
-		else
-			status_text := "Erro";
-			status_color := 33;
-		endif
+		// REFATORADO: Usa GetArtifactStatus() ao invés de código duplicado (DRY)
+		var status := GetArtifactStatus(spawner);
 		
 		// Nova página se necessário
 		if (item_count >= items_per_page)
@@ -570,11 +525,11 @@ function ShowStealablesListGump(who)
 		// Localização
 		GFTextLine(gump, 430, y_pos, 2100, "(" + x + "," + y + "," + z + ")");
 		
-		// Vezes roubado (apenas número)
+		// Vezes roubado
 		GFTextLine(gump, 600, y_pos, 2100, CStr(times_stolen));
 		
-		// Status
-		GFTextLine(gump, 660, y_pos, status_color, status_text);
+		// Status (REFATORADO: Usa struct retornado por GetArtifactStatus)
+		GFTextLine(gump, 660, y_pos, status.color, status.text);
 		
 		y_pos += 25;
 		item_count += 1;
@@ -608,6 +563,8 @@ endfunction
  * ShowStealableDetails(who, spawner)
  * 
  * Mostra detalhes de um artefato específico
+ * 
+ * REFATORADO: Usa GetArtifactStatus() e funções centralizadas (DRY)
  */
 function ShowStealableDetails(who, spawner)
 	var info := GetStealableDataElem(StealableElemName(spawner));
@@ -649,9 +606,9 @@ function ShowStealableDetails(who, spawner)
 	GFTextLine(gump, 150, y_pos, 2100, artifact_desc);
 	y_pos += 25;
 	
-	// Raridade
+	// Raridade (REFATORADO: Usa funções centralizadas)
 	GFTextLine(gump, 50, y_pos, 2100, "Raridade:");
-	var rarity_name := GetRarityNameByLevel(rarity);
+	var rarity_name := GetRarityName(rarity);
 	var rarity_color := GetRarityColor(rarity);
 	GFTextLine(gump, 150, y_pos, rarity_color, rarity_name);
 	y_pos += 25;
@@ -696,28 +653,20 @@ function ShowStealableDetails(who, spawner)
 		y_pos += 30;
 	endif
 	
-	// Status atual
-	var current_artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
-	var next_spawn_time := CInt(GetObjProperty(spawner, "NextSpawnTime"));
+	// Status atual (REFATORADO: Usa GetArtifactStatus() ao invés de código duplicado)
+	var status := GetArtifactStatus(spawner);
 	
 	GFTextLine(gump, 50, y_pos, 2100, "Status Atual:");
+	GFTextLine(gump, 200, y_pos, status.color, status.text);
 	
-	if (current_artifact_serial)
-		var artifact := SystemFindObjectBySerial(current_artifact_serial);
-		if (artifact && !GetObjProperty(artifact, "PropStealable"))
-			GFTextLine(gump, 200, y_pos, 53, "Roubado - Em posse de jogador");
-		elseif (artifact)
-			GFTextLine(gump, 200, y_pos, 68, "Disponível para roubo");
-		else
-			GFTextLine(gump, 200, y_pos, 33, "Em respawn");
-		endif
-	elseif (next_spawn_time && ReadGameClock() < next_spawn_time)
+	// Se em respawn, mostra tempo detalhado
+	var next_spawn_time := CInt(GetObjProperty(spawner, "NextSpawnTime"));
+	if (next_spawn_time && ReadGameClock() < next_spawn_time)
 		var time_left := next_spawn_time - ReadGameClock();
 		var hours_left := CInt(time_left / 3600);
 		var mins_left := CInt((time_left % 3600) / 60);
-		GFTextLine(gump, 200, y_pos, 2100, "Respawn em: " + hours_left + "h " + mins_left + "m");
-	else
-		GFTextLine(gump, 200, y_pos, 33, "Erro no spawner");
+		y_pos += 15;
+		GFTextLine(gump, 200, y_pos, 2100, "(" + hours_left + "h " + mins_left + "m restantes)");
 	endif
 	
 	y_pos += 40;
@@ -746,56 +695,68 @@ function ShowStealableDetails(who, spawner)
 	y_pos += 50;
 	
 	// Botões de ação
-	GFAddButton(gump, 50, y_pos, 2117, 2118, GF_CLOSE_BTN, 100); // Teleportar
+	GFAddButton(gump, 50, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_TELEPORT);
 	GFTextLine(gump, 75, y_pos, 68, "Teleportar para o Local");
 	
-	GFAddButton(gump, 280, y_pos, 2117, 2118, GF_CLOSE_BTN, 200); // Deletar
+	GFAddButton(gump, 280, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_DELETE);
 	GFTextLine(gump, 305, y_pos, 33, "Deletar Artefato");
 	
-	GFAddButton(gump, 480, y_pos, 2117, 2118, GF_CLOSE_BTN, 300); // Voltar
+	GFAddButton(gump, 480, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_BACK);
 	GFTextLine(gump, 505, y_pos, 2100, "Voltar");
 	
 	var res := GFSendGump(who, gump);
 	
-	if (!res || res[0] == 0 || res[0] == 300)
-		// Volta para lista
+	if (!res || res[0] == 0 || res[0] == GUMP_BTN_BACK)
 		ShowStealablesListGump(who);
 		return 0;
 	endif
 	
 	case (res[0])
-		100: // Teleportar
-			// Usa o realm diretamente (já é string)
+		GUMP_BTN_TELEPORT:
 			MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
 			Message("Você se teleportou para o artefato.", SSM_INFO).SendSys(who);
 			return 1;
 			
-		200: // Deletar
-			if (YesNo(who, "Tem certeza que deseja deletar este artefato permanentemente?", "Sim", "Não"))
-				// Remove da lista
-				RemoveStealableFromList(spawner);
-				
-				// Destrói o artefato atual se existir
-				if (current_artifact_serial)
-					var artifact := SystemFindObjectBySerial(current_artifact_serial);
-					if (artifact)
-						DestroyItem(artifact);
-					endif
-				endif
-				
-				// Destrói o spawner
-				DestroyItem(spawner);
-				
-				Message("Artefato deletado com sucesso!", SSM_INFO).SendSys(who);
-				
-				// Volta para lista
-				ShowStealablesListGump(who);
-			else
-				// Mostra detalhes novamente
-				ShowStealableDetails(who, spawner);
-			endif
+		GUMP_BTN_DELETE:
+			HandleArtifactDeletion(who, spawner);
 			return 1;
 	endcase
+	
+	return 1;
+endfunction
+
+/*
+ * HandleArtifactDeletion(who, spawner)
+ * 
+ * Gerencia a exclusão de um artefato
+ * 
+ * NOVO: Extraído para função separada (KISS)
+ */
+function HandleArtifactDeletion(who, spawner)
+	if (!YesNo(who, "Tem certeza que deseja deletar este artefato permanentemente?", "Sim", "Não"))
+		ShowStealableDetails(who, spawner);
+		return 0;
+	endif
+	
+	// Destrói o artefato atual se existir
+	var current_artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
+	if (current_artifact_serial)
+		var artifact := SystemFindObjectBySerial(current_artifact_serial);
+		if (artifact)
+			DestroyItem(artifact);
+		endif
+	endif
+	
+	// Remove da lista
+	RemoveStealableFromList(spawner);
+	
+	// Destrói o spawner
+	DestroyItem(spawner);
+	
+	Message("Artefato deletado com sucesso!", SSM_INFO).SendSys(who);
+	
+	// Volta para lista
+	ShowStealablesListGump(who);
 	
 	return 1;
 endfunction
