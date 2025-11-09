@@ -3,14 +3,51 @@
  * 
  * Funções de gerenciamento de artefatos roubáveis
  * Sistema inspirado no :unicos
+ * 
+
  */
 
 use uo;
 
 include ":datafile:include/datafile";
-include ":gumps:yesNo";
 
-//---=[ Stealable Artifacts specific functions ]=-----------------------------
+//---=[ Constantes ]=----------------------------------------------------------
+
+// Constantes de dificuldade
+const BASE_DIFFICULTY := 40.0;
+const RARITY_MULTIPLIER := 5.0;
+const WEIGHT_MULTIPLIER := 2.0;
+
+//---=[ Tabela de Raridades ]=-----------------------------------------------
+
+/*
+ * BuildRarityTable()
+ * 
+ * Constrói e retorna a tabela de raridades
+ * 
+ * NOTA: POL Script não suporta const com structs complexos,
+ * então usamos uma função que retorna o array
+ */
+function BuildRarityTable()
+	var table := array{
+		struct{level := 1,  name := "Comum",         time := 5400,    color := 2213, hex := "#00FF00"},
+		struct{level := 2,  name := "Incomum",       time := 10800,   color := 2213, hex := "#00FF00"},
+		struct{level := 3,  name := "Raro",          time := 21600,   color := 2125, hex := "#0080FF"},
+		struct{level := 4,  name := "Muito Raro",    time := 43200,   color := 2125, hex := "#0080FF"},
+		struct{level := 5,  name := "Épico",         time := 86400,   color := 1161, hex := "#A000FF"},
+		struct{level := 6,  name := "Lendário",      time := 172800,  color := 1161, hex := "#A000FF"},
+		struct{level := 7,  name := "Mítico",        time := 345600,  color := 1153, hex := "#FFD700"},
+		struct{level := 8,  name := "Supremo",       time := 691200,  color := 1153, hex := "#FFD700"},
+		struct{level := 9,  name := "Divino",        time := 1382400, color := 53,   hex := "#FF8C00"},
+		struct{level := 10, name := "Celestial",     time := 2764800, color := 53,   hex := "#FF8C00"},
+		struct{level := 11, name := "Primordial",    time := 5529600, color := 33,   hex := "#FF0000"},
+		struct{level := 12, name := "Transcendente", time := 11059200, color := 33,   hex := "#FF0000"}
+	};
+	
+	return table;
+endfunction
+
+//---=[ Funções de DataFile ]=------------------------------------------------
 
 /*
  * GetStealablesDataFile()
@@ -35,12 +72,17 @@ function GetStealableDataElem(elem_name)
 endfunction
 
 /*
- * StealableElemName(spawner)
+ * StealableElemName(spawner_or_serial)
  * 
- * Retorna o nome do elemento a ser usado (serial do spawner)
+ * Retorna o nome do elemento (serial em hex)
+ * Aceita tanto objeto quanto serial
  */
-function StealableElemName(spawner)
-	return Hex(spawner.serial);
+function StealableElemName(spawner_or_serial)
+	if (TypeOf(spawner_or_serial) == "Integer")
+		return Hex(spawner_or_serial);
+	else
+		return Hex(spawner_or_serial.serial);
+	endif
 endfunction
 
 /*
@@ -70,28 +112,42 @@ function GetStealableInfo(spawner)
 endfunction
 
 /*
- * AddStealableToList(gm, spawner, artifact_name, artifact_desc, objtype, color, rarity, x, y, z, realm)
+ * AddStealableToList(gm, spawner, artifact_info)
  * 
  * Adiciona um artefato roubável à lista
+ * 
+ * Parâmetros:
+ *   gm - GM que criou o artefato
+ *   spawner - Objeto spawner
+ *   artifact_info - Struct com todas as informações do artefato
  */
-function AddStealableToList(gm, spawner, artifact_name, artifact_desc, objtype, color, rarity, x, y, z, realm)
+function AddStealableToList(gm, spawner, artifact_info)
 	var elem_name := StealableElemName(spawner);
 	var data_elem := GetStealableDataElem(elem_name);
 
+	// Salva as informações no datafile
 	data_elem.SetProp("SpawnerSerial", spawner.serial);
-	data_elem.SetProp("ArtifactName", artifact_name);
-	data_elem.SetProp("ArtifactDesc", artifact_desc);
-	data_elem.SetProp("ArtifactObjtype", objtype);
-	data_elem.SetProp("ArtifactColor", color);
-	data_elem.SetProp("Rarity", rarity);
-	data_elem.SetProp("X", x);
-	data_elem.SetProp("Y", y);
-	data_elem.SetProp("Z", z);
-	data_elem.SetProp("Realm", realm);
-	data_elem.SetProp("Creator", gm.acctname);
-	data_elem.SetProp("CreatorName", gm.name);
-	data_elem.SetProp("TimeCreated", polcore().systime);
-	data_elem.SetProp("TimesStolen", 0);
+	data_elem.SetProp("ArtifactName", artifact_info.name);
+	data_elem.SetProp("ArtifactDesc", artifact_info.desc);
+	data_elem.SetProp("ArtifactObjtype", artifact_info.objtype);
+	data_elem.SetProp("ArtifactColor", artifact_info.color);
+	data_elem.SetProp("Rarity", artifact_info.rarity);
+	data_elem.SetProp("X", artifact_info.x);
+	data_elem.SetProp("Y", artifact_info.y);
+	data_elem.SetProp("Z", artifact_info.z);
+	data_elem.SetProp("Realm", artifact_info.realm);
+	data_elem.SetProp("Creator", artifact_info.creator);
+	data_elem.SetProp("CreatorName", artifact_info.creator_name);
+	data_elem.SetProp("TimeCreated", artifact_info.time_created);
+	data_elem.SetProp("TimesStolen", artifact_info.times_stolen);
+	data_elem.SetProp("LastStolen", artifact_info.last_stolen);
+	
+	// Salva informações de armadilha se existirem
+	if (artifact_info.has_trap)
+		data_elem.SetProp("HasTrap", artifact_info.has_trap);
+		data_elem.SetProp("TrapType", artifact_info.trap_type);
+		data_elem.SetProp("TrapLevel", artifact_info.trap_level);
+	endif
 	
 	// Marca o spawner
 	SetObjProperty(spawner, "StealableArtifact", 1);
@@ -100,15 +156,29 @@ function AddStealableToList(gm, spawner, artifact_name, artifact_desc, objtype, 
 endfunction
 
 /*
- * RemoveStealableFromList(spawner)
+ * RemoveStealableFromList(spawner_or_serial)
  * 
  * Remove um artefato roubável da lista
+ * Aceita tanto objeto spawner quanto serial
+ * 
+ * BUG FIX: Agora aceita ambos os tipos
  */
-function RemoveStealableFromList(spawner)
+function RemoveStealableFromList(spawner_or_serial)
 	var data_file := GetStealablesDataFile();
-	EraseObjProperty(spawner, "StealableArtifact");
+	var elem_name := StealableElemName(spawner_or_serial);
 	
-	return data_file.DeleteElement(StealableElemName(spawner));
+	// Se passou objeto, remove a propriedade
+	if (TypeOf(spawner_or_serial) != "Integer")
+		EraseObjProperty(spawner_or_serial, "StealableArtifact");
+	else
+		// Se passou serial, tenta encontrar o objeto
+		var spawner := SystemFindObjectBySerial(spawner_or_serial);
+		if (spawner)
+			EraseObjProperty(spawner, "StealableArtifact");
+		endif
+	endif
+	
+	return data_file.DeleteElement(elem_name);
 endfunction
 
 /*
@@ -125,178 +195,118 @@ function IncrementStealCount(spawner)
 	return 1;
 endfunction
 
+//---=[ Funções de Raridade (DRY - Centralizadas) ]=--------------------------
+
 /*
- * GetRarityNameByLevel(rarity)
+ * GetRarityData(rarity)
  * 
- * Retorna o nome da raridade
+ * Retorna struct com todas as informações da raridade
+ * 
+ * REFATORADO: Função única que substitui 3 funções antigas
  */
-function GetRarityNameByLevel(rarity)
-	case (CInt(rarity))
-		1: return "R1 - Comum";
-		2: return "R2 - Incomum";
-		3: return "R3 - Raro";
-		4: return "R4 - Muito Raro";
-		5: return "R5 - Épico";
-		6: return "R6 - Lendário";
-		7: return "R7 - Mítico";
-		8: return "R8 - Supremo";
-		9: return "R9 - Divino";
-		10: return "R10 - Celestial";
-		11: return "R11 - Primordial";
-		12: return "R12 - Transcendente";
-		default: return "Desconhecido";
-	endcase
+function GetRarityData(rarity)
+	rarity := CInt(rarity);
+	
+	if (rarity < 1 || rarity > 12)
+		return struct{
+			level := 0,
+			name := "Desconhecido",
+			time := 0,
+			color := 1153,
+			hex := "#FFD700"
+		};
+	endif
+	
+	return BuildRarityTable()[rarity];
 endfunction
 
 /*
- * GetRespawnTimeByRarity(rarity)
+ * GetRarityName(rarity, include_time)
  * 
- * Retorna o tempo de respawn em segundos para a raridade especificada
+ * Retorna o nome da raridade
  * 
- * Tabela de tempos:
- * R1: 90 minutos, R2: 3 horas, R3: 6 horas, R4: 12 horas, R5: 24 horas (1 dia)
- * R6: 48 horas (2 dias), R7: 96 horas (4 dias), R8: 192 horas (8 dias)
- * R9: 384 horas (16 dias), R10: 768 horas (32 dias), R11: 1536 horas (64 dias), R12: 3072 horas (128 dias)
+ * Parâmetros:
+ *   rarity - Nível (1-12)
+ *   include_time - Se true, inclui tempo de respawn (opcional)
+ * 
+ * Retorno:
+ *   "R5 - Épico" ou "Épico (1 dia)"
  */
-function GetRespawnTimeByRarity(rarity)
-	rarity := CInt(rarity);
-	case (rarity)
-		1: return 5400;     // 90 minutos
-		2: return 10800;    // 3 horas
-		3: return 21600;    // 6 horas
-		4: return 43200;    // 12 horas
-		5: return 86400;    // 1 dia
-		6: return 172800;   // 2 dias
-		7: return 345600;   // 4 dias
-		8: return 691200;   // 8 dias
-		9: return 1382400;  // 16 dias
-		10: return 2764800; // 32 dias
-		11: return 5529600; // 64 dias
-		12: return 11059200; // 128 dias
-		default: return 0;
-	endcase
+function GetRarityName(rarity, include_time := 0)
+	var data := GetRarityData(rarity);
+	
+	if (include_time)
+		var time_str := FormatRespawnTime(data.time);
+		return data.name + " (" + time_str + ")";
+	endif
+	
+	return "R" + CStr(data.level) + " - " + data.name;
 endfunction
+
+/*
+ * GetRarityColor(rarity)
+ * 
+ * Retorna a cor da raridade para gumps
+ */
+function GetRarityColor(rarity)
+	var data := GetRarityData(rarity);
+	return data.color;
+endfunction
+
+/*
+ * GetRespawnTime(rarity)
+ * 
+ * Retorna o tempo de respawn em segundos
+ */
+function GetRespawnTime(rarity)
+	var data := GetRarityData(rarity);
+	return data.time;
+endfunction
+
+/*
+ * FormatRespawnTime(seconds)
+ * 
+ * Formata tempo de respawn em string legível
+ * 
+ * Exemplos: "90 minutos", "3 horas", "2 dias"
+ */
+function FormatRespawnTime(seconds)
+	var days := CInt(seconds / 86400);
+	if (days > 0)
+		return CStr(days) + (days == 1 ? " dia" : " dias");
+	endif
+	
+	var hours := CInt(seconds / 3600);
+	if (hours > 0)
+		return CStr(hours) + (hours == 1 ? " hora" : " horas");
+	endif
+	
+	var minutes := CInt(seconds / 60);
+	return CStr(minutes) + (minutes == 1 ? " minuto" : " minutos");
+endfunction
+
+//---=[ Funções de Cálculo ]=------------------------------------------------
 
 /*
  * CalculateStealingDifficulty(rarity, weight)
  * 
  * Calcula a dificuldade de roubo baseada na raridade e peso do item
  * Fórmula: 40.0 + (Raridade × 5.0) + (Peso × 2.0)
- * 
- * Parâmetros:
- *   rarity - Nível de raridade (1-12)
- *   weight - Peso do item em stones
- * 
- * Retorno:
- *   Dificuldade calculada
  */
 function CalculateStealingDifficulty(rarity, weight)
-	var difficulty := 40.0; // BASE_DIFFICULTY
-	difficulty := difficulty + (CDbl(rarity) * 5.0); // RARITY_MULTIPLIER
-	difficulty := difficulty + (CDbl(weight) * 2.0); // WEIGHT_MULTIPLIER
+	var difficulty := BASE_DIFFICULTY;
+	difficulty += (CDbl(rarity) * RARITY_MULTIPLIER);
+	difficulty += (CDbl(weight) * WEIGHT_MULTIPLIER);
 	
 	return difficulty;
 endfunction
 
-/*
- * GetRarityName(rarity)
- * 
- * Retorna o nome descritivo da raridade com tempo
- * 
- * Parâmetros:
- *   rarity - Nível de raridade (1-12)
- * 
- * Retorno:
- *   String descritiva da raridade
- */
-function GetRarityName(rarity)
-	case (CInt(rarity))
-		1: return "Comum (90 min)";
-		2: return "Incomum (3 horas)";
-		3: return "Raro (6 horas)";
-		4: return "Muito Raro (12 horas)";
-		5: return "Épico (1 dia)";
-		6: return "Lendário (2 dias)";
-		7: return "Mítico (4 dias)";
-		8: return "Supremo (8 dias)";
-		9: return "Divino (16 dias)";
-		10: return "Celestial (32 dias)";
-		11: return "Primordial (64 dias)";
-		12: return "Transcendente (128 dias)";
-		default: return "Desconhecido";
-	endcase
-endfunction
-
-/*
- * FormatTimeRemaining(seconds)
- * 
- * Formata o tempo restante em uma string legível
- * 
- * Parâmetros:
- *   seconds - Tempo em segundos
- * 
- * Retorno:
- *   String formatada (ex: "2 dias, 5 horas, 30 minutos")
- */
-function FormatTimeRemaining(seconds)
-	if (seconds <= 0)
-		return "Disponível agora";
-	endif
-	
-	var days := CInt(seconds / 86400);
-	seconds := seconds % 86400;
-	
-	var hours := CInt(seconds / 3600);
-	seconds := seconds % 3600;
-	
-	var minutes := CInt(seconds / 60);
-	
-	var result := "";
-	
-	if (days > 0)
-		result := result + days + " dia";
-		if (days > 1)
-			result := result + "s";
-		endif
-	endif
-	
-	if (hours > 0)
-		if (result != "")
-			result := result + ", ";
-		endif
-		result := result + hours + " hora";
-		if (hours > 1)
-			result := result + "s";
-		endif
-	endif
-	
-	if (minutes > 0)
-		if (result != "")
-			result := result + ", ";
-		endif
-		result := result + minutes + " minuto";
-		if (minutes > 1)
-			result := result + "s";
-		endif
-	endif
-	
-	if (result == "")
-		result := "Menos de 1 minuto";
-	endif
-	
-	return result;
-endfunction
+//---=[ Funções de Artefato ]=-----------------------------------------------
 
 /*
  * IsStealableArtifact(item)
  * 
  * Verifica se um item é um artefato roubável
- * 
- * Parâmetros:
- *   item - Item a ser verificado
- * 
- * Retorno:
- *   1 se for artefato roubável, 0 caso contrário
  */
 function IsStealableArtifact(item)
 	if (!item)
@@ -310,12 +320,6 @@ endfunction
  * GetArtifactSpawner(item)
  * 
  * Retorna o spawner vinculado ao artefato
- * 
- * Parâmetros:
- *   item - Artefato roubável
- * 
- * Retorno:
- *   Objeto spawner ou error
  */
 function GetArtifactSpawner(item)
 	if (!item)
@@ -333,4 +337,51 @@ function GetArtifactSpawner(item)
 	endif
 	
 	return spawner;
+endfunction
+
+/*
+ * GetArtifactStatus(spawner)
+ * 
+ * Retorna o status atual do artefato
+ * 
+ * NOVO: Função extraída para evitar duplicação (DRY)
+ * 
+ * Retorno:
+ *   struct{text := "Status", color := cor_do_status}
+ */
+function GetArtifactStatus(spawner)
+	var status := struct;
+	status.+text := "Desconhecido";
+	status.+color := 2100;
+	
+	var current_artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
+	var next_spawn_time := CInt(GetObjProperty(spawner, "NextSpawnTime"));
+	
+	if (current_artifact_serial)
+		var artifact := SystemFindObjectBySerial(current_artifact_serial);
+		if (artifact && !GetObjProperty(artifact, "PropStealable"))
+			status.text := "Roubado";
+			status.color := 53; // Laranja
+		elseif (artifact)
+			status.text := "Disponível";
+			status.color := 68; // Verde
+		else
+			status.text := "Respawn";
+			status.color := 33; // Vermelho
+		endif
+	elseif (next_spawn_time && ReadGameClock() < next_spawn_time)
+		var time_left := next_spawn_time - ReadGameClock();
+		var hours_left := CInt(time_left / 3600);
+		if (hours_left > 0)
+			status.text := CStr(hours_left) + "h";
+		else
+			status.text := CStr(CInt(time_left / 60)) + "m";
+		endif
+		status.color := 2100; // Cinza
+	else
+		status.text := "Erro";
+		status.color := 33; // Vermelho
+	endif
+	
+	return status;
 endfunction
