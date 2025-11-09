@@ -184,6 +184,8 @@ function ExecuteEpicTrapEffect(mobile, trap)
     var fx_id := GetObjProperty(trap, "epic_trap_fx");
     var damage_dice := GetObjProperty(trap, "epic_trap_damage_dice");
     var damage_types := GetObjProperty(trap, "epic_trap_damage_types");
+    var fx_type := GetObjProperty(trap, "epic_trap_fx_type"); // "Stationary" or "Moving"
+    var fx_source := GetObjProperty(trap, "epic_trap_fx_source"); // struct{x, y, z, realm}
 
     if (!trap_name)
         trap_name := "Armadilha Epica";
@@ -195,6 +197,10 @@ function ExecuteEpicTrapEffect(mobile, trap)
 
     if (!damage_types || !damage_types.size())
         damage_types := array{"Physical"}; // Default
+    endif
+
+    if (!fx_type || fx_type == "")
+        fx_type := "Stationary"; // Default
     endif
 
     // Show trap
@@ -209,7 +215,17 @@ function ExecuteEpicTrapEffect(mobile, trap)
 
     // Play visual effect
     if (fx_id)
-        PlayObjectCenteredEffect(trap, CInt(fx_id), 7, 10);
+        if (fx_type == "Moving" && fx_source && fx_source.x)
+            // Moving effect from source coordinates to trap
+            PlayMovingEffectXYZ(
+                CInt(fx_source.x), CInt(fx_source.y), CInt(fx_source.z),
+                trap.x, trap.y, trap.z,
+                CInt(fx_id), 7, 10, 0, fx_source.realm
+            );
+        else
+            // Stationary effect at trap location
+            PlayObjectCenteredEffect(trap, CInt(fx_id), 7, 10);
+        endif
     endif
 
     // Message to player
