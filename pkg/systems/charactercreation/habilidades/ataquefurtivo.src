@@ -16,7 +16,7 @@ program backstab(who)
 
 	who.GetObjRef().SetProp("backstab", 1);
 	who.GetEquipBySlot(WEAPON).GetObjRef().SetProp("backstab", 1);
-	
+
 	if (who.hidden)
 		who.GetObjRef().SetProp("#attackbonus", 100);
 		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))

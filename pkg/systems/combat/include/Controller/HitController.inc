@@ -3,9 +3,11 @@
  * Purpose
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
-
-include "AbilitiesController";
+// include "AbilitiesController";
+include ":message:Model/Message";
+include ":objWrapper:Model/WeaponWrapper";
 include ":combat:Model/CombatAbility";
+include "include/packets";
 
 /**
  * Calcula a chance de acerto de um ataque baseado nos atributos do atacante e defensor,

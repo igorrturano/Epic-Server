@@ -638,10 +638,12 @@ function CalcDamageHabs(attacker, defender, damage)
 endfunction
 
 function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano Base {attackInfo.GetAttackType()}: {attackInfo.GetDamage()}");
+	var totaldamage;
+	var attackInfo := struct{};
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
 
-	if (isForced)
-		totaldamage := CInt(attackInfo.GetDamage());
+	if (type == DMG_FORCED)
+		totaldamage := CInt(damage);
 	else
 		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
 	endif
@@ -649,15 +651,15 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 	attackInfo.+damage := totaldamage;
 	attackInfo.+type := type;
 
-	CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo);
-	CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo);
+	// CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo);
+	// CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo);
 
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
 
-	CheckDefenderHabsAfterDamage(attacker, defender, attackInfo);
-	CheckAttackerHabsAfterDamage(attacker, defender, attackInfo);
+	// CheckDefenderHabsAfterDamage(attacker, defender, attackInfo);
+	// CheckAttackerHabsAfterDamage(attacker, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;
