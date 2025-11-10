@@ -40,7 +40,7 @@ function effectByAltar(altar)
 	  HALLEUAD:
 		 effect := 0x6CEB;
 	  ARADALORE:
-		 effect := 0xA2CC;
+		 effect := 0xE047; // druid altar
    endcase
 
    return effect;
@@ -66,7 +66,7 @@ function altarByObjtype(who, altar)
 		 religion := CETICOS;
 	  0xA060:
 		 religion := HALLEUAD;
-	  0xA49E:
+	  0xD351:
 		 religion := ARADALORE;
    endcase
 
@@ -93,7 +93,7 @@ function graphicByAltar(altar)
 	  CETICOS:
 		 graphic := 0xA262;
 	  ARADALORE:
-		 graphic := 0xA49F;
+		 graphic := 0xD350;
 	  default:
 		 graphic := 0;
    endcase
