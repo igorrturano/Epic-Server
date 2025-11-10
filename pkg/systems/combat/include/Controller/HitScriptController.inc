@@ -2,7 +2,7 @@ include ":combat:Model/AttackInfo";
 include ":combat:Model/CombatAbility";
 
 include ":IO:CFGFile";
-include ":message:Model/Message";
+// include ":message:Model/Message";
 include "include/epicMageryUtils";
 
 function WeaponHitScripts(byRef attackInfo)
