@@ -840,6 +840,15 @@ function GetActiveResearch(who)
 endfunction
 
 function CheckforBooks(who, power := 0)
+    // Validação defensiva: prevenir chamadas com parâmetros inválidos
+    if (!who || who == error)
+        return 0;
+    endif
+
+    if (power < 0 || power > 5)
+        return 0;
+    endif
+
     var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
 
     var basicBooks := {0x6F97, 0x6F98};  // power 1-2
@@ -1582,7 +1591,7 @@ function CalculateResearchChance(who, recipe)
     var maxFailureBonus := 30.0 - (4.0 + intBonus + levelBonus);
     var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
     
-    var totalChance := 50.0 + intBonus + levelBonus + failureBonus;
+    var totalChance := 90.0 + intBonus + levelBonus + failureBonus;
     
     return totalChance;
 endfunction
