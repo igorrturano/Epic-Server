@@ -63,6 +63,12 @@ function ComportamentoWarMode(quem, itemFonte)
 		return 0;
 	endif
 
+	if (targ == quem.weapon)
+		MoveItemToContainer(targ, quem.backpack);
+		Message("Você desequipa sua arma.").SetColor(SSM_INFO).SendSys(quem);
+		return 0;
+	endif
+
 	if ( !targ.item )
 		SendSysMessage(quem, "Você não pode destruir isso.");
 		return 0;
