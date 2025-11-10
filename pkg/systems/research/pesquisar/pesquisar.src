@@ -48,10 +48,77 @@ var SKILL_THRESHOLDS := struct{
 
 var STUDY_ACTIONS;
 var BOOK_OBJTYPES;
+var RECIPE_CACHE;    // Cache para receitas indexadas por nível
+var SPELL_CACHE;     // Cache para spells indexados por círculo
 
 function InitializeGlobals()
     STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"};
-    BOOK_OBJTYPES := array{0xA9D, 0xA9E};  
+    BOOK_OBJTYPES := array{0xA9D, 0xA9E};
+    
+    // Inicializar caches para performance
+    RECIPE_CACHE := BuildRecipeCache();
+    SPELL_CACHE := BuildSpellCache();
+endfunction
+
+function BuildRecipeCache()
+    // ============================================
+    // CONSTRÓI CACHE DE RECEITAS PARA PERFORMANCE
+    // ============================================
+    // Carrega todas as receitas do arquivo de configuração uma vez
+    // e organiza por nível de poder (1-5) para acesso O(1).
+    // ============================================
+    var cfg := ReadConfigFile(":recipes:recipes");
+    if (!cfg)
+        return error;
+    endif
+
+    var cache := struct{};
+    for power := 1 to 5
+        cache[CStr(power)] := array{};
+    endfor
+
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (elem)
+            var level := GetConfigInt(elem, "level");
+            if (level >= 1 && level <= 5)
+                cache[CStr(level)].append(key);
+            endif
+        endif
+    endforeach
+
+    return cache;
+endfunction
+
+function BuildSpellCache()
+    // ============================================
+    // CONSTRÓI CACHE DE MAGIAS PARA PERFORMANCE
+    // ============================================
+    // Carrega todas as magias do arquivo de configuração uma vez
+    // e organiza por círculo (1-5) para acesso O(1).
+    // ============================================
+    var cfg := ReadConfigFile(":spells:spellcaster");
+    if (!cfg)
+        return error;
+    endif
+
+    var cache := struct{};
+    for circle := 1 to 5
+        cache[CStr(circle)] := array{};
+    endfor
+
+    foreach entry in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, entry);
+        if (elem)
+            var circle := GetConfigInt(elem, "Circle");
+            if (circle >= 1 && circle <= 5)
+                var spellId := GetConfigInt(elem, "SpellId");
+                cache[CStr(circle)].append(spellId);
+            endif
+        endif
+    endforeach
+
+    return cache;
 endfunction
 
 program use_research_book(params)
@@ -1356,23 +1423,22 @@ function CustomFormatRealToString(value, decimal_places := 2)
 endfunction
 
 function SelectRandomSpell(power)
-    var cfg := ReadConfigFile(":spells:spellcaster");
-    if (!cfg)
+    // ============================================
+    // SELECIONA UMA MAGIA ALEATÓRIA DO CACHE
+    // ============================================
+    // Usa o cache pré-carregado para acesso O(1) em vez de ler
+    // o arquivo de configuração a cada chamada, melhorando performance.
+    // ============================================
+    if (!SPELL_CACHE || SPELL_CACHE == error)
         return 0;
     endif
-    var spells := array{};
-    foreach entry in (GetConfigStringKeys(cfg))
-        var elem := FindConfigElem(cfg, entry);
-        var circle := GetConfigInt(elem, "Circle");
-        if (circle == power)
-            spells.append(GetConfigInt(elem, "SpellId"));
-        endif
-    endforeach
-    if (spells.size() > 0)
-        var selectedSpell := spells[RandomInt(spells.size()) + 1];
-        return selectedSpell;
+
+    var circleSpells := SPELL_CACHE[CStr(power)];
+    if (!circleSpells || circleSpells.size() == 0)
+        return 0;
     endif
-    return 0;
+
+    return circleSpells[RandomInt(circleSpells.size()) + 1];
 endfunction
 
 function CheckStudyConditions(who, my_x, my_y, my_facing)
@@ -1521,24 +1587,22 @@ function CompleteResearch(who, recipe, byref gump)
 endfunction
 
 function SelectRandomRecipe(power)
-    var cfg := ReadConfigFile(":recipes:recipes");
-    if (cfg.errortext)
+    // ============================================
+    // SELECIONA UMA RECEITA ALEATÓRIA DO CACHE
+    // ============================================
+    // Usa o cache pré-carregado para acesso O(1) em vez de ler
+    // o arquivo de configuração a cada chamada, melhorando performance.
+    // ============================================
+    if (!RECIPE_CACHE || RECIPE_CACHE == error)
         return 0;
     endif
 
-    var levelRecipes := array{};
-    foreach key in (GetConfigStringKeys(cfg))
-        var elem := FindConfigElem(cfg, key);
-        if (elem && GetConfigInt(elem, "level") == power)
-            levelRecipes.append(key);
-        endif
-    endforeach
-
-    if (levelRecipes.size() > 0)
-        return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+    var levelRecipes := RECIPE_CACHE[CStr(power)];
+    if (!levelRecipes || levelRecipes.size() == 0)
+        return 0;
     endif
 
-    return 0;
+    return levelRecipes[RandomInt(levelRecipes.size()) + 1];
 endfunction
 
 function CheckAndConsumeMana(who, isQuickResearch := 0, power := 0)
