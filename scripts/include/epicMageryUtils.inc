@@ -1,4 +1,5 @@
 use os;
+use math;
 
 include "client";
 include "include/epicConstants";
@@ -228,11 +229,11 @@ function ApplyElementalWeaponProperties(who, elemento)
 	elementalWeapon.decayScriptPid := start_script(":spells:elementalweapon", { weapon,
 																				elementalWeapon.endtime }).pid;
 
-	if (elemento == DMG_FIRE)
+	if (elemento == "Fire")
 		weapon.color := COLOR_ELEMENTAL_FIRE_LIGHT;
-	elseif (elemento == DMG_COLD)
+	elseif (elemento == "Cold")
 		weapon.color := COLOR_ELEMENTAL_ICE_LIGHT;
-	elseif (elemento == DMG_ENERGY)
+	elseif (elemento == "Energy")
 		weapon.color := COLOR_ELEMENTAL_ENERGY_LIGHT;
 	endif
 

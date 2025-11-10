@@ -13,7 +13,7 @@ include ":objWrapper:Model/WeaponWrapper";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
 include ":IO:CFGFile";
-include ":message:model/Message";
+// include ":message:model/Message";
 include ":tn:cooldown";
 
 program MainHitScript(attackInfo)
@@ -64,7 +64,7 @@ function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
-		if (CheckHab_ArrowRecovery(attackInfo.GetAttacker().GetObjRef(), 0, chance))
+		if (CheckHab_ArrowRecovery(attackInfo))
 			chance += 15;
 		endif
 
@@ -82,17 +82,22 @@ function DoMovement(byRef attackInfo)
 	var movtime := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#movtime"));
 	if (move != error)
 		if (ReadGameClock() < movtime + 30)
-			var e := start_script(
-				CStr(move),
-				array{
-					attackInfo.GetAttacker().GetObjRef(),
-					attackInfo.GetDefender().GetObjRef(),
-					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-					armor,
-					attackInfo.GetDamage().GetTotalBaseDamage(),
-					attackInfo.GetDamage().GetTotalRawDamage()
-				}
-			);
+			var armorsInSlot := attackInfo.GetDefender().GetObjRef().GetEquipBySlot(attackInfo.GetBodyRegion());
+
+			foreach armor in (armorsInSlot)
+				var e := start_script(
+					CStr(move),
+					array{
+						attackInfo.GetAttacker().GetObjRef(),
+						attackInfo.GetDefender().GetObjRef(),
+						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
+						armor,
+						attackInfo.GetDamage().GetTotalBaseDamage(),
+						attackInfo.GetDamage().GetTotalRawDamage()
+					}
+				);
+			endforeach
+			
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
 			return 1;
 		else

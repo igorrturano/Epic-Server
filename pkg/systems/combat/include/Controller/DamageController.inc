@@ -173,6 +173,12 @@ function CheckCriticalHit(byRef attackInfo)
 	// if (attackInfo.GetAttacker().GetObjRef().GetProp("critdelay") > ReadGameClock())
 	// 	return false;
 	// endif
+	
+	CalculateCriticalChance(attackInfo);
+
+	if (attackInfo.IsCriticalHit())
+		ApplyCriticalDamage(attackInfo);
+	endif
 
 	return true;
 endfunction
@@ -180,7 +186,7 @@ endfunction
 function CalculateCriticalChance(byRef attackInfo)
 endfunction
 
-function ApplyCriticalHit(byRef attackInfo)
+function ApplyCriticalDamage(byRef attackInfo)
 	// var weapon_scripts := array{};
 
 	// var pet_instinto := attacker.GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes

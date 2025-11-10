@@ -4,7 +4,7 @@
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
 // include "AbilitiesController";
-include ":message:Model/Message";
+// include ":message:Model/Message";
 include ":objWrapper:Model/WeaponWrapper";
 include ":combat:Model/CombatAbility";
 include "include/packets";

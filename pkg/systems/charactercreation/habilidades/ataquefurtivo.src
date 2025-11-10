@@ -3,8 +3,8 @@ use uo;
 include "include/epicCombatUtils";
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
-include ":message:model/Message";
-include ":objWrapper:Model/MobileWrapper";
+// include ":message:model/Message";
+// include ":objWrapper:Model/MobileWrapper";
 
 program backstab(who)
 	who := MobileWrapper(who);
