@@ -152,7 +152,7 @@ function ShowMainResearchGump(who, byref gump)
     var bottom_margin := 460; 
     var y_pos := top_margin + 70;
     
-    GFTextMid(gump, left_margin - 50, top_margin, right_margin - left_margin - 200, 2439, "Livro de Pesquisa");
+    BuildGumpHeader(gump, "Livro de Pesquisa");
 
     // Verificar se o jogador tem alguma skill válida
     var skills := GetResearchSkills(who);
@@ -267,7 +267,7 @@ function ShowQuickResearchGump(who, byref gump)
         var top_margin := 40;
         var bottom_margin := 460; 
         
-        GFTextMid(gump, left_margin - 160, top_margin, right_margin - left_margin, 2439, "Pesquisa Rápida");
+    BuildGumpHeader(gump, "Pesquisa Rápida");
         GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha o tipo de Pesquisa Rápida:");
         
         var y_pos := top_margin + 70;
@@ -376,7 +376,7 @@ function ShowExtensiveResearchGump(who, byref gump)
         var top_margin := 40;
         var bottom_margin := 460;
         
-        GFTextMid(gump, left_margin - 150, top_margin, right_margin - left_margin, 2439, "Pesquisa Extensiva");
+    BuildGumpHeader(gump, "Pesquisa Extensiva");
         GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha o tipo de Pesquisa:");
         
         var y_pos := top_margin + 140;
@@ -680,7 +680,7 @@ function ShowOngoingResearchGump(who, byref gump)
     var top_margin := 40;
     var bottom_margin := 460;
     
-    GFTextMid(gump, left_margin, top_margin, right_margin - left_margin, 2439, "Pesquisa em Andamento");
+    BuildGumpHeader(gump, "Pesquisa em Andamento");
     
     var y_pos := top_margin + 40;
     GFTextLine(gump, left_margin, y_pos, 2505, "Tipo: " + activeResearch.type);
@@ -960,6 +960,16 @@ endfunction
 function AddBackButton(gump, left_margin, bottom_margin)
     GFAddButton(gump, left_margin, bottom_margin - 40, 4014, 4015, GF_CLOSE_BTN, 0);
     GFTextLine(gump, left_margin + 35, bottom_margin - 40, 2517, "Voltar");
+endfunction
+
+
+// Helper para construir cabeçalhos de Gump consistentes
+function BuildGumpHeader(byref gump, title)
+    var left_margin := 40;
+    var top_margin := 40;
+    var right_margin := 640;
+    // Texto centralizado no topo do gump; o font 2439 é usado nos outros gumps
+    GFTextMid(gump, left_margin - 160, top_margin, right_margin - left_margin, 2439, title);
 endfunction
 
 
