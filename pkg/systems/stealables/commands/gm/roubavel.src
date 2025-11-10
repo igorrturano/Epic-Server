@@ -97,9 +97,9 @@ program roubavel(who, text)
 	endif
 	
 	// Mensagens de sucesso
-	var rarity_name := GetRarityName(rarity);
+	var time_str := FormatRespawnTime(GetRarityData(rarity).time);
 	Message("Artefato roubável criado com sucesso!", SSM_INFO).SendSys(who);
-	Message("Raridade: " + rarity_name, SSM_INFO).SendSys(who);
+	Message("Respawn: " + time_str, SSM_INFO).SendSys(who);
 	Message("Spawner criado em: " + artifact_x + ", " + artifact_y + ", " + artifact_z, SSM_INFO).SendSys(who);
 	
 	return 1;
@@ -142,7 +142,7 @@ function CreateArtifactSpawner(artifact, rarity, trap_config)
 	// REFATORADO: Realm já vem como string, verificação desnecessária removida
 	var realm := artifact.realm ? artifact.realm : "britannia";
 	
-	var spawner := CreateItemAtLocation(artifact.x, artifact.y, artifact.z, 0x9F16, 1, realm);
+	var spawner := CreateItemAtLocation(artifact.x, artifact.y, artifact.z, 0xFC7E, 1, realm);
 	if (!spawner)
 		return 0;
 	endif
@@ -237,7 +237,7 @@ function SelectRarityGump(who, artifact)
 	
 	// Subtítulo
 	info_y += 10;
-	GFTextMid(gump, 20, info_y, gump_width - 40, 2100, "Selecione a Raridade do Artefato");
+	GFTextMid(gump, 20, info_y, gump_width - 40, 2100, "Selecione o Tempo de Respawn do Artefato");
 	
 	var y_pos := info_y + 30;
 	var x_left := 60;
@@ -257,12 +257,9 @@ function SelectRarityGump(who, artifact)
 		// Radio button
 		GFRadioButton(gump, x_pos, y_pos, 208, 209, (i == 1 ? 1 : 0), 10 + i);
 		
-		// Nome da raridade com cor
-		GFTextLine(gump, x_pos + 25, y_pos, rarity_data.color, "R" + i + " - " + rarity_data.name);
-		
 		// Tempo de respawn
 		var time_str := FormatRespawnTime(rarity_data.time);
-		GFTextLine(gump, x_pos + 25, y_pos + 15, 2100, "   Respawn: " + time_str);
+		GFTextLine(gump, x_pos + 25, y_pos, 2100, "Respawn: " + time_str);
 		
 		col += 1;
 		if (col >= 2)
@@ -279,7 +276,7 @@ function SelectRarityGump(who, artifact)
 	
 	// Informação adicional
 	y_pos += 15;
-	GFTextMid(gump, 20, y_pos, gump_width - 40, 2100, "Dificuldade = 40 + (Raridade × 5) + (Peso × 2)");
+	GFTextMid(gump, 20, y_pos, gump_width - 40, 2100, "Dificuldade = 40 + (Respawn × 5) + (Peso × 2)");
 	
 	// Botões de ação
 	y_pos += 35;
@@ -350,9 +347,9 @@ function ConfirmArtifactCreation(who, artifact, rarity)
 	
 	// Raridade (REFATORADO: Usa funções centralizadas)
 	var rarity_data := GetRarityData(rarity);
-	GFTextMid(gump, 0, box_y, gump_width, 2100, "Raridade: ");
+	GFTextMid(gump, 0, box_y, gump_width, 2100, "Respawn: ");
 	var rarity_x := center_x + 25;
-	GFTextLine(gump, rarity_x, box_y, rarity_data.color, rarity_data.name);
+	GFTextLine(gump, rarity_x, box_y, 2100, FormatRespawnTime(rarity_data.time));
 	
 	y_pos += box_height + 15;
 	
@@ -461,7 +458,7 @@ function ShowStealablesListGump(who)
 	var y_pos := 80;
 	GFTextLine(gump, 35, y_pos, 2100, "Nome");
 	GFTextLine(gump, 200, y_pos, 2100, "GM Criador");
-	GFTextLine(gump, 330, y_pos, 2100, "Raridade");
+	GFTextLine(gump, 330, y_pos, 2100, "Respawn");
 	GFTextLine(gump, 430, y_pos, 2100, "Localização");
 	GFTextLine(gump, 590, y_pos, 2100, "Roubos");
 	GFTextLine(gump, 660, y_pos, 2100, "Status");
@@ -518,9 +515,9 @@ function ShowStealablesListGump(who)
 		// GM Criador (conta)
 		GFTextLine(gump, 200, y_pos, 2100, creator_acct);
 		
-		// Raridade
-		var rarity_color := GetRarityColor(rarity);
-		GFTextLine(gump, 330, y_pos, rarity_color, "R" + rarity);
+		// Respawn
+		var time_str := FormatRespawnTime(GetRarityData(rarity).time);
+		GFTextLine(gump, 330, y_pos, 2100, time_str);
 		
 		// Localização
 		GFTextLine(gump, 430, y_pos, 2100, "(" + x + "," + y + "," + z + ")");
@@ -607,10 +604,9 @@ function ShowStealableDetails(who, spawner)
 	y_pos += 25;
 	
 	// Raridade (REFATORADO: Usa funções centralizadas)
-	GFTextLine(gump, 50, y_pos, 2100, "Raridade:");
-	var rarity_name := GetRarityName(rarity);
-	var rarity_color := GetRarityColor(rarity);
-	GFTextLine(gump, 150, y_pos, rarity_color, rarity_name);
+	GFTextLine(gump, 50, y_pos, 2100, "Respawn:");
+	var time_str := FormatRespawnTime(GetRarityData(rarity).time);
+	GFTextLine(gump, 150, y_pos, 2100, time_str);
 	y_pos += 25;
 	
 	// Localização

@@ -383,7 +383,7 @@ function HandleStealableArtifact(mobile, artifact)
 		Message("Você conseguiu roubar " + artifact.desc + "!").SetColor(SSM_INFO).SendSys(mobile);
 		
 		// Mensagem overhead visível para todos
-		PrintTextAbove(mobile, "Você roubou um item sem ser pego, fuja rapidamente antes que alguém denuncie o item como roubado.");
+		PrintTextAbove(mobile, "Você roubou um item sem ser pego, ele agora é seu.");
 		
 		// Pega o spawner
 		var spawner := GetArtifactSpawner(artifact);
