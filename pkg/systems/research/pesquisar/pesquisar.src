@@ -93,6 +93,42 @@ function IsValidPlayer(who)
     return (who && who != error && TypeOf(who) == "MobileRef" && who.connected);
 endfunction
 
+function GetManaRequirement(power)
+    // Retorna quantidade de mana necessária baseado no power
+    case (power)
+        1: return 20;
+        2: return 25;
+        3: return 30;
+        4: return 35;
+        5: return 40;
+        default: return 20;
+    endcase
+endfunction
+
+function GetIntelligenceRequirement(power)
+    // Retorna inteligência mínima necessária baseado no power
+    case (power)
+        1: return 45;
+        2: return 55;
+        3: return 65;
+        4: return 75;
+        5: return 85;
+        default: return 45;
+    endcase
+endfunction
+
+function GetSkillRequirement(power)
+    // Retorna skill mínima necessária baseado no power
+    case (power)
+        1: return 40;
+        2: return 50;
+        3: return 60;
+        4: return 70;
+        5: return 80;
+        default: return 40;
+    endcase
+endfunction
+
 function ShowMainResearchGump(who, byref gump)
     // ============================================
     // EXIBE O GUMP PRINCIPAL DO SISTEMA DE PESQUISA
@@ -102,7 +138,7 @@ function ShowMainResearchGump(who, byref gump)
     // de pesquisa rápida ou extensiva, além de mostrar progresso de
     // pesquisas em andamento.
     // ============================================
-    if (!who || who == error || who.connected == 0)
+    if (!IsValidPlayer(who))
         return 0;
     endif
     
@@ -210,7 +246,7 @@ function ShowMainResearchGump(who, byref gump)
 endfunction
 
 function ShowQuickResearchGump(who, byref gump)
-    if (!who || who == error || who.connected == 0)
+    if (!IsValidPlayer(who))
         return 0;
     endif
     
@@ -319,7 +355,7 @@ function PerformQuickResearch(who, recipe, byref gump)
 endfunction
 
 function ShowExtensiveResearchGump(who, byref gump)
-    if (!who || who == error || who.connected == 0)
+    if (!IsValidPlayer(who))
         return 0;
     endif
     
@@ -711,15 +747,7 @@ endfunction
 
 function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe := 0)
     // Verificar Inteligência
-    var minInt;
-    case (power)
-        1: minInt := 45;
-        2: minInt := 55;
-        3: minInt := 65;
-        4: minInt := 75;
-        5: minInt := 85;
-        default: minInt := 45;
-    endcase
+    var minInt := GetIntelligenceRequirement(power);
 
     if (AP_GetStat(who, "Intelligence") < minInt)
         SendSysMessageEx(who, "Você precisa ter no mínimo " + minInt + " de Inteligência para pesquisa nível " + power + ".", SSM_FAIL);
@@ -727,15 +755,7 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
     endif
 
     // Verificar Mana
-    var minMana;
-    case (power)
-        1: minMana := 20;
-        2: minMana := 25;
-        3: minMana := 30;
-        4: minMana := 35;
-        5: minMana := 40;
-        default: minMana := 20;
-    endcase
+    var minMana := GetManaRequirement(power);
 
     var currentMana := AP_GetVital(who, "Mana");
     if (currentMana < minMana)
@@ -744,15 +764,7 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
     endif
 
     // Verificar Skill
-    var minSkill;
-    case (power)
-        1: minSkill := 40;
-        2: minSkill := 50;
-        3: minSkill := 60;
-        4: minSkill := 70;
-        5: minSkill := 80;
-        default: minSkill := 40;
-    endcase
+    var minSkill := GetSkillRequirement(power);
 
     var skillLevel := 0;
     if (recipe)
@@ -1290,11 +1302,11 @@ function PerformRapidResearch(who, recipe, byref gump)
         EraseObjProperty(who, "#QuickResearching");
 
         if (i == 3) // Na última iteração, faça a verificação de sucesso
+            // Calcular chance normalmente usando a função central (CalculateResearchChance)
             var chance := CalculateResearchChance(who, recipe);
             var rollResult := RandomInt(10000);
             var chanceThreshold := CInt(chance * 100);
 
-            
             if (rollResult <= chanceThreshold)
                 success := 1;
                 SendSysMessageEx(who, "Pesquisa bem-sucedida!", SSM_INFO);
@@ -1407,25 +1419,30 @@ function FormatResearchTime(totalSeconds)
     var minutes := Floor((totalSeconds % 3600) / 60);
     var seconds := totalSeconds % 60;
     
-    var result := "";
+    var parts := array{};
+    
     if (hours > 0)
-        result += $"{hours} hora" + (hours != 1 ? "s" : "") + " ";
-    endif
-    if (minutes > 0 || (hours > 0 && seconds > 0))
-        result += $"{minutes} minuto" + (minutes != 1 ? "s" : "") + " ";
-    endif
-    if (seconds > 0 || (hours == 0 && minutes == 0))
-        result += $"{seconds} segundo" + (seconds != 1 ? "s" : "");
+        parts.append(hours + " hora" + (hours != 1 ? "s" : ""));
     endif
     
-    return TrimRight(result);
-endfunction
-
-function TrimRight(text)
-    while (text[text.length()] == " ")
-        text := text[1, text.length() - 1];
-    endwhile
-    return text;
+    if (minutes > 0)
+        parts.append(minutes + " minuto" + (minutes != 1 ? "s" : ""));
+    endif
+    
+    if (seconds > 0 || parts.size() == 0)
+        parts.append(seconds + " segundo" + (seconds != 1 ? "s" : ""));
+    endif
+    
+    // Juntar com espaços
+    var result := "";
+    for i := 1 to parts.size()
+        result += parts[i];
+        if (i < parts.size())
+            result += " ";
+        endif
+    endfor
+    
+    return result;
 endfunction
 
 function CompleteResearch(who, recipe, byref gump)
@@ -1515,15 +1532,7 @@ endfunction
 
 function CheckAndConsumeMana(who, isQuickResearch := 0, power := 0)
     // Define o requisito de mana baseado no power
-    var requiredMana;
-    case (power)
-        1: requiredMana := 20;
-        2: requiredMana := 25;
-        3: requiredMana := 30;
-        4: requiredMana := 35;
-        5: requiredMana := 40;
-        default: requiredMana := 20;
-    endcase
+    var requiredMana := GetManaRequirement(power);
 
     var currentMana := AP_GetVital(who, "Mana");
     var maxMana := AP_GetVitalMaximumValue(who, "Mana");
@@ -1573,7 +1582,7 @@ function CalculateResearchChance(who, recipe)
     var maxFailureBonus := 30.0 - (4.0 + intBonus + levelBonus);
     var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
     
-    var totalChance := 4.0 + intBonus + levelBonus + failureBonus;
+    var totalChance := 50.0 + intBonus + levelBonus + failureBonus;
     
     return totalChance;
 endfunction
@@ -1595,15 +1604,7 @@ function ResetFailuresIfDifferentResearch(who, newRecipe)
 endfunction
 
 function CheckIntelligenceForLevel(who, power)
-    var minInt;
-    case (power)
-        1: minInt := 45;
-        2: minInt := 55;
-        3: minInt := 65;
-        4: minInt := 75;
-        5: minInt := 85;
-        default: minInt := 45;
-    endcase
+    var minInt := GetIntelligenceRequirement(power);
 
     var playerInt := AP_GetStat(who, "Intelligence");
     if (playerInt < minInt)
