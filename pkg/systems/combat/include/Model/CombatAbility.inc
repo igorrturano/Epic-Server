@@ -60,6 +60,13 @@ enum class COMBAT_ABILITY
 	INSPIRAR_DEFESAS := "Inspirar Defesas",
 	KEN_NO_TATSUJIN := "Ken no Tatsujin",
 	TABIBITO_NO_MICHI := "Tabibito no Michi",
+	RECUPERAR_FLECHAS := "Recuperar Flechas",
+	TATICAS_ARCANAS := "Taticas Arcanas",
+	BRIGADOR_DE_TAVERNA := "Brigador de Taverna",
+	KANI_NO_SUTAIRU := "Kani no Sutairu",
+	EXOESQUELETO := "Exoesqueleto",
+	ESPECIALISTA_ESCUDOS := "Especialista Escudos",
+	FURIA := "Furia",
 
 
 
@@ -69,13 +76,9 @@ enum class COMBAT_ABILITY
 	RECUPERACAO_SALVADORA := "Recuperação Salvadora",
 	VINGANCA := "Vingança",
 	CHAIN_OF_PAIN := "Chain of Pain",
-	TATICAS_ARCANAS := "Táticas Arcanas",
-	BRIGADOR_DE_TAVERNA := "Brigador de Taverna",
 	KANINO_SUTAIRU := "Kanino Sutairu",
 	EXO_ESQUELETO := "Exo Esqueleto",
-	ESPECIALISTA_ESCUDOS := "Especialista Escudos",
 	BACKSTAB := "Backstab",
-	FURIA := "Fúria",
 	RESILIENCIA_BARBARA := "Resiliência Barbará",
 	SEMPRE_ALERTA := "Sempre Alerta",
 	CHARGE := "Charge",
