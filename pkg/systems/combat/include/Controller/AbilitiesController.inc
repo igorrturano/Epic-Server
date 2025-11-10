@@ -11,14 +11,17 @@
  *
  **********************************/
 
+// TODO: Depois de finalizar o combate refatorar isso novamente, só para encapsular as habilidades em CombatAbility
+
 include "DamageController";
 include "HitController";
 include "SkillController";
 include "FXController";
 include ":combat:Model/CombatAbility";
 
-include ":message:Model/Message";
+// include ":message:Model/Message";
 include ":charactercreation:resists";
+include ":blood:blood";
 // include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum class HAB_STATUS
@@ -92,9 +95,9 @@ function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	CheckHab_MestreDuelista(attackInfo);
 	CheckHab_Insistencia(attackInfo);
 
-	EraseObjProperty(attacker, "movement");
-	EraseObjProperty(attacker, "#shooting_effects");
-	EraseObjProperty(attacker, "charge_damage"); // TODO: Ver pra quê que serve esse troço
+	EraseObjProperty(attackInfo.GetAttacker().GetObjRef(), "movement");
+	EraseObjProperty(attackInfo.GetAttacker().GetObjRef(), "#shooting_effects");
+	EraseObjProperty(attackInfo.GetAttacker().GetObjRef(), "charge_damage"); // TODO: Ver pra quê que serve esse troço
 
 	return 1;
 endfunction
@@ -153,11 +156,9 @@ function CheckDefenderHabsOnHit(byRef attackInfo)
 	CheckHab_Rebuke(attackInfo);
 
 	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
-	if (GetObjProperty(defender, "#contraataquepoderoso"))
-		EraseObjProperty(defender, "#contraataquepoderoso");
+	if (GetObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso"))
+		EraseObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso");
 	endif
-
-	return 1;
 endfunction
 
 /**
@@ -196,19 +197,15 @@ endfunction
  * Retorna 1 sempre ao final da execução.
  */
 function CheckDefenderHabsOnMiss(byRef attackInfo)
-	// TODO: Adicionar habilidades que serão 
-
-	return 1;
+	// TODO: Adicionar habilidades que serão incluídas aqui
 endfunction
 
 function CheckHab_Martir(byRef attackInfo)
-	var HAB_NAME := "Martir";
-	
-	if (GetObjProperty(defender, "#martir"))
-		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#martir"))
+		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("martirserial"));
 		if (martir && !martir.dead)
-			defender := martir;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
+			attackInfo.SetDefender(martir);
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::SUCCESS}!");
 			return 1;
 		endif
 	endif
@@ -217,21 +214,21 @@ function CheckHab_Martir(byRef attackInfo)
 endfunction
 
 function CheckHab_MantoRothen(byRef attackInfo)
-	var HAB_NAME := "Manto de Rothen";
-	
-	if (GetObjProperty(defender, "#mantorothen"))
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-		var healed := CInt(attackInfo.damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
-		attackInfo.damage := attackInfo.damage - healed;
-		var party := defender.party;
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#mantorothen"))
+		var healed := CInt(attackInfo.GetDamage().GetTotalBaseDamage() * 0.3); // TODO: Ver se o valor curado será esse mesmo.
+		var party := attackInfo.GetDefender().GetObjRef().party;
 		var amthealed := CInt(healed/party.members.size());
+		// attackInfo.damage := attackInfo.damage - healed;
+
 		if (amthealed < 1)
 			amthealed := 1;
 		endif
+
 		foreach member in (party.members)
 			HealDamage(member, amthealed);
 		endforeach
 
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MANTO_ROTHEN}]: {HAB_STATUS::SUCCESS}!");
 		return 1;
 	endif
 
@@ -241,45 +238,50 @@ endfunction
 function CheckHab_RecuperacaoSalvadora(byRef attackInfo)
 	var HAB_NAME := "Recuperacao Salvadora";
 	
-	if (isBloodied(defender))
-		RecalcVitals(defender);
-		MakeBleed(defender);
-		if (getObjProperty(defender, "#recuperacaosalvadora"))
-			EraseObjProperty(defender, "#recuperacaosalvadora");
-			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			HealDamage(defender, CInt(GetPH(defender)/2));
-			return 1;
+	if (isBloodied(attackInfo.GetDefender().GetObjRef()))
+		attackInfo.GetDefender().Update();
+		MakeBleed(attackInfo.GetDefender().GetObjRef());
+		if (attackInfo.GetDefender().GetObjRef().GetProp("#recuperacaosalvadora"))
+			attackInfo.GetDefender().GetObjRef().EraseProp("#recuperacaosalvadora");
+			Message("Uma recuperacao salvadora salvou voce.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
+
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
+			return true;
 		endif
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_Vinganca(byRef attackInfo)
-	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + attackInfo.damage));
-		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
-		return 1;
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#vinganca"))
+		attackInfo.GetDefender().GetObjRef().SetProp(
+			"#vinganca",
+			CInt(attackInfo.GetDefender().GetObjRef().GetProp("#vinganca")) + attackInfo.GetDamage().GetTotalBaseDamage()
+		);
+		
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_ChainOfPain(byRef attackInfo)
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
+	if(attackInfo.GetDefender().GetObjRef().GetProp("#chainofpain") != error )
+		if (CInt(attackInfo.GetDefender().GetObjRef().GetProp("#chainofpain")) > readgameclock())
+			var copmobs := attackInfo.GetDefender().GetObjRef().GetProp("#chainserials");
+			var mage := MobileWrapper(SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("#mageserial")));
 			var copdefenders := array;
 			
 			// Get the higher skill between ARCANA and THEOLOGY
-			var arcana_skill := AP_GetSkill(mage, ARCANA);
-			var theology_skill := AP_GetSkill(mage, THEOLOGY);
+			var arcana_skill := mage.GetSkill(ARCANA);
+			var theology_skill := mage.GetSkill(THEOLOGY);
 			var skill_value := (arcana_skill > theology_skill) ? arcana_skill : theology_skill;
-			var lvl := cdbl(skill_value/200);
+			var lvl := CDbl(skill_value / 200);
 			
-			var originalDefenderSerial := defender.serial;  // Store original defender's serial
+			var originalDefenderSerial := attackInfo.GetDefender().GetSerial(); // Store original defender's serial
 
 			foreach serial in copmobs
 				// Only add other targets, not the original defender
@@ -297,7 +299,8 @@ function CheckHab_ChainOfPain(byRef attackInfo)
 				if (total < 1)
 					total := 1;
 				endif
-				DamageFLS(opponent, total, DMG_FORCED, mage);
+
+				// DamageFLS(opponent, total, DMG_FORCED, mage); // TODO: Refatorar isso daqui para o dano com uso de classe
 			endforeach
 
 			return 1;
@@ -308,114 +311,144 @@ function CheckHab_ChainOfPain(byRef attackInfo)
 endfunction
 
 function CheckHab_TaticasArcanas(byRef attackInfo)
-	var HAB_NAME := "Taticas Arcanas";
-	
-	if (TemHabilidade(attacker, HAB_NAME))
-		var manaatual := AP_GetVital(attacker, "MANA");
-		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::TATICAS_ARCANAS))
+		var manaatual := attackInfo.GetAttacker().GetCurrentMana();
+		var manatotal := attackInfo.GetAttacker().GetMaximumMana();
 		if (manaatual >= manatotal / 2)
+			var dmg := attackInfo.GetDamage();
 			var damagemod := CInt(manaatual / 20);
-			attackInfo.damage += damagemod;
-			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
-			return 1;
+
+			if (dmg.GetSlashBaseDamage() > 0)
+				dmg.IncreaseSlashBaseDamage(damagemod);
+			elseif (dmg.GetPiercingBaseDamage() > 0)
+				dmg.IncreasePiercingBaseDamage(damagemod);
+			elseif (dmg.GetBluntBaseDamage() > 0)
+				dmg.IncreaseBluntBaseDamage(damagemod);
+			endif
+
+			attackInfo.SetDamage(dmg);
+			
+			DebugMsg(attackInfo.GetAttacker().ObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetAttacker().ObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: " + CInt(damagemod));
+			return true;
 		endif
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_BrigadorDeTaverna(byRef attackInfo)
-	var HAB_NAME := "Brigador de Taverna";
-	
-	if (TemHabilidade(attacker, HAB_NAME) && attacker.weapon.objtype == 0x1F020)
-		var damagemod := 2;
-		attackInfo.damage += damagemod;
-		DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-		DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
-		return 1;
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::BRIGADOR_DE_TAVERNA) &&
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED
+		)
+		var damageMod := 2;
+
+		attackInfo.SetDamage(attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod));
+		
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: " + CInt(damageMod));
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_KaniNoSutairu(byRef attackInfo)
-	var HAB_NAME := "Kani no Sutairu";
-	
-	if (IsPhysicalDamage(attackInfo.type))
-		if (TemHabilidade(defender, HAB_NAME))
-			var resist := RandomDiceRoll("1d4");
-			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
-			return 1;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KANI_NO_SUTAIRU))
+		var resist := Dice("1d4").Roll().GetResult();
+		var dmg := attackInfo.GetDamage();
+
+		if (dmg.GetSlashBaseDamage() > 0)
+			dmg.DecreaseSlashBaseDamage(resist);
+		elseif (dmg.GetPiercingBaseDamage() > 0)
+			dmg.DecreasePiercingBaseDamage(resist);
+		elseif (dmg.GetBluntBaseDamage() > 0)
+			dmg.DecreaseBluntBaseDamage(resist);
 		endif
+
+		attackInfo.SetDamage(dmg);
+		
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KANI_NO_SUTAIRU}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::KANI_NO_SUTAIRU}]: " + CInt(resist));
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_Exoesqueleto(byRef attackInfo)
-	var HAB_NAME := "Exoesqueleto";
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::EXOESQUELETO))
+		var resist := 2;
+		var dmg := attackInfo.GetDamage();
 
-	if (IsPhysicalDamage(attackInfo.type))
-		if (TemHabilidade(defender, HAB_NAME))
-			var resist := 2;
-			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
-			return 1;
+		if (dmg.GetSlashBaseDamage() > 0)
+			dmg.DecreaseSlashBaseDamage(resist);
+		elseif (dmg.GetPiercingBaseDamage() > 0)
+			dmg.DecreasePiercingBaseDamage(resist);
+		elseif (dmg.GetBluntBaseDamage() > 0)
+			dmg.DecreaseBluntBaseDamage(resist);
 		endif
+
+		attackInfo.SetDamage(dmg);
+
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::EXOESQUELETO}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::EXOESQUELETO}]: " + CInt(resist));
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_EspecialistaEscudos(byRef attackInfo)
-	var HAB_NAME := "Especialista em Escudos";
-	
-	if (IsPhysicalDamage(attackInfo.type))
-		if (TemHabilidade(defender, HAB_NAME) && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
-			var resist := RandomDiceRoll("1d4");
-			attackInfo.damage -= resist;
-			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
-			return 1;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESPECIALISTA_ESCUDOS) &&
+		attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetObjRef()) // Tem que estar com escudo equipado
+		var resist := Dice("1d4").Roll().GetResult();
+		var dmg := attackInfo.GetDamage();
+
+		if (dmg.GetSlashBaseDamage() > 0)
+			dmg.DecreaseSlashBaseDamage(resist);
+		elseif (dmg.GetPiercingBaseDamage() > 0)
+			dmg.DecreasePiercingBaseDamage(resist);
+		elseif (dmg.GetBluntBaseDamage() > 0)
+			dmg.DecreaseBluntBaseDamage(resist);
 		endif
+
+		attackInfo.SetDamage(dmg);
+
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: " + CInt(resist));
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_Backstab(byRef attackInfo)
-	if (IsPhysicalDamage(attackInfo.type))
-		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
-			EraseObjProperty(attacker, "backstab");
-			EraseObjProperty(attacker.weapon, "backstab");
-			EraseObjProperty(attacker, "#nextcritical");
-			if (!CheckHab_SempreAlerta(attacker, defender, attackInfo))
-				CheckHab_AtaqueFurtivo(attacker, defender);
-			endif
+	if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
+		EraseObjProperty(attacker, "backstab");
+		EraseObjProperty(attacker.weapon, "backstab");
+		EraseObjProperty(attacker, "#nextcritical");
+		if (!CheckHab_SempreAlerta(attacker, defender, attackInfo))
+			CheckHab_AtaqueFurtivo(attacker, defender);
 		endif
+
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_Furia(byRef attackInfo)
-	var HAB_NAME := "Furia";
-	
-	if (IsPhysicalDamage(attackInfo.type))
-		if (GetCooldown(attacker, "furia"))
-			var damagemod := RandomDiceRoll("1d4");
-			attackInfo.damage += damagemod;
-			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
-			return 1;
-		endif
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), COMBAT_ABILITY::FURIA))
+		var damagemod := Dice("1d4").Roll().GetResult();
+		attackInfo.damage += damagemod;
+
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FURIA}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::FURIA}]: " + CInt(damagemod));
+		return true;
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function CheckHab_ResilienciaBarbara(byRef attackInfo)
@@ -881,8 +914,8 @@ function CheckHab_Insistencia(byRef attackInfo)
 endfunction
 
 function CheckHab_ArrowRecovery(byRef attackInfo)
-	if (TemHabilidade(attacker, "Recuperar Flechas"))
-		attackInfo += 35;
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::RECUPERAR_FLECHAS))
+		attackInfo.SetHitChance(attackInfo.GetHitChance() + 35);
 		return true;
 	endif
 

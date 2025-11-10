@@ -235,5 +235,4 @@ enum class WEAPON_CATEGORY
 
 	BOW := "Bow",
 	CROSSBOW := "Crossbow"
-
 endenum
