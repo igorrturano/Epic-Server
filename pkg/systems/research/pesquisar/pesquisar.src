@@ -36,6 +36,16 @@ const RESEARCH_DURATION_MINUTES := 2; // Mudar para 10080 em produção (7 dias)
 const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
+// Thresholds de skill usados para determinar o máximo power possível
+// para diferentes tipos de pesquisa. O array representa os limites de
+// skill para os níveis 5..1 (ver lógica em GetMaxPowerForSkill).
+// Usamos var aqui porque a inicialização complexa como struct/array
+// pode não ser aceita em uma const expression pelo compilador.
+var SKILL_THRESHOLDS := struct{
+    "default" := array{80, 70, 60, 50, 40},
+    "magic"   := array{100, 90, 80, 70, 0}
+};
+
 var STUDY_ACTIONS;
 var BOOK_OBJTYPES;
 
@@ -1208,34 +1218,25 @@ function GetMaxPowerForCrafting(skills)
     return GetMaxPowerForSkill(maxSkill);
 endfunction
 
-function GetMaxPowerForSkill(skill)
-    if (skill >= 80)
-        return 5;
-    elseif (skill >= 70)
-        return 4;
-    elseif (skill >= 60)
-        return 3;
-    elseif (skill >= 50)
-        return 2;
-    elseif (skill >= 40)
-        return 1;
-    else
+function GetMaxPowerForSkill(skill, kind := "default")
+    var thresholds := SKILL_THRESHOLDS[kind];
+    if (!thresholds)
         return 0;
     endif
+
+    for i := 1 to thresholds.size()
+        if (skill >= thresholds[i])
+            // thresholds[1] corresponde ao nível 5, thresholds[5] ao nível 1
+            return (6 - i);
+        endif
+    endfor
+
+    // Para magia, o mínimo é 1; para o resto, 0
+    return (kind == "magic" ? 1 : 0);
 endfunction
 
 function GetMaxPowerForMagic(skill)
-    if (skill >= 100)
-        return 5;
-    elseif (skill >= 90)
-        return 4;
-    elseif (skill >= 80)
-        return 3;
-    elseif (skill >= 70)
-        return 2;
-    else
-        return 1;
-    endif
+    return GetMaxPowerForSkill(skill, "magic");
 endfunction
 
 function PerformRapidResearch(who, recipe, byref gump)
@@ -1626,17 +1627,5 @@ function CheckIntelligenceForLevel(who, power)
 endfunction
 
 function GetMaxPowerForInk(skill)
-    if (skill >= 80)
-        return 5;
-    elseif (skill >= 70)
-        return 4;
-    elseif (skill >= 60)
-        return 3;
-    elseif (skill >= 50)
-        return 2;
-    elseif (skill >= 40)
-        return 1;
-    else
-        return 0;
-    endif
+    return GetMaxPowerForSkill(skill, "default");
 endfunction
