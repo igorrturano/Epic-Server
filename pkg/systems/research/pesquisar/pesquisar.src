@@ -253,7 +253,7 @@ function ShowQuickResearchGump(who, byref gump)
      
  
     var skills := GetResearchSkills(who);
-    var types := GetAvailableRapidResearchTypes(skills);
+    var types := GetAvailableResearchTypes(skills, 1);
     var selectedType := "";
     var selectedPower := 0;
     
@@ -1182,7 +1182,7 @@ function FinishQuickResearch(who, recipe)
 endfunction
 
 
-function GetAvailableResearchTypes(skills)
+function GetAvailableResearchTypes(skills, isRapid := 0)
     var types := array{};
     if (skills.ferreiro >= MIN_SKILL || skills.costureiro >= MIN_SKILL || skills.carpenter >= MIN_SKILL)
         types.append("Instrução de Fabricação");
@@ -1194,23 +1194,14 @@ function GetAvailableResearchTypes(skills)
     if (skills.mago >= MIN_SKILL)
         types.append("Magia");
     endif
+
+    // Parâmetro isRapid em place para futuras diferenças entre
+    // pesquisa rápida e extensiva. No momento retornam-se os mesmos tipos.
+
     return types;
 endfunction
 
-function GetAvailableRapidResearchTypes(skills)
-    var types := array{};
-    if (skills.ferreiro >= MIN_SKILL || skills.costureiro >= MIN_SKILL || skills.carpenter >= MIN_SKILL)
-        types.append("Instrução de Fabricação");
-    endif
-    if (skills.alquimista >= MIN_SKILL)
-        types.append("Receita Alquimica");
-        types.append("Tinta");
-    endif
-    if (skills.mago >= MIN_SKILL)
-        types.append("Magia");
-    endif
-    return types;
-endfunction
+// GetAvailableRapidResearchTypes foi removida: use GetAvailableResearchTypes(skills, isRapid := 1)
 
 function GetMaxPowerForCrafting(skills)
     var maxSkill := Max(skills.ferreiro, Max(skills.costureiro, skills.carpenter));
