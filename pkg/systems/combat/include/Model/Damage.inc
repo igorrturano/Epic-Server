@@ -176,6 +176,76 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function IncreaseSlashBaseDamage(this, value)
+		this._slashBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePiercingBaseDamage(this, value)
+		this._piercingBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseBluntBaseDamage(this, value)
+		this._bluntBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseFireBaseDamage(this, value)
+		this._fireBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseColdBaseDamage(this, value)
+		this._coldBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePoisonBaseDamage(this, value)
+		this._poisonBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseEnergyBaseDamage(this, value)
+		this._energyBase += CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseSlashBaseDamage(this, value)
+		this._slashBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePiercingBaseDamage(this, value)
+		this._piercingBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseBluntBaseDamage(this, value)
+		this._bluntBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseFireBaseDamage(this, value)
+		this._fireBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseColdBaseDamage(this, value)
+		this._coldBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePoisonBaseDamage(this, value)
+		this._poisonBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseEnergyBaseDamage(this, value)
+		this._energyBase -= CInt(value);
+		return this;
+	endfunction
+
 	function IsCritical(this)
 		return this._criticalDamage;
 	endfunction

@@ -84,50 +84,62 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetCurrentHP(this)
+		this.Update();
 		return AP_GetVital(this._objRef, HITS);
 	endfunction
 
 	function GetCurrentStamina(this)
+		this.Update();
 		return AP_GetVital(this._objRef, STAMINA);
 	endfunction
 
 	function GetCurrentMana(this)
+		this.Update();
 		return AP_GetVital(this._objRef, MANA);
 	endfunction
 
 	function GetCurrentHunger(this)
+		this.Update();
 		return AP_GetVital(this._objRef, HUNGER);
 	endfunction
 
 	function GetMaxHP(this)
+		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, HITS);
 	endfunction
 
 	function GetMaxStamina(this)
+		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, STAMINA);
 	endfunction
 
 	function GetMaxMana(this)
+		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, MANA);
 	endfunction
 
 	function GetMaxHunger(this)
+		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
 	endfunction
 
 	function GetRegenHP(this)
+		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, HITS);
 	endfunction
 
 	function GetRegenStamina(this)
+		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, STAMINA);
 	endfunction
 
 	function GetRegenMana(this)
+		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, MANA);
 	endfunction
 
 	function GetRegenHunger(this)
+		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
@@ -311,6 +323,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	function Update(this)
+		RecalcVitals(this._objRef);
+	endfunction
+	
 	function Dispose(this)
 		this._objRef := 0;
 		this._name := "";
