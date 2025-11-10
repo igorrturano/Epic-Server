@@ -16,12 +16,23 @@ include ":tn:tngumps";
 include ":fls_core:fls_crafting";
 include ":recipes:recipes";
 
+// ============================================
+// CONFIGURAÇÕES DO SISTEMA DE PESQUISA
+// ============================================
+
+// Recursos Necessários
 const PERGAMINHO_OBJTYPE := 0xE34;
-const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
 const PERGAMINHO_AMOUNT_RAPIDA := 5;
+const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
+
+// Requisitos Mínimos
 const MIN_SKILL := 40;
 const MIN_MANA := 40;
-const RESEARCH_DURATION_MINUTES := 2; // 3 minutos para testes, 10080 para 7 dias
+
+// Tempo de Pesquisa
+const RESEARCH_DURATION_MINUTES := 2; // Mudar para 10080 em produção (7 dias)
+
+// UI - Cores das Barras
 const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
@@ -83,6 +94,14 @@ function IsValidPlayer(who)
 endfunction
 
 function ShowMainResearchGump(who, byref gump)
+    // ============================================
+    // EXIBE O GUMP PRINCIPAL DO SISTEMA DE PESQUISA
+    // ============================================
+    // Responsável por mostrar a interface principal do livro de pesquisa,
+    // verificando se o jogador possui skills válidas e exibindo opções
+    // de pesquisa rápida ou extensiva, além de mostrar progresso de
+    // pesquisas em andamento.
+    // ============================================
     if (!who || who == error || who.connected == 0)
         return 0;
     endif
@@ -431,6 +450,13 @@ function ShowExtensiveResearchGump(who, byref gump)
 endfunction
 
 function ValidateResearchParameters(who, recipe)
+    // ============================================
+    // VALIDA OS PARÂMETROS DA PESQUISA
+    // ============================================
+    // Verifica se o nível de poder da pesquisa está dentro dos limites
+    // válidos (1-5) e se o tipo de pesquisa selecionado está disponível
+    // para as skills do jogador.
+    // ============================================
     if (recipe.power < 1 || recipe.power > 5)
         SendSysMessageEx(who, "Nível de poder inválido para a pesquisa.", SSM_FAIL);
         return 0;
@@ -446,6 +472,12 @@ function ValidateResearchParameters(who, recipe)
 endfunction
 
 function ConsumeResearchResources(who, recipe)
+    // ============================================
+    // CONSUME OS RECURSOS NECESSÁRIOS PARA A PESQUISA
+    // ============================================
+    // Remove os pergaminhos em branco necessários do inventário do jogador
+    // com base no tipo de pesquisa (rápida ou extensiva).
+    // ============================================
     var pergaminho_amount := recipe.extensiveResearch ? PERGAMINHO_AMOUNT_EXTENSIVA : PERGAMINHO_AMOUNT_RAPIDA;
 
     if (!ConsumeSubstance(who.backpack, PERGAMINHO_OBJTYPE, pergaminho_amount))
@@ -458,6 +490,13 @@ function ConsumeResearchResources(who, recipe)
 endfunction
 
 function InitiateResearch(who, recipe)
+    // ============================================
+    // INICIA O PROCESSO DE PESQUISA EXTENSIVA
+    // ============================================
+    // Define os timestamps de início e fim da pesquisa, chama StartResearch
+    // para iniciar o processo, e fornece feedback sonoro e visual ao jogador
+    // sobre o sucesso ou falha do início da pesquisa.
+    // ============================================
     recipe.start := ReadGameClock();
     recipe.end := recipe.start + (RESEARCH_DURATION_MINUTES * 60);
     
@@ -481,6 +520,13 @@ function InitiateResearch(who, recipe)
 endfunction
 
 function StartResearch(who, recipe, remainingTime := 0)
+    // ============================================
+    // INICIA O TIMER E PROCESSO DE PESQUISA
+    // ============================================
+    // Configura o timer para pesquisa extensiva, seleciona magia se necessário,
+    // salva os dados da pesquisa no jogador e inicia verificações periódicas
+    // do progresso da pesquisa.
+    // ============================================
     if (!who || who == error)
         return 0;
     endif
@@ -567,8 +613,6 @@ endfunction
 
 function NotifyResearchResult(who, success, message := "")
     if (success)
-        if (message == "")
-        endif
         SendSysMessageEx(who, message, SSM_INFO);
     else
         if (message == "")
@@ -716,7 +760,7 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
             "Instrução de Fabricação":
                 skillLevel := Max(AP_GetSkill(who, METALWORKING), 
                                 Max(AP_GetSkill(who, WOODWORKING), 
-                                    AP_GetSkill(who, Domestic_Work)));
+                                    AP_GetSkill(who, "Domestic_Work")));
             "Receita Alquimica":
             "Tinta":
                 skillLevel := AP_GetSkill(who, ALCHEMY);
@@ -778,9 +822,7 @@ function GetActiveResearch(who)
     
     var activeResearch := GetObjProperty(who, "aprenderrecipe");
     if (activeResearch == error)
-    else
-        foreach key in (activeResearch.keys())
-        endforeach
+        return error;
     endif
     return activeResearch;
 endfunction
@@ -821,7 +863,7 @@ endfunction
 function GetResearchSkills(who)
     return struct{
         "ferreiro" := AP_GetSkill(who, METALWORKING),
-        "costureiro" := AP_GetSkill(who, Domestic_Work),
+        "costureiro" := AP_GetSkill(who, "Domestic_Work"),
         "alquimista" := AP_GetSkill(who, ALCHEMY),
         "mago" := AP_GetSkill(who, MAGERY),
         "carpenter" := AP_GetSkill(who, WOODWORKING)
@@ -1017,7 +1059,7 @@ function StartResearchCheck(who)
     var result := TS_StartTimer(who, timerName, checkInterval, 0, params);
     
     if (result != 1)
-    else
+        // Timer não pôde ser iniciado
     endif
 
 endfunction
@@ -1201,7 +1243,7 @@ function PerformRapidResearch(who, recipe, byref gump)
             var craftSkills := struct{
                 "woodworking" := AP_GetSkill(who, WOODWORKING),
                 "metalworking" := AP_GetSkill(who, METALWORKING),
-                "domesticwork" := AP_GetSkill(who, Domestic_Work)
+                "domesticwork" := AP_GetSkill(who, "Domestic_Work")
             };
             var highestSkill := Max(craftSkills.woodworking, Max(craftSkills.metalworking, craftSkills.domesticwork));
             if (highestSkill == craftSkills.woodworking)
@@ -1209,7 +1251,7 @@ function PerformRapidResearch(who, recipe, byref gump)
             elseif (highestSkill == craftSkills.metalworking)
                 skillname := METALWORKING;
             else
-                skillname := Domestic_Work;
+                skillname := "Domestic_Work";
             endif
         "Receita Alquimica": skillname := ALCHEMY;
         "Tinta": skillname := ALCHEMY;
@@ -1386,7 +1428,14 @@ function TrimRight(text)
     return text;
 endfunction
 
-function CompleteResearch(who, recipe, byref gump)  
+function CompleteResearch(who, recipe, byref gump)
+    // ============================================
+    // FINALIZA A PESQUISA E CRIA O ITEM RESULTANTE
+    // ============================================
+    // Cria o item de pesquisa no inventário do jogador baseado no tipo
+    // e nível da pesquisa completada, configura suas propriedades específicas
+    // e fornece feedback sonoro e visual sobre o sucesso.
+    // ============================================  
     if (!who || who == error || TypeOf(who) != "MobileRef")
         return;
     endif
@@ -1440,11 +1489,7 @@ function CompleteResearch(who, recipe, byref gump)
     else
         SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
         return 0;
-
-    ShowMainResearchGump(who, gump);
-        return 1;
     endif
-    return 0;
 endfunction
 
 function SelectRandomRecipe(power)
