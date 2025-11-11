@@ -3,7 +3,7 @@ use os;
 
 include ":gumps:gumps";
 include ":gumps:epicGumps";
-include "estudavel";
+include ":estudar:estudavel";
 
 // ============================================================================
 // COMANDO GM: Criar item de estudo
