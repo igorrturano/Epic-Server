@@ -443,11 +443,24 @@ function PegaDescDuracaoFabricacao(qtdSucessos)
 	endcase
 endfunction
 
-function MontaCraftProp(fabricacaoConfig)
+function MontaCraftProp(fabricacaoConfig, prop)
+
+	if(TypeOfInt(prop) == OT_STRUCT)
+		
+		var teste := prop.?deveReciclar;
+		if(!(prop.?deveReciclar))
+			prop.+deveReciclar := false;
+		endif
+
+		if(prop.pericias && prop.pericias.size() > 0)
+			return prop;
+		endif
+	endif
 
 	var propRetorno := struct {
 		pericias  := dictionary,
-		encaixesMemorizados := array
+		encaixesMemorizados := array,
+		deveReciclar := false
 	};
 
 	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")
