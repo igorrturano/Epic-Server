@@ -114,6 +114,13 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				endif
 				break;
 
+			RT_CHK_BOX_RECICLAR:
+				sessao.deveReciclar := !sessao.deveReciclar;
+				var propCraft := MontaCraftProp(0,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+				propCraft.deveReciclar := sessao.deveReciclar;
+				SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
+				break;	
+
 			RT_BTN_FILTRAR:
 				AtualizaPesquisaComponentes(configComponentes,sessao);
 				break;
@@ -211,6 +218,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 							sessao.componenteSelecionado.selecione.objtype,
 							sessao.materiaisEncontrados,
 							materiaisEscolhidos,
+							sessao.deveReciclar,
 							i == lotes && resto > 0 ? resto : quantidadePorLote,
 							sessao.componenteSelecionado.encaixe,
 							sessao.picoPericia,
@@ -249,8 +257,11 @@ function AtualizaPesquisaComponentes(configComponentes,byref sessao)
 	sessao.componenteSelecionado := 0;
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, encaixe, picoPericia, lote)
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos, deveReciclar,quantidade, encaixe, picoPericia, lote)
 
+	var maiorQualidade := 1;
+	var quantidadeRecicladaTotal := 0;
+	var quantidadeMaterialRetornado := 0;
 	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
 	var quantidadeAFazer := CalculaQuantidadePossivel(quantidade,materiaisEscolhidos,materiaisEncontrados);
 	
@@ -264,14 +275,62 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 	lote := lote ? lote : 1;
 	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer * lote,picoPericia);
 	
+	if(deveReciclar)
+		maiorQualidade := Max(qualidades.keys());
+	endif
+
 	foreach qualidade in (qualidades.keys())
+		Sleepms(2);
+		if(deveReciclar && qualidade != maiorQualidade)
+			var quantidadeTier :=  cint(qualidades[qualidade]);
+			quantidadeRecicladaTotal += quantidadeTier;
+			quantidadeMaterialRetornado += CriaMaterialReciclado(quem,materiaisEscolhidos,quantidadeTier);
+			continue;
+		endif
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
+		if(!item)
+			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(qualidades[qualidade]), quem.realm);
+		endif
 		item.hp := item.maxhp;
-		Sleepms(2);
 	endforeach
 
-	SendSysMessageEX(quem,"{} componete(s) criado(s).".format(quantidadeAFazer * lote),SSM_INFO);
+	if(quantidadeRecicladaTotal > 0)
+		SendSysMessageEX(quem,"Reciclado(s) {}, retornando {} materiai(s).".format(quantidadeRecicladaTotal, quantidadeMaterialRetornado),SSM_INFO_IC);
+	endif
+	SendSysMessageEX(quem,"{} componete(s) criado(s).".format((quantidadeAFazer * lote) - quantidadeRecicladaTotal),SSM_INFO);
+endfunction
+
+function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var Percentuais := SplitWords(profissaoConfig["Setup"].ReciclagemPercentual);
+	var percentualFinal := RandomIntMinMax(cint(Percentuais[1]), cint(Percentuais[2]));
+	var percentualReciclagem := percentualFinal / 100.0;
+	var materialRecicladoTotal := 0;
+
+	foreach materialEscolhido in materiaisEscolhidos
+		Sleepms(2);
+
+		var quantidadeReciclada := cint(cint(materialEscolhido.quantidadeNecessaria) * quantidade * percentualReciclagem);
+		if(quantidadeReciclada <= 1) 
+			if(RandomInt(100) <= (percentualFinal + 1))
+				quantidadeReciclada := 1;
+			else
+				continue;
+			endif
+		endif
+
+		materialRecicladoTotal += quantidadeReciclada;
+		var descriptor := GetItemDescriptor(materialEscolhido.objtype);
+		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+
+		var item := CreateItemInBackpack(quem,descriptor, quantidadeReciclada);
+		if(!item)
+			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, quantidadeReciclada, quem.realm);
+		endif
+	endforeach
+
+	return materialRecicladoTotal;
 endfunction
 
 function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
@@ -463,8 +522,11 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	sessao.+picoPericia := CalculaValorPico(quem,pericia);
 	sessao.+picoMaximoPericia := sessao.picoPericia;
 	sessao.+filtros := struct{ nome := "", encaixe := ""};
-	sessao.+encaixesMemorizados := GetObjProperty(quem, "Craft").encaixesMemorizados;
+	sessao.+encaixesMemorizados := GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP).encaixesMemorizados;
 	sessao.+componentes := MontaVisaoComponentes(configProfissao, false, array);
+	var propCraft := MontaCraftProp(0,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
+	sessao.+deveReciclar := propCraft.deveReciclar;
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
@@ -503,6 +565,8 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 		return RT_FILTRO_MEMORIA_LIG_DES;
 	elseif(valorRetorno == COMPONENTES_BTN_LIMPA_FILTRO)
 		return RT_BTN_LIMPA_FILTRO;
+	elseif(valorRetorno == COMPONENTES_CHK_BOX_RECICLAR)
+		return RT_CHK_BOX_RECICLAR;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO;
 	else

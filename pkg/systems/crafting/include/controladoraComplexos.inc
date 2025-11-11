@@ -1160,11 +1160,8 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 	var menuFile    := profissaoConfig[profissao].MenuFile;
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
-	var propCraft := GetObjProperty(quem, "Craft");
-	if( TypeOfInt(propCraft) == OT_ERROR)
-		propCraft := MontaCraftProp(profissaoConfig);
-		SetObjProperty(quem, "Craft", propCraft);
-	endif
+	var propCraft := MontaCraftProp(profissaoConfig,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
