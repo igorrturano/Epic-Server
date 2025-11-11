@@ -3,7 +3,7 @@ use os;
 
 include ":attributes:attributes";
 include ":training:training";
-include "estudavel";
+include ":estudar:estudavel";
 
 // ============================================================================
 // COMANDO PLAYER: Estudar item
