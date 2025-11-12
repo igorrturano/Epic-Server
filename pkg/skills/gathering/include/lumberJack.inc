@@ -61,7 +61,7 @@ endfunction
  * Returns 1 if the coordinates are in the rect.
  *
  */
-function LJ_InRect(x_pos, y_pos, rect)
+function Gathering_InRect(x_pos, y_pos, rect)
 	var x1 := CInt(rect[1]);
 	var y1 := CInt(rect[2]);
 	var x2 := CInt(rect[3]);
@@ -257,7 +257,7 @@ function LJ_PickWoodType(realm, x_pos, y_pos)
 	var wood_found := array{"Log"};
 	foreach region_name in ( GetConfigStringKeys(wood_cfg) )
 		var region_elem := wood_cfg[region_name];
-		if ( !LJ_InRect(x_pos, y_pos, region_elem.Rect) )
+		if ( !Gathering_InRect(x_pos, y_pos, region_elem.Rect) )
 			continue;
 		endif
 

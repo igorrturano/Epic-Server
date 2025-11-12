@@ -6,6 +6,7 @@ include "include/client";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":treasurehunting:treasuredigging";
+include ":gathering:lumberJack";
 
 
 const MAX_RESOURCE_AMOUNT := 10;
@@ -258,14 +259,6 @@ function GetOreRarityDesc(rarity)
 
 endfunction
 
-function InRect(x_pos, y_pos, rect)
-	var x1 := CInt(rect[1]);
-	var y1 := CInt(rect[2]);
-	var x2 := CInt(rect[3]);
-	var y2 := CInt(rect[4]);
-
-	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
-endfunction
 
 function GetMiningRegion(x, y)
 
@@ -274,7 +267,7 @@ function GetMiningRegion(x, y)
 
     var region := df.FindElement(elem);
     var rect := region.getProp("Rect");
-    if (inrect(x, y, SplitWords(rect)))
+    if (Gathering_InRect(x, y, SplitWords(rect)))
       return elem;
     endif
 
