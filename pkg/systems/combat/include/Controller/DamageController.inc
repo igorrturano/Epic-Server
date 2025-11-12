@@ -52,9 +52,9 @@ function CalculateAttackerDamage(byRef attackInfo)
 	endif
 
 	attackInfo.SetDamage(Damage(
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::SLASH ? damageDice.RollSlashDamage() : 0,
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::PIERCING ? damageDice.RollPiercingDamage() : 0,
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == COMBAT_POSTURE::BLUNT ? damageDice.RollBluntDamage() : 0,
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.RollSlashDamage() : 0,
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.RollPiercingDamage() : 0,
+		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.RollBluntDamage() : 0,
 		damageDice.RollFireDamage(),
 		damageDice.RollColdDamage(),
 		damageDice.RollPoisonDamage(),
@@ -69,13 +69,13 @@ function CalculateDefenderResist(byRef attackInfo)
 
 	foreach equip in (armorsInBodyRegion)
 		var armorResist := equip.GetResists();
-		damage.SetSlashBaseDamage(damage.GetSlashBaseDamage() - armorResist.GetSlashResist());
-		damage.SetPiercingBaseDamage(damage.GetPiercingBaseDamage() - armorResist.GetPiercingResist());
-		damage.SetBluntBaseDamage(damage.GetBluntBaseDamage() - armorResist.GetBluntResist());
-		damage.SetFireBaseDamage(damage.GetFireBaseDamage() - armorResist.GetFireResist());
-		damage.SetColdBaseDamage(damage.GetColdBaseDamage() - armorResist.GetColdResist());
-		damage.SetPoisonBaseDamage(damage.GetPoisonBaseDamage() - armorResist.GetPoisonResist());
-		damage.SetEnergyBaseDamage(damage.GetEnergyBaseDamage() - armorResist.GetEnergyResist());
+		damage.DecreaseSlashBaseDamage(armorResist.GetSlashResist());
+		damage.DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
+		damage.DecreaseBluntBaseDamage(armorResist.GetBluntResist());
+		damage.DecreaseFireBaseDamage(armorResist.GetFireResist());
+		damage.DecreaseColdBaseDamage(armorResist.GetColdResist());
+		damage.DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
+		damage.DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 		DebugMsg($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());
 		DebugMsg($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}", DEBUG_HIT, attackInfo.GetDefender().GetObjRef());
 		DebugMsg($"Restou: {damage.ToString()}", DEBUG_HIT, attackInfo.GetAttacker().GetObjRef());

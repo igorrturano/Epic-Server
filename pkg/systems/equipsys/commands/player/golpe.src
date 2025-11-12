@@ -25,17 +25,17 @@ function ChoosePosture(who)
 	buttonBlunt := Button("BluntDamage", 13, 23, 1009, 1009);
 
 	while (true)
-		if (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::SLASH)
+		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 			container.AddControl(imgSelector, 1, 1);
 			selectedOption.SetUnpressedImage(buttonSlash.GetUnpressedImage())
 						  .SetPressedImage(buttonSlash.GetPressedImage());
 			buttonSlash := selectedOption;
-		elseif (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::PIERCING)
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
 			container.AddControl(imgSelector, 1, 2);
 			selectedOption.SetUnpressedImage(buttonPiercing.GetUnpressedImage())
 						  .SetPressedImage(buttonPiercing.GetPressedImage());
 			buttonPiercing := selectedOption;
-		elseif (who.GetCombatTraits().GetPosture() == COMBAT_POSTURE::BLUNT)
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
 			container.AddControl(imgSelector, 1, 3);
 			selectedOption.SetUnpressedImage(buttonBlunt.GetUnpressedImage())
 						  .SetPressedImage(buttonBlunt.GetPressedImage());
@@ -52,11 +52,11 @@ function ChoosePosture(who)
 		if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
 			return gump.Dispose();
 		elseif (eventHandled.GetControl() == buttonSlash)
-			return COMBAT_POSTURE::SLASH;
+			return DAMAGE_TYPE::SLASH;
 		elseif (eventHandled.GetControl() == buttonPiercing)
-			return COMBAT_POSTURE::PIERCING;
+			return DAMAGE_TYPE::PIERCING;
 		elseif (eventHandled.GetControl() == buttonBlunt)
-			return COMBAT_POSTURE::BLUNT;
+			return DAMAGE_TYPE::BLUNT;
 		endif
 
 		gump.Dispose();
@@ -64,9 +64,9 @@ function ChoosePosture(who)
 endfunction
 
 function SetNewPosture(who, newPosture)
-	if (newPosture == COMBAT_POSTURE::SLASH ||
-		newPosture == COMBAT_POSTURE::PIERCING ||
-		newPosture == COMBAT_POSTURE::BLUNT
+	if (newPosture == DAMAGE_TYPE::SLASH ||
+		newPosture == DAMAGE_TYPE::PIERCING ||
+		newPosture == DAMAGE_TYPE::BLUNT
 		)
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
 		Message($"*muda postura de combate para {newPosture}*").SendAbove(who.GetObjRef());
