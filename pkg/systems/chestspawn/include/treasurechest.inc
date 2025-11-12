@@ -10,44 +10,153 @@ include ":timedscripts:timedScripts";
 include ":destroyable:include/destroyItem";
 
 // ========================================
+// CONSTANTS - Sem hardcoding espalhado
+// ========================================
+const DEFAULT_MATERIAL_WOOD     := 0x1bd7;
+const DEFAULT_MATERIAL_METAL    := 0x6995;
+const DEFAULT_MAXHP_WOOD        := 30;
+const DEFAULT_MAXHP_METAL       := 45;
+const DEFAULT_NAME_GENERIC      := "Container";
+const MATERIAL_LEATHER          := "leather";  // Para bags
+
+// ========================================
 // CONFIG FUNCTIONS - Using CFGFile with Category Support
 // ========================================
 
 // Cache global do dicionário de baús (carregado uma vez)
 var _chest_cache := 0;
 
-// Carrega e retorna o dicionário de baús do arquivo chests.cfg
+// Carrega e retorna o dicionário de baús combinando chests.cfg + itemdesc.cfg
 function LoadChestsConfig()
     // Se já tiver em cache, retorna direto (performance)
     if (_chest_cache)
         return _chest_cache;
     endif
     
-    // Método tradicional: ReadConfigFile + GetConfigStringKeys
-    var cfg_file := ReadConfigFile(":chestspawn:config/chests");
-    if (!cfg_file)
+    // PASSO 1: Ler chests.cfg para mapear Graphic → Category
+    var category_map := dictionary; // key: graphic (int), value: category name (string)
+    
+    var chests_cfg := ReadConfigFile(":chestspawn:config/chests");
+    if (!chests_cfg)
         return error;
     endif
     
-    var chest_names := GetConfigStringKeys(cfg_file);
-    if (!chest_names || chest_names.size() == 0)
-        return error;
-    endif
+    // Lê os tipos do chests.cfg
+    var type_names := GetConfigStringKeys(chests_cfg);
     
-    // Cria dictionary manualmente
-    var chests := dictionary;
-    foreach chest_name in chest_names
-        var elem := FindConfigElem(cfg_file, chest_name);
-        if (elem)
-            var chest_struct := struct{
-                "Graphic" := GetConfigInt(elem, "Graphic"),
-                "Material" := GetConfigInt(elem, "Material"),
-                "MaxHp" := GetConfigInt(elem, "MaxHp"),
-                "Name" := GetConfigString(elem, "Name"),
-                "Category" := GetConfigString(elem, "Category")
-            };
-            chests[chest_name] := chest_struct;
+    foreach type_name in type_names
+        var type_elem := FindConfigElem(chests_cfg, type_name);
+        if (!type_elem)
+            continue;
         endif
+        
+        // Determina a categoria baseado no nome do tipo
+        var category := "";
+        if (type_name["MetalChests"] || type_name["WoodenChests"])
+            category := "Chest";
+        elseif (type_name["Bags"])
+            category := "Bag";
+        elseif (type_name["Crates"])
+            category := "Crate";
+        elseif (type_name["Bookshelves"])
+            category := "Bookshelf";
+        elseif (type_name["Barrels"])
+            category := "Barrel";
+        elseif (type_name["Tombs"])
+            category := "Tomb";
+        endif
+        
+        if (category == "")
+            continue;
+        endif
+        
+        // Usa ListConfigElemProps para obter os valores hexadecimais
+        var prop_indices := ListConfigElemProps(type_elem);
+        
+        if (prop_indices && prop_indices.size() > 0)
+            foreach prop_index in prop_indices
+                var graphic_int := CInt(prop_index);
+                
+                if (graphic_int > 0)
+                    category_map[graphic_int] := category;
+                endif
+            endforeach
+        endif
+    endforeach
+    
+    if (category_map.size() == 0)
+        return error;
+    endif
+    
+    // PASSO 2: Ler itemdesc.cfg para obter propriedades dos containers
+    var itemdesc_cfg := ReadConfigFile(":*:itemdesc");
+    if (!itemdesc_cfg)
+        return error;
+    endif
+    
+    // PASSO 3: Combinar ambos em um dictionary
+    var chests := dictionary;
+    var count := 0;
+    var not_found := 0;
+    
+    foreach graphic_int in (category_map.keys())
+        var category := category_map[graphic_int];
+        
+        // Valores padrão iniciais (usando CONSTANTES, não hardcoding!)
+        var material := DEFAULT_MATERIAL_WOOD;
+        var maxhp := DEFAULT_MAXHP_WOOD;
+        var name := DEFAULT_NAME_GENERIC;
+        
+        // Busca o container no itemdesc para sobrescrever os padrões
+        var container_elem := FindConfigElem(itemdesc_cfg, graphic_int);
+        
+        if (container_elem)
+            // Tenta ler as propriedades do config
+            var config_material := GetConfigInt(container_elem, "Material");
+            var config_maxhp := GetConfigInt(container_elem, "MaxHp");
+            var config_name := GetConfigString(container_elem, "Name");
+            
+            // Sobrescreve apenas se tiver valores válidos
+            if (config_material && config_material != 0)
+                material := config_material;
+            endif
+            
+            if (config_maxhp && config_maxhp != 0)
+                maxhp := config_maxhp;
+            else
+                // Infere MaxHp baseado no material
+                if (material == DEFAULT_MATERIAL_METAL)
+                    maxhp := DEFAULT_MAXHP_METAL;
+                else
+                    maxhp := DEFAULT_MAXHP_WOOD;
+                endif
+            endif
+            
+            if (config_name && config_name != "")
+                name := config_name;
+            endif
+        else
+            not_found := not_found + 1;
+            // Se não encontrou, usa lógica de padrão baseado no material
+            if (material == DEFAULT_MATERIAL_METAL)
+                maxhp := DEFAULT_MAXHP_METAL;
+            else
+                maxhp := DEFAULT_MAXHP_WOOD;
+            endif
+        endif
+        
+        // UMA ÚNICA struct - sem duplicação, sem hardcoding
+        var chest_key := "Chest_0x" + Hex(graphic_int);
+        var chest_struct := struct{
+            "Graphic" := graphic_int,
+            "Material" := material,
+            "MaxHp" := maxhp,
+            "Name" := name,
+            "Category" := category
+        };
+        
+        chests[chest_key] := chest_struct;
+        count := count + 1;
     endforeach
     
     if (chests.size() == 0)
@@ -66,8 +175,8 @@ function GetRandomChestFromConfig()
         // Fallback para baú padrão se config falhar
         return struct{ 
             "graphic" := 3650, 
-            "material" := 0x1bd7, 
-            "maxhp" := 30 
+            "material" := DEFAULT_MATERIAL_WOOD, 
+            "maxhp" := DEFAULT_MAXHP_WOOD
         };
     endif
     
@@ -76,8 +185,8 @@ function GetRandomChestFromConfig()
         // Fallback se não houver tipos
         return struct{ 
             "graphic" := 3650, 
-            "material" := 0x1bd7, 
-            "maxhp" := 30 
+            "material" := DEFAULT_MATERIAL_WOOD, 
+            "maxhp" := DEFAULT_MAXHP_WOOD
         };
     endif
     
@@ -97,15 +206,15 @@ function GetChestInfoByGraphic(graphic)
     var chests := LoadChestsConfig();
     if (chests == error)
         // Fallback baseado no gráfico
-        var material := 0x1bd7; // madeira por padrão
+        var material := DEFAULT_MATERIAL_WOOD;
         if (graphic == 3648 || graphic == 3708)
-            material := 0x6995; // metal
+            material := DEFAULT_MATERIAL_METAL;
         endif
         return struct{ 
             "graphic" := graphic, 
             "material" := material, 
-            "maxhp" := 30,
-            "name" := "Baú"
+            "maxhp" := DEFAULT_MAXHP_WOOD,
+            "name" := DEFAULT_NAME_GENERIC
         };
     endif
     
@@ -123,15 +232,15 @@ function GetChestInfoByGraphic(graphic)
     endforeach
     
     // Se não encontrou, retorna fallback
-    var material := 0x1bd7; // madeira por padrão
+    var material := DEFAULT_MATERIAL_WOOD;
     if (graphic == 3648 || graphic == 3708)
-        material := 0x6995; // metal
+        material := DEFAULT_MATERIAL_METAL;
     endif
     return struct{ 
         "graphic" := graphic, 
         "material" := material, 
-        "maxhp" := 30,
-        "name" := "Baú"
+        "maxhp" := DEFAULT_MAXHP_WOOD,
+        "name" := DEFAULT_NAME_GENERIC
     };
 endfunction
 
@@ -281,11 +390,11 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                     chestStruct := struct;
                     var type := RandomInt(4) + 1;
                     case(type)
-                        1: chestStruct.+gfx := 3650; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
-                        2: chestStruct.+gfx := 3651; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
-                        3: chestStruct.+gfx := 3703; chestStruct.+maxHp := 22; chestStruct.+material := 0x1bd7;
-                        4: chestStruct.+gfx := 3648; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
-                        5: chestStruct.+gfx := 3708; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
+                        1: chestStruct.+gfx := 3650; chestStruct.+maxHp := DEFAULT_MAXHP_WOOD; chestStruct.+material := DEFAULT_MATERIAL_WOOD;
+                        2: chestStruct.+gfx := 3651; chestStruct.+maxHp := DEFAULT_MAXHP_WOOD; chestStruct.+material := DEFAULT_MATERIAL_WOOD;
+                        3: chestStruct.+gfx := 3703; chestStruct.+maxHp := 22; chestStruct.+material := DEFAULT_MATERIAL_WOOD;
+                        4: chestStruct.+gfx := 3648; chestStruct.+maxHp := DEFAULT_MAXHP_METAL; chestStruct.+material := DEFAULT_MATERIAL_METAL;
+                        5: chestStruct.+gfx := 3708; chestStruct.+maxHp := DEFAULT_MAXHP_METAL; chestStruct.+material := DEFAULT_MATERIAL_METAL;
                     endcase
                 endif
                 

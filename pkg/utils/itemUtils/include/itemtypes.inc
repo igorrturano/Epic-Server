@@ -1188,7 +1188,6 @@ function IsSteedContainer(item)
 		return 1;
 	elseif (item.objtype == 0x1EB6)                  //Emptytoolkit
 		return 1;	
-		return 1;
 	elseif (item.objtype >= 0x0a97 && item.objtype <= 0x0a9e)    //EmptyBookShelf
 		return 1;
         endif
