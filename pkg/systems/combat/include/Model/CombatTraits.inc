@@ -1,3 +1,5 @@
+include "Damage";
+
 class CombatTraits()
 	var _posture := "";
 
@@ -5,7 +7,7 @@ class CombatTraits()
 		if (serializedData)
 			this.Deserialize(serializedData);
 		else
-			this._posture := COMBAT_POSTURE::BLUNT;
+			this._posture := DAMAGE_TYPE::BLUNT;
 		endif
 	endfunction
 
@@ -13,7 +15,7 @@ class CombatTraits()
 		return this._posture;
 	endfunction
 
-	function SetPosture(this, posture) // posture: enum COMBAT_POSTURE
+	function SetPosture(this, posture) // posture: enum DAMAGE_TYPE
 		this._posture := posture;
 		return this;
 	endfunction
@@ -37,9 +39,3 @@ class CombatTraits()
 		return this;
 	endfunction
 endclass
-
-enum class COMBAT_POSTURE
-	SLASH := "Cortante",
-	PIERCING := "Perfurante",
-	BLUNT := "Contusivo"
-endenum
