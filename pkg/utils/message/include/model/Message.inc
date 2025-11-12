@@ -178,6 +178,24 @@ class Message(IMessage)
 		return this;
 	endfunction
 
+	function SendEmote(this, who)
+		if (!this._asyncInfo.sending)
+			if (_WantTranslation(who)) this.Translate(); endif
+			var msgSplitted := this._SplitMessages(MSG_MAXSIZE::PRINTTEXT);
+
+			foreach part in (msgSplitted)
+				PrintText(who, $"*{part.textTarget}*", part.color, part.font);
+			endforeach
+		else
+			return this._SendAsync(struct{
+				who := who,
+				msg_type := MSG_TYPE::PRINTTEXT
+			});
+		endif
+
+		return this;
+	endfunction
+
 	// Private functions
 	function _SplitMessages(this, maxSize)
 		var msgSplitted := array{};
