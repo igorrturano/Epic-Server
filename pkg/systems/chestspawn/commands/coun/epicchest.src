@@ -411,8 +411,6 @@ endfunction
 // Usa cache para performance (carrega apenas uma vez por categoria)
 function GetCategoryGraphics(category)
 	
-	
-	
 	// Verifica se já existe no cache
 	if (CACHED_CATEGORY_GRAPHICS.exists(category))
 		var cached := CACHED_CATEGORY_GRAPHICS[category];
