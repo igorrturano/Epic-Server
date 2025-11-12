@@ -558,6 +558,7 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	if(deveIgnorarRequisitos) return true; endif
 	
 	foreach elemento in contagem
+		Print("elemento.nomeItem" + elemento.nomeItem + " elemento.quantidadeEncontrada: " + elemento.quantidadeEncontrada + " elemento.quantidadeNecessaria: " + elemento.quantidadeNecessaria + " quantidade: " + quantidade + " elemento.lote: " + elemento.lote);
 		Sleepms(2);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
 			var mensagem; 
@@ -594,11 +595,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	endforeach
 
-	if(IsMateriaisNaoEncontrados(receita, contagem))
-		SendSysMessageEX(quem,"Você não tem todos materiais necessários.",SSM_FAIL);
-		return false;
-	endif
-
 	return true;
 endfunction
 
@@ -631,10 +627,25 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 
 		foreach ingrediente in (receita.materiaisNecessarios)
 			Sleepms(2);
+			
 			var ingredienteInfo := SplitWords(ingrediente);
+			var materialNecessarioObjType :=  cint(ingredienteInfo[1]);
+			var qtdNecessaria := cint(ingredienteInfo[2]);
 
-			if(isMaterialNecessario(item, ingredienteInfo[1]))
-				var qtdNecessaria := cint(ingredienteInfo[2]);
+			if(!contagemFinal.exists(materialNecessarioObjType))
+				var materialDesc := itemsConfig[materialNecessarioObjType];
+				InsereInformacoesContagem(
+											contagemFinal, 
+											struct {
+														name := materialDesc.desc, 
+														objtype := materialNecessarioObjType
+													},
+											qtdNecessaria,
+											receita.lote);
+			endif
+
+			if(isMaterialNecessario(item, materialNecessarioObjType))
+				
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											qtdNecessaria,
@@ -672,21 +683,26 @@ endfunction
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
-		var informacoesContagem := struct;
-		informacoesContagem.+quantidadeEncontrada := 0;
-		informacoesContagem.+itemRefArray := array;
-		informacoesContagem.+nomeItem := item.name;
-		informacoesContagem.+tierDesc := tierDesc;
-		informacoesContagem.+lote := lote;
-		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
-		if(encaixe)
-			informacoesContagem.+encaixe := encaixe;
-		endif
-		catalogoContagem.insert(item.objtype, informacoesContagem);
+		InsereInformacoesContagem(catalogoContagem, item, quantidadeNecessaria, lote, encaixe, tierDesc);
 	endif
 
 	catalogoContagem[item.objtype].quantidadeEncontrada += item.amount;
 	catalogoContagem[item.objtype].itemRefArray.append(item);
+endfunction
+
+function InsereInformacoesContagem(byref catalogoContagem, item, quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
+	var informacoesContagem := struct;
+	informacoesContagem.+quantidadeEncontrada := 0;
+	informacoesContagem.+itemRefArray := array;
+	informacoesContagem.+nomeItem := item.name;
+	informacoesContagem.+tierDesc := tierDesc;
+	informacoesContagem.+lote := lote;
+	informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
+	if(encaixe)
+		informacoesContagem.+encaixe := encaixe;
+	endif
+	catalogoContagem.insert(item.objtype, informacoesContagem);
+	return informacoesContagem;
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
