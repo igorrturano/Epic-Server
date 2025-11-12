@@ -558,7 +558,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	if(deveIgnorarRequisitos) return true; endif
 	
 	foreach elemento in contagem
-		Print("elemento.nomeItem" + elemento.nomeItem + " elemento.quantidadeEncontrada: " + elemento.quantidadeEncontrada + " elemento.quantidadeNecessaria: " + elemento.quantidadeNecessaria + " quantidade: " + quantidade + " elemento.lote: " + elemento.lote);
 		Sleepms(2);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
 			var mensagem; 
