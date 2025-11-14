@@ -40,6 +40,7 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_LIMPA_FILTRO := 10,
 	COMPONENTES_BTN_LIGA_DESL_FILTRO_MEMORIA := 11,
 	COMPONENTES_BTN_LIMPAR_MEMORIA := 12,
+	COMPONENTES_CHK_BOX_RECICLAR := 13,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_BTN_AJUDA := 4,
@@ -88,6 +89,7 @@ enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do G
 	RT_BTN_AVALIAR,
 	RT_BTN_FILTRAR,
 	RT_BTN_LIMPA_FILTRO,
+	RT_CHK_BOX_RECICLAR,
 	RT_LIMPAR_MEMORIA_COMPNT,
 	RT_FILTRO_MEMORIA_LIG_DES,
 	RT_CANCELADO
@@ -343,13 +345,17 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2  + 6,1254,"Selecionado: " + (componenteSelecionado.nome ? componenteSelecionado.nome : "Nenhum"));
 
 	if(componenteSelecionado)
-		
-		GFAddButton(gump,margemBaseEsquerda +  10 + larguraCelula * 3.5,G_MARGEM_SUPERIOR + 10 + G_ESPACAMENTO + CInt(alturaCelula * 1.5) ,2311,2312,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
+		var deveReciclarCheckBoxMarcado := sessao.deveReciclar ? 6440 : 6439;
+		var deveReciclarCheckBoxDesmarcado := sessao.deveReciclar ? 6439 : 6440;
+		GFAddButton(gump,margemBaseEsquerda +  10 + cint(larguraCelula * 3.5),G_MARGEM_SUPERIOR + 10 + G_ESPACAMENTO + CInt(alturaCelula * 1.5) ,2311,2312,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
 		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,687,"Esforço:  " + AvaliaEsforço(sessao));
 		GFAddButton(gump,margemBaseEsquerda + 64,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
 		GFTooltipText(gump,"Aumentar o esforço produz componentes de melhor qualidade.");
 		GFAddButton(gump,margemBaseEsquerda + 64 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 54,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
+		GFTextLine(gump,margemBaseEsquerda + 20 + larguraCelula * 3,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,687,"Reciclar");
+		GFAddButton(gump,margemBaseEsquerda + 20 +  cint(larguraCelula * 3.8), G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 44,deveReciclarCheckBoxMarcado,deveReciclarCheckBoxDesmarcado,GF_CLOSE_BTN, COMPONENTES_CHK_BOX_RECICLAR);
+		GFTooltipText(gump,"Quando marcado, apenas o melhor componente será produzido e o resto será reciclado.");
 		GFAddButton(gump, margemEsquerdaBotoesFiltro + 100,margemTopoBotoesFiltro,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
 		GFTooltipText(gump,"Avaliar Material.");
 		GFTextLine(gump,margemBaseEsquerda + 15,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 64,687,"Perícia Usada: " + componenteSelecionado.pericia);
