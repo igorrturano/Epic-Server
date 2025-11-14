@@ -7,6 +7,7 @@ const PROPNAME_MATERIAL := "material";
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
 const PROPNAME_ESTACAO_FORJA := "estacaoForja"; 
 const PROPNAME_ISESTACAO_OCUPADA := "isEstacaoOcupada"; 
+const PROPNAME_VELHA_CRAFTPROP := "Craft"; 
 
 
 //SISTEMA DESTRUIVEIS
