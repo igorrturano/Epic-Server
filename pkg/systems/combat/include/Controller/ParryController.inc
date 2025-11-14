@@ -168,7 +168,7 @@ function ApplyParryDelay(byRef attackInfo, modifier := 1)
 endfunction
 
 function CalculateParryDelay(byRef attackInfo)
-	if (CheckHab_BarreiraIndestrutivel(attackInfo))
+	if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
 		return 2;
 	endif
 
@@ -216,7 +216,7 @@ function CheckDisarmShield(byRef attackInfo)
 				endif
 			endif
 
-			CheckHab_KenNoTatsujin(attackInfo);
+			TryToExecuteHab_KenNoTatsujin(attackInfo);
 		endif
 	endif
 

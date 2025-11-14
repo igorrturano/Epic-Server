@@ -64,7 +64,7 @@ function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
-		if (TryToExecute_ArrowRecovery(attackInfo))
+		if (TryToExecuteHab_ArrowRecovery(attackInfo))
 			chance += 15;
 		endif
 
