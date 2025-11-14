@@ -186,14 +186,14 @@ function CheckAmmo(byRef attackInfo)
 		return true;
 	endif
 
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
+	var arcane_bows := array{0xFA6D, 0xF997};
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
 		return true;
 	endif
 
 	var ammo := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammo)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -222,18 +222,6 @@ function CheckAmmo(byRef attackInfo)
 			return false;
 		endif
 	endif
-
-	// TODO: Jogar essa parte para função lá no FXController
-	// var cfg := ReadConfigFile(":woodworking:itemdesc");
-	// var elem := FindConfigElem(cfg, GetObjType(ammo));
-	// var ammo_color := elem.color;
-	// PlayMovingEffectXYZHued(
-	// 	attackInfo.GetAttacker().GetObjRef(),
-	// 	attackInfo.GetDefender().GetObjRef(),
-	// 	attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
-	// 	10, 10, 0, ammo_color
-	// );
-	// return true;
 
 	return false; // False por segurança, mas não deveria chegar aqui. Se chegar, vai travar o ataque e facilita encontrar o bug.
 endfunction

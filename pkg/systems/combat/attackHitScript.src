@@ -30,8 +30,12 @@ program MainHitScript(attackInfo)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	
-	if (ConsumeAmmo(attackInfo)) // Consome munição, se aplicável
-		TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
+	if (attackInfo.GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
+		if (ConsumeAmmo(attackInfo)) // Consome munição
+			TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
+		else
+			return 1;
+		endif
 	endif
 
 	WeaponHitScripts(attackInfo);
@@ -56,20 +60,16 @@ function CheckBodyRegionToHit(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
 endfunction
 
-function ConsumeAmmo(byRef attackInfo)
-	return SubtractAmount(attackInfo.GetAmmo(), attackInfo.GetAmmoAmount());
-endfunction
-
 function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
-		if (CheckHab_ArrowRecovery(attackInfo))
+		if (TryToExecute_ArrowRecovery(attackInfo))
 			chance += 15;
 		endif
 
 		if (RandomInt(100 + 1) <= chance)
-			var ammo := attackInfo.GetAmmo();
+			var ammo := attackInfo.GetAmmoObjRef();
 			if (ammo)
 				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
 			endif
