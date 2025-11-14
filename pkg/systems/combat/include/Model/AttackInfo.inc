@@ -91,7 +91,7 @@ class AttackInfo(IAttackInfo)
 		return this._attackType;
 	endfunction
 
-	function GetAmmo(this)
+	function GetAmmoObjRef(this)
 		return this._ammo.itemRef;
 	endfunction
 

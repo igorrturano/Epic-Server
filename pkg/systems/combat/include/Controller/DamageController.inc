@@ -351,7 +351,7 @@ function CheckPoison(byRef attackInfo)
 			return false;
 		endif
 	else // Se for player, checa pela arma/munição
-		var sourcePoison := attackInfo.GetAmmo() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var sourcePoison := attackInfo.GetAmmoObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 		var poisonInfo := sourcePoison.GetProp("poisonInfo");
 
 		if (poisonInfo == error)
