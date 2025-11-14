@@ -5,6 +5,7 @@ use cfgfile;
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/HitController";
 include ":combat:Controller/FXController";
+include ":combat:Controller/AbilitiesController";
 include ":combat:armorZones";
 
 // Externos
@@ -15,7 +16,7 @@ include ":mastery:Abilities";
 include ":objWrapper:Model/MobileWrapper";
 include ":objWrapper:Model/WeaponWrapper";
 include ":objWrapper:Model/ArmorWrapper";
-include ":message:Model/Message";
+// include ":message:Model/Message";
 
 program Install()
 	print("INSTALLING: AttackHook ... OK!");
@@ -134,7 +135,7 @@ function TryToAttack(byRef attackInfo)
 		// SkillChecks(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjRef(), 1); // TODO: Checar apenas quando executar o dano de fato...
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-			ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_HIT, attackInfo, TARGET::BOTH);
+			ExecuteCombatAbilitiesOnHit(attackInfo);
 			ExecuteMasteryAbility(attackInfo);
 		endif
 
@@ -142,7 +143,7 @@ function TryToAttack(byRef attackInfo)
 	else
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
 		PlayAttackSFX(attackInfo); // Se errou, chama o som aqui
-		ExecuteCombatAbilities(COMBATABILITY_MOMENT::ON_MISS, attackInfo, TARGET::BOTH);
+		ExecuteCombatAbilitiesOnMiss(attackInfo);
 	endif
 endfunction
 
