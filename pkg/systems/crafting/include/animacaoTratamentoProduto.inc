@@ -248,10 +248,9 @@ function DesequipaArma(quem)
 	endif
 endfunction
 
-
 function PegaEstacaoFerreiro (quem, bigorna)
 
-	if(bigorna.objtype != UOBJ_ANVIL1)
+	if(bigorna.objtype != UOBJ_ANVIL1 || bigorna.objtype != UOBJ_ANVIL2)
 		SendSysMessageEX(quem,"A estação escolhida não é uma bigorna.", SSM_FAIL);
 		return 0;
 	endif
