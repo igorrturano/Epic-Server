@@ -39,6 +39,7 @@ class CombatAbility(ICombatAbility)
 endclass
 
 enum class COMBAT_ABILITY
+	// TODO: Quando finalizar, organizar por ordem alfabética
 	POSTURA_OFENSIVA := "Postura Ofensiva",
 	POSTURA_DEFENSIVA := "Postura Defensiva",
 	PRESERVAR_ORGAOS := "Preservar Orgaos",
@@ -74,7 +75,18 @@ enum class COMBAT_ABILITY
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
 	TRESPASSAR := "Trespassar",
 	TRESPASSAR_CRITICO := "Trespassar Critico",
-
+	ARMADURA_ARCANA := "Armadura Arcana",
+	ATAQUE_FURTIVO := "Ataque Furtivo",
+	AINALAITH := "Ainalaith",
+	CONHECIMENTO_SOBRE_O_INIMIGO := "Conhecimento sobre o Inimigo",
+	DEATH_DANCE := "Death Dance",
+	DISPARO_MISTICO := "Disparo Místico",
+	DESVIAR_PROJETIL := "Desviar Projetil",
+	DESVIAR_DISPAROS := "Desviar Disparos",
+	MAO_LIVRE := "Mão Livre",
+	EVASAO := "Evasão",
+	REBUKE := "Rebuke",
+	ATAQUE_INFALIVEL := "Ataque Infalível",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
@@ -85,20 +97,8 @@ enum class COMBAT_ABILITY
 	EXO_ESQUELETO := "Exo Esqueleto",
 	BACKSTAB := "Backstab",
 	BARREIRA_INDESTRUTIVEL := "Barreira Indestrutível",
-	ATAQUE_FURTIVO := "Ataque Furtivo",
-	ARMADURA_ARCANA := "Armadura Arcana",
-	AINALAITH := "Ainalaith",
-	CONHECIMENTO_SOBRE_INIMIGO := "Conhecimento sobre Inimigo",
-	DEATH_DANCE := "Death Dance",
-	DISPARO_MISTICO := "Disparo Místico",
 	CONTRA_ATAQUE := "Contra-Ataque",
-	DESVIAR_PROJETIL := "Desviar Projetil",
-	DESVIAR_DISPAROS := "Desviar Disparos",
-	MAO_LIVRE := "Mão Livre",
 	FEROCIDADE_ENSANGUENTADA := "Ferocidade Ensanguentada",
-	EVASAO := "Evasão",
-	REBUKE := "Rebuke",
-	ATAQUE_INFALIVEL := "Ataque Infalível",
 	MESTRE_DUELISTA := "Mestre Duelista",
 	INSISTENCIA := "Insistência",
 	ARROW_RECOVERY := "Arrow Recovery",
