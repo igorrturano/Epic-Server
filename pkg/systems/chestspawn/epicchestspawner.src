@@ -151,21 +151,24 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					endif
 
 					if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
-						// Create puzzle chest with random appearance
-						var type := RandomInt(4) + 1;
-						var gfx, material;
-						case (type) // Same chest types as in treasurechest.inc
-							1: gfx := 3650; material := 0x1bd7; // Wooden E
-							2: gfx := 3651; material := 0x1bd7; // Wooden S
-							3: gfx := 3703; material := 0x1bd7; // Barrel
-							4: gfx := 3648; material := 0x6995; // Metal E
-							5: gfx := 3708; material := 0x6995; // Metal S
-						endcase
+						// Check if custom chest graphics were selected
+						var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+						var chest_info;
+						
+						if (custom_graphics && custom_graphics.size() > 0)
+							// Use custom graphics - pick random from selection
+							var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+							chest_info := GetChestInfoByGraphic(gfx);
+						else
+							// Use random chest from config
+							chest_info := GetRandomChestFromConfig();
+						endif
 
-						new_chest := CreateItemAtLocation(new_x, new_y, new_z, 0xf022, 1, spawner.realm);
+						new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
 						if (new_chest)
-							new_chest.graphic := gfx;
-							SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
+							new_chest.graphic := chest_info.graphic;
+							SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+							SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
 							current_puzzle_count := current_puzzle_count + 1;
 							SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
 							SetObjProperty(new_chest, "IsPuzzleChest", 1);
@@ -193,9 +196,33 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 
 				// If not puzzle or mimic, create regular epic chest with loot
 				if (!new_chest)
-					chests := CreateTreasureChests(level, 1, 1, new_x, new_y, new_z, spawner.realm, lootname);
-					if (chests.size() > 0)
-						new_chest := chests[1];
+					// Check if custom graphics were selected
+					var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+					var chest_info;
+					
+					if (custom_graphics && custom_graphics.size() > 0)
+						// Use custom graphics - pick random from selection
+						var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+						chest_info := GetChestInfoByGraphic(gfx);
+					else
+						// Use random chest from config
+						chest_info := GetRandomChestFromConfig();
+					endif
+					
+					// Create chest directly with info from config
+					new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
+					if (new_chest)
+						new_chest.graphic := chest_info.graphic;
+						SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+						SetObjProperty(new_chest, "IsTreasureChest", 1);
+						SetObjProperty(new_chest, "level", level);
+						SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
+						
+						// Add traps using the same logic from treasurechest.inc
+						AddRandomTraps(new_chest, level);
+						
+						// Generate loot
+						Loot_Generate(new_chest, lootname);
 					endif
 				endif
 
@@ -210,17 +237,15 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					new_chest.movable := 0;
 					new_chest.locked := 1;
 
-					// Traps are already added by CreateTreasureChests() in treasurechest.inc
-					// No need to add traps here for regular chests
+				// Traps are already added by CreateTreasureChests() in treasurechest.inc
+				// No need to add traps here for regular chests
 
-					// Generate loot for puzzle chest
+				// Generate loot for puzzle chest
 					if (GetObjProperty(new_chest, "IsPuzzleChest"))
 						Loot_Generate(new_chest, lootname);
 					endif
 
 					created_chests_this_cycle.append(new_chest.serial);
-				else
-					print("Failed to create epic chest item at " + new_x + "," + new_y);
 				endif
 			endif
 			placement_tries += 1;
