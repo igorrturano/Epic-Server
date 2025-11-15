@@ -53,11 +53,11 @@ class Text(Control)
 
 	function SelfCreate(this, byRef gump)
 		if (!this._align)
-			GFTextLine(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+			GFTextLine(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_CENTER)
-			GFTextMid(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetColor(), this.GetValue());
+			GFTextMid(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_RIGHT)
-			GFTextRight(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+			GFTextRight(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		endif
 		
 		Super::SelfCreate(this, gump);
