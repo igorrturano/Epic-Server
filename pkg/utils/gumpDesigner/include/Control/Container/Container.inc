@@ -94,7 +94,7 @@ class Container(Control)
 	function SelfCreate(this, byRef gump)
 		if (this._isVisible)
 			var bg := array{0x5B8, 0xBBC, 0xE14, 0x13C2, 0x1414, 0x1436};
-			GFGumpPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), bg[RandomInt(bg.size()) + 1]); // Desenha um background aleatório para o container, só para visualização
+			GFGumpPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), bg[RandomInt(bg.size()) + 1]); // Desenha um background aleatório para o container, só para visualização
 		endif
 
 		foreach control in (this._controls)
