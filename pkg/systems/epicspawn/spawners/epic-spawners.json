@@ -1,0 +1,70 @@
+{
+  "spawners": [
+    {
+      "spawner_id": "1",
+      "spawner_name": "Orc Camp North",
+      "description": "Northern orc encampment near Britain",
+      "location": {
+        "x": 1234,
+        "y": 5678,
+        "z": 0,
+        "realm": "britannia"
+      },
+      "spawn_area": {
+        "x1": 1200,
+        "y1": 5650,
+        "x2": 1250,
+        "y2": 5700
+      },
+      "level1": {
+        "mobs": "orc orcbomber orcscout",
+        "amount": 5
+      },
+      "level2": {
+        "mobs": "orcwarrior orccaptain",
+        "amount": 3
+      },
+      "level3": {
+        "mobs": "orclord",
+        "amount": 1
+      },
+      "respawn": {
+        "min_minutes": 60,
+        "max_minutes": 120
+      }
+    },
+    {
+      "spawner_id": "2",
+      "spawner_name": "Skeleton Graveyard",
+      "description": "Undead spawn in graveyard",
+      "location": {
+        "x": 2464,
+        "y": 2960,
+        "z": 0,
+        "realm": "britannia"
+      },
+      "spawn_area": {
+        "x1": 2464,
+        "y1": 2960,
+        "x2": 2511,
+        "y2": 3008
+      },
+      "level1": {
+        "mobs": "skeleton1 zombie",
+        "amount": 8
+      },
+      "level2": {
+        "mobs": "skeletonknight zombiemage",
+        "amount": 4
+      },
+      "level3": {
+        "mobs": "lich",
+        "amount": 2
+      },
+      "respawn": {
+        "min_minutes": 30,
+        "max_minutes": 60
+      }
+    }
+  ]
+}
