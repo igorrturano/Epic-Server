@@ -1,8 +1,12 @@
 use os;
 use math;
+use util;
 
 include "client";
 include "include/epicConstants";
+include "include/say";
+include ":charactercreation:habilidades";
+include "include/packets";
 include ":combat:Controller/DamageController_legacy";
 
 function playAltarAnimations(who, item)
@@ -319,11 +323,11 @@ function ConsumeItemArcaneCharges(item, quantidade, consumeAll := false)
 
 	if (elementalWeapon != error)
 		var typeColor;
-		if (elementalWeapon.type == DMG_FIRE)
+		if (elementalWeapon.type == "Fire")
 			typeColor := COLOR_ELEMENTAL_FIRE_LIGHT;
-		elseif (elementalWeapon.type == DMG_COLD)
+		elseif (elementalWeapon.type == "Cold")
 			typeColor := COLOR_ELEMENTAL_ICE_LIGHT;
-		elseif (elementalWeapon.type == DMG_ENERGY)
+		elseif (elementalWeapon.type == "Energy")
 			typeColor := COLOR_ELEMENTAL_ENERGY_LIGHT;
 		endif
 
@@ -371,6 +375,14 @@ function LogOffElementalWeapon(who)
 			ConsumeItemArcaneCharges(item, 0, true);
 		endif
 	endforeach
+endfunction
+
+function ApplyDamageHabElementalWeapon(attacker, defender, damageDice, elementalType , divisor)
+	var dmgBonus := RandomDiceRoll(damageDice);
+	var totalDamage := CalculateDamage(defender, elementalType, dmgBonus);
+	totalDamage := CInt(Floor(totalDamage / divisor)); // Não tinha cargas suficiente, entao diminui a eficência do dano.
+	DisplayDamage(defender, totalDamage, attacker);
+	ApplyRawDamage(defender, totalDamage);
 endfunction
 
 function ApplyChargesCalculation(weapon, dmg, chargesAmount)
