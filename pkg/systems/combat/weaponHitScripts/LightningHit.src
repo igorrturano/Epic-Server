@@ -16,7 +16,7 @@ program HitScript(params)
 
 	// Makes the defender emit static-electricity.
 	// PlayMovingEffectXYZHued(attacker, defender, FX_ENERGY, 5, 1, 1, RAIO, 0);
-	PlayObjectCenteredEffectEx(defender, FX_ENERGY, 7, 16, RAIO);
+	PlayObjectCenteredEffectEx(defender, FX_ENERGY, 7, 16, COLOR_ELEMENTAL_ENERGY);
 
 	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x-1, defender.y, defender.z+15, FX_ENERGY, 5, 25);
 	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x+1, defender.y, defender.z+15, FX_ENERGY, 5, 25);

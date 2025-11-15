@@ -1,7 +1,8 @@
 use os;
 
 include ":debug:Controller/DebugController";
-include ":combat:combatFX";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program SpecialAttack_DownwardCut(combatInfo)
 	var attacker := combatInfo.attacker;

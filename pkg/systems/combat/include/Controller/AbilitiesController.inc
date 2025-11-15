@@ -25,6 +25,7 @@ include ":combat:Model/CombatAbility";
 // include ":message:Model/Message";
 include ":charactercreation:resists";
 include ":blood:blood";
+include "include/epicCombatUtils";
 // include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum class HAB_STATUS
@@ -67,13 +68,13 @@ function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	endif
 
 	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
-	var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
-	if ( elemental != error )
-		If(elemental.cargas >= 1)
-			var retorno := ConsumeArcaneCharges(attacker,1);
-			ApplyDamageHabElementalWeapon( attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
-		endif
-	endif
+	// var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
+	// if (elemental != error)
+	// 	If(elemental.cargas >= 1)
+	// 		var retorno := ConsumeArcaneCharges(attacker,1);
+	// 		ApplyDamageHabElementalWeapon(attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
+	// 	endif
+	// endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no hit.");
 
@@ -556,7 +557,8 @@ function TryToExecuteHab_Charge(byRef attackInfo)
 		endif
 		attackInfo.SetDamage(dmg);
 
-		if (hasAntiMountedWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()))
+		// TODO: Refatorar essa checagem sem codesmell
+		if (":combat:weaponHitScripts/AntiMountedHit" in attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().HitScripts)
 			attackInfo.GetAttacker().GetObjRef().SetProp("#ForcedTarget", attackInfo.GetAttacker().GetSerial());
 
 			var resisted := CheckResist(attackInfo.GetAttacker().GetObjRef(), FORTITUDE, RESIST_MEDIUM);

@@ -1,6 +1,7 @@
 use os;
 
-include ":combat:combatFX";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program WhirlwindAttack(combatInfo)
 	var attacker := combatInfo.attacker;
