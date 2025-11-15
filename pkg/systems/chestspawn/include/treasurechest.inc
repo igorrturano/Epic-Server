@@ -8,6 +8,7 @@ include "include/client";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":destroyable:include/destroyItem";
+include ":DiscordWebhook:outbound";
 
 // ========================================
 // CONSTANTS - Sem hardcoding espalhado
@@ -368,23 +369,33 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         chest := 0;
         checker := 0;
         var tries := 0;
-        
+
         while(checker == 0)
+            // Give up after 30 tries to avoid CPU overload
+            if (tries >= 30)
+                // Send single Discord notification instead of spamming all GMs
+                var message := "**CHESTSPAWN ERRO** -> Chestspawner nao conseguiu encontrar local valido apos 30 tentativas. " +
+                               "Localizacao: X=" + x + " Y=" + y + " Z=" + z + " Realm=" + realm +
+                               " | Level=" + lvl + " Loot=" + lootname;
+                PresetDiscordMessage(message, "Default");
+                break; // Exit the position-finding loop - give up on this chest
+            endif
+
             newx := cint(x + RandomInt(rng) - RandomInt(rng));
             newy := cint(y + RandomInt(rng) - RandomInt(rng));
             newz := GetWorldHeight(x, y, realm);
-            
+
             if (z > newz+5)
                 newz := z;
             elseif(z < newz-5)
                 newz := z;
             endif
-            
+
             if(len(ListItemsNearLocation(newx, newy, newz, 0, realm)) == 0)
                 // Get random chest type from config
                 var chest_type := GetRandomChestType();
                 var chestStruct := GetChestInfo(chest_type);
-                
+
                 // Fallback to hardcoded if config fails
                 if (chestStruct.errortext)
                     chestStruct := struct;
@@ -397,12 +408,13 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                         5: chestStruct.+gfx := 3708; chestStruct.+maxHp := DEFAULT_MAXHP_METAL; chestStruct.+material := DEFAULT_MATERIAL_METAL;
                     endcase
                 endif
-                
+
                 chest := CreateItemAtLocation(newx, newy, newz, chestStruct.graphic, 1, realm);
                 if(chest)
                     checker := 1;
                     chest.movable := 0;
-                    
+                    chest.locked := 1;
+
                     // Configurações do baú
                     SetObjProperty(chest, "IsTreasureChest", 1);
                     SetObjProperty(chest, "CreatedOn", ReadGameClock());
@@ -410,39 +422,28 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                     SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
                     SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
                     SetObjProperty(chest, "level", lvl);
-                    
+
                     if (GetObjProperty(chest, "link"))
                         SetObjProperty(chest, "IsSpawned", 1);
                     else
                         SetObjProperty(chest, "IsPlayerCreated", 1);
                     endif
-                    
-                    chest.locked := 1;
-                    chest.movable := 0;
 
                     // Add traps using centralized function
                     AddRandomTraps(chest, lvl);
 
                     Loot_Generate(chest, lootname);
                 else
-                    checker := 0;
                     tries := tries + 1;
                 endif
+            else
+                // Location occupied, increment tries counter
+                tries := tries + 1;
             endif
-            
-            if (tries > 30)
-                var players := EnumerateOnlineCharacters();
-                foreach player in players
-                    if (player.cmdlevel > 2)
-                        SendSysMessageEx(player, "Chestspawner em x " + x + " y " + y + " z " + z + " esta consumindo muito a CPU, e sera destruido", SSM_FAIL);
-                        DestroyItem(chest);
-                        sleepms(20);
-                    endif
-                endforeach
-            endif
+
             sleep(1);
         endwhile
-        
+
         if(chest)
             arraychest.append(chest);
             total := total + 1;
