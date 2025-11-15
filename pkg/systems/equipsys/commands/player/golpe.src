@@ -14,17 +14,19 @@ program cmd_golpe(who)
 endprogram
 
 function ChoosePosture(who)
-	var eventHandled, buttonSlash, buttonPiercing, buttonBlunt, selectedOption;
+	var eventHandled;
 	
-	var gump := Gump(who.GetObjRef(), "Postura de Combate", 225, 115);
-	var container := ContainerGridLayout("Container", 15, 40, 195, 35, 1, 3);
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 250, 125);
 	var imgSelector := ImageGump("Selector", 0, 0, 30062);
-	selectedOption := ImageGump("SelectedButton", 13, 23, 1004).SetColor(COLOR_RED);
-	buttonSlash := Button("SlashDamage", 13, 23, 1004, 1004);
-	buttonPiercing := Button("PiercingDamage", 13, 23, 1008, 1008);
-	buttonBlunt := Button("BluntDamage", 13, 23, 1009, 1009);
+	var selectedOption := ImageGump("SelectedButton", 0, 23, 1004).SetColor(COLOR_RED);
+	var buttonSlash := Button("SlashDamage", 0, 23, 1004, 1004);
+	var buttonPiercing := Button("PiercingDamage", 0, 23, 1008, 1008);
+	var buttonBlunt := Button("BluntDamage", 0, 23, 1009, 1009);
 
 	while (true)
+		var container := ContainerGridLayout("Container", 25, 75, 220, 100, 1, 3);
+		container.SetVisible();
+
 		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 			container.AddControl(imgSelector, 1, 1);
 			selectedOption.SetUnpressedImage(buttonSlash.GetUnpressedImage())

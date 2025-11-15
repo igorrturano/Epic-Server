@@ -128,7 +128,6 @@ class Gump(IGump)
 			foreach containerControl in (control.GetControls())
 				this.AddControl(containerControl);
 			endforeach
-			// return; // Container não precisa de ID próprio, só os controles internos
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINERGRIDLAYOUT) // ContainerGridLayout é ainda pior, precisa pegar os controles internos de cada célula
 			foreach row in (control.GetControls()) // Cada linha do grid é um array de containers
 				foreach container in (row) // Cada container pode ter múltiplos controles
@@ -137,7 +136,6 @@ class Gump(IGump)
 					endforeach
 				endforeach
 			endforeach
-			// return; // ContainerGridLayout não precisa de ID próprio, só os controles internos
 		elseif (control.GetType() == GUMP_CONTROL::NONE)
 			return error { errortext := "Control type is NONE!" };
 		else
@@ -196,7 +194,7 @@ class Gump(IGump)
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTBOX + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTBOX][gumpResult[0]-GUMP_ID_REFERENCE::TEXTBOX]);
 		else
-			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
+			eventHandled := EventHandler(error{errortext := "Unknown control type!"});
 		endif
 
 		this._UpdateInputValues();
