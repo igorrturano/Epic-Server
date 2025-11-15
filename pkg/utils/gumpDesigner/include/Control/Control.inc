@@ -8,6 +8,8 @@ class Control()
 
 	var _x := 0;
 	var _y := 0;
+	var _xOffset := 0;
+	var _yOffset := 0;
 
 	function Control(this, type, name, x, y, gumpId := 0)
 		this._gumpId := gumpId;
@@ -16,6 +18,8 @@ class Control()
 
 		this._x := x;
 		this._y := y;
+		this._xOffset := 0;
+		this._yOffset := 0;
 	endfunction
 
 	function GetGumpId(this)
@@ -40,6 +44,14 @@ class Control()
 
 	function GetY(this)
 		return this._y;
+	endfunction
+
+	function GetXOffset(this)
+		return this._xOffset;
+	endfunction
+
+	function GetYOffset(this)
+		return this._yOffset;
 	endfunction
 
 	function SetGumpId(this, gumpId)
@@ -69,6 +81,16 @@ class Control()
 
 	function SetY(this, y)
 		this._y := y;
+		return this;
+	endfunction
+
+	function SetXOffset(this, xOffset)
+		this._xOffset := xOffset;
+		return this;
+	endfunction
+
+	function SetYOffset(this, yOffset)
+		this._yOffset := yOffset;
 		return this;
 	endfunction
 
