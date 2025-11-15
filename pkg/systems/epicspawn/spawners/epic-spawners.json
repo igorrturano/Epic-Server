@@ -1,69 +1,55 @@
 {
   "spawners": [
     {
-      "spawner_id": "1",
-      "spawner_name": "Orc Camp North",
-      "description": "Northern orc encampment near Britain",
+      "spawner_id": "maze_outer",
+      "spawner_name": "Thrain's Maze - Outer Passages",
+      "description": "Lost souls and scavengers in the outer maze",
       "location": {
-        "x": 1234,
-        "y": 5678,
-        "z": 0,
-        "realm": "britannia"
+        "realm": "britannia_alt"
       },
       "spawn_area": {
-        "x1": 1200,
-        "y1": 5650,
-        "x2": 1250,
-        "y2": 5700
+        "x1": 939,
+        "y1": 1041,
+        "x2": 1058,
+        "y2": 1110
       },
       "level1": {
-        "mobs": "orc orcbomber orcscout",
-        "amount": 5
+        "mobs": "skeleton2 skeletonarcher zombie floatingskull Headless giantrat giantbat RatMan",
+        "amount": 25
       },
       "level2": {
-        "mobs": "orcwarrior orccaptain",
-        "amount": 3
-      },
-      "level3": {
-        "mobs": "orclord",
-        "amount": 1
+        "mobs": "halberd sword axe",
+        "amount": 6
       },
       "respawn": {
-        "min_minutes": 60,
-        "max_minutes": 120
+        "min_minutes": 20,
+        "max_minutes": 40
       }
     },
     {
-      "spawner_id": "2",
-      "spawner_name": "Skeleton Graveyard",
-      "description": "Undead spawn in graveyard",
+      "spawner_id": "maze_inner",
+      "spawner_name": "Thrain's Maze - Inner Sanctum Approaches",
+      "description": "Stronger undead and animated guardians near the vault",
       "location": {
-        "x": 2464,
-        "y": 2960,
-        "z": 0,
-        "realm": "britannia"
+        "realm": "britannia_alt"
       },
       "spawn_area": {
-        "x1": 2464,
-        "y1": 2960,
-        "x2": 2511,
-        "y2": 3008
+        "x1": 939,
+        "y1": 1118,
+        "x2": 1057,
+        "y2": 1157
       },
       "level1": {
-        "mobs": "skeleton1 zombie",
-        "amount": 8
+        "mobs": "skeleton3 Spectre ghost GiantSpider RatMan2 RatMan3",
+        "amount": 16
       },
       "level2": {
-        "mobs": "skeletonknight zombiemage",
-        "amount": 4
-      },
-      "level3": {
-        "mobs": "lich",
-        "amount": 2
+        "mobs": "minotauro Spectre DreadGiantSpider ",
+        "amount": 6
       },
       "respawn": {
         "min_minutes": 30,
-        "max_minutes": 60
+        "max_minutes": 50
       }
     }
   ]
