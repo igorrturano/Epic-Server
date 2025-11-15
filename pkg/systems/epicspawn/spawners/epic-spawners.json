@@ -5,6 +5,9 @@
       "spawner_name": "Thrain's Maze - Outer Passages",
       "description": "Lost souls and scavengers in the outer maze",
       "location": {
+        "x": 997,
+        "y": 1036,
+        "z": 2,
         "realm": "britannia_alt"
       },
       "spawn_area": {
@@ -15,11 +18,11 @@
       },
       "level1": {
         "mobs": "skeleton2 skeletonarcher zombie floatingskull Headless giantrat giantbat RatMan",
-        "amount": 25
+        "amount": 12
       },
       "level2": {
-        "mobs": "halberd sword axe",
-        "amount": 6
+        "mobs": "halberd sword",
+        "amount": 4
       },
       "respawn": {
         "min_minutes": 20,
@@ -31,6 +34,9 @@
       "spawner_name": "Thrain's Maze - Inner Sanctum Approaches",
       "description": "Stronger undead and animated guardians near the vault",
       "location": {
+        "x": 994,
+        "y": 1163,
+        "z": 1,
         "realm": "britannia_alt"
       },
       "spawn_area": {
@@ -41,10 +47,10 @@
       },
       "level1": {
         "mobs": "skeleton3 Spectre ghost GiantSpider RatMan2 RatMan3",
-        "amount": 16
+        "amount": 10
       },
       "level2": {
-        "mobs": "minotauro Spectre DreadGiantSpider ",
+        "mobs": "sword skeleton3 Spectre DreadGiantSpider",
         "amount": 6
       },
       "respawn": {
