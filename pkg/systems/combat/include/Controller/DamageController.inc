@@ -41,11 +41,12 @@ endfunction
 function CalculateAttackerDamage(byRef attackInfo)
 	var damageDice;
 
-	if (attackInfo.GetAttacker().IsNPC())
+	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
 		damageDice := attackInfo.GetAttacker().GetNPCDamage();
 	else
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
+			// print ($"Dano da arma principal: {damageDice.ToString()}");
 		elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
 		endif
@@ -60,6 +61,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 		damageDice.RollPoisonDamage(),
 		damageDice.RollEnergyDamage()
 	));
+	// print ($"Dano bruto calculado: {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)

@@ -4,6 +4,7 @@ include "EquipWrapper";
 include "IWeaponWrapper";
 include ":equipsys:Controller/WeaponController";
 
+include ":combat:Model/DamageTier";
 include ":combat:Model/DamageDice";
 include ":diceroll:model/Dice";
 
@@ -37,21 +38,22 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
 		this._criticalChanceTier := this._template.EpicCriticalChance;
-		this._mainDamageTier := !this._template.EpicMainDamage ? DamageDice() : DamageDice(
-			Dice(SplitWords(this._template.EpicMainDamage)[1]),
-			Dice(SplitWords(this._template.EpicMainDamage)[2]),
-			Dice(SplitWords(this._template.EpicMainDamage)[3])
+		this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
+			SplitWords(this._template.EpicMainDamage)[1],
+			SplitWords(this._template.EpicMainDamage)[2],
+			SplitWords(this._template.EpicMainDamage)[3]
 		);
-		this._offDamageTier := !this._template.EpicOffDamage ? DamageDice() : DamageDice(
-			Dice(SplitWords(this._template.EpicOffDamage)[1]),
-			Dice(SplitWords(this._template.EpicOffDamage)[2]),
-			Dice(SplitWords(this._template.EpicOffDamage)[3])
+		this._offDamageTier := !this._template.EpicOffDamage ? DamageTier() : DamageTier(
+			SplitWords(this._template.EpicOffDamage)[1],
+			SplitWords(this._template.EpicOffDamage)[2],
+			SplitWords(this._template.EpicOffDamage)[3]
 		);
 		this._mainDamage := DamageDice(
 			Dice(GetDamageByTier(this._mainDamageTier.GetSlashDamage())),
 			Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
 			Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
 		);
+		print ($"Dano da arma principal: {this._mainDamage.ToString()}");
 		this._offDamage := DamageDice(
 			Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
 			Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
@@ -134,6 +136,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function SetMainDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
+		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
+			return error{errortext := "Parameters must be of type DamageDice!"};
+		endif
 		this._mainDamage.SetSlashDamage(slash);
 		this._mainDamage.SetPiercingDamage(piercing);
 		this._mainDamage.SetBluntDamage(blunt);
@@ -143,6 +148,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function SetOffDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
+		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
+			return error{errortext := "Parameters must be of type DamageDice!"};
+		endif
 		this._offDamage.SetSlashDamage(slash);
 		this._offDamage.SetPiercingDamage(piercing);
 		this._offDamage.SetBluntDamage(blunt);

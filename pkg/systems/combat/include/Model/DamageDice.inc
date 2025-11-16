@@ -12,7 +12,7 @@ class DamageDice(IDamageDice)
 	var _poison; // Dice class
 	var _energy; // Dice class
 
-	function DamageDice(this, slash := DAMAGE_NONE, piercing := DAMAGE_NONE, blunt := DAMAGE_NONE, fire := DAMAGE_NONE, cold := DAMAGE_NONE, poison := DAMAGE_NONE, energy := DAMAGE_NONE)
+	function DamageDice(this, slash := false, piercing := false, blunt := false, fire := false, cold := false, poison := false, energy := false)
 		this.SetSlashDamage(slash);
 		this.SetPiercingDamage(piercing);
 		this.SetBluntDamage(blunt);
