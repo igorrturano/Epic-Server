@@ -63,9 +63,12 @@ endfunction
 function SetNewPosture(who, newPosture)
 	if (newPosture == DAMAGE_TYPE::SLASH ||
 		newPosture == DAMAGE_TYPE::PIERCING ||
-		newPosture == DAMAGE_TYPE::BLUNT
-		)
-		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
-		Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
+		newPosture == DAMAGE_TYPE::BLUNT)
+		if (who.GetEquipBySlot(WEAPON).GetCategory == BOW)
+			Message("Arcos não podem mudar postura de combate.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
+		else
+			who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+			Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
+		endif
 	endif
 endfunction
