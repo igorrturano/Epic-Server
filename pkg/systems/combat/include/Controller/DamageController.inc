@@ -85,64 +85,26 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
-	var damage := attackInfo.GetDamage();
 	var armorsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 	armorsInBodyRegion := OrderEquipsByAttackDirection(armorsInBodyRegion, attackInfo.GetDirection());
-	print($"Armors in body region ({attackInfo.GetBodyRegion()}): {armorsInBodyRegion.size()} -> {armorsInBodyRegion}");
 
 	foreach equip in (armorsInBodyRegion)
 		var armorResist := equip.GetResists();
-		damage.DecreaseSlashBaseDamage(armorResist.GetSlashResist());
-		damage.DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
-		damage.DecreaseBluntBaseDamage(armorResist.GetBluntResist());
-		damage.DecreaseFireBaseDamage(armorResist.GetFireResist());
-		damage.DecreaseColdBaseDamage(armorResist.GetColdResist());
-		damage.DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
-		damage.DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+		attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
+		attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
+		attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
+		attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
+		attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
+		attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
+		attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {damage.ToString()}");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {damage.ToString()}");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
 	endforeach
 
-	// if (damage.GetSlashBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::SLASH)} garantido em 1!");
-	// 	damage.SetSlashBaseDamage(1);
-	// endif
-
-	// if (damage.GetPiercingBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::PIERCING)} garantido em 1!");
-	// 	damage.SetPiercingBaseDamage(1);
-	// endif
-
-	// if (damage.GetBluntBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::BLUNT)} garantido em 1!");
-	// 	damage.SetBluntBaseDamage(1);
-	// endif
-
-	// if (damage.GetFireBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::FIRE)} garantido em 1!");
-	// 	damage.SetFireBaseDamage(1);
-	// endif
-
-	// if (damage.GetColdBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::COLD)} garantido em 1!");
-	// 	damage.SetColdBaseDamage(1);
-	// endif
-
-	// if (damage.GetPoisonBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::POISON)} garantido em 1!");
-	// 	damage.SetPoisonBaseDamage(1);
-	// endif
-
-	// if (damage.GetEnergyBaseDamage() < 1)
-	// 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano mínimo do tipo {Upper(DAMAGE_TYPE::ENERGY)} garantido em 1!");
-	// 	damage.SetEnergyBaseDamage(1);
-	// endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {damage.ToString()}");
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {damage.ToString()}");
-	attackInfo.SetDamage(damage);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
@@ -189,6 +151,8 @@ function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATT
 			endif
 		endforeach
 	endforeach
+
+	return orderedEquips;
 endfunction
 
 function CheckCriticalHit(byRef attackInfo)

@@ -29,22 +29,15 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			this._graphic := this._template.graphic;
 			this._color := this._template.color;
 			
-			if (this._prop)
-				this._name := this._prop.Name;
-				this._weight := this._prop.Weight;
-				this._maxHP := this._prop.MaxHP;
-			else
-				this._name := item.name;
-				this._weight := item.weight;
-				this._maxHP := item.maxHP;
-			endif
+			this._name := this._prop.Name ?: item.name;
+			this._weight := this._prop.Weight ?: item.weight;
+			this._maxHP := this._prop.MaxHP ?: item.maxHP;
 			
 		else // Caso seja apenas um template
 			this._template := cfgFile.SetElementName(item).GetElementValue();
 			this._objType := error{"errortext" := "This item is just a template!"};
 			this._prop := error{"errortext" := "This item is just a template!"};
 
-			this._name := this._template.desc;
 			this._weight := this._template.weight;
 			this._maxHP := this._template.maxHP;
 			this._graphic := this._template.graphic;

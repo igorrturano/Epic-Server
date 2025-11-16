@@ -81,7 +81,7 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 
-	if (!CheckFacing(attackInfo.GetAttacker(), attackInfo.GetDefender()))
+	if (!CheckFacing(attackInfo))
 		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
@@ -294,19 +294,28 @@ function arcane_shooting(byRef attackInfo)
 	return 1;
 endfunction
 
-function CheckFacing(attacker, defender)
+function CheckFacing(byRef attackInfo)
 	var retval := 1;
 
-	if (!IsFacing(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y))
-		if (attacker.IsNPC())
-			TurnObjectToward(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y);
+	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y))
+		if (attackInfo.GetAttacker().IsNPC())
+			TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
 		else
-			if (IsBehind(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y) && !(getcooldown(attacker, "deathdance")))
-				Message("Você está de costas para o inimigo!", FONTCOLOR_ERROR).SendSys(attacker);
+			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y) && !(getcooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
+				Message("Você está de costas para o inimigo!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
 				retval := 0;
 			endif
 		endif
 	endif
+
+	var attackDirection;
+	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetPosition().x, attackInfo.GetAttacker().GetPosition().y))
+		attackDirection := ATTACK_DIRECTION::BACK;
+	else
+		attackDirection := ATTACK_DIRECTION::FRONT;
+	endif
+	attackInfo.SetDirection(attackDirection);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Direção do golpe: {attackInfo.GetDirection()}");
 
 	return retval;
 endfunction
