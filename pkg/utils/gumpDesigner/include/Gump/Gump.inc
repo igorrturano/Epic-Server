@@ -126,13 +126,13 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINER) // Container precisa pegar os controles internos e adicionar aqui no gump
 			foreach containerControl in (control.GetControls())
-				this.AddControl(containerControl);
+				this.AddControl(containerControl); // Adiciona os controles encapsulados ao gump
 			endforeach
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINERGRIDLAYOUT) // ContainerGridLayout é ainda pior, precisa pegar os controles internos de cada célula
 			foreach row in (control.GetControls()) // Cada linha do grid é um array de containers
 				foreach container in (row) // Cada container pode ter múltiplos controles
 					foreach containerControl in (container.GetControls())
-						this.AddControl(containerControl);
+						this.AddControl(containerControl); // Adiciona os controles encapsulados ao gump
 					endforeach
 				endforeach
 			endforeach
@@ -209,6 +209,13 @@ class Gump(IGump)
 	function Dispose(this)
 		this._gump := 0;
 		this._gumpResult := 0;
+		print("controles aqui: " + this._controls);
+		foreach controlGroup in (this._controls)
+			foreach control in (controlGroup)
+				print("Disposed Control[gump]: " + control.ToString());
+				control.Dispose();
+			endforeach
+		endforeach
 		this._controls := dictionary{};
 	endfunction
 
