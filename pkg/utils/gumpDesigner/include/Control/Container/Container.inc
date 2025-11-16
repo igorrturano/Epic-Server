@@ -102,6 +102,16 @@ class Container(Control)
 		endforeach
 	endfunction
 
+	function Dispose(this)
+		print("Disposing Container: " + this.ToString());
+		print("Disposing its Controls: " + this._controls);
+		foreach control in (this._controls)
+			print("Disposed Control: " + control.ToString());
+			control.Dispose();
+		endforeach
+		this._controls := array{};
+	endfunction
+
 	function ToString(this)
 		return "Container (name=" + this.GetName()
 			+ ", x=" + CStr(this.GetX())

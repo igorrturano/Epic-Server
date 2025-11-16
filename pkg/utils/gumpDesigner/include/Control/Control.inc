@@ -106,6 +106,11 @@ class Control()
 			&& this._name == other.GetName();
 	endfunction
 
+	function Dispose(this)
+		// Implementa descarte no objeto filho, se necessário
+		print("Sou objeto que não precisa de descarte: " + this.ToString());
+	endfunction
+
 	function ToString(this)
 		return "Control(gumpId=" + this.GetGumpId()
 			+ ", name=" + this.GetName()

@@ -16,7 +16,9 @@ endprogram
 function ChoosePosture(who)
 	var eventHandled;
 	
-	var gump := Gump(who.GetObjRef(), "Postura de Combate", 250, 125);
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 260, 175);
+	var container := ContainerGridLayout("Container", 25, 75, 220, 90, 1, 3);
+	container.SetVisible();
 	var imgSelector := ImageGump("Selector", 0, 0, 30062);
 	var selectedOption := ImageGump("SelectedButton", 0, 23, 1004).SetColor(COLOR_RED);
 	var buttonSlash := Button("SlashDamage", 0, 23, 1004, 1004);
@@ -24,9 +26,6 @@ function ChoosePosture(who)
 	var buttonBlunt := Button("BluntDamage", 0, 23, 1009, 1009);
 
 	while (true)
-		var container := ContainerGridLayout("Container", 25, 75, 220, 100, 1, 3);
-		container.SetVisible();
-
 		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 			container.AddControl(imgSelector, 1, 1);
 			selectedOption.SetUnpressedImage(buttonSlash.GetUnpressedImage())
