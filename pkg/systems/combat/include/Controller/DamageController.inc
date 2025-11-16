@@ -156,20 +156,25 @@ function CalculateDefenderResist(byRef attackInfo)
 	var armorsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 	armorsInBodyRegion := OrderEquipsByAttackDirection(armorsInBodyRegion, attackInfo.GetDirection());
 
-	foreach equip in (armorsInBodyRegion)
-		var armorResist := equip.GetResists();
-		attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
-		attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
-		attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
-		attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
-		attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
-		attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
-		attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
-	endforeach
+	if (armorsInBodyRegion == {})
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida.");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida.");
+	else
+		foreach equip in (armorsInBodyRegion)
+			var armorResist := equip.GetResists();
+			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
+			attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
+			attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
+			attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
+			attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
+			attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
+			attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
+		endforeach
+	endif
 
 	// TODO: Colocar um debug informando quanto foi reduzido por cada tipo de dano
 
