@@ -53,7 +53,6 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
 			Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
 		);
-		print ($"Dano da arma principal: {this._mainDamage.ToString()}");
 		this._offDamage := DamageDice(
 			Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
 			Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),

@@ -21,9 +21,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		Super(mobRef);
 
 		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
-			this._race := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
-			this._culture := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
-			this._religion := this.objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
+			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
+			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
+			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
 		else
 			var err := error{errortext := "Param is not a mobRef or does not exist!"};
 			this._objRef := err;
