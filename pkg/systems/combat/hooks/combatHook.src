@@ -25,14 +25,16 @@ endprogram
 
 exported function Attack(attacker, defender)
 	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
-	attackInfo.SetAttackerWeapon(attacker.GetEquipBySlot(WEAPON))
-			  .SetDefenderWeapon(defender.GetEquipBySlot(WEAPON));
 
 	if (!CanAttack(attackInfo))	return 1; endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "ATAQUE INICIADO!");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
+
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Postura adotada no golpe: {attackInfo.GetAttackType()}");
+
 	TryToAttack(attackInfo);
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
@@ -132,7 +134,6 @@ function TryToAttack(byRef attackInfo)
 
 	if (attackInfo.Succeeded())
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
-		// SkillChecks(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(EQUIP_SLOT::WEAPON).GetObjRef(), 1); // TODO: Checar apenas quando executar o dano de fato...
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			ExecuteCombatAbilitiesOnHit(attackInfo);
@@ -174,9 +175,9 @@ function DoAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-		Run_Script(":combat:attackHitScript", attackInfo);
+		Run_Script(":combat:mainHitScript", attackInfo);
 	else // Se for ataque da segunda arma, executa async com delay
-		Start_Script(":combat:attackHitScript", attackInfo);
+		Start_Script(":combat:mainHitScript", attackInfo);
 	endif
 endfunction
 

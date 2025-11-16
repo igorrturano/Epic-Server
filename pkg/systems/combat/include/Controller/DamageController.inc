@@ -316,11 +316,11 @@ function CheckPoison(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().IsNPC()) // Se for NPC, checa pela skill dele
-		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetNPCTemplateCfg(), "Poisoning");
+		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetNPCTemplate(), "Poisoning");
 		if (poisonChance > 0)
 			if (RandomInt(100) < poisonChance)
-				var poisonName := GetConfigString(attackInfo.GetAttacker().GetNPCTemplateCfg(), "PoisonType");
-				var level := Cint(GetConfigInt(attackInfo.GetAttacker().GetNPCTemplateCfg(), "PoisonLevel"));
+				var poisonName := GetConfigString(attackInfo.GetAttacker().GetNPCTemplate(), "PoisonType");
+				var level := Cint(GetConfigInt(attackInfo.GetAttacker().GetNPCTemplate(), "PoisonLevel"));
 
 				if (!level)
 					level := 1;

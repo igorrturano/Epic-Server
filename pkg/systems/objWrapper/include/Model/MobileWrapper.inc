@@ -153,11 +153,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
-	function GetNPCTemplate(this)
+	function GetNPCTemplateName(this)
 		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
-	function GetNPCTemplateCfg(this)
+	function GetNPCTemplate(this)
 		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
 	endfunction
 

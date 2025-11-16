@@ -197,7 +197,7 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetAttackType(this, attackType)
+	function SetAttackType(this, attackType) // attackType: enum DAMAGE_TYPE
 		this._attackType := attackType;
 
 		return this;
@@ -279,14 +279,14 @@ class AttackInfo(IAttackInfo)
 	function RollHitChance(this)
 		if (!this._hitChance) return error{errortext := "Hit chance not set!"}; endif
 		
-		this._hitChanceResult := Dice("1d" + this._hitChance).Roll();
+		this._hitChanceResult := Dice("1d" + this._hitChance).Roll().GetResult();
 		return this;
 	endfunction
 
 	function RollParryChance(this)
 		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
 		
-		this._parryChanceResult := Dice("1d" + this._parryChance).Roll();
+		this._parryChanceResult := Dice("1d" + this._parryChance).Roll().GetResult();
 		return this;
 	endfunction
 

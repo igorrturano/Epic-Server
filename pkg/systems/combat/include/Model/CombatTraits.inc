@@ -38,4 +38,8 @@ class CombatTraits()
 		this._posture := dataStruct.posture;
 		return this;
 	endfunction
+
+	function ToString(this)
+		return "CombatTraits: Posture=" + this._posture;
+	endfunction
 endclass
