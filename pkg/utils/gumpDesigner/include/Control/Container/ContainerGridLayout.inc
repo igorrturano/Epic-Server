@@ -30,12 +30,13 @@ class ContainerGridLayout(Container)
 		// this._isVisible := false; // Desativa pra não sobrepor ao dos containers filhos
 		foreach row in (this._controls)
 			foreach container in (row)
-				if (this._isVisible) container.SetVisible(); endif // O container interno deve ter a mesma visibilidade que o grid
+				container.SetVisible(this._isVisible); // O container interno deve ter a mesma visibilidade que o grid
 				container.SelfCreate(gump);
+				sleepms(2);
 			endforeach
 		endforeach
 
-		Super::SelfCreate(this, gump);
+		// Super::SelfCreate(this, gump);
 	endfunction
 
 	function Dispose(this)
