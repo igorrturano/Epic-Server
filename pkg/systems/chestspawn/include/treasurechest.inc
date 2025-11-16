@@ -373,6 +373,8 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         while(checker == 0)
             // Give up after 30 tries to avoid CPU overload
             if (tries >= 30)
+                // Give up, send message to discord and finish operation
+                checker := 1;
                 // Send single Discord notification instead of spamming all GMs
                 var message := "**CHESTSPAWN ERRO** -> Chestspawner nao conseguiu encontrar local valido apos 30 tentativas. " +
                                "Localizacao: X=" + x + " Y=" + y + " Z=" + z + " Realm=" + realm +
