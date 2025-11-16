@@ -23,31 +23,31 @@ class DamageDice(IDamageDice)
 	endfunction
 
 	function GetSlashDamage(this)
-		return this._slash;
+		return this._slash ?: error{errortext := "Slash is not a valid Dice!"};
 	endfunction
 
 	function GetPiercingDamage(this)
-		return this._piercing;
+		return this._piercing ?: error{errortext := "Piercing is not a valid Dice!"};
 	endfunction
 
 	function GetBluntDamage(this)
-		return this._blunt;
+		return this._blunt ?: error{errortext := "Blunt is not a valid Dice!"};
 	endfunction
 
 	function GetFireDamage(this)
-		return this._fire;
+		return this._fire ?: error{errortext := "Fire is not a valid Dice!"};
 	endfunction
 
 	function GetColdDamage(this)
-		return this._cold;
+		return this._cold ?: error{errortext := "Cold is not a valid Dice!"};
 	endfunction
 
 	function GetPoisonDamage(this)
-		return this._poison;
+		return this._poison ?: error{errortext := "Poison is not a valid Dice!"};
 	endfunction
 
 	function GetEnergyDamage(this)
-		return this._energy;
+		return this._energy ?: error{errortext := "Energy is not a valid Dice!"};
 	endfunction
 
 	function SetSlashDamage(this, dice)
@@ -125,62 +125,6 @@ class DamageDice(IDamageDice)
 		this._energy := dice;
 
 		return this;
-	endfunction
-
-	function RollSlashDamage(this)
-		if (!this._slash)
-			return error{errortext := "Slash damage not set!"};
-		endif
-		
-		return this._slash.Roll();
-	endfunction
-
-	function RollPiercingDamage(this)
-		if (!this._piercing)
-			return error{errortext := "Piercing damage not set!"};
-		endif
-		
-		return this._piercing.Roll();
-	endfunction
-
-	function RollBluntDamage(this)
-		if (!this._blunt)
-			return error{errortext := "Blunt damage not set!"};
-		endif
-		
-		return this._blunt.Roll();
-	endfunction
-
-	function RollFireDamage(this)
-		if (!this._fire)
-			return error{errortext := "Fire damage not set!"};
-		endif
-		
-		return this._fire.Roll();
-	endfunction
-
-	function RollColdDamage(this)
-		if (!this._cold)
-			return error{errortext := "Cold damage not set!"};
-		endif
-		
-		return this._cold.Roll();
-	endfunction
-
-	function RollPoisonDamage(this)
-		if (!this._poison)
-			return error{errortext := "Poison damage not set!"};
-		endif
-		
-		return this._poison.Roll();
-	endfunction
-
-	function RollEnergyDamage(this)
-		if (!this._energy)
-			return error{errortext := "Energy damage not set!"};
-		endif
-		
-		return this._energy.Roll();
 	endfunction
 
 	function ToString(this)
