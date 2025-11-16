@@ -49,11 +49,14 @@ class AttackInfo(IAttackInfo)
 		this._damage := Damage();
 		this._damageHand := DAMAGE_HAND::MAINHAND;
 		this._hitChance := error{errortext := "Hit chance not set yet!"};
-		this._hitChancePenalty := 0;
+		this._hitChancePenalty := error{errortext := "Hit chance penalty not set yet!"};
 		this._hitChanceResult := error{errortext := "Hit chance not rolled yet!"};
 		this._parryChance := error{errortext := "Parry chance not set yet!"};
-		this._parryChancePenalty := 0;
+		this._parryChancePenalty := error{errortext := "Parry chance penalty not set yet!"};
 		this._parryChanceResult := error{errortext := "Parry chance not rolled yet!"};
+		this._criticalHitChance := error{errortext := "Critical hit chance not set yet!"};
+		this._criticalHitChancePenalty := error{errortext := "Critical hit chance penalty not set yet!"};
+		this._criticalHitChanceResult := error{errortext := "Critical hit chance not rolled yet!"};
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -313,7 +316,29 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function ToString(this)
-		// TODO: Implementar uma representação em string do AttackInfo
+		return $"Detalhes do AttackInfo: " +
+			$"Momento: {this._moment}, " +
+			$"Atacante: {this._attacker}, " +
+			$"Defensor: {this._defender}, " +
+			$"Região do Corpo: {this._bodyRegion}, " +
+			$"Direção: {this._direction}, " +
+			$"Dano: {this._damage}, " +
+			$"Mão do Dano: {this._damageHand}, " +
+			$"Tipo de Ataque: {this._attackType}, " +
+			$"Ref. Item Munição: {this._ammo.itemRef}, " +
+			$"Quantidade Munição: {this._ammo.amount}, " +
+			$"Chance de Acerto: {this._hitChance}, " +
+			$"Penalidade Chance de Acerto: {this._hitChancePenalty}, " +
+			$"Resultado Chance de Acerto: {this._hitChanceResult}, " +
+			$"Chance de Acerto Crítico: {this._criticalHitChance}, " +
+			$"Penalidade Chance de Acerto Crítico: {this._criticalHitChancePenalty}, " +
+			$"Resultado Chance de Acerto Crítico: {this._criticalHitChanceResult}, " +
+			$"Equipamento de Aparar: {this._parryEquip}, " +
+			$"Chance de Aparar: {this._parryChance}, " +
+			$"Penalidade Chance de Aparar: {this._parryChancePenalty}, " +
+			$"Resultado Chance de Aparar: {this._parryChanceResult}, " +
+			$"Habilidades do Atacante: {this._attackerAbilities}, " +
+			$"Habilidades do Defensor: {this._defenderAbilities}";
 	endfunction
 endclass
 
