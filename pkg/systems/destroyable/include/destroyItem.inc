@@ -63,6 +63,12 @@ function ComportamentoWarMode(quem, itemFonte)
 		return 0;
 	endif
 
+	if (targ == quem.weapon)
+		MoveItemToContainer(targ, quem.backpack);
+		Message("Você desequipa sua arma.").SetColor(SSM_INFO).SendSys(quem);
+		return 0;
+	endif
+
 	if ( !targ.item )
 		SendSysMessage(quem, "Você não pode destruir isso.");
 		return 0;
@@ -407,6 +413,11 @@ endfunction
 function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
 	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
+
+	if(!resistenciaFabricacao)
+		var efeito := InterpretaMaterialEfeitos(CARACTERISTICA_FABRICACAO_RESISTENCIA,materialId);
+		resistenciaFabricacao := efeito.valorPrincipal;
+	endif
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
 	if(propRes)
@@ -948,6 +959,12 @@ endfunction
  */
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
+		
+		if (GetObjProperty(alvo, "PropStealable"))
+			SendSysMessageEx(quem, "Este item é um artifact roubável e não pode ser configurado como destrutível.", SSM_FAIL);
+			return 0;
+		endif
+		
 		var material := configRecursos[cfgselecao.material];
 
 		if(cfgselecao.durabTotal)

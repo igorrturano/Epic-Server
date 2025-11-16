@@ -3,6 +3,8 @@ use uo;
 const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
 const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
 
+const CRAFTING_ESTACAO_SUPERFICIE := "superficie";
+
 enum CULTURA
     AIGLANA := "Aiglana",
     HAROLOTH := "Har'oloth",
@@ -309,5 +311,7 @@ enum ANIMATIONS_ID
     EPIC_FX_BLUE_ENERGY_SPHERE := 0xE1A3,
     EPIC_FX_ENERGY_GLOBES := 0xE1AE,
     EPIC_FX_WATER_WALL_EXPLOSION := 0xCBBB,
-    EPIC_FX_ARMADILHA_DE_URSO := 0xCA79
+    EPIC_FX_ARMADILHA_DE_URSO := 0xCA79,
+    EPIC_FX_PETRIFY := 0xDBD7,
+    EPIC_FX_DEPETRIFY := 0xDBCA
 endenum

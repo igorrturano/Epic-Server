@@ -594,11 +594,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	endforeach
 
-	if(IsMateriaisNaoEncontrados(receita, contagem))
-		SendSysMessageEX(quem,"Você não tem todos materiais necessários.",SSM_FAIL);
-		return false;
-	endif
-
 	return true;
 endfunction
 
@@ -631,10 +626,25 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 
 		foreach ingrediente in (receita.materiaisNecessarios)
 			Sleepms(2);
+			
 			var ingredienteInfo := SplitWords(ingrediente);
+			var materialNecessarioObjType :=  cint(ingredienteInfo[1]);
+			var qtdNecessaria := cint(ingredienteInfo[2]);
 
-			if(isMaterialNecessario(item, ingredienteInfo[1]))
-				var qtdNecessaria := cint(ingredienteInfo[2]);
+			if(!contagemFinal.exists(materialNecessarioObjType))
+				var materialDesc := itemsConfig[materialNecessarioObjType];
+				InsereInformacoesContagem(
+											contagemFinal, 
+											struct {
+														name := materialDesc.desc, 
+														objtype := materialNecessarioObjType
+													},
+											qtdNecessaria,
+											receita.lote);
+			endif
+
+			if(isMaterialNecessario(item, materialNecessarioObjType))
+				
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											qtdNecessaria,
@@ -672,21 +682,26 @@ endfunction
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
-		var informacoesContagem := struct;
-		informacoesContagem.+quantidadeEncontrada := 0;
-		informacoesContagem.+itemRefArray := array;
-		informacoesContagem.+nomeItem := item.name;
-		informacoesContagem.+tierDesc := tierDesc;
-		informacoesContagem.+lote := lote;
-		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
-		if(encaixe)
-			informacoesContagem.+encaixe := encaixe;
-		endif
-		catalogoContagem.insert(item.objtype, informacoesContagem);
+		InsereInformacoesContagem(catalogoContagem, item, quantidadeNecessaria, lote, encaixe, tierDesc);
 	endif
 
 	catalogoContagem[item.objtype].quantidadeEncontrada += item.amount;
 	catalogoContagem[item.objtype].itemRefArray.append(item);
+endfunction
+
+function InsereInformacoesContagem(byref catalogoContagem, item, quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
+	var informacoesContagem := struct;
+	informacoesContagem.+quantidadeEncontrada := 0;
+	informacoesContagem.+itemRefArray := array;
+	informacoesContagem.+nomeItem := item.name;
+	informacoesContagem.+tierDesc := tierDesc;
+	informacoesContagem.+lote := lote;
+	informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
+	if(encaixe)
+		informacoesContagem.+encaixe := encaixe;
+	endif
+	catalogoContagem.insert(item.objtype, informacoesContagem);
+	return informacoesContagem;
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
@@ -1143,35 +1158,6 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	return propriedades; 
 endfunction
 
-function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
-	var retornoEfeitos := struct;
-	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
-	var efeitosMaterialString := efeitosMaterial[caracteristica];
-	var subEfeitosMaterial;
-	var valorEfeitoMaterial := 0;
-
-	if(efeitosMaterialString)
-		subEfeitosMaterial := SplitWords(efeitosMaterialString);
-		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
-		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
-		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
-		
-		if(subEfeitosMaterial.size() > 1)
-			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-			var subefeitosDict := dictionary{};
-
-			for indice := 1 to subEfeitosMaterial.size()
-				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
-				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
-				Sleepms(2);
-			endfor
-			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
-		endif 
-	endif
-	
-	return retornoEfeitos;
-endfunction
-
 function IsAlvoValido(quem, alvo)
 
 	if( !Accessible(quem,alvo))
@@ -1189,11 +1175,8 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 	var menuFile    := profissaoConfig[profissao].MenuFile;
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
-	var propCraft := GetObjProperty(quem, "Craft");
-	if( TypeOfInt(propCraft) == OT_ERROR)
-		propCraft := MontaCraftProp(profissaoConfig);
-		SetObjProperty(quem, "Craft", propCraft);
-	endif
+	var propCraft := MontaCraftProp(profissaoConfig,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
