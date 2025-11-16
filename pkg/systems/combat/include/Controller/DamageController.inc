@@ -39,6 +39,73 @@ function CalculateCombatDamage(byRef attackInfo)
 endfunction
 
 function CalculateAttackerDamage(byRef attackInfo)
+	attackInfo.SetDamage(Damage());
+	CalculateStatusDamage(attackInfo);
+	CalculateSkillDamage(attackInfo);
+	CalculateWeaponDamage(attackInfo);
+	
+	var damage := attackInfo.GetDamage();
+	damage.SetSlashBaseDamage(damage.GetSlashRawDamage());
+	damage.SetPiercingBaseDamage(damage.GetPiercingRawDamage());
+	damage.SetBluntBaseDamage(damage.GetBluntRawDamage());
+	damage.SetFireBaseDamage(damage.GetFireRawDamage());
+	damage.SetColdBaseDamage(damage.GetColdRawDamage());
+	damage.SetPoisonBaseDamage(damage.GetPoisonRawDamage());
+	damage.SetEnergyBaseDamage(damage.GetEnergyRawDamage());
+	attackInfo.SetDamage(damage);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser calculado para defesa: {attackInfo.GetDamage().ToString()}");
+endfunction
+
+function CalculateStatusDamage(byRef attackInfo)
+	var damage := attackInfo.GetDamage();
+	var damageMod := 0;
+
+	var stat := "";
+	var statMod := 0;
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
+		stat := DEXTERITY;
+		statMod := CInt(attackInfo.GetAttacker().GetDex());
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == THROWING)
+		stat := $"{STRENGTH} + {DEXTERITY}";
+		statMod := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
+	else
+		stat := STRENGTH;
+		statMod := CInt(attackInfo.GetAttacker().GetStr());
+	endif
+
+	damageMod += CInt(statMod / 10);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(stat)}: {damageMod}");
+	
+	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+		damage.IncreaseSlashRawDamage(damageMod);
+	elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+		damage.IncreasePiercingRawDamage(damageMod);
+	elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+		damage.IncreaseBluntRawDamage(damageMod);
+	endif
+
+	attackInfo.SetDamage(damage);
+endfunction
+
+function CalculateSkillDamage(byRef attackInfo)
+	var damage := attackInfo.GetDamage();
+	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(TACTICS)}: {damageMod}");
+	
+	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+		damage.IncreaseSlashRawDamage(damageMod);
+	elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+		damage.IncreasePiercingRawDamage(damageMod);
+	elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+		damage.IncreaseBluntRawDamage(damageMod);
+	endif
+	
+	attackInfo.SetDamage(damage);
+endfunction
+
+function CalculateWeaponDamage(byRef attackInfo)
 	var damageDice;
 
 	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
@@ -51,6 +118,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 		endif
 	endif
 
+	// TODO: Melhorar esse debug, dá pra fazer mais enxuto com .ToString()
 	if (damageDice.GetSlashDamage())
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString()}");
 	endif
@@ -73,15 +141,15 @@ function CalculateAttackerDamage(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString()}");
 	endif
 
-	attackInfo.SetDamage(Damage(
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.GetSlashDamage().Roll().GetResult() : 0,
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.GetPiercingDamage().Roll().GetResult() : 0,
-		attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.GetBluntDamage().Roll().GetResult() : 0,
-		damageDice.GetFireDamage().Roll().GetResult(),
-		damageDice.GetColdDamage().Roll().GetResult(),
-		damageDice.GetPoisonDamage().Roll().GetResult(),
-		damageDice.RollEnergyDamage().Roll().GetResult()
-	));
+	var damage := attackInfo.GetDamage();
+	damage.IncreaseSlashRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.GetSlashDamage().Roll().GetResult() : 0);
+	damage.IncreasePiercingRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.GetPiercingDamage().Roll().GetResult() : 0);
+	damage.IncreaseBluntRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.GetBluntDamage().Roll().GetResult() : 0);
+	damage.IncreaseFireRawDamage(damageDice.GetFireDamage().Roll().GetResult());
+	damage.IncreaseColdRawDamage(damageDice.GetColdDamage().Roll().GetResult());
+	damage.IncreasePoisonRawDamage(damageDice.GetPoisonDamage().Roll().GetResult());
+	damage.IncreaseEnergyRawDamage(damageDice.RollEnergyDamage().Roll().GetResult());
+	attackInfo.SetDamage(damage);
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -102,6 +170,8 @@ function CalculateDefenderResist(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
 	endforeach
+
+	// TODO: Colocar um debug informando quanto foi reduzido por cada tipo de dano
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
 	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");

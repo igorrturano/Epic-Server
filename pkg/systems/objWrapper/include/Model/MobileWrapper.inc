@@ -211,15 +211,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		this._skills[skillName].base := AP_GetTrueSkill(this._objRef, skillName);
-
-		return this._skills[skillName].base;
+		return AP_GetTrueSkill(this._objRef, skillName);
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		this._skills[skillName].mod := AP_GetSkillMod(this._objRef, skillName);
-
-		return this._skills[skillName].mod;
+		return AP_GetSkillMod(this._objRef, skillName);
 	endfunction
 
 	function GetAbility(this, abilityName)
@@ -238,14 +234,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		this._skills[skillName].base := AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
-
+		AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
-		this._skills[skillName].mod := AP_SetSkillMod(this._objRef, skillName, CDbl(value));
-
+		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
 

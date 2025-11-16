@@ -176,6 +176,41 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function IncreaseSlashRawDamage(this, value)
+		this._slashRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePiercingRawDamage(this, value)
+		this._piercingRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseBluntRawDamage(this, value)
+		this._bluntRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseFireRawDamage(this, value)
+		this._fireRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseColdRawDamage(this, value)
+		this._coldRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePoisonRawDamage(this, value)
+		this._poisonRaw += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseEnergyRawDamage(this, value)
+		this._energyRaw += CInt(value);
+		return this;
+	endfunction
+
 	function IncreaseSlashBaseDamage(this, value)
 		this._slashBase += CInt(value);
 		return this;
@@ -208,6 +243,41 @@ class Damage(IDamage)
 
 	function IncreaseEnergyBaseDamage(this, value)
 		this._energyBase += CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseSlashRawDamage(this, value)
+		this._slashRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePiercingRawDamage(this, value)
+		this._piercingRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseBluntRawDamage(this, value)
+		this._bluntRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseFireRawDamage(this, value)
+		this._fireRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseColdRawDamage(this, value)
+		this._coldRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePoisonRawDamage(this, value)
+		this._poisonRaw -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseEnergyRawDamage(this, value)
+		this._energyRaw -= CInt(value);
 		return this;
 	endfunction
 
