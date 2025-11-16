@@ -251,14 +251,14 @@ class Damage(IDamage)
 	endfunction
 
 	function ToString(this)
-		return "Damage " + (this._criticalDamage ? "(CRITICAL)" : "") + ":" +
-			$"Slash: Raw={this._slashRaw}, Base={this._slashBase}" +
-			$"Piercing: Raw={this._piercingRaw}, Base={this._piercingBase}" +
-			$"Blunt: Raw={this._bluntRaw}, Base={this._bluntBase}" +
-			$"Fire: Raw={this._fireRaw}, Base={this._fireBase}" +
-			$"Cold: Raw={this._coldRaw}, Base={this._coldBase}" +
-			$"Poison: Raw={this._poisonRaw}, Base={this._poisonBase}" +
-			$"Energy: Raw={this._energyRaw}, Base={this._energyBase}";
+		return "Damage" + (this._criticalDamage ? " (CRITICAL)" : "") + ": " +
+			$"Slash: [Raw={this._slashRaw}, Base={this._slashBase}], " +
+			$"Piercing: [Raw={this._piercingRaw}, Base={this._piercingBase}], " +
+			$"Blunt: [Raw={this._bluntRaw}, Base={this._bluntBase}], " +
+			$"Fire: [Raw={this._fireRaw}, Base={this._fireBase}], " +
+			$"Cold: [Raw={this._coldRaw}, Base={this._coldBase}], " +
+			$"Poison: [Raw={this._poisonRaw}, Base={this._poisonBase}], " +
+			$"Energy: [Raw={this._energyRaw}, Base={this._energyBase}]";
 	endfunction
 endclass
 
