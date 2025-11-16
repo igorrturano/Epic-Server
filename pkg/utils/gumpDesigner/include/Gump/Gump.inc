@@ -209,10 +209,8 @@ class Gump(IGump)
 	function Dispose(this)
 		this._gump := 0;
 		this._gumpResult := 0;
-		print("controles aqui: " + this._controls);
 		foreach controlGroup in (this._controls)
 			foreach control in (controlGroup)
-				print("Disposed Control[gump]: " + control.ToString());
 				control.Dispose();
 			endforeach
 		endforeach
@@ -221,7 +219,22 @@ class Gump(IGump)
 
 	// Private functions
 	function _CreateControls(this)
+		// Containers precisam ser criados antes, para evitar sobreposição
+		foreach control in (this._controls[GUMP_CONTROL::CONTAINER])
+			control.SelfCreate(this._gump);
+		endforeach; 
+
+		foreach control in (this._controls[GUMP_CONTROL::CONTAINERGRIDLAYOUT])
+			control.SelfCreate(this._gump);
+		endforeach
+		
 		foreach controlGroup in (this._controls)
+			if (_controlGroup_iter == GUMP_CONTROL::CONTAINER ||
+				_controlGroup_iter == GUMP_CONTROL::CONTAINERGRIDLAYOUT
+				)
+				continue; // Containers foram criados antes
+			endif
+
 			foreach control in (controlGroup)
 				control.SelfCreate(this._gump);
 			endforeach

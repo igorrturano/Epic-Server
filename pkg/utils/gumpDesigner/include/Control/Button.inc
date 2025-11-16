@@ -51,7 +51,6 @@ class Button(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		print(this.GetXOffset());
 		GFAddButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction

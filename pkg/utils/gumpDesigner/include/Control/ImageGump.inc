@@ -22,7 +22,7 @@ class ImageGump(Control)
 		return this._color;
 	endfunction
 
-	function SetImageId(this, imageId)
+	function SetImage(this, imageId)
 		this._imageId := imageId;
 		return this;
 	endfunction
