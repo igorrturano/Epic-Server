@@ -26,11 +26,14 @@ endprogram
 exported function Attack(attacker, defender)
 	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
 
-	if (!CanAttack(attackInfo))	return 1; endif
-
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "ATAQUE INICIADO!");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
+
+	if (!CanAttack(attackInfo))
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***NÃO PODE ATACAR***");
+		return 1;
+	endif
 
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Postura adotada no golpe: {attackInfo.GetAttackType()}");
@@ -315,7 +318,7 @@ function CheckFacing(byRef attackInfo)
 		attackDirection := ATTACK_DIRECTION::FRONT;
 	endif
 	attackInfo.SetDirection(attackDirection);
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Direção do golpe: {attackInfo.GetDirection()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Direção do golpe: {(attackInfo.GetDirection() == ATTACK_DIRECTION::FRONT ? "Frente" : "Costas")}");
 
 	return retval;
 endfunction
