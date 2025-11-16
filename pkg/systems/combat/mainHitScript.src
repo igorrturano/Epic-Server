@@ -17,7 +17,6 @@ include ":IO:CFGFile";
 include ":tn:cooldown";
 
 program MainHitScript(attackInfo)
-	print ("Executing MainHitScript...");
 	// Define attacker como o originador do ataque
 	SetScriptController(attackInfo.GetAttacker().GetObjRef());
 
