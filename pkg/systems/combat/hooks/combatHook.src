@@ -120,7 +120,7 @@ function TryToAttack(byRef attackInfo)
 	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-		Start_Script(":combat:hooks/opportunityAttack", { attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef() });
+		Start_Script(":combat:hooks/opportunityAttack", array{attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()});
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
@@ -176,7 +176,7 @@ function DoAttack(byRef attackInfo)
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Run_Script(":combat:mainHitScript", attackInfo);
-	else // Se for ataque da segunda arma, executa async com delay
+	else // Se for ataque da segunda arma, executa async por causa do delay
 		Start_Script(":combat:mainHitScript", attackInfo);
 	endif
 endfunction
@@ -293,32 +293,6 @@ function arcane_shooting(byRef attackInfo)
 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), 0xf42, 10, 10, 0, ammo_color);
 	return 1;
 endfunction
-
-// function ArqueiroNPC(attackInfo)
-// 	var anim := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim;
-	
-// 	if (!anim)
-// 		anim := 0xF79;
-// 	endif
-
-// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), anim, 10, 10);
-
-// 	return 1;
-// endfunction
-
-// function ThrowerNPC(attackInfo)
-// 	var throwItem := attackInfo.GetAttacker().GetObjRef().GetProp("throwItem");
-// 	if (!throwItem)
-// 		return 0;
-// 	endif
-
-// 	PerformAction(attackInfo.GetAttacker().GetObjRef(), 4);
-
-// 	// Play the throw effect
-// 	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), throwItem, 10, 10);
-
-// 	return 1;
-// endfunction
 
 function CheckFacing(attacker, defender)
 	var retval := 1;

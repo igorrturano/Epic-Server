@@ -37,7 +37,6 @@ function PlayAttackSFX(byRef attackInfo)
 	endif
 
 	attackInfo.GetAttacker().PlaySound(weaponSound);
-	print("Played weapon sound: " + weaponSound + " for attacker: " + attackInfo.GetAttacker().GetName());
 	if (attackerSound) attackInfo.GetAttacker().PlaySound(attackerSound); endif
 	if (defenderSound) attackInfo.GetDefender().PlaySound(defenderSound); endif
 endfunction
@@ -137,7 +136,6 @@ function GetWeaponSFX(byRef attackInfo)
 		critical := array{}
 	};
 
-	print("Getting weapon SFX for weapon: " + attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetName() + ", attackType: " + attackInfo.GetAttackType() + ", isCriticalAttack: " + attackInfo.GetDamage().IsCritical() + ", acerto: " + attackInfo.Succeeded());
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON) == error)
 		weaponSFX.hit := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
 		weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
@@ -171,7 +169,6 @@ function GetWeaponSFX(byRef attackInfo)
 			endif
 		else
 			if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
-				print("arma de corte 1h");
 				weaponSFX.hit := array{ 0x23C, 0x23D };
 				weaponSFX.miss := array{ 0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B };
 				weaponSFX.critical := array{};
