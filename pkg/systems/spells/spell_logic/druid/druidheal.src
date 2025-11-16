@@ -14,8 +14,8 @@ include ":brainai:npcUtil";
 
 program SpellScript(params)
 	var who := params[1];
+	var targ := params[2];
 
-	var targ := Target(who);
 	if (who.npctemplate)
 		targ := who;
 	endif
@@ -58,7 +58,37 @@ program SpellScript(params)
 		"remaining_ticks" := hot_ticks
 	};
 
-	start_script(":spells:spell_logic/druid/druidheal_hot", hot_params);
+	HealOverTime(hot_params);
 
 	return 1;
 endprogram
+
+function HealOverTime(params)
+	var targ := params.target;
+	var heal_amount := params.heal_amount;
+	var remaining_ticks := params.remaining_ticks;
+
+	if (!targ || !targ.connected)
+		return;
+	endif
+
+	// Apply heal over time every 5 seconds
+	while (remaining_ticks > 0)
+		sleep(5);
+
+		// Check if target is still valid
+		if (!targ || targ.dead || !targ.connected)
+			return;
+		endif
+
+		// Apply the heal tick
+		HealFLS(targ, heal_amount);
+
+		// Visual and sound feedback
+		PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+
+		remaining_ticks := remaining_ticks - 1;
+	endwhile
+
+	return 1;
+endfunction

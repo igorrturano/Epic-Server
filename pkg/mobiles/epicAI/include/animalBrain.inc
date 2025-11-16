@@ -8,7 +8,7 @@ function AnimalBrain()
     Set_Event_Queue_Size(50);
 
     while (me)
-        ev := os::wait_for_event(1);
+        ev := os::wait_for_event(0);
 
         // Check FORCE dormant FIRST - before anything else
         var current_time := polcore().systime;
@@ -202,34 +202,38 @@ function HandleAnimalLeftArea(opponent)
     // Clear current combat state
     ClearCombatState();
 
-    // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleAnimalCombatEvent(mobile);
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
+    // Check for nearby threats first
+    var threat := CheckNearbyThreats();
+    if (threat)
+        HandleAnimalCombatEvent(threat);
+        return 1;
+    endif
 
-    if (opponent.dead)
+    // Only interact with corpses if this animal actually does something with them
+    if (opponent.dead && me.CanDoWebWrap())
         var corpse := opponent.GetCorpse();
         if (corpse)
-
-            // First, approach the corpse
+            // Approach the corpse, but check for threats while approaching
             while (Distance(me, corpse) > 1)
+                // Check for nearby hostiles before continuing
+                foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+                    if (CanFight(me, mobile))
+                        HandleAnimalCombatEvent(mobile);
+                        return 1;
+                    endif
+                    sleepms(2);
+                endforeach
+
                 RunToward(corpse);
                 sleepms(100);
-                                
+
                 // Break if corpse disappeared or too far
                 if (!corpse || Distance(me, corpse) > 20)
                     return 0;
                 endif
             endwhile
 
-            if (me.CanDoWebWrap())
-                WebWrapCorpse(me);
-            endif
-
+            WebWrapCorpse(me);
         endif
     endif
 

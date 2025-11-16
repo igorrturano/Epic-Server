@@ -22,7 +22,7 @@ function MonsterBrain()
     endif
 
     while (me)
-        ev := os::wait_for_event(1);
+        ev := os::wait_for_event(0);
         
         // Check FORCE dormant FIRST - before anything else
         var current_time := polcore().systime;
@@ -141,14 +141,12 @@ function HandleMonsterLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
-    // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleMonsterCombatEvent(mobile, is_ranged);
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
+    // Check for nearby threats first
+    var threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
+    endif
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
@@ -168,6 +166,13 @@ function HandleMonsterLeftArea(is_ranged)
             endif
             sleepms(100);
         endforeach
+    endif
+
+    // Re-check for threats after looting attempt (in case one appeared while looting)
+    threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
     endif
 
     // If nothing else to do, go idle
@@ -282,6 +287,25 @@ function MonsterIdle(wanders, is_ranged)
         endif
         sleepms(2);
     endforeach
+
+    // If didn't see anyone, try to hear footsteps (no LoS required)
+    var heard_mobile := NPCHearFootsteps(me);
+    if (heard_mobile)
+        // Check if we can see them now (might have moved into view)
+        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+            HandleMonsterCombatEvent(heard_mobile, is_ranged);
+            return;
+        endif
+
+        // Only show alert and investigate if not on cooldown (prevents spam)
+        if (GetCooldown(me, "heard_sound") == 0)
+            Message("*!*").SetColor(500).SendAbove(me);
+            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
+        endif
+
+        // Move toward the sound - NPC will investigate the last known position
+        PursueTarget(heard_mobile);
+    endif
 
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     var anchor := GetObjProperty(me, "anchor");

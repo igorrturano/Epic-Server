@@ -47,7 +47,6 @@ class Message()
 		foreach msg in (this._messages)
 			msg.color := color;
 		endforeach
-
 		return this;
 	endfunction
 	
@@ -136,7 +135,7 @@ class Message()
 			foreach part in (msgSplitted)
 				print("Sending message part...");
 				print("Text: " + part);
-				PrintTextAbove(who, part.textTarget, part.color, part.font);
+				PrintText(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
 			print("Sending async message...");
