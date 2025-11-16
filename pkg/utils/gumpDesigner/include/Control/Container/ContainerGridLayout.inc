@@ -26,8 +26,6 @@ class ContainerGridLayout(Container)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		// var thisIsVisible := this._isVisible; // Salva o estado de visibilidade atual
-		// this._isVisible := false; // Desativa pra não sobrepor ao dos containers filhos
 		foreach row in (this._controls)
 			foreach container in (row)
 				container.SetVisible(this._isVisible); // O container interno deve ter a mesma visibilidade que o grid
@@ -35,22 +33,16 @@ class ContainerGridLayout(Container)
 				sleepms(2);
 			endforeach
 		endforeach
-
-		// Super::SelfCreate(this, gump);
 	endfunction
 
 	function Dispose(this)
-		print("Disposing ContainerGridLayout: " + this.ToString());
-		print("Disposing its Controls: " + this._controls);
 		foreach row in (this._controls)
 			foreach control in (row)
-				print("Disposed Control: " + control.ToString());
 				control.Dispose();
 			endforeach
 		endforeach
 		this._controls := array{};
 		this._AddContainers(); // Recria os containers internos após o descarte
-		print ("Recreated internal containers after dispose: " + this._controls);
 	endfunction
 
 	function _AddContainers(this)

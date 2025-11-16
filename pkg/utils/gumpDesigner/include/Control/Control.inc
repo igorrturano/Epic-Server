@@ -108,7 +108,6 @@ class Control()
 
 	function Dispose(this)
 		// Implementa descarte no objeto filho, se necessário
-		print("Sou objeto que não precisa de descarte: " + this.ToString());
 	endfunction
 
 	function ToString(this)

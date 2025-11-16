@@ -114,17 +114,10 @@ class Container(Control)
 			};
 			GFGumpPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), bg[RandomInt(bg.size()) + 1]); // Desenha um background aleatório para o container, só para visualização
 		endif
-
-		foreach control in (this._controls)
-			control.SelfCreate(gump);
-		endforeach
 	endfunction
 
 	function Dispose(this)
-		print("Disposing Container: " + this.ToString());
-		print("Disposing its Controls: " + this._controls);
 		foreach control in (this._controls)
-			print("Disposed Control: " + control.ToString());
 			control.Dispose();
 		endforeach
 		this._controls := array{};
