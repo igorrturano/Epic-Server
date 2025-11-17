@@ -18,7 +18,8 @@ use cfgfile;
 const MOUNT_OBJTYPE := 0x1F021;
 
 include "include/client";
-
+include "include/epicConstants";
+include ":message:include/model/Message";
 
 /*
  * MP_GetMountsCfgFile()
@@ -180,85 +181,50 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-
-
-	//check do Urso
-	if (npc.graphic == 0xD5 && chardata.povo != "Numajene")
-		SendSysMessage(mobile, "Voce nao pode montar essa criatura.");
-		return 0;
-	endif
-
-	//check do Unicornio
-	if (npc.graphic == 0x7A && chardata.povo != "Numajene")
-		SendSysMessage(mobile, "Voce nao pode montar essa criatura.");
-		return 0;
-	endif
-
-	//Lock dos tigres
-	if (npc.graphic == 0x4e6 || npc.graphic == 0x4e7)
-		return error{"errortext":="Voce nao pode montar essa criatura"};
-	endif
-
 	//check da Tarantula - apenas drows femeas podem montar
 	if (npc.graphic == 0x579)
-		if (chardata.raca != "Drow" || mobile.gender != 1)
+		if (chardata.raca != DROW && mobile.gender != 1)
 			SendSysMessage(mobile, "Apenas drows femeas podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	// Check male drow: 0xA9
+	if (npc.graphic == 0xA9)
+		if (chardata.raca != DROW)
+			Message("Apenas drows podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
 
 	//check do Pavao - apenas elfos podem montar
 	if (npc.graphic == 0x5A0)
-		if (chardata.povo != "Elfo")
-			SendSysMessage(mobile, "Apenas elfos podem montar essa criatura.");
+		if (chardata.raca != ELFO)
+			Message("Apenas elfos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
 
 	//check do War Boar - apenas anoes podem montar
 	if (npc.graphic == 0x5F6)
-		if (chardata.povo != "Anão")
-			SendSysMessage(mobile, "Apenas anoes podem montar essa criatura.");
+		if (chardata.raca != ANAO)
+			Message("Apenas anoes podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
 
 	//check do Hell Hound - apenas orcs podem montar
 	if (npc.graphic == 0x42D)
-		if (chardata.povo != "Orc")
-			SendSysMessage(mobile, "Apenas orcs podem montar essa criatura.");
-			return 0;
-		endif
-	endif
-
-	//check do Cavalo Marrom com Cela - apenas races com cultura Bjorska podem montar
-	if (npc.graphic == 0x80F)
-		if (chardata.cultura != "Björska")
-			SendSysMessage(mobile, "Apenas povos do Björska podem montar essa criatura.");
+		if (chardata.raca != ORC)
+			Message("Apenas orcs podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
 
 	//check do Capybara - apenas polskis podem montar
 	if (npc.graphic == 0x5F7)
-		if (chardata.povo != "Polski")
-			SendSysMessage(mobile, "Apenas polskis podem montar essa criatura.");
-			return 0;
-		endif
-	endif
-
-	//check do Kirin - apenas povos do Leste podem montar
-	if (npc.graphic == 0x84)
-		if (chardata.cultura != "Povos do Leste")
-			SendSysMessage(mobile, "Apenas povos do Leste podem montar esse Kirin.");
-			return 0;
-		endif
-	endif
-
-	//check do Raptalon - apenas Aiglanos podem montar
-	if (npc.graphic == 0x114)
-		if (chardata.cultura != "Aiglana")
-			SendSysMessage(mobile, "Apenas aiglanos podem montar esse Raptalon.");
+		if (chardata.raca != PEQUILHO)
+			Message("Apenas pequilhos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif

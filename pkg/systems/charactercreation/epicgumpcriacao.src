@@ -110,7 +110,7 @@ function racialSelection(who, culture_pic)
 			chardata.raca := ORC;
 			break;
 		elseif (btn_value == 206)
-			chardata.raca := POLSKI;
+			chardata.raca := PEQUILHO;
 			break;
 		elseif (chardata.culture == AIGLANA || chardata.culture == LESTE)
 			SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
@@ -130,9 +130,9 @@ function racialSelection(who, culture_pic)
 		who.graphic := 1832;
 	elseif (who.graphic == 401 && (chardata.raca == ORC))
 		who.graphic := 1833;
-	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1828;
-	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1829;
 	endif
 
