@@ -1,7 +1,7 @@
 include "include/client";
 function makeRace(mobile, race := 0)
    if (!race)
-      var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
+      var races := array{ANAO, ELFO, DROW, ORC, PEQUILHO, HUMANO};
       race := races[RandomInt(races.size()) + 1];
       print("Making race: " + race);
    endif
@@ -11,7 +11,7 @@ function makeRace(mobile, race := 0)
       ELFO:   makeElven(mobile);
       DROW:   makeDrow(mobile);
       ORC:    makeOrc(mobile);
-      POLSKI: makePolski(mobile);
+      PEQUILHO: makePequilho(mobile);
       HUMANO: makeHuman(mobile);
    endcase
 
@@ -277,7 +277,7 @@ function makeOrc(mobile)
    return 1;
 endfunction
 
-function makePolski(mobile)
+function makePequilho(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
       mobile.graphic := 1828;
