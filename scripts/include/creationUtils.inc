@@ -37,11 +37,11 @@ A sociedade élfica é profundamente ligada à natureza e às tradições. Eles 
 Elfos são contemplativos, meditando e refletindo antes de tomar decisões importantes. Essa característica os torna resistentes a mudanças, especialmente aquelas que perturbam a natureza. A religião dos elfos gira em torno de Alora Larethian, deusa da beleza e da magia, cuja presença é celebrada com festas e canções. A bênção de Alora confere aos elfos grande habilidade em magia, facilitando seu uso e tornando-os excelentes magos.
 Os elfos mantêm uma rivalidade histórica com os anões devido à sua aversão à tecnologia. Acreditam que a pureza de suas obras, inspiradas pela natureza, supera qualquer criação tecnológica. Essa rivalidade se reflete em sua atitude reservada e, por vezes, hostil em relação aos avanços tecnológicos e aos estrangeiros.";
 
-const polkineaText := "Os Polski são um povo diverso e tranquilo, com uma estatura média de 90 centímetros e um corpo rechonchudo que varia de 20 a 30 quilogramas. Sua pele bronzeada pode variar de tons mais escuros a mais claros, e traços distintos podem indicar a linhagem familiar. Eles valorizam o conforto e a simplicidade em suas vestimentas e casas, mas têm orgulho de se vestirem bem.
-Os Polski cultivam as terras de Colhesol há centenas de anos, preferindo manter-se à parte dos problemas dos povos maiores. São conhecidos por seu amor pela comida, fumo e bebidas, bem como pela paz e tranquilidade da vida no campo. Suas habilidades em cultivo e culinária são notáveis, e eles desenvolveram um comércio de especiarias e condimentos.
-Divididos em três grupos principais - Pérvalhos, Cascalvas e Encostarvores - os Polski têm laços familiares fortes e um sistema político baseado em decisões comunitárias. São conhecidos por sua capacidade de passar despercebidos e por conquistar a amizade dos outros.
-Os Polski não se preocupam muito com posses materiais e valorizam a hospitalidade e a simplicidade. Seus costumes incluem compartilhar ferramentas e lidar com limites e privacidade de maneira única. São habilidosos em fala e canto, apreciando a arte do improviso.
-Em resumo, os Polski são criaturas simples que valorizam o conforto, a boa comida e a calmaria da vida no campo, além de serem ótimos agricultores e, em alguns casos, aventureiros.";
+const polkineaText := "Os Pequilho são um povo diverso e tranquilo, com uma estatura média de 90 centímetros e um corpo rechonchudo que varia de 20 a 30 quilogramas. Sua pele bronzeada pode variar de tons mais escuros a mais claros, e traços distintos podem indicar a linhagem familiar. Eles valorizam o conforto e a simplicidade em suas vestimentas e casas, mas têm orgulho de se vestirem bem.
+Os Pequilho cultivam as terras de Colhesol há centenas de anos, preferindo manter-se à parte dos problemas dos povos maiores. São conhecidos por seu amor pela comida, fumo e bebidas, bem como pela paz e tranquilidade da vida no campo. Suas habilidades em cultivo e culinária são notáveis, e eles desenvolveram um comércio de especiarias e condimentos.
+Divididos em três grupos principais - Pérvalhos, Cascalvas e Encostarvores - os Pequilho têm laços familiares fortes e um sistema político baseado em decisões comunitárias. São conhecidos por sua capacidade de passar despercebidos e por conquistar a amizade dos outros.
+Os Pequilho não se preocupam muito com posses materiais e valorizam a hospitalidade e a simplicidade. Seus costumes incluem compartilhar ferramentas e lidar com limites e privacidade de maneira única. São habilidosos em fala e canto, apreciando a arte do improviso.
+Em resumo, os Pequilho são criaturas simples que valorizam o conforto, a boa comida e a calmaria da vida no campo, além de serem ótimos agricultores e, em alguns casos, aventureiros.";
 
 const baduranText := "Os Anões são uma raça distintiva, reconhecível por suas longas barbas adornadas e estatura baixa, mas robusta. Com uma cultura profundamente enraizada na forja e na tecnologia, eles habitam regiões montanhosas e possuem uma sociedade organizada, com líderes como o 'Pai' e a 'Mãe'. Sua relação com outras raças é marcada por um misto de hospitalidade e irritabilidade, especialmente com os elfos, com os quais têm uma rivalidade histórica.
 Vestidos com suas melhores armaduras e tecidos, os Anões buscam demonstrar sua destreza e riqueza por meio de suas vestimentas. São inventivos em suas forjas e valorizam o trabalho árduo, considerando a terra como uma arte insuperável. A forja desempenha um papel crucial em sua identidade, transmitindo tradições e ensinamentos aos mais jovens.
@@ -277,7 +277,7 @@ function getRaceByCulturalId(culture_pic)
         ALURIEL_ID:
             races := {ELFO};
         POLKINEA_ID:
-            races := {POLSKI};
+            races := {PEQUILHO};
         GULTHRAK_ID:
             races := {ORC};
         BADURAN_ID:
@@ -285,7 +285,7 @@ function getRaceByCulturalId(culture_pic)
         BJORSKA_ID:
             races := {HUMANO};
         default:
-            races := array{ANAO, DROW, ELFO, HUMANO, ORC, POLSKI};
+            races := array{ANAO, DROW, ELFO, HUMANO, ORC, PEQUILHO};
     endcase
     return races;
 endfunction
@@ -400,7 +400,7 @@ function GetRaceMaximumAge(race)
     case (race)
         ANAO:
             idade_maxima := 150;
-        POLSKI:
+        PEQUILHO:
             idade_maxima := 150;
         ELFO:
             idade_maxima := 225;
@@ -1328,7 +1328,7 @@ function attributeBonusByRaceAndTraits(who)
     elseif (raca == ORC)
         final_str += 5;
         final_int +=5;
-    elseif (raca == POLSKI)
+    elseif (raca == PEQUILHO)
         final_dex += 10;
     endif
 
@@ -2084,8 +2084,8 @@ function GetPaperdollBackground(graphic)
         1831: result := 0xF; // Elfo F
         1832: result := 54596; // Orc M
         1833: result := 54595; // Orc F
-        1834: result := 54534; // Polski M
-        1835: result := 54533; // Polski F
+        1834: result := 54534; // Pequilho M
+        1835: result := 54533; // Pequilho F
     endcase
     return result;
 endfunction

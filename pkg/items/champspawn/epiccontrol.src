@@ -20,7 +20,7 @@ program control(altar)
 			DestroyItem(altar);
 			return 0;
 		endif
-		sleep(10);
+		sleep(60);
 	endwhile
 
 	var globalSpawns := GetGlobalProperty("epicSpawns");

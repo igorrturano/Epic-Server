@@ -18,7 +18,8 @@ use cfgfile;
 const MOUNT_OBJTYPE := 0x1F021;
 
 include "include/client";
-
+include "include/epicConstants";
+include ":message:include/model/Message";
 
 /*
  * MP_GetMountsCfgFile()
@@ -180,29 +181,50 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-
-
-	//check do Urso
-	if (npc.graphic == 0xD5 && chardata.povo != "Numajene")
-		SendSysMessage(mobile, "Voce nao pode montar essa criatura.");
-		return 0;
-	endif
-
-	//check do Unicornio
-	if (npc.graphic == 0x7A && chardata.povo != "Numajene")
-		SendSysMessage(mobile, "Voce nao pode montar essa criatura.");
-		return 0;
-	endif
-
-	//Lock dos tigres
-	if (npc.graphic == 0x4e6 || npc.graphic == 0x4e7)
-		return error{"errortext":="Voce nao pode montar essa criatura"};
-	endif
-
 	//check da Tarantula - apenas drows femeas podem montar
 	if (npc.graphic == 0x579)
-		if (chardata.raca != "Drow" || mobile.gender != 1)
+		if (chardata.raca != DROW && mobile.gender != 1)
 			SendSysMessage(mobile, "Apenas drows femeas podem montar essa criatura.");
+			return 0;
+		endif
+	endif
+
+	// Check male drow: 0xA9
+	if (npc.graphic == 0xA9)
+		if (chardata.raca != DROW)
+			Message("Apenas drows podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
+			return 0;
+		endif
+	endif
+
+	//check do Pavao - apenas elfos podem montar
+	if (npc.graphic == 0x5A0)
+		if (chardata.raca != ELFO)
+			Message("Apenas elfos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
+			return 0;
+		endif
+	endif
+
+	//check do War Boar - apenas anoes podem montar
+	if (npc.graphic == 0x5F6)
+		if (chardata.raca != ANAO)
+			Message("Apenas anoes podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
+			return 0;
+		endif
+	endif
+
+	//check do Hell Hound - apenas orcs podem montar
+	if (npc.graphic == 0x42D)
+		if (chardata.raca != ORC)
+			Message("Apenas orcs podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
+			return 0;
+		endif
+	endif
+
+	//check do Capybara - apenas polskis podem montar
+	if (npc.graphic == 0x5F7)
+		if (chardata.raca != PEQUILHO)
+			Message("Apenas pequilhos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
