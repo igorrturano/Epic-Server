@@ -143,6 +143,91 @@ function MP_GetMountTemplate(mount)
 endfunction
 
 /*
+ * MP_GetMountRestriction(npc)
+ *
+ * Purpose
+ * Returns mount restriction information based on NPC race
+ *
+ * Parameters
+ * npc:		NPC to check restrictions for
+ *
+ * Return value
+ * Returns a struct with restriction info: {race, gender, race_name}
+ * Returns 0 if no restriction
+ *
+ */
+function MP_GetMountRestriction(npc)
+	var cfg := NPC_GetNPCConfig(npc);
+	var npc_race := cfg.NPCRace;
+
+	// Mount restrictions by NPCRace
+	// Format: race (required race), gender (optional: 0=male, 1=female), race_name (display name)
+	case (npc_race)
+		"Cavalo":		// Horses
+			return struct{race := HUMANO, gender := 0, race_name := "humanos"};
+		"Aranha":		// Tarantula
+			return struct{race := DROW, gender := 1, race_name := "drows femeas"};
+		"Besouro":		// Beetle (drow mount)
+			return struct{race := DROW, gender := 0, race_name := "drows"};
+		"Vaela":		// Peacock
+			return struct{race := ELFO, gender := 0, race_name := "elfos"};
+		"Javali":		// War Boar
+			return struct{race := ANAO, gender := 0, race_name := "anoes"};
+		"Cachorro":		// Hell Hound (check if it's the specific graphic)
+			if (npc.graphic == 0x42D)
+				return struct{race := ORC, gender := 0, race_name := "orcs"};
+			endif
+	endcase
+
+	// Fallback to graphic-based checks for mounts without NPCRace in config
+	case (npc.graphic)
+		0x5F7:		// Capybara
+			return struct{race := PEQUILHO, gender := 0, race_name := "pequilhos"};
+	endcase
+
+	return 0; // No restriction
+endfunction
+
+/*
+ * MP_CheckMountRestriction(mobile, npc)
+ *
+ * Purpose
+ * Validates if a mobile can mount a specific NPC based on race/gender restrictions
+ *
+ * Parameters
+ * mobile:	Mobile attempting to mount
+ * npc:		NPC to be mounted
+ *
+ * Return value
+ * Returns 1 if allowed
+ * Returns error struct with errortext if not allowed
+ *
+ */
+function MP_CheckMountRestriction(mobile, npc)
+	var restriction := MP_GetMountRestriction(npc);
+
+	if (!restriction)
+		return 1; // No restriction, allowed
+	endif
+
+	var chardata := GetObjProperty(mobile, "chardata");
+
+	// Check race restriction
+	if (chardata.raca != restriction.race)
+		var msg := "Apenas " + restriction.race_name + " podem montar essa criatura";
+		return error{"errortext" := msg};
+	endif
+
+	// Check gender restriction (if specified)
+	if (restriction.gender > 0 && mobile.gender != restriction.gender)
+		var msg := "Apenas femeas " + restriction.race_name + " podem montar essa criatura";
+		return error{"errortext" := msg};
+	endif
+
+	return 1; // All checks passed
+endfunction
+
+/*
  * MP_Mount(mobile, npc)
  *
  * Purpose
@@ -169,7 +254,6 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-
 	if ( Cint(GetObjProperty(mobile, "#desmontar")) == 1)
 		SendSysMessage(mobile, "Voce nao pode montar.");
 		return 0;
@@ -181,52 +265,11 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-	//check da Tarantula - apenas drows femeas podem montar
-	if (npc.graphic == 0x579)
-		if (chardata.raca != DROW && mobile.gender != 1)
-			SendSysMessage(mobile, "Apenas drows femeas podem montar essa criatura.");
-			return 0;
-		endif
-	endif
-
-	// Check male drow: 0xA9
-	if (npc.graphic == 0xA9)
-		if (chardata.raca != DROW)
-			Message("Apenas drows podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
-			return 0;
-		endif
-	endif
-
-	//check do Pavao - apenas elfos podem montar
-	if (npc.graphic == 0x5A0)
-		if (chardata.raca != ELFO)
-			Message("Apenas elfos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
-			return 0;
-		endif
-	endif
-
-	//check do War Boar - apenas anoes podem montar
-	if (npc.graphic == 0x5F6)
-		if (chardata.raca != ANAO)
-			Message("Apenas anoes podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
-			return 0;
-		endif
-	endif
-
-	//check do Hell Hound - apenas orcs podem montar
-	if (npc.graphic == 0x42D)
-		if (chardata.raca != ORC)
-			Message("Apenas orcs podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
-			return 0;
-		endif
-	endif
-
-	//check do Capybara - apenas polskis podem montar
-	if (npc.graphic == 0x5F7)
-		if (chardata.raca != PEQUILHO)
-			Message("Apenas pequilhos podem montar essa criatura").SetColor(SSM_FAIL).SendSys(mobile);
-			return 0;
-		endif
+	// Check race/gender restrictions using new system
+	var restriction_check := MP_CheckMountRestriction(mobile, npc);
+	if (!restriction_check)
+		Message(restriction_check.errortext).SetColor(SSM_FAIL).SendSys(mobile);
+		return 0;
 	endif
 
 	npc.hidden := 1;
