@@ -22,7 +22,7 @@ enum RACA
     ELFO := "Elfo",
     ORC := "Orc",
     HUMANO :="Humano",
-    POLSKI := "Polski"
+    PEQUILHO := "Pequilho"
 endenum
 
 enum RELIGIAO
