@@ -19,6 +19,7 @@ const MOUNT_OBJTYPE := 0x1F021;
 
 include "include/client";
 include "include/epicConstants";
+include "include/dungeons";
 include ":message:include/model/Message";
 
 /*
@@ -250,18 +251,18 @@ function MP_Mount(mobile, npc)
 	var cfg := ReadConfigFile(":*:npcdesc");
 
 	if (cfg[npctemplate.template].Category != "Mount")
-		SendSysMessage(mobile, "Nao pode montar este animal.");
+		Message("Nao pode montar este animal").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 
 	if ( Cint(GetObjProperty(mobile, "#desmontar")) == 1)
-		SendSysMessage(mobile, "Voce nao pode montar.");
+		Message("Voce nao pode montar").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 
 	//check de polymorph druid
 	if ( Cint(GetObjProperty(mobile, "metamorfosedruida")) == 1)
-		SendSysMessage(mobile, "Voce nao pode montar nessa forma.");
+		Message("Voce nao pode montar nessa forma").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 
@@ -272,8 +273,16 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-	npc.hidden := 1;
+	// Check if mount is allowed in dungeon
+	var coord := struct{x := mobile.x, y := mobile.y, z := mobile.z, realm := mobile.realm};
+	if (InDungeon(coord))
+		if (!IsDungeonApprovedMount(mount_graphic))
+			Message("Você não pode usar essa montaria em masmorras").SetColor(SSM_FAIL).SendSys(mobile);
+			return 0;
+		endif
+	endif
 
+	npc.hidden := 1;
 
 	if ( mount_piece )
 		return error{"errortext":="Mobile is already mounted."};
