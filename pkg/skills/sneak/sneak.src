@@ -16,7 +16,7 @@ program skill_Hide(who)
 	EraseObjProperty(who, "#overridehiding");
 	var orig_x := who.x;
 	var orig_y := who.y;
-	var isPolski := GetObjProperty(who, "chardata").race == POLSKI;
+	var isPequilho := GetObjProperty(who, "chardata").race == PEQUILHO;
 
 	if (who.hidden)
 		Start_Script("stealth", who);
@@ -35,7 +35,7 @@ program skill_Hide(who)
 
 	if (temHabilidade(who, "Camuflagem"))
 		while (1)
-			if (isPolski)
+			if (isPequilho)
 				sleep(2);
 			else
 				sleep(3);
@@ -91,7 +91,7 @@ program skill_Hide(who)
 	else
 
 		while (1)
-			if (isPolski)
+			if (isPequilho)
 				sleep(2);
 			else
 				sleep(3);

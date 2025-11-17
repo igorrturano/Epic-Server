@@ -162,7 +162,7 @@ function open_npc_portal(npc)
 	dest.x := RandomIntMinMax(500, 2000);
 	dest.y := RandomIntMinMax(500, 2000);
 	dest.z := GetWorldHeight(dest.x, dest.y, dest.realm);
-	dest.race := array{ ANAO, DROW, ELFO, ORC, HUMANO, POLSKI };
+	dest.race := array{ ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO };
 
 	tile.SetDestination(dest.x, dest.y, dest.z, dest.realm, dest.race);
 
