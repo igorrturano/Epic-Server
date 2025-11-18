@@ -34,7 +34,7 @@ endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
-	CheckCriticalHit(attackInfo);
+	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction
 
@@ -242,19 +242,18 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 		endforeach
 	endforeach
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Ordem dos equipamentos a serem atingidos: {equipNamesForDebug}");
+	if (equipNamesForDebug.size() > 0)
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Ordem dos equipamentos a serem atingidos: {equipNamesForDebug}");
+	endif
+
 	return orderedEquips;
 endfunction
 
-function CheckCriticalHit(byRef attackInfo)
-	// Testar primeiro sem delay. Se der errado, a gente ativa isso aqui de novo...
-	// if (attackInfo.GetAttacker().GetObjRef().GetProp("critdelay") > ReadGameClock())
-	// 	return false;
-	// endif
-	
-	CalculateCriticalChance(attackInfo);
+function CalculateAttackerCriticalHit(byRef attackInfo)
+	attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
+	attackInfo.RollCriticalHitChance();
 
-	if (attackInfo.IsCriticalHit())
+	if (attackInfo.GetDamage().IsCritical())
 		ApplyCriticalDamage(attackInfo);
 	endif
 
@@ -262,122 +261,161 @@ function CheckCriticalHit(byRef attackInfo)
 endfunction
 
 function CalculateCriticalChance(byRef attackInfo)
+	var chance := 0;
+	var skillUsedForCritical := TACTICS;
+
+	if (attackInfo.GetAttacker().GetProp("#nextcritical"))
+		attackInfo.GetAttacker().EraseProp("#nextcritical");
+		return 100;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
+		Message("Seu critico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Seu corpo evita o crítico", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		return 0;
+	endif
+
+	// TODO: Melhorar esse código para encapsular em gets nos wrappers
+	chance := CInt(
+		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	 // Crítico base da arma
+		CInt(attackInfo.GetAttacker().GetProp("CriticalChance")) +					 // Crítico extra do Char
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) +		 // Crítico extra da Skill
+		CInt(attackInfo.GetAttacker().GetProp("#CriticalChance"))					 // Crítico extra de Habilidade especial do personagem
+	);
+
+	attackInfo.GetAttacker().EraseProp("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque
+
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
+		chance := chance * 2.0;
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
+		Message("Seu alvo desviou do crítico!", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você desviou do crítico e usará isso contra seu oponente!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		attackInfo.GetDefender().SetProp("#nextcritical", true);
+		return 0;
+	endif
+
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::OPORTUNIDADE_CRITICA))
+		Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
+		attackInfo.GetAttacker().GetObjRef().attack_once(attackInfo.GetDefender().GetObjRef());
+	endif
+
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
+		GetCooldown(attackInfo.GetDefender().GetObjRef(), "vitalidadeinabalavel") > 0 ||
+	 	GetCooldown(attackInfo.GetDefender().GetObjRef(), "balance_restored"))
+		Message("Você não leva o crítico").SendSys(attackInfo.GetDefender().GetObjRef());
+		return 0;
+	endif
+
+	return CInt(chance);
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
-	// var weapon_scripts := array{};
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "***DANO CRÍTICO***");
 
-	// var pet_instinto := attacker.GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
-	// var pet_critic := attacker.GetProp("Critic");
-	// var pet_selvagem := attacker.GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
-
-	// var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attacker.npctemplate);
-	// var tamingCfg := CFGFile("taming", "taming").SetElementName(pet_critic);
-	// var weaponCfg := CFGFile("*", "itemdesc").SetElementName(weapon.objtype);
+	// TODO: Refatorar isso daqui, tá MUITO cagado....
+		// Jogar as coisas de pet pra uma função separada
 	
-	// var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
-	// var tem_critico := npcCfg.SetElementName("CriticalHitScripts").GetElementValue(); // Se tem critico no npcdesc definido
+	var weapon_scripts := array{};
 
-	// if (!attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem)
-	// 	if (tem_critico == {})
-	// 		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
-	// 	else
-	// 		weapon_scripts := tem_critico;
-	// 	endif
-	// elseif (pet_instinto == 1 || pet_selvagem == 1)
-	// 	weapon_scripts := tamingCfg.GetElementValue("CriticalHitScripts");
-	// 	Message(pet_txt[1]).SendAbove(attacker);
-	// else
-	// 	weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
-	// endif
-	// // Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
+	var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetNPCTemplate());
+	var tamingCfg := CFGFile("taming", "taming").SetElementName(attackInfo.GetAttacker().GetObjRef().GetProp("Critic"));
+	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
 
-	// var criticoFabricacao := CInt(PegaValorFabricacao(attacker.weapon, CARACTERISTICA_FABRICACAO_CRITICO));
-	// var reducaoCriticoFabricacao := CInt(PegaValorFabricacao(attacker.weapon, CARACTERISTICA_FABRICACAO_REDUCAOCRITICO));
-	// var can_crit := criticoFabricacao > 0 || attacker.npctemplate || weapon == FIST;
+	var pet_instinto := attackInfo.GetAttacker().GetObjRef().GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
+	var pet_selvagem := attackInfo.GetAttacker().GetObjRef().GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
+	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
 
-	// if (weapon_scripts.size() > 0 && can_crit)
-	// 	var multiplicador := 7;
-	// 	reducaoCriticoFabricacao := reducaoCriticoFabricacao == OT_LONG ? reducaoCriticoFabricacao : 0;
-	// 	multiplicador -= (criticoFabricacao - reducaoCriticoFabricacao);
-		
-	// 	var critdelay := RandomIntMinMax(15 * multiplicador, 130 + (15 * multiplicador));
-	// 	if (!GetObjProperty(weapon, "polida"))
-	// 		Message("Sua arma está embotada!").SetColor(SSM_FAIL).SendSys(attacker);
-	// 		critdelay := ReadGameClock() + RandomIntMinMax(240, 450);
-	// 	endif
+	if (pet_instinto || pet_selvagem) // Se for pet
+		weapon_scripts := tamingCfg.GetElementValue("CriticalHitScripts");
+		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
+		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
+	elseif (attackInfo.GetAttacker().IsNPC())
+		weapon_scripts := npcCfg.SetElementName("CriticalHitScripts").GetElementValue();
+	endif
 
-	// 	Message("*CRÍTICO*").SetColor(2118).SendAbove(attacker);
-	// 	SetObjProperty(attacker, "critdelay", ReadGameClock() + critdelay);
+	Message("CRÍTICO", FONTCOLOR_RED).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
+	foreach hitscript in (weapon_scripts)
+		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
+			var script := start_script(
+				hitscript,
+				array{
+					attackInfo.GetAttacker().GetObjRef(),
+					attackInfo.GetDefender().GetObjRef(),
+					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
+					armor.GetObjRef(),
+					attackInfo.GetDamage().GetTotalBaseDamage(),
+					attackInfo.GetDamage().GetTotalRawDamage()
+				}
+			);
+			if (!script || script.errortext)
+				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+			endif
 
-	// 	var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
-	// 	if (GetCooldown(defender, "vitalidadeinabalavel") > 0 || isDwarverDefender)
-	// 		Message("Você ignora o crítico!").SetColor(SSM_INFO).SendSys(defender);
-	// 		Message("O defensor ignorou o crítico!").SetColor(SSM_FAIL).SendSys(attacker);
-	// 		return 1;
-	// 	endif
-	// elseif (!can_crit)
-	// 	// Message("Apenas armas elaboradas causam crítico").SetColor(SSM_FAIL).SendSys(attacker);
-	// 	return 1;
-	// endif
+			SleepMS(2);
+		endforeach
+	endforeach
 
-	// foreach hitscript in weapon_scripts
-	// 	var script := start_script(
-	// 		hitscript,
-	// 		array{ attacker, defender, weapon, armor, basedamage, rawdamage }
-	// 	);
-	// 	if (!script || script.errortext)
-	// 		Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext).SendSys(attacker);
-	// 		Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext).SendSys(defender);
-	// 	endif
-	// endforeach
-
-	// return true;
+	return true;
 endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
 	var slash, piercing, blunt, fire, cold, poison, energy;
-	slash 	 := attackInfo.GetDamage().GetSlashDamage();
-	piercing := attackInfo.GetDamage().GetPierceDamage();
-	blunt 	 := attackInfo.GetDamage().GetBluntDamage();
-	fire 	 := attackInfo.GetDamage().GetFireDamage();
-	cold 	 := attackInfo.GetDamage().GetColdDamage();
-	poison 	 := attackInfo.GetDamage().GetPoisonDamage();
-	energy 	 := attackInfo.GetDamage().GetEnergyDamage();
+	slash 	 := attackInfo.GetDamage().GetSlashBaseDamage();
+	piercing := attackInfo.GetDamage().GetPierceBaseDamage();
+	blunt 	 := attackInfo.GetDamage().GetBluntBaseDamage();
+	fire 	 := attackInfo.GetDamage().GetFireBaseDamage();
+	cold 	 := attackInfo.GetDamage().GetColdBaseDamage();
+	poison 	 := attackInfo.GetDamage().GetPoisonBaseDamage();
+	energy 	 := attackInfo.GetDamage().GetEnergyBaseDamage();
 	
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano aplicado em: {attackInfo.GetDefender().GetName()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{attackInfo.GetDamage().ToString()}");
+
 	if (slash > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Slash: {CInt(slash)}");
 	endif
 
 	if (piercing > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Piercing: {CInt(piercing)}");
 	endif
 
 	if (blunt > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Blunt: {CInt(blunt)}");
 	endif
 
 	if (fire > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Fire: {CInt(fire)}");
 	endif
 
 	if (cold > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Cold: {CInt(cold)}");
 	endif
 
 	if (poison > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Poison: {CInt(poison)}");
 	endif
 
 	if (energy > 0)
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
+		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy), attackInfo.GetAttacker().GetObjRef());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Energy: {CInt(energy)}");
 	endif
 endfunction
 

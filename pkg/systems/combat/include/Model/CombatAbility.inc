@@ -87,6 +87,10 @@ enum class COMBAT_ABILITY
 	EVASAO := "Evasão",
 	REBUKE := "Rebuke",
 	ATAQUE_INFALIVEL := "Ataque Infalível",
+	MUMIFICACAO := "Mumificacao",
+	DESTRUIDOR := "Destruidor",
+	LADRAO_DA_SORTE := "Ladrao da Sorte",
+	OPORTUNIDADE_CRITICA := "Oportunidade Critica",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",

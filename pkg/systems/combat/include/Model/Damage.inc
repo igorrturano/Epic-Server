@@ -171,8 +171,8 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
-	function SetCritical(this)
-		this._criticalDamage := true;
+	function SetCritical(this, isCriticalDamage)
+		this._criticalDamage := isCriticalDamage;
 		return this;
 	endfunction
 
