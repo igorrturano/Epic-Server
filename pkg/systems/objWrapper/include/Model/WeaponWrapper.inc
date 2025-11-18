@@ -115,7 +115,15 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function GetCriticalChance(this)
-		return this._criticalChance;
+		return CInt(this.GetCriticalChanceBase() + this.GetCriticalChanceMod());
+	endfunction
+
+	function GetCriticalChanceBase(this)
+		return CInt(this._criticalChance);
+	endfunction
+
+	function GetCriticalChanceMod(this)
+		return CInt(this._criticalChanceMod);
 	endfunction
 
 	function GetMinRange(this)
