@@ -40,5 +40,35 @@ class IDamage()
 	uninit function SetPoisonBaseDamage(this, value);
 	uninit function SetEnergyBaseDamage(this, value);
 
+	uninit function IncreaseSlashRawDamage(this, value);
+	uninit function IncreasePiercingRawDamage(this, value);
+	uninit function IncreaseBluntRawDamage(this, value);
+	uninit function IncreaseFireRawDamage(this, value);
+	uninit function IncreaseColdRawDamage(this, value);
+	uninit function IncreasePoisonRawDamage(this, value);
+	uninit function IncreaseEnergyRawDamage(this, value);
+	uninit function IncreaseSlashBaseDamage(this, value);
+	uninit function IncreasePiercingBaseDamage(this, value);
+	uninit function IncreaseBluntBaseDamage(this, value);
+	uninit function IncreaseFireBaseDamage(this, value);
+	uninit function IncreaseColdBaseDamage(this, value);
+	uninit function IncreasePoisonBaseDamage(this, value);
+	uninit function IncreaseEnergyBaseDamage(this, value);
+
+	uninit function DecreaseSlashRawDamage(this, value);
+	uninit function DecreasePiercingRawDamage(this, value);
+	uninit function DecreaseBluntRawDamage(this, value);
+	uninit function DecreaseFireRawDamage(this, value);
+	uninit function DecreaseColdRawDamage(this, value);
+	uninit function DecreasePoisonRawDamage(this, value);
+	uninit function DecreaseEnergyRawDamage(this, value);
+	uninit function DecreaseSlashBaseDamage(this, value);
+	uninit function DecreasePiercingBaseDamage(this, value);
+	uninit function DecreaseBluntBaseDamage(this, value);
+	uninit function DecreaseFireBaseDamage(this, value);
+	uninit function DecreaseColdBaseDamage(this, value);
+	uninit function DecreasePoisonBaseDamage(this, value);
+	uninit function DecreaseEnergyBaseDamage(this, value);
+
 	uninit function ToString(this);
 endclass
