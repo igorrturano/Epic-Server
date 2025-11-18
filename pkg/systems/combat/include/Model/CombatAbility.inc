@@ -91,6 +91,7 @@ enum class COMBAT_ABILITY
 	DESTRUIDOR := "Destruidor",
 	LADRAO_DA_SORTE := "Ladrao da Sorte",
 	OPORTUNIDADE_CRITICA := "Oportunidade Critica",
+	DOMINIO_VITAL := "Domínio Vital",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",

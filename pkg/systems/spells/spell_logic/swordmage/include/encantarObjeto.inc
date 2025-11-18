@@ -1,75 +1,68 @@
 use uo;
 
 include "include/client";
-include "include/say";
+include ":objWrapper:Model/WeaponWrapper";
+include ":objWrapper:Model/ArmorWrapper";
+include "include/epicMaterials";
 
 function setBonus(who, item, bonus)
-	var prop; // Vai bugar após o EqupiSys v3.0 - É intencional, pra poder rastrear os outros bugs....
+	if (item.IsA(POLCLASS_ARMOR))
+		item := ArmorWrapper(item);
+	elseif (item.IsA(POLCLASS_WEAPON))
+		item := WeaponWrapper(item);
+	else
+		return;
+	endif
+
 	var material := item.getMaterialID();
 	bonus := CInt(bonus); // POL BUGADO DO CARALHO!!!!!!!!!!
 	
-	if (item.isA(POLCLASS_WEAPON))
-		case (material)
-			0x630d: // Ignium
-				prop.FireDamage := bonus;
-				break;
-			0x6303: // Venetita
-				prop.PoisonDamage := bonus;
-				break;
-			0x6460: // Frigutium
-				prop.ColdDamage := bonus;
-				break;
-			0x630b: // Fulmium
-				prop.EnergyDamage := bonus;
-				break;
-
-			0x6315: // Illyra
-				bonus := bonus * 0.6;
-				prop.FireDamage := bonus;
-				prop.ColdDamage := bonus;
-				prop.PoisonDamage := bonus;
-				prop.EnergyDamage := bonus;
-				break;
-
-			0x6311: // Mithril
-				prop.FireDamage := bonus;
-				prop.ColdDamage := bonus;
-				prop.PoisonDamage := bonus;
-				prop.EnergyDamage := bonus;
-				break;
-		endcase
-	elseif (item.isA(POLCLASS_ARMOR))
-		
-		case (material)
-			0x630d: // Ignium
-				prop.FireResist := bonus;
-				break;
-			0x6303: // Venetita
-				prop.PoisonResist := bonus;
-				break;
-			0x6460: // Frigutium
-				prop.ColdResist := bonus;
-				break;
-			0x630b: // Fulmium
-				prop.EnergyResist := bonus;
-				break;
-			0xef20: // Escamoso
-				prop.PoisonResist := bonus;
-				break;
-			0xed29: // Draconiano
-				prop.FireResist := bonus;
-				break;
-			0xef27: //Gigante
-				prop.EnergyResist := bonus;
-				break;
-			0xef26: //Polar
-				prop.ColdResist := bonus;
-				break;
-		endcase
+	if (item is @WeaponWrapper)
+		var damageMod := item.GetDamageMod();
+		if (material == MATERIAL_OBJTYPE::IGNIUM)
+			damageMod.IncreaseFireRawDamage(bonus);
+		elseif (material == MATERIAL_OBJTYPE::VENETIUM)
+			damageMod.IncreasePoisonRawDamage(bonus);
+		elseif (material == MATERIAL_OBJTYPE::FRIGUTIUM)
+			damageMod.IncreaseColdRawDamage(bonus);
+		elseif (material == MATERIAL_OBJTYPE::FULMIUM)
+			damageMod.IncreaseEnergyRawDamage(bonus);
+		elseif (material == MATERIAL_OBJTYPE::ILLYRA)
+			bonus := bonus * 0.6;
+			damageMod.IncreaseFireRawDamage(bonus);
+			damageMod.IncreaseColdRawDamage(bonus);
+			damageMod.IncreasePoisonRawDamage(bonus);
+			damageMod.IncreaseEnergyRawDamage(bonus);
+		elseif (material == MATERIAL_OBJTYPE::MITHRIL)
+			damageMod.IncreaseFireRawDamage(bonus);
+			damageMod.IncreaseColdRawDamage(bonus);
+			damageMod.IncreasePoisonRawDamage(bonus);
+			damageMod.IncreaseEnergyRawDamage(bonus);
+		endif
+		item.SetDamageMod(damageMod);
+	elseif (item is @ArmorWrapper)
+		var resistMod := item.GetResistsMod();
+		if (material == MATERIAL_OBJTYPE::IGNIUM)
+			resistMod.IncreaseFireResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::VENETIUM)
+			resistMod.IncreasePoisonResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::FRIGUTIUM)
+			resistMod.IncreaseColdResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::FULMIUM)
+			resistMod.IncreaseEnergyResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::ESCAMOSO)
+			resistMod.IncreasePoisonResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::DRACONIANO)
+			resistMod.IncreaseFireResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::GIGANTE)
+			resistMod.IncreaseEnergyResist(bonus);
+		elseif (material == MATERIAL_OBJTYPE::POLAR)
+			resistMod.IncreaseColdResist(bonus);
+		endif
+		item.SetResistsMod(resistMod);
 	endif
 
-	// item.setAttrBase(prop);
-	SendSysMessageEx(who, "Você encantou o objeto.", SSM_INFO);
-	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-	PlaySoundEffect(who, SFX_SPELL_HEAL);
+	Message("Você encantou o objeto.", FONTCOLOR_SUCCESS).SendSys(who.GetObjRef());
+	PlayStationaryEffect(who.GetPosition().x, who.GetPosition().y, who.GetPosition().z, FX_SPARK_EFFECT, 2, 2);
+	who.PlaySound(SFX_SPELL_HEAL);
 endfunction
