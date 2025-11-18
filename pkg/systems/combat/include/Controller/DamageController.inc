@@ -387,43 +387,43 @@ function ApplyCombatDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{attackInfo.GetDamage().ToString()}");
 
 	if (slash > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Slash: {CInt(slash)}");
 	endif
 
 	if (piercing > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Piercing: {CInt(piercing)}");
 	endif
 
 	if (blunt > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Blunt: {CInt(blunt)}");
 	endif
 
 	if (fire > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Fire: {CInt(fire)}");
 	endif
 
 	if (cold > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Cold: {CInt(cold)}");
 	endif
 
 	if (poison > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Poison: {CInt(poison)}");
 	endif
 
 	if (energy > 0)
-		// ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy), attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Energy: {CInt(energy)}");
 	endif
