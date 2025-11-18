@@ -26,14 +26,14 @@ class AttackInfo(IAttackInfo)
 		amount := 0
 	};
 	var _hitChance := 100;
-	var _hitChancePenalty := 0;
+	var _hitChanceMod := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
 	var _criticalHitChance := 0;
-	var _criticalHitChancePenalty := 0;
+	var _criticalHitChanceMod := 0;
 	var _criticalHitChanceResult := 0; // Resultado da rolagem do dado de dano crítico
 	var _parryEquip; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
-	var _parryChancePenalty := 0;
+	var _parryChanceMod := 0;
 	var _parryChanceResult := 0; // Resultado da rolagem do dado de parry chance
 
 	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
@@ -49,13 +49,13 @@ class AttackInfo(IAttackInfo)
 		this._damage := Damage();
 		this._damageHand := DAMAGE_HAND::MAINHAND;
 		this._hitChance := error{errortext := "Hit chance not set yet!"};
-		this._hitChancePenalty := error{errortext := "Hit chance penalty not set yet!"};
+		this._hitChanceMod := error{errortext := "Hit chance mod not set yet!"};
 		this._hitChanceResult := error{errortext := "Hit chance not rolled yet!"};
 		this._parryChance := error{errortext := "Parry chance not set yet!"};
-		this._parryChancePenalty := error{errortext := "Parry chance penalty not set yet!"};
+		this._parryChanceMod := error{errortext := "Parry chance mod not set yet!"};
 		this._parryChanceResult := error{errortext := "Parry chance not rolled yet!"};
 		this._criticalHitChance := error{errortext := "Critical hit chance not set yet!"};
-		this._criticalHitChancePenalty := error{errortext := "Critical hit chance penalty not set yet!"};
+		this._criticalHitChanceMod := error{errortext := "Critical hit chance mod not set yet!"};
 		this._criticalHitChanceResult := error{errortext := "Critical hit chance not rolled yet!"};
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
@@ -106,8 +106,8 @@ class AttackInfo(IAttackInfo)
 		return this._hitChance;
 	endfunction
 
-	function GetHitChancePenalty(this)
-		return this._hitChancePenalty;
+	function GetHitChanceMod(this)
+		return this._hitChanceMod;
 	endfunction
 
 	function GetHitChanceResult(this)
@@ -118,8 +118,8 @@ class AttackInfo(IAttackInfo)
 		return this._criticalHitChance;
 	endfunction
 
-	function GetCriticalHitChancePenalty(this)
-		return this._criticalHitChancePenalty;
+	function GetCriticalHitChanceMod(this)
+		return this._criticalHitChanceMod;
 	endfunction
 	
 	function GetCriticalHitChanceResult(this)
@@ -134,8 +134,8 @@ class AttackInfo(IAttackInfo)
 		return this._parryChance;
 	endfunction
 
-	function GetParryChancePenalty(this)
-		return this._parryChancePenalty;
+	function GetParryChanceMod(this)
+		return this._parryChanceMod;
 	endfunction
 
 	function GetParryChanceResult(this)
@@ -215,26 +215,26 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetHitChance(this, hitChance)
-		this._hitChance := hitChance;
+	function SetHitChance(this, value)
+		this._hitChance := CInt(value);
 
 		return this;
 	endfunction
 
-	function SetHitChancePenalty(this, penalty)
-		this._hitChancePenalty := penalty;
+	function SetHitChanceMod(this, value)
+		this._hitChanceMod := CInt(value);
 
 		return this;
 	endfunction
 
-	function SetCriticalHitChance(this, critChance)
-		this._criticalHitChance := critChance;
+	function SetCriticalHitChance(this, value)
+		this._criticalHitChance := CInt(value);
 
 		return this;
 	endfunction
 
-	function SetCriticalHitChancePenalty(this, penalty)
-		this._criticalHitChancePenalty := penalty;
+	function SetCriticalHitChanceMod(this, value)
+		this._criticalHitChanceMod := CInt(value);
 
 		return this;
 	endfunction
@@ -250,13 +250,13 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetParryChance(this, parryChance)
-		this._parryChance := parryChance;
+		this._parryChance := CInt(parryChance);
 
 		return this;
 	endfunction
 
 	function SetParryChancePenalty(this, penalty)
-		this._parryChancePenalty := penalty;
+		this._parryChancePenalty := CInt(penalty);
 
 		return this;
 	endfunction
@@ -286,17 +286,20 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function RollParryChance(this)
-		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
-		
-		this._parryChanceResult := RandomInt(100 + 1);
-		return this;
-	endfunction
-
 	function RollCriticalHitChance(this)
 		if (!this._criticalHitChance) return error{errortext := "Critical hit chance not set!"}; endif
 		
 		this._criticalHitChanceResult := RandomInt(100 + 1);
+		if (this._criticalHitChanceResult <= this._criticalHitChance)
+			this._damage.SetCritical(true);
+		endif
+		return this;
+	endfunction
+
+	function RollParryChance(this)
+		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
+		
+		this._parryChanceResult := RandomInt(100 + 1);
 		return this;
 	endfunction
 
