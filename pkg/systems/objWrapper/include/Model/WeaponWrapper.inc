@@ -6,6 +6,7 @@ include ":equipsys:Controller/WeaponController";
 
 include ":combat:Model/DamageTier";
 include ":combat:Model/DamageDice";
+include ":combat:Model/Damage";
 include ":diceroll:model/Dice";
 
 class WeaponWrapper(EquipWrapper, IWeaponWrapper)
@@ -20,7 +21,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _offDamageTier; // DamageDice class
 	var _mainDamage; // DamageDice class
 	var _offDamage; // DamageDice class
-	var _damageMod; // DamageDice class
+	var _damageMod; // Damage class
 	var _criticalChanceTier := "";
 	var _criticalChance := 0;
 	var _criticalChanceMod := 0;
@@ -38,6 +39,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		this._minRange := this._template.MinRange ?: 1;
 		this._maxRange := this._template.MaxRange ?: 1;
 		this._criticalChanceTier := this._template.EpicCriticalChance;
+		this._criticalChanceMod := 0;
 		this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
 			SplitWords(this._template.EpicMainDamage)[1],
 			SplitWords(this._template.EpicMainDamage)[2],
@@ -58,15 +60,21 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
 			Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
 		);
+		this._damageMod := Damage();
 		this._speed := getSpeedByTier(this._speedTier);
 		this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
 
-		if (this._prop) // Caso já tenha prop, não sobrepor alguns valores que devem ser mantidos
+		if (this._prop) // Alguns atributos só estão nas props
 			this._criticalChanceMod := this._prop.CriticalChanceMod;
-		else
-			this._criticalChanceMod := 0;
+			this._damageMod.SetSlashRawDamage(CInt(this._prop.SlashDamageMod));
+			this._damageMod.SetPiercingRawDamage(CInt(this._prop.PiercingDamageMod));
+			this._damageMod.SetBluntRawDamage(CInt(this._prop.BluntDamageMod));
+			this._damageMod.SetFireRawDamage(CInt(this._prop.FireDamage));
+			this._damageMod.SetColdRawDamage(CInt(this._prop.ColdDamage));
+			this._damageMod.SetPoisonRawDamage(CInt(this._prop.PoisonDamage));
+			this._damageMod.SetEnergyRawDamage(CInt(this._prop.EnergyDamage));
 		endif
 	endfunction
 
@@ -110,6 +118,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this._offDamage;
 	endfunction
 
+	function GetDamageMod(this)
+		return this._damageMod;
+	endfunction
+
 	function GetCriticalChanceTier(this)
 		return this._criticalChanceTier;
 	endfunction
@@ -144,7 +156,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function SetMainDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
-			return error{errortext := "Parameters must be of type DamageDice!"};
+			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
 		this._mainDamage.SetSlashDamage(slash);
 		this._mainDamage.SetPiercingDamage(piercing);
@@ -156,11 +168,21 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function SetOffDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
-			return error{errortext := "Parameters must be of type DamageDice!"};
+			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
 		this._offDamage.SetSlashDamage(slash);
 		this._offDamage.SetPiercingDamage(piercing);
 		this._offDamage.SetBluntDamage(blunt);
+
+		return this;
+	endfunction
+
+	function SetDamageMod(this, damageMod)
+		if (this._item == error) return this._item; endif
+		if (!(damageMod is @Damage))
+			return error{errortext := "Parameter must be a Damage class!"};
+		endif
+		this._damageMod := damageMod;
 
 		return this;
 	endfunction

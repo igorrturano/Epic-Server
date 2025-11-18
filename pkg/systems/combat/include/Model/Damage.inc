@@ -21,20 +21,14 @@ class Damage(IDamage)
 	function Damage(this, slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0)
 		this._criticalDamage := false;
 
-		this._slashRaw := CInt(slash);
-		this._slashBase := this._slashRaw;
-		this._piercingRaw := CInt(piercing);
-		this._piercingBase := this._piercingRaw;
-		this._bluntRaw := CInt(blunt);
-		this._bluntBase := this._bluntRaw;
-		this._fireRaw := CInt(fire);
-		this._fireBase := this._fireRaw;
-		this._coldRaw := CInt(cold);
-		this._coldBase := this._coldRaw;
-		this._poisonRaw := CInt(poison);
-		this._poisonBase := this._poisonRaw;
-		this._energyRaw := CInt(energy);
-		this._energyBase := this._energyRaw;
+		this.SetSlashRawDamage(slash);
+		this.SetPiercingRawDamage(piercing);
+		this.SetBluntRawDamage(blunt);
+
+		this.SetFireRawDamage(fire);
+		this.SetColdRawDamage(cold);
+		this.SetPoisonRawDamage(poison);
+		this.SetEnergyRawDamage(energy);
 	endfunction
 
 	function GetSlashRawDamage(this)
@@ -103,36 +97,43 @@ class Damage(IDamage)
 
 	function SetSlashRawDamage(this, value)
 		this._slashRaw := CInt(value);
+		this._slashBase := this._slashRaw;
 		return this;
 	endfunction
 
 	function SetPiercingRawDamage(this, value)
 		this._piercingRaw := CInt(value);
+		this._piercingBase := this._piercingRaw;
 		return this;
 	endfunction
 
 	function SetBluntRawDamage(this, value)
 		this._bluntRaw := CInt(value);
+		this._bluntBase := this._bluntRaw;
 		return this;
 	endfunction
 
 	function SetFireRawDamage(this, value)
 		this._fireRaw := CInt(value);
+		this._fireBase := this._fireRaw;
 		return this;
 	endfunction
 
 	function SetColdRawDamage(this, value)
 		this._coldRaw := CInt(value);
+		this._coldBase := this._coldRaw;
 		return this;
 	endfunction
 
 	function SetPoisonRawDamage(this, value)
 		this._poisonRaw := CInt(value);
+		this._poisonBase := this._poisonRaw;
 		return this;
 	endfunction
 
 	function SetEnergyRawDamage(this, value)
 		this._energyRaw := CInt(value);
+		this._energyBase := this._energyRaw;
 		return this;
 	endfunction
 
@@ -178,36 +179,43 @@ class Damage(IDamage)
 
 	function IncreaseSlashRawDamage(this, value)
 		this._slashRaw += CInt(value);
+		this._slashBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreasePiercingRawDamage(this, value)
 		this._piercingRaw += CInt(value);
+		this._piercingBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreaseBluntRawDamage(this, value)
 		this._bluntRaw += CInt(value);
+		this._bluntBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreaseFireRawDamage(this, value)
 		this._fireRaw += CInt(value);
+		this._fireBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreaseColdRawDamage(this, value)
 		this._coldRaw += CInt(value);
+		this._coldBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreasePoisonRawDamage(this, value)
 		this._poisonRaw += CInt(value);
+		this._poisonBase += CInt(value);
 		return this;
 	endfunction
 
 	function IncreaseEnergyRawDamage(this, value)
 		this._energyRaw += CInt(value);
+		this._energyBase += CInt(value);
 		return this;
 	endfunction
 
@@ -253,31 +261,37 @@ class Damage(IDamage)
 
 	function DecreasePiercingRawDamage(this, value)
 		this._piercingRaw -= CInt(value);
+		this._piercingBase -= CInt(value);
 		return this;
 	endfunction
 
 	function DecreaseBluntRawDamage(this, value)
 		this._bluntRaw -= CInt(value);
+		this._bluntBase -= CInt(value);
 		return this;
 	endfunction
 
 	function DecreaseFireRawDamage(this, value)
 		this._fireRaw -= CInt(value);
+		this._fireBase -= CInt(value);
 		return this;
 	endfunction
 
 	function DecreaseColdRawDamage(this, value)
 		this._coldRaw -= CInt(value);
+		this._coldBase -= CInt(value);
 		return this;
 	endfunction
 
 	function DecreasePoisonRawDamage(this, value)
 		this._poisonRaw -= CInt(value);
+		this._poisonBase -= CInt(value);
 		return this;
 	endfunction
 
 	function DecreaseEnergyRawDamage(this, value)
 		this._energyRaw -= CInt(value);
+		this._energyBase -= CInt(value);
 		return this;
 	endfunction
 

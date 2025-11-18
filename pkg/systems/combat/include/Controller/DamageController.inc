@@ -47,37 +47,27 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateSkillDamage(attackInfo);
 	CalculateWeaponDamage(attackInfo);
 	
-	var damage := attackInfo.GetDamage();
-	damage.SetSlashBaseDamage(damage.GetSlashRawDamage());
-	damage.SetPiercingBaseDamage(damage.GetPiercingRawDamage());
-	damage.SetBluntBaseDamage(damage.GetBluntRawDamage());
-	damage.SetFireBaseDamage(damage.GetFireRawDamage());
-	damage.SetColdBaseDamage(damage.GetColdRawDamage());
-	damage.SetPoisonBaseDamage(damage.GetPoisonRawDamage());
-	damage.SetEnergyBaseDamage(damage.GetEnergyRawDamage());
-	attackInfo.SetDamage(damage);
-
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateStatusDamage(byRef attackInfo)
 	var damage := attackInfo.GetDamage();
-	var damageMod := 0;
 
 	var stat := "";
-	var statMod := 0;
+	var statBase := 0;
+	var statDivisor := 20;
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		stat := DEXTERITY;
-		statMod := CInt(attackInfo.GetAttacker().GetDex());
+		statBase := CInt(attackInfo.GetAttacker().GetDex());
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == THROWING)
 		stat := $"{STRENGTH} + {DEXTERITY}";
-		statMod := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
+		statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
 	else
 		stat := STRENGTH;
-		statMod := CInt(attackInfo.GetAttacker().GetStr());
+		statBase := CInt(attackInfo.GetAttacker().GetStr());
 	endif
 
-	damageMod := CInt(statMod / 10);
+	var damageMod := CInt(statBase / statDivisor);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(stat)}: {damageMod}");
 	
 	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
@@ -93,8 +83,9 @@ endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
+	var skillDivisor := 20;
 	var damage := attackInfo.GetDamage();
-	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / 10);
+	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / skillDivisor);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(skill)}: {damageMod}");
 	
@@ -158,6 +149,25 @@ function CalculateWeaponDamage(byRef attackInfo)
 	damage.IncreaseColdRawDamage(coldDamage);
 	damage.IncreasePoisonRawDamage(poisonDamage);
 	damage.IncreaseEnergyRawDamage(energyDamage);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Modificadores de dano:");
+	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+	damage.IncreaseSlashRawDamage(damageMod.GetSlashRawDamage());
+	damage.IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage());
+	damage.IncreaseBluntRawDamage(damageMod.GetBluntRawDamage());
+	damage.IncreaseFireRawDamage(damageMod.GetFireRawDamage());
+	damage.IncreaseColdRawDamage(damageMod.GetColdRawDamage());
+	damage.IncreasePoisonRawDamage(damageMod.GetPoisonRawDamage());
+	damage.IncreaseEnergyRawDamage(damageMod.GetEnergyRawDamage());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::SLASH)}: {damageMod.GetSlashRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::PIERCING)}: {damageMod.GetPiercingRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::BLUNT)}: {damageMod.GetBluntRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::FIRE)}: {damageMod.GetFireRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}");
+
 	attackInfo.SetDamage(damage);
 endfunction
 
