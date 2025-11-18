@@ -282,14 +282,21 @@ class AttackInfo(IAttackInfo)
 	function RollHitChance(this)
 		if (!this._hitChance) return error{errortext := "Hit chance not set!"}; endif
 		
-		this._hitChanceResult := Dice("1d" + this._hitChance).Roll().GetResult();
+		this._hitChanceResult := RandomInt(100 + 1);
 		return this;
 	endfunction
 
 	function RollParryChance(this)
 		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
 		
-		this._parryChanceResult := Dice("1d" + this._parryChance).Roll().GetResult();
+		this._parryChanceResult := RandomInt(100 + 1);
+		return this;
+	endfunction
+
+	function RollCriticalHitChance(this)
+		if (!this._criticalHitChance) return error{errortext := "Critical hit chance not set!"}; endif
+		
+		this._criticalHitChanceResult := RandomInt(100 + 1);
 		return this;
 	endfunction
 

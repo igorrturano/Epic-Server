@@ -146,7 +146,9 @@ function TryToAttack(byRef attackInfo)
 		DoAttack(attackInfo);
 	else
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
-		PlayAttackSFX(attackInfo); // Se errou, chama o som aqui
+		// Se errou, chama os efeitos aqui
+		PlayAttackFX(attackInfo);
+		PlayAttackSFX(attackInfo);
 		ExecuteCombatAbilitiesOnMiss(attackInfo);
 	endif
 endfunction
