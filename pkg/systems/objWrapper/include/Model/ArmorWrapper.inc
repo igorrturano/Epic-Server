@@ -20,22 +20,19 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		this._coverage := GetConfigStringArray(this._template, "Coverage");
 		this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 		this._resists := this._GetArmorResist();
+		this._resistsMod := ArmorResist();
 		this._weight := this._GetWeight();
 		this._strRequired := this._GetSTRRequired();
 		this._InitModifiers();
 
 		if (this._prop)
-			this._resistsMod := ArmorResist(
-				CInt(this._prop.SlashResistMod),
-				CInt(this._prop.PiercingResistMod),
-				CInt(this._prop.BluntResistMod),
-				CInt(this._prop.FireResistMod),
-				CInt(this._prop.ColdResistMod),
-				CInt(this._prop.PoisonResistMod),
-				CInt(this._prop.EnergyResistMod)
-			);
-		else // Caso não tenha prop ou seja um item não existente (template)
-			this._resistsMod := ArmorResist(); // TODO: Não tem mod, é tudo 0
+			this._resistsMod.SetSlashResist(this._prop.SlashResistMod);
+			this._resistsMod.SetPiercingResist(this._prop.PiercingResistMod);
+			this._resistsMod.SetBluntResist(this._prop.BluntResistMod);
+			this._resistsMod.SetFireResist(this._prop.FireResistMod);
+			this._resistsMod.SetColdResist(this._prop.ColdResistMod);
+			this._resistsMod.SetPoisonResist(this._prop.PoisonResistMod);
+			this._resistsMod.SetEnergyResist(this._prop.EnergyResistMod);
 		endif
 	endfunction
 	

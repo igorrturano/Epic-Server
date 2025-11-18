@@ -77,6 +77,62 @@ class ArmorResist(IArmorResist)
 		this._energy := CInt(value);
 	endfunction
 
+	function IncreaseSlashResist(this, value)
+		this._slash += CInt(value);
+	endfunction
+
+	function IncreasePiercingResist(this, value)
+		this._piercing += CInt(value);
+	endfunction
+
+	function IncreaseBluntResist(this, value)
+		this._blunt += CInt(value);
+	endfunction
+
+	function IncreaseFireResist(this, value)
+		this._fire += CInt(value);
+	endfunction
+
+	function IncreaseColdResist(this, value)
+		this._cold += CInt(value);
+	endfunction
+
+	function IncreasePoisonResist(this, value)
+		this._poison += CInt(value);
+	endfunction
+
+	function IncreaseEnergyResist(this, value)
+		this._energy += CInt(value);
+	endfunction
+
+	function DecreaseSlashResist(this, value)
+		this._slash -= CInt(value);
+	endfunction
+
+	function DecreasePiercingResist(this, value)
+		this._piercing -= CInt(value);
+	endfunction
+
+	function DecreaseBluntResist(this, value)
+		this._blunt -= CInt(value);
+	endfunction
+
+	function DecreaseFireResist(this, value)
+		this._fire -= CInt(value);
+	endfunction
+
+	function DecreaseColdResist(this, value)
+		this._cold -= CInt(value);
+	endfunction
+
+	function DecreasePoisonResist(this, value)
+		this._poison -= CInt(value);
+	endfunction
+
+	function DecreaseEnergyResist(this, value)
+		this._energy -= CInt(value);
+	endfunction
+
 	function ToString(this)
 		return $"Slash={this._slash}, " +
 			   $"Piercing={this._piercing}, " +
