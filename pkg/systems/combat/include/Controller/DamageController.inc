@@ -54,7 +54,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	damage.SetEnergyBaseDamage(damage.GetEnergyRawDamage());
 	attackInfo.SetDamage(damage);
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser calculado para defesa: {attackInfo.GetDamage().ToString()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateStatusDamage(byRef attackInfo)
@@ -159,11 +159,10 @@ function CalculateWeaponDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
-	var armorsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
-	armorsInBodyRegion := OrderEquipsByAttackDirection(armorsInBodyRegion, attackInfo.GetDirection());
+	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 
-	if (armorsInBodyRegion == {})
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida.");
+	if (armorsInBodyRegion == array{})
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida. Dano direto no corpo do defensor.");
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
@@ -180,11 +179,22 @@ function CalculateDefenderResist(byRef attackInfo)
 	endif
 
 	// TODO: Colocar um debug informando quanto foi reduzido por cada tipo de dano
+	var damage := attackInfo.GetDamage();
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano resistido:" +
+		$"{Upper(DAMAGE_TYPE::SLASH)}: {CInt(damage.GetSlashRawDamage() - damage.GetSlashBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::PIERCING)}: {CInt(damage.GetPiercingRawDamage() - damage.GetPiercingBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::BLUNT)}: {CInt(damage.GetBluntRawDamage() - damage.GetBluntBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::FIRE)}: {CInt(damage.GetFireRawDamage() - damage.GetFireBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::COLD)}: {CInt(damage.GetColdRawDamage() - damage.GetColdBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::POISON)}: {CInt(damage.GetPoisonRawDamage() - damage.GetPoisonBaseDamage())}" +
+		$"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(damage.GetEnergyRawDamage() - damage.GetEnergyBaseDamage())}"
+	);
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
-function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
+function GetEquipsByAttackDirection(byRef attackInfo)
+	var armorsInBodyRegion := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 	var FRONT_TO_BACK := array{
 		LAYER_ROBE,
 		LAYER_TUNIC,
@@ -219,16 +229,19 @@ function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATT
 	};
 
 	var orderedEquips := array{};
-	var orderArray := attackDirection == ATTACK_DIRECTION::BACK ? BACK_TO_FRONT : FRONT_TO_BACK;
+	var orderArray := attackInfo.GetDirection() == ATTACK_DIRECTION::BACK ? BACK_TO_FRONT : FRONT_TO_BACK;
+	var equipNamesForDebug := array{};
 
 	foreach layer in (orderArray)
 		foreach equip in (armorsInBodyRegion)
 			if (equip.GetLayer() == layer)
 				orderedEquips.Append(equip);
+				equipNamesForDebug.Append(equip.GetName());
 			endif
 		endforeach
 	endforeach
 
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Ordem dos equipamentos para cálculo de defesa: {equipNamesForDebug}");
 	return orderedEquips;
 endfunction
 
