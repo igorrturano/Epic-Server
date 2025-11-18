@@ -39,6 +39,9 @@ function CalculateCombatDamage(byRef attackInfo)
 endfunction
 
 function CalculateAttackerDamage(byRef attackInfo)
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "CÁLCULO DE DANO!");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	attackInfo.SetDamage(Damage());
 	CalculateStatusDamage(attackInfo);
 	CalculateSkillDamage(attackInfo);
@@ -119,34 +122,34 @@ function CalculateWeaponDamage(byRef attackInfo)
 		endif
 	endif
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dados de dano:" +
-		$"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString()}" +
-		$"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString()}"
-	);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dados de dano da arma ({attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetName()}):");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString() ?: "N/A"}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString() ?: "N/A"}");
 
 	var damage := attackInfo.GetDamage();
 	var slashDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.GetSlashDamage().Roll().GetResult() : 0;
 	var piercingDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.GetPiercingDamage().Roll().GetResult() : 0;
 	var bluntDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.GetBluntDamage().Roll().GetResult() : 0;
-	var fireDamage := damageDice.GetFireDamage().Roll().GetResult();
-	var coldDamage := damageDice.GetColdDamage().Roll().GetResult();
-	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult();
-	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult();
+	var fireDamage := damageDice.GetFireDamage().Roll().GetResult() ?: 0;
+	var coldDamage := damageDice.GetColdDamage().Roll().GetResult() ?: 0;
+	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult() ?: 0;
+	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult() ?: 0;
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano por tipo:" +
-		$"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}" +
-		$"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}" +
-		$"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDamage}" +
-		$"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}" +
-		$"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}" +
-		$"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}" +
-		$"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"
-	);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano rolado:");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}");
 	
 	damage.IncreaseSlashRawDamage(slashDamage);
 	damage.IncreasePiercingRawDamage(piercingDamage);
@@ -178,18 +181,16 @@ function CalculateDefenderResist(byRef attackInfo)
 		endforeach
 	endif
 
-	// TODO: Colocar um debug informando quanto foi reduzido por cada tipo de dano
 	var damage := attackInfo.GetDamage();
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano resistido:" +
-		$"{Upper(DAMAGE_TYPE::SLASH)}: {CInt(damage.GetSlashRawDamage() - damage.GetSlashBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::PIERCING)}: {CInt(damage.GetPiercingRawDamage() - damage.GetPiercingBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::BLUNT)}: {CInt(damage.GetBluntRawDamage() - damage.GetBluntBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::FIRE)}: {CInt(damage.GetFireRawDamage() - damage.GetFireBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::COLD)}: {CInt(damage.GetColdRawDamage() - damage.GetColdBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::POISON)}: {CInt(damage.GetPoisonRawDamage() - damage.GetPoisonBaseDamage())}" +
-		$"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(damage.GetEnergyRawDamage() - damage.GetEnergyBaseDamage())}"
-	);
-
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano resistido:");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::SLASH)}: {CInt(damage.GetSlashRawDamage() - damage.GetSlashBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::PIERCING)}: {CInt(damage.GetPiercingRawDamage() - damage.GetPiercingBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::BLUNT)}: {CInt(damage.GetBluntRawDamage() - damage.GetBluntBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::FIRE)}: {CInt(damage.GetFireRawDamage() - damage.GetFireBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::COLD)}: {CInt(damage.GetColdRawDamage() - damage.GetColdBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::POISON)}: {CInt(damage.GetPoisonRawDamage() - damage.GetPoisonBaseDamage())}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(damage.GetEnergyRawDamage() - damage.GetEnergyBaseDamage())}");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
@@ -241,7 +242,7 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 		endforeach
 	endforeach
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Ordem dos equipamentos para cálculo de defesa: {equipNamesForDebug}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Ordem dos equipamentos a serem atingidos: {equipNamesForDebug}");
 	return orderedEquips;
 endfunction
 
