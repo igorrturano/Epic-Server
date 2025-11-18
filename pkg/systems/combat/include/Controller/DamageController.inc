@@ -89,10 +89,11 @@ function CalculateStatusDamage(byRef attackInfo)
 endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
+	var skill := TACTICS;
 	var damage := attackInfo.GetDamage();
-	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
+	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / 10);
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(TACTICS)}: {damageMod}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(skill)}: {damageMod}");
 	
 	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 		damage.IncreaseSlashRawDamage(damageMod);
@@ -118,37 +119,42 @@ function CalculateWeaponDamage(byRef attackInfo)
 		endif
 	endif
 
-	// TODO: Melhorar esse debug, dá pra fazer mais enxuto com .ToString()
-	if (damageDice.GetSlashDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString()}");
-	endif
-	if (damageDice.GetPiercingDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString()}");
-	endif
-	if (damageDice.GetBluntDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString()}");
-	endif
-	if (damageDice.GetFireDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString()}");
-	endif
-	if (damageDice.GetColdDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString()}");
-	endif
-	if (damageDice.GetPoisonDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString()}");
-	endif
-	if (damageDice.GetEnergyDamage())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dado de dano {Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString()}");
-	endif
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dados de dano:" +
+		$"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString()}" +
+		$"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString()}"
+	);
 
 	var damage := attackInfo.GetDamage();
-	damage.IncreaseSlashRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.GetSlashDamage().Roll().GetResult() : 0);
-	damage.IncreasePiercingRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.GetPiercingDamage().Roll().GetResult() : 0);
-	damage.IncreaseBluntRawDamage(attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.GetBluntDamage().Roll().GetResult() : 0);
-	damage.IncreaseFireRawDamage(damageDice.GetFireDamage().Roll().GetResult());
-	damage.IncreaseColdRawDamage(damageDice.GetColdDamage().Roll().GetResult());
-	damage.IncreasePoisonRawDamage(damageDice.GetPoisonDamage().Roll().GetResult());
-	damage.IncreaseEnergyRawDamage(damageDice.RollEnergyDamage().Roll().GetResult());
+	var slashDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH ? damageDice.GetSlashDamage().Roll().GetResult() : 0;
+	var piercingDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING ? damageDice.GetPiercingDamage().Roll().GetResult() : 0;
+	var bluntDamage := attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT ? damageDice.GetBluntDamage().Roll().GetResult() : 0;
+	var fireDamage := damageDice.GetFireDamage().Roll().GetResult();
+	var coldDamage := damageDice.GetColdDamage().Roll().GetResult();
+	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult();
+	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult();
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano por tipo:" +
+		$"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}" +
+		$"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}" +
+		$"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDamage}" +
+		$"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}" +
+		$"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}" +
+		$"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}" +
+		$"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"
+	);
+	
+	damage.IncreaseSlashRawDamage(slashDamage);
+	damage.IncreasePiercingRawDamage(piercingDamage);
+	damage.IncreaseBluntRawDamage(bluntDamage);
+	damage.IncreaseFireRawDamage(fireDamage);
+	damage.IncreaseColdRawDamage(coldDamage);
+	damage.IncreasePoisonRawDamage(poisonDamage);
+	damage.IncreaseEnergyRawDamage(energyDamage);
 	attackInfo.SetDamage(damage);
 endfunction
 

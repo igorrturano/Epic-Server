@@ -42,10 +42,9 @@ program MainHitScript(attackInfo)
 	ArmorHitScripts(attackInfo);
 	DoMovement(attackInfo);
 
-	PlayAttackFX(attackInfo);
 	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
 	ProccessCombatDamage(attackInfo);
-	
+	PlayAttackFX(attackInfo);
 	PlayAttackSFX(attackInfo);
 
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
