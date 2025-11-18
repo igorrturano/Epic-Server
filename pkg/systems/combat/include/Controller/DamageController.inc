@@ -74,7 +74,7 @@ function CalculateStatusDamage(byRef attackInfo)
 		statMod := CInt(attackInfo.GetAttacker().GetStr());
 	endif
 
-	damageMod += CInt(statMod / 10);
+	damageMod := CInt(statMod / 10);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(stat)}: {damageMod}");
 	
 	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
@@ -158,7 +158,6 @@ function CalculateDefenderResist(byRef attackInfo)
 
 	if (armorsInBodyRegion == {})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida.");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida.");
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
@@ -170,16 +169,13 @@ function CalculateDefenderResist(byRef attackInfo)
 			attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
 			attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
 		endforeach
 	endif
 
 	// TODO: Colocar um debug informando quanto foi reduzido por cada tipo de dano
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado: {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function OrderEquipsByAttackDirection(armorsInBodyRegion, attackDirection := ATTACK_DIRECTION::FRONT)
