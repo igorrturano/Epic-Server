@@ -153,6 +153,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
+	function GetCriticalChance(this)
+		return CInt(this.GetCriticalChanceBase() + this.GetCriticalChanceMod());
+	endfunction
+	
+	function GetCriticalChanceBase(this)
+		return CInt(this._objRef.GetProp("CriticalChance"));
+	endfunction
+
+	function GetCriticalChanceMod(this)
+		return CInt(this._objRef.GetProp("#CriticalChance"));
+	endfunction
+
 	function GetNPCTemplateName(this)
 		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not a NPC!"};
 	endfunction

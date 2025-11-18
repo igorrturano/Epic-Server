@@ -73,7 +73,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	endfunction
 
 	function GetModifier(this, modifierName)
-		if ( this._modifiers.size() == 0 ) return error{"errortext" := "The item have no Modifiers!"}; endif
+		if (this._modifiers.size() == 0) return error{"errortext" := "The item have no Modifiers!"}; endif
 		return this._modifiers[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
 	endfunction
 	
