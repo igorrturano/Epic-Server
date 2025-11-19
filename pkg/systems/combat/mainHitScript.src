@@ -34,6 +34,7 @@ program MainHitScript(attackInfo)
 		if (ConsumeAmmo(attackInfo)) // Consome munição
 			TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
 		else
+			Message("Não foi possível encontrar a munição escolhida.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 			return 1;
 		endif
 	endif
