@@ -210,10 +210,10 @@ function CheckAmmo(byRef attackInfo)
 	var needs_aljava := (obj.objtype != STONE_OBJTYPE);
 	if (needs_aljava)
 		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE);
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE).GetObjRef();
 
 		if (!(aljava.objtype in aljavas))
-			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		endif
 
 		// Check if ammo is in aljava
@@ -230,7 +230,7 @@ function CheckAmmo(byRef attackInfo)
 		endif
 	endif
 
-	return false; // False por segurança, mas não deveria chegar aqui. Se chegar, vai travar o ataque e facilita encontrar o bug.
+	return true; // Se chegou ate aqui, eh pq encontrou flecha e pode continuar com a rotina de disparo
 endfunction
 
 function arcane_shooting(byRef attackInfo)
