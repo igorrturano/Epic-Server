@@ -222,7 +222,51 @@ function ExaminarArea(who)
 		endif
 		sleepms(2);
 	endforeach
+
+	// Check for secret doors
+	var secret_doors := CheckForSecretDoors(who);
+	found := found + secret_doors;
+
 	return found;
+endfunction
+
+function CheckForSecretDoors(who)
+	// Load secret doors config
+	var secretDoorCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+	if (!secretDoorCfg)
+		return 0;
+	endif
+
+	var awareness_skill := CInt(AP_GetSkill(who, AWARENESS));
+	var range := CInt(awareness_skill / 10) + 1;
+
+	if (TemHabilidade(who, "Sempre Alerta"))
+		range := range + 5;
+	endif
+
+	// Reduce range for secret doors (harder to spot)
+	var search_range := CInt(range / 2);
+	if (search_range < 1)
+		search_range := 1;
+	endif
+
+	var doors_found := 0;
+	var nearby_items := ListItemsNearLocation(who.x, who.y, who.z, search_range, who.realm);
+
+	foreach item in nearby_items
+		// Check if this item is a secret door
+		if (FindConfigElem(secretDoorCfg, item.objtype))
+			// Roll against skill to notice it
+			if (RandomInt(100) < awareness_skill)
+				doors_found := doors_found + 1;
+				Message("*!*").SendAbove(item);
+				Message("Voce notou algo estranho...").SetColor(SSM_INFO).SendSys(who);
+				sleepms(50);
+			endif
+		endif
+	endforeach
+
+	return doors_found;
 endfunction
 
 function exibeCharEscondido(who, escondido, cor)
