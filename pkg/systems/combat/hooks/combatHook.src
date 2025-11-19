@@ -300,15 +300,12 @@ function arcane_shooting(byRef attackInfo)
 endfunction
 
 function CheckFacing(byRef attackInfo)
-	var retval := 1;
-
 	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y))
 		if (attackInfo.GetAttacker().IsNPC())
 			TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
 		else
-			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y) && !(getcooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
-				Message("Você está de costas para o inimigo!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
-				retval := 0;
+			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y) && !(GetCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
+				return false;
 			endif
 		endif
 	endif
@@ -322,5 +319,5 @@ function CheckFacing(byRef attackInfo)
 	attackInfo.SetDirection(attackDirection);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Direção do golpe: {(attackInfo.GetDirection() == ATTACK_DIRECTION::FRONT ? "Frente" : "Costas")}");
 
-	return retval;
+	return true;
 endfunction
