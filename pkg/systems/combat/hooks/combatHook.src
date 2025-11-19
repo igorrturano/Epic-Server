@@ -181,7 +181,7 @@ function DoAttack(byRef attackInfo)
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Run_Script(":combat:mainHitScript", attackInfo);
-	else // Se for ataque da segunda arma, executa async por causa do delay
+	else // Se for ataque da mão secundária, executa async por causa do delay
 		Start_Script(":combat:mainHitScript", attackInfo);
 	endif
 endfunction
@@ -232,44 +232,6 @@ function CheckAmmo(byRef attackInfo)
 
 	return false; // False por segurança, mas não deveria chegar aqui. Se chegar, vai travar o ataque e facilita encontrar o bug.
 endfunction
-
-// function playSoundAndEffectForThrowingWeapons(attackInfo) // TODO: Transferir isso daqui para o AttackAnimation
-// 	if (attackInfo.GetAttacker().IsNPC())
-// 		ThrowerNPC(attackInfo);
-// 		return;
-// 	endif
-
-// 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::THROWING)
-// 		return;
-// 	endif
-
-// 	if (!AP_ConsumeVital(attackInfo.GetAttacker().GetObjRef(), STAMINA, 10))
-// 		Message("Você está exausto!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
-// 		return;
-// 	endif
-
-// 	PlayMovingEffectXYZHued(
-// 		attackInfo.GetAttacker().GetObjRef(),
-// 		attackInfo.GetDefender().GetObjRef(),
-// 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
-// 		10, 10, 0,
-// 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetColor()
-// 	);
-
-// 	PlayAttackFX(attackInfo.GetAttacker().GetObjRef()); // 0x9
-// 	// PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
-
-// 	var defenderPos := attackInfo.GetDefender().GetPosition();
-// 	MoveObjectToLocation(
-// 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-// 		defenderPos.x,
-// 		defenderPos.y,
-// 		defenderPos.z,
-// 		defenderPos.realm,
-// 		MOVEOBJECT_FORCELOCATION
-// 	);
-
-// endfunction
 
 function arcane_shooting(byRef attackInfo)
 	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType)
