@@ -31,9 +31,9 @@ function PlayAttackSFX(byRef attackInfo)
 		var npcTemplate := attackInfo.GetAttacker().GetNPCTemplate();
 		weaponSound := attackInfo.Succeeded() ? npcTemplate.AttackSound : npcTemplate.AttackMissSound;
 	else
-		attackerSound 	:= GetAttackerSFX(attackInfo);
-		defenderSound 	:= GetDefenderSFX(attackInfo);
-		weaponSound 	:= GetWeaponSFX(attackInfo);
+		attackerSound := GetAttackerSFX(attackInfo);
+		defenderSound := GetDefenderSFX(attackInfo);
+		weaponSound := GetWeaponSFX(attackInfo);
 	endif
 
 	attackInfo.GetAttacker().PlaySound(weaponSound);

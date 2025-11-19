@@ -79,7 +79,7 @@ function DoParry(byRef attackInfo)
 		SkillCheck(attackInfo.GetDefender().GetObjRef(), PARRY, -1);
 	endif
 
-	attackInfo.SetDamage(Damage().SetBluntDamage(1)); // Seta o dano pra 1 de blunt por causa do impacto do bloqueio
+	attackInfo.SetDamage(Damage().SetBluntRawDamage(1)); // Seta o dano pra 1 de blunt por causa do impacto do bloqueio
 
 	return true;
 endfunction
