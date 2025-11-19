@@ -23,34 +23,25 @@ function PlayAttackFX(byRef attackInfo)
 endfunction
 
 function PlayAttackSFX(byRef attackInfo)
-	var weaponSound;
-	var attackerSound;
-	var defenderSound;
-
-	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		var npcTemplate := attackInfo.GetAttacker().GetNPCTemplate();
-		weaponSound := attackInfo.Succeeded() ? npcTemplate.AttackSound : npcTemplate.AttackMissSound;
-	else
-		attackerSound := GetAttackerSFX(attackInfo);
-		defenderSound := GetDefenderSFX(attackInfo);
-		weaponSound := GetWeaponSFX(attackInfo);
-	endif
+	var weaponSound   := GetWeaponSFX(attackInfo);
+	var attackerSound := GetAttackerSFX(attackInfo);
+	var defenderSound := GetDefenderSFX(attackInfo);
 
 	attackInfo.GetAttacker().PlaySound(weaponSound);
 	if (attackerSound) attackInfo.GetAttacker().PlaySound(attackerSound); endif
 	if (defenderSound) attackInfo.GetDefender().PlaySound(defenderSound); endif
 endfunction
 
-function PlayDefenseFX(byRef attackInfo)
-	var defenseAnim := GetDefenseFX(attackInfo);
+function PlayParryFX(byRef attackInfo)
+	var parryAnim := GetParryFX(attackInfo);
 
-	attackInfo.GetDefender().PlayAnimation(defenseAnim);
+	attackInfo.GetDefender().PlayAnimation(parryAnim);
 endfunction
 
-function PlayDefenseSFX(byRef attackInfo)
-	// var defenseSound := GetDefenseSFX(attackInfo);
+function PlayParrySFX(byRef attackInfo)
+	var parrySound := GetParrySFX(attackInfo);
 
-	// attackInfo.GetDefender().PlaySound(defenseSound);
+	attackInfo.GetDefender().PlaySound(parrySound);
 endfunction
 
 function GetAttackerFX(byRef attackInfo)
@@ -135,6 +126,81 @@ function GetDefenderFX(byRef attackInfo)
 	return CInt(defenderFX);
 endfunction
 
+function GetParryFX(byRef attackInfo)
+	var parryFX := struct{
+		hit := array{},
+		critical := array{}
+	};
+	
+	if (attackInfo.GetDefender().IsNPC())
+		parryFX.hit := array{15, 16};
+		parryFX.critical := array{15, 16};
+	else
+		parryFX.hit := array{30};
+		parryFX.critical := array{30};
+	endif
+
+	if (attackInfo.GetDamage().IsCritical())
+		parryFX := parryFX.critical;
+	else
+		parryFX := parryFX.hit;
+	endif
+
+	parryFX := parryFX.Size() > 1 ? parryFX[RandomIntMinMax(1, parryFX.Size() + 1)] : parryFX[1];
+
+	return CInt(parryFX);
+endfunction
+
+function GetAttackerSFX(byRef attackInfo)
+	if (attackInfo.GetDamage().IsCritical())
+		if (attackInfo.GetDefender().IsDead())
+			if (attackInfo.GetAttacker().GetRace() == ANAO)
+				return 0;
+			elseif (attackInfo.GetAttacker().GetRace() == DROW)
+				return 0;
+			elseif (attackInfo.GetAttacker().GetRace() == ELFO)
+				return 0;
+			elseif (attackInfo.GetAttacker().GetRace() == ORC)
+				return 0;
+			elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
+				return 0;
+			elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
+				return 0;
+			endif
+		endif
+	endif
+endfunction
+
+function GetDefenderSFX(byRef attackInfo)
+	if (attackInfo.GetDefender().IsNPC())
+		if (attackInfo.GetDefender().IsDead())
+			return attackInfo.GetDefender().GetNPCTemplate().DeathSound;
+		else
+			return attackInfo.GetDefender().GetNPCTemplate().DamagedSound;
+		endif
+	else
+		if (attackInfo.GetDefender().IsDead())
+			if (attackInfo.GetDefender().GetRace() == ANAO)
+				return 0;
+			elseif (attackInfo.GetDefender().GetRace() == DROW)
+				return 0;
+			elseif (attackInfo.GetDefender().GetRace() == ELFO)
+				return 0;
+			elseif (attackInfo.GetDefender().GetRace() == ORC)
+				return 0;
+			elseif (attackInfo.GetDefender().GetRace() == HUMANO)
+				return 0;
+			elseif (attackInfo.GetDefender().GetRace() == POLSKI)
+				return 0;
+			endif
+		else
+			// TODO: Add hurt sounds
+		endif
+	endif
+
+	return 0;
+endfunction
+
 function GetWeaponSFX(byRef attackInfo)
 	var weaponSFX := struct{
 		hit := array{},
@@ -142,11 +208,16 @@ function GetWeaponSFX(byRef attackInfo)
 		critical := array{}
 	};
 
-	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		/* weaponSFX.hit := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+	/* if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
+		weaponSFX.hit := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.critical := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED) */
+		weaponSFX.critical := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}; */
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+		var npcTemplate := attackInfo.GetAttacker().GetNPCTemplate();
+		weaponSFX.hit := array{npcTemplate.AttackSound};
+		weaponSFX.miss := array{npcTemplate.AttackMissSound};
+		weaponSFX.critical := array{npcTemplate.AttackSound};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
@@ -203,75 +274,19 @@ function GetWeaponSFX(byRef attackInfo)
 	return CInt(weaponSFX);
 endfunction
 
-function GetDefenseFX(byRef attackInfo)
-	var defenseFX := struct{
-		hit := array{},
-		critical := array{}
-	};
-	
-	if (attackInfo.GetDefender().IsNPC())
-		defenseFX.hit := array{15, 16};
-		defenseFX.critical := array{15, 16};
+function GetParrySFX(byRef attackInfo)
+	var parrySFX := 0;
+
+	if (attackInfo.GetDefender().IsNPC() && !attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetCategory())
+		// TODO: Adicionar sons de bloqueio para NPCs sem escudo
 	else
-		defenseFX.hit := array{30};
-		defenseFX.critical := array{30};
+		// TODO: Adicionar sons de bloqueio para NPCs/Players com escudo
+			//TODO: Diferenciar sons de bloqueio por tipo de escudo
+		
+		parrySFX := array{0x136, 0x138, 0x139, 0x140, 0x143, 0x536, 0x537};
 	endif
 
-	if (attackInfo.GetDamage().IsCritical())
-		defenseFX := defenseFX.critical;
-	else
-		defenseFX := defenseFX.hit;
-	endif
+	parrySFX := parrySFX.Size() > 1 ? parrySFX[RandomIntMinMax(1, parrySFX.Size() + 1)] : parrySFX[1];
 
-	defenseFX := defenseFX.Size() > 1 ? defenseFX[RandomIntMinMax(1, defenseFX.Size() + 1)] : defenseFX[1];
-
-	return CInt(defenseFX);
-endfunction
-
-function GetAttackerSFX(byRef attackInfo)
-	if (attackInfo.GetDamage().IsCritical())
-		if (attackInfo.GetDefender().IsDead())
-			if (attackInfo.GetAttacker().GetRace() == ANAO)
-				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == DROW)
-				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == ELFO)
-				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == ORC)
-				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
-				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
-				return 0;
-			endif
-		endif
-	endif
-endfunction
-
-function GetDefenderSFX(byRef attackInfo)
-	if (attackInfo.GetDefender().IsNPC())
-		if (attackInfo.GetDefender().IsDead())
-			return attackInfo.GetDefender().GetNPCTemplate().DeathSound;
-		else
-			return attackInfo.GetDefender().GetNPCTemplate().DamagedSound;
-		endif
-	else
-		if (attackInfo.GetDefender().IsDead())
-			if (attackInfo.GetDefender().GetRace() == ANAO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == DROW)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == ELFO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == ORC)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == HUMANO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == POLSKI)
-				return 0;
-			endif
-		else
-			// TODO: Add hurt sounds
-		endif
-	endif
+	return parrySFX;
 endfunction

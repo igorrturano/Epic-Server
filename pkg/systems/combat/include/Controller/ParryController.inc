@@ -54,8 +54,8 @@ endfunction
 function DoParry(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ATAQUE BLOQUEADO***");
 	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HIT, "***ATAQUE BLOQUEADO***");
-	PlayDefenseFX(attackInfo);
-	PlayDefenseSFX(attackInfo);
+	PlayParryFX(attackInfo);
+	PlayParrySFX(attackInfo);
 
 	Message($"Você parou o ataque de {attackInfo.GetAttacker().GetName()}!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 	if (attackInfo.GetDefender().GetSerial() != attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos"))
