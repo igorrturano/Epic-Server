@@ -375,7 +375,7 @@ endfunction
 function ApplyCombatDamage(byRef attackInfo)
 	var slash, piercing, blunt, fire, cold, poison, energy;
 	slash 	 := attackInfo.GetDamage().GetSlashBaseDamage();
-	piercing := attackInfo.GetDamage().GetPierceBaseDamage();
+	piercing := attackInfo.GetDamage().GetPiercingBaseDamage();
 	blunt 	 := attackInfo.GetDamage().GetBluntBaseDamage();
 	fire 	 := attackInfo.GetDamage().GetFireBaseDamage();
 	cold 	 := attackInfo.GetDamage().GetColdBaseDamage();
