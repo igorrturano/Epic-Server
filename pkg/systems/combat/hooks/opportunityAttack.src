@@ -2,7 +2,6 @@ use os;
 include "include/say";
 include ":tn:cooldown";
 include ":combat:Controller/DamageController_legacy";
-include ":combat:Controller/FXController";
 include ":combat:Controller/HitController";
 include ":combat:Model/AttackInfo";
 
@@ -25,14 +24,12 @@ program attackOfOpportunity(params)
 		if ((attacker.x != attacker_x || attacker.y != attacker_y))
 			waitUntilNextAttack(defender);
 			defender.attack_once(attacker);
-		PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 			disengage(attacker, defender);
 			PrintTextAbove(defender, "*Ataque de Oportunidade*");
 			break;
 		elseif ((defender.x != defender_x || defender.y != defender_y))
 			waitUntilNextAttack(attacker);
 			attacker.attack_once(defender);
-			PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 			disengage(attacker, defender);
 			PrintTextAbove(attacker, "*Ataque de Oportunidade*");
 			break;
