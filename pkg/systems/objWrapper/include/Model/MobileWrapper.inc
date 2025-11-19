@@ -35,6 +35,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
+	function GetAccountName(this)
+		return this._objRef.acctname;
+	endfunction
+	
 	function GetRace(this)
 		return this._race;
 	endfunction
