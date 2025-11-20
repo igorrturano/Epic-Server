@@ -2,6 +2,8 @@ use uo;
 
 include "IUObjectWrapper";
 
+include "include/packets";
+
 class UObjectWrapper(IUObjectWrapper)
 	var _objRef; // ObjRef
 	var _serial := 0x0;
@@ -74,6 +76,13 @@ class UObjectWrapper(IUObjectWrapper)
 
 	function PlaySoundPrivate(this, soundId, soundSource := false)
 		PlaySoundEffectPrivate(this._objRef, soundId, soundSource ?: this._objRef);
+
+		return this;
+	endfunction
+
+	// Feito com Wrappeds para poder customizar futuramente
+	function PlayEffectTo(this, targetWrapped, effectId, speed, loop := 0, explode := 0, color := 0, translucent := 0)
+		PlayMovingEffectXYZHued(this._objRef, targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
 
 		return this;
 	endfunction
