@@ -1,18 +1,18 @@
 use uo;
 
-include "IPosition";
+include "IPositionWrapper";
 
-class Position(IPosition)
+class PositionWrapper(IPositionWrapper)
 	var _x := 0;
 	var _y := 0;
 	var _z := 0;
 	var _realm := "";
 
-	function Position(this, x, y, z, realm)
-		this._x := x;
-		this._y := y;
-		this._z := z;
-		this._realm := realm;
+	function PositionWrapper(this, x := 0, y := 0, z := 0, realm := _DEFAULT_REALM)
+		this._x := CInt(x);
+		this._y := CInt(y);
+		this._z := CInt(z);
+		this._realm := CStr(realm);
 	endfunction
 
 	function GetX(this)
@@ -39,19 +39,19 @@ class Position(IPosition)
 	endfunction
 	
 	function SetX(this, x)
-		this._x := x;
+		this._x := CInt(x);
 	endfunction
 
 	function SetY(this, y)
-		this._y := y;
+		this._y := CInt(y);
 	endfunction
 
 	function SetZ(this, z)
-		this._z := z;
+		this._z := CInt(z);
 	endfunction
 
 	function SetRealm(this, realm)
-		this._realm := realm;
+		this._realm := CStr(realm);
 	endfunction
 
 	function PlayEffect(this, effectId, speed := 10, duration := 0, hue := 0, render := 0, effect3d := 0)
