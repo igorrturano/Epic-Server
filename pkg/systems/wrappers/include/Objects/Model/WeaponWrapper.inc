@@ -1,12 +1,13 @@
 use math;
 
-include "EquipWrapper";
 include "IWeaponWrapper";
+include "EquipWrapper";
 include ":equipsys:Controller/WeaponController";
 
 include ":combat:Model/DamageTier";
 include ":combat:Model/DamageDice";
 include ":combat:Model/Damage";
+include ":combat:Model/Ammo";
 include ":diceroll:model/Dice";
 
 class WeaponWrapper(EquipWrapper, IWeaponWrapper)
@@ -26,6 +27,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _criticalChance := 0;
 	var _criticalChanceMod := 0;
 	var _strRequired := 0;
+	var _ammo; // Ammo class
 	var _minRange := 1;
 	var _maxRange := 1;
 
@@ -138,6 +140,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return CInt(this._criticalChanceMod);
 	endfunction
 
+	function GetAmmo(this)
+		return this._ammo;
+	endfunction
+
 	function GetMinRange(this)
 		return this._minRange;
 	endfunction
@@ -158,9 +164,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._mainDamage.SetSlashDamage(slash);
-		this._mainDamage.SetPiercingDamage(piercing);
-		this._mainDamage.SetBluntDamage(blunt);
+		this._mainDamage.SetSlashRawDamage(slash);
+		this._mainDamage.SetPiercingRawDamage(piercing);
+		this._mainDamage.SetBluntRawDamage(blunt);
 
 		return this;
 	endfunction
@@ -170,9 +176,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._offDamage.SetSlashDamage(slash);
-		this._offDamage.SetPiercingDamage(piercing);
-		this._offDamage.SetBluntDamage(blunt);
+		this._offDamage.SetSlashRawDamage(slash);
+		this._offDamage.SetPiercingRawDamage(piercing);
+		this._offDamage.SetBluntRawDamage(blunt);
 
 		return this;
 	endfunction
@@ -189,8 +195,24 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function SetCriticalChance(this, value)
 		if (this._item == error) return this._item; endif
-		this._criticalChance := value;
+		this._criticalChance := CInt(value);
 
+		return this;
+	endfunction
+
+	function SetCriticalChanceMod(this, value)
+		if (this._item == error) return this._item; endif
+		this._criticalChanceMod := CInt(value);
+
+		return this;
+	endfunction
+
+	function SetAmmo(this, ammo)
+		if (this._item == error) return this._item; endif
+		if (!(ammo is @Ammo))
+			return error{errortext := "Parameter must be an Ammo class!"};
+		endif
+		this._ammo := ammo;
 		return this;
 	endfunction
 
