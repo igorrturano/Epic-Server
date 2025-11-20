@@ -2,7 +2,7 @@ use uo;
 
 include "IUObjectWrapper";
 
-include ":wrappers:Position/Model/Position";
+include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
 
 class UObjectWrapper(IUObjectWrapper)
@@ -61,7 +61,7 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 
 	function GetPosition(this)
-		return Position(
+		return PositionWrapper(
 			this._objRef.x,
 			this._objRef.y,
 			this._objRef.z,
@@ -69,8 +69,8 @@ class UObjectWrapper(IUObjectWrapper)
 		);
 	endfunction
 
-	function MoveToLocation(this, x, y, z, realm := _DEFAULT_REALM, flags := MOVEOBJECT_NORMAL)
-		return MoveObjectToLocation(this._objRef, x, y, z, realm, flags);
+	function MoveToLocation(this, position, flags := MOVEOBJECT_NORMAL)
+		return MoveObjectToLocation(this._objRef, position.GetX(), position.GetY(), position.GetZ(), position.GetRealm(), flags);
 	endfunction
 
 	function PlaySound(this, soundId)
@@ -85,8 +85,7 @@ class UObjectWrapper(IUObjectWrapper)
 		return this;
 	endfunction
 
-	// Feito com Wrappeds para poder customizar futuramente
-	function PlayEffectTo(this, targetWrapped, effectId, speed, loop := 0, explode := 0, color := 0, translucent := 0)
+	function PlayEffectTo(this, targetWrapped, effectId, speed := 10, loop := 0, explode := 0, color := 0, translucent := 0)
 		PlayMovingEffectXYZHued(this._objRef, targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
 
 		return this;

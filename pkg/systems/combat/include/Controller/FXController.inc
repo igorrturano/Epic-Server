@@ -313,7 +313,7 @@ function PlayThrowingFX(byRef attackInfo)
 	else
 		var effect := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim;
 		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect, 10, 10);
-
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).MoveToLocation(attackInfo.GetDefender().GetPosition());
 	endif
 endfunction
 
