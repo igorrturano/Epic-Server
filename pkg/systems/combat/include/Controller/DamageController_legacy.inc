@@ -1189,11 +1189,11 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(weapon.objtype);
 	
 	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
-	var tem_critico := npcCfg.SetElementName("CriticalHitScripts").GetElementValue(); // Se tem critico no npcdesc definido
+	var tem_critico := npcCfg.SetElementName("CriticalHitScripts").GetKeyValue(); // Se tem critico no npcdesc definido
 
 	if (!attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem)
 		if (tem_critico == {})
-			weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
+			weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
 		else
 			weapon_scripts := tem_critico;
 		endif
@@ -1201,7 +1201,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 		weapon_scripts := tamingCfg.GetElementValue("CriticalHitScripts");
 		Message(pet_txt[1]).SendAbove(attacker);
 	else
-		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
+		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
 	endif
 	// Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
 

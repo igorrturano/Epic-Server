@@ -318,4 +318,10 @@ function PlayThrowingFX(byRef attackInfo)
 endfunction
 
 function PlayShootingFX(byRef attackInfo)
+	attackInfo.GetAttacker().PlayEffectTo(
+		attackInfo.GetDefender(),
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
+		10,
+		10
+	);
 endfunction
