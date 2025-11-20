@@ -60,28 +60,16 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	/*
-	 * Verifica se um determinado tipo de objeto existe dentro do contêiner.
+	 * Obtém um item do contêiner pelo tipo de objeto
 	 *
-	 * @param {ItemWrapper} object - O objeto ItemWrapper a ser procurado no contêiner.
-	 * @param {Integer} flag - (Opcional) Flag de busca. Padrão: FINDOBJTYPE_ROOT_ONLY.
-	 *                         Define o escopo da busca dentro do contêiner.
-	 *						   POSSÍVEIS VALORES: FINDOBJTYPE_ROOT_ONLY, FINDOBJTYPE_IGNORE_LOCKED,
-	 											  FINDOBJTYPE_RECURSIVE.
+	 * @param objType     Tipo do objeto a ser procurado no contêiner
+	 * @param flag        Sinalizador de busca (padrão: FINDOBJTYPE_ROOT_ONLY)
+	 *                    Define o escopo da busca no contêiner
 	 *
-	 * @return {Integer|Error} Retorna a quantidade de objetos encontrados do tipo especificado,
-	 *                         ou um objeto de erro se o parâmetro object não for um ItemWrapper.
-	 *
-	 * @error errortext - "The object must be an ItemWrapper." quando o objeto fornecido
-	 *                    não é uma instância de ItemWrapper.
+	 * @return ItemWrapper Retorna um ItemWrapper contendo o objeto encontrado,
+	 *                     ou um wrapper vazio se nenhum item for encontrado
 	 */
-	function Contains(this, object, flag := FINDOBJTYPE_ROOT_ONLY)
-		if (!(object is @ItemWrapper))
-			return error{errortext := "The object must be an ItemWrapper."};
-		endif
-
-		return FindObjtypeInContainer(this.GetObjRef(), object.GetObjType(), flag);
+	function GetItemByObjType(this, objType, flag := FINDOBJTYPE_ROOT_ONLY)
+		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), objType, flag));
 	endfunction
-
-
-	
 endclass
