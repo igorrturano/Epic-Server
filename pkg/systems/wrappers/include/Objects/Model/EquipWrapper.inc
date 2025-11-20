@@ -8,7 +8,6 @@ include ":equipsys:utils/consts";
 include ":combat:Model/AttributeModifier";
 
 class EquipWrapper(ItemWrapper, IEquipWrapper)
-	var _template; // CfgElem
 	var _prop;
 
 	var _layer := 0x0;

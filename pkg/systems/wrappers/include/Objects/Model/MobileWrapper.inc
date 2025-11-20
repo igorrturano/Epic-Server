@@ -21,6 +21,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		Super(mobRef);
 
 		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
+			this._template := this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
 			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
 			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
 			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
@@ -174,11 +175,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetNPCTemplate(this)
-		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
+		return this._template;
 	endfunction
 
 	function GetNPCDamage(this)
-		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate).Damage : error{errortext := "This mobile is not a NPC!"};
+		return this._template.Damage ?: error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
 	/**
@@ -428,7 +429,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function Update(this)
-		RecalcVitals(this._objRef);
+		return RecalcVitals(this._objRef);
+	endfunction
+
+	function GetTarget(this)
+		return Target(this._objRef);
 	endfunction
 
 	function ConsumeHP(this, value)
