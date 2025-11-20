@@ -2,6 +2,7 @@ use uo;
 
 include "IUObjectWrapper";
 
+include ":wrappers:Position/Model/Position";
 include "include/packets";
 
 class UObjectWrapper(IUObjectWrapper)
@@ -60,12 +61,12 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 
 	function GetPosition(this)
-		return struct{
-			x := this._objRef.x,
-			y := this._objRef.y,
-			z := this._objRef.z,
-			realm := this._objRef.realm
-		};
+		return Position(
+			this._objRef.x,
+			this._objRef.y,
+			this._objRef.z,
+			this._objRef.realm
+		);
 	endfunction
 
 	function MoveToLocation(this, x, y, z, realm := _DEFAULT_REALM, flags := MOVEOBJECT_NORMAL)

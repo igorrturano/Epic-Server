@@ -211,7 +211,7 @@ function CheckDisarmShield(byRef attackInfo)
 						defenderPos.x,
 						defenderPos.y,
 						GetWorldHeight(defenderPos.x, defenderPos.y),
-						attackInfo.GetAttacker().GetPosition().realm,
+						attackInfo.GetAttacker().GetPosition().GetRealm(),
 						MOVEOBJECT_FORCELOCATION
 					);
 				endif

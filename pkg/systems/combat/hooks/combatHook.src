@@ -262,18 +262,18 @@ function arcane_shooting(byRef attackInfo)
 endfunction
 
 function CheckFacing(byRef attackInfo)
-	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y))
+	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()))
 		if (attackInfo.GetAttacker().IsNPC())
 			TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
 		else
-			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().x, attackInfo.GetDefender().GetPosition().y) && !(GetCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
+			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()) && !(GetCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
 				return false;
 			endif
 		endif
 	endif
 
 	var attackDirection;
-	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetPosition().x, attackInfo.GetAttacker().GetPosition().y))
+	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetPosition().GetX(), attackInfo.GetAttacker().GetPosition().GetY()))
 		attackDirection := ATTACK_DIRECTION::BACK;
 	else
 		attackDirection := ATTACK_DIRECTION::FRONT;
