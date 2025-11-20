@@ -17,22 +17,36 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
 
-	function MobileWrapper(this, byRef mobRef)
-		Super(mobRef);
+	function MobileWrapper(this, byRef mobile)
+		Super(mobile);
 
-		if (mobRef.isA(POLCLASS_MOBILE)) // Caso mobRef seja válido
+		if (mobile.isA(POLCLASS_NPC))
+			var err := error{errortext := "This mobile is a NPC!"};
+
+			var cfg := CFGFile("epicAI", "npcdesc");
+			this._template := cfg.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
+			this._name := this._objRef.name;
+			this._race := err;
+			this._culture := err;
+			this._religion := err;
+			this._combatTraits := err;
+		elseif (mobile.isA(POLCLASS_MOBILE)) // Se entrar aqui, é player
 			this._template := this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
 			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
 			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
 			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
-		else
-			var err := error{errortext := "Param is not a mobRef or does not exist!"};
+		elseif (TypeOfInt(mobile) == OT_STRING) // Caso seja apenas um template
+			var err := error{errortext := "This is just a template!"};
+
+			var cfg := CFGFile("epicAI", "npcdesc");
+			this._template := cfg.SetElementName(mobile).GetElementValue();
 			this._objRef := err;
 			this._name := err;
 			this._race := err;
 			this._culture := err;
 			this._religion := err;
 			this._combatTraits := err;
+		else // Caso não seja nenhum valor válido
 		endif
 	endfunction
 
