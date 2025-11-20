@@ -17,19 +17,29 @@ include ":objWrapper:Model/MobileWrapper";
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
 	var defenderAnim := GetDefenderFX(attackInfo);
+	PlayWeaponFX(attackInfo);
 
 	attackInfo.GetAttacker().PlayAnimation(attackerAnim);
 	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
 endfunction
 
 function PlayAttackSFX(byRef attackInfo)
-	var weaponSound   := GetWeaponSFX(attackInfo);
 	var attackerSound := GetAttackerSFX(attackInfo);
 	var defenderSound := GetDefenderSFX(attackInfo);
+	var weaponSound   := GetWeaponSFX(attackInfo);
 
-	attackInfo.GetAttacker().PlaySound(weaponSound);
 	if (attackerSound) attackInfo.GetAttacker().PlaySound(attackerSound); endif
 	if (defenderSound) attackInfo.GetDefender().PlaySound(defenderSound); endif
+	attackInfo.GetAttacker().PlaySound(weaponSound);
+endfunction
+
+function PlayWeaponFX(byRef attackInfo)
+	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(THROWING))
+		PlayThrowingFX(attackInfo);
+	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(BOW) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(CROSSBOW))
+		PlayShootingFX(attackInfo);
+	endif
 endfunction
 
 function PlayParryFX(byRef attackInfo)
@@ -289,4 +299,13 @@ function GetParrySFX(byRef attackInfo)
 	parrySFX := parrySFX.Size() > 1 ? parrySFX[RandomIntMinMax(1, parrySFX.Size() + 1)] : parrySFX[1];
 
 	return parrySFX;
+endfunction
+
+/**************************/
+/* Weapon Custom FX & SFX */
+/**************************/
+function PlayThrowingFX(byRef attackInfo)
+endfunction
+
+function PlayShootingFX(byRef attackInfo)
 endfunction
