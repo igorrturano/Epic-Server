@@ -30,7 +30,7 @@ program MainHitScript(attackInfo)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	
-	if (attackInfo.GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
+	if (Upper(attackInfo.GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED))
 		if (ConsumeAmmo(attackInfo)) // Consome munição
 			TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
 		else
@@ -61,7 +61,7 @@ function CheckBodyRegionToHit(byRef attackInfo)
 endfunction
 
 function TryToRecoverAmmo(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().IsA(POLCLASS_NPC) && attackInfo.GetDefender().GetObjRef().backpack)
+	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
 		if (TryToExecuteHab_ArrowRecovery(attackInfo))
