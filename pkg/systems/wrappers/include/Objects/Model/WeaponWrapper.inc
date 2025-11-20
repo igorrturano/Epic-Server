@@ -154,35 +154,71 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function SetSpeed(this, value)
 		if (this._item == error) return this._item; endif
-		this._speed := value;
+		this._speed := CInt(value);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define os valores de dano principal da arma
+	 *
+	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
+	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
+	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
+	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
+	 *                                - O item interno for inválido
+	 *                                - Algum parâmetro não for uma instância de DamageDice
+	 */
 	function SetMainDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._mainDamage.SetSlashRawDamage(slash);
-		this._mainDamage.SetPiercingRawDamage(piercing);
-		this._mainDamage.SetBluntRawDamage(blunt);
+		this._mainDamage.SetSlashDamage(slash);
+		this._mainDamage.SetPiercingDamage(piercing);
+		this._mainDamage.SetBluntDamage(blunt);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define os valores de dano secundário da arma
+	 *
+	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
+	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
+	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
+	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
+	 *                                - O item interno for inválido
+	 *                                - Algum parâmetro não for uma instância de DamageDice
+	 */
 	function SetOffDamage(this, slash, piercing, blunt)
 		if (this._item == error) return this._item; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._offDamage.SetSlashRawDamage(slash);
-		this._offDamage.SetPiercingRawDamage(piercing);
-		this._offDamage.SetBluntRawDamage(blunt);
+		this._offDamage.SetSlashDamage(slash);
+		this._offDamage.SetPiercingDamage(piercing);
+		this._offDamage.SetBluntDamage(blunt);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o modificador de dano para a arma.
+	 *
+	 * @param {WeaponWrapper} this - Instância do wrapper da arma
+	 * @param {Damage} damageMod - Objeto da classe Damage que será usado como modificador de dano
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância (this) para encadeamento de métodos,
+	 *                                ou erro se o item não existir ou se o parâmetro não for da classe Damage
+	 *
+	 * @error Retorna erro se this._item for error
+	 * @error Retorna erro com mensagem "Parameter must be a Damage class!" se damageMod não for da classe Damage
+	 */
 	function SetDamageMod(this, damageMod)
 		if (this._item == error) return this._item; endif
 		if (!(damageMod is @Damage))
@@ -216,6 +252,30 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Atualiza as propriedades da arma no item.
+	 * 
+	 * Esta função sincroniza todos os atributos da arma wrapper com as propriedades
+	 * do item subjacente, incluindo tipos de dano, atributos de combate e requisitos.
+	 * 
+	 * @param this O objeto WeaponWrapper a ser atualizado
+	 * @return Retorna o item atualizado ou um erro caso o item seja inválido
+	 * 
+	 * @note A função primeiro verifica se o item é válido antes de prosseguir
+	 * @note Chama a função Update da classe pai (EquipWrapper) antes de processar
+	 * @note Atualiza os seguintes atributos:
+	 *       - Attribute: Atributo principal da arma
+	 *       - AttackType: Tipo de ataque
+	 *       - Danos principais: Slash, Piercing e Blunt
+	 *       - Danos secundários: Slash, Piercing e Blunt
+	 *       - CriticalChance: Chance de crítico base
+	 *       - CriticalChanceMod: Modificador de chance de crítico
+	 *       - STRRequired: Força requerida para equipar
+	 *       - AttackSpeed: Velocidade de ataque
+	 *       - MinRange/MaxRange: Alcance mínimo e máximo
+	 * @note Calcula e define o modificador de velocidade (speed_mod) do item
+	 * @note Persiste todas as propriedades através do método SetProp
+	 */
 	function Update(this)
 		if (this._item == error) return this._item; endif
 		EquipWrapper::Update(this);
