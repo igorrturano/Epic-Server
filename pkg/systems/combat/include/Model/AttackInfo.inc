@@ -7,6 +7,7 @@ include "CombatAbility";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
+include ":combat:Model/Ammo";
 include ":diceroll:model/Dice";
 include ":message:model/Message";
 include "include/packets";
@@ -21,10 +22,7 @@ class AttackInfo(IAttackInfo)
 	var _damage; // Damage object
 	var _damageHand := DAMAGE_HAND::MAINHAND;
 	var _attackType := DAMAGE_TYPE::SLASH; // enum da postura que o atacante está usando no ataque
-	var _ammo := struct{
-		itemRef := 0x0,
-		amount := 0
-	};
+	var _ammo; // Ammo object
 	var _hitChance := 100;
 	var _hitChanceMod := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
@@ -94,12 +92,8 @@ class AttackInfo(IAttackInfo)
 		return this._attackType;
 	endfunction
 
-	function GetAmmoObjRef(this)
-		return this._ammo.itemRef;
-	endfunction
-
-	function GetAmmoAmount(this)
-		return this._ammo.amount;
+	function GetAmmo(this)
+		return this._ammo;
 	endfunction
 
 	function GetHitChance(this)
@@ -206,11 +200,10 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
-	function SetAmmo(this, ammoItemRef, amount)
-		if (amount < 1) return error{errortext := "Amount used must be at least 1!"}; endif
-
-		this._ammo.itemRef := ammoItemRef;
-		this._ammo.amount := amount;
+	function SetAmmo(this, ammo)
+		if (!(ammo is @Ammo)) return error{errortext := "Parameter must be an Ammo object!"}; endif
+		
+		this._ammo := ammo;
 
 		return this;
 	endfunction
