@@ -1,3 +1,5 @@
+use uo;
+
 include "IContainerWrapper";
 include "ItemWrapper";
 
@@ -57,8 +59,27 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._isLocked;
 	endfunction
 
-	function Contains(this, object)
-		// Implementation to check if the container contains the specified object
+	/*
+	 * Verifica se um determinado tipo de objeto existe dentro do contêiner.
+	 *
+	 * @param {ItemWrapper} object - O objeto ItemWrapper a ser procurado no contêiner.
+	 * @param {Integer} flag - (Opcional) Flag de busca. Padrão: FINDOBJTYPE_ROOT_ONLY.
+	 *                         Define o escopo da busca dentro do contêiner.
+	 *						   POSSÍVEIS VALORES: FINDOBJTYPE_ROOT_ONLY, FINDOBJTYPE_IGNORE_LOCKED,
+	 											  FINDOBJTYPE_RECURSIVE.
+	 *
+	 * @return {Integer|Error} Retorna a quantidade de objetos encontrados do tipo especificado,
+	 *                         ou um objeto de erro se o parâmetro object não for um ItemWrapper.
+	 *
+	 * @error errortext - "The object must be an ItemWrapper." quando o objeto fornecido
+	 *                    não é uma instância de ItemWrapper.
+	 */
+	function Contains(this, object, flag := FINDOBJTYPE_ROOT_ONLY)
+		if (!(object is @ItemWrapper))
+			return error{errortext := "The object must be an ItemWrapper."};
+		endif
+
+		return FindObjtypeInContainer(this.GetObjRef(), object.GetObjType(), flag);
 	endfunction
 
 
