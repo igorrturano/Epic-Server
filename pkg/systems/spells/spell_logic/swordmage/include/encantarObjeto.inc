@@ -63,6 +63,6 @@ function setBonus(who, item, bonus)
 	endif
 
 	Message("Você encantou o objeto.", FONTCOLOR_SUCCESS).SendSys(who.GetObjRef());
-	PlayStationaryEffect(who.GetPosition().x, who.GetPosition().y, who.GetPosition().z, FX_SPARK_EFFECT, 2, 2);
+	PlayStationaryEffect(who.GetPosition().GetX(), who.GetPosition().GetY(), who.GetPosition().GetZ(), FX_SPARK_EFFECT, 2, 2);
 	who.PlaySound(SFX_SPELL_HEAL);
 endfunction
