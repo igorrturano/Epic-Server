@@ -6,6 +6,7 @@ include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
 
 class UObjectWrapper(IUObjectWrapper)
+	var _template; 
 	var _objRef; // ObjRef
 	var _serial := 0x0;
 	var _objType := 0x0;
@@ -67,6 +68,10 @@ class UObjectWrapper(IUObjectWrapper)
 			this._objRef.z,
 			this._objRef.realm
 		);
+	endfunction
+
+	function GetMobilesInLineOfSight(this, range)
+		return ListMobilesInLineOfSight(this._objRef, CInt(range));
 	endfunction
 	
 	/**

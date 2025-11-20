@@ -1,8 +1,8 @@
 include ":io:CFGFile";
 
-class Ammo()
-	var _objType := 0;
-	var _name := "";
+include ":wrappers:Objects/Model/ItemWrapper";
+
+class Ammo(ItemWrapper)
 	var _anim := 0;
 	var _sound := 0;
 
