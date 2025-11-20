@@ -13,9 +13,9 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
 include ":mastery:Abilities";
-include ":objWrapper:Model/MobileWrapper";
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/ArmorWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
 // include ":message:Model/Message";
 
 program Install()

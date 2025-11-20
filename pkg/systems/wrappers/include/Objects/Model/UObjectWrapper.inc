@@ -68,6 +68,10 @@ class UObjectWrapper(IUObjectWrapper)
 		};
 	endfunction
 
+	function MoveToLocation(this, x, y, z, realm := _DEFAULT_REALM, flags := MOVEOBJECT_NORMAL)
+		return MoveObjectToLocation(this._objRef, x, y, z, realm, flags);
+	endfunction
+
 	function PlaySound(this, soundId)
 		PlaySoundEffect(this._objRef, soundId);
 

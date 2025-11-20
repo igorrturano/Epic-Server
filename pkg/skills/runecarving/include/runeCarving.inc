@@ -1,8 +1,8 @@
 use uo;
 
 include "include/say";
-include ":objWrapper:Model/ArmorWrapper";
-include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 
 // Gem objtype constants
 const GEM_DIAMOND := 0xF30;

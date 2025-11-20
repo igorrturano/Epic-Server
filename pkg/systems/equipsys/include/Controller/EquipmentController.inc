@@ -7,8 +7,8 @@ use cfgfile;
 use math;
 
 include ":equipsys:utils/consts";
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
 include ":equipsys:Controller/ArmorController";
 include ":equipsys:Controller/WeaponController";
 

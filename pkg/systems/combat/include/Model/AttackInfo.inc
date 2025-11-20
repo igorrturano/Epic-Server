@@ -4,9 +4,9 @@ include "IAttackInfo";
 
 include "Damage";
 include "CombatAbility";
-include ":objWrapper:Model/MobileWrapper";
-include ":objWrapper:Model/ArmorWrapper";
-include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include ":diceroll:model/Dice";
 include ":message:model/Message";
 include "include/packets";

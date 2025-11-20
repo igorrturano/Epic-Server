@@ -11,8 +11,8 @@ use cfgfile;
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
@@ -34,7 +34,9 @@ function PlayAttackSFX(byRef attackInfo)
 endfunction
 
 function PlayWeaponFX(byRef attackInfo)
-	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(THROWING))
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("throwItem"))
+
+	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(THROWING))
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(BOW) ||
 			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(CROSSBOW))
@@ -305,6 +307,14 @@ endfunction
 /* Weapon Custom FX & SFX */
 /**************************/
 function PlayThrowingFX(byRef attackInfo)
+	if (attackInfo.GetAttacker().IsNPC())
+		var effect := attackInfo.GetAttacker().GetObjRef().GetProp("throwItem");
+		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect, 10, 10);
+	else
+		var effect := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim;
+		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect, 10, 10);
+
+	endif
 endfunction
 
 function PlayShootingFX(byRef attackInfo)

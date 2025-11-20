@@ -2,8 +2,8 @@ include ":combat:settings";
 include ":combat:Model/AttackInfo";
 include ":combat:Model/CombatAbility";
 
-include ":objWrapper:Model/MobileWrapper";
-// include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+// include ":wrappers:Objects/Model/WeaponWrapper";
 include ":debug:Controller/DebugController";
 
 include ":attributes:attributes";

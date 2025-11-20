@@ -5,7 +5,7 @@ use cfgfile;
 
 include ":alchemy:alchemy";
 include ":spells:spell_logic/swordmage/include/encantarObjeto";
-include ":objWrapper:Model/MobileWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program drink_blue(who, potion)
 	who := MobileWrapper(who);

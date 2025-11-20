@@ -4,7 +4,7 @@ include "include/say";
 include ":tn:cooldown";
 include ":spells:tnmagery";
 include "include/encantarObjeto";
-include ":objWrapper:Model/MobileWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/CombatAbility";
 
 program SpellScript(params)

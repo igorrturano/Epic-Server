@@ -19,7 +19,7 @@ use polsys;
 
 include "include/say";
 include ":mastery:Abilities";
-include ":objWrapper:Model/MobileWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":message:model/Message";
 
