@@ -1,5 +1,5 @@
-include ":objWrapper:Model/MobileWrapper";
-include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 // include ":message:Model/Message";
 include ":gumpDesigner:Gump/Gump";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";

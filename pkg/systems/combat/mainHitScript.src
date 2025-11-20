@@ -8,8 +8,8 @@ include ":combat:Model/CombatAbility";
 include ":combat:weardown";
 
 // External
-include ":objWrapper:Model/MobileWrapper";
-include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include ":mastery:CombatController";
 include ":achievements:CombatController";
 include ":IO:CFGFile";

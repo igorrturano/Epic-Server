@@ -1,5 +1,5 @@
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
 
 program cmd_showequip(who, args)
 	var item, type;

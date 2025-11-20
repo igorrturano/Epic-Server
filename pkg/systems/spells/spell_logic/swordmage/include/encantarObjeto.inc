@@ -1,8 +1,8 @@
 use uo;
 
 include "include/client";
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
 include "include/epicMaterials";
 
 function setBonus(who, item, bonus)

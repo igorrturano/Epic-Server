@@ -5,7 +5,7 @@
  */
 // include "AbilitiesController";
 // include ":message:Model/Message";
-include ":objWrapper:Model/WeaponWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include ":combat:Model/CombatAbility";
 include "include/packets";
 

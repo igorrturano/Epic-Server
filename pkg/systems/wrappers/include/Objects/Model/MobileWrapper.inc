@@ -329,8 +329,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
-		PerformAction(this._objRef, animID, repeatcount, framecount, backward, repeatflag, delay);
-		return this;
+		return PerformAction(this._objRef, Hex(animID), repeatcount, framecount, backward, repeatflag, delay);
+	endfunction
+
+	function PlayMusic(this, musicID)
+		return PlayMusic(this._objRef, Hex(musicID));
 	endfunction
 
 	function Update(this)

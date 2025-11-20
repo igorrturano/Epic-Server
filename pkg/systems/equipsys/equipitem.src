@@ -1,7 +1,7 @@
 include ":message:model/Message";
-include ":objWrapper:Model/ArmorWrapper";
-include ":objWrapper:Model/WeaponWrapper";
-include ":objWrapper:Model/MobileWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 
 program equipitem(params)
