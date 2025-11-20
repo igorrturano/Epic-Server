@@ -181,7 +181,22 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate).Damage : error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
-	function GetEquipBySlot(this, equipSlot) // Os enum estão em EquipWrapper::EQUIP_SLOT
+	/**
+	 * Obtém o equipamento equipado em um slot específico do personagem.
+	 *
+	 * @param this Referência ao objeto Mobile (personagem)
+	 * @param equipSlot ENUM do Slot do equipamento a ser consultado (WEAPON, SHIELD, HEAD, NECK, ARMS, BODY, HANDS, LEGS, FEET)
+	 *
+	 * @return WeaponWrapper|ArmorWrapper|Array<ArmorWrapper>|error
+	 *         - Para WEAPON: retorna WeaponWrapper ou erro se o slot estiver vazio
+	 *         - Para SHIELD: retorna ArmorWrapper ou erro se o slot estiver vazio
+	 *         - Para outros slots de armadura: retorna array de ArmorWrapper ou erro se o slot estiver vazio
+	 *         - Retorna erro se o slot especificado for inválido
+	 *
+	 * @error "Empty slot!" - Quando não há equipamento no slot especificado
+	 * @error "Wrong slot specified!" - Quando o slot informado não é válido
+	 */
+	function GetEquipBySlot(this, equipSlot)
 		var equipsInSlot;
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
@@ -218,6 +233,21 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return equipsInSlot;
 	endfunction
 
+	/*
+	 * Obtém o equipamento equipado em uma camada específica do personagem
+	 *
+	 * Parâmetros:
+	 *   this      - Referência ao objeto mobile
+	 *   layerEnum - Enumeração da camada de equipamento a ser consultada
+	 *
+	 * Retorna:
+	 *   ArmorWrapper - Objeto wrapper da armadura equipada na camada especificada
+	 *                  ou invalid se não houver equipamento na camada
+	 *
+	 * Descrição:
+	 *   Esta função encapsula a chamada nativa GetEquipmentByLayer e retorna
+	 *   o resultado como um ArmorWrapper para facilitar a manipulação do item.
+	 */
 	function GetEquipByLayer(this, layerEnum)
 		return ArmorWrapper(GetEquipmentByLayer(this._objRef, layerEnum));
 	endfunction
@@ -259,7 +289,20 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
-	function SetCombatTraits(this, combatTrait) // combatTrait: CombatTraits
+	/**
+	 * Define as características de combate do mobile.
+	 * 
+	 * @param this Referência ao objeto MobileWrapper
+	 * @param combatTrait Objeto CombatTraits contendo as características de combate a serem definidas
+	 * 
+	 * @return this Retorna a própria instância do objeto para encadeamento de métodos
+	 * @return error Retorna um erro se o parâmetro não for um objeto CombatTraits
+	 * 
+	 * @example
+	 * var traits := CombatTraits.Create();
+	 * mobile.SetCombatTraits(traits);
+	 */
+	function SetCombatTraits(this, combatTrait)
 		if (!(combatTrait is @CombatTraits))
 			return error{errortext := "The param must be a CombatTraits object!"};
 		endif
@@ -270,6 +313,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Aplica os modificadores de um item no objeto móvel.
+	 *
+	 * @param itemWrapped ArmorWrapper|WeaponWrapper - Objeto wrapper de armadura ou arma contendo os modificadores
+	 * @return MobileWrapper - Retorna a própria instância para encadeamento de métodos
+	 * @throws error - Retorna erro se o parâmetro não for um ArmorWrapper ou WeaponWrapper
+	 *
+	 * @description
+	 * Esta função itera sobre todos os modificadores do item fornecido e os aplica
+	 * na referência do objeto móvel (_objRef). Um pequeno atraso de 2ms é adicionado
+	 * entre cada aplicação de modificador.
+	 */
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
 			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
@@ -283,6 +338,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/*
+	 * Remove modificadores de um item equipado
+	 *
+	 * Remove todos os modificadores de um item (arma ou armadura) do mobile.
+	 * Itera por cada modificador do item e os remove da referência do objeto.
+	 *
+	 * @param itemWrapped ArmorWrapper|WeaponWrapper - O objeto wrapper do item (armadura ou arma)
+	 *
+	 * @return MobileWrapper - Retorna a própria instância para encadeamento de métodos
+	 * @return Error - Retorna erro se o parâmetro não for um ArmorWrapper ou WeaponWrapper
+	 */
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
 			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
@@ -320,7 +386,19 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.connected == true;
 	endfunction
 
-	function DistanceTo(this, otherObj) // other: ObjRef
+	/*
+	 * Calcula a distância entre este objeto e outro objeto.
+	 *
+	 * @param this      Referência ao objeto atual
+	 * @param otherObj  Referência ao objeto de destino (deve ser um POLCLASS_UOBJECT)
+	 *
+	 * @return Integer  Distância entre os dois objetos
+	 * @return Error    Retorna um erro se otherObj não for uma referência de objeto válida
+	 *
+	 * @example
+	 *   var distancia := mobile.DistanceTo(target);
+	 */
+	function DistanceTo(this, otherObj)
 		if (!otherObj.IsA(POLCLASS_UOBJECT))
 			return error{errortext := "The param must be an ObjRef!"};
 		endif
@@ -328,6 +406,19 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return Distance(this._objRef, otherObj);
 	endfunction
 
+	/**
+	 * Reproduz uma animação no objeto móvel.
+	 *
+	 * @param this          Referência ao objeto wrapper do móvel
+	 * @param animID        ID da animação a ser reproduzida
+	 * @param framecount    Número de frames da animação (padrão: 5)
+	 * @param repeatcount   Número de vezes que a animação será repetida (padrão: 1)
+	 * @param backward      Direção da animação - ACTION_DIR_FORWARD ou ACTION_DIR_BACKWARD (padrão: ACTION_DIR_FORWARD)
+	 * @param repeatflag    Flag de repetição - ACTION_NOREPEAT ou ACTION_REPEAT (padrão: ACTION_NOREPEAT)
+	 * @param delay         Atraso entre repetições em frames (padrão: 1)
+	 *
+	 * @return Retorna o resultado da execução da ação PerformAction
+	 */
 	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
 		return PerformAction(this._objRef, Hex(animID), repeatcount, framecount, backward, repeatflag, delay);
 	endfunction
