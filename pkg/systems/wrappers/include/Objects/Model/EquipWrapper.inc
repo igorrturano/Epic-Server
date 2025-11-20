@@ -34,7 +34,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			
 		else // Caso seja apenas um template
 			this._template := cfgFile.SetElementName(item).GetElementValue();
-			this._objType := error{"errortext" := "This item is just a template!"};
+			this._objType := item;
 			this._prop := error{"errortext" := "This item is just a template!"};
 
 			this._weight := this._template.weight;
