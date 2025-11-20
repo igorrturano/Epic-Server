@@ -336,7 +336,31 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	function Update(this)
 		RecalcVitals(this._objRef);
 	endfunction
-	
+
+	function ConsumeHP(this, value)
+		return AP_ConsumeVital(this._objRef, HITS, CDbl(value));
+	endfunction
+
+	function ConsumeStamina(this, value)
+		return AP_ConsumeVital(this._objRef, STAMINA, CDbl(value));
+	endfunction
+
+	function ConsumeMana(this, value)
+		return AP_ConsumeVital(this._objRef, MANA, CDbl(value));
+	endfunction
+
+	function RestoreHP(this, value)
+		return HealHits(this._objRef, CDbl(value));
+	endfunction
+
+	function RestoreStamina(this, value)
+		return HealStamina(this._objRef, CDbl(value));
+	endfunction
+
+	function RestoreMana(this, value)
+		return HealMana(this._objRef, CDbl(value));
+	endfunction
+
 	function Dispose(this)
 		this._objRef := 0;
 		this._name := "";
