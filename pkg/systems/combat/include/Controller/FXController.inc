@@ -320,7 +320,7 @@ endfunction
 function PlayShootingFX(byRef attackInfo)
 	attackInfo.GetAttacker().PlayEffectTo(
 		attackInfo.GetDefender(),
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim,
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAmmo().GetAnim(),
 		10,
 		10
 	);
