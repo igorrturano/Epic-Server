@@ -198,28 +198,27 @@ function CheckAmmo(byRef attackInfo)
 		return true;
 	endif
 
-	var ammo := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
-	if (!ammo)
+	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
+	if (!ammoSerial)
 		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	// Handle stones differently - they don't need aljava check
-	var obj := SystemFindObjectBySerial(ammo);
-	attackInfo.SetAmmo(obj, 1);
-	var needs_aljava := (obj.objtype != STONE_OBJTYPE);
-	if (needs_aljava)
-		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE).GetObjRef();
+	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial).objtype);
+	attackInfo.SetAmmo(ammo);
+	if (ammo.NeedsQuiver())
+		var aljavas := array{0x791c, 0x2fb7};
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE);
 
 		if (!(aljava.objtype in aljavas))
-			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
 		endif
 
 		// Check if ammo is in aljava
 		var found_in_aljava := false;
 		foreach arrow in (EnumerateItemsInContainer(aljava))
-			if (arrow.serial == ammo)
+			if (arrow.serial == ammo.GetObjRef().serial)
 				found_in_aljava := true;
 				break;
 			endif
