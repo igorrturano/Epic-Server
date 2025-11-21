@@ -40,7 +40,6 @@ exported function LoginHook(who, byref packet)
 	var username := Packet.GetString(OFFSET_ACCOUNT_NAME, INFO_LEN);
 	var password := Packet.GetString(OFFSET_ACCOUNT_PASS, INFO_LEN);
 	var key := Packet.GetInt8(OFFSET_CLIENT_KEY);
-	Print("key: " + key);
 
 	if (!username)
 		SysLog("Account/GetString Error: " + username.errortext);
