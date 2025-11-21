@@ -5,6 +5,7 @@ use cfgfile;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":voidrift:include/voidrift";
+include ":message:include/model/Message";
 include "include/epicConstants";
 
 program useScroll(who, scroll)
@@ -14,13 +15,13 @@ program useScroll(who, scroll)
     var ritual_id := GetObjProperty(scroll, "ritual");
 
     if (!ritual_id)
-        SendSysMessage(who, "Este pergaminho não possui um ritual válido.");
+        Message("Este pergaminho nao possui um ritual valido.").SendSys(who);
         return 0;
     endif
 
     var ritual := LoadRitualConfig(ritual_id);
     if (ritual.errortext)
-        SendSysMessage(who, ritual.errortext);
+        Message(ritual.errortext).SendSys(who);
         return 0;
     endif
 
@@ -113,7 +114,7 @@ function ExecuteRitual(who, scroll, scroll_type, scroll_level, reagents)
     // Verificar ingredientes e coletar itemRefs
     var items_to_consume := CheckReagents(who, reagents);
     if (!items_to_consume)
-        SendSysMessage(who, "Voce nao possui os ingredientes necessarios.");
+        Message("Voce nao possui os ingredientes necessarios.").SendSys(who);
         return 0;
     endif
 
@@ -153,7 +154,7 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
                 SetEntropy(mobile, VOIDRIFT_MIN_CORRUPTION);
             endif
             UpdateEntropy(mobile, entropy_amount);
-            SendSysMessage(mobile, "Voce sente uma energia sombria corromper sua alma!");
+            Message("Voce sente uma energia sombria corromper sua alma!").SendSys(mobile);
         endif
     endforeach
 
@@ -166,7 +167,7 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
     // Criar portal
     var portal := CreateItemAtLocation(who.x, who.y, who.z, VOIDRIFT_PORTAL_OBJTYPE, 1, who.realm);
     if (!portal)
-        SendSysMessage(who, "Erro ao criar o portal!");
+        Message("Erro ao criar o portal!").SendSys(who);
         return 0;
     endif
 
@@ -180,7 +181,7 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
     // Efeito visual do portal
     PlayObjectCenteredEffect(portal, EPIC_FX_PORTAL_SUGADOR, 0, 30);
     PlaySoundEffect(who, 0x20D);
-    SendSysMessage(who, "O portal do vazio foi aberto! " + spawn_amount + " criaturas serao invocadas.");
+    Message("O portal do vazio foi aberto! " + spawn_amount + " criaturas serao invocadas.").SendSys(who);
     // ControlScript inicia automaticamente via itemdesc.cfg
 endfunction
 
@@ -189,7 +190,7 @@ function ExecutePurgeRitual(who, scroll, scroll_level)
     var portal := FindNearbyPortal(who, scroll_level);
 
     if (!portal)
-        SendSysMessage(who, "Nao ha portais do vazio proximos que possam ser destruidos.");
+        Message("Nao ha portais do vazio proximos que possam ser destruidos.").SendSys(who);
         // Ainda adiciona entropia positiva
         var entropy_amount;
         case (scroll_level)
@@ -226,5 +227,5 @@ function ExecutePurgeRitual(who, scroll, scroll_level)
     endcase
     UpdateEntropy(who, entropy_amount);
 
-    SendSysMessage(who, "O portal do vazio foi purificado e fechado!");
+    Message("O portal do vazio foi purificado e fechado!").SendSys(who);
 endfunction
