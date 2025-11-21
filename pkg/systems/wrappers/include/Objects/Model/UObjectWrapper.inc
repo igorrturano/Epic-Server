@@ -6,7 +6,8 @@ include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
 
 class UObjectWrapper(IUObjectWrapper)
-	var _template; 
+	var _cfgFile;
+	var _template;
 	var _objRef; // ObjRef
 	var _serial := 0x0;
 	var _objType := 0x0;
