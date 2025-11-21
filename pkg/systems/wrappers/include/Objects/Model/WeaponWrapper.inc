@@ -171,7 +171,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function SetSpeed(this, value)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		this._speed := CInt(value);
 
 		return this;
@@ -190,7 +190,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *                                - Algum parâmetro não for uma instância de DamageDice
 	 */
 	function SetMainDamage(this, slash, piercing, blunt)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
@@ -214,7 +214,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *                                - Algum parâmetro não for uma instância de DamageDice
 	 */
 	function SetOffDamage(this, slash, piercing, blunt)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
@@ -238,7 +238,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @error Retorna erro com mensagem "Parameter must be a Damage class!" se damageMod não for da classe Damage
 	 */
 	function SetDamageMod(this, damageMod)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(damageMod is @Damage))
 			return error{errortext := "Parameter must be a Damage class!"};
 		endif
@@ -248,21 +248,21 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function SetCriticalChance(this, value)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		this._criticalChance := CInt(value);
 
 		return this;
 	endfunction
 
 	function SetCriticalChanceMod(this, value)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		this._criticalChanceMod := CInt(value);
 
 		return this;
 	endfunction
 
 	function SetAmmo(this, ammo)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(ammo is @Ammo))
 			return error{errortext := "Parameter must be an Ammo class!"};
 		endif
@@ -295,7 +295,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @note Persiste todas as propriedades através do método SetProp
 	 */
 	function Update(this)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		EquipWrapper::Update(this);
 
 		this._prop.+Attribute := this._attribute;
@@ -313,9 +313,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		this._prop.+MinRange := this._minRange;
 		this._prop.+MaxRange := this._maxRange;
 
-		this._item.speed_mod := CInt(this._speed) - this._item.speed;
+		this._objRef.speed_mod := CInt(this._speed) - this._objRef.speed;
 		
-		this._item.SetProp(PROPNAME_ITEMINFO, this._prop);
+		this._objRef.SetProp(PROPNAME_ITEMINFO, this._prop);
 	endfunction
 
 	function ToString(this)
@@ -328,7 +328,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function IsMontante(this)
-		return this._item.objtype in array{0x26CF, 0xF9EA, 0xF9F7};
+		return this._objType in array{0x26CF, 0xF9EA, 0xF9F7};
 	endfunction
 
 	function IsRanged(this)

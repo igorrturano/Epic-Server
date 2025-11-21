@@ -34,7 +34,8 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			this._name := this._prop.Name ?: this._objRef.name;
 			this._weight := this._prop.Weight ?: this._objRef.weight;
 			this._maxHP := this._prop.MaxHP ?: this._objRef.maxHP;
-		else // Caso seja apenas um template ou tipo errado
+			this._modifiers := dictionary{};
+		else // Caso seja um template ou tipo errado
 			var err;
 			if (!this._template)
 				err := InvalidFormatException("The param must be a Equipment ObjRef or a valid Template!");
@@ -48,11 +49,10 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 				this._graphic := this._template.graphic;
 			endif
 			
-			// Aqui ficam os que recebem erro de qualquer jeito
 			this._prop := err;
+			this._layer := err;
+			this._modifiers := err;
 		endif
-
-		this._modifiers := dictionary{};
 	endfunction
 
 	function GetTemplate(this)
@@ -89,9 +89,22 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		return this._modifiers;
 	endfunction
 
-	function SetModifier(this, modifier) // modifier: AttributeModifier
+	/**
+	 * Define um modificador para o objeto.
+	 * 
+	 * @param modifier O modificador a ser definido (deve ser um objeto AttributeModifier)
+	 * 
+	 * @return this Retorna a própria instância para encadeamento de métodos, ou
+	 *              Exception se _objRef for uma exceção, ou
+	 *              InvalidFormatException se o parâmetro não for um AttributeModifier
+	 */
+	function SetModifier(this, modifier)
 		if (this._objRef is @Exception)
 			return this._objRef;
+		endif
+
+		if (!(modifier is @AttributeModifier))
+			return InvalidFormatException("The param must be an AttributeModifier object!");
 		endif
 
 		this._modifiers[modifier.GetAttribute()] := modifier;

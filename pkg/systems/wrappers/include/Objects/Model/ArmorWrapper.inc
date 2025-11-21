@@ -47,86 +47,78 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 	
 	function GetTipoProtecao(this)
-		return this._tipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
+		return this._tipoProtecao;
 	endfunction
 
 	function GetCoverage(this)
-		return this._coverage ?: error{ errortext := "The item have no Coverage!" };
+		return this._coverage;
 	endfunction
 
 	function GetResists(this)
 		var base := this.GetResistsBase();
 		var mod := this.GetResistsMod();
 
-		if (!base)
-			return error{ errortext := "The item have no Resists!" };
-		endif
-
-		if (!mod)
+		if (base is @Exception)
 			return base;
 		endif
 
 		return ArmorResist(
-			base.GetSlashResist() + mod.GetSlashResist(),
-			base.GetPiercingResist() + mod.GetPiercingResist(),
-			base.GetBluntResist() + mod.GetBluntResist(),
-			base.GetFireResist() + mod.GetFireResist(),
-			base.GetColdResist() + mod.GetColdResist(),
-			base.GetEnergyResist() + mod.GetEnergyResist(),
-			base.GetPoisonResist() + mod.GetPoisonResist()
+			CInt(base.GetSlashResist()) + CInt(mod.GetSlashResist()),
+			CInt(base.GetPiercingResist()) + CInt(mod.GetPiercingResist()),
+			CInt(base.GetBluntResist()) + CInt(mod.GetBluntResist()),
+			CInt(base.GetFireResist()) + CInt(mod.GetFireResist()),
+			CInt(base.GetColdResist()) + CInt(mod.GetColdResist()),
+			CInt(base.GetEnergyResist()) + CInt(mod.GetEnergyResist()),
+			CInt(base.GetPoisonResist()) + CInt(mod.GetPoisonResist())
 		);
 	endfunction
 
 	function GetResistsBase(this)
-		return this._resists ?: error{ errortext := "The item have no Resists!" };
+		return this._resists;
 	endfunction
 
 	function GetResistsMod(this)
-		return this._resistsMod ?: error{ errortext := "The item have no Resists Modifier!" };
+		return this._resistsMod;
 	endfunction
 
 	function GetShieldAttributes(this)
 		var base := this.GetShieldAttributesBase();
 		var mod := this.GetShieldAttributesMod();
 
-		if (!base)
-			return error{ errortext := "The item have no Shield Attributes!" };
-		endif
-
-		if (!mod)
+		if (base is @Exception)
 			return base;
 		endif
 
 		return ShieldAttributes(
-			base.GetParryBonus() + mod.GetParryBonus(),
-			base.GetParryDelay() + mod.GetParryDelay()
+			CInt(base.GetParryBonus()) + CInt(mod.GetParryBonus()),
+			CInt(base.GetParryDelay()) + CInt(mod.GetParryDelay())
 		);
 	endfunction
 	
 	function GetShieldAttributesBase(this)
-		return this._shieldAttributes ?: error{ errortext := "The item have no Shield Attributes!" };
+		return this._shieldAttributes;
 	endfunction
 
 	function GetShieldAttributesMod(this)
-		return this._shieldAttributesMod ?: error{ errortext := "The item have no Shield Attributes Modifier!" };
+		return this._shieldAttributesMod;
 	endfunction
 
 	function SetResistsBase(this, resists)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		this._resists := resists;
 
 		return this;
 	endfunction
 
 	function SetResistsMod(this, resists)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		this._resistsMod := resists;
 
 		return this;
 	endfunction
 
 	function SetShieldAttributesBase(this, shieldAttrs)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
 
 		this._shieldAttributes := shieldAttrs;
@@ -135,7 +127,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 
 	function SetShieldAttributesMod(this, shieldAttrs)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
 
 		this._shieldAttributesMod := shieldAttrs;
@@ -144,7 +136,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 
 	function Update(this)
-		if (this._item == error) return this._item; endif
+		if (this._objRef is @Exception) return this._objRef; endif
 		EquipWrapper::Update(this);
 
 		this._prop.+SlashResist := this._resists.GetSlashResist();
