@@ -84,7 +84,6 @@ program daynightsystem()
 		endif
 		
 		var ev := Wait_For_Event( base_full_cycle_seconds * 2);
-		Print("DayNight EventReceived: " + ev);
 
 		if(ev.id == DAYNIGHT_EVTS::EV_ADVANCE_DAY_ID)
 			advanceDay();
