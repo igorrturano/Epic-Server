@@ -1,6 +1,7 @@
 use uo;
 
 include ":wrappers:Objects/Exceptions/_all";
+include "system/exception/FormatException/InvalidFormatException";
 
 include "IUObjectWrapper";
 
@@ -28,13 +29,11 @@ class UObjectWrapper(IUObjectWrapper)
 		else
 			this._objType := object;
 
-			var err := IsTemplateException();
-			this._objRef := err;
-			this._serial := err;
-
-			err := InvalidTemplateException("Template not loaded properly!");
+			var err := InvalidTemplateException("Template not loaded properly!");
 			this._cfgFile := err;
 			this._template := err;
+			this._objRef := err;
+			this._serial := err;
 			this._name := err;
 			this._graphic := err;
 			this._color := err;

@@ -9,8 +9,7 @@ class IAttackInfo()
 	uninit function GetDamage(this);
 	uninit function GetDamageHand(this);
 	uninit function GetAttackType(this);
-	uninit function GetAmmoObjRef(this);
-	uninit function GetAmmoAmount(this);
+	uninit function GetAmmo(this);
 	uninit function GetHitChance(this);
 	uninit function GetHitChanceMod(this);
 	uninit function GetHitChanceResult(this);
@@ -32,7 +31,7 @@ class IAttackInfo()
 	uninit function SetDamage(this, damage);
 	uninit function SetDamageHand(this, damageHand);
 	uninit function SetAttackType(this, attackType);
-	uninit function SetAmmo(this, ammoItemRef, amount);
+	uninit function SetAmmo(this, ammo);
 	uninit function SetHitChance(this, value);
 	uninit function SetHitChanceMod(this, value);
 	uninit function SetCriticalHitChance(this, value);
