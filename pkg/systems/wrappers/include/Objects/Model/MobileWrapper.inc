@@ -1,10 +1,15 @@
 use uo;
 
+// Exceptions
+include ":wrappers:Objects/Exceptions/_all";
+
+// Internal
 include "IMobileWrapper";
 include "UObjectWrapper";
 include "ArmorWrapper";
 include "WeaponWrapper";
 
+// External
 include ":attributes:skills";
 include ":attributes:vitals";
 include ":attributes:stats";
@@ -21,25 +26,30 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		Super(mobile);
 
 		if (mobile.isA(POLCLASS_NPC))
-			var err := error{errortext := "This mobile is a NPC!"};
-
-			var cfg := CFGFile("epicAI", "npcdesc");
-			this._template := cfg.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
+			this._cfgFile := CFGFile("epicAI", "npcdesc");
+			this._template := this._cfgFile.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
 			this._name := this._objRef.name;
+
+			// Variáveis que indicarão que é um NPC
+			var err := error{errortext := "This mobile is a NPC!"};
 			this._race := err;
 			this._culture := err;
 			this._religion := err;
 			this._combatTraits := err;
 		elseif (mobile.isA(POLCLASS_MOBILE)) // Se entrar aqui, é player
-			this._template := error{errortext := "This mobile has no template configured! Is a player?"};
 			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
 			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
 			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
-		elseif (TypeOfInt(mobile) == OT_STRING) // Caso seja apenas um template
-			var err := error{errortext := "This is just a template!"};
 
-			var cfg := CFGFile("epicAI", "npcdesc");
-			this._template := cfg.SetElementName(mobile).GetElementValue();
+			// Variáveis que indicarão que é um player
+			var err := error{errortext := "This mobile is a player!"};
+			this._template := err;
+		elseif (TypeOfInt(mobile) == OT_STRING) // Caso seja apenas um template
+			this._cfgFile := CFGFile("epicAI", "npcdesc");
+			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
+
+			// Variáveis que indicarão é apenas um template
+			var err := error{errortext := "This is just a template!"};
 			this._objRef := err;
 			this._name := err;
 			this._race := err;
@@ -147,31 +157,65 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetMaxHunger(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
 	endfunction
 
 	function GetRegenHP(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, HITS);
 	endfunction
 
 	function GetRegenStamina(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, STAMINA);
 	endfunction
 
 	function GetRegenMana(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, MANA);
 	endfunction
 
 	function GetRegenHunger(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
 	function GetGender(this)
+		if (!this._objRef)
+			if (!this._template)
+				return error{errortext := "This is not a Player, NPC or valid template!"};
+			else
+				if (this._template.Gender == 0)
+					return MOBILE_GENDER::MALE;
+				elseif (this._template.Gender == 1)
+					return MOBILE_GENDER::FEMALE;
+				else
+					return MOBILE_GENDER::UNDEFINED;
+				endif
+			endif
+		endif
+		
 		if (this._objRef.gender == 0)
 			return MOBILE_GENDER::MALE;
 		elseif (this._objRef.gender == 1)
@@ -186,10 +230,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 	
 	function GetCriticalChanceBase(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		return CInt(this._objRef.GetProp("CriticalChance"));
 	endfunction
 
 	function GetCriticalChanceMod(this)
+		if (!this._objRef)
+			return InvalidMobRefException();
+		endif
+		
 		return CInt(this._objRef.GetProp("#CriticalChance"));
 	endfunction
 
@@ -221,6 +273,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @error "Wrong slot specified!" - Quando o slot informado não é válido
 	 */
 	function GetEquipBySlot(this, equipSlot)
+		if (!this._objRef)
+			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		endif
+		
 		var equipsInSlot;
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
@@ -273,6 +329,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   o resultado como um ArmorWrapper para facilitar a manipulação do item.
 	 */
 	function GetEquipByLayer(this, layerEnum)
+		if (!this._objRef)
+			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		endif
+		
 		return ArmorWrapper(GetEquipmentByLayer(this._objRef, layerEnum));
 	endfunction
 
@@ -304,6 +364,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
+		if (!this._objRef)
+			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		endif
+		
 		AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
@@ -391,23 +455,23 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function IsNPC(this)
-		return this._objRef.npctemplate != error;
+		return this._template != error;
 	endfunction
 
 	function IsDead(this)
-		return this._objRef.dead == true;
+		return this._objRef ? this._objRef.dead == true : error{errortext := "Invalid mobRef. Maybe a template?"};
 	endfunction
 
 	function IsWarMode(this)
-		return this._objRef.warmode == true;
+		return this._objRef ? this._objRef.warmode == true : error{errortext := "Invalid mobRef. Maybe a template?"};
 	endfunction
 
 	function IsMounted(this)
-		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+		return this._objRef ? this.GetEquipByLayer(LAYER_MOUNT) == true : error{errortext := "Invalid mobRef. Maybe a template?"};
 	endfunction
 
 	function IsConnected(this)
-		return this._objRef.connected == true;
+		return this._objRef ? this._objRef.connected == true : error{errortext := "Invalid mobRef. Maybe a template?"};
 	endfunction
 
 	/*
