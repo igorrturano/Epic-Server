@@ -297,7 +297,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 		this._item.speed_mod := CInt(this._speed) - this._item.speed;
 		
-		this._item.SetProp("atributos", this._prop);
+		this._item.SetProp(PROPNAME_ITEMINFO, this._prop);
 	endfunction
 
 	function ToString(this)

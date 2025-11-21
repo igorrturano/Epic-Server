@@ -1,5 +1,8 @@
 use uo;
 
+include ":wrappers:Objects/Exceptions/_all";
+include "system/exception/FormatException/InvalidFormatException";
+
 include "IContainerWrapper";
 include "ItemWrapper";
 
@@ -11,18 +14,19 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	function ContainerWrapper(this, byRef objRef)
 		Super(objRef);
 
-		var cfg := CFGFile("containers", "itemdesc");
-		this._template := cfg.SetElementName(this._objRef.objtype).GetElementValue();
+		this._cfgFile := CFGFile("containers", "itemdesc");
 		if (objRef.isA(POLCLASS_CONTAINER))
+			this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
 			this._name := this._objRef.name;
 			this._weightMultiplier := this._objRef.held_weight_multiplier;
 			this._maxItems := this._objRef.max_items_mod;
 			this._maxSlots := this._objRef.max_slots_mod;
 			this._maxWeight := this._objRef.max_weight_mod;
-		else
-			var err := error{errortext := "Param is not a container ObjRef or is just a template!"};
-			this._objRef := err;
+		else // Caso seja apenas um template
 			this._name := this._template.desc;
+
+			var err := InvalidFormatException("Param is not a container ObjRef or is just a template!");
+			this._objRef := err;
 		endif
 	endfunction
 
@@ -98,9 +102,13 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ItemWrapper Retorna um ItemWrapper contendo o objeto encontrado,
 	 *                     ou um wrapper vazio se nenhum item for encontrado
 	 */
-	function GetItemByObjType(this, objType, flag := FINDOBJTYPE_ROOT_ONLY)
-		if (this._objRef == error) return this._objRef; endif
+	function GetItemInside(this, item, searchRecursively := false)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
-		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), objType, flag));
+		var flag := searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY;
+
+		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), flag));
 	endfunction
 endclass

@@ -1,5 +1,7 @@
 use uo;
 
+include "system/exception/PropException/InvalidPropException";
+
 include "IEquipWrapper";
 include "ItemWrapper";
 include ":IO:CFGFile";
@@ -7,41 +9,47 @@ include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
 
+CONST PROPNAME_ITEMINFO := "itemInfo";
+
 class EquipWrapper(ItemWrapper, IEquipWrapper)
 	var _prop;
-
 	var _layer := 0x0;
 	var _weight := 0;
 	var _maxHP := 0;
-	var _material := "";
-
 	var _modifiers := dictionary{}; // Dictionary of AttributeModifier()
 
 	function EquipWrapper(this, byRef item)
 		Super(item);
 
-		var cfgFile := CFGFile("*", "itemdesc");
-		if (item.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
-			this._template := cfgFile.SetElementName(item.objtype).GetElementValue();
-			this._prop := item.GetProp("atributos") ?: error{"errortext" := "This item has no attributes Property!"};
-			this._layer := item.layer;
-			this._graphic := this._template.graphic;
-			this._color := this._template.color;
-			
-			this._name := this._prop.Name ?: item.name;
-			this._weight := this._prop.Weight ?: item.weight;
-			this._maxHP := this._prop.MaxHP ?: item.maxHP;
-			
-		else // Caso seja apenas um template
-			this._template := cfgFile.SetElementName(item).GetElementValue();
-			this._objType := item;
-			this._prop := error{"errortext" := "This item is just a template!"};
+		this._cfgFile := CFGFile("combat", "itemdesc");
+		this._template := this._cfgFile.SetElementName(this._objType).GetElementValue();
 
-			this._weight := this._template.weight;
-			this._maxHP := this._template.maxHP;
-			this._graphic := this._template.graphic;
-
-			this._material := this._template.Material ?: error{"errortext" := "This item is just a template and have no Material!"};
+		if (this._objRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
+			var err := InvalidTemplateException();
+			this._prop := this._objRef.GetProp(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
+			this._layer := this._objRef.layer;
+			this._graphic := this._objRef.graphic;
+			this._color := this._objRef.color;
+			
+			this._name := this._prop.Name ?: this._objRef.name;
+			this._weight := this._prop.Weight ?: this._objRef.weight;
+			this._maxHP := this._prop.MaxHP ?: this._objRef.maxHP;
+		else // Caso seja apenas um template ou tipo errado
+			var err;
+			if (!this._template)
+				err := InvalidFormatException("The param must be a Equipment ObjRef or a valid Template!");
+				this._weight := err;
+				this._maxHP := err;
+				this._graphic := err;
+			else
+				err := IsTemplateException();
+				this._weight := this._template.weight;
+				this._maxHP := this._template.maxHP;
+				this._graphic := this._template.graphic;
+			endif
+			
+			// Aqui ficam os que recebem erro de qualquer jeito
+			this._prop := err;
 		endif
 
 		this._modifiers := dictionary{};
@@ -67,57 +75,34 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		return this._maxHP;
 	endfunction
 
-	function GetMaterial(this)
-		return this._material ?: error{"errortext" := "The item have no Material!"};
-	endfunction
-
 	function GetModifier(this, modifierName)
+		if (this.GetModifiers() is @Exception)
+			return this.GetModifiers();
+		endif
+
 		if (this._modifiers.size() == 0) return error{"errortext" := "The item have no Modifiers!"}; endif
+
 		return this._modifiers[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
 	endfunction
 	
 	function GetModifiers(this)
-		return this._modifiers ?: error{"errortext" := "The item have no Modifiers!"};
-	endfunction
-
-	function _SetName(this, name)
-		if (this._objType == error) return this._objType; endif
-		Super::_SetName(this, name);
-		return this;
-	endfunction
-
-	function SetGraphic(this, graphic)
-		if (this._objType == error) return this._objType; endif
-		Super::SetGraphic(this, graphic);
-		return this;
-	endfunction
-
-	function SetWeight(this, weight)
-		if (this._objType == error) return this._objType; endif
-		this._weight := weight;
-		return this;
-	endfunction
-
-	function SetMaxHP(this, maxHP)
-		if (this._objType == error) return this._objType; endif
-		this._maxHP := maxHP;
-		return this;
-	endfunction
-
-	function SetMaterial(this, material)
-		if (this._objType == error) return this._objType; endif
-		this._material := material;
-		return this;
+		return this._modifiers;
 	endfunction
 
 	function SetModifier(this, modifier) // modifier: AttributeModifier
-		if (this._objType == error) return this._objType; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this._modifiers[modifier.GetAttribute()] := modifier;
+
 		return this;
 	endfunction
 
 	function Update(this)
-		if (this._objType == error) return this._objType; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 
 		this._prop := struct{};
 		this._prop.+Name := this._name;

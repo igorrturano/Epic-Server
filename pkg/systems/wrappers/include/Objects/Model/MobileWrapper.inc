@@ -1,9 +1,5 @@
 use uo;
 
-// Exceptions
-include ":wrappers:Objects/Exceptions/_all";
-include "system/exception/FormatException/InvalidFormatException";
-
 // Internal
 include "IMobileWrapper";
 include "UObjectWrapper";
@@ -26,40 +22,39 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
-		if (mobile.isA(POLCLASS_NPC))
-			this._cfgFile := CFGFile("epicAI", "npcdesc");
-			this._template := this._cfgFile.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
-			this._name := this._objRef.name;
+		if (TypeOfInt(mobile) == OT_MOBILEREF)
+			if (mobile.isA(POLCLASS_NPC))
+				this._cfgFile := CFGFile("epicAI", "npcdesc");
+				this._template := this._cfgFile.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
+				this._name := this._objRef.name;
 
-			// Variáveis que indicarão que é um NPC
-			var err := IsNPCException();
-			this._race := err;
-			this._culture := err;
-			this._religion := err;
-			this._combatTraits := err;
-		elseif (mobile.isA(POLCLASS_MOBILE)) // Se entrar aqui, é player
-			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
-			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
-			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
+				// Variáveis que indicarão que é um NPC ou não encontrou template
+				var err := IsNPCException();
+				this._race := err;
+				this._culture := err;
+				this._religion := err;
+				this._combatTraits := err;
+			else // Se entrar aqui, é player
+				this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
+				this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
+				this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
 
-			// Variáveis que indicarão que é um player
-			var err := IsPlayerException();
-			this._template := err;
-		elseif (TypeOfInt(mobile) == OT_STRING) // Caso seja apenas um template
+				// Variáveis que indicarão que é um player
+				var err := IsPlayerException();
+				this._template := err;
+			endif
+		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
 			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
 
-			// Variáveis que indicarão que é apenas um template
-			var err := IsTemplateException();
-			this._objRef := err;
-			this._name := err;
-			this._race := err;
-			this._culture := err;
-			this._religion := err;
-			this._combatTraits := err;
-		else // Caso não seja nenhum valor válido
-			var err := InvalidFormatException("The param must be a Mobile ObjRef or NPC template string!");
-			this._template := err;
+			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
+			var err;
+			if (!this._template)
+				err := InvalidFormatException("The param must be a Mobile ObjRef or a valid Template!");
+			else
+				err := IsTemplateException();
+			endif
+			
 			this._objRef := err;
 			this._name := err;
 			this._race := err;
@@ -300,7 +295,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	/**
 	 * Obtém o equipamento equipado em um slot específico do personagem.
 	 *
-	 * @param this Referência ao objeto Mobile (personagem)
 	 * @param equipSlot ENUM do Slot do equipamento a ser consultado (WEAPON, SHIELD, HEAD, NECK, ARMS, BODY, HANDS, LEGS, FEET)
 	 *
 	 * @return WeaponWrapper|ArmorWrapper|Array<ArmorWrapper>|error
@@ -357,7 +351,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * Obtém o equipamento equipado em uma camada específica do personagem
 	 *
 	 * Parâmetros:
-	 *   this      - Referência ao objeto mobile
 	 *   layerEnum - Enumeração da camada de equipamento a ser consultada
 	 *
 	 * Retorna:
@@ -424,7 +417,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	/**
 	 * Define as características de combate do mobile.
 	 * 
-	 * @param this Referência ao objeto MobileWrapper
 	 * @param combatTrait Objeto CombatTraits contendo as características de combate a serem definidas
 	 * 
 	 * @return this Retorna a própria instância do objeto para encadeamento de métodos
@@ -537,7 +529,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	/*
 	 * Calcula a distância entre este objeto e outro objeto.
 	 *
-	 * @param this      Referência ao objeto atual
 	 * @param otherObj  Referência ao objeto de destino (deve ser um POLCLASS_UOBJECT)
 	 *
 	 * @return Integer  Distância entre os dois objetos
@@ -557,7 +548,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	/**
 	 * Reproduz uma animação no objeto móvel.
 	 *
-	 * @param this          Referência ao objeto wrapper do móvel
 	 * @param animID        ID da animação a ser reproduzida
 	 * @param framecount    Número de frames da animação (padrão: 5)
 	 * @param repeatcount   Número de vezes que a animação será repetida (padrão: 1)

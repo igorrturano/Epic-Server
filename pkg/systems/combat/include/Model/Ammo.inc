@@ -1,22 +1,21 @@
 include ":io:CFGFile";
 
+include ":wrappers:Objects/Model/ItemWrapper";
+
 class Ammo()
-	var _objType := 0;
+	var _item; // ItemWrapper object
 	var _name := "";
 	var _anim := 0;
 	var _sound := 0;
 
 	function Ammo(this, objType)
-		var cfg := CFGFile("*", "itemdesc").SetElementName(objType);
-		
-		this._objType := CInt(objType);
-		this._name := CStr(cfg.SetKeyName("desc").GetKeyValue());
-		this._anim := CInt(cfg.SetKeyName("Anim").GetKeyValue());
-		this._sound := CInt(cfg.SetKeyName("Sound").GetKeyValue());
+		this._item := ItemWrapper(objType);
+		this._anim := this._item.GetTemplate().Anim;
+		this._sound := this._item.GetTemplate().Sound;
 	endfunction
 
 	function GetObjType(this)
-		return this._objType;
+		return this._item.GetObjType();
 	endfunction
 
 	function GetName(this)
@@ -29,6 +28,10 @@ class Ammo()
 
 	function GetSound(this)
 		return this._sound;
+	endfunction
+
+	function NeedsQuiver(this)
+		return this._objType != 0x5001;
 	endfunction
 
 	function ToString(this)
