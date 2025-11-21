@@ -1,5 +1,8 @@
 use uo;
 
+include "system/exception/FormatException/InvalidFormatException";
+include ":combat:Exceptions/_all";
+
 include "IAttackInfo";
 
 include "Damage";
@@ -42,19 +45,19 @@ class AttackInfo(IAttackInfo)
 		this._attacker := attacker;
 		this._defender := defender;
 		
-		this._bodyRegion := error{errortext := "Body region not set yet!"};
+		this._bodyRegion := ValueNotSetException();
 		this._direction := ATTACK_DIRECTION::FRONT;
 		this._damage := Damage();
 		this._damageHand := DAMAGE_HAND::MAINHAND;
-		this._hitChance := error{errortext := "Hit chance not set yet!"};
-		this._hitChanceMod := error{errortext := "Hit chance mod not set yet!"};
-		this._hitChanceResult := error{errortext := "Hit chance not rolled yet!"};
-		this._parryChance := error{errortext := "Parry chance not set yet!"};
-		this._parryChanceMod := error{errortext := "Parry chance mod not set yet!"};
-		this._parryChanceResult := error{errortext := "Parry chance not rolled yet!"};
-		this._criticalHitChance := error{errortext := "Critical hit chance not set yet!"};
-		this._criticalHitChanceMod := error{errortext := "Critical hit chance mod not set yet!"};
-		this._criticalHitChanceResult := error{errortext := "Critical hit chance not rolled yet!"};
+		this._hitChance := ValueNotSetException();
+		this._hitChanceMod := ValueNotSetException();
+		this._hitChanceResult := ValueNotSetException();
+		this._parryChance := ValueNotSetException();
+		this._parryChanceMod := ValueNotSetException();
+		this._parryChanceResult := ValueNotSetException();
+		this._criticalHitChance := ValueNotSetException();
+		this._criticalHitChanceMod := ValueNotSetException();
+		this._criticalHitChanceResult := ValueNotSetException();
 
 		this._attackerAbilities := AttackInfo::_attackerAbilities;
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
@@ -201,7 +204,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function SetAmmo(this, ammo)
-		if (!(ammo is @Ammo)) return error{errortext := "Parameter must be an Ammo object!"}; endif
+		if (!(ammo is @Ammo)) return InvalidFormatException("Parameter must be an Ammo object!"); endif
 		
 		this._ammo := ammo;
 
@@ -234,7 +237,7 @@ class AttackInfo(IAttackInfo)
 
 	function SetParryEquip(this, equip)
 		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
-			return error{errortext := "Parameter must be an ArmorWrapper or WeaponWrapper object!"};
+			return InvalidFormatException("Parameter must be an ArmorWrapper or WeaponWrapper object!");
 		endif
 
 		this._parryEquip := equip;
@@ -255,7 +258,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddAttackerAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility object!"}; endif
+		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
 		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
@@ -264,7 +267,7 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function AddDefenderAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return error{errortext := "Parameter must be a CombatAbility object!"}; endif
+		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
 		if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
 
 		this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);
@@ -273,14 +276,14 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function RollHitChance(this)
-		if (!this._hitChance) return error{errortext := "Hit chance not set!"}; endif
+		if (this._hitChance is @Exception) return this._hitChance; endif
 		
 		this._hitChanceResult := RandomInt(100 + 1);
 		return this;
 	endfunction
 
 	function RollCriticalHitChance(this)
-		if (!this._criticalHitChance) return error{errortext := "Critical hit chance not set!"}; endif
+		if (this._criticalHitChance is @Exception) return this._criticalHitChance; endif
 		
 		this._criticalHitChanceResult := RandomInt(100 + 1);
 		if (this._criticalHitChanceResult <= this._criticalHitChance)
@@ -290,22 +293,22 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	function RollParryChance(this)
-		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
+		if (this._parryChance is @Exception) return this._parryChance; endif
 		
 		this._parryChanceResult := RandomInt(100 + 1);
 		return this;
 	endfunction
 
 	function Succeeded(this)
-		if (!this._hitChance) return error{errortext := "Hitchance not set!"}; endif
-		if (!this._hitChanceResult) return error{errortext := "Hitchance Dice not rolled yet!"}; endif
+		if (this._hitChance is @Exception) return this._hitChance; endif
+		if (this._hitChanceResult is @Exception) return this._hitChanceResult; endif
 
 		return this._hitChanceResult <= this._hitChance;
 	endfunction
 
 	function Parried(this)
-		if (!this._parryChance) return error{errortext := "Parry chance not set!"}; endif
-		if (!this._parryChanceResult) return error{errortext := "Parry chance Dice not rolled yet!"}; endif
+		if (this._parryChance is @Exception) return this._parryChance; endif
+		if (this._parryChanceResult is @Exception) return this._parryChanceResult; endif
 
 		return this._parryChanceResult <= this._parryChance;
 	endfunction
