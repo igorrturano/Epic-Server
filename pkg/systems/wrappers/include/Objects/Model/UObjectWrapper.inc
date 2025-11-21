@@ -17,6 +17,7 @@ class UObjectWrapper(IUObjectWrapper)
 	var _name := "";
 	var _graphic := 0;
 	var _color := 0;
+	var _weight := 0;
 
 	function UObjectWrapper(this, byRef object)
 		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_ITEMREF)
@@ -26,17 +27,22 @@ class UObjectWrapper(IUObjectWrapper)
 			this._name := object.name;
 			this._graphic := object.graphic;
 			this._color := object.color;
+			this._weight := object.weight;
 		else
 			this._objType := object;
+			
+			// O resto só inicializa nas classes filhas, para poder verificar se é template ou erro
 
-			var err := InvalidTemplateException("Template not loaded properly!");
-			this._cfgFile := err;
-			this._template := err;
-			this._objRef := err;
-			this._serial := err;
-			this._name := err;
-			this._graphic := err;
-			this._color := err;
+			// var err := InvalidTemplateException("Template not loaded properly!");
+			// this._cfgFile := err;
+			// this._template := err;
+			// this._name := err;
+			// this._graphic := err;
+			// this._color := err;
+
+			// err := IsTemplateException();
+			// this._objRef := err;
+			// this._serial := err;
 		endif
 	endfunction
 

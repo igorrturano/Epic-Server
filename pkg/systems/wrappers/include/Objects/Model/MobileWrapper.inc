@@ -42,6 +42,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				// Variáveis que indicarão que é um player
 				var err := IsPlayerException();
 				this._template := err;
+				this._objType := err;
 			endif
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
@@ -51,12 +52,20 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			var err;
 			if (!this._template)
 				err := InvalidFormatException("The param must be a Mobile ObjRef or a valid Template!");
+				this._objType := err;
+				this._name := err;
+				this._graphic := err;
+				this._color := err;
 			else
 				err := IsTemplateException();
+				this._name := this._template.desc;
+				this._graphic := this._template.graphic;
+				this._color := this._template.color;
 			endif
 			
 			this._objRef := err;
-			this._name := err;
+			this._serial := err;
+
 			this._race := err;
 			this._culture := err;
 			this._religion := err;

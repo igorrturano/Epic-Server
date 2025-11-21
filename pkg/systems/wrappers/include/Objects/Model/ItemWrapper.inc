@@ -18,6 +18,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 			var err;
 			if (!this._template)
 				err := InvalidFormatException("The param must be a Item ObjRef or a valid Template!");
+				this._objType := err;
 				this._name := err;
 				this._graphic := err;
 				this._color := err;
@@ -30,7 +31,6 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 				this._weight := this._template.weight;
 			endif
 
-			// Aqui ficam os que recebem erro de qualquer jeito
 			this._objRef := err;
 			this._serial := err;
 		endif
@@ -52,6 +52,14 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		// TODO: Retornar um ContainerWrapper ao invés do ObjRef puro
 		return this._objRef.container;
 	endfunction
+
+	function GetQuality(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return CDbl(this._objRef.quality);
+	endfunction
 	
 	function IsStackableWith(this, byRef otherItemWrapped)
 		if (this._objRef is @Exception)
@@ -63,6 +71,14 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 
 		return IsStackable(this._objRef, otherItemWrapped.GetObjRef());
+	endfunction
+
+	function IsMovable(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.movable == true;
 	endfunction
 	
 	function Lock(this)

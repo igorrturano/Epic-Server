@@ -23,27 +23,57 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 			this._maxSlots := this._objRef.max_slots_mod;
 			this._maxWeight := this._objRef.max_weight_mod;
 		else // Caso seja apenas um template
-			this._name := this._template.desc;
+			var err;
+			if (!this._template)
+				err := InvalidFormatException("The param must be a Container ObjRef or a valid Template!");
+				this._objType := err;
+			else
+				err := IsTemplateException();
+			endif
 
-			var err := InvalidFormatException("Param is not a container ObjRef or is just a template!");
 			this._objRef := err;
+			this._serial := err;
 		endif
 	endfunction
 
 	function GetWeightMultiplier(this)
-		return this._objRef != error ? this._objRef.held_weight_multiplier : 0.0;
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.held_weight_multiplier;
 	endfunction
 
 	function GetMaxItems(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
 		return this._objRef != error ? this._objRef.max_items_mod : this._template.MaxItems;
 	endfunction
 
 	function GetMaxSlots(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
 		return this._objRef != error ? this._objRef.max_slots_mod : this._template.MaxSlots;
 	endfunction
 
 	function GetMaxWeight(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return this._objRef != error ? this._objRef.max_weight_mod : this._template.MaxWeight;
+	endfunction
+
+	function GetItemsAmount(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return CInt(this._objRef.item_count - 1); // Subtrai 1 para não contar o próprio container
 	endfunction
 	
 	function SetLocked(this, boolValue)
