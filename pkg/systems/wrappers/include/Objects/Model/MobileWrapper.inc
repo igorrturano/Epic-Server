@@ -2,6 +2,7 @@ use uo;
 
 // Exceptions
 include ":wrappers:Objects/Exceptions/_all";
+include "system/exception/FormatException/InvalidFormatException";
 
 // Internal
 include "IMobileWrapper";
@@ -31,7 +32,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._name := this._objRef.name;
 
 			// Variáveis que indicarão que é um NPC
-			var err := error{errortext := "This mobile is a NPC!"};
+			var err := IsNPCException();
 			this._race := err;
 			this._culture := err;
 			this._religion := err;
@@ -42,14 +43,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
 
 			// Variáveis que indicarão que é um player
-			var err := error{errortext := "This mobile is a player!"};
+			var err := IsPlayerException();
 			this._template := err;
 		elseif (TypeOfInt(mobile) == OT_STRING) // Caso seja apenas um template
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
 			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
 
-			// Variáveis que indicarão é apenas um template
-			var err := error{errortext := "This is just a template!"};
+			// Variáveis que indicarão que é apenas um template
+			var err := IsTemplateException();
 			this._objRef := err;
 			this._name := err;
 			this._race := err;
@@ -57,8 +58,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._religion := err;
 			this._combatTraits := err;
 		else // Caso não seja nenhum valor válido
-			var err := error{errortext := "The param must be a Mobile ObjRef or NPC template string!"};
-
+			var err := InvalidFormatException("The param must be a Mobile ObjRef or NPC template string!");
 			this._template := err;
 			this._objRef := err;
 			this._name := err;
@@ -70,18 +70,34 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetAccountName(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return this._objRef.acctname;
 	endfunction
 	
 	function GetRace(this)
+		if (this._race is @Exception)
+			return this._race;
+		endif
+
 		return this._race;
 	endfunction
 
 	function GetCulture(this)
+		if (this._culture is @Exception)
+			return this._culture;
+		endif
+
 		return this._culture;
 	endfunction
 
 	function GetReligion(this)
+		if (this._religion is @Exception)
+			return this._religion;
+		endif
+
 		return this._religion;
 	endfunction
 	
@@ -122,21 +138,37 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetCurrentHP(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this.Update();
 		return AP_GetVital(this._objRef, HITS);
 	endfunction
 
 	function GetCurrentStamina(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this.Update();
 		return AP_GetVital(this._objRef, STAMINA);
 	endfunction
 
 	function GetCurrentMana(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this.Update();
 		return AP_GetVital(this._objRef, MANA);
 	endfunction
 
 	function GetCurrentHunger(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this.Update();
 		return AP_GetVital(this._objRef, HUNGER);
 	endfunction
@@ -157,17 +189,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetMaxHunger(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
-		endif
-		
 		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
 	endfunction
 
 	function GetRegenHP(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		this.Update();
@@ -175,8 +203,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetRegenStamina(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		this.Update();
@@ -184,8 +212,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetRegenMana(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		this.Update();
@@ -193,8 +221,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetRegenHunger(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		this.Update();
@@ -202,8 +230,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetGender(this)
-		if (!this._objRef)
-			if (!this._template)
+		if (this._objRef is @Exception)
+			if (this._template is @Exception)
 				return error{errortext := "This is not a Player, NPC or valid template!"};
 			else
 				if (this._template.Gender == 0)
@@ -230,30 +258,42 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 	
 	function GetCriticalChanceBase(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		return CInt(this._objRef.GetProp("CriticalChance"));
 	endfunction
 
 	function GetCriticalChanceMod(this)
-		if (!this._objRef)
-			return InvalidMobRefException();
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		return CInt(this._objRef.GetProp("#CriticalChance"));
 	endfunction
 
 	function GetNPCTemplateName(this)
-		return this.IsNPC() ? this._objRef.npctemplate : error{errortext := "This mobile is not a NPC!"};
+		if (this._template is @Exception)
+			return this._template;
+		endif
+
+		return this._cfgFile.GetElementName();
 	endfunction
 
 	function GetNPCTemplate(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
 		return this._template;
 	endfunction
 
 	function GetNPCDamage(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
 		return this._template.Damage ?: error{errortext := "This mobile is not a NPC!"};
 	endfunction
 
@@ -273,8 +313,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @error "Wrong slot specified!" - Quando o slot informado não é válido
 	 */
 	function GetEquipBySlot(this, equipSlot)
-		if (!this._objRef)
-			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		var equipsInSlot;
@@ -329,8 +369,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   o resultado como um ArmorWrapper para facilitar a manipulação do item.
 	 */
 	function GetEquipByLayer(this, layerEnum)
-		if (!this._objRef)
-			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		return ArmorWrapper(GetEquipmentByLayer(this._objRef, layerEnum));
@@ -364,8 +404,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		if (!this._objRef)
-			return error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 		
 		AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
@@ -373,6 +413,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
 		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
 	endfunction
@@ -392,7 +436,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 */
 	function SetCombatTraits(this, combatTrait)
 		if (!(combatTrait is @CombatTraits))
-			return error{errortext := "The param must be a CombatTraits object!"};
+			return InvalidFormatException("The param must be a CombatTraits object!");
 		endif
 		
 		this._combatTraits := combatTrait;
@@ -415,7 +459,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 */
 	function ApplyItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
+			return InvalidFormatException("The param must be an ArmorWrapper or WeaponWrapper object!");
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -439,7 +483,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 */
 	function RemoveItemModifiers(this, byRef itemWrapped)
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
-			return error{errortext := "The param must be an ArmorWrapper or WeaponWrapper object!"};
+			return InvalidFormatException("The param must be an ArmorWrapper or WeaponWrapper object!");
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
@@ -455,23 +499,39 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function IsNPC(this)
-		return this._template != error;
+		return !(this._template is @Exception);
 	endfunction
 
 	function IsDead(this)
-		return this._objRef ? this._objRef.dead == true : error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
+		return this._objRef.dead == true;
 	endfunction
 
 	function IsWarMode(this)
-		return this._objRef ? this._objRef.warmode == true : error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.warmode == true;
 	endfunction
 
 	function IsMounted(this)
-		return this._objRef ? this.GetEquipByLayer(LAYER_MOUNT) == true : error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this.GetEquipByLayer(LAYER_MOUNT) == true;
 	endfunction
 
 	function IsConnected(this)
-		return this._objRef ? this._objRef.connected == true : error{errortext := "Invalid mobRef. Maybe a template?"};
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.connected;
 	endfunction
 
 	/*
@@ -488,7 +548,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 */
 	function DistanceTo(this, otherObj)
 		if (!otherObj.IsA(POLCLASS_UOBJECT))
-			return error{errortext := "The param must be an ObjRef!"};
+			return InvalidFormatException("The param must be an ObjRef!");
 		endif
 
 		return Distance(this._objRef, otherObj);
@@ -508,63 +568,93 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Retorna o resultado da execução da ação PerformAction
 	 */
 	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return PerformAction(this._objRef, Hex(animID), repeatcount, framecount, backward, repeatflag, delay);
 	endfunction
 
 	function PlayMusic(this, musicID)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return PlayMusic(this._objRef, Hex(musicID));
 	endfunction
 
 	function Update(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return RecalcVitals(this._objRef);
 	endfunction
 
 	function GetTarget(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return Target(this._objRef);
 	endfunction
 
 	function ConsumeHP(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return AP_ConsumeVital(this._objRef, HITS, CDbl(value));
 	endfunction
 
 	function ConsumeStamina(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return AP_ConsumeVital(this._objRef, STAMINA, CDbl(value));
 	endfunction
 
 	function ConsumeMana(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return AP_ConsumeVital(this._objRef, MANA, CDbl(value));
 	endfunction
 
 	function RestoreHP(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return HealHits(this._objRef, CDbl(value));
 	endfunction
 
 	function RestoreStamina(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return HealStamina(this._objRef, CDbl(value));
 	endfunction
 
 	function RestoreMana(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return HealMana(this._objRef, CDbl(value));
 	endfunction
 
 	function Dispose(this)
 		this._objRef := 0;
 		this._name := "";
-		this._str := 0;
-		this._dex := 0;
-		this._int := 0;
-		this._hp := 0;
-		this._stamina := 0;
-		this._mana := 0;
-		this._hunger := 0;
-		this._gold := 0;
-		this._weight := 0;
-		this._skills := 0;
 	endfunction
 
 	function Equals(this, byRef otherMobileWrapper)
 		if (!(otherMobileWrapper is @MobileWrapper))
-			return error{errortext := "The param must be a MobileWrapper object!"};
+			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
 		return this.GetObjRef() == otherMobileWrapper.GetObjRef() &&
@@ -572,6 +662,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function ToString(this)
+		return $"Mobile {this._name}: " +
+			$"Serial: {Hex(this._serial)}, " +
+			$"ObjType: {Hex(this._objType)}, " +
+			$"Graphic: {this._graphic} ({Hex(this._graphic)}), " +
+			$"Color: {this._color} ({Hex(this._color)}) ";
 	endfunction
 endclass
 
