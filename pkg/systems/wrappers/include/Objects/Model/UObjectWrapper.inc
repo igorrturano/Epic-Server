@@ -1,5 +1,7 @@
 use uo;
 
+include ":wrappers:Objects/Exceptions/_all";
+
 include "IUObjectWrapper";
 
 include ":wrappers:Position/Model/PositionWrapper";
@@ -15,13 +17,28 @@ class UObjectWrapper(IUObjectWrapper)
 	var _graphic := 0;
 	var _color := 0;
 
-	function UObjectWrapper(this, byRef objRef)
-		this._objRef := objRef;
-		this._serial := objRef.serial;
-		this._objType := objRef.objtype;
-		this._name := objRef.name;
-		this._graphic := objRef.graphic;
-		this._color := objRef.color;
+	function UObjectWrapper(this, byRef object)
+		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_ITEMREF)
+			this._objRef := object;
+			this._serial := object.serial;
+			this._objType := object.objtype;
+			this._name := object.name;
+			this._graphic := object.graphic;
+			this._color := object.color;
+		else
+			this._objType := object;
+
+			var err := IsTemplateException();
+			this._objRef := err;
+			this._serial := err;
+
+			err := InvalidTemplateException("Template not loaded properly!");
+			this._cfgFile := err;
+			this._template := err;
+			this._name := err;
+			this._graphic := err;
+			this._color := err;
+		endif
 	endfunction
 
 	function GetObjRef(this)
@@ -45,24 +62,43 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 
 	function _SetName(this, name)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this._name := name;
 		this._objRef.name := name;
+
 		return this;
 	endfunction
 
 	function SetGraphic(this, graphic)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this._graphic := graphic;
 		this._objRef.graphic := graphic;
+
 		return this;
 	endfunction
 
 	function SetColor(this, color)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		this._color := color;
 		this._objRef.color := color;
+
 		return this;
 	endfunction
 
 	function GetPosition(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return PositionWrapper(
 			this._objRef.x,
 			this._objRef.y,
@@ -72,6 +108,10 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 
 	function GetMobilesInLineOfSight(this, range)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return ListMobilesInLineOfSight(this._objRef, CInt(range));
 	endfunction
 	
@@ -88,6 +128,10 @@ class UObjectWrapper(IUObjectWrapper)
 	 * var resultado := obj.MoveToLocation(novaPosicao, MOVEOBJECT_FORCELOCATION);
 	 */
 	function MoveToLocation(this, position, flags := MOVEOBJECT_NORMAL)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return MoveObjectToLocation(this._objRef, position.GetX(), position.GetY(), position.GetZ(), position.GetRealm(), flags);
 	endfunction
 
@@ -99,6 +143,10 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Retorna a própria instância (this) para permitir encadeamento de métodos
 	 */
 	function PlaySound(this, soundId)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		PlaySoundEffect(this._objRef, soundId);
 
 		return this;
@@ -114,6 +162,10 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Retorna a instância atual do objeto (this) para permitir encadeamento de métodos
 	 */
 	function PlaySoundPrivate(this, soundId, soundSource := false)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		PlaySoundEffectPrivate(this._objRef, soundId, soundSource ?: this._objRef);
 
 		return this;
@@ -134,6 +186,10 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return this            Retorna a própria instância do objeto para permitir encadeamento de métodos
 	 */
 	function PlayEffectTo(this, targetWrapped, effectId, speed := 10, loop := 0, explode := 0, color := 0, translucent := 0)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		PlayMovingEffectXYZHued(this._objRef, targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
 
 		return this;
