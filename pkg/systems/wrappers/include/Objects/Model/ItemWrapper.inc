@@ -6,6 +6,18 @@ include "IItemWrapper";
 class ItemWrapper(IItemWrapper, UObjectWrapper)
 	function ItemWrapper(this, byRef item)
 		Super(item);
+
+		var cfgFile := CFGFile("*", "itemdesc");
+		if (TypeOfInt(item) == OT_ITEMREF) // Caso o itemRef exista
+			this._template := cfgFile.SetElementName(item.objtype).GetElementValue();
+		else // Caso seja apenas um template
+			this._template := cfgFile.SetElementName(item).GetElementValue();
+			this._objRef := error{errortext := "This item is just a template!"};
+			this._name := this._template.desc;
+			this._graphic := this._template.graphic;
+			this._color := this._template.color;
+			this._weight := this._template.weight;
+		endif
 	endfunction
 
 	function IsStackableWith(this, byRef otherItemWrapped)

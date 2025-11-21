@@ -31,7 +31,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._religion := err;
 			this._combatTraits := err;
 		elseif (mobile.isA(POLCLASS_MOBILE)) // Se entrar aqui, é player
-			this._template := this.IsNPC() ? NPC_GetNPCConfig(this._objRef.npctemplate) : error{errortext := "This mobile is not a NPC or has no template configured!"};
+			this._template := error{errortext := "This mobile has no template configured! Is a player?"};
 			this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
 			this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
 			this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
@@ -47,6 +47,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._religion := err;
 			this._combatTraits := err;
 		else // Caso não seja nenhum valor válido
+			var err := error{errortext := "The param must be a Mobile ObjRef or NPC template string!"};
+
+			this._template := err;
+			this._objRef := err;
+			this._name := err;
+			this._race := err;
+			this._culture := err;
+			this._religion := err;
+			this._combatTraits := err;
 		endif
 	endfunction
 
