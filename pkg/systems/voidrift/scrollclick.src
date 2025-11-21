@@ -94,7 +94,11 @@ endfunction
 
 function ConjureRitual(who, portal_level, ritual_type)
     var total_actions := portal_level * 3;
-
+    // Salvar posição inicial
+    var start_x := who.x;
+    var start_y := who.y;
+    var start_z := who.z;
+    
     for i := 1 to total_actions
         if (ritual_type == "chaos")
             PerformAction(who, ANIM_CAST_DIR);
@@ -104,6 +108,11 @@ function ConjureRitual(who, portal_level, ritual_type)
             PerformAction(who, ANIM_CAST_AREA);
             PlayObjectCenteredEffect(who, EPIC_FX_ILUMINADO, 0, 15);
             PlaySoundEffect(who, 0x1EC);
+        endif
+        // Verificar se jogador se moveu
+        if (who.x != start_x || who.y != start_y || who.z != start_z)
+            Message("O ritual foi interrompido! Voce precisa permanecer parado.").SendSys(who);
+            return 0;
         endif
 
         sleep(2);
