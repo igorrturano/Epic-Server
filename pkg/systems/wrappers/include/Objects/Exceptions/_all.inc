@@ -1,5 +1,6 @@
 include "InvalidTemplateException";
-include "IsNotPlayerException";
-include "IsNotNPCException";
-include "IsTemplateException";
 include "InvalidMobRefException";
+
+include "IsPlayerException";
+include "IsNPCException";
+include "IsTemplateException";
