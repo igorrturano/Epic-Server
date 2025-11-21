@@ -34,49 +34,67 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function WeaponWrapper(this, byRef item)
 		Super(item);
 		
-		this._attribute := this._template.Attribute;
-		this._attackType := this._template.TipoAtaque;
-		this._category := this._template.Category;
-		this._speedTier := this._template.EpicSpeed;
-		this._minRange := this._template.MinRange ?: 1;
-		this._maxRange := this._template.MaxRange ?: 1;
-		this._criticalChanceTier := this._template.EpicCriticalChance;
-		this._criticalChanceMod := 0;
-		this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
-			SplitWords(this._template.EpicMainDamage)[1],
-			SplitWords(this._template.EpicMainDamage)[2],
-			SplitWords(this._template.EpicMainDamage)[3]
-		);
-		this._offDamageTier := !this._template.EpicOffDamage ? DamageTier() : DamageTier(
-			SplitWords(this._template.EpicOffDamage)[1],
-			SplitWords(this._template.EpicOffDamage)[2],
-			SplitWords(this._template.EpicOffDamage)[3]
-		);
-		this._mainDamage := DamageDice(
-			Dice(GetDamageByTier(this._mainDamageTier.GetSlashDamage())),
-			Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
-			Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
-		);
-		this._offDamage := DamageDice(
-			Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
-			Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
-			Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
-		);
-		this._damageMod := Damage();
-		this._speed := getSpeedByTier(this._speedTier);
-		this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
-		this._weight := this._GetWeight();
-		this._strRequired := this._GetSTRRequired();
+		if (!this._template)
+			var err := InvalidTemplateException("The param must be a Weapon ObjRef or a valid Template!");
+			this._attribute := err;
+			this._attackType := err;
+			this._category := err;
+			this._speedTier := err;
+			this._mainDamageTier := err;
+			this._offDamageTier := err;
+			this._mainDamage := err;
+			this._offDamage := err;
+			this._damageMod := err;
+			this._criticalChanceTier := err;
+			this._criticalChance := err;
+			this._criticalChanceMod := err;
+			this._speed := err;
+			this._strRequired := err;
+		else
+			this._attribute := this._template.Attribute;
+			this._attackType := this._template.TipoAtaque;
+			this._category := this._template.Category;
+			this._speedTier := this._template.EpicSpeed;
+			this._minRange := this._template.MinRange ?: 1;
+			this._maxRange := this._template.MaxRange ?: 1;
+			this._criticalChanceTier := this._template.EpicCriticalChance;
+			this._criticalChanceMod := 0;
+			this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
+				SplitWords(this._template.EpicMainDamage)[1],
+				SplitWords(this._template.EpicMainDamage)[2],
+				SplitWords(this._template.EpicMainDamage)[3]
+			);
+			this._offDamageTier := !this._template.EpicOffDamage ? DamageTier() : DamageTier(
+				SplitWords(this._template.EpicOffDamage)[1],
+				SplitWords(this._template.EpicOffDamage)[2],
+				SplitWords(this._template.EpicOffDamage)[3]
+			);
+			this._mainDamage := DamageDice(
+				Dice(GetDamageByTier(this._mainDamageTier.GetSlashDamage())),
+				Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
+				Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
+			);
+			this._offDamage := DamageDice(
+				Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
+				Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
+				Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
+			);
+			this._damageMod := Damage();
+			this._speed := getSpeedByTier(this._speedTier);
+			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
+			this._weight := this._GetWeight();
+			this._strRequired := this._GetSTRRequired();
 
-		if (this._prop) // Alguns atributos só estão nas props
-			this._criticalChanceMod := this._prop.CriticalChanceMod;
-			this._damageMod.SetSlashRawDamage(CInt(this._prop.SlashDamageMod));
-			this._damageMod.SetPiercingRawDamage(CInt(this._prop.PiercingDamageMod));
-			this._damageMod.SetBluntRawDamage(CInt(this._prop.BluntDamageMod));
-			this._damageMod.SetFireRawDamage(CInt(this._prop.FireDamage));
-			this._damageMod.SetColdRawDamage(CInt(this._prop.ColdDamage));
-			this._damageMod.SetPoisonRawDamage(CInt(this._prop.PoisonDamage));
-			this._damageMod.SetEnergyRawDamage(CInt(this._prop.EnergyDamage));
+			if (this._prop) // Alguns atributos só estão nas props
+				this._criticalChanceMod := this._prop.CriticalChanceMod;
+				this._damageMod.SetSlashRawDamage(CInt(this._prop.SlashDamageMod));
+				this._damageMod.SetPiercingRawDamage(CInt(this._prop.PiercingDamageMod));
+				this._damageMod.SetBluntRawDamage(CInt(this._prop.BluntDamageMod));
+				this._damageMod.SetFireRawDamage(CInt(this._prop.FireDamage));
+				this._damageMod.SetColdRawDamage(CInt(this._prop.ColdDamage));
+				this._damageMod.SetPoisonRawDamage(CInt(this._prop.PoisonDamage));
+				this._damageMod.SetEnergyRawDamage(CInt(this._prop.EnergyDamage));
+			endif
 		endif
 	endfunction
 

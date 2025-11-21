@@ -36,6 +36,23 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 	endfunction
 
+	function GetAmount(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.amount;
+	endfunction
+
+	function GetContainer(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		// TODO: Retornar um ContainerWrapper ao invés do ObjRef puro
+		return this._objRef.container;
+	endfunction
+	
 	function IsStackableWith(this, byRef otherItemWrapped)
 		if (this._objRef is @Exception)
 			return this._objRef;

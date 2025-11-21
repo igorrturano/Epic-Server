@@ -17,22 +17,32 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	function ArmorWrapper(this, byRef item)
 		Super(item);
 
-		this._coverage := GetConfigStringArray(this._template, "Coverage");
-		this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
-		this._resists := this._GetArmorResist();
-		this._resistsMod := ArmorResist();
-		this._weight := this._GetWeight();
-		this._strRequired := this._GetSTRRequired();
-		this._InitModifiers();
+		if (!this._template)
+			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
+			this._coverage := err;
+			this._tipoProtecao := err;
+			this._resists := err;
+			this._resistsMod := err;
+			this._shieldAttributes := err;
+			this._shieldAttributesMod := err;
+		else
+			this._coverage := GetConfigStringArray(this._template, "Coverage");
+			this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
+			this._resists := this._GetArmorResist();
+			this._resistsMod := ArmorResist();
+			this._weight := this._GetWeight();
+			this._strRequired := this._GetSTRRequired();
+			this._InitModifiers();
 
-		if (this._prop)
-			this._resistsMod.SetSlashResist(this._prop.SlashResistMod);
-			this._resistsMod.SetPiercingResist(this._prop.PiercingResistMod);
-			this._resistsMod.SetBluntResist(this._prop.BluntResistMod);
-			this._resistsMod.SetFireResist(this._prop.FireResistMod);
-			this._resistsMod.SetColdResist(this._prop.ColdResistMod);
-			this._resistsMod.SetPoisonResist(this._prop.PoisonResistMod);
-			this._resistsMod.SetEnergyResist(this._prop.EnergyResistMod);
+			if (this._prop)
+				this._resistsMod.SetSlashResist(this._prop.SlashResistMod);
+				this._resistsMod.SetPiercingResist(this._prop.PiercingResistMod);
+				this._resistsMod.SetBluntResist(this._prop.BluntResistMod);
+				this._resistsMod.SetFireResist(this._prop.FireResistMod);
+				this._resistsMod.SetColdResist(this._prop.ColdResistMod);
+				this._resistsMod.SetPoisonResist(this._prop.PoisonResistMod);
+				this._resistsMod.SetEnergyResist(this._prop.EnergyResistMod);
+			endif
 		endif
 	endfunction
 	
