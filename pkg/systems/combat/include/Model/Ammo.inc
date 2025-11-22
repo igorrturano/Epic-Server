@@ -4,14 +4,15 @@ include ":wrappers:Objects/Model/ItemWrapper";
 
 class Ammo()
 	var _item; // ItemWrapper object
-	var _name := "";
 	var _anim := 0;
 	var _sound := 0;
+	var _needQuiver := false;
 
 	function Ammo(this, objType)
 		this._item := ItemWrapper(objType);
 		this._anim := this._item.GetTemplate().Anim;
 		this._sound := this._item.GetTemplate().Sound;
+		this._needQuiver := this.NeedsQuiver();
 	endfunction
 
 	function GetObjType(this)
@@ -31,10 +32,10 @@ class Ammo()
 	endfunction
 
 	function NeedsQuiver(this)
-		return this._objType != 0x5001;
+		return this._item.GetObjType() != 0x5001;
 	endfunction
 
 	function ToString(this)
-		return $"Ammo: {this._name} (ObjType: {CStr(Hex(this._objType))}, Anim: {CStr(Hex(this._anim))}, Sound: {CStr(Hex(this._sound))})";
+		return $"Ammo: {this._item.GetName()} (ObjType: {CStr(Hex(this._item.GetObjType()))}, Anim: {CStr(Hex(this._anim))}, Sound: {CStr(Hex(this._sound))}, NeedsQuiver: {CStr(this._needQuiver)})";
 	endfunction
 endclass
