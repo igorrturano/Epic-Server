@@ -43,10 +43,20 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 	endfunction
 
+	/**
+	 * Obtém a categoria do item.
+	 *
+	 * @return String contendo a categoria do item (valor do enum ITEM_CATEGORY)
+	 */
 	function GetCategory(this)
 		return this._category;
 	endfunction
 
+	/**
+	 * Obtém a quantidade do item.
+	 *
+	 * @return Integer com a quantidade do item ou Exception se o item for inválido
+	 */
 	function GetAmount(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -55,6 +65,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return this._objRef.amount;
 	endfunction
 
+	/**
+	 * Obtém o container que contém este item.
+	 *
+	 * @return ContainerWrapper do container que contém o item ou Exception se o item for inválido
+	 */
 	function GetContainer(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -63,6 +78,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return ContainerWrapper(this._objRef.container);
 	endfunction
 
+	/**
+	 * Obtém a qualidade do item.
+	 *
+	 * @return Double com o valor de qualidade do item ou Exception se o item for inválido
+	 */
 	function GetQuality(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -71,6 +91,13 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return CDbl(this._objRef.quality);
 	endfunction
 	
+	/**
+	 * Verifica se este item pode ser empilhado com outro item.
+	 *
+	 * @param otherItemWrapped ItemWrapper do outro item a ser verificado
+	 * @return Boolean true se os itens podem ser empilhados juntos, false caso contrário
+	 * @throws InvalidFormatException Se o parâmetro não for um objeto ItemWrapper
+	 */
 	function IsStackableWith(this, byRef otherItemWrapped)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -83,6 +110,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return IsStackable(this._objRef, otherItemWrapped.GetObjRef());
 	endfunction
 
+	/**
+	 * Verifica se o item pode ser movido.
+	 *
+	 * @return Boolean true se o item é movível, false caso contrário, ou Exception se o item for inválido
+	 */
 	function IsMovable(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -91,6 +123,12 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return this._objRef.movable == true;
 	endfunction
 	
+	/**
+	 * Reserva o item para uso exclusivo, impedindo modificações concorrentes.
+	 *
+	 * @return Boolean indicando sucesso da operação de bloqueio ou Exception se o item for inválido
+	 * @see Unlock
+	 */
 	function Lock(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -99,6 +137,12 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return ReserveItem(this._objRef);
 	endfunction
 
+	/**
+	 * Libera o item previamente reservado, permitindo modificações.
+	 *
+	 * @return Boolean indicando sucesso da operação de desbloqueio ou Exception se o item for inválido
+	 * @see Lock
+	 */
 	function Unlock(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -107,15 +151,13 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return ReleaseItem(this._objRef);
 	endfunction
 
-	/*
+	/**
 	 * Consome uma quantidade específica do item.
 	 *
 	 * Esta função reduz a quantidade do item pelo valor especificado.
 	 *
-	 * @param amount   Quantidade a ser consumida do item
-	 *
-	 * @return Retorna o resultado da função SubtractAmount, indicando se a 
-	 *         operação foi bem-sucedida ou não
+	 * @param amount Quantidade a ser consumida do item
+	 * @return Boolean indicando se a operação foi bem-sucedida ou Exception se o item for inválido
 	 */
 	function Consume(this, amount)
 		if (this._objRef is @Exception)
@@ -125,6 +167,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return SubtractAmount(this._objRef, CInt(amount));
 	endfunction
 
+	/**
+	 * Atualiza o item no jogo, enviando mudanças para todos os clientes.
+	 *
+	 * @return Boolean indicando sucesso da atualização ou Exception se o item for inválido
+	 */
 	function Update(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -136,11 +183,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	/**
 	 * Move o item para um container especificado.
 	 *
-	 * @param containerWrapped Referência encapsulada do container de destino
+	 * @param containerWrapped Referência encapsulada do container de destino (ContainerWrapper)
 	 * @param x Coordenada X dentro do container (padrão: -1 para posição automática)
 	 * @param y Coordenada Y dentro do container (padrão: -1 para posição automática)
 	 * @param add_to_existing_stack Se deve adicionar a uma pilha existente (padrão: 0)
-	 * @return Resultado da operação de movimentação ou objeto Exception em caso de erro
+	 * @return Boolean indicando sucesso da movimentação ou Exception se o item for inválido
 	 */
 	function MoveToContainer(this, byRef containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
 		if (this._objRef is @Exception)
