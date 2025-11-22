@@ -328,9 +328,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return this._objRef.weapon ? WeaponWrapper(this._objRef.weapon) : error{errortext := "Empty slot!"};
+			return WeaponWrapper(this._objRef.weapon);
 		elseif (equipSlot == SHIELD)
-			return this._objRef.shield ? ArmorWrapper(this._objRef.shield) : error{errortext := "Empty slot!"};
+			return ArmorWrapper(this._objRef.shield);
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
 		elseif (equipSlot == NECK)
@@ -384,7 +384,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			equip := ArmorWrapper(equip);
 		elseif (itemType == ITEM_TYPE::CONTAINER)
 			equip := ContainerWrapper(equip);
-			print("Equip na camada " + layerEnum + ": " + equip.ToString());
 		else
 			return InvalidFormatException("The itemType param must be a valid ITEM_TYPE enum value!");
 		endif
@@ -622,7 +621,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		return PerformAction(this._objRef, Hex(animID), repeatcount, framecount, backward, repeatflag, delay);
+		print($"Playing animation {animID} on mobile {this._name} (Serial: {this._serial})");
+		return PerformAction(this._objRef, animID, repeatcount, framecount, backward, repeatflag, delay);
 	endfunction
 
 	function PlayMusic(this, musicID)
@@ -630,7 +630,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		return PlayMusic(this._objRef, Hex(musicID));
+		return PlayMusic(this._objRef, musicID);
 	endfunction
 
 	function Update(this)
@@ -713,10 +713,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function ToString(this)
 		return $"Mobile {this._name}: " +
-			$"Serial: {Hex(this._serial)}, " +
-			$"ObjType: {Hex(this._objType)}, " +
-			$"Graphic: {this._graphic} ({Hex(this._graphic)}), " +
-			$"Color: {this._color} ({Hex(this._color)}) ";
+			$"Serial: {this._serial}, " +
+			$"ObjType: {this._objType}, " +
+			$"Graphic: {this._graphic} ({this._graphic}), " +
+			$"Color: {this._color} ({this._color}) ";
 	endfunction
 endclass
 

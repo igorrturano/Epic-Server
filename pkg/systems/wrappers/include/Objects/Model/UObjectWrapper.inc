@@ -218,10 +218,10 @@ class UObjectWrapper(IUObjectWrapper)
 
 	function ToString(this)
 		return "UObject: " +
-			$"Serial: {Hex(this._serial)}, " +
-			$"ObjType: {Hex(this._objType)}, " +
+			$"Serial: {this._serial}, " +
+			$"ObjType: {this._objType}, " +
 			$"Name: {this._name}, " +
-			$"Graphic: {Hex(this._graphic)}, " +
-			$"Color: {Hex(this._color)}";
+			$"Graphic: {this._graphic}, " +
+			$"Color: {this._color}";
 	endfunction
 endclass
