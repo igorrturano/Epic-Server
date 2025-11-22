@@ -143,6 +143,12 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	endfunction
 endclass
 
+enum class ITEM_TYPE
+	ARMOR,
+	WEAPON,
+	CONTAINER
+endenum
+
 enum class ITEM_CATEGORY
 	QUIVER := "Quiver"
 endenum
