@@ -79,7 +79,7 @@ program daynightsystem()
 
 		if(!clockPid)
 			clockPid := Start_Script("daynightClock", getPid());
-			Print("Day\Night Cycle *STARTED* pid: " + clockPid);
+			Print("Day\Night Cycle *STARTED* pid: " + clockPid.pid);
 			isAlreadyStarted := true;
 		endif
 		

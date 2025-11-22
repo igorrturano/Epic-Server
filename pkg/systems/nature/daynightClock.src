@@ -19,7 +19,6 @@ program daynightClocksystem(parameters)
 	var lightLevel := maxSystemDarkness;
 	var previousLightLevel := lightLevel;
 	var clockDelay := 6 * 60; //atraso para que o calculo da luz no pico bata com o meio dia.  
-	var direction := -1;
 	setregionlightlevel("Umbraeterna", cint(config.umbraeternaDarkness)); // é semrpe a mesma lightlevel.
 	PRINT("*** Clock Counting ****");
 
@@ -34,13 +33,7 @@ program daynightClocksystem(parameters)
 		var timeInMinutes := currentHour * 60 + currentMinute;
 		var wholeDayInMinutes := maxHoursDayCycle * 60 ;
 		var halfHourAmountInADay := wholeDayInMinutes / 30;
-		//var timeDelay := halfHourAmountInADay / 4;
 		var halfHourAmountElapsed := timeInMinutes / 30;
-		//var lightLevelHalfhours := halfHourAmountElapsed - timeDelay;
-
-		//if(halfHourAmountElapsed < 0)
-		//	lightLevelHalfhours *= -1;
-		//endif
 
 		var midDay := halfHourAmountInADay / 2;
 
