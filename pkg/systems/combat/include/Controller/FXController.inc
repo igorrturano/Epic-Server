@@ -34,9 +34,8 @@ function PlayAttackSFX(byRef attackInfo)
 endfunction
 
 function PlayWeaponFX(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("throwItem"))
-
-	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(THROWING))
+	if (attackInfo.GetAttacker().GetProperty("throwItem") ||
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(BOW) ||
 			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(CROSSBOW))
@@ -310,10 +309,10 @@ endfunction
 function PlayThrowingFX(byRef attackInfo)
 	if (attackInfo.GetAttacker().IsNPC())
 		var effect := attackInfo.GetAttacker().GetObjRef().GetProp("throwItem");
-		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect, 10, 10);
+		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect);
 	else
-		var effect := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileAnim;
-		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect, 10, 10);
+		var effect := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType();
+		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect);
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).MoveToLocation(attackInfo.GetDefender().GetPosition());
 	endif
 endfunction
@@ -321,8 +320,6 @@ endfunction
 function PlayShootingFX(byRef attackInfo)
 	attackInfo.GetAttacker().PlayEffectTo(
 		attackInfo.GetDefender(),
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAmmo().GetAnim(),
-		10,
-		10
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAmmo().GetAnim()
 	);
 endfunction
