@@ -32,7 +32,8 @@ program MainHitScript(attackInfo)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	
-	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED))
+	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
+		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		if (ConsumeAmmo(attackInfo)) // Consome munição
 			TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
 		else
