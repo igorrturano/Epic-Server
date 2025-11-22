@@ -413,13 +413,13 @@ function FlashbangEffect(who, potion)
 			// Revela jogadores ocultos
 			if (critter.hidden)
 				critter.hidden := 0;
-				SendSysMessage(critter, "Voce foi revelado pela flashbang!");
+				SendSysMessage(critter, "Voce foi revelado pela granada ofuscante!");
 			endif
 			
 			// Envia o flash branco (tipo 5 = FLASH_WHITE)
 			if (critter.connected)
 				SendScreenFlash(critter, FLASH_WHITE);
-				SendSysMessageEx(critter, "VOCE FOI CEGADO POR UMA FLASHBANG!", SSM_FAIL);
+				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
 				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
 			endif
 		endif
