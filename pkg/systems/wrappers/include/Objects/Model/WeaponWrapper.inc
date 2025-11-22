@@ -13,7 +13,6 @@ include ":diceroll:model/Dice";
 class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _attribute := "";
 	var _attackType := "";
-	var _category := "";
 	var _speedTier := "";
 	var _speed := 0;
 	var _speedModTier := "";
@@ -104,10 +103,6 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function GetAttackType(this)
 		return this._attackType;
-	endfunction
-
-	function GetCategory(this)
-		return this._category;
 	endfunction
 
 	function GetAnimation(this)
@@ -370,5 +365,6 @@ enum class WEAPON_CATEGORY
 	POLEARM := "Polearm",
 
 	BOW := "Bow",
-	CROSSBOW := "Crossbow"
+	CROSSBOW := "Crossbow",
+	MAGICBOW := "MagicBow"
 endenum
