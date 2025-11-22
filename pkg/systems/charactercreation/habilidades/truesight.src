@@ -57,11 +57,11 @@ function RevealSecretDoors(who, range)
 		// Verifica se é uma porta secreta
 		if (FindConfigElem(secretDoorCfg, item.objtype))
 			// Efeito visual de revelação - divination eyes
-			PlayStationaryEffect(item.x, item.y, item.z, EPIC_FX_DIVINATION_EYES, 10, 30, 0, item.realm);
+			PlayStationaryEffect(item.x, item.y, item.z, FX_DIVINATION_EYES, 10, 30, 0, item.realm);
 			sleepms(100);
 
 			// Efeito de sparkles ao redor
-			PlayStationaryEffect(item.x, item.y, item.z + 5, EPIC_FX_YELLOW_SPARKLE, 7, 20, 0, item.realm);
+			PlayStationaryEffect(item.x, item.y, item.z + 5, FX_YELLOW_SPARKLE, 7, 20, 0, item.realm);
 
 			// Inicia script de abertura da porta secreta
 			start_script(":epicspawn:scripts/animatePassage", array{ item, 20, 60 });

@@ -201,7 +201,7 @@ function ShamanSoulHarvest(mobile)
 				PerformAction(player, ANIM_SALUTE);
 				sleep(1);
 
-				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, EPIC_FX_SOUL_LEAVING, 0, 15, 0, 0, 0);
+				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, FX_SOUL_LEAVING, 0, 15, 0, 0, 0);
 				// 			// PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, , 0, 60, 2676, 5, 0);
 
 				PlaySoundEffect(player, 0x653);
