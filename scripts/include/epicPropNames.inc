@@ -7,6 +7,7 @@ const PROPNAME_MATERIAL := "material";
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
 const PROPNAME_ESTACAO_FORJA := "estacaoForja"; 
 const PROPNAME_ISESTACAO_OCUPADA := "isEstacaoOcupada"; 
+const PROPNAME_VELHA_CRAFTPROP := "Craft"; 
 
 
 //SISTEMA DESTRUIVEIS
@@ -27,7 +28,8 @@ const PROPNAME_SEL_AREA_PID_SELECIONADOR := "pidSelecionador";
 const PROPNAME_SEL_AREA_IS_COR_ORIGINAL_ALTERADA := "isCorOrigAlterada"; 
 
 //SISTEMA DE PROPAGACAO
-const PROPNAME_PROP_PROPAGACAO := "propPropagacao"; 
+const PROPNAME_PROP_PROPAGACAO := "propPropagacao";
+const PROPNAME_GAS_PATOGENICO_COOLDOWN := "gasPatogenicoCD";  
 
 //CONTROLE DE GUMP
 

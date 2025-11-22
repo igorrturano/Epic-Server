@@ -428,7 +428,7 @@ function PegaDescEfeitosComponente(componente, xDesc)
 			descValor := RED_FIRE + propriedades.valorPrincipal + " <br>";
 		endif
 
-		if(componente.tier.valor == 3)
+		if(componente.tier.valor >= PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valor)
 			corLinha := AMARELO_CLARO;
 		endif
 
@@ -436,10 +436,18 @@ function PegaDescEfeitosComponente(componente, xDesc)
 	endif
 	
 	if(propriedades.efeitosAdicionais)
+		var descValor, corLinha;
 		foreach efeitoAdicional in (propriedades.efeitosAdicionais)
 			Sleepms(2);
 			if(efeitoAdicional != 0)
-				xDesc := xDesc + BLUE + "*" +  _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+				if(efeitoAdicional[_efeitoAdicional_iter] > 0)
+					descValor := _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+					corLinha := BLUE;
+				else
+					corLinha := SOFT_PINK;
+					descValor := _efeitoAdicional_iter + " " + RED_FIRE + efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+				endif
+				xDesc := xDesc + corLinha + "*" + descValor;
 			else
 				continue;
 			endif

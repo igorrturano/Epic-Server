@@ -1,10 +1,13 @@
 use uo;
+use os;
+use cfgfile;
 
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/client";
 include "include/say";
 include "include/dungeons";
+include "include/epicConstants";
 
 program truesight(who)
 	var range := cint(AP_GetSkill(who, THEOLOGY) / 5);
@@ -13,7 +16,10 @@ program truesight(who)
 		SendSysMessage(who, "Sua visao verdadeira funciona apenas na escuridao");
 		return 0;
 	endif
+
 	PlaySoundEffect(who, 0x687);
+
+	// Revela criaturas escondidas
 	var nearby := ListMobilesNearLocationEx(who.x, who.y, who.z, range,
 											 LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
 	foreach char in nearby
@@ -30,4 +36,44 @@ program truesight(who)
 		endif
 	endforeach
 
+	// Revela portas secretas próximas
+	RevealSecretDoors(who, range);
+
 endprogram
+
+function RevealSecretDoors(who, range)
+	// Carrega config de portas secretas
+	var secretDoorCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+	if (!secretDoorCfg)
+		return 0;
+	endif
+
+	// Lista todos os itens próximos (range reduzido pela metade para portas)
+	var search_range := cint(range / 2);
+	var nearby_items := ListItemsNearLocation(who.x, who.y, who.z, search_range, who.realm);
+
+	var doors_found := 0;
+	foreach item in nearby_items
+		// Verifica se é uma porta secreta
+		if (FindConfigElem(secretDoorCfg, item.objtype))
+			// Efeito visual de revelação - divination eyes
+			PlayStationaryEffect(item.x, item.y, item.z, EPIC_FX_DIVINATION_EYES, 10, 30, 0, item.realm);
+			sleepms(100);
+
+			// Efeito de sparkles ao redor
+			PlayStationaryEffect(item.x, item.y, item.z + 5, EPIC_FX_YELLOW_SPARKLE, 7, 20, 0, item.realm);
+
+			// Inicia script de abertura da porta secreta
+			start_script(":epicspawn:scripts/animatePassage", array{ item, 20, 60 });
+
+			doors_found := doors_found + 1;
+			sleepms(50);
+		endif
+	endforeach
+
+	if (doors_found > 0)
+		SendSysMessage(who, "Voce revelou " + doors_found + " passagem(ns) secreta(s)!");
+	endif
+
+	return doors_found;
+endfunction

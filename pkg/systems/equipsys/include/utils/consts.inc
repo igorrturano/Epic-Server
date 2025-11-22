@@ -41,7 +41,6 @@ enum DAMAGETAG
 endenum
 enum WEAPONCATEGORY
 	UNARMED := "Unarmed",
-
 	DAGGER := "Dagger",
 	SWORD := "Sword",
 	GREATSWORD := "Greatsword",

@@ -18,6 +18,12 @@ program equipitem(params)
 	endif
 
 	equip.Update();
+
+	who := MobileWrapper(who);
+	if (who.isShaman())
+		who.AddModifier(AttributeModifier(MAGERY, 0));
+	endif
+
 	MobileWrapper(who).ApplyItemModifiers(equip);
 endprogram
 

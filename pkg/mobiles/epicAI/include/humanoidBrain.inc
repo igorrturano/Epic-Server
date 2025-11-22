@@ -31,7 +31,7 @@ function HumanoidBrain()
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
-        ev := os::wait_for_event(1);
+        ev := os::wait_for_event(0);
         
         // Check FORCE dormant FIRST - before anything else
         var current_time := polcore().systime;
@@ -49,14 +49,10 @@ function HumanoidBrain()
             else
                 var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                
-                var range_info := GetWeaponRangeInfo();
-                // Only pursue if we're significantly out of range
-                if (dist > (range_info.max_range + 1))
-                    PursueTarget(me.opponent);
-                else
-                    MaintainRange(me.opponent);
-                endif
+
+                // PursueTarget now handles ideal distance calculation internally
+                // Let it decide when to stop based on weapon type
+                PursueTarget(me.opponent);
             endif
         endif
         
@@ -151,12 +147,12 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     endif
 
     // Gera e processa resposta
-    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
-    if (response == error)
-        return Say(handle_error_combat_AI_speech());
-    endif
+    // var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    // if (response == error)
+    //     return Say(handle_error_combat_AI_speech());
+    // endif
 
-    Say(response);
+    // Say(response);
     SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
@@ -165,14 +161,12 @@ function HandleHumanoidLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
-    // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleHumanoidCombatEvent(mobile, is_ranged);
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
+    // Check for nearby threats first
+    var threat := CheckNearbyThreats();
+    if (threat)
+        HandleHumanoidCombatEvent(threat, is_ranged);
+        return 1;
+    endif
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
@@ -192,6 +186,13 @@ function HandleHumanoidLeftArea(is_ranged)
             endif
             sleepms(100);
         endforeach
+    endif
+
+    // Re-check for threats after looting attempt (in case one appeared while looting)
+    threat := CheckNearbyThreats();
+    if (threat)
+        HandleHumanoidCombatEvent(threat, is_ranged);
+        return 1;
     endif
 
     // If nothing else to do, go idle
@@ -268,17 +269,10 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
             reachForMeleeWeapon(opponent);
         endif
 
-        var range_info := GetWeaponRangeInfo();
-        // Always try to maintain maximum range for ranged attackers
-        if (Distance(me, opponent) < range_info.max_range)
-            RunAwayFrom(opponent);
-        else
-            // Only move closer if we're too far to shoot
-            if (Distance(me, opponent) > range_info.max_range)
-                PursueTarget(opponent);
-            endif
-        endif
-        
+        // PursueTarget now handles positioning for ranged attackers
+        // It will maintain ideal distance internally with tolerance
+        PursueTarget(opponent);
+
         // Continuously try to shoot while in combat
         if (me.isShooter())
             ShooterBehavior(me);
@@ -341,6 +335,25 @@ function HumanoidIdle(wanders, is_ranged)
         endif
         sleepms(2);
     endforeach
+
+    // If didn't see anyone, try to hear footsteps (no LoS required)
+    var heard_mobile := NPCHearFootsteps(me);
+    if (heard_mobile)
+        // Check if we can see them now (might have moved into view)
+        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+            HandleHumanoidCombatEvent(heard_mobile, is_ranged);
+            return;
+        endif
+
+        // Only show alert and investigate if not on cooldown (prevents spam)
+        if (GetCooldown(me, "heard_sound") == 0)
+            Message("*!*").SetColor(500).SendAbove(me);
+            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
+        endif
+
+        // Move toward the sound - NPC will investigate the last known position
+        PursueTarget(heard_mobile);
+    endif
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
@@ -777,7 +790,7 @@ function ChooseSageAbility(npc, state, habs)
         foreach hab in habs
             case (hab)
                 "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
-                "Treinamento Druídico": return hab; // controlar a besta
+                "Coração da Matilha": return hab; // controlar a besta
             endcase
         endforeach
     endif

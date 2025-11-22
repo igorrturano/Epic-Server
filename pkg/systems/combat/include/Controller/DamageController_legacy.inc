@@ -103,6 +103,41 @@ function getNewDamageList(attacker)
 			endif
 		endif
 
+		// Primordial Form elemental conversion for druids in metamorphose
+		var metamorfose := GetObjProperty(attacker, "metamorfose");
+		if (metamorfose)
+			// Check which primordial element is active
+			if (GetObjProperty(attacker, "primordial_fire"))
+				// Convert all damage to fire (100%)
+				list[DMG_FIRE] := 1.0;
+				list[DMG_PHYSICAL] := 0.0;
+				list[DMG_COLD] := 0.0;
+				list[DMG_POISON] := 0.0;
+				list[DMG_ENERGY] := 0.0;
+			elseif (GetObjProperty(attacker, "primordial_cold"))
+				// Convert all damage to cold (100%)
+				list[DMG_COLD] := 1.0;
+				list[DMG_PHYSICAL] := 0.0;
+				list[DMG_FIRE] := 0.0;
+				list[DMG_POISON] := 0.0;
+				list[DMG_ENERGY] := 0.0;
+			elseif (GetObjProperty(attacker, "primordial_energy"))
+				// Convert all damage to energy (100%)
+				list[DMG_ENERGY] := 1.0;
+				list[DMG_PHYSICAL] := 0.0;
+				list[DMG_FIRE] := 0.0;
+				list[DMG_COLD] := 0.0;
+				list[DMG_POISON] := 0.0;
+			elseif (GetObjProperty(attacker, "primordial_poison"))
+				// Convert all damage to poison (100%)
+				list[DMG_POISON] := 1.0;
+				list[DMG_PHYSICAL] := 0.0;
+				list[DMG_FIRE] := 0.0;
+				list[DMG_COLD] := 0.0;
+				list[DMG_ENERGY] := 0.0;
+			endif
+		endif
+
 		return list;
 	endif
 endfunction

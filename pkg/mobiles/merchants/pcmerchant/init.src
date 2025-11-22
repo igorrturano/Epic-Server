@@ -88,6 +88,23 @@ program InitScript(params)
 		SetObjProperty(npc, "faccao", "A.C.");
 	endif
 
+	// Set default shift for certain merchant types
+	var shift := "day"; // Default shift
+	if (npc.npctemplate == ":merchants:estalagem")
+		// Innkeepers/taverneers work at night by default
+		shift := "night";
+	endif
+
+	SetObjProperty(npc, "shift", shift);
+
+	// Register the merchant in the global registry
+	var registry := GetGlobalProperty("ShiftMerchantRegistry");
+	if (!registry || registry == error)
+		registry := dictionary;
+	endif
+	registry[npc.serial] := shift;
+	SetGlobalProperty("ShiftMerchantRegistry", registry);
+
 	if (result.errortext)
 		return result;
 	endif

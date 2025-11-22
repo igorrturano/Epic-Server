@@ -157,13 +157,13 @@ endfunction
 function bonusSpellDurationForSpecialists(who, duration, school)
 	var bonus := 1.2;
 
-	if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
-		duration := Cint(duration * bonus);
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
-		duration := Cint(duration * bonus);
-	elseif (Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
-		duration := Cint(duration * bonus);
-	endif
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+	  duration := Cint(duration * bonus);
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	  duration := Cint(duration * bonus);
+   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
+	  duration := Cint(duration * bonus);
+   endif
 
 	return duration;
 endfunction
@@ -399,4 +399,10 @@ function HandleSpellSkill(who)
 	endif
 
 	return skill;
+endfunction
+
+function handleSpellResistDiffForDivineCasters(who, school)
+   var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
+    
+   return diff;
 endfunction

@@ -14,21 +14,27 @@ function CriaMuralhaFogo(x,y,z,realm,direcao, dadoDano, combustivel, conjurador,
 	if(dadoDano)
 		catalogoDano.insert(cstr(ESTADO_PROPAGACAO::INTENSO),dadoDano);
 	endif
-	NovoEfeitoPersonalizado(dict,ESTADO_PROPAGACAO::INTENSO,direcao,0,0,0x1DE,0,0,-1);
+	var opcoesEfeitos := NovoOpcoesEfeitoPersonalizado(direcao);
+	opcoesEfeitos.duracao := 0;
+	opcoesEfeitos.isInvisibel := 0;
+	opcoesEfeitos.chanceRandom := -1;
+	
+	NovoEfeitoPersonalizado(dict,ESTADO_PROPAGACAO::INTENSO,opcoesEfeitos);
 
-	var propPropagacao := NovaPropPropagacao(
-										0,
-										conjurador.serial,
-										-1,
-										PROPAGACAO_TIPO::INCENDIO,
-										ESTADO_PROPAGACAO::INTENSO,
-										0,
-										0,
-										catalogoDano,
-										dict,
-										NovoStructCombustivelMagico(combustivel,fatorInflamavel));
-
-	var muralha := CriarMarcadorPropagacao(x,y,z,realm,propPropagacao);
+	var muralha := CriarMarcadorPropagacao(
+											x,
+											y,
+											z,
+											realm, 
+											struct {
+												origem := conjurador.serial,
+												tipoPropagacao := PROPAGACAO_TIPO::INCENDIO,
+												estadoInicial := ESTADO_PROPAGACAO::INTENSO,
+												marcadorProps := struct{ catalogoDano := catalogoDano},
+												efeitosPersonalizados := dict,
+												combustivelExterno := NovoStructCombustivelMagico(combustivel,fatorInflamavel)
+											}
+											);
 	muralha.Abastecer(true);
 endfunction
 
@@ -37,19 +43,13 @@ function CriaFagulhaIncendiaria(quem, alvo)
 										alvo.x,
 										alvo.y,
 										alvo.z,
-										alvo.realm, 
-										NovaPropPropagacao(
-												0,
-												quem.serial,
-												-1,
-												PROPAGACAO_TIPO::INCENDIO,
-												ESTADO_PROPAGACAO::PRINCIPIO,
-												0,
-												0,
-												0,
-												0,
-												0
-												)
+										alvo.realm,
+										struct {
+												origem := quem.serial,
+												tipoPropagacao := PROPAGACAO_TIPO::INCENDIO,
+												estadoInicial := ESTADO_PROPAGACAO::PRINCIPIO,
+												combustivelExterno := NovoStructCombustivelMagico(5,1)
+										} 
 										);
 endfunction
 

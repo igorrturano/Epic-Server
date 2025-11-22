@@ -62,7 +62,7 @@ program SummonMagicCreature(params)
 	endif
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (Temhabilidade(who, "Coração da Matilha"))
 		skill_a := Cint(skill_a * 1.2);
 		skill_d := Cint(skill_d * 1.2);
 		resistmod := Cint(resistmod * 1.2);
@@ -86,7 +86,7 @@ program SummonMagicCreature(params)
 	HealDamage(who, hitsmod);
 
 	var metamorfosetime := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
-	if (TemHabilidade(who, "Treinamento Druídico"))
+	if (TemHabilidade(who, "Coração da Matilha"))
 		metamorfosetime := metamorfosetime * 2;
 	endif
 

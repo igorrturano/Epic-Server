@@ -35,11 +35,11 @@ program DblClickNerve(params)
 					if (npcType == ":merchants:taverneiro" || npcType == ":brainai:taverneiro" ||
 		 npcType == "taverneiro")
 						npcType := "taverneiro"; // Get a propriedade "npc_type"
-						responseAI := handle_doubleclick(npcType, playerinput);
+						// responseAI := handle_doubleclick(npcType, playerinput);
 					elseif (npcType == ":merchants:vendedor" || npcType == ":brainai:vendedor" ||
 			 npcType == "vendedor")
 						npcType := "vendedor";
-						responseAI := handle_doubleclick(npcType, playerinput);
+						// responseAI := handle_doubleclick(npcType, playerinput);
 					endif
 
 					if (responseAI == "<uninitialized object>")

@@ -20,6 +20,7 @@ include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
 include "include/epicMageryUtils";
+include "include/sysEvent";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -384,6 +385,11 @@ function selectSpellTarget(mobile, spellinfo, targ)
 			return 0;
 		endif
 
+		if (!targ.opponent && spellinfo.alvo == "Unico" && targ.npctemplate)
+			var event := {"type" := SYSEVENT_DAMAGED, "source" := mobile};
+			SendEvent(mobile, event);
+		endif
+
 		if (spellinfo.alvo != "Self")
 			TurnObjectToward(mobile, targ.x, targ.y);
 		endif
@@ -437,6 +443,8 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 	var attribute := MAGERY;
 	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
 		attribute := ARCANA;
+	elseif (spellinfo.Type == "Divine")
+		attribute := THEOLOGY;
 	endif
 
 	var difficulty := CInt(spellinfo.Difficulty);

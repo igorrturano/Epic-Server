@@ -2,8 +2,7 @@ use uo;
 use cfgfile;
 
 include ":crafting:gumps/fabricacaoGumps";
-
-const FABRICACAO_AJUDA_CONFIG_PATH := ":crafting:config/ajuda";
+include ":crafting:include/util/fabricacaoConstants";
 
 function EnviaFabricacaoAjudaGump(quem, profissao, idAba)
 	var retorno := true;

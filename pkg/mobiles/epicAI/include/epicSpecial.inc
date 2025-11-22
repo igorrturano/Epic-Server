@@ -1045,3 +1045,30 @@ function frightenOpponent(attacker, defender)
         SendSysMessageEx(defender, "Você foi aterrorizado por " + npc_name, SSM_INFO);
     endif
 endfunction
+
+function petrify(attacker, defender)
+    if (GetCooldown(me, "petrifiy") > 0)
+        return 0;
+    endif
+    var duration := 18;
+	// Check if already petrified
+	if (GetObjProperty(defender, "#petrified"))
+		return 0;
+	endif
+
+	// Check resistance
+	if (CheckResist(defender, VONTADE, RESIST_HARD))
+		PrintTextAbove(defender, "*resiste à petrificação*");
+		return 0;
+	endif
+
+	// Apply petrification effect for 3 minutes (180 seconds)
+	PrintTextAbove(attacker, "*petrifica " + defender.name + "*");
+	TS_StartTimer(defender, "petrify", duration);
+    SetObjProperty(defender, "noattack", 1);
+    Setcooldown(defender, "silence", duration);
+
+    SetCooldown(me, "petrify", 30);
+
+	return 1;
+endfunction

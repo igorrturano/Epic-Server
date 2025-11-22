@@ -11,7 +11,7 @@ function GetRacialTraits(raca)
         ELFO: return GetAlurielCaracteristicas();
         ORC: return GetGulthrakCaracteristicas();
         HUMANO: return GetBjorskeCaracteristicas();
-        POLSKI: return GetPolkineaCaracteristicas();
+        PEQUILHO: return GetPolkineaCaracteristicas();
         default: return error;
     endcase
 endfunction
@@ -433,7 +433,7 @@ function ConvertAge(race, age)
             else
                 return array{"Ancião", 75};
             endif
-        POLSKI:
+        PEQUILHO:
             if (age < 18)
                 return array{"Jovem", 18};
             elseif (age <= 65)

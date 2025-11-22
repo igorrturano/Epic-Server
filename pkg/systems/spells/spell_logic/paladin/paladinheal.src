@@ -1,0 +1,65 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+include ":combat:Controller/DamageController_legacy";
+include ":brainai:npcUtil";
+include ":epicAI:epicai";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
+		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		return;
+	endif
+
+	var healed := cint(AP_GetSkill(who, THEOLOGY) / 3);
+	if (healed < 15)
+		healed := 15;
+	endif
+
+    if (targ.npctemplate)
+        var elem := NPC_GetNPCConfig(targ.npctemplate);
+        var category := lower(GetConfigString(elem, "Category"));
+
+        if (category == "undead" || category == "demons")
+
+            DamageFLS(targ, healed, DMG_FORCED, who);
+        else
+            Sendsysmessage(who, "Alvo invalido.");
+        endif
+    endif
+
+    healFLS(targ, healed);
+	recalcvitals(targ);
+	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	return 1;
+endprogram
