@@ -14,7 +14,6 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	function ContainerWrapper(this, byRef object)
 		Super(object);
 
-		// this._cfgFile := CFGFile("containers", "itemdesc");
 		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
 		this._category := this._template.Category;
 

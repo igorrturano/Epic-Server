@@ -33,7 +33,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function WeaponWrapper(this, byRef item)
 		Super(item);
 		
-		if (this._template != error && !(this._template is @Exception))
+		if (this._template)
 			this._attribute := this._template.Attribute;
 			this._attackType := this._template.TipoAtaque;
 			this._category := this._template.Category;

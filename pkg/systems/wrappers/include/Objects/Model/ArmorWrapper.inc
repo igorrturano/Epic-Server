@@ -17,7 +17,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	function ArmorWrapper(this, byRef item)
 		Super(item);
 
-		if (this._template != error && !(this._template is @Exception))
+		if (this._template)
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 			this._resists := this._GetArmorResist();
@@ -119,7 +119,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function SetShieldAttributesBase(this, shieldAttrs)
 		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
+		if (!(shieldAttrs is @ShieldAttributes)) return InvalidFormatException("Param must be a ShieldAttributes!"); endif
 
 		this._shieldAttributes := shieldAttrs;
 
@@ -128,7 +128,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function SetShieldAttributesMod(this, shieldAttrs)
 		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(shieldAttrs is @ShieldAttributes)) return error{ errortext := "Param must be a ShieldAttributes!" }; endif
+		if (!(shieldAttrs is @ShieldAttributes)) return InvalidFormatException("Param must be a ShieldAttributes!"); endif
 
 		this._shieldAttributesMod := shieldAttrs;
 
@@ -155,7 +155,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 
 	function ToString(this)
-		var str := Super::ToString(this) + "Armor:" +
+		var str := Super::ToString(this) + " Armor:" +
 			$"\nCoverage: {this._coverage}, Protection Type: {this._tipoProtecao}" +
 			$"\nSlashResist: {this._resists.GetSlashResist()} (+{this._resistsMod.GetSlashResist()})" +
 			$"\nPiercingResist: {this._resists.GetPiercingResist()} (+{this._resistsMod.GetPiercingResist()})" +

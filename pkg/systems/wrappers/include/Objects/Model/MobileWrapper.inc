@@ -324,7 +324,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		var equipsInSlot;
+		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
@@ -621,7 +621,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		print($"Playing animation {animID} on mobile {this._name} (Serial: {this._serial})");
 		return PerformAction(this._objRef, animID, repeatcount, framecount, backward, repeatflag, delay);
 	endfunction
 

@@ -118,9 +118,6 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 *         operação foi bem-sucedida ou não
 	 */
 	function Consume(this, amount)
-		print($"Consumindo {amount} do item {this._name} (Serial: {this._serial})");
-		print($"Quantidade atual antes do consumo: {this.GetAmount()}");
-		print($"ObjRef do item: {this._objRef}");
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
