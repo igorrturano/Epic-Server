@@ -14,6 +14,7 @@ include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
+	var _backpack; // ContainerWrapper class
 	var _race := "";
 	var _culture := "";
 	var _religion := "";
@@ -26,7 +27,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
 				this._template := this._cfgFile.SetElementName(NPC_GetNPCConfig(mobile.npctemplate).template).GetElementValue();
-				this._name := this._objRef.name;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -44,6 +44,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this._template := err;
 				this._objType := err;
 			endif
+
+			this._name := this._objRef.name;
+			this._backpack := ContainerWrapper(this._objRef.backpack);
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
 			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
@@ -66,6 +69,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._objRef := err;
 			this._serial := err;
 
+			this._backpack := err;
 			this._race := err;
 			this._culture := err;
 			this._religion := err;
@@ -79,6 +83,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return this._objRef.acctname;
+	endfunction
+	
+	function GetBackpack(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._backpack;
 	endfunction
 	
 	function GetRace(this)
