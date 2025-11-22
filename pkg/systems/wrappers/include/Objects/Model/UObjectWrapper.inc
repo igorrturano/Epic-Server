@@ -46,6 +46,14 @@ class UObjectWrapper(IUObjectWrapper)
 		endif
 	endfunction
 
+	function GetCfgFile(this)
+		return this._cfgFile;
+	endfunction
+	
+	function GetTemplate(this)
+		return this._template;
+	endfunction
+	
 	function GetObjRef(this)
 		return this._objRef;
 	endfunction
@@ -64,6 +72,27 @@ class UObjectWrapper(IUObjectWrapper)
 
 	function GetGraphic(this)
 		return this._graphic;
+	endfunction
+
+	function GetColor(this)
+		return this._color;
+	endfunction
+
+	function GetWeight(this)
+		return this._weight;
+	endfunction
+
+	function GetPosition(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return PositionWrapper(
+			this._objRef.x,
+			this._objRef.y,
+			this._objRef.z,
+			this._objRef.realm
+		);
 	endfunction
 
 	function _SetName(this, name)
@@ -97,19 +126,6 @@ class UObjectWrapper(IUObjectWrapper)
 		this._objRef.color := color;
 
 		return this;
-	endfunction
-
-	function GetPosition(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		return PositionWrapper(
-			this._objRef.x,
-			this._objRef.y,
-			this._objRef.z,
-			this._objRef.realm
-		);
 	endfunction
 
 	function GetMobilesInLineOfSight(this, range)
