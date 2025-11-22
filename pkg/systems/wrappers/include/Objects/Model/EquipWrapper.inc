@@ -55,10 +55,6 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		endif
 	endfunction
 
-	function GetTemplate(this)
-		return this._template;
-	endfunction
-
 	function GetItemProp(this)
 		return this._prop;
 	endfunction

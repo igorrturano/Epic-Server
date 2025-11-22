@@ -264,7 +264,7 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance -= 15.0;
 	endif
 
-	if (attackInfo.GetDefender().GetNPCTemplate() == ":epicai:spiderling")
+	if (attackInfo.GetDefender().GetTemplate() == ":epicai:spiderling")
 		hit_chance -= 20.0;
 	endif
 

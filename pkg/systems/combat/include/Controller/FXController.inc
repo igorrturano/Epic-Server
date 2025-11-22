@@ -186,9 +186,9 @@ endfunction
 function GetDefenderSFX(byRef attackInfo)
 	if (attackInfo.GetDefender().IsNPC())
 		if (attackInfo.GetDefender().IsDead())
-			return attackInfo.GetDefender().GetNPCTemplate().DeathSound;
+			return attackInfo.GetDefender().GetTemplate().DeathSound;
 		else
-			return attackInfo.GetDefender().GetNPCTemplate().DamagedSound;
+			return attackInfo.GetDefender().GetTemplate().DamagedSound;
 		endif
 	else
 		if (attackInfo.GetDefender().IsDead())
@@ -225,7 +225,7 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}; */
 	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
-		var npcTemplate := attackInfo.GetAttacker().GetNPCTemplate();
+		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
 		weaponSFX.hit := array{npcTemplate.AttackSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
 		weaponSFX.critical := array{npcTemplate.AttackSound};

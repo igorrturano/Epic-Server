@@ -25,7 +25,7 @@ function WeaponHitScripts(byRef attackInfo)
 
 	var hitopt;
 	if (attackInfo.GetAttacker().IsNPC())
-		var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetNPCTemplate());
+		var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetTemplate());
 		var others_scripts := npcCfg.SetKeyName("HitScripts").GetKeyValue();
 
 		if (weapon_scripts == error) weapon_scripts := array{}; endif
@@ -302,7 +302,7 @@ function ArmorHitScripts(byRef attackInfo)
 		var others_scripts := itemCfg.SetKeyName("ArmorHitScripts").GetKeyValue();
 
 		if (attackInfo.GetDefender().IsNPC())
-			others_scripts := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetDefender().GetNPCTemplate())
+			others_scripts := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetDefender().GetTemplate())
 														  .SetKeyName("ArmorHitScripts")
 														  .GetKeyValue();
 		endif
