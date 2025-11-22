@@ -1098,7 +1098,6 @@ function ComparaMelhorComponente(poderAtual,poderNovo, envelopeNovo, envelopeVel
 endfunction
 
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
-	var poderContado := 0;
 	var retorno := struct;
 
 	if(!propriedades)
@@ -1110,13 +1109,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 
 	endif
 								
-	poderContado += propriedades.valorPrincipal;
-
-	foreach efeitoSecundario in (propriedades.efeitosAdicionais)
-		poderContado += efeitoSecundario;
-	endforeach
-
-	retorno.+poderContado := poderContado;
+	retorno.+poderContado := propriedades.valorPrincipal + propriedades.valorTotalSubefeitos;
 	retorno.+modPeso := propriedades.modificadorPeso;
 	retorno.+modHp := propriedades.modificadorHp;
 
@@ -1146,6 +1139,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	if(valorEfeitos.efeitosAdicionais)
 		propriedades.+efeitosAdicionais := valorEfeitos.efeitosAdicionais;
+		propriedades.+valorTotalSubefeitos := valorEfeitos.valorTotalSubefeitos;
 	endif
 
 	if(TypeOfInt(valorEfeitos.valorPrincipal) != OT_UNINIT || TypeOfInt(valorEfeitos.valorPrincipal) != OT_ERROR)
@@ -1525,10 +1519,9 @@ function CriaPropFabricadoGerada(
 
 		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
 
+		var materialStruct, valorTier, materialNom, materialComponente;
 		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size() + 1)];
-		var materialComponente;
 		var arrayMateriais := array;
-		var materialNome;
 		var tipoMaterial := componenteDescConfig[hex(componenteAleatorio)].principalMaterial;
 		var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
 		var materiaisPossiveisPorTier := dictionary;
@@ -1551,9 +1544,11 @@ function CriaPropFabricadoGerada(
 				endif
 			else
 				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
-				var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
-				
-				if( DeveEscreverMaterial(materiaisPossiveisPorTier,tier))
+				var tierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
+				var tiers :=  PegaComponenteTiers();
+				tierMaterial := tierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : tierMaterial;
+
+				if( DeveEscreverMaterial(materiaisPossiveisPorTier,tierMaterial))
 					materiaisPossiveisPorTier.insert(
 														tierMaterial,
 														struct{
@@ -1567,14 +1562,16 @@ function CriaPropFabricadoGerada(
 			
 		endforeach
 
-		var materialStruct;
 		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
-			materialStruct := materiaisPossiveisPorTier[tier];
+			valorTier := tierInfo.valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
-			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tier + 1)];
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tier + 1)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
 			var tierValidado := tier > 1 ? tier : 2;// achei melhor só reajustar ao invés de mandar msg de erro.
-			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tierValidado)];
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tierValidado)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		else
 			return error{"errorText" := "parâmetro modoEscolhaMaterial inválido."};
 		endif
