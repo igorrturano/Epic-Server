@@ -15,6 +15,15 @@ include ":diceroll:model/Dice";
 include ":message:model/Message";
 include "include/packets";
 
+/**
+ * Classe que representa informações detalhadas sobre um ataque no sistema de combate.
+ * 
+ * Esta classe encapsula todos os dados relacionados a um ataque, incluindo informações sobre
+ * o atacante, defensor, tipo de dano, chances de acerto, crítico e aparar, além de gerenciar
+ * habilidades de combate que podem ser executadas durante o ataque.
+ *
+ * @implements IAttackInfo Interface base para informações de ataque
+ */
 class AttackInfo(IAttackInfo)
 	var _moment := ATTACK_MOMENT::COMBATING;
 	var _attacker; // MobileWrapper object
@@ -63,126 +72,271 @@ class AttackInfo(IAttackInfo)
 		this._defenderAbilities := AttackInfo::_defenderAbilities;
 	endfunction
 
+	/**
+	 * Obtém o momento do ataque.
+	 *
+	 * @return ATTACK_MOMENT Momento atual do ataque (ENGAGING ou COMBATING)
+	 */
 	function GetMoment(this)
 		return this._moment;
 	endfunction
 	
+	/**
+	 * Obtém o atacante.
+	 *
+	 * @return MobileWrapper Objeto que representa o atacante
+	 */
 	function GetAttacker(this)
 		return this._attacker;
 	endfunction
 
+	/**
+	 * Obtém o defensor.
+	 *
+	 * @return MobileWrapper Objeto que representa o defensor
+	 */
 	function GetDefender(this)
 		return this._defender;
 	endfunction
 
+	/**
+	 * Obtém a região do corpo alvo do ataque.
+	 *
+	 * @return String Região do corpo a ser atingida
+	 */
 	function GetBodyRegion(this)
 		return this._bodyRegion;
 	endfunction
 
+	/**
+	 * Obtém a direção do ataque.
+	 *
+	 * @return ATTACK_DIRECTION Direção do ataque (FRONT, BACK, SIDE)
+	 */
 	function GetDirection(this)
 		return this._direction;
 	endfunction
 
+	/**
+	 * Obtém o objeto de dano.
+	 *
+	 * @return Damage Objeto contendo informações sobre o dano do ataque
+	 */
 	function GetDamage(this)
 		return this._damage;
 	endfunction
 
+	/**
+	 * Obtém a mão usada para o ataque.
+	 *
+	 * @return DAMAGE_HAND Mão do ataque (MAINHAND ou OFFHAND)
+	 */
 	function GetDamageHand(this)
 		return this._damageHand;
 	endfunction
 
+	/**
+	 * Obtém o tipo de ataque.
+	 *
+	 * @return DAMAGE_TYPE Tipo de ataque baseado na postura
+	 */
 	function GetAttackType(this)
 		return this._attackType;
 	endfunction
 
+	/**
+	 * Obtém a munição usada no ataque.
+	 *
+	 * @return Ammo Objeto representando a munição
+	 */
 	function GetAmmo(this)
 		return this._ammo;
 	endfunction
 
+	/**
+	 * Obtém a chance base de acerto.
+	 *
+	 * @return Integer Chance de acerto (0-100)
+	 */
 	function GetHitChance(this)
 		return this._hitChance;
 	endfunction
 
+	/**
+	 * Obtém o modificador da chance de acerto.
+	 *
+	 * @return Integer Modificador aplicado à chance de acerto
+	 */
 	function GetHitChanceMod(this)
 		return this._hitChanceMod;
 	endfunction
 
+	/**
+	 * Obtém o resultado da rolagem de chance de acerto.
+	 *
+	 * @return Integer Valor rolado para determinar acerto (0-100)
+	 */
 	function GetHitChanceResult(this)
 		return this._hitChanceResult;
 	endfunction
 
+	/**
+	 * Obtém a chance base de acerto crítico.
+	 *
+	 * @return Integer Chance de acerto crítico (0-100)
+	 */
 	function GetCriticalHitChance(this)
 		return this._criticalHitChance;
 	endfunction
 
+	/**
+	 * Obtém o modificador da chance de acerto crítico.
+	 *
+	 * @return Integer Modificador aplicado à chance de crítico
+	 */
 	function GetCriticalHitChanceMod(this)
 		return this._criticalHitChanceMod;
 	endfunction
 	
+	/**
+	 * Obtém o resultado da rolagem de acerto crítico.
+	 *
+	 * @return Integer Valor rolado para determinar crítico (0-100)
+	 */
 	function GetCriticalHitChanceResult(this)
 		return this._criticalHitChanceResult;
 	endfunction
 	
+	/**
+	 * Obtém o equipamento usado para aparar.
+	 *
+	 * @return EquipWrapper Item usado na defesa (ArmorWrapper ou WeaponWrapper)
+	 */
 	function GetParryEquip(this)
 		return this._parryEquip;
 	endfunction
 
+	/**
+	 * Obtém a chance base de aparar.
+	 *
+	 * @return Integer Chance de aparar o ataque (0-100)
+	 */
 	function GetParryChance(this)
 		return this._parryChance;
 	endfunction
 
+	/**
+	 * Obtém o modificador da chance de aparar.
+	 *
+	 * @return Integer Modificador aplicado à chance de aparar
+	 */
 	function GetParryChanceMod(this)
 		return this._parryChanceMod;
 	endfunction
 
+	/**
+	 * Obtém o resultado da rolagem de chance de aparar.
+	 *
+	 * @return Integer Valor rolado para determinar aparar (0-100)
+	 */
 	function GetParryChanceResult(this)
 		return this._parryChanceResult;
 	endfunction
 
+	/**
+	 * Obtém as habilidades do atacante.
+	 *
+	 * @return Dictionary Habilidades indexadas por momento de execução
+	 */
 	function GetAttackerAbilities(this)
 		return this._attackerAbilities;
 	endfunction
 
+	/**
+	 * Obtém as habilidades do defensor.
+	 *
+	 * @return Dictionary Habilidades indexadas por momento de execução
+	 */
 	function GetDefenderAbilities(this)
 		return this._defenderAbilities;
 	endfunction
 
+	/**
+	 * Define o momento do ataque.
+	 *
+	 * @param moment ATTACK_MOMENT Momento do ataque (ENGAGING ou COMBATING)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetMoment(this, moment)
 		this._moment := moment;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o atacante.
+	 *
+	 * @param attacker MobileWrapper Objeto que representa o atacante
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Error Se o parâmetro não for um MobileWrapper
+	 */
 	function SetAttacker(this, attacker)
-		if (!(attacker is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper object!"}; endif
+		if (!(attacker is @MobileWrapper)) return InvalidFormatException("Parameter must be a MobileWrapper object!"); endif
 		
 		this._attacker := attacker;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o defensor.
+	 *
+	 * @param defender MobileWrapper Objeto que representa o defensor
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Error Se o parâmetro não for um MobileWrapper
+	 */
 	function SetDefender(this, defender)
-		if (!(defender is @MobileWrapper)) return error{errortext := "Parameter must be a MobileWrapper object!"}; endif
+		if (!(defender is @MobileWrapper)) return InvalidFormatException("Parameter must be a MobileWrapper object!"); endif
 
 		this._defender := defender;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define a região do corpo alvo do ataque.
+	 *
+	 * @param bodyRegion String Região do corpo (deve ser uma zona de armadura válida)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Error Se o parâmetro não for uma zona de armadura válida
+	 */
 	function SetBodyRegion(this, bodyRegion)
-		if (!(bodyRegion in CS_GetArmorZones())) return error{errortext := "Parameter must be a valid armor zone!"}; endif
+		if (!(bodyRegion in CS_GetArmorZones())) return InvalidFormatException("Parameter must be a valid armor zone!"); endif
 
 		this._bodyRegion := bodyRegion;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define a direção do ataque.
+	 *
+	 * @param direction ATTACK_DIRECTION Direção do ataque
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetDirection(this, direction)
 		this._direction := direction;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o objeto de dano.
+	 *
+	 * @param damage Damage Objeto contendo informações sobre o dano
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Error Se o parâmetro não for um objeto Damage
+	 */
 	function SetDamage(this, damage)
 		if (!(damage is @Damage)) return error{errortext := "Parameter must be a Damage class!"}; endif
 
@@ -191,18 +345,37 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Define a mão usada para o ataque.
+	 *
+	 * @param damageHand DAMAGE_HAND Mão do ataque (MAINHAND ou OFFHAND)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetDamageHand(this, damageHand)
 		this._damageHand := damageHand;
 
 		return this;
 	endfunction
 
-	function SetAttackType(this, attackType) // attackType: enum DAMAGE_TYPE
+	/**
+	 * Define o tipo de ataque.
+	 *
+	 * @param attackType DAMAGE_TYPE Tipo de ataque baseado na postura
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetAttackType(this, attackType)
 		this._attackType := attackType;
 
 		return this;
 	endfunction
 
+	/**
+	 * Define a munição usada no ataque.
+	 *
+	 * @param ammo Ammo Objeto representando a munição
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws InvalidFormatException Se o parâmetro não for um objeto Ammo
+	 */
 	function SetAmmo(this, ammo)
 		if (!(ammo is @Ammo)) return InvalidFormatException("Parameter must be an Ammo object!"); endif
 		
@@ -211,30 +384,61 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Define a chance base de acerto.
+	 *
+	 * @param value Integer Chance de acerto (0-100)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetHitChance(this, value)
 		this._hitChance := CInt(value);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o modificador da chance de acerto.
+	 *
+	 * @param value Integer Modificador a ser aplicado
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetHitChanceMod(this, value)
 		this._hitChanceMod := CInt(value);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define a chance base de acerto crítico.
+	 *
+	 * @param value Integer Chance de crítico (0-100)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetCriticalHitChance(this, value)
 		this._criticalHitChance := CInt(value);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o modificador da chance de acerto crítico.
+	 *
+	 * @param value Integer Modificador a ser aplicado
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetCriticalHitChanceMod(this, value)
 		this._criticalHitChanceMod := CInt(value);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define o equipamento usado para aparar.
+	 *
+	 * @param equip EquipWrapper Item de defesa (ArmorWrapper ou WeaponWrapper)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws InvalidFormatException Se não for ArmorWrapper ou WeaponWrapper
+	 */
 	function SetParryEquip(this, equip)
 		if (!(equip is @ArmorWrapper) && !(equip is @WeaponWrapper))
 			return InvalidFormatException("Parameter must be an ArmorWrapper or WeaponWrapper object!");
@@ -245,18 +449,39 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Define a chance base de aparar.
+	 *
+	 * @param parryChance Integer Chance de aparar (0-100)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetParryChance(this, parryChance)
 		this._parryChance := CInt(parryChance);
 
 		return this;
 	endfunction
 
+	/**
+	 * Define a penalidade da chance de aparar.
+	 *
+	 * @param penalty Integer Penalidade a ser aplicada
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
 	function SetParryChancePenalty(this, penalty)
 		this._parryChancePenalty := CInt(penalty);
 
 		return this;
 	endfunction
 
+	/**
+	 * Adiciona uma habilidade ao atacante.
+	 *
+	 * As habilidades são organizadas por momento de execução em um dicionário.
+	 *
+	 * @param combatAbility CombatAbility Habilidade a ser adicionada
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
+	 */
 	function AddAttackerAbility(this, combatAbility)
 		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
 		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
@@ -266,6 +491,15 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Adiciona uma habilidade ao defensor.
+	 *
+	 * As habilidades são organizadas por momento de execução em um dicionário.
+	 *
+	 * @param combatAbility CombatAbility Habilidade a ser adicionada
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
+	 */
 	function AddDefenderAbility(this, combatAbility)
 		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
 		if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
@@ -275,6 +509,14 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Rola um dado para determinar se o ataque acerta.
+	 *
+	 * Gera um número aleatório entre 0 e 100 e armazena em _hitChanceResult.
+	 *
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Exception Se a chance de acerto não foi definida
+	 */
 	function RollHitChance(this)
 		if (this._hitChance is @Exception) return this._hitChance; endif
 		
@@ -282,6 +524,15 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Rola um dado para determinar se o ataque é crítico.
+	 *
+	 * Gera um número aleatório entre 0 e 100 e armazena em _criticalHitChanceResult.
+	 * Se o resultado for menor ou igual à chance de crítico, marca o dano como crítico.
+	 *
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Exception Se a chance de crítico não foi definida
+	 */
 	function RollCriticalHitChance(this)
 		if (this._criticalHitChance is @Exception) return this._criticalHitChance; endif
 		
@@ -292,6 +543,14 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Rola um dado para determinar se o ataque é aparado.
+	 *
+	 * Gera um número aleatório entre 0 e 100 e armazena em _parryChanceResult.
+	 *
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws Exception Se a chance de aparar não foi definida
+	 */
 	function RollParryChance(this)
 		if (this._parryChance is @Exception) return this._parryChance; endif
 		
@@ -299,6 +558,14 @@ class AttackInfo(IAttackInfo)
 		return this;
 	endfunction
 
+	/**
+	 * Verifica se o ataque foi bem-sucedido.
+	 *
+	 * Compara o resultado da rolagem com a chance de acerto.
+	 *
+	 * @return Boolean true se o ataque acertou, false caso contrário
+	 * @throws Exception Se a chance ou resultado não foram definidos
+	 */
 	function Succeeded(this)
 		if (this._hitChance is @Exception) return this._hitChance; endif
 		if (this._hitChanceResult is @Exception) return this._hitChanceResult; endif
@@ -306,6 +573,14 @@ class AttackInfo(IAttackInfo)
 		return this._hitChanceResult <= this._hitChance;
 	endfunction
 
+	/**
+	 * Verifica se o ataque foi aparado.
+	 *
+	 * Compara o resultado da rolagem com a chance de aparar.
+	 *
+	 * @return Boolean true se o ataque foi aparado, false caso contrário
+	 * @throws Exception Se a chance ou resultado de aparar não foram definidos
+	 */
 	function Parried(this)
 		if (this._parryChance is @Exception) return this._parryChance; endif
 		if (this._parryChanceResult is @Exception) return this._parryChanceResult; endif
@@ -313,7 +588,13 @@ class AttackInfo(IAttackInfo)
 		return this._parryChanceResult <= this._parryChance;
 	endfunction
 
-	function ExecuteAbilitesOnMomentum(this, momentum) // TODO: Jogar para combat::CombatController
+	/**
+	 * Executa habilidades programadas para um determinado momento.
+	 *
+	 * @param momentum COMBATABILITY_MOMENT Momento de execução das habilidades
+	 * @deprecated TODO: Mover para combat::CombatController
+	 */
+	function ExecuteAbilitesOnMomentum(this, momentum)
 		if (this._abilitiesToExecute[momentum])
 			foreach ability in (this._abilitiesToExecute[momentum])
 				ability.ExecuteOn(this._attacker, this._defender);
