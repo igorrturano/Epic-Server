@@ -34,23 +34,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function WeaponWrapper(this, byRef item)
 		Super(item);
 		
-		if (!this._template)
-			var err := InvalidTemplateException("The param must be a Weapon ObjRef or a valid Template!");
-			this._attribute := err;
-			this._attackType := err;
-			this._category := err;
-			this._speedTier := err;
-			this._mainDamageTier := err;
-			this._offDamageTier := err;
-			this._mainDamage := err;
-			this._offDamage := err;
-			this._damageMod := err;
-			this._criticalChanceTier := err;
-			this._criticalChance := err;
-			this._criticalChanceMod := err;
-			this._speed := err;
-			this._strRequired := err;
-		else
+		if (this._template != error && !(this._template is @Exception))
 			this._attribute := this._template.Attribute;
 			this._attackType := this._template.TipoAtaque;
 			this._category := this._template.Category;
@@ -95,6 +79,22 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 				this._damageMod.SetPoisonRawDamage(CInt(this._prop.PoisonDamage));
 				this._damageMod.SetEnergyRawDamage(CInt(this._prop.EnergyDamage));
 			endif
+		else
+			var err := InvalidTemplateException("The param must be a Weapon ObjRef or a valid Template!");
+			this._attribute := err;
+			this._attackType := err;
+			this._category := err;
+			this._speedTier := err;
+			this._mainDamageTier := err;
+			this._offDamageTier := err;
+			this._mainDamage := err;
+			this._offDamage := err;
+			this._damageMod := err;
+			this._criticalChanceTier := err;
+			this._criticalChance := err;
+			this._criticalChanceMod := err;
+			this._speed := err;
+			this._strRequired := err;
 		endif
 	endfunction
 
