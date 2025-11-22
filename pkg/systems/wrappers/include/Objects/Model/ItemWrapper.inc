@@ -7,6 +7,8 @@ include "ContainerWrapper";
 include ":io:CFGFile";
 
 class ItemWrapper(IItemWrapper, UObjectWrapper)
+	var _category := ""; // ITEM_CATEGORY enum
+
 	function ItemWrapper(this, byRef item)
 		Super(item);
 
@@ -24,17 +26,25 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 				this._graphic := err;
 				this._color := err;
 				this._weight := err;
+
+				this._category := err;
 			else
 				err := IsTemplateException();
 				this._name := this._template.desc;
 				this._graphic := this._template.graphic;
 				this._color := this._template.color;
 				this._weight := this._template.weight;
+
+				this._category := this._template.Category;
 			endif
 
 			this._objRef := err;
 			this._serial := err;
 		endif
+	endfunction
+
+	function GetCategory(this)
+		return this._category;
 	endfunction
 
 	function GetAmount(this)
@@ -50,7 +60,6 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 			return this._objRef;
 		endif
 
-		// TODO: Retornar um ContainerWrapper ao invés do ObjRef puro
 		return ContainerWrapper(this._objRef.container);
 	endfunction
 
@@ -133,3 +142,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return MoveItemToContainer(this._objRef, containerWrapped.GetObjRef(), x, y, add_to_existing_stack);
 	endfunction
 endclass
+
+enum class ITEM_CATEGORY
+	QUIVER := "Quiver"
+endenum
