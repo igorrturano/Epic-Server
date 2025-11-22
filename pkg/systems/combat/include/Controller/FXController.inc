@@ -62,41 +62,41 @@ function GetAttackerFX(byRef attackInfo)
 		critical := array{}
 	};
 	
-	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		attackerFX.hit := array{0x0c};
-		attackerFX.critical := array{0x0c};
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+		attackerFX.hit := array{4, 5, 6};
+		attackerFX.critical := array{4, 5, 6};
 	else
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
-			attackerFX.hit := array{0x9, 0xA, 0xB};
-			attackerFX.critical := array{0x1F};
+			attackerFX.hit := array{9, 10, 11};
+			attackerFX.critical := array{31};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == BOW)
-			attackerFX.hit := array{0x12};
-			attackerFX.critical := array{0x12};
+			attackerFX.hit := array{18};
+			attackerFX.critical := array{18};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == CROSSBOW)
-			attackerFX.hit := array{0x13};
-			attackerFX.critical := array{0x13};
+			attackerFX.hit := array{19};
+			attackerFX.critical := array{19};
 		else
 			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
-					attackerFX.hit := array{0xC};
-					attackerFX.critical := array{0xC};
+					attackerFX.hit := array{13};
+					attackerFX.critical := array{13};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
-					attackerFX.hit := array{0xE};
-					attackerFX.critical := array{0xE};
+					attackerFX.hit := array{14};
+					attackerFX.critical := array{14};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
-					attackerFX.hit := array{0xB};
-					attackerFX.critical := array{0xB};
+					attackerFX.hit := array{12};
+					attackerFX.critical := array{12};
 				endif
-			else
+			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(ONEHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
-					attackerFX.hit := array{0xD};
-					attackerFX.critical := array{0xD};
+					attackerFX.hit := array{9};
+					attackerFX.critical := array{9};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
-					attackerFX.hit := array{0xA};
-					attackerFX.critical := array{0xA};
+					attackerFX.hit := array{10};
+					attackerFX.critical := array{10};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
-					attackerFX.hit := array{0xB};
-					attackerFX.critical := array{0xB};
+					attackerFX.hit := array{11};
+					attackerFX.critical := array{11};
 				endif
 			endif
 		endif
@@ -108,7 +108,8 @@ function GetAttackerFX(byRef attackInfo)
 		attackerFX := attackerFX.hit;
 	endif
 
-	attackerFX := attackerFX.Size() > 1 ? attackerFX[RandomIntMinMax(1, attackerFX.Size() + 1)] : attackerFX[1];
+	attackerFX := attackerFX.Size() > 1 ? attackerFX[RandomInt(attackerFX.Size()) + 1] : attackerFX[1];
+	print($"Attacker FX selected for {attackInfo.GetAttacker().GetName()}: {attackerFX}");
 
 	return CInt(attackerFX);
 endfunction
@@ -120,11 +121,11 @@ function GetDefenderFX(byRef attackInfo)
 	};
 
 	if (attackInfo.GetDefender().IsNPC())
-		defenderFX.hit := array{0x0C};
-		defenderFX.miss := array{};
+		defenderFX.hit := array{10};
+		defenderFX.miss := array{15, 16};
 	else
 		defenderFX.hit := array{20};
-		defenderFX.miss := array{};
+		defenderFX.miss := array{30};
 	endif
 
 	if (attackInfo.Succeeded())
