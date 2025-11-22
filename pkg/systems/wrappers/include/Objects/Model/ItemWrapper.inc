@@ -16,7 +16,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
 
 		if (TypeOfInt(item) == OT_ITEMREF)
-			// Feito assim para caso precisar personalizar algo futuramente
+			this._category := this._template.Category;
 		else
 			var err;
 			if (!this._template)
@@ -112,13 +112,15 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 *
 	 * Esta função reduz a quantidade do item pelo valor especificado.
 	 *
-	 * @param this     Referência ao objeto ItemWrapper atual
 	 * @param amount   Quantidade a ser consumida do item
 	 *
 	 * @return Retorna o resultado da função SubtractAmount, indicando se a 
 	 *         operação foi bem-sucedida ou não
 	 */
 	function Consume(this, amount)
+		print($"Consumindo {amount} do item {this._name} (Serial: {this._serial})");
+		print($"Quantidade atual antes do consumo: {this.GetAmount()}");
+		print($"ObjRef do item: {this._objRef}");
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
@@ -134,12 +136,31 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return UpdateItem(this._objRef);
 	endfunction
 
+	/**
+	 * Move o item para um container especificado.
+	 *
+	 * @param containerWrapped Referência encapsulada do container de destino
+	 * @param x Coordenada X dentro do container (padrão: -1 para posição automática)
+	 * @param y Coordenada Y dentro do container (padrão: -1 para posição automática)
+	 * @param add_to_existing_stack Se deve adicionar a uma pilha existente (padrão: 0)
+	 * @return Resultado da operação de movimentação ou objeto Exception em caso de erro
+	 */
 	function MoveToContainer(this, byRef containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
 
 		return MoveItemToContainer(this._objRef, containerWrapped.GetObjRef(), x, y, add_to_existing_stack);
+	endfunction
+
+	function ToString(this)
+		return $"Item {this._name}:" +
+			   $"Serial: {this._serial}, " +
+			   $"ObjType: {this._objType}, " +
+			   $"Graphic: {this._graphic}, " +
+			   $"Color: {this._color}, " +
+			   $"Weight: {this._weight}, " +
+			   $"Category: {this._category}";
 	endfunction
 endclass
 

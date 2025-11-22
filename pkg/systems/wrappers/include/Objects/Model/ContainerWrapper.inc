@@ -59,7 +59,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 			return this._objRef;
 		endif
 		
-		return this._objRef != error ? this._objRef.max_items_mod : this._template.MaxItems;
+		return this._objRef.max_items_mod;
 	endfunction
 
 	function GetMaxSlots(this)
@@ -67,7 +67,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 			return this._objRef;
 		endif
 		
-		return this._objRef != error ? this._objRef.max_slots_mod : this._template.MaxSlots;
+		return this._objRef.max_slots_mod;
 	endfunction
 
 	function GetMaxWeight(this)
@@ -75,7 +75,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 			return this._objRef;
 		endif
 
-		return this._objRef != error ? this._objRef.max_weight_mod : this._template.MaxWeight;
+		return this._objRef.max_weight_mod;
 	endfunction
 
 	function GetItemsAmount(this)
@@ -141,7 +141,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 			return this._objRef;
 		endif
 		
-		return Boolean(this._objRef.locked);
+		return this._objRef.locked;
 	endfunction
 
 	function Contains(this, item, searchRecursively := false)
