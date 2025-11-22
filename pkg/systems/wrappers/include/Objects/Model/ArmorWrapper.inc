@@ -17,15 +17,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	function ArmorWrapper(this, byRef item)
 		Super(item);
 
-		if (!this._template)
-			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
-			this._coverage := err;
-			this._tipoProtecao := err;
-			this._resists := err;
-			this._resistsMod := err;
-			this._shieldAttributes := err;
-			this._shieldAttributesMod := err;
-		else
+		if (this._template != error && !(this._template is @Exception))
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 			this._resists := this._GetArmorResist();
@@ -43,6 +35,14 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				this._resistsMod.SetPoisonResist(this._prop.PoisonResistMod);
 				this._resistsMod.SetEnergyResist(this._prop.EnergyResistMod);
 			endif
+		else
+			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
+			this._coverage := err;
+			this._tipoProtecao := err;
+			this._resists := err;
+			this._resistsMod := err;
+			this._shieldAttributes := err;
+			this._shieldAttributesMod := err;
 		endif
 	endfunction
 	
