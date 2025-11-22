@@ -319,13 +319,16 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
 		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
 		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+		retornoEfeitos.+valorTotalSubefeitos := 0;
 		
 		if(subEfeitosMaterial.size() > 1)
 			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
 			var subefeitosDict := dictionary{};
 
 			for indice := 1 to subEfeitosMaterial.size()
-				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				var valorSubEfeito := ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1]);
+				subefeitosDict.insert( subEfeitosMaterial[indice], valorSubEfeito); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				retornoEfeitos.valorTotalSubefeitos += valorSubEfeito;
 				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 				Sleepms(2);
 			endfor
