@@ -1,5 +1,5 @@
 class IContainerWrapper()
-	uninit function IContainerWrapper(this);
+	uninit function IContainerWrapper(this, byRef object);
 
 	uninit function GetWeightMultiplier(this);
 	uninit function GetMaxItems(this);
@@ -13,5 +13,6 @@ class IContainerWrapper()
 	uninit function SetMaxWeight(this, value);
 
 	uninit function IsLocked(this);
-	uninit function Contains(this, object);
+	uninit function GetInside(this, item, default searchRecursively);
+	uninit function Contains(this, item, default searchRecursively);
 endclass

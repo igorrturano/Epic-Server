@@ -11,24 +11,32 @@ include ":io:CFGFile";
 class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	var _isLocked := false;
 
-	function ContainerWrapper(this, byRef objRef)
-		Super(objRef);
+	function ContainerWrapper(this, byRef object)
+		Super(object);
 
 		this._cfgFile := CFGFile("containers", "itemdesc");
-		if (objRef.isA(POLCLASS_CONTAINER))
-			this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
-			this._name := this._objRef.name;
+		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
+
+		if (object.isA(POLCLASS_CONTAINER))
 			this._weightMultiplier := this._objRef.held_weight_multiplier;
 			this._maxItems := this._objRef.max_items_mod;
 			this._maxSlots := this._objRef.max_slots_mod;
 			this._maxWeight := this._objRef.max_weight_mod;
-		else // Caso seja apenas um template
+		else // Caso seja template ou erro
 			var err;
 			if (!this._template)
 				err := InvalidFormatException("The param must be a Container ObjRef or a valid Template!");
 				this._objType := err;
+				this._name := err;
+				this._graphic := err;
+				this._color := err;
+				this._weight := err;
 			else
 				err := IsTemplateException();
+				this._name := this._template.desc;
+				this._graphic := this._template.graphic;
+				this._color := this._template.color;
+				this._weight := this._template.weight;
 			endif
 
 			this._objRef := err;
@@ -77,7 +85,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 	
 	function SetLocked(this, boolValue)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		this._objRef.locked := boolValue;
 
@@ -85,7 +95,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	function SetWeightMultiplier(this, value)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		this._objRef.held_weight_multiplier := CDbl(value);
 
@@ -93,7 +105,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	function SetMaxItems(this, value)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		this._objRef.max_items_mod := CInt(value);
 
@@ -101,7 +115,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	function SetMaxSlots(this, value)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		this._objRef.max_slots_mod := CInt(value);
 
@@ -109,7 +125,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	function SetMaxWeight(this, value)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		this._objRef.max_weight_mod := CInt(value);
 
@@ -117,9 +135,23 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	endfunction
 
 	function IsLocked(this)
-		if (this._objRef == error) return this._objRef; endif
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
 		
 		return Boolean(this._objRef.locked);
+	endfunction
+
+	function Contains(this, item, searchRecursively := false)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (!(item is @ItemWrapper))
+			return InvalidFormatException("The param must be an item Wrapper!");
+		endif
+
+		return FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY) != error;
 	endfunction
 
 	/*
@@ -132,13 +164,15 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ItemWrapper Retorna um ItemWrapper contendo o objeto encontrado,
 	 *                     ou um wrapper vazio se nenhum item for encontrado
 	 */
-	function GetItemInside(this, item, searchRecursively := false)
+	function GetInside(this, item, searchRecursively := false)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
 		
-		var flag := searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY;
+		if (!(item is @ItemWrapper))
+			return InvalidFormatException("The param must be an Item Wrapper!");
+		endif
 
-		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), flag));
+		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY));
 	endfunction
 endclass
