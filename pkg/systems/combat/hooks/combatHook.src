@@ -206,7 +206,7 @@ function CheckAmmo(byRef attackInfo)
 		return false;
 	endif
 
-	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial).objtype);
+	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial));
 	attackInfo.SetAmmo(ammo);
 	if (ammo.NeedsQuiver())
 		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE, ITEM_TYPE::CONTAINER);
@@ -214,9 +214,7 @@ function CheckAmmo(byRef attackInfo)
 			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER);
 		endif
 
-		if (aljava.Contains(ammo.GetItem()))
-			return true;
-		else
+		if (!aljava.Contains(ammo.GetItem()))
 			Message("A munição não está na aljava.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 			return false;
 		endif
