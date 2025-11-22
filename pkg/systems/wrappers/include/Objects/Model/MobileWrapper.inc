@@ -286,10 +286,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetNPCTemplate(this)
-		if (this._template is @Exception)
-			return this._template;
-		endif
-		
 		return this._template;
 	endfunction
 
@@ -379,22 +375,42 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetSkill(this, skillName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return this.GetSkillBase(skillName) + this.GetSkillMod(skillName);
 	endfunction
 
 	function GetSkillBase(this, skillName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return AP_GetTrueSkill(this._objRef, skillName);
 	endfunction
 
 	function GetSkillMod(this, skillName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return AP_GetSkillMod(this._objRef, skillName);
 	endfunction
 
 	function GetAbility(this, abilityName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		// TODO: Implementar retorno de CombatAbility
 	endfunction
 
 	function GetCombatTraits(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		var propData := this._objRef.GetProp(MOBILE_PROPNAME::COMBAT_TRAITS);
 		if (!propData)
 			propData := CombatTraits().Serialize();
@@ -459,6 +475,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * entre cada aplicação de modificador.
 	 */
 	function ApplyItemModifiers(this, byRef itemWrapped)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
 			return InvalidFormatException("The param must be an ArmorWrapper or WeaponWrapper object!");
 		endif
@@ -483,6 +503,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Error - Retorna erro se o parâmetro não for um ArmorWrapper ou WeaponWrapper
 	 */
 	function RemoveItemModifiers(this, byRef itemWrapped)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
 			return InvalidFormatException("The param must be an ArmorWrapper or WeaponWrapper object!");
 		endif
@@ -496,11 +520,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function HasAbility(this, abilityName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
 		return TemHabilidade(this._objRef, abilityName);
 	endfunction
 
 	function IsNPC(this)
-		return !(this._template is @Exception);
+		return this._template != error && !(this._template is @Exception);
 	endfunction
 
 	function IsDead(this)
@@ -547,11 +575,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   var distancia := mobile.DistanceTo(target);
 	 */
 	function DistanceTo(this, otherObj)
-		if (!otherObj.IsA(POLCLASS_UOBJECT))
-			return InvalidFormatException("The param must be an ObjRef!");
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
 
-		return Distance(this._objRef, otherObj);
+		if (!(otherObj is @UObjectWrapper))
+			return InvalidFormatException("The param must be an Object Wrapper!");
+		endif
+
+		return Distance(this._objRef, otherObj.GetObjRef());
 	endfunction
 
 	/**

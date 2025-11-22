@@ -2,6 +2,7 @@ use uo;
 
 include "UObjectWrapper";
 include "IItemWrapper";
+include "ContainerWrapper";
 
 include ":io:CFGFile";
 
@@ -50,7 +51,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 
 		// TODO: Retornar um ContainerWrapper ao invés do ObjRef puro
-		return this._objRef.container;
+		return ContainerWrapper(this._objRef.container);
 	endfunction
 
 	function GetQuality(this)
