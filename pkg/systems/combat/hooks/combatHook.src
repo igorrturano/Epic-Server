@@ -89,6 +89,7 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 
+	
 	if (!CheckAmmo(attackInfo))
 		return false;
 	endif
@@ -174,7 +175,7 @@ function DoAttack(byRef attackInfo)
 		attackInfo.GetDefender().GetObjRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
 			LogToFile(
 				":fls_core:pets.log",
-				attackInfo.GetDefender().GetObjRef().acctname + " atacou " + attackInfo.GetDefender().GetObjRef().name + " (" + attackInfo.GetDefender().GetNPCTemplate() + ")",
+				attackInfo.GetDefender().GetObjRef().acctname + " atacou " + attackInfo.GetDefender().GetObjRef().name + " (" + attackInfo.GetDefender().GetTemplate() + ")",
 				LOG_DATETIME
 			);
 	endif
@@ -187,15 +188,16 @@ function DoAttack(byRef attackInfo)
 endfunction
 
 function CheckAmmo(byRef attackInfo)
-	const STONE_OBJTYPE := 20481;
-
-	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType) // Não tem projétil
+	if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().ProjectileType)
 		return true;
 	endif
 
-	var arcane_bows := array{0xFA6D, 0xF997};
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
-		return true;
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow"))
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+			return true;
+		else
+			return false;
+		endif
 	endif
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
@@ -204,32 +206,23 @@ function CheckAmmo(byRef attackInfo)
 		return false;
 	endif
 
-	// Handle stones differently - they don't need aljava check
 	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial).objtype);
 	attackInfo.SetAmmo(ammo);
 	if (ammo.NeedsQuiver())
-		var aljavas := array{0x791c, 0x2fb7};
-		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE);
-
-		if (!(aljava.objtype in aljavas))
-			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE, ITEM_TYPE::CONTAINER);
+		if (aljava.GetCategory() != ITEM_CATEGORY::QUIVER)
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER);
 		endif
 
-		// Check if ammo is in aljava
-		var found_in_aljava := false;
-		foreach arrow in (EnumerateItemsInContainer(aljava))
-			if (arrow.serial == ammo.GetObjRef().serial)
-				found_in_aljava := true;
-				break;
-			endif
-		endforeach
-
-		if (!found_in_aljava)
+		if (aljava.Contains(ammo.GetItem()))
+			return true;
+		else
+			Message("A munição não está na aljava.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 			return false;
 		endif
 	endif
 
-	return true; // Se chegou ate aqui, eh pq encontrou flecha e pode continuar com a rotina de disparo
+	return true;
 endfunction
 
 function arcane_shooting(byRef attackInfo)

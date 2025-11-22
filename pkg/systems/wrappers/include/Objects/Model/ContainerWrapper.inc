@@ -14,8 +14,9 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	function ContainerWrapper(this, byRef object)
 		Super(object);
 
-		this._cfgFile := CFGFile("containers", "itemdesc");
+		// this._cfgFile := CFGFile("containers", "itemdesc");
 		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
+		this._category := this._template.Category;
 
 		if (object.isA(POLCLASS_CONTAINER))
 			this._weightMultiplier := this._objRef.held_weight_multiplier;
@@ -31,6 +32,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 				this._graphic := err;
 				this._color := err;
 				this._weight := err;
+				this._category := err;
 			else
 				err := IsTemplateException();
 				this._name := this._template.desc;
@@ -174,5 +176,21 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		endif
 
 		return ItemWrapper(FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY));
+	endfunction
+
+	function ToString(this)
+		return "Container: " +
+			   $"Serial: {Hex(this._serial)}, " +
+			   $"ObjType: {Hex(this._objType)}, " +
+			   $"Name: {this._name}, " +
+			   $"Graphic: {Hex(this._graphic)}, " +
+			   $"Color: {Hex(this._color)}, " +
+			   $"Weight: {this._weight}, " +
+			   $"MaxItems: {this.GetMaxItems()}, " +
+			   $"MaxSlots: {this.GetMaxSlots()}, " +
+			   $"MaxWeight: {this.GetMaxWeight()}, " +
+			   $"WeightMultiplier: {this.GetWeightMultiplier()}, " +
+			   $"IsLocked: {this.IsLocked()}, " +
+			   $"ItemsAmount: {this.GetItemsAmount()}";
 	endfunction
 endclass

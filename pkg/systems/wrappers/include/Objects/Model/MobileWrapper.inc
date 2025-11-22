@@ -360,26 +360,36 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return equipsInSlot;
 	endfunction
 
-	/*
-	 * Obtém o equipamento equipado em uma camada específica do personagem
+	/**
+	 * Obtém o equipamento de uma camada específica do personagem e o encapsula no wrapper apropriado.
 	 *
-	 * Parâmetros:
-	 *   layerEnum - Enumeração da camada de equipamento a ser consultada
+	 * @param this Referência ao objeto Mobile
+	 * @param layerEnum Enumeração da camada de equipamento a ser consultada
+	 * @param itemType Tipo do item (ITEM_TYPE::WEAPON, ITEM_TYPE::ARMOR ou ITEM_TYPE::CONTAINER)
 	 *
-	 * Retorna:
-	 *   ArmorWrapper - Objeto wrapper da armadura equipada na camada especificada
-	 *                  ou invalid se não houver equipamento na camada
-	 *
-	 * Descrição:
-	 *   Esta função encapsula a chamada nativa GetEquipmentByLayer e retorna
-	 *   o resultado como um ArmorWrapper para facilitar a manipulação do item.
+	 * @return Retorna o equipamento encapsulado no wrapper correspondente ao tipo especificado
+	 *         (WeaponWrapper, ArmorWrapper ou ContainerWrapper).
+	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException se
+	 *         o itemType não for válido.
 	 */
-	function GetEquipByLayer(this, layerEnum)
+	function GetEquipByLayer(this, layerEnum, itemType)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
 		
-		return ArmorWrapper(GetEquipmentByLayer(this._objRef, layerEnum));
+		var equip := GetEquipmentByLayer(this._objRef, layerEnum);
+		if (itemType == ITEM_TYPE::WEAPON)
+			equip := WeaponWrapper(equip);
+		elseif (itemType == ITEM_TYPE::ARMOR)
+			equip := ArmorWrapper(equip);
+		elseif (itemType == ITEM_TYPE::CONTAINER)
+			equip := ContainerWrapper(equip);
+			print("Equip na camada " + layerEnum + ": " + equip.ToString());
+		else
+			return InvalidFormatException("The itemType param must be a valid ITEM_TYPE enum value!");
+		endif
+
+		return equip;
 	endfunction
 
 	function GetSkill(this, skillName)
@@ -560,6 +570,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
+		// TODO: Isso aqui vai dar errado
 		return this.GetEquipByLayer(LAYER_MOUNT) == true;
 	endfunction
 
