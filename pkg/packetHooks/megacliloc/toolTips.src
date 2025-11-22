@@ -28,7 +28,6 @@ program Install()
 endprogram
 
 exported function MegaCliloc(who, byref packet)
-
 	var Object_Name;
 
 	var xDesc := ""; // Será utilizado para juntar as informações do tooltip do item
@@ -63,13 +62,36 @@ exported function MegaCliloc(who, byref packet)
 		// for some reason. Maybe a core/client issue?
 
 		xDesc := "";
-		xDesc := AddSpecialBookshelfDescription(item, xDesc); // Adicione esta linha
-		xDesc := MontaDescPersonagem(item, who, xDesc);
+		xDesc := AddSpecialBookshelfDescription(item, xDesc);  // Adicione esta linha
+		xDesc := MontaDescPersonagem(item,who,xDesc);
 
-		// LIMITA O TAMANHO DAS DESCRIÇÕES
-		if (len(desc) > 85)
-			desc := desc[1, 85];
-		endif
+		// Comentei porque a variavel desc não estava sendo usada pra nada - Luteros
+		// desc := GetObjProperty(item, "description");
+		// if(desc == error)
+		// 	 desc := "";
+
+		// //JUNTA AS DESCRIÇÕES DO DOS PROPS DO PERSONAGEM
+		// // var descmods := GetObjProperty(item, "descmod");
+		// // if(descmods != error)
+		// 	// if(item.IsA(POLCLASS_MOBILE))
+		// 		// foreach descmod in descmods
+		// 			// if(descmod)
+		// 				// desc := desc + descmod;
+		// 			// endif
+		// 		// endforeach
+		// 	// elseif(item.IsA(POLCLASS_ITEM))
+		// 		// desc := desc + descmods;
+		// 	// endif
+        // // else
+        //     // if (item.npctemplate)
+        //         // desc := showHurtDescription(item);
+        //     // endif
+		// // endif 
+
+		// //LIMITA O TAMANHO DAS DESCRIÇÕES
+		// // if (len(desc) > 85)
+		// 	// desc := desc[1, 85];
+		// // endif
 
 		// MONTA DEscrição commum a qualquer item. [Colocar as novas descs dentro deste metodo]
 		xDesc := MontaDescricaoItem(item, who, xDesc);
