@@ -436,5 +436,5 @@ function CanBackStab(attacker) // attacker: MobileWrapper
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)
-	return SubtractAmount(attackInfo.GetAmmoObjRef(), attackInfo.GetAmmoAmount());
+	return attackInfo.GetAmmo().GetItem().Consume(1);
 endfunction
