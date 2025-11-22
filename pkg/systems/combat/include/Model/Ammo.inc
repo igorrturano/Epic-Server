@@ -8,19 +8,15 @@ class Ammo()
 	var _sound := 0;
 	var _needQuiver := false;
 
-	function Ammo(this, objType)
-		this._item := ItemWrapper(objType);
+	function Ammo(this, object)
+		this._item := ItemWrapper(object);
 		this._anim := this._item.GetTemplate().Anim;
 		this._sound := this._item.GetTemplate().Sound;
 		this._needQuiver := this.NeedsQuiver();
 	endfunction
 
-	function GetObjType(this)
-		return this._item.GetObjType();
-	endfunction
-
-	function GetName(this)
-		return this._name;
+	function GetItem(this)
+		return this._item;
 	endfunction
 
 	function GetAnim(this)
