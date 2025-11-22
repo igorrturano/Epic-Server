@@ -50,10 +50,25 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this._tipoProtecao;
 	endfunction
 
+	/**
+	 * Obtém a região do corpo protegida pela armadura
+	 *
+	 * @return String contendo a área de cobertura da armadura
+	 */
 	function GetCoverage(this)
 		return this._coverage;
 	endfunction
 
+	/**
+	 * Calcula e retorna as resistências totais da armadura.
+	 * 
+	 * Combina os valores de resistência base com os modificadores,
+	 * somando cada tipo de resistência individualmente.
+	 * 
+	 * @return ArmorResist Objeto contendo todas as resistências calculadas (corte, perfuração, 
+	 *                     contusão, fogo, gelo, energia e veneno), ou Exception em caso de erro
+	 *                     ao obter as resistências base.
+	 */
 	function GetResists(this)
 		var base := this.GetResistsBase();
 		var mod := this.GetResistsMod();
@@ -73,14 +88,34 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		);
 	endfunction
 
+	/**
+	 * Retorna os resistências base da armadura.
+	 *
+	 * @return ArmorResist Objeto contendo as resistências da armadura
+	 */
 	function GetResistsBase(this)
 		return this._resists;
 	endfunction
 
+	/**
+	 * Retorna o modificador de resistências da armadura.
+	 *
+	 * @return ArmorResist Objeto contendo os modificadores de resistência da armadura
+	 */
 	function GetResistsMod(this)
 		return this._resistsMod;
 	endfunction
 
+	/**
+	 * Obtém os atributos de escudo combinados (base + modificadores).
+	 *
+	 * Calcula e retorna os atributos finais do escudo somando os valores base
+	 * com os modificadores aplicados. Se houver erro ao obter atributos base,
+	 * retorna a exceção.
+	 *
+	 * @return ShieldAttributes Objeto contendo ParryBonus e ParryDelay calculados
+	 * @return Exception Se houver erro ao obter atributos base
+	 */
 	function GetShieldAttributes(this)
 		var base := this.GetShieldAttributesBase();
 		var mod := this.GetShieldAttributesMod();
@@ -95,10 +130,20 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		);
 	endfunction
 	
+	/**
+	 * Retorna os atributos base do escudo.
+	 *
+	 * @return Objeto ShieldAttributes contendo os atributos base do escudo
+	 */
 	function GetShieldAttributesBase(this)
 		return this._shieldAttributes;
 	endfunction
 
+	/**
+	 * Retorna as modificações dos atributos do escudo
+	 *
+	 * @return objeto ShieldAttributes contendo as modificações dos atributos do escudo
+	 */
 	function GetShieldAttributesMod(this)
 		return this._shieldAttributesMod;
 	endfunction
@@ -110,6 +155,13 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define o modificador de resistências do objeto de armadura.
+	 * 
+	 * @param resists Objeto contendo os modificadores de resistência a serem aplicados
+	 *
+	 * @return Retorna a própria instância do objeto para encadeamento de métodos, ou um objeto Exception em caso de erro
+	 */
 	function SetResistsMod(this, resists)
 		if (this._objRef is @Exception) return this._objRef; endif
 		this._resistsMod := resists;
@@ -117,6 +169,13 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define os atributos base do escudo para o objeto.
+	 *
+	 * @param shieldAttrs Objeto ShieldAttributes contendo os atributos do escudo a serem definidos
+	 *
+	 * @return Retorna a própria instância do objeto em caso de sucesso, ou uma Exception em caso de erro
+	 */
 	function SetShieldAttributesBase(this, shieldAttrs)
 		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(shieldAttrs is @ShieldAttributes)) return InvalidFormatException("Param must be a ShieldAttributes!"); endif
@@ -126,6 +185,14 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define os modificadores de atributos de escudo do objeto.
+	 * 
+	 * @param {ShieldAttributes} shieldAttrs - Os atributos de escudo a serem aplicados como modificadores
+	 * @return {Object|Exception} Retorna o próprio objeto para encadeamento ou uma Exception em caso de erro
+	 * @throws {Exception} Se a referência do objeto for inválida
+	 * @throws {InvalidFormatException} Se shieldAttrs não for do tipo ShieldAttributes
+	 */
 	function SetShieldAttributesMod(this, shieldAttrs)
 		if (this._objRef is @Exception) return this._objRef; endif
 		if (!(shieldAttrs is @ShieldAttributes)) return InvalidFormatException("Param must be a ShieldAttributes!"); endif
