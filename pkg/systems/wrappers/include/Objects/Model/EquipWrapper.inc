@@ -21,9 +21,6 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	function EquipWrapper(this, byRef item)
 		Super(item);
 
-		this._cfgFile := CFGFile("combat", "itemdesc");
-		this._template := this._cfgFile.SetElementName(this._objType).GetElementValue();
-
 		if (this._objRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			var err := InvalidTemplateException();
 			this._prop := this._objRef.GetProp(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
