@@ -3039,3 +3039,44 @@ function CleanupDoppelgangerTransformation(mobile)
     CleanupDoppelgangerEquipment(mobile);
     return 1;
 endfunction
+
+/*
+ * ShouldGoDormant(last_activity_time)
+ *
+ * Purpose: Check if NPC should go dormant due to inactivity
+ * Returns 1 if dormant (caller should return), 0 otherwise
+ */
+function ShouldGoDormant(last_activity_time)
+    var current_time := polcore().systime;
+    var time_since_activity := CInt(current_time - last_activity_time);
+
+    if (time_since_activity >= 120)  // 2 minutes
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+/*
+ * CheckDarknessCreatureSurvival(mobile)
+ *
+ * Purpose: Kill darkness creatures (undead/Mobnoturno) if not in darkness
+ * Called every AI loop iteration - O(1) per creature
+ * Returns 1 if creature was killed (caller should return), 0 otherwise
+ */
+function CheckDarknessCreatureSurvival(mobile)
+    var npc_elem := NPC_GetNPCConfig(mobile);
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+
+    if (!isDarknessCreature)
+        return 0;
+    endif
+
+    if (!InDarkness(mobile))
+        SetObjProperty(mobile, "nocorpse", 1);
+        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+        return 1;
+    endif
+
+    return 0;
+endfunction
