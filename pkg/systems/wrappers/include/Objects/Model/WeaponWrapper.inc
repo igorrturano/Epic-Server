@@ -188,6 +188,90 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this._maxRange;
 	endfunction
 
+	function SetSpeed(this, value)
+		if (this._objRef is @Exception) return this._objRef; endif
+		this._speed := CInt(value);
+
+		return this;
+	endfunction
+
+	/**
+	 * Define os valores de dano principal da arma
+	 *
+	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
+	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
+	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
+	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
+	 *                                - O item interno for inválido
+	 *                                - Algum parâmetro não for uma instância de DamageDice
+	 */
+	function SetMainDamage(this, slash, piercing, blunt)
+		if (this._objRef is @Exception) return this._objRef; endif
+		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
+			return error{errortext := "Parameters must be a DamageDice class!"};
+		endif
+		this._mainDamage.SetSlashDamage(slash);
+		this._mainDamage.SetPiercingDamage(piercing);
+		this._mainDamage.SetBluntDamage(blunt);
+
+		return this;
+	endfunction
+
+	/**
+	 * Define os valores de dano secundário da arma
+	 *
+	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
+	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
+	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
+	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
+	 *                                - O item interno for inválido
+	 *                                - Algum parâmetro não for uma instância de DamageDice
+	 */
+	function SetOffDamage(this, slash, piercing, blunt)
+		if (this._objRef is @Exception) return this._objRef; endif
+		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
+			return error{errortext := "Parameters must be a DamageDice class!"};
+		endif
+		this._offDamage.SetSlashDamage(slash);
+		this._offDamage.SetPiercingDamage(piercing);
+		this._offDamage.SetBluntDamage(blunt);
+
+		return this;
+	endfunction
+
+	/**
+	 * Define o modificador de dano para a arma.
+	 *
+	 * @param {WeaponWrapper} this - Instância do wrapper da arma
+	 * @param {Damage} damageMod - Objeto da classe Damage que será usado como modificador de dano
+	 *
+	 * @return {WeaponWrapper|Error} Retorna a própria instância (this) para encadeamento de métodos,
+	 *                                ou erro se o item não existir ou se o parâmetro não for da classe Damage
+	 *
+	 * @error Retorna erro se this._item for error
+	 * @error Retorna erro com mensagem "Parameter must be a Damage class!" se damageMod não for da classe Damage
+	 */
+	function SetDamageMod(this, damageMod)
+		if (this._objRef is @Exception) return this._objRef; endif
+		if (!(damageMod is @Damage))
+			return error{errortext := "Parameter must be a Damage class!"};
+		endif
+		this._damageMod := damageMod;
+
+		return this;
+	endfunction
+
+	function SetCriticalChanceBase(this, value)
+		if (this._objRef is @Exception) return this._objRef; endif
+		this._criticalChance := CInt(value);
+
+		return this;
+	endfunction
+
 	/**
 	 * Define a velocidade da arma
 	 * 
