@@ -23,7 +23,7 @@ program TimedScript_Clumsy(params)
 	var dmg := cint(AP_GetSkill(mobile, THEOLOGY) / 100);
 	SetObjProperty(mobile, "dmg", dmg);
 	SetObjProperty(mobile, "#dmgbonus", dmgbonus + dmg);
-	PlayObjectCenteredEffect(mobile, EPIC_FX_RAGE_MAGIC, 255, 20);
+	PlayObjectCenteredEffect(mobile, FX_RAGE_MAGIC, 255, 20);
 
 	return 1;
 endprogram

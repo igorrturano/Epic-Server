@@ -119,7 +119,7 @@ function BondWithCreature(who)
 			StoreBond(who, targ);
 
 			PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
-			PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_TELEPORT, 10, 30, 0, who.realm);
+			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_TELEPORT, 10, 30, 0, who.realm);
 			targ.hidden := 1;
 			MoveObjectToLocation(targ, 6143, 0, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
@@ -148,7 +148,7 @@ function SummonSelectedCreature(who, selected_creature)
 	// Visual and sound effects
 	PerformAction(who, ANIM_CAST_DIR);
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_CREATURE);
-	PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_SUMMON_BEAST, 10, 30, 0, who.realm);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SUMMON_BEAST, 10, 30, 0, who.realm);
 
 	// Summon the creature
 	sleepms(1500);

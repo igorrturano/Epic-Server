@@ -176,7 +176,7 @@ function GetAttackerSFX(byRef attackInfo)
 				return 0;
 			elseif (attackInfo.GetAttacker().GetRace() == HUMANO)
 				return 0;
-			elseif (attackInfo.GetAttacker().GetRace() == POLSKI)
+			elseif (attackInfo.GetAttacker().GetRace() == PEQUILHO)
 				return 0;
 			endif
 		endif
@@ -202,7 +202,7 @@ function GetDefenderSFX(byRef attackInfo)
 				return 0;
 			elseif (attackInfo.GetDefender().GetRace() == HUMANO)
 				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == POLSKI)
+			elseif (attackInfo.GetDefender().GetRace() == PEQUILHO)
 				return 0;
 			endif
 		else
