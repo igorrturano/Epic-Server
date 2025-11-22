@@ -10,15 +10,12 @@ program daynightClocksystem(parameters)
 
 	var dayCycleSystemPid := parameters[0]; 
 	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
-	var daynightStartingTime := cint(GetGlobalProperty("daynightStartingTime"));
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var maxSystemDarkness := cint(config.maxSystemDarkness);
 	var maxHoursDayCycle := cint(config.maxHoursDayCycle);
-	var midDayRewind := 6;
 	var lightLevel := maxSystemDarkness;
 	var previousLightLevel := lightLevel;
-	var clockDelay := 6 * 60; //atraso para que o calculo da luz no pico bata com o meio dia.  
 	setregionlightlevel("Umbraeterna", cint(config.umbraeternaDarkness)); // é semrpe a mesma lightlevel.
 	PRINT("*** Clock Counting ****");
 
@@ -26,7 +23,7 @@ program daynightClocksystem(parameters)
 
 	while(1)
 		var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
-		var tempestade := GetGlobalProperty("tempestade");
+		var tempestade := GetGlobalProperty("tempestade");//TODO  lembrar de implementar isso pra afetar a luz.
 		var maxAllowedDarkness := GeTMoonLightMod();
 		var currentHour := getCurrentHour();
 		var currentMinute := getCurrentMinute();
