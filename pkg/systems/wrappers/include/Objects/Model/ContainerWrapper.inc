@@ -45,6 +45,14 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		endif
 	endfunction
 
+	/**
+	 * Obtém o multiplicador de peso do container
+	 * 
+	 * Este valor afeta quanto do peso dos itens dentro do container
+	 * é considerado no peso total do container.
+	 * 
+	 * @return Double O multiplicador de peso ou Exception se houver erro
+	 */
 	function GetWeightMultiplier(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -53,6 +61,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._objRef.held_weight_multiplier;
 	endfunction
 
+	/**
+	 * Obtém o número máximo de itens permitidos no container
+	 * 
+	 * @return Integer Quantidade máxima de itens ou Exception se houver erro
+	 */
 	function GetMaxItems(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -61,6 +74,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._objRef.max_items_mod;
 	endfunction
 
+	/**
+	 * Obtém o número máximo de slots disponíveis no container
+	 * 
+	 * @return Integer Quantidade máxima de slots ou Exception se houver erro
+	 */
 	function GetMaxSlots(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -69,6 +87,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._objRef.max_slots_mod;
 	endfunction
 
+	/**
+	 * Obtém o peso máximo que o container pode suportar
+	 * 
+	 * @return Integer Peso máximo em stones ou Exception se houver erro
+	 */
 	function GetMaxWeight(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -77,6 +100,13 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._objRef.max_weight_mod;
 	endfunction
 
+	/**
+	 * Obtém a quantidade atual de itens dentro do container
+	 * 
+	 * Retorna a contagem total de itens, excluindo o próprio container.
+	 * 
+	 * @return Integer Quantidade de itens ou Exception se houver erro
+	 */
 	function GetItemsAmount(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -85,6 +115,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return CInt(this._objRef.item_count - 1); // Subtrai 1 para não contar o próprio container
 	endfunction
 	
+	/**
+	 * Define se o container está bloqueado
+	 * 
+	 * @param boolValue Boolean indicando se deve bloquear (true) ou desbloquear (false)
+	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
+	 */
 	function SetLocked(this, boolValue)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -95,6 +131,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define o multiplicador de peso do container
+	 * 
+	 * @param value Novo valor do multiplicador (será convertido para Double)
+	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
+	 */
 	function SetWeightMultiplier(this, value)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -105,6 +147,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define o número máximo de itens permitidos no container
+	 * 
+	 * @param value Novo valor máximo de itens (será convertido para Integer)
+	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
+	 */
 	function SetMaxItems(this, value)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -115,6 +163,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define o número máximo de slots disponíveis no container
+	 * 
+	 * @param value Novo valor máximo de slots (será convertido para Integer)
+	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
+	 */
 	function SetMaxSlots(this, value)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -125,6 +179,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define o peso máximo que o container pode suportar
+	 * 
+	 * @param value Novo valor de peso máximo em stones (será convertido para Integer)
+	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
+	 */
 	function SetMaxWeight(this, value)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -135,6 +195,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Verifica se o container está bloqueado
+	 * 
+	 * @return Boolean true se bloqueado, false caso contrário, ou Exception se houver erro
+	 */
 	function IsLocked(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -143,6 +208,15 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return this._objRef.locked;
 	endfunction
 
+	/**
+	 * Verifica se o container contém um item do tipo especificado
+	 * 
+	 * @param item ItemWrapper do tipo de item a ser procurado
+	 * @param searchRecursively Boolean indicando se deve buscar recursivamente (dentro dos containers
+	 							que estão dentro dele) [padrão: false]
+	 * @return Boolean true se contém, false caso contrário, ou Exception se houver erro
+	 * @throws InvalidFormatException quando o parâmetro não é um ItemWrapper
+	 */
 	function Contains(this, item, searchRecursively := false)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -155,15 +229,21 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		return FindObjtypeInContainer(this.GetObjRef(), item.GetObjType(), searchRecursively ? FINDOBJTYPE_RECURSIVE : FINDOBJTYPE_ROOT_ONLY) != error;
 	endfunction
 
-	/*
-	 * Obtém um item do contêiner pelo tipo de objeto
+	/**
+	 * Obtém um item do container pelo tipo de objeto
+	 * 
+	 * Procura no container por um item do tipo especificado e retorna
+	 * um wrapper contendo o primeiro item encontrado.
+	 * 
+	 * @param item ItemWrapper do tipo de item a ser procurado
 	 *
-	 * @param objType     Tipo do objeto a ser procurado no contêiner
-	 * @param flag        Sinalizador de busca (padrão: FINDOBJTYPE_ROOT_ONLY)
-	 *                    Define o escopo da busca no contêiner
+	 * @param searchRecursively Boolean indicando se deve buscar recursivamente (dentro dos containers
+	 							que estão dentro dele) [padrão: false]
 	 *
-	 * @return ItemWrapper Retorna um ItemWrapper contendo o objeto encontrado,
-	 *                     ou um wrapper vazio se nenhum item for encontrado
+	 * @return ItemWrapper Wrapper contendo o objeto encontrado ou vazio se não encontrado,
+	 *                     ou Exception se houver erro
+	 *
+	 * @throws InvalidFormatException quando o parâmetro não é um ItemWrapper
 	 */
 	function GetInside(this, item, searchRecursively := false)
 		if (this._objRef is @Exception)
