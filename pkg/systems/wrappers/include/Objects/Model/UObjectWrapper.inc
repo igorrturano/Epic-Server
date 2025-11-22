@@ -128,6 +128,34 @@ class UObjectWrapper(IUObjectWrapper)
 		return this;
 	endfunction
 
+	function GetProperty(this, propName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.GetProp(propName);
+	endfunction
+
+	function SetProperty(this, propName, propValue)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		this._objRef.SetProp(propName, propValue);
+
+		return this;
+	endfunction
+
+	function EraseProperty(this, propName)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		this._objRef.EraseProp(propName);
+
+		return this;
+	endfunction
+	
 	function GetMobilesInLineOfSight(this, range)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -195,7 +223,6 @@ class UObjectWrapper(IUObjectWrapper)
 	/**
 	 * Reproduz um efeito visual animado que se move do objeto atual até um objeto alvo.
 	 *
-	 * @param this             Referência ao objeto wrapper atual (origem do efeito)
 	 * @param targetWrapped    Objeto wrapper de destino para onde o efeito será direcionado
 	 * @param effectId         ID do efeito visual a ser reproduzido
 	 * @param speed            Velocidade do movimento do efeito (padrão: 10)
@@ -206,7 +233,7 @@ class UObjectWrapper(IUObjectWrapper)
 	 *
 	 * @return this            Retorna a própria instância do objeto para permitir encadeamento de métodos
 	 */
-	function PlayEffectTo(this, targetWrapped, effectId, speed := 10, loop := 0, explode := 0, color := 0, translucent := 0)
+	function PlayEffectTo(this, targetWrapped, effectId, speed := 10, loop := 0, explode := false, color := 0, translucent := false)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
