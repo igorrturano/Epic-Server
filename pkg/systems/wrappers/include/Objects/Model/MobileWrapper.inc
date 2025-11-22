@@ -289,7 +289,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return CInt(this._objRef.GetProp("#CriticalChance"));
 	endfunction
 
-	function GetNPCTemplateName(this)
+	function GetTemplateName(this)
 		if (this._template is @Exception)
 			return this._template;
 		endif
@@ -297,16 +297,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
-	function GetNPCTemplate(this)
-		return this._template;
-	endfunction
-
 	function GetNPCDamage(this)
 		if (this._template is @Exception)
 			return this._template;
 		endif
 		
-		return this._template.Damage ?: error{errortext := "This mobile is not a NPC!"};
+		return this._template.Damage;
 	endfunction
 
 	/**

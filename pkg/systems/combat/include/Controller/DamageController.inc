@@ -329,7 +329,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	
 	var weapon_scripts := array{};
 
-	var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetNPCTemplate());
+	var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetTemplate());
 	var tamingCfg := CFGFile("taming", "taming").SetElementName(attackInfo.GetAttacker().GetObjRef().GetProp("Critic"));
 	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
 
@@ -442,11 +442,11 @@ function CheckPoison(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().IsNPC()) // Se for NPC, checa pela skill dele
-		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetNPCTemplate(), "Poisoning");
+		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetTemplate(), "Poisoning");
 		if (poisonChance > 0)
 			if (RandomInt(100) < poisonChance)
-				var poisonName := GetConfigString(attackInfo.GetAttacker().GetNPCTemplate(), "PoisonType");
-				var level := Cint(GetConfigInt(attackInfo.GetAttacker().GetNPCTemplate(), "PoisonLevel"));
+				var poisonName := GetConfigString(attackInfo.GetAttacker().GetTemplate(), "PoisonType");
+				var level := Cint(GetConfigInt(attackInfo.GetAttacker().GetTemplate(), "PoisonLevel"));
 
 				if (!level)
 					level := 1;
