@@ -29,6 +29,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _ammo; // Ammo class
 	var _minRange := 1;
 	var _maxRange := 1;
+	var _isThrowable := false;
 
 	function WeaponWrapper(this, byRef item)
 		Super(item);
@@ -38,8 +39,6 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._attackType := this._template.TipoAtaque;
 			this._category := this._template.Category;
 			this._speedTier := this._template.EpicSpeed;
-			this._minRange := this._template.MinRange ?: 1;
-			this._maxRange := this._template.MaxRange ?: 1;
 			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChanceMod := 0;
 			this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
@@ -67,6 +66,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 			this._weight := this._GetWeight();
 			this._strRequired := this._GetSTRRequired();
+			this._ammo := this._template.ProjectileType ? Ammo(this._template.ProjectileType) : uninit;
+			this._minRange := this._template.MinRange ?: 1;
+			this._maxRange := this._template.MaxRange ?: 1;
+			this._isThrowable := Boolean(this._template.Throwable) ?: false;
 
 			if (this._prop) // Alguns atributos só estão nas props
 				this._criticalChanceMod := this._prop.CriticalChanceMod;
@@ -125,14 +128,29 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this._offDamageTier;
 	endfunction
 	
+	/**
+	 * Retorna o dano principal da arma.
+	 *
+	 * @return DamageDice do dano principal
+	 */
 	function GetMainDamage(this)
 		return this._mainDamage;
 	endfunction
 
+	/**
+	 * Retorna o DamageDice da mão secundária.
+	 *
+	 * @return DamageDice da mão secundária
+	 */
 	function GetOffDamage(this)
 		return this._offDamage;
 	endfunction
 
+	/*
+	 * Retorna o modificador de dano da arma.
+	 *
+	 * @return objeto Damage contendo o modificador de dano
+	 */
 	function GetDamageMod(this)
 		return this._damageMod;
 	endfunction
@@ -153,6 +171,11 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return CInt(this._criticalChanceMod);
 	endfunction
 
+	/*
+	 * Retorna a munição atrelada à arma.
+	 *
+	 * @return Ammo - Objeto da classe Ammo representando a munição da arma
+	 */
 	function GetAmmo(this)
 		return this._ammo;
 	endfunction
@@ -165,90 +188,13 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this._maxRange;
 	endfunction
 
-	function SetSpeed(this, value)
-		if (this._objRef is @Exception) return this._objRef; endif
-		this._speed := CInt(value);
-
-		return this;
-	endfunction
-
 	/**
-	 * Define os valores de dano principal da arma
-	 *
-	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
-	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
-	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
-	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
-	 *
-	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
-	 *                                - O item interno for inválido
-	 *                                - Algum parâmetro não for uma instância de DamageDice
+	 * Define a velocidade da arma
+	 * 
+	 * @param value Valor da velocidade a ser definida (será convertido para inteiro)
+	 * @return Retorna a própria instância do objeto para permitir encadeamento de métodos, 
+	 *         ou uma exceção caso _objRef seja uma Exception
 	 */
-	function SetMainDamage(this, slash, piercing, blunt)
-		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
-			return error{errortext := "Parameters must be a DamageDice class!"};
-		endif
-		this._mainDamage.SetSlashDamage(slash);
-		this._mainDamage.SetPiercingDamage(piercing);
-		this._mainDamage.SetBluntDamage(blunt);
-
-		return this;
-	endfunction
-
-	/**
-	 * Define os valores de dano secundário da arma
-	 *
-	 * @param {WeaponWrapper} this - Instância do objeto WeaponWrapper
-	 * @param {DamageDice} slash - Objeto DamageDice representando o dano de corte
-	 * @param {DamageDice} piercing - Objeto DamageDice representando o dano perfurante
-	 * @param {DamageDice} blunt - Objeto DamageDice representando o dano contundente
-	 *
-	 * @return {WeaponWrapper|Error} Retorna a própria instância para encadeamento ou erro se:
-	 *                                - O item interno for inválido
-	 *                                - Algum parâmetro não for uma instância de DamageDice
-	 */
-	function SetOffDamage(this, slash, piercing, blunt)
-		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
-			return error{errortext := "Parameters must be a DamageDice class!"};
-		endif
-		this._offDamage.SetSlashDamage(slash);
-		this._offDamage.SetPiercingDamage(piercing);
-		this._offDamage.SetBluntDamage(blunt);
-
-		return this;
-	endfunction
-
-	/**
-	 * Define o modificador de dano para a arma.
-	 *
-	 * @param {WeaponWrapper} this - Instância do wrapper da arma
-	 * @param {Damage} damageMod - Objeto da classe Damage que será usado como modificador de dano
-	 *
-	 * @return {WeaponWrapper|Error} Retorna a própria instância (this) para encadeamento de métodos,
-	 *                                ou erro se o item não existir ou se o parâmetro não for da classe Damage
-	 *
-	 * @error Retorna erro se this._item for error
-	 * @error Retorna erro com mensagem "Parameter must be a Damage class!" se damageMod não for da classe Damage
-	 */
-	function SetDamageMod(this, damageMod)
-		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(damageMod is @Damage))
-			return error{errortext := "Parameter must be a Damage class!"};
-		endif
-		this._damageMod := damageMod;
-
-		return this;
-	endfunction
-
-	function SetCriticalChance(this, value)
-		if (this._objRef is @Exception) return this._objRef; endif
-		this._criticalChance := CInt(value);
-
-		return this;
-	endfunction
-
 	function SetCriticalChanceMod(this, value)
 		if (this._objRef is @Exception) return this._objRef; endif
 		this._criticalChanceMod := CInt(value);
@@ -256,12 +202,26 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Define a munição para a arma.
+	 * 
+	 * @param ammo Objeto da classe Ammo a ser definido como munição da arma
+	 * 
+	 * @return this Retorna a própria instância para permitir encadeamento de métodos
+	 * @return Exception Retorna exceção se a referência do objeto for inválida
+	 * @return InvalidFormatException Retorna exceção se o parâmetro não for da classe Ammo
+	 */
 	function SetAmmo(this, ammo)
-		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(ammo is @Ammo))
-			return error{errortext := "Parameter must be an Ammo class!"};
+		if (this._objRef is @Exception)
+			return this._objRef;
 		endif
+		
+		if (!(ammo is @Ammo))
+			return InvalidFormatException("Parameter must be an Ammo class!");
+		endif
+		
 		this._ammo := ammo;
+		
 		return this;
 	endfunction
 
@@ -328,6 +288,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function IsRanged(this)
 		return this._maxRange > 1;
+	endfunction
+
+	function IsThrowable(this)
+		return this._isThrowable;
 	endfunction
 
 	// Private functions
