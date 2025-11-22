@@ -17,10 +17,11 @@ include "include/sounds";
 include "include/epicConstants";
 include ":charactercreation:include/RPTraits";
 include ":nature:nature";
+include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);
-
+	who.frozen := 1;
 	var culture_pic := culturalSelection(who);
 	racialSelection(who, culture_pic);
 	classSelection(who, culture_pic);
@@ -50,6 +51,8 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
+	SetObjProperty(who, "creation_completed", 1);
+	who.frozen := 0;
 endprogram
 
 function culturalSelection(who)
@@ -107,7 +110,7 @@ function racialSelection(who, culture_pic)
 			chardata.raca := ORC;
 			break;
 		elseif (btn_value == 206)
-			chardata.raca := POLSKI;
+			chardata.raca := PEQUILHO;
 			break;
 		elseif (chardata.culture == AIGLANA || chardata.culture == LESTE)
 			SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
@@ -127,9 +130,9 @@ function racialSelection(who, culture_pic)
 		who.graphic := 1832;
 	elseif (who.graphic == 401 && (chardata.raca == ORC))
 		who.graphic := 1833;
-	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1828;
-	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1829;
 	endif
 
@@ -709,7 +712,19 @@ function pathOfWisdom(who, culture_pic)
 			btn_value := key;
 		endforeach
 
-		if (btn_value == 201)
+		// Get the wisdom paths array using the helper function
+		var wisdomPaths := getWisdomPathsByCulture(who);
+
+		// Get the selected path name based on the button value
+		var selectedIndex := btn_value - 200;
+		if (selectedIndex < 1 || selectedIndex > wisdomPaths.size())
+			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
+			continue;
+		endif
+		var selectedPath := wisdomPaths[selectedIndex];
+
+		// Handle each path by name
+		if (selectedPath == "Mago")
 			chardata.+wisdom_path := "Mago";
 			chardata.+magia := "spellcaster";
 			var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
@@ -724,25 +739,25 @@ function pathOfWisdom(who, culture_pic)
 			foreach spell in chosenSpells
 				var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
 				spellinfo.id := spell.id;
-				spellinfo.school := spell.School;
+				spellinfo.school := spell.school;
 				SetObjProperty(scroll, "spellinfo", spellinfo);
 			endforeach
 			break;
-		elseif (btn_value == 202)
+		elseif (selectedPath == "Alquimista")
 			chardata.+wisdom_path := "Alquimista";
 			break;
-		elseif (btn_value == 203 && chardata.culture == GULTHRAK)
+		elseif (selectedPath == "Xamã")
 			chardata.+wisdom_path := "Xamã";
 			chardata.+magia := "Shaman";
 			break;
-		elseif (btn_value == 203 && chardata.culture != GULTHRAK)
+		elseif (selectedPath == "Clérigo" || selectedPath == "Clériga de Idrith")
 			chardata.magia := "Sacerdote";
 			if (chardata.culture == HAROLOTH)
 				CreateItemInBackpack(who, 0x166E, 1);
 			endif
-			chardata.+wisdom_path := "Clérigo";
+			chardata.+wisdom_path := selectedPath;
 			CreateItemInBackPack(who, "chisels", 1);
-			var gems := array{ 
+			var gems := array{
 				"rawstarsapphire",
 				"rawemerald",
 				"rawsapphire",
@@ -756,7 +771,7 @@ function pathOfWisdom(who, culture_pic)
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			break;
-		elseif (btn_value == 204)
+		elseif (selectedPath == "Engenheiro")
 			chardata.+wisdom_path := "Engenheiro";
 			CreateItemInBackPack(who, "ammo", 20);
 			CreateItemInBackPack(who, "powder", 20);
@@ -767,9 +782,45 @@ function pathOfWisdom(who, culture_pic)
 			SetObjProperty(pistol1, "serialid", who.serial);
 			SetObjProperty(pistol2, "serialid", who.serial);
 			break;
-		elseif (btn_value == 205)
+		elseif (selectedPath == "Druida")
 			chardata.+wisdom_path := "Druida";
 			chardata.+magia := "Druid";
+			break;
+		elseif (selectedPath == "Martelo Divino")
+			chardata.+wisdom_path := "Martelo Divino";
+			chardata.+magia := "Sacerdote";
+			CreateItemInBackPack(who, "chisels", 1);
+			var gems := array{
+				"rawstarsapphire",
+				"rawemerald",
+				"rawsapphire",
+				"rawruby",
+				"rawcitrine",
+				"rawamethyst",
+				"rawtourmaline",
+				"rawamber",
+				"rawdiamond"
+			};
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			break;
+		elseif (selectedPath == "Augur")
+			chardata.+wisdom_path := "Augur";
+			chardata.+magia := "Sacerdote";
+			CreateItemInBackPack(who, "chisels", 1);
+			var gems := array{
+				"rawstarsapphire",
+				"rawemerald",
+				"rawsapphire",
+				"rawruby",
+				"rawcitrine",
+				"rawamethyst",
+				"rawtourmaline",
+				"rawamber",
+				"rawdiamond"
+			};
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			break;
 		else
 			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
@@ -834,6 +885,10 @@ function languageSelection(who, culture_pic)
 		endif
 
 	endwhile
+	
+	if (GetObjProperty(who, "chardata").magia == "Druid")
+		known_languages.append("Sylovir");
+	endif
 
 	SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
 	SetObjProperty(who, "linguas_conhecidas", known_languages);

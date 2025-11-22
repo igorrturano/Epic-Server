@@ -5,12 +5,13 @@ use uo;
 use os;
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":tn:cooldown";
 
 program onRemove(character, container, item, item_amount, move_type)
 	if (container.ownerserial == character.serial)
 		return 1;
 	elseif (!(character.concealed || character.hidden))
-		if (GetObjProperty(character, "maosleves") == 1)
+		if (GetObjProperty(character, "maosleves") == 1 || GetCooldown(character, "#PickPid"))
 			EraseObjProperty(character, "maosleves");
 		else
 			PrintTextAbove(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41);
@@ -40,7 +41,7 @@ program onRemove(character, container, item, item_amount, move_type)
 	endif
 
 	var hostiles := ListHostiles(character, 8, LH_FLAG_LOS);
-	if (hostiles.size() >= 1)
+	if (hostiles.size() >= 1 && !GetCooldown(character, "#PickPid"))
 		TS_StartTimer(character, "paralysis", 6);
 	endif
 	if (cint(GetObjProperty(container, "looteado")) == 0)

@@ -28,6 +28,11 @@ program SpellScript(params)
 		return;
 	endif
 
+	if (!targ.isHumanoidBrain())
+		Message("Voce so consegue encantar humanoides").SendSys(who);
+		return;
+	endif
+
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 
@@ -38,7 +43,7 @@ program SpellScript(params)
 	endif
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-	if (TemHabilidade(who, "Treinamento Druídico"))
+	if (TemHabilidade(who, "Coração da Matilha"))
 		duration := Cint(duration * 1.5);
 	endif
 

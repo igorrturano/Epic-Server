@@ -62,7 +62,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 	var gump;
 
 	while(retorno)
-		FechaTodosDropdowns(quem,gerenciador.dropDowns);
+		GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
 			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos);
@@ -72,7 +72,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		MontaComponentesGump(gump, parametros,sessao);
 		retorno := GFSendGump(quem,gump);
 
-		
 		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
 			sessao.quantidade := GFExtractData(retorno,COMPONENTES_INPT_QTD)[1,3];
 		endif
@@ -81,15 +80,11 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
-				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
-				var objetoDropDown := gerenciador.dropDowns[indice];
+				var indice := retorno[0] - gerenciador.PegaAdicionalIdDropDown();
+				var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(indice);
 
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
-				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-				
-				if(process)
-					objetoDropDown.pid := process.pid;
-				endif
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				objetoDropDown.SendGump(quem,GetPid());
 				break;
 
 			RT_ESCOLHA_DD_OPCOES:
@@ -97,7 +92,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				break;
 			
 			RT_ESCOLHA_COMPONENTE:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				GerenciadorDropDown::LimpaDropDowns(gerenciador);
 				sessao.devePopularDropDown := true;
 				sessao.componenteSelecionado := sessao.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
@@ -118,6 +113,13 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					sessao.picoPericia := 0;
 				endif
 				break;
+
+			RT_CHK_BOX_RECICLAR:
+				sessao.deveReciclar := !sessao.deveReciclar;
+				var propCraft := MontaCraftProp(0,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+				propCraft.deveReciclar := sessao.deveReciclar;
+				SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
+				break;	
 
 			RT_BTN_FILTRAR:
 				AtualizaPesquisaComponentes(configComponentes,sessao);
@@ -161,19 +163,19 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				endif
 				
 			RT_BTN_FABRICAR:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 
 				var materiaisEscolhidos := array;
 				var isValidado := true;
-				foreach dropDown in (gerenciador.dropDowns)
-					var escolhido := dropDown.valorEscolhido;
+				foreach dropDown in (gerenciador.PegaDropDowns())
+					var escolhido := dropDown.PegaValorEscolhido();
 					if(!escolhido || escolhido.size() == 0)
 						SendSysMessageEX(quem,"Você não escolheu todos os materiais necessários.",SSM_FAIL);
 						isValidado := false;
 						break;
 					endif
 
-					foreach itemEncontrado in (sessao.materiaisEncontrados[dropDown.valorEscolhido.tipoMaterial][dropDown.valorEscolhido.objtype].itensEncontrados)
+					foreach itemEncontrado in (sessao.materiaisEncontrados[escolhido.tipoMaterial][escolhido.objtype].itensEncontrados)
 						if(!itemEncontrado || !Accessible(quem,itemEncontrado, 1) )
 							SendSysMessageEX(quem,"Você não esta mais em posse do material {}.".format(itemEncontrado.desc),SSM_FAIL);
 							isValidado := false;
@@ -181,7 +183,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 						endif
 						Sleepms(2);
 					endforeach
-					materiaisEscolhidos.append(dropDown.valorEscolhido);
+					materiaisEscolhidos.append(escolhido);
 					Sleepms(2);
 				endforeach
 				
@@ -197,7 +199,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					var lotes := Ceil(CDBL(quantidade) / quantidadePorLote);
 					var resto := quantidade % quantidadePorLote;
 					lotes := lotes < 1 ? 1 : lotes;
-					var posicaoInicial :=  CriaObjetoPosicao(quem);
+					var posicaoInicial :=  BuildPositionStruct(quem);
 					var vidaInicial := AP_GetVital(quem, "Hits");
 
 					for i := 1 to lotes
@@ -216,6 +218,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 							sessao.componenteSelecionado.selecione.objtype,
 							sessao.materiaisEncontrados,
 							materiaisEscolhidos,
+							sessao.deveReciclar,
 							i == lotes && resto > 0 ? resto : quantidadePorLote,
 							sessao.componenteSelecionado.encaixe,
 							sessao.picoPericia,
@@ -228,7 +231,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 			RT_CANCELADO:
 			default:
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 0;
 				break;
 
@@ -254,8 +257,11 @@ function AtualizaPesquisaComponentes(configComponentes,byref sessao)
 	sessao.componenteSelecionado := 0;
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, encaixe, picoPericia, lote)
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos, deveReciclar,quantidade, encaixe, picoPericia, lote)
 
+	var maiorQualidade := 1;
+	var quantidadeRecicladaTotal := 0;
+	var quantidadeMaterialRetornado := 0;
 	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
 	var quantidadeAFazer := CalculaQuantidadePossivel(quantidade,materiaisEscolhidos,materiaisEncontrados);
 	
@@ -269,14 +275,62 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 	lote := lote ? lote : 1;
 	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer * lote,picoPericia);
 	
+	if(deveReciclar)
+		maiorQualidade := Max(qualidades.keys());
+	endif
+
 	foreach qualidade in (qualidades.keys())
+		Sleepms(2);
+		if(deveReciclar && qualidade != maiorQualidade)
+			var quantidadeTier :=  cint(qualidades[qualidade]);
+			quantidadeRecicladaTotal += quantidadeTier;
+			quantidadeMaterialRetornado += CriaMaterialReciclado(quem,materiaisEscolhidos,quantidadeTier);
+			continue;
+		endif
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
+		if(!item)
+			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(qualidades[qualidade]), quem.realm);
+		endif
 		item.hp := item.maxhp;
-		Sleepms(2);
 	endforeach
 
-	SendSysMessageEX(quem,"{} componete(s) criado(s).".format(quantidadeAFazer * lote),SSM_INFO);
+	if(quantidadeRecicladaTotal > 0)
+		SendSysMessageEX(quem,"Reciclado(s) {}, retornando {} materiai(s).".format(quantidadeRecicladaTotal, quantidadeMaterialRetornado),SSM_INFO_IC);
+	endif
+	SendSysMessageEX(quem,"{} componete(s) criado(s).".format((quantidadeAFazer * lote) - quantidadeRecicladaTotal),SSM_INFO);
+endfunction
+
+function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var Percentuais := SplitWords(profissaoConfig["Setup"].ReciclagemPercentual);
+	var percentualFinal := RandomIntMinMax(cint(Percentuais[1]), cint(Percentuais[2]));
+	var percentualReciclagem := percentualFinal / 100.0;
+	var materialRecicladoTotal := 0;
+
+	foreach materialEscolhido in materiaisEscolhidos
+		Sleepms(2);
+
+		var quantidadeReciclada := cint(cint(materialEscolhido.quantidadeNecessaria) * quantidade * percentualReciclagem);
+		if(quantidadeReciclada <= 1) 
+			if(RandomInt(100) <= (percentualFinal + 1))
+				quantidadeReciclada := 1;
+			else
+				continue;
+			endif
+		endif
+
+		materialRecicladoTotal += quantidadeReciclada;
+		var descriptor := GetItemDescriptor(materialEscolhido.objtype);
+		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+
+		var item := CreateItemInBackpack(quem,descriptor, quantidadeReciclada);
+		if(!item)
+			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, quantidadeReciclada, quem.realm);
+		endif
+	endforeach
+
+	return materialRecicladoTotal;
 endfunction
 
 function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
@@ -312,7 +366,12 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
 		var quantidadeRestante := quantidadeConsumo;
 
-		foreach itemEncontrado in (materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].itensEncontrados)			
+		foreach itemEncontrado in (
+							materiaisEncontrados
+								[Lower(materialEscolhido.tipoMaterial)]
+								[materialEscolhido.objtype]
+								.itensEncontrados
+							)			
 
 			If(quantidadeRestante <= 0) 
 				break; 
@@ -333,7 +392,6 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 endfunction
 
-
 function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
 	var materiaisNecessarios := sessao.componenteSelecionado.selecione.materiais;
 	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(
@@ -342,17 +400,11 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 																sessao.componenteSelecionado);
 	
 	var materiaisNecessariosInvertidos :=  materiaisNecessarios.keys();
-	materiaisNecessariosInvertidos.reverse();//Foi preciso inverter para ficar de acordo com a ordem na string da tabela.
+	//materiaisNecessariosInvertidos.reverse();//Foi preciso inverter para ficar de acordo com a ordem na string da tabela.
 
 	foreach materialNecessario in (materiaisNecessariosInvertidos)
 		
-		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_materialNecessario_iter);
-		
-		if(!dropDown) 
-			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_materialNecessario_iter);
-		else
-			DropDown::ResetaValores(dropDown);
-		endif
+		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_materialNecessario_iter);
 
 		var tipo := materiaisNecessariosInvertidos[_materialNecessario_iter];
 		var qtd := materiaisNecessarios[materialNecessario];
@@ -360,12 +412,11 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 		var materiaisEncontrados := sessao.materiaisEncontrados[Lower(materialNecessario)].keys();
 
 		if(materiaisEncontrados)
-
 			var isValorEscolhidoPresente := false;
 
 			foreach chave in (materiaisEncontrados)
 				Sleepms(2); 
-				if (dropDown.valorEscolhido.objtype == chave)
+				if (dropDown.PegaValorEscolhido().objtype == chave)
 					isValorEscolhidoPresente := true;
 				endif
 
@@ -380,12 +431,6 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 				endif;
 				++indiceOpcoes;
 			endforeach
-
-			if(!isValorEscolhidoPresente)
-				DropDown::LimpaValorEscolhido(dropDown);
-			endif
-		else
-			DropDown::LimpaValorEscolhido(dropDown);
 		endif
 		
 		Sleepms(2);
@@ -399,7 +444,7 @@ function MontaValorOpcaoComponente(chave,qtd,tipo,sessao)
 					nome := configRecursos[chave].name,
 					quantidadeNecessaria := qtd,
 					tipoMaterial := Lower(tipo),
-					isPrincipal := Lower(tipo) == Trim(Lower(sessao.componenteSelecionado.materialPrincipal))
+					isPrincipal := Lower(tipo) == Trim(Lower(sessao.componenteSelecionado.selecione.materialPrincipal))
 					};
 endfunction
 
@@ -424,10 +469,10 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var materialDetalhe := configRecursos[chaveMaterial];
 
 	var tipoMaterial := Lower(materialDetalhe.type);
-	var materialPrincipal := Lower(componente.materialPrincipal);
+	var materialPrincipal := Lower(componente.selecione.materialPrincipal);
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
-
-	if(materialPrincipal == tipoMaterial)
+	
+	if(lower(materialPrincipal) == lower(tipoMaterial))
 		return materialDetalhe.Skill <= AP_GetSkill(quem,pericia);
 	else
 		return tipoMaterial in (componente.selecione.materiais.keys());
@@ -437,7 +482,7 @@ endfunction
 
 function MontaMaterialEncontrado(byref categorias, tipo, item)
 	var dictitemsEncontrados;
-
+	tipo := lower(tipo);
 	if( !categorias.exists(tipo)) // garante que o dictionary do tipo exista nas categorias de materiais.
 		categorias.insert(tipo, dictionary);
 	endif
@@ -477,13 +522,16 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	sessao.+picoPericia := CalculaValorPico(quem,pericia);
 	sessao.+picoMaximoPericia := sessao.picoPericia;
 	sessao.+filtros := struct{ nome := "", encaixe := ""};
-	sessao.+encaixesMemorizados := GetObjProperty(quem, "Craft").encaixesMemorizados;
+	sessao.+encaixesMemorizados := GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP).encaixesMemorizados;
 	sessao.+componentes := MontaVisaoComponentes(configProfissao, false, array);
+	var propCraft := MontaCraftProp(0,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
+	sessao.+deveReciclar := propCraft.deveReciclar;
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3.5};
-		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3};
+		colCfg["pericia"] := struct{titulo := "Perícia", ordem := 3,largura := 2};
 		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 3};
 		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
 
@@ -517,6 +565,8 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 		return RT_FILTRO_MEMORIA_LIG_DES;
 	elseif(valorRetorno == COMPONENTES_BTN_LIMPA_FILTRO)
 		return RT_BTN_LIMPA_FILTRO;
+	elseif(valorRetorno == COMPONENTES_CHK_BOX_RECICLAR)
+		return RT_CHK_BOX_RECICLAR;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO;
 	else
@@ -540,7 +590,9 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 			var isMemorizadoEncontrado := false;
 			foreach encaixeMemorizado in encaixesMemorizados
 				Sleepms(2);
-				isMemorizadoEncontrado := encaixesConfig[configProfissao[chave].encaixe].Desc == encaixesConfig[encaixeMemorizado].Desc;
+				isMemorizadoEncontrado :=  encaixesConfig[configProfissao[chave].encaixe].Desc 
+											== encaixesConfig[encaixeMemorizado].Desc;
+
 				if(isMemorizadoEncontrado) break; endif
 			endforeach
 			if(!isMemorizadoEncontrado) continue; endif
@@ -565,7 +617,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 			var tipoEQuantidade := SplitWords(material);
 			dicionarioMateriais.insert(tipoEQuantidade[1],tipoEQuantidade[2]);
-			materiaisConcatenados += material;
+			materiaisConcatenados += tipoEQuantidade[2] + " " + tipoEQuantidade[1];
 			Sleepms(2);
 		endforeach
 
@@ -573,10 +625,14 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 		var componente := struct;
 		componente.+nome :=  quantidadeLotePrefixo + configProfissao[chave].name;
-		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
+		componente.+pericia :=  StrReplace(configProfissao[chave].pericia,"_", " ");
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := encaixesConfig[configProfissao[chave].encaixe].Desc;
-		componente.+selecione := struct{isColunaBotao := true, objtype := chave, materiais := dicionarioMateriais};
+		componente.+selecione := struct{
+									isColunaBotao := true, 
+									objtype := chave, 
+									materiais := dicionarioMateriais, 
+									materialPrincipal := configProfissao[chave].principalMaterial};
 
 		componentes.append(componente);
 	endforeach

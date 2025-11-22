@@ -30,42 +30,50 @@ program orderSpells(who, item)
 		druid_list := array{};
 	endif
 
-	var spell_list := array{};
-	var slots_used := 0;
-
-	// Adiciona cantrips
-	if (!GetObjProperty(who, "cantrips"))
-		var cantrips := array{};
+	// Auto-grant cantrips on first visit (circle 0 spells)
+	if (!GetObjProperty(who, "cantrips_granted"))
 		foreach spell in (GetConfigIntKeys(cfg))
 			spell := FindConfigElem(cfg, spell);
-			var new_spell := struct{};
 			WriteSpellInfo(spell, ":spells:config/druidspells");
 			sleepms(2);
 			if (spell.circle == 0)
-				new_spell.+id := spell.SpellId;
-				new_spell.+name := spell.name;
-				new_spell.+powerwords := spell.powerwords;
-				cantrips.Append(new_spell);
+				var cantrip := struct{
+					"id" := spell.SpellId,
+					"name" := spell.name,
+					"circle" := 0,
+					"description" := spell.desc,
+					"flavortext" := spell.flavortext,
+					"cantrip" := 1  // Flag to prevent removal
+				};
+				druid_list.Append(cantrip);
 			endif
 		endforeach
-		SetObjProperty(who, "cantrips", cantrips);
+		SetObjProperty(who, "druid_list", druid_list);
+		SetObjProperty(who, "cantrips_granted", 1);
 	endif
 
+	var spell_list := array{};
+	var slots_used := 0;
+
+	// Count slots used (excluding cantrips)
+	foreach spell in druid_list
+		if (spell.circle > 0)
+			slots_used += cint(spell.circle);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Build list of available spells to memorize
 	foreach spell in (GetConfigIntKeys(cfg))
 		spell := FindConfigElem(cfg, spell);
 		sleepms(2);
 		WriteSpellInfo(spell, ":spells:config/druidspells");
-		var spell_found := FindAllElemInArray(druid_list, struct{ id := spell.SpellId }, 1);
-		if (spell_found)
-			slots_used += cint(spell.circle * spell_found.size());
-			foreach i in spell_found
-				druid_list[spell_found].circle := spell.circle;
-				sleepms(2);
-			endforeach
-		endif
+
 		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
 			continue;
 		elseif (spell.type == "Auto")
+			continue;
+		elseif (spell.circle == 0) // Skip cantrips - they're auto-granted
 			continue;
 		endif
 		spell_list.append(spell);
@@ -76,7 +84,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, druid_list, available_slots);
-		var input := CreateDruidGump(who, spell_list, available_slots);
+		var input := CreateDruidGump(who, spell_list, available_slots, druid_list);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -94,7 +102,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateDruidGump(who, spell_list, available_slots)
+function CreateDruidGump(who, spell_list, available_slots, druid_list)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -129,7 +137,11 @@ function CreateDruidGump(who, spell_list, available_slots)
 			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
 				 spell.desc));
 			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
-			if (available_slots >= spell.circle)
+
+			// Check if spell already exists in druid_list
+			var spell_exists := FindAllElemInArray(druid_list, struct{ id := spell.SpellId }, 1);
+
+			if (available_slots >= spell.circle && !spell_exists)
 				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
 			else
 				GFGumpPic(gump, 319, y + 5, 10006, 1891);
@@ -158,6 +170,7 @@ function StoreSpell(who, spellinfo, byref druid_list, byref available_slots)
 						 	"circle" := spellinfo.circle,
 						 	"time" := AddTimeTo(polcore().systime, 20, "minutes"),
 						 	"flavortext" := spellinfo.flavortext,
+							"description" := spellinfo.desc,
 						 	"used" := 0 };
 
 	available_slots -= spellinfo.circle;

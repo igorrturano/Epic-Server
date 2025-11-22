@@ -49,7 +49,6 @@ class Message(IMessage)
 		foreach msg in (this._messages)
 			msg.color := color;
 		endforeach
-
 		return this;
 	endfunction
 	

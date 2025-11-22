@@ -144,13 +144,13 @@ function SpeechEvent(npc, byref event)
 		elseif (npc.npctemplate == ":brainai:talker_reply" && source.IsA(POLCLASS_NPC)) // aqui só entra se a conversa é com npcs, ou seja, POLCALLS_NPC
 			var contexto := "Você é um fofoqueiro de taverna medieval de um jogo de RPG. Você conversa com outro fofoqueiro. Máximo de 50 caracteres.";
 
-			var responseAI := handle_npc_listen_openai(contexto, text, temperatura := 1.5);
+			// var responseAI := handle_npc_listen_openai(contexto, text, temperatura := 1.5);
 
-			if (responseAI == "<uninitialized object>")
-				responseAI := "";
-			endif
+			// if (responseAI == "<uninitialized object>")
+			// 	responseAI := "";
+			// endif
 
-			AI_Speak(npc, responseAI); // usa a responsa do modelo
+			// AI_Speak(npc, responseAI); // usa a responsa do modelo
 
 		elseif (npc.npctemplate == ":merchants:rumorAIRepro")
 			if (Distance(npc, event.source) > 2)

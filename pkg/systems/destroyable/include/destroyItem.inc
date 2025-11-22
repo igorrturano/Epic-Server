@@ -12,6 +12,7 @@ include ":traps:traps";
 // include "include/packets";
 include ":architect:architect";
 include ":crafting:/include/fabricacaoUtil";
+include "/include/packets";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -62,7 +63,13 @@ function ComportamentoWarMode(quem, itemFonte)
 		return 0;
 	endif
 
-	if (!targ.item)
+	if (targ == quem.weapon)
+		MoveItemToContainer(targ, quem.backpack);
+		Message("Você desequipa sua arma.").SetColor(SSM_INFO).SendSys(quem);
+		return 0;
+	endif
+
+	if ( !targ.item )
 		SendSysMessage(quem, "Você não pode destruir isso.");
 		return 0;
 	endif
@@ -186,14 +193,10 @@ function Destruir(quem, itemAlvo, fonteDano)
 		if (!descFonteDano)
 			descFonteDano := "Desconhecido";
 		endif
-		if (TypeOfInt(itemAlvo.x) == OT_UNINIT || TypeOfInt(itemAlvo.x) == OT_ERROR)
-			Print("O que diabo é isso que destrui? " + itemAlvo.desc + " " + fonteDano);
+		if(TypeOfInt(itemAlvo.x) != OT_UNINIT || TypeOfInt(itemAlvo.x) != OT_ERROR)//TODO tem um unintialized vindo de algum lugar, essa é uma solução provisória.
+			InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
+			DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 		endif
-		InsereLogItemDestruido(quem,
-						 POLCore().systime,
-						 itemAlvo.x, itemAlvo.y, itemAlvo.z, itemAlvo.realm, itemAlvoDesc, descFonteDano, deveMarcar);
-		DisparaAvisoDiscord(quem, itemAlvo.x, itemAlvo.y, itemAlvo.z, itemAlvo.realm, itemAlvoDesc,
-							 descFonteDano);
 	endif
 
 	if (!envelopeDeed.isDeed)
@@ -251,10 +254,12 @@ endfunction
  *
 */
 function DeveMarcarRecriarItem(itemAlvo)
-	return !GetObjProperty(itemAlvo, PROPNAME_ARTIFICE_SERIAL) &&
-						!GetObjProperty(itemAlvo, PROPNAME_DISPENSAVEL_FLAG)
-						// Coloco todo objeto como indispensavel para que itens destruidos antes do sistema entrar nao sejam descartados.
-						&& !itemAlvo.ISA(POLCLASS_CORPSE) && itemAlvo.ISA(POLCLASS_ITEM) && !IsDestroco(itemAlvo);
+	return !GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
+	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG) //Coloco todo objeto como indispensavel para que itens destruidos antes do sistema entrar nao sejam descartados.
+	&& !itemAlvo.ISA(POLCLASS_CORPSE)
+	&& itemAlvo.ISA(POLCLASS_ITEM)
+	&& !IsDestroco(itemAlvo)
+	&& TypeOfInt(itemAlvo.x) != OT_UNINIT;// TODO solução temporarária. tem um unintialized vindo de algum lugar
 endfunction
 
 /*
@@ -410,10 +415,15 @@ endfunction
  * Return value
  *   resistência total do item.
  *
-*/
-function PegaResistenciaItem(itemAlvo, fonteDano, materialId, isInflamavel)
-	var propRes := GetObjProperty(itemAlvo, PROPNAME_RESITEM_MULT);
-	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo, CARACTERISTICA_FABRICACAO_RESISTENCIA);
+ */
+function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
+	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
+	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
+
+	if(!resistenciaFabricacao)
+		var efeito := InterpretaMaterialEfeitos(CARACTERISTICA_FABRICACAO_RESISTENCIA,materialId);
+		resistenciaFabricacao := efeito.valorPrincipal;
+	endif
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
 	if (propRes)
@@ -639,11 +649,11 @@ function DanificaItem(quemDanificou, item, fonteDano, gfx := 0, gfxHue := 0)
 			CriaDestrocos(item, 1, 3, false);
 		endif
 	endif
-
-	SetObjProperty(item, PROPNAME_DURABILIDADE, durabilidadeRestante);
-	if (!IsDestroco(item))
-		PrintTextPrivate(item, CStr(danoCalculado.dano), quemDanificou, 3, COLOR_ELEMENTAL_FIRE_LIGHT);
-		EnviaEventoDanoItem(quemDanificou, item, atributosItem);
+	
+	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
+	if(!IsDestroco(item))
+		DisplayDamage(item,danoCalculado.dano,quemDanificou);
+		EnviaEventoDanoItem(quemDanificou,item,atributosItem);
 	endif
 
 	if (durabilidadeRestante <= 0)
@@ -921,9 +931,15 @@ endfunction
  * Return value
  *   sem retorno.
  *
-*/
-function ConfiguraAlvo(quem, alvo, cfgselecao, mostrarMensagem := true)
-	if (alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
+ */
+function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
+	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
+		
+		if (GetObjProperty(alvo, "PropStealable"))
+			SendSysMessageEx(quem, "Este item é um artifact roubável e não pode ser configurado como destrutível.", SSM_FAIL);
+			return 0;
+		endif
+		
 		var material := configRecursos[cfgselecao.material];
 
 		if (cfgselecao.durabTotal)

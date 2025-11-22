@@ -57,7 +57,7 @@ Quando você criar ou modificar uma habilidade, siga os passos abaixo:
          delay 180
          stam 25
          desc Permite controlar uma besta selvagem, aumentando suas habilidades em combate.
-         requisito Treinamento Druídico
+         requisito Coração da Matilha
      }
      ```
 
@@ -83,7 +83,7 @@ Quando você criar ou modificar uma habilidade, siga os passos abaixo:
        delay 180
        stam 25
        desc Permite controlar uma besta selvagem, aumentando suas habilidades em combate.
-       requisito Treinamento Druídico
+       requisito Coração da Matilha
    }
    ```
 
@@ -92,7 +92,7 @@ Quando você criar ou modificar uma habilidade, siga os passos abaixo:
 Atualmente, todas as habilidades da classe **Sabio** relacionadas à **Druida** já foram portadas seguindo esta estrutura. Isso inclui habilidades como:
 
 - **Guardião do Bosque**
-- **Treinamento Druídico**
+- **Coração da Matilha**
 - **Instinto de Sobrevivência**
 - **Natureza Selvagem**
 - **Controlar Besta**

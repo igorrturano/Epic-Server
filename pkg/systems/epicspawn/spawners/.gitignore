@@ -1,0 +1,3 @@
+# Ignore all JSON files except epic-spawners.json
+*.json
+!epic-spawners.json

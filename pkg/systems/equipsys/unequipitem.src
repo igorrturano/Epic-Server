@@ -14,5 +14,10 @@ program unequipitem(params)
 		equip := WeaponWrapper(item);
 	endif
 
+	who := MobileWrapper(who);
+	if (who.isShaman())
+		who.AddModifier(AttributeModifier(MAGERY, 0));
+	endif
+
 	MobileWrapper(who).RemoveItemModifiers(equip);
 endprogram

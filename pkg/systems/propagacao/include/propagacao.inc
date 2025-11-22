@@ -5,52 +5,7 @@ use cfgfile;
 use math;
 
 include "/include/epicPropNames";
-
-const MARCADOR_PROPAGACAO_OBJTYPE := 0xe13a;
-
-enum class EV_PROPAGACAO
-	TIMEOUT, // OBS: Esta tem que ser a posicao zero, pois é o retorno da wait_for_event.
-	ESTIMULO,
-	COMBUSTIVEL,
-	RESFRIAMENTO,
-	PISAO,
-endenum
-
-enum class PROPAGACAO_TIPO
-	INCENDIO := 1,
-endenum
-
-enum class RESFRIAMENTOS
-	BASICO := -10,
-	RAZOAVEL := -55,
-	INTENSO := -120,
-endenum
-
-enum class COMBUSTIVEIS
-	TERRENO := "terrenoInflamavel",
-	ESTATICOS := "staticInflamavel",
-	MAGICO := "magico",
-endenum
-
-enum class ESTADO_PROPAGACAO
-	DORMENTE, //Só aguarda estimulo.
-	LATENTE, //Danifica, mas não propaga
-	PRINCIPIO, //Danifica e propaga
-	REGULAR, //Danifica + e propaga
-	INTENSO //Danifica ++ e propaga
-endenum
-
-
-enum class CONTROLE_PROPAGACAO
-	ATIVO,
-	DORMENTE,
-	MORTO
-endenum
-
-enum tipoCalculoEnergia
-	CALCULO_ENERGIA_GRAPHIC, 
-	CALCULO_ENERGIA_LANDTILE, 
-endenum
+include ":propagacao:/include/util/propagacaoConstants";
 
 function MontaCatalogoDano()
 	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
@@ -93,34 +48,39 @@ function IsMarcadorPropagacaoValido(marcador, z, alturaMaxima,tipoPropagacaoOrig
 	return propPropagacaoEncontrada.tipoPropagacao == tipoPropagacaoOrigem && isAoAlcance;
 endfunction
 
-function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propPropagacao, estadoInicial := ESTADO_PROPAGACAO::DORMENTE)
-	var structPropagacao := NovaPropPropagacao(
-								cint(propPropagacao.geracao) + 1,
-								propPropagacao.origem,
-								esteItemMarcador.serial,
-								propPropagacao.tipoPropagacao,
-								estadoInicial,
-								propPropagacao.esteMarcadorPid,
-								0,
-								0,
-								0,
-								0,
-								propPropagacao.isMarcadorCoberto
-							);
+function CriaMarcadorPropagacaoAdjacente(esteItemMarcador, x,y,z,realm, propPropagacaoOrigem, estadoInicial := ESTADO_PROPAGACAO::DORMENTE)
+	var structPropagacao := struct;
+
+	structPropagacao.+geracao := cint(propPropagacaoOrigem.geracao) + 1;
+	structPropagacao.+origem := propPropagacaoOrigem.origem;
+	structPropagacao.+marcadorOrigem := esteItemMarcador.serial;
+	structPropagacao.+tipoPropagacao := propPropagacaoOrigem.tipoPropagacao;
+	structPropagacao.+marcadorOrigemPid := propPropagacaoOrigem.marcadorOrigemPid;
+	structPropagacao.+estadoInicial := estadoInicial;
+	structPropagacao.+isMarcadorCoberto := propPropagacaoOrigem.isMarcadorCoberto;
+	structPropagacao.+geracaoMaxima := propPropagacaoOrigem.geracaoMaxima;
+
+	var marcadorProps := propPropagacaoOrigem.marcadorProps;
+	if(marcadorProps)
+		if(marcadorProps.devePropagarProps)
+			structPropagacao.+marcadorProps := propPropagacaoOrigem.marcadorProps;
+		endif
+	endif
 
 	return CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, true);
 	
 endfunction
 
-function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao, isAdjacente := false)
+function CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, isAdjacente := false)
 	
 	var marcadorExistente;
 
 	if(!isAdjacente)
-		marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,propPropagacao.tipoPropagacao,5);
+		marcadorExistente :=  EncontraMarcadorPropagacao(x,y,z,realm,structPropagacao.tipoPropagacao,5);
 	endif
 	
 	if(!marcadorExistente)
+		var propPropagacao := MapeiaPropPropagacao(structPropagacao);
 		var marcadorDescriptor := GetItemDescriptor(MARCADOR_PROPAGACAO_OBJTYPE);
 		marcadorDescriptor.CProps.insert(PROPNAME_PROP_PROPAGACAO,propPropagacao);
 		marcadorDescriptor.CProps.insert(PROPNAME_INDESTRUTIVEL,true);
@@ -128,9 +88,29 @@ function CriarMarcadorPropagacao(x,y,z,realm,propPropagacao, isAdjacente := fals
 		var marcador := CreateItemAtLocation(x,y,z,marcadorDescriptor,1,realm);
 		return marcador;
 	else 
-		ConfiguraExistente(marcadorExistente, propPropagacao);
+		ConfiguraExistente(marcadorExistente, structPropagacao);
 		return marcadorExistente;
 	endif
+endfunction
+
+function MapeiaPropPropagacao(structRecebido)
+	var structPropagacao := NovaPropPropagacao();
+
+	structPropagacao.geracao := structRecebido.geracao ? structRecebido.geracao : structPropagacao.geracao;
+	structPropagacao.origem := structRecebido.origem ? structRecebido.origem : structPropagacao.origem;
+	structPropagacao.tipoPropagacao := structRecebido.tipoPropagacao ? structRecebido.tipoPropagacao : structPropagacao.tipoPropagacao;
+	structPropagacao.estadoInicial := structRecebido.estadoInicial ? structRecebido.estadoInicial : structPropagacao.estadoInicial;
+	structPropagacao.marcadorOrigemPid := structRecebido.marcadorOrigemPid ? structRecebido.marcadorOrigemPid : structPropagacao.marcadorOrigemPid;
+	structPropagacao.marcadorOrigem := structRecebido.marcadorOrigem ? structRecebido.marcadorOrigem : structPropagacao.marcadorOrigem;
+	structPropagacao.esteMarcadorPid := structRecebido.esteMarcadorPid ? structRecebido.esteMarcadorPid : structPropagacao.esteMarcadorPid;
+	structPropagacao.marcadorProps := structRecebido.marcadorProps ? structRecebido.marcadorProps : structPropagacao.marcadorProps;
+	structPropagacao.efeitosPersonalizados := structRecebido.efeitosPersonalizados ? structRecebido.efeitosPersonalizados : structPropagacao.efeitosPersonalizados;
+	structPropagacao.combustivelExterno := structRecebido.combustivelExterno ? structRecebido.combustivelExterno : structPropagacao.combustivelExterno;
+	structPropagacao.isMarcadorCoberto := structRecebido.isMarcadorCoberto ? structRecebido.isMarcadorCoberto : structPropagacao.isMarcadorCoberto;
+	structPropagacao.lerEstadoAtual := structRecebido.lerEstadoAtual ? structRecebido.lerEstadoAtual : structPropagacao.lerEstadoAtual;
+	structPropagacao.geracaoMaxima := structRecebido.geracaoMaxima ? structRecebido.geracaoMaxima : structPropagacao.geracaoMaxima;
+
+	return structPropagacao;
 endfunction
 
 function ConfiguraExistente(marcadorExistente, novaProp)
@@ -143,41 +123,23 @@ function ConfiguraExistente(marcadorExistente, novaProp)
 	marcadorExistente.Abastecer(true);
 endfunction
 
-function NovaPropPropagacao(
-						geracao := 0,
-						origem := 0,
-						marcadorOrigem := -1,
-						tipoPropagacao := PROPAGACAO_TIPO::INCENDIO,
-						estadoInicial := ESTADO_PROPAGACAO::DORMENTE,
-						marcadorOrigemPid := 0, 
-						esteMarcadorPid := 0,
-						catalogoDano := 0,
-						efeitosPersonalizados := 0,
-						combustivelMagico := 0,
-						isMarcadorCoberto := 0
-						)
+function NovaPropPropagacao()
 
 	var prop := struct{
-				geracao := geracao,
-				origem := origem,
-				marcadorOrigem := marcadorOrigem,
-				tipoPropagacao := tipoPropagacao, 
-				estadoInicial := estadoInicial,
-				catalogoDano := catalogoDano ? catalogoDano : MontaCatalogoDano(),
-				efeitosPersonalizados := efeitosPersonalizados,
-				combustivelMagico := combustivelMagico,
-				isMarcadorCoberto := isMarcadorCoberto,
-				lerEstadoAtual := estadoInicial
+				geracao := 0,
+				origem := 0,
+				marcadorOrigem := -1,
+				tipoPropagacao := 0, 
+				estadoInicial := ESTADO_PROPAGACAO::DORMENTE,
+				marcadorOrigemPid := 0,
+				esteMarcadorPid := 0,
+				marcadorProps := struct,
+				efeitosPersonalizados := dictionary,
+				combustivelExterno := 0,
+				isMarcadorCoberto := 0,
+				lerEstadoAtual := ESTADO_PROPAGACAO::DORMENTE,
+				geracaoMaxima := 0
 			};
-
-	if( esteMarcadorPid)
-		prop.+marcadorOrigemPid := marcadorOrigemPid;
-	endif
-
-	if( esteMarcadorPid)
-		prop.+esteMarcadorPid := esteMarcadorPid;
-	endif
-
 	return prop;
 endfunction
 
@@ -200,32 +162,33 @@ endfunction
 
 function NovoEfeitoPersonalizado( byref dictEfeito, 
 										estado,
-										graphic, 
-										cor :=0, 
-										isInvisibel := 1, 
-										sfx := 0,
-										efx := -1, 
-										duracao := 10,
-										effectItemObjtype := 0, 
-										chanceRandom := 2,
-										minRandom := 1, 
-										maxRandom := 8)
+										opcoesPersonalizadas
+										)
 	if(dictEfeito)
-		dictEfeito.insert(cstr(estado), struct {
-											graphic := graphic, 
-											cor := cor, 
-											isInvisibel := isInvisibel, 
-											sfx := sfx,
-											efx := efx, 
-											duracao := duracao, 
-											effectItemObjtype := effectItemObjtype, 
-											chanceRandom := chanceRandom,
-											minRandom := minRandom,
-											maxRandom := maxRandom});
+		if(!opcoesPersonalizadas)
+			return error{ error_text := "As opções são obrigatórias, veja função 'NovoOpcoesEfeitoPersonalizado'"};
+		endif
+		dictEfeito.insert(cstr(estado), opcoesPersonalizadas);
 		return 1;
 	else
 		return error{ error_text := "É necessário um dicionario como referência"}; 
 	endif
+
+endfunction
+
+function NovoOpcoesEfeitoPersonalizado(graphic)
+	return struct {
+					graphic := graphic, 
+					cor := 0, 
+					isInvisibel := 1, 
+					sfx := 0,
+					efx := -1, 
+					duracao := 10, 
+					effectItemObjtype := 0, 
+					chanceRandom := 2,
+					minRandom := 1,
+					maxRandom := 8
+				};
 
 endfunction
 

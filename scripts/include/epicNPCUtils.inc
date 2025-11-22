@@ -501,3 +501,17 @@ function GetRandomNearbyHostile(who)
 
 	return chosen_opponent;
 endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
+endfunction

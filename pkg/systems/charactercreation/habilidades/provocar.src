@@ -1,16 +1,10 @@
 use uo;
 
 include ":attributes:attributes";
-include ":timedScripts:timedScripts";
-include "include/sysEvent";
-include "include/client";
-include "include/say";
-include "include/sysEvent";
 include "include/eventID";
 include ":tn:cooldown";
 
 program taunt(who)
-
 	PrintTextAbove(who, "*urra*");
 	case (who.graphic)
 		401:  PlaySoundEffect(who, 0x339);
@@ -26,21 +20,56 @@ program taunt(who)
 	endcase
 	PerformAction(who, ANIM_HIT);
 	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
-	var provoke_times := cint(AP_GetSkill(who, PARRY) / 20);
-	var taunt_duration := cint(AP_GetSkill(who, PARRY) / 5); // Duration based on skill
+	var taunt_duration := cint(AP_GetSkill(who, PARRY) / 2); // Duration based on skill
 	var i := 0;
-	while (i < provoke_times)
-		foreach char in nearby
-			var event := struct{ "type" := EVID_TAUNT, "source" := who };
-			SendEvent(char, event);
-			// Mark this NPC as taunted by this player for a duration
-			SetCooldown(char, "taunted", taunt_duration);
-			SetObjProperty(char, "#taunter", who.serial);
-		endforeach
+	var taunted := array{};
 
-		sleep(2);
-		i++;
-	endwhile
+	foreach char in nearby
+		// Skip the caster themselves
+		if (char == who)
+			continue;
+		endif
+
+		// Skip players
+		if (char.acctname)
+			continue;
+		endif
+
+		// Skip if dead, hidden, or concealed
+		if (char.dead || char.hidden || char.concealed)
+			continue;
+		endif
+
+		// Skip if has noattack property
+		if (GetObjProperty(char, "noattack"))
+			continue;
+		endif
+
+		// Skip if no line of sight
+		if (!CheckLineOfSight(who, char))
+			continue;
+		endif
+
+		// Skip if already taunted
+		if (GetCooldown(char, "taunted"))
+			continue;
+		endif
+
+		taunted.append(char);
+		i += 1;
+	endforeach
+
+	foreach char in taunted
+		var event := struct{ "type" := EVID_TAUNT, "source" := who };
+		SendEvent(char, event);
+
+		SetCooldown(char, "taunted", taunt_duration);
+		SetObjProperty(char, "#taunter", who.serial);
+	endforeach
+	Message("Voce provocou " + i + " adversarios, por " + taunt_duration + " segundos.").SendSys(who);
+
+	sleep(2);
 	SetCooldown(who, "resistenciaheroica", cint(AP_GetSkill(who, PARRY) / 5));
+
 // TS_StartTimer(who, "provocar", 10); //bonus de parry e de reduzir hit_chance
 endprogram

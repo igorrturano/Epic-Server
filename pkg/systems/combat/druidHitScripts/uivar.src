@@ -7,8 +7,7 @@ include ":timedScripts:timedScripts";
 include "include/sysEvent";
 include "include/client";
 include "include/say";
-include ":taming:taming";
-//
+include "include/epicCombatUtils";
 
 program newprogram(who)
 

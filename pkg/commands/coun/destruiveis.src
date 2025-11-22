@@ -22,14 +22,27 @@ program destruiveis(quem, texto)
 
 		if (cfgselecao.tipoAlvo == "cadeiaUnica")
 			while (true)
+
+
+
 				var alvo := Target(quem, TGTOPT_NOCHECK_LOS);
 				if (!alvo)
 					SendSysMessageEx(quem, "Alvo Cancelado.", SSM_FAIL);
 					break;
 				endif
 				ConfiguraAlvo(quem, alvo, cfgselecao);
+
+
+
+
+
+
 				Sleepms(2);
 			endwhile
+
+
+
+
 		elseif (cfgselecao.tipoAlvo == "retanguloSelecao")
 
 			SendSysMessageEx(quem, "Selecione o vertice superior esquerdo.", SSM_INFO);

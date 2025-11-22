@@ -15,16 +15,25 @@ include ":destroyable:include/destroyItem";
 
 program use_Bladed(who, tool)
 
-	if (who.warmode)
+	if (who.warmode && who.weapon == tool)
 		return ComportamentoWarMode(who, tool);
 	endif
 
+	// If weapon is not equipped, equip it
 	if (who.weapon != tool)
-		SendSysMessage(who, "Voce deve estar com a arma em maos.");
-		return 0;
+		if (EquipItem(who, tool))
+			Message("Voce equipa sua arma!").SetColor(SSM_INFO).SendSys(who);
+			Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel equipar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
 	endif
 
+	// Weapon is equipped, ask what to cut
 	SendSysMessage(who, "O que voce deseja cortar com esta lamina?");
+	Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
 	var targ := TargetCoordinates(who);
 
 	if (!targ)
@@ -32,6 +41,18 @@ program use_Bladed(who, tool)
 		return 0;
 	endif
 
+	// If target is the equipped weapon itself, unequip it
+	if (targ.item && targ.item == who.weapon)
+		if (MoveItemToContainer(tool, who.backpack))
+			Message("Voce guardou sua arma!").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel guardar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
+	endif
+
+	// Otherwise, proceed with carving
 	if (LJ_IsTree(targ.objtype)) // Alvo é arvore
 		CarveObject(who, tool, targ.objtype, targ);
 	elseif (targ.item)
@@ -222,11 +243,11 @@ function FazPergaminhoEmBranco(who, item)
 
 		while (item)
 			if (who.x != xInicial || who.y != yInicial)
-				SendSysMessageEx(who, "Voce se moveu do local e parou de fazer os pergaminhos!", SSM_FAIL);
+				Message("Voce se moveu do local e parou de fazer os pergaminhos!").SetColor(SSM_FAIL).SendSys(who);
 				return 0;
 			else
 				if (!SubtractAmount(item, 1))
-					SendSysMessageEx(who, "Nao consegue utilizar o couro.", SSM_FAIL);
+					Message("Nao consegue utilizar o couro.").SetColor(SSM_FAIL).SendSys(who);
 				// return 0;
 				else
 					for i := 1 to 3
@@ -242,11 +263,11 @@ function FazPergaminhoEmBranco(who, item)
 							SendSysMessage(who, "Voce fez um pergaminho em branco.");
 						endif
 					else
-						SendSysMessageEx(who, "Voce arruinou os materiais.", SSM_FAIL);
+						Message("Voce arruinou os materiais.").SetColor(SSM_FAIL).SendSys(who);
 					endif
 				endif
 				if (!item)
-					SendSysMessageEx(who, "Voce nao tem mais couros nessa pilha.", SSM_FAIL);
+					Message("Voce nao tem mais couros nessa pilha.").SetColor(SSM_FAIL).SendSys(who);
 				// return 0;
 				endif
 			endif

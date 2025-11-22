@@ -1,0 +1,297 @@
+use uo;
+use os;
+use file;
+
+include ":message:model/Message";
+include "include/say";
+
+const SPAWNERS_FILE := "spawners/epic-spawners.json";
+
+program importspawners(who)
+    if (!IsAuthorized(who))
+        return 0;
+    endif
+
+    var spawners_data := LoadSpawnersFromJSON(who);
+    if (!spawners_data)
+        return 0;
+    endif
+
+    ProcessSpawners(who, spawners_data);
+    return 1;
+endprogram
+
+function IsAuthorized(who)
+    if (who.acctname != "igorturano")
+        Message("Apenas administradores podem usar esse comando").SetColor(SSM_FAIL).SendSys(who);
+        return 0;
+    endif
+    return 1;
+endfunction
+
+function LoadSpawnersFromJSON(who)
+    Message("Importando spawners de " + SPAWNERS_FILE + "...").SetColor(SSM_INFO).SendSys(who);
+
+    var json_content := ReadAndParseJSON(SPAWNERS_FILE);
+    if (!json_content)
+        Message("ERRO: Não foi possível ler o arquivo JSON!").SetColor(SSM_FAIL).SendSys(who);
+        Message("Verifique se o arquivo existe em: " + SPAWNERS_FILE).SetColor(SSM_FAIL).SendSys(who);
+        return 0;
+    endif
+
+    var spawners_data := json_content["spawners"];
+    if (!spawners_data)
+        Message("ERRO: Array 'spawners' não encontrado no JSON!").SetColor(SSM_FAIL).SendSys(who);
+        return 0;
+    endif
+
+    return spawners_data;
+endfunction
+
+function ReadAndParseJSON(file_path)
+    var lines := ReadFile(file_path);
+
+    if (TypeOf(lines) == "Error" || !lines || lines.errortext)
+        return 0;
+    endif
+
+    var content := "";
+    foreach line in lines
+        content += line;
+    endforeach
+
+    return UnpackJSON(content);
+endfunction
+
+function ProcessSpawners(who, spawners_data)
+    Message("Verificando spawners existentes...").SetColor(SSM_INFO).SendSys(who);
+    var existing_spawners := BuildExistingSpawnersLookup();
+
+    var created_count := 0;
+    var updated_count := 0;
+    var failed_count := 0;
+
+    foreach spawner_config in spawners_data
+        var result := CreateOrUpdateSpawner(who, spawner_config, existing_spawners);
+        case (result)
+            1: created_count += 1;
+            2: updated_count += 1;
+            default: failed_count += 1;
+        endcase
+        sleepms(50);
+    endforeach
+
+    ShowSummary(who, created_count, updated_count, failed_count);
+endfunction
+
+function BuildExistingSpawnersLookup()
+    var existing_spawners := dictionary;
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+
+    if (!globalSpawns)
+        return existing_spawners;
+    endif
+
+    foreach serial in globalSpawns
+        var spawner := SystemFindObjectBySerial(serial);
+        if (!spawner)
+            continue;
+        endif
+
+        if (!GetObjProperty(spawner, "spawnedOfflineByJson"))
+            continue;
+        endif
+
+        var spawner_id := GetObjProperty(spawner, "spawner_id");
+        if (spawner_id)
+            existing_spawners[spawner_id] := spawner;
+        endif
+    endforeach
+
+    return existing_spawners;
+endfunction
+
+function CreateOrUpdateSpawner(who, config, existing_spawners)
+    var spawner_id := config["spawner_id"];
+    if (!spawner_id || spawner_id == "")
+        Message("AVISO: Spawner sem 'spawner_id' - será criado mas não pode ser rastreado!").SetColor(SSM_HARMFUL).SendSys(who);
+    endif
+
+    var spawner;
+    var is_update := (spawner_id && existing_spawners.exists(spawner_id));
+
+    if (is_update)
+        spawner := existing_spawners[spawner_id];
+    else
+        spawner := CreateNewSpawner(who, config, spawner_id);
+        if (!spawner)
+            return 0;
+        endif
+    endif
+
+    ConfigureSpawner(spawner, config);
+    StartSpawnerScript(spawner);
+
+    var location_info := FormatLocation(config["location"], spawner);
+    ShowSpawnerMessage(who, config["spawner_name"], location_info, is_update);
+
+    return (is_update ? 2 : 1);
+endfunction
+
+function CreateNewSpawner(who, config, spawner_id)
+    var loc := config["location"];
+    if (!loc)
+        Message("ERRO: Localização ausente na config do spawner").SetColor(SSM_FAIL).SendSys(who);
+        return 0;
+    endif
+
+    var x := CInt(loc["x"]);
+    var y := CInt(loc["y"]);
+    var z := CInt(loc["z"]);
+    var realm := loc["realm"] ? loc["realm"] : "britannia";
+
+    var spawner := CreateItemAtLocation(x, y, z, 0x5000, 1, realm);
+    if (!spawner)
+        Message("ERRO: Falha ao criar spawner em (" + x + "," + y + "," + z + ")").SetColor(SSM_FAIL).SendSys(who);
+        return 0;
+    endif
+
+    spawner.invisible := 1;
+    SetObjProperty(spawner, "spawnedOfflineByJson", 1);
+
+    if (spawner_id)
+        SetObjProperty(spawner, "spawner_id", spawner_id);
+    endif
+
+    RegisterSpawnerGlobally(spawner);
+    return spawner;
+endfunction
+
+function ConfigureSpawner(spawner, config)
+    var spawn_area := config["spawn_area"];
+    var rect_str := BuildRectString(spawn_area, config["location"], spawner);
+
+    var level1 := config["level1"];
+    var level2 := config["level2"];
+    var level3 := config["level3"];
+    var respawn := config["respawn"];
+
+    var loc := config["location"];
+    var location_struct := BuildLocationStruct(loc, spawner);
+
+    var cfg := struct{
+        spawner_name := config["spawner_name"] ? config["spawner_name"] : "Unnamed Spawner",
+        description := config["description"] ? config["description"] : "",
+        mobslvl1 := level1 ? level1["mobs"] : "",
+        amtlvl1 := level1 ? CInt(level1["amount"]) : 0,
+        mobslvl2 := level2 ? level2["mobs"] : "",
+        amtlvl2 := level2 ? CInt(level2["amount"]) : 0,
+        mobslvl3 := level3 ? level3["mobs"] : "",
+        amtlvl3 := level3 ? CInt(level3["amount"]) : 0,
+        rect := rect_str,
+        location := location_struct,
+        min_respawn := respawn ? CInt(respawn["min_minutes"]) : 60,
+        max_respawn := respawn ? CInt(respawn["max_minutes"]) : 120
+    };
+
+    SetObjProperty(spawner, "config", cfg);
+    SetObjProperty(spawner, "form_data", cfg);
+endfunction
+
+function BuildRectString(spawn_area, loc, spawner)
+    if (spawn_area)
+        return CStr(spawn_area["x1"]) + " " + CStr(spawn_area["y1"]) + " " +
+               CStr(spawn_area["x2"]) + " " + CStr(spawn_area["y2"]);
+    endif
+
+    if (loc)
+        var x := CInt(loc["x"]);
+        var y := CInt(loc["y"]);
+        return CStr(x - 10) + " " + CStr(y - 10) + " " + CStr(x + 10) + " " + CStr(y + 10);
+    endif
+
+    return CStr(spawner.x - 10) + " " + CStr(spawner.y - 10) + " " +
+           CStr(spawner.x + 10) + " " + CStr(spawner.y + 10);
+endfunction
+
+function BuildLocationStruct(loc, spawner)
+    if (loc)
+        return struct{
+            x := CInt(loc["x"]),
+            y := CInt(loc["y"]),
+            z := CInt(loc["z"]),
+            realm := loc["realm"] ? loc["realm"] : "britannia"
+        };
+    endif
+
+    return struct{
+        x := spawner.x,
+        y := spawner.y,
+        z := spawner.z,
+        realm := spawner.realm
+    };
+endfunction
+
+function RegisterSpawnerGlobally(spawner)
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns)
+        globalSpawns := array{};
+    endif
+
+    if (!(spawner.serial in globalSpawns))
+        globalSpawns.append(spawner.serial);
+        SetGlobalProperty("epicSpawns", globalSpawns);
+    endif
+endfunction
+
+function StartSpawnerScript(spawner)
+    start_script(":epicspawn:epiccontrol", spawner);
+endfunction
+
+function FormatLocation(loc, spawner)
+    var x, y, z, realm;
+
+    if (loc)
+        x := CInt(loc["x"]);
+        y := CInt(loc["y"]);
+        z := CInt(loc["z"]);
+        realm := loc["realm"] ? loc["realm"] : "britannia";
+    else
+        x := spawner.x;
+        y := spawner.y;
+        z := spawner.z;
+        realm := spawner.realm;
+    endif
+
+    return "(" + x + "," + y + "," + z + " - " + realm + ")";
+endfunction
+
+function ShowSpawnerMessage(who, spawner_name, location_info, is_update)
+    var name := spawner_name ? spawner_name : "Unnamed Spawner";
+
+    if (is_update)
+        Message("Atualizado: " + name + " em " + location_info).SetColor(SSM_INFO_OOC).SendSys(who);
+    else
+        Message("Criado: " + name + " em " + location_info).SetColor(SSM_INFO).SendSys(who);
+    endif
+endfunction
+
+function ShowSummary(who, created_count, updated_count, failed_count)
+    Message("Importação completa!").SetColor(SSM_INFO).SendSys(who);
+
+    if (created_count > 0)
+        Message("Criados: " + created_count + " spawners").SetColor(SSM_INFO).SendSys(who);
+    endif
+
+    if (updated_count > 0)
+        Message("Atualizados: " + updated_count + " spawners").SetColor(SSM_INFO_OOC).SendSys(who);
+    endif
+
+    if (failed_count > 0)
+        Message("Falhados: " + failed_count + " spawners").SetColor(SSM_FAIL).SendSys(who);
+    endif
+
+    if (created_count == 0 && updated_count == 0 && failed_count == 0)
+        Message("Nenhum spawner processado").SetColor(SSM_INFO_OOC).SendSys(who);
+    endif
+endfunction
