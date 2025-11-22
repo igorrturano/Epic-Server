@@ -69,6 +69,10 @@ class CFGFile(IOFile)
 		UnloadConfigFile(this._file);
 	endfunction
 
+	function ToString(this)
+		return $"CFGFile: Package: {this._packageName}, File: {this._fileName}, FullPath: {this._fullPath}, Element: {this._element.name}, Key: {this._key.name}";
+	endfunction
+
 	// Private Functions
 	function _LoadFile(this, createFile := false)
 		this._file := ReadConfigFile($":{this._packageName}:{this._fileName}");
