@@ -1,7 +1,8 @@
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 
 program doubleattack(attacker)
@@ -10,8 +11,8 @@ program doubleattack(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm))
 		if (!(mobile in attacker.party.members))
-			PlayAttackAnimation(attacker);
-			PlayHitSounds(attacker, mobile);
+			PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(mobile)));
+			PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(mobile)));
 			sleepms(250);
 			attacker.facing := attacker.facing + 1;
 			TS_StartTimer(mobile, "paralysis", 5);

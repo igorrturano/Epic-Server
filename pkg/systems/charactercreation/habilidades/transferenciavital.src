@@ -70,7 +70,7 @@ program manobra(mobile)
 		endif
 
 		PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
-		PerformAction(mobile, ANIM_CAST_AREA);
+		PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
 		time := time + 1;
 		sleep(1);
 	endwhile

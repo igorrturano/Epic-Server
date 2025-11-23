@@ -188,7 +188,7 @@ function FailSpell(who)
 	// fails the casting.
 	who.frozen := 0;
 	EraseObjProperty(who, "#medding");
-	PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 	PlaySoundEffect(who, SFX_SPELL_FAIL);
 
 	return 1;

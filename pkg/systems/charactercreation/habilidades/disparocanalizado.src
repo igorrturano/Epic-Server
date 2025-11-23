@@ -25,13 +25,13 @@ program meditar(who)
 	var ammo_color := 0;
 	var sound;
 	if (isFireArrow)
-		ammo_color := FOGO;
+		ammo_color := COLOR_ELEMENTAL_FIRE;
 		sound := 0x5cb;
 	elseif (isEnergyArrow)
-		ammo_color := RAIO;
+		ammo_color := COLOR_ELEMENTAL_ENERGY;
 		var sound := 0x666; // Energy
 	elseif (isColdArrow)
-		ammo_color := GELO;
+		ammo_color := COLOR_ELEMENTAL_ICE;
 		sound := 0x5c8;
 	endif
 

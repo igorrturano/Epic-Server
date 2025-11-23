@@ -9,6 +9,8 @@ include ":destroyable:include/destroyItem";
 include "include/epicConstants";
 include "include/facings";
 include ":traps:traps";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program destroyitems(parms)
 
@@ -100,11 +102,12 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 endfunction
 
 function RodaEfeitosAnim(quem, arma, alvo)
-	PlayAttackAnimation(quem);
-	sleepms(600);
-	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
-	PlaySoundEffect(quem, somAtaque);
-	PlayObjectCenteredEffect(alvo, FX_SMOKE, 2, 4);
+	var attackInfo := AttackInfo(MobileWrapper(quem), MobileWrapper(alvo));
+
+	PlayAttackFX(attackInfo);
+	SleepMS(600);
+	PlayAttackSFX(attackInfo);
+	PlayObjectCenteredEffect(attackInfo.GetDefender().GetObjRef(), FX_SMOKE, 2, 4);
 endfunction
 
 function CalculaConsumoStamina(fonteDano, byref consumoStamina)

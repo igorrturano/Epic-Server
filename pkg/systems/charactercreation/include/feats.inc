@@ -443,13 +443,13 @@ function TriggerHabilitie(who, hab)
 
          case ( hab.Target )
             "Mobile":
-               PerformAction(who, ANIM_CAST_DIR);
+               PerformAction(who, HUMAN_ANIM::CAST_DIR);
                break;
             "Area":
-               PerformAction(who, ANIM_CAST_AREA);
+               PerformAction(who, HUMAN_ANIM::CAST_AREA);
                break;
             default:
-               PerformAction(who, ANIM_CAST_DIR);
+               PerformAction(who, HUMAN_ANIM::CAST_DIR);
          endcase
 
          cycles -= 1;

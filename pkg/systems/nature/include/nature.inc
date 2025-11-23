@@ -4,7 +4,7 @@ use util;
 use cfgfile;
 use datafile;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":debug:Controller/DebugController";
 
 // Calendar constants

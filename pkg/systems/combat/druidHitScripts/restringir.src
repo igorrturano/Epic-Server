@@ -4,7 +4,7 @@ use vitals;
 
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program loko(params)
 	var who := params[1];

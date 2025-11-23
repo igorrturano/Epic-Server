@@ -10,7 +10,7 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":gumps:gumps";
 include ":tn:tngumps";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":traps:traps";
 include ":levers:lever";

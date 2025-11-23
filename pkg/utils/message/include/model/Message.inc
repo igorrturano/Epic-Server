@@ -1,23 +1,25 @@
 use math;
 use os;
 
-include "include/say";
+include "IMessage";
 include "TranslatableText";
 include ":message:Translator";
+include "include/say";
+include "include/client";
 
-class Message()
+class Message(IMessage)
 	var _asyncInfo := struct{
 		sending := false, // Em situações de script critico precisa ser assincrono. Definir isso com SetAsync().
 		translation := false // Se ele é assincrono, a tradução também, e é feita no processo do sender.
-	}; 
+	};
 	var _messages := array{ struct{ // Array de structs com as informações de cada mensagem: string, cor, fonte, lingua
 		text := TranslatableText(),
-		color := _DEFAULT_TEXT_COLOR,
-		font := _DEFAULT_TEXT_FONT
+		color := FONTCOLOR_BLUE,
+		font := FONT_UNICODE_DEFAULT
 	}};
-	var _translator := Translator(); // Objeto tradutor
+	var _translator; // Translator class
 
-	function Message(this, text, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._asyncInfo := struct{
 			sending := false,
 			translation := false
@@ -33,7 +35,7 @@ class Message()
 		return this;
 	endfunction
 
-	function AddMessage(this, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+	function AddMessage(this, text, color := FONTCOLOR_BLUE, font := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._messages.append(struct{
 			text := TranslatableText(text, langSource, langTarget),
 			color := color,
@@ -58,9 +60,17 @@ class Message()
 		return this;
 	endfunction
 
-	function SetLanguage(this, langSource, langTarget)
+	function SetSourceLanguage(this, lang)
 		foreach msg in (this._messages)
-			msg.text.SetLanguage(langSource, langTarget);
+			msg.text.SetSourceLanguage(lang);
+		endforeach
+
+		return this;
+	endfunction
+
+	function SetTargetLanguage(this, lang)
+		foreach msg in (this._messages)
+			msg.text.SetTargetLanguage(lang);
 		endforeach
 
 		return this;
@@ -130,15 +140,11 @@ class Message()
 		if (!this._asyncInfo.sending)
 			if (_WantTranslation(who)) this.Translate(); endif
 			var msgSplitted := this._SplitMessages(MSG_MAXSIZE::PRINTTEXT);
-			print("Sending message...");
 
 			foreach part in (msgSplitted)
-				print("Sending message part...");
-				print("Text: " + part);
 				PrintText(who, part.textTarget, part.color, part.font);
 			endforeach
 		else
-			print("Sending async message...");
 			return this._SendAsync(struct{
 				who := who,
 				msg_type := MSG_TYPE::PRINTTEXT
@@ -165,6 +171,24 @@ class Message()
 			return this._SendAsync(struct{
 				who := whoSee ?: who,
 				msg_type := MSG_TYPE::PRINTTEXTPRIVATE
+			});
+		endif
+
+		return this;
+	endfunction
+
+	function SendEmote(this, who)
+		if (!this._asyncInfo.sending)
+			if (_WantTranslation(who)) this.Translate(); endif
+			var msgSplitted := this._SplitMessages(MSG_MAXSIZE::PRINTTEXT);
+
+			foreach part in (msgSplitted)
+				PrintText(who, $"*{part.textTarget}*", part.color, part.font);
+			endforeach
+		else
+			return this._SendAsync(struct{
+				who := who,
+				msg_type := MSG_TYPE::PRINTTEXT
 			});
 		endif
 
@@ -204,8 +228,8 @@ class Message()
 		return Start_Script(":message:sender", params);
 	endfunction
 
-	function _WantTranslation(who)
-		return true; // Temporário, depois fazer verificação se o char quer tradução ou não
+	function _WantTranslation(this)
+		return false; // Temporário, depois fazer verificação se o char quer tradução ou não
 	endfunction
 endclass
 

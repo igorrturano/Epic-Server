@@ -6,7 +6,7 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":destroyable:include/destroyItem";
 
 function PlayLightningSoundEffect(mobile)
@@ -19,7 +19,7 @@ endfunction
 
 function FireballEffect(npc, opponent, skill)
 
-	PlayMovingEffect(npc, opponent, GFX_LARGE_FIREBALL, 10, 10, 1);
+	PlayMovingEffect(npc, opponent, FX_LARGE_FIREBALL, 10, 10, 1);
 
 	var coord_list := GetCoordsInLine(npc.x, npc.y, opponent.x, opponent.y);
 	foreach coord in coord_list
@@ -48,13 +48,13 @@ function FireballEffect(npc, opponent, skill)
 		endif
 		case( RandomInt(3) )
 			default:
-				PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_1, 10, 10, 0);
+				PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_1, 10, 10, 0);
 				break;
 			1:
-				PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_2, 10, 10, 0);
+				PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_2, 10, 10, 0);
 				break;
 			2:
-				PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_3, 10, 10, 0);
+				PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_3, 10, 10, 0);
 				break;
 		endcase
 		var field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldNS", 1);
@@ -65,7 +65,7 @@ function FireballEffect(npc, opponent, skill)
 	endforeach
 
 	ApplyDamageEX(opponent, (RandomDiceRoll(dice) + skill/2), DMG_FIRE);
-	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := (RandomDiceRoll(dice) + skill/2), desc := "Bola de Fogo." },range,GFX_EXPLODE_3);
+	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := (RandomDiceRoll(dice) + skill/2), desc := "Bola de Fogo." },range,FX_EXPLODE_3);
 
 	foreach mobile in ListMobilesInLineOfSight(opponent, range)
 		ApplyDamageEX(mobile, (RandomDiceRoll(dice) + skill/2), DMG_FIRE);

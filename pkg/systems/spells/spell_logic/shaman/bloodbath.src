@@ -57,7 +57,7 @@ program spell_bloodbath(params)
         endif
     endforeach
 
-    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, EPIC_FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
+    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
     foreach victim_data in victims
         // PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
         // PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);

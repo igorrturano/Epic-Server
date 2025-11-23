@@ -2,9 +2,10 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include ":blood:blood";
-include ":combat:damage";
 
 program doubleattack(params)
 	var attacker := params[1];
@@ -36,8 +37,8 @@ program doubleattack(params)
 		DamageFLS(mobile, total, DMG_PHYSICAL, attacker);
 		MostraDano(attacker, mobile, total);
 		MakeBleed(defender);
-		PlayAttackAnimation(attacker);
-		PlayHitSounds(attacker, defender);
+		PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+		PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 		sleepms(250);
 		attacker.facing := attacker.facing + 1;
 	endforeach

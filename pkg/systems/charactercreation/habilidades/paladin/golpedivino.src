@@ -9,7 +9,7 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":charactercreation:resists";
 include "include/epicConstants";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program habilidade(params)
 	var who := params[1];

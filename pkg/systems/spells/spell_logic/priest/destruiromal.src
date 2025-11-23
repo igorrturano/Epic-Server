@@ -34,7 +34,7 @@ program SpellScript(params)
 
 			if (category == "undead" || category == "demons")
 				PlayMovingEffectXYZEx(mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60,
-									   mobile.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+									   mobile.realm, FX_LARGE_FIREBALL, 1, 10, 2320);
 
 				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm, MOVEOBJECT_FORCELOCATION);
 

@@ -2,9 +2,10 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 include "include/say";
 
@@ -24,8 +25,8 @@ program doubleattack(params)
 		endif
 	endif
 
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	PrintTextAbove(attacker, "*desarmar*");
 	var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);

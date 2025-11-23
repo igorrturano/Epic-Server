@@ -7,7 +7,7 @@ include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";

@@ -25,7 +25,7 @@ function Resurrection(mobile)
 	
 	mobile.graphic := mobile.trueobjtype;
 	PlaySoundEffect(mobile, SFX_RESURRECT);
-	PlayObjectCenteredEffect(mobile, GFX_BLUE_SPARKLES, 10,10);
+	PlayObjectCenteredEffect(mobile, FX_BLUE_SPARKLES, 10,10);
 	return Resurrect(mobile);
 endfunction
 
