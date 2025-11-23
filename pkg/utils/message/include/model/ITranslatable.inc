@@ -6,5 +6,6 @@ class ITranslatable()
 
 	uninit function SetTextSource(this, text);
 	uninit function SetTextTarget(this, text);
-	uninit function SetLanguage(this, langSource, langTarget);
+	uninit function SetSourceLanguage(this, lang);
+	uninit function SetTargetLanguage(this, lang);
 endclass

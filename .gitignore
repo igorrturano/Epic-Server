@@ -17,7 +17,6 @@ data
 *.bak
 
 # POL Server
-config/animxlate.cfg
 config/boats.cfg
 config/extobj.cfg
 config/servers.cfg

@@ -4,7 +4,7 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/epicNPCUtils";
 
@@ -285,7 +285,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	endif
 
 	// Visual and sound effects
-	PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 	PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, weapon_info.shot_sound);
 

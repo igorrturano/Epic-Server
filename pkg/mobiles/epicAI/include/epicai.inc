@@ -9,6 +9,7 @@ include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
+include ":io:CFGFile";
 
 const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
@@ -2345,7 +2346,8 @@ function GetWeaponRangeInfo()
         return struct{ "min_range" := 1, "max_range" := 1 };
     endif
 
-    var wpn_elem := GetWpnCfgInfo(me, weapon);
+    // var wpn_elem := GetWpnCfgInfo(me, weapon);
+	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue(); 
     var min_range := 1;
     var max_range := 1;
     

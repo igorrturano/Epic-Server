@@ -16,7 +16,7 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":destroyable:include/destroyItem";
 
 program BrainNerve(params)
@@ -109,7 +109,7 @@ function BreathAttack(npc, opponent, byref dist, settings)
 	PerformAction(npc, 12);
 	PlaySoundEffect(npc, 0x16B);
 	sleep(2);
-	PlayMovingEffect(npc, opponent, GFX_LARGE_FIREBALL, 10, 10, 1);
+	PlayMovingEffect(npc, opponent, FX_LARGE_FIREBALL, 10, 10, 1);
 
 	var coord_list := GetCoordsInLine(npc.x, npc.y, opponent.x, opponent.y);
 	foreach coord in coord_list
@@ -129,9 +129,9 @@ function BreathAttack(npc, opponent, byref dist, settings)
 			continue;
 		endif
 		case (RandomInt(3))
-			default: PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_1, 10, 10, 0); break;
-			1: PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_2, 10, 10, 0); break;
-			2: PlayStationaryEffect(coord.x, coord.y, npc.z, GFX_EXPLODE_3, 10, 10, 0); break;
+			default: PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_1, 10, 10, 0); break;
+			1: PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_2, 10, 10, 0); break;
+			2: PlayStationaryEffect(coord.x, coord.y, npc.z, FX_EXPLODE_3, 10, 10, 0); break;
 		endcase
 		var field;
 		if (RandomInt(2))
@@ -151,7 +151,7 @@ function BreathAttack(npc, opponent, byref dist, settings)
 									  npc.realm);
 	DanificaObjetosProximos(npc, opponent.x, opponent.y, opponent.z, opponent.realm, struct{ dano := RandomDiceRoll(
 																						 	settings["BreathDamage"]),
-																						 	desc := "Bafo Draconico." }, settings["BreathRadius"], GFX_EXPLODE_2);
+																						 	desc := "Bafo Draconico." }, settings["BreathRadius"], FX_EXPLODE_2);
 	foreach mobile in chars
 		ApplyDamageEX(mobile, RandomDiceRoll(settings["BreathDamage"]), DMG_FIRE);
 	endforeach

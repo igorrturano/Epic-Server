@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";
@@ -15,7 +15,7 @@ program HitScript(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+	PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 
 	TS_StartTimer(defender, "paralysis", 10);

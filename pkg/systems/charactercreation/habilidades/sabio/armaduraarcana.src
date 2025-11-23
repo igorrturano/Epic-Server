@@ -2,9 +2,9 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":tn:cooldown";
 include "include/epicConstants";
@@ -20,16 +20,16 @@ endprogram
 function grantBonus(who, duration)
 	var weapon := who.weapon;
 	var effect_color := 0;
-	if (weapon.color == FOGO)
-		effect_color := FOGO;
+	if (weapon.color == COLOR_ELEMENTAL_FIRE)
+		effect_color := COLOR_ELEMENTAL_FIRE;
 		who.resist_fire_mod := who.resist_fire_mod + 100;
 		SetCooldown(who, "incinerate_enemy", duration);
-	elseif (weapon.color == GELO)
-		effect_color := GELO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+		effect_color := COLOR_ELEMENTAL_ICE;
 		who.resist_cold_mod := who.resist_cold_mod + 100;
 		SetCooldown(who, "freeze_enemy", duration);
-	elseif (weapon.color == RAIO)
-		effect_color := RAIO;
+	elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+		effect_color := COLOR_ELEMENTAL_ENERGY;
 		who.resist_energy_mod := who.resist_energy_mod + 100;
 		SetCooldown(who, "move_speed", duration);
 	endif
@@ -39,11 +39,11 @@ function grantBonus(who, duration)
 endfunction
 
 function revokeBonus(who, effect)
-	if (effect == FOGO)
+	if (effect == COLOR_ELEMENTAL_FIRE)
 		who.resist_fire_mod := who.resist_fire_mod - 100;
-	elseif (effect == GELO)
+	elseif (effect == COLOR_ELEMENTAL_ICE)
 		who.resist_cold_mod := who.resist_cold_mod - 100;
-	elseif (effect == RAIO)
+	elseif (effect == COLOR_ELEMENTAL_ENERGY)
 		who.resist_energy_mod := who.resist_energy_mod - 100;
 	endif
 endfunction

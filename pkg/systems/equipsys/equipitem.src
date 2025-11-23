@@ -1,7 +1,7 @@
 include ":message:model/Message";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":charsys:ViewModel/MobileWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 
 program equipitem(params)
@@ -10,10 +10,10 @@ program equipitem(params)
 
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
-		equip := EquipWrapperArmor(item);
+		equip := ArmorWrapper(item);
 		debugArmor(who, equip);
 	elseif (item.IsA(POLCLASS_WEAPON))
-		equip := EquipWrapperWeapon(item);
+		equip := WeaponWrapper(item);
 		debugWeapon(who, equip);
 	endif
 

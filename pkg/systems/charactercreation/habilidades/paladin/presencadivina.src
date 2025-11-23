@@ -4,7 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 
 program presencadivina(paladin)
