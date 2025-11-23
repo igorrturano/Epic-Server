@@ -267,6 +267,8 @@ function CalculateAttackerCriticalHit(byRef attackInfo)
 		ApplyCriticalDamage(attackInfo);
 	endif
 
+	attackInfo.GetAttacker().EraseProperty("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque
+
 	return true;
 endfunction
 
@@ -274,8 +276,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	var chance := 0;
 	var skillUsedForCritical := TACTICS;
 
-	if (attackInfo.GetAttacker().GetProp("#nextcritical"))
-		attackInfo.GetAttacker().EraseProp("#nextcritical");
+	if (attackInfo.GetAttacker().GetProperty("#nextcritical"))
+		attackInfo.GetAttacker().EraseProperty("#nextcritical");
 		return 100;
 	endif
 
@@ -291,8 +293,6 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)			// Crítico extra da Skill
 	);
 
-	attackInfo.GetAttacker().EraseProp("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque
-
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
 		chance := chance * 2.0;
 	endif
@@ -300,13 +300,13 @@ function CalculateCriticalChance(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
 		Message("Seu alvo desviou do crítico!", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Você desviou do crítico e usará isso contra seu oponente!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-		attackInfo.GetDefender().SetProp("#nextcritical", true);
+		attackInfo.GetDefender().SetProperty("#nextcritical", true);
 		return 0;
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::OPORTUNIDADE_CRITICA))
 		Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
-		attackInfo.GetAttacker().GetObjRef().attack_once(attackInfo.GetDefender().GetObjRef());
+		attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
 	endif
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
