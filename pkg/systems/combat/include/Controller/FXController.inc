@@ -108,7 +108,6 @@ function GetAttackerFX(byRef attackInfo)
 	endif
 
 	attackerFX := attackerFX.Size() > 1 ? attackerFX[RandomInt(attackerFX.Size()) + 1] : attackerFX[1];
-	print($"Attacker FX selected for {attackInfo.GetAttacker().GetName()}: {attackerFX}");
 
 	return CInt(attackerFX);
 endfunction
