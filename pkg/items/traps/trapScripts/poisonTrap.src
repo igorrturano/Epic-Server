@@ -7,7 +7,7 @@ use math;
 
 include "include/client";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
@@ -21,7 +21,7 @@ program trapScript(params)
 	params := 0; // Not needed anymore.
 
 	PlaysoundEffect(object, sounds[RandomInt(sounds.size()) + 1]);
-	PlayStationaryEffect(object.x, object.y, object.z, GFX_POISON_GAS, 10, 10, 0, object.realm);
+	PlayStationaryEffect(object.x, object.y, object.z, FX_POISON_GAS, 10, 10, 0, object.realm);
 
 	var range := trap_info.Strength;
 	var poisonLvl := trap_info.Strength;
@@ -67,7 +67,7 @@ program trapScript(params)
 				endif
 			endif
 			mobile.hidden := 0;
-			PerformAction(mobile, ANIM_HIT);
+			PerformAction(mobile, HUMAN_ANIM::HIT);
 		endif
 	endforeach
 	return 1;

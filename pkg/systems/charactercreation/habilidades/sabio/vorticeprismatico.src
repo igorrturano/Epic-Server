@@ -2,9 +2,10 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include "include/say";
 include "include/epicConstants";
 include ":magery:spells";
@@ -28,7 +29,7 @@ program doubleattack(who)
 	var festa := who.party;
 	var effect := who.weapon.color;
 	var total_dmg := Cint(Cint(GetObjProperty(who, "vortice_dmg")) + Cint(AP_GetSkill(who, ARCANA)));
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
 	var allPets := array{};
 	var party_members := who.party.members;
@@ -50,17 +51,17 @@ program doubleattack(who)
 		var char_owner := GetObjProperty(char, "owner");
 		if (!(char in (festa.members) || char == who))
 			if (!(char in allPets) && !(char in who.party.members) && !(char_owner == who.serial))
-				if (effect == FOGO)
+				if (effect == COLOR_ELEMENTAL_FIRE)
 					PlaySoundEffect(char, 0x5D0);
 					PlayObjectCenteredEffect(char, 0x6d77, 7, 60);
 					DamageFLS(char, total_dmg, DMG_FIRE, who);
 					TS_StartTimer(char, "queimar", 10);
-				elseif (effect == GELO)
+				elseif (effect == COLOR_ELEMENTAL_ICE)
 					PlaySoundEffect(char, 0x65b);
-					PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, GELO, 0);
+					PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
 					DamageFLS(char, total_dmg, DMG_COLD, who);
 					TS_StartTimer(char, "congelamento", 10);
-				elseif (effect == RAIO)
+				elseif (effect == COLOR_ELEMENTAL_ENERGY)
 					PlaySoundEffect(char, 0x5CF);
 					DamageFLS(char, Cint(total_dmg * 1.2), DMG_ENERGY, who);
 					PlayObjectCenteredEffect(char, 0xcdaf, 7, 30);

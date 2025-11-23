@@ -1,6 +1,6 @@
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":medicine:disease";
 include ":tn:cooldown";
 include "include/imersao";

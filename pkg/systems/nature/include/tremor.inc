@@ -4,7 +4,7 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 function EfeitosTerremoto(who,danobase,danoale,dif)
      if (who.dead)

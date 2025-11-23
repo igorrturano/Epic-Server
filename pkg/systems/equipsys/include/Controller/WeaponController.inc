@@ -1,7 +1,7 @@
 include ":equipsys:utils/consts";
 
 function getDamageElemental(DMGTYPE, weapon)
-	case(DMGTYPE)
+	case(Upper(DMGTYPE))
 		"FIRE":
 			return CInt(weapon.getAttrBase().FireDamage);
 
@@ -32,7 +32,7 @@ endfunction
  *
  */
 function getSpeedByTier(tier)
-	case (tier.Upper())
+	case (Upper(tier))
 		MELEE_LOW: return 24; // min = 24 + 3 random
 		MELEE_MID: return 30; // min = 30 + 3 random
 		MELEE_HIGH: return 36; // min = 36 + 3 random
@@ -58,7 +58,7 @@ endfunction
  *
  */
 function getDamageByTier(tier)
-	case (tier.Upper())
+	case (Upper(tier))
 		// NO DAMAGE
 		DAMAGE_NONE: return 0;
 		
@@ -103,7 +103,7 @@ endfunction
  *
  */
 function getCriticalChanceByTier(tier)
-	case(tier.upper())
+	case(Upper(tier))
 		CRITICALCHANCE_NOCHANCE: return 0;
 		CRITICALCHANCE_LOW: return 1;
 		CRITICALCHANCE_MID: return 3;

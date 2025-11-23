@@ -37,7 +37,7 @@ program UseGrower(who, grower)
 			break;
 		endif
 
-		PerformAction(who, ANIM_BOW);
+		PerformAction(who, HUMAN_ANIM::BOW);
 		sleepms(sleep_time);
 	endfor
 

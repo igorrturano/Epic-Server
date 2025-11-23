@@ -63,7 +63,7 @@ program controleclima(who)
 
 	while (i < duration)
 
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		if ((origx != who.x) || (origy != who.y))
 			SendSysMessage(who, "Voce parou de controlar o clima.", SSM_FAIL);
 			break;

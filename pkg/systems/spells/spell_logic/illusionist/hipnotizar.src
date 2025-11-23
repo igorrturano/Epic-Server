@@ -28,10 +28,10 @@ program SpellScript(params)
 	endif
 
 	handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
-	// PlayObjectCenteredEffectEx(targ, EPIC_FX_HIPNOSYS, 255, 60);
-	// PlayObjectCenteredEffect(targ, EPIC_FX_HIPNOSYS, 150, 50);
+	// PlayObjectCenteredEffectEx(targ, FX_HIPNOSYS, 255, 60);
+	// PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 150, 50);
 
-	var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, EPIC_FX_HIPNOSYS, 1, targ.realm);
+	var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, FX_HIPNOSYS, 1, targ.realm);
 	sleepms(2000);
 	DestroyItem(fx);
 

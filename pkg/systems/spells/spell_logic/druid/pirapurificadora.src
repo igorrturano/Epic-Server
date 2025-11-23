@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 
 const SOUND_EFFECT_FIRE := 0x1de;

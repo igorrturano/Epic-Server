@@ -188,7 +188,7 @@ function Engravidar(who, location_mobile, npc, partos, female_template)
 							CInt(Getobjproperty(location_mobile, "Gravida")) + 1); // Adiciona o valor +1 pra qtas x engravidou
 			TS_StartTimer(location_mobile, "Paralysis", 300); // para definir o tempo de um parto pro outro
 			PrintTextAbove(location_mobile, "*" + location_mobile.name + " está parindo!!!*");
-			PerformAction(npc, ANIM_FIDGET_1); // roda a animação de ataque default para npcs
+			PerformAction(npc, HUMAN_ANIM::FIDGET_1); // roda a animação de ataque default para npcs
 			PlaySoundEffect(npc, gemer); // tocar som na hora do acasalamento
 			detach();
 			sleep(5);

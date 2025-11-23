@@ -41,8 +41,8 @@ endprogram
 
 function SelectRandomExplosion()
 	case (RandomInt(3))
-		1: return GFX_EXPLODE_2; break;
-		2: return GFX_EXPLODE_3; break;
-		default: return GFX_EXPLODE_1; break;
+		1: return FX_EXPLODE_2; break;
+		2: return FX_EXPLODE_3; break;
+		default: return FX_EXPLODE_1; break;
 	endcase
 endfunction

@@ -4,7 +4,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:tngumps";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/client";
 include "include/imersao";

@@ -1,7 +1,7 @@
 use npc;
 include "include/sysEvent";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";

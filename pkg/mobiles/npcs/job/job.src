@@ -432,7 +432,7 @@ function GetWorkAction(jobtype)
 
 	case (jobtype)
 		44: return 0x0D; // lumberjacking
-		default: return ANIM_SALUTE;
+		default: return HUMAN_ANIM::SALUTE;
 	endcase
 
 endfunction

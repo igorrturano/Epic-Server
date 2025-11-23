@@ -13,7 +13,7 @@ include "include/sounds";
 include "include/say";
 include ":tn:cooldown";
 include ":taming:taming";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
@@ -23,7 +23,7 @@ program SpellScript(params)
 
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	foreach mobile in allMobiles
 		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x38C8, 10, 100, 0, mobile.realm);
 		SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);

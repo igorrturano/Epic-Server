@@ -4,7 +4,7 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include "include/client";
 
@@ -23,7 +23,7 @@ program default_poison(params)
 
 		SendSysMessageEx(who, "Voce esta queimando.", SSM_FAIL);
 		ApplyRawDamage(who, dmg);
-		PlayObjectCenteredEffect(who, GFX_EXPLODE_1, 7, 16);
+		PlayObjectCenteredEffect(who, FX_EXPLODE_1, 7, 16);
 		sleep(time);
 	endwhile
 

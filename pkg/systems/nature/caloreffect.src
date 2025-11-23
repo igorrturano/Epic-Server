@@ -3,7 +3,7 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";

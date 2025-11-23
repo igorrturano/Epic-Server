@@ -6,7 +6,7 @@ use util;
 
 include "include/client";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicConstants";
@@ -35,13 +35,13 @@ program trapScript(params)
 										  LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
 	DanificaObjetosProximos(mobile, object.x, object.y, object.z, object.realm, struct{ dano := dmgfinal,
 																						desc := "Armadilha Explosão." },
-							range, GFX_EXPLODE_3, object.serial);
+							range, FX_EXPLODE_3, object.serial);
 
 	PlaySoundEffect(object, 0x208);
 	foreach mobile in mobiles
 		if (!mobile.npctemplate)
 			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha explosiva.", SSM_FAIL);
-			PlayObjectCenteredEffect(mobile, GFX_EXPLODE_3, 10, 10);
+			PlayObjectCenteredEffect(mobile, FX_EXPLODE_3, 10, 10);
 
 			if (CheckResist(mobile, REFLEXOS, RESIST_MEDIUM, -2 * dmg))
 				if (temHabilidade(mobile, "Desbravador Nato"))
