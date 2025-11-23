@@ -2626,7 +2626,7 @@ function CreateItemInicial(who, objtype, qtd)
                                 );
 
     if(!item)
-        Print("Erro ao criar item incial {}".format(objtype));
-        Message("Erro ao criar item incial {}".format(objtype), SSM_FAIL).SendSys(who);
+        Print("Erro ao criar item incial {} [{}]".format(Hex(objtype), item.errortext));
+        Message("Erro ao criar item incial {}".format(Hex(objtype)), SSM_FAIL).SendSys(who);
     endif
 endfunction
