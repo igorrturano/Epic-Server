@@ -622,7 +622,7 @@ function TryToExecuteHab_KenNoTatsujin(byRef attackInfo)
 
 	Message($"{COMBAT_ABILITY::KEN_NO_TATSUJIN}").SendEmote(attackInfo.GetDefender().GetObjRef());
 	PlaySoundEffect(attackInfo.GetDefender().GetObjRef(), 0x51f);
-	attackInfo.GetDefender().GetObjRef().attack_once(attackInfo.GetAttacker().GetObjRef());
+	attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
 	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::SUCCESS}!");
 
 	return true;
@@ -655,17 +655,18 @@ function TryToExecuteHab_Trespassar(byRef attackInfo)
 		attackInfo.GetAttacker().GetObjRef().SetProp("#trespassando", 1);
 		var targ := list[RandomInt(list.size()) + 1];
 		if (GetVital(targ, HITS) > 0)
+			targ := MobileWrapper(targ);
 			Message("trespassar").SendEmote(attackInfo.GetAttacker().GetObjRef());
 			
 			if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::TRESPASSAR_CRITICO))
 				attackInfo.GetAttacker().GetObjRef().SetProp("#nextcritical", 1);
 			endif
 			
-			attackInfo.GetAttacker().GetObjRef().attack_once(targ);
-			attackInfo.GetAttacker().GetObjRef().EraseProp("#nextcritical");
+			attackInfo.GetAttacker().Attack(targ);
+			attackInfo.GetAttacker().EraseProperty("#nextcritical");
 		endif
 
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#trespassando");
+		attackInfo.GetAttacker().EraseProperty("#trespassando");
 		
 		return true;
 	endif
@@ -875,10 +876,10 @@ endfunction
 
 function TryToExecuteHab_FerocidadeEnsanguentada(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "FerocidadeEnsanguentada"))
-		if (attackInfo.GetDefender().GetObjRef().GetProp("#contraatacando") == error)
-			attackInfo.GetDefender().GetObjRef().SetProp("#contraatacando", 1);
-			attackInfo.GetDefender().GetObjRef().attack_once(attackInfo.GetAttacker().GetObjRef());
-			attackInfo.GetDefender().GetObjRef().EraseProp("#contraatacando");
+		if (attackInfo.GetDefender().GetProperty("#contraatacando") == error)
+			attackInfo.GetDefender().SetProperty("#contraatacando", 1);
+			attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
+			attackInfo.GetDefender().EraseProperty("#contraatacando");
 
 			Message("contra ataque").SendEmote(attackInfo.GetDefender().GetObjRef());
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FEROCIDADE_ENSANGUENTADA}]: {HAB_STATUS::SUCCESS}!");

@@ -267,6 +267,8 @@ function CalculateAttackerCriticalHit(byRef attackInfo)
 		ApplyCriticalDamage(attackInfo);
 	endif
 
+	attackInfo.GetAttacker().EraseProperty("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque
+
 	return true;
 endfunction
 
@@ -274,26 +276,22 @@ function CalculateCriticalChance(byRef attackInfo)
 	var chance := 0;
 	var skillUsedForCritical := TACTICS;
 
-	if (attackInfo.GetAttacker().GetProp("#nextcritical"))
-		attackInfo.GetAttacker().EraseProp("#nextcritical");
+	if (attackInfo.GetAttacker().GetProperty("#nextcritical"))
+		attackInfo.GetAttacker().EraseProperty("#nextcritical");
 		return 100;
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
-		Message("Seu critico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Seu crítico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
-	// TODO: Melhorar esse código para encapsular em gets nos wrappers
 	chance := CInt(
-		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	 // Crítico base da arma
-		CInt(attackInfo.GetAttacker().GetProp("CriticalChance")) +					 // Crítico extra do Char
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) +		 // Crítico extra da Skill
-		CInt(attackInfo.GetAttacker().GetProp("#CriticalChance"))					 // Crítico extra de Habilidade especial do personagem
+		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
+		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)			// Crítico extra da Skill
 	);
-
-	attackInfo.GetAttacker().EraseProp("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
 		chance := chance * 2.0;
@@ -302,13 +300,13 @@ function CalculateCriticalChance(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
 		Message("Seu alvo desviou do crítico!", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Você desviou do crítico e usará isso contra seu oponente!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-		attackInfo.GetDefender().SetProp("#nextcritical", true);
+		attackInfo.GetDefender().SetProperty("#nextcritical", true);
 		return 0;
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::OPORTUNIDADE_CRITICA))
 		Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
-		attackInfo.GetAttacker().GetObjRef().attack_once(attackInfo.GetDefender().GetObjRef());
+		attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
 	endif
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||

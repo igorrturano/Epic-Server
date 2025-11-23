@@ -114,7 +114,7 @@ program runegem(who, rune)
 		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x6DF1, 255, 15, 0, 0);
 	endif
 
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 	PlaySoundEffect(who, getRuneSound(runeType));
 
 	// Destroy the carved rune

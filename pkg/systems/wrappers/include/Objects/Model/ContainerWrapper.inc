@@ -17,7 +17,7 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
 		this._category := this._template.Category;
 
-		if (object.isA(POLCLASS_CONTAINER))
+		if (this._objRef.isA(POLCLASS_CONTAINER))
 			this._weightMultiplier := this._objRef.held_weight_multiplier;
 			this._maxItems := this._objRef.max_items_mod;
 			this._maxSlots := this._objRef.max_slots_mod;

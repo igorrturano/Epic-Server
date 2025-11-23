@@ -14,7 +14,7 @@ program truesight(who)
 	var dano_mlore := CInt(AP_GetSkill(who, THEOLOGY) / 2);
 	var range := cint(AP_GetSkill(who, THEOLOGY) / 5);
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	PlaySoundEffect(who, 0x684);
 
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);

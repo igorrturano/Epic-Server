@@ -73,7 +73,7 @@ program SpellScript(params)
 			break;
 		endif
 
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		PlayObjectCenteredEffect(who, FX_RED_SPARKLES, 7, 7);
 		PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 		time := time + 1;
