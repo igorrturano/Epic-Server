@@ -423,7 +423,7 @@ function CriarTestemunha(magnifyingGlass, areax, areay, areaz, arearealm, skillC
 		elseif (raca_escolhida == "Colhesol")
 			npc.graphic := 1829;
 			name_raca := "Fada";
-			npc.title_race := "Polski";
+			npc.title_race := "Pequilho";
 		elseif (raca_escolhida == "Aigla")
 			npc.title_race := "Humano";
 			name_raca := "AiglaMale";

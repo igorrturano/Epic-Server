@@ -155,7 +155,7 @@
 //          ## Drows - trate eles com certo receio.
 //          ## Orcs - trate eles com esperança de ajuda, mas também preconceito pela aparência bestial.
 //          ## Bjorske - povos do norte - Pergunte ou mencione o Norte.
-//          ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
+//          ## Pequilho são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
 //          ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
 //          ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
 //          ## Povos do Leste - Pergunte sarcasticamente se veio a procura de algum dragão
@@ -188,7 +188,7 @@
 //          ## Drows - trate eles com certo receio.
 //          ## Orcs - trate eles com esperança de ajuda, mas também preconceito pela aparência bestial.
 //          ## Bjorske - povos do norte - Pergunte ou mencione o Norte.
-//          ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
+//          ## Pequilho são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
 //          ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
 //          ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
 //          ## Povos do Leste - Pergunte sarcasticamente se veio a procura de algum dragã
