@@ -732,9 +732,9 @@ enum class HUMAN_ANIM
 	STAND_2HAND			:= 8, 	// Stand 2 handed attack.
 	ATTACK_1HAND_WIDE	:= 13, 	// Attack 1 handed wide (sword/any).
 	ATTACK_1HAND_JAB	:= 10, 	// Attack 1 handed jab (fencing).
-	ATTACK_2HAND_DOWN	:= 11, 	// Attack 2 handed jab (mace).
-	ATTACK_1HAND_DOWN	:= 13, 	// Attack 1 handed down (mace).
-	ATTACK_2HAND_WIDE	:= 12, 	// Attack 2 handed wide. Mantive o 12
+	ATTACK_2HAND_DOWN	:= 12, 	// Attack 2 handed jab (mace).
+	ATTACK_1HAND_DOWN	:= 11, 	// Attack 1 handed down (mace).
+	ATTACK_2HAND_WIDE	:= 13, 	// Attack 2 handed wide.
 	ATTACK_2HAND_JAB	:= 14, 	// Attack 2 handed jab (spear).
 	WALK_WARMODE		:= 15, 	// Walk in warmode.
 	CAST_DIR			:= 16, 	// Spellcasting direction.

@@ -27,7 +27,7 @@ program vacuodemana(params)
 	if (!shaman_souls)
 		var shaman_souls := 0;
 	else
-		PerformAction(attacker, ANIM_CAST_DIR);
+		PerformAction(attacker, HUMAN_ANIM::CAST_DIR);
 		TS_StartTimer(defender, "paralysis", duration);
 		SetCooldown(defender, "horrify", shaman_souls + duration);
 		PlaySoundEffect(defender, 0x654);

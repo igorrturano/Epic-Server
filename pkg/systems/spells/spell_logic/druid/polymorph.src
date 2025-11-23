@@ -108,7 +108,7 @@ function Transforma(who, animal, snd, graphic, namepoly)
 		UnequipAll(who);
 	endif
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
 	var npc := CreateNpcFromTemplate(animal, who.x, who.y, who.z, 0, who.realm);
 	who.frozen := 1;

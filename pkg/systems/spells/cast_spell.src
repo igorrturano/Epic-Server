@@ -355,9 +355,9 @@ endfunction
 
 function performCastingAnimation(mobile, range)
 	case (range)
-		"Distancia": PerformAction(mobile, ANIM_CAST_DIR); break;
-		"Area":      PerformAction(mobile, ANIM_CAST_AREA); break;
-		default:     PerformAction(mobile, ANIM_CAST_DIR);
+		"Distancia": PerformAction(mobile, HUMAN_ANIM::CAST_DIR); break;
+		"Area":      PerformAction(mobile, HUMAN_ANIM::CAST_AREA); break;
+		default:     PerformAction(mobile, HUMAN_ANIM::CAST_DIR);
 	endcase
 endfunction
 

@@ -67,7 +67,7 @@ program trapScript(params)
 				endif
 			endif
 			mobile.hidden := 0;
-			PerformAction(mobile, ANIM_HIT);
+			PerformAction(mobile, HUMAN_ANIM::HIT);
 		endif
 	endforeach
 	return 1;
