@@ -66,7 +66,7 @@ function GetAttackerFX(byRef attackInfo)
 		attackerFX.critical := array{4, 5, 6};
 	else
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
-			attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_WIDE, HUMAN_ANIM::ATTACK_1HAND_JAB, HUMAN_ANIM::ATTACK_1HAND_DOWN};
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH, HUMAN_ANIM::ATTACK_1HAND_PIERCING, HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_PUNCH};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == BOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
@@ -77,25 +77,25 @@ function GetAttackerFX(byRef attackInfo)
 		else
 			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_WIDE};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_WIDE};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_JAB};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_JAB};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_DOWN};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_DOWN};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 				endif
 			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(ONEHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_WIDE};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_WIDE};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_JAB};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_JAB};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
 				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
-					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_DOWN};
-					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_DOWN};
+					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
+					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 				endif
 			endif
 		endif
