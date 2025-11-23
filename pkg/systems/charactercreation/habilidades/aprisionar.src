@@ -33,7 +33,7 @@ program HitScript(who)
 		return 0;
 	endif
 
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 	sleep(2);
 
 	var hell_gate := 0x6D1D;

@@ -52,13 +52,13 @@ program SpellStarter(params)
 			case (spell_elem.Target)
 				"none":
 				"direct":
-					PerformAction(mobile, ANIM_CAST_DIR);
+					PerformAction(mobile, HUMAN_ANIM::CAST_DIR);
 					break;
 				"area":
 				"summon":
-					PerformAction(mobile, ANIM_CAST_AREA);
+					PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
 					break;
-				default: PerformAction(mobile, ANIM_CAST_DIR);
+				default: PerformAction(mobile, HUMAN_ANIM::CAST_DIR);
 			endcase
 
 			SetObjProperty(mobile, "#Casting", 1);

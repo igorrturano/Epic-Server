@@ -9,7 +9,7 @@ program habilidade(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var religiao := chardata.religion;
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 5);
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 
 	case (religiao)
 		ELUITHORTH:

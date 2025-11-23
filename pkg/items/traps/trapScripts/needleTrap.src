@@ -54,7 +54,7 @@ program trapScript(params)
 				endif
 			endif
 
-			PerformAction(mobile, ANIM_HIT);
+			PerformAction(mobile, HUMAN_ANIM::HIT);
 			DamageFLS(mobile, dmgfinal);
 			mobile.hidden := 0;
 		endif

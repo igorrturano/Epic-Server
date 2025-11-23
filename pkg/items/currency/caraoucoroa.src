@@ -34,7 +34,7 @@ program cara_ou_coroa(who, item)
 		coin(who); // Random normal
 	endif
 
-	PerformAction(who, ANIM_ATTACK_1HAND_DOWN);
+	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_DOWN);
 	PlaySoundEffect(who, SOUND_EFFECT_JOGAR);
 
 	return 1;

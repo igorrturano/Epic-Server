@@ -84,7 +84,7 @@ program SpellScript(params)
 
 		PlayMovingEffect(targ, who, 3982, 255, 1);
 		time := time + 1;
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		sleep(1);
 	endwhile
 
