@@ -121,7 +121,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[BIGORNA].height, 
 								estacao[BIGORNA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
-				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_DOWN ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_BLUNT ); 
 				PlaySoundEffect(quem, SFX_2B);
 				
 				if(contadorInterno >= LIMITE_MARTELADAS)
@@ -155,7 +155,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[FONTE_AGUA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 				endif
-				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_JAB ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_PIERCING ); 
 				PlaySoundEffect(quem, SFX_27);
 				PlayObjectCenteredEffectEx(estacao[FONTE_AGUA],FX_SMOKE,1,12);
 				produto.color := 1175;

@@ -344,7 +344,7 @@ function FishFight(who, fishingpole, pretfish, targetsquare, molinete)
 		endif
 		if (acao == 2)
 			PrintTextAbove(who, "*soltando a linha*");
-			PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_JAB);
+			PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_PIERCING);
 			tensao := Cint(tensao - (GetAttribute(who, DEXTERITY) / 10) - (AP_GetSkill(who, SURVIVAL) / 2));
 			distancia := distancia + 1;
 			if (tensao <= 0)
