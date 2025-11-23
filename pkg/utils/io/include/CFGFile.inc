@@ -93,11 +93,12 @@ class CFGFile(IOFile)
 			if (isDictionary)
 				this._key.value := GetConfigStringDictionary(this._element.value, this._key.name);
 			else
-				if (this._key.value.size() > 1)
-					this._key.value := GetConfigStringArray(this._element.value, this._key.name);
-				else
-					this._key.value := GetConfigString(this._element.value, this._key.name);
-				endif
+				this._key.value := GetConfigStringArray(this._element.value, this._key.name);
+				// if (this._key.value.size() > 1)
+				// 	this._key.value := GetConfigStringArray(this._element.value, this._key.name);
+				// else
+				// 	this._key.value := GetConfigString(this._element.value, this._key.name);
+				// endif
 			endif
 		elseif (TypeOf(this._key.name) == "Integer")
 		else
