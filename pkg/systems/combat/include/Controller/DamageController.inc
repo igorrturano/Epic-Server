@@ -280,17 +280,15 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
-		Message("Seu critico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Seu crítico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
-	// TODO: Melhorar esse código para encapsular em gets nos wrappers
 	chance := CInt(
-		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	 // Crítico base da arma
-		CInt(attackInfo.GetAttacker().GetProp("CriticalChance")) +					 // Crítico extra do Char
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) +		 // Crítico extra da Skill
-		CInt(attackInfo.GetAttacker().GetProp("#CriticalChance"))					 // Crítico extra de Habilidade especial do personagem
+		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
+		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)			// Crítico extra da Skill
 	);
 
 	attackInfo.GetAttacker().EraseProp("#CriticalChance"); // Limpa a CProp de bonus critico para o próximo ataque

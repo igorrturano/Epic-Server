@@ -245,6 +245,20 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
+	/**
+	 * Obtém o gênero do mobile (jogador ou NPC).
+	 * 
+	 * Este método verifica primeiro se existe uma referência de objeto válida.
+	 * Caso não exista, tenta obter o gênero através do template.
+	 * Se nenhum dos dois existir, retorna um erro.
+	 * 
+	 * @param this Instância do MobileWrapper
+	 * @return MOBILE_GENDER Retorna uma das seguintes constantes:
+	 *         - MOBILE_GENDER::MALE (0) para masculino
+	 *         - MOBILE_GENDER::FEMALE (1) para feminino
+	 *         - MOBILE_GENDER::UNDEFINED para valores não reconhecidos
+	 * @throws error Se não houver nem referência de objeto nem template válido
+	 */
 	function GetGender(this)
 		if (this._objRef is @Exception)
 			if (this._template is @Exception)
@@ -278,7 +292,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		return CInt(this._objRef.GetProp("CriticalChance"));
+		return CInt(this.GetProperty("CriticalChance"));
 	endfunction
 
 	function GetCriticalChanceMod(this)
@@ -286,7 +300,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		return CInt(this._objRef.GetProp("#CriticalChance"));
+		return CInt(this.GetProperty("#CriticalChance"));
 	endfunction
 
 	function GetTemplateName(this)
