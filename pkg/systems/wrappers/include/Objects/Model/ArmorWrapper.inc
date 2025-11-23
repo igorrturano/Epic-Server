@@ -139,6 +139,10 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this._shieldAttributes;
 	endfunction
 
+	function GetSTRRequired(this)
+		return this._strRequired;
+	endfunction
+
 	/**
 	 * Retorna as modificações dos atributos do escudo
 	 *
