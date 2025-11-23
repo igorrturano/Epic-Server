@@ -1,7 +1,7 @@
 include ":message:model/Message";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
-include ":charsys:ViewModel/MobileWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program unequipitem(params)
 	var who := params[1];
@@ -9,9 +9,9 @@ program unequipitem(params)
 
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
-		equip := EquipWrapperArmor(item);
+		equip := ArmorWrapper(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
-		equip := EquipWrapperWeapon(item);
+		equip := WeaponWrapper(item);
 	endif
 
 	who := MobileWrapper(who);

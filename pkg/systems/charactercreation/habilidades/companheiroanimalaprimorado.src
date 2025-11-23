@@ -22,7 +22,7 @@ program pet(who)
 	if (petAprimorado != error)
 		var yes := YesNo(who, "Voce ja tem um companheiro animal aprimorado, deseja liberta-lo?");
 		if (yes)
-			PlayMovingEffectXYZEx(pet.x, pet.y, pet.z, pet.x, pet.y, pet.z + 60, pet.realm, GFX_LARGE_FIREBALL,
+			PlayMovingEffectXYZEx(pet.x, pet.y, pet.z, pet.x, pet.y, pet.z + 60, pet.realm, FX_LARGE_FIREBALL,
 								   1, 10, 2320);
 
 			MoveObjectToLocation(pet, 10, 10, 10, pet.realm, MOVEOBJECT_FORCELOCATION);
@@ -55,7 +55,7 @@ program pet(who)
 				z := 100;
 			endif
 
-			PlayMovingEffectXYZEx(targ.x, targ.y, z, targ.x, targ.y, targ.z, targ.realm, GFX_LARGE_FIREBALL,
+			PlayMovingEffectXYZEx(targ.x, targ.y, z, targ.x, targ.y, targ.z, targ.realm, FX_LARGE_FIREBALL,
 								   1, 10, 2320);
 			sleep(2);
 			var npc := CreateNpcFromTemplate(pettemplate, targ.x, targ.y, targ.z, 0, targ.realm);

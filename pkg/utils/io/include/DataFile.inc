@@ -92,6 +92,10 @@ class DataFile(IOFile)
 		return DFPurgeFile(this._fileName);
 	endfunction
 
+	function ToString(this)
+		return $"DataFile: Package: {this._packageName}, File: {this._fileName}, FullPath: {this._fullPath}, Element: {this._element.name}, Property: {this._property.name}";
+	endfunction
+
 	// Private Functions
 	function _LoadFile(this, createFile := false)
 		this._file := DFOpenDataFile(this._fullPath, createFile);

@@ -119,7 +119,14 @@ function CS_GetArmorZone(equip)
 	return zones;
 endfunction
 
-function GetArmorToHit(defender)
-	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
-	return armor[RandomIntMinMax(1, Len(armor))];
+function CS_GetArmorZones()
+	var cfg_file := ReadConfigFile("::armrzone");
+	var zones := array{};
+	
+	foreach zone_name in (GetConfigStringKeys(cfg_file))
+		zones.append(zone_name);
+		SleepMS(2);
+	endforeach
+	
+	return zones;
 endfunction

@@ -7,7 +7,7 @@ include ":crafting:include/craftingSkill";
 include ":crafting:include/craftingUtil";
 include ":gumps:include/gumps";
 include ":gumps:include/gumps_ex";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":PacketConfig:settings";
 include "include/say";
 include "include/objtype";

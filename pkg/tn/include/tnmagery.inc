@@ -4,7 +4,7 @@ use math;
 include "include/client";
 include "include/sounds";
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";
 include "spellSounds";
 
@@ -344,7 +344,7 @@ function EncantoCurar(mobile, alvos, spellinfo)
 					AP_SetVital(mob, STAMINA, dmg2);
 				endif
 			endforeach
-			PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+			PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 			PlaySoundEffect(mob, SFX_HEAL);
 		endforeach
 	else
@@ -382,16 +382,16 @@ function EncantoDestruir(mobile, alvos, spellinfo)
 				endif
 			endforeach
 			if (spellinfo.dmgtype == "Fogo")
-				PlayObjectCenteredEffect(mob, GFX_EXPLODE_1, 7, 16);
+				PlayObjectCenteredEffect(mob, FX_EXPLODE_1, 7, 16);
 				PlaySoundEffect(mob, SFX_EXPLOSION_11);
 			elseif ( spellinfo.dmgtype == "Gelo")
-				PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+				PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_GROUND, 7, 16);
 				PlaySoundEffect(mob, SFX_GLASS_BREAK_3);
 			elseif ( spellinfo.dmgtype == "Relampago")
-				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x-1, mob.y, mob.z+15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x+1, mob.y, mob.z+15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x, mob.y+1, mob.z+15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x, mob.y-1, mob.z+15, GFX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x-1, mob.y, mob.z+15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x+1, mob.y, mob.z+15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x, mob.y+1, mob.z+15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(mob.x, mob.y, mob.z+15, mob.x, mob.y-1, mob.z+15, FX_ENERGY, 5, 25);
 				PlaySoundEffect(mob, SFX_LIGHTNING);
 			endif
 		endforeach
@@ -428,7 +428,7 @@ function EncantoFortalecer(mobile, byref alvos, byref spellinfo)
 				endif
 			endforeach
 			PlaySoundEffect(mob, SFX_SPELL_BLESS);
-			PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLES, 7, 7);	
+			PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLES, 7, 7);	
 		endforeach
       
 	else
@@ -438,7 +438,7 @@ function EncantoFortalecer(mobile, byref alvos, byref spellinfo)
 				if (mob.isa(POLCLASS_WEAPON ))
 					SetObjProperty(mob, "armaafiada", (CINT(AP_GetSkill(mobile, MAGERY)/10)+1) );
 					PlaySoundEffect(mob, SFX_SPELL_BLESS);
-					PlayStationaryEffect(mob.x, mob.y, mob.z, GFX_BLUE_SPARKLES, 7, 7);	
+					PlayStationaryEffect(mob.x, mob.y, mob.z, FX_BLUE_SPARKLES, 7, 7);	
 				endif
 			elseif (spellinfo.inanimado == "Curativos")
 				if (mob.objtype  == 0xe21 )
@@ -490,7 +490,7 @@ function EncantoEnfraquecer(mobile, byref alvos, byref spellinfo)
 			endif
 		endforeach
 		PlaySoundEffect(mob, SFX_WEAKEN);
-		PlayObjectCenteredEffect(mob, GFX_RED_SPARKLES, 7, 7);	
+		PlayObjectCenteredEffect(mob, FX_RED_SPARKLES, 7, 7);	
 	endforeach
     
 endfunction

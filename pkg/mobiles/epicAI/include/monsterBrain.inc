@@ -1,7 +1,7 @@
 use npc;
 include "include/sysEvent";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
@@ -23,12 +23,14 @@ function MonsterBrain()
 
     while (me)
         ev := os::wait_for_event(0);
-        
+
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
+            return;
+        endif
+
+        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
+        if (CheckDarknessCreatureSurvival(me))
             return;
         endif
            

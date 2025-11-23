@@ -33,7 +33,7 @@ program TimedScript_Clumsy(params)
 
 	SetObjProperty(mobile, "#StrengthMod", points);
 	AP_ModifyStatMod(mobile, STRENGTH, points);
-	PlayStationaryEffect(mobile.x, mobile.y, mobile.z+10, EPIC_FX_BLESS_SPELL, 10, 20, 0, mobile.realm);
+	PlayStationaryEffect(mobile.x, mobile.y, mobile.z+10, FX_BLESS_SPELL, 10, 20, 0, mobile.realm);
 
 	return 1;
 endprogram

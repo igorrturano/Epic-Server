@@ -3,7 +3,7 @@ use uo;
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 
 program manobra(params)
 	var attacker := params[1];

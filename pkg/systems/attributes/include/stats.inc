@@ -11,6 +11,8 @@
 ===============================================================*/
 
 use uo;
+use attributes;
+use vitals;
 
 /*
  * AP_GetStat(mobile, stat_name)

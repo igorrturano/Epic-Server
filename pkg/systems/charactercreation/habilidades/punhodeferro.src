@@ -7,7 +7,9 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program SpellScript(params)
 	var attacker := params[1];
@@ -21,8 +23,8 @@ program SpellScript(params)
 	//    return;
 	// endif
 
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	PrintTextAbove(attacker, "*punho de ferro*");
 	TS_StartTimer(defender, "sleep", tactics_bonus, 1, attacker, 0);
