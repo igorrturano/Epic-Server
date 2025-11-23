@@ -720,41 +720,59 @@ const SFX_CLOSE_METAL_DOOR          :=  SFX_F4;
 // Animations/Actions //
 ////////////////////////
 // * Human animations (all humans have these) (this is not complete, will update later)
-const ANIM_WALK_UNARMED			:= 0x0000; // Walk unarmed.
-const ANIM_WALK_ARMED			:= 0x0001; // Walk armed.
-const ANIM_RUN_UNARMED			:= 0x0002; // Run unarmed.
-const ANIM_RUN_ARMED			:= 0x0003; // Run armed.
-const ANIM_STAND				:= 0x0004; // Stand.
-const ANIM_FIDGET_1				:= 0x0005; // Twist a little (look around?).
-const ANIM_FIDGET_2				:= 0x0006; // Look down.
-const ANIM_STAND_1HAND			:= 0x0007; // Stand 1 handed attack.
-const ANIM_STAND_2HAND			:= 0x0008; // Stand 2 handed attack.
-const ANIM_ATTACK_1HAND_WIDE	:= 0x000C; // Attack 1 handed wide (sword/any). Troquei o 9 pelo 12
-const ANIM_ATTACK_1HAND_JAB		:= 0x000A; // Attack 1 handed jab (fencing).
-const ANIM_ATTACK_2HAND_DOWN	:= 0x000B; // Attack 2 handed jab (mace).
-const ANIM_ATTACK_1HAND_DOWN	:= 0x000D; // Attack 1 handed down (mace).
-const ANIM_ATTACK_2HAND_WIDE	:= 0x000C; // Attack 2 handed wide. Mantive o 12
-const ANIM_ATTACK_2HAND_JAB		:= 0x000E; // Attack 2 handed jab (spear).
-const ANIM_WALK_WARMODE			:= 0x000F; // Walk in warmode.
-const ANIM_CAST_DIR				:= 0x0010; // Spellcasting direction.
-const ANIM_CAST_AREA			:= 0x0011; // Spellcasting area.
-const ANIM_ATTACK_BOW			:= 0x0012; // Attack bow.
-const ANIM_ATTACK_XBOW			:= 0x0013; // Attack xbow.
-const ANIM_HIT					:= 0x0014; // Get hit.
-const ANIM_DIE_BACK				:= 0x0015; // Die backward.
-const ANIM_DIE_FOR				:= 0x0016; // Die forward.
-const ANIM_HORSE_RIDE_SLOW		:= 0x0017; // Horseback: Ride - slow
-const ANIM_HORSE_RIDE_FAST		:= 0x0018; // Horseback: Ride - fast
-const ANIM_HORSE_SIT			:= 0x0019; // Horseback: Sit still
-const ANIM_HORSE_ATTACK_MELEE	:= 0x001A; // Horseback: Attack - 1-handed
-const ANIM_HORSE_ATTACK_BOW		:= 0x001B; // Horseback: Attack with a bow
-const ANIM_HORSE_ATTACK_XBOW	:= 0x001C; // Horseback: Attack with a crossbow
-const ANIM_HORSE_SLAP			:= 0x001D; // Horseback: Slap horse
-const ANIM_TWIST_DODGE			:= 0x001E; // Twist (dodge hit?)
-const ANIM_ATTACK_PUNCH			:= 0x001F; // Attack - punch
-const ANIM_BOW					:= 0x0020; // Bow.
-const ANIM_SALUTE				:= 0x0021; // Salute.
-const ANIM_EAT					:= 0x0022; // Eat.
+enum class HUMAN_ANIM
+	WALK_UNARMED		:= 0, 	// Walk unarmed.
+	WALK_ARMED			:= 1, 	// Walk armed.
+	RUN_UNARMED			:= 2, 	// Run unarmed.
+	RUN_ARMED			:= 3, 	// Run armed.
+	STAND				:= 4, 	// Stand.
+	FIDGET_1			:= 5, 	// Twist a little (look around?).
+	FIDGET_2			:= 6, 	// Look down.
+	STAND_1HAND			:= 7, 	// Stand 1 handed attack.
+	STAND_2HAND			:= 8, 	// Stand 2 handed attack.
+	ATTACK_1HAND_WIDE	:= 13, 	// Attack 1 handed wide (sword/any).
+	ATTACK_1HAND_JAB	:= 10, 	// Attack 1 handed jab (fencing).
+	ATTACK_2HAND_DOWN	:= 11, 	// Attack 2 handed jab (mace).
+	ATTACK_1HAND_DOWN	:= 13, 	// Attack 1 handed down (mace).
+	ATTACK_2HAND_WIDE	:= 12, 	// Attack 2 handed wide. Mantive o 12
+	ATTACK_2HAND_JAB	:= 14, 	// Attack 2 handed jab (spear).
+	WALK_WARMODE		:= 15, 	// Walk in warmode.
+	CAST_DIR			:= 16, 	// Spellcasting direction.
+	CAST_AREA			:= 17, 	// Spellcasting area.
+	ATTACK_BOW			:= 18, 	// Attack bow.
+	ATTACK_XBOW			:= 19, 	// Attack xbow.
+	HIT					:= 20, 	// Get hit.
+	DIE_BACK			:= 21, 	// Die backward.
+	DIE_FOR				:= 22, 	// Die forward.
+	HORSE_RIDE_SLOW		:= 23, 	// Horseback: Ride - slow
+	HORSE_RIDE_FAST		:= 24, 	// Horseback: Ride - fast
+	HORSE_SIT			:= 25, 	// Horseback: Sit still
+	HORSE_ATTACK_MELEE	:= 26, 	// Horseback: Attack - 1-handed
+	HORSE_ATTACK_BOW	:= 27, 	// Horseback: Attack with a bow
+	HORSE_ATTACK_XBOW	:= 28, 	// Horseback: Attack with a crossbow
+	HORSE_SLAP			:= 29, 	// Horseback: Slap horse
+	TWIST_DODGE			:= 30, 	// Twist (dodge hit?)
+	ATTACK_PUNCH		:= 31, 	// Attack - punch
+	BOW					:= 32, 	// Bow.
+	SALUTE				:= 33, 	// Salute.
+	EAT					:= 34  	// Eat.
+endenum
+
+enum class NPC_ANIM
+	WALK 		:= 0,
+	IDLE 		:= 1,
+	DIE1 		:= 2,
+	DIE2 		:= 3,
+	ATTACK1 	:= 4,
+	ATTACK2 	:= 5,
+	ATTACK3 	:= 6,
+	HIT 	 	:= 10,
+	PILLAGE 	:= 11,
+	BLOCK_RIGHT := 15,
+	BLOCK_LEFT  := 16,
+	IDLE2 		:= 17,
+	FIDGET 		:= 18
+endenum
 
 ////////////////////////////////
 // Graphicaleffects (itemIDs) //
