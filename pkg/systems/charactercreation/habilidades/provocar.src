@@ -18,7 +18,7 @@ program taunt(who)
 		1834: PlaySoundEffect(who, 0x44B);
 		1835: PlaySoundEffect(who, 0x339);
 	endcase
-	PerformAction(who, ANIM_HIT);
+	PerformAction(who, HUMAN_ANIM::HIT);
 	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
 	var taunt_duration := cint(AP_GetSkill(who, PARRY) / 2); // Duration based on skill
 	var i := 0;

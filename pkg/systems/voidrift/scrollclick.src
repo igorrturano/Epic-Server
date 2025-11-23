@@ -101,11 +101,11 @@ function ConjureRitual(who, portal_level, ritual_type)
     
     for i := 1 to total_actions
         if (ritual_type == "chaos")
-            PerformAction(who, ANIM_CAST_DIR);
+            PerformAction(who, HUMAN_ANIM::CAST_DIR);
             PlayObjectCenteredEffect(who, FX_ENERGY_BEAM_MAGIC, 0, 13);
             PlaySoundEffect(who, 0x1f1);
         else
-            PerformAction(who, ANIM_CAST_AREA);
+            PerformAction(who, HUMAN_ANIM::CAST_AREA);
             PlayObjectCenteredEffect(who, FX_ILUMINADO, 0, 15);
             PlaySoundEffect(who, 0x1EC);
         endif

@@ -2,28 +2,38 @@ use uo;
 // use math;
 use os;
 
-// include "include/say";
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
-// include ":message:model/Message";
 include ":message:model/TranslatableText";
-// include ":message:Translator";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");
 	return 1;
 endprogram
 
-const ITEM_ID := 3;
-const TEXT_TYPE := 9;
-const NAME_ID := 18; // posição do Name de quem fala
-const SYS_MSG := 0x06;
+enum class PACKET_POSITION
+	ITEM_ID := 3, // Quem enviou a mensagem
+	TEXT_TYPE := 9, // Tipo da mensagem
+	NAME_ID := 18, // Nome de quem fala
+endenum
 
-var msgTranslator := Translator();
+enum class MESSAGE_TYPE
+	NORMAL := 0x00,
+	BROADCAST := 0x01,
+	EMOTE := 0x02,
+	SYSTEM := 0x06, // SysMessage
+	MESSAGE_CORNER := 0x07, // Mensagem no canto da tela, sem aparecer em cima do char
+	WHISPER := 0x08, // Sussurro
+	YELL := 0x09, // Grita
+	SPELL := 0x0A, // PowerWords
+	GUILD := 0x0D,
+	ALLIANCE := 0x0E,
+	COMMAND_PROMPTS := 0x0F
+endenum
 
 exported function handleUCOutgoing(character, byref packet)
-	var type := packet.GetInt8(TEXT_TYPE);
-	var serial := packet.GetInt32(ITEM_ID);
+	var type := packet.GetInt8(PACKET_POSITION::TEXT_TYPE);
+	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
@@ -246,7 +256,6 @@ exported function handleUCOutgoing(character, byref packet)
 endfunction
 
 exported function handleUCOrequest(character, byref packet)
-
 	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
 	var length_of_text := (packet.GetInt16(1) - 49) / 2;

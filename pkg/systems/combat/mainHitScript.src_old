@@ -780,7 +780,7 @@
 // // 	endif
 
 // // 	// Exibe o efeito visual do bloqueio
-// // 	PerformAction(defender, ANIM_TWIST_DODGE);
+// // 	PerformAction(defender, HUMAN_ANIM::TWIST_DODGE);
 
 // // 	if (blocker)
 // // 		PerformAction(defender, 13);
