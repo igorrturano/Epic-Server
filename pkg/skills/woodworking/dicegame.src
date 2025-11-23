@@ -28,7 +28,7 @@ program diceroll(who, item)
 		coin(who); // Random normal
 	endif
 
-	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_DOWN);
+	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_BLUNT);
 	PlaySoundEffect(who, SOUND_EFFECT_JOGAR);
 
 	return 1;

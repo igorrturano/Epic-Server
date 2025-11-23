@@ -732,10 +732,10 @@ enum class HUMAN_ANIM
 	STAND_2HAND				:= 8, 	// Stand 2 handed attack.
 	ATTACK_1HAND_SLASH		:= 13, 	// Attack 1 handed wide (sword/any).
 	ATTACK_1HAND_PIERCING	:= 10, 	// Attack 1 handed jab (fencing).
-	ATTACK_1HAND_BLUNT		:= 11, 	// Attack 1 handed down (mace).
-	ATTACK_2HAND_SLASH		:= 13, 	// Attack 2 handed wide.
+	ATTACK_1HAND_BLUNT		:= 12, 	// Attack 1 handed down (mace).
+	ATTACK_2HAND_SLASH		:= 15, 	// Attack 2 handed wide.
 	ATTACK_2HAND_PIERCING	:= 14, 	// Attack 2 handed jab (spear).
-	ATTACK_2HAND_BLUNT		:= 12, 	// Attack 2 handed jab (mace).
+	ATTACK_2HAND_BLUNT		:= 11, 	// Attack 2 handed jab (mace).
 	WALK_WARMODE			:= 15, 	// Walk in warmode.
 	CAST_DIR				:= 16, 	// Spellcasting direction.
 	CAST_AREA				:= 17, 	// Spellcasting area.
