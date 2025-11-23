@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 
@@ -26,7 +26,7 @@ program SwarmDamageOverTime(params)
 
 	// Array de efeitos visuais de insetos variados
 	var insect_effects := array{
-		EPIC_FX_SWARM_3_MAGIC  // Nuvem/enxame
+		FX_SWARM_3_MAGIC  // Nuvem/enxame
 	};
 
 	// Array de sons de insetos

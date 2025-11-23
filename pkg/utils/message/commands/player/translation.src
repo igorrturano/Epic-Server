@@ -33,7 +33,7 @@ program cmd_translation(who)
 
 		var result := gump.Show();
 
-		if (result.GetControl() == "CLOSED")
+		if (result.GetControl() == EVENT_ACTION::CLOSED)
 			cont := false;
 		elseif (result.GetControl().Equals(button2))
 			who.SetProp("translation", 1);

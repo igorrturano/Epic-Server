@@ -101,12 +101,12 @@ function ConjureRitual(who, portal_level, ritual_type)
     
     for i := 1 to total_actions
         if (ritual_type == "chaos")
-            PerformAction(who, ANIM_CAST_DIR);
-            PlayObjectCenteredEffect(who, EPIC_FX_ENERGY_BEAM_MAGIC, 0, 13);
+            PerformAction(who, HUMAN_ANIM::CAST_DIR);
+            PlayObjectCenteredEffect(who, FX_ENERGY_BEAM_MAGIC, 0, 13);
             PlaySoundEffect(who, 0x1f1);
         else
-            PerformAction(who, ANIM_CAST_AREA);
-            PlayObjectCenteredEffect(who, EPIC_FX_ILUMINADO, 0, 15);
+            PerformAction(who, HUMAN_ANIM::CAST_AREA);
+            PlayObjectCenteredEffect(who, FX_ILUMINADO, 0, 15);
             PlaySoundEffect(who, 0x1EC);
         endif
         // Verificar se jogador se moveu
@@ -188,7 +188,7 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
     SetObjProperty(portal, "creatures", array{});
 
     // Efeito visual do portal
-    PlayObjectCenteredEffect(portal, EPIC_FX_PORTAL_SUGADOR, 0, 30);
+    PlayObjectCenteredEffect(portal, FX_PORTAL_SUGADOR, 0, 30);
     PlaySoundEffect(who, 0x20D);
     Message("O portal do vazio foi aberto! " + spawn_amount + " criaturas serao invocadas.").SendSys(who);
     // ControlScript inicia automaticamente via itemdesc.cfg
@@ -216,7 +216,7 @@ function ExecutePurgeRitual(who, scroll, scroll_level)
     ConjureRitual(who, scroll_level, "purge");
 
     // Efeito visual de purificação
-    PlayObjectCenteredEffect(portal, EPIC_FX_DIVINE_BLESS, 0, 20);
+    PlayObjectCenteredEffect(portal, FX_DIVINE_BLESS, 0, 20);
     PlaySoundEffect(who, 0x213);  // Som de destruição do portal
     sleepms(1100);
 

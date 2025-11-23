@@ -7,7 +7,7 @@ include ":attributes:attributes";
 include ":combat:weaponInfo";
 include ":training:training";
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 // Função para verificar se um objtype de projétil é uma flecha
 function IsArrowProjectile(projectile_objtype)
@@ -173,7 +173,7 @@ program ArcheryButte(who, butte)
 		PlaySoundEffect(who, hit_sound);
 
 		if (closest.IsA(POLCLASS_MOBILE))
-			PerformAction(closest, ANIM_HIT);
+			PerformAction(closest, HUMAN_ANIM::HIT);
 			var projectile_damage := CS_GetWeaponInfo(weapon, "Damage");
 			ApplyDamageEX(closest, RandomDiceRoll(projectile_damage), DMG_PHYSICAL);
 			if (butte.graphic != original_objtype) // Reseta o alvo de arqueria se um mob foi atingido

@@ -51,7 +51,7 @@ class RadioButton(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFRadioButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
+		GFRadioButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction
 endclass

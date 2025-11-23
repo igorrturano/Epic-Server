@@ -2,9 +2,9 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":fls_magery:basicMagery";
 include "include/client";
@@ -26,7 +26,7 @@ program doubleattack(who)
 	who.frozen := 1;
 	var i := 1;
 	while (i <= 3)
-		PerformAction(who, ANIM_CAST_DIR);
+		PerformAction(who, HUMAN_ANIM::CAST_DIR);
 		PrintTextAbove(who, "*Conjurando*");
 		if (i == 1)
 			sound := 583;

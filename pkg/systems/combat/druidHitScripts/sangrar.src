@@ -20,7 +20,7 @@ program taunt(who)
 			who.hidden := 0;
 			PrintTextAbove(who, "*dá o bote*");
 			PlaySoundEffect(who, 0x62);
-			PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
+			PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_SLASH);
 			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 3);
 		else
 			PrintTextAbove(who, "*faz um corte profundo*");

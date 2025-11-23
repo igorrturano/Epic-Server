@@ -4,7 +4,7 @@ use util;
 use vitals;
 use polsys;
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
@@ -115,7 +115,7 @@ endfunction
 function HalluEffect(who, potion, lvl)
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 6, potion.realm))
 		if (CheckLineOfSight(potion, critter))
-			PlayStationaryEffect(critter.x, critter.y, critter.z, GFX_POISON_GAS, 10, 10, 0, critter.realm);
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
 			TS_StartTimer(critter, "hallucination", 120, lvl);
 		endif
 	endforeach
@@ -125,7 +125,7 @@ endfunction
 function PoisonEffect(who, potion, lvl)
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 3, potion.realm))
 		if (CheckLineOfSight(potion, critter))
-			PlayStationaryEffect(critter.x, critter.y, critter.z, GFX_POISON_GAS, 10, 10, 0, critter.realm);
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
 			if (CheckResist(critter, FORTITUDE, RESIST_EASY, -2 * lvl))
 				SendSysMessageEx(critter, "Voce resistiu ao veneno.", SSM_INFO);
 			else
@@ -200,12 +200,12 @@ function ExplosionEffect(who, potion, dmg)
 	var color := 0;
 	var dmg_type := DMG_FIRE;
 	if (GetObjProperty(who, "Infusão Ígnea"))
-		color := FOGO;
+		color := COLOR_ELEMENTAL_FIRE;
 	elseif (GetObjProperty(who, "Infusão Gélida"))
-		color := GELO;
+		color := COLOR_ELEMENTAL_ICE;
 		dmg_type := DMG_COLD;
 	elseif (GetObjProperty(who, "Infusão Elétrica"))
-		color := RAIO;
+		color := COLOR_ELEMENTAL_ENERGY;
 		dmg_type := DMG_ENERGY;
 	endif
 	// PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)

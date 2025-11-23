@@ -9,6 +9,7 @@ include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
+include ":io:CFGFile";
 
 const MAX_Z_DIFF := 60; // Increased to handle watchtowers, wooden walls, and multi-floor buildings
 
@@ -2345,7 +2346,8 @@ function GetWeaponRangeInfo()
         return struct{ "min_range" := 1, "max_range" := 1 };
     endif
 
-    var wpn_elem := GetWpnCfgInfo(me, weapon);
+    // var wpn_elem := GetWpnCfgInfo(me, weapon);
+	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue(); 
     var min_range := 1;
     var max_range := 1;
     
@@ -3038,4 +3040,45 @@ function CleanupDoppelgangerTransformation(mobile)
     RestoreDoppelgangerAppearance(mobile);
     CleanupDoppelgangerEquipment(mobile);
     return 1;
+endfunction
+
+/*
+ * ShouldGoDormant(last_activity_time)
+ *
+ * Purpose: Check if NPC should go dormant due to inactivity
+ * Returns 1 if dormant (caller should return), 0 otherwise
+ */
+function ShouldGoDormant(last_activity_time)
+    var current_time := polcore().systime;
+    var time_since_activity := CInt(current_time - last_activity_time);
+
+    if (time_since_activity >= 120)  // 2 minutes
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+/*
+ * CheckDarknessCreatureSurvival(mobile)
+ *
+ * Purpose: Kill darkness creatures (undead/Mobnoturno) if not in darkness
+ * Called every AI loop iteration - O(1) per creature
+ * Returns 1 if creature was killed (caller should return), 0 otherwise
+ */
+function CheckDarknessCreatureSurvival(mobile)
+    var npc_elem := NPC_GetNPCConfig(mobile);
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+
+    if (!isDarknessCreature)
+        return 0;
+    endif
+
+    if (!InDarkness(mobile))
+        SetObjProperty(mobile, "nocorpse", 1);
+        ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+        return 1;
+    endif
+
+    return 0;
 endfunction

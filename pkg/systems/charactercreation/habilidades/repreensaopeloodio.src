@@ -6,10 +6,10 @@ use uo;
 use os;
 
 include ":attributes:attributes";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
-include ":combat:damage";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program aura_of_hate(params)
 	var attacker := params[1];
@@ -64,7 +64,7 @@ program aura_of_hate(params)
 	SetObjProperty(defender, "#FeebleMindMod", points);
 	AP_ModifyStatMod(defender, INTELLIGENCE, points);
 
-	PlayAttackAnimation(attacker);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 	if (!GetObjProperty(attacker, "#magiasilenciosa"))
 		PlayObjectCenteredEffectEx(defender, 0x3789, 7, 32, 2485, 1);
 		PlaySoundEffect(defender, 0x58E);

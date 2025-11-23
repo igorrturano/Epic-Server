@@ -62,7 +62,7 @@ class TextBox(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		this._value := GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
+		this._value := GFEAddTextBox(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset() - 6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
 		Super::SelfCreate(this, gump);
 	endfunction
 
