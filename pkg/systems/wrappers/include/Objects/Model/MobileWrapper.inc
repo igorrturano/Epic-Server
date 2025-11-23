@@ -710,6 +710,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return HealMana(this._objRef, CDbl(value));
 	endfunction
 
+	/**
+	 * Executa um ataque contra um alvo móvel.
+	 * 
+	 * @param targetWrapper O wrapper do objeto alvo que será atacado (deve ser do tipo MobileWrapper)
+	 * 
+	 * @return Retorna o resultado do ataque executado pelo objeto de referência, ou uma Exception se:
+	 *         - O objeto de referência interno for uma Exception
+	 *         - O parâmetro targetWrapper não for um objeto do tipo MobileWrapper (retorna InvalidFormatException)
+	 */
+	function Attack(this, byRef targetWrapper)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (!(targetWrapper is @MobileWrapper))
+			return InvalidFormatException("The param must be a MobileWrapper object!");
+		endif
+
+		return this._objRef.attack_once(targetWrapper.GetObjRef());
+	endfunction
+
 	function Dispose(this)
 		this._objRef := 0;
 		this._name := "";

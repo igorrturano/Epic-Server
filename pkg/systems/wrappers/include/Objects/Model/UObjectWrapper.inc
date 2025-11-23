@@ -29,20 +29,19 @@ class UObjectWrapper(IUObjectWrapper)
 			this._color := object.color;
 			this._weight := object.weight;
 		else
-			this._objType := object;
-			
-			// O resto só inicializa nas classes filhas, para poder verificar se é template ou erro
-
-			// var err := InvalidTemplateException("Template not loaded properly!");
-			// this._cfgFile := err;
-			// this._template := err;
-			// this._name := err;
-			// this._graphic := err;
-			// this._color := err;
-
-			// err := IsTemplateException();
-			// this._objRef := err;
-			// this._serial := err;
+			var objRefBySerial := SystemFindObjectBySerial(object);
+			if (objRefBySerial)
+				object := objRefBySerial;
+				this._objRef := object;
+				this._serial := object.serial;
+				this._objType := object.objtype;
+				this._name := object.name;
+				this._graphic := object.graphic;
+				this._color := object.color;
+				this._weight := object.weight;
+			else
+				this._objType := object;
+			endif
 		endif
 	endfunction
 
