@@ -54,7 +54,7 @@ function Hallucinate(who)
 		ELFO:
 			graphicarray := array{ 72, 87, 250, 271 }; // TERATHAN, OPHIDIAN, LOBISOMEM DE 3 CABEÇAS, SATIRO.
 			break;
-		POLSKI:
+		PEQUILHO:
 			graphicarray := array{ 38, 69, 76, 77 }; // DEMONIO DA SANGRIA, GAZER, TITAN, KRAKEN.
 			break;
 		default:

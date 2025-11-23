@@ -18,7 +18,7 @@ var MONTHS := array{
     struct{ "name" := "Adarae", "days" := 30}, // Mês dedicado à Adar Kor Doom, Gulthrak, orcs
     struct{ "name" := "Crassus", "days" := 31 }, // Mês dedicado ao primeiro imperador, Crassus
     struct{ "name" := "Demiurgus", "days" := 33 }, // Mês dedicado ao Deus da Criação aiglano, Demiurgus. O Mês com mais dias
-    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
+    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos pequilho e à colheita
     struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
     struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
 };

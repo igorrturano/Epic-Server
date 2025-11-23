@@ -37,6 +37,17 @@ exported function MegaCliloc(who, byref packet)
 	// Encontra o objeto que terá o tooltip preenchido
 	var item := SystemFindObjectBySerial(packet.GetInt32(OFFSET_OBJECT_SERIAL));
 
+	// Items que não devem mostrar tooltip (portas secretas, etc)
+	// Configurados em config/secretDoors.cfg
+	// Usa FindConfigElem para lookup O(1) ao invés de iterar array
+	if (item)
+		var noTooltipCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+		if (noTooltipCfg && FindConfigElem(noTooltipCfg, item.objtype))
+			// Bloqueia o pacote de tooltip completamente
+			return 1;
+		endif
+	endif
+
 	if (item)
 		packet.SetSize(15); // primeira parte do packet eh tamanho 15
 
