@@ -221,12 +221,43 @@ function normalusage(who, item)
       lever_list.append(origin.serial);
    endif
 
-   if (opts.all_levers)
-      if (!CheckAllLevers(item, lever_list, opts)) 
+   // Handle sync_toggle mode - all levers act as one switch
+   if (opts.sync_toggle)
+      // Get the master lever to check current state
+      var master := item;
+      if (opts.is_linked)
+         master := SystemFindObjectBySerial(CInt(opts.is_linked));
+         opts := master.GetLeverOpts();
+      endif
+
+      var master_status := GetObjProperty(master, "status");
+
+      // Toggle ALL levers in the group to the opposite state
+      foreach lever_serial in lever_list
+         var lever_item := SystemFindObjectBySerial(lever_serial);
+         if (lever_item)
+            // Set all to same state based on master
+            if (!master_status || master_status == "off")
+               SetObjProperty(lever_item, "status", "on");
+            else
+               SetObjProperty(lever_item, "status", "off");
+            endif
+         endif
+         sleepms(2);
+      endforeach
+
+      // Change graphic of the activated lever
+      ChangeLeverStatus(item.serial);
+
+      // Use master's opts for effects
+      opts := master.GetLeverOpts();
+
+   elseif (opts.all_levers)
+      if (!CheckAllLevers(item, lever_list, opts))
          SendSysMessageEx(who, "Você não percebe nada de diferente", SSM_FAIL);
          if (RunTraps(item, who)) //se estiver errado, vai cair no outro runtraps
             SetObjProperty(item, "trapSpoted", 1);
-            PrintTextAbove(who, "*dispara armadilha*"); 
+            PrintTextAbove(who, "*dispara armadilha*");
          endif
          return;
       endif

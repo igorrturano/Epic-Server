@@ -72,6 +72,11 @@ function ConstructGump(item)
       y += 20;
       GFTextLine(gump, 45, y, _ifElse(opts.linked_to, 520, 500), "Linkar outras alavancas");
       GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 3);
+      if (opts.linked_to)
+         y += 20;
+         GFTextLine(gump, 45, y, _ifElse(opts.sync_toggle, 520, 500), "Sincronizar toggle (interruptores)");
+         GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 108);
+      endif
    endif
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.linked_to || opts.is_linked, 520, 500), "Unlink alavancas");
@@ -253,6 +258,7 @@ program lever(who, item)
 		 103: ConfigureRequiredItems(who, item);
 		 130: SetGlobalEventGump(who, item);
 		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 108: toggleSyncToggle(who, item);  // Toggle sync mode for linked levers
 		 105: 	  foreach key in (res.keys) sleepms(2);
    case (key)
       106: // Mover primeiro
@@ -637,6 +643,25 @@ function togglewalkon(who, item)
       SendSysMessageEx(who, "O item será ativado ao andar por cima. O graphic alterado para padrão passable, se quiser pode alterar por outro passable nas opções da alavanca", SSM_INFO);
       opts.walkon := 1;
 	  item.graphic := 0x0523;
+   endif
+   item.setLeverOpts(opts);
+endfunction
+
+function toggleSyncToggle(who, item)
+   var opts := item.GetLeverOpts();
+   if (opts.sync_toggle)
+      SendSysMessageEx(who, "Modo sincronizado desativado. As alavancas funcionarão de forma independente.", SSM_FAIL);
+      opts.-"sync_toggle";
+   else
+      SendSysMessageEx(who, "Modo sincronizado ativado. Qualquer alavanca pode ligar/desligar o mecanismo.", SSM_INFO);
+      opts.sync_toggle := 1;
+      // Disable all_levers when sync_toggle is enabled (they are mutually exclusive)
+      if (opts.all_levers)
+         opts.-"all_levers";
+         opts.-"all_levers_order";
+         EraseObjProperty(item, "leverorder");
+         SendSysMessageEx(who, "Nota: Modo 'todas as alavancas' foi desativado automaticamente.", SSM_INFO);
+      endif
    endif
    item.setLeverOpts(opts);
 endfunction
