@@ -77,7 +77,7 @@ exported function handleUCOutgoing(character, byref packet)
 					Object_Name := source.name;
 				endif
 			endif
-			packet.SetString(NAME_ID, Object_Name, 1);
+			packet.SetString(PACKET_POSITION::NAME_ID, Object_Name, 1);
 		endif
 	endif
 
@@ -256,8 +256,7 @@ exported function handleUCOutgoing(character, byref packet)
 endfunction
 
 exported function handleUCOrequest(character, byref packet)
-
-	var serial := packet.GetInt32(ITEM_ID);
+	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
