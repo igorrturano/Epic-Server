@@ -30,6 +30,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _minRange := 1;
 	var _maxRange := 1;
 	var _isThrowable := false;
+	var _epicMainDamage := "";
 
 	function WeaponWrapper(this, byRef item)
 		Super(item);
@@ -41,6 +42,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._speedTier := this._template.EpicSpeed;
 			this._criticalChanceTier := this._template.EpicCriticalChance;
 			this._criticalChanceMod := 0;
+			this._epicMainDamage := this._template.EpicMainDamage;
 			this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
 				SplitWords(this._template.EpicMainDamage)[1],
 				SplitWords(this._template.EpicMainDamage)[2],
@@ -97,6 +99,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._criticalChanceMod := err;
 			this._speed := err;
 			this._strRequired := err;
+			this._epicMainDamage := err;
 		endif
 	endfunction
 
@@ -127,6 +130,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function GetOffDamageTier(this)
 		return this._offDamageTier;
 	endfunction
+
+	function GetEpicMainDamage(this)
+		return this._epicMainDamage;
+	endfunction
 	
 	/**
 	 * Retorna o dano principal da arma.
@@ -153,6 +160,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 */
 	function GetDamageMod(this)
 		return this._damageMod;
+	endfunction
+
+	function GetSTRRequired(this)
+		return this._strRequired;
 	endfunction
 
 	function GetCriticalChanceTier(this)
