@@ -85,7 +85,7 @@ program SpellScript(params)
 	SendEvent(globo, ev);
 
 	sleep(3);
-	PerformAction(globo, HUMAN_ANIM::ATTACK_2HAND_WIDE);
+	PerformAction(globo, HUMAN_ANIM::ATTACK_2HAND_SLASH);
 
 	return 1;
 endprogram
