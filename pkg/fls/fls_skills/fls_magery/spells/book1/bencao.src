@@ -30,7 +30,7 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_CURSE);
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 
 	SetObjProperty(targ, "mage", who.serial);
 	TS_StartTimer(targ, "bless", CINT(AP_GetSkill(who, THEOLOGY) * 2) + 35, 1, who);

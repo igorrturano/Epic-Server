@@ -9,7 +9,7 @@ program habilidade(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var religiao := chardata.religion;
 	var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 5);
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 
 	case (religiao)
 		ELUITHORTH:
@@ -33,7 +33,7 @@ program habilidade(who)
 				return 0;
 			endif
 
-			PlayObjectCenteredEffectEx(targ, EPIC_FX_SPEED_BOOTS, 7, 32, 0, 1);
+			PlayObjectCenteredEffectEx(targ, FX_SPEED_BOOTS, 7, 32, 0, 1);
 			PlaySoundEffect(targ, 0x20F);
 			TS_StartTimer(targ, "velocidade", theology_bonus);
 
@@ -45,7 +45,7 @@ program habilidade(who)
 				return 0;
 			endif
 
-			PlayObjectCenteredEffectEx(targ, EPIC_FX_MORALE_UP, 7, 32);
+			PlayObjectCenteredEffectEx(targ, FX_MORALE_UP, 7, 32);
 			PlaySoundEffect(targ, 0x1F5);
 
 			// Buff em todas as stats

@@ -111,7 +111,7 @@ function CheckIngredients(master, ritualid)
 	foreach loop in loops
 		foreach mobile in ritualmages
 			PrintTextAbove(mobile, powerwords);
-			PerformAction(mobile, ANIM_CAST_AREA);
+			PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
 		endforeach
 		sleepms(delay);
 	endforeach

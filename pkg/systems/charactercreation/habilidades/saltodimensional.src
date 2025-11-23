@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":charactercreation:resists";
@@ -10,7 +10,7 @@ include ":survival:fishingFunctions";
 program HitScript(who)
 	who.concealed := 1;
 	who.frozen := 1;
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
 	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 35, 0, who.realm);
 	PlaySoundEffect(who, 0x1f2);

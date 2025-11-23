@@ -1,6 +1,6 @@
 use cfgfile;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:tngumps";
 
 const  EXCEP := 1;

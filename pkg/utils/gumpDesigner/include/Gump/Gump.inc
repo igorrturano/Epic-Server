@@ -126,18 +126,16 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINER) // Container precisa pegar os controles internos e adicionar aqui no gump
 			foreach containerControl in (control.GetControls())
-				this.AddControl(containerControl);
+				this.AddControl(containerControl); // Adiciona os controles encapsulados ao gump
 			endforeach
-			// return; // Container não precisa de ID próprio, só os controles internos
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINERGRIDLAYOUT) // ContainerGridLayout é ainda pior, precisa pegar os controles internos de cada célula
 			foreach row in (control.GetControls()) // Cada linha do grid é um array de containers
 				foreach container in (row) // Cada container pode ter múltiplos controles
 					foreach containerControl in (container.GetControls())
-						this.AddControl(containerControl);
+						this.AddControl(containerControl); // Adiciona os controles encapsulados ao gump
 					endforeach
 				endforeach
 			endforeach
-			// return; // ContainerGridLayout não precisa de ID próprio, só os controles internos
 		elseif (control.GetType() == GUMP_CONTROL::NONE)
 			return error { errortext := "Control type is NONE!" };
 		else
@@ -174,7 +172,7 @@ class Gump(IGump)
 		this._gumpResult := GFSendGump(this._parent, this._gump);
 
 		if (this._gumpResult[0] == 0)
-			eventHandled := EventHandler("CLOSED");
+			eventHandled := EventHandler(EVENT_ACTION::CLOSED);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXT + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXT][this._gumpResult[0]]-GUMP_ID_REFERENCE::TEXT);
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTCROPPED + GUMP_ID_REFERENCE::LIMIT)
@@ -196,7 +194,7 @@ class Gump(IGump)
 		elseif (this._gumpResult[0] < GUMP_ID_REFERENCE::TEXTBOX + GUMP_ID_REFERENCE::LIMIT)
 			eventHandled := EventHandler(this._controls[GUMP_CONTROL::TEXTBOX][gumpResult[0]-GUMP_ID_REFERENCE::TEXTBOX]);
 		else
-			eventHandled := EventHandler(error { errortext := "Unknown control type!" });
+			eventHandled := EventHandler(error{errortext := "Unknown control type!"});
 		endif
 
 		this._UpdateInputValues();
@@ -208,9 +206,35 @@ class Gump(IGump)
 		return GFCloseGump(this._parent, this._pid);
 	endfunction
 
+	function Dispose(this)
+		this._gump := 0;
+		this._gumpResult := 0;
+		foreach controlGroup in (this._controls)
+			foreach control in (controlGroup)
+				control.Dispose();
+			endforeach
+		endforeach
+		this._controls := dictionary{};
+	endfunction
+
 	// Private functions
 	function _CreateControls(this)
+		// Containers precisam ser criados antes, para evitar sobreposição
+		foreach control in (this._controls[GUMP_CONTROL::CONTAINER])
+			control.SelfCreate(this._gump);
+		endforeach; 
+
+		foreach control in (this._controls[GUMP_CONTROL::CONTAINERGRIDLAYOUT])
+			control.SelfCreate(this._gump);
+		endforeach
+		
 		foreach controlGroup in (this._controls)
+			if (_controlGroup_iter == GUMP_CONTROL::CONTAINER ||
+				_controlGroup_iter == GUMP_CONTROL::CONTAINERGRIDLAYOUT
+				)
+				continue; // Containers foram criados antes
+			endif
+
 			foreach control in (controlGroup)
 				control.SelfCreate(this._gump);
 			endforeach

@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -59,7 +59,7 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 		return 1;
 	endif
 
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 3, 4);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
 	PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
 	TS_Starttimer(targ, "lentidao", CINT(AP_GetSkill(caster, ARCANA) / 10));
 

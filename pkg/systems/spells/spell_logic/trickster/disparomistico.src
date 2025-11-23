@@ -6,7 +6,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/epicMageryUtils";
 
@@ -51,9 +51,9 @@ program SpellScript(params)
 		TurnObjectToward(who, loc.x, loc.y);
 
 		PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
-		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
 		sleepms(400);
-		PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+		PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
 		sleepms(400);
 		MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
 	endif

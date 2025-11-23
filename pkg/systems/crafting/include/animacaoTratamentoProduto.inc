@@ -91,7 +91,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 					produto.color := corAquecido;
 				endif
 				PlaySoundEffect(quem, SFX_2C);
-				PerformAction( quem, ANIM_CAST_DIR );
+				PerformAction( quem, HUMAN_ANIM::CAST_DIR );
 
 				if(contadorInterno >=  CORES_AQUECIMENTO_FORJA.size())
 					PrintTextAbove(produto,"*Item em brasa*");
@@ -121,7 +121,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[BIGORNA].height, 
 								estacao[BIGORNA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
-				PerformAction( quem, ANIM_ATTACK_1HAND_DOWN ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_BLUNT ); 
 				PlaySoundEffect(quem, SFX_2B);
 				
 				if(contadorInterno >= LIMITE_MARTELADAS)
@@ -155,7 +155,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[FONTE_AGUA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 				endif
-				PerformAction( quem, ANIM_ATTACK_1HAND_JAB ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_PIERCING ); 
 				PlaySoundEffect(quem, SFX_27);
 				PlayObjectCenteredEffectEx(estacao[FONTE_AGUA],FX_SMOKE,1,12);
 				produto.color := 1175;
@@ -208,7 +208,7 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 		if(RandomInt(10) <= 3 )
 			PrintTextAbove(quem,"*Trabalhando*");
 		endif
-		PerformAction( quem, ANIM_ATTACK_BOW ); 
+		PerformAction( quem, HUMAN_ANIM::ATTACK_BOW ); 
 		PlaySoundEffect(quem, SFX_56);
 		CheckToolWear(quem,ferramentaNecessaria,skill);
 		Sleep(Cint(espera));

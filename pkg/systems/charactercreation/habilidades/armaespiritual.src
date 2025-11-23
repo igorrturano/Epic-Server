@@ -3,7 +3,7 @@ use cfgfile;
 include ":spells:include/swordmage";
 include "include/say";
 include ":tn:tngumps";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/epicConstants";
 
 program swordmage(who)
@@ -56,19 +56,19 @@ program swordmage(who)
 			info.+type := DMG_FIRE;
 			wp.damage_physical_mod := -100;
 			wp.damage_fire_mod := 100;
-			wp.color := FOGO;
+			wp.color := COLOR_ELEMENTAL_FIRE;
 			SetObjProperty(wp, "HitScripts", { ":combat:weaponHitScripts/FireHit" });
 		elseif (dmg == "Energia")
 			info.+type := DMG_ENERGY;
 			wp.damage_physical_mod := -100;
 			wp.damage_energy_mod := 100;
-			wp.color := RAIO;
+			wp.color := COLOR_ELEMENTAL_ENERGY;
 			SetObjProperty(wp, "HitScripts", { ":combat:weaponHitScripts/LightningHit" });
 		elseif (dmg == "Gelo")
 			info.+type := DMG_COLD;
 			wp.damage_physical_mod := -100;
 			wp.damage_cold_mod := 100;
-			wp.color := GELO;
+			wp.color := COLOR_ELEMENTAL_ICE;
 			SetObjProperty(wp, "HitScripts", { ":combat:weaponHitScripts/IceHit" });
 		endif
 

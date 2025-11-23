@@ -67,7 +67,7 @@ program SpellScript(params)
 	targ.usescript := ":tn:fruta_curativa";
 
 	// Visual effects
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
 
 	Message("Voce abencoa o alimento com energia curativa.").SetColor(SSM_INFO).SendSys(who);

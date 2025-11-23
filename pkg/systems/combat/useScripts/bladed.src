@@ -252,7 +252,7 @@ function FazPergaminhoEmBranco(who, item)
 				else
 					for i := 1 to 3
 						PlaySoundEffect(who, 0x5A);
-						PerformAction(who, ANIM_SALUTE);
+						PerformAction(who, HUMAN_ANIM::SALUTE);
 						sleep(1);
 					endfor
 					if (SkillCheck(who, SURVIVAL, RequiredSkill))

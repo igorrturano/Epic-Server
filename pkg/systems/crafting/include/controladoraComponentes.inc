@@ -206,7 +206,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 						
 						var interrompido := CheckCanWork(quem, vidaInicial, posicaoInicial);
 
-						PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+						PerformAction( quem, HUMAN_ANIM::HORSE_ATTACK_XBOW ); 
 						PlaySoundEffect(quem, SFX_56);
 						
 						if(!interrompido)

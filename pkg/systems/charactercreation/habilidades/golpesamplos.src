@@ -8,7 +8,7 @@
 // include "include/say";
 // include ":timedscripts:timedScripts";
 // include ":tn:cooldown";
-// include ":combat:damage";
+// include ":combat:Controller/DamageController_legacy";
 
 // program SpellScript(params)
 // 	var who := params[1];

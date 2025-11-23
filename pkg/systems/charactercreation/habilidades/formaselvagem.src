@@ -99,7 +99,7 @@ endfunction
 function Transforma(who, animal)
 
 	UnequipAll(who);
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
 	var template;
 	var snd;
