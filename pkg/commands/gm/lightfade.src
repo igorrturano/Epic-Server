@@ -6,7 +6,7 @@ include "include/lightfade";
 program textcmd_lightfade(who, text)
     var params := SplitWords(text);
     if (params.size() < 5)
-        SendSysMessage(who, "Usage: .lightfade <level> <r> <g> <b> <duration>");
+        SendSysMessage(who, "Usage: .lightfade <level> <r> <g> <b> <duration> [style] [transition_time]");
         return;
     endif
 
@@ -15,7 +15,17 @@ program textcmd_lightfade(who, text)
     var g := CInt(params[3]);
     var b := CInt(params[4]);
     var duration := CInt(params[5]);
+    var style := 0;
+    var transition_time := 0;
+    
+    if (params.size() >= 6)
+        style := CInt(params[6]);
+    endif
+    
+    if (params.size() >= 7)
+        transition_time := CInt(params[7]);
+    endif
 
-    SendLightFade(who, level, r, g, b, duration);
-    SendSysMessage(who, "Sent Light Fade: Level=" + level + " RGB=(" + r + "," + g + "," + b + ") Duration=" + duration);
+    SendLightFade(who, level, r, g, b, duration, style, transition_time);
+    SendSysMessage(who, "Sent Light Fade: Level=" + level + " RGB=(" + r + "," + g + "," + b + ") Duration=" + duration + " Style=" + style + " TransTime=" + transition_time);
 endprogram
