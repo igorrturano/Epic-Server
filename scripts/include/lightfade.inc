@@ -1,16 +1,13 @@
 use uo;
 use os;
-use uo;
-use os;
 
 include "packets";
 
-// Packet 0xE0 - Light Fade (Dynamic Length)
-// Format:
-// Byte 0: 0xE0
-// Byte 1-2: Lengthuse uo;
-use os;
-include "packets";
+// Light Fade Style Constants
+const LIGHTFADE_STYLE_STATIC   := 0;
+const LIGHTFADE_STYLE_FADEIN   := 1;
+const LIGHTFADE_STYLE_FADEOUT  := 2;
+const LIGHTFADE_STYLE_PULSE    := 3;
 
 /*
  * SendLightFade(who, level, r, g, b, duration, style := 0, transition_time := 0)
@@ -18,7 +15,7 @@ include "packets";
  * level: 0-30 (0 = remove effect)
  * r, g, b: Color of the fade (0-255)
  * duration: Duration in milliseconds (0 = infinite)
- * style: 0=Static, 1=FadeIn, 2=FadeOut, 3=Pulse
+ * style: Use LIGHTFADE_STYLE_* constants (Static, FadeIn, FadeOut, Pulse)
  * transition_time: Time for fade transition in ms
  */
 function SendLightFade(who, level, r, g, b, duration, style := 0, transition_time := 0)
