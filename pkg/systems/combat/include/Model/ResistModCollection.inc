@@ -17,7 +17,7 @@ class ResistModCollection(ModCollectionBase)
 	function GetTotal(this)
 
 		var totalResist := ArmorResist();
-
+		
 		foreach resistMod in (this._modDict)
 			SleepMS(2);
 			totalResist.SetSlashResist( resistMod.GetMod().GetSlashResist() + totalResist.GetSlashResist());
