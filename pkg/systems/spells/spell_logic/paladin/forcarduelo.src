@@ -9,6 +9,7 @@ include ":timedScripts:timedScripts";
 include ":brainai:npcUtil";
 include "include/sysEvent";
 include "include/eventID";
+include ":tn:cooldown";
 
 program SpellScript(params)
 	var who := params[1];
@@ -26,8 +27,13 @@ program SpellScript(params)
 
 	// For NPCs
 	if (targ.npctemplate)
+		var duration := Cint(AP_GetSkill(who, THEOLOGY) / 2);
 		var event := struct{ "type" := EVID_TAUNT, "source" := who };
 		SendEvent(targ, event);
+		
+		// Set taunt duration and taunter (paladin spell has fixed 15 second duration)
+		SetCooldown(targ, "taunted", duration);
+		SetObjProperty(targ, "#taunter", who.serial);
 	// For Players
 	else
 		if (GetObjProperty(targ, "#DuelChallenge"))
