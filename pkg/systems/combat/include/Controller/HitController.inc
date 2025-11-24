@@ -281,7 +281,7 @@ function CalculateHitChance(byRef attackInfo)
 	return CInt(hit_chance); // Devolve Int, pra facilitar a rolagem do dado
 endfunction
 
-function _GetSkillForCombat(mobile)
+function _GetSkillForCombat(byRef mobile)
 	var skill;
 
 	if (mobile.IsNPC()) // Se for NPC, a skill é wrestling

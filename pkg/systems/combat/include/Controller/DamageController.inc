@@ -336,12 +336,12 @@ function ApplyCriticalDamage(byRef attackInfo)
 	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
 
 	if (pet_instinto || pet_selvagem) // Se for pet
-		weapon_scripts := tamingCfg.GetElementValue("CriticalHitScripts");
+		weapon_scripts := tamingCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
 		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetElementValue();
+		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
 	elseif (attackInfo.GetAttacker().IsNPC())
-		weapon_scripts := npcCfg.SetElementName("CriticalHitScripts").GetElementValue();
+		weapon_scripts := npcCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
 	endif
 
 	Message("CRÍTICO", FONTCOLOR_RED).SendEmote(attackInfo.GetAttacker().GetObjRef());
