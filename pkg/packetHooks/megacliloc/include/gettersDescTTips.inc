@@ -311,7 +311,7 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	endif
 
 	var armadura := ArmorWrapper(objeto); 
-	
+
 	var xDesc := cfg.desc;
 
 	if (armadura.GetSTRRequired() > 0)
@@ -341,9 +341,13 @@ function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
 
 	var bluntRes,slashRes,pircRes :=0;
 
-	slashRes := armadura.GetResistsBase().GetSlashResist();
-	pircRes := armadura.GetResistsBase().GetSlashResist();
-	bluntRes := armadura.GetResistsBase().GetSlashResist();
+	slashRes := armadura.GetResists().GetSlashResist();
+	pircRes := armadura.GetResists().GetSlashResist();
+	bluntRes := armadura.GetResists().GetSlashResist();
+	var fireResist:= armadura.GetResists().GetFireResist();
+	var coldResist:= armadura.GetResists().GetColdResist();
+	var poisonResist := armadura.GetResists().GetPoisonResist();
+	var energyResist := armadura.GetResists().GetEnergyResist();
 	
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
@@ -357,21 +361,8 @@ function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
 			xDesc := xDesc  + " Cont: " + ClassificaResistCor(armadura.GetTipoProtecao()) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
 		endif
 	endif
-	return xDesc;
-endfunction
 
-function PegaDescResistModArmadura(objeto,cfg,armadura, xDesc := "")
 	
-	var atrib := struct;
-	if(!armadura)
-		armadura := ArmorWrapper(objeto);
-	endif
-
-	var fireResist:= armadura.GetResists().GetFireResist();
-	var coldResist:= armadura.GetResists().GetColdResist();
-	var poisonResist := armadura.GetResists().GetPoisonResist();
-	var energyResist := armadura.GetResists().GetEnergyResist();
-
 	if(fireResist || coldResist || poisonResist || energyResist)
 		xDesc := xDesc + "<br> Resistência Mágica: <br>";
 
