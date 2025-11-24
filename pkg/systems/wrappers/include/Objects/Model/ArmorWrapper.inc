@@ -29,6 +29,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._weight := this._GetWeight();
 			this._strRequired := this._GetSTRRequired();
 			this._InitModifiers();
+			this._criticalReductionMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
 
 			/*if (this._prop)
 				this._resistsMod.SetSlashResist(this._prop.SlashResistMod);
@@ -47,6 +48,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._resistsMod := err;
 			this._shieldAttributes := err;
 			this._shieldAttributesMod := err;
+			this._criticalReductionMod := err;
 		endif
 	endfunction
 	
@@ -108,6 +110,10 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	 */
 	function GetResistsMod(this)
 		return this._resistsMod.GetTotal();
+	endfunction
+
+	function GetCriticalReductionMod(this)
+		return this._criticalReductionMod;
 	endfunction
 
 	/**
@@ -176,6 +182,11 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 		if(ret is @Exception) return this.ret; endif
 
+		return this;
+	endfunction
+
+	function SetCriticalReductionMod(this, criticalReduction)
+		this._criticalReductionMod := criticalReduction;
 		return this;
 	endfunction
 
