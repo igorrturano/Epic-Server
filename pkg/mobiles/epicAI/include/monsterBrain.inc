@@ -77,8 +77,9 @@ function MonsterBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
+                        // Taunt forces a target switch - clear current opponent and target lock
                         SetOpponent(0);
+                        EraseObjProperty(me, "#target_lock");
                         HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
@@ -202,12 +203,19 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         if (taunter_serial)
             var taunter := SystemFindObjectBySerial(taunter_serial);
             if (taunter && CanFight(me, taunter))
-                // Forced to fight the taunter, ignore all other targets
+                // Forced to fight the taunter, ignore all other targets and locks
                 opponent := taunter;
                 SetOpponent(opponent);
+                // Maintain taunt lock - prevent CheckForIdealTarget from overriding
+                SetObjProperty(me, "#target_lock", struct{
+                    "serial" := taunter.serial,
+                    "time" := ReadGameClock(),
+                    "taunt" := 1  // Flag to indicate this is a taunt lock
+                });
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
+                EraseObjProperty(me, "#target_lock");
                 SetCooldown(me, "taunted", 0);
             endif
         endif
