@@ -4,10 +4,10 @@ include "ArmorResist";
 
 class ResistModFabricacao(ResistModBase)
 
-	function ResistModFabricacao(this ,itemOrTemplate ,damage := 0)
+	function ResistModFabricacao(this ,itemOrTemplate ,resist := 0)
 		this._itemOrTemplate := itemOrTemplate;
 
-		Super(MOD_SOURCES::CRAFTING, damage);
+		Super(MOD_SOURCES::CRAFTING, resist);
 	endfunction
 
 	function MapResist(this, param)
@@ -18,16 +18,17 @@ class ResistModFabricacao(ResistModBase)
 		else
 			resist := ArmorResist();
 		endif
+
 		
-		resist.SetSlashRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CORTANTE)));
-		resist.SetPiercingRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_PERFURANTE)));
-		resist.SetBluntRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CONTUSAO)));
+		resist.SetSlashResist(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CORTANTE)));
+		resist.SetPiercingResist(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_PERFURANTE)));
+		resist.SetBluntResist(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CONTUSAO)));
 		
 		//OBS: se no futuro tiver um componente só pra resistência mágica tem que adicionar aqui a soma.
-		resist.SetFireRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_FOGO)));
-		resist.SetColdRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_GELO)));
-		resist.SetPoisonRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_VENENO)));
-		resist.SetEnergyRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_ENERGIA)));
+		resist.SetFireResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_FOGO)));
+		resist.SetColdResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_GELO)));
+		resist.SetPoisonResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_VENENO)));
+		resist.SetEnergyResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_ENERGIA)));
 		
 		return resist;
 	endfunction
