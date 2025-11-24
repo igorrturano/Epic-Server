@@ -12,6 +12,7 @@ include ":alchemy:alchemy";
 include ":destroyable:include/destroyItem";
 include ":propagacao:include/efeitosIncendiarios";
 include "include/flash";
+include "include/lightfade";
 
 program exploder(parms)
 
@@ -417,8 +418,10 @@ function FlashbangEffect(who, potion)
 			endif
 			
 			// Envia o flash branco (tipo 5 = FLASH_WHITE)
+			// Envia o flash branco (tipo 5 = FLASH_WHITE)
 			if (critter.connected)
-				SendScreenFlash(critter, FLASH_WHITE);
+				// SendScreenFlash(critter, FLASH_WHITE);
+				SendLightFade(critter, 30, 255, 255, 255, 5000);
 				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
 				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
 			endif

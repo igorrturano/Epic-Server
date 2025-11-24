@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+include "include/lightfade";
+
+program textcmd_lightfade(who, text)
+    var params := SplitWords(text);
+    if (params.size() < 5)
+        SendSysMessage(who, "Usage: .lightfade <level> <r> <g> <b> <duration>");
+        return;
+    endif
+
+    var level := CInt(params[1]);
+    var r := CInt(params[2]);
+    var g := CInt(params[3]);
+    var b := CInt(params[4]);
+    var duration := CInt(params[5]);
+
+    SendLightFade(who, level, r, g, b, duration);
+    SendSysMessage(who, "Sent Light Fade: Level=" + level + " RGB=(" + r + "," + g + "," + b + ") Duration=" + duration);
+endprogram
