@@ -48,20 +48,6 @@ function UpdatePlayerGraphic(who, forwho, graphic, color)
 	return SendPacket(forwho, packetString);
 endfunction
 
-function DrawGamePlayer(who, jgraphic, jcolor)
-	var PacketHexString := "20" + ConvertIntToHex(who.serial, 4);
-	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
-	PacketHexString := PacketHexString + "0000";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
-	SendPacket(who, PacketHexString);
-endfunction
-
 function ConvertIntToHex(astring, alength)
 	if (astring < 0)
 		astring := (1 << (alength * 8)) + astring; // Convert to two's complement for negative values
