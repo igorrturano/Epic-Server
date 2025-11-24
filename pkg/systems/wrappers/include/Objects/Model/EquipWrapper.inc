@@ -23,7 +23,7 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 
 		if (this._objRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			var err := InvalidTemplateException();
-			this._prop := this._objRef.GetProp(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
+			this._prop := this.GetProp(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
 			this._layer := this._objRef.layer;
 			this._graphic := this._objRef.graphic;
 			this._color := this._objRef.color;

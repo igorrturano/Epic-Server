@@ -156,7 +156,9 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	if(cfg == error || cfg.size() <= 0)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
+
 	var weapon := WeaponWrapper(objeto);
+
 	var character := MobileWrapper(who);
 	var xDesc := cfg.desc;
 	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
@@ -307,7 +309,9 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	if(cfg == error || cfg.size() <= 0)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
+
 	var armadura := ArmorWrapper(objeto); 
+	
 	var xDesc := cfg.desc;
 
 	if (armadura.GetSTRRequired() > 0)
