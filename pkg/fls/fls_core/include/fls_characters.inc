@@ -7,6 +7,7 @@ include ":attributes:attributes";
 include ":fls_core:fls_chargumps_ex";
 include "include/dungeons";
 include "include/epicConstants";
+include "include/flash";
 include ":tn:cooldown";
 function EquipRaceSkin(who)
 
@@ -124,6 +125,11 @@ function ReverseLight(player)
 		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);
 		player.setlightlevel(newlight, 9000); // Reverse surface light (0-28 becomes 28-0)
+
+		// Send white flash effect for drows in bright daylight (when newlight is very dark = bright surface)
+		if (newlight >= 20 && playerRace == DROW)
+			SendScreenFlash(player, FLASH_WHITE);
+		endif
 	endif
 endfunction
 

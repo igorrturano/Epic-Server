@@ -21,7 +21,6 @@ include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);
-	who.frozen := 1;
 	var culture_pic := culturalSelection(who);
 	racialSelection(who, culture_pic);
 	classSelection(who, culture_pic);
@@ -33,7 +32,6 @@ program epicCreationGump(who)
 	// gameModeSelection(who);
 	pathOfWisdom(who, culture_pic);
 	languageSelection(who, culture_pic);
-	itemInheritance(who);
 	signSelection(who);
 	birthDaySelection(who);
 	RPcharacteristicsSelection(who, culture_pic);
@@ -51,8 +49,9 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
+	itemInheritance(who);
+
 	SetObjProperty(who, "creation_completed", 1);
-	who.frozen := 0;
 endprogram
 
 function culturalSelection(who)

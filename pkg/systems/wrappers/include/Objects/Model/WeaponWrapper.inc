@@ -352,7 +352,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		this._prop.+MinRange := this._minRange;
 		this._prop.+MaxRange := this._maxRange;
 
-		this._objRef.speed_mod := CInt(this._speed) - this._objRef.speed;
+		this._objRef.speed_mod := CInt(this._speed) - CInt(this._template.Speed);
 		
 		this._objRef.SetProp(PROPNAME_ITEMINFO, this._prop);
 	endfunction
