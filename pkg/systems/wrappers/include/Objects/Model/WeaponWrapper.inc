@@ -342,7 +342,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *       - AttackSpeed: Velocidade de ataque
 	 *       - MinRange/MaxRange: Alcance mínimo e máximo
 	 * @note Calcula e define o modificador de velocidade (speed_mod) do item
-	 * @note Persiste todas as propriedades através do método SetProp
+	 * @note Persiste todas as propriedades através do método SetProperty
 	 */
 	function Update(this)
 		if (this._objRef is @Exception) return this._objRef; endif
@@ -365,7 +365,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 		this._objRef.speed_mod := CInt(this._speed) - CInt(this._template.Speed);
 		
-		this._objRef.SetProp(PROPNAME_ITEMINFO, this._prop);
+		this.SetProperty(PROPNAME_ITEMINFO, this._prop);
 	endfunction
 
 	function ToString(this)
