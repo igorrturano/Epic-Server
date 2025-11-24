@@ -1535,7 +1535,7 @@ function CriaPropFabricadoGerada(
 			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
 				if(cint(recursosConfig[materialPossivel.chave].tier) == tier )
 					materiaisPossiveisPorTier.insert(
-														tier,
+														tierInfo.valor,
 														struct{
 																materialComponente := materialPossivel.chave,
 																materialNome := recursosConfig[hex(materialPossivel.chave)].name
@@ -1544,13 +1544,13 @@ function CriaPropFabricadoGerada(
 				endif
 			else
 				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
-				var tierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
+				var valorTierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
 				var tiers :=  PegaComponenteTiers();
-				tierMaterial := tierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : tierMaterial;
+				var chaveValorTier := valorTierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : valorTierMaterial;
 
-				if( DeveEscreverMaterial(materiaisPossiveisPorTier,tierMaterial))
+				if( DeveEscreverMaterial(materiaisPossiveisPorTier,chaveValorTier))
 					materiaisPossiveisPorTier.insert(
-														tierMaterial,
+														chaveValorTier,
 														struct{
 																materialComponente := materialPossivel.chave,
 																materialNome := recursosConfig[hex(materialPossivel.chave)].name
@@ -1563,8 +1563,7 @@ function CriaPropFabricadoGerada(
 		endforeach
 
 		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
-			valorTier := tierInfo.valor;
-			materialStruct := materiaisPossiveisPorTier[valorTier];
+			materialStruct := materiaisPossiveisPorTier[tierInfo.valor];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
 			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tier + 1)).valor;
 			materialStruct := materiaisPossiveisPorTier[valorTier];
@@ -1587,10 +1586,21 @@ function CriaPropFabricadoGerada(
 			return error{"errorText" := "Não foi possível encontrar material para este tier."};
 		endif
 
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
+		var componenteEscolhido := MontaComponenteEscolhido(
+														opcaoEncontrada, 
+														componenteNecessario, 
+														recursosConfig, 
+														receita.componentesNecessarios.size(), 
+														receita.quantidadeOpicionais);
+
+		AcrescentaComponenteEscolhido(
+										objetoEsquema,
+										componenteNecessario,
+										componenteEscolhido, 
+										opcaoEncontrada.indiceEncaixeComponente, 
+										classe);
 	endforeach
-	//Print("objetoEsquema: " + objetoEsquema);
+	
 
 	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
 endfunction

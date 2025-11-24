@@ -17,6 +17,8 @@ function GeraDescriptorComplexo(
 
 	var fabricadoProp := CriaPropFabricadoGerada(objtype, tier,deveGerarOpcionais, listaDeMateriaisIgnorados,modoEscolhaMaterial, classe);
 
+	if(!fabricadoProp) return fabricadoProp; endif
+
 	var descriptor := GetItemDescriptor(CInt(objtype));
 	descriptor.CProps.insert(PROPNAME_MATERIAL,fabricadoProp.materialPrincipal);
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,isDispensavel);
@@ -48,8 +50,10 @@ function GeraItemComplexo(
 							deveGerarOpcionais, 
 							classe);
 
+	if(!descriptor) return descriptor; endif
+
 	var item := CreateItemInContainer( quem.backpack, descriptor, quantidade );
 	item.hp := item.maxhp;
 
-	return descriptor;
+	return item;
 endfunction
