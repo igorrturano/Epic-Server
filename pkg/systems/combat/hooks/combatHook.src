@@ -200,6 +200,11 @@ function CheckAmmo(byRef attackInfo)
 		endif
 	endif
 
+	// NPCs don't need to set ammo serial - they use infinite ammo
+	if (attackInfo.GetAttacker().IsNPC())
+		return true;
+	endif
+
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammoSerial)
 		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
