@@ -6,7 +6,6 @@ include ":gumps:gumps_ex";
 include "include/client";
 include "include/utils";
 
-const HIDDEN_CANCEL := 1;
 const DEFAULT_FONT_COLOR := 1153;
 
 function QuestionsGumpUOSE(who, questions := array{}, hidden_cancel_btn := 0)
