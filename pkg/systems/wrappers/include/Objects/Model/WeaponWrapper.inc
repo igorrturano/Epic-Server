@@ -7,6 +7,9 @@ include ":equipsys:Controller/WeaponController";
 include ":combat:Model/DamageTier";
 include ":combat:Model/DamageDice";
 include ":combat:Model/Damage";
+include ":combat:Model/DamageModCollection";
+include ":combat:Model/DamageModBase";
+include ":combat:Model/DamageModFabricacao";
 include ":combat:Model/Ammo";
 include ":diceroll:model/Dice";
 
@@ -25,6 +28,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _criticalChanceTier := "";
 	var _criticalChance := 0;
 	var _criticalChanceMod := 0;
+	var _accuracyMod := 0;
 	var _strRequired := 0;
 	var _ammo; // Ammo class
 	var _minRange := 1;
@@ -41,7 +45,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._category := this._template.Category;
 			this._speedTier := this._template.EpicSpeed;
 			this._criticalChanceTier := this._template.EpicCriticalChance;
-			this._criticalChanceMod := 0;
+			//this._criticalChanceMod := 0;
 			this._epicMainDamage := this._template.EpicMainDamage;
 			this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
 				SplitWords(this._template.EpicMainDamage)[1],
@@ -63,7 +67,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 				Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
 				Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
 			);
-			this._damageMod := Damage();
+			this._damageMods := DamageModCollection();
+			this.SetDamageMod(DamageModFabricacao(this._objRef ? this._objRef : this.GetTemplate()));
+
 			this._speed := getSpeedByTier(this._speedTier);
 			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
 			this._weight := this._GetWeight();
@@ -72,17 +78,14 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
 			this._isThrowable := Boolean(this._template.Throwable) ?: false;
+			this._criticalChanceMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);
+			this._accuracyMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_PRECISAO) * 3;
 
+			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
 			if (this._prop) // Alguns atributos só estão nas props
 				this._criticalChanceMod := this._prop.CriticalChanceMod;
-				this._damageMod.SetSlashRawDamage(CInt(this._prop.SlashDamageMod));
-				this._damageMod.SetPiercingRawDamage(CInt(this._prop.PiercingDamageMod));
-				this._damageMod.SetBluntRawDamage(CInt(this._prop.BluntDamageMod));
-				this._damageMod.SetFireRawDamage(CInt(this._prop.FireDamage));
-				this._damageMod.SetColdRawDamage(CInt(this._prop.ColdDamage));
-				this._damageMod.SetPoisonRawDamage(CInt(this._prop.PoisonDamage));
-				this._damageMod.SetEnergyRawDamage(CInt(this._prop.EnergyDamage));
 			endif
+			*/
 		else
 			var err := InvalidTemplateException("The param must be a Weapon ObjRef or a valid Template!");
 			this._attribute := err;
@@ -97,6 +100,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._criticalChanceTier := err;
 			this._criticalChance := err;
 			this._criticalChanceMod := err;
+			this._accuracyMod := err;
 			this._speed := err;
 			this._strRequired := err;
 			this._epicMainDamage := err;
@@ -159,7 +163,11 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return objeto Damage contendo o modificador de dano
 	 */
 	function GetDamageMod(this)
-		return this._damageMod;
+		return this._damageMods.GetTotal();
+	endfunction
+
+	function GetAccuracyMod(this)
+		return this._accuracyMod;
 	endfunction
 
 	function GetSTRRequired(this)
@@ -258,20 +266,25 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * Define o modificador de dano para a arma.
 	 *
 	 * @param {WeaponWrapper} this - Instância do wrapper da arma
-	 * @param {Damage} damageMod - Objeto da classe Damage que será usado como modificador de dano
+	 * @param {DamageMod} damageMod - Objeto da classe Damage que será usado como modificador de dano
 	 *
 	 * @return {WeaponWrapper|Error} Retorna a própria instância (this) para encadeamento de métodos,
 	 *                                ou erro se o item não existir ou se o parâmetro não for da classe Damage
 	 *
 	 * @error Retorna erro se this._item for error
-	 * @error Retorna erro com mensagem "Parameter must be a Damage class!" se damageMod não for da classe Damage
+	 * 
 	 */
-	function SetDamageMod(this, damageMod)
+	function SetDamageMod(this,byref damageMod)
 		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(damageMod is @Damage))
-			return error{errortext := "Parameter must be a Damage class!"};
-		endif
-		this._damageMod := damageMod;
+		var ret := this._damageMods.InsertMod(damageMod);
+
+		if(ret is @Exception) return this.ret; endif
+
+		return this;
+	endfunction
+
+	function SetAccuracyMod(this, accuracyMod)
+		this._accuracyMod := _accuracyMod;
 
 		return this;
 	endfunction
@@ -357,7 +370,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		this._prop.+PiercingOffDamage := this._offDamage.GetPiercingDamage();
 		this._prop.+BluntOffDamage := this._offDamage.GetBluntDamage();
 		this._prop.+CriticalChance := this._criticalChance;
-		this._prop.+CriticalChanceMod := this._criticalChanceMod;
+		//this._prop.+CriticalChanceMod := this._criticalChanceMod;
 		this._prop.+STRRequired := this._strRequired;
 		this._prop.+AttackSpeed := this._speed;
 		this._prop.+MinRange := this._minRange;
