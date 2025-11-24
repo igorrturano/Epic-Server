@@ -316,7 +316,38 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._template;
 		endif
 		
-		return this._template.Damage;
+		// Get the raw damage strings from config
+		var elemFisDamages := this._template.EpicAttackDamage;
+		var elemElemDamages := this._template.EpicElemDamage;
+		
+		if (!elemFisDamages || !elemElemDamages)
+			return error{errortext := "NPC doesnt have the new attack model (EpicAttackDamage/EpicElemDamage)!"};
+		endif
+		
+		// Split the space-separated damage tiers
+		elemFisDamages := SplitWords(elemFisDamages);
+		elemElemDamages := SplitWords(elemElemDamages);
+		
+		// Convert tier strings to actual dice (e.g., "ONEHANDED_MID" -> "1d6")
+		var slashDiceStr := getDamageByTier(elemFisDamages[1]);
+		var piercingDiceStr := getDamageByTier(elemFisDamages[2]);
+		var bluntDiceStr := getDamageByTier(elemFisDamages[3]);
+		var fireDiceStr := getDamageByTier(elemElemDamages[1]);
+		var coldDiceStr := getDamageByTier(elemElemDamages[2]);
+		var poisonDiceStr := getDamageByTier(elemElemDamages[3]);
+		var energyDiceStr := getDamageByTier(elemElemDamages[4]);
+		
+		// Create Dice objects from strings (only if not 0/error)
+		var slashDice := slashDiceStr ? Dice(slashDiceStr) : false;
+		var piercingDice := piercingDiceStr ? Dice(piercingDiceStr) : false;
+		var bluntDice := bluntDiceStr ? Dice(bluntDiceStr) : false;
+		var fireDice := fireDiceStr ? Dice(fireDiceStr) : false;
+		var coldDice := coldDiceStr ? Dice(coldDiceStr) : false;
+		var poisonDice := poisonDiceStr ? Dice(poisonDiceStr) : false;
+		var energyDice := energyDiceStr ? Dice(energyDiceStr) : false;
+		
+		// Create and return DamageDice object
+		return DamageDice(slashDice, piercingDice, bluntDice, fireDice, coldDice, poisonDice, energyDice);
 	endfunction
 
 	/**
