@@ -239,7 +239,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
 
-		this.GetProperty(PROPNAME_ITEMINFO, this._prop);
+		this.SetProperty(PROPNAME_ITEMINFO, this._prop);
 	endfunction
 
 	function ToString(this)
