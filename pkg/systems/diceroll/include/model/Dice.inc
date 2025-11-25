@@ -43,6 +43,10 @@ class Dice()
 		return this._result;
 	endfunction
 
+	function GetDiceString(this)
+		return this._diceString;
+	endfunction
+
 	function SetAmount(this, amount)
 		this._amount := CInt(amount);
 		return this;
