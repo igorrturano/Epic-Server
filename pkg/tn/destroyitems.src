@@ -79,7 +79,6 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 	endif
 
 	if (fonteDano.ISA(POLCLASS_WEAPON))
-
 		if (quem.concealed || quem.invisible)
 			SendSysMessageEx(quem, "Você foi revelado.", SSM_FAIL);
 			quem.concealed := 0;
@@ -102,7 +101,8 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 endfunction
 
 function RodaEfeitosAnim(quem, arma, alvo)
-	var attackInfo := AttackInfo(MobileWrapper(quem), MobileWrapper(alvo));
+	var attackInfo := AttackInfo(MobileWrapper(quem), ItemWrapper(alvo));
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
 
 	PlayAttackFX(attackInfo);
 	SleepMS(600);
@@ -111,5 +111,5 @@ function RodaEfeitosAnim(quem, arma, alvo)
 endfunction
 
 function CalculaConsumoStamina(fonteDano, byref consumoStamina)
-	consumoStamina := CInt(fonteDano.weight * 1.5);
+	consumoStamina := CInt(fonteDano.weight * 3);
 endfunction

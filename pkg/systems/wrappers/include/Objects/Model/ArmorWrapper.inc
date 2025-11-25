@@ -1,6 +1,8 @@
 include "EquipWrapper";
 include "IArmorWrapper";
 include ":equipsys:Controller/ArmorController";
+include ":combat:Model/ResistModCollection";
+include ":combat:Model/ResistModFabricacao";
 
 include ":combat:Model/ArmorResist";
 include ":combat:Model/ShieldAttributes";
@@ -21,12 +23,15 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._coverage := GetConfigStringArray(this._template, "Coverage");
 			this._tipoProtecao := this._template.TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
 			this._resists := this._GetArmorResist();
-			this._resistsMod := ArmorResist();
+			this._resistsMod := ResistModCollection();
+			this.SetResistsMod(ResistModFabricacao(this._objRef ? this._objRef : this.GetTemplate()));
+
 			this._weight := this._GetWeight();
 			this._strRequired := this._GetSTRRequired();
 			this._InitModifiers();
+			this._criticalReductionMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
 
-			if (this._prop)
+			/*if (this._prop)
 				this._resistsMod.SetSlashResist(this._prop.SlashResistMod);
 				this._resistsMod.SetPiercingResist(this._prop.PiercingResistMod);
 				this._resistsMod.SetBluntResist(this._prop.BluntResistMod);
@@ -34,7 +39,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				this._resistsMod.SetColdResist(this._prop.ColdResistMod);
 				this._resistsMod.SetPoisonResist(this._prop.PoisonResistMod);
 				this._resistsMod.SetEnergyResist(this._prop.EnergyResistMod);
-			endif
+			endif*/
 		else
 			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
 			this._coverage := err;
@@ -43,6 +48,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._resistsMod := err;
 			this._shieldAttributes := err;
 			this._shieldAttributesMod := err;
+			this._criticalReductionMod := err;
 		endif
 	endfunction
 	
@@ -103,7 +109,11 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	 * @return ArmorResist Objeto contendo os modificadores de resistência da armadura
 	 */
 	function GetResistsMod(this)
-		return this._resistsMod;
+		return this._resistsMod.GetTotal();
+	endfunction
+
+	function GetCriticalReductionMod(this)
+		return this._criticalReductionMod;
 	endfunction
 
 	/**
@@ -139,6 +149,10 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this._shieldAttributes;
 	endfunction
 
+	function GetSTRRequired(this)
+		return this._strRequired;
+	endfunction
+
 	/**
 	 * Retorna as modificações dos atributos do escudo
 	 *
@@ -164,8 +178,15 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	 */
 	function SetResistsMod(this, resists)
 		if (this._objRef is @Exception) return this._objRef; endif
-		this._resistsMod := resists;
+		var ret := this._resistsMod.InsertMod(resists);
 
+		if(ret is @Exception) return this.ret; endif
+
+		return this;
+	endfunction
+
+	function SetCriticalReductionMod(this, criticalReduction)
+		this._criticalReductionMod := criticalReduction;
 		return this;
 	endfunction
 
@@ -218,7 +239,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this._prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
 
-		this._item.SetProp(PROPNAME_ITEMINFO, this._prop);
+		this.SetProperty(PROPNAME_ITEMINFO, this._prop);
 	endfunction
 
 	function ToString(this)
