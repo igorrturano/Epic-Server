@@ -8,12 +8,15 @@ include ":io:CFGFile";
 
 class ItemWrapper(IItemWrapper, UObjectWrapper)
 	var _category := ""; // ITEM_CATEGORY enum
-
+	
 	function ItemWrapper(this, byRef item)
 		Super(item);
 
 		this._cfgFile := CFGFile("*", "itemdesc");
-		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
+		
+		if(!this._template)
+			this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
+		endif
 
 		if (TypeOfInt(this._objRef) == OT_ITEMREF)
 			this._category := this._template.Category;
