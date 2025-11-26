@@ -313,12 +313,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
+	/**
+	 * GetNPCDamage(this)
+	 *
+	 * Purpose
+	 * Model getter - returns raw damage configuration from npcdesc.cfg.
+	 * This is a simple data accessor following MVC pattern.
+	 * For business logic to convert to DamageDice, use BuildNPCDamageDice() in DamageController.
+	 *
+	 * Return struct
+	 * Returns a struct with raw EpicAttackDamage and EpicElemDamage config strings
+	 *
+	 */
 	function GetNPCDamage(this)
 		if (this._template is @Exception)
 			return this._template;
 		endif
-		
-		return this._template.Damage;
+
+		return struct{
+			EpicAttackDamage := this._template.EpicAttackDamage,
+			EpicElemDamage := this._template.EpicElemDamage
+		};
 	endfunction
 
 	/**

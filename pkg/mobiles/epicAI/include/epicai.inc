@@ -1021,18 +1021,33 @@ function CheckNearbyThreats()
 endfunction
 
 function CheckForIdealTarget()
+   // Check if we're locked onto a target (20 second lock)
+   var target_lock := GetObjProperty(me, "#target_lock");
+   if (target_lock)
+      var locked_target := SystemFindObjectBySerial(target_lock.serial);
+      var time_locked := ReadGameClock() - target_lock.time;
+      
+      // If lock is still valid (< 20 seconds) and target is still valid, keep it
+      if (time_locked < 20 && locked_target && CanFight(me, locked_target))
+         return locked_target;
+      else
+         // Lock expired or target invalid, clear it
+         EraseObjProperty(me, "#target_lock");
+      endif
+   endif
+
    // Get the target priority
    var target_priority := GetObjProperty(me, "target_priority");
-   var switch_chance := 70; // Default 10% chance to switch
+   var keep_target_chance := 90; // Default 90% chance to keep current target (10% to switch)
    case (target_priority)
-      "Aggressive": switch_chance := 50;  // 15% chance to switch
-      "Defensive":  switch_chance := 85;   // 5% chance to switch
-      "Focus":      switch_chance := 95;   // 2% chance to switch
+      "Aggressive": keep_target_chance := 85;  // 85% chance to keep (15% to switch)
+      "Defensive":  keep_target_chance := 95;  // 95% chance to keep (5% to switch)
+      "Focus":      keep_target_chance := 98;  // 98% chance to keep (2% to switch)
    endcase
    
    // If we already have an opponent, check if we should stick with them
    if (me.opponent && CanFight(me, me.opponent))
-      if (RandomInt(100) < switch_chance)
+      if (RandomInt(100) < keep_target_chance)
          return me.opponent;
       endif
    endif
@@ -1112,6 +1127,14 @@ function CheckForIdealTarget()
 
       sleepms(2);
    endforeach
+
+   // Lock onto the best opponent for 20 seconds
+   if (best_opponent.mobile)
+      SetObjProperty(me, "#target_lock", struct{
+         "serial" := best_opponent.mobile.serial,
+         "time" := ReadGameClock()
+      });
+   endif
 
    return best_opponent.mobile;
 endfunction
