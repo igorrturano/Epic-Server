@@ -113,15 +113,15 @@ program runScript_CharProfileRequest(params)
 			endif
 
 			var gump := GFCreateGump();
-			GFPage(gump, 0);
-			GFResizePic(gump, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump, 37, 41, 200, 200, "<img src=\"" + url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			GFHTMLArea(gump, 20, 273, 236, 100, descricao, 1, 1);
-			GFHTMLArea(gump, 16, 14, 239, 24, Object_Name, 1, 0);
-
 			var raca := who.getRace();
+			GFPage(gump, 0);
+			GFResizePic(gump, 4, 3, 9270, 232, 510);
+			GFHTMLArea(gump, 15, 14, 210, 24, Object_Name, 1, 0); // Nome do personagem no .r (Primera parte de cima)
+			GFHTMLArea(gump, 15, 41, 210, 330, "<img src=\"" + url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">");
+			GFHTMLArea(gump, 15, 375, 210, 24, raca, 1, 0); // Raca
+			GFHTMLArea(gump, 15, 400, 210, 100, descricao, 1, 1);
 
-			GFHTMLArea(gump, 19, 245, 239, 24, raca, 1, 0);
+
 
 			GFSendGump(who, gump);
 		endif
@@ -134,8 +134,8 @@ program runScript_CharProfileRequest(params)
 			var gump2 := GFCreateGump();
 			GFPage(gump2, 0);
 			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump2, 37, 41, 200, 200,
-						"<img src=\"" + incognito_url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
+			GFHTMLArea(gump2, 37, 41, 210, 330,
+						"<img src=\"" + incognito_url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">");
 			GFHTMLArea(gump2, 20, 273, 236, 100, incognito_descricao, 1, 1);
 			GFHTMLArea(gump2, 16, 14, 239, 24, "Incognito", 1, 0);
 			GFHTMLArea(gump2, 19, 245, 239, 24, "Desconhecido", 1, 0);
@@ -163,8 +163,8 @@ program runScript_CharProfileRequest(params)
 			var gump2 := GFCreateGump();
 			GFPage(gump2, 0);
 			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump2, 37, 41, 200, 200, "<img src=\"" + GetObjProperty(chr, "url")
-						+ "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
+			GFHTMLArea(gump2, 37, 41, 210, 330, "<img src=\"" + GetObjProperty(chr, "url")
+						+ "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">");
 			GFHTMLArea(gump2, 20, 273, 236, 100, GetObjProperty(chr, "descricao"), 1, 1);
 			GFHTMLArea(gump2, 16, 14, 239, 24, Object_Name, 1, 0);
 
