@@ -56,6 +56,10 @@ function CalculateStatusDamage(byRef attackInfo)
 	var stat := "";
 	var statBase := 0;
 	var statDivisor := 20;
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		statDivisor *= 2;
+	endif
+
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		stat := DEXTERITY;
 		statBase := CInt(attackInfo.GetAttacker().GetDex());
@@ -84,6 +88,9 @@ endfunction
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	var skillDivisor := 20;
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		skillDivisor *= 2;
+	endif
 	var damage := attackInfo.GetDamage();
 	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / skillDivisor);
 
