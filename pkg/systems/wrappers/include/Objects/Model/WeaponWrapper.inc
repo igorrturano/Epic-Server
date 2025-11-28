@@ -17,8 +17,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _speed := 0;
 	var _speedModTier := "";
 	var _speedMod := 0;
-	var _mainDamageTier; // DamageDice class
-	var _offDamageTier; // DamageDice class
+	var _mainDamageTier; // DamageTier class
+	var _offDamageTier; // DamageTier class
 	var _mainDamage; // DamageDice class
 	var _offDamage; // DamageDice class
 	var _damageMod; // Damage class
@@ -62,8 +62,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 				Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
 			);
 			this._damageMod := Damage();
-			this._speed := getSpeedByTier(this._speedTier);
-			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
+			this._speed := GetSpeedByTier(this._speedTier);
+			this._criticalChance := GetCriticalChanceByTier(this._criticalChanceTier);
+			this._maxHP := GetDurabilityByType(this.GetAttackType());
 			this._weight := this._GetWeight();
 			this._strRequired := this._GetSTRRequired();
 			this._ammo := this._template.ProjectileType ? Ammo(this._template.ProjectileType) : uninit;

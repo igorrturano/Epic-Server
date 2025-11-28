@@ -342,7 +342,25 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return WeaponWrapper(this._objRef.weapon);
+			var weapon := WeaponWrapper(this._objRef.weapon);
+
+			if (this.IsNPC())
+				weapon.SetMainDamage(DamageDice(
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
+				));
+				weapon.SetDamageMod(Damage(
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
+				));
+
+
+			endif
+
+			return weapon;
 		elseif (equipSlot == SHIELD)
 			return ArmorWrapper(this._objRef.shield);
 		elseif (equipSlot == HEAD)
