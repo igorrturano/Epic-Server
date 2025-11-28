@@ -35,8 +35,25 @@ enum class HAB_STATUS
 endenum
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de aplicar o dano.");
+	var exec := 0;
+	exec += TryToExecuteHab_Martir(attackInfo);
+	exec += TryToExecuteHab_MantoRothen(attackInfo);
+	exec += TryToExecuteHab_KaniNoSutairu(attackInfo);
+	exec += TryToExecuteHab_Exoesqueleto(attackInfo);
+	exec += TryToExecuteHab_EspecialistaEscudos(attackInfo);
+	exec += TryToExecuteHab_Furia(attackInfo);
+	exec += TryToExecuteHab_ResilienciaBarbara(attackInfo);
+	exec += TryToExecuteHab_VinculoElemental(attackInfo);
+	exec += TryToExecuteHab_Backstab(attackInfo);
+	exec += TryToExecuteHab_Charge(attackInfo);
+	exec += TryToExecuteHab_DivineAuthority(attackInfo);
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de receber o dano.");
+
 	return false;
 endfunction
 
@@ -56,25 +73,22 @@ endfunction
  *
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
-	// TODO: Checar se o POL vai contar o bitwise corretamente ou se precisa armazenar em um int.
-	if (TryToExecuteHab_ArmaduraArcana(attackInfo) |
-		TryToExecuteHab_Ainalaith(attackInfo) |
-		TryToExecuteHab_DeathDance(attackInfo) |
-		TryToExecuteHab_ConhecimentoSobreInimigo(attackInfo) |
-		TryToExecuteHab_DisparoMistico(attackInfo)
-		)
+	var exec := 0;
 
+	exec += TryToExecuteHab_ArmaduraArcana(attackInfo);
+	exec += TryToExecuteHab_Ainalaith(attackInfo);
+	exec += TryToExecuteHab_DeathDance(attackInfo);
+	exec += TryToExecuteHab_DisparoMistico(attackInfo);
+	exec += TryToExecuteHab_DesviarProjetil(attackInfo);
+	exec += TryToExecuteHab_DesviarDisparos(attackInfo);
+	exec += TryToExecuteHab_FerocidadeEnsanguentada(attackInfo);
+	exec += TryToExecuteHab_Evasao(attackInfo);
+	exec += TryToExecuteHab_ContraAtaque(attackInfo);
+	exec += TryToExecuteHab_Rebuke(attackInfo);
+
+	if (exec > 0)
 		return true;
 	endif
-
-	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
-	// var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
-	// if (elemental != error)
-	// 	If(elemental.cargas >= 1)
-	// 		var retorno := ConsumeArcaneCharges(attacker,1);
-	// 		ApplyDamageHabElementalWeapon(attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
-	// 	endif
-	// endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no hit.");
 
@@ -82,30 +96,28 @@ function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada após aplicar o dano.");
+	var exec := 0;
+
+	exec += TryToExecuteHab_RecuperacaoSalvadora(attackInfo);
+	exec += TryToExecuteHab_Vinganca(attackInfo);
+	exec += TryToExecuteHab_ChainOfPain(attackInfo);
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada após receber o dano.");
 
 	return false;
 endfunction
 
-/**
- * CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Executa verificações e efeitos relacionados às habilidades do atacante quando um ataque falha.
- *
- * Parameters
- * attacker: Objeto do atacante.
- * defender: Objeto do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 após executar todas as verificações e efeitos.
- */
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	if (TryToExecuteHab_AtaqueInfalivel(attackInfo) |
-		TryToExecuteHab_MestreDuelista(attackInfo) |
-		TryToExecuteHab_Insistencia(attackInfo)
-		)
+	var exec := 0;
+
+	exec += TryToExecuteHab_AtaqueInfalivel(attackInfo);
+	exec += TryToExecuteHab_MestreDuelista(attackInfo);
+
+	if (exec > 0)
 		return true;
 	endif
 
@@ -113,124 +125,7 @@ function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	return false;
 endfunction
 
-/**
- * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- *
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return void
- *
- */
-function CheckDefenderHabsBeforeDamage(byRef attackInfo)
-	if (TryToExecuteHab_Martir(attackInfo) |
-		TryToExecuteHab_MantoRothen(attackInfo) |
-		TryToExecuteHab_KaniNoSutairu(attackInfo) |
-		TryToExecuteHab_Exoesqueleto(attackInfo) |
-		TryToExecuteHab_EspecialistaEscudos(attackInfo) |
-		TryToExecuteHab_Furia(attackInfo) |
-		TryToExecuteHab_ResilienciaBarbara(attackInfo) |
-		TryToExecuteHab_VinculoElemental(attackInfo) |
-		TryToExecuteHab_Backstab(attackInfo) |
-		TryToExecuteHab_Charge(attackInfo) |
-		TryToExecuteHab_DivineAuthority(attackInfo)
-		)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de receber o dano.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Verifica e aplica as habilidades defensivas do defensor quando atingido por um ataque.
- * Chama funções específicas para cada habilidade defensiva relevante e limpa a propriedade
- * "#contraataquepoderoso" do defensor, se estiver presente.
- *
- * Parameters
- * attacker: Identificador do atacante.
- * defender: Identificador do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 sempre que a função é executada.
- */
-function CheckDefenderHabsOnHit(byRef attackInfo)
-	if (TryToExecuteHab_DesviarProjetil(attackInfo) |
-		TryToExecuteHab_DesviarDisparos(attackInfo) |
-		TryToExecuteHab_FerocidadeEnsanguentada(attackInfo) |
-		TryToExecuteHab_Evasao(attackInfo) |
-		TryToExecuteHab_ContraAtaque(attackInfo) |
-		TryToExecuteHab_Rebuke(attackInfo)
-		)
-		return true;
-	endif
-
-	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
-	if (GetObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso"))
-		EraseObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso");
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no hit.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsAfterDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsAfterDamage(byRef attackInfo)
-	if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo) |
-		TryToExecuteHab_Vinganca(attackInfo) |
-		TryToExecuteHab_ChainOfPain(attackInfo)
-		)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada após receber o dano.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Função responsável por verificar e aplicar habilidades defensivas do defensor quando um ataque falha (miss).
- *
- * Parameters
- * attacker: objeto ou id do atacante.
- * defender: objeto ou id do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 sempre ao final da execução.
- */
-function CheckDefenderHabsOnMiss(byRef attackInfo)
-	// TODO: Adicionar habilidades que serão incluídas aqui
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no miss.");
-	return false;
-endfunction
-
+// ================ Habilidades Individuais ================= //
 function TryToExecuteHab_Martir(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#martir"))
 		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("martirserial"));
@@ -959,17 +854,6 @@ function TryToExecuteHab_MestreDuelista(byRef attackInfo)
 		return true;
 	else
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MESTRE_DUELISTA}]: {HAB_STATUS::COOLDOWN}!");
-	endif
-
-	return false;
-endfunction
-
-function TryToExecuteHab_Insistencia(byRef attackInfo)
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::INSISTENCIA))
-		attackInfo.GetAttacker().GetObjRef().SetProp("insistencia", 1);
-
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::INSISTENCIA}]: {HAB_STATUS::SUCCESS}!");
-		return true;
 	endif
 
 	return false;
