@@ -86,7 +86,14 @@ function getDamageByTier(tier)
 		THROWING_LOW: return "1d4";
 		THROWING_MID: return "1d6";
 		THROWING_HIGH: return "1d8";
-			
+
+		// NPCs
+		DAMAGE_LOW: return 1;
+		// DAMAGE_LOWMID: return "2d2";
+		DAMAGE_MID:	return 3;
+		// DAMAGE_MIDHIGH: return "4d2";
+		DAMAGE_HIGH: return 5;
+
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
 endfunction
