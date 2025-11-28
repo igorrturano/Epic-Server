@@ -386,7 +386,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	cold 	 := attackInfo.GetDamage().GetColdBaseDamage();
 	poison 	 := attackInfo.GetDamage().GetPoisonBaseDamage();
 	energy 	 := attackInfo.GetDamage().GetEnergyBaseDamage();
-	
+
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano aplicado em: {attackInfo.GetDefender().GetName()}");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{attackInfo.GetDamage().ToString()}");

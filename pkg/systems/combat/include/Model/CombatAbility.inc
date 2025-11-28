@@ -50,7 +50,7 @@ enum class COMBAT_ABILITY
 	CHARGE := "Charge",
 	CONHECIMENTO_SOBRE_O_INIMIGO := "Conhecimento sobre o Inimigo",
 	DANCA_DAS_SOMBRAS := "Danca das Sombras",
-	DEATH_DANCE := "Death Dance",
+	DEATH_DANCE := "Danca da Morte",
 	DESTRUIDOR := "Destruidor",
 	DESVIAR_DISPAROS := "Desviar Disparos",
 	DESVIAR_PROJETIL := "Desviar Projetil",
@@ -97,16 +97,13 @@ enum class COMBAT_ABILITY
 	MARTIR := "Mártir",
 	MANTO_ROTHEN := "Manto Rothen",
 	VINGANCA := "Vingança",
-	CHAIN_OF_PAIN := "Chain of Pain",
 	KANINO_SUTAIRU := "Kanino Sutairu",
-	EXO_ESQUELETO := "Exo Esqueleto",
 	BACKSTAB := "Backstab",
 	BARREIRA_INDESTRUTIVEL := "Barreira Indestrutível",
 	CONTRA_ATAQUE := "Contra-Ataque",
 	FEROCIDADE_ENSANGUENTADA := "Ferocidade Ensanguentada",
 	MESTRE_DUELISTA := "Mestre Duelista",
-	INSISTENCIA := "Insistência",
-	ARROW_RECOVERY := "Arrow Recovery",
+	ARROW_RECOVERY := "Recuperar Flechas",
 	DIVINE_AUTHORITY := "Divine Authority"
 endenum
 
