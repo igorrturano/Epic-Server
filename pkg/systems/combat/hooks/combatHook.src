@@ -90,8 +90,10 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	
-	if (!CheckAmmo(attackInfo))
-		return false;
+	if (!attackInfo.GetAttacker().IsNPC())
+		if (!CheckAmmo(attackInfo))
+			return false;
+		endif
 	endif
 	
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesatotal") > 0)
@@ -198,11 +200,6 @@ function CheckAmmo(byRef attackInfo)
 		else
 			return false;
 		endif
-	endif
-
-	// NPCs don't need to set ammo serial - they use infinite ammo
-	if (attackInfo.GetAttacker().IsNPC())
-		return true;
 	endif
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
