@@ -166,7 +166,8 @@ endfunction
  */
 function CheckAttackerHabsBeforeDamage(byRef attackInfo)
 	if (TryToExecuteHab_Backstab(attackInfo) |
-		TryToExecuteHab_Furia(attackInfo)
+		TryToExecuteHab_Furia(attackInfo) |
+		TryToExecuteHab_TaticasArcanas(attackInfo)
 		)
 		return true;
 	endif
