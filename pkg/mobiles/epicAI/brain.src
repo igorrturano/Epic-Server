@@ -10,7 +10,7 @@ include "include/eventID";
 
 var brain_type;
 var me := Self();
-const AREA_SIZE := 12;
+const AREA_SIZE := 15;
 
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
