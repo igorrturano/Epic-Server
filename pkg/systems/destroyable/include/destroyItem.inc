@@ -2,7 +2,6 @@ use uo;
 use os;
 use basic;
 
-include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include ":destroyable:include/destroyItemPersist";
 include ":itemutils:itemInfo";
@@ -13,6 +12,8 @@ include ":traps:traps";
 include ":architect:architect";
 include ":crafting:/include/fabricacaoUtil";
 include "/include/packets";
+include ":combat:Model/AttackInfo";
+include ":combat:Controller/DamageController";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -444,6 +445,7 @@ endfunction
  *	Calcula o dano recebido, após subtração da resistência do item.
  *
  * Parameters
+ * quemDanificou:       O mobile que geroou o dano
  * fonteDano:	   		a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc> e <dano> ou um valor real.
  * atributosItem:	   	atributos do item que receberá o dano. comtem a durabilidade, resistencia e durabildiade total.
  *
@@ -451,7 +453,7 @@ endfunction
  *   retorna um struct com danoCalculado.+dano valor total do dano e .+isEficaz, um boolean informando se foi eficaz.
  *
 */
-function CalculaDanoRecebido(fonteDano, atributosItem)
+function CalculaDanoRecebido(quemDanificou, fonteDano, atributosItem)
 	var danoCalculado := struct;
 	if (atributosItem.isIndestrutivel)
 		danoCalculado.+isEficaz := false;
@@ -460,8 +462,20 @@ function CalculaDanoRecebido(fonteDano, atributosItem)
 
 	var danoCru := 0;
 	if (fonteDano.ISA(POLCLASS_WEAPON))
-		var dadoDano := RandomDiceRoll(fonteDano.getMainDamageDice());
-		danoCru := dadoDano + (Ceil(GetAttribute(fonteDano.character_owner, "Strength") / 10));
+		var attackInfo := AttackInfo(MobileWrapper(quemDanificou), 0);
+		var danoCalculado := CalculateAttackerDamage( attackInfo);
+		var danocausado := 0;
+
+		if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+			danocausado += attackInfo.GetDamage().GetSlashRawDamage();
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+			danocausado += attackInfo.GetDamage().GetPiercingRawDamage();
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+			danocausado += attackInfo.GetDamage().GetBluntRawDamage();
+		endif
+
+		danocausado += attackInfo.GetDamage().GetFireRawDamage() +  attackInfo.GetDamage().GetColdRawDamage() + attackInfo.GetDamage().GetPoisonRawDamage() + attackInfo.GetDamage().GetEnergyRawDamage();
+		danoCru := danocausado;
 	elseif (TypeOf("Struct"))
 		danoCru := fonteDano.dano;
 	else
@@ -620,7 +634,7 @@ function DanificaItem(quemDanificou, item, fonteDano, gfx := 0, gfxHue := 0)
 	endif
 
 	var atributosItem := MontaAtributosItem(item, fonteDano);
-	var danoCalculado := CalculaDanoRecebido(fonteDano, atributosItem);
+	var danoCalculado := CalculaDanoRecebido(quemDanificou, fonteDano, atributosItem);
 
 	if (item.IsA(POLCLASS_CORPSE) && GetObjProperty(item, "account")) // Corpo de jogador.
 		danoCalculado.isEficaz := false;

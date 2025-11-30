@@ -101,7 +101,7 @@ function ClassificaDanoCor(tipo)
 endfunction
 
 function ClassificaResistCor(tipo)
-	case(Upper(tipo))
+	case(tipo)
 		ARMOR_LOWLOW:
 			return "<BASEFONT COLOR=#c2185b>"; //Tons de vermelho inicio
 		ARMOR_LOWMID:

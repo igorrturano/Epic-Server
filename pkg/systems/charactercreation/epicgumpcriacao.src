@@ -22,6 +22,8 @@ include ":crafting:fabricaComplexos";
 program epicCreationGump(who)
 	resetCharacter(who);
 	var culture_pic := culturalSelection(who);
+	SetObjProperty(who, "nome_inicial", who.name);
+
 	racialSelection(who, culture_pic);
 	classSelection(who, culture_pic);
 	backgroundSelection(who, culture_pic);
@@ -38,8 +40,6 @@ program epicCreationGump(who)
 	setBirthdate(who);
 	looksSelection(who);
 	setCitizenship(who);
-	SetObjProperty(who, "nome_inicial", who.name);
-	who.name := who.title_race;
 
 	AP_SetVital(who, "Hunger", 0);
 	HealDamage(who, 200);
@@ -118,8 +118,11 @@ function racialSelection(who, culture_pic)
 			break;
 		endif
 	endwhile
-
-	SendSysMessageEX(who, "Voce será um " + chardata.raca, SSM_INFO);
+	var prefix := "";
+	if (chardata.culture == AIGLANA || chardata.culture == LESTE)
+		prefix := "Meio-";
+	endif
+	SendSysMessageEX(who, "Voce será um " + prefix + chardata.raca, SSM_INFO);
 
 	if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
 		who.graphic := 1830;
@@ -135,9 +138,9 @@ function racialSelection(who, culture_pic)
 		who.graphic := 1829;
 	endif
 
-	who.title_race := chardata.raca;
+	who.title_race := prefix+chardata.raca;
 	who.race := chardata.raca;
-
+	who.name := prefix+chardata.raca;
 	SetObjProperty(who, "chardata", chardata);
 endfunction
 

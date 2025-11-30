@@ -4,6 +4,7 @@ use cfgfile;
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
 include ":destroyable:include/destroyItem";
+include ":equipsys:utils/consts";
 
 
 function GetDmgStringDesc(elem, item)
@@ -146,30 +147,25 @@ function getTipoStringDesc(elem) //Exibe o tipo de arma
 endfunction
 
 
-function getVelStringDesc2(elem, item) //Velocidade da arma. Mostra diferença pra item base
-	var speedI := GetObjProperty(item,"attackspeedbonus");
-	var itemAttr := item.getAttrBase();
-	var speedE := CInt(itemAttr.AttackSpeed);
-	var speedDesc := "";
-	if (speedE >= 41)
-		speedDesc := "Muito Rápida";
-	elseif (speedE >= 37)
-		speedDesc := "Rápida";
-	elseif (speedE >= 33)
-		speedDesc := "Normal";
-	elseif (speedE >= 29)
+function getVelStringDesc2( tier)
+	var speedDesc;
+	if (tier  ==  MELEE_LOW)
 		speedDesc := "Lenta";
+	elseif (tier  ==  MELEE_MID)
+		speedDesc := "Regular";
+	elseif (tier  ==  MELEE_HIGH)
+		speedDesc := "Rápida";
+	elseif (tier  ==  RANGED_LOW)
+		speedDesc := "Lenta";
+	elseif (tier  ==  RANGED_MID)
+		speedDesc := "Regular";
+	elseif (tier  ==  RANGED_HIGH)
+		speedDesc := "Rápida";
 	else
-		speedDesc := "Muito Lenta";
+		speedDesc := "Lenta";
 	endif
 
-	if (speedI != error && speedI > 0)
-		return speedDesc + " (+" + CSTR(speedI) + ")";
-	elseif (speedI != error && speedI < 0)
-		return speedDesc + " (" + CSTR(speedI) + ")";
-	else
-		return speedDesc;
-	endif
+	return speedDesc;
 endfunction
 
 function getParryBonus(elem, item)

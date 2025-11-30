@@ -1533,15 +1533,15 @@ function CriaPropFabricadoGerada(
 			endif
 
 			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
-				if(cint(recursosConfig[materialPossivel.chave].tier) == tier )
-					materiaisPossiveisPorTier.insert(
-														tierInfo.valor,
-														struct{
-																materialComponente := materialPossivel.chave,
-																materialNome := recursosConfig[hex(materialPossivel.chave)].name
-															}
-													);
-				endif
+				
+				var chaveValorTier := PegaComponenteTierDesc(cint(recursosConfig[materialPossivel.chave].tier)).valor;
+				materiaisPossiveisPorTier.insert(
+													chaveValorTier,
+													struct{
+															materialComponente := materialPossivel.chave,
+															materialNome := recursosConfig[hex(materialPossivel.chave)].name
+														}
+												);
 			else
 				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
 				var valorTierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
@@ -1563,7 +1563,8 @@ function CriaPropFabricadoGerada(
 		endforeach
 
 		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
-			materialStruct := materiaisPossiveisPorTier[tierInfo.valor];
+			valorTier := tierInfo.valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
 			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tier + 1)).valor;
 			materialStruct := materiaisPossiveisPorTier[valorTier];
@@ -1581,9 +1582,10 @@ function CriaPropFabricadoGerada(
 				nomeMaterial := materialStruct.materialNome,
 				chaveMaterial := hex(materialStruct.materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
-
+		
 		if(TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_ERROR || TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_UNINIT)
-			return error{"errorText" := "Não foi possível encontrar material para este tier."};
+			//Print("receita.componentesNecessarios: " + componenteNecessario + " materiaisPossiveisPorTier:  " + materiaisPossiveisPorTier);
+			return error{"errorText" := "Não foi possível encontrar material para este valor de tier [{}].".format(valorTier) };
 		endif
 
 		var componenteEscolhido := MontaComponenteEscolhido(

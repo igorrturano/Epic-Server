@@ -26,7 +26,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				if(!this._template)
+					this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				endif
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -35,9 +37,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this._religion := err;
 				this._combatTraits := err;
 			else // Se entrar aqui, é player
-				this._race := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).race;
-				this._culture := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).culture;
-				this._religion := this._objRef.GetProp(MOBILE_PROPNAME::CHARDATA).religion;
+				this._race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
+				this._culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
+				this._religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
 
 				// Variáveis que indicarão que é um player
 				var err := IsPlayerException();
@@ -311,12 +313,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
+	/**
+	 * GetNPCDamage(this)
+	 *
+	 * Purpose
+	 * Model getter - returns raw damage configuration from npcdesc.cfg.
+	 * This is a simple data accessor following MVC pattern.
+	 * For business logic to convert to DamageDice, use BuildNPCDamageDice() in DamageController.
+	 *
+	 * Return struct
+	 * Returns a struct with raw EpicAttackDamage and EpicElemDamage config strings
+	 *
+	 */
 	function GetNPCDamage(this)
 		if (this._template is @Exception)
 			return this._template;
 		endif
-		
-		return this._template.Damage;
+
+		return struct{
+			EpicAttackDamage := this._template.EpicAttackDamage,
+			EpicElemDamage := this._template.EpicElemDamage
+		};
 	endfunction
 
 	/**
@@ -460,7 +477,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		var propData := this._objRef.GetProp(MOBILE_PROPNAME::COMBAT_TRAITS);
+		var propData := this.GetProperty(MOBILE_PROPNAME::COMBAT_TRAITS);
 		if (!propData)
 			propData := CombatTraits().Serialize();
 		endif
@@ -506,7 +523,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 		
 		this._combatTraits := combatTrait;
-		this._objRef.SetProp(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
+		this.SetProperty(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
 
 		return this;
 	endfunction
