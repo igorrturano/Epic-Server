@@ -271,27 +271,14 @@ function AnimalIdle(wanders)
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif
     
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+    WanderAroundAnchor(me);
 
     if (RandomInt(100) < 10) // 10% de chance de criar traps
         if (me.isSpider())
             CreateInvisibleWeb(me); 
         endif
 
-        wander();
+        WanderAroundAnchor(me);
         sleep(1);
         if (me.CanLayEggSac())
             LayEggSac(me);
