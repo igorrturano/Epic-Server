@@ -5,6 +5,8 @@
  *
  */
 
+use uo;
+
 // Internal
 include ":combat:armorZones";
 include ":combat:Model/CombatAbility";
@@ -16,6 +18,7 @@ include ":combat:weardown";
 
 // External
 include ":io:CFGFile";
+include "include/epicNPCUtils";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -98,6 +101,65 @@ function CalculateSkillDamage(byRef attackInfo)
 	endif
 	
 	attackInfo.SetDamage(damage);
+endfunction
+
+/**
+ * BuildNPCDamageDice(npc)
+ *
+ * Purpose
+ * Controller function that builds a DamageDice object from NPC template configuration.
+ * This is business logic - it converts raw config data into domain objects.
+ *
+ * Parameters
+ * npc: MobRef of the NPC (POL object reference, not wrapper)
+ *
+ * Return DamageDice
+ * Returns a DamageDice object with all damage types configured from npcdesc.cfg
+ *
+ */
+function BuildNPCDamageDice(npc)
+	var npcConfig := NPC_GetNPCConfig(npc);
+	var physicalTiers := GetConfigString(npcConfig, "EpicAttackDamage");
+	var elementalTiers := GetConfigString(npcConfig, "EpicElemDamage");
+
+	physicalTiers := SplitWords(physicalTiers);
+	elementalTiers := SplitWords(elementalTiers);
+
+	// Physical damage: Convert tier names to dice strings (e.g., "ONEHANDED_MID" -> "1d6")
+	var slashDiceStr := getDamageByTier(physicalTiers[1]);
+	var piercingDiceStr := getDamageByTier(physicalTiers[2]);
+	var bluntDiceStr := getDamageByTier(physicalTiers[3]);
+
+	var slashDice := slashDiceStr ? Dice(slashDiceStr) : false;
+	var piercingDice := piercingDiceStr ? Dice(piercingDiceStr) : false;
+	var bluntDice := bluntDiceStr ? Dice(bluntDiceStr) : false;
+
+	// Elemental damage: Convert flat values to dice notation (e.g., 5 -> "5d1")
+	var fireDice := CreateElementalDice(elementalTiers[1]);
+	var coldDice := CreateElementalDice(elementalTiers[2]);
+	var poisonDice := CreateElementalDice(elementalTiers[3]);
+	var energyDice := CreateElementalDice(elementalTiers[4]);
+
+	return DamageDice(slashDice, piercingDice, bluntDice, fireDice, coldDice, poisonDice, energyDice);
+endfunction
+
+// Helper: Convert elemental damage tier to Dice (e.g., DAMAGE_HIGH -> 5 -> "5d1" -> Dice)
+function CreateElementalDice(tierString)
+	if (!tierString)
+		return false;
+	endif
+
+	var flatDamage := getElementalDamageByTier(tierString);
+	if (flatDamage && flatDamage != error)
+		return Dice(CStr(flatDamage) + "d1");
+	endif
+
+	return false;
+endfunction
+
+// Helper: Safely roll elemental damage dice with error checking
+function RollElementalDamage(dice)
+	return (dice && dice != error) ? dice.Roll().GetResult() : 0;
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
@@ -290,7 +352,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	chance := CInt(
 		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)			// Crítico extra da Skill
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -		// Crítico extra da Skill
+		CInt(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()).GetCriticalReductionMod()) // Redução de critico da Armadura defesora.
 	);
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))

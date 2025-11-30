@@ -305,7 +305,6 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 
 endfunction
 
-
 function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var retornoEfeitos := struct;
