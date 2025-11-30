@@ -21,6 +21,11 @@ include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);
+	
+	// Create chardata at the very start - this serves as the "creation in progress" flag
+	var chardata := struct;
+	SetObjProperty(who, "chardata", chardata);
+	
 	var culture_pic := culturalSelection(who);
 	SetObjProperty(who, "nome_inicial", who.name);
 
@@ -50,7 +55,8 @@ program epicCreationGump(who)
 	// Open Beta 28/09
 	startAdventure(who);
 	itemInheritance(who);
-
+	
+	// Mark creation as completed
 	SetObjProperty(who, "creation_completed", 1);
 endprogram
 
