@@ -183,6 +183,7 @@ endfunction
 
 function getRaceByCulturalId(culture_pic)
     var races;
+    var prefix := "Meio-";
     case (culture_pic)
         HAROLOTH_ID:
             races := {DROW};
@@ -197,12 +198,17 @@ function getRaceByCulturalId(culture_pic)
         BJORSKA_ID:
             races := {HUMANO};
         default:
-            races := array{ANAO, DROW, ELFO, HUMANO, ORC, PEQUILHO};
+            races := array{ANAO, prefix+DROW, prefix+ELFO, HUMANO, prefix+ORC, PEQUILHO};
     endcase
     return races;
 endfunction
 
 function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var display_race := "";
+    if (chardata.culture == AIGLANA || chardata.culture == LESTE)
+        display_race += "Meio-";
+    endif
+    display_race += chardata.raca;
     var racial_traits := GetRacialTraits(chardata.raca);
     var gump := GFCreateGump();
     GFClosable(gump, 0);
@@ -217,7 +223,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 149, 76, 192, 40, "<BASEFONT Size=55 Color=#999999>Raça", 0, 0);
     GFHTMLArea(gump, 148, 75, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Raça", 0, 0);
     
-    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(chardata.raca), 1, 0);
+    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(display_race), 1, 0);
 
     // Exibir imagem da cultura
     GFGumpPic(gump, 298, 100, culture_pic);
