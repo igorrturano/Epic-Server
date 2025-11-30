@@ -18,6 +18,7 @@ class UObjectWrapper(IUObjectWrapper)
 	var _graphic := 0;
 	var _color := 0;
 	var _weight := 0;
+	var _cProps;
 
 	function UObjectWrapper(this, byRef object)
 		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_ITEMREF)
@@ -28,6 +29,16 @@ class UObjectWrapper(IUObjectWrapper)
 			this._graphic := object.graphic;
 			this._color := object.color;
 			this._weight := object.weight;
+		elseif (TypeOfInt(object) == OT_CONFIGELEMREF)
+			this._template := object;
+			this._cProps := object.CProps;
+		elseif (object.isVendorTemplate)
+			this._objType := object.objtype;
+			this._name := object.name;
+			this._graphic := object.graphic;
+			this._color := object.color;
+			this._weight := object.weight;
+			this._cProps := object.CProps;
 		else
 			var objRefBySerial := SystemFindObjectBySerial(object);
 			if (objRefBySerial)
@@ -126,21 +137,30 @@ class UObjectWrapper(IUObjectWrapper)
 
 		return this;
 	endfunction
+	
+	/**
+	 * Obtém o mapa de propriedades personalizadas do template.
+	 *
+	 * @return Mapa contendo as propriedades personalizadas do template
+	 */
+	function GetCProps(this)
+		return this._cProps;
+	endfunction
 
 	function GetProperty(this, propName)
-		if (this._objRef is @Exception)
+		if (this._objRef is @Exception && !this.GetCProps())
 			return this._objRef;
 		endif
 
-		return this._objRef.GetProp(propName);
+		return this.GetObjRef() ? this.GetObjRef().GetProp(propName) : this.GetCProps()[propName];
 	endfunction
 
 	function SetProperty(this, propName, propValue)
-		if (this._objRef is @Exception)
+		if (this._objRef is @Exception && !this.GetCProps())
 			return this._objRef;
 		endif
 
-		this._objRef.SetProp(propName, propValue);
+		return this.GetObjRef() ? this.GetObjRef().SetProp(propName, propValue) : this.GetCProps().insert(propName, propValue);
 
 		return this;
 	endfunction
@@ -150,7 +170,7 @@ class UObjectWrapper(IUObjectWrapper)
 			return this._objRef;
 		endif
 
-		this._objRef.EraseProp(propName);
+		this.GetObjRef() ? this.GetObjRef().EraseProp(propName) :  this.GetCProps().erase(propName);
 
 		return this;
 	endfunction

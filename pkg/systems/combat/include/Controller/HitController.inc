@@ -56,7 +56,7 @@ function CalculateHitChance(byRef attackInfo)
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
 
-	hit_chance += CInt(PegaValorFabricacao(attackInfo.GetAttacker().GetWeapon().GetObjRef(), CARACTERISTICA_FABRICACAO_PRECISAO) * 3);
+	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
 	hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"));
 

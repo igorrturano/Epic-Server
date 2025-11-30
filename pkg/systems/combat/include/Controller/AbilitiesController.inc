@@ -35,9 +35,10 @@ enum class HAB_STATUS
 endenum
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de aplicar o dano.");
-	return false;
+	// CheckDefenderHabsBeforeDamage(attackInfo); // TODO: Enable when ready
+	CheckAttackerHabsBeforeDamage(attackInfo); // Enabled: Backstab and Furia only
+
+	return true;
 endfunction
 
 /**
@@ -82,9 +83,10 @@ function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada após aplicar o dano.");
+	// CheckDefenderHabsAfterDamage(attackInfo); // TODO: Enable when ready
+	// CheckAttackerHabsAfterDamage(attackInfo); // TODO: Add when attacker habs are needed
 
-	return false;
+	return true;
 endfunction
 
 /**
@@ -145,6 +147,31 @@ function CheckDefenderHabsBeforeDamage(byRef attackInfo)
 	endif
 
 	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de receber o dano.");
+	return false;
+endfunction
+
+/**
+ * CheckAttackerHabsBeforeDamage(byref attackInfo)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas antes de o atacante causar dano;
+ * Criado com byRef pois algumas habilidades modificam o dano e outras propriedades.
+ *
+ * Parameters
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
+ *
+ * Return
+ * Retorna true se alguma habilidade foi ativada, false caso contrário.
+ *
+ */
+function CheckAttackerHabsBeforeDamage(byRef attackInfo)
+	if (TryToExecuteHab_Backstab(attackInfo) |
+		TryToExecuteHab_Furia(attackInfo)
+		)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de causar dano.");
 	return false;
 endfunction
 
@@ -460,13 +487,14 @@ function TryToExecuteHab_EspecialistaEscudos(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Backstab(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") &&
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab")
-		)
+	var hasProp := attackInfo.GetAttacker().GetObjRef().GetProp("backstab");
+	var weaponHasProp := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab");
+
+	if (hasProp && weaponHasProp)
 		attackInfo.GetAttacker().GetObjRef().EraseProp("backstab");
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("backstab");
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#nextcritical");
-		
+
 		if (!TryToExecuteHab_SempreAlerta(attackInfo))
 			TryToExecuteHab_AtaqueFurtivo(attackInfo);
 		endif
@@ -690,15 +718,27 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
 	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y))
 		if (CanBackStab(attackInfo.GetAttacker()))
-			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-				MakeBleed(attackInfo.GetDefender().GetObjRef());
-				DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
-				return true;
+			// Apply sneak damage bonus
+			var dmg := attackInfo.GetDamage();
+			if (dmg.GetSlashBaseDamage() > 0)
+				dmg.IncreaseSlashBaseDamage(sneak_dmg);
+			elseif (dmg.GetPiercingBaseDamage() > 0)
+				dmg.IncreasePiercingBaseDamage(sneak_dmg);
+			elseif (dmg.GetBluntBaseDamage() > 0)
+				dmg.IncreaseBluntBaseDamage(sneak_dmg);
 			endif
+			attackInfo.SetDamage(dmg);
+
+			// Apply bleed effect
+			MakeBleed(attackInfo.GetDefender().GetObjRef());
+
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: " + CInt(sneak_dmg));
+			return true;
 		else
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!");
-        endif
-    endif
+		endif
+	endif
 
 	return false;
 endfunction
