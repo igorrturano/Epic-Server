@@ -126,7 +126,10 @@ function racialSelection(who, culture_pic)
 	endwhile
 	var prefix := "";
 	if (chardata.culture == AIGLANA || chardata.culture == LESTE)
-		prefix := "Meio-";
+		// Only Elfo, Drow, and Orc can be half races
+		if (chardata.raca == ELFO || chardata.raca == DROW || chardata.raca == ORC)
+			prefix := "Meio-";
+		endif
 	endif
 	SendSysMessageEX(who, "Voce será um " + prefix + chardata.raca, SSM_INFO);
 
