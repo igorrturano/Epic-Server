@@ -42,7 +42,7 @@ program doubleattack(who)
 		PlaySoundEffect(who, sound);
 		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, color);
 
-		sleep(3);
+		sleep(1);
 		i++;
 	endwhile
 	PlaySoundEffect(who, 0x245);
