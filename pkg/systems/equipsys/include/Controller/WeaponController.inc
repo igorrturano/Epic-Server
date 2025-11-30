@@ -61,8 +61,6 @@ function getDamageByTier(tier)
 	case (Upper(tier))
 		// NO DAMAGE
 		DAMAGE_NONE: return 0;
-
-		DAMAGE_FIST: return "1d2";
 		
 		// ONE HANDED
 		ONEHANDED_LOW: return "1d4";
