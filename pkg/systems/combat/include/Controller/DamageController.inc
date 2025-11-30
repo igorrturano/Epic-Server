@@ -61,11 +61,16 @@ function CalculateStatusDamage(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-		stat := DEXTERITY;
-		statBase := CInt(attackInfo.GetAttacker().GetDex());
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == THROWING)
-		stat := $"{STRENGTH} + {DEXTERITY}";
-		statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
+			stat := DEXTERITY;
+			statBase := CInt(attackInfo.GetAttacker().GetDex());
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+			stat := DEXTERITY;
+			statBase := CInt(attackInfo.GetAttacker().GetDex());
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+			stat := $"{STRENGTH} + {DEXTERITY}";
+			statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
+		endif
 	else
 		stat := STRENGTH;
 		statBase := CInt(attackInfo.GetAttacker().GetStr());
@@ -110,15 +115,23 @@ endfunction
 function CalculateWeaponDamage(byRef attackInfo)
 	var damageDice;
 
-	if (attackInfo.GetAttacker().IsNPC() && !attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		damageDice := attackInfo.GetAttacker().GetNPCDamage();
-	else
-		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
-		elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-			damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
-		endif
+	// if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
+	// 	damageDice := attackInfo.GetAttacker().GetNPCDamage();
+	// else
+	// 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+	// 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
+	// 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+	// 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
+	// 	endif
+	// endif
+
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
+	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
 	endif
+
+	print($"{attackInfo.GetAttacker().GetName()} atacou com: {attackInfo.GetAttacker().GetEquipBySlot(WEAPON).ToString()} usando {attackInfo.GetDamageHand()}");
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dados de dano da arma ({attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetName()}):");
