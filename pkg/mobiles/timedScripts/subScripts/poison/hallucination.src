@@ -104,20 +104,6 @@ function ConvertIntToHex(astring, alength)
 	return astring;
 endfunction
 
-function DrawGamePlayer(who, jgraphic, jcolor)
-	var PacketHexString := "20" + ConvertIntToHex(who.serial, 4);
-	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
-	PacketHexString := PacketHexString + "0000";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
-	SendPacket(who, PacketHexString);
-endfunction
-
 function DrawObject(ktowhom, kobj, kgraphic, kcolor, keqitrandcolor := 0)
 	var PacketHexStringPart1 := "78";
 	var PacketHexStringPart2 := ConvertIntToHex(kobj.serial, 4) + ConvertIntToHex(kgraphic, 2);
