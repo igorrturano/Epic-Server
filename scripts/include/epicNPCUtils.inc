@@ -2,6 +2,7 @@ use util;
 
 include ":attributes:attributes";
 include ":equipsys:Controller/WeaponController";
+include ":combat:Model/Damage";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
@@ -193,12 +194,12 @@ endfunction
 function getNPCMainDamage(npc, type)
 	var damage := struct;
 
-	if (type.Upper() == SLASHDAMAGE.Upper())
-		damage.+AttackType := SLASHDAMAGE;
-	elseif (type.Upper() == PIERCINGDAMAGE.Upper())
-		damage.+AttackType := PIERCINGDAMAGE;
-	elseif (type.Upper() == BLUNTDAMAGE.Upper())
-		damage.+AttackType := BLUNTDAMAGE;
+	if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
+		damage.+AttackType := DAMAGE_TYPE::SLASH;
+	elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
+		damage.+AttackType := DAMAGE_TYPE::PIERCING;
+	elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
+		damage.+AttackType := DAMAGE_TYPE::BLUNT;
 	else
 		damage.+AttackType := error{"errortext" := "No valid attack type!"};
 	endif
@@ -208,11 +209,11 @@ function getNPCMainDamage(npc, type)
 		var npcDamages := getNPCDamages(npc);
 		var damageTier;
 
-		if (type.Upper() == SLASHDAMAGE.Upper())
+		if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
 			damageTier := npcDamages.SlashDamage;
-		elseif (type.Upper() == PIERCINGDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
 			damageTier := npcDamages.PiercingDamage;
-		elseif (type.Upper() == BLUNTDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
 			damageTier := npcDamages.BluntDamage;
 		else
 			damageTier := error{"errortext" := "No valid damage tier!"};
