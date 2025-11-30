@@ -116,6 +116,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
         AP_SetSkillMod(npc, PARRY, CInt(boss.skills_mod.parry));
     endif
 
+    if (boss.skills_mod.arcana)
+        AP_SetSkillMod(npc, ARCANA, CInt(boss.skills_mod.arcana));
+    endif
+
     if (boss.skills_mod.one_handed)
         AP_SetSkillMod(npc, ONEHANDED, CInt(boss.skills_mod.one_handed));
     endif
