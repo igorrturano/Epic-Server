@@ -269,6 +269,7 @@ endfunction
 
 function CalculateAttackerCriticalHit(byRef attackInfo)
 	attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
+	attackInfo.SetCriticalHitChanceMod(CalculateCriticalChanceMod(attackInfo));
 	attackInfo.RollCriticalHitChance();
 
 	if (attackInfo.GetDamage().IsCritical())
@@ -298,7 +299,7 @@ function CalculateCriticalChance(byRef attackInfo)
 	chance := CInt(
 		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -		// Crítico extra da Skill
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) 			// Crítico extra da Skill
 	);
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
@@ -325,6 +326,14 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	return CInt(chance);
+endfunction
+
+function CalculateCriticalChanceMod(byRef attackInfo)
+	var criticalChanceMod := 0;
+
+	criticalChanceMod -= CInt(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()).GetCriticalReductionMod()); // Redução de critico da Armadura defensora.
+
+	return CInt(criticalChanceMod);
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
