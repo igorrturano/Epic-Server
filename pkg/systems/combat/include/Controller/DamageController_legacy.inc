@@ -37,6 +37,12 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
+enum DAMAGE_TYPE_LEGACY
+	SLASHDAMAGE	:= "Cortante",
+	PIERCINGDAMAGE := "Perfurante",
+	BLUNTDAMAGE	:= "Contusivo",
+endenum
+
 function HealFLS(targ, amt)
 	if (!GetObjProperty(targ, "nocure"))
 		HealDamage(targ, amt);

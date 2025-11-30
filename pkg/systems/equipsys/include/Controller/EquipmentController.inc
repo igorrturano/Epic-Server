@@ -3,16 +3,17 @@
 use math;
 
 include ":equipsys:utils/consts";
+include ":combat:Model/Damage";
 include "ArmorController";
 
 function GetDurabilityByType(type)
 	var maxhp := 0;
 	
-	if (Upper(type) == Upper(SLASHDAMAGE))
+	if (Upper(type) == Upper(DAMAGE_TYPE::SLASH))
 		maxhp := 45;
-	elseif (Upper(type) == Upper(PIERCINGDAMAGE))
+	elseif (Upper(type) == Upper(DAMAGE_TYPE::PIERCING))
 		maxhp := 60;
-	elseif (Upper(type) == Upper(BLUNTDAMAGE))
+	elseif (Upper(type) == Upper(DAMAGE_TYPE::BLUNT))
 		maxhp := 75;
 	elseif (Upper(type) == Upper(SHIELD_BUCKLER))
 		maxhp := 40;

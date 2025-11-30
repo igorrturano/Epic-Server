@@ -1,4 +1,5 @@
 include ":equipsys:utils/consts";
+include ":combat:Model/DamageTier";
 
 function getDamageElemental(DMGTYPE, weapon)
 	case(Upper(DMGTYPE))
@@ -60,39 +61,36 @@ endfunction
 function getDamageByTier(tier)
 	case (Upper(tier))
 		// NO DAMAGE
-		DAMAGE_NONE: return 0;
+		DAMAGE_TIER::DAMAGE_NONE: return 0;
+
+		DAMAGE_TIER::UNARMED_LOW: return "1d2";
+		DAMAGE_TIER::UNARMED_MID: return "2d2";
+		DAMAGE_TIER::UNARMED_HIGH: return "3d2";
 		
 		// ONE HANDED
-		ONEHANDED_LOW: return "1d4";
-		ONEHANDED_MID: return "1d6";
-		ONEHANDED_HIGH: return "1d8";
+		DAMAGE_TIER::ONEHANDED_LOW: return "1d4";
+		DAMAGE_TIER::ONEHANDED_MID: return "1d6";
+		DAMAGE_TIER::ONEHANDED_HIGH: return "1d8";
 			
 		// TWO HANDED
-		TWOHANDED_LOW: return "1d8";
-		TWOHANDED_MID: return "1d10";
-		TWOHANDED_HIGH: return "1d12";
+		DAMAGE_TIER::TWOHANDED_LOW: return "1d8";
+		DAMAGE_TIER::TWOHANDED_MID: return "1d10";
+		DAMAGE_TIER::TWOHANDED_HIGH: return "1d12";
 
 		// BOW
-		BOW_LOW: return "1d4";
-		BOW_MID: return "1d6";
-		BOW_HIGH: return "1d8";
+		DAMAGE_TIER::BOW_LOW: return "1d4";
+		DAMAGE_TIER::BOW_MID: return "1d6";
+		DAMAGE_TIER::BOW_HIGH: return "1d8";
 
 		// CROSSBOW
-		CROSSBOW_LOW: return "1d6";
-		CROSSBOW_MID: return "1d8";
-		CROSSBOW_HIGH: return "1d10";
+		DAMAGE_TIER::CROSSBOW_LOW: return "1d6";
+		DAMAGE_TIER::CROSSBOW_MID: return "1d8";
+		DAMAGE_TIER::CROSSBOW_HIGH: return "1d10";
 
 		// THROWING
-		THROWING_LOW: return "1d4";
-		THROWING_MID: return "1d6";
-		THROWING_HIGH: return "1d8";
-
-		// NPCs
-		DAMAGE_LOW: return 1;
-		// DAMAGE_LOWMID: return "2d2";
-		DAMAGE_MID:	return 3;
-		// DAMAGE_MIDHIGH: return "4d2";
-		DAMAGE_HIGH: return 5;
+		DAMAGE_TIER::THROWING_LOW: return "1d4";
+		DAMAGE_TIER::THROWING_MID: return "1d6";
+		DAMAGE_TIER::THROWING_HIGH: return "1d8";
 
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
