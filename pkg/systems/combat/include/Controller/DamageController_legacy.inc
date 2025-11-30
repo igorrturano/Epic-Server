@@ -441,7 +441,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var damagemod := 2;
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
-	endif
+    endif
 
 	if (getCooldown(attacker, "faroporsangue"))
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
