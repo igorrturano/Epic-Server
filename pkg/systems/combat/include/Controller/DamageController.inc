@@ -78,7 +78,6 @@ function CalculateStatusDamage(byRef attackInfo)
 
 	var damageMod := CInt(statBase / statDivisor);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(stat)}: {damageMod}");
-	print($"Bônus de dano por {Upper(stat)}: {damageMod}");
 	
 	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 		damage.IncreaseSlashRawDamage(damageMod);
@@ -101,7 +100,6 @@ function CalculateSkillDamage(byRef attackInfo)
 	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / skillDivisor);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de dano por {Upper(skill)}: {damageMod}");
-	print($"Bônus de dano por {Upper(skill)}: {damageMod}");
 	
 	if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 		damage.IncreaseSlashRawDamage(damageMod);
@@ -117,23 +115,11 @@ endfunction
 function CalculateWeaponDamage(byRef attackInfo)
 	var damageDice;
 
-	// if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
-	// 	damageDice := attackInfo.GetAttacker().GetNPCDamage();
-	// else
-	// 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-	// 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
-	// 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-	// 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
-	// 	endif
-	// endif
-
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
 	endif
-
-	print($"{attackInfo.GetAttacker().GetName()} atacou com: {attackInfo.GetAttacker().GetEquipBySlot(WEAPON).ToString()}");
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dados de dano da arma ({attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetName()}):");
@@ -313,7 +299,6 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -		// Crítico extra da Skill
-		CInt(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()).GetCriticalReductionMod()) // Redução de critico da Armadura defesora.
 	);
 
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
@@ -406,8 +391,6 @@ function ApplyCombatDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano aplicado em: {attackInfo.GetDefender().GetName()}");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{attackInfo.GetDamage().ToString()}");
-
-	print($"{attackInfo.GetAttacker().GetName()} causou {attackInfo.GetDamage().ToString()} em {attackInfo.GetDefender().GetName()}");
 
 	if (slash > 0)
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
