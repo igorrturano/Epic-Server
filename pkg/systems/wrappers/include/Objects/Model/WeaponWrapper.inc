@@ -65,8 +65,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._speed := GetSpeedByTier(this._speedTier);
 			this._criticalChance := GetCriticalChanceByTier(this._criticalChanceTier);
 			this._maxHP := GetDurabilityByType(this.GetAttackType());
-			this._weight := this._GetWeight();
-			this._strRequired := this._GetSTRRequired();
+			this._weight := this._CalculateWeight();
+			this._strRequired := this._CalculateSTRRequired();
 			this._ammo := this._template.ProjectileType ? Ammo(this._template.ProjectileType) : uninit;
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
@@ -380,7 +380,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	// Private functions
-	function _GetWeight(this)
+	function _CalculateWeight(this)
+		var weight := 1;
+		
 		var maxMainDamage := Max(array{
 			CInt(SplitWords(this._mainDamage.GetSlashDamage(), "d")[2]),
 			CInt(SplitWords(this._mainDamage.GetPiercingDamage(), "d")[2]),
@@ -392,10 +394,13 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			CInt(SplitWords(this._offDamage.GetBluntDamage(), "d")[2])
 		});
 
-		return CInt(maxMainDamage) + CInt(maxOffDamage);
+		weight := CInt(maxMainDamage) + CInt(maxOffDamage);
+		weight *= GetWeightMultiplierByMaterial(this._material);
+
+		return weight;
 	endfunction
 
-	function _GetSTRRequired(this)
+	function _CalculateSTRRequired(this)
 		return CInt(this._weight * 7.5);
 	endfunction
 endclass
