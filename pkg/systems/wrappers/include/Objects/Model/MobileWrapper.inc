@@ -317,11 +317,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._template is @Exception)
 			return this._template;
 		endif
-
-		return struct{
-			EpicAttackDamage := this._template.EpicAttackDamage,
-			EpicElemDamage := this._template.EpicElemDamage
-		};
+		
+		return this._template.Damage;
 	endfunction
 
 	/**
