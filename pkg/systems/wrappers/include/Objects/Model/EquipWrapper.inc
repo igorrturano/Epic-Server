@@ -8,6 +8,7 @@ include ":IO:CFGFile";
 include ":equipsys:utils/consts";
 
 include ":combat:Model/AttributeModifier";
+include ":equipsys:Controller/EquipmentController";
 
 CONST PROPNAME_ITEMINFO := "itemInfo";
 
@@ -16,6 +17,8 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	var _layer := 0x0;
 	var _weight := 0;
 	var _maxHP := 0;
+	var _STRRequired := 0;
+	var _material := "";
 	var _modifiers := dictionary{}; // Dictionary of AttributeModifier()
 
 	function EquipWrapper(this, byRef item)
@@ -30,19 +33,16 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			
 			this._name := this._prop.Name ?: this._objRef.name;
 			this._weight := this._prop.Weight ?: this._objRef.weight;
-			this._maxHP := this._prop.MaxHP ?: this._objRef.maxHP;
 			this._modifiers := dictionary{};
 		else // Caso seja um template ou tipo errado
 			var err;
 			if (!this._template)
 				err := InvalidFormatException("The param must be a Equipment ObjRef or a valid Template!");
 				this._weight := err;
-				this._maxHP := err;
 				this._graphic := err;
 			else
 				err := IsTemplateException();
 				this._weight := this._template.weight;
-				this._maxHP := this._template.maxHP;
 				this._graphic := this._template.graphic;
 			endif
 			
@@ -64,6 +64,14 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		return this._weight;
 	endfunction
 
+	function GetSTRRequired(this)
+		return this._STRRequired;
+	endfunction
+
+	function GetMaterial(this)
+		return this._material;
+	endfunction
+
 	function GetMaxHP(this)
 		return this._maxHP;
 	endfunction
@@ -80,6 +88,18 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	
 	function GetModifiers(this)
 		return this._modifiers;
+	endfunction
+
+	function SetSTRRequired(this, strRequired)
+		this._STRRequired := CInt(strRequired);
+
+		return this;
+	endfunction
+
+	function SetMaterial(this, material)
+		this._material := material;
+
+		return this;
 	endfunction
 
 	/**
@@ -117,9 +137,10 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		this._prop.+MaxHP := this._maxHP;
 
 		this._SetName(this._name);
-		this._objType.graphic := this._graphic;
-		this._objType.weight := this._weight;
-		this._objType.maxHP := this._maxHP;
+		this._objRef.graphic := this._graphic;
+		this._objRef.weight := this._weight;
+		this._objRef.maxHP := this._maxHP;
+		this._objRef.max_weight_mod := this._weight - this._objRef.weight;
 
 		this._prop.+Modifiers := dictionary{};
 	endfunction
