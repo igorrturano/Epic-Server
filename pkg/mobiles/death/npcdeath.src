@@ -94,6 +94,7 @@ program core_npcDeath(params)
 	endforeach
 
 	HandleEpicBossLoot(corpse);
+	HandleLeverSpawnedBoss(corpse);
 
 	if (getObjProperty(corpse, "owner")) // se for tamed, atualiza a prop tamedpets do master
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
@@ -511,6 +512,41 @@ function HandleEpicBossLoot(corpse)
 
 		item.movable := 1;
 	endforeach
+
+	return 1;
+endfunction
+
+function HandleLeverSpawnedBoss(corpse)
+	// Check if this boss was spawned by a lever
+	var lever_serial := GetObjProperty(corpse, "spawned_by_lever");
+	if (!lever_serial)
+		return 0;
+	endif
+
+	// Find the lever
+	var lever := SystemFindObjectBySerial(lever_serial);
+	if (!lever || lever == error)
+		return 0;
+	endif
+
+	// Get respawn configuration (default 120-150 minutes)
+	var respawn_min := GetObjProperty(lever, "respawn_min");
+	var respawn_max := GetObjProperty(lever, "respawn_max");
+	if (!respawn_min) respawn_min := 120; endif
+	if (!respawn_max) respawn_max := 150; endif
+
+	// Calculate random respawn time in seconds
+	var respawn_minutes := RandomInt(respawn_max - respawn_min + 1) + respawn_min;
+	var respawn_seconds := respawn_minutes * 60;
+
+	// Set cooldown on lever (cooldown.inc uses "#" prefix internally)
+	SetObjProperty(lever, "#boss_respawn", Cint(ReadGameClock() + respawn_seconds));
+
+	// Unlock the lever
+	EraseObjProperty(lever, "#inuse");
+
+	// Clean up boss reference
+	EraseObjProperty(lever, "champ");
 
 	return 1;
 endfunction
