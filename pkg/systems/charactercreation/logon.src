@@ -17,6 +17,8 @@ program createChar(who)
         Message("Criação de personagem incompleta ou corrompida. Por favor, delete este personagem e crie um novo. Contate um GM se precisar de assistência.")
             .SetColor(SSM_FAIL)
             .SendSys(who);
+
+            SetObjProperty(who, "Delete", 1); // Insta logoff
             
             sleep(1);
             DisconnectClient(who);
