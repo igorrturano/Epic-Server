@@ -679,7 +679,7 @@ if (CheckImpassable(trg_boss.objtype) == 1)
 	return;
 endif
    var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x) +" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z), 1);
- if (loc == error)
+   if (loc == error)
 		SendSysMessageEx(who, "cancelado", SSM_FAIL);
 		return;
    endif 
