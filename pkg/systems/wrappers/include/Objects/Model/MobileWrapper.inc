@@ -770,7 +770,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Serial: {this._serial}, " +
 			$"ObjType: {this._objType}, " +
 			$"Graphic: {this._graphic} ({this._graphic}), " +
-			$"Color: {this._color} ({this._color}) ";
+			$"Color: {this._color} ({this._color}), " +
+			$"Str: {this.GetStr()}, " +
+			$"Dex: {this.GetDex()}, " +
+			$"Int: {this.GetInt()}";
 	endfunction
 endclass
 
