@@ -436,9 +436,8 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Tiro Penetrante]: " + CInt(damagemod));
 	endif
 
-	// Brigador de Taverna: bonus damage when unarmed (using FIST weapon 0x1F020)
-	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == FIST)
-		var damagemod := 2;
+	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
+        var damagemod := 2;
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
     endif
