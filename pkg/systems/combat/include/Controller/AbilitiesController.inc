@@ -359,14 +359,13 @@ function TryToExecuteHab_EspecialistaEscudos(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Backstab(byRef attackInfo)
-	var hasProp := attackInfo.GetAttacker().GetObjRef().GetProp("backstab");
-	var weaponHasProp := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab");
-
-	if (hasProp && weaponHasProp)
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") &&
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab")
+		)
 		attackInfo.GetAttacker().GetObjRef().EraseProp("backstab");
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("backstab");
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#nextcritical");
-
+		
 		if (!TryToExecuteHab_SempreAlerta(attackInfo))
 			TryToExecuteHab_AtaqueFurtivo(attackInfo);
 		endif
@@ -590,27 +589,15 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
 	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y))
 		if (CanBackStab(attackInfo.GetAttacker()))
-			// Apply sneak damage bonus
-			var dmg := attackInfo.GetDamage();
-			if (dmg.GetSlashBaseDamage() > 0)
-				dmg.IncreaseSlashBaseDamage(sneak_dmg);
-			elseif (dmg.GetPiercingBaseDamage() > 0)
-				dmg.IncreasePiercingBaseDamage(sneak_dmg);
-			elseif (dmg.GetBluntBaseDamage() > 0)
-				dmg.IncreaseBluntBaseDamage(sneak_dmg);
+			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
+				MakeBleed(attackInfo.GetDefender().GetObjRef());
+				DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
+				return true;
 			endif
-			attackInfo.SetDamage(dmg);
-
-			// Apply bleed effect
-			MakeBleed(attackInfo.GetDefender().GetObjRef());
-
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: " + CInt(sneak_dmg));
-			return true;
 		else
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!");
-		endif
-	endif
+        endif
+    endif
 
 	return false;
 endfunction
