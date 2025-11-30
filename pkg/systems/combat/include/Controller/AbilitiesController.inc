@@ -36,6 +36,7 @@ endenum
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	var exec := 0;
+	return;
 	exec += TryToExecuteHab_Martir(attackInfo);
 	exec += TryToExecuteHab_MantoRothen(attackInfo);
 	exec += TryToExecuteHab_KaniNoSutairu(attackInfo);
@@ -74,6 +75,7 @@ endfunction
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	var exec := 0;
+	return;
 
 	exec += TryToExecuteHab_ArmaduraArcana(attackInfo);
 	exec += TryToExecuteHab_Ainalaith(attackInfo);
@@ -97,6 +99,7 @@ endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 	var exec := 0;
+	return;
 
 	exec += TryToExecuteHab_RecuperacaoSalvadora(attackInfo);
 	exec += TryToExecuteHab_Vinganca(attackInfo);
@@ -113,6 +116,7 @@ endfunction
 
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	var exec := 0;
+	return;
 
 	exec += TryToExecuteHab_AtaqueInfalivel(attackInfo);
 	exec += TryToExecuteHab_MestreDuelista(attackInfo);
