@@ -10,6 +10,8 @@ include ":levers:efeitos";
 include ":tn:cooldown";
 include "include/say";
 include ":destroyable:include/destroyItem";
+include ":epicspawn:epicBoss";
+include ":message:include/model/Message";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -175,6 +177,15 @@ endfunction
 function normalusage(who, item)
    if (GetObjProperty(item, "#inuse"))
       return;
+   endif
+
+   // Check boss respawn cooldown (GMs with cmdlevel > 1 can bypass)
+   if (who.cmdlevel <= 1)
+      var cooldown_remaining := getCooldown(item, "boss_respawn");
+      if (cooldown_remaining > 0)
+         Message("Voce nao consegue mover a alavanca").SetColor(SSM_FAIL).SendSys(who);
+         return;
+      endif
    endif
 
    var status := GetObjProperty(item, "status");
@@ -372,31 +383,88 @@ endfunction
 function spawnBoss(item, opts)
    SetObjProperty(item, "#inuse", 1);
    Detach();
- var cfg := GetObjProperty(item, "configboss");
- var text_above := GetObjProperty(item, "txtabove");
- var creature;
-		if (GetObjProperty(item, "loc") ==1 )
-			creature := Createboss(cfg.boss, item.x, item.y, item.z, item.realm);
-			SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
-			sleepms(20);
-			if (!text_above)
-			else
-			PrintTextAbove(creature,""+text_above);
-			endif
-		else
-			var x := GetObjProperty(item, "x");
-			var y := GetObjProperty(item, "y");
-			var z := GetObjProperty(item, "z");
-			creature := Createboss(cfg.boss, cint(x), cint(y), cint(z), item.realm);
-			SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
-			sleepms(20);
-			if (!text_above)
-			else
-				PrintTextAbove(creature,""+text_above);
-			endif
-		endif
- SetObjProperty(item, "champ", creature.serial);
- EraseObjProperty(item, "#inuse");
+
+   // Get the boss configuration saved by epicboss command
+   var form_data := GetObjProperty(item, "form_data");
+   if (!form_data)
+      // Fallback to old config if no form_data exists
+      var cfg := GetObjProperty(item, "configboss");
+      if (cfg && cfg.boss)
+         // Use old system as fallback
+         var text_above := GetObjProperty(item, "txtabove");
+         var creature;
+         if (GetObjProperty(item, "loc") == 1)
+            creature := Createboss(cfg.boss, item.x, item.y, item.z, item.realm);
+         else
+            var x := GetObjProperty(item, "x");
+            var y := GetObjProperty(item, "y");
+            var z := GetObjProperty(item, "z");
+            creature := Createboss(cfg.boss, CInt(x), CInt(y), CInt(z), item.realm);
+         endif
+
+         if (creature && creature != error)
+            SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
+            SetObjProperty(creature, "spawned_by_lever", item.serial);
+            if (text_above)
+               Message(""+text_above).SendAbove(creature);
+            endif
+            SetObjProperty(item, "champ", creature.serial);
+            // Keep #inuse - don't erase it
+         else
+            // Spawn failed, unlock
+            EraseObjProperty(item, "#inuse");
+         endif
+      else
+         // No config at all, unlock
+         EraseObjProperty(item, "#inuse");
+      endif
+      return;
+   endif
+
+   // Determine spawn location
+   var spawn_x, spawn_y, spawn_z;
+   if (GetObjProperty(item, "spawn_at_lever"))
+      spawn_x := item.x;
+      spawn_y := item.y;
+      spawn_z := item.z;
+   else
+      spawn_x := CInt(GetObjProperty(item, "spawn_x"));
+      spawn_y := CInt(GetObjProperty(item, "spawn_y"));
+      spawn_z := CInt(GetObjProperty(item, "spawn_z"));
+
+      // Fallback to lever position if no spawn coordinates
+      if (!spawn_x || !spawn_y)
+         spawn_x := item.x;
+         spawn_y := item.y;
+         spawn_z := item.z;
+      endif
+   endif
+
+   // Create the epic boss using the modern system
+   var creature := CreateEpicBoss(form_data, spawn_x, spawn_y, spawn_z, item.realm);
+
+   if (creature && creature != error)
+      // Set anchor to lever location
+      SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
+
+      // Link boss to lever for death cleanup
+      SetObjProperty(creature, "spawned_by_lever", item.serial);
+
+      // Show text above if configured
+      var text_above := GetObjProperty(item, "spawn_textabove");
+      if (text_above && text_above != "")
+         Message(""+text_above).SendAbove(creature);
+      endif
+
+      // Save creature serial for reset/deactivation
+      SetObjProperty(item, "champ", creature.serial);
+
+      // Keep #inuse set - lever stays locked until boss dies
+      // This prevents spam spawning and instant kill via lever toggle
+   else
+      // Spawn failed, unlock the lever
+      EraseObjProperty(item, "#inuse");
+   endif
 endfunction
 
 function changegraphiclever(item, opts)
