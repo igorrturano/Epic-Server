@@ -130,9 +130,9 @@ function TryToAttack(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-		attackInfo.SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo));
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - CalculateDualWieldPenalty(attackInfo));
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> OffHand");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})");
 	endif
 
 	attackInfo.RollHitChance();
@@ -142,7 +142,6 @@ function TryToAttack(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-			ExecuteCombatAbilitiesOnHit(attackInfo);
 			ExecuteMasteryAbility(attackInfo);
 		endif
 
@@ -163,7 +162,7 @@ function DoAttack(byRef attackInfo)
 		attackInfo.GetAttacker().GetObjRef().concealed := 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().hidden) // Checa se o atacante escondido revela ou não
+	if (attackInfo.GetAttacker().IsHidden()) // Checa se o atacante escondido revela ou não
 		if (attackInfo.GetAttacker().GetObjRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
 			attackInfo.GetAttacker().GetObjRef().EraseProp("ataquefurtivoaprimorado");
 		else // Revela o atacante
@@ -183,7 +182,7 @@ function DoAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-		Run_Script(":combat:mainHitScript", attackInfo);
+		Run_Script_To_Completion(":combat:mainHitScript", attackInfo);
 	else // Se for ataque da mão secundária, executa async por causa do delay
 		Start_Script(":combat:mainHitScript", attackInfo);
 	endif
