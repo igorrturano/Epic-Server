@@ -9,7 +9,6 @@ include ":message:include/model/Message";
 include "include/epicConstants";
 
 program useScroll(who, scroll)
-
     var scroll_type := GetObjProperty(scroll, "scroll_type");
     var scroll_level := GetObjProperty(scroll, "scroll_level");
     var ritual_id := GetObjProperty(scroll, "ritual");
@@ -141,9 +140,10 @@ function ExecuteRitual(who, scroll, scroll_type, scroll_level, reagents)
 endfunction
 
 function ExecuteChaosRitual(who, scroll, scroll_level)
+    var mobile := MobileWrapper(who);
     // Ajustar entropia mínima
-    if (GetEntropy(who) > VOIDRIFT_MIN_CORRUPTION)
-        SetEntropy(who, VOIDRIFT_MIN_CORRUPTION);
+    if (mobile.GetEntropy() > VOIDRIFT_MIN_CORRUPTION)
+        mobile.SetEntropy(VOIDRIFT_MIN_CORRUPTION);
     endif
 
     // Adicionar entropia do pergaminho
@@ -154,15 +154,16 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
         3: entropy_amount := -3000;
         4: entropy_amount := -4000;
     endcase
-    UpdateEntropy(who, entropy_amount);
+    mobile.UpdateEntropy(entropy_amount);
 
     // Corromper jogadores próximos
     foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, VOIDRIFT_CORRUPT_RANGE, who.realm)
         if (mobile.acctname && mobile != who)
-            if (GetEntropy(mobile) > VOIDRIFT_MIN_CORRUPTION)
-                SetEntropy(mobile, VOIDRIFT_MIN_CORRUPTION);
+            var mobileWrapper := MobileWrapper(mobile);
+            if (mobileWrapper.GetEntropy() > VOIDRIFT_MIN_CORRUPTION)
+                mobileWrapper.SetEntropy(VOIDRIFT_MIN_CORRUPTION);
             endif
-            UpdateEntropy(mobile, entropy_amount);
+            mobileWrapper.UpdateEntropy(entropy_amount);
             Message("Voce sente uma energia sombria corromper sua alma!").SendSys(mobile);
         endif
     endforeach
@@ -195,6 +196,7 @@ function ExecuteChaosRitual(who, scroll, scroll_level)
 endfunction
 
 function ExecutePurgeRitual(who, scroll, scroll_level)
+    var mobile := MobileWrapper(who);
     // Buscar portal próximo
     var portal := FindNearbyPortal(who, scroll_level);
 
@@ -208,7 +210,7 @@ function ExecutePurgeRitual(who, scroll, scroll_level)
             3: entropy_amount := 3000;
             4: entropy_amount := 4000;
         endcase
-        UpdateEntropy(who, entropy_amount);
+        mobile.UpdateEntropy(entropy_amount);
         return 0;
     endif
 
@@ -234,7 +236,7 @@ function ExecutePurgeRitual(who, scroll, scroll_level)
         3: entropy_amount := 3000;
         4: entropy_amount := 4000;
     endcase
-    UpdateEntropy(who, entropy_amount);
+    mobile.UpdateEntropy(entropy_amount);
 
     Message("O portal do vazio foi purificado e fechado!").SendSys(who);
 endfunction

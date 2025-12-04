@@ -754,6 +754,75 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Graphic: {this._graphic} ({this._graphic}), " +
 			$"Color: {this._color} ({this._color}) ";
 	endfunction
+
+	// ============================================================================
+	// Entropy System Methods
+	// ============================================================================
+
+	/**
+	 * Obtém o valor atual de entropia do mobile.
+	 *
+	 * @return Integer Valor de entropia (0 se não definido)
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function GetEntropy(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var entropy := this.GetProperty(MOBILE_PROPNAME::ENTROPY);
+		if (!entropy)
+			return 0;
+		endif
+		return CInt(entropy);
+	endfunction
+
+	/**
+	 * Define o valor de entropia do mobile, respeitando os limites mínimo e máximo.
+	 *
+	 * @param value Integer Novo valor de entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function SetEntropy(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (value > ENTROPY_LIMITS::MAX)
+			value := ENTROPY_LIMITS::MAX;
+		elseif (value < ENTROPY_LIMITS::MIN)
+			value := ENTROPY_LIMITS::MIN;
+		endif
+
+		this.SetProperty(MOBILE_PROPNAME::ENTROPY, CInt(value));
+		return this;
+	endfunction
+
+	/**
+	 * Atualiza a entropia do mobile e a entropia global do mundo.
+	 *
+	 * @param amt Integer Quantidade a ser adicionada ou subtraída da entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function UpdateEntropy(this, amt)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var current := this.GetEntropy();
+		this.SetEntropy(current + amt);
+
+		// Atualizar entropia global do mundo
+		var global_entropy := GetGlobalProperty("GlobalEntropy");
+		if (!global_entropy)
+			global_entropy := 0;
+		endif
+		SetGlobalProperty("GlobalEntropy", global_entropy + amt);
+
+		return this;
+	endfunction
 endclass
 
 enum class MOBILE_GENDER
@@ -764,5 +833,11 @@ endenum
 
 enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
-	COMBAT_TRAITS := "combattraits"
+	COMBAT_TRAITS := "combattraits",
+	ENTROPY := "entropy"
+endenum
+
+enum class ENTROPY_LIMITS
+	MAX := 20000,
+	MIN := -20000
 endenum
