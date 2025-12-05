@@ -692,18 +692,27 @@ endfunction
 
 function setupAnchorNPC(mobile)
     var spawnpointserial := GetObjProperty(mobile, "spawnpoint");
-        if (spawnpointserial)
-            var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
-            if (spawnpoint)
-                var range := cint(GetObjProperty(spawnpoint, "Range"));
-            if (!range)
-                range := 6;
+    var range := 6;
+    var x := mobile.x;
+    var y := mobile.y;
+    var z := mobile.z;
+
+    if (spawnpointserial)
+        var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
+        if (spawnpoint)
+            var spawn_range := CInt(GetObjProperty(spawnpoint, "Range"));
+            if (spawn_range)
+                range := spawn_range;
             endif
-            SetObjProperty(mobile, "anchor", array{ spawnpoint.x , spawnpoint.y , spawnpoint.z + 2 });
-            SetObjProperty(mobile, "range", range);
-            var e := SetAnchor(spawnpoint.x, spawnpoint.y, range, 90);
+            x := spawnpoint.x;
+            y := spawnpoint.y;
+            z := spawnpoint.z;
         endif
     endif
+
+    SetObjProperty(mobile, "anchor", array{ x, y, z + 2, range });
+    SetObjProperty(mobile, "range", range);
+    // SetAnchor(x, y, range, 90); // This function seems to be deprecated or not working as expected
 endfunction
 
 function setupChampspawnNPC(mobile)
@@ -3104,4 +3113,45 @@ function CheckDarknessCreatureSurvival(mobile)
     endif
 
     return 0;
+endfunction
+/*
+ * WanderAroundAnchor(mobile)
+ *
+ * Purpose: Handle random wandering for idle NPCs, respecting anchor range
+ * Checks if the destination is within the allowed range from the anchor point
+ */
+function WanderAroundAnchor(mobile)
+    var anchor := GetObjProperty(mobile, "anchor");
+    var range := 6;
+    if (anchor[4])
+        range := anchor[4];
+    endif
+
+    // If outside range, walk back to anchor
+    if (CoordinateDistance(mobile.x, mobile.y, anchor[1], anchor[2]) > range)
+        WalkTowardLocation(anchor[1], anchor[2]);
+        return;
+    endif
+
+    // Random wandering when no targets
+    if (RandomInt(100) < 30)
+        var direction := RandomInt(8);
+        var dest_x := mobile.x;
+        var dest_y := mobile.y;
+
+        case (direction)
+            0: dest_y -= 1;
+            1: dest_x += 1; dest_y -= 1;
+            2: dest_x += 1;
+            3: dest_x += 1; dest_y += 1;
+            4: dest_y += 1;
+            5: dest_x -= 1; dest_y += 1;
+            6: dest_x -= 1;
+            7: dest_x -= 1; dest_y -= 1;
+        endcase
+
+        if (CoordinateDistance(dest_x, dest_y, anchor[1], anchor[2]) <= range)
+            WalkTowardLocation(dest_x, dest_y);
+        endif
+    endif
 endfunction
