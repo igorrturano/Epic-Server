@@ -570,7 +570,7 @@ class AttackInfo(IAttackInfo)
 		if (this._hitChance is @Exception) return this._hitChance; endif
 		if (this._hitChanceResult is @Exception) return this._hitChanceResult; endif
 
-		return this._hitChanceResult <= this._hitChance;
+		return CInt(this._hitChanceResult) <= CInt(this._hitChance) + CInt(this._hitChanceMod);
 	endfunction
 
 	/**
@@ -585,7 +585,7 @@ class AttackInfo(IAttackInfo)
 		if (this._parryChance is @Exception) return this._parryChance; endif
 		if (this._parryChanceResult is @Exception) return this._parryChanceResult; endif
 
-		return this._parryChanceResult <= this._parryChance;
+		return CInt(this._parryChanceResult) <= CInt(this._parryChance) + CInt(this._parryChanceMod);
 	endfunction
 
 	/**

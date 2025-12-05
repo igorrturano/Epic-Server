@@ -615,6 +615,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.connected;
 	endfunction
 
+	function IsHidden(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.hidden;
+	endfunction
+
 	/*
 	 * Calcula a distância entre este objeto e outro objeto.
 	 *
