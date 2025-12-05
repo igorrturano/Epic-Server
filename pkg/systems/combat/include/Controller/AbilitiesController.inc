@@ -33,18 +33,19 @@ endenum
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	var exec := 0;
-	exec += TryToExecuteHab_Martir(attackInfo);
-	exec += TryToExecuteHab_MantoRothen(attackInfo);
-	exec += TryToExecuteHab_KaniNoSutairu(attackInfo);
-	exec += TryToExecuteHab_Exoesqueleto(attackInfo);
-	exec += TryToExecuteHab_EspecialistaEscudos(attackInfo);
-	exec += TryToExecuteHab_Furia(attackInfo);
-	exec += TryToExecuteHab_ResilienciaBarbara(attackInfo);
-	exec += TryToExecuteHab_VinculoElemental(attackInfo);
-	exec += TryToExecuteHab_Backstab(attackInfo);
-	exec += TryToExecuteHab_Charge(attackInfo);
-	exec += TryToExecuteHab_DivineAuthority(attackInfo);
+	// if (TryToExecuteHab_Martir(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_MantoRothen(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_KaniNoSutairu(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Exoesqueleto(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_EspecialistaEscudos(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Furia(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_ResilienciaBarbara(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_VinculoElemental(attackInfo)) exec++; endif
+	if (TryToExecuteHab_Backstab(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Charge(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DivineAuthority(attackInfo)) exec++; endif
 
+	print($"Executed {exec} combat abilities before damage.");
 	if (exec > 0)
 		return true;
 	endif
@@ -72,16 +73,16 @@ endfunction
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	var exec := 0;
 
-	exec += TryToExecuteHab_ArmaduraArcana(attackInfo);
-	exec += TryToExecuteHab_Ainalaith(attackInfo);
-	exec += TryToExecuteHab_DeathDance(attackInfo);
-	exec += TryToExecuteHab_DisparoMistico(attackInfo);
-	exec += TryToExecuteHab_DesviarProjetil(attackInfo);
-	exec += TryToExecuteHab_DesviarDisparos(attackInfo);
-	exec += TryToExecuteHab_FerocidadeEnsanguentada(attackInfo);
-	exec += TryToExecuteHab_Evasao(attackInfo);
-	exec += TryToExecuteHab_ContraAtaque(attackInfo);
-	exec += TryToExecuteHab_Rebuke(attackInfo);
+	// if (TryToExecuteHab_ArmaduraArcana(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Ainalaith(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DeathDance(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DisparoMistico(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DesviarProjetil(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DesviarDisparos(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_FerocidadeEnsanguentada(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Evasao(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_ContraAtaque(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Rebuke(attackInfo)) exec++; endif
 
 	if (exec > 0)
 		return true;
@@ -95,9 +96,9 @@ endfunction
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 	var exec := 0;
 
-	exec += TryToExecuteHab_RecuperacaoSalvadora(attackInfo);
-	exec += TryToExecuteHab_Vinganca(attackInfo);
-	exec += TryToExecuteHab_ChainOfPain(attackInfo);
+	// if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Vinganca(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_ChainOfPain(attackInfo)) exec++; endif
 
 	if (exec > 0)
 		return true;
@@ -111,8 +112,8 @@ endfunction
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	var exec := 0;
 
-	exec += TryToExecuteHab_AtaqueInfalivel(attackInfo);
-	exec += TryToExecuteHab_MestreDuelista(attackInfo);
+	// if (TryToExecuteHab_AtaqueInfalivel(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_MestreDuelista(attackInfo)) exec++; endif
 
 	if (exec > 0)
 		return true;
@@ -124,15 +125,15 @@ endfunction
 
 // ================ Habilidades Individuais ================= //
 function TryToExecuteHab_Martir(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#martir"))
-		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("martirserial"));
+	if (attackInfo.GetDefender().GetProperty("#martir"))
+		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetProperty("martirserial"));
 		if (martir && !martir.dead)
-			attackInfo.GetDefender().GetObjRef().EraseProp("#martir");
+			attackInfo.GetDefender().EraseProperty("#martir");
 			attackInfo.SetDefender(martir);
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::SUCCESS}!");
 			return true;
 		else
-			attackInfo.GetDefender().GetObjRef().EraseProp("#martir");
+			attackInfo.GetDefender().EraseProperty("#martir");
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::FAIL}!");
 		endif
 	endif
@@ -145,7 +146,6 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 		var healed := CInt(attackInfo.GetDamage().GetTotalBaseDamage() * 0.3); // TODO: Ver se o valor curado será esse mesmo.
 		var party := attackInfo.GetDefender().GetObjRef().party;
 		var amthealed := CInt(healed/party.members.size());
-		// attackInfo.damage := attackInfo.damage - healed;
 
 		if (amthealed < 1)
 			amthealed := 1;
