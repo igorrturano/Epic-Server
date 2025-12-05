@@ -12,6 +12,7 @@ include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
+include "include/epicNPCUtils";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -319,6 +320,21 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 		
 		return this._template.Damage;
+	endfunction
+
+	function GetBodyResist(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
+		var phys, elem;
+		phys := SplitWords(this._template.EpicFisResists);
+		elem := SplitWords(this._template.EpicElemResists);
+
+		return ArmorResist(
+			GetResistValueByTier(phys[1]), GetResistValueByTier(phys[2]), GetResistValueByTier(phys[3]),
+			GetResistValueByTier(elem[1]), GetResistValueByTier(elem[2]), GetResistValueByTier(elem[3]), GetResistValueByTier(elem[4])
+		);
 	endfunction
 
 	/**

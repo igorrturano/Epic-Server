@@ -140,6 +140,26 @@ enum ELEMDAMAGES
 	DAMAGE_HIGH := "DAMAGE_HIGH"
 endenum
 
+function GetResistValueByTier(tier)
+	var resist := 0;
+
+	if (Upper(tier) == Upper(T0))
+		resist := RESIST_TIER0;
+	elseif (Upper(tier) == Upper(T1))
+		resist := RESIST_TIER1;
+	elseif (Upper(tier) == Upper(T2))
+		resist := RESIST_TIER2;
+	elseif (Upper(tier) == Upper(T3))
+		resist := RESIST_TIER3;
+	elseif (Upper(tier) == Upper(T4))
+		resist := RESIST_TIER4;
+	elseif (Upper(tier) == Upper(T5))
+		resist := RESIST_TIER5;
+	endif
+
+	return CInt(resist);
+endfunction
+
 /**
  * getNPCDamages(npc)
  *
