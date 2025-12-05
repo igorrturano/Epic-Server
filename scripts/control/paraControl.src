@@ -28,7 +28,7 @@ program paracontrol(field)
 				SetScriptController(boss);
 				send_attack(cast_on, boss, 46);
 				ApplyRawDamage(cast_on, 1);
-				HealDamage(cast_on, 1);
+				ApplyEpicHealing(cast_on, 1);
 				send_attack(cast_on, boss, 46);
 				if (!GetObjProperty(cast_on, "#pfield"))
 					if (CheckResist(cast_on, VONTADE, 70, -CInt(AP_GetSkill(creater, ARCANA) / 2.5)))

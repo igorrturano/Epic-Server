@@ -23,7 +23,7 @@ program SpellScript(params)
 
 	AP_ModifyStatMod(who, STRENGTH, vont);
 	SetObjProperty(who, "hitsmod", hitsmod + vont);
-	HealDamage(who, 1000);
+	ApplyEpicHealing(who, 1000);
 
 	var dex_vont_mod := Cint(vont / 2);
 	AP_ModifyStatMod(who, DEXTERITY, dex_vont_mod);

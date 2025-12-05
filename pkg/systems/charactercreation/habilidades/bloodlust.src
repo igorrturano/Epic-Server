@@ -15,7 +15,7 @@ program HitScript(who)
 	endif
 	var bonus_mlore := Cint(AP_GetSkill(who, THEOLOGY) / 25);
 	Setcooldown(who, "bloodlust", shaman_souls);
-	HealFLS(who, shaman_souls * bonus_mlore);
+	applyEpicHealing(who, shaman_souls * bonus_mlore);
 	PlayStationaryEffect(who.x, who.y, who.z + 2, 0x546C, 0, 30);
 	EraseObjProperty(who, "shaman_souls");
 	SendSysMessage(who, "Voce concede as almas um novo proposito");

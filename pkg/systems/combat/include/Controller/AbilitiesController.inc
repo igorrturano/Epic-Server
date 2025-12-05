@@ -287,7 +287,7 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 		endif
 
 		foreach member in (party.members)
-			HealDamage(member, amthealed);
+			ApplyEpicHealing(member, amthealed);
 		endforeach
 
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MANTO_ROTHEN}]: {HAB_STATUS::SUCCESS}!");
@@ -304,7 +304,7 @@ function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
 		if (attackInfo.GetDefender().GetObjRef().GetProp("#recuperacaosalvadora"))
 			attackInfo.GetDefender().GetObjRef().EraseProp("#recuperacaosalvadora");
 			Message("Uma recuperacao salvadora salvou voce.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
+			ApplyEpicHealing(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
 
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!");
 			return true;

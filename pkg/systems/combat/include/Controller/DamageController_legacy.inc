@@ -37,14 +37,6 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
-function HealFLS(targ, amt)
-	if (!GetObjProperty(targ, "nocure"))
-		HealDamage(targ, amt);
-	else
-		SendSysMessageEx(targ, "Você não pode ser curado.", SSM_FAIL);
-	endif
-endfunction
-
 function getNewDamageList(attacker)
 	var list := dictionary;
 

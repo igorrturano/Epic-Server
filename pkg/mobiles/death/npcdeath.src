@@ -209,7 +209,7 @@ program core_npcDeath(params)
 				// 		SetobjProperty(mob, "souls", souls);
 				PlayMovingEffect(corpse, mob, 14202, 5, 1, 0);
 				PlaySoundEffect(mob, 383);
-				HealFLS(mob, 5);
+				applyEpicHealing(mob, 5);
 				recalcvitals(mob);
 			endif
 		endif
@@ -218,7 +218,7 @@ program core_npcDeath(params)
 
 		// HABILIDADES SHAMAN
 		if (TemHabilidade(mob, "Sede de Sangue"))
-			HealFLS(mob, shaman_reap_bonus);
+			applyEpicHealing(mob, shaman_reap_bonus);
 		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN

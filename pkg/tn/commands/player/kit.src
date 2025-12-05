@@ -65,6 +65,6 @@ function healhand(who)
 		SendSysMessage(who, "Voce nao pode curar a si mesmo.");
 		return;
 	endif
-	HealDamage(alvo, 50);
+	ApplyEpicHealing(alvo, 50);
 	SetObjProperty(who, "curamao", ReadGameClock());
 endfunction
