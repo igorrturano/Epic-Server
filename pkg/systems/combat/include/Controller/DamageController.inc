@@ -180,26 +180,37 @@ function CalculateWeaponDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
+	var damage := attackInfo.GetDamage();
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
+	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
+	print($"Body Resists: {bodyResist.ToString()}");
+
+	damage.DecreaseSlashBaseDamage(bodyResist.GetSlashResist());
+	damage.DecreasePiercingBaseDamage(bodyResist.GetPiercingResist());
+	damage.DecreaseBluntBaseDamage(bodyResist.GetBluntResist());
+	damage.DecreaseFireBaseDamage(bodyResist.GetFireResist());
+	damage.DecreaseColdBaseDamage(bodyResist.GetColdResist());
+	damage.DecreasePoisonBaseDamage(bodyResist.GetPoisonResist());
+	damage.DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
+	
 	if (armorsInBodyRegion == array{})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida. Dano direto no corpo do defensor.");
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
-			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
-			attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
-			attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
-			attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
-			attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
-			attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
-			attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+			damage.DecreaseSlashBaseDamage(armorResist.GetSlashResist());
+			damage.DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
+			damage.DecreaseBluntBaseDamage(armorResist.GetBluntResist());
+			damage.DecreaseFireBaseDamage(armorResist.GetFireResist());
+			damage.DecreaseColdBaseDamage(armorResist.GetColdResist());
+			damage.DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
+			damage.DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}");
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {attackInfo.GetDamage().ToString()}");
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Restou: {damage.ToString()}");
 		endforeach
 	endif
 
-	var damage := attackInfo.GetDamage();
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "=================");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Dano resistido:");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::SLASH)}: {CInt(damage.GetSlashRawDamage() - damage.GetSlashBaseDamage())}");
@@ -209,7 +220,8 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::COLD)}: {CInt(damage.GetColdRawDamage() - damage.GetColdBaseDamage())}");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::POISON)}: {CInt(damage.GetPoisonRawDamage() - damage.GetPoisonBaseDamage())}");
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(damage.GetEnergyRawDamage() - damage.GetEnergyBaseDamage())}");
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicado (após defesa): {damage.ToString()}");
+	attackInfo.SetDamage(damage);
 endfunction
 
 function GetEquipsByAttackDirection(byRef attackInfo)
