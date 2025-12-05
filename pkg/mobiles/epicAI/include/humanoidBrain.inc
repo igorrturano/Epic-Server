@@ -377,20 +377,7 @@ function HumanoidIdle(wanders, is_ranged)
         return; // Skip regular wandering
     endif
     
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+    WanderAroundAnchor(me);
 endfunction
 
 function HandleHumanoidEnteredArea(source, is_ranged)

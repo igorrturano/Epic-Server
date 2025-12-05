@@ -557,7 +557,7 @@ function CheckPoison(byRef attackInfo)
 		endif
 	endif
 
-	Message("Seu veneno surtir efeito no alvo!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
+	Message("Seu veneno surtiu efeito no alvo!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
 	Message("Você foi envenenado.", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
 	return true;
 endfunction

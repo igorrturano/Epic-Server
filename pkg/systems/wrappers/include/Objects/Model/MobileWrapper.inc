@@ -313,13 +313,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
-	// function GetNPCDamage(this)
-	// 	if (this._template is @Exception)
-	// 		return this._template;
-	// 	endif
+	function GetNPCDamage(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
 		
-	// 	return this._template.Damage;
-	// endfunction
+		return this._template.Damage;
+	endfunction
 
 	/**
 	 * Obtém o equipamento equipado em um slot específico do personagem.
