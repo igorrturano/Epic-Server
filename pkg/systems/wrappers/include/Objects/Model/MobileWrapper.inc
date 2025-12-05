@@ -811,3 +811,22 @@ enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits"
 endenum
+
+enum class MOBILE_CATEGORY
+	ANGEL := "Angel",
+	ANIMAL := "Animal",
+	BEAST := "Beast",
+	CONSTRUCT := "Construct",
+	DEMONS := "Demons",
+	DRAGON := "Dragon",
+	GIANTANIMAL := "GiantAnimal",
+	GIANTS := "Giants",
+	GOBLIN := "Goblin",
+	MAGIC := "Magic",
+	MONSTROSITY := "Monstrosity",
+	MOUNT := "Mount",
+	SEA := "Sea",
+	SNOW := "Snow",
+	UNDEAD := "Undead",
+	UNDERDARK := "Underdark"
+endenum
