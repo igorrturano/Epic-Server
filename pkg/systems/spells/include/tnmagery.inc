@@ -319,7 +319,7 @@ function EncantoCurar(mobile, alvos, spellinfo)
 		foreach mob in alvos
 			foreach att in (spellinfo.dmgtarg)
 				if (att == "Vida")
-					HealDamage(mob, dmg);
+					ApplyEpicHealing(mob, dmg);
 				elseif (att == "Alma")
 					var dmg2;
 					if (dmg > AP_GetVitalMaximumValue(mob, MANA))

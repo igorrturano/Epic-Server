@@ -321,6 +321,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._template.Damage;
 	endfunction
 
+	function GetNPCCategory(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
+		return this._template.Category;
+	endfunction
+
 	/**
 	 * Obtém o equipamento equipado em um slot específico do personagem.
 	 *

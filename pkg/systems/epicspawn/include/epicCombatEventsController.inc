@@ -212,7 +212,7 @@ function ExecuteHealAction(targets, action)
     var success := 0;
     
     foreach targ in targets
-        HealDamage(targ, heal_amount);
+        ApplyEpicHealing(targ, heal_amount);
         PlayObjectCenteredEffect(targ, 0x376A, 10, 10);
         success := 1;
     endforeach

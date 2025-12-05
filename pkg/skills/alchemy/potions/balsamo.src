@@ -79,8 +79,8 @@ program drink_blue(who, potion)
 	SetObjProperty(who, "#healingpotion", 1);
 	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
 	while (i < healed)
-		HealFLS(who, 1);
-		// HealDamage(who,  1 );
+		applyEpicHealing(who, 1);
+		// ApplyEpicHealing(who,  1 );
 		RecalcVitals(who);
 		i := i + 1;
 		sleepms(delay);

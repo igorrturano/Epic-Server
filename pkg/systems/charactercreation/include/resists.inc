@@ -4,6 +4,7 @@ include ":charactercreation:habilidades";
 include "include/say";
 include "include/creationUtils";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 const FORTITUDE := "Fortitude";
 const REFLEXOS := "Reflexos";
@@ -47,8 +48,9 @@ function GetResist(who, resist)
             valor := valor + 2;
 		endif
 
-		if (GetObjProperty(who, "corruption"))
-			var corruption_penalty := GetObjProperty(who, "corruption_penalty");
+		var mobile := MobileWrapper(who);
+		if (mobile.GetEntropy() < 4000)
+			var corruption_penalty := Cint(mobile.GetEntropy() / 4000);
 			valor := valor - corruption_penalty;
 		endif
 
