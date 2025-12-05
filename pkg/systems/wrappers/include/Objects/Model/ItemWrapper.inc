@@ -7,8 +7,6 @@ include "ContainerWrapper";
 include ":io:CFGFile";
 
 class ItemWrapper(IItemWrapper, UObjectWrapper)
-	var _category := ""; // ITEM_CATEGORY enum
-	
 	function ItemWrapper(this, byRef item)
 		Super(item);
 
@@ -44,15 +42,6 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 			this._objRef := err;
 			this._serial := err;
 		endif
-	endfunction
-
-	/**
-	 * Obtém a categoria do item.
-	 *
-	 * @return String contendo a categoria do item (valor do enum ITEM_CATEGORY)
-	 */
-	function GetCategory(this)
-		return this._category;
 	endfunction
 
 	/**
