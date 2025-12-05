@@ -22,11 +22,8 @@ include "SkillController";
 include "FXController";
 include ":combat:Model/CombatAbility";
 
-// include ":message:Model/Message";
 include ":charactercreation:resists";
 include ":blood:blood";
-include "include/epicCombatUtils";
-// include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum class HAB_STATUS
 	SUCCESS := "ATIVADA!",
@@ -36,7 +33,6 @@ endenum
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	var exec := 0;
-	return;
 	exec += TryToExecuteHab_Martir(attackInfo);
 	exec += TryToExecuteHab_MantoRothen(attackInfo);
 	exec += TryToExecuteHab_KaniNoSutairu(attackInfo);
@@ -75,7 +71,6 @@ endfunction
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	var exec := 0;
-	return;
 
 	exec += TryToExecuteHab_ArmaduraArcana(attackInfo);
 	exec += TryToExecuteHab_Ainalaith(attackInfo);
@@ -99,7 +94,6 @@ endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 	var exec := 0;
-	return;
 
 	exec += TryToExecuteHab_RecuperacaoSalvadora(attackInfo);
 	exec += TryToExecuteHab_Vinganca(attackInfo);
@@ -116,7 +110,6 @@ endfunction
 
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	var exec := 0;
-	return;
 
 	exec += TryToExecuteHab_AtaqueInfalivel(attackInfo);
 	exec += TryToExecuteHab_MestreDuelista(attackInfo);
@@ -359,18 +352,24 @@ function TryToExecuteHab_EspecialistaEscudos(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Backstab(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") &&
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab")
+	if (attackInfo.GetAttacker().GetProperty("backstab") &&
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetProperty("backstab")
 		)
-		attackInfo.GetAttacker().GetObjRef().EraseProp("backstab");
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("backstab");
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#nextcritical");
+		attackInfo.GetAttacker().EraseProperty("backstab");
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).EraseProperty("backstab");
+		attackInfo.GetAttacker().EraseProperty("#nextcritical");
+
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::SUCCESS}!");
 		
-		if (!TryToExecuteHab_SempreAlerta(attackInfo))
+		if (TryToExecuteHab_SempreAlerta(attackInfo))
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::FAIL}! Bloqueado pelo defensor.");
+		else
 			TryToExecuteHab_AtaqueFurtivo(attackInfo);
 		endif
 
 		return true;
+	else
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::FAIL}!");
 	endif
 
 	return false;
@@ -587,16 +586,25 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
 	endif
 
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y))
+	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.GetX(), attackerPos.GetY()))
 		if (CanBackStab(attackInfo.GetAttacker()))
-			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-				MakeBleed(attackInfo.GetDefender().GetObjRef());
-				DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
-				return true;
-			endif
+			var dmg := attackInfo.GetDamage();
+
+			dmg.IncreaseSlashBaseDamage(sneak_dmg);
+			dmg.IncreasePiercingBaseDamage(sneak_dmg);
+			dmg.IncreaseBluntBaseDamage(sneak_dmg);
+
+			attackInfo.SetDamage(dmg);
+			
+			MakeBleed(attackInfo.GetDefender().GetObjRef());
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}! Bônus de dano: {sneak_dmg}");
+			return true;
 		else
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}! Você não consegue realizar um ataque furtivo com esse tipo de arma.");
         endif
+	else
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!");
+		Message("Você precisa estar atrás do inimigo para um ataque furtivo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
     endif
 
 	return false;
