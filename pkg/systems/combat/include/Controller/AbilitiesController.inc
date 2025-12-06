@@ -11,10 +11,6 @@
  *
  **********************************/
 
-// TODO: Depois de finalizar o combate refatorar isso novamente, só para encapsular as habilidades em CombatAbility
-// TODO: Criar um TryToExecuteHab(enumDaHab, byRef attackInfo) para evitar repetição de código
-	// TODO: Essa função chama o ExecuteHab_nomedahab(byRef attackInfo)
-	// TODO: Para isso vai precisar padronizar a checagem das habs: Algumas são checagem de cooldown, outras são de prop...
 
 include "DamageController";
 include "HitController";
@@ -46,7 +42,6 @@ function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	if (TryToExecuteHab_Charge(attackInfo)) exec++; endif
 	if (TryToExecuteHab_DivineAuthority(attackInfo)) exec++; endif
 
-	print($"Executed {exec} combat abilities before damage.");
 	if (exec > 0)
 		return true;
 	endif
