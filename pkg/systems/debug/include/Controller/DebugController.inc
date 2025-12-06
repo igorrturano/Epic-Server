@@ -104,7 +104,8 @@ var listDebugs := dictionary {
  */
 function DebugMsg(who, debugName, msg)
 	if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-		Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+		// Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+		msg.SendSys(who);
 	endif
 endfunction
 
@@ -125,7 +126,8 @@ endfunction
 function DebugMsgAll(debugName, msg)
 	foreach who in EnumerateOnlineCharacters()
 		if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-			Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+			// Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+			msg.SendSys(who);
 		endif
 	endforeach
 endfunction
