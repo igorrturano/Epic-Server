@@ -20,6 +20,9 @@ class Message(IMessage)
 		color := FONTCOLOR_BLUE,
 		font := FONT_UNICODE_DEFAULT
 	}};
+	var _messageText := "";
+	var _messageColor; // Color class
+	var _messageFont; // Font class
 	var _translator; // Translator class // TODO: Remover esse Translator daqui.... Porra, que maluquice do cacete...
 
 	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
