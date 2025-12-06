@@ -17,7 +17,7 @@ include "include/facings";
 function CheckParry(byRef attackInfo)
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") || // Se for habilidade de ataque pelas costas
-		IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y) || // Se o atacante estiver atrás do defensor
+		IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
 		!attackInfo.GetDefender().IsWarMode() || // Se o defensor não estiver em war mode
 		GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) // Se o atacante estiver em cooldown de parry
 		
@@ -204,13 +204,13 @@ function CheckDisarmShield(byRef attackInfo)
 				
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();
-					defenderPos.x += RandomIntMinMax(-2, 3);
-					defenderPos.y += RandomIntMinMax(-2, 3);
+					defenderPos.SetX(defenderPos.GetX() + RandomIntMinMax(-2, 3));
+					defenderPos.SetY(defenderPos.GetY() + RandomIntMinMax(-2, 3));
 					MoveObjectToLocation(
 						attackInfo.GetParryEquip().GetObjRef(),
-						defenderPos.x,
-						defenderPos.y,
-						GetWorldHeight(defenderPos.x, defenderPos.y),
+						defenderPos.GetX(),
+						defenderPos.GetY(),
+						GetWorldHeight(defenderPos.GetX(), defenderPos.GetY()),
 						attackInfo.GetAttacker().GetPosition().GetRealm(),
 						MOVEOBJECT_FORCELOCATION
 					);

@@ -35,9 +35,9 @@ endfunction
  */
 function ExecuteBeforeEngage(byRef attackInfo)
 	if (attackInfo.GetAttackerWeapon().GetAttribute() != RANGED) // Armas melee
-		if (attackInfo.GetAttackerWeapon().GetCategory() == GREATSWORD)
+		if (attackInfo.GetAttackerWeapon().GetCategory() == WEAPON_CATEGORY::GREATSWORD)
 			ExecuteMasteryAbility_DownwardCut(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SWORD))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
 			ExecuteMasteryAbility_Charge(attackInfo);
 		endif
 	else // Armas ranged
@@ -47,45 +47,45 @@ endfunction
 
 function ExecuteAfterEngage(byRef attackInfo)
 	if (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(RANGED))
-		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(BOW))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
 			ExecuteMasteryAbility_DoubleShot(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(CROSSBOW))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
 			ExecuteMasteryAbility_Lame(attackInfo);
 		endif
 	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(TWOHANDED))
-		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(GREATSWORD))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::GREATSWORD))
 			ExecuteMasteryAbility_DownwardCut(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SWORD))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
 			ExecuteMasteryAbility_SwordBlock(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(AXE))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
 			ExecuteMasteryAbility_Cleave(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SPEAR))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SPEAR))
 			ExecuteMasteryAbility_SpearPush(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(MACE))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::MACE))
 			ExecuteMasteryAbility_Knockdown(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(POLEARM))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::POLEARM))
 			ExecuteMasteryAbility_Whirlwind(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(THROWING))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::THROWING))
 			ExecuteMasteryAbility_Pillum(attackInfo);
 		endif
 	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(ONEHANDED))
-		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(DAGGER))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::DAGGER))
 			ExecuteMasteryAbility_Cutthroat(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SWORD))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
 			ExecuteMasteryAbility_CounterAttack(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(AXE))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
 			ExecuteMasteryAbility_KneeBreaker(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SPEAR))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SPEAR))
 			ExecuteMasteryAbility_SpearPush(attackInfo);
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(MACE))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::MACE))
 			ExecuteMasteryAbility_BoneBreaker(attackInfo);
 		endif
 	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(DUALWIELD))
-		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(AXE))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
 			// TODO: Habilidade de maestria para MACHADOS em dual wield
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(DAGGER))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::DAGGER))
 			// TODO: Habilidade de maestria para ADAGAS em dual wield
-		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(SWORD))
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
 			// TODO: Habilidade de maestria para ESPADA em dual wield
 		endif
 	endif
