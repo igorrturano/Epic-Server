@@ -1,11 +1,11 @@
 class Font()
 	var _fontType := FONT_TYPE::_DEFAULT; // FONT_TYPE enum
+	var _fontID := 0;
 	var _fontName := FONT_UNICODE_NAME::_DEFAULT; // FONT_NAME enum
-	var _textValue := 0;
 
 	function Font(this, fontName := FONT_UNICODE_NAME::_DEFAULT, fontType := FONT_TYPE::_DEFAULT)
 		this._fontType := fontType;
-		this._textValue := fontName;
+		this._fontID := fontName;
 		this._Initialize();
 	endfunction
 
@@ -21,28 +21,13 @@ class Font()
 		return this._textValue;
 	endfunction
 
-	function SetFontType(this, fontType)
-		this._fontType := fontType;
-		this._Initialize();
-	endfunction
-
-	function SetFontName(this, fontName)
-		this._textValue := fontName;
-		this._Initialize();
-	endfunction
-
-	function SetTextValue(this, textValue)
-		this._textValue := textValue;
-		this._Initialize();
-	endfunction
-
 	function ToString(this)
-		return $"Font: Type={this._fontType}, Name={this._fontName}";
+		return $"Font {this._fontName}: Type={this._fontType}, ID={this._fontID} ({CStr(Hex(this._fontID))})";
 	endfunction
 
 	function _Initialize(this)
 		if (this._fontType == FONT_TYPE::ASCII)
-			case (this._textValue)
+			case (this._fontID)
 				FONT_ASCII_NAME::BOLD: this._fontName := "BOLD";
 				FONT_ASCII_NAME::SHADOW: this._fontName := "SHADOW";
 				FONT_ASCII_NAME::BOLD_SHAD: this._fontName := "BOLD_SHAD";
@@ -55,7 +40,7 @@ class Font()
 				FONT_ASCII_NAME::SMALL_LIGHT: this._fontName := "SMALL_LIGHT";
 			endcase
 		elseif (this._fontType == FONT_TYPE::UNICODE)
-			case (this._textValue)
+			case (this._fontID)
 				FONT_UNICODE_NAME::UO: this._fontName := "UO";
 				FONT_UNICODE_NAME::ARIAL_BOLD: this._fontName := "ARIAL_BOLD";
 				FONT_UNICODE_NAME::ARIAL: this._fontName := "ARIAL";
