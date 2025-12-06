@@ -184,76 +184,17 @@ function GetModifiersByProtection(protection)
 	};
 endfunction
 
-function getDurabilityByType(item)
-	var maxhp := 0;
-	
-	if(item.isA(POLCLASS_WEAPON))
-		case (item.getType())
-			SLASHDAMAGE: maxhp := 45; break;
-			PIERCINGDAMAGE: maxhp := 60; break;
-			BLUNTDAMAGE: maxhp := 75; break;
-
-			default: maxhp := 0; break;
-		endcase
-	elseif (item.isA(POLCLASS_ARMOR))
-		if (item.isShield())
-			case (item.getType().Upper())
-				SHIELD_BUCKLER: maxhp := 40; break;
-				SHIELD_SMALL: maxhp := 60; break;
-				SHIELD_MEDIUM: maxhp := 80; break;
-				SHIELD_LARGE: maxhp := 100; break;
-				SHIELD_TOWER: maxhp := 120; break;
-
-				default: maxhp := 0; break;
-			endcase
-		else
-			var resists := getResistPhysicalByProtection(item.getType());
-			maxhp := Max(array{resists.SlashResist, resists.PiercingResist, resists.BluntResist});
-		endif
-	endif
-
-	return maxhp;
-endfunction
-
-function getDurabilityModByMaterial(material)
-	var modifier := 0;
-
-	case (material)
-		0x6309: modifier := 1; break; // Ferro
-
-		default: modifier := 0.5;
-	endcase
-
-	return CDbl(modifier);
-endfunction
-
-function getWeightModByMaterial(material)
-	var modifier := 0;
-
-	case (material)
-		0x6994: modifier := 1.3; break; // Bronze
-		0x6309: modifier := 1.1; break; // Ferro
-		0x6995: modifier := 0.9; break; // Aço
-		0x6315: modifier := 0.8; break; // Illyra
-		0x6311: modifier := 0.7; break; // Mithril
-
-		default: modifier := 1;
-	endcase
-
-	return CDbl(modifier);
-endfunction
-
-function getShieldModsByProtection(tier)
+function GetShieldModsByProtection(tier)
 	if (Upper(tier) == Upper(SHIELD_BUCKLER))
-		return ShieldResist(-1, 0);
+		return ShieldAttributes(-1, 0);
 	elseif (Upper(tier) == Upper(SHIELD_SMALL))
-		return ShieldResist(4, 8);
+		return ShieldAttributes(4, 8);
 	elseif (Upper(tier) == Upper(SHIELD_MEDIUM))
-		return ShieldResist(5, 10);
+		return ShieldAttributes(5, 10);
 	elseif (Upper(tier) == Upper(SHIELD_LARGE))
-		return ShieldResist(6, 12);
+		return ShieldAttributes(6, 12);
 	elseif (Upper(tier) == Upper(SHIELD_TOWER))
-		return ShieldResist(7, 14);
+		return ShieldAttributes(7, 14);
 	endif
 
 	return error{ errortext := "Value not found for this Shield Protection Tier!"};

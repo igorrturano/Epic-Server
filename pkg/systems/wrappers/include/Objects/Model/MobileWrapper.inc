@@ -12,6 +12,7 @@ include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
+include "include/epicNPCUtils";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -285,6 +286,21 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
+	/**
+	 * Obtém o tier do template associado ao objeto (NPC).
+	 * 
+	 * @return Integer representando o tier do template, ou um objeto Exception caso o template seja inválido
+	 * 
+	 * @note Se o template for uma Exception, retorna a própria Exception ao invés do tier
+	 */
+	function GetTier(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
+		return CInt(this._template.Tier);
+	endfunction
+
 	function GetCriticalChance(this)
 		return CInt(this.GetCriticalChanceBase() + this.GetCriticalChanceMod());
 	endfunction
@@ -321,6 +337,21 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._template.Damage;
 	endfunction
 
+	function GetBodyResist(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
+		var phys, elem;
+		phys := SplitWords(this._template.EpicFisResists);
+		elem := SplitWords(this._template.EpicElemResists);
+
+		return ArmorResist(
+			GetResistValueByTier(phys[1]), GetResistValueByTier(phys[2]), GetResistValueByTier(phys[3]),
+			GetResistValueByTier(elem[1]), GetResistValueByTier(elem[2]), GetResistValueByTier(elem[3]), GetResistValueByTier(elem[4])
+		);
+	endfunction
+
 	/**
 	 * Obtém o equipamento equipado em um slot específico do personagem.
 	 *
@@ -344,7 +375,25 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			return WeaponWrapper(this._objRef.weapon);
+			var weapon := WeaponWrapper(this._objRef.weapon);
+
+			if (this.IsNPC())
+				weapon.SetMainDamage(DamageDice(
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
+				));
+				weapon.SetDamageMod(Damage(
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
+				));
+
+
+			endif
+
+			return weapon;
 		elseif (equipSlot == SHIELD)
 			return ArmorWrapper(this._objRef.shield);
 		elseif (equipSlot == HEAD)
@@ -597,6 +646,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.connected;
 	endfunction
 
+	function IsHidden(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.hidden;
+	endfunction
+
 	/*
 	 * Calcula a distância entre este objeto e outro objeto.
 	 *
@@ -752,7 +809,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Serial: {this._serial}, " +
 			$"ObjType: {this._objType}, " +
 			$"Graphic: {this._graphic} ({this._graphic}), " +
-			$"Color: {this._color} ({this._color}) ";
+			$"Color: {this._color} ({this._color}), " +
+			$"Str: {this.GetStr()}, " +
+			$"Dex: {this.GetDex()}, " +
+			$"Int: {this.GetInt()}";
 	endfunction
 endclass
 
@@ -765,4 +825,23 @@ endenum
 enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits"
+endenum
+
+enum class MOBILE_CATEGORY
+	ANGEL := "Angel",
+	ANIMAL := "Animal",
+	BEAST := "Beast",
+	CONSTRUCT := "Construct",
+	DEMONS := "Demons",
+	DRAGON := "Dragon",
+	GIANTANIMAL := "GiantAnimal",
+	GIANTS := "Giants",
+	GOBLIN := "Goblin",
+	MAGIC := "Magic",
+	MONSTROSITY := "Monstrosity",
+	MOUNT := "Mount",
+	SEA := "Sea",
+	SNOW := "Snow",
+	UNDEAD := "Undead",
+	UNDERDARK := "Underdark"
 endenum
