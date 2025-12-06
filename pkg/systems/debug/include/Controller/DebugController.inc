@@ -30,7 +30,6 @@
 use uo;
 
 include ":message:model/Message";
-include ":message:Translator";
 
 const PROPTAG := "#debug_";
 
