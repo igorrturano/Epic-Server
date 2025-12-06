@@ -13,7 +13,7 @@ include "include/epicConstants";
 include ":attributes:attributeConstants";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
-// include ":combat:Model/Damage";
+include ":blood:blood";
 
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
@@ -22,6 +22,11 @@ function PlayAttackFX(byRef attackInfo)
 
 	attackInfo.GetAttacker().PlayAnimation(attackerAnim);
 	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
+
+	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
+	if (hpPercent < 20)
+		MakeBleed(attackInfo.GetDefender().GetObjRef());
+	endif
 endfunction
 
 function PlayAttackSFX(byRef attackInfo)

@@ -27,6 +27,19 @@ enum class HAB_STATUS
 	COOLDOWN := "EM RECARGA!",
 endenum
 
+function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
+	var exec := 0;
+
+	if (TryToExecuteHab_AtaqueInfalivel(attackInfo)) exec++; endif
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes do hit.");
+	return false;
+endfunction
+
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	var exec := 0;
 
@@ -92,7 +105,7 @@ endfunction
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 	var exec := 0;
 
-	// if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo)) exec++; endif
+	if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo)) exec++; endif
 	// if (TryToExecuteHab_Vinganca(attackInfo)) exec++; endif
 	// if (TryToExecuteHab_ChainOfPain(attackInfo)) exec++; endif
 
@@ -108,8 +121,7 @@ endfunction
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 	var exec := 0;
 
-	// if (TryToExecuteHab_AtaqueInfalivel(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_MestreDuelista(attackInfo)) exec++; endif
+	if (TryToExecuteHab_MestreDuelista(attackInfo)) exec++; endif
 
 	if (exec > 0)
 		return true;
@@ -159,13 +171,12 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
-	if (isBloodied(attackInfo.GetDefender().GetObjRef()))
-		attackInfo.GetDefender().Update();
-		MakeBleed(attackInfo.GetDefender().GetObjRef());
-		if (attackInfo.GetDefender().GetObjRef().GetProp("#recuperacaosalvadora"))
-			attackInfo.GetDefender().GetObjRef().EraseProp("#recuperacaosalvadora");
+	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
+	if (hpPercent < 20)
+		if (attackInfo.GetDefender().GetProperty("#recuperacaosalvadora"))
+			attackInfo.GetDefender().EraseProperty("#recuperacaosalvadora");
 			Message("Uma recuperacao salvadora salvou voce.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
+			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef()) / 2));
 
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!");
 			return true;
@@ -176,10 +187,10 @@ function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Vinganca(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#vinganca"))
-		attackInfo.GetDefender().GetObjRef().SetProp(
+	if (attackInfo.GetDefender().GetProperty("#vinganca"))
+		attackInfo.GetDefender().SetProperty(
 			"#vinganca",
-			CInt(attackInfo.GetDefender().GetObjRef().GetProp("#vinganca")) + attackInfo.GetDamage().GetTotalBaseDamage()
+			CInt(attackInfo.GetDefender().GetProperty("#vinganca")) + attackInfo.GetDamage().GetTotalBaseDamage()
 		);
 		
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
@@ -774,6 +785,7 @@ endfunction
 function TryToExecuteHab_AtaqueInfalivel(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "ataqueinfalivel") > 0)
 		attackInfo.SetHitChance(1000);
+		attackInfo.RollHitChance();
 
 		Message("ataque infalivel").SendEmote(attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_INFALIVEL}]: {HAB_STATUS::SUCCESS}!");
