@@ -6,6 +6,7 @@ include "TranslatableText";
 include ":message:Translator";
 include "include/say";
 include "include/client";
+include "system/colors/Color";
 
 class Message(IMessage)
 	var _asyncInfo := struct{
