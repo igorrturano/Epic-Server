@@ -1,22 +1,23 @@
 use os;
 
+include "ITranslator";
 include "system/text/TranslatableText";
 include "system/exception/FormatException/InvalidFormatException";
 
-class Translator()
+class Translator(ITranslator)
 	var _apiURL := ""; // URL da API de tradução
-	var _translatableText := TranslatableText(); // Objeto de texto traduzível
+	var _translatableText; // Objeto de texto traduzível
 	
 	function Translator(this, translatableText := false)
 		this._apiURL := "http://127.0.0.1:5000/translate";
 		this._translatableText := translatableText;
 	endfunction
 
-	function GetTranslatableText(this)
+	function GetText(this)
 		return this._translatableText;
 	endfunction
 	
-	function SetTranslatableText(this, text)
+	function SetText(this, text)
 		if (!(text is @TranslatableText))
 			return InvalidFormatException("Parameter 'text' must be of type TranslatableText.");
 		endif
