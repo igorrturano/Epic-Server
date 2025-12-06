@@ -256,7 +256,7 @@ endfunction
 function CheckFacing(byRef attackInfo)
 	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()))
 		if (attackInfo.GetAttacker().IsNPC())
-			TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
+			// TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
 		else
 			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()) && !(GetCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
 				return false;
