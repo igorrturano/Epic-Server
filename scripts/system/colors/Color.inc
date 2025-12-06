@@ -224,6 +224,4 @@ enum class COLOR_ENUM
 	INFO,
 	ALERT,
 	NEUTRAL,
-
-	
 endenum
