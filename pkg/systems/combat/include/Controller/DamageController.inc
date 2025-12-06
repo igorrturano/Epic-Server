@@ -172,6 +172,7 @@ function CalculateDefenderResist(byRef attackInfo)
 	attackInfo.GetDamage().DecreaseColdBaseDamage(bodyResist.GetColdResist());
 	attackInfo.GetDamage().DecreasePoisonBaseDamage(bodyResist.GetPoisonResist());
 	attackInfo.GetDamage().DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}");
 	
 	if (armorsInBodyRegion == array{})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, "Não há armadura na região atingida. Dano direto no corpo do defensor.");
