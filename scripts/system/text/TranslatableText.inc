@@ -1,64 +1,56 @@
 include "ITranslatableText";
 
 class TranslatableText(ITranslatableText)
-	var _source := struct{
-		text := "",
-		lang := LANGUAGE::PORTUGUESE
-	};
-	var _target := struct{
-		text := "",
-		lang := LANGUAGE::ENGLISH
-	};
-
+	var _sourceText := "";
+	var _sourceLang := LANGUAGE::PORTUGUESE;
+	var _targetText := "";
+	var _targetLang := LANGUAGE::ENGLISH;
+	
 	function TranslatableText(this, text := "", langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
-		this._source := struct{
-			text := text,
-			lang := langSource
-		};
-		this._target := struct{
-			text := text,
-			lang := langTarget
-		};
+		this._sourceText := text;
+		this._sourceLang := langSource;
+		this._targetText := text;
+		this._targetLang := langTarget;
 	endfunction
 
 	function GetTextSource(this)
-		return this._source.text;
+		return this._sourceText;
 	endfunction
 
 	function GetTextTarget(this)
-		return this._target.text;
+		return this._targetText;
 	endfunction
 
 	function GetLanguageSource(this)
-		return this._source.lang;
+		return this._sourceLang;
 	endfunction
 
 	function GetLanguageTarget(this)
-		return this._target.lang;
+		return this._targetLang;
 	endfunction
 
 	function SetTextSource(this, text)
-		this._source.text := text;
+		this._sourceText := text;
 		return this;
 	endfunction
 
 	function SetTextTarget(this, text)
-		this._target.text := text;
+		this._targetText := text;
 		return this;
 	endfunction
 
 	function SetSourceLanguage(this, lang)
-		this._source.lang := lang;
+		this._sourceLang := lang;
 		return this;
 	endfunction
 
 	function SetTargetLanguage(this, lang)
-		this._target.lang := lang;
+		this._targetLang := lang;
 		return this;
 	endfunction
 	
 	function ToString(this)
-		return $"Texto original ({this._source.lang}): {this._source.text} -> Texto traduzido ({this._target.lang}): {this._target.text}";
+		return $"Texto original ({this._sourceLang}): {this._sourceText} -> Texto traduzido ({this._targetLang}): {this._targetText}";
 	endfunction
 endclass
 
