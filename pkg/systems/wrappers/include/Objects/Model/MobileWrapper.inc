@@ -286,6 +286,21 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 	endfunction
 
+	/**
+	 * Obtém o tier do template associado ao objeto (NPC).
+	 * 
+	 * @return Integer representando o tier do template, ou um objeto Exception caso o template seja inválido
+	 * 
+	 * @note Se o template for uma Exception, retorna a própria Exception ao invés do tier
+	 */
+	function GetTier(this)
+		if (this._template is @Exception)
+			return this._template;
+		endif
+		
+		return CInt(this._template.Tier);
+	endfunction
+
 	function GetCriticalChance(this)
 		return CInt(this.GetCriticalChanceBase() + this.GetCriticalChanceMod());
 	endfunction
