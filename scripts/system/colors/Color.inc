@@ -11,10 +11,6 @@ class Color()
 		this._Initialize();
 	endfunction
 
-	function ToString(this)
-		return $"Color: Name={this._name}, BaseValue={this._baseValue}, HTMLValue={this._htmlValue}";
-	endfunction
-
 	function GetName(this)
 		return this._name;
 	endfunction
@@ -25,6 +21,10 @@ class Color()
 
 	function GetHtmlValue(this)
 		return this._htmlValue;
+	endfunction
+
+	function ToString(this)
+		return $"Color: Name={this._name}, BaseValue={this._baseValue}, HTMLValue={this._htmlValue}";
 	endfunction
 
 	function _Initialize(this)
