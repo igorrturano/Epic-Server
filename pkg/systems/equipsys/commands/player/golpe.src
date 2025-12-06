@@ -64,10 +64,10 @@ function SetNewPosture(who, newPosture)
 	if (newPosture == DAMAGE_TYPE::SLASH ||
 		newPosture == DAMAGE_TYPE::PIERCING ||
 		newPosture == DAMAGE_TYPE::BLUNT)
-		if (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(UNARMED))
+		if (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::UNARMED))
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
 			Message("Você deve estar empunhando uma arma para mudar sua postura de combate.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
-		elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(BOW))
+		elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
 			Message("Arcos não podem mudar postura de combate.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
 		else
