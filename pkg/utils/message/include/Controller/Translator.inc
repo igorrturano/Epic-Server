@@ -1,6 +1,7 @@
 use os;
 
-include "model/TranslatableText";
+include "system/text/TranslatableText";
+include "system/exception/FormatException/InvalidFormatException";
 
 class Translator()
 	var _apiURL := ""; // URL da API de tradução
@@ -15,42 +16,34 @@ class Translator()
 		return this._translatableText;
 	endfunction
 	
-	function SetTranslatableText(this, object)
-		this._translatableText := object;
+	function SetTranslatableText(this, text)
+		if (!(text is @TranslatableText))
+			return InvalidFormatException("Parameter 'text' must be of type TranslatableText.");
+		endif
+		
+		this._translatableText := text;
 		return this;
 	endfunction
 
 	function Translate(this)
-		print ("Translating text...");
-		if (!this._translatableText) return error{ errortext := "There is no text to translate"}; endif
-		
-		var translation := _apiTranslate(struct{
-			apiURL := this._apiURL,
-			translatableText := this._translatableText
-		});
-
-		print ("Translation result: " + translation);
-		print ("Translation result: " + translation.GetTextTarget());
-
-		if (!translation)
-			print("!!!!!!!!!! Translation failed !!!!!!!!!!");
+		if (!this._translatableText)
+			return InvalidFormatException("There is no text to translate");
 		endif
+		
+		this._apiTranslate();
 		
 		return this;
 	endfunction
 
-	function _apiTranslate(params)
-		var apiURL := params.apiURL;
-		var translatableText := params.translatableText;
-
+	function _apiTranslate(this)
 		var jsonData := PackJSON(struct{
-			"q" := translatableText.GetTextSource(),
-			"source" := translatableText.GetLanguageSource(),
-			"target" := translatableText.GetLanguageTarget()
+			"q" := this._translatableText.GetTextSource(),
+			"source" := this._translatableText.GetLanguageSource(),
+			"target" := this._translatableText.GetLanguageTarget()
 		});
 
 		var apiResponse := HTTPRequest(
-			apiURL,
+			this._apiURL,
 			"POST",
 			struct{
 				data := jsonData,
@@ -69,9 +62,7 @@ class Translator()
 			var start_pos := body.Find("\":\"") + 3;
 			var end_pos := body.Length() - start_pos - 2;
 			body := body[start_pos, end_pos];
-			translatableText.SetTextTarget(body);
+			this._translatableText.SetTextTarget(body);
 		endif
-
-		return translatableText;
 	endfunction
 endclass
