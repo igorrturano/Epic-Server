@@ -24,7 +24,7 @@ class Color()
 	endfunction
 
 	function ToString(this)
-		return $"Color: Name={this._name}, BaseValue={this._baseValue}, HTMLValue={this._htmlValue}";
+		return $"Color: Name={this._name}, BaseValue={this._textValue}, HTMLValue={this._htmlValue}";
 	endfunction
 
 	function _Initialize(this)
@@ -227,5 +227,5 @@ enum class COLOR_NAME
 	ALERT,
 	NEUTRAL,
 
-	_DEFAULT := BLACK
+	_DEFAULT := BLUE
 endenum
