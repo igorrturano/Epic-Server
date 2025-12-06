@@ -26,17 +26,17 @@ endprogram
 exported function Attack(attacker, defender)
 	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("ATAQUE INICIADO!"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
 
 	if (!CanAttack(attackInfo))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***NÃO PODE ATACAR***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", FONTCOLOR_ERROR));
 		return 1;
 	endif
 
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Postura adotada no golpe: {attackInfo.GetAttackType()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Postura adotada no golpe: {attackInfo.GetAttackType()}"));
 
 	TryToAttack(attackInfo);
 
@@ -127,20 +127,20 @@ function TryToAttack(byRef attackInfo)
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Start_Script(":combat:hooks/opportunityAttack", array{attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()});
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Mão -> MainHand"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Chance de acerto: {attackInfo.GetHitChance()}"));
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
 		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - CalculateDualWieldPenalty(attackInfo));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> OffHand");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Mão -> OffHand"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})"));
 	endif
 
 	attackInfo.RollHitChance();
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Rolagem de acerto: " + attackInfo.GetHitChanceResult()));
 
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***"));
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			ExecuteMasteryAbility(attackInfo);
@@ -148,7 +148,7 @@ function TryToAttack(byRef attackInfo)
 
 		DoAttack(attackInfo);
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***"));
 		// Se errou, chama os efeitos aqui
 		PlayAttackFX(attackInfo);
 		PlayAttackSFX(attackInfo);
