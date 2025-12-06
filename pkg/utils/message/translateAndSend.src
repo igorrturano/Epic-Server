@@ -1,9 +1,0 @@
-include ":message:model/Message";
-include ":message:Controller/Translator";
-
-program Sender(message)
-	print("Starting Sender...");
-	var translator := Translator();
-
-	
-endprogram
