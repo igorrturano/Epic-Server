@@ -1,6 +1,6 @@
-include "ITranslatable";
+include "ITranslatableText";
 
-class TranslatableText(ITranslatable)
+class TranslatableText(ITranslatableText)
 	var _source := struct{
 		text := "",
 		lang := LANGUAGE::PORTUGUESE
@@ -10,7 +10,7 @@ class TranslatableText(ITranslatable)
 		lang := LANGUAGE::ENGLISH
 	};
 
-	function TranslatableText(this, text := "", langSource := "", langTarget := "")
+	function TranslatableText(this, text := "", langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._source := struct{
 			text := text,
 			lang := langSource

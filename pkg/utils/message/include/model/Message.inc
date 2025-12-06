@@ -2,83 +2,102 @@ use math;
 use os;
 
 include "IMessage";
-include "TranslatableText";
 include ":message:Translator";
 include "include/say";
 include "include/client";
-include "system/colors/Color";
+include "system/text/_all";
+include "system/exception/FormatException/InvalidFormatException";
 
-
-// TODO: Fazer receber apenas 1 mensagem, para evitar bugs de concatenação
 class Message(IMessage)
+	var _messageTranslatableText := "";
+	var _messageColor; // Color class
+	var _messageFont; // Font class
 	var _asyncInfo := struct{
 		sending := false, // Em situações de script critico precisa ser assincrono. Definir isso com SetAsync().
 		translation := false // Se ele é assincrono, a tradução também, e é feita no processo do sender.
 	};
-	var _messages := array{ struct{ // Array de structs com as informações de cada mensagem: string, cor, fonte, lingua
-		text := TranslatableText(),
-		color := FONTCOLOR_BLUE,
-		font := FONT_UNICODE_DEFAULT
-	}};
-	var _messageText := "";
-	var _messageColor; // Color class
-	var _messageFont; // Font class
-	var _translator; // Translator class // TODO: Remover esse Translator daqui.... Porra, que maluquice do cacete...
 
-	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+	function Message(this, text, color := false, font := false, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+		this._messageTranslatableText := text ?: TranslatableText("", langSource, langTarget);
+		this._messageColor := color ?: Color();
+		this._messageFont := font ?: Font();
+
 		this._asyncInfo := struct{
 			sending := false,
 			translation := false
 		};
-		this._messages := array{};
-		this._translator := Translator();
-		this.AddMessage(text, color, font_number, langSource, langTarget);
 	endfunction
 
-	function SetAsync(this, sending := true, translation := true)
-		this._asyncInfo.sending := sending;
-		this._asyncInfo.translation := translation;
-		return this;
+	function GetText(this)
+		return this._messageTranslatableText;
 	endfunction
 
-	function AddMessage(this, text, color := FONTCOLOR_BLUE, font := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
-		this._messages.append(struct{
-			text := TranslatableText(text, langSource, langTarget),
-			color := color,
-			font := font
-		});
+	function GetColor(this)
+		return this._messageColor;
+	endfunction
+
+	function GetFont(this)
+		return this._messageFont;
+	endfunction
+
+	function SetText(this, text)
+		if (!(text is @TranslatableText))
+			return InvalidFormatException("Parameter 'text' must be of type TranslatableText.");
+		endif
+		
+		this._messageTranslatableText := text;
 
 		return this;
 	endfunction
 
 	function SetColor(this, color)
-		foreach msg in (this._messages)
-			msg.color := color;
-		endforeach
+		if (!(color is @Color))
+			return InvalidFormatException("Parameter 'color' must be of type Color.");
+		endif
+
+		this._messageColor := color;
+
 		return this;
 	endfunction
 	
 	function SetFont(this, font)
-		foreach msg in (this._messages)
-			msg.font := font;
-		endforeach
+		if (!(font is @Font))
+			return InvalidFormatException("Parameter 'font' must be of type Font.");
+		endif
+
+		this._messageFont := font;
 
 		return this;
 	endfunction
 
 	function SetSourceLanguage(this, lang)
-		foreach msg in (this._messages)
-			msg.text.SetSourceLanguage(lang);
-		endforeach
+		if (!(this._messageTranslatableText is @TranslatableText))
+			return InvalidFormatException("Internal message text is not of type TranslatableText.");
+		endif
+		
+		this._messageTranslatableText.SetSourceLanguage(lang);
 
 		return this;
 	endfunction
 
 	function SetTargetLanguage(this, lang)
-		foreach msg in (this._messages)
-			msg.text.SetTargetLanguage(lang);
-		endforeach
+		if (!(this._messageTranslatableText is @TranslatableText))
+			return InvalidFormatException("Internal message text is not of type TranslatableText.");
+		endif
 
+		this._messageTranslatableText.SetTargetLanguage(lang);
+
+		return this;
+	endfunction
+
+	function IsAsync(this)
+		return this._asyncInfo.sending;
+	endfunction
+	
+	function SetAsync(this, sending := true, translation := true)
+		this._asyncInfo.sending := sending;
+		this._asyncInfo.translation := translation;
+		
 		return this;
 	endfunction
 
