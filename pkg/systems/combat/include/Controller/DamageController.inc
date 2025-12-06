@@ -165,13 +165,13 @@ function CalculateDefenderResist(byRef attackInfo)
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
-	attackInfo.GetDamage().DecreaseSlashBaseDamage(bodyResist.GetSlashResist())
-						  .DecreasePiercingBaseDamage(bodyResist.GetPiercingResist())
-						  .DecreaseBluntBaseDamage(bodyResist.GetBluntResist())
-						  .DecreaseFireBaseDamage(bodyResist.GetFireResist())
-						  .DecreaseColdBaseDamage(bodyResist.GetColdResist())
-						  .DecreasePoisonBaseDamage(bodyResist.GetPoisonResist())
-						  .DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
+	attackInfo.GetDamage().DecreaseSlashBaseDamage(bodyResist.GetSlashResist());
+	attackInfo.GetDamage().DecreasePiercingBaseDamage(bodyResist.GetPiercingResist());
+	attackInfo.GetDamage().DecreaseBluntBaseDamage(bodyResist.GetBluntResist());
+	attackInfo.GetDamage().DecreaseFireBaseDamage(bodyResist.GetFireResist());
+	attackInfo.GetDamage().DecreaseColdBaseDamage(bodyResist.GetColdResist());
+	attackInfo.GetDamage().DecreasePoisonBaseDamage(bodyResist.GetPoisonResist());
+	attackInfo.GetDamage().DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
 	
 	if (armorsInBodyRegion == array{})
@@ -179,13 +179,13 @@ function CalculateDefenderResist(byRef attackInfo)
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
-			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
-								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
-								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
-								  .DecreaseFireBaseDamage(armorResist.GetFireResist())
-								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
-								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
-								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
+			attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
+			attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
+			attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
+			attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
+			attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
+			attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}"));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
@@ -200,10 +200,6 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {CInt(attackInfo.GetDamage().GetColdRawDamage() - attackInfo.GetDamage().GetColdBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
-	
-	if (attackInfo.GetDamage().GetSlashBaseDamage() < 1) attackInfo.GetDamage().SetSlashBaseDamage(1); endif
-	if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1) attackInfo.GetDamage().SetPiercingBaseDamage(1); endif
-	if (attackInfo.GetDamage().GetBluntBaseDamage() < 1) attackInfo.GetDamage().SetBluntBaseDamage(1); endif
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
 endfunction
 
