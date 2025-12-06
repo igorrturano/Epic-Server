@@ -14,13 +14,13 @@ program backstab(who)
 		return;
 	endif
 
-	who.GetObjRef().SetProp("backstab", 1);
-	who.GetEquipBySlot(WEAPON).GetObjRef().SetProp("backstab", 1);
+	who.SetProperty("backstab", 1);
+	who.GetEquipBySlot(WEAPON).SetProperty("backstab", 1);
 
-	if (who.hidden)
-		who.GetObjRef().SetProp("#attackbonus", 100);
+	if (who.IsHidden())
+		who.SetProperty("#attackbonus", 100);
 		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))
-			who.GetObjRef().SetProp("#nextcritical", 1);
+			who.SetProperty("#nextcritical", 1);
 		endif
 	endif
 

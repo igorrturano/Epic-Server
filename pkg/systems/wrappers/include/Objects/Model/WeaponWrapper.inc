@@ -20,8 +20,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var _speed := 0;
 	var _speedModTier := "";
 	var _speedMod := 0;
-	var _mainDamageTier; // DamageDice class
-	var _offDamageTier; // DamageDice class
+	var _mainDamageTier; // DamageTier class
+	var _offDamageTier; // DamageTier class
 	var _mainDamage; // DamageDice class
 	var _offDamage; // DamageDice class
 	var _damageMod; // Damage class
@@ -70,10 +70,11 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this._damageMods := DamageModCollection();
 			this.SetDamageMod(DamageModFabricacao(this._objRef ? this._objRef : this.GetTemplate()));
 
-			this._speed := getSpeedByTier(this._speedTier);
-			this._criticalChance := getCriticalChanceByTier(this._criticalChanceTier);
-			this._weight := this._GetWeight();
-			this._strRequired := this._GetSTRRequired();
+			this._speed := GetSpeedByTier(this._speedTier);
+			this._criticalChance := GetCriticalChanceByTier(this._criticalChanceTier);
+			this._maxHP := GetDurabilityByType(this.GetAttackType());
+			this._weight := this._CalculateWeight();
+			this._strRequired := this._CalculateSTRRequired();
 			this._ammo := this._template.ProjectileType ? Ammo(this._template.ProjectileType) : uninit;
 			this._minRange := this._template.MinRange ?: 1;
 			this._maxRange := this._template.MaxRange ?: 1;
@@ -403,7 +404,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	// Private functions
-	function _GetWeight(this)
+	function _CalculateWeight(this)
+		var weight := 1;
+		
 		var maxMainDamage := Max(array{
 			CInt(SplitWords(this._mainDamage.GetSlashDamage(), "d")[2]),
 			CInt(SplitWords(this._mainDamage.GetPiercingDamage(), "d")[2]),
@@ -415,10 +418,13 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			CInt(SplitWords(this._offDamage.GetBluntDamage(), "d")[2])
 		});
 
-		return CInt(maxMainDamage) + CInt(maxOffDamage);
+		weight := CInt(maxMainDamage) + CInt(maxOffDamage);
+		weight *= GetWeightMultiplierByMaterial(this._material);
+
+		return weight;
 	endfunction
 
-	function _GetSTRRequired(this)
+	function _CalculateSTRRequired(this)
 		return CInt(this._weight * 7.5);
 	endfunction
 endclass

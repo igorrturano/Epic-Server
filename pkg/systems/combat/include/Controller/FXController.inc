@@ -13,6 +13,7 @@ include "include/epicConstants";
 include ":attributes:attributeConstants";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":blood:blood";
 
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
@@ -21,6 +22,11 @@ function PlayAttackFX(byRef attackInfo)
 
 	attackInfo.GetAttacker().PlayAnimation(attackerAnim);
 	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
+
+	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
+	if (hpPercent < 20)
+		MakeBleed(attackInfo.GetDefender().GetObjRef());
+	endif
 endfunction
 
 function PlayAttackSFX(byRef attackInfo)
@@ -37,8 +43,8 @@ function PlayWeaponFX(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetProperty("throwItem") ||
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		PlayThrowingFX(attackInfo);
-	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(BOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(CROSSBOW))
+	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
@@ -61,40 +67,40 @@ function GetAttackerFX(byRef attackInfo)
 		critical := array{}
 	};
 	
-	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		attackerFX.hit := array{4, 5, 6};
 		attackerFX.critical := array{4, 5, 6};
 	else
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH, HUMAN_ANIM::ATTACK_1HAND_PIERCING, HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_PUNCH};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == BOW)
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_BOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == CROSSBOW)
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
 		else
 			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
-				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
+				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
-				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
+				elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
-				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
+				elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 				endif
 			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(ONEHANDED) ||
 					Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(DUALWIELD))
-				if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
+				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
-				elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
+				elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
-				elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
+				elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 				endif
@@ -224,48 +230,48 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}; */
-	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
 		weaponSFX.hit := array{npcTemplate.AttackSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
 		weaponSFX.critical := array{npcTemplate.AttackSound};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == UNARMED)
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == BOW)
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == CROSSBOW)
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
 	else
 		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
-			if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
+			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 				weaponSFX.hit := array{0x237, 0x238};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
-			elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
+			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 				weaponSFX.hit := array{0x23D, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
-			elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
+			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 				weaponSFX.hit := array{0x3AE};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
 			endif
 		else
-			if (Upper(attackInfo.GetAttackType()) == Upper(SLASHDAMAGE))
+			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 				weaponSFX.hit := array{0x23C, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
-			elseif (Upper(attackInfo.GetAttackType()) == Upper(PIERCINGDAMAGE))
+			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 				weaponSFX.hit := array{0x23C, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
-			elseif (Upper(attackInfo.GetAttackType()) == Upper(BLUNTDAMAGE))
+			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 				weaponSFX.hit := array{0x3AC};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 				weaponSFX.critical := array{};
