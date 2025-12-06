@@ -2,8 +2,6 @@ include ":message:model/Message";
 include ":message:Controller/Translator";
 
 program Sender(message)
-	print("Starting Sender...");
-	
 	if (message.WantTranslation())
 		var translator := Translator();
 		translator.SetText(message.GetText());
