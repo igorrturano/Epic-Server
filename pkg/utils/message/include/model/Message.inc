@@ -7,6 +7,7 @@ include "include/client";
 include "system/text/_all";
 include "system/exception/FormatException/InvalidFormatException";
 
+// TODO: Fazer receber apenas 1 mensagem, para evitar bugs de concatenação
 class Message(IMessage)
 	var _isAsync := false;
 	var _translate := false; // Boolean indicando se a mensagem deve ser traduzida
