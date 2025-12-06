@@ -31,7 +31,7 @@ exported function Attack(attacker, defender)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
 
 	if (!CanAttack(attackInfo))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", FONTCOLOR_ERROR));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", Color(COLOR_NAME::FAIL).GetTextValue()));
 		return 1;
 	endif
 
@@ -50,7 +50,7 @@ endfunction
 
 function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
-		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetAttacker().GetObjRef(), 5000);
 		return false;
 	endif
@@ -67,7 +67,7 @@ function CanAttack(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC())
 		if (!attackInfo.GetAttacker().IsWarMode())
 			if (attackInfo.GetAttacker().GetObjRef().GetProp("attackmsg") <= polcore().systime)
-				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 				attackInfo.GetAttacker().GetObjRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
 			return false;
@@ -80,12 +80,12 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (!CheckDistance(attackInfo.GetAttacker(), attackInfo.GetDefender()))
-		Message("O alvo está fora do alcance.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("O alvo está fora do alcance.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	if (!CheckFacing(attackInfo))
-		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você precisa estar de frente para o alvo.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -97,7 +97,7 @@ function CanAttack(byRef attackInfo)
 	endif
 	
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesatotal") > 0)
-		Message("Você está totalmente concentrado na defesa.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você está totalmente concentrado na defesa.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 	
@@ -115,7 +115,7 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#PrisaoGelida"))
-		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar o alvo.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -140,7 +140,7 @@ function TryToAttack(byRef attackInfo)
 
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(COLOR_NAME::SUCCESS).GetTextValue()));
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			ExecuteMasteryAbility(attackInfo);
@@ -148,7 +148,7 @@ function TryToAttack(byRef attackInfo)
 
 		DoAttack(attackInfo);
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***", Color(COLOR_NAME::FAIL).GetTextValue()));
 		// Se errou, chama os efeitos aqui
 		PlayAttackFX(attackInfo);
 		PlayAttackSFX(attackInfo);
@@ -204,7 +204,7 @@ function CheckAmmo(byRef attackInfo)
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammoSerial)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
