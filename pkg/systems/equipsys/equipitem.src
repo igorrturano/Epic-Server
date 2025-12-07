@@ -31,14 +31,14 @@ function debugWeapon(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, $"====================
 		Arma: {equip.GetName()}
 		====================");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {equip.GetMainDamage().GetSlashDamage()}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {equip.GetMainDamage().GetPiercingDamage()}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {equip.GetMainDamage().GetBluntDamage()}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {DAMAGE_TYPE::SLASH}: {equip.GetMainDamage().GetSlashDamage()}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {DAMAGE_TYPE::PIERCING}: {equip.GetMainDamage().GetPiercingDamage()}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {DAMAGE_TYPE::BLUNT}: {equip.GetMainDamage().GetBluntDamage()}");
 
 	if (equip.IsDualWield())
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {equip.GetOffDamage().GetSlashDamage()}");
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {equip.GetOffDamage().GetPiercingDamage()}");
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {equip.GetOffDamage().GetBluntDamage()}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {DAMAGE_TYPE::SLASH}: {equip.GetOffDamage().GetSlashDamage()}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {DAMAGE_TYPE::PIERCING}: {equip.GetOffDamage().GetPiercingDamage()}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {DAMAGE_TYPE::BLUNT}: {equip.GetOffDamage().GetBluntDamage()}");
 	endif
 
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] Fogo: {equip.GetMainDamage().GetFireDamage()}");
@@ -72,11 +72,11 @@ function debugArmor(who, equip)
 
 	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA]");
 	DebugMsg(who, DEBUG_EQUIP,
-		  $"{SLASHDAMAGE}: {equip.GetResists().GetSlashResist()} (+{equip.GetResistsMod().GetSlashResist()})");
+		  $"{DAMAGE_TYPE::SLASH}: {equip.GetResists().GetSlashResist()} (+{equip.GetResistsMod().GetSlashResist()})");
 	DebugMsg(who, DEBUG_EQUIP,
-		  $"{PIERCINGDAMAGE}: {equip.GetResists().GetPiercingResist()} (+{equip.GetResistsMod().GetPiercingResist()})");
+		  $"{DAMAGE_TYPE::PIERCING}: {equip.GetResists().GetPiercingResist()} (+{equip.GetResistsMod().GetPiercingResist()})");
 	DebugMsg(who, DEBUG_EQUIP,
-		  $"{BLUNTDAMAGE}: {equip.GetResists().GetBluntResist()} (+{equip.GetResistsMod().GetBluntResist()})");
+		  $"{DAMAGE_TYPE::BLUNT}: {equip.GetResists().GetBluntResist()} (+{equip.GetResistsMod().GetBluntResist()})");
 	// DebugMsg(who, DEBUG_EQUIP, $"Material ({materialName}): {resistByMaterial["SlashResist"]}/{resistByMaterial["PiercingResist"]}/{resistByMaterial["BluntResist"]}");
 	// DebugMsg(who, DEBUG_EQUIP, $"Slot ({slot}): {resistBySlot["SlashResist"]}/{resistBySlot["PiercingResist"]}/{resistBySlot["BluntResist"]}");
 	// DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({type}): {resistByProtection["SlashResist"]}/{resistByProtection["PiercingResist"]}/{resistByProtection["BluntResist"]}

@@ -6,7 +6,10 @@ include "TranslatableText";
 include ":message:Translator";
 include "include/say";
 include "include/client";
+include "system/colors/Color";
 
+
+// TODO: Fazer receber apenas 1 mensagem, para evitar bugs de concatenação
 class Message(IMessage)
 	var _asyncInfo := struct{
 		sending := false, // Em situações de script critico precisa ser assincrono. Definir isso com SetAsync().
@@ -17,7 +20,7 @@ class Message(IMessage)
 		color := FONTCOLOR_BLUE,
 		font := FONT_UNICODE_DEFAULT
 	}};
-	var _translator; // Translator class
+	var _translator; // Translator class // TODO: Remover esse Translator daqui.... Porra, que maluquice do cacete...
 
 	function Message(this, text, color := FONTCOLOR_BLUE, font_number := FONT_UNICODE_DEFAULT, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._asyncInfo := struct{
