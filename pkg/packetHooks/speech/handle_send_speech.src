@@ -4,7 +4,7 @@ use os;
 
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
-include ":message:model/TranslatableText";
+// include ":message:model/TranslatableText";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");

@@ -30,7 +30,6 @@
 use uo;
 
 include ":message:model/Message";
-include ":message:Translator";
 
 const PROPTAG := "#debug_";
 
@@ -104,7 +103,7 @@ var listDebugs := dictionary {
  */
 function DebugMsg(who, debugName, msg)
 	if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-		// Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+		msg.GetText().SetTextSource($"DEBUG {debugName}: {msg.GetText().GetTextSource()}");
 		msg.SendSys(who);
 	endif
 endfunction
@@ -124,9 +123,9 @@ endfunction
  * mensagem do sistema com nível de informação.
  */
 function DebugMsgAll(debugName, msg)
+	msg.GetText().SetTextSource($"DEBUG {debugName}: {msg.GetText().GetTextSource()}");
 	foreach who in EnumerateOnlineCharacters()
 		if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-			// Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
 			msg.SendSys(who);
 		endif
 	endforeach
