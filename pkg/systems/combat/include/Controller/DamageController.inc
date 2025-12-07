@@ -77,9 +77,9 @@ function CalculateStatusDamage(byRef attackInfo)
 	var damageMod := CInt(statBase / statDivisor);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod);
-	attackInfo.GetDamage().IncreasePiercingRawDamage(damageMod);
-	attackInfo.GetDamage().IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
+						  .IncreasePiercingRawDamage(damageMod)
+						  .IncreaseBluntRawDamage(damageMod);
 endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
@@ -92,9 +92,9 @@ function CalculateSkillDamage(byRef attackInfo)
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(skill)}: {damageMod}"));
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod);
-	attackInfo.GetDamage().IncreasePiercingRawDamage(damageMod);
-	attackInfo.GetDamage().IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
+						  .IncreasePiercingRawDamage(damageMod)
+						  .IncreaseBluntRawDamage(damageMod);
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
@@ -134,24 +134,24 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(slashDamage);
-	attackInfo.GetDamage().IncreasePiercingRawDamage(piercingDamage);
-	attackInfo.GetDamage().IncreaseBluntRawDamage(bluntDamage);
-	attackInfo.GetDamage().IncreaseFireRawDamage(fireDamage);
-	attackInfo.GetDamage().IncreaseColdRawDamage(coldDamage);
-	attackInfo.GetDamage().IncreasePoisonRawDamage(poisonDamage);
-	attackInfo.GetDamage().IncreaseEnergyRawDamage(energyDamage);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(slashDamage)
+						  .IncreasePiercingRawDamage(piercingDamage)
+						  .IncreaseBluntRawDamage(bluntDamage)
+						  .IncreaseFireRawDamage(fireDamage)
+						  .IncreaseColdRawDamage(coldDamage)
+						  .IncreasePoisonRawDamage(poisonDamage)
+						  .IncreaseEnergyRawDamage(energyDamage);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
 	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage());
-	attackInfo.GetDamage().IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage());
-	attackInfo.GetDamage().IncreaseBluntRawDamage(damageMod.GetBluntRawDamage());
-	attackInfo.GetDamage().IncreaseFireRawDamage(damageMod.GetFireRawDamage());
-	attackInfo.GetDamage().IncreaseColdRawDamage(damageMod.GetColdRawDamage());
-	attackInfo.GetDamage().IncreasePoisonRawDamage(damageMod.GetPoisonRawDamage());
-	attackInfo.GetDamage().IncreaseEnergyRawDamage(damageMod.GetEnergyRawDamage());
+	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage())
+						  .IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage())
+						  .IncreaseBluntRawDamage(damageMod.GetBluntRawDamage())
+						  .IncreaseFireRawDamage(damageMod.GetFireRawDamage())
+						  .IncreaseColdRawDamage(damageMod.GetColdRawDamage())
+						  .IncreasePoisonRawDamage(damageMod.GetPoisonRawDamage())
+						  .IncreaseEnergyRawDamage(damageMod.GetEnergyRawDamage());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageMod.GetSlashRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageMod.GetPiercingRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageMod.GetBluntRawDamage()}"));
@@ -165,13 +165,13 @@ function CalculateDefenderResist(byRef attackInfo)
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
-	attackInfo.GetDamage().DecreaseSlashBaseDamage(bodyResist.GetSlashResist());
-	attackInfo.GetDamage().DecreasePiercingBaseDamage(bodyResist.GetPiercingResist());
-	attackInfo.GetDamage().DecreaseBluntBaseDamage(bodyResist.GetBluntResist());
-	attackInfo.GetDamage().DecreaseFireBaseDamage(bodyResist.GetFireResist());
-	attackInfo.GetDamage().DecreaseColdBaseDamage(bodyResist.GetColdResist());
-	attackInfo.GetDamage().DecreasePoisonBaseDamage(bodyResist.GetPoisonResist());
-	attackInfo.GetDamage().DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
+	attackInfo.GetDamage().DecreaseSlashBaseDamage(bodyResist.GetSlashResist())
+						  .DecreasePiercingBaseDamage(bodyResist.GetPiercingResist())
+						  .DecreaseBluntBaseDamage(bodyResist.GetBluntResist())
+						  .DecreaseFireBaseDamage(bodyResist.GetFireResist())
+						  .DecreaseColdBaseDamage(bodyResist.GetColdResist())
+						  .DecreasePoisonBaseDamage(bodyResist.GetPoisonResist())
+						  .DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
 	
 	if (armorsInBodyRegion == array{})
@@ -179,13 +179,13 @@ function CalculateDefenderResist(byRef attackInfo)
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
-			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist());
-			attackInfo.GetDamage().DecreasePiercingBaseDamage(armorResist.GetPiercingResist());
-			attackInfo.GetDamage().DecreaseBluntBaseDamage(armorResist.GetBluntResist());
-			attackInfo.GetDamage().DecreaseFireBaseDamage(armorResist.GetFireResist());
-			attackInfo.GetDamage().DecreaseColdBaseDamage(armorResist.GetColdResist());
-			attackInfo.GetDamage().DecreasePoisonBaseDamage(armorResist.GetPoisonResist());
-			attackInfo.GetDamage().DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
+								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
+								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
+								  .DecreaseFireBaseDamage(armorResist.GetFireResist())
+								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
+								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
+								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}"));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
@@ -200,6 +200,10 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {CInt(attackInfo.GetDamage().GetColdRawDamage() - attackInfo.GetDamage().GetColdBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
+
+	if (attackInfo.GetDamage().GetSlashBaseDamage() < 1) attackInfo.GetDamage().SetSlashBaseDamage(1); endif
+	if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1) attackInfo.GetDamage().SetPiercingBaseDamage(1); endif
+	if (attackInfo.GetDamage().GetBluntBaseDamage() < 1) attackInfo.GetDamage().SetBluntBaseDamage(1); endif
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
 endfunction
 
