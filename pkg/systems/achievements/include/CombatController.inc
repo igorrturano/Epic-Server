@@ -37,7 +37,7 @@ function AchievementCombat_Advance_NPCTemplate(attacker, defender, combatInfo)
 	var achiev;
 	var key := defender.npctemplate;
 	if (!key) // Se não tem template, não é um npc válido.
-		DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para TEMPLATE.");
+		DebugMsg(attacker, DEBUG_ACHIEVEMENT, Message($"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para TEMPLATE."));
 		return;
 	endif
 
@@ -50,7 +50,7 @@ function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 	var achiev;
 	var key := defender.GetCategory() ?: NPC_GetNPCConfig(defender.npctemplate).Category;
 	if (!key) // Se ainda não tem categoria, não é um npc válido.
-		DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para CATEGORIA.");
+		DebugMsg(attacker, DEBUG_ACHIEVEMENT, Message($"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para CATEGORIA."));
 		return;
 	endif
 
@@ -63,7 +63,7 @@ function AchievementCombat_Advance_Weapon(attacker, defender, combatInfo)
 	var achiev;
 	var key := CStr(Hex(attacker.weapon.objtype));
 	if (!key) // Se não tem arma, não tem achievement de arma. DUUUUUUUUUH.
-		DebugMsg(attacker, DEBUG_ACHIEVEMENT, "Arma empunhada não é uma arma válida. Ignorando avanço de achievement.");
+		DebugMsg(attacker, DEBUG_ACHIEVEMENT, Message("Arma empunhada não é uma arma válida. Ignorando avanço de achievement."));
 		return;
 	endif
 
@@ -82,8 +82,8 @@ function AchievementAdvance(type, who, key, name, value, refName := false)
 
 	if (refName) achiev.SetRefName(refName); endif
 
-	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Ganho de achievement para {achiev.GetName()} ({type}): {value}");
-	DebugMsg(who, DEBUG_ACHIEVEMENT, $"Progresso atual de {achiev.GetName()}: {achiev.ToString()}");
+	DebugMsg(who, DEBUG_ACHIEVEMENT, Message($"Ganho de achievement para {achiev.GetName()} ({type}): {value}"));
+	DebugMsg(who, DEBUG_ACHIEVEMENT, Message($"Progresso atual de {achiev.GetName()}: {achiev.ToString()}"));
 
 	who.SetAchievement(type, who, achiev);
 endfunction
