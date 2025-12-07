@@ -86,7 +86,7 @@ function enterGolem(who)
 	SetObjProperty(who, "hitsmod", hitsmod);
 
 	recalcvitals(who);
-	ApplyEpicHealingealing(who, hitsmod);
+	ApplyEpicHealing(who, hitsmod);
 endfunction
 
 function moveToBehind(attacker, defender)

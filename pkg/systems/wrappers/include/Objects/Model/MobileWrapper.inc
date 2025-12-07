@@ -12,7 +12,7 @@ include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
-
+include ":entropy:entropy";
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
 	var _race := "";
@@ -821,14 +821,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		var current := this.GetEntropy();
 		this.SetEntropy(current + amt);
-
-		// Atualizar entropia global do mundo
-		var global_entropy := GetGlobalProperty("GlobalEntropy");
-		if (!global_entropy)
-			global_entropy := 0;
-		endif
-		SetGlobalProperty("GlobalEntropy", global_entropy + amt);
-
+		updateGlobalEntropy(amt);
 		return this;
 	endfunction
 endclass
