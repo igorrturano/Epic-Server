@@ -62,7 +62,7 @@ endprogram
 function CheckBodyRegionToHit(byRef attackInfo)
 	var zoneToHit := CS_GetRandomArmorZone();
 	attackInfo.SetBodyRegion(zoneToHit);
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Região atingida: {zoneToHit}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Região atingida: {zoneToHit}"));
 endfunction
 
 function TryToRecoverAmmo(byRef attackInfo)
