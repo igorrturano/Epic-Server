@@ -32,67 +32,67 @@ class Damage(IDamage)
 	endfunction
 
 	function GetSlashRawDamage(this)
-		return this._slashRaw;
+		return CInt(this._slashRaw);
 	endfunction
 
 	function GetPiercingRawDamage(this)
-		return this._piercingRaw;
+		return CInt(this._piercingRaw);
 	endfunction
 
 	function GetBluntRawDamage(this)
-		return this._bluntRaw;
+		return CInt(this._bluntRaw);
 	endfunction
 
 	function GetFireRawDamage(this)
-		return this._fireRaw;
+		return CInt(this._fireRaw);
 	endfunction
 
 	function GetColdRawDamage(this)
-		return this._coldRaw;
+		return CInt(this._coldRaw);
 	endfunction
 
 	function GetPoisonRawDamage(this)
-		return this._poisonRaw;
+		return CInt(this._poisonRaw);
 	endfunction
 
 	function GetEnergyRawDamage(this)
-		return this._energyRaw;
+		return CInt(this._energyRaw);
 	endfunction
 
 	function GetSlashBaseDamage(this)
-		return this._slashBase;
+		return CInt(this._slashBase);
 	endfunction
 
 	function GetPiercingBaseDamage(this)
-		return this._piercingBase;
+		return CInt(this._piercingBase);
 	endfunction
 
 	function GetBluntBaseDamage(this)
-		return this._bluntBase;
+		return CInt(this._bluntBase);
 	endfunction
 
 	function GetFireBaseDamage(this)
-		return this._fireBase;
+		return CInt(this._fireBase);
 	endfunction
 
 	function GetColdBaseDamage(this)
-		return this._coldBase;
+		return CInt(this._coldBase);
 	endfunction
 
 	function GetPoisonBaseDamage(this)
-		return this._poisonBase;
+		return CInt(this._poisonBase);
 	endfunction
 
 	function GetEnergyBaseDamage(this)
-		return this._energyBase;
+		return CInt(this._energyBase);
 	endfunction
 
 	function GetTotalRawDamage(this)
-		return this._slashRaw + this._piercingRaw + this._bluntRaw + this._fireRaw + this._coldRaw + this._poisonRaw + this._energyRaw;
+		return CInt(this._slashRaw + this._piercingRaw + this._bluntRaw + this._fireRaw + this._coldRaw + this._poisonRaw + this._energyRaw);
 	endfunction
 
 	function GetTotalBaseDamage(this)
-		return this._slashBase + this._piercingBase + this._bluntBase + this._fireBase + this._coldBase + this._poisonBase + this._energyBase;
+		return CInt(this._slashBase + this._piercingBase + this._bluntBase + this._fireBase + this._coldBase + this._poisonBase + this._energyBase);
 	endfunction
 
 	function SetSlashRawDamage(this, value)
