@@ -200,10 +200,6 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {CInt(attackInfo.GetDamage().GetColdRawDamage() - attackInfo.GetDamage().GetColdBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
-
-	if (attackInfo.GetDamage().GetSlashBaseDamage() < 1) attackInfo.GetDamage().SetSlashBaseDamage(1); endif
-	if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1) attackInfo.GetDamage().SetPiercingBaseDamage(1); endif
-	if (attackInfo.GetDamage().GetBluntBaseDamage() < 1) attackInfo.GetDamage().SetBluntBaseDamage(1); endif
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
 endfunction
 
@@ -385,56 +381,64 @@ endfunction
 function ApplyCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesOnHit(attackInfo);
 
-	var slash, piercing, blunt, fire, cold, poison, energy;
-	slash 	 := attackInfo.GetDamage().GetSlashBaseDamage();
-	piercing := attackInfo.GetDamage().GetPiercingBaseDamage();
-	blunt 	 := attackInfo.GetDamage().GetBluntBaseDamage();
-	fire 	 := attackInfo.GetDamage().GetFireBaseDamage();
-	cold 	 := attackInfo.GetDamage().GetColdBaseDamage();
-	poison 	 := attackInfo.GetDamage().GetPoisonBaseDamage();
-	energy 	 := attackInfo.GetDamage().GetEnergyBaseDamage();
-
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{attackInfo.GetDamage().ToString()}"));
 
 	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 	if (posture == DAMAGE_TYPE::SLASH)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(slash));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Slash: {CInt(slash)}"));
+		if (attackInfo.GetDamage().GetSlashBaseDamage() < 1)
+			attackInfo.GetDamage().SetSlashBaseDamage(1);
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+		else
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
+		endif
+
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage());
 	elseif (posture == DAMAGE_TYPE::PIERCING)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(piercing));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Piercing: {CInt(piercing)}"));
+		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
+			attackInfo.GetDamage().SetPiercingBaseDamage(1);
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+		else
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
+		endif
+
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage());
 	elseif (posture == DAMAGE_TYPE::BLUNT)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(blunt));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Blunt: {CInt(blunt)}"));
+		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
+			attackInfo.GetDamage().SetBluntBaseDamage(1);
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+		else
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
+		endif
+
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
 	endif
 
-	if (fire > 0)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(fire));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Fire: {CInt(fire)}"));
+	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
 	endif
 
-	if (cold > 0)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(cold));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Cold: {CInt(cold)}"));
+	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
 	endif
 
-	if (poison > 0)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(poison));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Poison: {CInt(poison)}"));
+	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
 	endif
 
-	if (energy > 0)
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy), attackInfo.GetAttacker().GetObjRef());
-		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), CInt(energy));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Energy: {CInt(energy)}"));
+	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
 	endif
 endfunction
 
