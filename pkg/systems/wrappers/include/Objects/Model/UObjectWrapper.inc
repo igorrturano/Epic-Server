@@ -18,6 +18,7 @@ class UObjectWrapper(IUObjectWrapper)
 	var _graphic := 0;
 	var _color := 0;
 	var _weight := 0;
+	var _category := ""; // CATEGORY enum
 	var _cProps;
 
 	function UObjectWrapper(this, byRef object)
@@ -103,6 +104,15 @@ class UObjectWrapper(IUObjectWrapper)
 			this._objRef.z,
 			this._objRef.realm
 		);
+	endfunction
+
+	/**
+	 * Obtém a categoria do objeto.
+	 *
+	 * @return String contendo a categoria do objeto (valor do enum CATEGORY das classes filhas)
+	 */
+	function GetCategory(this)
+		return this._category;
 	endfunction
 
 	function _SetName(this, name)

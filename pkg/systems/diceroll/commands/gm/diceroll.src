@@ -3,9 +3,8 @@ include ":diceroll:model/DiceRoll";
 
 program diceroll(who, params)
 	if (!params || params == "")
-		Message("Uso correto: .diceroll <rolagem de dados>", SSM_FAIL)
-			.AddMessage("Exemplo: .diceroll 1d6, 1d20, 2d8+3, etc. [múltiplos dados são aceitos]", SSM_FAIL)
-			.SendSys(who);
+		Message("Uso correto: .diceroll <rolagem de dados>", SSM_FAIL).SendSys(who);
+		Message("Exemplo: .diceroll 1d6, 1d20, 2d8+3, etc. [múltiplos dados são aceitos]", SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 

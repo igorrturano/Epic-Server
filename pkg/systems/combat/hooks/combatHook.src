@@ -26,17 +26,17 @@ endprogram
 exported function Attack(attacker, defender)
 	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "=================");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("ATAQUE INICIADO!"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
 
 	if (!CanAttack(attackInfo))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***NÃO PODE ATACAR***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", Color(COLOR_NAME::FAIL).GetTextValue()));
 		return 1;
 	endif
 
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Postura adotada no golpe: {attackInfo.GetAttackType()}");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Postura adotada no golpe: {attackInfo.GetAttackType()}"));
 
 	TryToAttack(attackInfo);
 
@@ -50,7 +50,7 @@ endfunction
 
 function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
-		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetAttacker().GetObjRef(), 5000);
 		return false;
 	endif
@@ -67,7 +67,7 @@ function CanAttack(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC())
 		if (!attackInfo.GetAttacker().IsWarMode())
 			if (attackInfo.GetAttacker().GetObjRef().GetProp("attackmsg") <= polcore().systime)
-				Message("Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 				attackInfo.GetAttacker().GetObjRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
 			return false;
@@ -80,22 +80,24 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (!CheckDistance(attackInfo.GetAttacker(), attackInfo.GetDefender()))
-		Message("O alvo está fora do alcance.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("O alvo está fora do alcance.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	if (!CheckFacing(attackInfo))
-		Message("Você precisa estar de frente para o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você precisa estar de frente para o alvo.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	
-	if (!CheckAmmo(attackInfo))
-		return false;
+	if (!attackInfo.GetAttacker().IsNPC())
+		if (!CheckAmmo(attackInfo))
+			return false;
+		endif
 	endif
 	
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesatotal") > 0)
-		Message("Você está totalmente concentrado na defesa.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você está totalmente concentrado na defesa.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 	
@@ -113,7 +115,7 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#PrisaoGelida"))
-		Message("Você não pode atacar o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar o alvo.", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -125,28 +127,28 @@ function TryToAttack(byRef attackInfo)
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		Start_Script(":combat:hooks/opportunityAttack", array{attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()});
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> MainHand");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto: {attackInfo.GetHitChance()}");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Mão -> MainHand"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Chance de acerto: {attackInfo.GetHitChance()}"));
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-		attackInfo.SetHitChancePenalty(CalculateDualWieldPenalty(attackInfo));
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Mão -> OffHand");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}(-{attackInfo.GetHitChancePenalty()})");
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - CalculateDualWieldPenalty(attackInfo));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Mão -> OffHand"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})"));
 	endif
 
 	attackInfo.RollHitChance();
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "Rolagem de acerto: " + attackInfo.GetHitChanceResult());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Rolagem de acerto: " + attackInfo.GetHitChanceResult()));
 
+	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ACERTOU!***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(COLOR_NAME::SUCCESS).GetTextValue()));
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-			ExecuteCombatAbilitiesOnHit(attackInfo);
 			ExecuteMasteryAbility(attackInfo);
 		endif
 
 		DoAttack(attackInfo);
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, "***ERROU!***");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***", Color(COLOR_NAME::FAIL).GetTextValue()));
 		// Se errou, chama os efeitos aqui
 		PlayAttackFX(attackInfo);
 		PlayAttackSFX(attackInfo);
@@ -161,7 +163,7 @@ function DoAttack(byRef attackInfo)
 		attackInfo.GetAttacker().GetObjRef().concealed := 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().hidden) // Checa se o atacante escondido revela ou não
+	if (attackInfo.GetAttacker().IsHidden()) // Checa se o atacante escondido revela ou não
 		if (attackInfo.GetAttacker().GetObjRef().GetProp("ataquefurtivoaprimorado")) // Gasta a carga de Ataque Furtivo Aprimorado e não se revela
 			attackInfo.GetAttacker().GetObjRef().EraseProp("ataquefurtivoaprimorado");
 		else // Revela o atacante
@@ -181,7 +183,7 @@ function DoAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-		Run_Script(":combat:mainHitScript", attackInfo);
+		Run_Script_To_Completion(":combat:mainHitScript", attackInfo);
 	else // Se for ataque da mão secundária, executa async por causa do delay
 		Start_Script(":combat:mainHitScript", attackInfo);
 	endif
@@ -200,14 +202,9 @@ function CheckAmmo(byRef attackInfo)
 		endif
 	endif
 
-	// NPCs don't need to set ammo serial - they use infinite ammo
-	if (attackInfo.GetAttacker().IsNPC())
-		return true;
-	endif
-
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammoSerial)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", Color(COLOR_NAME::FAIL).GetTextValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -259,7 +256,7 @@ endfunction
 function CheckFacing(byRef attackInfo)
 	if (!IsFacing(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()))
 		if (attackInfo.GetAttacker().IsNPC())
-			TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
+			// TurnObjectToward(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef().x, attackInfo.GetDefender().GetObjRef().y);
 		else
 			if (IsBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetPosition().GetX(), attackInfo.GetDefender().GetPosition().GetY()) && !(GetCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance")))
 				return false;

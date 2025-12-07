@@ -34,7 +34,6 @@ program MainHitScript(attackInfo)
 	
 	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
 		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
-		// NPCs don't consume ammo - they have infinite arrows
 		if (!attackInfo.GetAttacker().IsNPC())
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
