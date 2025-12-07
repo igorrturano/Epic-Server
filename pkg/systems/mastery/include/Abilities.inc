@@ -9,7 +9,7 @@ include ":combat:Model/AttackInfo";
 function ExecuteMasteryAbility(attackInfo)
 	var cooldown := GetCooldown(attackInfo.GetAttacker(), "MasteryAbilityCooldown");
 	if (cooldown > 0)
-		DebugMsg(attackInfo.GetAttacker(), DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
+		DebugMsg(attackInfo.GetAttacker(), DEBUG_MASTERY, Message($"Habilidade de maestria está em cooldown por mais {cooldown} segundos."));
 		return false;
 	endif
 
