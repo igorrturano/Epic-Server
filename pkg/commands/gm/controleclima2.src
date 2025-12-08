@@ -79,6 +79,16 @@ program controleclima2(who)
                      if (!mob.isUnderRoof())
                         if (weather_type == 0 || weather_type == 1) // Rain/Storm
                             wetPowder(mob);
+                        elseif (weather_type == 4) // Poison Rain
+                            if (RandomInt(100) < 10) // 10% chance per tick
+                                SendSysMessageEx(mob, "A chuva ácida queima sua pele!", SSM_FAIL);
+                                TS_StartTimer(mob, "defaultPoison", 10); // 10s poison
+                            endif
+                        elseif (weather_type == 5) // Sandstorm
+                             if (RandomInt(100) < 5)
+                                SendSysMessageEx(mob, "A areia entra em seus olhos!", SSM_FAIL);
+                                // Could add blindness or stamina drain here
+                             endif
                         endif
                         SetWeatherForPlayer(mob, weather_type, intensity);
                     endif
@@ -143,14 +153,14 @@ function ControleClimaGump(who)
     GFSetRadioGroup(gump, 1);
     GFRadioButton(gump, 40, 90, 210, 211, 1, 100); GFTextLine(gump, 65, 90, 1153, "Limpar Clima");
     GFRadioButton(gump, 40, 115, 210, 211, 0, 101); GFTextLine(gump, 65, 115, 1153, "Chuva");
-    // GFRadioButton(gump, 40, 140, 210, 211, 0, 102); GFTextLine(gump, 65, 140, 1153, "Chuva Venenosa"); // Omitted
+    GFRadioButton(gump, 40, 140, 210, 211, 0, 102); GFTextLine(gump, 65, 140, 1153, "Chuva Venenosa");
 
     GFRadioButton(gump, 180, 90, 210, 211, 0, 103); GFTextLine(gump, 205, 90, 1153, "Neve");
     GFRadioButton(gump, 180, 115, 210, 211, 0, 104); GFTextLine(gump, 205, 115, 1153, "Tempestade");
-    // GFRadioButton(gump, 180, 140, 210, 211, 0, 105); GFTextLine(gump, 205, 140, 1153, "Areia Fog"); // Omitted
+    GFRadioButton(gump, 180, 140, 210, 211, 0, 105); GFTextLine(gump, 205, 140, 1153, "Areia Fog");
 
     GFRadioButton(gump, 320, 90, 210, 211, 0, 106); GFTextLine(gump, 345, 90, 1153, "Temp. Raios");
-    // GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia"); // Omitted
+    GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia");
     // GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa"); // Omitted
 
     // --- Section 2: Estação do Ano ---
@@ -170,7 +180,7 @@ function ControleClimaGump(who)
 
     // --- Section 3: Configurações ---
     GFTextLine(gump, 30, 280, 53, "Configurações");
-    GFResizePic(gump, 25, 300, 0xBB8, 450, 120);
+    GFResizePic(gump, 25, 300, 0xBB8, 450, 150);
 
     // Inputs
     GFTextLine(gump, 40, 310, 1153, "Intensidade (0-70):");
@@ -185,13 +195,26 @@ function ControleClimaGump(who)
     GFResizePic(gump, 180, 370, 2620, 60, 20);
     GFTextEntry(gump, 185, 370, 50, 20, 1153, "100", 302);
 
+    // Fog Config
+    GFTextLine(gump, 40, 400, 1153, "Fog (Lvl/R/G/B):");
+    GFResizePic(gump, 180, 400, 2620, 40, 20);
+    GFTextEntry(gump, 185, 400, 30, 20, 1153, "50", 303); // Level (Alpha)
+    
+    GFResizePic(gump, 230, 400, 2620, 40, 20);
+    GFTextEntry(gump, 235, 400, 30, 20, 1153, "210", 304); // R
+    
+    GFResizePic(gump, 280, 400, 2620, 40, 20);
+    GFTextEntry(gump, 285, 400, 30, 20, 1153, "180", 305); // G
+    
+    GFResizePic(gump, 330, 400, 2620, 40, 20);
+    GFTextEntry(gump, 335, 400, 30, 20, 1153, "140", 306); // B
+
     // Extra Options
     GFCheckBox(gump, 280, 310, 210, 211, 0, 400); GFTextLine(gump, 305, 310, 1153, "Sons de Vento");
     GFCheckBox(gump, 280, 340, 210, 211, 0, 401); GFTextLine(gump, 305, 340, 1153, "Vento Forte (Paralisia)");
 
     // Button
-    GFAddButton(gump, 210, 440, 4502, 4502, 1, 1); // OKAY button
-    // GFTextLine(gump, 225, 445, 1153, "OKAY"); // Button likely has text or is distinct enough
+    GFAddButton(gump, 210, 460, 4502, 4502, 1, 1); // OKAY button (Moved down)
 
     var res := GFSendGump(who, gump);
     
@@ -205,6 +228,10 @@ function ControleClimaGump(who)
     result.+intensity := CInt(GFExtractData(res, 300));
     result.+duration := CInt(GFExtractData(res, 301));
     result.+range := CInt(GFExtractData(res, 302));
+    result.+fog_level := CInt(GFExtractData(res, 303));
+    result.+fog_r := CInt(GFExtractData(res, 304));
+    result.+fog_g := CInt(GFExtractData(res, 305));
+    result.+fog_b := CInt(GFExtractData(res, 306));
     result.+sound := 0;
     result.+heavy_wind := 0;
     result.+bolts := 0;
@@ -212,12 +239,23 @@ function ControleClimaGump(who)
     // Parse Weather Type
     if (res[100]) result.weather_type := 0xFF; endif
     if (res[101]) result.weather_type := 0; endif // Chuva
+    if (res[102]) result.weather_type := 4; endif // Chuva Venenosa
     if (res[103]) result.weather_type := 2; endif // Neve
     if (res[104]) result.weather_type := 1; endif // Tempestade
+    if (res[105]) // Areia Fog
+        result.weather_type := 6; 
+        result.sound := 1;
+        result.heavy_wind := 1;
+    endif
     if (res[106]) 
         result.weather_type := 1; 
         result.bolts := 1; 
         result.sound := 1; // Thunder implies sound usually
+    endif
+    if (res[107])
+        result.weather_type := 5; // Sandstorm
+        result.sound := 1; // Wind sound
+        result.heavy_wind := 1; // Optional: maybe add paralysis or stamina drain later
     endif
 
     // Parse Season
