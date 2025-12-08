@@ -133,27 +133,24 @@ function ControleClimaGump(who)
     GFDisposable(gump, 1);
     
     // Backgrounds (Epic Style)
-    GFResizePic(gump, 0, 0, 3600, 500, 520);
-    GFResizePic(gump, 15, 15, 0x13BE, 470, 490);
+    GFResizePic(gump, 0, 0, 3600, 500, 545); // Increased height by 25
+    GFResizePic(gump, 15, 15, 0x13BE, 470, 515); // Increased height by 25
     
     // Title
     GFTextMid(gump, 15, 25, 470, 53, "Painel de Controle Atmosférico"); // Yellow/Gold color
 
     // --- Section 1: Tipo de Clima ---
     GFTextLine(gump, 30, 60, 53, "Tipo de Clima");
-    GFResizePic(gump, 25, 80, 0xBB8, 450, 90); // Lighter background for section
+    GFResizePic(gump, 25, 80, 0xBB8, 450, 115); // Increased height by 25 (90 -> 115)
 
     // Checkboxes (using standard 0x938/0x939 or similar)
-    // Group 1 (Weather Type) - Radio behavior manually or via logic? 
-    // User image shows checkboxes. Let's use Radio Buttons for mutual exclusivity where it makes sense, 
-    // or Checkboxes and handle logic. Original used CheckBoxGump which allows multiple? 
-    // "Chuva" AND "Neve" together doesn't make sense for packet 0x65.
-    // I will use Radio Buttons for the main type.
+    // Group 1 (Weather Type)
     
     GFSetRadioGroup(gump, 1);
     GFRadioButton(gump, 40, 90, 210, 211, 1, 100); GFTextLine(gump, 65, 90, 1153, "Limpar Clima");
     GFRadioButton(gump, 40, 115, 210, 211, 0, 101); GFTextLine(gump, 65, 115, 1153, "Chuva");
     GFRadioButton(gump, 40, 140, 210, 211, 0, 102); GFTextLine(gump, 65, 140, 1153, "Chuva Venenosa");
+    GFRadioButton(gump, 40, 165, 210, 211, 0, 109); GFTextLine(gump, 65, 165, 1153, "Areia Feel"); // New Option
 
     GFRadioButton(gump, 180, 90, 210, 211, 0, 103); GFTextLine(gump, 205, 90, 1153, "Neve");
     GFRadioButton(gump, 180, 115, 210, 211, 0, 104); GFTextLine(gump, 205, 115, 1153, "Tempestade");
@@ -161,60 +158,60 @@ function ControleClimaGump(who)
 
     GFRadioButton(gump, 320, 90, 210, 211, 0, 106); GFTextLine(gump, 345, 90, 1153, "Temp. Raios");
     GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia");
-    // GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa"); // Omitted
+    GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa");
 
     // --- Section 2: Estação do Ano ---
-    GFTextLine(gump, 30, 180, 53, "Estação do Ano");
-    GFResizePic(gump, 25, 200, 0xBB8, 450, 70);
+    GFTextLine(gump, 30, 205, 53, "Estação do Ano"); // Shifted +25 (180 -> 205)
+    GFResizePic(gump, 25, 225, 0xBB8, 450, 70); // Shifted +25 (200 -> 225)
 
     GFSetRadioGroup(gump, 2);
-    GFRadioButton(gump, 40, 210, 210, 211, 1, 200); GFTextLine(gump, 65, 210, 1153, "Manter Atual");
-    GFRadioButton(gump, 40, 235, 210, 211, 0, 201); GFTextLine(gump, 65, 235, 1153, "Primavera");
+    GFRadioButton(gump, 40, 235, 210, 211, 1, 200); GFTextLine(gump, 65, 235, 1153, "Manter Atual"); // +25
+    GFRadioButton(gump, 40, 260, 210, 211, 0, 201); GFTextLine(gump, 65, 260, 1153, "Primavera"); // +25
 
-    GFRadioButton(gump, 180, 210, 210, 211, 0, 202); GFTextLine(gump, 205, 210, 1153, "Verão");
-    GFRadioButton(gump, 180, 235, 210, 211, 0, 203); GFTextLine(gump, 205, 235, 1153, "Outono");
+    GFRadioButton(gump, 180, 235, 210, 211, 0, 202); GFTextLine(gump, 205, 235, 1153, "Verão"); // +25
+    GFRadioButton(gump, 180, 260, 210, 211, 0, 203); GFTextLine(gump, 205, 260, 1153, "Outono"); // +25
 
-    GFRadioButton(gump, 320, 210, 210, 211, 0, 204); GFTextLine(gump, 345, 210, 1153, "Inverno");
-    GFRadioButton(gump, 320, 235, 210, 211, 0, 205); GFTextLine(gump, 345, 235, 1153, "Desolação");
+    GFRadioButton(gump, 320, 235, 210, 211, 0, 204); GFTextLine(gump, 345, 235, 1153, "Inverno"); // +25
+    GFRadioButton(gump, 320, 260, 210, 211, 0, 205); GFTextLine(gump, 345, 260, 1153, "Desolação"); // +25
 
 
     // --- Section 3: Configurações ---
-    GFTextLine(gump, 30, 280, 53, "Configurações");
-    GFResizePic(gump, 25, 300, 0xBB8, 450, 150);
+    GFTextLine(gump, 30, 305, 53, "Configurações"); // +25 (280 -> 305)
+    GFResizePic(gump, 25, 325, 0xBB8, 450, 150); // +25 (300 -> 325)
 
     // Inputs
-    GFTextLine(gump, 40, 310, 1153, "Intensidade (0-70):");
-    GFResizePic(gump, 180, 310, 2620, 60, 20);
-    GFTextEntry(gump, 185, 310, 50, 20, 1153, "50", 300);
+    GFTextLine(gump, 40, 335, 1153, "Intensidade (0-70):"); // +25
+    GFResizePic(gump, 180, 335, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 335, 50, 20, 1153, "50", 300); // +25
 
-    GFTextLine(gump, 40, 340, 1153, "Duração (segundos):");
-    GFResizePic(gump, 180, 340, 2620, 60, 20);
-    GFTextEntry(gump, 185, 340, 50, 20, 1153, "100", 301);
+    GFTextLine(gump, 40, 365, 1153, "Duração (segundos):"); // +25
+    GFResizePic(gump, 180, 365, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 365, 50, 20, 1153, "100", 301); // +25
 
-    GFTextLine(gump, 40, 370, 1153, "Raio de Alcance:");
-    GFResizePic(gump, 180, 370, 2620, 60, 20);
-    GFTextEntry(gump, 185, 370, 50, 20, 1153, "100", 302);
+    GFTextLine(gump, 40, 395, 1153, "Raio de Alcance:"); // +25
+    GFResizePic(gump, 180, 395, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 395, 50, 20, 1153, "100", 302); // +25
 
     // Fog Config
-    GFTextLine(gump, 40, 400, 1153, "Fog (Lvl/R/G/B):");
-    GFResizePic(gump, 180, 400, 2620, 40, 20);
-    GFTextEntry(gump, 185, 400, 30, 20, 1153, "50", 303); // Level (Alpha)
+    GFTextLine(gump, 40, 425, 1153, "Fog (Lvl/R/G/B):"); // +25
+    GFResizePic(gump, 180, 425, 2620, 40, 20); // +25
+    GFTextEntry(gump, 185, 425, 30, 20, 1153, "50", 303); // +25
     
-    GFResizePic(gump, 230, 400, 2620, 40, 20);
-    GFTextEntry(gump, 235, 400, 30, 20, 1153, "210", 304); // R
+    GFResizePic(gump, 230, 425, 2620, 40, 20); // +25
+    GFTextEntry(gump, 235, 425, 30, 20, 1153, "210", 304); // +25
     
-    GFResizePic(gump, 280, 400, 2620, 40, 20);
-    GFTextEntry(gump, 285, 400, 30, 20, 1153, "180", 305); // G
+    GFResizePic(gump, 280, 425, 2620, 40, 20); // +25
+    GFTextEntry(gump, 285, 425, 30, 20, 1153, "180", 305); // +25
     
-    GFResizePic(gump, 330, 400, 2620, 40, 20);
-    GFTextEntry(gump, 335, 400, 30, 20, 1153, "140", 306); // B
+    GFResizePic(gump, 330, 425, 2620, 40, 20); // +25
+    GFTextEntry(gump, 335, 425, 30, 20, 1153, "140", 306); // +25
 
     // Extra Options
-    GFCheckBox(gump, 280, 310, 210, 211, 0, 400); GFTextLine(gump, 305, 310, 1153, "Sons de Vento");
-    GFCheckBox(gump, 280, 340, 210, 211, 0, 401); GFTextLine(gump, 305, 340, 1153, "Vento Forte (Paralisia)");
+    GFCheckBox(gump, 280, 335, 210, 211, 0, 400); GFTextLine(gump, 305, 335, 1153, "Sons de Vento"); // +25
+    GFCheckBox(gump, 280, 365, 210, 211, 0, 401); GFTextLine(gump, 305, 365, 1153, "Vento Forte (Paralisia)"); // +25
 
     // Button
-    GFAddButton(gump, 210, 460, 4502, 4502, 1, 1); // OKAY button (Moved down)
+    GFAddButton(gump, 210, 485, 4502, 4502, 1, 1); // +25 (460 -> 485)
 
     var res := GFSendGump(who, gump);
     
@@ -256,6 +253,16 @@ function ControleClimaGump(who)
         result.weather_type := 5; // Sandstorm
         result.sound := 1; // Wind sound
         result.heavy_wind := 1; // Optional: maybe add paralysis or stamina drain later
+    endif
+    if (res[108])
+        result.weather_type := 7; // Sandstorm Fog Low
+        result.sound := 1;
+        result.heavy_wind := 1;
+    endif
+    if (res[109])
+        result.weather_type := 8; // Sandstorm Heat Wave
+        result.sound := 1;
+        result.heavy_wind := 1;
     endif
 
     // Parse Season
