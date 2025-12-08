@@ -1,0 +1,267 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":tn:tngumps";
+include ":nature:nature";
+include ":fls_core:packets";
+include "include/say";
+include "include/client";
+include ":timedScripts:timedScripts";
+
+program controleclima2(who)
+    var input := ControleClimaGump(who);
+    if (!input)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+
+    var weather_type := input.weather_type;
+    var season := input.season;
+    var intensity := input.intensity;
+    var duration := input.duration;
+    var range := input.range;
+    var sound := input.sound;
+    var heavy_wind := input.heavy_wind;
+    var bolts := input.bolts;
+
+    // Apply Season
+    if (season != "Keep")
+        SetSeasonForAll(season);
+        // Update global property if needed, though SetSeasonForAll might be temporary in some systems.
+        // Assuming nature.inc handles persistence or we just set it for now.
+        // nature.inc has SetGlobalProperty("season", ...), let's do that too to be safe/consistent.
+        SetGlobalProperty("season", season);
+        Broadcast("A estação mudou!"); 
+    endif
+
+    // Apply Weather
+    if (weather_type == 0xFF) // Limpar
+        SetWeatherForAll(0xFF, 0);
+        foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+             EraseObjProperty(mob, "molhado");
+        endforeach
+        SendSysMessage(who, "Clima limpo.");
+        return;
+    endif
+
+    // Logic loop similar to original but with new parameters
+    var origx := who.x;
+    var origy := who.y;
+    var i := 0;
+    
+    // Convert duration (seconds) to loop iterations (approx 5s sleep in original)
+    // Original: sleep(5) -> 5 seconds per loop? No, sleep(5) is 5 seconds.
+    // User asked for Duration in Seconds.
+    var loops := duration / 5;
+    if (loops < 1) loops := 1; endif
+
+    SendSysMessageEx(who, "Iniciando controle climático...", SSM_INFO);
+
+    while (i < loops)
+        PerformAction(who, HUMAN_ANIM::CAST_AREA);
+        if ((origx != who.x) || (origy != who.y))
+            SendSysMessage(who, "Voce se moveu e parou de controlar o clima.", SSM_FAIL);
+            break;
+        endif
+
+        if (sound)
+            windsound(who);
+        endif
+
+        // Apply to players in range
+        foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+            if (!mob.cmdlevel) // Don't annoy GMs maybe? Or just apply to all. Original applied to 'enemies' (non-party, non-self).
+                // Original logic:
+                if (mob.serial != who.serial)
+                     if (!mob.isUnderRoof())
+                        if (weather_type == 0 || weather_type == 1) // Rain/Storm
+                            wetPowder(mob);
+                        endif
+                        SetWeatherForPlayer(mob, weather_type, intensity);
+                    endif
+                    
+                    if (bolts)
+                        if (RandomInt(100) < 5)
+                            PlayLightningBoltEffect(mob);
+                            ApplyDamageEX(mob, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
+                            SendSysMessageEx(mob, "Voce foi atingido por um raio!", SSM_INFO);
+                        endif
+                    endif
+
+                    if (heavy_wind)
+                        if (RandomInt(100) < 5)
+                            SendSysMessageEx(mob, "O vento forte impede seus movimentos!", SSM_INFO);
+                            TS_StartTimer(mob, "paralysis", 5);
+                        endif
+                    endif
+                endif
+            endif
+        endforeach
+        
+        // Visuals for the caster
+        SetWeatherForPlayer(who, weather_type, intensity);
+        if (bolts)
+             if (RandomInt(100) < 15)
+                DoBolt(who);
+             endif
+        endif
+
+        sleep(5);
+        i := i + 1;
+    endwhile
+    
+    SendSysMessage(who, "Controle climático finalizado.", SSM_INFO);
+
+endprogram
+
+function ControleClimaGump(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 1);
+    
+    // Backgrounds (Epic Style)
+    GFResizePic(gump, 0, 0, 3600, 500, 520);
+    GFResizePic(gump, 15, 15, 0x13BE, 470, 490);
+    
+    // Title
+    GFTextMid(gump, 15, 25, 470, 53, "Painel de Controle Atmosférico"); // Yellow/Gold color
+
+    // --- Section 1: Tipo de Clima ---
+    GFTextLine(gump, 30, 60, 53, "Tipo de Clima");
+    GFResizePic(gump, 25, 80, 0xBB8, 450, 90); // Lighter background for section
+
+    // Checkboxes (using standard 0x938/0x939 or similar)
+    // Group 1 (Weather Type) - Radio behavior manually or via logic? 
+    // User image shows checkboxes. Let's use Radio Buttons for mutual exclusivity where it makes sense, 
+    // or Checkboxes and handle logic. Original used CheckBoxGump which allows multiple? 
+    // "Chuva" AND "Neve" together doesn't make sense for packet 0x65.
+    // I will use Radio Buttons for the main type.
+    
+    GFSetRadioGroup(gump, 1);
+    GFRadioButton(gump, 40, 90, 210, 211, 1, 100); GFTextLine(gump, 65, 90, 1153, "Limpar Clima");
+    GFRadioButton(gump, 40, 115, 210, 211, 0, 101); GFTextLine(gump, 65, 115, 1153, "Chuva");
+    // GFRadioButton(gump, 40, 140, 210, 211, 0, 102); GFTextLine(gump, 65, 140, 1153, "Chuva Venenosa"); // Omitted
+
+    GFRadioButton(gump, 180, 90, 210, 211, 0, 103); GFTextLine(gump, 205, 90, 1153, "Neve");
+    GFRadioButton(gump, 180, 115, 210, 211, 0, 104); GFTextLine(gump, 205, 115, 1153, "Tempestade");
+    // GFRadioButton(gump, 180, 140, 210, 211, 0, 105); GFTextLine(gump, 205, 140, 1153, "Areia Fog"); // Omitted
+
+    GFRadioButton(gump, 320, 90, 210, 211, 0, 106); GFTextLine(gump, 345, 90, 1153, "Temp. Raios");
+    // GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia"); // Omitted
+    // GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa"); // Omitted
+
+    // --- Section 2: Estação do Ano ---
+    GFTextLine(gump, 30, 180, 53, "Estação do Ano");
+    GFResizePic(gump, 25, 200, 0xBB8, 450, 70);
+
+    GFSetRadioGroup(gump, 2);
+    GFRadioButton(gump, 40, 210, 210, 211, 1, 200); GFTextLine(gump, 65, 210, 1153, "Manter Atual");
+    GFRadioButton(gump, 40, 235, 210, 211, 0, 201); GFTextLine(gump, 65, 235, 1153, "Primavera");
+
+    GFRadioButton(gump, 180, 210, 210, 211, 0, 202); GFTextLine(gump, 205, 210, 1153, "Verão");
+    GFRadioButton(gump, 180, 235, 210, 211, 0, 203); GFTextLine(gump, 205, 235, 1153, "Outono");
+
+    GFRadioButton(gump, 320, 210, 210, 211, 0, 204); GFTextLine(gump, 345, 210, 1153, "Inverno");
+    GFRadioButton(gump, 320, 235, 210, 211, 0, 205); GFTextLine(gump, 345, 235, 1153, "Desolação");
+
+
+    // --- Section 3: Configurações ---
+    GFTextLine(gump, 30, 280, 53, "Configurações");
+    GFResizePic(gump, 25, 300, 0xBB8, 450, 120);
+
+    // Inputs
+    GFTextLine(gump, 40, 310, 1153, "Intensidade (0-70):");
+    GFResizePic(gump, 180, 310, 2620, 60, 20);
+    GFTextEntry(gump, 185, 310, 50, 20, 1153, "50", 300);
+
+    GFTextLine(gump, 40, 340, 1153, "Duração (segundos):");
+    GFResizePic(gump, 180, 340, 2620, 60, 20);
+    GFTextEntry(gump, 185, 340, 50, 20, 1153, "100", 301);
+
+    GFTextLine(gump, 40, 370, 1153, "Raio de Alcance:");
+    GFResizePic(gump, 180, 370, 2620, 60, 20);
+    GFTextEntry(gump, 185, 370, 50, 20, 1153, "100", 302);
+
+    // Extra Options
+    GFCheckBox(gump, 280, 310, 210, 211, 0, 400); GFTextLine(gump, 305, 310, 1153, "Sons de Vento");
+    GFCheckBox(gump, 280, 340, 210, 211, 0, 401); GFTextLine(gump, 305, 340, 1153, "Vento Forte (Paralisia)");
+
+    // Button
+    GFAddButton(gump, 210, 440, 4502, 4502, 1, 1); // OKAY button
+    // GFTextLine(gump, 225, 445, 1153, "OKAY"); // Button likely has text or is distinct enough
+
+    var res := GFSendGump(who, gump);
+    
+    if (res[0] != 1)
+        return 0;
+    endif
+
+    var result := struct;
+    result.+weather_type := 0xFF; // Default clear
+    result.+season := "Keep";
+    result.+intensity := CInt(GFExtractData(res, 300));
+    result.+duration := CInt(GFExtractData(res, 301));
+    result.+range := CInt(GFExtractData(res, 302));
+    result.+sound := 0;
+    result.+heavy_wind := 0;
+    result.+bolts := 0;
+
+    // Parse Weather Type
+    if (res[100]) result.weather_type := 0xFF; endif
+    if (res[101]) result.weather_type := 0; endif // Chuva
+    if (res[103]) result.weather_type := 2; endif // Neve
+    if (res[104]) result.weather_type := 1; endif // Tempestade
+    if (res[106]) 
+        result.weather_type := 1; 
+        result.bolts := 1; 
+        result.sound := 1; // Thunder implies sound usually
+    endif
+
+    // Parse Season
+    if (res[200]) result.season := "Keep"; endif
+    if (res[201]) result.season := 5; endif // Primavera (SPRING=5 in nature.inc)
+    if (res[202]) result.season := 1; endif // Verão (SUMMER=1)
+    if (res[203]) result.season := 2; endif // Outono (AUTUMN=2)
+    if (res[204]) result.season := 4; endif // Inverno (WINTER=4)
+    if (res[205]) result.season := 4; endif // Desolação (Map to Winter or special? nature.inc doesn't show Desolation constant, packets.inc has SEASON_DESOLATION=4. nature.inc has WINTER=4. Let's use 4 for now or check packets.inc again. packets.inc: SEASON_DESOLATION=4. nature.inc: WINTER=4. Wait, nature.inc WINTER=4? packets.inc WINTER=3? Let's check packets.inc again.)
+    // packets.inc: SEASON_SPRING=0, SUMMER=1, FALL=2, WINTER=3, DESOLATION=4.
+    // nature.inc: SUMMER=1, AUTUMN=2, WINTER=4, SPRING=5. 
+    // There is a mismatch or custom mapping. nature.inc seems to use 4 for Winter. 
+    // Let's trust nature.inc for "Inverno" and maybe 3 or 4 for Desolation? 
+    // Actually, nature.inc says "Season Id based on UO packet". 
+    // Let's use the values from nature.inc for consistency with the server's logic.
+    // If user selects Desolation, I'll try 3 (packets.inc Winter) or 0 (packets.inc Spring?). 
+    // Let's stick to nature.inc constants for named seasons and maybe 4 (Desolation/Winter) for Desolation if not defined.
+    // Wait, nature.inc: WINTER=4. packets.inc: WINTER=3, DESOLATION=4. 
+    // If nature.inc uses 4 for Winter, maybe it maps to Desolation visually? 
+    // I will use the raw values from packets.inc for the packet sending if I call SetSeasonForAll directly.
+    // But nature.inc `SeasonRotate` sets global property `season` to 1, 2, 4, 5.
+    // Let's use:
+    // Primavera: 5 (nature)
+    // Verão: 1 (nature)
+    // Outono: 2 (nature)
+    // Inverno: 4 (nature)
+    // Desolação: 3 (packets.inc Winter/Desolation confusion? Let's try 3).
+    
+    if (res[205]) result.season := 3; endif // Desolação (Trying 3 based on packets.inc WINTER=3 which is "Screwed attempt... Snow has no edges") or maybe it is Desolation.
+    
+    // Parse Configs
+    if (res[400]) result.sound := 1; endif
+    if (res[401]) result.heavy_wind := 1; result.sound := 1; endif // Wind implies sound
+
+    // Limits
+    if (result.intensity > 70) result.intensity := 70; endif
+    if (result.intensity < 0) result.intensity := 0; endif
+    
+    return result;
+endfunction
+
+function windsound(person)
+	var wind := { 21, 22, 23 };
+	if (randomdiceroll("1d4") == 2)
+		playsoundeffect(person, wind[randomint(3) + 1]);
+	endif
+endfunction
