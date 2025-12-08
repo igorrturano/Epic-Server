@@ -197,7 +197,7 @@ function endweather()
 			moveobjecttolocation(player, player.x, player.y, player.z, player.realm);
 		endif
 	endforeach
-	DebugMsgAll(DEBUG_CLIMA, "Stopping weather effects.");
+	DebugMsgAll(DEBUG_CLIMA, Message("Stopping weather effects."));
 endfunction
 
 function WhatSeason()
