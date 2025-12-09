@@ -170,6 +170,9 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 320, 165, 210, 211, 0, 111); GFTextLine(gump, 345, 165, 1153, "Terremoto");
     GFRadioButton(gump, 40, 190, 210, 211, 0, 112); GFTextLine(gump, 65, 190, 1153, "Shockwave");
     GFRadioButton(gump, 180, 190, 210, 211, 0, 113); GFTextLine(gump, 205, 190, 1153, "Pulsação Mística");
+    GFRadioButton(gump, 320, 190, 210, 211, 0, 114); GFTextLine(gump, 345, 190, 1153, "Sol");
+    GFRadioButton(gump, 40, 215, 210, 211, 0, 115); GFTextLine(gump, 65, 215, 1153, "Vertigem2");
+    GFRadioButton(gump, 180, 215, 210, 211, 0, 116); GFTextLine(gump, 205, 215, 1153, "Radiant Sun");
 
     // --- Section 2: Estação do Ano ---
     GFTextLine(gump, 30, 230, 53, "Estação do Ano"); // Shifted +25 (205 -> 230)
@@ -191,7 +194,7 @@ function ControleClimaGump(who)
     GFResizePic(gump, 25, 350, 0xBB8, 450, 150); // +25 (325 -> 350)
 
     // Inputs
-    GFTextLine(gump, 40, 360, 1153, "Intensidade (0-70):"); // +25
+    GFTextLine(gump, 40, 360, 1153, "Intensidade:"); // +25
     GFResizePic(gump, 180, 360, 2620, 60, 20); // +25
     GFTextEntry(gump, 185, 360, 50, 20, 1153, "50", 300); // +25
 
@@ -292,6 +295,15 @@ function ControleClimaGump(who)
     if (res[113])
         result.weather_type := 12; // Pulsação Mística
     endif
+    if (res[114])
+        result.weather_type := 0xFF; // Sol -> Clear
+    endif
+    if (res[115])
+        result.weather_type := 13; // Vertigem2 -> Vertigo
+    endif
+    if (res[116])
+        result.weather_type := 14; // Radiant Sun
+    endif
 
     // Parse Season
     if (res[200]) result.season := "Keep"; endif
@@ -326,7 +338,7 @@ function ControleClimaGump(who)
     if (res[401]) result.heavy_wind := 1; result.sound := 1; endif // Wind implies sound
 
     // Limits
-    if (result.intensity > 70) result.intensity := 70; endif
+    if (result.intensity > 150000) result.intensity := 150000; endif
     if (result.intensity < 0) result.intensity := 0; endif
     
     return result;

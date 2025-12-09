@@ -256,8 +256,8 @@ endfunction
 //  temp   Temperature. Currently has no effect...
 ///////////////////////////////////////////////////////
 function SetWeatherForAll( type, num, temp := 0 )
-    if( num > 70 )
-        num := 70;
+    if( num > 150000 )
+        num := 150000;
     endif
 
     var packetString := "65";
@@ -277,8 +277,8 @@ endfunction
 //  temp   Temperature. Currently has no effect...
 ///////////////////////////////////////////////////////
 function SetWeatherForPlayer( who, type, num, temp := 0 )
-    if( num > 70 )
-        num := 70;
+    if( num > 150000 )
+        num := 150000;
     endif
 
     var packetString := "65";
