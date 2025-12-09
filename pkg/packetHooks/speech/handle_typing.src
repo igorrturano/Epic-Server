@@ -1,0 +1,32 @@
+use uo;
+
+include "include/packets";
+
+program typing_hook()
+	Print("INSTALLING: Typing Hooking... OK!");
+	return 1;
+endprogram
+
+exported function TypingHandler(who, byRef packet)
+	var packetString := "AE";
+	// packetString += fixPacketLength("AE", 1); // Command
+	packetString += fixPacketLength("", 2); // Length (will be calculated)
+	packetString += fixPacketLength(Hex(who.serial), 4); // ID (character serial)
+	packetString += fixPacketLength(Hex(who.graphic), 2); // Model
+	packetString += fixPacketLength("FF", 1); // Type
+	packetString += fixPacketLength(Hex(who.color), 2); // Color
+	packetString += fixPacketLength("0", 2); // Font
+	packetString += fixPacketLength("ENU", 4); // Language (ENU = English)
+	packetString += fixPacketLength(who.name, 30); // Name (null-terminated)
+	packetString += ". . ." + Hex(0); // Message (null-terminated)
+	
+	// Calculate and set the packet length
+	var totalLength := Len(packetString);
+	packetString[2, 2] := fixPacketLength(Hex(totalLength), 2);
+
+	print($"Received Typing Packet from Client: {CStr(packet)}");
+	print($"Sending Message Packet to Client: {packetString}");
+	
+	// return SendPacket(who, );
+	return 1;
+endfunction

@@ -41,9 +41,9 @@ exported function handleUCOutgoing(character, byref packet)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::WHISPER) // Whisper
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::YELL) // System
+	elseif (data.type == MESSAGE_TYPE::YELL)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::SPELL) // Normal Private
+	elseif (data.type == MESSAGE_TYPE::SPELL)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um spell: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::GUILD)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um guild: " + data.message, 1);
@@ -51,6 +51,9 @@ exported function handleUCOutgoing(character, byref packet)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::I_AM_TYPING)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, ". . .", 1);
+		return 1;
 	endif
 	
 	// LogPlayerSpeech(data.source, data.message);

@@ -216,7 +216,9 @@ enum class MESSAGE_TYPE
 	SPELL := 0x0A, // PowerWords
 	GUILD := 0x0D,
 	ALLIANCE := 0x0E,
-	COMMAND_PROMPTS := 0x0F
+	COMMAND_PROMPTS := 0x0F,
+
+	I_AM_TYPING := 0xF0, // "Está digitando..."
 endenum
 
 enum class MESSAGE_MAXSIZE
