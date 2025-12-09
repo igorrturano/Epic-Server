@@ -12,7 +12,6 @@ include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
-include ":entropy:entropy";
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
 	var _race := "";
@@ -808,7 +807,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	/**
-	 * Atualiza a entropia do mobile e a entropia global do mundo.
+	 * Atualiza a entropia do mobile.
+	 *
+	 * IMPORTANT: This method only updates the individual mobile's entropy.
+	 * The caller is responsible for updating global entropy and handling any
+	 * game-specific bonuses or effects.
 	 *
 	 * @param amt Integer Quantidade a ser adicionada ou subtraída da entropia
 	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
@@ -821,7 +824,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		var current := this.GetEntropy();
 		this.SetEntropy(current + amt);
-		updateGlobalEntropy(amt);
 		return this;
 	endfunction
 endclass

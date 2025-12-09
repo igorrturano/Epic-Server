@@ -16,6 +16,7 @@ include ":combat:weardown";
 
 // External
 include ":io:CFGFile";
+include ":wrappers:include/Objects/Model/MobileWrapper";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -46,7 +47,8 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateStatusDamage(attackInfo);
 	CalculateSkillDamage(attackInfo);
 	CalculateWeaponDamage(attackInfo);
-	
+	CalculateEntropyDamage(attackInfo);
+
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
@@ -545,4 +547,54 @@ function CheckPoison(byRef attackInfo)
 	Message("Seu veneno surtir efeito no alvo!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
 	Message("Você foi envenenado.", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
 	return true;
+endfunction
+
+function CalculateEntropyDamage(byRef attackInfo)
+	var damage := attackInfo.GetDamage();
+	var bonus_damage := 0;
+
+	// Player entropy bonus: +1 damage per 4k entropy against undead/demons (12k-20k range)
+	if (!attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsNPC())
+		var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
+		if (attacker_entropy >= 12000)
+			var npc_category := Lower(attackInfo.GetDefender().GetNPCCategory());
+			if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
+				// +1 per 4k entropy, max +5 at 20k
+				var entropy_bonus := CInt(attacker_entropy / 4000);
+				if (entropy_bonus > 5)
+					entropy_bonus := 5;
+				endif
+				bonus_damage += entropy_bonus;
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de entropia contra {npc_category}: +{entropy_bonus}");
+			endif
+		endif
+	endif
+
+	// Global entropy bonus: NPCs (undead/demon/void) get +1 damage per -20k global entropy
+	var globalEntropy := CInt(GetGlobalProperty("GlobalEntropy"));
+	if (globalEntropy <= -20000 && attackInfo.GetAttacker().IsNPC())
+		var npc_category := Lower(attackInfo.GetAttacker().GetNPCCategory());
+		if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
+			// +1 per -20k global entropy, max +5 at -100k
+			var global_bonus := CInt(Abs(globalEntropy) / 20000);
+			if (global_bonus > 5)
+				global_bonus := 5;
+			endif
+			bonus_damage += global_bonus;
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de entropia global para {npc_category}: +{global_bonus}");
+		endif
+	endif
+
+	// Apply bonus damage to all damage types proportionally
+	if (bonus_damage > 0)
+		if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+			damage.IncreaseSlashRawDamage(bonus_damage);
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+			damage.IncreasePiercingRawDamage(bonus_damage);
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+			damage.IncreaseBluntRawDamage(bonus_damage);
+		endif
+
+		attackInfo.SetDamage(damage);
+	endif
 endfunction
