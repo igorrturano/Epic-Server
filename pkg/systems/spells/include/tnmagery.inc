@@ -9,6 +9,7 @@ include ":timedScripts:timedScripts";
 include "spellSounds";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
+include ":entropy:entropy";
 
 function spelllearn(who)
 	var spell := GetObjProperty(who, "spellcraft");
@@ -743,12 +744,21 @@ endfunction
 
 //////////////////////////////////////////////////////////////
 //////// Corromper(jogador, alvo, mana, circulo) - By Duttones
+//////// Adapted to use entropy system - corruption decreases entropy
 //////////////////////////////////////////////////////////////
 function Corromper(who, spell, targ)
-	if (GetObjProperty(who, "corruption") == 20000) //se o jogador tiver atingido o maximo de corrupcao, ele nem inicia o script
+	// Check if player has reached maximum corruption (-20000 entropy)
+	var wrapper := MobileWrapper(who);
+	if (wrapper.GetObjRef().errortext)
 		return 0;
 	endif
-	//escreve o spellinfo
+
+	var current_entropy := wrapper.GetEntropy();
+	if (current_entropy <= -20000)
+		return 0;
+	endif
+
+	// Read spell configuration
 	var cfg := ReadConfigFile(":spells:config/allspells");
 	var elem := FindConfigElem(cfg, spell);
 	var spellinfo := dictionary;
@@ -756,29 +766,25 @@ function Corromper(who, spell, targ)
 	spellinfo.+mana := GetConfigInt( elem, "Mana" );
 	spellinfo.+cycles := GetConfigInt( elem, "Circle" );
 	spellinfo.+corruption := GetConfigInt( elem, "Corruption" );
-	var variavel; var corrupcao;
+	var variavel := 0.0;
+	var corrupcao;
 
-	//testa resistencia de vontade
-	if (temHabilidade(who, "Pacto com Shimoria"))
-		if (CheckResist(who, VONTADE, RESIST_MEDIUM+spellinfo.cycles))
-		return 0;
-		endif
-	elseif (CheckResist(who, VONTADE, RESIST_HARD+spellinfo.cycles))
+	// Test willpower resistance
+	if (CheckResist(who, VONTADE, RESIST_HARD+spellinfo.cycles))
 		return 0;
 	endif
 
 	SendSysMessageEx(who, "Você não resiste a corrupção inevitável da arte necromântica. Seu corpo começa a sentir.", SSM_FAIL);
-	//fim de checagem
 
-	//checa se e magia banida e define a variavel
+	// Check if it's a banned spell and define the multiplier
 	if (spellinfo.corruption != 1)
-		variavel := spellinfo.corruption/10;
+		variavel := CDbl(spellinfo.corruption) / 10.0;
 	endif
 
-	//checa se é player
+	// Check if target is a player and increase corruption
 	if (targ)
 		if (targ.acctname)
-            var chardata := GetObjProperty(targ, "chardata");
+			var chardata := GetObjProperty(targ, "chardata");
 			if (chardata.magia == "Sacerdote")
 				variavel := variavel + 0.8;
 			else
@@ -786,59 +792,26 @@ function Corromper(who, spell, targ)
 			endif
 		endif
 	endif
-	//fim de checagem
 
-	//calculo de corrupcao
-	corrupcao := (spellinfo.mana) /5 * spellinfo.cycles;
+	// Calculate corruption gain
+	corrupcao := CDbl(spellinfo.mana) / 5.0 * CDbl(spellinfo.cycles);
 	variavel := corrupcao * variavel;
 	corrupcao := Cint(corrupcao + variavel);
 
-	if (temHabilidade(who, "Alma Forte"))
-		corrupcao := corrupcao /2;
-	endif
-	//fim do calculo de corrupcao
+	// Apply corruption as negative entropy (corruption decreases entropy)
+	var entropy_loss := corrupcao * -1;
 
-	//adiciona corrupcao no personagem
-	if (GetObjProperty(who, "corruption"))
-		corrupcao := corrupcao + GetObjProperty(who, "corruption");
+	// Ensure we don't go below -20000 entropy
+	if ((current_entropy + entropy_loss) < -20000)
+		entropy_loss := -20000 - current_entropy;
 	endif
 
-	if (corrupcao > 20000)
-		corrupcao := 20000;
+	// Apply the entropy change
+	if (entropy_loss != 0)
+		UpdateMobileEntropy(who, entropy_loss);
 	endif
 
-	SetObjProperty(who, "corruption", corrupcao);
-	//fim
-	if (GetObjProperty(who, "corruptionalert") == error)
-		SetObjProperty(who, "corruptionalert", 0);
-	endif
-
-	//checa se o nivel de corrupcao aumentou, avisa o jogador e adiciona os efeitos
-	if ((corrupcao >= 5000) && (corrupcao < 9999) )
-		if (GetObjProperty(who, "corruptionalert") < 1)
-			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'muito baixa' para 'baixa'.", SSM_FAIL);
-			SetObjProperty(who, "corruption_penalty", 5);
-			SetObjProperty(who, "corruptionalert", 1);
-		endif
-	elseif ((corrupcao >= 10000) && (corrupcao < 14999) )
-		if (GetObjProperty(who, "corruptionalert") < 2)
-			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'baixa' para 'razoavel'.", SSM_FAIL);
-			SetObjProperty(who, "corruption_penalty",10);
-			SetObjProperty(who, "corruptionalert", 2);
-		endif
-	elseif ((corrupcao >= 15000) && (corrupcao < 19999) )
-		if (GetObjProperty(who, "corruptionalert") < 3)
-			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'razoavel' para 'alta'.", SSM_FAIL);
-			SetObjProperty(who, "corruption_penalty", 15);
-			SetObjProperty(who, "corruptionalert", 3);
-		endif
-	elseif (corrupcao >= 20000)
-		if (GetObjProperty(who, "corruptionalert") < 4)
-			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'alta' para 'muito alta'.", SSM_FAIL);
-			SetObjProperty(who, "corruption_penalty", 20);
-			SetObjProperty(who, "corruptionalert", 4);
-		endif
-	endif
+	return 1;
 endfunction
 
 
