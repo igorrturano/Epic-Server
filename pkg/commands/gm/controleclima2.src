@@ -155,6 +155,7 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 180, 90, 210, 211, 0, 103); GFTextLine(gump, 205, 90, 1153, "Neve");
     GFRadioButton(gump, 180, 115, 210, 211, 0, 104); GFTextLine(gump, 205, 115, 1153, "Tempestade");
     GFRadioButton(gump, 180, 140, 210, 211, 0, 105); GFTextLine(gump, 205, 140, 1153, "Areia Fog");
+    GFRadioButton(gump, 180, 165, 210, 211, 0, 110); GFTextLine(gump, 205, 165, 1153, "Areia Feel Wave");
 
     GFRadioButton(gump, 320, 90, 210, 211, 0, 106); GFTextLine(gump, 345, 90, 1153, "Temp. Raios");
     GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia");
@@ -261,6 +262,11 @@ function ControleClimaGump(who)
     endif
     if (res[109])
         result.weather_type := 8; // Sandstorm Heat Wave
+        result.sound := 1;
+        result.heavy_wind := 1;
+    endif
+    if (res[110])
+        result.weather_type := 9; // Sandstorm Heat Wave NEW
         result.sound := 1;
         result.heavy_wind := 1;
     endif
