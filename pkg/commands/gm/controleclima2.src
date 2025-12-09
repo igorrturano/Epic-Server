@@ -160,6 +160,7 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 320, 90, 210, 211, 0, 106); GFTextLine(gump, 345, 90, 1153, "Temp. Raios");
     GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia");
     GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa");
+    GFRadioButton(gump, 320, 165, 210, 211, 0, 111); GFTextLine(gump, 345, 165, 1153, "Terremoto");
 
     // --- Section 2: Estação do Ano ---
     GFTextLine(gump, 30, 205, 53, "Estação do Ano"); // Shifted +25 (180 -> 205)
@@ -268,7 +269,12 @@ function ControleClimaGump(who)
     if (res[110])
         result.weather_type := 9; // Sandstorm Heat Wave NEW
         result.sound := 1;
+        result.sound := 1;
         result.heavy_wind := 1;
+    endif
+    if (res[111])
+        result.weather_type := 10; // Earthquake
+        result.sound := 1;
     endif
 
     // Parse Season
