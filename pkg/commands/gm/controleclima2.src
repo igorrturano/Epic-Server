@@ -123,6 +123,14 @@ program controleclima2(who)
         i := i + 1;
     endwhile
     
+    // Cleanup: Clear weather when finished or interrupted
+    SetWeatherForPlayer(who, 0xFF, 0);
+    foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+        if (!mob.cmdlevel && mob.serial != who.serial)
+             SetWeatherForPlayer(mob, 0xFF, 0);
+        endif
+    endforeach
+
     SendSysMessage(who, "Controle climático finalizado.", SSM_INFO);
 
 endprogram
