@@ -52,10 +52,9 @@ program controleclima2(who)
     var origy := who.y;
     var i := 0;
     
-    // Convert duration (seconds) to loop iterations (approx 5s sleep in original)
-    // Original: sleep(5) -> 5 seconds per loop? No, sleep(5) is 5 seconds.
-    // User asked for Duration in Seconds.
-    var loops := duration / 5;
+    // Convert duration (ms) to loop iterations (500ms step)
+    var step_ms := 500;
+    var loops := duration / step_ms;
     if (loops < 1) loops := 1; endif
 
     SendSysMessageEx(who, "Iniciando controle climático...", SSM_INFO);
@@ -80,12 +79,12 @@ program controleclima2(who)
                         if (weather_type == 0 || weather_type == 1) // Rain/Storm
                             wetPowder(mob);
                         elseif (weather_type == 4) // Poison Rain
-                            if (RandomInt(100) < 10) // 10% chance per tick
+                            if (RandomInt(1000) < 10) // 1% chance per tick (adjusted for 500ms)
                                 SendSysMessageEx(mob, "A chuva ácida queima sua pele!", SSM_FAIL);
                                 TS_StartTimer(mob, "defaultPoison", 10); // 10s poison
                             endif
                         elseif (weather_type == 5) // Sandstorm
-                             if (RandomInt(100) < 5)
+                             if (RandomInt(1000) < 5)
                                 SendSysMessageEx(mob, "A areia entra em seus olhos!", SSM_FAIL);
                                 // Could add blindness or stamina drain here
                              endif
@@ -94,7 +93,7 @@ program controleclima2(who)
                     endif
                     
                     if (bolts)
-                        if (RandomInt(100) < 5)
+                        if (RandomInt(1000) < 5)
                             PlayLightningBoltEffect(mob);
                             ApplyDamageEX(mob, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
                             SendSysMessageEx(mob, "Voce foi atingido por um raio!", SSM_INFO);
@@ -102,7 +101,7 @@ program controleclima2(who)
                     endif
 
                     if (heavy_wind)
-                        if (RandomInt(100) < 5)
+                        if (RandomInt(1000) < 5)
                             SendSysMessageEx(mob, "O vento forte impede seus movimentos!", SSM_INFO);
                             TS_StartTimer(mob, "paralysis", 5);
                         endif
@@ -114,12 +113,12 @@ program controleclima2(who)
         // Visuals for the caster
         SetWeatherForPlayer(who, weather_type, intensity);
         if (bolts)
-             if (RandomInt(100) < 15)
+             if (RandomInt(1000) < 15)
                 DoBolt(who);
              endif
         endif
 
-        sleep(5);
+        sleepms(step_ms);
         i := i + 1;
     endwhile
     
@@ -141,15 +140,15 @@ function ControleClimaGump(who)
     GFDisposable(gump, 1);
     
     // Backgrounds (Epic Style)
-    GFResizePic(gump, 0, 0, 3600, 500, 545); // Increased height by 25
-    GFResizePic(gump, 15, 15, 0x13BE, 470, 515); // Increased height by 25
+    GFResizePic(gump, 0, 0, 3600, 500, 570); // Increased height by 25
+    GFResizePic(gump, 15, 15, 0x13BE, 470, 540); // Increased height by 25
     
     // Title
     GFTextMid(gump, 15, 25, 470, 53, "Painel de Controle Atmosférico"); // Yellow/Gold color
 
     // --- Section 1: Tipo de Clima ---
     GFTextLine(gump, 30, 60, 53, "Tipo de Clima");
-    GFResizePic(gump, 25, 80, 0xBB8, 450, 115); // Increased height by 25 (90 -> 115)
+    GFResizePic(gump, 25, 80, 0xBB8, 450, 140); // Increased height by 25 (115 -> 140)
 
     // Checkboxes (using standard 0x938/0x939 or similar)
     // Group 1 (Weather Type)
@@ -169,59 +168,61 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 320, 115, 210, 211, 0, 107); GFTextLine(gump, 345, 115, 1153, "Temp. Areia");
     GFRadioButton(gump, 320, 140, 210, 211, 0, 108); GFTextLine(gump, 345, 140, 1153, "Areia Fog Baixa");
     GFRadioButton(gump, 320, 165, 210, 211, 0, 111); GFTextLine(gump, 345, 165, 1153, "Terremoto");
+    GFRadioButton(gump, 40, 190, 210, 211, 0, 112); GFTextLine(gump, 65, 190, 1153, "Shockwave");
+    GFRadioButton(gump, 180, 190, 210, 211, 0, 113); GFTextLine(gump, 205, 190, 1153, "Pulsação Mística");
 
     // --- Section 2: Estação do Ano ---
-    GFTextLine(gump, 30, 205, 53, "Estação do Ano"); // Shifted +25 (180 -> 205)
-    GFResizePic(gump, 25, 225, 0xBB8, 450, 70); // Shifted +25 (200 -> 225)
+    GFTextLine(gump, 30, 230, 53, "Estação do Ano"); // Shifted +25 (205 -> 230)
+    GFResizePic(gump, 25, 250, 0xBB8, 450, 70); // Shifted +25 (225 -> 250)
 
     GFSetRadioGroup(gump, 2);
-    GFRadioButton(gump, 40, 235, 210, 211, 1, 200); GFTextLine(gump, 65, 235, 1153, "Manter Atual"); // +25
-    GFRadioButton(gump, 40, 260, 210, 211, 0, 201); GFTextLine(gump, 65, 260, 1153, "Primavera"); // +25
+    GFRadioButton(gump, 40, 260, 210, 211, 1, 200); GFTextLine(gump, 65, 260, 1153, "Manter Atual"); // +25
+    GFRadioButton(gump, 40, 285, 210, 211, 0, 201); GFTextLine(gump, 65, 285, 1153, "Primavera"); // +25
 
-    GFRadioButton(gump, 180, 235, 210, 211, 0, 202); GFTextLine(gump, 205, 235, 1153, "Verão"); // +25
-    GFRadioButton(gump, 180, 260, 210, 211, 0, 203); GFTextLine(gump, 205, 260, 1153, "Outono"); // +25
+    GFRadioButton(gump, 180, 260, 210, 211, 0, 202); GFTextLine(gump, 205, 260, 1153, "Verão"); // +25
+    GFRadioButton(gump, 180, 285, 210, 211, 0, 203); GFTextLine(gump, 205, 285, 1153, "Outono"); // +25
 
-    GFRadioButton(gump, 320, 235, 210, 211, 0, 204); GFTextLine(gump, 345, 235, 1153, "Inverno"); // +25
-    GFRadioButton(gump, 320, 260, 210, 211, 0, 205); GFTextLine(gump, 345, 260, 1153, "Desolação"); // +25
+    GFRadioButton(gump, 320, 260, 210, 211, 0, 204); GFTextLine(gump, 345, 260, 1153, "Inverno"); // +25
+    GFRadioButton(gump, 320, 285, 210, 211, 0, 205); GFTextLine(gump, 345, 285, 1153, "Desolação"); // +25
 
 
     // --- Section 3: Configurações ---
-    GFTextLine(gump, 30, 305, 53, "Configurações"); // +25 (280 -> 305)
-    GFResizePic(gump, 25, 325, 0xBB8, 450, 150); // +25 (300 -> 325)
+    GFTextLine(gump, 30, 330, 53, "Configurações"); // +25 (305 -> 330)
+    GFResizePic(gump, 25, 350, 0xBB8, 450, 150); // +25 (325 -> 350)
 
     // Inputs
-    GFTextLine(gump, 40, 335, 1153, "Intensidade (0-70):"); // +25
-    GFResizePic(gump, 180, 335, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 335, 50, 20, 1153, "50", 300); // +25
+    GFTextLine(gump, 40, 360, 1153, "Intensidade (0-70):"); // +25
+    GFResizePic(gump, 180, 360, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 360, 50, 20, 1153, "50", 300); // +25
 
-    GFTextLine(gump, 40, 365, 1153, "Duração (segundos):"); // +25
-    GFResizePic(gump, 180, 365, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 365, 50, 20, 1153, "100", 301); // +25
+    GFTextLine(gump, 40, 390, 1153, "Duração (ms):"); // +25
+    GFResizePic(gump, 180, 390, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 390, 50, 20, 1153, "10000", 301); // +25
 
-    GFTextLine(gump, 40, 395, 1153, "Raio de Alcance:"); // +25
-    GFResizePic(gump, 180, 395, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 395, 50, 20, 1153, "100", 302); // +25
+    GFTextLine(gump, 40, 420, 1153, "Raio de Alcance:"); // +25
+    GFResizePic(gump, 180, 420, 2620, 60, 20); // +25
+    GFTextEntry(gump, 185, 420, 50, 20, 1153, "100", 302); // +25
 
     // Fog Config
-    GFTextLine(gump, 40, 425, 1153, "Fog (Lvl/R/G/B):"); // +25
-    GFResizePic(gump, 180, 425, 2620, 40, 20); // +25
-    GFTextEntry(gump, 185, 425, 30, 20, 1153, "50", 303); // +25
+    GFTextLine(gump, 40, 450, 1153, "Fog (Lvl/R/G/B):"); // +25
+    GFResizePic(gump, 180, 450, 2620, 40, 20); // +25
+    GFTextEntry(gump, 185, 450, 30, 20, 1153, "50", 303); // +25
     
-    GFResizePic(gump, 230, 425, 2620, 40, 20); // +25
-    GFTextEntry(gump, 235, 425, 30, 20, 1153, "210", 304); // +25
+    GFResizePic(gump, 230, 450, 2620, 40, 20); // +25
+    GFTextEntry(gump, 235, 450, 30, 20, 1153, "210", 304); // +25
     
-    GFResizePic(gump, 280, 425, 2620, 40, 20); // +25
-    GFTextEntry(gump, 285, 425, 30, 20, 1153, "180", 305); // +25
+    GFResizePic(gump, 280, 450, 2620, 40, 20); // +25
+    GFTextEntry(gump, 285, 450, 30, 20, 1153, "180", 305); // +25
     
-    GFResizePic(gump, 330, 425, 2620, 40, 20); // +25
-    GFTextEntry(gump, 335, 425, 30, 20, 1153, "140", 306); // +25
+    GFResizePic(gump, 330, 450, 2620, 40, 20); // +25
+    GFTextEntry(gump, 335, 450, 30, 20, 1153, "140", 306); // +25
 
     // Extra Options
-    GFCheckBox(gump, 280, 335, 210, 211, 0, 400); GFTextLine(gump, 305, 335, 1153, "Sons de Vento"); // +25
-    GFCheckBox(gump, 280, 365, 210, 211, 0, 401); GFTextLine(gump, 305, 365, 1153, "Vento Forte (Paralisia)"); // +25
+    GFCheckBox(gump, 280, 360, 210, 211, 0, 400); GFTextLine(gump, 305, 360, 1153, "Sons de Vento"); // +25
+    GFCheckBox(gump, 280, 390, 210, 211, 0, 401); GFTextLine(gump, 305, 390, 1153, "Vento Forte (Paralisia)"); // +25
 
     // Button
-    GFAddButton(gump, 210, 485, 4502, 4502, 1, 1); // +25 (460 -> 485)
+    GFAddButton(gump, 210, 510, 4502, 4502, 1, 1); // +25 (485 -> 510)
 
     var res := GFSendGump(who, gump);
     
@@ -283,6 +284,13 @@ function ControleClimaGump(who)
     if (res[111])
         result.weather_type := 10; // Earthquake
         result.sound := 1;
+    endif
+    if (res[112])
+        result.weather_type := 11; // Shockwave
+        result.sound := 1;
+    endif
+    if (res[113])
+        result.weather_type := 12; // Pulsação Mística
     endif
 
     // Parse Season
