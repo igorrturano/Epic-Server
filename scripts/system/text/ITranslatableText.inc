@@ -1,4 +1,4 @@
-class ITranslatable()
+class ITranslatableText()
 	uninit function GetTextSource(this);
 	uninit function GetTextTarget(this);
 	uninit function GetLanguageSource(this);

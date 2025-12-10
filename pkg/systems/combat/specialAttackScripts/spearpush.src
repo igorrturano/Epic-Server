@@ -10,7 +10,7 @@ program SpearPush(combatInfo)
 
 	PushTarget(attacker, defender);
 
-	DebugMsg(attacker, DEBUG_MASTERY, $"Executou Maestria SpearPush em {defender.name}");
+	DebugMsg(attacker, DEBUG_MASTERY, Message($"Executou Maestria SpearPush em {defender.name}"));
 	SendSysMessage(attacker, "Seu impulso permite um segundo golpe!", 3, 89);
 
 	return false;

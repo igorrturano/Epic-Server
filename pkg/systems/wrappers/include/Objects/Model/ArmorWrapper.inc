@@ -223,6 +223,10 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this;
 	endfunction
 
+	function IsShield(this)
+		return Upper(SplitWords(this._tipoProtecao)[1]) == "ESCUDO";
+	endfunction
+
 	function Update(this)
 		if (this._objRef is @Exception) return this._objRef; endif
 		EquipWrapper::Update(this);
@@ -260,15 +264,16 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	// Private functions
 	function _GetWeight(this)
-		var weight := 0;
-		var prot := SplitWords(this._tipoProtecao);
+		var weight := 1;
 		
-		if (Upper(prot[1]) == "ESCUDO") // Se for escudo, peso é o DEX Penalty
-			weight := -(this._modifiers[DEXTERITY].GetValue()) ?: 0;
+		if (this.IsShield()) // Se for escudo, peso é o DEX Penalty
+			weight := -(this._modifiers[DEXTERITY].GetValue()) ?: 1;
 		else // Se não for, é a soma do maior valor de resistência + resistência por slot
 			weight := Max(array{this._resists.GetSlashResist(), this._resists.GetPiercingResist(), this._resists.GetBluntResist()});
 			weight += CInt(getResistPhysicalBySlot(this._coverage));
 		endif
+
+		weight *= GetWeightMultiplierByMaterial(this._material);
 
 		return weight;
 	endfunction

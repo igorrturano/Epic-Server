@@ -341,8 +341,6 @@ function _GetSkillForCombat(byRef mobile)
 endfunction
 
 function CalculateDualWieldPenalty(attackInfo)
-	var attacker := attackInfo.GetAttacker();
-
 	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
 
 	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute())) / 2;
