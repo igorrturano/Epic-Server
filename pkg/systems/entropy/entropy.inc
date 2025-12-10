@@ -28,7 +28,7 @@ function UpdateMobileEntropy(who, amt)
     // Check and update entropy milestone bonuses (dynamic)
     var current_entropy := wrapper.GetEntropy();
     updateDPEntropyBonus(who, current_entropy);
-    updateEntropyDescription(who, current_entropy);
+    // updateEntropyDescription(who, current_entropy);
     
     var color := SSM_REQUEST;
     if (amt < 0)
