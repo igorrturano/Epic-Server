@@ -30,15 +30,14 @@ program controleclima2(who)
     // Apply Season
     if (season != "Keep")
         SetSeasonForAll(season);
-        // Update global property if needed, though SetSeasonForAll might be temporary in some systems.
-        // Assuming nature.inc handles persistence or we just set it for now.
-        // nature.inc has SetGlobalProperty("season", ...), let's do that too to be safe/consistent.
         SetGlobalProperty("season", season);
         Broadcast("A estação mudou!"); 
     endif
 
     // Apply Weather
-    if (weather_type == 0xFF) // Limpar
+    // Se for 0xFF (Limpar real) removemos efeitos de molhado. 
+    // Nota: O ID 15 (Sol Visual) não entra aqui, ele vai para o loop abaixo para ser mantido visualmente.
+    if (weather_type == 0xFF) 
         SetWeatherForAll(0xFF, 0);
         foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
              EraseObjProperty(mob, "molhado");
@@ -47,7 +46,7 @@ program controleclima2(who)
         return;
     endif
 
-    // Logic loop similar to original but with new parameters
+    // Logic loop
     var origx := who.x;
     var origy := who.y;
     var i := 0;
@@ -72,23 +71,22 @@ program controleclima2(who)
 
         // Apply to players in range
         foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
-            if (!mob.cmdlevel) // Don't annoy GMs maybe? Or just apply to all. Original applied to 'enemies' (non-party, non-self).
-                // Original logic:
+            if (!mob.cmdlevel) 
                 if (mob.serial != who.serial)
                      if (!mob.isUnderRoof())
                         if (weather_type == 0 || weather_type == 1) // Rain/Storm
                             wetPowder(mob);
                         elseif (weather_type == 4) // Poison Rain
-                            if (RandomInt(1000) < 10) // 1% chance per tick (adjusted for 500ms)
+                            if (RandomInt(1000) < 10) 
                                 SendSysMessageEx(mob, "A chuva ácida queima sua pele!", SSM_FAIL);
-                                TS_StartTimer(mob, "defaultPoison", 10); // 10s poison
+                                TS_StartTimer(mob, "defaultPoison", 10); 
                             endif
                         elseif (weather_type == 5) // Sandstorm
                              if (RandomInt(1000) < 5)
                                 SendSysMessageEx(mob, "A areia entra em seus olhos!", SSM_FAIL);
-                                // Could add blindness or stamina drain here
                              endif
                         endif
+                        // Aplica o clima (inclusive o ID 15 Sol)
                         SetWeatherForPlayer(mob, weather_type, intensity);
                     endif
                     
@@ -140,24 +138,22 @@ function ControleClimaGump(who)
     GFDisposable(gump, 1);
     
     // Backgrounds (Epic Style)
-    GFResizePic(gump, 0, 0, 3600, 500, 570); // Increased height by 25
-    GFResizePic(gump, 15, 15, 0x13BE, 470, 540); // Increased height by 25
+    GFResizePic(gump, 0, 0, 3600, 500, 570); 
+    GFResizePic(gump, 15, 15, 0x13BE, 470, 540); 
     
     // Title
-    GFTextMid(gump, 15, 25, 470, 53, "Painel de Controle Atmosférico"); // Yellow/Gold color
+    GFTextMid(gump, 15, 25, 470, 53, "Painel de Controle Atmosférico"); 
 
     // --- Section 1: Tipo de Clima ---
     GFTextLine(gump, 30, 60, 53, "Tipo de Clima");
-    GFResizePic(gump, 25, 80, 0xBB8, 450, 140); // Increased height by 25 (115 -> 140)
+    GFResizePic(gump, 25, 80, 0xBB8, 450, 140); 
 
-    // Checkboxes (using standard 0x938/0x939 or similar)
-    // Group 1 (Weather Type)
     
     GFSetRadioGroup(gump, 1);
     GFRadioButton(gump, 40, 90, 210, 211, 1, 100); GFTextLine(gump, 65, 90, 1153, "Limpar Clima");
     GFRadioButton(gump, 40, 115, 210, 211, 0, 101); GFTextLine(gump, 65, 115, 1153, "Chuva");
     GFRadioButton(gump, 40, 140, 210, 211, 0, 102); GFTextLine(gump, 65, 140, 1153, "Chuva Venenosa");
-    GFRadioButton(gump, 40, 165, 210, 211, 0, 109); GFTextLine(gump, 65, 165, 1153, "Areia Feel"); // New Option
+    GFRadioButton(gump, 40, 165, 210, 211, 0, 109); GFTextLine(gump, 65, 165, 1153, "Areia Feel"); 
 
     GFRadioButton(gump, 180, 90, 210, 211, 0, 103); GFTextLine(gump, 205, 90, 1153, "Neve");
     GFRadioButton(gump, 180, 115, 210, 211, 0, 104); GFTextLine(gump, 205, 115, 1153, "Tempestade");
@@ -172,60 +168,60 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 180, 190, 210, 211, 0, 113); GFTextLine(gump, 205, 190, 1153, "Pulsação Mística");
     GFRadioButton(gump, 320, 190, 210, 211, 0, 114); GFTextLine(gump, 345, 190, 1153, "Sol");
     GFRadioButton(gump, 40, 215, 210, 211, 0, 115); GFTextLine(gump, 65, 215, 1153, "Vertigem2");
-    GFRadioButton(gump, 180, 215, 210, 211, 0, 116); GFTextLine(gump, 205, 215, 1153, "Radiant Sun");
+    // REMOVIDO: Radiant Sun
 
     // --- Section 2: Estação do Ano ---
-    GFTextLine(gump, 30, 230, 53, "Estação do Ano"); // Shifted +25 (205 -> 230)
-    GFResizePic(gump, 25, 250, 0xBB8, 450, 70); // Shifted +25 (225 -> 250)
+    GFTextLine(gump, 30, 230, 53, "Estação do Ano"); 
+    GFResizePic(gump, 25, 250, 0xBB8, 450, 70); 
 
     GFSetRadioGroup(gump, 2);
-    GFRadioButton(gump, 40, 260, 210, 211, 1, 200); GFTextLine(gump, 65, 260, 1153, "Manter Atual"); // +25
-    GFRadioButton(gump, 40, 285, 210, 211, 0, 201); GFTextLine(gump, 65, 285, 1153, "Primavera"); // +25
+    GFRadioButton(gump, 40, 260, 210, 211, 1, 200); GFTextLine(gump, 65, 260, 1153, "Manter Atual"); 
+    GFRadioButton(gump, 40, 285, 210, 211, 0, 201); GFTextLine(gump, 65, 285, 1153, "Primavera"); 
 
-    GFRadioButton(gump, 180, 260, 210, 211, 0, 202); GFTextLine(gump, 205, 260, 1153, "Verão"); // +25
-    GFRadioButton(gump, 180, 285, 210, 211, 0, 203); GFTextLine(gump, 205, 285, 1153, "Outono"); // +25
+    GFRadioButton(gump, 180, 260, 210, 211, 0, 202); GFTextLine(gump, 205, 260, 1153, "Verão"); 
+    GFRadioButton(gump, 180, 285, 210, 211, 0, 203); GFTextLine(gump, 205, 285, 1153, "Outono"); 
 
-    GFRadioButton(gump, 320, 260, 210, 211, 0, 204); GFTextLine(gump, 345, 260, 1153, "Inverno"); // +25
-    GFRadioButton(gump, 320, 285, 210, 211, 0, 205); GFTextLine(gump, 345, 285, 1153, "Desolação"); // +25
+    GFRadioButton(gump, 320, 260, 210, 211, 0, 204); GFTextLine(gump, 345, 260, 1153, "Inverno"); 
+    GFRadioButton(gump, 320, 285, 210, 211, 0, 205); GFTextLine(gump, 345, 285, 1153, "Desolação"); 
 
 
     // --- Section 3: Configurações ---
-    GFTextLine(gump, 30, 330, 53, "Configurações"); // +25 (305 -> 330)
-    GFResizePic(gump, 25, 350, 0xBB8, 450, 150); // +25 (325 -> 350)
+    GFTextLine(gump, 30, 330, 53, "Configurações"); 
+    GFResizePic(gump, 25, 350, 0xBB8, 450, 150); 
 
     // Inputs
-    GFTextLine(gump, 40, 360, 1153, "Intensidade:"); // +25
-    GFResizePic(gump, 180, 360, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 360, 50, 20, 1153, "50", 300); // +25
+    GFTextLine(gump, 40, 360, 1153, "Intensidade:"); 
+    GFResizePic(gump, 180, 360, 2620, 60, 20); 
+    GFTextEntry(gump, 185, 360, 50, 20, 1153, "50", 300); 
 
-    GFTextLine(gump, 40, 390, 1153, "Duração (ms):"); // +25
-    GFResizePic(gump, 180, 390, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 390, 50, 20, 1153, "10000", 301); // +25
+    GFTextLine(gump, 40, 390, 1153, "Duração (ms):"); 
+    GFResizePic(gump, 180, 390, 2620, 60, 20); 
+    GFTextEntry(gump, 185, 390, 50, 20, 1153, "10000", 301); 
 
-    GFTextLine(gump, 40, 420, 1153, "Raio de Alcance:"); // +25
-    GFResizePic(gump, 180, 420, 2620, 60, 20); // +25
-    GFTextEntry(gump, 185, 420, 50, 20, 1153, "100", 302); // +25
+    GFTextLine(gump, 40, 420, 1153, "Raio de Alcance:"); 
+    GFResizePic(gump, 180, 420, 2620, 60, 20); 
+    GFTextEntry(gump, 185, 420, 50, 20, 1153, "100", 302); 
 
     // Fog Config
-    GFTextLine(gump, 40, 450, 1153, "Fog (Lvl/R/G/B):"); // +25
-    GFResizePic(gump, 180, 450, 2620, 40, 20); // +25
-    GFTextEntry(gump, 185, 450, 30, 20, 1153, "50", 303); // +25
+    GFTextLine(gump, 40, 450, 1153, "Fog (Lvl/R/G/B):"); 
+    GFResizePic(gump, 180, 450, 2620, 40, 20); 
+    GFTextEntry(gump, 185, 450, 30, 20, 1153, "50", 303); 
     
-    GFResizePic(gump, 230, 450, 2620, 40, 20); // +25
-    GFTextEntry(gump, 235, 450, 30, 20, 1153, "210", 304); // +25
+    GFResizePic(gump, 230, 450, 2620, 40, 20); 
+    GFTextEntry(gump, 235, 450, 30, 20, 1153, "210", 304); 
     
-    GFResizePic(gump, 280, 450, 2620, 40, 20); // +25
-    GFTextEntry(gump, 285, 450, 30, 20, 1153, "180", 305); // +25
+    GFResizePic(gump, 280, 450, 2620, 40, 20); 
+    GFTextEntry(gump, 285, 450, 30, 20, 1153, "180", 305); 
     
-    GFResizePic(gump, 330, 450, 2620, 40, 20); // +25
-    GFTextEntry(gump, 335, 450, 30, 20, 1153, "140", 306); // +25
+    GFResizePic(gump, 330, 450, 2620, 40, 20); 
+    GFTextEntry(gump, 335, 450, 30, 20, 1153, "140", 306); 
 
     // Extra Options
-    GFCheckBox(gump, 280, 360, 210, 211, 0, 400); GFTextLine(gump, 305, 360, 1153, "Sons de Vento"); // +25
-    GFCheckBox(gump, 280, 390, 210, 211, 0, 401); GFTextLine(gump, 305, 390, 1153, "Vento Forte (Paralisia)"); // +25
+    GFCheckBox(gump, 280, 360, 210, 211, 0, 400); GFTextLine(gump, 305, 360, 1153, "Sons de Vento"); 
+    GFCheckBox(gump, 280, 390, 210, 211, 0, 401); GFTextLine(gump, 305, 390, 1153, "Vento Forte (Paralisia)"); 
 
     // Button
-    GFAddButton(gump, 210, 510, 4502, 4502, 1, 1); // +25 (485 -> 510)
+    GFAddButton(gump, 210, 510, 4502, 4502, 1, 1); 
 
     var res := GFSendGump(who, gump);
     
@@ -261,81 +257,64 @@ function ControleClimaGump(who)
     if (res[106]) 
         result.weather_type := 1; 
         result.bolts := 1; 
-        result.sound := 1; // Thunder implies sound usually
+        result.sound := 1; 
     endif
     if (res[107])
-        result.weather_type := 5; // Sandstorm
-        result.sound := 1; // Wind sound
-        result.heavy_wind := 1; // Optional: maybe add paralysis or stamina drain later
+        result.weather_type := 5; 
+        result.sound := 1; 
+        result.heavy_wind := 1; 
     endif
     if (res[108])
-        result.weather_type := 7; // Sandstorm Fog Low
+        result.weather_type := 7; 
         result.sound := 1;
         result.heavy_wind := 1;
     endif
     if (res[109])
-        result.weather_type := 8; // Sandstorm Heat Wave
+        result.weather_type := 8; 
         result.sound := 1;
         result.heavy_wind := 1;
     endif
     if (res[110])
-        result.weather_type := 9; // Sandstorm Heat Wave NEW
+        result.weather_type := 9; 
         result.sound := 1;
         result.sound := 1;
         result.heavy_wind := 1;
     endif
     if (res[111])
-        result.weather_type := 10; // Earthquake
+        result.weather_type := 10; 
         result.sound := 1;
     endif
     if (res[112])
-        result.weather_type := 11; // Shockwave
+        result.weather_type := 11; 
         result.sound := 1;
     endif
     if (res[113])
-        result.weather_type := 12; // Pulsação Mística
+        result.weather_type := 12; 
     endif
+    
+    // --- ALTERAÇÃO AQUI ---
     if (res[114])
-        result.weather_type := 0xFF; // Sol -> Clear
+        // Agora "Sol" ativa o ID 15 para efeitos visuais no Client
+        result.weather_type := 15; 
     endif
+    
     if (res[115])
-        result.weather_type := 13; // Vertigem2 -> Vertigo
+        result.weather_type := 13; 
     endif
-    if (res[116])
-        result.weather_type := 14; // Radiant Sun
-    endif
+    
+    // Radiant Sun (116) foi removido.
 
     // Parse Season
     if (res[200]) result.season := "Keep"; endif
-    if (res[201]) result.season := 5; endif // Primavera (SPRING=5 in nature.inc)
-    if (res[202]) result.season := 1; endif // Verão (SUMMER=1)
-    if (res[203]) result.season := 2; endif // Outono (AUTUMN=2)
-    if (res[204]) result.season := 4; endif // Inverno (WINTER=4)
-    if (res[205]) result.season := 4; endif // Desolação (Map to Winter or special? nature.inc doesn't show Desolation constant, packets.inc has SEASON_DESOLATION=4. nature.inc has WINTER=4. Let's use 4 for now or check packets.inc again. packets.inc: SEASON_DESOLATION=4. nature.inc: WINTER=4. Wait, nature.inc WINTER=4? packets.inc WINTER=3? Let's check packets.inc again.)
-    // packets.inc: SEASON_SPRING=0, SUMMER=1, FALL=2, WINTER=3, DESOLATION=4.
-    // nature.inc: SUMMER=1, AUTUMN=2, WINTER=4, SPRING=5. 
-    // There is a mismatch or custom mapping. nature.inc seems to use 4 for Winter. 
-    // Let's trust nature.inc for "Inverno" and maybe 3 or 4 for Desolation? 
-    // Actually, nature.inc says "Season Id based on UO packet". 
-    // Let's use the values from nature.inc for consistency with the server's logic.
-    // If user selects Desolation, I'll try 3 (packets.inc Winter) or 0 (packets.inc Spring?). 
-    // Let's stick to nature.inc constants for named seasons and maybe 4 (Desolation/Winter) for Desolation if not defined.
-    // Wait, nature.inc: WINTER=4. packets.inc: WINTER=3, DESOLATION=4. 
-    // If nature.inc uses 4 for Winter, maybe it maps to Desolation visually? 
-    // I will use the raw values from packets.inc for the packet sending if I call SetSeasonForAll directly.
-    // But nature.inc `SeasonRotate` sets global property `season` to 1, 2, 4, 5.
-    // Let's use:
-    // Primavera: 5 (nature)
-    // Verão: 1 (nature)
-    // Outono: 2 (nature)
-    // Inverno: 4 (nature)
-    // Desolação: 3 (packets.inc Winter/Desolation confusion? Let's try 3).
-    
-    if (res[205]) result.season := 3; endif // Desolação (Trying 3 based on packets.inc WINTER=3 which is "Screwed attempt... Snow has no edges") or maybe it is Desolation.
+    if (res[201]) result.season := 5; endif 
+    if (res[202]) result.season := 1; endif 
+    if (res[203]) result.season := 2; endif 
+    if (res[204]) result.season := 4; endif 
+    if (res[205]) result.season := 3; endif 
     
     // Parse Configs
     if (res[400]) result.sound := 1; endif
-    if (res[401]) result.heavy_wind := 1; result.sound := 1; endif // Wind implies sound
+    if (res[401]) result.heavy_wind := 1; result.sound := 1; endif 
 
     // Limits
     if (result.intensity > 150000) result.intensity := 150000; endif
