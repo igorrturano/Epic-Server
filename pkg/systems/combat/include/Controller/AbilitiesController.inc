@@ -11,10 +11,6 @@
  *
  **********************************/
 
-// TODO: Depois de finalizar o combate refatorar isso novamente, só para encapsular as habilidades em CombatAbility
-// TODO: Criar um TryToExecuteHab(enumDaHab, byRef attackInfo) para evitar repetição de código
-	// TODO: Essa função chama o ExecuteHab_nomedahab(byRef attackInfo)
-	// TODO: Para isso vai precisar padronizar a checagem das habs: Algumas são checagem de cooldown, outras são de prop...
 
 include "DamageController";
 include "HitController";
@@ -22,11 +18,8 @@ include "SkillController";
 include "FXController";
 include ":combat:Model/CombatAbility";
 
-// include ":message:Model/Message";
 include ":charactercreation:resists";
 include ":blood:blood";
-include "include/epicCombatUtils";
-// include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum class HAB_STATUS
 	SUCCESS := "ATIVADA!",
@@ -34,11 +27,41 @@ enum class HAB_STATUS
 	COOLDOWN := "EM RECARGA!",
 endenum
 
-function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
-	// CheckDefenderHabsBeforeDamage(attackInfo); // TODO: Enable when ready
-	CheckAttackerHabsBeforeDamage(attackInfo); // Enabled: Backstab and Furia only
+function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
+	var exec := 0;
 
-	return true;
+	if (TryToExecuteHab_AtaqueInfalivel(attackInfo)) exec++; endif
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada antes do hit.", Color(COLOR_NAME::FAIL)));
+	return false;
+endfunction
+
+function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
+	var exec := 0;
+
+	if (TryToExecuteHab_Martir(attackInfo)) exec++; endif
+	if (TryToExecuteHab_MantoRothen(attackInfo)) exec++; endif
+	if (TryToExecuteHab_KaniNoSutairu(attackInfo)) exec++; endif
+	if (TryToExecuteHab_Exoesqueleto(attackInfo)) exec++; endif
+	if (TryToExecuteHab_EspecialistaEscudos(attackInfo)) exec++; endif
+	if (TryToExecuteHab_Furia(attackInfo)) exec++; endif
+	if (TryToExecuteHab_ResilienciaBarbara(attackInfo)) exec++; endif
+	if (TryToExecuteHab_VinculoElemental(attackInfo)) exec++; endif
+	if (TryToExecuteHab_Backstab(attackInfo)) exec++; endif
+	if (TryToExecuteHab_Charge(attackInfo)) exec++; endif
+	if (TryToExecuteHab_DivineAuthority(attackInfo)) exec++; endif
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada antes de receber o dano.", Color(COLOR_NAME::FAIL)));
+
+	return false;
 endfunction
 
 /**
@@ -57,218 +80,69 @@ endfunction
  *
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
-	// TODO: Checar se o POL vai contar o bitwise corretamente ou se precisa armazenar em um int.
-	if (TryToExecuteHab_ArmaduraArcana(attackInfo) |
-		TryToExecuteHab_Ainalaith(attackInfo) |
-		TryToExecuteHab_DeathDance(attackInfo) |
-		TryToExecuteHab_ConhecimentoSobreInimigo(attackInfo) |
-		TryToExecuteHab_DisparoMistico(attackInfo)
-		)
+	var exec := 0;
 
+	// if (TryToExecuteHab_ArmaduraArcana(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Ainalaith(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DeathDance(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DisparoMistico(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DesviarProjetil(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_DesviarDisparos(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_FerocidadeEnsanguentada(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Evasao(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_ContraAtaque(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Rebuke(attackInfo)) exec++; endif
+
+	if (exec > 0)
 		return true;
 	endif
 
-	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
-	// var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
-	// if (elemental != error)
-	// 	If(elemental.cargas >= 1)
-	// 		var retorno := ConsumeArcaneCharges(attacker,1);
-	// 		ApplyDamageHabElementalWeapon(attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
-	// 	endif
-	// endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no hit.");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada no hit.", Color(COLOR_NAME::FAIL)));
 
 	return false;
 endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
-	// CheckDefenderHabsAfterDamage(attackInfo); // TODO: Enable when ready
-	// CheckAttackerHabsAfterDamage(attackInfo); // TODO: Add when attacker habs are needed
+	var exec := 0;
 
-	return true;
+	if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_Vinganca(attackInfo)) exec++; endif
+	// if (TryToExecuteHab_ChainOfPain(attackInfo)) exec++; endif
+
+	if (exec > 0)
+		return true;
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada após causar o dano.", Color(COLOR_NAME::FAIL)));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada após receber o dano.", Color(COLOR_NAME::FAIL)));
+	return false;
 endfunction
 
-/**
- * CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Executa verificações e efeitos relacionados às habilidades do atacante quando um ataque falha.
- *
- * Parameters
- * attacker: Objeto do atacante.
- * defender: Objeto do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 após executar todas as verificações e efeitos.
- */
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	if (TryToExecuteHab_AtaqueInfalivel(attackInfo) |
-		TryToExecuteHab_MestreDuelista(attackInfo) |
-		TryToExecuteHab_Insistencia(attackInfo)
-		)
+	var exec := 0;
+
+	if (TryToExecuteHab_MestreDuelista(attackInfo)) exec++; endif
+
+	if (exec > 0)
 		return true;
 	endif
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no miss.");
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada no miss.", Color(COLOR_NAME::FAIL)));
 	return false;
 endfunction
 
-/**
- * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- *
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return void
- *
- */
-function CheckDefenderHabsBeforeDamage(byRef attackInfo)
-	if (TryToExecuteHab_Martir(attackInfo) |
-		TryToExecuteHab_MantoRothen(attackInfo) |
-		TryToExecuteHab_KaniNoSutairu(attackInfo) |
-		TryToExecuteHab_Exoesqueleto(attackInfo) |
-		TryToExecuteHab_EspecialistaEscudos(attackInfo) |
-		TryToExecuteHab_Furia(attackInfo) |
-		TryToExecuteHab_ResilienciaBarbara(attackInfo) |
-		TryToExecuteHab_VinculoElemental(attackInfo) |
-		TryToExecuteHab_Backstab(attackInfo) |
-		TryToExecuteHab_Charge(attackInfo) |
-		TryToExecuteHab_DivineAuthority(attackInfo)
-		)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de receber o dano.");
-	return false;
-endfunction
-
-/**
- * CheckAttackerHabsBeforeDamage(byref attackInfo)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o atacante causar dano;
- * Criado com byRef pois algumas habilidades modificam o dano e outras propriedades.
- *
- * Parameters
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna true se alguma habilidade foi ativada, false caso contrário.
- *
- */
-function CheckAttackerHabsBeforeDamage(byRef attackInfo)
-	if (TryToExecuteHab_Backstab(attackInfo) |
-		TryToExecuteHab_Furia(attackInfo)
-		)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada antes de causar dano.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Verifica e aplica as habilidades defensivas do defensor quando atingido por um ataque.
- * Chama funções específicas para cada habilidade defensiva relevante e limpa a propriedade
- * "#contraataquepoderoso" do defensor, se estiver presente.
- *
- * Parameters
- * attacker: Identificador do atacante.
- * defender: Identificador do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 sempre que a função é executada.
- */
-function CheckDefenderHabsOnHit(byRef attackInfo)
-	if (TryToExecuteHab_DesviarProjetil(attackInfo) |
-		TryToExecuteHab_DesviarDisparos(attackInfo) |
-		TryToExecuteHab_FerocidadeEnsanguentada(attackInfo) |
-		TryToExecuteHab_Evasao(attackInfo) |
-		TryToExecuteHab_ContraAtaque(attackInfo) |
-		TryToExecuteHab_Rebuke(attackInfo)
-		)
-		return true;
-	endif
-
-	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
-	if (GetObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso"))
-		EraseObjProperty(attackInfo.GetDefender().GetObjRef(), "#contraataquepoderoso");
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no hit.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsAfterDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsAfterDamage(byRef attackInfo)
-	if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo) |
-		TryToExecuteHab_Vinganca(attackInfo) |
-		TryToExecuteHab_ChainOfPain(attackInfo)
-		)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada após receber o dano.");
-	return false;
-endfunction
-
-/**
- * CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Função responsável por verificar e aplicar habilidades defensivas do defensor quando um ataque falha (miss).
- *
- * Parameters
- * attacker: objeto ou id do atacante.
- * defender: objeto ou id do defensor.
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 sempre ao final da execução.
- */
-function CheckDefenderHabsOnMiss(byRef attackInfo)
-	// TODO: Adicionar habilidades que serão incluídas aqui
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Nenhuma habilidade ativada no miss.");
-	return false;
-endfunction
-
+// ================ Habilidades Individuais ================= //
 function TryToExecuteHab_Martir(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#martir"))
-		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("martirserial"));
+	if (attackInfo.GetDefender().GetProperty("#martir"))
+		var martir := SystemFindObjectBySerial(attackInfo.GetDefender().GetProperty("martirserial"));
 		if (martir && !martir.dead)
-			attackInfo.GetDefender().GetObjRef().EraseProp("#martir");
+			attackInfo.GetDefender().EraseProperty("#martir");
 			attackInfo.SetDefender(martir);
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			attackInfo.GetDefender().GetObjRef().EraseProp("#martir");
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::FAIL}!");
+			attackInfo.GetDefender().EraseProperty("#martir");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MARTIR}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
 		endif
 	endif
 
@@ -280,7 +154,6 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 		var healed := CInt(attackInfo.GetDamage().GetTotalBaseDamage() * 0.3); // TODO: Ver se o valor curado será esse mesmo.
 		var party := attackInfo.GetDefender().GetObjRef().party;
 		var amthealed := CInt(healed/party.members.size());
-		// attackInfo.damage := attackInfo.damage - healed;
 
 		if (amthealed < 1)
 			amthealed := 1;
@@ -290,7 +163,7 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 			ApplyEpicHealing(member, amthealed);
 		endforeach
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MANTO_ROTHEN}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MANTO_ROTHEN}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -298,15 +171,14 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
-	if (isBloodied(attackInfo.GetDefender().GetObjRef()))
-		attackInfo.GetDefender().Update();
-		MakeBleed(attackInfo.GetDefender().GetObjRef());
-		if (attackInfo.GetDefender().GetObjRef().GetProp("#recuperacaosalvadora"))
-			attackInfo.GetDefender().GetObjRef().EraseProp("#recuperacaosalvadora");
+	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
+	if (hpPercent < 20)
+		if (attackInfo.GetDefender().GetProperty("#recuperacaosalvadora"))
+			attackInfo.GetDefender().EraseProperty("#recuperacaosalvadora");
 			Message("Uma recuperacao salvadora salvou voce.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 			ApplyEpicHealing(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
 
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		endif
 	endif
@@ -315,13 +187,13 @@ function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Vinganca(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#vinganca"))
-		attackInfo.GetDefender().GetObjRef().SetProp(
+	if (attackInfo.GetDefender().GetProperty("#vinganca"))
+		attackInfo.GetDefender().SetProperty(
 			"#vinganca",
-			CInt(attackInfo.GetDefender().GetObjRef().GetProp("#vinganca")) + attackInfo.GetDamage().GetTotalBaseDamage()
+			CInt(attackInfo.GetDefender().GetProperty("#vinganca")) + attackInfo.GetDamage().GetTotalBaseDamage()
 		);
 		
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[Vinganca]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -329,7 +201,7 @@ function TryToExecuteHab_Vinganca(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_ChainOfPain(byRef attackInfo)
-	if(attackInfo.GetDefender().GetObjRef().GetProp("#chainofpain") != error )
+	if (attackInfo.GetDefender().GetObjRef().GetProp("#chainofpain") != error)
 		if (CInt(attackInfo.GetDefender().GetObjRef().GetProp("#chainofpain")) > readgameclock())
 			var copmobs := attackInfo.GetDefender().GetObjRef().GetProp("#chainserials");
 			var mage := MobileWrapper(SystemFindObjectBySerial(attackInfo.GetDefender().GetObjRef().GetProp("#mageserial")));
@@ -363,11 +235,11 @@ function TryToExecuteHab_ChainOfPain(byRef attackInfo)
 				// DamageFLS(opponent, total, DMG_FORCED, mage); // TODO: Refatorar isso daqui para o dano com uso de classe
 			endforeach
 
-			return 1;
+			return true;
 		endif
 	endif
 
-	return 0;
+	return false;
 endfunction
 
 function TryToExecuteHab_TaticasArcanas(byRef attackInfo)
@@ -375,23 +247,16 @@ function TryToExecuteHab_TaticasArcanas(byRef attackInfo)
 		var manaatual := attackInfo.GetAttacker().GetCurrentMana();
 		var manatotal := attackInfo.GetAttacker().GetMaximumMana();
 		if (manaatual >= manatotal / 2)
-			var dmg := attackInfo.GetDamage();
-
 			var damagemod := CInt(manaatual / 20);
-			if (dmg.GetSlashBaseDamage() > 0)
-				dmg.IncreaseSlashBaseDamage(damagemod);
-			elseif (dmg.GetPiercingBaseDamage() > 0)
-				dmg.IncreasePiercingBaseDamage(damagemod);
-			elseif (dmg.GetBluntBaseDamage() > 0)
-				dmg.IncreaseBluntBaseDamage(damagemod);
-			endif
-			attackInfo.SetDamage(dmg);
+
+			attackInfo.GetDamage().IncreaseSlashBaseDamage(damagemod);
+			attackInfo.GetDamage().IncreasePiercingBaseDamage(damagemod);
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(damagemod);
 			
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: " + CInt(damagemod));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: {HAB_STATUS::SUCCESS}! Dano aumentado em {CInt(damagemod)}", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: {HAB_STATUS::FAIL}!");
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::TATICAS_ARCANAS}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
 		endif
 	endif
 
@@ -401,15 +266,14 @@ endfunction
 function TryToExecuteHab_BrigadorDeTaverna(byRef attackInfo)
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::BRIGADOR_DE_TAVERNA))
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
-			var damageMod := 2;
+			var damageMod := CInt(attackInfo.GetAttacker().GetSkill(TACTICS) / 20);
 
-			attackInfo.SetDamage(attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod));
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod);
 			
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: " + CInt(damageMod));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: {HAB_STATUS::SUCCESS}! Dano aumentado em {CInt(damageMod)}", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: {HAB_STATUS::FAIL}!");
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BRIGADOR_DE_TAVERNA}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
 		endif
 	endif
 
@@ -418,20 +282,13 @@ endfunction
 
 function TryToExecuteHab_KaniNoSutairu(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KANI_NO_SUTAIRU))
-		var resist := Dice("1d4").Roll().GetResult();
+		var resist := CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 20);
 
-		var dmg := attackInfo.GetDamage();
-		if (dmg.GetSlashBaseDamage() > 0)
-			dmg.DecreaseSlashBaseDamage(resist);
-		elseif (dmg.GetPiercingBaseDamage() > 0)
-			dmg.DecreasePiercingBaseDamage(resist);
-		elseif (dmg.GetBluntBaseDamage() > 0)
-			dmg.DecreaseBluntBaseDamage(resist);
-		endif
-		attackInfo.SetDamage(dmg);
+		attackInfo.GetDamage().DecreaseSlashBaseDamage(resist);
+		attackInfo.GetDamage().DecreasePiercingBaseDamage(resist);
+		attackInfo.GetDamage().DecreaseBluntBaseDamage(resist);
 		
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KANI_NO_SUTAIRU}]: {HAB_STATUS::SUCCESS}!");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::KANI_NO_SUTAIRU}]: " + CInt(resist));
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::KANI_NO_SUTAIRU}]: {HAB_STATUS::SUCCESS}! Defensa aumentada em {CInt(resist)}", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -442,18 +299,11 @@ function TryToExecuteHab_Exoesqueleto(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::EXOESQUELETO))
 		var resist := 2;
 
-		var dmg := attackInfo.GetDamage();
-		if (dmg.GetSlashBaseDamage() > 0)
-			dmg.DecreaseSlashBaseDamage(resist);
-		elseif (dmg.GetPiercingBaseDamage() > 0)
-			dmg.DecreasePiercingBaseDamage(resist);
-		elseif (dmg.GetBluntBaseDamage() > 0)
-			dmg.DecreaseBluntBaseDamage(resist);
-		endif
-		attackInfo.SetDamage(dmg);
+		attackInfo.GetDamage().DecreaseSlashBaseDamage(resist);
+		attackInfo.GetDamage().DecreasePiercingBaseDamage(resist);
+		attackInfo.GetDamage().DecreaseBluntBaseDamage(resist);
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::EXOESQUELETO}]: {HAB_STATUS::SUCCESS}!");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::EXOESQUELETO}]: " + CInt(resist));
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::EXOESQUELETO}]: {HAB_STATUS::SUCCESS}! Defensa aumentada em {CInt(resist)}", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -463,23 +313,16 @@ endfunction
 function TryToExecuteHab_EspecialistaEscudos(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESPECIALISTA_ESCUDOS)) // Tem que estar com escudo equipado
 		if (attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetObjRef())
-			var resist := Dice("1d4").Roll().GetResult();
+			var resist := CInt(attackInfo.GetDefender().GetSkill(PARRY) / 20);
 
-			var dmg := attackInfo.GetDamage();
-			if (dmg.GetSlashBaseDamage() > 0)
-				dmg.DecreaseSlashBaseDamage(resist);
-			elseif (dmg.GetPiercingBaseDamage() > 0)
-				dmg.DecreasePiercingBaseDamage(resist);
-			elseif (dmg.GetBluntBaseDamage() > 0)
-				dmg.DecreaseBluntBaseDamage(resist);
-			endif
-			attackInfo.SetDamage(dmg);
+			attackInfo.GetDamage().DecreaseSlashBaseDamage(resist);
+			attackInfo.GetDamage().DecreasePiercingBaseDamage(resist);
+			attackInfo.GetDamage().DecreaseBluntBaseDamage(resist);
 
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: " + CInt(resist));
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: {HAB_STATUS::SUCCESS}! Defensa aumentada em {CInt(resist)}", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: {HAB_STATUS::FAIL}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ESPECIALISTA_ESCUDOS}]: {HAB_STATUS::FAIL}! Nenhum escudo equipado.", Color(COLOR_NAME::FAIL)));
 		endif
 	endif
 
@@ -487,19 +330,24 @@ function TryToExecuteHab_EspecialistaEscudos(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Backstab(byRef attackInfo)
-	var hasProp := attackInfo.GetAttacker().GetObjRef().GetProp("backstab");
-	var weaponHasProp := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("backstab");
+	if (attackInfo.GetAttacker().GetProperty("backstab") &&
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetProperty("backstab")
+		)
+		attackInfo.GetAttacker().EraseProperty("backstab");
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).EraseProperty("backstab");
+		attackInfo.GetAttacker().EraseProperty("#nextcritical");
 
-	if (hasProp && weaponHasProp)
-		attackInfo.GetAttacker().GetObjRef().EraseProp("backstab");
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("backstab");
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#nextcritical");
-
-		if (!TryToExecuteHab_SempreAlerta(attackInfo))
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
+		
+		if (TryToExecuteHab_SempreAlerta(attackInfo))
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::FAIL}! Bloqueado pelo defensor.", Color(COLOR_NAME::FAIL)));
+		else
 			TryToExecuteHab_AtaqueFurtivo(attackInfo);
 		endif
 
 		return true;
+	else
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BACKSTAB}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
 	endif
 
 	return false;
@@ -507,53 +355,34 @@ endfunction
 
 function TryToExecuteHab_Furia(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), COMBAT_ABILITY::FURIA))
-		var damagemod := Dice("1d4").Roll().GetResult();
+		var damagemod := CInt(attackInfo.GetAttacker().GetStr() / 20);
 
-		var dmg := attackInfo.GetDamage();
-		if (dmg.GetSlashBaseDamage() > 0)
-			dmg.IncreaseSlashBaseDamage(damagemod);
-		elseif (dmg.GetPiercingBaseDamage() > 0)
-			dmg.IncreasePiercingBaseDamage(damagemod);
-		elseif (dmg.GetBluntBaseDamage() > 0)
-			dmg.IncreaseBluntBaseDamage(damagemod);
-		endif
-		attackInfo.SetDamage(dmg);
+		attackInfo.GetDamage().IncreaseSlashBaseDamage(damagemod);
+		attackInfo.GetDamage().IncreasePiercingBaseDamage(damagemod);
+		attackInfo.GetDamage().IncreaseBluntBaseDamage(damagemod);
 
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FURIA}]: {HAB_STATUS::SUCCESS}!");
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::FURIA}]: " + CInt(damagemod));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::FURIA}]: {HAB_STATUS::SUCCESS}! Dano aumentado em {CInt(damagemod)}", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FURIA}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::FURIA}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
 endfunction
 
 function TryToExecuteHab_ResilienciaBarbara(byRef attackInfo)
-	// Como é uma contra-checagem, o defensor torna-se atacante apenas nesse momento
-	var invertedAttackInfo := attackInfo;
-	invertedAttackInfo.SetAttacker(attackInfo.GetDefender());
-	invertedAttackInfo.SetDefender(attackInfo.GetAttacker());
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::RESILIENCIA_BARBARA))
+		if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), COMBAT_ABILITY::FURIA))
+			var resist := CInt(attackInfo.GetDefender().GetStr() / 20);
 
-	if (invertedAttackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::RESILIENCIA_BARBARA))
-		if (TryToExecuteHab_Furia(invertedAttackInfo))
-			var resist := Dice("1d4").Roll().GetResult();
+			attackInfo.GetDamage().DecreaseSlashBaseDamage(resist);
+			attackInfo.GetDamage().DecreasePiercingBaseDamage(resist);
+			attackInfo.GetDamage().DecreaseBluntBaseDamage(resist);
 
-			var dmg := attackInfo.GetDamage();
-			if (dmg.GetSlashBaseDamage() > 0)
-				dmg.DecreaseSlashBaseDamage(resist);
-			elseif (dmg.GetPiercingBaseDamage() > 0)
-				dmg.DecreasePiercingBaseDamage(resist);
-			elseif (dmg.GetBluntBaseDamage() > 0)
-				dmg.DecreaseBluntBaseDamage(resist);
-			endif
-			attackInfo.SetDamage(dmg);
-
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RESILIENCIA_BARBARA}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::RESILIENCIA_BARBARA}]: " + CInt(resist));
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RESILIENCIA_BARBARA}]: {HAB_STATUS::SUCCESS}! Defensa aumentada em {CInt(resist)}", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RESILIENCIA_BARBARA}]: {HAB_STATUS::FAIL}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RESILIENCIA_BARBARA}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 		endif
 	endif
 
@@ -564,7 +393,7 @@ function TryToExecuteHab_SempreAlerta(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::SEMPRE_ALERTA))
 		TS_StartTimer(attackInfo.GetDefender().GetObjRef(), "paralysis", 5);
 		Message("Sempre Alerta").SendEmote(attackInfo.GetDefender().GetObjRef());
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::SEMPRE_ALERTA}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::SEMPRE_ALERTA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -572,18 +401,12 @@ function TryToExecuteHab_SempreAlerta(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Charge(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("charge_damage"))
-		var damageMod := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("charge_damage"));
+	var damageMod := CInt(attackInfo.GetAttacker().GetProperty("charge_damage"));
 
-		var dmg := attackInfo.GetDamage();
-		if (dmg.GetSlashBaseDamage() > 0)
-			dmg.IncreaseSlashBaseDamage(damageMod);
-		elseif (dmg.GetPiercingBaseDamage() > 0)
-			dmg.IncreasePiercingBaseDamage(damageMod);
-		elseif (dmg.GetBluntBaseDamage() > 0)
-			dmg.IncreaseBluntBaseDamage(damageMod);
-		endif
-		attackInfo.SetDamage(dmg);
+	if (attackInfo.GetAttacker().GetProperty("charge_damage"))
+		attackInfo.GetDamage().IncreaseSlashBaseDamage(damageMod);
+		attackInfo.GetDamage().IncreasePiercingBaseDamage(damageMod);
+		attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod);
 
 		// TODO: Refatorar essa checagem sem codesmell
 		if (":combat:weaponHitScripts/AntiMountedHit" in attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetTemplate().HitScripts)
@@ -597,7 +420,7 @@ function TryToExecuteHab_Charge(byRef attackInfo)
 			endif
 		endif
 
-		attackInfo.GetAttacker().GetObjRef().EraseProp("charge_damage");
+		attackInfo.GetAttacker().EraseProperty("charge_damage");
 		return true;
 	endif
 
@@ -607,10 +430,10 @@ endfunction
 function TryToExecuteHab_VinculoElemental(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::VINCULO_ELEMENTAL))
 		var resist := 0;
-		var arcane_armor := attackInfo.GetDefender().GetSkill(ARCANA) / 20;
+		var arcane_armor := CInt(attackInfo.GetDefender().GetSkill(ARCANA) / 20);
 
 		if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "armor_drain") > 0)
-			arcane_armor += attackInfo.GetDefender().GetSkill(ARCANA) / 30;
+			arcane_armor += CInt(attackInfo.GetDefender().GetSkill(ARCANA) / 30);
 			PlayObjectCenteredEffectEx(attackInfo.GetDefender().GetObjRef(), 0x5454, 20, 20, 0);
 		endif
 
@@ -619,18 +442,11 @@ function TryToExecuteHab_VinculoElemental(byRef attackInfo)
 			PlayObjectCenteredEffectEx(attackInfo.GetDefender().GetObjRef(), 0x5487, 1, 8, 0);
 		endif
 
-		var dmg := attackInfo.GetDamage();
-		if (dmg.GetSlashBaseDamage() > 0)
-			dmg.DecreaseSlashBaseDamage(resist);
-		elseif (dmg.GetPiercingBaseDamage() > 0)
-			dmg.DecreasePiercingBaseDamage(resist);
-		elseif (dmg.GetBluntBaseDamage() > 0)
-			dmg.DecreaseBluntBaseDamage(resist);
-		endif
-		attackInfo.SetDamage(dmg);
+		attackInfo.GetDamage().DecreaseSlashBaseDamage(resist);
+		attackInfo.GetDamage().DecreasePiercingBaseDamage(resist);
+		attackInfo.GetDamage().DecreaseBluntBaseDamage(resist);
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::VINCULO_ELEMENTAL}]: {HAB_STATUS::SUCCESS}!");
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, $"Defesa de Habilidade[{COMBAT_ABILITY::VINCULO_ELEMENTAL}]: " + CInt(resist));
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::VINCULO_ELEMENTAL}]: {HAB_STATUS::SUCCESS}! Defensa aumentada em {CInt(resist)}", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -638,30 +454,30 @@ function TryToExecuteHab_VinculoElemental(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_KenNoTatsujin(byRef attackInfo)
-	if (!attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KEN_NO_TATSUJIN))
-		return false;
+	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KEN_NO_TATSUJIN))
+		if (attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetObjRef())
+			Message($"Você está usando escudo e falhou {COMBAT_ABILITY::KEN_NO_TATSUJIN}", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
+		else
+			Message($"{COMBAT_ABILITY::KEN_NO_TATSUJIN}").SendEmote(attackInfo.GetDefender().GetObjRef());
+			PlaySoundEffect(attackInfo.GetDefender().GetObjRef(), 0x51f);
+
+			attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
+			
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
+			return true;
+		endif
 	endif
 
-	if (attackInfo.GetDefender().GetEquipBySlot(SHIELD))
-		Message($"Você está usando escudo e falhou {COMBAT_ABILITY::KEN_NO_TATSUJIN}", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::FAIL}!");
-		return false;
-	endif
-
-	Message($"{COMBAT_ABILITY::KEN_NO_TATSUJIN}").SendEmote(attackInfo.GetDefender().GetObjRef());
-	PlaySoundEffect(attackInfo.GetDefender().GetObjRef(), 0x51f);
-	attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::SUCCESS}!");
-
-	return true;
+	return false;
 endfunction
 
 function TryToExecuteHab_BarreiraIndestrutivel(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "barreiraindestrutivel"))
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BARREIRA_INDESTRUTIVEL}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BARREIRA_INDESTRUTIVEL}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::BARREIRA_INDESTRUTIVEL}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::BARREIRA_INDESTRUTIVEL}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
@@ -687,7 +503,7 @@ function TryToExecuteHab_Trespassar(byRef attackInfo)
 			Message("trespassar").SendEmote(attackInfo.GetAttacker().GetObjRef());
 			
 			if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::TRESPASSAR_CRITICO))
-				attackInfo.GetAttacker().GetObjRef().SetProp("#nextcritical", 1);
+				attackInfo.GetAttacker().SetProperty("#nextcritical", 1);
 			endif
 			
 			attackInfo.GetAttacker().Attack(targ);
@@ -708,7 +524,7 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
 	attackInfo.GetAttacker().GetObjRef().disable("hiddenattack");
 
 	if (attackInfo.GetAttacker().IsNPC())
-		sneak_dmg := CInt(attackInfo.GetAttacker().GetObjRef().getTier() * 15);
+		sneak_dmg := CInt(attackInfo.GetAttacker().GetTier() * 15);
 
 		if (sneak_dmg < 15)
 			sneak_dmg := 15;
@@ -716,29 +532,22 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
 	endif
 
 	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.x, attackerPos.y))
+	if (IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.GetX(), attackerPos.GetY()))
 		if (CanBackStab(attackInfo.GetAttacker()))
-			// Apply sneak damage bonus
-			var dmg := attackInfo.GetDamage();
-			if (dmg.GetSlashBaseDamage() > 0)
-				dmg.IncreaseSlashBaseDamage(sneak_dmg);
-			elseif (dmg.GetPiercingBaseDamage() > 0)
-				dmg.IncreasePiercingBaseDamage(sneak_dmg);
-			elseif (dmg.GetBluntBaseDamage() > 0)
-				dmg.IncreaseBluntBaseDamage(sneak_dmg);
-			endif
-			attackInfo.SetDamage(dmg);
-
-			// Apply bleed effect
+			attackInfo.GetDamage().IncreaseSlashBaseDamage(sneak_dmg);
+			attackInfo.GetDamage().IncreasePiercingBaseDamage(sneak_dmg);
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(sneak_dmg);
+			
 			MakeBleed(attackInfo.GetDefender().GetObjRef());
-
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}!");
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano de Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: " + CInt(sneak_dmg));
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::SUCCESS}! Bônus de dano: {sneak_dmg}", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		else
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!");
-		endif
-	endif
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}! Você não consegue realizar um ataque furtivo com esse tipo de arma.", Color(COLOR_NAME::FAIL)));
+        endif
+	else
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
+		Message("Você precisa estar atrás do inimigo para um ataque furtivo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+    endif
 
 	return false;
 endfunction
@@ -751,21 +560,21 @@ function TryToExecuteHab_ArmaduraArcana(byRef attackInfo)
 		PlayObjectCenteredEffectHuefx(attackInfo.GetAttacker().GetObjRef(), 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
 		TS_Starttimer(attackInfo.GetAttacker().GetObjRef(), "congelamento", 5);
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (Congelamento)]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (Congelamento)]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	elseif (GetCooldown(attackInfo.GetDefender().GetObjRef(), "incinerate_enemy") && dist == 1)
 		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x5D0);
 		PlayObjectCenteredEffect(attackInfo.GetAttacker().GetObjRef(), 0x6d77, 7, 60);
 		TS_Starttimer(attackInfo.GetAttacker().GetObjRef(), "queimar", 5, 1, attackInfo.GetDefender().GetObjRef());
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (Incinerar)]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (Incinerar)]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	elseif (GetCooldown(attackInfo.GetDefender().GetObjRef(), "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
 		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x5CF);
 		PlayObjectCenteredEffect(attackInfo.GetDefender().GetObjRef(), 0xcdaf, 7, 30);
 		TS_StartTimer(attackInfo.GetDefender().GetObjRef(), "velocidade", 5);
 
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (SEI LÁ QUE TIPO É ESSE... PRINTA ISSO PROS DEV DESCOBRIREM!)]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ARMADURA_ARCANA} (SEI LÁ QUE TIPO É ESSE... PRINTA ISSO PROS DEV DESCOBRIREM!)]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -773,9 +582,8 @@ function TryToExecuteHab_ArmaduraArcana(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_Ainalaith(byRef attackInfo)
-	var HAB_TYPE := "";
-
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::AINALAITH))
+		var HAB_TYPE := "";
 		var arrow_effects := attackInfo.GetAttacker().GetObjRef().GetProp("#shooting_effects");
 		if (!arrow_effects)
 			arrow_effects := struct{
@@ -804,7 +612,7 @@ function TryToExecuteHab_Ainalaith(byRef attackInfo)
 
 			attackInfo.GetAttacker().GetObjRef().SetProp("#shooting_effects", arrow_effects);
 
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::AINALAITH} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::AINALAITH} ({HAB_TYPE})]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		endif
 	endif
@@ -825,10 +633,10 @@ endfunction
 function TryToExecuteHab_DeathDance(byRef attackInfo)
 	if (getCooldown(attackInfo.GetAttacker().GetObjRef(), "deathdance") > 0)
 		moveToBehind(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::DEATH_DANCE}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DEATH_DANCE}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::DEATH_DANCE}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DEATH_DANCE}]: {HAB_STATUS::COOLDOWN}!"));
 	endif
 
 	return false;
@@ -847,42 +655,29 @@ function TryToExecuteHab_DisparoMistico(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_ContraAtaque(byRef attackInfo)
-	// TODO: Revisar se esse código realmente precisar calcular toda a estrutura do dano aqui...
-	
-	// if (GetCooldown(defender, "contraataque") > 0)
-	// 	if (GetObjProperty(defender, "#contraatacando") == error)
-	// 		SetObjProperty(defender, "#contraatacando", 1);
-	// 		PrintTextAbove(defender, "*contra ataque*");
-	// 		//defender.attack_once(attacker);
-	// 		var new_hit_chance := CalculateHitChance(defender, attacker);
-	// 		var new_random := RandomInt(100);
-	// 		PlayAttackFX(defender);
-	// 		if ( new_random < new_hit_chance )
-	// 			var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-	// 			armor := armor[ RandomInt( len( armor ) ) + 1];
-	// 			PlayHitSounds(defender, attacker);
-	// 			var time := ReadGameClock();
-	// 			var dmg := CalculateRawDamage(defender, defender.weapon);
-	// 			var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-	// 			SkillChecks(attacker, defender, attacker.weapon, dmg);
-	// 		endif
-	// 		EraseObjProperty(defender, "#contraatacando");
-
-	// 		return true;
-	// 	endif
-	// endif
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "contraataque") > 0)
+		Message("contra ataca").SendEmote(attackInfo.GetDefender().GetObjRef());
+		
+		attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
+		
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::CONTRA_ATAQUE}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
+		return true;
+	else
+	endif
 
 	return false;
 endfunction
 
 function TryToExecuteHab_DesviarProjetil(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#desviarprojetil"))
-		attackInfo.GetDefender().GetObjRef().EraseProp("#desviarprojetil");
+	if (attackInfo.GetDefender().GetProperty("#desviarprojetil"))
+		attackInfo.GetDefender().EraseProperty("#desviarprojetil");
+
+		// TODO: Adicionar lógica para impedir o dano e talvez adicionar um efeito visual
 
 		Message("desvia projétil").SendEmote(attackInfo.GetDefender().GetObjRef());
 		Message("O projétil foi desviado para longe de você.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 		Message("Seu projétil foi desviado do alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_PROJETIL}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_PROJETIL}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 	
@@ -890,24 +685,26 @@ function TryToExecuteHab_DesviarProjetil(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_DesviarDisparos(byRef attackInfo)
-	if (getCooldown(attackInfo.GetDefender().GetObjRef(), "desviardisparos") > 0)
+	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "desviardisparos") > 0)
+		// TODO: Adicionar lógica para impedir o dano e talvez adicionar um efeito visual
+
 		Message("desvia disparo").SendEmote(attackInfo.GetDefender().GetObjRef());
 		Message("O disparo foi desviado para longe de você.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
 		Message("Seu disparo foi desviado do alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_DISPAROS}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_DISPAROS}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_DISPAROS}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_DISPAROS}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
 endfunction
 
 function TryToExecuteHab_MaoLivre(byRef attackInfo)
-	if (attackInfo.GetDefender().GetObjRef().GetProp("maolivre") == 1)
-		attackInfo.GetDefender().GetObjRef().EraseProp("maolivre");
-		attackInfo.GetDefender().GetObjRef().SetProp("evasao", 1);
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MAO_LIVRE}]: {HAB_STATUS::SUCCESS}!");
+	if (attackInfo.GetDefender().GetProperty("maolivre") == 1)
+		attackInfo.GetDefender().EraseProperty("maolivre");
+		attackInfo.GetDefender().SetProperty("evasao", 1);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MAO_LIVRE}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -922,18 +719,18 @@ function TryToExecuteHab_FerocidadeEnsanguentada(byRef attackInfo)
 			attackInfo.GetDefender().EraseProperty("#contraatacando");
 
 			Message("contra ataque").SendEmote(attackInfo.GetDefender().GetObjRef());
-			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FEROCIDADE_ENSANGUENTADA}]: {HAB_STATUS::SUCCESS}!");
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::FEROCIDADE_ENSANGUENTADA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 			return true;
 		endif
 	else
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::FEROCIDADE_ENSANGUENTADA}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::FEROCIDADE_ENSANGUENTADA}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
 endfunction
 
 function TryToExecuteHab_Evasao(byRef attackInfo)
-	// TODO: Refatorar esse código após combate funcionando, vai precisar de um carinho aqui	
+	// TODO: Refatorar esse código após combate funcionando, vai precisar de um carinho PESADO aqui	
 	
 	// if (Cint(GetObjProperty(defender, "evasao")))
 	// 	PrintTextAbove(defender, "*esquiva-se*");
@@ -968,9 +765,9 @@ endfunction
 
 function TryToExecuteHab_Rebuke(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#campeaodivino"))
-		Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetObjRef()});
+		Run_Script_To_Completion(":charactercreation:habilidades/paladin/golpedivino", array{attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetObjRef()});
 		
-		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::REBUKE}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::REBUKE}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -980,12 +777,13 @@ endfunction
 function TryToExecuteHab_AtaqueInfalivel(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "ataqueinfalivel") > 0)
 		attackInfo.SetHitChance(1000);
+		attackInfo.RollHitChance();
 
 		Message("ataque infalivel").SendEmote(attackInfo.GetAttacker().GetObjRef());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_INFALIVEL}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_INFALIVEL}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_INFALIVEL}]: {HAB_STATUS::COOLDOWN}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_INFALIVEL}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
@@ -995,21 +793,10 @@ function TryToExecuteHab_MestreDuelista(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "mestreduelista") > 0)
 		// TODO: Ver o que diabos é pra isso fazer...		
 		Message("mestre duelista").SendEmote(attackInfo.GetAttacker().GetObjRef());
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MESTRE_DUELISTA}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MESTRE_DUELISTA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::MESTRE_DUELISTA}]: {HAB_STATUS::COOLDOWN}!");
-	endif
-
-	return false;
-endfunction
-
-function TryToExecuteHab_Insistencia(byRef attackInfo)
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::INSISTENCIA))
-		attackInfo.GetAttacker().GetObjRef().SetProp("insistencia", 1);
-
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::INSISTENCIA}]: {HAB_STATUS::SUCCESS}!");
-		return true;
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MESTRE_DUELISTA}]: {HAB_STATUS::COOLDOWN}!", Color(COLOR_NAME::ALERT)));
 	endif
 
 	return false;
@@ -1018,7 +805,7 @@ endfunction
 function TryToExecuteHab_ArrowRecovery(byRef attackInfo)
 	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::RECUPERAR_FLECHAS))
 		attackInfo.SetHitChance(attackInfo.GetHitChance() + 35);
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, $"Possui Habilidade[{COMBAT_ABILITY::RECUPERAR_FLECHAS}]: {HAB_STATUS::SUCCESS}!");
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RECUPERAR_FLECHAS}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
 
@@ -1041,29 +828,3 @@ function TryToExecuteHab_DivineAuthority(byRef attackInfo)
 
 	// return 0;
 endfunction
-
-// function TryToExecuteHab_(byRef attackInfo)
-
-// 	return 0;
-// endfunction
-
-// function TryToExecuteHab_(byRef attackInfo)
-
-// 	return 0;
-// endfunction
-
-// function TryToExecuteHab_(byRef attackInfo)
-
-// 	return 0;
-// endfunction
-
-// function TryToExecuteHab_(byRef attackInfo)
-
-// 	return 0;
-// endfunction
-
-// function TryToExecuteHab_(byRef attackInfo)
-
-// 	return 0;
-// endfunction
-
