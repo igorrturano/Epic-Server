@@ -49,6 +49,7 @@ function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	if (TryToExecuteHab_Exoesqueleto(attackInfo)) exec++; endif
 	if (TryToExecuteHab_EspecialistaEscudos(attackInfo)) exec++; endif
 	if (TryToExecuteHab_Furia(attackInfo)) exec++; endif
+	if (TryToExecuteHab_TaticasArcanas(attackInfo)) exec++; endif
 	if (TryToExecuteHab_ResilienciaBarbara(attackInfo)) exec++; endif
 	if (TryToExecuteHab_VinculoElemental(attackInfo)) exec++; endif
 	if (TryToExecuteHab_Backstab(attackInfo)) exec++; endif
