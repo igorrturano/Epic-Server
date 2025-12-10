@@ -27,9 +27,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				if(!this._template)
-					this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
-				endif
+				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				this._category := this._template.Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -67,6 +66,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this._name := this._template.desc;
 				this._graphic := this._template.graphic;
 				this._color := this._template.color;
+				this._category := this._template.Category;
 			endif
 			
 			this._objRef := err;
