@@ -37,20 +37,6 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
-enum DAMAGE_TYPE_LEGACY
-	SLASHDAMAGE	:= "Cortante",
-	PIERCINGDAMAGE := "Perfurante",
-	BLUNTDAMAGE	:= "Contusivo",
-endenum
-
-function HealFLS(targ, amt)
-	if (!GetObjProperty(targ, "nocure"))
-		HealDamage(targ, amt);
-	else
-		SendSysMessageEx(targ, "Você não pode ser curado.", SSM_FAIL);
-	endif
-endfunction
-
 function getNewDamageList(attacker)
 	var list := dictionary;
 

@@ -16,6 +16,7 @@ include ":brainAi:npcUtil";
 include ":gumps:yesNo";
 include ":charactercreation:habilidades";
 include ":tn:cooldown";
+include ":entropy:entropy";
 
 program skinning(parms)
 	var who := parms[1];
@@ -80,6 +81,15 @@ program skinning(parms)
 				SetName(cadaver, "Corpo Irreconhecivel");
 				SetObjProperty(cadaver, "morto", 1);
 				SetObjProperty(cadaver, "assassinado", 1);
+				if (GetObjProperty(cadaver, "entropy") != error)
+					var wrapper := MobileWrapper(who);
+					var killed_entropy := Cint(GetObjProperty(cadaver, "entropy"));
+					if (killed_entropy <= -12000)
+						UpdateMobileEntropy(who, killed_entropy / 10);
+					elseif(killed_entropy > -12000)
+						UpdateMobileEntropy(who, -killed_entropy / 10);
+					endif
+				endif
 
 				var region := GetRegionName(cadaver);
 				var tipo := "pk";

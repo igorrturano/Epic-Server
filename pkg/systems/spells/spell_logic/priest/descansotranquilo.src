@@ -58,7 +58,7 @@ program SpellScript(params)
 
 		foreach char in (nearbypeople)
 			if (char != who)
-				healDamage(char, heal);
+				ApplyEpicHealing(char, heal);
 			endif
 		endforeach
 

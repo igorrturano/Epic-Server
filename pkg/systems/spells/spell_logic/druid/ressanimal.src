@@ -87,7 +87,7 @@ program SpellScript(params)
 		// Se o caster é druida com habilidades especiais, aplica bônus
 		if (TemHabilidade(caster, "Filho da Floresta"))
 			// Cura o animal completamente
-			HealDamage(npc, 999);
+			ApplyEpicHealing(npc, 999);
 			SendSysMessageEx(caster, "Sua conexão com a natureza restaura " + npc.name + " completamente!", SSM_INFO);
 			PlayObjectCenteredEffect(npc, 0x376A, 5, 10);
 		endif

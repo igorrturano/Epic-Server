@@ -11,5 +11,5 @@ program manobra(attacker)
 	// SendSysMessageEx(attacker, "Use seu vigor como sua vida.", SSM_INFO);
 
 	// SetCooldown(attacker, "vigordabatalha", cint(AP_GetSkill(attacker, TACTICS)));
-	HealFLS(attacker, Cint(AP_GetVitalMaximumValue(attacker, STAMINA)));
+	applyEpicHealing(attacker, Cint(AP_GetVitalMaximumValue(attacker, STAMINA)));
 endprogram
