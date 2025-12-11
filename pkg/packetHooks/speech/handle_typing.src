@@ -8,39 +8,16 @@ program typing_hook()
 endprogram
 
 exported function TypingHandler(who, byRef packet)
+	var prop := who.GetProp("#lastyping");
 	var msgPacket := CreatePacket(0xAE, MSGLEN_VARIABLE);
-	msgPacket.SetInt32(3, Hex(who.serial)); // ID
-	msgPacket.SetInt16(7, 0x00); // Model
-	msgPacket.SetInt8(9, 0x01); // Type
-	msgPacket.SetInt16(10, 0x00); // Color
-	msgPacket.SetInt16(12, 0x00); // Font
-	msgPacket.SetString(14, "ENU"); // Language
-	msgPacket.SetString(18, who.name, 0); // Name
-	msgPacket.SetUnicodeString(48, "...", 1); // Message
-	msgPacket.SendPacket(who);
+	var delay := 4; // seconds
 
-	Print($"Received Typing Packet from Client: {CStr(packet)}");
-	Print($"Sending Message Packet to Client: {CStr(msgPacket)}");
+	if (prop > polcore().systime)
+		return 1;
+	endif
 
-	
-	// var packetString := "AE";
-	// packetString += fixPacketLength("", 2); // Length (will be calculated)
-	// packetString += fixPacketLength(Hex(who.serial), 4); // ID (character serial)
-	// packetString += fixPacketLength(Hex(who.graphic), 2); // Model
-	// packetString += fixPacketLength("00", 1); // Type
-	// packetString += fixPacketLength(Hex(who.color), 2); // Color
-	// packetString += fixPacketLength("0", 2); // Font
-	// packetString += fixPacketLength("ENU", 4); // Language (ENU = English)
-	// packetString += fixPacketLength(who.name, 30); // Name (null-terminated)
-	// packetString += ". . ." + Hex(0); // Message (null-terminated)
-	
-	// // Calculate and set the packet length
-	// var totalLength := Len(packetString);
-	// packetString[2, 2] := fixPacketLength(Hex(totalLength), 2);
+	PlayObjectCenteredEffectEx(who, 0xC43C, 1, 16*delay);
+	who.SetProp("#lastyping", polcore().systime + delay);
 
-	// print($"Received Typing Packet from Client: {CStr(packet)}");
-	// print($"Sending Message Packet to Client: {packetString}");
-	
-	// SendPacket(who, packetString);
 	return 1;
 endfunction

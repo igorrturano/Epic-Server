@@ -217,8 +217,6 @@ enum class MESSAGE_TYPE
 	GUILD := 0x0D,
 	ALLIANCE := 0x0E,
 	COMMAND_PROMPTS := 0x0F,
-
-	I_AM_TYPING := 0xF0, // "Está digitando..."
 endenum
 
 enum class MESSAGE_MAXSIZE
