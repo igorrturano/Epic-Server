@@ -286,7 +286,7 @@ function MonsterIdle(wanders, is_ranged)
     if (wanders > 10)
         // Heal slowly while idle
         var heal_amount := CInt(CDbl(AP_GetVitalMaximumValue(me, HITS)) * 0.01);
-        HealDamage(me, heal_amount);
+        ApplyEpicHealing(me, heal_amount);
     endif
 
     // Look for potential targets

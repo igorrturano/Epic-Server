@@ -216,7 +216,7 @@ function PerformHeal(shaman, targ, tier)
     PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
     
     var heal_amount := tier * 12;
-    HealDamage(targ, heal_amount);
+    ApplyEpicHealing(targ, heal_amount);
     
     return 1;
 endfunction
@@ -230,7 +230,7 @@ function PerformHealingRain(shaman, allies)
     // Heal allies
     foreach ally in allies
         if (!ally.isUnderRoof())
-            HealDamage(ally, CInt(mlore/3));
+            ApplyEpicHealing(ally, CInt(mlore/3));
             PlayObjectCenteredEffect(ally, FX_HEAL_EFFECT, 7, 0x10);
         endif
         sleepms(2);
