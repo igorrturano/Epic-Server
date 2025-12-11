@@ -68,3 +68,14 @@ ecompile
 
 # Web WWW Accounts
 /pkg/systems/accounts/config/settings.cfg
+
+# Encryption Keys and Encrypted Data
+*.key
+*.bin
+.env.encryption
+/opt/uo-encryption/
+/opt/uo-data-encrypted/
+encryption-backup*/
+release/
+*.enc
+key.hex

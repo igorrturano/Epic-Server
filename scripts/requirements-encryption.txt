@@ -1,0 +1,4 @@
+# Python dependencies for UO file encryption
+# Install with: pip3 install -r requirements-encryption.txt
+
+pycryptodome>=3.19.0  # AES encryption library

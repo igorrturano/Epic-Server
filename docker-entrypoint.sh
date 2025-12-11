@@ -54,6 +54,16 @@ mkdir -p /opt/pol/data
 mkdir -p /opt/pol/logs
 mkdir -p /opt/uo-data
 
+# Decrypt UO data files if encryption is enabled
+if [ -d "/opt/uo-data-encrypted" ] || [ -n "$UO_ENCRYPTION_KEY" ]; then
+    echo "Encryption detected, decrypting UO data files..."
+    if [ -f "/home/user/Epic-Server/scripts/decrypt_uo_data.sh" ]; then
+        /home/user/Epic-Server/scripts/decrypt_uo_data.sh
+    else
+        echo "WARNING: Decryption script not found, skipping decryption"
+    fi
+fi
+
 # Função para copiar dados UO
 copy_uo_data() {
     local source_path="$1"
