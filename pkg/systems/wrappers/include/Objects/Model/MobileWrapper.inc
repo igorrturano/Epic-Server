@@ -27,9 +27,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				if(!this._template)
-					this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
-				endif
+				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				this._category := this._template.Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -67,6 +66,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this._name := this._template.desc;
 				this._graphic := this._template.graphic;
 				this._color := this._template.color;
+				this._category := this._template.Category;
 			endif
 			
 			this._objRef := err;
@@ -814,6 +814,71 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Dex: {this.GetDex()}, " +
 			$"Int: {this.GetInt()}";
 	endfunction
+
+	// ============================================================================
+	// Entropy System Methods
+	// ============================================================================
+
+	/**
+	 * Obtém o valor atual de entropia do mobile.
+	 *
+	 * @return Integer Valor de entropia (0 se não definido)
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function GetEntropy(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var entropy := this.GetProperty(MOBILE_PROPNAME::ENTROPY);
+		if (!entropy)
+			return 0;
+		endif
+		return CInt(entropy);
+	endfunction
+
+	/**
+	 * Define o valor de entropia do mobile, respeitando os limites mínimo e máximo.
+	 *
+	 * @param value Integer Novo valor de entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function SetEntropy(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (value > ENTROPY_LIMITS::MAX)
+			value := ENTROPY_LIMITS::MAX;
+		elseif (value < ENTROPY_LIMITS::MIN)
+			value := ENTROPY_LIMITS::MIN;
+		endif
+
+		this.SetProperty(MOBILE_PROPNAME::ENTROPY, CInt(value));
+		return this;
+	endfunction
+
+	/**
+	 * Atualiza a entropia do mobile.
+	 *
+	 * IMPORTANT: This method only updates the individual mobile's entropy.
+	 * The caller is responsible for updating global entropy and handling any
+	 * game-specific bonuses or effects.
+	 *
+	 * @param amt Integer Quantidade a ser adicionada ou subtraída da entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function UpdateEntropy(this, amt)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var current := this.GetEntropy();
+		this.SetEntropy(current + amt);
+		return this;
+	endfunction
 endclass
 
 enum class MOBILE_GENDER
@@ -824,7 +889,13 @@ endenum
 
 enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
-	COMBAT_TRAITS := "combattraits"
+	COMBAT_TRAITS := "combattraits",
+	ENTROPY := "entropy"
+endenum
+
+enum class ENTROPY_LIMITS
+	MAX := 20000,
+	MIN := -20000
 endenum
 
 enum class MOBILE_CATEGORY

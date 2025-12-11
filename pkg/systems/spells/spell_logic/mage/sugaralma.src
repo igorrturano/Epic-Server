@@ -49,7 +49,7 @@ program SpellScript(params)
 				EraseObjProperty(targ, "#sleep");
 			endif
 			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
-			HealDamage(who, amt);
+			ApplyEpicHealing(who, amt);
 			DamageMana(targ, amt);
 			PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
 			time := time + 1;

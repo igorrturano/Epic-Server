@@ -18,7 +18,7 @@ program spell_heal(parms)
   if(castOn.isA(POLCLASS_NPC))
     healed := healed * 2;
   endif
-  HealDamage(castOn, healed);
+  ApplyEpicHealing(castOn, healed);
   PlayObjectCenteredEffect(castOn, FX_SPARK_EFFECT, 7, 0x10);
   PlaySoundEffect(castOn, SFX_SPELL_HEAL);
   SendSysMessage(caster, "You healed " + healed + " damage.");

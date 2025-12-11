@@ -86,7 +86,7 @@ program aurafe(paladin)
 							if (has_banner && member.getReligion() == paladin_religion)
 								heal_amount := heal_amount * 1.5; // 50% more healing for same religion
 							endif
-							HealFLS(member, heal_amount);
+							applyEpicHealing(member, heal_amount);
 						endif
 					endif
 				endif

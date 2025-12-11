@@ -79,7 +79,7 @@ program genericscript(who, item)
 		var amt := Cint(GetObjProperty(item, "heal"));
 		foreach vit in vitals
 			if (vit == "hits")
-				HealDamage(trg, amt);
+				ApplyEpicHealing(trg, amt);
 			elseif (vit == "mana")
 				HEalMana(trg, amt);
 			elseif (vit == "stam")

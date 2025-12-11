@@ -729,7 +729,7 @@ function skillGump(who, culture_pic, byref chardata)
     SetObjProperty(who, "chardata", chardata);
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.points), 1, 0);
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#DAA520 >{}".format(chardata.points), 1, 0);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
@@ -804,7 +804,7 @@ function attributeGump(who, culture_pic, byref chardata)
 
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.attribute_points), 1, 0);
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#DAA520 >{}".format(chardata.attribute_points), 1, 0);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 

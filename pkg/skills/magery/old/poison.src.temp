@@ -43,7 +43,7 @@ program poison(parms)
   if(castOn.isA(POLCLASS_NPC))
     var element := npccfg[castOn.npctemplate].elemental;
     if(element == "poison")
-      HealDamage(castOn, (pLevel * 50));
+      ApplyEpicHealing(castOn, (pLevel * 50));
     else
       newamt := PoisonResist(caster, castOn, pLevel);
       if(newamt > 0)
