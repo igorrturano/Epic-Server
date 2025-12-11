@@ -168,7 +168,6 @@ function ControleClimaGump(who)
     GFRadioButton(gump, 180, 190, 210, 211, 0, 113); GFTextLine(gump, 205, 190, 1153, "Pulsação Mística");
     GFRadioButton(gump, 320, 190, 210, 211, 0, 114); GFTextLine(gump, 345, 190, 1153, "Sol");
     GFRadioButton(gump, 40, 215, 210, 211, 0, 115); GFTextLine(gump, 65, 215, 1153, "Vertigem2");
-    GFRadioButton(gump, 180, 215, 210, 211, 0, 116); GFTextLine(gump, 205, 215, 1153, "Aurora Boreal");
     // REMOVIDO: Radiant Sun
 
     // --- Section 2: Estação do Ano ---
@@ -301,10 +300,6 @@ function ControleClimaGump(who)
     
     if (res[115])
         result.weather_type := 13; 
-    endif
-    
-    if (res[116])
-        result.weather_type := 16; 
     endif
     
     // Radiant Sun (116) foi removido.
