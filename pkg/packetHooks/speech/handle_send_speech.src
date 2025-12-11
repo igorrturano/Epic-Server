@@ -51,9 +51,6 @@ exported function handleUCOutgoing(character, byref packet)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::I_AM_TYPING)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, ". . .", 1);
-		return 1;
 	endif
 	
 	// LogPlayerSpeech(data.source, data.message);
@@ -67,6 +64,9 @@ function _GetPacketData(packet)
 	var type := packet.GetInt8(PACKET_POSITION::TEXT_TYPE);
 	var message_length := (packet.GetInt16(1) - 49) / 2;
 	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
+
+	print($"Serial: {serial}, Source: {source}, Type: {type}");
+	print("Mensagem recebida: " + message);
 	
 	return struct{
 		source_serial := serial,
