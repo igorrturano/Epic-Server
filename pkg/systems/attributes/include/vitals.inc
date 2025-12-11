@@ -300,7 +300,7 @@ function applyEpicHealing(mobile, amt)
 	var damage := 0;
 
 	if (wrapper.IsNPC())
-        if (Lower(wrapper.GetNPCCategory()) == "undead" || Lower(wrapper.GetNPCCategory()) == "demons")
+        if (Lower(wrapper.GetCategory()) == "undead" || Lower(wrapper.GetCategory()) == "demons")
 			damage := Cint(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;

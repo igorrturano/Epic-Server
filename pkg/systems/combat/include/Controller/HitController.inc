@@ -241,17 +241,17 @@ function CalculateHitChance(byRef attackInfo)
 
 	var globalEntropy := Cint(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -60000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetNPCCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
 		if (npc_category == "void")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -40000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetNPCCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
 		if (npc_category == "demon")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -20000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetNPCCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
 		if (npc_category == "undead")
 			hit_chance += 10.0;
 		endif

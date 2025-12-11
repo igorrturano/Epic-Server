@@ -1,0 +1,44 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program drink_potion (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if(!Accessible(who, potion))
+		return;
+	endif
+
+	if(potion.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
+		return;
+	endif
+
+	var tier := CInt(GetObjProperty(potion, "tier"));
+	if (!tier)
+		tier := 1;
+	endif
+
+	// Calculate protection duration based on tier
+	var duration := 300 * tier;  // Base 5 minutes per tier
+
+	// Apply the necrotic disguise cooldown (same as checked in detect corruption spell)
+	SetCooldown(who, "necrotic", duration);
+
+	SendSysMessageEx(who, "Sombras necromânticas envolvem sua alma, obscurecendo sua verdadeira natureza...", SSM_INFO);
+	SendSysMessageEx(who, "Sua corrupção está disfarçada!", SSM_INFO);
+	PrintTextAbove(who, "*aura sombria*");
+
+	// Visual and sound effects
+	PlayObjectCenteredEffect(who, 0x3728, 10, 20);  // Dark purple smoke effect
+	PlaySoundEffect(who, 0x1F8);                     // Necromancy sound
+
+	empty_bottle(who, potion);
+
+	return 1;
+endprogram
