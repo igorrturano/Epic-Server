@@ -5,6 +5,8 @@ use cfgfile;
 include ":alchemy:alchemy";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":message:include/model/Message";
+include "include/tileEffects";
 
 program drink_potion (who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -15,8 +17,18 @@ program drink_potion (who, potion)
 	endif
 
 	if(potion.movable == 0)
-		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
+		Message("Voce nao pode beber isto.")
+			.SetColor(COLOR_NAME::FAIL)
+			.SendSys(who);
 		return;
+	endif
+
+	// Check if already has the effect active
+	if (GetCooldown(who, "necrotic"))
+		Message("Você já está disfarçando sua corrupção.")
+			.SetColor(COLOR_NAME::FAIL)
+			.SendSys(who);
+		return 0;
 	endif
 
 	var tier := CInt(GetObjProperty(potion, "tier"));
@@ -24,19 +36,21 @@ program drink_potion (who, potion)
 		tier := 1;
 	endif
 
-	// Calculate protection duration based on tier
-	var duration := 300 * tier;  // Base 5 minutes per tier
+	var duration := 300 * tier * 6;
 
 	// Apply the necrotic disguise cooldown (same as checked in detect corruption spell)
 	SetCooldown(who, "necrotic", duration);
 
-	SendSysMessageEx(who, "Sombras necromânticas envolvem sua alma, obscurecendo sua verdadeira natureza...", SSM_INFO);
-	SendSysMessageEx(who, "Sua corrupção está disfarçada!", SSM_INFO);
-	PrintTextAbove(who, "*aura sombria*");
+	Message("Sombras envolvem sua alma, obscurecendo sua verdadeira natureza...")
+		.SetColor(COLOR_NAME::SUCCESS)
+		.SendSys(who);
+	Message("Sua corrupção está disfarçada por {} minutos!".format(CInt(duration/60)))
+		.SetColor(COLOR_NAME::SUCCESS)
+		.SendSys(who);
 
 	// Visual and sound effects
-	PlayObjectCenteredEffect(who, 0x3728, 10, 20);  // Dark purple smoke effect
-	PlaySoundEffect(who, 0x1F8);                     // Necromancy sound
+	PlayObjectCenteredEffect(who, FX_POISON_DEATH, 0, 10);
+	PlaySoundEffect(who, 0x483);
 
 	empty_bottle(who, potion);
 
