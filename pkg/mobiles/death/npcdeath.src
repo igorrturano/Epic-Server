@@ -29,7 +29,7 @@ include ":commands:possess";
 include ":expbar:expbar";
 include ":achievements:CombatController";
 include ":epicAI:epicai";
-include ":entropy:entropy";
+// include ":entropy:entropy";
 
 program core_npcDeath(params)
 	var corpse := params[1];
@@ -58,7 +58,7 @@ program core_npcDeath(params)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
 	handleExpGain(corpse);
-	handleEntropyGain(corpse);
+	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
 		// var lista_itens := {
