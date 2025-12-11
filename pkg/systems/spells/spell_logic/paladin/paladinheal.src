@@ -54,7 +54,7 @@ program SpellScript(params)
         endif
     endif
 
-    healFLS(targ, healed);
+    applyEpicHealing(targ, healed);
 	recalcvitals(targ);
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
 

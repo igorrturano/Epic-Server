@@ -113,7 +113,7 @@ function Transforma(who, animal)
 		var hitsmod := GetObjProperty(who, "hitsmod");
 		SetObjProperty(who, "hitsmod", hitsmod + 50);
 		recalcvitals(who);
-		healdamage(who, 50);
+		ApplyEpicHealing(who, 50);
 		who.resist_physical_mod := who.resist_physical_mod + 50;
 	elseif (animal == "lobo")
 		template := ":brainai:wolf";
@@ -122,7 +122,7 @@ function Transforma(who, animal)
 		var hitsmod := GetObjProperty(who, "hitsmod");
 		SetObjProperty(who, "hitsmod", hitsmod + 10);
 		recalcvitals(who);
-		healdamage(who, 10);
+		ApplyEpicHealing(who, 10);
 		who.resist_physical_mod := who.resist_physical_mod + 10;
 	elseif (animal == "cobra")
 		template := ":brainai:giantserpent2";
@@ -131,7 +131,7 @@ function Transforma(who, animal)
 		var hitsmod := GetObjProperty(who, "hitsmod");
 		SetObjProperty(who, "hitsmod", hitsmod + 20);
 		recalcvitals(who);
-		healdamage(who, 20);
+		ApplyEpicHealing(who, 20);
 		who.resist_physical_mod := who.resist_physical_mod + 20;
 	elseif (animal == "aguia")
 		template := ":brainai:eagle";
@@ -140,7 +140,7 @@ function Transforma(who, animal)
 		var hitsmod := GetObjProperty(who, "hitsmod");
 		SetObjProperty(who, "hitsmod", hitsmod + 10);
 		recalcvitals(who);
-		healdamage(who, 10);
+		ApplyEpicHealing(who, 10);
 		who.resist_physical_mod := who.resist_physical_mod + 10;
 	endif
 

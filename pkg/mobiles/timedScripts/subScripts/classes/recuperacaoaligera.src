@@ -21,7 +21,7 @@ program default_poison(params)
 			if (who.dead)
 				break;
 			endif
-			HealFLS(who, tactics_bonus);
+			applyEpicHealing(who, tactics_bonus);
 
 			sleep(2);
 		endwhile
@@ -31,7 +31,7 @@ program default_poison(params)
 			if (who.dead)
 				break;
 			endif
-			HealFLS(who, parry_bonus);
+			applyEpicHealing(who, parry_bonus);
 
 			sleep(2);
 		endwhile
@@ -40,7 +40,7 @@ program default_poison(params)
 			if (who.dead)
 				break;
 			endif
-			HealFLS(who, tactics_bonus);
+			applyEpicHealing(who, tactics_bonus);
 
 			sleep(2);
 		endwhile

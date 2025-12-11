@@ -15,7 +15,7 @@ program HitScript(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	HealDamage(attacker, rawdamage);
+	ApplyEpicHealing(attacker, rawdamage);
 	PlayObjectCenteredEffect(attacker, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 
 	return 1;

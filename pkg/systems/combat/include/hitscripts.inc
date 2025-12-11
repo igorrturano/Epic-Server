@@ -134,7 +134,7 @@ function execonkill(attacker, defender)
     HealStamina(attacker, onkill.stamina);
   endif
   if (onkill.hits != error)
-    HealDamage(attacker, onkill.hits);
+    ApplyEpicHealing(attacker, onkill.hits);
     RecalcVitals(attacker);
   endif
   if (onkill.itemcreate != error)
