@@ -328,7 +328,7 @@ function CalculateCriticalChanceMod(byRef attackInfo)
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(FONTCOLOR_RED).GetTextValue()));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(FONTCOLOR_RED).GetValue()));
 
 	// TODO: Refatorar isso daqui, tá MUITO cagado....
 		// Jogar as coisas de pet pra uma função separada
