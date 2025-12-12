@@ -63,7 +63,7 @@ endfunction
 
 function SendSysTo(who, splitedMessage)
 	foreach part in (splitedMessage)
-		SendSysMessageUNI(who, part.textTarget, part.color.GetTextValue(), part.font.GetTextValue());
+		SendSysMessageUNI(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
 	endforeach
 endfunction
 
