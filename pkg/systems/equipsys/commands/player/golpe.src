@@ -66,10 +66,10 @@ function SetNewPosture(who, newPosture)
 		newPosture == DAMAGE_TYPE::BLUNT)
 		if (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::UNARMED))
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
-			Message("Você deve estar empunhando uma arma para mudar sua postura de combate.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
+			Message("Você deve estar empunhando uma arma para mudar sua postura de combate.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(who.GetObjRef());
 		elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
-			Message("Arcos não podem mudar postura de combate.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
+			Message("Arcos não podem mudar postura de combate.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(who.GetObjRef());
 		else
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
 			Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
