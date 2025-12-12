@@ -175,7 +175,7 @@ function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
 	if (hpPercent < 20)
 		if (attackInfo.GetDefender().GetProperty("#recuperacaosalvadora"))
 			attackInfo.GetDefender().EraseProperty("#recuperacaosalvadora");
-			Message("Uma recuperacao salvadora salvou voce.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message("Uma recuperacao salvadora salvou voce.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef()) / 2));
 
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
@@ -456,7 +456,7 @@ endfunction
 function TryToExecuteHab_KenNoTatsujin(byRef attackInfo)
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::KEN_NO_TATSUJIN))
 		if (attackInfo.GetDefender().GetEquipBySlot(SHIELD).GetObjRef())
-			Message($"Você está usando escudo e falhou {COMBAT_ABILITY::KEN_NO_TATSUJIN}", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message($"Você está usando escudo e falhou {COMBAT_ABILITY::KEN_NO_TATSUJIN}", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::KEN_NO_TATSUJIN}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
 		else
 			Message($"{COMBAT_ABILITY::KEN_NO_TATSUJIN}").SendEmote(attackInfo.GetDefender().GetObjRef());
@@ -546,7 +546,7 @@ function TryToExecuteHab_AtaqueFurtivo(byRef attackInfo)
         endif
 	else
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::ATAQUE_FURTIVO}]: {HAB_STATUS::FAIL}!", Color(COLOR_NAME::FAIL)));
-		Message("Você precisa estar atrás do inimigo para um ataque furtivo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você precisa estar atrás do inimigo para um ataque furtivo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
     endif
 
 	return false;
@@ -675,8 +675,8 @@ function TryToExecuteHab_DesviarProjetil(byRef attackInfo)
 		// TODO: Adicionar lógica para impedir o dano e talvez adicionar um efeito visual
 
 		Message("desvia projétil").SendEmote(attackInfo.GetDefender().GetObjRef());
-		Message("O projétil foi desviado para longe de você.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-		Message("Seu projétil foi desviado do alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("O projétil foi desviado para longe de você.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu projétil foi desviado do alvo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_PROJETIL}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	endif
@@ -689,8 +689,8 @@ function TryToExecuteHab_DesviarDisparos(byRef attackInfo)
 		// TODO: Adicionar lógica para impedir o dano e talvez adicionar um efeito visual
 
 		Message("desvia disparo").SendEmote(attackInfo.GetDefender().GetObjRef());
-		Message("O disparo foi desviado para longe de você.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
-		Message("Seu disparo foi desviado do alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("O disparo foi desviado para longe de você.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu disparo foi desviado do alvo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::DESVIAR_DISPAROS}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 		return true;
 	else

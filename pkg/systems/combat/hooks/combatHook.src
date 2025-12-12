@@ -56,7 +56,7 @@ function CanAttack(byRef attackInfo)
 	endif
 	
 	if (!CheckLineOfSight(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()))
-		Message("Você não enxerga o alvo.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não enxerga o alvo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -217,7 +217,7 @@ function CheckAmmo(byRef attackInfo)
 		endif
 
 		if (!aljava.Contains(ammo.GetItem()))
-			Message("A munição não está na aljava.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("A munição não está na aljava.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 			return false;
 		endif
 	endif
@@ -236,7 +236,7 @@ function arcane_shooting(byRef attackInfo)
 	endif
 
 	if (!DamageMANA(attackInfo.GetAttacker().GetObjRef(), 4))
-		Message("Você está sem mana!", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você está sem mana!", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return 0;
 	endif
 	
