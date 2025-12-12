@@ -10,8 +10,6 @@ jobs:
   notify:
     runs-on: ubuntu-latest
 
-    environment: Configure Discord HOOK
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
