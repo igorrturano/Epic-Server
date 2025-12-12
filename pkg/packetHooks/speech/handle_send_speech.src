@@ -21,13 +21,15 @@ enum class PACKET_POSITION
 endenum
 
 exported function handleUCOutgoing(character, byref packet)
-	var data := _GetPacketData(packet);
+	var data := GetPacketData(packet);
 	var who := MobileWrapper(character);
 	var translator := Translator();
 
-	if (!_MustContinue(data))
+	if (!MustContinue(data))
 		return 0;
 	endif
+
+	LogPlayerSpeech(data.source, data.message);
 
 	if (data.type == MESSAGE_TYPE::NORMAL) // Normal
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
@@ -52,21 +54,26 @@ exported function handleUCOutgoing(character, byref packet)
 	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
 	endif
-	
-	// LogPlayerSpeech(data.source, data.message);
+
+	AddLanguagePrefix(who, data.message);
+
+	if (!CanUnderstand(who, data.source, data.message))
+		
+		return 1;
+	endif
 	
 	return 0;
 endfunction
 
-function _GetPacketData(packet)
+function GetPacketData(packet)
 	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
 	var source := SystemFindObjectBySerial(serial);
 	var type := packet.GetInt8(PACKET_POSITION::TEXT_TYPE);
 	var message_length := (packet.GetInt16(1) - 49) / 2;
 	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
 
-	print($"Serial: {serial}, Source: {source}, Type: {type}");
-	print("Mensagem recebida: " + message);
+	// print($"Serial: {serial}, Source: {source}, Type: {type}");
+	// print("Mensagem recebida: " + message);
 	
 	return struct{
 		source_serial := serial,
@@ -76,7 +83,7 @@ function _GetPacketData(packet)
 	};
 endfunction
 
-function _MustContinue(data)
+function MustContinue(data)
 	if (data.type == MESSAGE_TYPE::SYSTEM ||
 		data.type == MESSAGE_TYPE::MESSAGE_CORNER ||
 		data.type == MESSAGE_TYPE::SPELL ||
@@ -87,6 +94,48 @@ function _MustContinue(data)
 	endif
 
 	return true;
+endfunction
+
+function AddLanguagePrefix(who, byRef message)
+	var chosen_language := who.GetProp("lingua_escolhida");
+	if (chosen_language && chosen_language != "Comum")
+		var full_message := "[" + chosen_language + "] " + message;
+		message := full_message;
+	endif
+endfunction
+
+function CanUnderstand(who, source, message)
+	// if (!source.npctemplate && type != 0x02)
+	// 	var chosen_language := source.GetProp("lingua_escolhida");
+	// 	var playerKnownLanguages := character.GetProp("linguas_conhecidas");
+	// 	var firstActionWord := (splitwords(message_txt)[1]);
+
+	// 	if (firstActionWord in (isGeneralAction))
+	// 		return 0;
+	// 	endif
+
+	// 	if ((message_txt in isSkillAction))
+	// 		return 0;
+	// 	endif
+
+	// 	if (GetObjProperty(source, "ghostvoice"))
+	// 		return handleGhostVoice(source, message_txt, packet);
+	// 	endif
+
+	// 	if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) ||
+	//   message_txt == "*Incompreensível*" || character.cmdlevel >= 1)
+	// 		if (message_txt != "..." && message_txt != "" && chosen_language && chosen_language != "Comum")
+	// 			var full_message := "[" + chosen_language + "] " + message_txt;
+	// 			packet.SetUnicodeString(48, full_message, 1);
+	// 		endif
+	// 		return 0;
+	// 	endif
+
+	// 	if (source != character)
+	// 		PrintTextPrivate(source, "*Incompreensível*", character);
+	// 		return 1;
+	// 	endif
+	// endif
 endfunction
 
 // exported function handleUCOutgoing(character, byref packet)
@@ -314,21 +363,21 @@ function handleGhostVoice(source, message_txt, byref packet)
 	return 0;
 endfunction
 
-function Translate(byRef params)
-	var who := params.who;
-	var message := params.message;
+// function Translate(byRef params)
+// 	var who := params.who;
+// 	var message := params.message;
 
-	var wantTranslation := CInt(GetObjProperty(who, "translation"));
-	if (wantTranslation > 0)
-		var dubbed := CInt(wantTranslation) == 2 ? true : false; // Temporário, depois fazer verificação se o char quer legenda ou não
+// 	var wantTranslation := CInt(GetObjProperty(who, "translation"));
+// 	if (wantTranslation > 0)
+// 		var dubbed := CInt(wantTranslation) == 2 ? true : false; // Temporário, depois fazer verificação se o char quer legenda ou não
 
-		if (message[1] != "[" && message[message.length()] != "]") // Evita loop de tradução
-			Message("[" + message + "]").SetAsync().SendAbove(who);
-			if (dubbed)
-				return true; // Impede o envio da mensagem original
-			endif
-		endif
-	endif
+// 		if (message[1] != "[" && message[message.length()] != "]") // Evita loop de tradução
+// 			Message("[" + message + "]").SetAsync().SendAbove(who);
+// 			if (dubbed)
+// 				return true; // Impede o envio da mensagem original
+// 			endif
+// 		endif
+// 	endif
 
-	return false;
-endfunction
+// 	return false;
+// endfunction
