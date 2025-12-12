@@ -1501,7 +1501,7 @@ endenum
 // Font Colours //
 //////////////////
 enum FONTCOLOR
-	// DEPRECATED - use FONTCOLOR_* (above) instead
+	// DEPRECATED - use COLOR()* class instead
 	MSG_ERROR				:= 33,
 	MSG_FAIL				:= MSG_ERROR,
 	MSG_SUCCESS				:= 66,

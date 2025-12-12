@@ -180,7 +180,7 @@ endclass
 
 enum class COLOR_NAME
 	BLACK := 1,
-	TRUE_BLACK := 1000,
+	TRUE_BLACK := 1279,
 	WHITE := 2,
 	RED := 38,
 	GREEN := 68,
