@@ -14,8 +14,12 @@ program speech_hooks()
 endprogram
 
 enum class PACKET_POSITION
-	ITEM_ID := 3, // Quem enviou a mensagem
-	TEXT_TYPE := 9, // Tipo da mensagem
+	SERIAL := 3, // Quem enviou a mensagem
+	MODEL := 7, // Não sei para o que serve
+	TYPE := 9, // Tipo da mensagem
+	COLOR := 10, // Cor da mensagem
+	FONT := 12, // Fonte da mensagem
+	LANGUAGE := 14, // Lingua da mensagem
 	NAME_ID := 18, // Nome de quem fala
 	MESSAGE := 48 // Mensagem
 endenum
@@ -55,20 +59,21 @@ exported function handleUCOutgoing(character, byref packet)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
 	endif
 
-	AddLanguagePrefix(who, data.message);
+	// AddLanguagePrefix(who, data.message);
 
-	if (!CanUnderstand(who, data.source, data.message))
+	// if (!CanUnderstand(who, data.source, data.message))
 		
-		return 1;
-	endif
+	// 	return 1;
+	// endif
 	
 	return 0;
 endfunction
 
 function GetPacketData(packet)
-	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
+	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
 	var source := SystemFindObjectBySerial(serial);
-	var type := packet.GetInt8(PACKET_POSITION::TEXT_TYPE);
+	var type := packet.GetInt8(PACKET_POSITION::TYPE);
+	print($"Message Type: {type}");
 	var message_length := (packet.GetInt16(1) - 49) / 2;
 	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
 
@@ -332,7 +337,7 @@ endfunction
 // endfunction
 
 exported function handleUCOrequest(character, byref packet)
-	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
+	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
 	var source := SystemFindObjectBySerial(serial);
 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
