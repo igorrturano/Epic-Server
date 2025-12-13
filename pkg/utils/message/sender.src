@@ -9,13 +9,13 @@ program Sender(message)
 		message.SetText(translator.GetText());
 	endif
 
-	if (message.GetType() == MSG_TYPE::SYSMSG)
+	if (message.GetType() == MESSAGE_TYPE::SYSTEM)
 		SendSysTo(message.GetToWhom(), SplitMessage(message));
-	elseif (message.GetType() == MSG_TYPE::PRINTTEXT)
+	elseif (message.GetType() == MESSAGE_TYPE::NORMAL)
 		SendAboveTo(message.GetToWhom(), SplitMessage(message));
-	elseif (message.GetType() == MSG_TYPE::PRINTTEXTPRIVATE)
+	elseif (message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE)
 		SendAbovePrivateTo(message.GetFromWhom(), SplitMessage(message), message.GetToWhom());
-	elseif (message.GetType() == MSG_TYPE::EMOTE)
+	elseif (message.GetType() == MESSAGE_TYPE::EMOTE)
 		SendEmoteTo(message.GetToWhom(), SplitMessage(message));
 	endif
 endprogram
@@ -23,10 +23,10 @@ endprogram
 function SplitMessage(message)
 	var msgSplitted := array{};
 	var maxSize;
-	if (message.GetType() == MSG_TYPE::SYSMSG || message.GetType() == MSG_TYPE::SYSMSGALL)
-		maxSize := MSG_MAXSIZE::SYSMSG;
-	elseif (message.GetType() == MSG_TYPE::PRINTTEXT || message.GetType() == MSG_TYPE::PRINTTEXTPRIVATE)
-		maxSize := MSG_MAXSIZE::PRINTTEXT;
+	if (message.GetType() == MESSAGE_TYPE::SYSTEM || message.GetType() == MESSAGE_TYPE::SYSTEM) // TODO: Alterar o segundo SYSTEM para SYSMSGALL quando implementar
+		maxSize := MESSAGE_MAXSIZE::SYSTEM;
+	elseif (message.GetType() == MESSAGE_TYPE::NORMAL || message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE)
+		maxSize := MESSAGE_MAXSIZE::NORMAL;
 	endif
 
 	var msgFragmentsAmtTarget := CountFragments(message.GetText().GetTextTarget(), maxSize);
@@ -63,7 +63,7 @@ endfunction
 
 function SendSysTo(who, splitedMessage)
 	foreach part in (splitedMessage)
-		SendSysMessageUNI(who, part.textTarget, part.color.GetTextValue(), part.font.GetTextValue());
+		SendSysMessageUNI(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
 	endforeach
 endfunction
 
