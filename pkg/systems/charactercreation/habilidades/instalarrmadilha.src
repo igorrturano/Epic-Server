@@ -25,7 +25,7 @@ program instalararmadilha(who)
 		return 0;
 	endif
 
-	if ((!trap.objtype == 0x6076) || (!trap.objtype == 0xff97) || (!trap.objtype == 0x1BE6))
+	if ((!trap.objtype == 0x6076) || (!trap.objtype == 0xfa3) || (!trap.objtype == 0x1BE6))
 		SendSysMessageEx(who, "Isto nao e uma armadilha.", SSM_FAIL);
 		return 0;
 	endif
@@ -35,7 +35,7 @@ program instalararmadilha(who)
 		return 0;
 	endif
 
-	if (trap.objtype == 0xff97)
+	if (trap.objtype == 0xfa3)
 		SendSysMessageEx(who, "Onde deseja Instalar a Armadilha?", SSM_REQUEST);
 		var targetted := TargetCoordinates(who);
 		var armadilhanochao;

@@ -21,7 +21,7 @@ program Make_Trap(who, trap)
 		return 0;
 	endif
 
-	if (trap.objtype == 0xff97)
+	if (trap.objtype == 0xfa3)
 		SendSysMessageEx(who, "Esta armadilha ja esta pronta para uso.", SSM_FAIL);
 		return 0;
 	endif

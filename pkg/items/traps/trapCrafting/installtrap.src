@@ -29,7 +29,7 @@ program installtrap(who, trap)
 	var traptype := "";
 	if (trap.objtype == 0x367a)
 		traptype := "PoisonGas";
-	elseif (trap.objtype == 0xff97)
+	elseif (trap.objtype == 0xfa3)
 		traptype := "Explosion";
 	elseif (trap.objtype == 0xff98)
 		traptype := "Needle";
