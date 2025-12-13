@@ -4,6 +4,7 @@ include ":charactercreation:habilidades";
 include "include/say";
 include "include/creationUtils";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 const FORTITUDE := "Fortitude";
 const REFLEXOS := "Reflexos";
@@ -47,15 +48,21 @@ function GetResist(who, resist)
             valor := valor + 2;
 		endif
 
-		if (GetObjProperty(who, "corruption"))
-			var corruption_penalty := GetObjProperty(who, "corruption_penalty");
-			valor := valor - corruption_penalty;
-		endif
-
 		if (classe == "Guerreiro")
 			valor := valor + 5;
 		else
 			valor := valor + 2;
+		endif
+
+		var mobileWrapper := MobileWrapper(who);
+		// Bonus fortitude para goods
+		var entropy := mobileWrapper.GetEntropy();
+		if (entropy > 4000)
+			valor += Cint(entropy / 4000);
+		endif
+		// Penalidade em fortitude para evils
+		if (entropy <= -4000)
+			valor -= Cint(abs(entropy) / 4000);
 		endif
 
 		valor := valor + CInt(AP_GetStat(who, STRENGTH)/20);
@@ -102,6 +109,17 @@ function GetResist(who, resist)
 
 	if (TemHabilidade(who, "Shintai to Kokoro"))
 		valor := valor + 5;
+	endif
+	
+	var mobileWrapper := MobileWrapper(who);
+	// Bonus fortitude para goods
+	var entropy := mobileWrapper.GetEntropy();
+	if (entropy > 4000)
+		valor += Cint(entropy / 4000);
+	endif
+	// Penalidade em fortitude para evils
+	if (entropy <= -4000)
+		valor -= Cint(abs(entropy) / 4000);
 	endif
 
 	if (who.acctname)
@@ -161,7 +179,8 @@ function ShouldGetSecondChance(defender, resist_type)
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
         (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == VONTADE) ||
-        (chardata.culture == POLKINEA)
+        (chardata.culture == POLKINEA) ||
+		(MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
     );
 endfunction
 
@@ -175,6 +194,8 @@ function GetSecondChanceMessage(defender, resist_type)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)
         return "Um pequilho sempre pode contar com a própria sorte";
+	elseif (MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
+		return "Sua alma corrupta expurga o veneno";
     endif
     return "";
 endfunction

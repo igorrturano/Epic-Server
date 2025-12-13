@@ -22,7 +22,7 @@ program SpellScript(params)
 		if (!(mob in hostiles))
 			PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 			PlaySoundEffect(mob, SFX_HEAL);
-			HealDamage(mob, points);
+			ApplyEpicHealing(mob, points);
 		endif
 	endforeach
 

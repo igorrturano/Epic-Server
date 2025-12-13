@@ -15,6 +15,8 @@ use os;
 use vitals;
 use cfgfile;
 
+include ":wrappers:Objects/Model/MobileWrapper";
+
 /* AP_GetVitalsCfgFile()
  *
  * Purpose
@@ -262,4 +264,91 @@ function AP_RefreshVitals(mobile)
 	endforeach
 
 	return 1;
+endfunction
+
+/**
+ * applyEpicHealing(mobile, amt)
+ * 
+ * Sistema central de cura que considera entropia do alvo.
+ * Substitui applyEpicHealing e ApplyEpicHealing em todo o servidor.
+ * 
+ * ENTROPIA POSITIVA (0 a +20000):
+ * - 0: Cura normal (0% bônus)
+ * - +20000: +50% de cura
+ * - Linear: bônus = (entropia / 40000) * amt
+ * 
+ * ENTROPIA NEGATIVA (0 a -20000):
+ * - 0: Cura normal
+ * - -10000: Sem cura (100% bloqueado)
+ * - -20000: Sem cura + toma 100% do valor como dano
+ * - Linear de 0 a -10000: reduz cura
+ * - Linear de -10000 a -20000: adiciona dano
+ * 
+ * @param mobile Mobile alvo
+ * @param amt Quantidade de cura
+ * @return 1 se aplicou, 0 se bloqueado por nocure
+ */
+function applyEpicHealing(mobile, amt)
+	if (GetObjProperty(mobile, "nocure"))
+		PrintTextAbove(mobile, "*Não pode ser curado*");
+		return 0;
+	endif
+
+	var wrapper := MobileWrapper(mobile);
+	var entropy := wrapper.GetEntropy();
+	var healing := amt;
+	var damage := 0;
+
+	if (wrapper.IsNPC())
+        if (Lower(wrapper.GetCategory()) == "undead" || Lower(wrapper.GetCategory()) == "demons")
+			damage := Cint(amt / 2);
+            ApplyRawDamage(mobile, damage);
+			return true;
+        else
+            Message("Alvo invalido.").SetColor(SSM_FAIL).SendAbove(wrapper);
+			return false;
+        endif
+    endif
+
+	// ENTROPIA POSITIVA: Bônus de cura
+	if (entropy > 0)
+		var bonus := CDbl(entropy) / 40000.0; // 0.0 a 0.5 (0% a 50%)
+		if (bonus > 0.5)
+			bonus := 0.5;
+		endif
+		healing := CInt(amt * (1.0 + bonus));
+	
+	// ENTROPIA NEGATIVA: Penalidade e dano
+	elseif (entropy < 0)
+		var abs_entropy := Abs(entropy);
+		
+		// Fase 1: Redução de cura (0 a -10000)
+		var penalty := abs_entropy / 10000.0; // 0.0 a 1.0+
+		if (penalty > 1.0)
+			penalty := 1.0;
+		endif
+		healing := CInt(amt * (1.0 - penalty));
+		
+		// Fase 2: Dano (além de -10000)
+		if (abs_entropy > 10000)
+			var excess := abs_entropy - 10000; // 0 a 10000
+			var damage_mult := excess / 10000.0; // 0.0 a 1.0
+			if (damage_mult > 1.0)
+				damage_mult := 1.0;
+			endif
+			damage := CInt(amt * damage_mult);
+		endif
+	endif
+
+	// Aplicar efeitos
+	if (damage > 0)
+		Message("*A cura queima a corrupção!*").SetColor(SSM_FAIL).SendSys(mobile);
+		ApplyRawDamage(mobile, damage);
+	endif
+
+	if (healing > 0)
+		wrapper.RestoreHP(healing);
+	endif
+
+	return true;
 endfunction

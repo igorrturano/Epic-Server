@@ -32,7 +32,8 @@ program OreMining(who, tool)
 		return;
 	endif
 
-	SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
+	Message("Onde você deseja minerar?").SetColor(SSM_REQUEST).SendSys(who);
+	Message("Digite .skill gathering para selecionar o minerio desejado.").SetColor(SSM_REQUEST).SendSys(who);
 	var targ := TargetCoordinates(who);
 	var quebravel := GetObjProperty(targ.item, "quebrável");
 
