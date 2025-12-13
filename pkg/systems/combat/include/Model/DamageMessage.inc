@@ -1,42 +1,12 @@
-include ":wrappers:Objects/Model/UObjectWrapper";
-
 class DamageMessage()
-	var _source;
-	var _target;
 	var _damageAmount;
 	var _damageType;
 	var _isCritical;
 
-	function DamageMessage(this, source, target, damageAmount, damageType, isCriticalDamage := false)
-		this._source := source;
-		this._target := target;
+	function DamageMessage(this, damageAmount, damageType, isCriticalDamage := false)
 		this._damageAmount := CInt(damageAmount);
 		this._damageType := CStr(damageType);
 		this._isCritical := Boolean(isCriticalDamage);
-	endfunction
-
-	function GetSource(this)
-		return this._source;
-	endfunction
-
-	function SetSource(this, wrapper)
-		if (!(wrapper is @UObjectWrapper))
-			return InvalidFormatException("The param wrapper must be a UObjectWrapper object!");
-		endif
-		
-		this.source := wrapper;
-	endfunction
-
-	function GetTarget(this)
-		return this._target;
-	endfunction
-
-	function SetTarget(this, wrapper)
-		if (!(wrapper is @UObjectWrapper))
-			return InvalidFormatException("The param wrapper must be a UObjectWrapper object!");
-		endif
-		
-		this._target := wrapper;
 	endfunction
 
 	function GetDamageAmount(this)
