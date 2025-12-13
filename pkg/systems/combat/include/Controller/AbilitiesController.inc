@@ -49,6 +49,7 @@ function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	if (TryToExecuteHab_Exoesqueleto(attackInfo)) exec++; endif
 	if (TryToExecuteHab_EspecialistaEscudos(attackInfo)) exec++; endif
 	if (TryToExecuteHab_Furia(attackInfo)) exec++; endif
+	if (TryToExecuteHab_TaticasArcanas(attackInfo)) exec++; endif
 	if (TryToExecuteHab_ResilienciaBarbara(attackInfo)) exec++; endif
 	if (TryToExecuteHab_VinculoElemental(attackInfo)) exec++; endif
 	if (TryToExecuteHab_Backstab(attackInfo)) exec++; endif
@@ -160,7 +161,7 @@ function TryToExecuteHab_MantoRothen(byRef attackInfo)
 		endif
 
 		foreach member in (party.members)
-			HealDamage(member, amthealed);
+			ApplyEpicHealing(member, amthealed);
 		endforeach
 
 		DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::MANTO_ROTHEN}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
@@ -176,7 +177,7 @@ function TryToExecuteHab_RecuperacaoSalvadora(byRef attackInfo)
 		if (attackInfo.GetDefender().GetProperty("#recuperacaosalvadora"))
 			attackInfo.GetDefender().EraseProperty("#recuperacaosalvadora");
 			Message("Uma recuperacao salvadora salvou voce.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
-			HealDamage(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef()) / 2));
+			ApplyEpicHealing(attackInfo.GetDefender().GetObjRef(), CInt(GetPH(attackInfo.GetDefender().GetObjRef())/2));
 
 			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RECUPERACAO_SALVADORA}]: {HAB_STATUS::SUCCESS}!", Color(COLOR_NAME::SUCCESS)));
 			return true;

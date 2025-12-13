@@ -21,7 +21,7 @@ program manobra(attacker)
 			if (Distance(attacker, member) < 8)
 				if (!isBloodied(member))
 					SendSysMessageEx(member, "Voce se sente melhor!", SSM_INFO);
-					HealFLS(member, 80);
+					applyEpicHealing(member, 80);
 				endif
 			endif
 		endif
