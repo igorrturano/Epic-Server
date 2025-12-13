@@ -357,10 +357,16 @@ class UObjectWrapper(IUObjectWrapper)
 		endif
 
 		var packet := CreatePacket(0x0C, MSGLEN_VARIABLE);
-		packet.SetInt32(3, this._objRef.serial);
+		packet.SetInt32(3, Hex(this._objRef.serial));
+		packet.SetInt8(11, Hex(color));
+		packet.SetInt8(13, Hex(font));
+		packet.SetUnicodeString(15, damageMessage.ToString());
 
-		packet.SetUnicodeString(11, damageMessage.ToString());
+		packet.SendPacket(this._objRef);
 
+		if (!source.IsNPC())
+			packet.SendPacket(source.GetObjRef());
+		endif
 	endfunction
 
 	function ToString(this)
