@@ -23,12 +23,18 @@ endprogram
 function SplitMessage(message)
 	var msgSplitted := array{};
 	var maxSize;
-	if (message.GetType() == MESSAGE_TYPE::SYSTEM || message.GetType() == MESSAGE_TYPE::SYSTEM) // TODO: Alterar o segundo SYSTEM para SYSMSGALL quando implementar
-		maxSize := MESSAGE_MAXSIZE::SYSTEM;
-	elseif (message.GetType() == MESSAGE_TYPE::NORMAL || message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE)
-		maxSize := MESSAGE_MAXSIZE::NORMAL;
-	endif
+	
+	case (message.GetType())
+		MESSAGE_TYPE::NORMAL:
+		MESSAGE_TYPE::NORMAL_PRIVATE:
+		MESSAGE_TYPE::EMOTE:
+			maxSize := MESSAGE_MAXSIZE::NORMAL;
+			break;
 
+		default:
+			maxSize := MESSAGE_MAXSIZE::SYSTEM;
+	endcase
+	
 	var msgFragmentsAmtTarget := CountFragments(message.GetText().GetTextTarget(), maxSize);
 
 	for i := 1 to (msgFragmentsAmtTarget)
@@ -51,13 +57,13 @@ endfunction
 
 function SendAboveTo(who, splitedMessage)
 	foreach part in (splitedMessage)
-		PrintText(who, part.textTarget, part.color, part.font);
+		PrintText(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
 	endforeach
 endfunction
 
 function SendAbovePrivateTo(who, splitedMessage, whoSee)
 	foreach part in (splitedMessage)
-		PrintTextPrivate(who, part.textTarget, whoSee, part.color, part.font);
+		PrintTextPrivate(who, part.textTarget, whoSee, part.color.GetValue(), part.font.GetValue());
 	endforeach
 endfunction
 
@@ -69,6 +75,6 @@ endfunction
 
 function SendEmoteTo(who, splitedMessage)
 	foreach part in (splitedMessage)
-		PrintText(who, $"*{part.textTarget}*", part.color, part.font);
+		PrintText(who, $"*{part.textTarget}*", part.color.GetValue(), part.font.GetValue());
 	endforeach
 endfunction
