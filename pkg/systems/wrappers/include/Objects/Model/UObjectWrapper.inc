@@ -364,9 +364,18 @@ class UObjectWrapper(IUObjectWrapper)
 
 		packet.SendPacket(this._objRef);
 
-		if (!source.IsNPC())
+		if (!source.IsNPC() && !this.Equals(source))
 			packet.SendPacket(source.GetObjRef());
 		endif
+	endfunction
+
+	function Equals(this, byRef other)
+		if (!(other is @UObjectWrapper))
+			return false;
+		endif
+
+		return this.GetSerial() == other.GetSerial()
+			&& this.GetObjType() == other.GetObjType();
 	endfunction
 
 	function ToString(this)
