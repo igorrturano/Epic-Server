@@ -1,3 +1,5 @@
+use polsys;
+
 include ":message:model/Message";
 include ":message:Controller/Translator";
 
@@ -75,6 +77,25 @@ endfunction
 
 function SendEmoteTo(who, splitedMessage)
 	foreach part in (splitedMessage)
-		PrintText(who, $"*{part.textTarget}*", part.color.GetValue(), part.font.GetValue());
+		PrintEmote(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
 	endforeach
+endfunction
+
+function PrintEmote(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
+	var msg := $"*{text}*";
+
+	CreatePacketAndSend(MESSAGE_TYPE::EMOTE, who, color, font, langcode);
+endfunction
+
+function CreatePacketAndSend(messageType, who, color, font, langcode)
+	var packet := CreatePacket(0xAE, MSGLEN_VARIABLE);
+
+	packet.SetInt32(3, who.serial);
+	packet.SetInt8(9, messageType);
+	packet.SetInt16(10, color);
+	packet.SetInt16(12, font);
+	packet.SetString(14, langcode, 0);
+	packet.SetString(18, who.name, 0);
+
+	packet.SendPacket(who);
 endfunction

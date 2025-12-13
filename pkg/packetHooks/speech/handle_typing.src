@@ -10,7 +10,6 @@ endprogram
 
 exported function TypingHandler(who, byRef packet)
 	var prop := who.GetProp("#lastyping");
-	var msgPacket := CreatePacket(0xAE, MSGLEN_VARIABLE);
 	var delay := 4; // seconds
 
 	if (prop > polcore().systime)
