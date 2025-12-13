@@ -9,6 +9,8 @@ include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
 include "system/text/Color";
 include "system/text/Font";
+include ":combat:Model/Damage";
+include ":combat:Model/DamageMessage";
 
 class UObjectWrapper(IUObjectWrapper)
 	var _cfgFile;
@@ -314,25 +316,50 @@ class UObjectWrapper(IUObjectWrapper)
 			return this._objRef;
 		endif
 
+		if (!(damageMessage is @DamageMessage))
+			return InvalidFormatException("The param damageMessage must be a DamageMessage object!");
+		endif
+
 		if (!(source is @UObjectWrapper))
 			return InvalidFormatException("The param source must be an Object Wrapper!");
 		endif
 
-		if (color != 0 && !(color is @Color))
-			return InvalidFormatException("The param color must be a Color object or 0!");
+		if (color)
+			if (!(color is @Color))
+				return InvalidFormatException("The param color must be a Color object!");
+			else
+				color := color.GetValue();
+			endif
 		else
-			color := color.GetValue();
+			if (damageMessage.IsCritical())
+				color := Color(COLOR_NAME::CRITICAL_DAMAGE).GetValue();
+			else
+				if (damageMessage.GetDamageType() == DAMAGE_TYPE::SLASH ||
+					damageMessage.GetDamageType() == DAMAGE_TYPE::PIERCING ||
+					damageMessage.GetDamageType() == DAMAGE_TYPE::BLUNT)
+					color := Color(COLOR_NAME::DAMAGE).GetValue();
+				elseif (damageMessage.GetDamageType() == DAMAGE_TYPE::FIRE)
+					color := Color(COLOR_NAME::FIRE).GetValue();
+				elseif (damageMessage.GetDamageType() == DAMAGE_TYPE::COLD)
+					color := Color(COLOR_NAME::COLD).GetValue();
+				elseif (damageMessage.GetDamageType() == DAMAGE_TYPE::POISON)
+					color := Color(COLOR_NAME::POISON).GetValue();
+				elseif (damageMessage.GetDamageType() == DAMAGE_TYPE::ENERGY)
+					color := Color(COLOR_NAME::ENERGY).GetValue();
+				endif
+			endif
 		endif
 
 		if (font != 0 && !(font is @Font))
-			return InvalidFormatException("The param font must be a Font object or 0!");
+			return InvalidFormatException("The param font must be a Font object!");
 		else
 			font := font.GetValue();
 		endif
 
 		var packet := CreatePacket(0x0C, MSGLEN_VARIABLE);
 		packet.SetInt32(3, this._objRef.serial);
-		packet.SetUnicodeString(11, damageMessage);
+
+		packet.SetUnicodeString(11, damageMessage.ToString());
 
 	endfunction
 
