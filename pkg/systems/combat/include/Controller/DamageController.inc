@@ -9,6 +9,7 @@
 include ":combat:armorZones";
 include ":combat:Model/CombatAbility";
 include ":combat:Model/Damage";
+include ":combat:Model/DamageMessage";
 // include "AbilitiesController";
 include "SkillController";
 include "ParryController";
@@ -395,7 +396,9 @@ function ApplyCombatDamage(byRef attackInfo)
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
 		endif
 
-		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		// DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		var damageMessage := DamageMessage(attackInfo.GetDamage().GetSlashBaseDamage(), DAMAGE_TYPE::SLASH, attackInfo.GetDamage().IsCritical());
+		attackInfo.GetDefender().DisplayDamage(damageMessage, attackInfo.GetAttacker());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage());
 	elseif (posture == DAMAGE_TYPE::PIERCING)
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
