@@ -67,6 +67,9 @@ function CalculateStatusDamage(byRef attackInfo)
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 			stat := DEXTERITY;
 			statBase := CInt(attackInfo.GetAttacker().GetDex());
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::FIREWEAPON)
+			stat := DEXTERITY;
+			statBase := CInt(attackInfo.GetAttacker().GetDex());
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
 			statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);

@@ -44,7 +44,8 @@ function PlayWeaponFX(byRef attackInfo)
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::FIREWEAPON))
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
