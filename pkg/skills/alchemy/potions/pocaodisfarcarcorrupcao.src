@@ -18,7 +18,7 @@ program drink_potion (who, potion)
 
 	if(potion.movable == 0)
 		Message("Voce nao pode beber isto.")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		return;
 	endif
@@ -26,7 +26,7 @@ program drink_potion (who, potion)
 	// Check if already has the effect active
 	if (GetCooldown(who, "necrotic"))
 		Message("Você já está disfarçando sua corrupção.")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		return 0;
 	endif
@@ -42,10 +42,10 @@ program drink_potion (who, potion)
 	SetCooldown(who, "necrotic", duration);
 
 	Message("Sombras envolvem sua alma, obscurecendo sua verdadeira natureza...")
-		.SetColor(COLOR_NAME::SUCCESS)
+		.SetColor(SYSTEM_COLOR::SUCCESS)
 		.SendSys(who);
 	Message("Sua corrupção está disfarçada por {} minutos!".format(CInt(duration/60)))
-		.SetColor(COLOR_NAME::SUCCESS)
+		.SetColor(SYSTEM_COLOR::SUCCESS)
 		.SendSys(who);
 
 	// Visual and sound effects

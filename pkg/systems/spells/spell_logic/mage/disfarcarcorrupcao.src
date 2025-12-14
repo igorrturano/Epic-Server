@@ -16,7 +16,7 @@ program SpellScript(params)
 	// Check if already has the effect active
 	if (GetCooldown(who, "necrotic"))
 		Message("Você já está disfarçando sua corrupção.")
-		.SetColor(COLOR_NAME::FAIL)
+		.SetColor(SYSTEM_COLOR::FAIL)
 		.SendSys(who);
 		return 0;
 	endif
@@ -27,8 +27,8 @@ program SpellScript(params)
 	// Apply the necrotic disguise cooldown
 	SetCooldown(who, "necrotic", duration);
 
-	Message("Sombras envolvem sua alma, obscurecendo sua verdadeira natureza...").SetColor(COLOR_NAME::SUCCESS).SendSys(who);
-	Message("Sua corrupção está disfarçada por {} minutos!".format(CInt(duration/60))).SetColor(COLOR_NAME::SUCCESS).SendSys(who);
+	Message("Sombras envolvem sua alma, obscurecendo sua verdadeira natureza...").SetColor(SYSTEM_COLOR::SUCCESS).SendSys(who);
+	Message("Sua corrupção está disfarçada por {} minutos!".format(CInt(duration/60))).SetColor(SYSTEM_COLOR::SUCCESS).SendSys(who);
 
 	// Visual and sound effects
 	PlayObjectCenteredEffect(who, FX_POISON_DEATH, 0, 10);

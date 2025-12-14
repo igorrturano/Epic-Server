@@ -248,6 +248,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
+	function GetLanguageOptions(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
+		return this.GetProperty(MOBILE_PROPNAME::LANGUAGE);
+	endfunction
+
 	/**
 	 * Obtém o gênero do mobile (jogador ou NPC).
 	 * 
@@ -542,6 +550,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		this.SetProperty(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
 
 		return this;
+	endfunction
+
+	function SetLanguageOptions(this, langOptions)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
+		return this.SetProperty(MOBILE_PROPNAME::LANGUAGE, langOptions);
 	endfunction
 
 	/**
@@ -890,6 +906,7 @@ endenum
 enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits",
+	LANGUAGE := "langdata",
 	ENTROPY := "entropy"
 endenum
 
