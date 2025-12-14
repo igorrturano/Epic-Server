@@ -26,7 +26,7 @@ program SpellScript(params)
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		Message("Isto não pode ser alvejado por essa magia.")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		return;
 	endif
@@ -34,7 +34,7 @@ program SpellScript(params)
 	// Check 1-hour cooldown on target
 	if (GetCooldown(targ, "detect_corruption"))
 		Message("Este alvo foi recentemente investigado. Aguarde antes de tentar novamente.")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		return 0;
 	endif
@@ -45,7 +45,7 @@ program SpellScript(params)
 
 	if (caster_wrapper.GetObjRef().errortext || target_wrapper.GetObjRef().errortext)
 		Message("Algo deu errado ao tentar detectar corrupção.")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		return 0;
 	endif
@@ -74,10 +74,10 @@ program SpellScript(params)
 
 	if (CheckResist(targ, VONTADE, resist_difficulty))
 		Message(targ.name + " resiste à investigação espiritual!")
-			.SetColor(COLOR_NAME::FAIL)
+			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
 		Message("Você sente uma força divina tentando perscrutar sua alma, mas consegue resistir.")
-			.SetColor(COLOR_NAME::INFO)
+			.SetColor(SYSTEM_COLOR::INFO)
 			.SendSys(targ);
 		SetCooldown(targ, "detect_corruption", 3600); // 1 hour cooldown even on resist
 		return 0;
@@ -85,7 +85,7 @@ program SpellScript(params)
 
 	// Notify target they're being investigated
 	Message("Você sente uma presença divina investigando sua alma...")
-		.SetColor(COLOR_NAME::INFO)
+		.SetColor(SYSTEM_COLOR::INFO)
 		.SendSys(targ);
 
 	// Determine corruption tier based on entropy (negative entropy = corruption)
@@ -109,7 +109,7 @@ program SpellScript(params)
 		msg_color := COLOR_NAME::VIOLET_DARK;
 	elseif (target_entropy < 4000)
 		corruption_msg := "A alma de " + targ.name + " parece neutra, sem sinais significativos de corrupção ou virtude.";
-		msg_color := COLOR_NAME::INFO;
+		msg_color := SYSTEM_COLOR::INFO;
 	elseif (target_entropy < 8000)
 		corruption_msg := "A alma de " + targ.name + " brilha com uma leve luz. Virtude LEVE detectada.";
 		msg_color := COLOR_NAME::BLUE_LIGHT;
