@@ -33,7 +33,6 @@ endenum
 exported function handleUCOutgoing(character, byref packet)
 	var messageData := GetPacketData(packet);
 	messageData.+target := MobileWrapper(character);
-
 	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
 
 	// TODO: Remover o block depois de implementar cada um dos tipos
@@ -45,7 +44,7 @@ exported function handleUCOutgoing(character, byref packet)
 	};
 
 	if (messageData.type in blockPorEnquanto)
-		Print($"Player {messageData.source.name} tentou usar um tipo de mensagem bloqueada: {Hex(messageData.type)}");
+		Print($"Player {messageData.source.GetName()} tentou usar um tipo de mensagem bloqueada: {Hex(messageData.type)}");
 		return 1;
 	endif
 
@@ -194,17 +193,14 @@ function CreateObjectWrapper(obj)
 endfunction
 
 function ReassemblePacket(byRef packet, byRef messageData);
-	packet.SetInt32(PACKET_POSITION::SERIAL, messageData.source.serial);
+	packet.SetInt32(PACKET_POSITION::SERIAL, messageData.source.GetSerial());
 	packet.SetInt16(PACKET_POSITION::MODEL, messageData.model);
 	packet.SetInt8(PACKET_POSITION::TYPE, messageData.type);
 	packet.SetInt16(PACKET_POSITION::COLOR, messageData.color);
 	packet.SetInt16(PACKET_POSITION::FONT, messageData.font);
 	packet.SetString(PACKET_POSITION::LANGUAGE, messageData.language, 0);
-	packet.SetString(PACKET_POSITION::NAME_ID, messageData.source.name, 0);
+	packet.SetString(PACKET_POSITION::NAME_ID, messageData.sourceName, 0);
 	packet.SetUnicodeString(PACKET_POSITION::MESSAGE, messageData.message, 1);
-	
-	_debugMe(packet);
-	return 0;
 endfunction
 
 function MustContinue(data)
@@ -227,10 +223,6 @@ function CheckPrefixAndSuffix(byRef messageData)
 		if (chosen_language && chosen_language != "Comum")
 			messageData.message := $"[{chosen_language}] " + messageData.message;
 		endif
-	endif
-
-	if (messageData.type == MESSAGE_TYPE::EMOTE)
-		// messageData.message := $"*{messageData.message}*";
 	endif
 endfunction
 
@@ -345,22 +337,3 @@ function handleGhostVoice(source, message_txt, byref packet)
 	EraseObjProperty(source, "ghostvoice");
 	return 0;
 endfunction
-
-// function Translate(byRef params)
-// 	var who := params.who;
-// 	var message := params.message;
-
-// 	var wantTranslation := CInt(GetObjProperty(who, "translation"));
-// 	if (wantTranslation > 0)
-// 		var dubbed := CInt(wantTranslation) == 2 ? true : false; // Temporário, depois fazer verificação se o char quer legenda ou não
-
-// 		if (message[1] != "[" && message[message.length()] != "]") // Evita loop de tradução
-// 			Message("[" + message + "]").SetAsync().SendAbove(who);
-// 			if (dubbed)
-// 				return true; // Impede o envio da mensagem original
-// 			endif
-// 		endif
-// 	endif
-
-// 	return false;
-// endfunction
