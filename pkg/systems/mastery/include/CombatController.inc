@@ -30,7 +30,7 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
 	if (HasReachedMasteriesLimit(attacker, mastery))
-		DebugMsg(attacker, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(COLOR_NAME::FAIL)));
+		DebugMsg(attacker, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(SYSTEM_COLOR::FAIL)));
 		return;
 	endif
 

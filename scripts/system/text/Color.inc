@@ -5,7 +5,7 @@ class Color()
 	var _value := 0;
 	var _htmlValue := "";
 
-	function Color(this, colorEnum := COLOR_NAME::_DEFAULT)
+	function Color(this, colorEnum := 0)
 		this._value := colorEnum;
 		this._InitValues();
 	endfunction
@@ -27,158 +27,166 @@ class Color()
 	endfunction
 
 	function _InitValues(this)
-		if (this._value == COLOR_NAME::BLACK)
-			this._name := "BLACK";
-			this._htmlValue := "#000000";
-		elseif (this._value == COLOR_NAME::TRUE_BLACK)
-			this._name := "TRUE_BLACK";
-			this._htmlValue := "#000000";
-		elseif (this._value == COLOR_NAME::WHITE)
-			this._name := "WHITE";
-			this._htmlValue := "#FFFFFF";
-		elseif (this._value == COLOR_NAME::RED)
-			this._name := "RED";
-			this._htmlValue := "#FF0000";
-		elseif (this._value == COLOR_NAME::GREEN)
-			this._name := "GREEN";
-			this._htmlValue := "#00FF00";
-		elseif (this._value == COLOR_NAME::BLUE)
-			this._name := "BLUE";
-			this._htmlValue := "#0000FF";
-		elseif (this._value == COLOR_NAME::YELLOW)
-			this._name := "YELLOW";
-			this._htmlValue := "#FFFF00";
-		elseif (this._value == COLOR_NAME::ORANGE)
-			this._name := "ORANGE";
-			this._htmlValue := "#FFA500";
-		elseif (this._value == COLOR_NAME::PURPLE)
-			this._name := "PURPLE";
-			this._htmlValue := "#800080";
-		elseif (this._value == COLOR_NAME::INDIGO_DARK)
-			this._name := "INDIGO_DARK";
-			this._htmlValue := "#2E0854";
-		elseif (this._value == COLOR_NAME::INDIGO)
-			this._name := "INDIGO";
-			this._htmlValue := "#4B0082";
-		elseif (this._value == COLOR_NAME::INDIGO_LIGHT)
-			this._name := "INDIGO_LIGHT";
-			this._htmlValue := "#6A0DAD";
-		elseif (this._value == COLOR_NAME::VIOLET_DARK)
-			this._name := "VIOLET_DARK";
-			this._htmlValue := "#5D1A8C";
-		elseif (this._value == COLOR_NAME::VIOLET)
-			this._name := "VIOLET";
-			this._htmlValue := "#8B00FF";
-		elseif (this._value == COLOR_NAME::VIOLET_LIGHT)
-			this._name := "VIOLET_LIGHT";
-			this._htmlValue := "#9F7FFF";
-		elseif (this._value == COLOR_NAME::MAGENTA_DARK)
-			this._name := "MAGENTA_DARK";
-			this._htmlValue := "#8B008B";
-		elseif (this._value == COLOR_NAME::MAGENTA)
-			this._name := "MAGENTA";
-			this._htmlValue := "#FF00FF";
-		elseif (this._value == COLOR_NAME::MAGENTA_LIGHT)
-			this._name := "MAGENTA_LIGHT";
-			this._htmlValue := "#FF77FF";
-		elseif (this._value == COLOR_NAME::RED_DARK)
-			this._name := "RED_DARK";
-			this._htmlValue := "#8B0000";
-		elseif (this._value == COLOR_NAME::RED_LIGHT)
-			this._name := "RED_LIGHT";
-			this._htmlValue := "#FF6B6B";
-		elseif (this._value == COLOR_NAME::ORANGE_DARK)
-			this._name := "ORANGE_DARK";
-			this._htmlValue := "#CC8400";
-		elseif (this._value == COLOR_NAME::ORANGE_LIGHT)
-			this._name := "ORANGE_LIGHT";
-			this._htmlValue := "#FFB347";
-		elseif (this._value == COLOR_NAME::YELLOW_DARK)
-			this._name := "YELLOW_DARK";
-			this._htmlValue := "#CCCC00";
-		elseif (this._value == COLOR_NAME::YELLOW_LIGHT)
-			this._name := "YELLOW_LIGHT";
-			this._htmlValue := "#FFFF99";
-		elseif (this._value == COLOR_NAME::GREEN_DARK)
-			this._name := "GREEN_DARK";
-			this._htmlValue := "#006400";
-		elseif (this._value == COLOR_NAME::GREEN_LIGHT)
-			this._name := "GREEN_LIGHT";
-			this._htmlValue := "#90EE90";
-		elseif (this._value == COLOR_NAME::CYAN_DARK)
-			this._name := "CYAN_DARK";
-			this._htmlValue := "#008B8B";
-		elseif (this._value == COLOR_NAME::CYAN)
-			this._name := "CYAN";
-			this._htmlValue := "#00FFFF";
-		elseif (this._value == COLOR_NAME::CYAN_LIGHT)
-			this._name := "CYAN_LIGHT";
-			this._htmlValue := "#7FFFD4";
-		elseif (this._value == COLOR_NAME::BLUE_DARK)
-			this._name := "BLUE_DARK";
-			this._htmlValue := "#00008B";
-		elseif (this._value == COLOR_NAME::BLUE_LIGHT)
-			this._name := "BLUE_LIGHT";
-			this._htmlValue := "#87CEEB";
-		elseif (this._value == COLOR_NAME::GRAY_DARK)
-			this._name := "GRAY_DARK";
-			this._htmlValue := "#404040";
-		elseif (this._value == COLOR_NAME::GRAY)
-			this._name := "GRAY";
-			this._htmlValue := "#808080";
-		elseif (this._value == COLOR_NAME::GRAY_LIGHT)
-			this._name := "GRAY_LIGHT";
-			this._htmlValue := "#C0C0C0";
-		elseif (this._value == COLOR_NAME::BLACKMETAL)
-			this._name := "BLACKMETAL";
-			this._htmlValue := "#2C2C2C";
-		elseif (this._value == COLOR_NAME::GOLDMETAL)
-			this._name := "GOLDMETAL";
-			this._htmlValue := "#D4AF37";
-		elseif (this._value == COLOR_NAME::BSHIMMER)
-			this._name := "BSHIMMER";
-			this._htmlValue := "#B8860B";
-		elseif (this._value == COLOR_NAME::STONE)
-			this._name := "STONE";
-			this._htmlValue := "#696969";
-		elseif (this._value == COLOR_NAME::SPECTRAL)
-			this._name := "SPECTRAL";
-			this._htmlValue := "#9370DB";
-		elseif (this._value == COLOR_NAME::TRANSLUCENT)
-			this._name := "TRANSLUCENT";
-			this._htmlValue := "#E0E0E080";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_FIRE)
-			this._name := "ELEMENTAL_FIRE";
-			this._htmlValue := "#FF4500";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_FIRE_LIGHT)
-			this._name := "ELEMENTAL_FIRE_LIGHT";
-			this._htmlValue := "#FF6347";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_ICE)
-			this._name := "ELEMENTAL_ICE";
-			this._htmlValue := "#00CED1";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_ICE_LIGHT)
-			this._name := "ELEMENTAL_ICE_LIGHT";
-			this._htmlValue := "#AFEEEE";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_ENERGY)
-			this._name := "ELEMENTAL_ENERGY";
-			this._htmlValue := "#9400D3";
-		elseif (this._value == COLOR_NAME::ELEMENTAL_ENERGY_LIGHT)
-			this._name := "ELEMENTAL_ENERGY_LIGHT";
-			this._htmlValue := "#DA70D6";
-		elseif (this._value == COLOR_NAME::NEUTRAL)
-			this._name := "NEUTRAL";
-			this._htmlValue := "#A9A9A9";
-		elseif (this._value == COLOR_NAME::LAVENDER)
-			this._name := "LAVENDER";
-			this._htmlValue := "#E6E6FA";
-		elseif (this._value == COLOR_NAME::MAUVE)
-			this._name := "MAUVE";
-			this._htmlValue := "#E0B0FF";
+		var value := this._value;
+		var name := "";
+		var htmlValue := "";
+
+		if (value == COLOR_NAME::_DEFAULT)
+			name := "DEFAULT";
+			htmlValue := "#000000";
+		elseif (value == COLOR_NAME::BLACK)
+			name := "BLACK";
+			htmlValue := "#000000";
+		elseif (value == COLOR_NAME::TRUE_BLACK)
+			name := "TRUE_BLACK";
+			htmlValue := "#000000";
+		elseif (value == COLOR_NAME::WHITE)
+			name := "WHITE";
+			htmlValue := "#FFFFFF";
+		elseif (value == COLOR_NAME::RED)
+			name := "RED";
+			htmlValue := "#FF0000";
+		elseif (value == COLOR_NAME::GREEN)
+			name := "GREEN";
+			htmlValue := "#00FF00";
+		elseif (value == COLOR_NAME::BLUE)
+			name := "BLUE";
+			htmlValue := "#0000FF";
+		elseif (value == COLOR_NAME::YELLOW)
+			name := "YELLOW";
+			htmlValue := "#FFFF00";
+		elseif (value == COLOR_NAME::ORANGE)
+			name := "ORANGE";
+			htmlValue := "#FFA500";
+		elseif (value == COLOR_NAME::PURPLE)
+			name := "PURPLE";
+			htmlValue := "#800080";
+		elseif (value == COLOR_NAME::INDIGO_DARK)
+			name := "INDIGO_DARK";
+			htmlValue := "#2E0854";
+		elseif (value == COLOR_NAME::INDIGO)
+			name := "INDIGO";
+			htmlValue := "#4B0082";
+		elseif (value == COLOR_NAME::INDIGO_LIGHT)
+			name := "INDIGO_LIGHT";
+			htmlValue := "#6A0DAD";
+		elseif (value == COLOR_NAME::VIOLET_DARK)
+			name := "VIOLET_DARK";
+			htmlValue := "#5D1A8C";
+		elseif (value == COLOR_NAME::VIOLET)
+			name := "VIOLET";
+			htmlValue := "#8B00FF";
+		elseif (value == COLOR_NAME::VIOLET_LIGHT)
+			name := "VIOLET_LIGHT";
+			htmlValue := "#9F7FFF";
+		elseif (value == COLOR_NAME::MAGENTA_DARK)
+			name := "MAGENTA_DARK";
+			htmlValue := "#8B008B";
+		elseif (value == COLOR_NAME::MAGENTA)
+			name := "MAGENTA";
+			htmlValue := "#FF00FF";
+		elseif (value == COLOR_NAME::MAGENTA_LIGHT)
+			name := "MAGENTA_LIGHT";
+			htmlValue := "#FF77FF";
+		elseif (value == COLOR_NAME::RED_DARK)
+			name := "RED_DARK";
+			htmlValue := "#8B0000";
+		elseif (value == COLOR_NAME::RED_LIGHT)
+			name := "RED_LIGHT";
+			htmlValue := "#FF6B6B";
+		elseif (value == COLOR_NAME::ORANGE_DARK)
+			name := "ORANGE_DARK";
+			htmlValue := "#CC8400";
+		elseif (value == COLOR_NAME::ORANGE_LIGHT)
+			name := "ORANGE_LIGHT";
+			htmlValue := "#FFB347";
+		elseif (value == COLOR_NAME::YELLOW_DARK)
+			name := "YELLOW_DARK";
+			htmlValue := "#CCCC00";
+		elseif (value == COLOR_NAME::YELLOW_LIGHT)
+			name := "YELLOW_LIGHT";
+			htmlValue := "#FFFF99";
+		elseif (value == COLOR_NAME::GREEN_DARK)
+			name := "GREEN_DARK";
+			htmlValue := "#006400";
+		elseif (value == COLOR_NAME::GREEN_LIGHT)
+			name := "GREEN_LIGHT";
+			htmlValue := "#90EE90";
+		elseif (value == COLOR_NAME::CYAN_DARK)
+			name := "CYAN_DARK";
+			htmlValue := "#008B8B";
+		elseif (value == COLOR_NAME::CYAN)
+			name := "CYAN";
+			htmlValue := "#00FFFF";
+		elseif (value == COLOR_NAME::CYAN_LIGHT)
+			name := "CYAN_LIGHT";
+			htmlValue := "#7FFFD4";
+		elseif (value == COLOR_NAME::BLUE_DARK)
+			name := "BLUE_DARK";
+			htmlValue := "#00008B";
+		elseif (value == COLOR_NAME::BLUE_LIGHT)
+			name := "BLUE_LIGHT";
+			htmlValue := "#87CEEB";
+		elseif (value == COLOR_NAME::GRAY)
+			name := "GRAY";
+			htmlValue := "#808080";
+		elseif (value == COLOR_NAME::GRAY_DARK)
+			name := "GRAY_DARK";
+			htmlValue := "#404040";
+		elseif (value == COLOR_NAME::GRAY_LIGHT)
+			name := "GRAY_LIGHT";
+			htmlValue := "#C0C0C0";
+		elseif (value == COLOR_NAME::BLACKMETAL)
+			name := "BLACKMETAL";
+			htmlValue := "#2C2C2C";
+		elseif (value == COLOR_NAME::GOLDMETAL)
+			name := "GOLDMETAL";
+			htmlValue := "#D4AF37";
+		elseif (value == COLOR_NAME::BSHIMMER)
+			name := "BSHIMMER";
+			htmlValue := "#B8860B";
+		elseif (value == COLOR_NAME::STONE)
+			name := "STONE";
+			htmlValue := "#696969";
+		elseif (value == COLOR_NAME::SPECTRAL)
+			name := "SPECTRAL";
+			htmlValue := "#9370DB";
+		elseif (value == COLOR_NAME::TRANSLUCENT)
+			name := "TRANSLUCENT";
+			htmlValue := "#E0E0E080";
+		elseif (value == COLOR_NAME::ELEMENTAL_FIRE)
+			name := "ELEMENTAL_FIRE";
+			htmlValue := "#FF4500";
+		elseif (value == COLOR_NAME::ELEMENTAL_FIRE_LIGHT)
+			name := "ELEMENTAL_FIRE_LIGHT";
+			htmlValue := "#FF6347";
+		elseif (value == COLOR_NAME::ELEMENTAL_ICE)
+			name := "ELEMENTAL_ICE";
+			htmlValue := "#00CED1";
+		elseif (value == COLOR_NAME::ELEMENTAL_ICE_LIGHT)
+			name := "ELEMENTAL_ICE_LIGHT";
+			htmlValue := "#AFEEEE";
+		elseif (value == COLOR_NAME::ELEMENTAL_ENERGY)
+			name := "ELEMENTAL_ENERGY";
+			htmlValue := "#9400D3";
+		elseif (value == COLOR_NAME::ELEMENTAL_ENERGY_LIGHT)
+			name := "ELEMENTAL_ENERGY_LIGHT";
+			htmlValue := "#DA70D6";
+		elseif (value == COLOR_NAME::LAVENDER)
+			name := "LAVENDER";
+			htmlValue := "#E6E6FA";
+		elseif (value == COLOR_NAME::MAUVE)
+			name := "MAUVE";
+			htmlValue := "#E0B0FF";
 		endif
+
+		this._name := name;
+		this._htmlValue := htmlValue;
 	endfunction
 endclass
 
 enum class COLOR_NAME
+	_DEFAULT := 0,
 	BLACK := 1,
 	TRUE_BLACK := 1279,
 	WHITE := 2,
@@ -227,23 +235,26 @@ enum class COLOR_NAME
 	ELEMENTAL_ICE_LIGHT := 0x002b,
 	ELEMENTAL_ENERGY := 0x002c,
 	ELEMENTAL_ENERGY_LIGHT := 0x002d,
+endenum
 
-	FAIL := RED,
-	ERRO := RED,
-	BAD := RED,
-	SUCCESS := BLUE,
-	GOOD := BLUE,
-	INFO := BLUE,
-	ALERT := YELLOW,
-	NEUTRAL := GRAY,
+enum class SYSTEM_COLOR
+	INFO := COLOR_NAME::BLUE,
+	GOOD := COLOR_NAME::BLUE,
+	SUCCESS := COLOR_NAME::BLUE,
 
-	DAMAGE_PHYSICAL := YELLOW,
-	DAMAGE_CRITICAL := RED,
-	DAMAGE_FIRE := ELEMENTAL_FIRE,
-	DAMAGE_COLD := ELEMENTAL_ICE,
-	DAMAGE_POISON := GREEN,
-	DAMAGE_ENERGY := ELEMENTAL_ENERGY,
-	HEAL := BLUE,
+	ALERT := COLOR_NAME::YELLOW,
 
-	_DEFAULT := BLUE
+	FAIL := COLOR_NAME::RED,
+	ERRO := COLOR_NAME::RED,
+	BAD := COLOR_NAME::RED
+endenum
+
+enum class COMBAT_COLOR
+	PHYSICAL := COLOR_NAME::YELLOW,
+	CRITICAL := COLOR_NAME::RED,
+	FIRE := COLOR_NAME::ELEMENTAL_FIRE,
+	COLD := COLOR_NAME::ELEMENTAL_ICE,
+	POISON := COLOR_NAME::GREEN,
+	ENERGY := COLOR_NAME::ELEMENTAL_ENERGY,
+	HEAL := COLOR_NAME::BLUE
 endenum

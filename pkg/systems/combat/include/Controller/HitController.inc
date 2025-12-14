@@ -109,7 +109,7 @@ function CalculateHitChance(byRef attackInfo)
 				if (attackInfo.GetDefender().GetSerial() != challenger.serial)
 					hit_chance -= 10.0;
 					if (RandomInt(100 + 1) < 20.0)
-						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 					endif
 				endif
 			else
@@ -264,7 +264,7 @@ function CalculateHitChance(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#ataqueinesperado"))
 		if (attackInfo.GetDefender().GetObjRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
 			hit_chance += 50.0;
-			Message("*ataque inesperado*", Color(COLOR_NAME::FAIL).GetValue()).SendAbove(attackInfo.GetAttacker().GetObjRef());
+			Message("*ataque inesperado*", Color(SYSTEM_COLOR::FAIL).GetValue()).SendAbove(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#ataqueinesperado");
@@ -278,7 +278,7 @@ function CalculateHitChance(byRef attackInfo)
 			hit_chance += 50.0;
 			attackers.append(attackInfo.GetAttacker().GetSerial());
 			attackInfo.GetDefender().GetObjRef().SetProp("#bomcomecoserials", attackers);
-			Message("Você começou bem.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você começou bem.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
