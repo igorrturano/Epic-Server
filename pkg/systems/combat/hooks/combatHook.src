@@ -204,12 +204,21 @@ function CheckAmmo(byRef attackInfo)
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammoSerial)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message($"Você não definiu o tipo de munição que vai usar. [clique 2x na arma e na munição]", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial));
 	attackInfo.SetAmmo(ammo);
+
+	var weaponCategory := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory();
+
+	// Fireweapon-specific checks
+	if (weaponCategory == WEAPON_CATEGORY::FIREWEAPON)
+		return CheckFireweaponSupplies(attackInfo);
+	endif
+
+	// Bow/Crossbow quiver check
 	if (ammo.NeedsQuiver())
 		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE, ITEM_TYPE::CONTAINER);
 		if (aljava.GetCategory() != ITEM_CATEGORY::QUIVER)
@@ -223,6 +232,73 @@ function CheckAmmo(byRef attackInfo)
 	endif
 
 	return true;
+endfunction
+
+function CheckFireweaponSupplies(byRef attackInfo)
+	// Check for Bandoleira de Artilharia (Artillery Bandolier)
+	var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE, ITEM_TYPE::CONTAINER);
+
+	if (bandolier.GetCategory() != ITEM_CATEGORY::BANDOLIER)
+		bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER);
+	endif
+
+	if (bandolier.GetCategory() != ITEM_CATEGORY::BANDOLIER)
+		Message("Você precisa equipar uma Bandoleira de Artilharia.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	// Check ammunition in bandolier - Get the Ammo wrapper object
+	var ammoWrapper := attackInfo.GetAmmo();
+
+	// Get the ItemWrapper from the Ammo object
+	var ammoItem := ammoWrapper.GetItem();
+	var containsResult := bandolier.Contains(ammoItem);
+
+	if (!containsResult)
+		Message("A munição não está na bandoleira.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var powder := FindObjtypeInContainer(bandolier.GetObjRef(), 0x9092);
+	if (TypeOf(powder) != "ItemRef")
+		Message("Você não tem pólvora na bandoleira.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
+	// Check if has ability "Municiador Experiente" (reduces powder needed)
+	if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
+		powderNeeded := 2;
+	endif
+
+	if (powder.amount < powderNeeded)
+		Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var powderFixer := FindObjtypeInContainer(bandolier.GetObjRef(), 0xC611);
+	if (TypeOf(powderFixer) != "ItemRef")
+		Message("Você não tem socador de pólvora na bandoleira.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	return true;
+endfunction
+
+function GetPowderAmount(weaponObjtype)
+	case (weaponObjtype)
+		0xC5FD: // Pistol 1
+		0xC5FE: // Pistol 2
+			return 1;
+		0xC600: // Carabine
+			return 2;
+		0x89A7: // Musket
+			return 3;
+		0xC5FF: // Hand Cannon
+			return 5;
+		default:
+			return 1;
+	endcase
 endfunction
 
 function arcane_shooting(byRef attackInfo)
