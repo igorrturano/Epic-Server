@@ -26,16 +26,14 @@ function SplitMessage(message)
 	var msgSplitted := array{};
 	var maxSize;
 	
-	case (message.GetType())
-		MESSAGE_TYPE::NORMAL:
-		MESSAGE_TYPE::NORMAL_PRIVATE:
-		MESSAGE_TYPE::EMOTE:
-			maxSize := MESSAGE_MAXSIZE::NORMAL;
-			break;
-
-		default:
-			maxSize := MESSAGE_MAXSIZE::SYSTEM;
-	endcase
+	
+	if (message.GetType() == MESSAGE_TYPE::NORMAL ||
+		message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE ||
+	    message.GetType() == MESSAGE_TYPE::EMOTE)
+		maxSize := MESSAGE_MAXSIZE::NORMAL;
+	else
+		maxSize := MESSAGE_MAXSIZE::SYSTEM;
+	endif
 	
 	var msgFragmentsAmtTarget := CountFragments(message.GetText().GetTextTarget(), maxSize);
 
@@ -79,23 +77,4 @@ function SendEmoteTo(who, splitedMessage)
 	foreach part in (splitedMessage)
 		PrintEmote(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
 	endforeach
-endfunction
-
-function PrintEmote(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
-	var msg := $"*{text}*";
-
-	CreatePacketAndSend(MESSAGE_TYPE::EMOTE, who, color, font, langcode);
-endfunction
-
-function CreatePacketAndSend(messageType, who, color, font, langcode)
-	var packet := CreatePacket(0xAE, MSGLEN_VARIABLE);
-
-	packet.SetInt32(3, who.serial);
-	packet.SetInt8(9, messageType);
-	packet.SetInt16(10, color);
-	packet.SetInt16(12, font);
-	packet.SetString(14, langcode, 0);
-	packet.SetString(18, who.name, 0);
-
-	packet.SendPacket(who);
 endfunction
