@@ -124,6 +124,9 @@ class Message(IMessage)
 	function SendSys(this, who)
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::SYSTEM;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::SYSTEM);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -142,6 +145,10 @@ class Message(IMessage)
 	function SendAbove(this, who)
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::NORMAL;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::NORMAL);
+		endif
+
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -153,6 +160,9 @@ class Message(IMessage)
 		this._toWhom := who;
 		this._fromWhom := whoSee ?: who;
 		this._type := MESSAGE_TYPE::NORMAL_PRIVATE;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::PRIVATE);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -163,6 +173,9 @@ class Message(IMessage)
 	function SendEmote(this, who)
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::EMOTE;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::EMOTE);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
