@@ -1,5 +1,6 @@
 use uo;
 use unicode;
+use polsys;
 
 const SSM_FAIL := 37;
 const SSM_REQUEST := 168;
@@ -79,4 +80,27 @@ function SendSystemReport(above_object, text, color := _DEFAULT_UCCOLOR, charact
       return PrintText(above_object, text, 9, color);
    endif
    return PrintTextAbovePrivateUC(above_object, UC(text), "ENG", character, 0x10, color);
+endfunction
+
+// EpicUO Functions
+function PrintEmote(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
+	text := $"*{text}*";
+	
+	var packet := _CreateMessagePacket(2, who, text, color, font, langcode);
+
+	packet.SendPacket(who);
+endfunction
+
+function _CreateMessagePacket(messageType, who, text, color, font, langcode)
+	var packet := CreatePacket(0xAE, MSGLEN_VARIABLE);
+
+	packet.SetInt32(3, who.serial);
+	packet.SetInt8(9, messageType);
+	packet.SetInt16(10, color);
+	packet.SetInt16(12, font);
+	packet.SetString(14, langcode, 0);
+	packet.SetString(18, who.name, 0);
+	packet.SetUnicodeString(48, text, 1);
+
+	return packet;	
 endfunction
