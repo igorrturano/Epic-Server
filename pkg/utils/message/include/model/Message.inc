@@ -129,7 +129,7 @@ class Message(IMessage)
 		endif
 		this._translate := _WantTranslation(who);
 
-		this._TranslateAndSend();
+		this._Send();
 
 		return this;
 	endfunction
@@ -151,7 +151,7 @@ class Message(IMessage)
 
 		this._translate := _WantTranslation(who);
 
-		this._TranslateAndSend();
+		this._Send();
 
 		return this;
 	endfunction
@@ -165,7 +165,7 @@ class Message(IMessage)
 		endif
 		this._translate := _WantTranslation(who);
 
-		this._TranslateAndSend();
+		this._Send();
 
 		return this;
 	endfunction
@@ -178,7 +178,7 @@ class Message(IMessage)
 		endif
 		this._translate := _WantTranslation(who);
 
-		this._TranslateAndSend();
+		this._Send();
 
 		return this;
 	endfunction
@@ -202,7 +202,7 @@ class Message(IMessage)
 	endfunction
 
 	// Private functions
-	function _TranslateAndSend(this)
+	function _Send(this)
 		if (this.IsAsync())
 			Start_Script(":message:sender", this);
 		else
