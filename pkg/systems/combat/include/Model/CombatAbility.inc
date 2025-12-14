@@ -92,6 +92,8 @@ enum class COMBAT_ABILITY
 	TRESPASSAR_CRITICO := "Trespassar Critico",
 	VENENO_PURO := "Veneno Puro",
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
+	ESPIAO := "Espiao",
+	MESTRE_ESPIAO := "Mestre Espiao",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",

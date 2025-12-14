@@ -17,20 +17,20 @@ program drink_blue(who, potion)
 	endif
 
 	if (!potion.movable)
-		Message("Você não pode usar isto.", FONTCOLOR_FAIL).SendSys(who.GetObjRef());
+		Message("Você não pode usar isto.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
 		return;
 	endif
 
-	Message("Qual item deseja encantar?", FONTCOLOR_INFO).SendSys(who.GetObjRef());
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO).GetValue()).SendSys(who.GetObjRef());
 	var use_on := Target(who.GetObjRef());
 
 	if (!use_on)
-		Message("Cancelado", FONTCOLOR_FAIL).SendSys(who.GetObjRef());
+		Message("Cancelado", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
 		return 0;
 	endif
 
 	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		Message("Isto não pode ser banhado por essa poção.", FONTCOLOR_FAIL).SendSys(who.GetObjRef());
+		Message("Isto não pode ser banhado por essa poção.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
 		return;
 	endif
 
@@ -39,6 +39,6 @@ program drink_blue(who, potion)
 
 	empty_bottle(who.GetObjRef(), potion, 1, 0);
 
-	Message("Você encantou o objeto.", FONTCOLOR_SUCCESS).SendSys(who.GetObjRef());
+	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(who.GetObjRef());
 	setBonus(who, use_on, bonus);
 endprogram

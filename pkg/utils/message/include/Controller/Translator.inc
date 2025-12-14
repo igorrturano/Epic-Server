@@ -8,9 +8,8 @@ class Translator(ITranslator)
 	var _apiURL := ""; // URL da API de tradução
 	var _translatableText; // Objeto de texto traduzível
 	
-	function Translator(this, translatableText := false)
+	function Translator(this)
 		this._apiURL := "http://127.0.0.1:5000/translate";
-		this._translatableText := translatableText;
 	endfunction
 
 	function GetText(this)
@@ -26,14 +25,15 @@ class Translator(ITranslator)
 		return this;
 	endfunction
 
-	function Translate(this)
+	function Translate(this, translatableText)
+		this.SetText(translatableText);
 		if (!this._translatableText)
 			return InvalidFormatException("There is no text to translate");
 		endif
 		
 		this._apiTranslate();
 		
-		return this;
+		this.GetText();
 	endfunction
 
 	function _apiTranslate(this)
@@ -67,3 +67,9 @@ class Translator(ITranslator)
 		endif
 	endfunction
 endclass
+
+enum class TRANSLATION_MODE
+	OFF,
+	SUBTITLED,
+	DUBBED
+endenum

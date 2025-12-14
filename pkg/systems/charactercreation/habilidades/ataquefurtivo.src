@@ -10,7 +10,7 @@ program backstab(who)
 	who := MobileWrapper(who);
 
 	if (!CanBackStab(who) || !isAssassinWeapon(who.GetObjRef()))
-		Message("Esta arma não é apropriada para um ataque furtivo.", FONTCOLOR_ERROR).SendSys(who.GetObjRef());
+		Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::ERRO).GetValue()).SendSys(who.GetObjRef());
 		return;
 	endif
 
@@ -26,5 +26,5 @@ program backstab(who)
 
 	GrantPrivilege(who.GetObjRef(), "hiddenattack");
 	who.GetObjRef().enable("hiddenattack");
-	Message("Você está preparado para um ataque furtivo!", FONTCOLOR_SUCCESS).SendSys(who.GetObjRef());
+	Message("Você está preparado para um ataque furtivo!", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(who.GetObjRef());
 endprogram
