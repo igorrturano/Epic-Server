@@ -31,7 +31,7 @@ program installtrap(who, trap)
 		traptype := "PoisonGas";
 	elseif (trap.objtype == 0xfa3)
 		traptype := "Explosion";
-	elseif (trap.objtype == 0xff98)
+	elseif (trap.objtype == 0xfa7)
 		traptype := "Needle";
 	endif
 

@@ -71,7 +71,7 @@ program instalararmadilha(who)
 		PrintTextAbove(who, "*instalando armadilha*");
 		DestroyITem(trap);
 		sleep(4);
-		armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0xff98, 1, who.realm);
+		armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0xfa7, 1, who.realm);
 		SendSysMessageEx(who, "Terminou de Instalar a Armadilha", SSM_FAIL);
 		sleep(5);
 		armadilhanochao.invisible := 1;
