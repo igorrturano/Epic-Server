@@ -24,28 +24,89 @@ enum class PACKET_POSITION
 	MESSAGE := 48 // Mensagem
 endenum
 
-exported function handleUCOutgoing(character, byref packet)
-	var data := GetPacketData(packet);
-	var who := MobileWrapper(character);
-	var translator := Translator();
+enum class MESSAGE_DISTANCE
+	WHISPER := 2,
+	NORMAL := 8,
+	YELL := 12
+endenum
 
-	if (!MustContinue(data))
-		return 0;
+exported function handleUCOutgoing(character, byref packet)
+	var messageData := GetPacketData(packet);
+	messageData.+target := MobileWrapper(character);
+
+	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+
+	if (!CanHear(messageData))
+		return 1;
 	endif
 
-	LogPlayerSpeech(data.source, data.message);
+	if (!CanUnderstand(messageData))
+		PrintTextAbovePrivate(messageData.source, "*Incompreensível*", messageData.target);
+		return 1;
+	endif
 
-	if (data.type == MESSAGE_TYPE::NORMAL) // Normal
+
+	CheckSourceName(messageData);
+	CheckLanguagePrefix(messageData);
+	ReassemblePacket(packet, messageData);
+	
+	return 0;
+endfunction
+
+function CanHear(byRef messageData)
+	if (!CheckLineOfSight(messageData.source, messageData.target))
+		if (messageData.type == MESSAGE_TYPE::WHISPER)
+			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER)
+				return false;
+			endif
+		elseif (messageData.type == MESSAGE_TYPE::YELL)
+			if (messageData.source.HasAbility("Mestre Espiao"))
+				if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL + 4)
+					return false;				
+				elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL + 4)
+					return false;
+				endif
+			else
+				if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL)
+					return false;
+				elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL)
+					return false;
+				endif
+			endif
+		elseif (messageData.type == MESSAGE_TYPE::NORMAL)
+			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::NORMAL)
+				return false;
+			endif
+		endif
+	endif
+
+	return true;
+endfunction
+
+function CheckSourceName(byRef messageData)
+	var sourceSerial := CStr(messageData.source.GetSerial());
+	var targetKnownNames := messageData.target.GetProperty("conhecidos");
+
+	var name := targetKnownNames[sourceSerial];
+	if (name)
+		messageData.sourceName := name;
+	endif
+endfunction
+
+function _debugMe(byRef packet)
+	var data := GetPacketData(packet);
+
+	if (data.type == MESSAGE_TYPE::NORMAL)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::BROADCAST)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um broadcast: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::EMOTE) // Emote
+	elseif (data.type == MESSAGE_TYPE::EMOTE)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um emote: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::SYSTEM) // System
+	elseif (data.type == MESSAGE_TYPE::SYSTEM)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um system: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER) // System
+	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::WHISPER) // Whisper
+	elseif (data.type == MESSAGE_TYPE::WHISPER)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
 	elseif (data.type == MESSAGE_TYPE::YELL)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
@@ -58,105 +119,109 @@ exported function handleUCOutgoing(character, byref packet)
 	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
 		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
 	endif
-
-	// AddLanguagePrefix(who, data.message);
-
-	// if (!CanUnderstand(who, data.source, data.message))
-		
-	// 	return 1;
-	// endif
-	
-	return 0;
 endfunction
 
 function GetPacketData(packet)
 	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
-	var source := SystemFindObjectBySerial(serial);
+	var model := packet.GetInt16(PACKET_POSITION::MODEL);
+	var source := CreateObjectWrapper(SystemFindObjectBySerial(serial));
 	var type := packet.GetInt8(PACKET_POSITION::TYPE);
-	print($"Message Type: {type}");
+	var color := packet.GetInt16(PACKET_POSITION::COLOR);
+	var font := packet.GetInt16(PACKET_POSITION::FONT);
+	var language := packet.GetString(PACKET_POSITION::LANGUAGE, 4);
+	var sourceName := packet.GetString(PACKET_POSITION::NAME_ID, 30);
 	var message_length := (packet.GetInt16(1) - 49) / 2;
 	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
 
-	// print($"Serial: {serial}, Source: {source}, Type: {type}");
-	// print("Mensagem recebida: " + message);
-	
 	return struct{
-		source_serial := serial,
 		source := source,
+		model := model,
 		type := type,
+		color := color,
+		font := font,
+		language := language,
+		sourceName := sourceName,
 		message := message
 	};
 endfunction
 
+function CreateObjectWrapper(obj)
+	if (obj.IsA(POLCLASS_MOBILE))
+		return MobileWrapper(obj);
+	elseif (obj.IsA(POLCLASS_CONTAINER))
+		return ContainerWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ARMOR))
+		return ArmorWrapper(obj);
+	elseif (obj.IsA(POLCLASS_WEAPON))
+		return WeaponWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ITEM))
+		return ItemWrapper(obj);
+	endif
+endfunction
+
+function ReassemblePacket(byRef packet, byRef messageData);
+	packet.SetInt32(PACKET_POSITION::SERIAL, messageData.source.serial);
+	packet.SetInt16(PACKET_POSITION::MODEL, messageData.model);
+	packet.SetInt8(PACKET_POSITION::TYPE, messageData.type);
+	packet.SetInt16(PACKET_POSITION::COLOR, messageData.color);
+	packet.SetInt16(PACKET_POSITION::FONT, messageData.font);
+	packet.SetString(PACKET_POSITION::LANGUAGE, messageData.language, 0);
+	packet.SetString(PACKET_POSITION::NAME_ID, messageData.source.name, 0);
+	packet.SetUnicodeString(PACKET_POSITION::MESSAGE, messageData.message, 1);
+	
+	_debugMe(packet);
+	return 0;
+endfunction
+
 function MustContinue(data)
-	if (data.type == MESSAGE_TYPE::SYSTEM ||
-		data.type == MESSAGE_TYPE::MESSAGE_CORNER ||
-		data.type == MESSAGE_TYPE::SPELL ||
-		data.type == MESSAGE_TYPE::GUILD ||
-		data.type == MESSAGE_TYPE::ALLIANCE ||
-		data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
+	var typesToIgnore := array{
+		MESSAGE_TYPE::BROADCAST
+	};
+	
+	if (data.type in typesToIgnore)
 		return false; // Mensagens que não precisam de tratamento, apenas de tradução (se o receptor quiser)
 	endif
 
 	return true;
 endfunction
 
-function AddLanguagePrefix(who, byRef message)
-	var chosen_language := who.GetProp("lingua_escolhida");
-	if (chosen_language && chosen_language != "Comum")
-		var full_message := "[" + chosen_language + "] " + message;
-		message := full_message;
+function CheckLanguagePrefix(byRef messageData)
+	var typesToPrefix := array{MESSAGE_TYPE::NORMAL, MESSAGE_TYPE::WHISPER, MESSAGE_TYPE::YELL};
+
+	if (messageData.type in typesToPrefix)
+		var chosen_language := messageData.target.GetProperty("lingua_escolhida");
+		if (chosen_language && chosen_language != "Comum")
+			messageData.message := $"[{chosen_language}] " + messageData.message;
+		endif
 	endif
 endfunction
 
-function CanUnderstand(who, source, message)
-	// if (!source.npctemplate && type != 0x02)
-	// 	var chosen_language := source.GetProp("lingua_escolhida");
-	// 	var playerKnownLanguages := character.GetProp("linguas_conhecidas");
-	// 	var firstActionWord := (splitwords(message_txt)[1]);
+function CanUnderstand(byRef messageData)
+	if (messageData.target.GetProperty("cmdlevel") >= 1)
+		return true;
+	endif
 
-	// 	if (firstActionWord in (isGeneralAction))
-	// 		return 0;
-	// 	endif
+	if (messageData.source == messageData.target)
+		return true;
+	endif
 
-	// 	if ((message_txt in isSkillAction))
-	// 		return 0;
-	// 	endif
+	if (messageData.source.GetProperty("ghostvoice"))
+		return handleGhostVoice(messageData.source, messageData.message, messageData.packet);
+	endif
 
-	// 	if (GetObjProperty(source, "ghostvoice"))
-	// 		return handleGhostVoice(source, message_txt, packet);
-	// 	endif
+	if (!messageData.source.IsNPC())
+		var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
+		var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
 
-	// 	if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) ||
-	//   message_txt == "*Incompreensível*" || character.cmdlevel >= 1)
-	// 		if (message_txt != "..." && message_txt != "" && chosen_language && chosen_language != "Comum")
-	// 			var full_message := "[" + chosen_language + "] " + message_txt;
-	// 			packet.SetUnicodeString(48, full_message, 1);
-	// 		endif
-	// 		return 0;
-	// 	endif
+		if (sourceLanguage in targetKnownLanguages)
+			return true;
+		endif
+	endif
 
-	// 	if (source != character)
-	// 		PrintTextPrivate(source, "*Incompreensível*", character);
-	// 		return 1;
-	// 	endif
-	// endif
+	return false;
 endfunction
 
 // exported function handleUCOutgoing(character, byref packet)
-// 	var type := packet.GetInt8(PACKET_POSITION::TEXT_TYPE);
-// 	var serial := packet.GetInt32(PACKET_POSITION::ITEM_ID);
-// 	var source := SystemFindObjectBySerial(serial);
-// 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
-// 	var message_txt := packet.GetUnicodeString(48, length_of_text);
-// 	var original_message := message_txt;
-
-// 	if (message_txt[1] == " ") return 0; endif // Para de aporrinhar com essa merda desse .......... nas traduções
-	
-// 	var params := struct{
-// 		who := source,
-// 		message := message_txt
-// 	};
 // 	if (Translate(params)) return 1; endif
 
 // 	var Object_Name;
@@ -192,9 +257,6 @@ endfunction
 // 			packet.SetString(PACKET_POSITION::NAME_ID, Object_Name, 1);
 // 		endif
 // 	endif
-
-// 	// Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
-// 	LogPlayerSpeech(source, message_txt);
 
 // 	if ((getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) ||
 // 	 (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
