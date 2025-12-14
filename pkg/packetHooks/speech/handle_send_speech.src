@@ -36,6 +36,22 @@ exported function handleUCOutgoing(character, byref packet)
 
 	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
 
+	// TODO: Remover o block depois de implementar cada um dos tipos
+		// Bloqueei pra a gente pode entender a necessidade de cada
+	var blockPorEnquanto := array{
+		MESSAGE_TYPE::ALLIANCE,
+		MESSAGE_TYPE::GUILD,
+		MESSAGE_TYPE::COMMAND_PROMPTS
+	};
+
+	if (messageData.type in blockPorEnquanto)
+		return 1;
+	endif
+
+	if (!CanSpeak(messageData))
+		return 1;
+	endif
+
 	if (!CanHear(messageData))
 		return 1;
 	endif
@@ -45,7 +61,6 @@ exported function handleUCOutgoing(character, byref packet)
 		return 1;
 	endif
 
-
 	CheckSourceName(messageData);
 	CheckLanguagePrefix(messageData);
 	ReassemblePacket(packet, messageData);
@@ -53,30 +68,48 @@ exported function handleUCOutgoing(character, byref packet)
 	return 0;
 endfunction
 
+function CanSpeak(byRef messageData)
+	if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility("Elo Natural"))
+		if (messageData.type == MESSAGE_TYPE::NORMAL)
+			return false;
+		endif
+	endif
+
+	if (messageData.source.GetProperty("mudo"))
+		return false;
+	endif
+
+	if (messageData.source.GetProperty("#sleep"))
+		return false;
+	endif
+
+	return true;
+endfunction
+
 function CanHear(byRef messageData)
-	if (!CheckLineOfSight(messageData.source, messageData.target))
-		if (messageData.type == MESSAGE_TYPE::WHISPER)
-			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER)
+	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2;
+	
+	if (messageData.type == MESSAGE_TYPE::WHISPER)
+		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::YELL)
+		if (messageData.source.HasAbility("Mestre Espiao"))
+			if (Distance(messageData.source, messageData.target) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
+				return false;				
+			elseif (Abs(messageData.source.z - messageData.target.z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
 			endif
-		elseif (messageData.type == MESSAGE_TYPE::YELL)
-			if (messageData.source.HasAbility("Mestre Espiao"))
-				if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL + 4)
-					return false;				
-				elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL + 4)
-					return false;
-				endif
-			else
-				if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL)
-					return false;
-				elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL)
-					return false;
-				endif
-			endif
-		elseif (messageData.type == MESSAGE_TYPE::NORMAL)
-			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::NORMAL)
+		else
+			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL / rangeMod)
+				return false;
+			elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL / rangeMod)
 				return false;
 			endif
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
+		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::NORMAL / rangeMod)
+			return false;
 		endif
 	endif
 
@@ -224,47 +257,6 @@ endfunction
 // exported function handleUCOutgoing(character, byref packet)
 // 	if (Translate(params)) return 1; endif
 
-// 	var Object_Name;
-// 	if (source.IsA(POLCLASS_MOBILE))
-// 		// PREENCHE NOME DO MOBILE
-// 		Object_Name := source.name;
-
-// 		// Cor do nome dos NPC conforme skill de combate
-// 		if (!source.npctemplate)
-// 			// Caso em que tá desconhecido
-// 			if (GetObjProperty(source, "realname"))
-// 				Object_Name := "Incognito";
-// 			else
-
-// 				// Verifica se o char já foi reconhecido por who
-// 				var conhecidos := dictionary;
-// 				if (GetObjProperty(character, "conhecidos"))
-// 					var ID := Cstr(source.serial); // Salva o serial do personagem
-// 					if (GetObjProperty(source, "disfarce"))
-// 						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
-// 					endif
-
-// 					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
-// 					if (conhecidos.Exists(ID))
-// 						Object_Name := conhecidos[ID];
-// 					else
-// 						Object_Name := source.name;
-// 					endif
-// 				else
-// 					Object_Name := source.name;
-// 				endif
-// 			endif
-// 			packet.SetString(PACKET_POSITION::NAME_ID, Object_Name, 1);
-// 		endif
-// 	endif
-
-// 	if ((getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) ||
-// 	 (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
-// 		if (type != 0x02)
-// 			return 1;
-// 		endif
-// 	endif
-
 // 	if (type == 0x0E)
 // 		if (source.cmdlevel >= 1 && GetObjProperty(source, "LastMSG") != message_txt)
 // 			SetObjProperty(source, "LastMSG", message_txt);
@@ -317,85 +309,6 @@ endfunction
 // 		endforeach
 // 		SetObjProperty(source, "LastMSG", message_txt);
 // 	endif
-
-// 	if (!CheckLineOfSight(source, character))
-// 		if (type == 0x09)
-// 			return 0;
-// 		elseif (temHabilidade(character, "Mestre Espiao"))
-// 			return 0;
-// 		else
-// 			if (temHabilidade(character, "Espionagem"))
-// 				if (Distance(character, source) < 12 &&
-// 		abs(character.z - source.z) < 19) // A hab só serve pra ouvir até 8 tile e 19 z
-// 					return 0;
-// 				else
-// 					return 1;
-// 				endif
-// 			else
-// 				// if (type == 0)
-// 				//    return 0;
-// 				// endif
-// 				return 0;
-// 			endif
-// 		endif
-// 	endif
-
-// 	var isGeneralAction := array{ "*Tirou", "*Guardou", "*Colocou", "*escalpelando",
-// 							  	"*Acrescentou", "*Pegou", "*Abriu", "*Arremessa" };
-// 	var isSkillAction := array{ "*defende o golpe*",
-// 								"*tratando a si mesmo*",
-// 								"*arrombando a fechadura*",
-// 								"*desarmando armadilha*",
-// 								"*preparando um extrato*",
-// 								"*tentando se esconder*",
-// 								"*CRÍTICO*",
-// 								"*aparece*",
-// 								"*Abre a escotilha*",
-// 								"*Fecha a escotilha*",
-// 								"*veste o capuz*",
-// 								"*remove o capuz*",
-// 								"*Golpeia com o escudo*",
-// 								"*morde um pedaço de comida*",
-// 								"*Kaze no Ichigeki*",
-// 								"*Acende o fusível do canhão*",
-// 								"*Dispara*",
-// 								"*Desmonta o equipamento*",
-// 								"*Lento*",
-// 								"*tentando estabilizar o paciente*",
-// 								"Você interrompeu a cura." };
-
-// 	if (!source.npctemplate && type != 0x02)
-// 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
-// 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
-// 		var firstActionWord := (splitwords(message_txt)[1]);
-
-// 		if (firstActionWord in (isGeneralAction))
-// 			return 0;
-// 		endif
-
-// 		if ((message_txt in isSkillAction))
-// 			return 0;
-// 		endif
-
-// 		if (GetObjProperty(source, "ghostvoice"))
-// 			return handleGhostVoice(source, message_txt, packet);
-// 		endif
-
-// 		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) ||
-// 	  message_txt == "*Incompreensível*" || character.cmdlevel >= 1)
-// 			if (message_txt != "..." && message_txt != "" && chosen_language && chosen_language != "Comum")
-// 				var full_message := "[" + chosen_language + "] " + message_txt;
-// 				packet.SetUnicodeString(48, full_message, 1);
-// 			endif
-// 			return 0;
-// 		endif
-
-// 		if (source != character)
-// 			PrintTextPrivate(source, "*Incompreensível*", character);
-// 			return 1;
-// 		endif
-// 	endif
-// 	return 0;
 // endfunction
 
 exported function handleUCOrequest(character, byref packet)
