@@ -45,6 +45,7 @@ exported function handleUCOutgoing(character, byref packet)
 	};
 
 	if (messageData.type in blockPorEnquanto)
+		Print($"Player {messageData.source.name} tentou usar um tipo de mensagem bloqueada: {Hex(messageData.type)}");
 		return 1;
 	endif
 
@@ -62,7 +63,7 @@ exported function handleUCOutgoing(character, byref packet)
 	endif
 
 	CheckSourceName(messageData);
-	CheckLanguagePrefix(messageData);
+	CheckPrefixAndSuffix(messageData);
 	ReassemblePacket(packet, messageData);
 	
 	return 0;
@@ -218,7 +219,7 @@ function MustContinue(data)
 	return true;
 endfunction
 
-function CheckLanguagePrefix(byRef messageData)
+function CheckPrefixAndSuffix(byRef messageData)
 	var typesToPrefix := array{MESSAGE_TYPE::NORMAL, MESSAGE_TYPE::WHISPER, MESSAGE_TYPE::YELL};
 
 	if (messageData.type in typesToPrefix)
@@ -226,6 +227,10 @@ function CheckLanguagePrefix(byRef messageData)
 		if (chosen_language && chosen_language != "Comum")
 			messageData.message := $"[{chosen_language}] " + messageData.message;
 		endif
+	endif
+
+	if (messageData.type == MESSAGE_TYPE::EMOTE)
+		// messageData.message := $"*{messageData.message}*";
 	endif
 endfunction
 
@@ -276,8 +281,6 @@ endfunction
 // 		return 1;
 // 	endif
 
-// 	var unvalid := { message_txt[1, 7], message_txt[1, 9], message_txt[1, 9], message_txt[1,
-// 				 	14], message_txt[1, 13], message_txt[1, 7] };
 // 	if (source.acctname && GetObjProperty(source, "LastMSG") != message_txt && unvalid[1] != "*Tirou " &&
 // 	 unvalid[2] != "*Guardou " && unvalid[3] != "*Colocou " && unvalid[4] != "*escalpelando " &&
 // 	 unvalid[5] != "*Acrescentou " && unvalid[6] != "*Pegou " && message_txt != "*defende o golpe*" &&
@@ -311,30 +314,30 @@ endfunction
 // 	endif
 // endfunction
 
-exported function handleUCOrequest(character, byref packet)
-	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
-	var source := SystemFindObjectBySerial(serial);
-	var length_of_text := (packet.GetInt16(1) - 49) / 2;
-	var message_txt := packet.GetUnicodeString(48, length_of_text);
+// exported function handleUCOrequest(character, byref packet)
+// 	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
+// 	var source := SystemFindObjectBySerial(serial);
+// 	var length_of_text := (packet.GetInt16(1) - 49) / 2;
+// 	var message_txt := packet.GetUnicodeString(48, length_of_text);
 
-	if (GetObjProperty(source, "original_language"))
-		// message_txt := TranslateText(message_txt, "pt_BR", "en_US");
-	endif
+// 	if (GetObjProperty(source, "original_language"))
+// 		// message_txt := TranslateText(message_txt, "pt_BR", "en_US");
+// 	endif
 
-	var type := packet.GetInt8(4);
+// 	var type := packet.GetInt8(4);
 
-	// 	sendsysmessage(character, "type" + type);
+// 	// 	sendsysmessage(character, "type" + type);
 
-	if (getObjProperty(character, "metamorfose") != error)
-		if (type == 0x00)
-			return 1;
-		else
-			return 0;
-		endif
-	endif
+// 	if (getObjProperty(character, "metamorfose") != error)
+// 		if (type == 0x00)
+// 			return 1;
+// 		else
+// 			return 0;
+// 		endif
+// 	endif
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
 function handleGhostVoice(source, message_txt, byref packet)
 	packet.SetUnicodeString(48, message_txt, 1);
