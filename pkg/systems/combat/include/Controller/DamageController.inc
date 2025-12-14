@@ -284,8 +284,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
-		Message("Seu crítico não surte efeito", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
-		Message("Seu corpo evita o crítico", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
@@ -300,8 +300,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
-		Message("Seu alvo desviou do crítico!", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
-		Message("Você desviou do crítico e usará isso contra seu oponente!", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 		attackInfo.GetDefender().SetProperty("#nextcritical", true);
 		return 0;
 	endif
@@ -370,7 +370,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 				}
 			);
 			if (!script || script.errortext)
-				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 			endif
 
 			SleepMS(2);
@@ -390,7 +390,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	if (posture == DAMAGE_TYPE::SLASH)
 		if (attackInfo.GetDamage().GetSlashBaseDamage() < 1)
 			attackInfo.GetDamage().SetSlashBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
 		endif
@@ -400,7 +400,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	elseif (posture == DAMAGE_TYPE::PIERCING)
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
 			attackInfo.GetDamage().SetPiercingBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
 		endif
@@ -410,7 +410,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	elseif (posture == DAMAGE_TYPE::BLUNT)
 		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
 			attackInfo.GetDamage().SetBluntBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
 		endif
@@ -452,7 +452,7 @@ function CheckPoison(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::SENSO_DA_NATUREZA))
-		Message("Você é imune ao efeito dos venenos.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Você é imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 		return false;
 	endif
 
@@ -477,12 +477,12 @@ function CheckPoison(byRef attackInfo)
 				endif
 
 				if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonName))
-					Message("Você está imune ao efeito dos venenos.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+					Message("Você está imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 					return false;
 				endif
 
 				if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, RESIST_EASY, -2 * level))
-					Message("Você resistiu ao veneno.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+					Message("Você resistiu ao veneno.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 					return false;
 				else
 					TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonName, time, level, attackInfo.GetAttacker().GetObjRef());
@@ -502,18 +502,18 @@ function CheckPoison(byRef attackInfo)
 		if (poisonInfo.dosage != "infinito")
 			poisonInfo.dosage := poisonInfo.dosage - 1;
 			if (poisonInfo.dosage <= 0) // TODO: Talvez dê bug na aplicação do veneno se a dosagem for 1, prestar atenção nisso aqui quando o combate estiver pronto
-				Message("Sua carga de veneno acabou.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Sua carga de veneno acabou.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 				sourcePoison.EraseProp("poisonInfo");
 				return false;
 			else
-				Message($"Restam {poisonInfo.dosage} doses de {poisonInfo.name}.", Color(COLOR_NAME::ALERT).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message($"Restam {poisonInfo.dosage} doses de {poisonInfo.name}.", Color(SYSTEM_COLOR::ALERT).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
 				sourcePoison.SetProp("poisonInfo", poisonInfo);
 			endif
 		endif
 
 		if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonInfo.name))
-			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
-			Message("Você está imune ao efeito dos venenos.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você está imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 			return false;
 		endif
 
@@ -532,8 +532,8 @@ function CheckPoison(byRef attackInfo)
 		endif
 
 		if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, poisonInfo.difficulty, -poisonInfo.difficulty_mod))
-			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
-			Message("Você resistiu ao veneno.", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você resistiu ao veneno.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 			return false;
 		else
 			if (TS_GetTimerInfo(attackInfo.GetDefender().GetObjRef(), "defaultPoison")) // confere se está sob default poison para estabelecer o mais forte
@@ -558,8 +558,8 @@ function CheckPoison(byRef attackInfo)
 		endif
 	endif
 
-	Message("Seu veneno surtiu efeito no alvo!", Color(COLOR_NAME::SUCCESS).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
-	Message("Você foi envenenado.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
+	Message("Seu veneno surtiu efeito no alvo!", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+	Message("Você foi envenenado.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetDefender().GetObjRef());
 	return true;
 endfunction
 

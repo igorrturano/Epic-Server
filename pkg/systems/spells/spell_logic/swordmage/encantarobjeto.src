@@ -12,14 +12,14 @@ program SpellScript(params)
 	var use_on := params[2];
 	params := 0; // No longer needed
 
-	Message("Qual item deseja encantar?", Color(COLOR_NAME::INFO).GetValue()).SendSys(who.GetObjRef());
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO).GetValue()).SendSys(who.GetObjRef());
 
 	if (!use_on)
 		return;
 	endif
 
 	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		Message("Isto não pode ser alvejado por essa magia.", Color(COLOR_NAME::FAIL).GetValue()).SendSys(who.GetObjRef());
+		Message("Isto não pode ser alvejado por essa magia.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
 		return;
 	endif
 
