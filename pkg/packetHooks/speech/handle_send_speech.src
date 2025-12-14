@@ -48,24 +48,44 @@ exported function handleUCOutgoing(character, byref packet)
 		return 1;
 	endif
 
-	if (!CanSpeak(messageData))
-		return 1;
+	if (CheckSaying(messageData))
+		if (!CanSpeak(messageData))
+			return 1;
+		endif
+
+		if (!CanHear(messageData))
+			return 1;
+		endif
+
+		if (!CanUnderstand(messageData))
+			PrintTextAbovePrivate(messageData.source, "*Incompreensível*", messageData.target);
+			return 1;
+		endif
+
+		CheckSourceName(messageData);
+		CheckPrefixAndSuffix(messageData);
 	endif
 
-	if (!CanHear(messageData))
-		return 1;
-	endif
-
-	if (!CanUnderstand(messageData))
-		PrintTextAbovePrivate(messageData.source, "*Incompreensível*", messageData.target);
-		return 1;
-	endif
-
-	CheckSourceName(messageData);
-	CheckPrefixAndSuffix(messageData);
 	ReassemblePacket(packet, messageData);
 	
 	return 0;
+endfunction
+
+function CheckSaying(byRef messageData)
+	if (messageData.type == MESSAGE_TYPE::BROADCAST ||
+		messageData.type == MESSAGE_TYPE::SYSTEM ||
+		messageData.type == MESSAGE_TYPE::MESSAGE_CORNER ||
+		messageData.type == MESSAGE_TYPE::SPELL)
+		return false;
+	endif
+
+	// Ê packet nativo do POL cagado, hein.....
+	if (messageData.source == 0 ||
+		messageData.sourceName == "System")
+		return false;
+	endif
+
+	return true;
 endfunction
 
 function CanSpeak(byRef messageData)
@@ -205,7 +225,8 @@ endfunction
 
 function MustContinue(data)
 	var typesToIgnore := array{
-		MESSAGE_TYPE::BROADCAST
+		MESSAGE_TYPE::BROADCAST,
+		MESSAGE_COLOR::SYSTEM
 	};
 	
 	if (data.type in typesToIgnore)
