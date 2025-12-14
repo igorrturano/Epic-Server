@@ -26,8 +26,8 @@ endenum
 
 enum class MESSAGE_DISTANCE
 	WHISPER := 2,
-	NORMAL := 8,
-	YELL := 12
+	NORMAL := 12,
+	YELL := 20
 endenum
 
 exported function handleUCOutgoing(character, byref packet)
