@@ -41,7 +41,6 @@ function PrintTextPrivate(above_object, uc_text, character, color := _DEFAULT_UC
 	endif
 
 	return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, character, font, color, journal_print);
-	// return PrintTextAbovePrivateUC(above_object, UC(uc_text), langcode, font, color, journal_print);
 endfunction
 
 function UC(strs)
@@ -86,7 +85,19 @@ endfunction
 function PrintEmote(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
 	text := $"*{text}*";
 	
-	var packet := _CreateMessagePacket(2, who, text, color, font, langcode);
+	var packet := _CreateMessagePacket(0x02, who, text, color, font, langcode);
+
+	packet.SendPacket(who);
+endfunction
+
+function PrintGuild(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
+	var packet := _CreateMessagePacket(0x0D, who, text, color, font, langcode);
+
+	packet.SendPacket(who);
+endfunction
+
+function PrintAlliance(who, text, color := _DEFAULT_UCCOLOR, font := _DEFAULT_UCFONT, langcode := "ENG")
+	var packet := _CreateMessagePacket(0x0E, who, text, color, font, langcode);
 
 	packet.SendPacket(who);
 endfunction
