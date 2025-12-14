@@ -6,9 +6,7 @@ include ":message:Controller/Translator";
 program Sender(message)
 	if (message.WantTranslation())
 		var translator := Translator();
-		translator.SetText(message.GetText());
-		translator.Translate();
-		message.SetText(translator.GetText());
+		message.SetText(translator.Translate(message.GetText()));
 	endif
 
 	if (message.GetType() == MESSAGE_TYPE::SYSTEM)
