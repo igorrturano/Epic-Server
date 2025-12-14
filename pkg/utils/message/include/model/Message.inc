@@ -123,7 +123,10 @@ class Message(IMessage)
 
 	function SendSys(this, who)
 		this._toWhom := who;
-		this._type := MSG_TYPE::SYSMSG;
+		this._type := MESSAGE_TYPE::SYSTEM;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::SYSTEM);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -132,14 +135,20 @@ class Message(IMessage)
 	endfunction
 
 	function SendSysAll(this)
-		this._type := MSG_TYPE::SYSMSGALL;
+		this._type := MESSAGE_TYPE::SYSTEM;
+
+		// TODO
 
 		return this;
 	endfunction
 
 	function SendAbove(this, who)
 		this._toWhom := who;
-		this._type := MSG_TYPE::PRINTTEXT;
+		this._type := MESSAGE_TYPE::NORMAL;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::NORMAL);
+		endif
+
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -150,7 +159,10 @@ class Message(IMessage)
 	function SendAbovePrivate(this, who, whoSee := false)
 		this._toWhom := who;
 		this._fromWhom := whoSee ?: who;
-		this._type := MSG_TYPE::PRINTTEXTPRIVATE;
+		this._type := MESSAGE_TYPE::NORMAL_PRIVATE;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::PRIVATE);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -160,7 +172,10 @@ class Message(IMessage)
 
 	function SendEmote(this, who)
 		this._toWhom := who;
-		this._type := MSG_TYPE::EMOTE;
+		this._type := MESSAGE_TYPE::EMOTE;
+		if (this._color.GetValue() == COLOR_NAME::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::EMOTE);
+		endif
 		this._translate := _WantTranslation(who);
 
 		this._TranslateAndSend();
@@ -173,14 +188,14 @@ class Message(IMessage)
 		result += "text: " + this._text.ToString();
 		result += ", color: " + this._color.ToString();
 		result += ", font: " + this._font.ToString();
-		result += ", type: " + this._type;
-		result += ", isAsync: " + this._isAsync;
-		result += ", translate: " + this._translate;
+		result += ", type: " + CStr(this._type);
+		result += ", isAsync: " + CStr(this._isAsync);
+		result += ", translate: " + CStr(this._translate);
 		if (this._fromWhom)
-			result += ", fromWhom: " + this._fromWhom.name;
+			result += ", fromWhom: " + CStr(this._fromWhom.name);
 		endif
 		if (this._toWhom)
-			result += ", toWhom: " + this._toWhom.name;
+			result += ", toWhom: " + CStr(this._toWhom.name);
 		endif
 		result += "}";
 		return result;
@@ -196,20 +211,29 @@ class Message(IMessage)
 	endfunction
 
 	function _WantTranslation(who)
+		who.GetProp("langdata");
+		
 		return false; // TODO: Pegar prop se o char quer tradução ou não
 	endfunction
 endclass
 
-enum class MSG_TYPE
-	SYSMSG,
-	SYSMSGALL,
-	PRINTTEXT,
-	PRINTTEXTPRIVATE,
-	EMOTE
+enum class MESSAGE_TYPE
+	NORMAL := 0x00,
+	BROADCAST := 0x01,
+	EMOTE := 0x02,
+	NORMAL_PRIVATE := 0x03, // CUSTOM do Message()
+	SYSTEM := 0x06, // SysMessage
+	MESSAGE_CORNER := 0x07, // Mensagem no canto da tela, sem aparecer em cima do char
+	WHISPER := 0x08, // Sussurro
+	YELL := 0x09, // Grita
+	SPELL := 0x0A, // PowerWords
+	GUILD := 0x0D,
+	ALLIANCE := 0x0E,
+	COMMAND_PROMPTS := 0x0F,
 endenum
 
-enum class MSG_MAXSIZE
-	SYSMSG := 200,
-	PRINTTEXT := 60,
-	EMOTE := PRINTTEXT
+enum class MESSAGE_MAXSIZE
+	SYSTEM := 200,
+	NORMAL := 60,
+	EMOTE := NORMAL
 endenum

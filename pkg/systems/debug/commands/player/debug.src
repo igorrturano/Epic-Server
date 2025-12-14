@@ -35,13 +35,13 @@ program CMD_debug(who, debugName)
 	endif
 
 	if (!listDebugs[Lower(debugName)])
-		Message($"DEBUG {debugName}: inexistente. Confira se a tag está correta.", Color(COLOR_NAME::FAIL)).SendSys(who);
-		Message("Para ver os debug disponíveis digite: .debug ou .debug list", Color(COLOR_NAME::FAIL)).SendSys(who);
+		Message($"DEBUG {debugName}: inexistente. Confira se a tag está correta.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		Message("Para ver os debug disponíveis digite: .debug ou .debug list", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 	else
 		if (who.cmdlevel >= listDebugs[Lower(debugName)].level)
 			who.setDebugProp(debugName);
 		else
-			Message($"DEBUG {debugName}: Nível insuficiente.", Color(COLOR_NAME::FAIL)).SendSys(who);
+			Message($"DEBUG {debugName}: Nível insuficiente.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		endif
 	endif
 endprogram

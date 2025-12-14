@@ -1,0 +1,23 @@
+use uo;
+
+include "include/packets";
+include "system/text/Color";
+
+program typing_hook()
+	Print("INSTALLING: Typing Hooking... OK!");
+	return 1;
+endprogram
+
+exported function TypingHandler(who, byRef packet)
+	var prop := who.GetProp("#lastyping");
+	var delay := 4; // seconds
+
+	if (prop > polcore().systime)
+		return 1;
+	endif
+
+	PlayObjectCenteredEffectEx(who, 0xFF6B, 1, 16*delay, Color(COLOR_NAME::TRUE_BLACK).GetValue());
+	who.SetProp("#lastyping", polcore().systime + delay);
+
+	return 1;
+endfunction
