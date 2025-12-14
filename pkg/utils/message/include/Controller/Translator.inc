@@ -67,3 +67,9 @@ class Translator(ITranslator)
 		endif
 	endfunction
 endclass
+
+enum class TRANSLATION_MODE
+	OFF,
+	SUBTITLED,
+	DUBBED
+endenum
