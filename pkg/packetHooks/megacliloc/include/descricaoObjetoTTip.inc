@@ -49,7 +49,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	xDesc := PegaDescDosesVeneno(objeto,xDesc);
 	
-	if (isFireWeapon(objeto))
+	if (objeto.isFireWeapon())
 		xDesc := PegaDescMunicao(objeto,xDesc);
 	endif
 

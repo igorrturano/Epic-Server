@@ -70,6 +70,12 @@ function SetNewPosture(who, newPosture)
 		elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
 			Message("Arcos não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
+		elseif(Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+			Message("Bestas não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
+		elseif(Upper(who.GetEquipBySlot(WEAPON).GetObjRef().isFireWeapon()))
+			who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+			Message("Armas de fogo não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(who.GetObjRef());
 		else
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
 			Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
