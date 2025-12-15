@@ -445,5 +445,9 @@ enum class WEAPON_CATEGORY
 	BOW := "Bow",
 	CROSSBOW := "Crossbow",
 	MAGICBOW := "MagicBow",
-	FIREWEAPON := "Fireweapon"
+
+	PISTOL := "Pistol",
+	MUSKET := "Musket",
+	CARABINE := "Carabine",
+	HANDCANNON := "HandCannon"
 endenum

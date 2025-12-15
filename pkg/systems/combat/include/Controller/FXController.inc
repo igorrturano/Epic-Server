@@ -14,6 +14,7 @@ include ":attributes:attributeConstants";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":blood:blood";
+include ":combat:Model/DamageTier";
 
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
@@ -45,7 +46,10 @@ function PlayWeaponFX(byRef attackInfo)
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
 			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::FIREWEAPON))
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::PISTOL) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::MUSKET) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CARABINE) ||
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::HANDCANNON))
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
@@ -79,6 +83,18 @@ function GetAttackerFX(byRef attackInfo)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_BOW};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::PISTOL)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::HANDCANNON)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CARABINE)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MUSKET)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
 		else
@@ -247,6 +263,22 @@ function GetWeaponSFX(byRef attackInfo)
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::PISTOL)
+		weaponSFX.hit := array{0x11C};
+		weaponSFX.miss := array{0x11C};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::HANDCANNON)
+		weaponSFX.hit := array{0x308};
+		weaponSFX.miss := array{0x308};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CARABINE)
+		weaponSFX.hit := array{0x309};
+		weaponSFX.miss := array{0x309};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MUSKET)
+		weaponSFX.hit := array{0x11E};
+		weaponSFX.miss := array{0x11E};
 		weaponSFX.critical := array{};
 	else
 		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
