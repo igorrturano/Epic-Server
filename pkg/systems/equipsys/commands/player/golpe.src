@@ -72,6 +72,7 @@ function SetNewPosture(who, newPosture)
 			Message("Arcos não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		else
 			who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+			Message("Você mudou sua postura de combate.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 			Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
 		endif
 	endif
