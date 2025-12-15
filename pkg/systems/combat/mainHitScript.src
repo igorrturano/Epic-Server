@@ -38,7 +38,7 @@ program MainHitScript(attackInfo)
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
 			else
-				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				return 1;
 			endif
 		endif
@@ -106,7 +106,7 @@ function DoMovement(byRef attackInfo)
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
 			return 1;
 		else
-			Message("Você perdeu seu ataque especial.", Color(SYSTEM_COLOR::INFO).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você perdeu seu ataque especial.", Color(SYSTEM_COLOR::INFO)).SendSys(attackInfo.GetAttacker().GetObjRef());
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
 		endif
 	endif

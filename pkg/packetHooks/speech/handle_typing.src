@@ -16,7 +16,7 @@ exported function TypingHandler(who, byRef packet)
 		return 1;
 	endif
 
-	PlayObjectCenteredEffectEx(who, 0xFF6B, 1, 16*delay, Color(COLOR_NAME::TRUE_BLACK).GetValue());
+	PlayObjectCenteredEffectEx(who, 0xFF6B, 1, 16*delay, Color(COLOR_NAME::TRUE_BLACK));
 	who.SetProp("#lastyping", polcore().systime + delay);
 
 	return 1;
