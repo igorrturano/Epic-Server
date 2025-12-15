@@ -31,6 +31,7 @@ include ":attributes:attributes";
 include "include/client";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
+include ":xpbar_v2:xpbar";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");
@@ -97,8 +98,13 @@ exported function HandleSendStats(character, byref packet)
 		// Envia a url do portrait junto com o status
 		packet.SetString(121, url, 1);
 
-	// Process extended stats
-	// HandleExtended(source, packet);
+		// XP System V2 - Apenas envia XP via TithingPoints se o packet tiver tamanho suficiente
+		// O POL core envia o packet com type=4 ou superior para players, 
+		// então TithingPoints já existe no offset 87
+		if (!source.npctemplate && packet.GetSize() >= 91)
+			var packed_xp := PackXPForClient(source);
+			packet.SetInt32(87, packed_xp);
+		endif
 	endif
 
 	return 0;
@@ -111,6 +117,49 @@ function HandleExtended(character, byref packet)
 	// Set packet mode to 6 (UOKR Extended Info) for most complete data
 	packet.SetInt8(42, 6);
 
+	// ============================================================
+	// PACKET 0x11 STRUCTURE FOR TYPE=6 (UOKR Extended)
+	// Based on ClassicUO sequential reading order:
+	// ============================================================
+	// Offset 0:   PacketID (1 byte)
+	// Offset 1:   Length (2 bytes)
+	// Offset 3:   Serial (4 bytes)
+	// Offset 7:   Name (30 bytes)
+	// Offset 37:  Hits (2 bytes)
+	// Offset 39:  HitsMax (2 bytes)
+	// Offset 41:  IsRenamable (1 byte)
+	// Offset 42:  Type (1 byte) = 6
+	// Offset 43:  IsFemale (1 byte)
+	// Offset 44:  Str (2 bytes)
+	// Offset 46:  Dex (2 bytes)
+	// Offset 48:  Int (2 bytes)
+	// Offset 50:  Stamina (2 bytes)
+	// Offset 52:  StaminaMax (2 bytes)
+	// Offset 54:  Mana (2 bytes)
+	// Offset 56:  ManaMax (2 bytes)
+	// Offset 58:  Gold (4 bytes)
+	// Offset 62:  PhysicalResist (2 bytes)
+	// Offset 64:  Weight (2 bytes)
+	// --- type >= 5 (ML) ---
+	// Offset 66:  WeightMax (2 bytes)
+	// Offset 68:  Race (1 byte)
+	// --- type >= 3 (Renaissance) ---
+	// Offset 69:  StatsCap (2 bytes)
+	// Offset 71:  Followers (1 byte)
+	// Offset 72:  FollowersMax (1 byte)
+	// --- type >= 4 (AOS) ---
+	// Offset 73:  FireResist (2 bytes)
+	// Offset 75:  ColdResist (2 bytes)
+	// Offset 77:  PoisonResist (2 bytes)
+	// Offset 79:  EnergyResist (2 bytes)
+	// Offset 81:  Luck (2 bytes)
+	// Offset 83:  DamageMin (2 bytes)
+	// Offset 85:  DamageMax (2 bytes)
+	// Offset 87:  TithingPoints (4 bytes) <-- XP goes here!
+	// --- type >= 6 ---
+	// Offset 91+: Extended stats...
+	// ============================================================
+
 	// Get pet data
 	var petcnt := GetNumPets(character);
 	if (!petcnt)
@@ -122,119 +171,97 @@ function HandleExtended(character, byref packet)
 		petmax := 1;
 	endif
 
-	// Set statcap
-	if (STATCAP <= 255)
-		packet.SetInt8(67, STATCAP);
-	else
-		packet.SetInt16(66, STATCAP);
-	endif
+	// --- Type >= 5 (ML) ---
+	// WeightMax is at offset 66, but POL core may set it, so skip
+	// Race is at offset 68 - POL core sets this
+	
+	// --- Type >= 3 (Renaissance) ---
+	// StatsCap at offset 69
+	packet.SetInt16(69, STATCAP);
+	// Followers at offset 71
+	packet.SetInt8(71, petcnt);
+	// FollowersMax at offset 72
+	packet.SetInt8(72, petmax);
 
-	// Sets their current pet count in packet
-	packet.SetInt8(68, petcnt);
-	// Sets their current pet max count based on taming in packet
-	packet.SetInt8(69, petmax);
-
-	// Set resistances
-	// Get defense from getMobileDefenses function
+	// --- Type >= 4 (AOS) ---
+	// Get defense/resistances
 	var defense := character.getMobileDefenses();
-	// Physical resistance
-	packet.SetInt16(70, CInt(defense));
-	// Fire resistance
-	packet.SetInt16(72, CInt(character.resist_fire));
-	// Cold resistance
-	packet.SetInt16(74, CInt(character.resist_cold));
-	// Poison resistance
-	packet.SetInt16(76, CInt(character.resist_poison));
-	// Energy resistance
-	packet.SetInt16(78, CInt(character.resist_energy));
+	
+	// FireResist at offset 73
+	packet.SetInt16(73, CInt(character.resist_fire));
+	// ColdResist at offset 75
+	packet.SetInt16(75, CInt(character.resist_cold));
+	// PoisonResist at offset 77
+	packet.SetInt16(77, CInt(character.resist_poison));
+	// EnergyResist at offset 79
+	packet.SetInt16(79, CInt(character.resist_energy));
+	// Luck at offset 81
+	packet.SetInt16(81, 0);
 
-	// Get custom properties for Fortitude, Reflexos, and Vontade using GetResist
-	var fortitude := GetResist(character, FORTITUDE);
-	if (!fortitude)
-		fortitude := 0;
-	endif
-
-	var reflexos := GetResist(character, REFLEXOS);
-	if (!reflexos)
-		reflexos := 0;
-	endif
-
-	var vontade := GetResist(character, VONTADE);
-	if (!vontade)
-		vontade := 0;
-	endif
-
-	// Get DPs (Death Points)
-	var dps_current := AP_GetVital(character, "DP");
-	var dps_max := AP_GetVitalMaximumValue(character, "DP");
-
-	// Get Hunger (Fome) - Max is 5
-	var hunger := GetObjProperty(character, "hunger");
-	if (!hunger)
-		hunger := 0;
-	endif
-
-	// Get Vicio
-	var vicio := GetObjProperty(character, "vicio");
-	if (!vicio)
-		vicio := 0;
-	endif
-
-	// Get custom damage types
-	var resist_slash := GetObjProperty(character, "resist_slash");
-	if (!resist_slash)
-		resist_slash := 0;
-	endif
-
-	var resist_pierce := GetObjProperty(character, "resist_pierce");
-	if (!resist_pierce)
-		resist_pierce := 0;
-	endif
-
-	var resist_blunt := GetObjProperty(character, "resist_blunt");
-	if (!resist_blunt)
-		resist_blunt := 0;
-	endif
-
-	// Set damage min/max
+	// DamageMin/Max
 	var min_dmg := 0, max_dmg := 0;
 	if (character.weapon)
 		var atrib := GetObjProperty(character.weapon, "atributos");
 		if (atrib)
-			// Sum up all damage types for the weapon
 			min_dmg := CInt(atrib.SlashMainDamage + atrib.PiercingMainDamage + atrib.BluntMainDamage);
-			max_dmg := min_dmg + 5; // Approximate max damage
+			max_dmg := min_dmg + 5;
 		endif
 	endif
+	
+	// DamageMin at offset 83
+	packet.SetInt16(83, min_dmg);
+	// DamageMax at offset 85
+	packet.SetInt16(85, max_dmg);
 
-	packet.SetInt16(80, min_dmg);
-	packet.SetInt16(82, max_dmg);
+	// XP System V2 - TithingPoints at offset 87
+	var packed_xp := PackXPForClient(character);
+	packet.SetInt32(87, packed_xp);
 
-	// Tithing points (repurposed for DPs)
-	packet.SetInt32(84, dps_current);
+	// --- Type >= 6 (Extended stats start at offset 91) ---
+	// Get custom properties
+	var fortitude := GetResist(character, FORTITUDE);
+	if (!fortitude) fortitude := 0; endif
 
-	// Use Flag 6 extended properties for custom stats
-	// We'll map our custom stats to these properties
-	// Fortitude -> Hit Chance Increase
-	packet.SetInt16(88, fortitude);
-	// Reflexos -> Swing Speed Increase
-	packet.SetInt16(90, reflexos);
-	// Vontade -> Damage Chance Increase
-	packet.SetInt16(92, vontade);
-	// Hunger -> Lower Reagent Cost (max 5)
-	packet.SetInt16(94, hunger);
-	// Vicio -> Hit Points Regeneration
-	packet.SetInt16(96, vicio);
-	// DP Max -> Stamina Regeneration
-	packet.SetInt16(98, dps_max);
+	var reflexos := GetResist(character, REFLEXOS);
+	if (!reflexos) reflexos := 0; endif
 
-	// Map custom damage resistances to other properties
-	// Slash -> Mana Regeneration
-	packet.SetInt16(100, resist_slash);
-	// Pierce -> Reflect Physical Damage
-	packet.SetInt16(102, resist_pierce);
-	// Blunt -> Enhance Potions
-	packet.SetInt16(104, resist_blunt);
+	var vontade := GetResist(character, VONTADE);
+	if (!vontade) vontade := 0; endif
+
+	var dps_max := AP_GetVitalMaximumValue(character, "DP");
+	var hunger := GetObjProperty(character, "hunger");
+	if (!hunger) hunger := 0; endif
+	var vicio := GetObjProperty(character, "vicio");
+	if (!vicio) vicio := 0; endif
+
+	var resist_slash := GetObjProperty(character, "resist_slash");
+	if (!resist_slash) resist_slash := 0; endif
+	var resist_pierce := GetObjProperty(character, "resist_pierce");
+	if (!resist_pierce) resist_pierce := 0; endif
+	var resist_blunt := GetObjProperty(character, "resist_blunt");
+	if (!resist_blunt) resist_blunt := 0; endif
+
+	// Extended stats at offset 91+
+	// MaxPhysicRes at offset 91
+	packet.SetInt16(91, CInt(defense));
+	// MaxFireRes at offset 93
+	packet.SetInt16(93, fortitude);
+	// MaxColdRes at offset 95
+	packet.SetInt16(95, reflexos);
+	// MaxPoisonRes at offset 97
+	packet.SetInt16(97, vontade);
+	// MaxEnergyRes at offset 99
+	packet.SetInt16(99, hunger);
+	// DefenseChanceIncrease at offset 101
+	packet.SetInt16(101, vicio);
+	// MaxDefenseChanceIncrease at offset 103
+	packet.SetInt16(103, dps_max);
+	// HitChanceIncrease at offset 105
+	packet.SetInt16(105, resist_slash);
+	// SwingSpeedIncrease at offset 107
+	packet.SetInt16(107, resist_pierce);
+	// DamageIncrease at offset 109
+	packet.SetInt16(109, resist_blunt);
 
 	return 1;
 endfunction
