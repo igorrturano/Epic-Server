@@ -663,6 +663,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.hidden;
 	endfunction
 
+	function GetGold(this)
+		return ContaCapital(this._objRef).valorTotal;
+	endfunction
+
 	/*
 	 * Calcula a distância entre este objeto e outro objeto.
 	 *
