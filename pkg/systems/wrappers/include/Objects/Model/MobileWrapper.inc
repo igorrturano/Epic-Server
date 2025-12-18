@@ -8,6 +8,7 @@ include "WeaponWrapper";
 
 // External
 include ":attributes:skills";
+include ":merchants:cambio";
 include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
@@ -165,6 +166,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetVital(this._objRef, HITS);
 	endfunction
 
+	function GetCurrentDp(this)
+		return AP_GetVital(this._objRef, DEATH_POINTS);
+	endfunction
+
 	function GetCurrentStamina(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -210,6 +215,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	function GetMaxHunger(this)
 		this.Update();
 		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
+	endfunction
+
+	function GetMaxDp(this)
+		return AP_GetVitalMaximumValue(this._objRef, DEATH_POINTS);
 	endfunction
 
 	function GetRegenHP(this)
