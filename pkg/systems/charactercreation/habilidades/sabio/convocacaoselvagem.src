@@ -29,7 +29,7 @@ program convocacaoselvagem(who)
 
 	if (bonded_creatures.size() == 0)
 		// No bonded creatures, go straight to bonding
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		return BondWithCreature(who);
 	else
 		// Has bonded creatures, show gump with options
@@ -112,14 +112,14 @@ function BondWithCreature(who)
 		if (SkillCheck(who, THEOLOGY, CInt(info.difficulty)) > 0)
 			SendSysMessageEx(who, "Voce criou um vinculo espiritual com " + targ.name + ".", SSM_INFO);
 			
-			PerformAction(who, ANIM_CAST_DIR);
+			PerformAction(who, HUMAN_ANIM::CAST_DIR);
 			PlayMovingEffectXYZHued(who, targ, 0xF79, 10, 10, 0, 0);
 
 			// Store the creature bond
 			StoreBond(who, targ);
 
 			PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
-			PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_TELEPORT, 10, 30, 0, who.realm);
+			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_TELEPORT, 10, 30, 0, who.realm);
 			targ.hidden := 1;
 			MoveObjectToLocation(targ, 6143, 0, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
@@ -146,9 +146,9 @@ function SummonSelectedCreature(who, selected_creature)
 	endif
 
 	// Visual and sound effects
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_CREATURE);
-	PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_SUMMON_BEAST, 10, 30, 0, who.realm);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SUMMON_BEAST, 10, 30, 0, who.realm);
 
 	// Summon the creature
 	sleepms(1500);
@@ -328,7 +328,7 @@ function BondLoop(who, targ, byref info)
 		return 0;
 	endif
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	PrintTextAbove(who, "*criando um vinculo espiritual com " + targ.name + "*");
 
 	return 1;

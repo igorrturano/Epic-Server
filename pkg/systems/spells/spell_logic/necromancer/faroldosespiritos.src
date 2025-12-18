@@ -51,7 +51,7 @@ program SpellScript(params)
 		endif
 
 		var m := 1;
-		PerformAction(who, ANIM_BOW);
+		PerformAction(who, HUMAN_ANIM::BOW);
 		while (m < 3)
 			CreateItemAtLocation(targ.x + m, targ.y, targ.z, 4650, 1, targ.realm);
 			CreateItemAtLocation(targ.x - m, targ.y, targ.z, 4650, 1, targ.realm);

@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":charactercreation:resists";
@@ -17,7 +17,7 @@ program HitScript(params)
 		return 0;
 	endif
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	sleep(2);
 
 	var dist := Distance(who, targ);

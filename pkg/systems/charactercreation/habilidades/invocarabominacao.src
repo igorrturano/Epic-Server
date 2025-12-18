@@ -24,7 +24,7 @@ program manobra(attacker)
 
 	attacker.frozen := 1;
 	for (i := 0; i < time; i++)
-		PerformAction(attacker, ANIM_CAST_AREA);
+		PerformAction(attacker, HUMAN_ANIM::CAST_AREA);
 		PlayObjectCenteredEffect(targ, FX_CURSE_EFFECT, 1, 16);
 		sleep(1);
 	endfor

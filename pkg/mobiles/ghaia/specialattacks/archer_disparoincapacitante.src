@@ -12,11 +12,13 @@ program VacuoDeMana(attacker)
 
 endprogram */
 use uo;
+use math;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include "include/say";
 include ":timedscripts:timedScripts";
 
@@ -32,8 +34,8 @@ program tironojoelho(params)
 	var dist := distance(attacker, defender);
 	CheckDistance(attacker, defender, dist);
 
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 	PrintTextAbove(attacker, "Mira no joelho do alvo!");
 	TS_StartTimer(defender, "paralysis", 6);
 	Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, weapon, armor,

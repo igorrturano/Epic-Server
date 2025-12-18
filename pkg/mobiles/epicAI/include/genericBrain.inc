@@ -1,5 +1,5 @@
 include "include/sysEvent";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 
 function GenericBrain()
@@ -10,13 +10,15 @@ function GenericBrain()
     Set_Event_Queue_Size(50);
 
     while (me)
-        ev := os::wait_for_event(1);
-        
+        ev := os::wait_for_event(0);
+
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
+            return;
+        endif
+
+        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
+        if (CheckDarknessCreatureSurvival(me))
             return;
         endif
     

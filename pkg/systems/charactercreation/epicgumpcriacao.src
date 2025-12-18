@@ -21,8 +21,14 @@ include ":crafting:fabricaComplexos";
 
 program epicCreationGump(who)
 	resetCharacter(who);
-	who.frozen := 1;
+	
+	// Create chardata at the very start - this serves as the "creation in progress" flag
+	var chardata := struct;
+	SetObjProperty(who, "chardata", chardata);
+	
 	var culture_pic := culturalSelection(who);
+	SetObjProperty(who, "nome_inicial", who.name);
+
 	racialSelection(who, culture_pic);
 	classSelection(who, culture_pic);
 	backgroundSelection(who, culture_pic);
@@ -33,15 +39,12 @@ program epicCreationGump(who)
 	// gameModeSelection(who);
 	pathOfWisdom(who, culture_pic);
 	languageSelection(who, culture_pic);
-	itemInheritance(who);
 	signSelection(who);
 	birthDaySelection(who);
 	RPcharacteristicsSelection(who, culture_pic);
 	setBirthdate(who);
 	looksSelection(who);
 	setCitizenship(who);
-	SetObjProperty(who, "nome_inicial", who.name);
-	who.name := who.title_race;
 
 	AP_SetVital(who, "Hunger", 0);
 	HealDamage(who, 200);
@@ -51,8 +54,10 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
+	itemInheritance(who);
+	
+	// Mark creation as completed
 	SetObjProperty(who, "creation_completed", 1);
-	who.frozen := 0;
 endprogram
 
 function culturalSelection(who)
@@ -110,7 +115,7 @@ function racialSelection(who, culture_pic)
 			chardata.raca := ORC;
 			break;
 		elseif (btn_value == 206)
-			chardata.raca := POLSKI;
+			chardata.raca := PEQUILHO;
 			break;
 		elseif (chardata.culture == AIGLANA || chardata.culture == LESTE)
 			SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
@@ -119,8 +124,14 @@ function racialSelection(who, culture_pic)
 			break;
 		endif
 	endwhile
-
-	SendSysMessageEX(who, "Voce será um " + chardata.raca, SSM_INFO);
+	var prefix := "";
+	if (chardata.culture == AIGLANA || chardata.culture == LESTE)
+		// Only Elfo, Drow, and Orc can be half races
+		if (chardata.raca == ELFO || chardata.raca == DROW || chardata.raca == ORC)
+			prefix := "Meio-";
+		endif
+	endif
+	SendSysMessageEX(who, "Voce será um " + prefix + chardata.raca, SSM_INFO);
 
 	if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
 		who.graphic := 1830;
@@ -130,15 +141,15 @@ function racialSelection(who, culture_pic)
 		who.graphic := 1832;
 	elseif (who.graphic == 401 && (chardata.raca == ORC))
 		who.graphic := 1833;
-	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1828;
-	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == POLSKI))
+	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
 		who.graphic := 1829;
 	endif
 
-	who.title_race := chardata.raca;
+	who.title_race := prefix+chardata.raca;
 	who.race := chardata.raca;
-
+	who.name := prefix+chardata.raca;
 	SetObjProperty(who, "chardata", chardata);
 endfunction
 
@@ -835,11 +846,11 @@ function startAdventure(who)
 	MoveObjectToLocation(who, 1407, 1062, -4, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
 	// PlaySoundEffectPrivate(who, 0x306, who);
-	// PlayStationaryEffect(who.x + 1, who.y + 1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
+	// PlayStationaryEffect(who.x + 1, who.y + 1, 5, FX_SMOKE, 10, 20, 0, who.realm);
 	// sleep(1);
-	// PlayStationaryEffect(who.x - 2, who.y + 1, 4, GFX_SMOKE, 10, 20, 0, who.realm);
+	// PlayStationaryEffect(who.x - 2, who.y + 1, 4, FX_SMOKE, 10, 20, 0, who.realm);
 	// sleep(1);
-	// PlayStationaryEffect(who.x - 2, who.y, 2, GFX_SMOKE, 10, 20, 0, who.realm);
+	// PlayStationaryEffect(who.x - 2, who.y, 2, FX_SMOKE, 10, 20, 0, who.realm);
 	// sleep(1);
 	// PlaySoundEffectPrivate(who, 0x2F4, who);
 
@@ -848,7 +859,7 @@ function startAdventure(who)
 	// CreateItemInBackpack(who, 0xC627, 1);
 	// CreateItemInBackpack(who, 0x6161, 1);
 
-	// PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
+	// PlayObjectCenteredEffect(who, FX_SMOKE, 0, 5);
 	sleep(1);
 	// startAdventureGump(who);
 endfunction

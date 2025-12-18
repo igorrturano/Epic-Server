@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
@@ -37,7 +37,7 @@ program manobra(who)
 			foreach defender in (ListMobilesNearLocation(who.x, who.y, who.z, 10, who.realm))
 				if (!(defender in who.party.members))
 					if (defender.serial != who.serial)
-						PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 3, 4);
+						PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 3, 4);
 						PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 						DamageFLS(defender, RandomIntMinMax(20, 35), DMG_ENERGY, who);
 						TS_Starttimer(defender, "congelamento", 3);

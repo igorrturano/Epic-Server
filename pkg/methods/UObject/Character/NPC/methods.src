@@ -277,7 +277,7 @@ exported function isMage(who)
 	var npc_elem := NPC_GetNPCConfig(who);
 
 	// First check if it's a shaman - if so, definitely not a mage
-	if (isShaman(who))
+	if (who.isShaman())
 		return 0;
 	endif
 
@@ -288,21 +288,6 @@ exported function isMage(who)
 
 	// Store the school
 	if (GetObjProperty(who, "SpellSchool"))
-		return 1;
-	endif
-
-	return 0;
-endfunction
-
-exported function isShaman(who)
-	var templates := array{ "ratoide_xama", "vulcanideomage", "varag4" };
-	var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
-	if (template in templates)
-		return 1;
-	endif
-	// TODO:  Buscar se é xamã no cfg ou no EPIC BOSS
-	var habs := GetObjProperty(who, "myhabs");
-	if ("Sede de Sangue" in habs)
 		return 1;
 	endif
 

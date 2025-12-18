@@ -30,7 +30,7 @@ class ImageGumpTiled(ImageGump)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFGumpPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+		GFGumpPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
 		Super::SelfCreate(this, gump);
 	endfunction
 

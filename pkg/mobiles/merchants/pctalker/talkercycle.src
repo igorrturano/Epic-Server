@@ -59,8 +59,8 @@ program BrainNerve(params)
 					if (speech_iteracao <= max_speech_with_same_player)
 						var temperatura := 2.0;
 						var top_p := 1.0;
-						var new_ai_textfrase := handle_npc_talker_openai("" + text.frase, temperatura, top_p); // fazendo a frase ser trabalhada pela IA
-						AI_Speak_to_Each_Other(npc, "" + new_ai_textfrase);
+						// var new_ai_textfrase := handle_npc_talker_openai("" + text.frase, temperatura, top_p); // fazendo a frase ser trabalhada pela IA
+						// AI_Speak_to_Each_Other(npc, "" + new_ai_textfrase);
 
 						SetGlobalProperty("speech_iteracao", (speech_iteracao + 1));
 

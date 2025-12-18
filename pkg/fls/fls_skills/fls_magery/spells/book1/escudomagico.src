@@ -24,7 +24,7 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_REACTIVE_ARMOR);
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 
 	SetObjProperty(targ, "mage", who.serial);
 	TS_StartTimer(targ, "MagicResist", CINT(AP_GetSkill(who, MAGERY) * 2) + 30, 1, who);

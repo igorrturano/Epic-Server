@@ -135,7 +135,7 @@ function FailSpell(who, spellinfo := struct)
 	if(spellinfo.size() == 0)
 		if (!GetObjProperty(who, "#magiasilenciosa"));
 			PlaySoundEffect(who, SFX_SPELL_FAIL);
-			PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+			PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 		endif
 	else
 		var detArcana := GetObjProperty(who,"#CustoDeterminacaoArcana");

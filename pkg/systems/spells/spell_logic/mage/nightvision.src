@@ -8,13 +8,29 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include "include/dungeons";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
 	params := 0; // No longer needed
 
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	var race := GetObjProperty(who, "chardata").raca;
+	var in_darkness := InDarkness(who);
+
+	// Non-drows casting during daylight (not in darkness)
+	if (!in_darkness && race != DROW)
+		SendSysMessageEx(who, "A magia não tem efeito sob a luz do dia.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Drows casting during darkness
+	if (in_darkness && race == DROW)
+		SendSysMessageEx(who, "A magia não tem efeito na escuridão.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, who, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
@@ -27,8 +43,8 @@ program SpellScript(params)
 		duration := Cint(duration * 1.2);
 	endif
 
-	who.setlightlevel(24, duration); // TODO: Voltar pra 15 pro def
-	if (GetObjProperty(who, "chardata").raca != DROW)
+	who.setlightlevel(15, duration);
+	if (race != DROW)
 		SetCooldown(who, "nightvision", duration);
 	else
 		SetCooldown(who, "lightvision", duration);

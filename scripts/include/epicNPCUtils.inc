@@ -2,6 +2,7 @@ use util;
 
 include ":attributes:attributes";
 include ":equipsys:Controller/WeaponController";
+include ":combat:Model/Damage";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
@@ -139,6 +140,26 @@ enum ELEMDAMAGES
 	DAMAGE_HIGH := "DAMAGE_HIGH"
 endenum
 
+function GetResistValueByTier(tier)
+	var resist := 0;
+
+	if (Upper(tier) == Upper(T0))
+		resist := RESIST_TIER0;
+	elseif (Upper(tier) == Upper(T1))
+		resist := RESIST_TIER1;
+	elseif (Upper(tier) == Upper(T2))
+		resist := RESIST_TIER2;
+	elseif (Upper(tier) == Upper(T3))
+		resist := RESIST_TIER3;
+	elseif (Upper(tier) == Upper(T4))
+		resist := RESIST_TIER4;
+	elseif (Upper(tier) == Upper(T5))
+		resist := RESIST_TIER5;
+	endif
+
+	return CInt(resist);
+endfunction
+
 /**
  * getNPCDamages(npc)
  *
@@ -193,12 +214,12 @@ endfunction
 function getNPCMainDamage(npc, type)
 	var damage := struct;
 
-	if (type.Upper() == SLASHDAMAGE.Upper())
-		damage.+AttackType := SLASHDAMAGE;
-	elseif (type.Upper() == PIERCINGDAMAGE.Upper())
-		damage.+AttackType := PIERCINGDAMAGE;
-	elseif (type.Upper() == BLUNTDAMAGE.Upper())
-		damage.+AttackType := BLUNTDAMAGE;
+	if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
+		damage.+AttackType := DAMAGE_TYPE::SLASH;
+	elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
+		damage.+AttackType := DAMAGE_TYPE::PIERCING;
+	elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
+		damage.+AttackType := DAMAGE_TYPE::BLUNT;
 	else
 		damage.+AttackType := error{"errortext" := "No valid attack type!"};
 	endif
@@ -208,11 +229,11 @@ function getNPCMainDamage(npc, type)
 		var npcDamages := getNPCDamages(npc);
 		var damageTier;
 
-		if (type.Upper() == SLASHDAMAGE.Upper())
+		if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
 			damageTier := npcDamages.SlashDamage;
-		elseif (type.Upper() == PIERCINGDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
 			damageTier := npcDamages.PiercingDamage;
-		elseif (type.Upper() == BLUNTDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
 			damageTier := npcDamages.BluntDamage;
 		else
 			damageTier := error{"errortext" := "No valid damage tier!"};
@@ -500,4 +521,18 @@ function GetRandomNearbyHostile(who)
 	endif
 
 	return chosen_opponent;
+endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
 endfunction

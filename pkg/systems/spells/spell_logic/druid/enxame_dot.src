@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 
@@ -26,7 +26,7 @@ program SwarmDamageOverTime(params)
 
 	// Array de efeitos visuais de insetos variados
 	var insect_effects := array{
-		0x91B  // Nuvem/enxame
+		FX_SWARM_3_MAGIC  // Nuvem/enxame
 	};
 
 	// Array de sons de insetos
@@ -53,7 +53,7 @@ program SwarmDamageOverTime(params)
 		tick_count := tick_count + 1;
 
 		// Aplica dano
-		var actual_damage := damage_per_tick + RandomInt(3) - 1; // Variação de ±1
+		var actual_damage := damage_per_tick; // Variação de ±1
 		DamageFLS(targ, actual_damage, DMG_PHYSICAL, caster);
 
 		// Efeitos visuais variados de insetos
@@ -66,11 +66,6 @@ program SwarmDamageOverTime(params)
 		// Mensagens periódicas
 		if (tick_count % 3 == 0)
 			SendSysMessageEx(targ, "Os insetos continuam a te morder!", SSM_FAIL);
-		endif
-
-		// A cada 5 ticks (10 segundos), mostra texto acima
-		if (tick_count % 5 == 0)
-			PrintTextAbove(targ, "*Zzzzzz*");
 		endif
 
 		remaining_ticks := remaining_ticks - 1;

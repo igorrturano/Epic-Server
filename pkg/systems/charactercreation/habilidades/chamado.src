@@ -19,7 +19,7 @@ program chamado(who)
 		SendSysMessageEx(who, "Nao existem animais selvagens nessa regiao.", SSM_FAIL);
 	endif
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	Playsoundeffect(who, 1482);
 
 	// sendsysmessage(who, "tamaveis " +tamable);

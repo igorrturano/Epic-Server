@@ -37,8 +37,8 @@ program habilidade(who)
 
 		VENERATIO:
 			var targ := getTarg(who);
-			// PlayObjectCenteredEffectEx(targ, /* 0x3789 */ EPIC_FX_MORALE_DOWN, 7, 32, 2485, 1);
-			var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, EPIC_FX_MORALE_DOWN, 1, targ.realm);
+			// PlayObjectCenteredEffectEx(targ, /* 0x3789 */ FX_MORALE_DOWN, 7, 32, 2485, 1);
+			var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, FX_MORALE_DOWN, 1, targ.realm);
 			Sleepms(800);
 			DestroyItem(fx);
 			PlaySoundEffect(targ, 0x58E);

@@ -7,7 +7,7 @@ use os;
 include "include/client";
 include "include/sounds";
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";
 include ":gumps:gumps";
 include ":gumps:yesNo";

@@ -46,8 +46,8 @@ program SpellStarter(params)
 			return 0;
 		endif
 	endif
-	var battlemageHabs := array{ "Concentracao Macabra", "Consagracao Divina", "Dominatio Animae", "Vínculo Elemental",
-							 	"Colheita de Almas", "Campeao das Montanhas" };
+	var battlemageHabs := array{ "Concentracao Macabra", "Consagracao Divina", "Vínculo Elemental",
+							 	"Colheita de Almas"};
 	var tem_hab := 0;
 	foreach hab in battlemageHabs
 		if (TemHabilidade(mobile, hab))
@@ -89,7 +89,7 @@ program SpellStarter(params)
 				SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
 				FailSpell(mobile);
 				PlaySoundEffect(mobile, SFX_SPELL_FAIL);
-				PlayObjectCenteredEffect(mobile, GFX_FIZZLE, 5, 50);
+				PlayObjectCenteredEffect(mobile, FX_FIZZLE, 5, 50);
 				EraseObjProperty(mobile, "#Casting");
 				return 0;
 			endif

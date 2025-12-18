@@ -141,7 +141,7 @@ function ShowLoreItemInfo(who, item, item_info)
 endfunction
 
 function PrintEmoteAbove(mobile, text)
-	PerformAction(mobile, ANIM_CAST_AREA);
+	PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
 	PrintTextAbove(mobile, "*" + text + "*", 3, 66);
 endfunction
 

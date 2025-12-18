@@ -78,6 +78,7 @@ program orderSpells(who, item)
 					"name" := spell.name,
 					"circle" := 0,
 					"description" := spell.desc, // funciona
+					"flavortext" := spell.flavortext,
 					"cantrip" := 1  // Flag to prevent removal
 				};
 				priest_list.Append(cantrip);

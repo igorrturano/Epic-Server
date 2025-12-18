@@ -69,6 +69,10 @@ class CFGFile(IOFile)
 		UnloadConfigFile(this._file);
 	endfunction
 
+	function ToString(this)
+		return $"CFGFile: Package: {this._packageName}, File: {this._fileName}, FullPath: {this._fullPath}, Element: {this._element.name}, Key: {this._key.name}";
+	endfunction
+
 	// Private Functions
 	function _LoadFile(this, createFile := false)
 		this._file := ReadConfigFile($":{this._packageName}:{this._fileName}");
@@ -87,14 +91,13 @@ class CFGFile(IOFile)
 
 		if (TypeOf(this._key.name) == "String")
 			if (isDictionary)
-				this._key.value := GetConfigStringDictionary(this._file, this._key.name);
+				this._key.value := GetConfigStringDictionary(this._element.value, this._key.name);
 			else
-				this._key.value := GetConfigStringArray(this._file, this._key.name);
-				if (this._key.value.size() == 1) this._key.value := this._key.value[1]; endif
+				this._key.value := GetConfigStringArray(this._element.value, this._key.name);
 			endif
 		elseif (TypeOf(this._key.name) == "Integer")
 		else
-			return error{ errortext := "Key name must be a string or integer" };
+			return error{ errortext := "Key name must be a 'string' or 'integer'" };
 		endif
 
 		return this._key.value;

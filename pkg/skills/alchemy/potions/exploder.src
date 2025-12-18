@@ -2,14 +2,16 @@ use uo;
 use os;
 use util;
 use vitals;
+use polsys;
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include ":alchemy:alchemy";
 include ":destroyable:include/destroyItem";
 include ":propagacao:include/efeitosIncendiarios";
+include "include/flash";
 
 program exploder(parms)
 
@@ -40,6 +42,7 @@ program exploder(parms)
 			0xef60: ExplosionEffect(who, potion, dmg);
 			0xef61: ExplosionEffect(who, potion, dmg);
 			0xef62: ExplosionEffect(who, potion, dmg);
+			0xef63: FlashbangEffect(who, potion);
 			0xbf0e: GlueEffect(who, potion);
 			0xbf0f: PoisonEffect(who, potion, 1);
 			0xbf10: PoisonEffect(who, potion, 2);
@@ -112,7 +115,7 @@ endfunction
 function HalluEffect(who, potion, lvl)
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 6, potion.realm))
 		if (CheckLineOfSight(potion, critter))
-			PlayStationaryEffect(critter.x, critter.y, critter.z, GFX_POISON_GAS, 10, 10, 0, critter.realm);
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
 			TS_StartTimer(critter, "hallucination", 120, lvl);
 		endif
 	endforeach
@@ -122,7 +125,7 @@ endfunction
 function PoisonEffect(who, potion, lvl)
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 3, potion.realm))
 		if (CheckLineOfSight(potion, critter))
-			PlayStationaryEffect(critter.x, critter.y, critter.z, GFX_POISON_GAS, 10, 10, 0, critter.realm);
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
 			if (CheckResist(critter, FORTITUDE, RESIST_EASY, -2 * lvl))
 				SendSysMessageEx(critter, "Voce resistiu ao veneno.", SSM_INFO);
 			else
@@ -197,12 +200,12 @@ function ExplosionEffect(who, potion, dmg)
 	var color := 0;
 	var dmg_type := DMG_FIRE;
 	if (GetObjProperty(who, "Infusão Ígnea"))
-		color := FOGO;
+		color := COLOR_ELEMENTAL_FIRE;
 	elseif (GetObjProperty(who, "Infusão Gélida"))
-		color := GELO;
+		color := COLOR_ELEMENTAL_ICE;
 		dmg_type := DMG_COLD;
 	elseif (GetObjProperty(who, "Infusão Elétrica"))
-		color := RAIO;
+		color := COLOR_ELEMENTAL_ENERGY;
 		dmg_type := DMG_ENERGY;
 	endif
 	// PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)
@@ -390,4 +393,37 @@ function MudBomb(who, potion, bonus)
 	endforeach
 
 	return 1;
+endfunction
+
+function FlashbangEffect(who, potion)
+	// Efeito visual de explosão
+	PlayStationaryEffect(potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, potion.realm);
+	PlaySoundEffect(potion, 0x208);
+	potion.graphic := 1;
+
+	// Raio de efeito da flashbang
+	var flash_range := 8;
+	
+	// LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN = 0x03
+	var mobiles := ListMobilesNearLocationEx(potion.x, potion.y, potion.z, flash_range, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, potion.realm);
+
+	// Aplica flash branco (tipo 5) em todos na área
+	foreach critter in mobiles
+		if (CheckLineOfSight(potion, critter))
+			// Revela jogadores ocultos
+			if (critter.hidden)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado pela granada ofuscante!");
+			endif
+			
+			// Envia o flash branco (tipo 5 = FLASH_WHITE)
+			if (critter.connected)
+				SendScreenFlash(critter, FLASH_WHITE);
+				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
+				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
 endfunction

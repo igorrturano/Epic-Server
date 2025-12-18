@@ -305,6 +305,39 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 
 endfunction
 
+function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	var retornoEfeitos := struct;
+	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
+	var efeitosMaterialString := efeitosMaterial[caracteristica];
+	var subEfeitosMaterial;
+	var valorEfeitoMaterial := 0;
+
+	if(efeitosMaterialString)
+		subEfeitosMaterial := SplitWords(efeitosMaterialString);
+		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
+		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
+		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		
+		if(subEfeitosMaterial.size() > 1)
+			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+			var subefeitosDict := dictionary{};
+
+			for indice := 1 to subEfeitosMaterial.size()
+				var valorSubEfeito := ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1]);
+				subefeitosDict.insert( subEfeitosMaterial[indice], valorSubEfeito); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				retornoEfeitos.valorTotalSubefeitos += valorSubEfeito;
+				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
+				Sleepms(2);
+			endfor
+			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
+		endif 
+	endif
+	
+	return retornoEfeitos;
+endfunction
+
 function AplicaFechadura(quem, item)
 	var levelFechadura := PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_TRANCA);
 	
@@ -412,11 +445,24 @@ function PegaDescDuracaoFabricacao(qtdSucessos)
 	endcase
 endfunction
 
-function MontaCraftProp(fabricacaoConfig)
+function MontaCraftProp(fabricacaoConfig, prop)
+
+	if(TypeOfInt(prop) == OT_STRUCT)
+		
+		var teste := prop.?deveReciclar;
+		if(!(prop.?deveReciclar))
+			prop.+deveReciclar := false;
+		endif
+
+		if(prop.pericias && prop.pericias.size() > 0)
+			return prop;
+		endif
+	endif
 
 	var propRetorno := struct {
 		pericias  := dictionary,
-		encaixesMemorizados := array
+		encaixesMemorizados := array,
+		deveReciclar := false
 	};
 
 	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")

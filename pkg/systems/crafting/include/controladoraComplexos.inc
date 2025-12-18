@@ -594,11 +594,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	endforeach
 
-	if(IsMateriaisNaoEncontrados(receita, contagem))
-		SendSysMessageEX(quem,"Você não tem todos materiais necessários.",SSM_FAIL);
-		return false;
-	endif
-
 	return true;
 endfunction
 
@@ -631,10 +626,25 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 
 		foreach ingrediente in (receita.materiaisNecessarios)
 			Sleepms(2);
+			
 			var ingredienteInfo := SplitWords(ingrediente);
+			var materialNecessarioObjType :=  cint(ingredienteInfo[1]);
+			var qtdNecessaria := cint(ingredienteInfo[2]);
 
-			if(isMaterialNecessario(item, ingredienteInfo[1]))
-				var qtdNecessaria := cint(ingredienteInfo[2]);
+			if(!contagemFinal.exists(materialNecessarioObjType))
+				var materialDesc := itemsConfig[materialNecessarioObjType];
+				InsereInformacoesContagem(
+											contagemFinal, 
+											struct {
+														name := materialDesc.desc, 
+														objtype := materialNecessarioObjType
+													},
+											qtdNecessaria,
+											receita.lote);
+			endif
+
+			if(isMaterialNecessario(item, materialNecessarioObjType))
+				
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											qtdNecessaria,
@@ -672,21 +682,26 @@ endfunction
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
-		var informacoesContagem := struct;
-		informacoesContagem.+quantidadeEncontrada := 0;
-		informacoesContagem.+itemRefArray := array;
-		informacoesContagem.+nomeItem := item.name;
-		informacoesContagem.+tierDesc := tierDesc;
-		informacoesContagem.+lote := lote;
-		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
-		if(encaixe)
-			informacoesContagem.+encaixe := encaixe;
-		endif
-		catalogoContagem.insert(item.objtype, informacoesContagem);
+		InsereInformacoesContagem(catalogoContagem, item, quantidadeNecessaria, lote, encaixe, tierDesc);
 	endif
 
 	catalogoContagem[item.objtype].quantidadeEncontrada += item.amount;
 	catalogoContagem[item.objtype].itemRefArray.append(item);
+endfunction
+
+function InsereInformacoesContagem(byref catalogoContagem, item, quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
+	var informacoesContagem := struct;
+	informacoesContagem.+quantidadeEncontrada := 0;
+	informacoesContagem.+itemRefArray := array;
+	informacoesContagem.+nomeItem := item.name;
+	informacoesContagem.+tierDesc := tierDesc;
+	informacoesContagem.+lote := lote;
+	informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
+	if(encaixe)
+		informacoesContagem.+encaixe := encaixe;
+	endif
+	catalogoContagem.insert(item.objtype, informacoesContagem);
+	return informacoesContagem;
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
@@ -1083,7 +1098,6 @@ function ComparaMelhorComponente(poderAtual,poderNovo, envelopeNovo, envelopeVel
 endfunction
 
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
-	var poderContado := 0;
 	var retorno := struct;
 
 	if(!propriedades)
@@ -1095,13 +1109,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 
 	endif
 								
-	poderContado += propriedades.valorPrincipal;
-
-	foreach efeitoSecundario in (propriedades.efeitosAdicionais)
-		poderContado += efeitoSecundario;
-	endforeach
-
-	retorno.+poderContado := poderContado;
+	retorno.+poderContado := propriedades.valorPrincipal + propriedades.valorTotalSubefeitos;
 	retorno.+modPeso := propriedades.modificadorPeso;
 	retorno.+modHp := propriedades.modificadorHp;
 
@@ -1131,6 +1139,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	if(valorEfeitos.efeitosAdicionais)
 		propriedades.+efeitosAdicionais := valorEfeitos.efeitosAdicionais;
+		propriedades.+valorTotalSubefeitos := valorEfeitos.valorTotalSubefeitos;
 	endif
 
 	if(TypeOfInt(valorEfeitos.valorPrincipal) != OT_UNINIT || TypeOfInt(valorEfeitos.valorPrincipal) != OT_ERROR)
@@ -1141,35 +1150,6 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	endif
 	
 	return propriedades; 
-endfunction
-
-function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
-	var retornoEfeitos := struct;
-	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
-	var efeitosMaterialString := efeitosMaterial[caracteristica];
-	var subEfeitosMaterial;
-	var valorEfeitoMaterial := 0;
-
-	if(efeitosMaterialString)
-		subEfeitosMaterial := SplitWords(efeitosMaterialString);
-		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
-		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
-		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
-		
-		if(subEfeitosMaterial.size() > 1)
-			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-			var subefeitosDict := dictionary{};
-
-			for indice := 1 to subEfeitosMaterial.size()
-				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
-				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
-				Sleepms(2);
-			endfor
-			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
-		endif 
-	endif
-	
-	return retornoEfeitos;
 endfunction
 
 function IsAlvoValido(quem, alvo)
@@ -1189,11 +1169,8 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 	var menuFile    := profissaoConfig[profissao].MenuFile;
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
-	var propCraft := GetObjProperty(quem, "Craft");
-	if( TypeOfInt(propCraft) == OT_ERROR)
-		propCraft := MontaCraftProp(profissaoConfig);
-		SetObjProperty(quem, "Craft", propCraft);
-	endif
+	var propCraft := MontaCraftProp(profissaoConfig,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
@@ -1542,10 +1519,9 @@ function CriaPropFabricadoGerada(
 
 		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
 
+		var materialStruct, valorTier, materialNom, materialComponente;
 		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size() + 1)];
-		var materialComponente;
 		var arrayMateriais := array;
-		var materialNome;
 		var tipoMaterial := componenteDescConfig[hex(componenteAleatorio)].principalMaterial;
 		var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
 		var materiaisPossiveisPorTier := dictionary;
@@ -1557,22 +1533,24 @@ function CriaPropFabricadoGerada(
 			endif
 
 			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
-				if(cint(recursosConfig[materialPossivel.chave].tier) == tier )
-					materiaisPossiveisPorTier.insert(
-														tier,
-														struct{
-																materialComponente := materialPossivel.chave,
-																materialNome := recursosConfig[hex(materialPossivel.chave)].name
-															}
-													);
-				endif
+				
+				var chaveValorTier := PegaComponenteTierDesc(cint(recursosConfig[materialPossivel.chave].tier)).valor;
+				materiaisPossiveisPorTier.insert(
+													chaveValorTier,
+													struct{
+															materialComponente := materialPossivel.chave,
+															materialNome := recursosConfig[hex(materialPossivel.chave)].name
+														}
+												);
 			else
 				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
-				var tierMaterial := cint(SplitWords(efeitosmaterial.valorLiteralPrincipal,"-")[2]);
-				
-				if( DeveEscreverMaterial(materiaisPossiveisPorTier,tier))
+				var valorTierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
+				var tiers :=  PegaComponenteTiers();
+				var chaveValorTier := valorTierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : valorTierMaterial;
+
+				if( DeveEscreverMaterial(materiaisPossiveisPorTier,chaveValorTier))
 					materiaisPossiveisPorTier.insert(
-														tierMaterial,
+														chaveValorTier,
 														struct{
 																materialComponente := materialPossivel.chave,
 																materialNome := recursosConfig[hex(materialPossivel.chave)].name
@@ -1584,14 +1562,16 @@ function CriaPropFabricadoGerada(
 			
 		endforeach
 
-		var materialStruct;
 		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
-			materialStruct := materiaisPossiveisPorTier[tier];
+			valorTier := tierInfo.valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
-			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tier + 1)];
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tier + 1)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
 			var tierValidado := tier > 1 ? tier : 2;// achei melhor só reajustar ao invés de mandar msg de erro.
-			materialStruct := materiaisPossiveisPorTier[RandomIntMinMax(1,tierValidado)];
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tierValidado)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		else
 			return error{"errorText" := "parâmetro modoEscolhaMaterial inválido."};
 		endif
@@ -1602,15 +1582,27 @@ function CriaPropFabricadoGerada(
 				nomeMaterial := materialStruct.materialNome,
 				chaveMaterial := hex(materialStruct.materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
-
+		
 		if(TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_ERROR || TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_UNINIT)
-			return error{"errorText" := "Não foi possível encontrar material para este tier."};
+			//Print("receita.componentesNecessarios: " + componenteNecessario + " materiaisPossiveisPorTier:  " + materiaisPossiveisPorTier);
+			return error{"errorText" := "Não foi possível encontrar material para este valor de tier [{}].".format(valorTier) };
 		endif
 
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
+		var componenteEscolhido := MontaComponenteEscolhido(
+														opcaoEncontrada, 
+														componenteNecessario, 
+														recursosConfig, 
+														receita.componentesNecessarios.size(), 
+														receita.quantidadeOpicionais);
+
+		AcrescentaComponenteEscolhido(
+										objetoEsquema,
+										componenteNecessario,
+										componenteEscolhido, 
+										opcaoEncontrada.indiceEncaixeComponente, 
+										classe);
 	endforeach
-	//Print("objetoEsquema: " + objetoEsquema);
+	
 
 	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
 endfunction

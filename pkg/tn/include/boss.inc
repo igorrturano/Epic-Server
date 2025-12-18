@@ -1023,27 +1023,27 @@ function CombatEventsOptions( who, state )
 	  if ( fxid == "Lightning" )
 		state.+fxid := fxid;
 	  elseif ( fxid == "Red Sparkles" )
-		state.+fxid := GFX_RED_SPARKLES;
+		state.+fxid := FX_RED_SPARKLES;
 		state.+speed := 7;
 		state.+loops := 7;
 	  elseif ( fxid == "Blue Sparkles" )
-		state.+fxid := GFX_BLUE_SPARKLES;
+		state.+fxid := FX_BLUE_SPARKLES;
 		state.+speed := 10;
 		state.+loops := 10;
 	  elseif ( fxid == "Blue and Swirl" )
-		state.+fxid := GFX_BLUE_SPARKLE_SWIRL;
+		state.+fxid := FX_BLUE_SPARKLE_SWIRL;
 		state.+speed := 7;
 		state.+loops := 16;
 	  elseif ( fxid == "Swirl Sparkles" )
-		state.+fxid := GFX_BLUE_SPARKLE_BORDER;
+		state.+fxid := FX_BLUE_SPARKLE_BORDER;
 		state.+speed := 7;
 		state.+loops := 0;
 	  elseif ( fxid == "Blue Sparkles on Ground" )
-		state.+fxid := GFX_BLUE_SPARKLE_GROUND;
+		state.+fxid := FX_BLUE_SPARKLE_GROUND;
 		state.+speed := 7;
 		state.+loops := 10;
 	  elseif ( fxid == "Fire Column" )
-		state.+fxid := GFX_FIRE_COLUMN;
+		state.+fxid := FX_FIRE_COLUMN;
 		state.+speed := 7;
 		state.+loops := 0;
 	  elseif ( fxid == "Outro" )
@@ -1063,15 +1063,15 @@ function CombatEventsOptions( who, state )
 				 	  "Player->Mob" }
 							   	  );
 	  if ( fxid == "Small Fireball" )
-		state.fxid := GFX_SMALL_FIREBALL;
+		state.fxid := FX_SMALL_FIREBALL;
 		state.+speed := 5;
 		state.+loops := 0;
 	  elseif ( fxid == "Large Fireball" )
-		state.fxid := GFX_LARGE_FIREBALL;
+		state.fxid := FX_LARGE_FIREBALL;
 		state.+speed := 5;
 		state.+loops := 0;
 	  elseif ( fxid == "Wavy Fireball" )
-		state.fxid := GFX_WAVY_FIREBALL;
+		state.fxid := FX_WAVY_FIREBALL;
 		state.+speed := 5;
 		state.+loops := 0;
 	  elseif ( fxid == "Other" )

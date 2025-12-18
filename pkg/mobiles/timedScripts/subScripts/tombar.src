@@ -10,27 +10,27 @@ include ":timedscripts:timedScripts";
 include ":attributes:attributes";
 include "include/sounds";
 include "include/say";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/FXController";
 include ":fls_core:fls_characters";
 
 function StartScript(mobile, attacker := 0, level := 0)
-	if (!CheckGender(mobile))
-		PerformAction(mobile, 0x14, 5, 1, ACTION_DIR_FORWARD, 0, 1);
-		sleepms(850);
-		PlayHurtSound(mobile);
-		PrintTextAbove(mobile, "*cai no chão*", SSM_FAIL);
+	PerformAction(mobile, 0x14, 5, 1, ACTION_DIR_FORWARD, 0, 1);
+	sleepms(850);
+	PlaySoundEffect(mobile.GetObjRef(), GetDefenderSFX(mobile));
+	PrintTextAbove(mobile, "*cai no chão*", SSM_FAIL);
+	
+	if (mobile.GetGender() == MOBILE_GENDER::MALE)
 		PerformAction(mobile, 0x03, 5, 1, ACTION_DIR_FORWARD, 0, 4);
 	else
-		PerformAction(mobile, 0x14, 5, 1, ACTION_DIR_FORWARD, 0, 1);
-		sleepms(850);
-		PlayHurtSound(mobile);
-		PrintTextAbove(mobile, "*cai no chão*", SSM_FAIL);
 		PerformAction(mobile, 0x15, 5, 1, ACTION_DIR_FORWARD, 0, 4);
 	endif
 
 	AP_ConsumeVital(mobile, STAMINA, 10);
 
 	sleepms(750);
+
 	return 1;
 endfunction
 
@@ -39,7 +39,7 @@ function EndScript(mobile)
 endfunction
 
 program TimedScriptInit(params)
-	var mobile := params[1];
+	var mobile := MobileWrapper(params[1]);
 	var type := params[2];
 	var level := params[3];
 

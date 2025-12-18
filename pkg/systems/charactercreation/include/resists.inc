@@ -174,7 +174,7 @@ function GetSecondChanceMessage(defender, resist_type)
     elseif (chardata.raca == ANAO && resist_type == VONTADE)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)
-        return "Um polski sempre pode contar com a própria sorte";
+        return "Um pequilho sempre pode contar com a própria sorte";
     endif
     return "";
 endfunction
