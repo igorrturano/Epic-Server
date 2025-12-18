@@ -15,7 +15,7 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	handleSilentMagic(who, who, SFX_BLESS);
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor de dia", SSM_INFO);
 

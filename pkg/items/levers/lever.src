@@ -10,13 +10,14 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":gumps:gumps";
 include ":tn:tngumps";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":traps:traps";
 include ":levers:lever";
 include ":tn:boss";
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
+include ":message:include/model/Message";
 
 CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
 CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
@@ -72,6 +73,11 @@ function ConstructGump(item)
       y += 20;
       GFTextLine(gump, 45, y, _ifElse(opts.linked_to, 520, 500), "Linkar outras alavancas");
       GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 3);
+      if (opts.linked_to)
+         y += 20;
+         GFTextLine(gump, 45, y, _ifElse(opts.sync_toggle, 520, 500), "Sincronizar toggle (interruptores)");
+         GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 108);
+      endif
    endif
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.linked_to || opts.is_linked, 520, 500), "Unlink alavancas");
@@ -241,7 +247,7 @@ program lever(who, item)
 			else
 			item.graphic := graphic_lev;
 			endif
-		 55: spawn_boss (who, item, cfg);
+		 55: spawn_boss(who, item);
 		 56: efeitos (who, item);
 		 //98: setprp(who, item, res);           // setobjproperty()
 		 98: changegraphic(who, item);
@@ -253,6 +259,7 @@ program lever(who, item)
 		 103: ConfigureRequiredItems(who, item);
 		 130: SetGlobalEventGump(who, item);
 		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 108: toggleSyncToggle(who, item);  // Toggle sync mode for linked levers
 		 105: 	  foreach key in (res.keys) sleepms(2);
    case (key)
       106: // Mover primeiro
@@ -641,45 +648,95 @@ function togglewalkon(who, item)
    item.setLeverOpts(opts);
 endfunction
 
-function spawn_boss(who, item, cfg)
+function toggleSyncToggle(who, item)
    var opts := item.GetLeverOpts();
-   var first_quest := SendSysMessageEx(who,"Selecione o Local onde deseja que o boss apareça (CUIDADO o local tem que ser passable!)", SSM_INFO);
-   var trg_boss := TargetCoordinates(who);
-	if(!trg_boss)
-		SendSysMessageEx(who, "cancelado", SSM_FAIL);
-		return;
-   endif   
-if (CheckImpassable(trg_boss.objtype) == 1)
-	SendSysMessageEx(who, "Essa não é uma localização válida", SSM_FAIL);
-	return;
-endif
-   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x) +" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z), 1);
- if (loc == error)
-		SendSysMessageEx(who, "cancelado", SSM_FAIL);
-		return;
-   endif 
-	loc := splitwords(loc);
-   if (loc[1] == "nada")
-		SetObjProperty(item, "loc", 1);
-	else
-		var x := SetObjProperty(item, "x", loc[1]);
-		var y := SetObjProperty(item, "y", loc[2]);
-		var z := SetObjProperty(item, "z", loc[3]);
+   if (opts.sync_toggle)
+      SendSysMessageEx(who, "Modo sincronizado desativado. As alavancas funcionarão de forma independente.", SSM_FAIL);
+      opts.-"sync_toggle";
+   else
+      SendSysMessageEx(who, "Modo sincronizado ativado. Qualquer alavanca pode ligar/desligar o mecanismo.", SSM_INFO);
+      opts.sync_toggle := 1;
+      // Disable all_levers when sync_toggle is enabled (they are mutually exclusive)
+      if (opts.all_levers)
+         opts.-"all_levers";
+         opts.-"all_levers_order";
+         EraseObjProperty(item, "leverorder");
+         SendSysMessageEx(who, "Nota: Modo 'todas as alavancas' foi desativado automaticamente.", SSM_INFO);
+      endif
    endif
- 
-  var loc2 := RequestGump(who, "Escreva o que deseja que apareça em textabove na criatura, se nao quer deixe em branco");
-  if (loc2 == "")
-  else
-  SetObjProperty(item, "txtabove", loc2);
-  endif
-CreateBossStructGump(who, cfg.boss);
-	var erro := setobjproperty(item, "configboss", cfg);
-	
-	
-	SendSysmessage(who, "Configurado." + erro);
-
-opts.spawn_boss := 1;
    item.setLeverOpts(opts);
+endfunction
+
+function spawn_boss(who, item)
+   var opts := item.GetLeverOpts();
+
+   // Ask where the boss should spawn
+   Message("Selecione o local onde deseja que o boss apareça (CUIDADO: o local tem que ser passable!)").SetColor(SSM_INFO).SendSys(who);
+   var trg_boss := TargetCoordinates(who);
+   if (!trg_boss)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   if (CheckImpassable(trg_boss.objtype) == 1)
+      Message("Essa não é uma localização válida").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x)+" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z)+ " " +Cstr(trg_boss.realm), 1);
+   if (loc == error)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   loc := SplitWords(loc);
+   if (loc[1] == "nada")
+      SetObjProperty(item, "spawn_at_lever", 1);
+   else
+      SetObjProperty(item, "spawn_x", CInt(loc[1]));
+      SetObjProperty(item, "spawn_y", CInt(loc[2]));
+      SetObjProperty(item, "spawn_z", CInt(loc[3]));
+      EraseObjProperty(item, "spawn_at_lever");
+   endif
+
+   var text_above := RequestGump(who, "Escreva o que deseja que apareça em textabove na criatura, se não quer deixe em branco");
+   if (text_above && text_above != "")
+      SetObjProperty(item, "spawn_textabove", text_above);
+   else
+      EraseObjProperty(item, "spawn_textabove");
+   endif
+
+   // Configure respawn cooldown time
+   var respawn_min := RequestGump(who, "Tempo mínimo de respawn em MINUTOS (deixe em branco para usar padrão de 120 min)", "", "120");
+   if (respawn_min && respawn_min != "")
+      SetObjProperty(item, "respawn_min", CInt(respawn_min));
+   else
+      SetObjProperty(item, "respawn_min", 120);
+   endif
+
+   var respawn_max := RequestGump(who, "Tempo máximo de respawn em MINUTOS (deixe em branco para usar padrão de 150 min)", "", "150");
+   if (respawn_max && respawn_max != "")
+      SetObjProperty(item, "respawn_max", CInt(respawn_max));
+   else
+      SetObjProperty(item, "respawn_max", 150);
+   endif
+
+   // Call the epicboss command to configure the boss
+   Message("Agora configure o boss usando o sistema Epic Boss...").SetColor(SSM_INFO).SendSys(who);
+   var result := start_script(":epicspawn:commands/gm/epicboss", array{who, item});
+   if (result == error)
+      Message("Erro ao iniciar o configurador de boss: " + result.errortext).SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   // The epicboss command will save the form_data to the item
+   // Wait a bit to ensure the script has started
+   sleepms(100);
+
+   opts.spawn_boss := 1;
+   item.setLeverOpts(opts);
+
+   Message("Configuração da alavanca com boss concluída!").SetColor(SSM_INFO).SendSys(who);
 endfunction
 
 function efeitos(who, item)

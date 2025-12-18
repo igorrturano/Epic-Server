@@ -171,7 +171,7 @@ function taming(who)
 		return;
 	endif
 
-	if (isBoss(targ))
+	if (isTrueBoss(targ))
 		SendSysMessageEx(who, "Essa criatura não aceita ser domesticada.", SSM_FAIL);
 		return 0;
 	endif

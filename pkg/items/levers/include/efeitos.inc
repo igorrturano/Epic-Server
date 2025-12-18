@@ -4,7 +4,7 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":nature:nature";
 
 function EfeitosTremor(item, danobase, danoale, dif, range)

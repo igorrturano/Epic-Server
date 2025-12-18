@@ -2,10 +2,10 @@ use uo;
 use vitals;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include "include/utils";
 
 // function PushBack(who, dist, delay)
 

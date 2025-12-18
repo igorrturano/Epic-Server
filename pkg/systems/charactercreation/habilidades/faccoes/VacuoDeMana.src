@@ -14,14 +14,14 @@ endprogram */
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:vitals";
 include ":charactercreation:resists";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program vacuodemana(params)
 	var attacker := params[1];

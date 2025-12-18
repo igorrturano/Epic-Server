@@ -15,24 +15,27 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 	var cfg := ReadConfigFile(":combat:itemdesc");
 	var elem := FindConfigElem(cfg, armor.objtype);
 
-	if (!GetObjProperty(armor, "encerada") && elem.TipoProtecao)
-		bonus := 1;
-	endif
-
 	if (armor)
 		var armr_elem := CS_GetSettingsCfgElem("Armor");
 
 		// Verifica a poncentagem de manter equipado o item
 		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(armor.hp)) / 100.0;
 		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(armor.hp) / 100);
-
 		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
 		var wearchance := armr_elem.WearChance;
 		if ( TemHabilidade(defender, "Conservar Equipamento"))
-			wearchance := wearchance/2;
+			wearchance := wearchance - 15;
 			//if (wearchance < 10)
 			//	wearchance := 10;
 			//endif
+		endif
+
+		if (GetObjProperty(armor, "encerada") && elem.TipoProtecao)
+			// Reduz a chance de desgaste em 10% se a armadura estiver encerada
+			wearchance := wearchance - 10;
+			if (wearchance < 5)
+				wearchance := 5;
+			endif
 		endif
 
 		//if (CInt(rawdamage) > dmg_to_wear)
@@ -103,7 +106,6 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 		var armr_elem := CS_GetSettingsCfgElem("Parry");
 
 		// Verifica a poncentagem de manter equipado o item
-		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(shield.hp) / 100);
 		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(shield.hp)) / 100.0;
 
 		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento

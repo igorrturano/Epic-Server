@@ -43,7 +43,7 @@ program SpellScript(params)
 	sleepms(500);
 
 	// Efeitos no alvo - pedra quebrando e vida retornando
-	PlayObjectCenteredEffect(targ, 0x3728, 10, 16); // Efeito de explosão/quebra
+	PlayObjectCenteredEffect(targ, 0xDBCA, 10, 16); // Efeito de explosão/quebra
 	PlaySoundEffect(targ, 0x3E8); // Som de quebra de pedra
 
 	sleepms(300);

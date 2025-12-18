@@ -62,7 +62,7 @@ endprogram
 
 function PlayTransformationEffects(who)
 	PlaySoundEffect(who, SFX_SPELL_HEAL);
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 endfunction
 
 function PerformTransformation(who, form)
@@ -74,7 +74,7 @@ function PerformTransformation(who, form)
 	metamorfose.+newgraphic := form.graphic;
 	SetObjProperty(who, "metamorfose", metamorfose);
 
-	PerformAction(who, ANIM_CAST_AREA);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	PrintTextAbove(who, "*transformando-se*");
 	// Freeze player during transformation
 	who.frozen := 1;
@@ -338,7 +338,7 @@ endfunction
 
 function FailTransformation(who)
 	who.frozen := 0;
-	PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 	PlaySoundEffect(who, SFX_SPELL_FAIL);
 	return 1;
 endfunction

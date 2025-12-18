@@ -24,7 +24,7 @@ program SpellScript_AprisionarDemonio(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(targ, 0x202); // Magical sound
-	PlayStationaryEffectEx(targ.x, targ.y, targ.z, targ.realm, EPIC_FX_MAZE, 10, 10);
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z, targ.realm, FX_MAZE, 10, 10);
 
 	// Duration based on Theology skill
 	var duration := 5 + CInt(AP_GetSkill(caster, THEOLOGY) / 10);

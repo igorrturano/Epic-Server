@@ -1,13 +1,13 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program vacuodemana(params)
 	var attacker := params[1];
@@ -47,14 +47,12 @@ program vacuodemana(params)
 	var dmgList := dictionary;
 	dmgList := getNewDamageList(attacker);
 	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	DamageFLS(defender, total, DMG_FORCED, attacker);
 	DamageFLS(defender, dano_mlore, DMG_COLD, attacker);
 	if (attacker.hidden || attacker.concealed)
-		PlayAttackAnimation(attacker);
-		PlayHitSounds(attacker, defender);
 		DamageFLS(defender, total, DMG_PHYSICAL, attacker);
 		DamageFLS(defender, dano_mlore, DMG_COLD, attacker);
 	endif

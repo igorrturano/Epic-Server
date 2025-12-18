@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":fls_magery:spellSounds";

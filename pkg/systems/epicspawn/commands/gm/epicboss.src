@@ -9,7 +9,7 @@ include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
 include ":epicspawn:epicDeathEvents";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/creationUtils";
 
 // Constants for button IDs and menu pages
@@ -153,7 +153,6 @@ function InitializeFormData()
 	form_data.skills_mod.+dual_wield := "0";
 	form_data.skills_mod.+gathering := "0";
 	form_data.skills_mod.+handle_animal := "0";
-	form_data.skills_mod.+magic_lore := "0";
 	form_data.skills_mod.+mechanics := "0";
 	form_data.skills_mod.+medicine := "0";
 	form_data.skills_mod.+metal_working := "0";
@@ -351,6 +350,103 @@ function ExtractPageData(input, page)
 			var awareness := GFExtractData(input, 23);
 			if (awareness != error && awareness != "")
 				form_data.skills_mod.awareness := awareness;
+			endif
+
+			var alchemy := GFExtractData(input, 41);
+			if (alchemy != error && alchemy != "")
+				form_data.skills_mod.alchemy := alchemy;
+			endif
+
+			var arcana := GFExtractData(input, 44);
+			if (arcana != error && arcana != "")
+				form_data.skills_mod.arcana := arcana;
+				print("FORM DATA ARCANA:"+form_data.skills_mod.arcana);
+			endif
+
+			var domestic_work := GFExtractData(input, 36);
+			if (domestic_work != error && domestic_work != "")
+				form_data.skills_mod.domestic_work := domestic_work;
+			endif
+
+			var dual_wield := GFExtractData(input, 39);
+			if (dual_wield != error && dual_wield != "")
+				form_data.skills_mod.dual_wield := dual_wield;
+			endif
+
+			var gathering := GFExtractData(input, 37);
+			if (gathering != error && gathering != "")
+				form_data.skills_mod.gathering := gathering;
+			endif	
+
+			var handle_animal := GFExtractData(input, 38);
+			if (handle_animal != error && handle_animal != "")
+				form_data.skills_mod.handle_animal := handle_animal;
+			endif
+
+			var mechanics := GFExtractData(input, 31);
+			if (mechanics != error && mechanics != "")
+				form_data.skills_mod.mechanics := mechanics;
+			endif
+
+			var medicine := GFExtractData(input, 32);
+			if (medicine != error && medicine != "")
+				form_data.skills_mod.medicine := medicine;
+			endif		
+
+			var metal_working := GFExtractData(input, 34);
+			if (metal_working != error && metal_working != "")
+				form_data.skills_mod.metal_working := metal_working;
+			endif		
+
+			var one_handed := GFExtractData(input, 26);
+			if (one_handed != error && one_handed != "")
+				form_data.skills_mod.one_handed := one_handed;
+			endif		
+
+			var parry := GFExtractData(input, 25);
+			if (parry != error && parry != "")
+				form_data.skills_mod.parry := parry;
+			endif		
+
+			var pickpocketing := GFExtractData(input, 30);
+			if (pickpocketing != error && pickpocketing != "")
+				form_data.skills_mod.pickpocketing := pickpocketing;
+			endif	
+
+			var ranged := GFExtractData(input, 28);
+			if (ranged != error && ranged != "")
+				form_data.skills_mod.ranged := ranged;
+			endif	
+
+			var science := GFExtractData(input, 43);
+			if (science != error && science != "")
+				form_data.skills_mod.science := science;
+			endif	
+
+			var sneak := GFExtractData(input, 29);
+			if (sneak != error && sneak != "")
+				form_data.skills_mod.sneak := sneak;
+			endif	
+
+			var survival := GFExtractData(input, 33);
+			if (survival != error && survival != "")
+				form_data.skills_mod.survival := survival;
+			endif	
+
+			
+			var theology := GFExtractData(input, 42);
+			if (theology != error && theology != "")
+				form_data.skills_mod.theology := theology;
+			endif	
+
+			var two_handed := GFExtractData(input, 27);
+			if (two_handed != error && two_handed != "")
+				form_data.skills_mod.two_handed := two_handed;
+			endif
+
+			var wood_working := GFExtractData(input, 35);
+			if (wood_working != error && wood_working != "")
+				form_data.skills_mod.wood_working := wood_working;
 			endif
 			break;
 
@@ -778,11 +874,6 @@ function ShowPage2(who, title, gump_width, gump_height)
 	GFTextLine(gump, skill_x_start[5], skill_y_start, 1153, "Theology:");
 	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start, 30, 20, 1150, form_data.skills_mod.theology ?
 				 form_data.skills_mod.theology : "0", 42, 4);
-
-	// Throwing
-	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing, 1153, "Throwing:");
-	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing, 30, 20, 1150,
-				 form_data.skills_mod.throwing ? form_data.skills_mod.throwing : "0", 40, 4);
 
 	// Two Handed
 	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 2, 1153, "Two Handed:");
@@ -2009,7 +2100,7 @@ function EditHairColor(who, byref form_data)
 		ELFO: color_elem := color_cfg["Cabelo Elfo"];
 		DROW: color_elem := color_cfg["Cabelo Drow"];
 		ORC:  color_elem := color_cfg["Cabelo Orc"];
-		POLSKI:
+		PEQUILHO:
 		HUMANO:
 		default:
 			color_elem := color_cfg["Cabelo Imperial"];
@@ -2232,7 +2323,7 @@ function EditBeardColor(who, byref form_data)
 		ELFO: hair_elem := color_cfg["Cabelo Elfo"];
 		DROW: hair_elem := color_cfg["Cabelo Drow"];
 		ORC:  hair_elem := color_cfg["Cabelo Orc"];
-		POLSKI:
+		PEQUILHO:
 		HUMANO:
 		default:
 			hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
@@ -2306,7 +2397,7 @@ function EditSkinColor(who, byref form_data)
 		DROW: skin_config := skin_cfg["drow"];
 		ORC:  skin_config := skin_cfg["orc"];
 		ANAO:
-		POLSKI:
+		PEQUILHO:
 		HUMANO:
 		default:
 			skin_config := skin_cfg["list"]; // Default to standard list
@@ -3130,7 +3221,7 @@ function HandleAddRace(who, byref form_data)
 	// Race Section
 	GFTextMid(gump, 0, 60, 500, 1153, "Race");
 
-	var races := array{ HUMANO, ELFO, DROW, ORC, ANAO, POLSKI };
+	var races := array{ HUMANO, ELFO, DROW, ORC, ANAO, PEQUILHO };
 
 	var y_pos := 90;
 	GFSetRadioGroup(gump, 1);
@@ -3207,7 +3298,7 @@ function GetRaceGraphic(race, gender)
 		return (gender == 1) ? 1831 : 1830;
 	elseif (race == ORC)
 		return (gender == 1) ? 1833 : 1832;
-	elseif (race == ANAO || race == POLSKI)
+	elseif (race == ANAO || race == PEQUILHO)
 		return (gender == 1) ? 1829 : 1828;
 	else
 		return base_graphic; // Human

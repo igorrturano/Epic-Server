@@ -3,9 +3,9 @@ use os;
 
 include "include/client";
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";
@@ -27,7 +27,7 @@ program vacuodemana(params)
 	if (!shaman_souls)
 		var shaman_souls := 0;
 	else
-		PerformAction(attacker, ANIM_CAST_DIR);
+		PerformAction(attacker, HUMAN_ANIM::CAST_DIR);
 		TS_StartTimer(defender, "paralysis", duration);
 		SetCooldown(defender, "horrify", shaman_souls + duration);
 		PlaySoundEffect(defender, 0x654);

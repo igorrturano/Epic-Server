@@ -54,7 +54,7 @@ function Hallucinate(who)
 		ELFO:
 			graphicarray := array{ 72, 87, 250, 271 }; // TERATHAN, OPHIDIAN, LOBISOMEM DE 3 CABEÇAS, SATIRO.
 			break;
-		POLSKI:
+		PEQUILHO:
 			graphicarray := array{ 38, 69, 76, 77 }; // DEMONIO DA SANGRIA, GAZER, TITAN, KRAKEN.
 			break;
 		default:
@@ -102,20 +102,6 @@ function ConvertIntToHex(astring, alength)
 		astring := "0" + astring;
 	endwhile
 	return astring;
-endfunction
-
-function DrawGamePlayer(who, jgraphic, jcolor)
-	var PacketHexString := "20" + ConvertIntToHex(who.serial, 4);
-	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
-	PacketHexString := PacketHexString + "0000";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
-	SendPacket(who, PacketHexString);
 endfunction
 
 function DrawObject(ktowhom, kobj, kgraphic, kcolor, keqitrandcolor := 0)

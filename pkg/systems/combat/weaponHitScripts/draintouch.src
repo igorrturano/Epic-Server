@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
@@ -16,7 +16,7 @@ program HitScript(params)
 	params := 0; // Not needed anymore.
 
 	HealDamage(attacker, rawdamage);
-	PlayObjectCenteredEffect(attacker, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+	PlayObjectCenteredEffect(attacker, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 
 	return 1;
 endprogram

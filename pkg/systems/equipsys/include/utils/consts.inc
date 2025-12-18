@@ -19,6 +19,8 @@ endenum
 enum DAMAGETAG
 	DAMAGE_NONE := "DAMAGE_NONE",
 
+	DAMAGE_FIST := "DAMAGE_FIST",
+
 	ONEHANDED_LOW := "ONEHANDED_LOW",
 	ONEHANDED_MID := "ONEHANDED_MID",
 	ONEHANDED_HIGH := "ONEHANDED_HIGH",
@@ -39,11 +41,11 @@ enum DAMAGETAG
 	THROWING_MID := "THROWING_MID",
 	THROWING_HIGH := "THROWING_HIGH"
 endenum
-enum WEAPONTYPE
+enum WEAPONCATEGORY
 	UNARMED := "Unarmed",
 	DAGGER := "Dagger",
 	SWORD := "Sword",
-	GREATSWORD := "GreatSword",
+	GREATSWORD := "Greatsword",
 	AXE := "Axe",
 	SPEAR := "Spear",
 	MACE := "Mace",
@@ -65,32 +67,33 @@ enum CRITICALTAG
 	CRITICALCHANCE_MID := "CRITICAL_MID",
 	CRITICALCHANCE_HIGH := "CRITICAL_HIGH"
 endenum
-enum ARMORSLOT
-	HEAD := "HEAD",
-	NECK := "NECK",
-	BODY := "BODY",
-	ARMS := "ARMS",
-	HANDS := "HANDS",
-	LEGS := "LEGS",
-	FEET := "FEET",
-	SHIELD := "SHIELD"
+enum EQUIPSLOT
+	HEAD := "Head",
+	NECK := "Neck",
+	BODY := "Body",
+	ARMS := "Arms",
+	HANDS := "Hands",
+	LEGS := "Legs",
+	FEET := "Feet",
+	SHIELD := "Shield",
+	WEAPON := "Weapon"
 endenum
 enum PROTECTIONTYPE
-	ARMOR_LOWLOW := "ARMADURA LEVE FRACA",
-	ARMOR_LOWMID := "ARMADURA LEVE MEDIA",
-	ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
+	ARMOR_LOWLOW := "Armadura Leve Fraca",
+	ARMOR_LOWMID := "Armadura Leve Media",
+	ARMOR_LOWHIGH := "Armadura Leve Forte",
 
-	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA",
-	ARMOR_MIDMID := "ARMADURA MEDIA MEDIA",
-	ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
+	ARMOR_MIDLOW := "Armadura Media Fraca",
+	ARMOR_MIDMID := "Armadura Media Media",
+	ARMOR_MIDHIGH := "Armadura Media Forte",
 
-	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA",
-	ARMOR_HIGHMID := "ARMADURA PESADA MEDIA",
-	ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
+	ARMOR_HIGHLOW := "Armadura Pesada Fraca",
+	ARMOR_HIGHMID := "Armadura Pesada Media",
+	ARMOR_HIGHHIGH := "Armadura Pesada Forte",
 
-	SHIELD_BUCKLER := "ESCUDO BROQUEL",
-	SHIELD_SMALL := "ESCUDO PEQUENO",
-	SHIELD_MEDIUM := "ESCUDO MEDIO",
-	SHIELD_LARGE := "ESCUDO GRANDE",
-	SHIELD_TOWER := "ESCUDO TORRE"
+	SHIELD_BUCKLER := "Escudo Broquel",
+	SHIELD_SMALL := "Escudo Pequeno",
+	SHIELD_MEDIUM := "Escudo Medio",
+	SHIELD_LARGE := "Escudo Grande",
+	SHIELD_TOWER := "Escudo Torre"
 endenum

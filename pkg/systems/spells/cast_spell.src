@@ -20,6 +20,7 @@ include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
 include "include/epicMageryUtils";
+include "include/sysEvent";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -354,9 +355,9 @@ endfunction
 
 function performCastingAnimation(mobile, range)
 	case (range)
-		"Distancia": PerformAction(mobile, ANIM_CAST_DIR); break;
-		"Area":      PerformAction(mobile, ANIM_CAST_AREA); break;
-		default:     PerformAction(mobile, ANIM_CAST_DIR);
+		"Distancia": PerformAction(mobile, HUMAN_ANIM::CAST_DIR); break;
+		"Area":      PerformAction(mobile, HUMAN_ANIM::CAST_AREA); break;
+		default:     PerformAction(mobile, HUMAN_ANIM::CAST_DIR);
 	endcase
 endfunction
 
@@ -382,6 +383,11 @@ function selectSpellTarget(mobile, spellinfo, targ)
 			SendSysMessageEx(mobile, "Voce cancelou a magia.", SSM_FAIL);
 			FailSpell(mobile, spellinfo);
 			return 0;
+		endif
+
+		if (!targ.opponent && spellinfo.alvo == "Unico" && targ.npctemplate)
+			var event := {"type" := SYSEVENT_DAMAGED, "source" := mobile};
+			SendEvent(mobile, event);
 		endif
 
 		if (spellinfo.alvo != "Self")

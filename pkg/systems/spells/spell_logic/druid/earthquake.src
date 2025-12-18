@@ -13,7 +13,7 @@ include "include/client";
 include "include/say";
 include ":taming:taming";
 include "include/epicMageryUtils";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program earthquake(parms)
 	var caster := parms[1];

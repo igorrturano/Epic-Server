@@ -1,0 +1,113 @@
+use uo;
+use os;
+use npc;
+
+include ":voidrift:include/voidrift";
+include ":attributes:attributes";
+include "include/epicConstants";
+
+program portalControl(portal)
+
+    if (!portal)
+        return 0;
+    endif
+
+    // Aguardar propriedades serem setadas pelo scrollclick
+    sleep(1);
+
+    var portal_level := GetObjProperty(portal, "portal_level");
+    var max_creatures := GetObjProperty(portal, "max_creatures");
+    var min_respawn := GetObjProperty(portal, "min_respawn");
+    var max_respawn := GetObjProperty(portal, "max_respawn");
+
+    // Spawn inicial
+    sleep(3); // pequena espera pros efeitos visuais tocarem
+    SpawnCreatures(portal, max_creatures);
+
+    // Loop de controle
+    while (portal)
+        var respawn_time := RandomInt(max_respawn - min_respawn + 1) + min_respawn;
+        sleep(respawn_time * 60);  // Converter minutos para segundos
+
+        if (!portal)
+            break;
+        endif
+
+        // Verificar criaturas vivas
+        var alive := CountAliveCreatures(portal);
+        var needed := max_creatures - alive;
+
+        if (needed > 0)
+            SpawnCreatures(portal, needed);
+        endif
+    endwhile
+
+endprogram
+
+function CountAliveCreatures(portal)
+    var creatures := GetObjProperty(portal, "creatures");
+    if (!creatures)
+        return 0;
+    endif
+
+    var alive := 0;
+    var updated_list := array{};
+
+    foreach serial in creatures
+        var npc := SystemFindObjectBySerial(serial);
+        if (npc)
+            updated_list.append(serial);
+            alive := alive + 1;
+        endif
+    endforeach
+
+    SetObjProperty(portal, "creatures", updated_list);
+    return alive;
+endfunction
+
+function SpawnCreatures(portal, amount)
+    var portal_level := GetObjProperty(portal, "portal_level");
+    var max_creatures := GetObjProperty(portal, "max_creatures");
+    var creatures := GetObjProperty(portal, "creatures");
+    if (!creatures)
+        creatures := array{};
+    endif
+
+    // Proteção contra over-spawn
+    var current_count := len(creatures);
+    if (current_count >= max_creatures)
+        return;
+    endif
+
+    // Limitar amount ao que falta
+    var to_spawn := amount;
+    if (current_count + to_spawn > max_creatures)
+        to_spawn := max_creatures - current_count;
+    endif
+
+    var spawned := 0;
+    for i := 1 to to_spawn
+        // Verificar limite novamente
+        if (len(creatures) >= max_creatures)
+            break;
+        endif
+
+        var template := GetRandomCreature(portal_level);
+        var npc := CreateNpcFromTemplate(":epicAI:" + template, portal.x, portal.y, portal.z, 0, portal.realm);
+
+        if (npc)
+            SetObjProperty(npc, "voidrift_portal", portal.serial);
+            creatures.append(npc.serial);
+            spawned := spawned + 1;
+
+            // Efeito visual de spawn
+            PlayObjectCenteredEffect(portal, FX_WARP_SPAWNER, 0, 13);
+            PlaySoundEffect(portal, 0x1F7);
+            SetObjProperty(portal, "creatures", creatures);
+        endif
+
+        sleep(RandomIntMinMax(2*portal_level, 5*portal_level));
+    endfor
+
+    SetObjProperty(portal, "creatures", creatures);
+endfunction

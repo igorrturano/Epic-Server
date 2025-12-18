@@ -3,14 +3,15 @@ include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/Text";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";
 include ":message:model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program cmd_translation(who)
 	// TODO: Gump para escolher a lingua que fala
-		// Também escolher se quer as falas traduzidas ou legendas
+	who := MobileWrapper(who);
 	
 	var cont := true;
-	while(cont)
-		var gump := Gump(who, "Translation Settings", 300, 200);
+	while (cont)
+		var gump := Gump(who.GetObjRef(), "Translation Settings", 300, 200);
 		var label := Text("Text1", 0, 0, "Setting");
 		var label2 := Text("Text2", 0, 0, "Ativar Legenda");
 		var label3 := Text("Text3", 0, 0, "Ativar Dublagem");
@@ -18,7 +19,7 @@ program cmd_translation(who)
 
 		var button2 := Button("Legenda", 0, 3);
 		var button3 := Button("Dublagem", 0, 3);
-		var button4 := Button("Tradução", 0, 3);
+		var button4 := Button("Desativado", 0, 3);
 
 		var container := ContainerGridLayout("Container1", 30, 80, 100, 100, 4, 2)
 			.AddControl(label, 1, 2)
@@ -33,17 +34,17 @@ program cmd_translation(who)
 
 		var result := gump.Show();
 
-		if (result.GetControl() == "CLOSED")
+		if (result.GetControl() == EVENT_ACTION::CLOSED)
 			cont := false;
 		elseif (result.GetControl().Equals(button2))
-			who.SetProp("translation", 1);
-			Message("Tradução: Legenda Ativada.").SendSys(who);
+			who.SetProperty("translation", 1);
+			Message("Tradução: Legenda Ativada.").SendSys(who.GetObjRef());
 		elseif (result.GetControl().Equals(button3))
-			who.SetProp("translation", 2);
-			Message("Tradução: Dublagem Ativada.").SendSys(who);
+			who.SetProperty("translation", 2);
+			Message("Tradução: Dublagem Ativada.").SendSys(who.GetObjRef());
 		elseif (result.GetControl().Equals(button4))
-			who.SetProp("translation", 0);
-			Message("Tradução: Desativada.").SendSys(who);
+			who.SetProperty("translation", 0);
+			Message("Tradução: Desativada.").SendSys(who.GetObjRef());
 		endif
 	endwhile
 endprogram

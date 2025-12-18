@@ -1,8 +1,6 @@
 use util;
 
-include "IDice";
-
-class Dice(IDice)
+class Dice()
 	var _diceString; // String representando o dado (ex: "2d6+3")
 	var _amount := 2; // Quantidade de dados
 	var _sides := 6; // Lados do dado
@@ -11,14 +9,14 @@ class Dice(IDice)
 
 	function Dice(this, diceString)
 		this._diceString := diceString;
-		var mod := SplitWords(diceString, "+")[2];
-		var base := SplitWords(mod[1], "d");
+		diceString := SplitWords(diceString, "+");
+		var mod := diceString[2];
+		var base := SplitWords(diceString[1], "d");
 		if (CInt(base)[0] < 1) base[0] := 1; endif // Garante que a quantidade de dados seja pelo menos 1
 
-		this._amount := CInt(base[1]);
-		this._sides := CInt(base[2]);
-		this._modifier := CInt(mod);
-		this._result := false;
+		this.SetAmount(base[1]);
+		this.SetSides(base[2]);
+		this.SetModifier(mod);
 	endfunction
 
 	function GetAmount(this)
@@ -45,31 +43,43 @@ class Dice(IDice)
 		return this._result;
 	endfunction
 
+	function GetDiceString(this)
+		return this._diceString;
+	endfunction
+
 	function SetAmount(this, amount)
-		this._amount := amount;
+		this._amount := CInt(amount);
 		return this;
 	endfunction
 
 	function SetSides(this, sides)
-		this._sides := sides;
+		this._sides := CInt(sides);
 		return this;
 	endfunction
 
 	function SetModifier(this, modifier)
-		this._modifier := modifier;
+		this._modifier := CInt(modifier);
 		return this;
 	endfunction
 
 	function Roll(this)
-		this._result := CInt(RandomDiceRoll(this._diceString));
-		return this.GetResult();
+		if (this._amount < 1)
+			this._result := error { errortext := "Amount of dice less than 1 or invalid" };
+		elseif (this._sides < 2)
+			this._result := error { errortext := "Sides of dice less than 2 or invalid" };
+		else
+			this._result := CInt(RandomDiceRoll(this._diceString));
+		endif
+
+		return this;
 	endfunction
 
 	function ToString(this, isDetailed := false)
 		if (!isDetailed) return this._diceString; endif
-		var str := "";
-		str += $"Esta rolagem contém {this._amount} dados de {this._sides} lados com um modificador de +{this._modifier}. O resultado foi: ";
-		str += !this._result ? "nunca rolado." : $"{this._result}.";
-		return str;
+		
+		return $"Esta rolagem contém {this._amount} dado" + (this._amount > 1 ? "s" : "")
+			+ $" de {this._sides} lado" + (this._sides > 1 ? "s" : "")
+			+ $" com um modificador de +{this._modifier}"
+			+ ". O resultado foi: " + (!this._result ? "nunca rolado." : $"{this._result}.");
 	endfunction
 endclass

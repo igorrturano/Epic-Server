@@ -21,7 +21,7 @@ include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:npcutil";
 include ":taming:taming";
 include "include/epicCombatUtils";
@@ -87,13 +87,14 @@ program core_npcDeath(params)
 		endif
 
 		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-			if (!GetObjProperty(item, "itemunico"))
+			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "#LootedBy"))
 				item.hp -= Cint(item.hp * 0.8);
 			endif
 		endif
 	endforeach
 
 	HandleEpicBossLoot(corpse);
+	HandleLeverSpawnedBoss(corpse);
 
 	if (getObjProperty(corpse, "owner")) // se for tamed, atualiza a prop tamedpets do master
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
@@ -197,35 +198,6 @@ program core_npcDeath(params)
 		endif
 	endif
 
-	if (GetObjProperty(corpse, "soulharvest"))
-		var shamanserial := getobjProperty(corpse, "soulharvest");
-		if (shamanserial && !shamanserial.errortext)
-			var shaman := SystemFindObjectBySerial(shamanserial);
-			if (shaman)
-				var shaman_reap_bonus := Cint(AP_GetSkill(shaman, THEOLOGY));
-
-				var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
-				if (!shaman_souls)
-					var shaman_souls := 0;
-				endif
-
-				if (shaman_souls < Cint(shaman_reap_bonus / 5))
-					shaman_souls := shaman_souls + 1;
-					PerformAction(shaman, ANIM_SALUTE);
-					sleep(1);
-					PlayStationaryEffectEx(corpse.x, corpse.y, corpse.z, shaman.realm, 0x6C6F, 0, 60, 2676, 5, 0);
-					PlaySoundEffect(shaman, 0x653);
-
-					SendSysMessage(shaman, "Voce colhe uma alma.");
-				else
-					SendSysMessage(shaman, "Voce nao consegue conduzir mais almas.");
-				endif
-
-				SetobjProperty(shaman, "shaman_souls", shaman_souls);
-			endif
-		endif
-	endif
-
 	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
 		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
@@ -242,11 +214,11 @@ program core_npcDeath(params)
 			endif
 		endif
 
-		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY));
+		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY) / 10);
 
 		// HABILIDADES SHAMAN
-		if (TemHabilidade(mob, "Sede de sangue"))
-			HealFLS(mob, Cint(shaman_reap_bonus / 10));
+		if (TemHabilidade(mob, "Sede de Sangue"))
+			HealFLS(mob, shaman_reap_bonus);
 		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN
@@ -276,6 +248,25 @@ program core_npcDeath(params)
 			endif
 		endif
 	endforeach
+
+	var accepted_sacrifice := 0;
+	foreach item in ListItemsNearLocation(corpse.x, corpse.y, corpse.z, 4, corpse.realm)
+		if (item.objtype == 0xA06A) // xamaaltar
+			if (GetObjProperty(corpse, "animal_sacrifice"))
+				accepted_sacrifice := 1;
+			endif
+		endif
+	endforeach
+	var shaman := SystemFindObjectBySerial(GetObjProperty(corpse, "animal_sacrifice"));
+	if (accepted_sacrifice == 1)
+		var time := 3600;
+		if (GetObjProperty(corpse, "aklat_sacrifice"))
+			time := 9800;
+		endif
+		TS_StartTimer(shaman, "bless", time);
+    	PlayStationaryEffect(shaman.x, shaman.y, shaman.z, 0xD035, 10, 30, 0, shaman.realm);
+    	PlaySoundEffect(shaman, 0x1F1); // Sacrifice sound effect
+	endif
 
 	TS_Death(corpse); // Will still get the PID from the corpse.
 
@@ -521,6 +512,41 @@ function HandleEpicBossLoot(corpse)
 
 		item.movable := 1;
 	endforeach
+
+	return 1;
+endfunction
+
+function HandleLeverSpawnedBoss(corpse)
+	// Check if this boss was spawned by a lever
+	var lever_serial := GetObjProperty(corpse, "spawned_by_lever");
+	if (!lever_serial)
+		return 0;
+	endif
+
+	// Find the lever
+	var lever := SystemFindObjectBySerial(lever_serial);
+	if (!lever || lever == error)
+		return 0;
+	endif
+
+	// Get respawn configuration (default 120-150 minutes)
+	var respawn_min := GetObjProperty(lever, "respawn_min");
+	var respawn_max := GetObjProperty(lever, "respawn_max");
+	if (!respawn_min) respawn_min := 120; endif
+	if (!respawn_max) respawn_max := 150; endif
+
+	// Calculate random respawn time in seconds
+	var respawn_minutes := RandomInt(respawn_max - respawn_min + 1) + respawn_min;
+	var respawn_seconds := respawn_minutes * 60;
+
+	// Set cooldown on lever (cooldown.inc uses "#" prefix internally)
+	SetObjProperty(lever, "#boss_respawn", Cint(ReadGameClock() + respawn_seconds));
+
+	// Unlock the lever
+	EraseObjProperty(lever, "#inuse");
+
+	// Clean up boss reference
+	EraseObjProperty(lever, "champ");
 
 	return 1;
 endfunction

@@ -11,9 +11,9 @@ include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
-include ":combat:combat";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 
 enum arrremesso
@@ -168,7 +168,7 @@ program arremesso(params)
 
 		if (to_hit_chance < (to_miss_chance + parry_chance)) // Erra ou defende
 			if (to_hit_chance > to_miss_chance)
-				PlayHitSounds(who, alvo);
+				// PlayHitSounds(who, alvo);
 				PrintTextAbove(alvo, "*Defendeu!*");
 			endif
 			PrintTextAbove(who, "*Errou!*");
@@ -204,7 +204,7 @@ program arremesso(params)
 			PlaySoundEffect(alvo, 0x521);
 			PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 			MakeBleed(alvo);
-			PlayHitSounds(who, alvo);
+			// PlayHitSounds(who, alvo);
 			return 1;
 		endif
 	else

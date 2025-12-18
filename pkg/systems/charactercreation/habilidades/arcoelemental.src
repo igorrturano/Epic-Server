@@ -2,9 +2,9 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":fls_magery:basicMagery";
 include "include/client";
@@ -27,22 +27,22 @@ program doubleattack(who)
 	who.frozen := 1;
 	var i := 1;
 	while (i <= 3)
-		PerformAction(who, ANIM_CAST_DIR);
+		PerformAction(who, HUMAN_ANIM::CAST_DIR);
 		PrintTextAbove(who, "*Conjurando*");
 		if (i == 1)
 			sound := 0x5cb;
-			color := FOGO;
+			color := COLOR_ELEMENTAL_FIRE;
 		elseif (i == 2)
 			sound := 0x5c8;
-			color := GELO;
+			color := COLOR_ELEMENTAL_ICE;
 		elseif (i == 3)
 			sound := 0x666;
-			color := RAIO;
+			color := COLOR_ELEMENTAL_ENERGY;
 		endif
 		PlaySoundEffect(who, sound);
 		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, color);
 
-		sleep(3);
+		sleep(1);
 		i++;
 	endwhile
 	PlaySoundEffect(who, 0x245);

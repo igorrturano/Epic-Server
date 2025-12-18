@@ -1,7 +1,7 @@
 use npc;
 include "include/sysEvent";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
@@ -22,13 +22,15 @@ function MonsterBrain()
     endif
 
     while (me)
-        ev := os::wait_for_event(1);
-        
+        ev := os::wait_for_event(0);
+
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
+            return;
+        endif
+
+        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
+        if (CheckDarknessCreatureSurvival(me))
             return;
         endif
            
@@ -39,7 +41,8 @@ function MonsterBrain()
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 is_ranged := isMonsterRanged();
-                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
+                // PursueTarget now handles ideal distance for both melee and ranged
+                PursueTarget(me.opponent);
             endif
         endif
         
@@ -74,8 +77,9 @@ function MonsterBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
+                        // Taunt forces a target switch - clear current opponent and target lock
                         SetOpponent(0);
+                        EraseObjProperty(me, "#target_lock");
                         HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
@@ -125,13 +129,13 @@ function HandleMonsterSpeech(text, source, is_ranged)
         endif
     endif
 
-    // Gera e processa resposta
-    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
-    if (response == error)
-        return Say(handle_error_combat_AI_speech());
-    endif
+    // // Gera e processa resposta
+    // // var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    // if (response == error)
+    //     return Say(handle_error_combat_AI_speech());
+    // endif
 
-    Say(response);
+    // Say(response);
     SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
@@ -140,14 +144,12 @@ function HandleMonsterLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
-    // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleMonsterCombatEvent(mobile, is_ranged);
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
+    // Check for nearby threats first
+    var threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
+    endif
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
@@ -167,6 +169,13 @@ function HandleMonsterLeftArea(is_ranged)
             endif
             sleepms(100);
         endforeach
+    endif
+
+    // Re-check for threats after looting attempt (in case one appeared while looting)
+    threat := CheckNearbyThreats();
+    if (threat)
+        HandleMonsterCombatEvent(threat, is_ranged);
+        return 1;
     endif
 
     // If nothing else to do, go idle
@@ -194,12 +203,19 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         if (taunter_serial)
             var taunter := SystemFindObjectBySerial(taunter_serial);
             if (taunter && CanFight(me, taunter))
-                // Forced to fight the taunter, ignore all other targets
+                // Forced to fight the taunter, ignore all other targets and locks
                 opponent := taunter;
                 SetOpponent(opponent);
+                // Maintain taunt lock - prevent CheckForIdealTarget from overriding
+                SetObjProperty(me, "#target_lock", struct{
+                    "serial" := taunter.serial,
+                    "time" := ReadGameClock(),
+                    "taunt" := 1  // Flag to indicate this is a taunt lock
+                });
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
+                EraseObjProperty(me, "#target_lock");
                 SetCooldown(me, "taunted", 0);
             endif
         endif
@@ -218,12 +234,9 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     endif
 
     // Let the combat hook handle the actual attacks
-    if (is_ranged)
-        MaintainRange(opponent);
-    else
-        TurnToward(opponent);
-        PursueTarget(opponent);
-    endif
+    // PursueTarget now handles positioning for both melee and ranged
+    TurnToward(opponent);
+    PursueTarget(opponent);
     
     if (me.isMyrkonid())
         SporeSpecial(me, opponent);
@@ -285,6 +298,25 @@ function MonsterIdle(wanders, is_ranged)
         sleepms(2);
     endforeach
 
+    // If didn't see anyone, try to hear footsteps (no LoS required)
+    var heard_mobile := NPCHearFootsteps(me);
+    if (heard_mobile)
+        // Check if we can see them now (might have moved into view)
+        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+            HandleMonsterCombatEvent(heard_mobile, is_ranged);
+            return;
+        endif
+
+        // Only show alert and investigate if not on cooldown (prevents spam)
+        if (GetCooldown(me, "heard_sound") == 0)
+            Message("*!*").SetColor(500).SendAbove(me);
+            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
+        endif
+
+        // Move toward the sound - NPC will investigate the last known position
+        PursueTarget(heard_mobile);
+    endif
+
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
@@ -306,20 +338,7 @@ function MonsterIdle(wanders, is_ranged)
         return; // Skip regular wandering
     endif
     
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+    WanderAroundAnchor(me);
 endfunction
 
 function HandleMonsterEnteredArea(source, is_ranged)
@@ -348,7 +367,7 @@ function HandleMonsterEnteredArea(source, is_ranged)
         me.hidden := 0;
     endif
 
-    handleMonsterInitialReaction(source);
+    // handleMonsterInitialReaction(source);
     if (me.canCharge())
         StartCharge(me, source);
     endif
@@ -370,29 +389,29 @@ function HandleMonsterEnteredArea(source, is_ranged)
     return 1;
 endfunction
 
-function handleMonsterInitialReaction(source)
-    var npc_elem := NPC_GetNPCConfig(me);
-    var category := GetConfigString(npc_elem, "Category");
+// function handleMonsterInitialReaction(source)
+//     var npc_elem := NPC_GetNPCConfig(me);
+//     var category := GetConfigString(npc_elem, "Category");
 
-    if (category == "Goblin")
-        var playerRaca := source.getRace();
-        var name_mob := GetConfigString(npc_elem, "Name");
-        if (playerRaca == ORC || playerRaca == DROW)
-            // High chance to flee from these races
-            var randomDice := RandomInt(100);
-            if (randomDice < 30)
-                var playerinput := "*raça " + playerRaca + " assusta*";
-                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-                if (responseAI)
-                    Say(responseAI);
-                else
-                    Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
-                endif
-                FleeFrom(source);
-                return 1;
-            endif
-        endif
-    endif
-endfunction
+//     if (category == "Goblin")
+//         var playerRaca := source.getRace();
+//         var name_mob := GetConfigString(npc_elem, "Name");
+//         if (playerRaca == ORC || playerRaca == DROW)
+//             // High chance to flee from these races
+//             var randomDice := RandomInt(100);
+//             if (randomDice < 30)
+//                 var playerinput := "*raça " + playerRaca + " assusta*";
+//                 var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+//                 if (responseAI)
+//                     Say(responseAI);
+//                 else
+//                     Say("Ahhh " + playerRaca + "!!!");
+//                     PrintTextAbove(me, "*Aterrorizado*");
+//                 endif
+//                 FleeFrom(source);
+//                 return 1;
+//             endif
+//         endif
+//     endif
+// endfunction
 

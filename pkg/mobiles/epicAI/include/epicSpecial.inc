@@ -4,6 +4,8 @@ include ":awareness:awareness";
 include ":nature:nature";
 include ":acid:acid";
 include "include/epicNPCUtils";
+include ":combat:Model/AttackInfo";
+include ":combat:Controller/FXController";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -209,7 +211,7 @@ function PerformHeal(shaman, targ, tier)
     endif
 
     PrintTextAbove(shaman, "*curando " + targ.name + "*");
-    PerformAction(shaman, ANIM_CAST_AREA);
+    PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
     PlaySoundEffect(shaman, SFX_SPELL_HEAL);
     PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
     
@@ -223,7 +225,7 @@ function PerformHealingRain(shaman, allies)
     var mlore := CInt(AP_GetSkill(shaman, ARCANA));
     
     PrintTextAbove(shaman, "*invoca tempestade*");
-    PerformAction(shaman, ANIM_CAST_AREA);
+    PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
     
     // Heal allies
     foreach ally in allies
@@ -263,7 +265,7 @@ function CastEnraizar(shaman, targ, diff)
    endif
    
    PrintTextAbove(shaman, "*conjura raízes*");
-   PerformAction(shaman, ANIM_CAST_AREA);
+   PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
    
    if (!CheckResist(targ, VONTADE, diff))
       var duration := CInt(AP_GetSkill(shaman, ARCANA) / 10);
@@ -282,7 +284,7 @@ function CastWeaken(shaman, targ, diff)
    endif
 
    PrintTextAbove(shaman, "*enfraquece inimigo*");
-   PerformAction(shaman, ANIM_CAST_AREA);
+   PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
    
    var bonus := CInt(AP_GetSkill(shaman, ARCANA) / 20); // Small bonus based on skill
    
@@ -459,7 +461,7 @@ function doConfusion(opponent)
                     var coords := GetCoordsInLine(opponent.x, opponent.y, randx, randy);
                     foreach coord in coords
                         MoveObjectToLocation(opponent, coord.x, coord.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
-                        PerformAction(opponent, ANIM_WALK_WARMODE);
+                        PerformAction(opponent, HUMAN_ANIM::WALK_WARMODE);
                         sleepms(200);
                     endforeach
                     PrintTextAbove(opponent, "*movendo aleatoriamente*");
@@ -492,7 +494,7 @@ function doConfusion(opponent)
                     var coords := GetCoordsInLine(opponent.x, opponent.y, random_ally.x, random_ally.y);
                     foreach coord in coords
                         MoveObjectToLocation(opponent, coord.x, coord.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
-                        PerformAction(opponent, ANIM_WALK_WARMODE);
+                        PerformAction(opponent, HUMAN_ANIM::WALK_WARMODE);
                         sleepms(200);
                         if (Distance(opponent, random_ally) <= 1)
                             if(!opponent.warmode || opponent.hidden || opponent.concealed) return 0; endif
@@ -526,7 +528,7 @@ function Bite(me, opponent)
     
     PrintTextAbove(me, "*morde*");
     PlaySoundEffect(me, 0x28a);
-    PlayAttackAnimation(me);
+    PlayAttackFX(AttackInfo(MobileWrapper(me), MobileWrapper(false)));
     
     var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
     if (!resist)
@@ -643,7 +645,7 @@ function TongueGrab(toad, opponent)
     
     // Animation and sound effects
     PrintTextAbove(toad, "*dispara a língua*");
-    PlayAttackAnimation(toad);
+    PlayAttackFX(AttackInfo(MobileWrapper(toad), MobileWrapper(false)));
     PlaySoundEffect(toad, 0x2b2); //slurp sound
     
     // Create tongue effect from toad to player
@@ -784,7 +786,7 @@ endfunction
 
 function PlayThrowAnimation(attacker)
    PrintTextAbove(attacker, "*arremessa*");
-   PlayAttackAnimation(attacker);
+   PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(false)));
    if (attacker.isLizardMan()) 
       attacker.graphic := 0x21;
    endif
@@ -833,7 +835,7 @@ function WebWrapCorpse(spider)
          PlayStationaryEffect(item.x, item.y, item.z, 0xCCA1, 5, 80);
          for i:= 0 to 3
             PlaySoundEffect(spider, 0x5A); // Web sound
-            PlayAttackAnimation(spider);
+            PlayAttackFX(AttackInfo(MobileWrapper(spider), MobileWrapper(false)));
             sleep(1);
          endfor
          sleep(1);

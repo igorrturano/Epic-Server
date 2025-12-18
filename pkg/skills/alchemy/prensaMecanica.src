@@ -105,10 +105,10 @@ program PrensaMecanica(quem, item)
 endprogram
 
 function TocaImersao(quem)
-	PerformAction(quem, ANIM_SALUTE);
+	PerformAction(quem, HUMAN_ANIM::SALUTE);
 	PlaySoundEffect(quem, SFX_243);
 	sleep(2);
-	PerformAction(quem, ANIM_SALUTE);
+	PerformAction(quem, HUMAN_ANIM::SALUTE);
 	PlaySoundEffect(quem, SFX_241);
 	sleepms(500);
 endfunction
