@@ -198,7 +198,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVital(this._objRef, HITS);
 	endfunction
 
@@ -211,7 +211,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVital(this._objRef, STAMINA);
 	endfunction
 
@@ -220,7 +220,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVital(this._objRef, MANA);
 	endfunction
 
@@ -229,27 +229,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVital(this._objRef, HUNGER);
 	endfunction
 
 	function GetMaxHP(this)
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalMaximumValue(this._objRef, HITS);
 	endfunction
 
 	function GetMaxStamina(this)
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalMaximumValue(this._objRef, STAMINA);
 	endfunction
 
 	function GetMaxMana(this)
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalMaximumValue(this._objRef, MANA);
 	endfunction
 
 	function GetMaxHunger(this)
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
 	endfunction
 
@@ -262,7 +262,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalRegenRate(this._objRef, HITS);
 	endfunction
 
@@ -271,7 +271,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalRegenRate(this._objRef, STAMINA);
 	endfunction
 
@@ -280,7 +280,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalRegenRate(this._objRef, MANA);
 	endfunction
 
@@ -289,7 +289,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 		
-		this.Update();
+		//this.Update(); estava criando problemas ao usar o get nos packets, removi porque nao faz sentido recalcular os vitals num get. Deiro
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
 	endfunction
 
