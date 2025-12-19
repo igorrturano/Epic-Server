@@ -265,6 +265,12 @@ function CheckFireweaponSupplies(byRef attackInfo)
 		return false;
 	endif
 
+	var powderFixer := FindObjtypeInContainer(bandolier.GetObjRef(), 0xC611);
+	if (!powderFixer)
+		Message("Você não tem socador de pólvora na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
 	var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
 	// Check if has ability "Municiador Experiente" (reduces powder needed)
 	if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
@@ -275,12 +281,8 @@ function CheckFireweaponSupplies(byRef attackInfo)
 		Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
-
-	var powderFixer := FindObjtypeInContainer(bandolier.GetObjRef(), 0xC611);
-	if (!powderFixer)
-		Message("Você não tem socador de pólvora na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-		return false;
-	endif
+	// Consume Powder
+	
 
 	return true;
 endfunction

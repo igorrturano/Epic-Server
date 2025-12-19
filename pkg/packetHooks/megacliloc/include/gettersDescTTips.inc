@@ -89,15 +89,6 @@ function PegaDescDosesVeneno(objeto,xDesc := "")
 	return xDesc;
 endfunction
 
-function PegaDescMunicao(objeto,xDesc := "")
-	if (!PegaPropObjItemOrTemplate(objeto, "balas"))
-		xDesc := xDesc + WHITE + "Sem Munição<br>";
-	else
-		xDesc := xDesc + WHITE + "Munição: " + PegaPropObjItemOrTemplate(objeto, "balas") + "<br>";
-	endif
-	return xDesc;
-endfunction
-
 function PegaDescArtefato(objeto,who,xDesc := "")
 
 	var description := PegaPropObjItemOrTemplate(objeto, "description");
