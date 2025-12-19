@@ -159,7 +159,8 @@ program equipweapon(who, item)
 	if (item.cursed == 1)
 		UpdateMobileEntropy(who, -100);
 	endif
-
+	updatePosture(who, item);
+	
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 
 	var cfg := readconfigfile(":combat:itemdesc");
@@ -170,3 +171,24 @@ program equipweapon(who, item)
 
 	return 1;
 endprogram
+
+function updatePosture(who, weapon)
+	var wrapper := WeaponWrapper(weapon);
+	var category := wrapper.GetCategory();
+	var fireWeapons := array{
+		Upper(WEAPON_CATEGORY::PISTOL),
+		Upper(WEAPON_CATEGORY::MUSKET),
+		Upper(WEAPON_CATEGORY::CARABINE),
+		Upper(WEAPON_CATEGORY::HANDCANNON)
+	};
+	
+	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+	elseif(Upper(category) in fireWeapons)
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+	endif
+endfunction
