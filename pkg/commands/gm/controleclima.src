@@ -12,7 +12,7 @@ include ":timedScripts:timedScripts";
 program controleclima(who)
 
 	var options := CheckBoxGump(who, 240, 300, "Controle do Clima", { "Chuva", "Neve", "Vento", "Vento Forte",
-																  	"Tempestade", "Tempestade de Raios" });
+																  	"Tempestade", "Tempestade de Raios", "Terremoto" });
 
 	sendsysmessage(who, "op " + options);
 
@@ -42,6 +42,9 @@ program controleclima(who)
 	if ("Vento Forte" in options)
 		som := 2;
 		ventoForte := 1;
+	endif
+	if ("Terremoto" in options)
+		type := 10;
 	endif
 
 	var origx := who.x;
