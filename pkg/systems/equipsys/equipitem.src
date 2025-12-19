@@ -5,26 +5,26 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 
 program equipitem(params)
-	var who := params[1];
+	var who := MobileWrapper(params[1]);
 	var item := params[2];
 
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
 		equip := ArmorWrapper(item);
-		debugArmor(who, equip);
+		debugArmor(who.GetObjRef(), equip);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		equip := WeaponWrapper(item);
-		debugWeapon(who, equip);
+		updatePosture(who, equip);
+		debugWeapon(who.GetObjRef(), equip);
 	endif
 
 	equip.Update();
 
-	who := MobileWrapper(who);
 	if (who.isShaman())
 		who.AddModifier(AttributeModifier(MAGERY, 0));
 	endif
 
-	MobileWrapper(who).ApplyItemModifiers(equip);
+	who.ApplyItemModifiers(equip);
 endprogram
 
 function debugWeapon(who, equip)
@@ -96,4 +96,26 @@ function debugArmor(who, equip)
 // DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
 // DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
 // DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
+endfunction
+
+function updatePosture(who, weapon)
+	var wrapper := WeaponWrapper(weapon);
+	var mobile_wrapper := MobileWrapper(who);
+	var category := wrapper.GetCategory();
+	var fireWeapons := array{
+		Upper(WEAPON_CATEGORY::PISTOL),
+		Upper(WEAPON_CATEGORY::MUSKET),
+		Upper(WEAPON_CATEGORY::CARABINE),
+		Upper(WEAPON_CATEGORY::HANDCANNON)
+	};
+	
+	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
+		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
+		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+	elseif(Upper(category) in fireWeapons)
+		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+	endif
 endfunction

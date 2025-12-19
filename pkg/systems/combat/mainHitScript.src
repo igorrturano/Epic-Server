@@ -37,6 +37,7 @@ program MainHitScript(attackInfo)
 		if (!attackInfo.GetAttacker().IsNPC())
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
+				SubtractPowder(attackInfo); // Subtrai pólvora
 			else
 				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				return 1;
@@ -74,7 +75,7 @@ function TryToRecoverAmmo(byRef attackInfo)
 		endif
 
 		if (RandomInt(100 + 1) <= chance)
-			var ammo := attackInfo.GetAmmoObjRef();
+			var ammo := attackInfo.GetAmmo().GetItem().GetObjRef();
 			if (ammo)
 				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
 			endif
