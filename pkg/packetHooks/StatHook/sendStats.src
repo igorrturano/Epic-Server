@@ -165,9 +165,9 @@ exported function HandleSendStats(character, byref packet)
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MIN_DAMAGE_OFFH, packet.GetInt16(OLD_STATUS_OFFSETS::MIN_DAMAGE));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MAX_DAMAGE_OFFH,  packet.GetInt16(OLD_STATUS_OFFSETS::MAX_DAMAGE));
 
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE,  10);
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  10);
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,  10);
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE, cint(mobileEnvelopado.GetFortitude()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  cint(mobileEnvelopado.GetReflexes()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,  cint(mobileEnvelopado.GetWill()));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS,  cint(mobileEnvelopado.GetCurrentDp()));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS_MAX,  cint(mobileEnvelopado.GetMaxDp()));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::ADDICTION,  cint(GetObjProperty(character, "vicio")));

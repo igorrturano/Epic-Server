@@ -96,8 +96,8 @@ program skill_Anatomy(who)
 	var dext := getDext(AP_GetStat(subject, "Dexterity"));
 
 	var fort := getFort(GetResist(subject, FORTITUDE));
-	var refl := getRefl(GetResist(subject, REFLEXOS));
-	var vont := getVont(GetResist(subject, VONTADE));
+	var refl := getRefl(GetResist(subject, REFLEXES));
+	var vont := getVont(GetResist(subject, WILL));
 	// var con := getVit( Cint(GetObjProperty(who, "Vitality") ));
 	var endur_percentage := CInt(CInt(AP_GetVital(subject, "Stamina")) / CDbl(AP_GetVitalMaximumValue(subject,
 																									   "Stamina")) * 100);
@@ -134,8 +134,8 @@ program skill_Anatomy(who)
 			SendSysMessageEx(who, dext + " (" + AP_GetStat(subject, "Dexterity") + "),", SSM_INFO);
 			SendSysMessageEx(who, endur + ".", SSM_INFO);
 			SendSysMessageEx(who, fort + " (" + GetResist(subject, FORTITUDE) + "),", SSM_INFO);
-			SendSysMessageEx(who, refl + " (" + GetResist(subject, REFLEXOS) + "),", SSM_INFO);
-			SendSysMessageEx(who, vont + " (" + GetResist(subject, VONTADE) + "),", SSM_INFO);
+			SendSysMessageEx(who, refl + " (" + GetResist(subject, REFLEXES) + "),", SSM_INFO);
+			SendSysMessageEx(who, vont + " (" + GetResist(subject, WILL) + "),", SSM_INFO);
 			if (who.serial == subject.serial)
 				SendSysMessageEx(who, "O alvo esta " + DPMsg(subject, who), SSM_INFO);
 			endif

@@ -33,7 +33,7 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;
 	endif
-	if (!CheckResist(targ, VONTADE, diff, -bonus))
+	if (!CheckResist(targ, WILL, diff, -bonus))
 		TS_StartTimer(targ, "dmgreduction", Cint(AP_GetSkill(who, ARCANA)), lvl, who, 1);
 		handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);
 

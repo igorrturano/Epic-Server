@@ -18,9 +18,9 @@ enum STATS
 	STRENGTH		:= "Strength",
 	DEXTERITY		:= "Dexterity",
 	INTELLIGENCE	:= "Intelligence",
-	//CONSTITUTION	:= "Constitution",
-	//WISDOM		:= "Wisdom",
-	//CHARISMA		:= "Charisma"
+	FORTITUDE		:= "Fortitude",
+	REFLEXES		:= "Reflexes",
+	WILL			:= "Will"
 endenum
 
 enum SKILLS

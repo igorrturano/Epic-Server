@@ -80,7 +80,7 @@ function SporeSpecial(attacker, defender)
                 endif
             
             3: // Blind
-                if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
+                if (!CheckResist(mobile, REFLEXES, RESIST_MEDIUM))
                     PrintTextAbove(attacker, "*libera esporos cegantes*");
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
                     SetCooldown(mobile, "blinded", 15);
@@ -267,7 +267,7 @@ function CastEnraizar(shaman, targ, diff)
    PrintTextAbove(shaman, "*conjura raízes*");
    PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
    
-   if (!CheckResist(targ, VONTADE, diff))
+   if (!CheckResist(targ, WILL, diff))
       var duration := CInt(AP_GetSkill(shaman, ARCANA) / 10);
       PlayStationaryEffect(targ.x, targ.y, targ.z-5, 0x6D01, 7, 40, 0, targ.realm);
       TS_StartTimer(targ, "paralysis", duration);
@@ -288,7 +288,7 @@ function CastWeaken(shaman, targ, diff)
    
    var bonus := CInt(AP_GetSkill(shaman, ARCANA) / 20); // Small bonus based on skill
    
-   if (!CheckResist(targ, VONTADE, diff, -bonus))
+   if (!CheckResist(targ, WILL, diff, -bonus))
       var duration := CInt(AP_GetSkill(shaman, ARCANA));
       var amount := 10 + CInt(bonus / 2); // Base amount plus skill bonus
       TS_StartTimer(targ, "weaken", duration, amount, shaman, 1);
@@ -444,7 +444,7 @@ function doConfusion(opponent)
 
     var confusion_type := RandomInt(3)+1;
     if (enemies.size() < 2) confusion_type := RandomInt(2)+1; endif
-    if (CheckResist(opponent, VONTADE, RESIST_HARD)) return 0; endif;
+    if (CheckResist(opponent, WILL, RESIST_HARD)) return 0; endif;
 
     case (confusion_type)
         1: // Paralyze
@@ -530,7 +530,7 @@ function Bite(me, opponent)
     PlaySoundEffect(me, 0x28a);
     PlayAttackFX(AttackInfo(MobileWrapper(me), MobileWrapper(false)));
     
-    var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
+    var resist := CheckResist(opponent, REFLEXES, RESIST_MEDIUM);
     if (!resist)
         DamageFLS(opponent, bite_dmg, DMG_FORCED, me);
     elseif (resist == -1) // Falha crítica
@@ -654,7 +654,7 @@ function TongueGrab(toad, opponent)
                       0x0F51, 8, 0, 0, toad.realm); //red line effect
     
     // Initial resistance check
-    if (CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+    if (CheckResist(opponent, REFLEXES, RESIST_MEDIUM))
         PrintTextAbove(opponent, "*desvia da língua*");
         SetCooldown(toad, "tongue_grab", 10);
         return 0;
@@ -798,7 +798,7 @@ function CreateThrowEffect(attacker, defender, throw_info)
 endfunction
 
 function ApplyThrowEffect(attacker, defender, throw_info)
-   if (CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+   if (CheckResist(defender, REFLEXES, RESIST_MEDIUM))
       return 0;
    endif
 
@@ -873,7 +873,7 @@ function WebShot(spider, opponent)
    PrintTextAbove(spider, "*dispara teia*");
    PlayMovingEffect(spider, opponent, 3814, 50);
 
-   if (!CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+   if (!CheckResist(opponent, REFLEXES, RESIST_MEDIUM))
       PrintTextAbove(opponent, "*preso na teia*");
 	  TS_StartTimer(opponent, "paralysis", 5);
    else
@@ -1021,7 +1021,7 @@ function CreateInvisibleWeb(spider)
 endfunction
 
 function charmOpponent(attacker, defender)
-    if (!CheckResist(defender, VONTADE, RESIST_VERY_HARD))
+    if (!CheckResist(defender, WILL, RESIST_VERY_HARD))
         PrintTextAbove(attacker, "*Hipnotiza*");
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
         
@@ -1035,7 +1035,7 @@ endfunction
 
 // Function to frighten opponents if they fail VONTADE check
 function frightenOpponent(attacker, defender)
-    if (!CheckResist(defender, VONTADE, RESIST_HARD))
+    if (!CheckResist(defender, WILL, RESIST_HARD))
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
         var skill := Cint(AP_GetSkill(attacker, WRESTLING));
 
@@ -1057,7 +1057,7 @@ function petrify(attacker, defender)
 	endif
 
 	// Check resistance
-	if (CheckResist(defender, VONTADE, RESIST_HARD))
+	if (CheckResist(defender, WILL, RESIST_HARD))
 		PrintTextAbove(defender, "*resiste à petrificação*");
 		return 0;
 	endif
