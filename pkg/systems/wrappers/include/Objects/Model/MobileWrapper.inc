@@ -122,7 +122,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 	
 	function GetStr(this)
-		return this.GetStrBase() + this.GetStrMod();
+		return AP_GetStat(this._objRef, STRENGTH);
 	endfunction
 
 	function GetStrBase(this)
@@ -134,7 +134,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetDex(this)
-		return this.GetDexBase() + this.GetDexMod();
+		return AP_GetStat(this._objRef, DEXTERITY);
 	endfunction
 
 	function GetDexBase(this)
@@ -146,7 +146,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetInt(this)
-		return this.GetIntBase() + this.GetIntMod();
+		return AP_GetStat(this._objRef, INTELLIGENCE);
 	endfunction
 
 	function GetIntBase(this)
@@ -155,6 +155,42 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetIntMod(this)
 		return AP_GetStatMod(this._objRef, INTELLIGENCE);
+	endfunction
+
+	function GetFortitude(this)
+		return AP_GetStat(this._objRef, FORTITUDE);
+	endfunction
+
+	function GetFortitudeBase(this)
+		return AP_GetTrueStat(this._objRef, FORTITUDE);
+	endfunction
+
+	function GetFortitudeMod(this)
+		return AP_GetStatMod(this._objRef, FORTITUDE);
+	endfunction
+
+	function GetReflexes(this)
+		return AP_GetStat(this._objRef, REFLEXES);
+	endfunction
+
+	function GetReflexesBase(this)
+		return AP_GetTrueStat(this._objRef, REFLEXES);
+	endfunction
+
+	function GetReflexesMod(this)
+		return AP_GetStatMod(this._objRef, REFLEXES);
+	endfunction
+
+	function GetWill(this)
+		return AP_GetStat(this._objRef, WILL);
+	endfunction
+
+	function GetWillBase(this)
+		return AP_GetTrueStat(this._objRef, WILL);
+	endfunction
+
+	function GetWillMod(this)
+		return AP_GetStatMod(this._objRef, WILL);
 	endfunction
 
 	function GetCurrentHP(this)

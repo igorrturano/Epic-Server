@@ -36,7 +36,7 @@ program vacuodemana(params)
 	PlaySoundEffect(defender, 0x358);
 
 	var danomana := (AP_GetVitalMaximumValue(defender, "mana") - AP_GetVital(defender, "mana")) * 1.2;
-	danomana += GetResist(attacker, VONTADE);
+	danomana += GetResist(attacker, WILL);
 
 	// TODO colocar isso em uma funcao depois
 	var dmgList := dictionary;

@@ -43,7 +43,7 @@ program trapScript(params)
 			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha explosiva.", SSM_FAIL);
 			PlayObjectCenteredEffect(mobile, FX_EXPLODE_3, 10, 10);
 
-			if (CheckResist(mobile, REFLEXOS, RESIST_MEDIUM, -2 * dmg))
+			if (CheckResist(mobile, REFLEXES, RESIST_MEDIUM, -2 * dmg))
 				if (temHabilidade(mobile, "Desbravador Nato"))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha explosiva.", SSM_INFO);
 					mobile.hidden := 0;
