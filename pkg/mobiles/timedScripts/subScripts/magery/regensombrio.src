@@ -21,7 +21,7 @@ program TimedScript_Clumsy(params)
 	// endif
 
 	while (i < 10)
-		HealFLS(attacker, points);
+		applyEpicHealing(attacker, points);
 		i := i + 1;
 		sleep(2);
 	endwhile

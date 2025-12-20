@@ -99,7 +99,7 @@ function ApplyDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 	endif
 
 	if ( amount < 0 )
-		HealDamage(mobile, Abs( amount ));
+		ApplyEpicHealing(mobile, Abs( amount ));
 	else
 		if ( source )
 			SetLastDamageInfo(mobile, amount, type, source);
@@ -141,7 +141,7 @@ function ApplyRawDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 	endif
 
 	if ( amount < 0 )
-		HealDamage(mobile, Abs(amount));
+		ApplyEpicHealing(mobile, Abs(amount));
 	else
 		if ( source )
 			SetLastDamageInfo(mobile, amount, type, source);
@@ -207,7 +207,7 @@ function ApplySpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circle 
 	endif
 
 	if ( amount < 0 )
-		HealDamage(mobile, Abs(amount));
+		ApplyEpicHealing(mobile, Abs(amount));
 	else
 		if ( source )
 			SetLastDamageInfo(mobile, amount, type, source, circle, spell);
@@ -261,7 +261,7 @@ function ApplyRawSpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circ
 	endif
 
 	if ( amount < 0 )
-		HealDamage(mobile, Abs(amount));
+		ApplyEpicHealing(mobile, Abs(amount));
 	else
 		if ( source )
 			SetLastDamageInfo(mobile, amount, type, source, circle, spell);
@@ -731,7 +731,7 @@ function LifeDrain(source, damage, percent)
 	percent := CDbl(percent);
 	percent := percent / 100;
 	var amt := CInt(CDbl(damage) * percent);
-	HealDamage(source, amt);
+	ApplyEpicHealing(source, amt);
 	SendSysMessage(source, amt + " life force from your opponent was applied to heal you.", 2, 66);
 
 	return amt;

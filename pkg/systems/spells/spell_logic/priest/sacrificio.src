@@ -48,8 +48,8 @@ program SpellScript(params)
 	var healed := cint((AP_GetVitalMaximumValue(who, HITS) - GetHP(who)) / 2);
 	DamageFLS(who, healed);
 
-	// healdamage( targ, healed );
-	healFLS(targ, healed);
+	// ApplyEpicHealing( targ, healed );
+	applyEpicHealing(targ, healed);
 	recalcVitals(targ);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);

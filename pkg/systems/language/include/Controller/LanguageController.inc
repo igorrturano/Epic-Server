@@ -1,16 +1,8 @@
-enum class LANGUAGE_NAME
-	IMPERIALIS := "Imperialis",
-	AGLAB := "Aglâb",
-	AHRUWEN := "Ahruwën",
-	HAIEI := "Haiei",
-	PHALK := "Phalk",
-	GRUMNAK := "Grumnak",
-	BJOR := "Björ",
-	IDRITHHAR := "Idrith'har",
-	ANTIGA := "Antiga"
-endenum
+include ":message:model/Message";
 
-function SetLanguage(who, langEnum)
+function ChangeMessage(who, message)
+	
 
+
+	return message;
 endfunction
-
