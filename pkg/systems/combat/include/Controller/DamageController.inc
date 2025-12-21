@@ -168,7 +168,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 		var ammoObjtype := ammoItem.objtype;
 
 		// 1. Apply PHYSICAL damage from crafting (fabricado CProp -> componentes -> dano)
-		var fabricado := attackInfo.GetAmmo().GetItem().GetProperty("fabricado");
+		var fabricado := attackInfo.GetAmmo().GetItem().GetProperty(PROPNAME_FABRICADO);
 		if (fabricado && fabricado.componentes)
 			var physicalDamage := 0;
 
