@@ -37,7 +37,6 @@ program MainHitScript(attackInfo)
 		if (!attackInfo.GetAttacker().IsNPC())
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
-				SubtractPowder(attackInfo); // Subtrai pólvora
 			else
 				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				return 1;
@@ -88,8 +87,7 @@ function DoMovement(byRef attackInfo)
 	var movtime := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#movtime"));
 	if (move != error)
 		if (ReadGameClock() < movtime + 30)
-			var armorsInSlot := attackInfo.GetDefender().GetObjRef().GetEquipBySlot(attackInfo.GetBodyRegion());
-
+			var armorsInSlot := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 			foreach armor in (armorsInSlot)
 				var e := start_script(
 					CStr(move),
@@ -103,7 +101,6 @@ function DoMovement(byRef attackInfo)
 					}
 				);
 			endforeach
-			
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
 			return 1;
 		else
