@@ -46,7 +46,6 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 
 	xDesc := PegaDescMagica(objeto,xDesc);
 	xDesc := PegaDescComponente(objeto,xDesc);
-	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	xDesc := PegaDescDosesVeneno(objeto,xDesc);
 	
 	if (isFireWeapon(objeto))
@@ -72,6 +71,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 
 	xDesc := PegaDescMagicLore(objeto,who,xDesc);
 	XDesc := PegaDescGoles(objeto,xDesc);
+	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	
 	return xDesc;
 endfunction
