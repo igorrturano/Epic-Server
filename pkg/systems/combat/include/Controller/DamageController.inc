@@ -158,6 +158,54 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}"));
+
+	// Apply ammunition damage if ammo exists
+	if (attackInfo.GetAmmo())
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano da munição:"));
+
+		var ammoItem := attackInfo.GetAmmo().GetItem().GetObjRef();
+		var ammoObjtype := ammoItem.objtype;
+
+		// 1. Apply PHYSICAL damage from crafting (fabricado CProp -> componentes -> dano)
+		var fabricado := attackInfo.GetAmmo().GetItem().GetProperty("fabricado");
+		if (fabricado && fabricado.componentes)
+			var physicalDamage := 0;
+
+			// Extract damage from components where caracteristica == "dano"
+			foreach comp in (fabricado.componentes)
+				if (comp.propriedades && comp.propriedades.caracteristica == "dano")
+					var danoValue := comp.propriedades.valorPrincipal;
+					physicalDamage += CInt(danoValue);
+				endif
+			endforeach
+
+			// Apply as PIERCING for arrows/bolts, BLUNT for fireweapon ammo
+			if (ammoObjtype in array{0xf3f, 0x1bfb, 0x9088, 0x9098, 0xF79})
+				attackInfo.GetDamage().IncreasePiercingRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {physicalDamage}"));
+			elseif (ammoObjtype == 0x9090)
+				attackInfo.GetDamage().IncreaseBluntRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {physicalDamage}"));
+			endif
+		endif
+
+		// 2. Apply ELEMENTAL damage from enchantments (AmmoDamage CProp)
+		var ammoDamage := attackInfo.GetAmmo().GetItem().GetProperty("AmmoDamage");
+
+		if (ammoDamage)
+			attackInfo.GetDamage()
+				.IncreaseFireRawDamage(ammoDamage.fire ?: 0)
+				.IncreaseColdRawDamage(ammoDamage.cold ?: 0)
+				.IncreasePoisonRawDamage(ammoDamage.poison ?: 0)
+				.IncreaseEnergyRawDamage(ammoDamage.energy ?: 0);
+
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {ammoDamage.fire ?: 0}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {ammoDamage.cold ?: 0}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {ammoDamage.poison ?: 0}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {ammoDamage.energy ?: 0}"));
+		endif
+	endif
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -489,7 +537,7 @@ function CheckPoison(byRef attackInfo)
 			return false;
 		endif
 	else // Se for player, checa pela arma/munição
-		var sourcePoison := attackInfo.GetAmmoObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 		var poisonInfo := sourcePoison.GetProp("poisonInfo");
 
 		if (poisonInfo == error)

@@ -18,10 +18,10 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		Message("Isto não pode ser alvejado por essa magia.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-		return;
-	endif
+	// if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
+	// 	Message("Isto não pode ser alvejado por essa magia.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	// 	return;
+	// endif
 
 	// Bonus
 	var bonus := CInt(who.GetSkill(ARCANA));
