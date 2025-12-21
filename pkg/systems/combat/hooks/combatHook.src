@@ -281,8 +281,9 @@ function CheckFireweaponSupplies(byRef attackInfo)
 		Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
+
 	// Consume Powder
-	
+	SubtractAmount(powder, powderNeeded);	
 
 	return true;
 endfunction
