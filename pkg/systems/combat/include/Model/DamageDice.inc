@@ -1,8 +1,6 @@
 include "IDamageDice";
 include ":diceroll:model/Dice";
 
-include ":equipsys:utils/consts";
-
 class DamageDice(IDamageDice)
 	var _slash; // Dice class
 	var _piercing; // Dice class
