@@ -8,8 +8,8 @@ include "include/epicMaterials";
 // Helper function to detect if item is ammunition
 function IsAmmunition(item)
 	var objtype := item.objtype;
-	// Check against known ammo types: arrows, bolts, war arrows, war bolts, throwing, fireweapon ammo
-	return objtype in array{0xf3f, 0x1bfb, 0x9088, 0x9098, 0xF79, 0x9090};
+	// Check against known ammo types: arrows, bolts, war arrows, war bolts, fireweapon ammo
+	return objtype in array{0xf3f, 0x1bfb, 0x9088, 0x9098, 0x9090};
 endfunction
 
 function setBonus(who, item, bonus)
@@ -28,7 +28,7 @@ function setBonus(who, item, bonus)
 	var materialName := "";  // Used for ammo (material name matching)
 
 	if (isAmmo)
-		var fabricado := GetObjProperty(item, "fabricado");
+		var fabricado := item.GetItem().GetProperty(item, PROPNAME_FABRICADO);
 		if (!fabricado || !fabricado.componentes)
 			SendSysMessage(who, "Esta munição não possui componentes para ser encantada.");
 			return;
@@ -123,6 +123,10 @@ function setBonus(who, item, bonus)
 			ammoDamage.energy := bonus;
 		endif
 
+		if (item.GetObjRef().amount >= 10)
+			Message("Você não pode encantar pilhas de munição com mais de 10 unidades.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			return;
+		endif
 		SetObjProperty(item, "AmmoDamage", ammoDamage);
 	endif
 
