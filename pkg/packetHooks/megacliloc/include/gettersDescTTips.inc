@@ -59,22 +59,31 @@ endfunction
 
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop.estado == ITEM_MONTADO)
+	if(prop)
 		var quantidadeLote := "";
 		if(prop.receita.lote && prop.receita.lote > 1)
 			quantidadeLote := prop.receita.lote  + "x ";
 		endif
 		
-		xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
-		if(prop.esquema.componentesEscolhidos.size() > 0)
-			xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
-			foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
-				Sleepms(2);
-				var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
-															componenteEscolhido.material.nome,
-															componenteEscolhido.tier.desc); 
-				xDesc := xDesc + WHITE + descComponente + " <br>";
-			endforeach
+		var componentes;
+		if(prop.estado == ITEM_MONTADO)
+			xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
+			componentes := prop.esquema.componentesEscolhidos;
+		else
+			componentes := prop.componentes;
+		endif 
+
+		if(componentes)
+			if(componentes.size() > 0)
+				xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
+				foreach componenteEscolhido in (componentes)
+					Sleepms(2);
+					var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
+																componenteEscolhido.material.nome,
+																componenteEscolhido.tier.desc); 
+					xDesc := xDesc + WHITE + descComponente + " <br>";
+				endforeach
+			endif
 		endif
 	endif
 	return xDesc;
