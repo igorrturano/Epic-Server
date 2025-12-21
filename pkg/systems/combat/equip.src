@@ -165,7 +165,6 @@ program equipweapon(who, item)
 	if (cint(cfg[item.objtype].parrybonus) > 0)
 		EraseObjProperty(who, "twohanded");
 	endif
-	// TODO: ADICIONAR A LOGICA DE POSTURA AQUI PRA RANGED JA COMECAR NA POSTURA CERTA
 
 	return 1;
 endprogram
