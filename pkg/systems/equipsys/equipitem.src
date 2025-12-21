@@ -99,9 +99,7 @@ function debugArmor(who, equip)
 endfunction
 
 function updatePosture(who, weapon)
-	var wrapper := WeaponWrapper(weapon);
-	var mobile_wrapper := MobileWrapper(who);
-	var category := wrapper.GetCategory();
+	var category := weapon.GetCategory();
 	var fireWeapons := array{
 		Upper(WEAPON_CATEGORY::PISTOL),
 		Upper(WEAPON_CATEGORY::MUSKET),
@@ -110,12 +108,17 @@ function updatePosture(who, weapon)
 	};
 	
 	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
-		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
 	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
-		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
 	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
-		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
 	elseif(Upper(category) in fireWeapons)
-		mobile_wrapper.SetCombatTraits(mobile_wrapper.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+	else
+		return false;
 	endif
+
+	Message($"Postura de combate alterada para {who.GetCombatTraits().GetPosture()}").SendSys(who.GetObjRef());
+	return true;
 endfunction
