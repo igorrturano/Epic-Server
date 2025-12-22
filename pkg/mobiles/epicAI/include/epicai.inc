@@ -2383,7 +2383,7 @@ function GetWeaponRangeInfo()
     endif
 
     // var wpn_elem := GetWpnCfgInfo(me, weapon);
-	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue(); 
+	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement(); 
     var min_range := 1;
     var max_range := 1;
     

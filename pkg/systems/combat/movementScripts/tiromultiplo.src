@@ -28,7 +28,7 @@ program doubleattack(params)
 
 	if (SubtractAmount(ammo, 3))
 		// var elem := GetWpnCfgInfo(attacker, attacker.weapon);
-		var elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue();
+		var elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement();
 		PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
 		sleepms(500);
 		PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
