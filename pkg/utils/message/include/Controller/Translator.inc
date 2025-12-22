@@ -1,7 +1,7 @@
 use os;
 
 include "ITranslator";
-include "system/text/TranslatableText";
+include ":text:TranslatableText";
 include "system/exception/FormatException/InvalidFormatException";
 
 class Translator(ITranslator)

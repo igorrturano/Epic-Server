@@ -3,65 +3,87 @@ use cfgfile;
 include "model/IOFile";
 
 class CFGFile(IOFile)
-	var _element := struct{};
-	var _key := struct{};
+	var _elementName := "";
+	var _element;
 	
-	function CFGFile(this, packageName, fileName, elem_name := false, key_name := false, createFile := true)
-		Super(packageName, fileName);
-		this._LoadFile(createFile);
-		
-		this._element := struct{
-			name := error{ errortext := "Element not loaded" },
-			value := error{ errortext := "Element not loaded" }
-		};
-		this._key := struct{
-			name := error{ errortext := "Property not loaded" },
-			value := error{ errortext := "Property not loaded" }
-		};
-
-		if (elem_name) this.SetElementName(elem_name); endif
-		if (key_name) this.SetKeyName(key_name); endif
+	function CFGFile(this, packageName, filePath, createFile := true)
+		Super(packageName, filePath);
+		this.LoadFile(createFile);
 	endfunction
 
 	function GetElementName(this)
-		return this._element.name;
+		return this._elementName;
 	endfunction
 
-	function GetElementValue(this)
-		return this._element.value;
+	function SetElementName(this, elem_name)
+		this._elementName := elem_name;
+		this._element := FindConfigElem(this._file, this._elementName);
+
+		return this;
 	endfunction
 
-	function GetElementKeys(this, elem_name := false)
+	function GetElement(this)
+		return this._element;
+	endfunction
+
+	function GetElementProps(this)
 		var result;
 
-		if (elem_name) this._element.name := elem_name; endif
-		this._LoadElement(this._element.name);
+		if (!this._elementName)
+			return InvalidElementException("Element name not set");
+		endif
+		
+		if (!this._element)
+			return InvalidElementException($"Element {this._elementName} not found in {this.GetFullPath()}");
+		endif
 
-		if (!this._element.value) result := error{ errortext := $"Element {this._element.name} not found in {this._fullPath}" }; endif
-
-		result := ListConfigElemProps(this._element.value);
-		if (!result) result := error{ errortext := $"No properties found in element {this._element.name} of {this._fullPath}" }; endif
+		result := ListConfigElemProps(this._element);
+		if (!result)
+			return InvalidPropertyException($"No properties found in element {this._elementName} of {this.GetFullPath()}");
+		endif
 
 		return result;
 	endfunction
 
-	function GetKeyName(this)
-		return this._key.name;
+	function GetPropertyValue(this, propName, type := OT_STRING, isDictionary := false)
+		var propValue;
+		
+		if (isDictionary)
+			propValue := GetConfigStringDictionary(this._element, propName);
+
+			if (type == OT_LONG)
+				foreach value in (propValue.values())
+					value := CInt(value);
+				endforeach
+			elseif (type == OT_DOUBLE)
+				foreach value in (propValue.values())
+					value := CDbl(value);
+				endforeach
+			endif
+		else
+			propValue := GetConfigStringArray(this._element, propName);
+
+			if (type == OT_LONG)
+				foreach value in (propValue)
+					value := CInt(value);
+				endforeach
+			elseif (type == OT_DOUBLE)
+				foreach value in (propValue)
+					value := CDbl(value);
+				endforeach
+			endif
+
+			if (propValue.size() == 1)
+				propValue := propValue[1];
+			endif
+		endif
+
+		return propValue;
 	endfunction
 
-	function GetKeyValue(this)
-		return this._key.value;
-	endfunction
+	function LoadFile(this, createFile := false)
+		this._file := ReadConfigFile($"{this.GetFullPath()}");
 
-	function SetElementName(this, elem_name)
-		this._element.name := elem_name;
-		this._LoadElement(this._element.name);
-		return this;
-	endfunction
-
-	function SetKeyName(this, key_name, isDictionary := false)
-		this._key.name := key_name;
-		this._LoadKey(this._key.name, isDictionary);
 		return this;
 	endfunction
 
@@ -70,36 +92,6 @@ class CFGFile(IOFile)
 	endfunction
 
 	function ToString(this)
-		return $"CFGFile: Package: {this._packageName}, File: {this._fileName}, FullPath: {this._fullPath}, Element: {this._element.name}, Key: {this._key.name}";
-	endfunction
-
-	// Private Functions
-	function _LoadFile(this, createFile := false)
-		this._file := ReadConfigFile($":{this._packageName}:{this._fileName}");
-	endfunction
-	
-	function _LoadElement(this, elem_name := false)
-		if (elem_name) this._element.name := elem_name; endif
-
-		this._element.value := FindConfigElem(this._file, elem_name);
-
-		return this._element.value;
-	endfunction
-
-	function _LoadKey(this, key_name := false, isDictionary := false)
-		if (key_name) this._key.name := key_name; endif
-
-		if (TypeOf(this._key.name) == "String")
-			if (isDictionary)
-				this._key.value := GetConfigStringDictionary(this._element.value, this._key.name);
-			else
-				this._key.value := GetConfigStringArray(this._element.value, this._key.name);
-			endif
-		elseif (TypeOf(this._key.name) == "Integer")
-		else
-			return error{ errortext := "Key name must be a 'string' or 'integer'" };
-		endif
-
-		return this._key.value;
+		return $"CFGFile: {Super::ToString(this)}, ElementName={this._elementName}";
 	endfunction
 endclass
