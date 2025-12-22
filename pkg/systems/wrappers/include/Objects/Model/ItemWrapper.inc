@@ -11,7 +11,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		Super(item);
 
 		this._cfgFile := CFGFile("*", "itemdesc");
-		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
+		this._template := this._cfgFile.SetElementName(this._objtype).GetElement();
 
 		if (TypeOfInt(this._objRef) == OT_ITEMREF)
 			this._category := this._template.Category;

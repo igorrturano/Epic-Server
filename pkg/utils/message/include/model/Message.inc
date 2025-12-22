@@ -4,7 +4,7 @@ use os;
 include "IMessage";
 include "include/say";
 include "include/client";
-include "system/text/_all";
+include ":text:_all";
 include "system/exception/FormatException/InvalidFormatException";
 
 // TODO: Fazer receber apenas 1 mensagem, para evitar bugs de concatenação

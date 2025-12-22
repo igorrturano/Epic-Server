@@ -34,9 +34,5 @@ class IOFile()
 		return $"Package={this._package}, PackageName={this._packageName}, FilePath={this._filePath}, FullPath={this._fullPath}";
 	endfunction
 
-	uninit function GetElementName(this);
-	uninit function SetElementName(this, default elemName);
-	uninit function GetElementProps(this);
-	uninit function GetPropertyValue(this, default propName);
 	uninit function LoadFile(this, default createFile);
 endclass

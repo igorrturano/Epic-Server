@@ -59,7 +59,7 @@ endfunction
  * 					  ou null se não encontrado.
 */
 exported function getCfgElem(item)
-	return CFGFile("*", "itemdesc").SetElementName(item.objtype).GetElementValue();
+	return CFGFile("*", "itemdesc").SetElementName(item.objtype).GetElement();
 endfunction
 
 exported function isSpiderEggSac(item)
