@@ -100,12 +100,6 @@ endfunction
 
 function updatePosture(who, weapon)
 	var category := weapon.GetCategory();
-	var fireWeapons := array{
-		Upper(WEAPON_CATEGORY::PISTOL),
-		Upper(WEAPON_CATEGORY::MUSKET),
-		Upper(WEAPON_CATEGORY::CARABINE),
-		Upper(WEAPON_CATEGORY::HANDCANNON)
-	};
 	
 	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
@@ -113,7 +107,7 @@ function updatePosture(who, weapon)
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
 	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
-	elseif(Upper(category) in fireWeapons)
+	elseif(weapon.isFireWeapon())
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
 	else
 		return false;

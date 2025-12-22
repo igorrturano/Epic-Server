@@ -391,16 +391,15 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			$"\nRange: {this._minRange}-{this._maxRange}";
 	endfunction
 
-	function IsMontante(this)
-		return this._objType in array{0x26CF, 0xF9EA, 0xF9F7};
-	endfunction
-
-	function IsRanged(this)
-		return this._maxRange > 1;
-	endfunction
-
 	function IsThrowable(this)
 		return this._isThrowable;
+	endfunction
+
+	function isFireWeapon(this)
+		return this.GetCategory() == WEAPON_CATEGORY::PISTOL ||
+		       this.GetCategory() == WEAPON_CATEGORY::MUSKET ||
+		       this.GetCategory() == WEAPON_CATEGORY::CARABINE ||
+		       this.GetCategory() == WEAPON_CATEGORY::HANDCANNON;
 	endfunction
 
 	// Private functions

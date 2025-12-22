@@ -28,7 +28,11 @@ class Ammo()
 	endfunction
 
 	function NeedsQuiver(this)
-		return this._item.GetObjType() != 0x5001;
+		return this._item.GetObjType() != 0x5001 && this._item.GetObjType() != 0x9090;
+	endfunction
+
+	function NeedsBandolier(this)
+		return this._item.GetObjType() == 0x9090;
 	endfunction
 
 	function ToString(this)
