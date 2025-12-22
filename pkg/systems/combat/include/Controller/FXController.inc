@@ -46,10 +46,7 @@ function PlayWeaponFX(byRef attackInfo)
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
 			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::PISTOL) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::MUSKET) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CARABINE) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::HANDCANNON))
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
@@ -85,16 +82,7 @@ function GetAttackerFX(byRef attackInfo)
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::PISTOL)
-			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
-			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::HANDCANNON)
-			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
-			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CARABINE)
-			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
-			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MUSKET)
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
 		else
@@ -264,7 +252,7 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::PISTOL)
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon() == WEAPON_CATEGORY::PISTOL)
 		weaponSFX.hit := array{0x11C};
 		weaponSFX.miss := array{0x11C};
 		weaponSFX.critical := array{};
