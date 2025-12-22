@@ -203,5 +203,6 @@ enum class ITEM_TYPE
 endenum
 
 enum class ITEM_CATEGORY
-	QUIVER := "Quiver"
+	QUIVER := "Quiver",
+	BANDOLIER := "Bandolier"
 endenum

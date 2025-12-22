@@ -463,5 +463,36 @@ function CanBackStab(attacker) // attacker: MobileWrapper
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
+		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
+
+		if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
+			powderNeeded := 2;
+		endif
+
+		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER).GetObjRef();
+		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
+		if (powder.amount < powderNeeded)
+			Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+
+		SubtractAmount(powder, powderNeeded);	
+	endif
+	
 	return attackInfo.GetAmmo().GetItem().Consume(1);
+endfunction
+
+function GetPowderAmount(weaponCategory)
+	case (weaponCategory)
+		WEAPON_CATEGORY::CARABINE:
+			return 2;
+		WEAPON_CATEGORY::MUSKET:
+			return 3;
+		WEAPON_CATEGORY::HANDCANNON:
+			return 5;
+		WEAPON_CATEGORY::PISTOL:
+		default:
+			return 1;
+	endcase
 endfunction

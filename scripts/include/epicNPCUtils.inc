@@ -80,7 +80,7 @@ function customizeNpc(mob, set_tier := "0")
 	SetObjProperty(mob, "hitsmod", hitsmod + hp);
 	SetObjProperty(mob, "anchor", array{ mob.x, mob.y, mob.z+2 });
 	RecalcVitals(mob);
-    ApplyEpicHealing(mob, hitsmod + hp);
+    HealDamage(mob, hitsmod + hp);
 endfunction
 
 function ReturnCharDataPlayerNear(who)

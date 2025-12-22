@@ -230,7 +230,7 @@ function PerformHealingRain(shaman, allies)
     // Heal allies
     foreach ally in allies
         if (!ally.isUnderRoof())
-            ApplyEpicHealing(ally, CInt(mlore/3));
+            HealDamage(ally, CInt(mlore/3));
             PlayObjectCenteredEffect(ally, FX_HEAL_EFFECT, 7, 0x10);
         endif
         sleepms(2);
