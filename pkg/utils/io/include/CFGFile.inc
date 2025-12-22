@@ -8,7 +8,7 @@ class CFGFile(IOFile)
 	
 	function CFGFile(this, packageName, fileName, createFile := true)
 		Super(packageName, fileName);
-		this._LoadFile(createFile);
+		this.LoadFile(createFile);
 	endfunction
 
 	function GetElementName(this)
@@ -30,16 +30,16 @@ class CFGFile(IOFile)
 		var result;
 
 		if (!this._elementName)
-			return InvalidPropException("Element name not set");
+			return InvalidElementException("Element name not set");
 		endif
 		
 		if (!this._element)
-			return InvalidPropException($"Element {this._elementName} not found in {this.GetFullPath()}");
+			return InvalidElementException($"Element {this._elementName} not found in {this.GetFullPath()}");
 		endif
 
 		result := ListConfigElemProps(this._element);
 		if (!result)
-			return error{ errortext := $"No properties found in element {this._elementName} of {this.GetFullPath()}" };
+			return InvalidPropertyException($"No properties found in element {this._elementName} of {this.GetFullPath()}");
 		endif
 
 		return result;
