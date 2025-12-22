@@ -28,11 +28,9 @@ class Color()
 
 	function _InitValues(this)
 		var cfgFile := CFGFile("text", "configs/Color").SetElementName(this._value);
-		// print($"CFGFile: {cfgFile.ToString()}");
 
 		this._name := cfgFile.GetPropertyValue("Name");
 		this._htmlValue := cfgFile.GetPropertyValue("HTMLValue");
-		// print($"CFGFile: {cfgFile.ToString()}");
 	endfunction
 endclass
 
