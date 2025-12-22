@@ -187,7 +187,7 @@ program calor(params)
 					RemoveHeatMod(who, 2);
 				endif
 			else
-				SendSysMessageEx(who, "Voce nao resiste aos efeito do calor.", SSM_FAIL);
+				SendSysMessageEx(who, "Voce nao resiste aos efeitos do calor.", SSM_FAIL);
 				if (penalty == 0)
 					penalty := 1;
 					ApplyHeatMod(who, 1);

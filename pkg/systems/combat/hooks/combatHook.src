@@ -16,6 +16,7 @@ include ":mastery:Abilities";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
+
 // include ":message:Model/Message";
 
 program Install()
@@ -31,7 +32,7 @@ exported function Attack(attacker, defender)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("================="));
 
 	if (!CanAttack(attackInfo))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", Color(SYSTEM_COLOR::FAIL).GetValue()));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", Color(SYSTEM_COLOR::FAIL)));
 		return 1;
 	endif
 
@@ -50,13 +51,13 @@ endfunction
 
 function CanAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().Equals(attackInfo.GetDefender())) // Impede de atacar-se
-		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetAttacker().GetObjRef(), 5000);
 		return false;
 	endif
 	
 	if (!CheckLineOfSight(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()))
-		Message("Você não enxerga o alvo.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não enxerga o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -67,7 +68,7 @@ function CanAttack(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC())
 		if (!attackInfo.GetAttacker().IsWarMode())
 			if (attackInfo.GetAttacker().GetObjRef().GetProp("attackmsg") <= polcore().systime)
-				Message("Você precisa estar em modo de combate para ameaçar alguem.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				attackInfo.GetAttacker().GetObjRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
 			return false;
@@ -80,12 +81,12 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (!CheckDistance(attackInfo.GetAttacker(), attackInfo.GetDefender()))
-		Message("O alvo está fora do alcance.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("O alvo está fora do alcance.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	if (!CheckFacing(attackInfo))
-		Message("Você precisa estar de frente para o alvo.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você precisa estar de frente para o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -97,7 +98,7 @@ function CanAttack(byRef attackInfo)
 	endif
 	
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "defesatotal") > 0)
-		Message("Você está totalmente concentrado na defesa.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você está totalmente concentrado na defesa.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 	
@@ -115,7 +116,7 @@ function CanAttack(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#PrisaoGelida"))
-		Message("Você não pode atacar o alvo.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você não pode atacar o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
@@ -135,12 +136,24 @@ function TryToAttack(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})"));
 	endif
 
+	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
+		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
+		if (!attackInfo.GetAttacker().IsNPC())
+			if (ConsumeAmmo(attackInfo)) // Consome munição
+				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
+			else
+				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+				return 1;
+			endif
+		endif
+	endif
+
 	attackInfo.RollHitChance();
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Rolagem de acerto: " + attackInfo.GetHitChanceResult()));
 
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	if (attackInfo.Succeeded())
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS).GetValue()));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS)));
 		
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 			ExecuteMasteryAbility(attackInfo);
@@ -148,7 +161,7 @@ function TryToAttack(byRef attackInfo)
 
 		DoAttack(attackInfo);
 	else
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***", Color(SYSTEM_COLOR::FAIL).GetValue()));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ERROU!***", Color(SYSTEM_COLOR::FAIL)));
 		// Se errou, chama os efeitos aqui
 		PlayAttackFX(attackInfo);
 		PlayAttackSFX(attackInfo);
@@ -204,12 +217,15 @@ function CheckAmmo(byRef attackInfo)
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
 	if (!ammoSerial)
-		Message("Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message($"Você não definiu o tipo de munição que vai usar. [clique 2x na arma e na munição]", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return false;
 	endif
 
 	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial));
 	attackInfo.SetAmmo(ammo);
+
+	var weaponCategory := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory();
+
 	if (ammo.NeedsQuiver())
 		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE, ITEM_TYPE::CONTAINER);
 		if (aljava.GetCategory() != ITEM_CATEGORY::QUIVER)
@@ -217,7 +233,24 @@ function CheckAmmo(byRef attackInfo)
 		endif
 
 		if (!aljava.Contains(ammo.GetItem()))
-			Message("A munição não está na aljava.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("A munição não está na aljava.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+	elseif (ammo.NeedsBandolier())
+		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER);
+		if (bandolier.GetCategory() != ITEM_CATEGORY::BANDOLIER)
+			Message("Você precisa equipar uma Bandoleira de Artilharia.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+
+		if (!bandolier.Contains(ammo.GetItem()))
+			Message("A munição não está na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+
+		var powderFixer := 0xC611; // Socador de Polvora
+		if (!bandolier.Contains(powderFixer))
+			Message("Você não tem socador de pólvora na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 			return false;
 		endif
 	endif
@@ -236,7 +269,7 @@ function arcane_shooting(byRef attackInfo)
 	endif
 
 	if (!DamageMANA(attackInfo.GetAttacker().GetObjRef(), 4))
-		Message("Você está sem mana!", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você está sem mana!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return 0;
 	endif
 	
@@ -274,4 +307,21 @@ function CheckFacing(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, $"Direção do golpe: {(attackInfo.GetDirection() == ATTACK_DIRECTION::FRONT ? "Frente" : "Costas")}");
 
 	return true;
+endfunction
+
+function TryToRecoverAmmo(byRef attackInfo)
+	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetDefender().GetObjRef().backpack)
+		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
+
+		if (TryToExecuteHab_ArrowRecovery(attackInfo))
+			chance += 15;
+		endif
+
+		if (RandomInt(100 + 1) <= chance)
+			var ammo := attackInfo.GetAmmo().GetItem().GetObjRef();
+			if (ammo)
+				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
+			endif
+		endif
+	endif
 endfunction

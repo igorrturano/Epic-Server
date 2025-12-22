@@ -109,7 +109,7 @@ function CalculateHitChance(byRef attackInfo)
 				if (attackInfo.GetDefender().GetSerial() != challenger.serial)
 					hit_chance -= 10.0;
 					if (RandomInt(100 + 1) < 20.0)
-						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 					endif
 				endif
 			else
@@ -264,7 +264,7 @@ function CalculateHitChance(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#ataqueinesperado"))
 		if (attackInfo.GetDefender().GetObjRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
 			hit_chance += 50.0;
-			Message("*ataque inesperado*", Color(SYSTEM_COLOR::FAIL).GetValue()).SendAbove(attackInfo.GetAttacker().GetObjRef());
+			Message("*ataque inesperado*", Color(SYSTEM_COLOR::FAIL)).SendAbove(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#ataqueinesperado");
@@ -278,7 +278,7 @@ function CalculateHitChance(byRef attackInfo)
 			hit_chance += 50.0;
 			attackers.append(attackInfo.GetAttacker().GetSerial());
 			attackInfo.GetDefender().GetObjRef().SetProp("#bomcomecoserials", attackers);
-			Message("Você começou bem.", Color(SYSTEM_COLOR::SUCCESS).GetValue()).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você começou bem.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
@@ -463,5 +463,36 @@ function CanBackStab(attacker) // attacker: MobileWrapper
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
+		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
+
+		if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
+			powderNeeded := 2;
+		endif
+
+		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER).GetObjRef();
+		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
+		if (powder.amount < powderNeeded)
+			Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+
+		SubtractAmount(powder, powderNeeded);	
+	endif
+	
 	return attackInfo.GetAmmo().GetItem().Consume(1);
+endfunction
+
+function GetPowderAmount(weaponCategory)
+	case (weaponCategory)
+		WEAPON_CATEGORY::CARABINE:
+			return 2;
+		WEAPON_CATEGORY::MUSKET:
+			return 3;
+		WEAPON_CATEGORY::HANDCANNON:
+			return 5;
+		WEAPON_CATEGORY::PISTOL:
+		default:
+			return 1;
+	endcase
 endfunction

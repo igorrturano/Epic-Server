@@ -7,7 +7,7 @@ include "IUObjectWrapper";
 
 include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
-include "system/text/Color";
+include ":text:Color";
 
 class UObjectWrapper(IUObjectWrapper)
 	var _cfgFile;

@@ -4,7 +4,7 @@ include ":achievements:model/Achievement";
 const pkg_name := "achievements";
 
 function SaveAchievement(type, who, achievement)
-	var DFController := DataFile(pkg_name, type, Hex(who.serial), CStr(achievement.GetRef()));
+	var DFController := DataFile(pkg_name, type, Hex(who.serial)).SetElementName(CStr(achievement.GetRef()));
 	var prop := DFController.GetPropertyValue() ?: dictionary{};
 
 	prop[achievement.GetName()] := achievement.Serialize();
@@ -13,8 +13,8 @@ function SaveAchievement(type, who, achievement)
 endfunction
 
 function LoadAchievement(type, who, key, name)
-	var DFController := DataFile(pkg_name, type, Hex(who.serial), key);
-	var prop := DFController.GetPropertyValue();
+	var DFController := DataFile(pkg_name, type).SetElementName(Hex(who.serial));
+	var prop := DFController.GetPropertyValue(key);
 	var achiev := Achievement(name, key);
 
 	achiev.Deserialize(prop[name]);
@@ -27,8 +27,8 @@ function LoadListAchievement(who)
 	var types := array{ ACHIEVEMENT_COMBAT };
 
 	foreach type in (types)
-		var DFController := DataFile(pkg_name, type, Hex(who.serial));
-		var elemKeys := DFController.GetElementKeys();
+		var DFController := DataFile(pkg_name, type).SetElementName(Hex(who.serial));
+		var elemKeys := DFController.GetElementProps();
 		print ("elemKeys: " + elemKeys);
 
 		if (elemKeys.size() < 1)
@@ -36,8 +36,7 @@ function LoadListAchievement(who)
 		endif
 
 		foreach key in (elemKeys)
-			DFController.SetPropertyName(key);
-			var prop := DFController.GetPropertyValue();
+			var prop := DFController.GetPropertyValue(key);
 			foreach value in (prop)
 				var achievement := Achievement(value.name, key);
 				achievement.Deserialize(value);
