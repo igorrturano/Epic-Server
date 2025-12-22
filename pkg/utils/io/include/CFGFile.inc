@@ -83,6 +83,8 @@ class CFGFile(IOFile)
 
 	function LoadFile(this, createFile := false)
 		this._file := ReadConfigFile($"{this.GetFullPath()}");
+
+		return this;
 	endfunction
 
 	function Unload(this)
