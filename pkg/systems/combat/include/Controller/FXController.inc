@@ -14,7 +14,6 @@ include ":attributes:attributeConstants";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":blood:blood";
-include ":combat:Model/DamageTier";
 
 function PlayAttackFX(byRef attackInfo)
 	var attackerAnim := GetAttackerFX(attackInfo);
