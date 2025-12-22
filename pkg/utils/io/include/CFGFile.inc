@@ -6,8 +6,8 @@ class CFGFile(IOFile)
 	var _elementName := "";
 	var _element;
 	
-	function CFGFile(this, packageName, fileName, createFile := true)
-		Super(packageName, fileName);
+	function CFGFile(this, packageName, filePath, createFile := true)
+		Super(packageName, filePath);
 		this.LoadFile(createFile);
 	endfunction
 
