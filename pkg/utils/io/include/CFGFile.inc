@@ -45,40 +45,44 @@ class CFGFile(IOFile)
 		return result;
 	endfunction
 
-	function GetKeyValue(this, keyName, type := OT_STRING, isDictionary := false)
-		var keyValue;
+	function GetPropertyValue(this, propName, type := OT_STRING, isDictionary := false)
+		var propValue;
 		
 		if (isDictionary)
-			keyValue := GetConfigStringDictionary(this._element, keyName);
+			propValue := GetConfigStringDictionary(this._element, propName);
 
 			if (type == OT_LONG)
-				foreach value in (keyValue.values())
+				foreach value in (propValue.values())
 					value := CInt(value);
 				endforeach
 			elseif (type == OT_DOUBLE)
-				foreach value in (keyValue.values())
+				foreach value in (propValue.values())
 					value := CDbl(value);
 				endforeach
 			endif
 		else
-			keyValue := GetConfigStringArray(this._element, this._keyName);
+			propValue := GetConfigStringArray(this._element, propName);
 
 			if (type == OT_LONG)
-				foreach value in (keyValue)
+				foreach value in (propValue)
 					value := CInt(value);
 				endforeach
 			elseif (type == OT_DOUBLE)
-				foreach value in (keyValue)
+				foreach value in (propValue)
 					value := CDbl(value);
 				endforeach
 			endif
 
-			if (keyValue.size() == 1)
-				keyValue := keyValue[1];
+			if (propValue.size() == 1)
+				propValue := propValue[1];
 			endif
 		endif
 
-		return keyValue;
+		return propValue;
+	endfunction
+
+	function LoadFile(this, createFile := false)
+		this._file := ReadConfigFile($"{this.GetFullPath()}");
 	endfunction
 
 	function Unload(this)
@@ -87,10 +91,5 @@ class CFGFile(IOFile)
 
 	function ToString(this)
 		return $"CFGFile: {Super::ToString(this)}, ElementName={this._elementName}";
-	endfunction
-
-	// Private Functions
-	function _LoadFile(this, createFile := false)
-		this._file := ReadConfigFile($"{this.GetFullPath()}");
 	endfunction
 endclass
