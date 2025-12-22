@@ -206,3 +206,8 @@ exported function isTwoHanded(weapon)
 	weapon := weapon.getCfgElem();
 	return Upper(weapon.Attribute) == Upper(TWOHANDED);
 endfunction
+
+exported function isFireWeapon(weapon)
+	var elem := weapon.getCfgElem();
+	return elem.ProjectileType == 0x9090;
+endfunction
