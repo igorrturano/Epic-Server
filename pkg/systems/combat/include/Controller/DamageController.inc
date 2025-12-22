@@ -343,15 +343,15 @@ function ApplyCriticalDamage(byRef attackInfo)
 
 	var pet_instinto := attackInfo.GetAttacker().GetObjRef().GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_selvagem := attackInfo.GetAttacker().GetObjRef().GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
-	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
+	var pet_txt := tamingCfg.GetPropertyValue("Text");
 
 	if (pet_instinto || pet_selvagem) // Se for pet
-		weapon_scripts := tamingCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := tamingCfg.GetPropertyValue("CriticalHitScripts");
 		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
-		weapon_scripts := npcCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
 	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());

@@ -32,6 +32,7 @@ program MainHitScript(attackInfo)
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 	
+	// TODO: Consumo da flechar tem que ser no combatHook, pra poder consumir mesmo quando o ataque erra
 	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
 		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		if (!attackInfo.GetAttacker().IsNPC())

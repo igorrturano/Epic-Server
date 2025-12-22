@@ -1,7 +1,7 @@
 use uo;
 
 include "include/packets";
-include "system/text/Color";
+include ":text:Color";
 
 program typing_hook()
 	Print("INSTALLING: Typing Hooking... OK!");

@@ -190,7 +190,7 @@
 
 // 		if (!weapon_scripts) weapon_scripts := array{}; endif
 
-// 		var other_scripts := weaponCfg.SetKeyName("HitScripts").GetElementValue();
+// 		var other_scripts := weaponCfg.SetKeyName("HitScripts").GetElement();
 
 // 		foreach script in other_scripts
 // 			weapon_scripts.Append(script);
@@ -200,7 +200,7 @@
 // 	var hitopt;
 // 	if (attacker.npctemplate)
 // 		var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attacker.npctemplate);
-// 		var others_scripts := npcCfg.SetKeyName("HitScripts").GetElementValue();
+// 		var others_scripts := npcCfg.SetKeyName("HitScripts").GetElement();
 
 // 		if (weapon_scripts == error) weapon_scripts := array{}; endif
 
@@ -451,11 +451,11 @@
 	
 // 	var body_scripts := GetObjProperty(defender, "ArmorHitScripts");
 // 	var armor_scripts := GetObjProperty(armor, "ArmorHitScripts");
-// 	var others_scripts := itemCfg.SetKeyName("ArmorHitScripts").GetElementValue();
+// 	var others_scripts := itemCfg.SetKeyName("ArmorHitScripts").GetElement();
 // 	if (defender.npctemplate)
 // 		var npcelem := NPC_GetNPCConfig(defender.npctemplate);
 // 		var npcCfg := CFGFile("combat", "npcdesc").SetElementName(defender.npctemplate);
-// 		others_scripts := npcCfg.SetKeyName("ArmorHitScripts").GetElementValue();
+// 		others_scripts := npcCfg.SetKeyName("ArmorHitScripts").GetElement();
 // 	endif
 // 	if (!body_scripts)
 // 		body_scripts := array{};

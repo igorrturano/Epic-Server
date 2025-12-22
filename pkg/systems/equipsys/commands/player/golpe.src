@@ -8,6 +8,7 @@ include ":gumpDesigner:Control/ImageGump";
 
 program cmd_golpe(who)
 	var newPosture;
+	print($"Color RED: {Color(COLOR_NAME::RED).ToString()}");
 	who := MobileWrapper(who);
 	newPosture := ChoosePosture(who);
 endprogram
