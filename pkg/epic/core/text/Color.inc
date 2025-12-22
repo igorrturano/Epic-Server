@@ -5,7 +5,7 @@ class Color()
 	var _value := 0;
 	var _htmlValue := "";
 
-	function Color(this, colorEnum := 0)
+	function Color(this, colorEnum := COLOR_NAME::_DEFAULT)
 		this._value := colorEnum;
 		this._InitValues();
 	endfunction
