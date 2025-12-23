@@ -285,7 +285,7 @@ function CalculateCriticalChance(byRef attackInfo)
 		return 100;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::MUMIFICACAO))
 		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
@@ -297,18 +297,18 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) 			// Crítico extra da Skill
 	);
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DESTRUIDOR))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::DESTRUIDOR))
 		chance := chance * 2.0;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::LADRAO_DA_SORTE))
 		Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		attackInfo.GetDefender().SetProperty("#nextcritical", true);
 		return 0;
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::OPORTUNIDADE_CRITICA))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::OPORTUNIDADE_CRITICA))
 		Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
 		attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
 	endif
@@ -453,7 +453,7 @@ function CheckPoison(byRef attackInfo)
 		return false;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::SENSO_DA_NATUREZA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::SENSO_DA_NATUREZA))
 		Message("Você é imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return false;
 	endif
@@ -526,7 +526,7 @@ function CheckPoison(byRef attackInfo)
 				duration := 2;
 			endif
 
-			if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::VENENO_PURO))
+			if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::VENENO_PURO))
 				duration := duration * 2;
 			endif
 

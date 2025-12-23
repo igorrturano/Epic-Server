@@ -133,7 +133,7 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::REFLEXO_ESTRATEGICO))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::REFLEXO_ESTRATEGICO))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
@@ -145,7 +145,7 @@ function CalculateParryChance(byRef attackInfo)
 
 	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
 	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::TABIBITO_NO_MICHI))
+		if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::TABIBITO_NO_MICHI))
 			parry_chance := CInt(parry_chance * 1.3);
 		else
 			parry_chance := CInt(parry_chance * 0.7);
@@ -181,7 +181,7 @@ function CalculateParryDelay(byRef attackInfo)
 	);
 
 	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
-	if (TemHabilidade(attackInfo.GetDefender().GetObjRef().party.leader, COMBAT_ABILITY::INSPIRAR_DEFESAS))
+	if (TemHabilidade(attackInfo.GetDefender().GetObjRef().party.leader, ABILITY_NAME::INSPIRAR_DEFESAS))
 		parryDelay := parryDelay - 1;
 	endif
 

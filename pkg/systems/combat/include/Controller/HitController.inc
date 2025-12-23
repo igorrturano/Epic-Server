@@ -76,23 +76,23 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance += 10.0;
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::POSTURA_OFENSIVA))
 		hit_chance += 10.0;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::POSTURA_OFENSIVA))
 		hit_chance += 10.0;
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::POSTURA_DEFENSIVA))
 		hit_chance -= 10.0;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::POSTURA_DEFENSIVA))
 		hit_chance -= 10.0;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::PRESERVAR_ORGAOS))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::PRESERVAR_ORGAOS))
 		hit_chance -= 10.0;
 	endif
 
@@ -118,7 +118,7 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::AURA_DE_FE))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::AURA_DE_FE))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetObjRef().party.members.size());
 	endif
 
@@ -126,14 +126,14 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance += 5.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::FURIA_INDOMAVEL))
+	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_NAME::FURIA_INDOMAVEL))
 		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
 			hit_chance += 10.0;
 		endif
 	endif
 
 	if (IsRaging(attackInfo.GetAttacker().GetObjRef()))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ILUDIR_O_FRACO))
+		if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::ILUDIR_O_FRACO))
 			hit_chance -= 10.0;
 		endif
 		
@@ -143,7 +143,7 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	if (IsRaging(attackInfo.GetDefender().GetObjRef()))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
+		if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::ESQUIVA_INSTINTIVA))
 			hit_chance -= 10.0;
 		endif
 
@@ -176,7 +176,7 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::LOBO_SOLITARIO))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::LOBO_SOLITARIO))
 		if (ListHostiles(attackInfo.GetAttacker().GetObjRef(), 3).size() > 1)
 			hit_chance += 15.0;
 		endif
@@ -194,29 +194,29 @@ function CalculateHitChance(byRef attackInfo)
 		return 100;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::BUDOKA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::BUDOKA))
 		if (attackInfo.GetDefender().GetWeapon().GetAttribute() == WRESTLING)
 			hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::DANCA_DAS_SOMBRAS) && GetCooldown(attackInfo.GetDefender().GetObjRef(), "shadowdancer_blur") > 0)
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::DANCA_DAS_SOMBRAS) && GetCooldown(attackInfo.GetDefender().GetObjRef(), "shadowdancer_blur") > 0)
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 5);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MOVIMENTACAO_GRACIOSA))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::MOVIMENTACAO_GRACIOSA))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MOVIMENTACAO_GRACIOSA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::MOVIMENTACAO_GRACIOSA))
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MANCHA_DA_CORRUPCAO))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::MANCHA_DA_CORRUPCAO))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(THEOLOGY) / 10);
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MANCHA_DA_CORRUPCAO))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::MANCHA_DA_CORRUPCAO))
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(THEOLOGY) / 10);
 	endif
 
@@ -297,7 +297,7 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance -= 20.0;
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::TIROTHAN))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::TIROTHAN))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 10);
 	endif
 

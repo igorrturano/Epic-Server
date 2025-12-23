@@ -19,7 +19,7 @@ program backstab(who)
 
 	if (who.IsHidden())
 		who.SetProperty("#attackbonus", 100);
-		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))
+		if (who.HasAbility(ABILITY_NAME::INSTINTO_ASSASSINO))
 			who.SetProperty("#nextcritical", 1);
 		endif
 	endif

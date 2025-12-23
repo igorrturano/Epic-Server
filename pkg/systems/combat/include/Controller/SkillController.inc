@@ -30,13 +30,13 @@ function ProgressAttackSkills(byRef attackInfo)
 			skillDefender := attackInfo.GetDefender().GetSkill(TWOHANDED);
 		endif
 
-		if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MAESTRIA_DE_DEVASTACAO) &&
+		if (attackInfo.GetAttacker().HasAbility(ABILITY_NAME::MAESTRIA_DE_DEVASTACAO) &&
 			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
 			
 			skillAttacker := attackInfo.GetAttacker().GetSkill(ONEHANDED);
 		endif
 
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MAESTRIA_DE_DEVASTACAO) &&
+		if (attackInfo.GetDefender().HasAbility(ABILITY_NAME::MAESTRIA_DE_DEVASTACAO) &&
 			attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
 			
 			skillDefender := attackInfo.GetDefender().GetSkill(ONEHANDED);

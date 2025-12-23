@@ -38,8 +38,7 @@ class CombatAbility(ICombatAbility)
 	// Private methods
 endclass
 
-enum class COMBAT_ABILITY
-	// TODO: Quando finalizar, organizar por ordem alfabética
+enum class ABILITY_NAME
 	AINALAITH := "Ainalaith",
 	ARMADURA_ARCANA := "Armadura Arcana",
 	ATAQUE_FURTIVO := "Ataque Furtivo",
