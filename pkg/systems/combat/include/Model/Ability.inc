@@ -1,31 +1,31 @@
-include "ICombatAbility";
+include "IAbility";
 
 include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
-class CombatAbility(ICombatAbility)
+class Ability(IAbility)
 	var _name := "";
 	var _description := "";
 	var _moment := COMBATABILITY_MOMENT::ON_HIT;
 	var _costHP := 0;
 	var _costSTAM := 0;
 	var _costMANA := 0;
-	var _cooldown := 0.0; // em segundos
-	var _effectDuration := 0.0; // em segundos
+	var _cooldown := 0; // em milisegundos
+	var _duration := 0; // em milisegundos
 	var _range := 1; // em tiles
 	var _damage; // DamageDice class
 
-	function CombatAbility(this, abilityName)
+	function Ability(this, abilityName)
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
 		
 		this._name := cfgFile.GetPropertyValue("name");
 		this._description := cfgFile.GetPropertyValue("description");
 		this._moment := cfgFile.GetPropertyValue("moment");
 		this._cooldown := cfgFile.GetPropertyValue("cooldown");
+		this._duration := cfgFile.GetPropertyValue("effectDuration");
 		this._costHP := cfgFile.GetPropertyValue("hp");
 		this._costSTAM := cfgFile.GetPropertyValue("stam");
 		this._costMANA := cfgFile.GetPropertyValue("mana");
-		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
 		this._range := cfgFile.GetPropertyValue("range");
 		this._damage := cfgFile.GetPropertyValue("damage");
 	endfunction
