@@ -1,0 +1,15 @@
+// GMHab PacketHook Handler
+// Handles incoming packet 0xD7 subcommand 0x50 (GMHab Request)
+
+use uo;
+use os;
+
+include "gmhab_packets";
+
+// Exported function called by POL when packet 0xD7/0x50 is received
+exported function HandleGMHabRequest(who, byref packet)
+    // Call the main handler from gmhab_packets
+    var result := HandleGMHabPacket(who, packet);
+    
+    return result;
+endfunction
