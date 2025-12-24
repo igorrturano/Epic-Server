@@ -11,6 +11,7 @@ include ":fls_core:fls_characters";
 include ":datafile:datafile";
 include ":timedscripts:timedScripts";
 include "gmhab_execute";
+include "include/icon_manager";
 
 // Packet IDs
 const PACKET_EXTENDED := 0xD7;
@@ -1022,12 +1023,15 @@ function GetSpecialsData(who)
                 special_desc := "Habilidade especial de " + special_class;
         endcase
         
+        // Buscar ícone do icons.cfg
+        var icon_data := GetSpecialIcon(special_name);
+        
         var special1 := struct{
             "name" := special_name,
             "classe" := special_class,
             "desc" := special_desc,
-            "iconid" := 0x7E,
-            "hue" := special_hue,
+            "iconid" := icon_data.iconid,
+            "hue" := icon_data.hue,
             "index" := special_index,
             "delay" := final_cooldown,
             "remaining" := remaining_cooldown  // Time left on current cooldown
@@ -1043,50 +1047,104 @@ endfunction
 function GetCommandsData(who)
     var commands := array{};
     var index := 1;
+    var icon_data;
     
-    // Comandos Gerais (6) - from gmhab.src lines 490-495
-    commands.append(struct{"command" := ".ficha", "desc" := "Ficha do personagem", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
-    commands.append(struct{"command" := ".point", "desc" := "Apontar", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
-    commands.append(struct{"command" := ".pularcerca", "desc" := "Pular cerca", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
-    commands.append(struct{"command" := ".revistar", "desc" := "Revistar alguem", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
-    commands.append(struct{"command" := ".senha", "desc" := "Trocar senha", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
-    commands.append(struct{"command" := ".showdmg", "desc" := "Mostrar dano", "iconid" := 0x9b90, "index" := index, "category" := "Geral"}); index += 1;
+    // Comandos Gerais (6)
+    icon_data := GetCommandIcon(".ficha");
+    commands.append(struct{"command" := ".ficha", "desc" := "Ficha do personagem", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Magias (6) - from gmhab.src lines 497-503
-    commands.append(struct{"command" := ".arcoelemental", "desc" := "Arco elemental", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
-    commands.append(struct{"command" := ".arremessar", "desc" := "Arremessar magia", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
-    commands.append(struct{"command" := ".assumirforma", "desc" := "Assumir forma animal", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
-    commands.append(struct{"command" := ".pilotar", "desc" := "Pilotar", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
-    commands.append(struct{"command" := ".rituais", "desc" := "Rituais magicos", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
-    commands.append(struct{"command" := ".voltar", "desc" := "Voltar forma original", "iconid" := 0x9b90, "index" := index, "category" := "Magia"}); index += 1;
+    icon_data := GetCommandIcon(".point");
+    commands.append(struct{"command" := ".point", "desc" := "Apontar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Combate (1) - from gmhab.src lines 505-507
-    commands.append(struct{"command" := ".golpe", "desc" := "Golpe especial de arma", "iconid" := 0x9b90, "index" := index, "category" := "Combate"}); index += 1;
+    icon_data := GetCommandIcon(".pularcerca");
+    commands.append(struct{"command" := ".pularcerca", "desc" := "Pular cerca", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Skills (5) - from gmhab.src lines 509-512
-    commands.append(struct{"command" := ".acalmar", "desc" := "Acalmar animal", "iconid" := 0x9b90, "index" := index, "category" := "Skill"}); index += 1;
-    commands.append(struct{"command" := ".adestrar", "desc" := "Adestrar criatura", "iconid" := 0x9b90, "index" := index, "category" := "Skill"}); index += 1;
-    commands.append(struct{"command" := ".camuflar", "desc" := "Camuflar-se", "iconid" := 0x9b90, "index" := index, "category" := "Skill"}); index += 1;
-    commands.append(struct{"command" := ".estudar", "desc" := "Estudar item", "iconid" := 0x9b90, "index" := index, "category" := "Skill"}); index += 1;
+    icon_data := GetCommandIcon(".revistar");
+    commands.append(struct{"command" := ".revistar", "desc" := "Revistar alguem", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Roleplay (6) - from gmhab.src lines 514-520
-    commands.append(struct{"command" := ".actions", "desc" := "Menu de acoes de RP", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
-    commands.append(struct{"command" := ".arrastar", "desc" := "Arrastar corpo", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
-    commands.append(struct{"command" := ".erguer", "desc" := "Erguer objeto", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
-    commands.append(struct{"command" := ".ficharp", "desc" := "Ficha de RP", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
-    commands.append(struct{"command" := ".lingua", "desc" := "Trocar idioma falado", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
-    commands.append(struct{"command" := ".sounds", "desc" := "Menu de sons", "iconid" := 0x9b90, "index" := index, "category" := "Roleplay"}); index += 1;
+    icon_data := GetCommandIcon(".senha");
+    commands.append(struct{"command" := ".senha", "desc" := "Trocar senha", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Pets (2) - from gmhab.src line 523
-    commands.append(struct{"command" := ".assoviar", "desc" := "Chamar pet do limbo", "iconid" := 0x9b90, "index" := index, "category" := "Pet"}); index += 1;
-    commands.append(struct{"command" := ".pe", "desc" := "Faz o pet fazer emotes", "iconid" := 0x9b90, "index" := index, "category" := "Pet"}); index += 1;
+    icon_data := GetCommandIcon(".showdmg");
+    commands.append(struct{"command" := ".showdmg", "desc" := "Mostrar dano", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
     
-    // Outros (5) - from gmhab.src lines 526-530
-    commands.append(struct{"command" := ".conquistas", "desc" := "Ver conquistas", "iconid" := 0x9b90, "index" := index, "category" := "Outros"}); index += 1;
-    commands.append(struct{"command" := ".fome", "desc" := "Ver fome", "iconid" := 0x9b90, "index" := index, "category" := "Outros"}); index += 1;
-    commands.append(struct{"command" := ".meditar", "desc" := "Meditar", "iconid" := 0x9b90, "index" := index, "category" := "Outros"}); index += 1;
-    commands.append(struct{"command" := ".pontosrp", "desc" := "Pontos de RP", "iconid" := 0x9b90, "index" := index, "category" := "Outros"}); index += 1;
-    commands.append(struct{"command" := ".rps", "desc" := "Sistema de RP", "iconid" := 0x9b90, "index" := index, "category" := "Outros"}); index += 1;
+    // Magias (6)
+    icon_data := GetCommandIcon(".arcoelemental");
+    commands.append(struct{"command" := ".arcoelemental", "desc" := "Arco elemental", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    icon_data := GetCommandIcon(".arremessar");
+    commands.append(struct{"command" := ".arremessar", "desc" := "Arremessar magia", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    icon_data := GetCommandIcon(".assumirforma");
+    commands.append(struct{"command" := ".assumirforma", "desc" := "Assumir forma animal", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    icon_data := GetCommandIcon(".pilotar");
+    commands.append(struct{"command" := ".pilotar", "desc" := "Pilotar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    icon_data := GetCommandIcon(".rituais");
+    commands.append(struct{"command" := ".rituais", "desc" := "Rituais magicos", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    icon_data := GetCommandIcon(".voltar");
+    commands.append(struct{"command" := ".voltar", "desc" := "Voltar forma original", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
+    
+    // Combate (1)
+    icon_data := GetCommandIcon(".golpe");
+    commands.append(struct{"command" := ".golpe", "desc" := "Golpe especial de arma", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Combate"}); index += 1;
+    
+    // Skills (5)
+    icon_data := GetCommandIcon(".acalmar");
+    commands.append(struct{"command" := ".acalmar", "desc" := "Acalmar animal", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
+    
+    icon_data := GetCommandIcon(".adestrar");
+    commands.append(struct{"command" := ".adestrar", "desc" := "Adestrar criatura", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
+    
+    icon_data := GetCommandIcon(".camuflar");
+    commands.append(struct{"command" := ".camuflar", "desc" := "Camuflar-se", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
+    
+    icon_data := GetCommandIcon(".estudar");
+    commands.append(struct{"command" := ".estudar", "desc" := "Estudar item", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
+    
+    // Roleplay (6)
+    icon_data := GetCommandIcon(".actions");
+    commands.append(struct{"command" := ".actions", "desc" := "Menu de acoes de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    icon_data := GetCommandIcon(".arrastar");
+    commands.append(struct{"command" := ".arrastar", "desc" := "Arrastar corpo", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    icon_data := GetCommandIcon(".erguer");
+    commands.append(struct{"command" := ".erguer", "desc" := "Erguer objeto", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    icon_data := GetCommandIcon(".ficharp");
+    commands.append(struct{"command" := ".ficharp", "desc" := "Ficha de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    icon_data := GetCommandIcon(".lingua");
+    commands.append(struct{"command" := ".lingua", "desc" := "Trocar idioma falado", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    icon_data := GetCommandIcon(".sounds");
+    commands.append(struct{"command" := ".sounds", "desc" := "Menu de sons", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
+    
+    // Pets (2)
+    icon_data := GetCommandIcon(".assoviar");
+    commands.append(struct{"command" := ".assoviar", "desc" := "Chamar pet do limbo", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Pet"}); index += 1;
+    
+    icon_data := GetCommandIcon(".pe");
+    commands.append(struct{"command" := ".pe", "desc" := "Faz o pet fazer emotes", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Pet"}); index += 1;
+    
+    // Outros (5)
+    icon_data := GetCommandIcon(".conquistas");
+    commands.append(struct{"command" := ".conquistas", "desc" := "Ver conquistas", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
+    
+    icon_data := GetCommandIcon(".fome");
+    commands.append(struct{"command" := ".fome", "desc" := "Ver fome", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
+    
+    icon_data := GetCommandIcon(".meditar");
+    commands.append(struct{"command" := ".meditar", "desc" := "Meditar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
+    
+    icon_data := GetCommandIcon(".pontosrp");
+    commands.append(struct{"command" := ".pontosrp", "desc" := "Pontos de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
+    
+    icon_data := GetCommandIcon(".rps");
+    commands.append(struct{"command" := ".rps", "desc" := "Sistema de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
     
     return commands;
 endfunction
@@ -1158,15 +1216,8 @@ function GetHabilidadesData(who)
         
         // Add to filtered list if eligible
         if (is_eligible)
-            // Determine icon based on class
-            var iconid := 0x9bac; // Default Sabio
-            if (classes["Guerreiro"] != error)
-                iconid := 0x9bad;
-            elseif (classes["Ladino"] != error)
-                iconid := 0x9bae;
-            elseif (classes["Artifice"] != error)
-                iconid := 0x9baf;
-            endif
+            // Buscar ícone do icons.cfg
+            var icon_data := GetHabilidadeIcon(hab_name, char_class);
             
             // Read additional fields from config
             var stamina_cost := CInt(GetConfigString(habelem, "stam"));
@@ -1191,8 +1242,8 @@ function GetHabilidadesData(who)
                 "required_level" := required_level,
                 "is_active" := (uso == "Ativa"),
                 "is_purchased" := has_purchased,
-                "iconid" := iconid,
-                "hue" := 0,
+                "iconid" := icon_data.iconid,
+                "hue" := icon_data.hue,
                 "stamina_cost" := stamina_cost,
                 "mana_cost" := mana_cost,
                 "delay" := delay_val,
@@ -1271,10 +1322,14 @@ function GetSkillsData(who)
         var skill_base := CInt(AP_GetTrueSkill(who, skill_internal_name));
         var skill_cap := CInt(AP_GetSkillCap(who, skill_internal_name));
         
+        // Buscar ícone do icons.cfg
+        var icon_data := GetSkillIcon(skill_name);
+        
         skills.append(struct{
             "name" := skill_name,  // Nome exibido
             "desc" := skill_descs[i],
-            "iconid" := 0x9b91,
+            "iconid" := icon_data.iconid,
+            "hue" := icon_data.hue,
             "index" := skill_ids[i],
             "current_value" := skill_value,
             "base_value" := skill_base,
@@ -1284,5 +1339,5 @@ function GetSkillsData(who)
     endfor
     
     return skills;
-endfunction
 
+endfunction
