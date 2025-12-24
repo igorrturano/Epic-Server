@@ -1,0 +1,8 @@
+// GMHab Packets Handler
+// This file exports the HandleGMHabPacket function for packet hook
+
+use uo;
+
+include ":gmhab:gmhab_packets";
+
+// The HandleGMHabPacket function is already exported in gmhab_packets.inc
