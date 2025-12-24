@@ -1,7 +1,7 @@
 include "IAbility";
 
-include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
+include ":combat:Model/DamageDice";
 
 class Ability(IAbility)
 	var _name := "";
@@ -28,14 +28,13 @@ class Ability(IAbility)
 		this._costMANA := cfgFile.GetPropertyValue("mana");
 		this._range := cfgFile.GetPropertyValue("range");
 		this._damage := cfgFile.GetPropertyValue("damage");
+
 	endfunction
 
 	function ExecuteOn(this, byRef executor, byRef target)
 		// TODO: Implementar a lógica de execução da habilidade aqui
 		return true;
 	endfunction
-
-	// Private methods
 endclass
 
 enum class ABILITY_NAME
