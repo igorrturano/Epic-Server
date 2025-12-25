@@ -357,6 +357,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 
 	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))

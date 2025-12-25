@@ -1,0 +1,77 @@
+use uo;
+use os;
+
+include "include/packets";
+
+/*
+ * GM Command: .shake
+ *
+ * Triggers a screen shake effect for testing.
+ *
+ * Usage:
+ *   .shake                    - Moderate earthquake (0.5s, 10px)
+ *   .shake <preset>           - Use preset: light, moderate, strong, catastrophic
+ *   .shake <duration> <mag>   - Custom duration (seconds) and magnitude (pixels)
+ *
+ * Presets:
+ *   light        - Quick tremor (0.3s, 5px)
+ *   moderate     - Standard earthquake (0.5s, 10px)
+ *   strong       - Strong earthquake (0.8s, 15px)
+ *   catastrophic - Devastating earthquake (1.0s, 20px)
+ *   extreme      - Very long shake for testing (5.0s, 50px)
+ */
+
+program ShakeCommand(who, text)
+    var params := SplitWords(text);
+    var duration := 0.5;
+    var magnitude := 10;
+
+    if (params.size() == 0)
+        // Default: moderate earthquake
+        duration := 0.5;
+        magnitude := 10;
+    elseif (params.size() == 1)
+        // Check for preset
+        var preset := Lower(params[1]);
+        case (preset)
+            "light":
+                duration := 0.3;
+                magnitude := 5;
+            "moderate":
+                duration := 0.5;
+                magnitude := 10;
+            "strong":
+                duration := 0.8;
+                magnitude := 15;
+            "catastrophic":
+                duration := 1.0;
+                magnitude := 20;
+            "extreme":
+                duration := 5.0;
+                magnitude := 50;
+            default:
+                SendSysMessage(who, "Unknown preset. Valid presets: light, moderate, strong, catastrophic, extreme");
+                return;
+        endcase
+    elseif (params.size() == 2)
+        // Custom parameters
+        duration := CDbl(params[1]);
+        magnitude := CInt(params[2]);
+
+        if (duration <= 0 || magnitude <= 0)
+            SendSysMessage(who, "Duration and magnitude must be positive values.");
+            return;
+        endif
+
+        if (magnitude > 25)
+            SendSysMessage(who, "Warning: Magnitude > 25 may cause visual artifacts (black edges)");
+        endif
+    else
+        SendSysMessage(who, "Usage: .shake [preset|duration magnitude]");
+        SendSysMessage(who, "Presets: light, moderate, strong, catastrophic, extreme");
+        return;
+    endif
+
+    SendSysMessage(who, "Screen shake: " + duration + "s, " + magnitude + "px");
+    ScreenShake(who, duration, magnitude);
+endprogram
