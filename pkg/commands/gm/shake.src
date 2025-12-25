@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include "include/packets";
+include ":message:include/model/Message";
 
 /*
  * GM Command: .shake
@@ -10,15 +11,20 @@ include "include/packets";
  *
  * Usage:
  *   .shake                    - Moderate earthquake (0.5s, 10px)
- *   .shake <preset>           - Use preset: light, moderate, strong, catastrophic
+ *   .shake <preset>           - Use preset: instant, light, moderate, strong, catastrophic, extreme
  *   .shake <duration> <mag>   - Custom duration (seconds) and magnitude (pixels)
  *
+ * Duration: 0.1s to 25.5s (0.1 second precision)
+ * Magnitude: 0-255 pixels (>25px may cause visual artifacts)
+ *
  * Presets:
+ *   instant      - Very quick impact (0.1s, 3px)
  *   light        - Quick tremor (0.3s, 5px)
  *   moderate     - Standard earthquake (0.5s, 10px)
  *   strong       - Strong earthquake (0.8s, 15px)
  *   catastrophic - Devastating earthquake (1.0s, 20px)
- *   extreme      - Very long shake for testing (5.0s, 50px)
+ *   extreme      - Very long shake (5.0s, 50px)
+ *   max          - Maximum duration test (25.5s, 25px)
  */
 
 program ShakeCommand(who, text)
@@ -34,6 +40,9 @@ program ShakeCommand(who, text)
         // Check for preset
         var preset := Lower(params[1]);
         case (preset)
+            "instant":
+                duration := 0.1;
+                magnitude := 3;
             "light":
                 duration := 0.3;
                 magnitude := 5;
@@ -49,8 +58,11 @@ program ShakeCommand(who, text)
             "extreme":
                 duration := 5.0;
                 magnitude := 50;
+            "max":
+                duration := 25.5;
+                magnitude := 25;
             default:
-                SendSysMessage(who, "Unknown preset. Valid presets: light, moderate, strong, catastrophic, extreme");
+                Message("Unknown preset. Valid presets: instant, light, moderate, strong, catastrophic, extreme, max").SendSys(who);
                 return;
         endcase
     elseif (params.size() == 2)
@@ -58,20 +70,29 @@ program ShakeCommand(who, text)
         duration := CDbl(params[1]);
         magnitude := CInt(params[2]);
 
-        if (duration <= 0 || magnitude <= 0)
-            SendSysMessage(who, "Duration and magnitude must be positive values.");
+        if (duration < 0.1)
+            Message("Error: Duration must be at least 0.1 seconds (minimum)").SendSys(who);
+            return;
+        elseif (duration > 25.5)
+            Message("Error: Duration cannot exceed 25.5 seconds (maximum)").SendSys(who);
+            return;
+        endif
+
+        if (magnitude <= 0)
+            Message("Error: Magnitude must be a positive value").SendSys(who);
             return;
         endif
 
         if (magnitude > 25)
-            SendSysMessage(who, "Warning: Magnitude > 25 may cause visual artifacts (black edges)");
+            Message("Warning: Magnitude > 25 may cause visual artifacts (black edges)").SendSys(who);
         endif
     else
-        SendSysMessage(who, "Usage: .shake [preset|duration magnitude]");
-        SendSysMessage(who, "Presets: light, moderate, strong, catastrophic, extreme");
+        Message("Usage: .shake [preset|duration magnitude]").SendSys(who);
+        Message("Presets: instant, light, moderate, strong, catastrophic, extreme, max").SendSys(who);
+        Message("Duration: 0.1-25.5s | Magnitude: 1-255px").SendSys(who);
         return;
     endif
 
-    SendSysMessage(who, "Screen shake: " + duration + "s, " + magnitude + "px");
+    Message("Screen shake: " + duration + "s, " + magnitude + "px").SendSys(who);
     ScreenShake(who, duration, magnitude);
 endprogram
