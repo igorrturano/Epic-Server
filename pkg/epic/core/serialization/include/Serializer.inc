@@ -29,8 +29,9 @@ class Serializer()
 		endif
 
 		this.SetObject(object);
+		this.__ObjToData();
 
-		return this.__ObjToData();
+		return this._data;
 	endfunction
 
 	function Deserialize(this, data, object)
@@ -40,23 +41,20 @@ class Serializer()
 
 		this.SetObject(object);
 		this.SetData(data);
+		this.__DataToObj();
 
-		return this.__DataToObj();
+		return this._object;
 	endfunction
 
 	function __ObjToData(this)
 		foreach attribute in (this._object)
 			this._data[_attribute_iter] := attribute;
 		endforeach
-
-		return this._data;
 	endfunction
 
 	function __DataToObj(this)
 		foreach attribute in (this._data)
 			this._object[_attribute_iter] := attribute;
 		endforeach
-
-		return this._object;
 	endfunction
 endclass
