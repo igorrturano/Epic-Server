@@ -307,8 +307,8 @@ endfunction
 //  WARNING: Magnitude values above 25 may cause visual artifacts (black edges)
 ///////////////////////////////////////////////////////
 function ScreenShake( who, duration, magnitude )
-    // Encode duration with 0.1 second precision (multiply by 10)
-    // Max duration: 25.5 seconds (255 / 10)
+    // Encode duration in deciseconds (0.1 second units)
+    // Range: 0.1s (byte=1) to 25.5s (byte=255)
     var duration_byte := CInt(duration * 10.0);
     if( duration_byte > 255 )
         duration_byte := 255;
@@ -334,7 +334,7 @@ endfunction
 
 ///////////////////////////////////////////////////////
 //Triggers screen shake for all online players
-//  duration    Duration in seconds (0.1 to 25.5)
+//  duration    Duration in seconds (0.1 to 25.5, precision: 0.1s)
 //  magnitude   Shake intensity in pixels (0 to 255)
 ///////////////////////////////////////////////////////
 function ScreenShakeForAll( duration, magnitude )
