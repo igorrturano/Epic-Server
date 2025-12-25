@@ -1,44 +1,18 @@
 include "system/exception/FormatException/InvalidFormatException";
 
-class StructSerializer()
+include "Serializer";
+
+class StructSerializer(Serializer)
 	function StructSerializer(this)
 	endfunction
 
-	function Serialize(this, object, data)
-		if (TypeOfInt(object) != OT_CLASSINSTANCEREF)
-			return InvalidFormatException("Object to serialize must be a class instance.");
-		endif
-
-		this._object := object;
-		this._data := data;
+	function Serialize(this, object)
+		this.SetData(struct{});
 		
-		return this.__ObjToStruct();
+		return Super::Serialize(this, object);
 	endfunction
 
 	function Deserialize(this, data, object)
-		if (TypeOfInt(object) != OT_CLASSINSTANCEREF)
-			return InvalidFormatException("Object to deserialize must be a class instance.");
-		endif
-
-		this._object := object;
-		this._data := data;
-
-		return this.__StructToObj();
-	endfunction
-
-	function __ObjToStruct(this)
-		foreach attribute in (this._object)
-			this._data[_attribute_iter] := attribute;
-		endforeach
-
-		return this._data;
-	endfunction
-
-	function __StructToObj(this)
-		foreach attribute in (this._data)
-			this._object[_attribute_iter] := attribute;
-		endforeach
-
-		return this._object;
+		return Super::Deserialize(this, data, object);
 	endfunction
 endclass
