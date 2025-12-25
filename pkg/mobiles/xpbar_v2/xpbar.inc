@@ -153,20 +153,30 @@ endfunction
 function PackXPForClient(who)
     XPDebug("PackXPForClient() chamado para: " + who.name);
     
-    var xp := GetPlayerXP(who);
-    var xp_max := GetXPToNextLevel(who);
+    var lvl := GetPlayerLevel(who);
+    var xp_total := GetPlayerXP(who);
+    var xp_current_level := GetXPForLevel(lvl);      // XP necessário para atingir o level atual
+    var xp_next_level := GetXPToNextLevel(who);      // XP necessário para próximo level
     
-    XPDebug("PackXPForClient() xp=" + xp + ", xp_max=" + xp_max);
+    // XP relativo = quanto progrediu desde o início do level atual
+    var xp_relative := xp_total - xp_current_level;
+    
+    // XP necessário para subir de level = diferença entre próximo e atual
+    var xp_needed := xp_next_level - xp_current_level;
+    
+    XPDebug("PackXPForClient() lvl=" + lvl + ", xp_total=" + xp_total);
+    XPDebug("PackXPForClient() xp_current_level=" + xp_current_level + ", xp_next_level=" + xp_next_level);
+    XPDebug("PackXPForClient() xp_relative=" + xp_relative + ", xp_needed=" + xp_needed);
     
     // Clamp para 16 bits
-    if (xp > 65535)
-        xp := 65535;
+    if (xp_relative > 65535)
+        xp_relative := 65535;
     endif
-    if (xp_max > 65535)
-        xp_max := 65535;
+    if (xp_needed > 65535)
+        xp_needed := 65535;
     endif
     
-    var packed := (xp_max * 65536) + xp;
+    var packed := (xp_needed * 65536) + xp_relative;
     XPDebug("PackXPForClient() packed=" + packed);
     
     return packed;
