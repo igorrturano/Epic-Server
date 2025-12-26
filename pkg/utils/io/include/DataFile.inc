@@ -59,6 +59,12 @@ class DataFile(IOFile)
 		return this._element.GetProp(propName);
 	endfunction
 
+	function SetPropertyValue(this, value)
+		this._element.SetProp(this._elementName, value);
+
+		return this;
+	endfunction
+
 	function DeleteProperty(this, propName := false)
 		if (!this._element)
 			return InvalidElementException();
