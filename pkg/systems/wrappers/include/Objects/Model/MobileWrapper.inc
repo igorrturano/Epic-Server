@@ -617,15 +617,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
-	function GetAchievement(who, type, key, name)
+	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
 	endfunction
 
-	function GetListAchievement(who)
+	function GetListAchievement(this, who)
 		return LoadListAchievement(who);
 	endfunction
 
-	function SetAchievement(who, type, elem, achievement)
+	function SetAchievement(this, who, type, elem, achievement)
 		return SaveAchievement(type, elem, achievement);
 	endfunction
 
