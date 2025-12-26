@@ -1,5 +1,5 @@
-class ICombatAbility()
-	uninit function ICombatAbility(this, abilityName);
+class IAbility()
+	uninit function IAbility(this, abilityEnum);
 
 	// uninit function SetName(this, name);
 	// uninit function SetDescription(this, description);

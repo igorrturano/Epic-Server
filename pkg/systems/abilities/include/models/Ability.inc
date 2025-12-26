@@ -1,9 +1,12 @@
-include "ICombatAbility";
+use os;
+
+include "IAbility";
 
 include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
-class CombatAbility(ICombatAbility)
+class CombatAbility(IAbility)
+	var _id; // ABILITY_ID enum
 	var _name := "";
 	var _description := "";
 	var _moment := COMBATABILITY_MOMENT::ON_HIT;
@@ -15,9 +18,10 @@ class CombatAbility(ICombatAbility)
 	var _range := 1; // em tiles
 	var _damage; // DamageDice class
 
-	function CombatAbility(this, abilityName)
-		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
+	function CombatAbility(this, abilityEnum)
+		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityEnum);
 		
+		this._id := abilityEnum;
 		this._name := cfgFile.GetPropertyValue("name");
 		this._description := cfgFile.GetPropertyValue("description");
 		this._moment := cfgFile.GetPropertyValue("moment");
@@ -28,18 +32,16 @@ class CombatAbility(ICombatAbility)
 		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
 		this._range := cfgFile.GetPropertyValue("range");
 		this._damage := cfgFile.GetPropertyValue("damage");
+
+		this._script := cfgFile.GetPropertyValue("script");
 	endfunction
 
-	function ExecuteOn(this, byRef executor, byRef target)
-		// TODO: Implementar a lógica de execução da habilidade aqui
-		return true;
+	function ExecuteOn(this, targetInfo)
+		Start_Script($":abilities:include/habilidades/{this._script}", targetInfo);
 	endfunction
-
-	// Private methods
 endclass
 
-enum class COMBAT_ABILITY
-	// TODO: Quando finalizar, organizar por ordem alfabética
+enum class ABILITY_ID
 	AINALAITH := "Ainalaith",
 	ARMADURA_ARCANA := "Armadura Arcana",
 	ATAQUE_FURTIVO := "Ataque Furtivo",
