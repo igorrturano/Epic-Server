@@ -1,0 +1,12 @@
+        magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+        magia.+circle := CInt(GetConfigString(spell_elem, "Circle"));
+        
+        // Get icon from icons.cfg
+        print("[GMHab DEBUG] Getting icon for spell: " + magia.name);
+        var icon_data := GetSpellIcon(magia.name);
+        print("[GMHab DEBUG] Icon data: iconid=" + icon_data.iconid + ", hue=" + icon_data.hue);
+        magia.+iconid := icon_data.iconid;
+        magia.+hue := icon_data.hue;
+        
+        magias.append(magia);
+        print("[GMHab DEBUG] Added spell: " + magia.name + " (ID: " + magia.spell_id + ", Icon: " + magia.iconid + ")");

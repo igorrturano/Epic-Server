@@ -23,6 +23,7 @@ const SUBCOMMAND_RESPONSE := 0x52;
 const REQUEST_HABILIDADES := 0x01;
 const REQUEST_SPECIALS := 0x02;
 const REQUEST_COMMANDS := 0x03;
+const REQUEST_MAGIAS := 0x04;
 
 // Execute Types
 const EXECUTE_HABILIDADE := 0x01;
@@ -518,7 +519,7 @@ function SendAllGMHabData(who)
     // Collect all data
     var hab_list := GetHabilidadesData(who);
     var specials := GetSpecialsData(who);
-    var magias := array{};  // Empty for now - to be implemented
+    var magias := GetMagiasData(who);  // ✅ Get magias from grimório
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
     
@@ -686,8 +687,55 @@ function SendAllGMHabData(who)
     endforeach
     
     // 3. Magias count
-    packet.SetInt8(offset, 0); offset += 1;
-    packet.SetInt8(offset, 0); offset += 1;
+    var mag_count := magias.size();
+    packet.SetInt8(offset, CInt(mag_count / 256)); offset += 1;
+    packet.SetInt8(offset, mag_count % 256); offset += 1;
+    
+    // Write magias data
+    foreach item in magias
+        // name
+        var name_len := len(item.name);
+        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
+        packet.SetInt8(offset, name_len % 256); offset += 1;
+        packet.SetString(offset, item.name, 0); offset += name_len;
+        
+        // circle (as string)
+        var circle_str := CStr(item.circle);
+        var circle_len := len(circle_str);
+        packet.SetInt8(offset, CInt(circle_len / 256)); offset += 1;
+        packet.SetInt8(offset, circle_len % 256); offset += 1;
+        packet.SetString(offset, circle_str, 0); offset += circle_len;
+        
+        // desc
+        var desc_len := len(item.desc);
+        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
+        packet.SetInt8(offset, desc_len % 256); offset += 1;
+        packet.SetString(offset, item.desc, 0); offset += desc_len;
+        
+        // iconid
+        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
+        packet.SetInt8(offset, item.iconid % 256); offset += 1;
+        
+        // hue (default 0)
+        packet.SetInt8(offset, 0); offset += 1;
+        packet.SetInt8(offset, 0); offset += 1;
+        
+        // mana_cost
+        packet.SetInt8(offset, CInt(item.mana_cost / 256)); offset += 1;
+        packet.SetInt8(offset, item.mana_cost % 256); offset += 1;
+        
+        // min_skill (default 0)
+        packet.SetInt8(offset, 0); offset += 1;
+        packet.SetInt8(offset, 0); offset += 1;
+        
+        // reagents (empty string for now)
+        packet.SetInt8(offset, 0); offset += 1;
+        packet.SetInt8(offset, 0); offset += 1;
+        
+        // spell_id
+        packet.SetInt8(offset, CInt(item.spell_id / 256)); offset += 1;
+        packet.SetInt8(offset, item.spell_id % 256); offset += 1;
+    endforeach
     
     // 4. Commands count
     var cmd_count := commands.size();
@@ -806,7 +854,28 @@ function CalculateSpecialsSize(items)
 endfunction
 
 function CalculateMagiasSize(items)
-    return 0; // Empty for now
+    var size := 0;
+    foreach item in items
+        // name: 2 bytes (length) + string length
+        size := size + 2 + len(item.name);
+        // circle: 2 bytes (length) + string length
+        size := size + 2 + len(CStr(item.circle));
+        // desc: 2 bytes (length) + string length
+        size := size + 2 + len(item.desc);
+        // iconid: 2 bytes
+        size := size + 2;
+        // hue: 2 bytes
+        size := size + 2;
+        // mana_cost: 2 bytes
+        size := size + 2;
+        // min_skill: 2 bytes
+        size := size + 2;
+        // reagents: 2 bytes (length) + 0 (empty string for now)
+        size := size + 2;
+        // spell_id: 2 bytes
+        size := size + 2;
+    endforeach
+    return size;
 endfunction
 
 function CalculateCommandsSize(items)
@@ -1340,4 +1409,180 @@ function GetSkillsData(who)
     
     return skills;
 
+endfunction
+
+// Get magias (spells) data from player's grimório
+function GetMagiasData(who)
+    print("[GMHab DEBUG] GetMagiasData called for " + who.name);
+    var magias := array{};
+    
+    // Find ALL player's spellbooks (grimórios) - pode ter múltiplos!
+    var books := FindAllSpellbooks(who);
+    print("[GMHab DEBUG] Found " + books.size() + " spellbooks");
+    
+    if (books.size() == 0)
+        print("[GMHab DEBUG] Returning 0 magias - no spellbooks found");
+        return magias;  // Return empty array if no spellbooks
+    endif
+    
+    // Load spell config to get spell details
+    var spell_cfg := ReadConfigFile(":spells:config/spellcaster");
+    if (!spell_cfg)
+        print("[GMHab DEBUG] ERROR: Could not load spellcaster.cfg!");
+        return magias;
+    endif
+    
+    // Process ALL spellbooks
+    foreach book in books
+        print("[GMHab DEBUG] Processing spellbook: " + book.name);
+        
+        // Get spells from this grimório
+        var spells := GetObjProperty(book, "spells");
+        print("[GMHab DEBUG] Spells from grimorio: " + spells);
+        
+        if (!spells || TypeOf(spells) != "Array")
+            print("[GMHab DEBUG] Skipping book - no spells array");
+            continue;  // Skip this book if no spells
+        endif
+        
+        // Convert spells to magia data format
+        foreach spell_struct in spells
+            var magia := struct;
+            
+            // Extract spell ID
+            var spell_id := 0;
+            if (spell_struct.id)
+                spell_id := CInt(spell_struct.id);
+            else
+                continue;  // Skip if no ID
+            endif
+            
+            // Load spell data from config
+            var spell_elem := FindConfigElem(spell_cfg, spell_id);
+            if (!spell_elem)
+                print("[GMHab DEBUG] WARNING: Spell ID " + spell_id + " not found in config!");
+                continue;
+            endif
+            
+            // Read spell data from config
+            magia.+spell_id := spell_id;
+            magia.+name := GetConfigString(spell_elem, "Name");
+            magia.+desc := GetConfigString(spell_elem, "Desc");
+            magia.+school := GetConfigString(spell_elem, "School");
+            magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+            magia.+circle := CInt(GetConfigString(spell_elem, "Circle"));
+            
+            // Get icon from icons.cfg
+            print("[GMHab DEBUG] Getting icon for spell: " + magia.name);
+            var icon_data := GetSpellIcon(magia.name);
+            print("[GMHab DEBUG] Icon data: iconid=" + icon_data.iconid + ", hue=" + icon_data.hue);
+            magia.+iconid := icon_data.iconid;
+            magia.+hue := icon_data.hue;
+            
+            magias.append(magia);
+            print("[GMHab DEBUG] Added spell: " + magia.name + " (ID: " + magia.spell_id + ", Icon: " + magia.iconid + ")");
+        endforeach
+    endforeach
+    
+    print("[GMHab DEBUG] Returning " + magias.size() + " magias");
+    return magias;
+endfunction
+
+// Find ALL spellbooks (grimórios) - modified to return array of all books
+function FindAllSpellbooks(player)
+    print("[GMHab DEBUG] Searching for ALL spellbooks in backpack and equipped...");
+    var books := array{};
+    
+    // Search in backpack
+    foreach item in EnumerateItemsInContainer(player.backpack)
+        print("[GMHab DEBUG] Checking item: " + item.objtype + " / " + item.name);
+        var booktype := GetObjProperty(item, "Booktype");
+        print("[GMHab DEBUG] Item booktype: " + booktype);
+        if (booktype == "spellcaster")  // Only spellcaster books
+            print("[GMHab DEBUG] Found spellcaster grimorio in backpack!");
+            books.append(item);
+        endif
+    endforeach
+    
+    // Search equipped (layer 1 = spellbook)
+    print("[GMHab DEBUG] Checking equipped layer 1...");
+    var book := GetEquipmentByLayer(player, 0x01);
+    if (book)
+        print("[GMHab DEBUG] Found equipped item: " + book.objtype);
+        var booktype := GetObjProperty(book, "Booktype");
+        print("[GMHab DEBUG] Equipped booktype: " + booktype);
+        if (booktype == "spellcaster")
+            print("[GMHab DEBUG] Found spellcaster grimorio equipped!");
+            books.append(book);
+        endif
+    endif
+    
+    print("[GMHab DEBUG] Total spellbooks found: " + books.size());
+    return books;
+endfunction
+
+// Helper function to find player's spellbook
+function FindSpellbook(player)
+    print("[GMHab DEBUG] Searching for spellbook in backpack and equipped...");
+    
+    // Search in backpack
+    foreach item in EnumerateItemsInContainer(player.backpack)
+        print("[GMHab DEBUG] Checking item: " + item.objtype + " / " + item.name);
+        var booktype := GetObjProperty(item, "Booktype");
+        print("[GMHab DEBUG] Item booktype: " + booktype);
+        if (booktype)  // Has Booktype property = custom grimorio
+            print("[GMHab DEBUG] Found grimorio in backpack!");
+            return item;
+        endif
+    endforeach
+    
+    // Search equipped (layer 1 = spellbook)
+    print("[GMHab DEBUG] Checking equipped layer 1...");
+    var book := GetEquipmentByLayer(player, 0x01);
+    if (book)
+        print("[GMHab DEBUG] Found equipped item: " + book.objtype);
+        var booktype := GetObjProperty(book, "Booktype");
+        print("[GMHab DEBUG] Equipped booktype: " + booktype);
+        if (booktype)
+            print("[GMHab DEBUG] Found grimorio equipped!");
+            return book;
+        endif
+    endif
+    
+    print("[GMHab DEBUG] No grimorio found!");
+    return 0;
+endfunction
+
+
+
+
+
+
+
+// Helper function to get spell icon from icons.cfg
+function GetSpellIcon(spell_name)
+    var icon_cfg := ReadConfigFile(":gmhab:config/icons");
+    if (!icon_cfg)
+        return struct{ "iconid" := 0x5DCD, "hue" := 0 };
+    endif
+    
+    // Create safe config name (remove spaces and special chars)
+    var safe_name := "";
+    for i := 1 to len(spell_name)
+        var ch := spell_name[i];
+        if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9"))
+            safe_name := safe_name + ch;
+        endif
+    endfor
+    
+    var elem := FindConfigElem(icon_cfg, "spell " + safe_name);
+    if (!elem)
+        // Default spell icon if not found
+        return struct{ "iconid" := 0x5DCD, "hue" := 0 };
+    endif
+    
+    var iconid := CInt(GetConfigString(elem, "iconid"));
+    var hue := CInt(GetConfigString(elem, "hue"));
+    
+    return struct{ "iconid" := iconid, "hue" := hue };
 endfunction

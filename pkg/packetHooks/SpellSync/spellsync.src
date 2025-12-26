@@ -1,0 +1,131 @@
+use uo;
+use os;
+use util;
+
+include ":spells:spellbooks";
+
+// ============================================================================
+// SPELL SYNC - Sincronização de Spells do Grimório
+// ============================================================================
+// Packet 0xFF/0x02: Solicitação de sincronização (Cliente -> Servidor)
+// Packet 0xFF/0x03: Resposta com IDs (Servidor -> Cliente)
+//
+// O servidor envia apenas os IDs das spells que o jogador tem no grimório.
+// O cliente carrega as definições (nome, ícone, descrição) do JSON local.
+// ============================================================================
+
+program SpellSync(client, packet)
+    var sub_id := packet.GetByte(1);
+    
+    if (sub_id == 0x02)
+        // Solicitação de sincronização
+        SendPlayerSpells(client);
+    endif
+endprogram
+
+function SendPlayerSpells(client)
+    var player := client.character;
+    if (!player)
+        return;
+    endif
+    
+    // Encontrar grimório do jogador
+    var book := FindSpellbook(player);
+    if (!book)
+        // Sem grimório, enviar lista vazia
+        SendEmptySpellList(client);
+        return;
+    endif
+    
+    // Obter spells do grimório
+    var spells := GetObjProperty(book, "spells");
+    if (!spells || TypeOf(spells) != "Array")
+        SendEmptySpellList(client);
+        return;
+    endif
+    
+    // Extrair IDs das spells
+    var spell_ids := array{};
+    foreach spell_struct in spells
+        // Cada spell_struct tem .SpellId ou .id
+        var spell_id := 0;
+        if (spell_struct.SpellId)
+            spell_id := CInt(spell_struct.SpellId);
+        elseif (spell_struct.id)
+            spell_id := CInt(spell_struct.id);
+        endif
+        
+        if (spell_id > 0)
+            spell_ids.append(spell_id);
+        endif
+    endforeach
+    
+    // Construir packet manualmente
+    var packetString := "FF";  // Packet ID
+    packetString := packetString + "03";  // Sub ID
+    
+    // Calcular tamanho total: 1 (ID) + 1 (SubID) + 2 (Length) + 2 (Count) + (2 * num_spells)
+    var packet_size := 6 + (spell_ids.size() * 2);
+    packetString := packetString + FixPacketLength(hex(packet_size), 2);  // Length
+    
+    // Adicionar contagem de spells
+    packetString := packetString + FixPacketLength(hex(spell_ids.size()), 2);
+    
+    // Adicionar IDs das spells
+    foreach spell_id in spell_ids
+        packetString := packetString + FixPacketLength(hex(spell_id), 2);
+    endforeach
+    
+    // Enviar packet
+    SendPacket(client, packetString);
+    
+    // Debug log
+    print("SpellSync: Enviadas " + spell_ids.size() + " spells para " + player.name);
+endfunction
+
+function FindSpellbook(player)
+    // Procurar grimório no backpack
+    foreach item in EnumerateItemsInContainer(player.backpack)
+        if (item.objtype == 0x0EFA)  // Spellbook objtype
+            return item;
+        endif
+    endforeach
+    
+    // Procurar equipado (layer 1 = spellbook)
+    var book := GetEquipmentByLayer(player, 0x01);
+    if (book && book.objtype == 0x0EFA)
+        return book;
+    endif
+    
+    return 0;
+endfunction
+
+function SendEmptySpellList(client)
+    var packetString := "FF";  // Packet ID
+    packetString := packetString + "03";  // Sub ID
+    packetString := packetString + "0006";  // Length = 6 bytes
+    packetString := packetString + "0000";  // 0 spells
+    SendPacket(client, packetString);
+endfunction
+
+function FixPacketLength(packetString, byteLength)
+    if (!packetString || packetString == error)
+        packetString := 0;
+    endif
+    packetString := cStr(packetString);
+
+    if (packetString[1, 2] == "0x")
+        packetString := cStr(packetString[3, len(packetString)]);
+    endif
+
+    if (len(packetString) > byteLength * 2)
+        var extraBytes := len(packetString) - (byteLength * 2) + 1;
+        return cStr(packetString[extraBytes, len(packetString)]);
+    endif
+
+    while (len(packetString) < byteLength * 2)
+        packetString := "0" + packetString;
+    endwhile
+
+    return packetString;
+endfunction
