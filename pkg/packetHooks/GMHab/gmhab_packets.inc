@@ -523,8 +523,6 @@ function SendAllGMHabData(who)
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
     
-    print("[GMHab DEBUG] Data counts: hab=" + hab_list.size() + ", spec=" + specials.size() + ", mag=" + magias.size() + ", cmd=" + commands.size() + ", skills=" + skills.size());
-    
     // Calculate total packet size
     var packet_size := 6; // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1)
     
@@ -535,15 +533,11 @@ function SendAllGMHabData(who)
     var cmd_size := CalculateCommandsSize(commands);
     var skill_size := CalculateSkillsSize(skills);
     
-    print("[GMHab DEBUG] Sizes: hab=" + hab_size + ", spec=" + spec_size + ", mag=" + mag_size + ", cmd=" + cmd_size + ", skills=" + skill_size);
-    
     packet_size := packet_size + 2 + hab_size;
     packet_size := packet_size + 2 + spec_size;
     packet_size := packet_size + 2 + mag_size;
     packet_size := packet_size + 2 + cmd_size;
     packet_size := packet_size + 2 + skill_size;
-    
-    print("[GMHab DEBUG] Total packet size: " + packet_size);
     
     var packet := CreatePacket(PACKET_EXTENDED, packet_size);
     
@@ -827,12 +821,6 @@ function SendAllGMHabData(who)
         // lock (1 byte)
         packet.SetInt8(offset, item.lock); offset += 1;
     endforeach
-    
-    print("[GMHab DEBUG] Final offset: " + offset + " (expected: " + packet_size + ")");
-    
-    if (offset != packet_size)
-        print("[GMHab DEBUG] ERROR: Offset mismatch! offset=" + offset + " vs packet_size=" + packet_size);
-    endif
     
     packet.SendPacket(who);
     
@@ -1358,7 +1346,6 @@ endfunction
 
 // Get skills data
 function GetSkillsData(who)
-    print("[GMHab DEBUG] GetSkillsData called for " + who.name);
     var skills := array{};
     
     // Usar os IDs reais das skills do UO (não índices sequenciais)
@@ -1379,8 +1366,6 @@ function GetSkillsData(who)
         "Handle Animal",
         "Theology"
     };
-    
-    print("[GMHab DEBUG] skill_names.size() = " + skill_names.size());
     
     // Nomes internos (usados para AP_GetSkill - devem corresponder aos nomes no attributes.cfg)
     var skill_internal_names := array{
@@ -1413,19 +1398,13 @@ function GetSkillsData(who)
     
     var skill_ids := array{2, 16, 21, 33, 38, 48, 17, 20, 32, 35, 23};
     
-    print("[GMHab DEBUG] Starting loop from 1 to " + skill_names.size());
-    
     for i := 1 to skill_names.size()
         var skill_name := skill_names[i];
         var skill_internal_name := skill_internal_names[i];
         
-        print("[GMHab DEBUG] Processing skill " + i + ": " + skill_name + " (internal: " + skill_internal_name + ")");
-        
         var skill_value := CInt(AP_GetSkill(who, skill_internal_name));
         var skill_base := CInt(AP_GetTrueSkill(who, skill_internal_name));
         var skill_cap := CInt(AP_GetSkillCap(who, skill_internal_name));
-        
-        print("[GMHab DEBUG] Values: current=" + skill_value + ", base=" + skill_base + ", cap=" + skill_cap);
         
         // Buscar ícone do icons.cfg
         var icon_data := GetSkillIcon(skill_name);
@@ -1441,11 +1420,8 @@ function GetSkillsData(who)
             "cap" := skill_cap,
             "lock" := 0  // Default: Up (0=up, 1=down, 2=locked)
         });
-        
-        print("[GMHab DEBUG] Added skill " + skill_name + " to array");
     endfor
     
-    print("[GMHab DEBUG] Returning " + skills.size() + " skills");
     return skills;
 
 endfunction
