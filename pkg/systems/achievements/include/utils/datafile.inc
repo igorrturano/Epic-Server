@@ -24,7 +24,7 @@ endfunction
 
 function LoadListAchievement(who)
 	var achievements := array{};
-	var types := array{ ACHIEVEMENT_COMBAT };
+	var types := array{ ACHIEVEMENT_TYPE::COMBAT };
 
 	foreach type in (types)
 		var DFController := DataFile(pkg_name, type).SetElementName(Hex(who.serial));
