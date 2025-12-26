@@ -523,6 +523,8 @@ function SendAllGMHabData(who)
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
     
+    print("[GMHab DEBUG] Data counts: hab=" + hab_list.size() + ", spec=" + specials.size() + ", mag=" + magias.size() + ", cmd=" + commands.size() + ", skills=" + skills.size());
+    
     // Calculate total packet size
     var packet_size := 6; // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1)
     
@@ -533,11 +535,15 @@ function SendAllGMHabData(who)
     var cmd_size := CalculateCommandsSize(commands);
     var skill_size := CalculateSkillsSize(skills);
     
+    print("[GMHab DEBUG] Sizes: hab=" + hab_size + ", spec=" + spec_size + ", mag=" + mag_size + ", cmd=" + cmd_size + ", skills=" + skill_size);
+    
     packet_size := packet_size + 2 + hab_size;
     packet_size := packet_size + 2 + spec_size;
     packet_size := packet_size + 2 + mag_size;
     packet_size := packet_size + 2 + cmd_size;
     packet_size := packet_size + 2 + skill_size;
+    
+    print("[GMHab DEBUG] Total packet size: " + packet_size);
     
     var packet := CreatePacket(PACKET_EXTENDED, packet_size);
     
@@ -712,6 +718,12 @@ function SendAllGMHabData(who)
         packet.SetInt8(offset, desc_len % 256); offset += 1;
         packet.SetString(offset, item.desc, 0); offset += desc_len;
         
+        // school
+        var school_len := len(item.school);
+        packet.SetInt8(offset, CInt(school_len / 256)); offset += 1;
+        packet.SetInt8(offset, school_len % 256); offset += 1;
+        packet.SetString(offset, item.school, 0); offset += school_len;
+        
         // iconid
         packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
         packet.SetInt8(offset, item.iconid % 256); offset += 1;
@@ -789,6 +801,10 @@ function SendAllGMHabData(who)
         packet.SetInt8(offset, desc_len % 256); offset += 1;
         packet.SetString(offset, item.desc, 0); offset += desc_len;
         
+        // hue (2 bytes) - ADICIONADO!
+        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
+        packet.SetInt8(offset, item.hue % 256); offset += 1;
+        
         // iconid
         packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
         packet.SetInt8(offset, item.iconid % 256); offset += 1;
@@ -811,6 +827,12 @@ function SendAllGMHabData(who)
         // lock (1 byte)
         packet.SetInt8(offset, item.lock); offset += 1;
     endforeach
+    
+    print("[GMHab DEBUG] Final offset: " + offset + " (expected: " + packet_size + ")");
+    
+    if (offset != packet_size)
+        print("[GMHab DEBUG] ERROR: Offset mismatch! offset=" + offset + " vs packet_size=" + packet_size);
+    endif
     
     packet.SendPacket(who);
     
@@ -862,6 +884,8 @@ function CalculateMagiasSize(items)
         size := size + 2 + len(CStr(item.circle));
         // desc: 2 bytes (length) + string length
         size := size + 2 + len(item.desc);
+        // school: 2 bytes (length) + string length
+        size := size + 2 + len(item.school);
         // iconid: 2 bytes
         size := size + 2;
         // hue: 2 bytes
@@ -897,6 +921,8 @@ function CalculateSkillsSize(items)
         size := size + 2 + len(item.name);
         // desc: 2 bytes (length) + string length
         size := size + 2 + len(item.desc);
+        // hue: 2 bytes
+        size := size + 2;
         // iconid: 2 bytes
         size := size + 2;
         // index: 1 byte
@@ -1332,6 +1358,7 @@ endfunction
 
 // Get skills data
 function GetSkillsData(who)
+    print("[GMHab DEBUG] GetSkillsData called for " + who.name);
     var skills := array{};
     
     // Usar os IDs reais das skills do UO (não índices sequenciais)
@@ -1352,6 +1379,8 @@ function GetSkillsData(who)
         "Handle Animal",
         "Theology"
     };
+    
+    print("[GMHab DEBUG] skill_names.size() = " + skill_names.size());
     
     // Nomes internos (usados para AP_GetSkill - devem corresponder aos nomes no attributes.cfg)
     var skill_internal_names := array{
@@ -1384,12 +1413,19 @@ function GetSkillsData(who)
     
     var skill_ids := array{2, 16, 21, 33, 38, 48, 17, 20, 32, 35, 23};
     
+    print("[GMHab DEBUG] Starting loop from 1 to " + skill_names.size());
+    
     for i := 1 to skill_names.size()
         var skill_name := skill_names[i];
         var skill_internal_name := skill_internal_names[i];
+        
+        print("[GMHab DEBUG] Processing skill " + i + ": " + skill_name + " (internal: " + skill_internal_name + ")");
+        
         var skill_value := CInt(AP_GetSkill(who, skill_internal_name));
         var skill_base := CInt(AP_GetTrueSkill(who, skill_internal_name));
         var skill_cap := CInt(AP_GetSkillCap(who, skill_internal_name));
+        
+        print("[GMHab DEBUG] Values: current=" + skill_value + ", base=" + skill_base + ", cap=" + skill_cap);
         
         // Buscar ícone do icons.cfg
         var icon_data := GetSkillIcon(skill_name);
@@ -1405,43 +1441,46 @@ function GetSkillsData(who)
             "cap" := skill_cap,
             "lock" := 0  // Default: Up (0=up, 1=down, 2=locked)
         });
+        
+        print("[GMHab DEBUG] Added skill " + skill_name + " to array");
     endfor
     
+    print("[GMHab DEBUG] Returning " + skills.size() + " skills");
     return skills;
 
 endfunction
 
 // Get magias (spells) data from player's grimório
 function GetMagiasData(who)
-    print("[GMHab DEBUG] GetMagiasData called for " + who.name);
+
     var magias := array{};
     
     // Find ALL player's spellbooks (grimórios) - pode ter múltiplos!
     var books := FindAllSpellbooks(who);
-    print("[GMHab DEBUG] Found " + books.size() + " spellbooks");
+
     
     if (books.size() == 0)
-        print("[GMHab DEBUG] Returning 0 magias - no spellbooks found");
+
         return magias;  // Return empty array if no spellbooks
     endif
     
     // Load spell config to get spell details
     var spell_cfg := ReadConfigFile(":spells:config/spellcaster");
     if (!spell_cfg)
-        print("[GMHab DEBUG] ERROR: Could not load spellcaster.cfg!");
+
         return magias;
     endif
     
     // Process ALL spellbooks
     foreach book in books
-        print("[GMHab DEBUG] Processing spellbook: " + book.name);
+
         
         // Get spells from this grimório
         var spells := GetObjProperty(book, "spells");
-        print("[GMHab DEBUG] Spells from grimorio: " + spells);
+
         
         if (!spells || TypeOf(spells) != "Array")
-            print("[GMHab DEBUG] Skipping book - no spells array");
+
             continue;  // Skip this book if no spells
         endif
         
@@ -1460,7 +1499,7 @@ function GetMagiasData(who)
             // Load spell data from config
             var spell_elem := FindConfigElem(spell_cfg, spell_id);
             if (!spell_elem)
-                print("[GMHab DEBUG] WARNING: Spell ID " + spell_id + " not found in config!");
+
                 continue;
             endif
             
@@ -1473,83 +1512,83 @@ function GetMagiasData(who)
             magia.+circle := CInt(GetConfigString(spell_elem, "Circle"));
             
             // Get icon from icons.cfg
-            print("[GMHab DEBUG] Getting icon for spell: " + magia.name);
+
             var icon_data := GetSpellIcon(magia.name);
-            print("[GMHab DEBUG] Icon data: iconid=" + icon_data.iconid + ", hue=" + icon_data.hue);
+
             magia.+iconid := icon_data.iconid;
             magia.+hue := icon_data.hue;
             
             magias.append(magia);
-            print("[GMHab DEBUG] Added spell: " + magia.name + " (ID: " + magia.spell_id + ", Icon: " + magia.iconid + ")");
+
         endforeach
     endforeach
     
-    print("[GMHab DEBUG] Returning " + magias.size() + " magias");
+
     return magias;
 endfunction
 
 // Find ALL spellbooks (grimórios) - modified to return array of all books
 function FindAllSpellbooks(player)
-    print("[GMHab DEBUG] Searching for ALL spellbooks in backpack and equipped...");
+
     var books := array{};
     
     // Search in backpack
     foreach item in EnumerateItemsInContainer(player.backpack)
-        print("[GMHab DEBUG] Checking item: " + item.objtype + " / " + item.name);
+
         var booktype := GetObjProperty(item, "Booktype");
-        print("[GMHab DEBUG] Item booktype: " + booktype);
+
         if (booktype == "spellcaster")  // Only spellcaster books
-            print("[GMHab DEBUG] Found spellcaster grimorio in backpack!");
+
             books.append(item);
         endif
     endforeach
     
     // Search equipped (layer 1 = spellbook)
-    print("[GMHab DEBUG] Checking equipped layer 1...");
+
     var book := GetEquipmentByLayer(player, 0x01);
     if (book)
-        print("[GMHab DEBUG] Found equipped item: " + book.objtype);
+
         var booktype := GetObjProperty(book, "Booktype");
-        print("[GMHab DEBUG] Equipped booktype: " + booktype);
+
         if (booktype == "spellcaster")
-            print("[GMHab DEBUG] Found spellcaster grimorio equipped!");
+
             books.append(book);
         endif
     endif
     
-    print("[GMHab DEBUG] Total spellbooks found: " + books.size());
+
     return books;
 endfunction
 
 // Helper function to find player's spellbook
 function FindSpellbook(player)
-    print("[GMHab DEBUG] Searching for spellbook in backpack and equipped...");
+
     
     // Search in backpack
     foreach item in EnumerateItemsInContainer(player.backpack)
-        print("[GMHab DEBUG] Checking item: " + item.objtype + " / " + item.name);
+
         var booktype := GetObjProperty(item, "Booktype");
-        print("[GMHab DEBUG] Item booktype: " + booktype);
+
         if (booktype)  // Has Booktype property = custom grimorio
-            print("[GMHab DEBUG] Found grimorio in backpack!");
+
             return item;
         endif
     endforeach
     
     // Search equipped (layer 1 = spellbook)
-    print("[GMHab DEBUG] Checking equipped layer 1...");
+
     var book := GetEquipmentByLayer(player, 0x01);
     if (book)
-        print("[GMHab DEBUG] Found equipped item: " + book.objtype);
+
         var booktype := GetObjProperty(book, "Booktype");
-        print("[GMHab DEBUG] Equipped booktype: " + booktype);
+
         if (booktype)
-            print("[GMHab DEBUG] Found grimorio equipped!");
+
             return book;
         endif
     endif
     
-    print("[GMHab DEBUG] No grimorio found!");
+
     return 0;
 endfunction
 
