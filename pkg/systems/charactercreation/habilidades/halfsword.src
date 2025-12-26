@@ -53,7 +53,7 @@ endfunction
  */
 function DisarmAttackerWeapon(byref attackInfo)
 	var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
-
+    var tactics_bonus := CInt(AP_GetSkill(attackInfo.GetDefender().GetObjRef(), TACTICS) / 5);
 	if (!attackerWeapon || !attackerWeapon.GetObjRef())
 		return false;
 	endif
@@ -78,6 +78,7 @@ function DisarmAttackerWeapon(byref attackInfo)
 		attackerPos.GetRealm(),
 		MOVEOBJECT_FORCELOCATION
 	))
+        TS_StartTimer(attackInfo.GetAttacker().GetObjRef(), "desarmar", tactics_bonus, 0, attackInfo.GetDefender().GetObjRef());
 		Message("*sua arma foi desarmada pela técnica de contra-empunhadura!*")
 			.SendAbove(attackInfo.GetAttacker().GetObjRef());
 
