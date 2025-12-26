@@ -31,18 +31,6 @@ program MainHitScript(attackInfo)
 	endif
 
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
-	
-	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
-		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
-		if (!attackInfo.GetAttacker().IsNPC())
-			if (ConsumeAmmo(attackInfo)) // Consome munição
-				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
-			else
-				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-				return 1;
-			endif
-		endif
-	endif
 
 	WeaponHitScripts(attackInfo);
 	ArmorHitScripts(attackInfo);
@@ -65,30 +53,12 @@ function CheckBodyRegionToHit(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Região atingida: {zoneToHit}"));
 endfunction
 
-function TryToRecoverAmmo(byRef attackInfo)
-	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetDefender().GetObjRef().backpack)
-		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
-
-		if (TryToExecuteHab_ArrowRecovery(attackInfo))
-			chance += 15;
-		endif
-
-		if (RandomInt(100 + 1) <= chance)
-			var ammo := attackInfo.GetAmmoObjRef();
-			if (ammo)
-				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
-			endif
-		endif
-	endif
-endfunction
-
 function DoMovement(byRef attackInfo)
 	var move := attackInfo.GetAttacker().GetObjRef().GetProp("movement");
 	var movtime := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#movtime"));
 	if (move != error)
 		if (ReadGameClock() < movtime + 30)
-			var armorsInSlot := attackInfo.GetDefender().GetObjRef().GetEquipBySlot(attackInfo.GetBodyRegion());
-
+			var armorsInSlot := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 			foreach armor in (armorsInSlot)
 				var e := start_script(
 					CStr(move),
@@ -102,7 +72,6 @@ function DoMovement(byRef attackInfo)
 					}
 				);
 			endforeach
-			
 			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
 			return 1;
 		else

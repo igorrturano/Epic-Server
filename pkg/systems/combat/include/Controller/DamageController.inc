@@ -61,13 +61,10 @@ function CalculateStatusDamage(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
-			stat := DEXTERITY;
-			statBase := CInt(attackInfo.GetAttacker().GetDex());
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
-			stat := DEXTERITY;
-			statBase := CInt(attackInfo.GetAttacker().GetDex());
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+		stat := DEXTERITY;
+		statBase := CInt(attackInfo.GetAttacker().GetDex());
+		
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
 			statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
 		endif
@@ -161,6 +158,11 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}"));
+
+	// Apply ammunition damage if ammo exists
+	if (attackInfo.GetAmmo())
+		ApplyAmmoDamage(attackInfo);
+	endif
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -343,18 +345,19 @@ function ApplyCriticalDamage(byRef attackInfo)
 
 	var pet_instinto := attackInfo.GetAttacker().GetObjRef().GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_selvagem := attackInfo.GetAttacker().GetObjRef().GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
-	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
+	var pet_txt := tamingCfg.GetPropertyValue("Text");
 
 	if (pet_instinto || pet_selvagem) // Se for pet
-		weapon_scripts := tamingCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := tamingCfg.GetPropertyValue("CriticalHitScripts");
 		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
-		weapon_scripts := npcCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
 	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
@@ -492,7 +495,7 @@ function CheckPoison(byRef attackInfo)
 			return false;
 		endif
 	else // Se for player, checa pela arma/munição
-		var sourcePoison := attackInfo.GetAmmoObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 		var poisonInfo := sourcePoison.GetProp("poisonInfo");
 
 		if (poisonInfo == error)
@@ -611,4 +614,56 @@ function CalculateEntropyDamage(byRef attackInfo)
 
 		attackInfo.SetDamage(damage);
 	endif
+endfunction
+
+function ApplyAmmoDamage(byref attackInfo)
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano da munição:"));
+
+		var ammoItem := attackInfo.GetAmmo().GetItem().GetObjRef();
+		var ammoObjtype := ammoItem.objtype;
+
+		// 1. Apply PHYSICAL damage from crafting (fabricado CProp -> componentes -> dano)
+		var fabricado := attackInfo.GetAmmo().GetItem().GetProperty(PROPNAME_FABRICADO);
+		if (fabricado && fabricado.componentes)
+			var physicalDamage := 0;
+
+			// Extract damage from components where caracteristica == "dano"
+			foreach comp in (fabricado.componentes)
+				if (comp.propriedades && comp.propriedades.caracteristica == "dano")
+					var danoValue := comp.propriedades.valorPrincipal;
+					physicalDamage += CInt(danoValue);
+				endif
+			endforeach
+
+			// Apply as PIERCING for arrows/bolts, BLUNT for fireweapon ammo
+			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW ||
+				attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+				attackInfo.GetDamage().IncreasePiercingRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {physicalDamage}"));
+			else
+				attackInfo.GetDamage().IncreaseBluntRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {physicalDamage}"));
+			endif
+		endif
+
+		// 2. Apply ELEMENTAL damage from enchantments (AmmoDamage CProp)
+		var ammoDamage := attackInfo.GetAmmo().GetItem().GetProperty("AmmoDamage");
+		var fireDamage := ammoDamage.fire ?: 0;
+		var coldDamage := ammoDamage.cold ?: 0;
+		var poisonDamage := ammoDamage.poison ?: 0;
+		var energyDamage := ammoDamage.energy ?: 0;
+
+		if (ammoDamage)
+			attackInfo.GetDamage()
+				.IncreaseFireRawDamage(fireDamage)
+				.IncreaseColdRawDamage(coldDamage)
+				.IncreasePoisonRawDamage(poisonDamage)
+				.IncreaseEnergyRawDamage(energyDamage);
+
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
+		endif
 endfunction

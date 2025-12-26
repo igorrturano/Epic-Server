@@ -27,7 +27,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
 				this._category := this._template.Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
@@ -51,7 +51,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._backpack := ContainerWrapper(this._objRef.backpack);
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
-			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
+			this._template := this._cfgFile.SetElementName(mobile).GetElement();
 
 			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
 			var err;
@@ -509,6 +509,93 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		this._combatTraits := CombatTraits().Deserialize(propData);
 
 		return this._combatTraits;
+	endfunction
+
+	/*
+	 * Calcula o dano mínimo principal baseado em critérios especificados.
+	 *
+	 * Esta função calcula um valor de dano mínimo considerando diferentes
+	 * atributos do mobile, como força, destreza e habilidade de táticas.
+	 *
+	 * @param this - Referência ao objeto MobileWrapper atual
+	 * @param criteria - Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
+	 *
+	 * @returns Integer - O valor calculado do dano mínimo baseado nos critérios fornecidos
+	 *
+	 * Comportamento:
+	 * - Se STRENGTH estiver nos critérios:
+	 *   - Se DEXTERITY também estiver presente, usa a média entre força e destreza
+	 *   - Caso contrário, usa apenas o valor de força
+	 * - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido por 20
+	 *
+	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
+	 */
+	function GetMainDamageMinimumBasedOn(this, criteria...)
+		var divisor := 20;
+		var value := 0;
+
+		if (STRENGTH in criteria)
+			var statValue := 0;
+
+			if (DEXTERITY in criteria)
+				value := CInt((this.GetStr() + this.GetDex()) / 2);
+			else
+				value := CInt(this.GetStr());
+			endif
+
+			statValue /= divisor;
+			value += statValue;
+		endif
+
+		if (TACTICS in criteria)
+			value += CInt(this.GetSkill(TACTICS) / divisor);
+		endif
+
+		return value;
+	endfunction
+
+	/**
+	 * Calcula o dano mínimo secundário (mão secundária) baseado em critérios especificados.
+	 *
+	 * Esta função calcula um valor de dano mínimo para a mão secundária, considerando diferentes
+	 * atributos do mobile, como força, destreza e habilidade de táticas. O cálculo aplica uma
+	 * penalidade de 50% em relação ao dano da mão principal (divisor dobrado).
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param criteria Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
+	 *
+	 * @return Integer O valor calculado do dano mínimo secundário baseado nos critérios fornecidos
+	 *
+	 * @note Comportamento:
+	 *       - Se STRENGTH estiver nos critérios:
+	 *         - Se DEXTERITY também estiver presente, usa a média entre força e destreza
+	 *         - Caso contrário, usa apenas o valor de força
+	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
+	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
+	 */
+	function GetOffDamageMinimumBasedOn(this, criteria...)
+		var divisor := 20;
+		divisor *= 2; // Mão secundário possui penalidade
+		var value := 0;
+
+		if (STRENGTH in criteria)
+			var statValue := 0;
+
+			if (DEXTERITY in criteria)
+				statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			else
+				statValue := CInt(this.GetStr());
+			endif
+			
+			statValue /= divisor;
+			value += statValue;
+		endif
+
+		if (TACTICS in criteria)
+			value += CInt(this.GetSkill(TACTICS) / divisor);
+		endif
+
+		return value;
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
