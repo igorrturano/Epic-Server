@@ -13,7 +13,7 @@ include ":combat:weardown";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":mastery:CombatController";
-include ":achievements:CombatController";
+include ":achievements:controllers/CombatController";
 include ":IO:CFGFile";
 // include ":message:model/Message";
 include ":tn:cooldown";
