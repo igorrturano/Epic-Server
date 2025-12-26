@@ -65,16 +65,12 @@ class DataFile(IOFile)
 		return this;
 	endfunction
 
-	function DeleteProperty(this, propName := false)
+	function DeleteProperty(this, propName)
 		if (!this._element)
 			return InvalidElementException();
 		endif
 
-		if (propName)
-			this._element.EraseProp(propName);
-		else
-			this._element.EraseProp(this._elementName);
-		endif
+		this._element.EraseProp(propName);
 
 		return this;
 	endfunction
