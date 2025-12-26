@@ -351,7 +351,8 @@ endfunction
  * limiteportempo(who)
  * Purpose: Calculates skill cap based on character age
  * Parameters: who: character reference
- * Return: skill cap (minimum 12, max 100)
+ * Return: skill cap (minimum 6, max 100)
+ * Cap diario / Cap dia
  */
 function limiteportempo(who)
     if (who.npctemplate)
@@ -359,7 +360,7 @@ function limiteportempo(who)
     endif
 
     var dias := idadeChar(who);  
-    var lim := 10;  
+    var lim := 6;  
 
     if (dias <= 15)
         lim := lim + dias*2;  
