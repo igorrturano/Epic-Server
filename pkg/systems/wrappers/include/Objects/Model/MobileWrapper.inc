@@ -13,6 +13,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include ":achievements:utils/datafile";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -614,6 +615,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		
 		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
+	endfunction
+
+	function GetAchievement(this, who, type, key, name)
+		return LoadAchievement(type, who, key, name);
+	endfunction
+
+	function GetListAchievement(this, who)
+		return LoadListAchievement(who);
+	endfunction
+
+	function SetAchievement(this, who, type, elem, achievement)
+		return SaveAchievement(type, elem, achievement);
 	endfunction
 
 	/**
