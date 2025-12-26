@@ -1,18 +1,11 @@
-enum ACHIEVEMENT_TYPE
-	ACHIEVEMENT := "ACHIEVEMENT",
-	ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT",
-	ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION",
-	ACHIEVEMENT_CRAFTING := ACHIEVEMENT + "_CRAFTING"
-endenum
-
 class Achievement()
-	var name := ""; // { get; }
-	var ref := ""; // { get; }
-	var refName := ""; // { get; set; }
+	var name := "";
+	var ref := "";
+	var refName := "";
 
-	var level := 0; // { get; set; }
-	var xp := 0; // { get; set; }
-	var value := 0; // { get; set; }
+	var level := 0;
+	var xp := 0;
+	var value := 0;
 
 	function Achievement(this, name, ref, refName := "", level := 0, xp := 0, value := 0)
 		this.name := name;
@@ -68,42 +61,25 @@ class Achievement()
 		this.xp += CInt(value);
 	endfunction
 
-	function IncrementLevel(this)
-		this.level++;
+	function IncrementLevel(this, value := 1)
+		this.level += CInt(value);
 	endfunction
 
 	function IncrementValue(this, value)
 		this.value += CInt(value);
 	endfunction
 
-	function Serialize(this)
-		return struct{
-			name := this.name,
-			ref := this.ref,
-			refName := this.refName,
-
-			level := this.level,
-			xp := this.xp,
-			value := this.value
-		};
-	endfunction
-
-	function Deserialize(this, data)
-		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
-
-		this.name := data.name;
-		this.ref := data.ref;
-		this.refName := data.refName;
-		
-		this.level := CInt(data.level);
-		this.xp := CInt(data.xp);
-		this.value := CInt(data.value);
-	endfunction
-
 	function toString(this)
 		return $"Achievement para {this.name} (ref={this.ref}, refName={this.refName}, xp={this.xp}, level={this.level}, value={this.value})";
 	endfunction
 endclass
+
+enum class ACHIEVEMENT_TYPE
+	ACHIEVEMENT := "ACHIEVEMENT",
+	COMBAT := ACHIEVEMENT + "_COMBAT",
+	EXPLORATION := ACHIEVEMENT + "_EXPLORATION",
+	CRAFTING := ACHIEVEMENT + "_CRAFTING"
+endenum
 
 enum class ACHIEVEMENT_COMBAT_CATEGORY
 	HITS := "hits",
@@ -133,7 +109,47 @@ enum class ACHIEVEMENT_COMBAT_CATEGORY
 	SPELLS_MOST_CASTED := "spells_casts_most_casted",
 endenum
 
-enum class ACHIEVEMENT_NAME_OTHERS
+enum class ACHIEVEMENT_EXPLORATION_CATEGORY
+	DUNGEONS_EXPLORED := "dungeons_explored",
+	LORE_ITEMS_FOUND := "lore_items_found",
+	CHESTS_OPENED := "chests_opened",
+	TRAPS_DISARMED := "traps_disarmed",
+	MAX_SNEAK_STEPS := "max_sneak_steps",
+	DUNGEONS_COMPLETED := "dungeons_completed",
+	UNIQUE_BOSSES_DEFEATED := "unique_bosses_defeated",
+	SECRET_AREAS_DISCOVERED := "secret_areas_discovered",
+	UNIQUE_NPCS_FOUND := "unique_npcs_found"
+endenum
+
+enum class ACHIEVEMENT_MARKET_CATEGORY
+	COINS_SPENT := "coins_spent",
+	COINS_ACQUIRED := "coins_acquired",
+	MAX_COINS_ACCUMULATED := "max_coins_accumulated",
+	ITEMS_PLACED_ON_MERCHANT := "items_placed_on_merchant"
+endenum
+
+enum class ACHIEVEMENT_SKILL_CATEGORY
+	_PLACEHOLDER // TODO: Colocado apenas pra conseguir compilar, adicionar achievements aqui
+endenum
+
+enum class ACHIEVEMENT_CRAFTING_CATEGORY
+	CRAFTED_NORMAL := "crafted_normal",
+	CRAFTED_EXCEPTIONAL := "crafted_exceptional",
+	FORGED_WEAPONS := "forged_weapons",
+	FORGED_SHIELDS := "forged_shields",
+	CREATED_POTIONS := "created_potions",
+	REPAIRED_EQUIPMENT := "repaired_equipment"
+endenum
+
+enum class ACHIEVEMENT_COLLECTION_CATEGORY
+	BOOKS_READ := "books_read",
+	RECIPES_DISCOVERED := "recipes_discovered",
+	MOUNTS_TAMED := "mounts_tamed",
+	PETS_COLLECTED := "pets_collected",
+	TITLES_UNLOCKED := "titles_unlocked"
+endenum
+
+enum class ACHIEVEMENT_OTHERS_CATEGORY
 	FISH_CAUGHT := "fish_caught",
 	FISH_CAUGHT_WITH_BAIT := "fish_caught_with_bait",
 	RESOURCES_COLLECTED := "resources_collected",
@@ -148,24 +164,5 @@ enum class ACHIEVEMENT_NAME_OTHERS
 	ALLIES_HEALED := "allies_healed",
 	ALLIES_HEALED_AMOUNT := "allies_healed_amount",
 	ABILITIES_USED := "abilities_used",
-	ABILITY_MOST_USED := "ability_most_used"
+	ABILITIES_MOST_USED := "abilities_most_used"
 endenum
-
-// OTHERS
-// TODO: Peixes pescados
-// TODO: Peixes pescados com isca
-// TODO: Quantas magias castadas 
-// TODO: Qual magia mais castada
-// TODO: Quanto recurso recolhido
-// TODO: Quantos corpos abertos
-// TODO: Quantos mobs rastreados
-// TODO: Quantos mobs descobertos com awareness
-// TODO: Quantos boss mortos
-// TODO: Qual tier mais alto voce ja matou/ajudou a matar
-// TODO: Top ganho de XP num dia
-// TODO: Quantas vezes ja se disfarçou
-// TODO: Quantos golpes acertados consecutivos sem errar em criaturas red
-// TODO: Quantos aliados voce ja curou
-// TODO: Quanto voce ja curou seus aliados
-// TODO: Quantas vezes utilizou suas habilidades
-// TODO: Qual habilidade mais utilizada

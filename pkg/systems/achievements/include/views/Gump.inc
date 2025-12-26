@@ -5,7 +5,7 @@ include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/Container/Container";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";
-include ":achievements:model/Achievement";
+include ":achievements:models/Achievement";
 
 function ShowAchievementsGump(who)
 	var whoAchievs := who.GetListAchievement() ?: array{};
