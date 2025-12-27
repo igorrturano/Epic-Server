@@ -1,0 +1,23 @@
+include ":abilities:controllers/AbilityController";
+
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program cmd_ability(who, text)
+	who := MobileWrapper(who);
+	
+	if (who.IsDead())
+		return 1;
+	endif
+
+	if (!who.HasAbility(text) && (who.GetObjRef().cmdlevel < 2))
+		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	if (!text)
+		Message("Uso: .ability <nome da habilidade>", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	ActivateAbility(who, text);
+endprogram
