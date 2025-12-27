@@ -14,7 +14,6 @@ endprogram
 
 include ":debug:methods/Character";
 include ":mastery:methods/Character";
-include ":achievements:methods/Character";
 include ":charactercreation:methods/Character";
 include ":merchants:cambio";
 

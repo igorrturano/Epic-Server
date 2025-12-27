@@ -96,6 +96,7 @@ enum class ABILITY_ID
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
 	ESPIAO := "Espiao",
 	MESTRE_ESPIAO := "Mestre Espiao",
+	HALFSWORD := "Contra-Empunhadura",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
