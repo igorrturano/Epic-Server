@@ -77,30 +77,53 @@ function CalculateHitChance(byRef attackInfo)
 	endif
 
 	// Combat stance modifiers (replaces old POSTURA_OFENSIVA/POSTURA_DEFENSIVA abilities)
-	var attackerStance := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#combatstance"));
-	var defenderStance := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#combatstance"));
+	var attackerTraits := attackInfo.GetAttacker().GetCombatTraits();
+	var defenderTraits := attackInfo.GetDefender().GetCombatTraits();
+
+	var attackerStance := STANCE_TYPE::NEUTRAL;
+	var defenderStance := STANCE_TYPE::NEUTRAL;
+
+	if (attackerTraits && !attackerTraits.errortext)
+		attackerStance := attackerTraits.GetStance();
+		if (!attackerStance)
+			attackerStance := STANCE_TYPE::NEUTRAL;
+		endif
+	endif
+
+	if (defenderTraits && !defenderTraits.errortext)
+		defenderStance := defenderTraits.GetStance();
+		if (!defenderStance)
+			defenderStance := STANCE_TYPE::NEUTRAL;
+		endif
+	endif
+
+	// Debug output
+	if (!attackInfo.GetAttacker().IsNPC())
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Sua postura: {attackerStance}"));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Postura do oponente: {defenderStance}"));
+	endif
 
 	// Attacker stance affects their accuracy
 	case (attackerStance)
-		1: // STANCE_AGGRESSIVE
+		STANCE_TYPE::AGGRESSIVE: // 1
 			hit_chance += 10.0;
-		2: // STANCE_VERY_AGGRESSIVE
+		STANCE_TYPE::VERY_AGGRESSIVE: // 2
 			hit_chance += 20.0;
-		3: // STANCE_DEFENSIVE
+		STANCE_TYPE::DEFENSIVE: // 3
 			hit_chance -= 10.0;
-		4: // STANCE_VERY_DEFENSIVE
+		STANCE_TYPE::VERY_DEFENSIVE: // 4
 			hit_chance -= 20.0;
 	endcase
 
 	// Defender stance affects how easy they are to hit
 	case (defenderStance)
-		1: // STANCE_AGGRESSIVE
+		STANCE_TYPE::AGGRESSIVE: // 1
 			hit_chance += 10.0;
-		2: // STANCE_VERY_AGGRESSIVE
+		STANCE_TYPE::VERY_AGGRESSIVE: // 2
 			hit_chance += 20.0;
-		3: // STANCE_DEFENSIVE
+		STANCE_TYPE::DEFENSIVE: // 3
 			hit_chance -= 10.0;
-		4: // STANCE_VERY_DEFENSIVE
+		STANCE_TYPE::VERY_DEFENSIVE: // 4
 			hit_chance -= 20.0;
 	endcase
 

@@ -1,16 +1,12 @@
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
 include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/Text";
 include ":gumpDesigner:Control/Tooltip";
 include ":timedScripts:timedScripts";
-
-const STANCE_NEUTRAL := 0;
-const STANCE_AGGRESSIVE := 1;
-const STANCE_VERY_AGGRESSIVE := 2;
-const STANCE_DEFENSIVE := 3;
-const STANCE_VERY_DEFENSIVE := 4;
+include ":combat:Model/CombatTraits";
 
 const STANCE_COOLDOWN := 30; // seconds
 
@@ -38,92 +34,95 @@ endprogram
 
 function ChooseStance(who)
 	var eventHandled;
-	var currentStance := CInt(who.GetObjRef().GetProp("#combatstance"));
+	var currentStance := who.GetCombatTraits().GetStance();
 	if (!currentStance)
-		currentStance := STANCE_NEUTRAL;
+		currentStance := STANCE_TYPE::NEUTRAL;
 	endif
 
 	var gump := Gump(who.GetObjRef(), "Postura de Combate", 250, 240);
+	var container := ContainerGridLayout("Container", 10, 70, 50, 140, 5, 2);
 
-	// Create buttons and labels for each stance with absolute positioning
-	var btnNeutral := Button("Neutral", 25, 80, 2152, 2153);
-	var txtNeutral := Text("txtNeutral", 55, 85, "Neutra", Color(COLOR_NAME::_DEFAULT));
-	var tooltipNeutral := TooltipText("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
+	// Create buttons and labels for each stance (coordinates relative to grid cell)
+	var btnNeutral := Button("Neutral", 15, 0, 2152, 2153);
+	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipNeutral := Tooltip("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
 
-	var btnAggressive := Button("Aggressive", 25, 108, 2152, 2153);
-	var txtAggressive := Text("txtAggressive", 55, 113, "Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT));
-	var tooltipAggressive := TooltipText("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
+	var btnAggressive := Button("Aggressive", 15, 0, 2152, 2153);
+	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipAggressive := Tooltip("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
 
-	var btnVeryAggressive := Button("VeryAggressive", 25, 136, 2152, 2153);
-	var txtVeryAggressive := Text("txtVeryAggressive", 55, 141, "Muito Agressiva (+20/+20)", Color(COLOR_NAME::_DEFAULT));
-	var tooltipVeryAggressive := TooltipText("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
+	var btnVeryAggressive := Button("VeryAggressive", 15, 0, 2152, 2153);
+	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+20/+20)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipVeryAggressive := Tooltip("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
 
-	var btnDefensive := Button("Defensive", 25, 164, 2152, 2153);
-	var txtDefensive := Text("txtDefensive", 55, 169, "Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT));
-	var tooltipDefensive := TooltipText("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
+	var btnDefensive := Button("Defensive", 15, 0, 2152, 2153);
+	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipDefensive := Tooltip("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
 
-	var btnVeryDefensive := Button("VeryDefensive", 25, 192, 2152, 2153);
-	var txtVeryDefensive := Text("txtVeryDefensive", 55, 197, "Muito Defensiva (-20/-20)", Color(COLOR_NAME::_DEFAULT));
-	var tooltipVeryDefensive := TooltipText("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
+	var btnVeryDefensive := Button("VeryDefensive", 15, 0, 2152, 2153);
+	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-20/-20)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipVeryDefensive := Tooltip("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
 
 	// Highlight current stance with green color
 	case (currentStance)
-		STANCE_NEUTRAL:
-			txtNeutral.SetColor(Color(COLOR_NAME::GREEN));
-		STANCE_AGGRESSIVE:
-			txtAggressive.SetColor(Color(COLOR_NAME::GREEN));
-		STANCE_VERY_AGGRESSIVE:
-			txtVeryAggressive.SetColor(Color(COLOR_NAME::GREEN));
-		STANCE_DEFENSIVE:
-			txtDefensive.SetColor(Color(COLOR_NAME::GREEN));
-		STANCE_VERY_DEFENSIVE:
-			txtVeryDefensive.SetColor(Color(COLOR_NAME::GREEN));
+		STANCE_TYPE::NEUTRAL:
+			txtNeutral.SetColor(COLOR_NAME::GREEN);
+		STANCE_TYPE::AGGRESSIVE:
+			txtAggressive.SetColor(COLOR_NAME::GREEN);
+		STANCE_TYPE::VERY_AGGRESSIVE:
+			txtVeryAggressive.SetColor(COLOR_NAME::GREEN);
+		STANCE_TYPE::DEFENSIVE:
+			txtDefensive.SetColor(COLOR_NAME::GREEN);
+		STANCE_TYPE::VERY_DEFENSIVE:
+			txtVeryDefensive.SetColor(COLOR_NAME::GREEN);
 	endcase
 
-	// Add controls directly to gump (tooltip must come right after the button)
-	gump.AddControl(btnNeutral);
-	txtNeutral.AddControl(tooltipNeutral);
-	gump.AddControl(txtNeutral);
+	// Add controls to grid (button in col 1, text with tooltip in col 2)
+	container.AddControl(btnNeutral, 1, 1);
+	txtNeutral.SetTooltip(tooltipNeutral);
+	container.AddControl(txtNeutral, 1, 2);
 
-	gump.AddControl(btnAggressive);
-	txtAggressive.AddControl(tooltipAggressive);
-	gump.AddControl(txtAggressive);
+	container.AddControl(btnAggressive, 2, 1);
+	txtAggressive.SetTooltip(tooltipAggressive);
+	container.AddControl(txtAggressive, 2, 2);
 
-	gump.AddControl(btnVeryAggressive);
-	txtVeryAggressive.AddControl(tooltipVeryAggressive);
-	gump.AddControl(txtVeryAggressive);
+	container.AddControl(btnVeryAggressive, 3, 1);
+	txtVeryAggressive.SetTooltip(tooltipVeryAggressive);
+	container.AddControl(txtVeryAggressive, 3, 2);
 
-	gump.AddControl(btnDefensive);
-	txtDefensive.AddControl(tooltipDefensive);
-	gump.AddControl(txtDefensive);
+	container.AddControl(btnDefensive, 4, 1);
+	txtDefensive.SetTooltip(tooltipDefensive);
+	container.AddControl(txtDefensive, 4, 2);
 
-	gump.AddControl(btnVeryDefensive);
-	txtVeryDefensive.AddControl(tooltipVeryDefensive);
-	gump.AddControl(txtVeryDefensive);
+	container.AddControl(btnVeryDefensive, 5, 1);
+	txtVeryDefensive.SetTooltip(tooltipVeryDefensive);
+	container.AddControl(txtVeryDefensive, 5, 2);
+
+	gump.AddControl(container);
 
 	eventHandled := gump.Show();
 
 	if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
 		return gump.Dispose();
 	elseif (eventHandled.GetControl().Equals(btnNeutral))
-		SetStance(who, STANCE_NEUTRAL);
+		SetStance(who, STANCE_TYPE::NEUTRAL);
 	elseif (eventHandled.GetControl().Equals(btnAggressive))
-		SetStance(who, STANCE_AGGRESSIVE);
+		SetStance(who, STANCE_TYPE::AGGRESSIVE);
 	elseif (eventHandled.GetControl().Equals(btnVeryAggressive))
-		SetStance(who, STANCE_VERY_AGGRESSIVE);
+		SetStance(who, STANCE_TYPE::VERY_AGGRESSIVE);
 	elseif (eventHandled.GetControl().Equals(btnDefensive))
-		SetStance(who, STANCE_DEFENSIVE);
+		SetStance(who, STANCE_TYPE::DEFENSIVE);
 	elseif (eventHandled.GetControl().Equals(btnVeryDefensive))
-		SetStance(who, STANCE_VERY_DEFENSIVE);
+		SetStance(who, STANCE_TYPE::VERY_DEFENSIVE);
 	endif
 
 	gump.Dispose();
 endfunction
 
 function SetStance(who, newStance)
-	var oldStance := CInt(who.GetObjRef().GetProp("#combatstance"));
+	var oldStance := who.GetCombatTraits().GetStance();
 	if (!oldStance)
-		oldStance := STANCE_NEUTRAL;
+		oldStance := STANCE_TYPE::NEUTRAL;
 	endif
 
 	if (oldStance == newStance)
@@ -131,7 +130,7 @@ function SetStance(who, newStance)
 		return;
 	endif
 
-	who.GetObjRef().SetProp("#combatstance", newStance);
+	who.SetCombatTraits(who.GetCombatTraits().SetStance(newStance));
 
 	// Set cooldown
 	SetCooldown(who.GetObjRef(), "combat_stance_change", STANCE_COOLDOWN);
@@ -146,15 +145,15 @@ endfunction
 
 function GetStanceName(stance)
 	case (stance)
-		STANCE_NEUTRAL:
+		STANCE_TYPE::NEUTRAL:
 			return "Neutra";
-		STANCE_AGGRESSIVE:
+		STANCE_TYPE::AGGRESSIVE:
 			return "Agressiva";
-		STANCE_VERY_AGGRESSIVE:
+		STANCE_TYPE::VERY_AGGRESSIVE:
 			return "Muito Agressiva";
-		STANCE_DEFENSIVE:
+		STANCE_TYPE::DEFENSIVE:
 			return "Defensiva";
-		STANCE_VERY_DEFENSIVE:
+		STANCE_TYPE::VERY_DEFENSIVE:
 			return "Muito Defensiva";
 		default:
 			return "Neutra";
@@ -163,15 +162,15 @@ endfunction
 
 function GetStanceEmote(stance)
 	case (stance)
-		STANCE_NEUTRAL:
+		STANCE_TYPE::NEUTRAL:
 			return "assume uma postura equilibrada";
-		STANCE_AGGRESSIVE:
+		STANCE_TYPE::AGGRESSIVE:
 			return "assume uma postura agressiva";
-		STANCE_VERY_AGGRESSIVE:
+		STANCE_TYPE::VERY_AGGRESSIVE:
 			return "assume uma postura extremamente agressiva";
-		STANCE_DEFENSIVE:
+		STANCE_TYPE::DEFENSIVE:
 			return "assume uma postura defensiva";
-		STANCE_VERY_DEFENSIVE:
+		STANCE_TYPE::VERY_DEFENSIVE:
 			return "assume uma postura extremamente defensiva";
 		default:
 			return "assume uma postura equilibrada";

@@ -80,7 +80,7 @@ enum class COMBAT_ABILITY
 	PRESERVAR_ORGAOS := "Preservar Orgaos",
 	REBUKE := "Rebuke",
 	RECUPERACAO_SALVADORA := "Recuperação Salvadora",
-	RECUPERAR_FLECHAS := "Recuperar Flechas",
+	TIRO_PODEROSO := "Tiro Poderoso",
 	REFLEXO_ESTRATEGICO := "Reflexo Estrategico",
 	RESILIENCIA_BARBARA := "Resiliência Bárbara",
 	SEMPRE_ALERTA := "Sempre Alerta",
@@ -110,7 +110,6 @@ enum class COMBAT_ABILITY
 	CONTRA_ATAQUE := "Contra-Ataque",
 	FEROCIDADE_ENSANGUENTADA := "Ferocidade Ensanguentada",
 	MESTRE_DUELISTA := "Mestre Duelista",
-	ARROW_RECOVERY := "Recuperar Flechas",
 	DIVINE_AUTHORITY := "Divine Authority"
 endenum
 
