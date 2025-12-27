@@ -913,7 +913,7 @@ function genericItems(who)
     CreateItemInicial(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
     var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
-    SetObjProperty(oleo, "descmod", "Óleo de polir armaduras" + "<br>");
+    SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
 endfunction
 
 function weaponsByClassAndCulture(who)
