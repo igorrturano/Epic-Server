@@ -97,6 +97,8 @@ enum class COMBAT_ABILITY
 	HALFSWORD := "Contra-Empunhadura",
 	MURDER_BLOW := "Golpe Mortal",
 	CROSS_CUT := "Contragolpe Cruzado",
+	RAGE_CUT := "Golpes Furiosos",
+	DEATH_SENTENCE := "Sentença de Morte",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
