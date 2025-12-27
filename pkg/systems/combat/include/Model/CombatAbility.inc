@@ -96,6 +96,7 @@ enum class COMBAT_ABILITY
 	MESTRE_ESPIAO := "Mestre Espiao",
 	HALFSWORD := "Contra-Empunhadura",
 	MURDER_BLOW := "Golpe Mortal",
+	CROSS_CUT := "Contragolpe Cruzado",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
