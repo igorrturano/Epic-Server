@@ -5,7 +5,7 @@ include "IAbility";
 include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
-class CombatAbility(IAbility)
+class Ability(IAbility)
 	var _id; // ABILITY_ID enum
 	var _name := "";
 	var _description := "";
@@ -19,21 +19,27 @@ class CombatAbility(IAbility)
 	var _damage; // DamageDice class
 	var _script := ""; // nome do script que será executado ao usar a habilidade
 
-	function CombatAbility(this, abilityEnum)
-		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityEnum);
+	function Ability(this, abilityEnum)
+		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
 		
 		this._id := abilityEnum;
-		this._name := cfgFile.GetPropertyValue("name");
-		this._description := cfgFile.GetPropertyValue("description");
-		this._activationMoment := cfgFile.GetPropertyValue("activationMoment");
-		this._cooldown := cfgFile.GetPropertyValue("cooldown");
-		this._costHP := cfgFile.GetPropertyValue("hp");
-		this._costSTAM := cfgFile.GetPropertyValue("stam");
-		this._costMANA := cfgFile.GetPropertyValue("mana");
-		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
-		this._range := cfgFile.GetPropertyValue("range");
-		this._damage := cfgFile.GetPropertyValue("damage");
-		this._script := cfgFile.GetPropertyValue("script");
+		this._name := cfgFile.GetPropertyValue("name")[1];
+		this._class := cfgFile.GetPropertyValue("classe");
+		this._level := cfgFile.GetPropertyValue("nivel");
+		this._folk := cfgFile.GetPropertyValue("povo")[1];
+		this._description := cfgFile.GetPropertyValue("description")[1];
+		this._activation := cfgFile.GetPropertyValue("uso")[1];
+		this._activationMoment := cfgFile.GetPropertyValue("activationMoment")[1];
+		this._requirement := cfgFile.GetPropertyValue("requisito")[1];
+
+		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1];
+		this._costHP := cfgFile.GetPropertyValue("hp")[1];
+		this._costSTAM := cfgFile.GetPropertyValue("stam")[1];
+		this._costMANA := cfgFile.GetPropertyValue("mana")[1];
+		this._effectDuration := cfgFile.GetPropertyValue("effectDuration")[1];
+		this._range := cfgFile.GetPropertyValue("range")[1];
+		this._damage := cfgFile.GetPropertyValue("damage")[1];
+		this._script := cfgFile.GetPropertyValue("script")[1];
 	endfunction
 
 	function GetId(this)
@@ -85,7 +91,7 @@ class CombatAbility(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Start_Script($":abilities:include/habilidades/{this._script}", targetInfo);
+		Start_Script($":abilities:scripts/{this._script}", targetInfo);
 	endfunction
 endclass
 
@@ -169,3 +175,11 @@ enum class ACTIVATION_MOMENT
 	ON_KILL,
 	ON_USE
 endenum
+
+enum class ACTIVATION_MODE
+	PASSIVE := "Passiva",
+	ACTIVE := "Ativa"
+endenum
+
+enum class ABILITY_DURATION
+endclass
