@@ -912,7 +912,7 @@ function genericItems(who)
     CreateItemInicial(who, 0x152e, 1); // short pants
     CreateItemInicial(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
-    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
+    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Equipamentos
     SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
 endfunction
 

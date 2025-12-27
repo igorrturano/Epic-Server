@@ -13,6 +13,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include ":achievements:utils/datafile";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -438,29 +439,28 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * @param this Referência ao objeto Mobile
 	 * @param layerEnum Enumeração da camada de equipamento a ser consultada
-	 * @param itemType Tipo do item (ITEM_TYPE::WEAPON, ITEM_TYPE::ARMOR ou ITEM_TYPE::CONTAINER)
 	 *
 	 * @return Retorna o equipamento encapsulado no wrapper correspondente ao tipo especificado
 	 *         (WeaponWrapper, ArmorWrapper ou ContainerWrapper).
-	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException se
-	 *         o itemType não for válido.
+	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException
 	 */
-	function GetEquipByLayer(this, layerEnum, itemType)
+	function GetEquipByLayer(this, layerEnum)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
 		
 		var equip := GetEquipmentByLayer(this._objRef, layerEnum);
-		if (itemType == ITEM_TYPE::WEAPON)
+		if (equip.IsA(POLCLASS_WEAPON))
 			equip := WeaponWrapper(equip);
-		elseif (itemType == ITEM_TYPE::ARMOR)
+		elseif (equip.IsA(POLCLASS_ARMOR))
 			equip := ArmorWrapper(equip);
-		elseif (itemType == ITEM_TYPE::CONTAINER)
+		elseif (equip.IsA(POLCLASS_CONTAINER))
 			equip := ContainerWrapper(equip);
 		else
-			return InvalidFormatException("The itemType param must be a valid ITEM_TYPE enum value!");
+			return equip;
 		endif
 
+		// TODO: Se retornou o item, tem que ver pra adicionar aqui em cima no Wrapper dele (deixei assim porque não sabia se tinha lembrado de todos os equipáveis)
 		return equip;
 	endfunction
 
@@ -530,7 +530,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetMainDamageMinimumBasedOn(this, criteria...)
+	function GetMainDamageModifier(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
@@ -573,29 +573,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
 	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
 	 */
-	function GetOffDamageMinimumBasedOn(this, criteria...)
-		var divisor := 20;
-		divisor *= 2; // Mão secundário possui penalidade
-		var value := 0;
+	function GetOffDamageModifier(this, criteria...)
+		var divisor := 2; // Mão secundário possui penalidade
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				statValue := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				statValue := CInt(this.GetStr());
-			endif
-			
-			statValue /= divisor;
-			value += statValue;
-		endif
-
-		if (TACTICS in criteria)
-			value += CInt(this.GetSkill(TACTICS) / divisor);
-		endif
-
-		return value;
+		return this.GetMainDamageModifier(criteria) / divisor;
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
@@ -614,6 +595,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		
 		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
+	endfunction
+
+	function GetAchievement(this, who, type, key, name)
+		return LoadAchievement(type, who, key, name);
+	endfunction
+
+	function GetListAchievement(this, who)
+		return LoadListAchievement(who);
+	endfunction
+
+	function SetAchievement(this, who, type, elem, achievement)
+		return SaveAchievement(type, elem, achievement);
 	endfunction
 
 	/**
@@ -738,7 +731,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		// TODO: Isso aqui vai dar errado
-		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+		return this.GetEquipByLayer(LAYER_MOUNT) != error;
 	endfunction
 
 	function IsConnected(this)

@@ -45,12 +45,8 @@ class DataFile(IOFile)
 		return result;
 	endfunction
 	
-	function DeleteElement(this, elemName := false)
-		if (elemName)
-			this._file.DeleteElement(elemName);
-		else
-			this._file.DeleteElement(this._elementName);
-		endif
+	function DeleteElement(this)
+		this._file.DeleteElement(this._elementName);
 		
 		return this;
 	endfunction
@@ -59,16 +55,18 @@ class DataFile(IOFile)
 		return this._element.GetProp(propName);
 	endfunction
 
-	function DeleteProperty(this, propName := false)
+	function SetPropertyValue(this, value)
+		this._element.SetProp(this._elementName, value);
+
+		return this;
+	endfunction
+
+	function DeleteProperty(this, propName)
 		if (!this._element)
 			return InvalidElementException();
 		endif
 
-		if (propName)
-			this._element.EraseProp(propName);
-		else
-			this._element.EraseProp(this._elementName);
-		endif
+		this._element.EraseProp(propName);
 
 		return this;
 	endfunction
@@ -79,7 +77,7 @@ class DataFile(IOFile)
 		return this;
 	endfunction
 
-	function Erase(this)
+	function EraseFile(this)
 		foreach elemName in (this._file.GetElemNames())
 			this._file.DeleteElement(elemName);
 			SleepMS(2);

@@ -557,7 +557,7 @@ function ShowHabilidadesPage(byref gump, who)
 	var x := 30;
 	var y := 120;
     var i;
-    for(i := 0; i <= 20; i := i + 1)
+    for(i := 1; i <= 20; i := i + 1)
         if (Cint(habs[i]) == 1)
             if (i%2 == 0)
                 GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
