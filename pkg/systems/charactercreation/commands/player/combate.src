@@ -21,6 +21,15 @@ program cmd_combate(who)
 		return;
 	endif
 
+	// Check if in combat
+	var hostiles := ListHostiles(who.GetObjRef());
+
+	if (!hostiles.size())
+		Message("Você só pode mudar sua postura de combate enquanto estiver em combate!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
 	// Check cooldown
 	if (GetCooldown(who.GetObjRef(), "combat_stance_change") > 0)
 		var remaining := GetCooldown(who.GetObjRef(), "combat_stance_change");
@@ -48,19 +57,19 @@ function ChooseStance(who)
 	var tooltipNeutral := Tooltip("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
 
 	var btnAggressive := Button("Aggressive", 15, 0, 2152, 2153);
-	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipAggressive := Tooltip("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
 
 	var btnVeryAggressive := Button("VeryAggressive", 15, 0, 2152, 2153);
-	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+20/+20)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipVeryAggressive := Tooltip("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
 
 	var btnDefensive := Button("Defensive", 15, 0, 2152, 2153);
-	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipDefensive := Tooltip("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
 
 	var btnVeryDefensive := Button("VeryDefensive", 15, 0, 2152, 2153);
-	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-20/-20)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipVeryDefensive := Tooltip("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
 
 	// Highlight current stance with green color
