@@ -21,6 +21,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _culture := "";
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
+	var _activeAbilities := dictionary{}; // Dictionary<ACTIVATION_MOMENT, Dictionary{ABILITY_ID, ABILITY}>
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
@@ -50,6 +51,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 			this._name := this._objRef.name;
 			this._backpack := ContainerWrapper(this._objRef.backpack);
+			this._activeAbilities := dictionary{};
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
 			this._template := this._cfgFile.SetElementName(mobile).GetElement();
@@ -78,6 +80,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._culture := err;
 			this._religion := err;
 			this._combatTraits := err;
+			this._activeAbilities := err;
 		endif
 	endfunction
 
@@ -617,6 +620,66 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	function GetAbilities(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._objRef.GetProp(MOBILE_PROPNAME::ABILITIES);
+	endfunction
+
+	function NewAbility(this, abilityID)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var abilities := this.GetAbilities();
+		if (!abilities)
+			abilities := dictionary{};
+		endif
+
+		abilities[abilityID] := 1;
+		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	function RemoveAbility(this, abilityID)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var abilities := this.GetAbilities();
+		if (!abilities)
+			return InvalidPropException("This mobile has no abilities!");
+		endif
+
+		abilities.remove(abilityID);
+		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	function ActivateAbility(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		this._activeAbilities[ability.GetActivationMoment()][ability.GetId()] := true;
+
+		return this;
+	endfunction
+
+	function DeactivateAbility(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		this._activeAbilities[ability.GetActivationMoment()].remove(ability.GetId());
+
+		return this;
+	endfunction
+
 	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
 	endfunction
@@ -1007,7 +1070,8 @@ enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits",
 	LANGUAGE := "langdata",
-	ENTROPY := "entropy"
+	ENTROPY := "entropy",
+	ABILITIES := "abilities"
 endenum
 
 enum class ENTROPY_LIMITS
