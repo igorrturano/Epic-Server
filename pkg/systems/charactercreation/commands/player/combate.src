@@ -1,0 +1,179 @@
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Tooltip";
+include ":timedScripts:timedScripts";
+
+const STANCE_NEUTRAL := 0;
+const STANCE_AGGRESSIVE := 1;
+const STANCE_VERY_AGGRESSIVE := 2;
+const STANCE_DEFENSIVE := 3;
+const STANCE_VERY_DEFENSIVE := 4;
+
+const STANCE_COOLDOWN := 30; // seconds
+
+program cmd_combate(who)
+	who := MobileWrapper(who);
+
+	// Check if player has a ranged weapon equipped
+	var weapon := who.GetEquipBySlot(WEAPON);
+	if (weapon.GetAttribute() == RANGED)
+		Message("Você não pode ajustar sua postura de combate com arma de longo alcance!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Check cooldown
+	if (GetCooldown(who.GetObjRef(), "combat_stance_change") > 0)
+		var remaining := GetCooldown(who.GetObjRef(), "combat_stance_change");
+		Message("Você precisa esperar " + remaining + " segundos para mudar sua postura novamente.", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	var newStance := ChooseStance(who);
+endprogram
+
+function ChooseStance(who)
+	var eventHandled;
+	var currentStance := CInt(who.GetObjRef().GetProp("#combatstance"));
+	if (!currentStance)
+		currentStance := STANCE_NEUTRAL;
+	endif
+
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 250, 240);
+
+	// Create buttons and labels for each stance with absolute positioning
+	var btnNeutral := Button("Neutral", 25, 80, 2152, 2153);
+	var txtNeutral := Text("txtNeutral", 55, 85, "Neutra", Color(COLOR_NAME::_DEFAULT));
+	var tooltipNeutral := TooltipText("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
+
+	var btnAggressive := Button("Aggressive", 25, 108, 2152, 2153);
+	var txtAggressive := Text("txtAggressive", 55, 113, "Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT));
+	var tooltipAggressive := TooltipText("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
+
+	var btnVeryAggressive := Button("VeryAggressive", 25, 136, 2152, 2153);
+	var txtVeryAggressive := Text("txtVeryAggressive", 55, 141, "Muito Agressiva (+20/+20)", Color(COLOR_NAME::_DEFAULT));
+	var tooltipVeryAggressive := TooltipText("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
+
+	var btnDefensive := Button("Defensive", 25, 164, 2152, 2153);
+	var txtDefensive := Text("txtDefensive", 55, 169, "Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT));
+	var tooltipDefensive := TooltipText("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
+
+	var btnVeryDefensive := Button("VeryDefensive", 25, 192, 2152, 2153);
+	var txtVeryDefensive := Text("txtVeryDefensive", 55, 197, "Muito Defensiva (-20/-20)", Color(COLOR_NAME::_DEFAULT));
+	var tooltipVeryDefensive := TooltipText("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
+
+	// Highlight current stance with green color
+	case (currentStance)
+		STANCE_NEUTRAL:
+			txtNeutral.SetColor(Color(COLOR_NAME::GREEN));
+		STANCE_AGGRESSIVE:
+			txtAggressive.SetColor(Color(COLOR_NAME::GREEN));
+		STANCE_VERY_AGGRESSIVE:
+			txtVeryAggressive.SetColor(Color(COLOR_NAME::GREEN));
+		STANCE_DEFENSIVE:
+			txtDefensive.SetColor(Color(COLOR_NAME::GREEN));
+		STANCE_VERY_DEFENSIVE:
+			txtVeryDefensive.SetColor(Color(COLOR_NAME::GREEN));
+	endcase
+
+	// Add controls directly to gump (tooltip must come right after the button)
+	gump.AddControl(btnNeutral);
+	txtNeutral.AddControl(tooltipNeutral);
+	gump.AddControl(txtNeutral);
+
+	gump.AddControl(btnAggressive);
+	txtAggressive.AddControl(tooltipAggressive);
+	gump.AddControl(txtAggressive);
+
+	gump.AddControl(btnVeryAggressive);
+	txtVeryAggressive.AddControl(tooltipVeryAggressive);
+	gump.AddControl(txtVeryAggressive);
+
+	gump.AddControl(btnDefensive);
+	txtDefensive.AddControl(tooltipDefensive);
+	gump.AddControl(txtDefensive);
+
+	gump.AddControl(btnVeryDefensive);
+	txtVeryDefensive.AddControl(tooltipVeryDefensive);
+	gump.AddControl(txtVeryDefensive);
+
+	eventHandled := gump.Show();
+
+	if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
+		return gump.Dispose();
+	elseif (eventHandled.GetControl().Equals(btnNeutral))
+		SetStance(who, STANCE_NEUTRAL);
+	elseif (eventHandled.GetControl().Equals(btnAggressive))
+		SetStance(who, STANCE_AGGRESSIVE);
+	elseif (eventHandled.GetControl().Equals(btnVeryAggressive))
+		SetStance(who, STANCE_VERY_AGGRESSIVE);
+	elseif (eventHandled.GetControl().Equals(btnDefensive))
+		SetStance(who, STANCE_DEFENSIVE);
+	elseif (eventHandled.GetControl().Equals(btnVeryDefensive))
+		SetStance(who, STANCE_VERY_DEFENSIVE);
+	endif
+
+	gump.Dispose();
+endfunction
+
+function SetStance(who, newStance)
+	var oldStance := CInt(who.GetObjRef().GetProp("#combatstance"));
+	if (!oldStance)
+		oldStance := STANCE_NEUTRAL;
+	endif
+
+	if (oldStance == newStance)
+		Message("Você já está nesta postura.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	who.GetObjRef().SetProp("#combatstance", newStance);
+
+	// Set cooldown
+	SetCooldown(who.GetObjRef(), "combat_stance_change", STANCE_COOLDOWN);
+
+	// Send feedback message
+	var stanceName := GetStanceName(newStance);
+	var stanceEmote := GetStanceEmote(newStance);
+
+	Message("Você mudou sua postura de combate para: " + stanceName, Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	Message(stanceEmote).SendEmote(who.GetObjRef());
+endfunction
+
+function GetStanceName(stance)
+	case (stance)
+		STANCE_NEUTRAL:
+			return "Neutra";
+		STANCE_AGGRESSIVE:
+			return "Agressiva";
+		STANCE_VERY_AGGRESSIVE:
+			return "Muito Agressiva";
+		STANCE_DEFENSIVE:
+			return "Defensiva";
+		STANCE_VERY_DEFENSIVE:
+			return "Muito Defensiva";
+		default:
+			return "Neutra";
+	endcase
+endfunction
+
+function GetStanceEmote(stance)
+	case (stance)
+		STANCE_NEUTRAL:
+			return "assume uma postura equilibrada";
+		STANCE_AGGRESSIVE:
+			return "assume uma postura agressiva";
+		STANCE_VERY_AGGRESSIVE:
+			return "assume uma postura extremamente agressiva";
+		STANCE_DEFENSIVE:
+			return "assume uma postura defensiva";
+		STANCE_VERY_DEFENSIVE:
+			return "assume uma postura extremamente defensiva";
+		default:
+			return "assume uma postura equilibrada";
+	endcase
+endfunction
