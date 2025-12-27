@@ -26,7 +26,12 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;
 	endif
-
+	var entropy := MobileWrapper(targ).GetEntropy();
+	if (entropy <= -8000)
+		Message("Você não conhece o medo.").SendSys(targ);
+		Message("O alvo resistiu a magia.").SendSys(who);
+		return 1;
+	endif
 	var mlore := Cint(AP_GetSkill(who, ARCANA));
 	var duration := 10 + cint(mlore / 10);
 	if (TemHabilidade(who, "Valdruk"))

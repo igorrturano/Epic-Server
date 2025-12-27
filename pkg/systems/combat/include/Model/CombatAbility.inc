@@ -18,16 +18,16 @@ class CombatAbility(ICombatAbility)
 	function CombatAbility(this, abilityName)
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
 		
-		this._name := cfgFile.SetKeyName("name").GetKeyValue();
-		this._description := cfgFile.SetKeyName("description").GetKeyValue();
-		this._moment := cfgFile.SetKeyName("moment").GetKeyValue();
-		this._cooldown := cfgFile.SetKeyName("cooldown").GetKeyValue();
-		this._costHP := cfgFile.SetKeyName("hp").GetKeyValue();
-		this._costSTAM := cfgFile.SetKeyName("stam").GetKeyValue();
-		this._costMANA := cfgFile.SetKeyName("mana").GetKeyValue();
-		this._effectDuration := cfgFile.SetKeyName("effectDuration").GetKeyValue();
-		this._range := cfgFile.SetKeyName("range").GetKeyValue();
-		this._damage := cfgFile.SetKeyName("damage").GetKeyValue();
+		this._name := cfgFile.GetPropertyValue("name");
+		this._description := cfgFile.GetPropertyValue("description");
+		this._moment := cfgFile.GetPropertyValue("moment");
+		this._cooldown := cfgFile.GetPropertyValue("cooldown");
+		this._costHP := cfgFile.GetPropertyValue("hp");
+		this._costSTAM := cfgFile.GetPropertyValue("stam");
+		this._costMANA := cfgFile.GetPropertyValue("mana");
+		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
+		this._range := cfgFile.GetPropertyValue("range");
+		this._damage := cfgFile.GetPropertyValue("damage");
 	endfunction
 
 	function ExecuteOn(this, byRef executor, byRef target)
@@ -92,6 +92,9 @@ enum class COMBAT_ABILITY
 	TRESPASSAR_CRITICO := "Trespassar Critico",
 	VENENO_PURO := "Veneno Puro",
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
+	ESPIAO := "Espiao",
+	MESTRE_ESPIAO := "Mestre Espiao",
+	HALFSWORD := "Contra-Empunhadura",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",

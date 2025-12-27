@@ -8,7 +8,7 @@ include ":tn:npcutil";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":death:death";
-
+include ":entropy:entropy";
 exported function CanDie(mobile)
 	if (mobile.template == ":merchants:conversation")
 		var pcdata := GetConversationDataFile();
@@ -17,6 +17,7 @@ exported function CanDie(mobile)
 
 	// Passive Soul Harvest - check for nearby shamans with the ability
 	ShamanSoulHarvest(mobile);
+	handleEntropyGain(mobile);
 
 	// Restore doppelganger appearance before death (while still alive)
 	if (GetObjProperty(mobile, "#doppelganger_transformed"))

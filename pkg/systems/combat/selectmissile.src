@@ -5,22 +5,26 @@ program select(who, item)
 	const ARROW_GRAPHIC := 3903;
 	const BOLT_GRAPHIC := 7163;
 	const STONE_GRAPHIC := 6584;
+	const AMMO_GRAPHIC := 0xE73;
 
 	// Arrays com tipos de armas
 	var weaponTypes := struct{ "bows" := array{ 0x13B2, 0xe137, 0x2D2B, 0x27A5,
 												0x2D2A, 0xe139, 0x26CC },
-						   	
+
 						   	"crossbows" := array{ 0x0f4f, 0x13fd, 0x26CD, 0xF983 },
-						   	"slings" := array{ 0xf9ab } };
+						   	"slings" := array{ 0xf9ab },
+						   	"fireweapons" := array{ 0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7 } };
 
 	// Mensagens do sistema
-	var messages := struct{ "select_ammo" := "Escolha o tipo de flecha.",
+	var messages := struct{ "select_ammo" := "Escolha o tipo de munição.",
 							"wrong_ammo" := struct{ "bows" := "Isto não parece uma flecha.",
 							  	"crossbows" := "Isto não parece um virote.",
-							  	"slings" := "Isto não parece uma pedra." },
+							  	"slings" := "Isto não parece uma pedra.",
+							  	"fireweapons" := "Isto não parece munição para arma de fogo." },
 							"ammo_selected" := struct{ "bows" := "Você selecionou a munição que vai usar com este arco.",
 							  	"crossbows" := "Você selecionou a munição que vai usar com esta besta.",
-							  	"slings" := "Você selecionou a munição que vai usar com esta funda."
+							  	"slings" := "Você selecionou a munição que vai usar com esta funda.",
+							  	"fireweapons" := "Você selecionou a munição que vai usar com esta arma de fogo."
 	},
 							"not_projectile" := "Isto não parece uma arma de projéteis." };
 
@@ -35,6 +39,8 @@ program select(who, item)
 		weaponType := "crossbows";
 	elseif (item.objtype in weaponTypes.slings)
 		weaponType := "slings";
+	elseif (item.objtype in weaponTypes.fireweapons)
+		weaponType := "fireweapons";
 	endif
 
 	if (!weaponType)
@@ -44,8 +50,9 @@ program select(who, item)
 
 	// Verifica se a munição é compatível
 	var isValidAmmo := ((weaponType == "bows" && alvo.graphic == ARROW_GRAPHIC) ||
-					 (weaponType == "crossbows" && alvo.graphic == BOLT_GRAPHIC) || (weaponType == "slings" &&
-					 alvo.graphic == STONE_GRAPHIC));
+					 (weaponType == "crossbows" && alvo.graphic == BOLT_GRAPHIC) ||
+					 (weaponType == "slings" && alvo.graphic == STONE_GRAPHIC) ||
+					 (weaponType == "fireweapons" && alvo.graphic == AMMO_GRAPHIC));
 
 	if (!isValidAmmo)
 		SendSysMessage(who, messages.wrong_ammo[weaponType]);

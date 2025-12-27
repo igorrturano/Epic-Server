@@ -13,6 +13,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include ":achievements:utils/datafile";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -27,7 +28,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
 				this._category := this._template.Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
@@ -51,7 +52,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._backpack := ContainerWrapper(this._objRef.backpack);
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
-			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
+			this._template := this._cfgFile.SetElementName(mobile).GetElement();
 
 			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
 			var err;
@@ -246,6 +247,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		
 		this.Update();
 		return AP_GetVitalRegenRate(this._objRef, HUNGER);
+	endfunction
+
+	function GetLanguageOptions(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
+		return this.GetProperty(MOBILE_PROPNAME::LANGUAGE);
 	endfunction
 
 	/**
@@ -503,6 +512,93 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._combatTraits;
 	endfunction
 
+	/*
+	 * Calcula o dano mínimo principal baseado em critérios especificados.
+	 *
+	 * Esta função calcula um valor de dano mínimo considerando diferentes
+	 * atributos do mobile, como força, destreza e habilidade de táticas.
+	 *
+	 * @param this - Referência ao objeto MobileWrapper atual
+	 * @param criteria - Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
+	 *
+	 * @returns Integer - O valor calculado do dano mínimo baseado nos critérios fornecidos
+	 *
+	 * Comportamento:
+	 * - Se STRENGTH estiver nos critérios:
+	 *   - Se DEXTERITY também estiver presente, usa a média entre força e destreza
+	 *   - Caso contrário, usa apenas o valor de força
+	 * - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido por 20
+	 *
+	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
+	 */
+	function GetMainDamageMinimumBasedOn(this, criteria...)
+		var divisor := 20;
+		var value := 0;
+
+		if (STRENGTH in criteria)
+			var statValue := 0;
+
+			if (DEXTERITY in criteria)
+				value := CInt((this.GetStr() + this.GetDex()) / 2);
+			else
+				value := CInt(this.GetStr());
+			endif
+
+			statValue /= divisor;
+			value += statValue;
+		endif
+
+		if (TACTICS in criteria)
+			value += CInt(this.GetSkill(TACTICS) / divisor);
+		endif
+
+		return value;
+	endfunction
+
+	/**
+	 * Calcula o dano mínimo secundário (mão secundária) baseado em critérios especificados.
+	 *
+	 * Esta função calcula um valor de dano mínimo para a mão secundária, considerando diferentes
+	 * atributos do mobile, como força, destreza e habilidade de táticas. O cálculo aplica uma
+	 * penalidade de 50% em relação ao dano da mão principal (divisor dobrado).
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param criteria Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
+	 *
+	 * @return Integer O valor calculado do dano mínimo secundário baseado nos critérios fornecidos
+	 *
+	 * @note Comportamento:
+	 *       - Se STRENGTH estiver nos critérios:
+	 *         - Se DEXTERITY também estiver presente, usa a média entre força e destreza
+	 *         - Caso contrário, usa apenas o valor de força
+	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
+	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
+	 */
+	function GetOffDamageMinimumBasedOn(this, criteria...)
+		var divisor := 20;
+		divisor *= 2; // Mão secundário possui penalidade
+		var value := 0;
+
+		if (STRENGTH in criteria)
+			var statValue := 0;
+
+			if (DEXTERITY in criteria)
+				statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			else
+				statValue := CInt(this.GetStr());
+			endif
+			
+			statValue /= divisor;
+			value += statValue;
+		endif
+
+		if (TACTICS in criteria)
+			value += CInt(this.GetSkill(TACTICS) / divisor);
+		endif
+
+		return value;
+	endfunction
+
 	function SetSkillBase(this, skillName, value)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -519,6 +615,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		
 		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
+	endfunction
+
+	function GetAchievement(this, who, type, key, name)
+		return LoadAchievement(type, who, key, name);
+	endfunction
+
+	function GetListAchievement(this, who)
+		return LoadListAchievement(who);
+	endfunction
+
+	function SetAchievement(this, who, type, elem, achievement)
+		return SaveAchievement(type, elem, achievement);
 	endfunction
 
 	/**
@@ -542,6 +650,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		this.SetProperty(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
 
 		return this;
+	endfunction
+
+	function SetLanguageOptions(this, langOptions)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+		
+		return this.SetProperty(MOBILE_PROPNAME::LANGUAGE, langOptions);
 	endfunction
 
 	/**
@@ -814,6 +930,71 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Dex: {this.GetDex()}, " +
 			$"Int: {this.GetInt()}";
 	endfunction
+
+	// ============================================================================
+	// Entropy System Methods
+	// ============================================================================
+
+	/**
+	 * Obtém o valor atual de entropia do mobile.
+	 *
+	 * @return Integer Valor de entropia (0 se não definido)
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function GetEntropy(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var entropy := this.GetProperty(MOBILE_PROPNAME::ENTROPY);
+		if (!entropy)
+			return 0;
+		endif
+		return CInt(entropy);
+	endfunction
+
+	/**
+	 * Define o valor de entropia do mobile, respeitando os limites mínimo e máximo.
+	 *
+	 * @param value Integer Novo valor de entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function SetEntropy(this, value)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (value > ENTROPY_LIMITS::MAX)
+			value := ENTROPY_LIMITS::MAX;
+		elseif (value < ENTROPY_LIMITS::MIN)
+			value := ENTROPY_LIMITS::MIN;
+		endif
+
+		this.SetProperty(MOBILE_PROPNAME::ENTROPY, CInt(value));
+		return this;
+	endfunction
+
+	/**
+	 * Atualiza a entropia do mobile.
+	 *
+	 * IMPORTANT: This method only updates the individual mobile's entropy.
+	 * The caller is responsible for updating global entropy and handling any
+	 * game-specific bonuses or effects.
+	 *
+	 * @param amt Integer Quantidade a ser adicionada ou subtraída da entropia
+	 * @return MobileWrapper Retorna a própria instância para encadeamento de métodos
+	 * @return Exception Se o objeto de referência for inválido
+	 */
+	function UpdateEntropy(this, amt)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var current := this.GetEntropy();
+		this.SetEntropy(current + amt);
+		return this;
+	endfunction
 endclass
 
 enum class MOBILE_GENDER
@@ -824,7 +1005,14 @@ endenum
 
 enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
-	COMBAT_TRAITS := "combattraits"
+	COMBAT_TRAITS := "combattraits",
+	LANGUAGE := "langdata",
+	ENTROPY := "entropy"
+endenum
+
+enum class ENTROPY_LIMITS
+	MAX := 20000,
+	MIN := -20000
 endenum
 
 enum class MOBILE_CATEGORY

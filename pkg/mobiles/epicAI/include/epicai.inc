@@ -1261,6 +1261,10 @@ function CanFight(attacker, defender)
     if (!CheckLineOfSight(attacker, defender))
         return 0;
     endif
+    // Jogadores corrompidos pela entropia nao sao atacados por mortos vivos.
+    if (MobileWrapper(defender).GetEntropy() <= -16000 && Lower(MobileWrapper(attacker).Category) == "undead")
+        return 0;
+    endif
 
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
@@ -2379,7 +2383,7 @@ function GetWeaponRangeInfo()
     endif
 
     // var wpn_elem := GetWpnCfgInfo(me, weapon);
-	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElementValue(); 
+	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement(); 
     var min_range := 1;
     var max_range := 1;
     

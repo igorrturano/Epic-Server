@@ -52,12 +52,12 @@ function TryToParry(byRef attackInfo)
 endfunction
 
 function DoParry(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ATAQUE BLOQUEADO***", Color(COLOR_NAME::FAIL)));
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HIT, Message("***ATAQUE BLOQUEADO***", Color(COLOR_NAME::FAIL)));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ATAQUE BLOQUEADO***", Color(SYSTEM_COLOR::FAIL)));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HIT, Message("***ATAQUE BLOQUEADO***", Color(SYSTEM_COLOR::FAIL)));
 	PlayParryFX(attackInfo);
 	PlayParrySFX(attackInfo);
 
-	Message($"Você parou o ataque de {attackInfo.GetAttacker().GetName()}!", Color(COLOR_NAME::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
+	Message($"Você parou o ataque de {attackInfo.GetAttacker().GetName()}!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 	if (attackInfo.GetDefender().GetSerial() != attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos"))
 		Message("*defende o golpe*").SendAbove(attackInfo.GetDefender().GetObjRef());
 		ApplyParryDelay(attackInfo);
@@ -199,8 +199,10 @@ function CheckDisarmShield(byRef attackInfo)
 
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
 			// Pike desarma defensor que bloquear sem escudo
+			// Half-sword desarma o atacante ao defender o golpe
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
+			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE
+			 	|| TemHabilidade(attackInfo.GetDefender().GetObjRef(), COMBAT_ABILITY::HALFSWORD))
 				
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();

@@ -289,7 +289,7 @@ function SetPetMods(pet)
 	var hits := Cint(GetVital(pet, "hits")/100);
 	SetObjProperty(pet, "hitsmod", hits);
 	recalcvitals(pet);
-	healdamage(pet, 255);
+	ApplyEpicHealing(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
