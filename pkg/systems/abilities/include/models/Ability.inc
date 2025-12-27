@@ -9,7 +9,7 @@ class CombatAbility(IAbility)
 	var _id; // ABILITY_ID enum
 	var _name := "";
 	var _description := "";
-	var _moment := COMBATABILITY_MOMENT::ON_HIT;
+	var _activationMoment := ACTIVATION_MOMENT::ON_USE;
 	var _costHP := 0;
 	var _costSTAM := 0;
 	var _costMANA := 0;
@@ -17,6 +17,7 @@ class CombatAbility(IAbility)
 	var _effectDuration := 0.0; // em segundos
 	var _range := 1; // em tiles
 	var _damage; // DamageDice class
+	var _script := ""; // nome do script que será executado ao usar a habilidade
 
 	function CombatAbility(this, abilityEnum)
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityEnum);
@@ -24,7 +25,7 @@ class CombatAbility(IAbility)
 		this._id := abilityEnum;
 		this._name := cfgFile.GetPropertyValue("name");
 		this._description := cfgFile.GetPropertyValue("description");
-		this._moment := cfgFile.GetPropertyValue("moment");
+		this._activationMoment := cfgFile.GetPropertyValue("activationMoment");
 		this._cooldown := cfgFile.GetPropertyValue("cooldown");
 		this._costHP := cfgFile.GetPropertyValue("hp");
 		this._costSTAM := cfgFile.GetPropertyValue("stam");
@@ -32,8 +33,55 @@ class CombatAbility(IAbility)
 		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
 		this._range := cfgFile.GetPropertyValue("range");
 		this._damage := cfgFile.GetPropertyValue("damage");
-
 		this._script := cfgFile.GetPropertyValue("script");
+	endfunction
+
+	function GetId(this)
+		return this._id;
+	endfunction
+
+	function GetName(this)
+		return this._name;
+	endfunction
+
+	function GetDescription(this)
+		return this._description;
+	endfunction
+
+	function GetActivationMoment(this)
+		return this._activationMoment;
+	endfunction
+
+	function GetCostHP(this)
+		return this._costHP;
+	endfunction
+
+	function GetCostSTAM(this)
+		return this._costSTAM;
+	endfunction
+
+	function GetCostMANA(this)
+		return this._costMANA;
+	endfunction
+
+	function GetCooldown(this)
+		return this._cooldown;
+	endfunction
+
+	function GetEffectDuration(this)
+		return this._effectDuration;
+	endfunction
+
+	function GetRange(this)
+		return this._range;
+	endfunction
+
+	function GetDamage(this)
+		return this._damage;
+	endfunction
+
+	function GetScript(this)
+		return this._script;
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
@@ -112,11 +160,12 @@ enum class ABILITY_ID
 	DIVINE_AUTHORITY := "Divine Authority"
 endenum
 
-enum class COMBATABILITY_MOMENT
+enum class ACTIVATION_MOMENT
 	BEFORE_DAMAGE,
 	AFTER_DAMAGE,
 	ON_MISS,
 	ON_HIT,
 	ON_CRITICAL,
-	ON_KILL
+	ON_KILL,
+	ON_USE
 endenum
