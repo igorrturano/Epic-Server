@@ -357,8 +357,9 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 
 	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.3, 3);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
+	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
 			var script := start_script(

@@ -88,12 +88,32 @@ function CalculateHitChance(byRef attackInfo)
 		if (!attackerStance)
 			attackerStance := STANCE_TYPE::NEUTRAL;
 		endif
+
+		// Auto-reset stance if not in combat (prevents exploitation)
+		if (attackerStance != STANCE_TYPE::NEUTRAL && !attackInfo.GetAttacker().IsNPC())
+			if (!ListHostiles(attackInfo.GetAttacker().GetObjRef()).size())
+				attackInfo.GetAttacker().SetCombatTraits(attackerTraits.SetStance(STANCE_TYPE::NEUTRAL));
+				attackerStance := STANCE_TYPE::NEUTRAL;
+				Message("Sua postura de combate foi resetada para Neutra (fora de perigo).", Color(SYSTEM_COLOR::INFO))
+					.SendSys(attackInfo.GetAttacker().GetObjRef());
+			endif
+		endif
 	endif
 
 	if (defenderTraits && !defenderTraits.errortext)
 		defenderStance := defenderTraits.GetStance();
 		if (!defenderStance)
 			defenderStance := STANCE_TYPE::NEUTRAL;
+		endif
+
+		// Auto-reset stance if not in combat (prevents exploitation)
+		if (defenderStance != STANCE_TYPE::NEUTRAL && !attackInfo.GetDefender().IsNPC())
+			if (!ListHostiles(attackInfo.GetDefender().GetObjRef()).size())
+				attackInfo.GetDefender().SetCombatTraits(defenderTraits.SetStance(STANCE_TYPE::NEUTRAL));
+				defenderStance := STANCE_TYPE::NEUTRAL;
+				Message("Sua postura de combate foi resetada para Neutra (fora de perigo).", Color(SYSTEM_COLOR::INFO))
+					.SendSys(attackInfo.GetDefender().GetObjRef());
+			endif
 		endif
 	endif
 
@@ -105,26 +125,26 @@ function CalculateHitChance(byRef attackInfo)
 
 	// Attacker stance affects their accuracy
 	case (attackerStance)
-		STANCE_TYPE::AGGRESSIVE: // 1
+		STANCE_TYPE::AGGRESSIVE:
+			hit_chance += 5.0;
+		STANCE_TYPE::VERY_AGGRESSIVE:
 			hit_chance += 10.0;
-		STANCE_TYPE::VERY_AGGRESSIVE: // 2
-			hit_chance += 20.0;
-		STANCE_TYPE::DEFENSIVE: // 3
+		STANCE_TYPE::DEFENSIVE:
+			hit_chance -= 5.0;
+		STANCE_TYPE::VERY_DEFENSIVE:
 			hit_chance -= 10.0;
-		STANCE_TYPE::VERY_DEFENSIVE: // 4
-			hit_chance -= 20.0;
 	endcase
 
 	// Defender stance affects how easy they are to hit
 	case (defenderStance)
-		STANCE_TYPE::AGGRESSIVE: // 1
+		STANCE_TYPE::AGGRESSIVE:
+			hit_chance += 5.0;
+		STANCE_TYPE::VERY_AGGRESSIVE:
 			hit_chance += 10.0;
-		STANCE_TYPE::VERY_AGGRESSIVE: // 2
-			hit_chance += 20.0;
-		STANCE_TYPE::DEFENSIVE: // 3
+		STANCE_TYPE::DEFENSIVE:
+			hit_chance -= 5.0;
+		STANCE_TYPE::VERY_DEFENSIVE:
 			hit_chance -= 10.0;
-		STANCE_TYPE::VERY_DEFENSIVE: // 4
-			hit_chance -= 20.0;
 	endcase
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::PRESERVAR_ORGAOS))
