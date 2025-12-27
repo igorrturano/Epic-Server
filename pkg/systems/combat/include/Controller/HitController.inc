@@ -76,21 +76,33 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance += 10.0;
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
-		hit_chance += 10.0;
-	endif
+	// Combat stance modifiers (replaces old POSTURA_OFENSIVA/POSTURA_DEFENSIVA abilities)
+	var attackerStance := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#combatstance"));
+	var defenderStance := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#combatstance"));
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_OFENSIVA))
-		hit_chance += 10.0;
-	endif
+	// Attacker stance affects their accuracy
+	case (attackerStance)
+		1: // STANCE_AGGRESSIVE
+			hit_chance += 10.0;
+		2: // STANCE_VERY_AGGRESSIVE
+			hit_chance += 20.0;
+		3: // STANCE_DEFENSIVE
+			hit_chance -= 10.0;
+		4: // STANCE_VERY_DEFENSIVE
+			hit_chance -= 20.0;
+	endcase
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
-		hit_chance -= 10.0;
-	endif
-
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::POSTURA_DEFENSIVA))
-		hit_chance -= 10.0;
-	endif
+	// Defender stance affects how easy they are to hit
+	case (defenderStance)
+		1: // STANCE_AGGRESSIVE
+			hit_chance += 10.0;
+		2: // STANCE_VERY_AGGRESSIVE
+			hit_chance += 20.0;
+		3: // STANCE_DEFENSIVE
+			hit_chance -= 10.0;
+		4: // STANCE_VERY_DEFENSIVE
+			hit_chance -= 20.0;
+	endcase
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::PRESERVAR_ORGAOS))
 		hit_chance -= 10.0;
