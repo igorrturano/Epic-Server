@@ -804,9 +804,9 @@ function TryToExecuteHab_MestreDuelista(byRef attackInfo)
 endfunction
 
 function TryToExecuteHab_ArrowRecovery(byRef attackInfo)
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::RECUPERAR_FLECHAS))
+	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::TIRO_PODEROSO))
 		attackInfo.SetHitChance(attackInfo.GetHitChance() + 35);
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::RECUPERAR_FLECHAS}]: {HAB_STATUS::SUCCESS}!", Color(SYSTEM_COLOR::SUCCESS)));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Possui Habilidade[{COMBAT_ABILITY::TIRO_PODEROSO}]: {HAB_STATUS::SUCCESS}!", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
 	endif
 
