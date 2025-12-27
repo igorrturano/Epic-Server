@@ -83,7 +83,7 @@ program SummonMagicCreature(params)
 	who.resist_energy_mod := who.resist_energy_mod + resistmod;
 
 	recalcvitals(who);
-	HealDamage(who, hitsmod);
+	ApplyEpicHealing(who, hitsmod);
 
 	var metamorfosetime := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
 	if (TemHabilidade(who, "Coração da Matilha"))

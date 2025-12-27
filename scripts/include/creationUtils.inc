@@ -149,6 +149,7 @@ function EpicRaceGump(who, culture_pic)
     foreach race in races
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
+        GFTooltipText(gump, "{}".format(displayRacialBonus(race)));
         if (races.size() > 1)
             GFRadioButton(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
         endif
@@ -522,6 +523,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFHTMLArea(gump, x+86, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Raça", 0, 0); //shadow
         GFHTMLArea(gump, x+85, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Raça", 0, 0);
         GFHTMLArea(gump, x+16, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
+        GFTooltipText(gump, "{}".format(displayRacialBonus(race)));
     endif
 
     if (culture_pic)
@@ -729,7 +731,7 @@ function skillGump(who, culture_pic, byref chardata)
     SetObjProperty(who, "chardata", chardata);
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.points), 1, 0);
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(COLOR_NAME::BLACK).GetHtmlValue(), chardata.points), 1, 0);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
@@ -779,6 +781,7 @@ function attributeGump(who, culture_pic, byref chardata)
     GFHTMLArea(gump, 556, y, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha seus atributos", 0, 0);
 
     GFHTMLArea(gump, 555, y+20, 120, 25, "<BASEFONT color=#FFFFFF >Forca:    {}".format(chardata.str), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Forca"));
     if (chardata.str > 40)
         GFAddButton(gump, 675, y+25, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 201);
     endif
@@ -787,6 +790,7 @@ function attributeGump(who, culture_pic, byref chardata)
     endif
 
     GFHTMLArea(gump, 555, y+40, 120, 25, "<BASEFONT color=#FFFFFF >Destreza:  {}".format(chardata.dex), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Destreza"));
     if (chardata.dex > 40)
         GFAddButton(gump, 675, y+45, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 211);
     endif
@@ -795,6 +799,7 @@ function attributeGump(who, culture_pic, byref chardata)
     endif
 
     GFHTMLArea(gump, 555, y+60, 120, 25, "<BASEFONT color=#FFFFFF >Inteligencia: {}".format(chardata.int), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Inteligencia"));
     if (chardata.int > 40)
         GFAddButton(gump, 675, y+65, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 221);
     endif
@@ -804,8 +809,7 @@ function attributeGump(who, culture_pic, byref chardata)
 
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.attribute_points), 1, 0);
-
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(COLOR_NAME::BLACK).GetHtmlValue(), chardata.attribute_points), 1, 0);
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
     return GFSendGump(who, gump);
@@ -2550,5 +2554,62 @@ function CreateItemInicial(who, objtype, qtd)
     if(!item)
         Print("Erro ao criar item incial {} [{}]".format(Hex(objtype), item.errortext));
         Message("Erro ao criar item incial {}".format(Hex(objtype))).SetColor(SSM_FAIL).SendSys(who);
+    endif
+endfunction
+
+function displayRacialBonus(raca)
+    var final_str := 0;
+    var final_dex := 0;
+    var final_int := 0;
+    var meio := "Meio-";
+    var desc := "";
+
+    if (raca == ANAO)
+        final_str += 10;
+    elseif (raca == ELFO || raca == meio+ELFO)
+        final_int += 10;
+    elseif (raca == DROW || raca == meio+DROW)
+        final_dex += 5;
+        final_int += 5;
+    elseif (raca == ORC || raca == meio+ORC)
+        final_str += 5;
+        final_int += 5;
+    elseif (raca == PEQUILHO)
+        final_dex += 10;
+    else // Humanos
+        desc := "Humanos recebem +2 pontos adicionais para comprar skills.";
+    endif
+
+    var bonus_str := "";
+    if (final_str > 0)
+        bonus_str += "+STR: " + final_str + " ";
+    endif
+    if (final_dex > 0)
+        bonus_str += "+DEX: " + final_dex + " ";
+    endif
+    if (final_int > 0)
+        bonus_str += "+INT: " + final_int + " ";
+    endif
+
+    if (desc != "")
+        return desc;
+    elseif (bonus_str != "")
+        return "Bônus racial: " + bonus_str;
+    else
+        return "Sem bônus racial.";
+    endif
+endfunction
+
+function displayAttributeDescription(chardata, attribute)
+    // calcula o valor e divide por /20 pra dar o dano. e.g. : attribute / 20 a mais de dano
+    if (attribute == "Forca")
+        attribute := chardata.str;
+        return "Aumenta o dano corpo-a-corpo em " + Cint(attribute / 20) + " pontos. Também aumenta a capacidade de carga. E vida";
+    elseif (attribute == "Destreza")
+        attribute := chardata.dex;
+        return "Aumenta a velocidade e dano para armas de longo alcance em " + Cint(attribute / 20) + " pontos. Também aumenta a stamina.";
+    elseif (attribute == "Inteligencia")
+        attribute := chardata.int;
+        return "Aumenta o dano e alcance de magias em " + Cint(attribute / 20) + " pontos. Também aumenta o mana.";
     endif
 endfunction

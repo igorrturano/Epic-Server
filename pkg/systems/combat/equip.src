@@ -11,9 +11,9 @@ include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
+include ":entropy:entropy";
 
 program equipweapon(who, item)
-
 	var descmod_item := GetObjProperty(item, "descmod");
 	var descmod := array;
 	var aux := array;
@@ -55,16 +55,12 @@ program equipweapon(who, item)
 		return 0;
 	endif
 
-	var dual_weapons := array{ 0x27a9, 0x27ab, 0x8fd, 0x27af };
 	var left_hand := GetEquipmentByLayer(who, LAYER_HAND2);
 	var right_hand := GetEquipmentByLayer(who, LAYER_HAND1);
 	if (item.isA(POLCLASS_WEAPON) && ((left_hand && left_hand.isA(POLCLASS_WEAPON)) || (right_hand &&
 	 right_hand.isA(POLCLASS_WEAPON))))
 		SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
 		return 0;
-	// elseif (item.isA(POLCLASS_WEAPON) && (left_hand.objtype in dual_weapons || right_hand.objtype in dual_weapons))
-	//       SendSysMessageEx(who, "Malandrinho :p", SSM_FAIL);
-	//       return 0;
 	endif
 	if (who.npctemplate)
 		return 1;
@@ -160,6 +156,9 @@ program equipweapon(who, item)
 		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
+	if (item.cursed == 1)
+		UpdateMobileEntropy(who, -100);
+	endif
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 
 	var cfg := readconfigfile(":combat:itemdesc");

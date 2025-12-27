@@ -55,7 +55,7 @@ program habilidade(who)
 				if (is_ally)
 					// Heal allies
 					var heal_amount := Cint(theology_skill * 1.4);
-					healFLS(mobile, heal_amount);
+					applyEpicHealing(mobile, heal_amount);
 					PlayObjectCenteredEffect(mobile, 0x375A, 0, 16);
 					SendSysMessageEx(mobile, "Você é curado pela luz divina!", SSM_INFO);
 				else

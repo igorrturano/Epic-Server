@@ -42,7 +42,7 @@ program SpellScript(params)
 		healed := 20;
 	endif
 	// sendsysmessage(who, "healed " + healed);
-	// healdamage(targ, healed);
+	// ApplyEpicHealing(targ, healed);
 	if (GetObjProperty(who, "votovinganca") == 1)
 		EraseObjProperty(who, "votovinganca");
 		if (targ.npctemplate)
@@ -62,7 +62,7 @@ program SpellScript(params)
 				healed := healed * 2;
 			endif
 		endif
-		healFLS(targ, healed);
+		applyEpicHealing(targ, healed);
 	endif
 	recalcvitals(targ);
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);

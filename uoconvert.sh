@@ -3,8 +3,8 @@
 # ./uoconvert converts UO .mul files to POL-format files.
 
 # ==== cut ====
-./uoconvert multis
-cp multis.cfg config/
+# ./uoconvert multis
+# cp multis.cfg config/
 
 ./uoconvert tiles
 cp tiles.cfg config/

@@ -27,11 +27,9 @@ include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
-include ":achievements:CombatController";
+include ":achievements:controllers/CombatController";
 include ":epicAI:epicai";
-// include ":kingdom:conquest";
-// include ":spawnnet:spawnnet";
-// include ":spawnregion:spawn";
+// include ":entropy:entropy";
 
 program core_npcDeath(params)
 	var corpse := params[1];
@@ -60,7 +58,7 @@ program core_npcDeath(params)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
 	handleExpGain(corpse);
-
+	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
 		// var lista_itens := {
@@ -209,7 +207,7 @@ program core_npcDeath(params)
 				// 		SetobjProperty(mob, "souls", souls);
 				PlayMovingEffect(corpse, mob, 14202, 5, 1, 0);
 				PlaySoundEffect(mob, 383);
-				HealFLS(mob, 5);
+				applyEpicHealing(mob, 5);
 				recalcvitals(mob);
 			endif
 		endif
@@ -218,7 +216,7 @@ program core_npcDeath(params)
 
 		// HABILIDADES SHAMAN
 		if (TemHabilidade(mob, "Sede de Sangue"))
-			HealFLS(mob, shaman_reap_bonus);
+			applyEpicHealing(mob, shaman_reap_bonus);
 		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN

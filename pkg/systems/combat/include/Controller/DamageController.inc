@@ -16,6 +16,7 @@ include ":combat:weardown";
 
 // External
 include ":io:CFGFile";
+include ":wrappers:include/Objects/Model/MobileWrapper";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -46,8 +47,9 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateStatusDamage(attackInfo);
 	CalculateSkillDamage(attackInfo);
 	CalculateWeaponDamage(attackInfo);
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}"));
+	CalculateEntropyDamage(attackInfo);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateStatusDamage(byRef attackInfo)
@@ -59,13 +61,10 @@ function CalculateStatusDamage(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
-			stat := DEXTERITY;
-			statBase := CInt(attackInfo.GetAttacker().GetDex());
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
-			stat := DEXTERITY;
-			statBase := CInt(attackInfo.GetAttacker().GetDex());
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+		stat := DEXTERITY;
+		statBase := CInt(attackInfo.GetAttacker().GetDex());
+		
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
 			statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
 		endif
@@ -159,6 +158,11 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}"));
+
+	// Apply ammunition damage if ammo exists
+	if (attackInfo.GetAmmo())
+		ApplyAmmoDamage(attackInfo);
+	endif
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -282,8 +286,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MUMIFICACAO))
-		Message("Seu crítico não surte efeito", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-		Message("Seu corpo evita o crítico", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
@@ -298,8 +302,8 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::LADRAO_DA_SORTE))
-		Message("Seu alvo desviou do crítico!", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-		Message("Você desviou do crítico e usará isso contra seu oponente!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		attackInfo.GetDefender().SetProperty("#nextcritical", true);
 		return 0;
 	endif
@@ -328,7 +332,7 @@ function CalculateCriticalChanceMod(byRef attackInfo)
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(FONTCOLOR_RED).GetTextValue()));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(COLOR_NAME::RED)));
 
 	// TODO: Refatorar isso daqui, tá MUITO cagado....
 		// Jogar as coisas de pet pra uma função separada
@@ -341,18 +345,19 @@ function ApplyCriticalDamage(byRef attackInfo)
 
 	var pet_instinto := attackInfo.GetAttacker().GetObjRef().GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_selvagem := attackInfo.GetAttacker().GetObjRef().GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
-	var pet_txt := tamingCfg.SetKeyName("Text").GetKeyValue();
+	var pet_txt := tamingCfg.GetPropertyValue("Text");
 
 	if (pet_instinto || pet_selvagem) // Se for pet
-		weapon_scripts := tamingCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := tamingCfg.GetPropertyValue("CriticalHitScripts");
 		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		weapon_scripts := weaponCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
-		weapon_scripts := npcCfg.SetKeyName("CriticalHitScripts").GetKeyValue();
+		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
-	Message("CRÍTICO", FONTCOLOR_RED).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
@@ -368,7 +373,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 				}
 			);
 			if (!script || script.errortext)
-				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 			endif
 
 			SleepMS(2);
@@ -388,7 +393,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	if (posture == DAMAGE_TYPE::SLASH)
 		if (attackInfo.GetDamage().GetSlashBaseDamage() < 1)
 			attackInfo.GetDamage().SetSlashBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
 		endif
@@ -398,7 +403,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	elseif (posture == DAMAGE_TYPE::PIERCING)
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
 			attackInfo.GetDamage().SetPiercingBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
 		endif
@@ -408,7 +413,7 @@ function ApplyCombatDamage(byRef attackInfo)
 	elseif (posture == DAMAGE_TYPE::BLUNT)
 		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
 			attackInfo.GetDamage().SetBluntBaseDamage(1);
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(COLOR_NAME::FAIL)));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
 		else
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
 		endif
@@ -450,7 +455,7 @@ function CheckPoison(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::SENSO_DA_NATUREZA))
-		Message("Você é imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+		Message("Você é imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return false;
 	endif
 
@@ -475,12 +480,12 @@ function CheckPoison(byRef attackInfo)
 				endif
 
 				if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonName))
-					Message("Você está imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+					Message("Você está imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 					return false;
 				endif
 
 				if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, RESIST_EASY, -2 * level))
-					Message("Você resistiu ao veneno.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+					Message("Você resistiu ao veneno.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 					return false;
 				else
 					TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonName, time, level, attackInfo.GetAttacker().GetObjRef());
@@ -490,7 +495,7 @@ function CheckPoison(byRef attackInfo)
 			return false;
 		endif
 	else // Se for player, checa pela arma/munição
-		var sourcePoison := attackInfo.GetAmmoObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
 		var poisonInfo := sourcePoison.GetProp("poisonInfo");
 
 		if (poisonInfo == error)
@@ -500,18 +505,18 @@ function CheckPoison(byRef attackInfo)
 		if (poisonInfo.dosage != "infinito")
 			poisonInfo.dosage := poisonInfo.dosage - 1;
 			if (poisonInfo.dosage <= 0) // TODO: Talvez dê bug na aplicação do veneno se a dosagem for 1, prestar atenção nisso aqui quando o combate estiver pronto
-				Message("Sua carga de veneno acabou.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message("Sua carga de veneno acabou.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				sourcePoison.EraseProp("poisonInfo");
 				return false;
 			else
-				Message($"Restam {poisonInfo.dosage} doses de {poisonInfo.name}.", FONTCOLOR_ALERT).SendSys(attackInfo.GetAttacker().GetObjRef());
+				Message($"Restam {poisonInfo.dosage} doses de {poisonInfo.name}.", Color(SYSTEM_COLOR::ALERT)).SendSys(attackInfo.GetAttacker().GetObjRef());
 				sourcePoison.SetProp("poisonInfo", poisonInfo);
 			endif
 		endif
 
 		if (IsPoisonImune(attackInfo.GetDefender().GetObjRef(), poisonInfo.name))
-			Message("Seu veneno parece não ter surtido efeito no alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-			Message("Você está imune ao efeito dos venenos.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você está imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 			return false;
 		endif
 
@@ -530,8 +535,8 @@ function CheckPoison(byRef attackInfo)
 		endif
 
 		if (CheckResist(attackInfo.GetDefender().GetObjRef(), FORTITUDE, poisonInfo.difficulty, -poisonInfo.difficulty_mod))
-			Message("Seu veneno parece não ter surtido efeito no alvo.", FONTCOLOR_FAIL).SendSys(attackInfo.GetAttacker().GetObjRef());
-			Message("Você resistiu ao veneno.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetDefender().GetObjRef());
+			Message("Seu veneno parece não ter surtido efeito no alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você resistiu ao veneno.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 			return false;
 		else
 			if (TS_GetTimerInfo(attackInfo.GetDefender().GetObjRef(), "defaultPoison")) // confere se está sob default poison para estabelecer o mais forte
@@ -556,7 +561,109 @@ function CheckPoison(byRef attackInfo)
 		endif
 	endif
 
-	Message("Seu veneno surtiu efeito no alvo!", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
-	Message("Você foi envenenado.", FONTCOLOR_FAIL).SendSys(attackInfo.GetDefender().GetObjRef());
+	Message("Seu veneno surtiu efeito no alvo!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetAttacker().GetObjRef());
+	Message("Você foi envenenado.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetDefender().GetObjRef());
 	return true;
+endfunction
+
+function CalculateEntropyDamage(byRef attackInfo)
+	var damage := attackInfo.GetDamage();
+	var bonus_damage := 0;
+
+	// Player entropy bonus: +1 damage per 4k entropy against undead/demons (12k-20k range)
+	if (!attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsNPC())
+		var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
+		if (attacker_entropy >= 12000)
+			var npc_category := Lower(attackInfo.GetDefender().GetCategory());
+			if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
+				// +1 per 4k entropy, max +5 at 20k
+				var entropy_bonus := CInt(attacker_entropy / 4000);
+				if (entropy_bonus > 5)
+					entropy_bonus := 5;
+				endif
+				bonus_damage += entropy_bonus;
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de entropia contra {npc_category}: +{entropy_bonus}");
+			endif
+		endif
+	endif
+
+	// Global entropy bonus: NPCs (undead/demon/void) get +1 damage per -20k global entropy
+	var globalEntropy := CInt(GetGlobalProperty("GlobalEntropy"));
+	if (globalEntropy <= -20000 && attackInfo.GetAttacker().IsNPC())
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
+			// +1 per -20k global entropy, max +5 at -100k
+			var global_bonus := CInt(Abs(globalEntropy) / 20000);
+			if (global_bonus > 5)
+				global_bonus := 5;
+			endif
+			bonus_damage += global_bonus;
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Bônus de entropia global para {npc_category}: +{global_bonus}");
+		endif
+	endif
+
+	// Apply bonus damage to all damage types proportionally
+	if (bonus_damage > 0)
+		if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+			damage.IncreaseSlashRawDamage(bonus_damage);
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+			damage.IncreasePiercingRawDamage(bonus_damage);
+		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+			damage.IncreaseBluntRawDamage(bonus_damage);
+		endif
+
+		attackInfo.SetDamage(damage);
+	endif
+endfunction
+
+function ApplyAmmoDamage(byref attackInfo)
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano da munição:"));
+
+		var ammoItem := attackInfo.GetAmmo().GetItem().GetObjRef();
+		var ammoObjtype := ammoItem.objtype;
+
+		// 1. Apply PHYSICAL damage from crafting (fabricado CProp -> componentes -> dano)
+		var fabricado := attackInfo.GetAmmo().GetItem().GetProperty(PROPNAME_FABRICADO);
+		if (fabricado && fabricado.componentes)
+			var physicalDamage := 0;
+
+			// Extract damage from components where caracteristica == "dano"
+			foreach comp in (fabricado.componentes)
+				if (comp.propriedades && comp.propriedades.caracteristica == "dano")
+					var danoValue := comp.propriedades.valorPrincipal;
+					physicalDamage += CInt(danoValue);
+				endif
+			endforeach
+
+			// Apply as PIERCING for arrows/bolts, BLUNT for fireweapon ammo
+			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW ||
+				attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+				attackInfo.GetDamage().IncreasePiercingRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {physicalDamage}"));
+			else
+				attackInfo.GetDamage().IncreaseBluntRawDamage(physicalDamage);
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {physicalDamage}"));
+			endif
+		endif
+
+		// 2. Apply ELEMENTAL damage from enchantments (AmmoDamage CProp)
+		var ammoDamage := attackInfo.GetAmmo().GetItem().GetProperty("AmmoDamage");
+		var fireDamage := ammoDamage.fire ?: 0;
+		var coldDamage := ammoDamage.cold ?: 0;
+		var poisonDamage := ammoDamage.poison ?: 0;
+		var energyDamage := ammoDamage.energy ?: 0;
+
+		if (ammoDamage)
+			attackInfo.GetDamage()
+				.IncreaseFireRawDamage(fireDamage)
+				.IncreaseColdRawDamage(coldDamage)
+				.IncreasePoisonRawDamage(poisonDamage)
+				.IncreaseEnergyRawDamage(energyDamage);
+
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
+		endif
 endfunction

@@ -216,7 +216,7 @@ function PerformHeal(shaman, targ, tier)
     PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
     
     var heal_amount := tier * 12;
-    HealDamage(targ, heal_amount);
+    ApplyEpicHealing(targ, heal_amount);
     
     return 1;
 endfunction
