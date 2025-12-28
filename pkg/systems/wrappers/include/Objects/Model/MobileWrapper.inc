@@ -621,6 +621,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	// ================= Abilities Management ================= //
+	/**
+	 * Obtém as habilidades do mobile.
+	 *
+	 * Este método recupera as habilidades armazenadas no mobile através da propriedade
+	 * ABILITIES. Se o objeto de referência for uma exceção, retorna a própria exceção.
+	 *
+	 * @param this Referência ao objeto wrapper do mobile
+	 * @return Array As habilidades do mobile ou uma Exception caso ocorra erro
+	 */
 	function GetAbilities(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -629,6 +638,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.GetProp(MOBILE_PROPNAME::ABILITIES);
 	endfunction
 
+	/**
+	 * Adiciona uma habilidade ao objeto móvel.
+	 *
+	 * Este método adiciona uma nova habilidade ao dicionário de habilidades do objeto,
+	 * associando-a ao nível em que foi adquirida.
+	 *
+	 * @param ability A habilidade a ser adicionada ao objeto
+	 * @param levelBought O nível no qual a habilidade foi adquirida
+	 * @return this Retorna a própria instância do wrapper para encadeamento de métodos,
+	 *              ou uma Exception se a referência do objeto for inválida ou a habilidade for inválida
+	 * @throws InvalidAbilityException Se a habilidade fornecida não for válida (não possui script)
+	 */
 	function AddAbility(this, ability, levelBought)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -649,6 +670,22 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Remove uma habilidade do personagem móvel.
+	 *
+	 * @param {MobileWrapper} this - Referência ao objeto wrapper do personagem móvel
+	 * @param {Ability} ability - Objeto de habilidade a ser removido
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna o próprio objeto wrapper em caso de sucesso,
+	 *                                    ou uma exceção em caso de erro:
+	 *                                    - Exception se _objRef for inválido
+	 *                                    - InvalidAbilityException se a habilidade não for válida
+	 *                                    - InvalidPropException se o móvel não possuir habilidades
+	 *                                    - InvalidAbilityException se o móvel não possuir a habilidade especificada
+	 *
+	 * @throws {InvalidAbilityException} Quando a habilidade não é válida ou não está presente no móvel
+	 * @throws {InvalidPropException} Quando o móvel não possui a propriedade de habilidades
+	 */
 	function RemoveAbility(this, ability)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -673,6 +710,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/**
+	 * Ativa uma habilidade para o objeto móvel.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto móvel
+	 * @param {Ability} ability - Habilidade a ser ativada
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna a própria instância do objeto em caso de sucesso,
+	 *                                   ou uma Exception se o objeto for inválido ou a habilidade não for válida
+	 * 
+	 * @throws {InvalidAbilityException} Lançada quando a habilidade não possui um script válido
+	 */
 	function ActivateAbility(this, ability)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -687,6 +735,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/*
+	 * Desativa uma habilidade ativa do mobile.
+	 *
+	 * @param this       Referência ao objeto MobileWrapper atual
+	 * @param ability    A habilidade a ser desativada
+	 *
+	 * @return Retorna o próprio objeto MobileWrapper para encadeamento de métodos,
+	 *         ou uma exceção caso o objeto seja inválido ou a habilidade não seja válida
+	 *
+	 * @throws Exception          Se a referência do objeto for uma exceção
+	 * @throws InvalidAbilityException Se a habilidade não possuir um script válido
+	 */
 	function DeactivateAbility(this, ability)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -701,6 +761,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	/*
+	 * Verifica se o mobile possui uma habilidade específica.
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param ability Objeto da habilidade a ser verificada
+	 * @return Retorna o objeto de exceção se _objRef for uma Exception,
+	 *         caso contrário retorna true se o mobile possui a habilidade,
+	 *         ou false se não possui
+	 */
 	function HasAbility(this, ability)
 		if (this._objRef is @Exception)
 			return this._objRef;
