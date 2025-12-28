@@ -150,8 +150,8 @@ function UnequipWeaponsWild(who)
 endfunction
 
 function ApplyAttributeModifiers(who, form, duration)
-	var skill_a_calc := CINT(0.1318 * form.strength + 0.5316 * form.dexterity + 0.5974 * 40); 
-	var resistmod_calc := CINT(-0.0015 * form.strength + 0.0375 * form.intelligence + 0.1125 * form.dexterity); 
+	var skill_a_calc := CINT(0.1318 * form.strength + 0.2316 * form.dexterity + 0.5974 * 40); 
+	var resistmod_calc := CINT(-0.0015 * form.strength + 0.0375 * form.intelligence + 0.2125 * form.dexterity); 
 	var hitsmod_calc := CINT(form.strength / 3);
 	var manamod_calc := CINT(form.dexterity / 5);
 	var stammod_calc := CINT(form.intelligence / 5);

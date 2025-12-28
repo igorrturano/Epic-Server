@@ -49,7 +49,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateSkillDamage(attackInfo);
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
-	ApplyPrimordialConversion(attackInfo);
+	CalculatePrimordialDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
@@ -177,7 +177,7 @@ endfunction
  *
  * @param attackInfo AttackInfo Combat information containing attacker and damage data
  */
-function ApplyPrimordialConversion(byRef attackInfo)
+function CalculatePrimordialDamage(byRef attackInfo)
 	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "metamorfose") == error)
 		return;
 	endif
