@@ -45,10 +45,6 @@ function CalculateHitChance(byRef attackInfo)
 	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
 
-	// Auto-reset stance if not in combat (prevents exploitation)
-	_AutoResetStanceIfNeeded(attackInfo.GetAttacker());
-	_AutoResetStanceIfNeeded(attackInfo.GetDefender());
-
 	// They need to be here because they change dynamically
 	CalculateAbilityHitModifier(hit_chance, attackInfo);
 	CalculateEntropyHitModifier(hit_chance, attackInfo);
@@ -257,50 +253,6 @@ function GetPowderAmount(weaponCategory)
 		default:
 			return 1;
 	endcase
-endfunction
-
-function _AutoResetStanceIfNeeded(mobileWrapper)
-	// Only auto-reset for players (not NPCs)
-	if (mobileWrapper.IsNPC())
-		return;
-	endif
-
-	var traits := mobileWrapper.GetCombatTraits();
-	if (!traits || traits.errortext)
-		return;
-	endif
-
-	var currentStance := traits.GetStance();
-	if (!currentStance || currentStance == STANCE_TYPE::NEUTRAL)
-		return; // Already neutral or no stance set
-	endif
-
-	// Check if player has any hostiles nearby
-	if (ListHostiles(mobileWrapper.GetObjRef()).size() > 0)
-		return; // Still in combat, don't reset
-	endif
-
-	// Player is out of combat with non-neutral stance - reset to neutral
-	// First, remove the stance modifiers
-	var hitchance_bonus := CInt(GetObjProperty(mobileWrapper.GetObjRef(), "#stance_hitchance_mod"));
-	var evasion_penalty := CInt(GetObjProperty(mobileWrapper.GetObjRef(), "#stance_evasion_mod"));
-
-	if (hitchance_bonus || evasion_penalty)
-		mobileWrapper.GetObjRef().hitchance_mod := mobileWrapper.GetObjRef().hitchance_mod - hitchance_bonus;
-		mobileWrapper.GetObjRef().evasionchance_mod := mobileWrapper.GetObjRef().evasionchance_mod + evasion_penalty;
-		EraseObjProperty(mobileWrapper.GetObjRef(), "#stance_hitchance_mod");
-		EraseObjProperty(mobileWrapper.GetObjRef(), "#stance_evasion_mod");
-
-		// Debug message
-		DebugMsg(mobileWrapper.GetObjRef(), DEBUG_HIT, Message($"[STANCE] Auto-reset: removido hitchance {hitchance_bonus}, evasion {evasion_penalty}"));
-	endif
-
-	// Reset stance to neutral
-	mobileWrapper.SetCombatTraits(traits.SetStance(STANCE_TYPE::NEUTRAL));
-
-	// Notify player
-	Message("Sua postura de combate foi resetada para Neutra (fora de perigo).", Color(SYSTEM_COLOR::INFO))
-		.SendSys(mobileWrapper.GetObjRef());
 endfunction
 
 function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
