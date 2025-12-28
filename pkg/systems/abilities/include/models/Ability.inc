@@ -97,6 +97,12 @@ endclass
 
 enum class ABILITY_ID
 	// Deixado com o INT para facilitar adições futuras e a leitura do código
+	
+	/*
+	 * Formato: 0000
+	 * x000 - x -> Caminho: 0(white): Armas, 1: Ladinos, 2: Sábios
+	 * 0x00 - x -> Classe dentro do caminho
+	 */
 
 	///////////////////////
 	// Caminho das Armas //
