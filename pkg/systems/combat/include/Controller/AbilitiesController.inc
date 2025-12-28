@@ -812,20 +812,3 @@ function TryToExecuteHab_ArrowRecovery(byRef attackInfo)
 
 	return false;
 endfunction
-
-function TryToExecuteHab_DivineAuthority(byRef attackInfo)
-	// TODO: VEI... QUE PORRA DE HAB É ESSA?!?! HUAHUUHahuHUaUHahuA
-	
-	// var HAB_NAME := "Divine Authority - Mountain's Strength";
-	
-	// if (IsPhysicalDamage(attackInfo.type))
-	// 	if (GetCooldown(defender, "mountains_strength") > 0)
-	// 		attackInfo.damage := 1; // Reduce physical damage to 1
-	// 		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_STATUS::SUCCESS}!");
-	// 		DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: Dano reduzido para 1");
-	// 		return 1;
-	// 	endif
-	// endif
-
-	// return 0;
-endfunction
