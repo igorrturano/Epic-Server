@@ -70,12 +70,10 @@ program habilidade(who)
 
 		KAI:
 			var targ := getTarg(who);
-			PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);
 			PlaySoundEffect(targ, 0x51D);
 
-			SetCooldown(targ, "exposed", theology_bonus);
+			TS_StartTimer(targ, "exposed", theology_bonus, 0, who);
 
-			PrintTextAbove(targ, "*exposto*");
 			SendSysMessageEx(who, "Seu alvo está exposto!", SSM_INFO);
 			SendSysMessageEx(targ, "Você foi marcado! Sua defesa está comprometida!", SSM_FAIL);
 	endcase

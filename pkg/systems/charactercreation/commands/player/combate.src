@@ -139,7 +139,14 @@ function SetStance(who, newStance)
 		return;
 	endif
 
+	// Remove old stance modifiers
+	RemoveStanceModifiers(who.GetObjRef(), oldStance);
+
+	// Set new stance
 	who.SetCombatTraits(who.GetCombatTraits().SetStance(newStance));
+
+	// Apply new stance modifiers
+	ApplyStanceModifiers(who.GetObjRef(), newStance);
 
 	// Set cooldown
 	SetCooldown(who.GetObjRef(), "combat_stance_change", STANCE_COOLDOWN);
@@ -150,6 +157,65 @@ function SetStance(who, newStance)
 
 	Message("Você mudou sua postura de combate para: " + stanceName, Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	Message(stanceEmote).SendEmote(who.GetObjRef());
+endfunction
+
+function ApplyStanceModifiers(mobile, stance)
+	var hitchance_bonus := 0;
+	var evasion_penalty := 0; // Positive value means easier to hit
+
+	case (stance)
+		STANCE_TYPE::AGGRESSIVE:
+			hitchance_bonus := 5;
+			evasion_penalty := 5;
+		STANCE_TYPE::VERY_AGGRESSIVE:
+			hitchance_bonus := 10;
+			evasion_penalty := 10;
+		STANCE_TYPE::DEFENSIVE:
+			hitchance_bonus := -5;
+			evasion_penalty := -5;
+		STANCE_TYPE::VERY_DEFENSIVE:
+			hitchance_bonus := -10;
+			evasion_penalty := -10;
+		STANCE_TYPE::NEUTRAL:
+			// No modifiers
+			return;
+	endcase
+
+	// Apply modifiers
+	mobile.hitchance_mod := mobile.hitchance_mod + hitchance_bonus;
+	mobile.evasionchance_mod := mobile.evasionchance_mod - evasion_penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[STANCE] Aplicado: hitchance {hitchance_bonus:+}, evasion {-evasion_penalty:+}"));
+	endif
+
+	// Store for cleanup
+	SetObjProperty(mobile, "#stance_hitchance_mod", hitchance_bonus);
+	SetObjProperty(mobile, "#stance_evasion_mod", evasion_penalty);
+endfunction
+
+function RemoveStanceModifiers(mobile, stance)
+	// Retrieve stored modifiers
+	var hitchance_bonus := CInt(GetObjProperty(mobile, "#stance_hitchance_mod"));
+	var evasion_penalty := CInt(GetObjProperty(mobile, "#stance_evasion_mod"));
+
+	if (!hitchance_bonus && !evasion_penalty)
+		return; // No modifiers to remove
+	endif
+
+	// Reverse the modifiers
+	mobile.hitchance_mod := mobile.hitchance_mod - hitchance_bonus;
+	mobile.evasionchance_mod := mobile.evasionchance_mod + evasion_penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[STANCE] Removido: hitchance {hitchance_bonus}, evasion {evasion_penalty}"));
+	endif
+
+	// Clean up properties
+	EraseObjProperty(mobile, "#stance_hitchance_mod");
+	EraseObjProperty(mobile, "#stance_evasion_mod");
 endfunction
 
 function GetStanceName(stance)

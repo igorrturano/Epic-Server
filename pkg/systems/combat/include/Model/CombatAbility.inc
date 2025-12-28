@@ -74,7 +74,6 @@ enum class COMBAT_ABILITY
 	OPORTUNIDADE_CRITICA := "Oportunidade Critica",
 	POSTURA_DEFENSIVA := "Postura Defensiva",
 	POSTURA_OFENSIVA := "Postura Ofensiva",
-	PRESERVAR_ORGAOS := "Preservar Orgaos",
 	REBUKE := "Rebuke",
 	RECUPERACAO_SALVADORA := "Recuperação Salvadora",
 	TIRO_PODEROSO := "Tiro Poderoso",
@@ -96,6 +95,7 @@ enum class COMBAT_ABILITY
 	CROSS_CUT := "Contragolpe Cruzado",
 	RAGE_CUT := "Golpes Furiosos",
 	DEATH_SENTENCE := "Sentença de Morte",
+	OLEO_DO_CACADOR := "Oleo do Cacador",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
