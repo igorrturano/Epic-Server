@@ -470,7 +470,7 @@ function ConsumeAmmo(byRef attackInfo)
 			powderNeeded := 2;
 		endif
 
-		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST, ITEM_TYPE::CONTAINER).GetObjRef();
+		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
 		if (powder.amount < powderNeeded)
 			Message("Você não tem pólvora suficiente na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
