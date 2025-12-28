@@ -750,8 +750,6 @@ function SendAllGMHabData(who)
             cmd_prefix := item.command_prefix;
         endif
         
-        print("[PACKET DEBUG] Sending magia: '" + item.name + "', prefix: '" + cmd_prefix + "'");
-        
         var prefix_len := len(cmd_prefix);
         packet.SetInt8(offset, CInt(prefix_len / 256)); offset += 1;
         packet.SetInt8(offset, prefix_len % 256); offset += 1;
