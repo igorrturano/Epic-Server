@@ -147,6 +147,11 @@ function StoreTransformation(who, targ)
 	var targ_strength := AP_GetStat(targ, "Strength");
 	var targ_dexterity := AP_GetStat(targ, "Dexterity");
 	var targ_intelligence := AP_GetStat(targ, "Intelligence");
+	
+	// Get creature category and taxonomy from npcdesc.cfg
+	var elem := NPC_GetNPCConfig(targ.npctemplate);
+	var targ_category := GetConfigString(elem, "Category");
+	var targ_taxonomy := elem.Taxonomy;
 	// ADJUST HERE REMOVE ALWAYS TRANSFORMATION
 
 	// Print stats to verify they exist
@@ -163,6 +168,8 @@ function StoreTransformation(who, targ)
 	transformation.+strength := targ_strength;
 	transformation.+dexterity := targ_dexterity;
 	transformation.+intelligence := targ_intelligence;
+	transformation.+category := targ_category;
+	transformation.+taxonomy := targ_taxonomy;
 
 	// Check if the player already has a list of wildshape_forms
 	var transformation_list := GetObjProperty(who, "wildshape_forms");
@@ -173,25 +180,27 @@ function StoreTransformation(who, targ)
 	endif
 
 	// Check if a transformation with the same name already exists in the list
-	foreach old_transformation in transformation_list
-		if (old_transformation.name == targ.name)
+	var found_index := 0;
+	for i := 1 to transformation_list.size()
+		if (transformation_list[i].name == targ.name)
 			SendSysMessageEx(who, "Voce ja conhece a forma de " + targ.name + ". Atualizando com a nova forma estudada.",
 							  SSM_INFO);
-			transformation_list.remove(old_transformation);
+			found_index := i;
 			break;
 		endif
-	endforeach
+	endfor
+	
+	if (found_index > 0)
+		transformation_list.erase(found_index);
+	endif
 
 	// Remove the oldest entry if the list exceeds the max transformations allowed
 	if (transformation_list.size() >= max_transformations)
-		var old_transformation := transformation_list[0];
+		var old_transformation := transformation_list[1];
 		SendSysMessageEx(who, "Ao aprender a nova forma " + targ.name + ", voce se esquece da forma "
 				   + old_transformation.name + ".", SSM_FAIL);
-		transformation_list.remove(0); // Remove the first (oldest) transformation
+		transformation_list.erase(1); // Remove the first (oldest) transformation
 	endif
-
-	// Clear the entire transformation list for
-	transformation_list.clear();
 
 	// Add the new transformation to the end of the list
 	transformation_list.append(transformation);

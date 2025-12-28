@@ -74,10 +74,21 @@ function PerformTransformation(who, form)
 	metamorfose.+newgraphic := form.graphic;
 	SetObjProperty(who, "metamorfose", metamorfose);
 
+	// Pre-transformation: casting animation and nature ambience
+	PlaySoundEffect(who, 0x0015); // Wind sound
 	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	PrintTextAbove(who, "*transformando-se*");
-	// Freeze player during transformation
+	
+	// Freeze and hide player during transformation
 	who.frozen := 1;
+	sleepms(500);
+	
+	// Enraizar effect - roots emerge from ground
+	PlayObjectCenteredEffect(who, 0x6D01, 10, 30); // FX_ENRAIZAR
+	who.hidden := 1;
+	sleepms(1200);
+	
+	// Transform
 	who.graphic := form.graphic;
 	who.color := form.color;
 
@@ -93,9 +104,11 @@ function PerformTransformation(who, form)
 		who.squelch(-1);
 	endif
 
-	// Unfreeze player after transformation
+	// Reveal in animal form with green nature sparkles
+	who.hidden := 0;
+	PlayObjectCenteredEffect(who, 0xCE72, 10, 20); // FX_GREEN_SPARKLES
+	sleepms(500);
 	who.frozen := 0;
-	PlayObjectCenteredEffect(who, 0x549B, 5, 50);
 endfunction
 
 function HandleWildShapeUnequip(who)
@@ -137,45 +150,55 @@ function UnequipWeaponsWild(who)
 endfunction
 
 function ApplyAttributeModifiers(who, form, duration)
-	var skill_a_calc := CINT(0.0879 * form.strength + 0.3544 * form.dexterity + 0.3983 * 40);
-	var skill_d_calc := CINT(0.027 * form.strength + 0.376 * form.dexterity + 0.036 * form.intelligence);
-	var resistmod_calc := CINT(-0.0100 * form.strength + 0.0570 * form.intelligence + 0.1942 * form.dexterity);
-	var hitsmod_calc := CINT(form.strength / 6);
-	var manamod_calc := CINT(form.dexterity / 6);
-	var stammod_calc := CINT(form.intelligence / 6);
-	var dicedmg_calc := CalculateDiceDamage(form.strength);
+	var skill_a_calc := CINT(0.1318 * form.strength + 0.5316 * form.dexterity + 0.5974 * 40); 
+	var resistmod_calc := CINT(-0.0015 * form.strength + 0.0375 * form.intelligence + 0.1125 * form.dexterity); 
+	var hitsmod_calc := CINT(form.strength / 3);
+	var manamod_calc := CINT(form.dexterity / 5);
+	var stammod_calc := CINT(form.intelligence / 5);
+	var dicedmg_calc := CalculateDiceDamage(form.strength); 
+
 	// Print for debugging
 	// SendSysMessageEx( who, "Skill Attack: " + skill_a_calc, SSM_INFO );
-	// SendSysMessageEx( who, "Skill Defense: " + skill_d_calc, SSM_INFO );
 	// SendSysMessageEx( who, "Histmod;: " + hitsmod_calc, SSM_INFO );
 	// SendSysMessageEx( who, "ResistMod: " + resistmod_calc, SSM_INFO );
 	// SendSysMessageEx( who, "Form Strength: " + form.strength, SSM_INFO );
 	// SendSysMessageEx( who, "Form Dexterity: " + form.dexterity, SSM_INFO );
 	// SendSysMessageEx( who, "Form Intelligence: " + form.intelligence, SSM_INFO );
 
+	var bonusMagery := 0;
+	bonusMagery:= 1 + (AP_GetSkill(who, MAGERY) / 500); 
 	if (TemHabilidade(who, "Coração da Matilha"))
-		skill_a_calc := CINT(skill_a_calc * 1.2);
-		skill_d_calc := CINT(skill_d_calc * 1.2);
-		hitsmod_calc := CINT(hitsmod_calc * 1.2);
-		resistmod_calc := CINT(resistmod_calc * 1.2);
+		skill_a_calc := CINT(skill_a_calc * bonusMagery);
+		hitsmod_calc := CINT(hitsmod_calc * bonusMagery); 
+		resistmod_calc := CINT(resistmod_calc * bonusMagery); 
 	endif
 
 	var bonusMagicLore := 0;
 	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 10);
 	if (TemHabilidade(who, "Instinto de Sobrevivência"))
-		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
-		skill_d_calc := CINT(skill_d_calc + bonusMagicLore);
-		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
-		resistmod_calc := CINT(resistmod_calc + bonusMagicLore);
+		skill_a_calc := CINT(skill_a_calc + bonusMagicLore); 
+		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore); 
+		resistmod_calc := CINT(resistmod_calc + bonusMagicLore); 
 	endif
 
 	/////////// START SPECIAL BEHAVIOURS (TODO: modularize it into a separate function)
 
-	// creature with high vitality but slow motion
-	if (form.strength / form.dexterity >= 10)
+	// creature with high vitality but slow motion 
+	if (form.category && Lower(form.category) == "giantanimal")
 		hitsmod_calc := CINT(hitsmod_calc + form.strength);
 		SendSysMessageEx(who, "Você se sente lento!", SSM_INFO);
 		TS_StartTimer(who, "lentidao", CINT(duration));
+	endif
+
+	// Apply taxonomy-based hitscripts to character body
+	var hitscript := GetTaxonomyHitScript(form.taxonomy);
+	if (hitscript)
+		SetObjProperty(who, "HitScripts", array{hitscript});
+		SendSysMessageEx(who, "[HITSCRIPT] Taxonomia: " + form.taxonomy + " -> " + hitscript, SSM_INFO);
+	elseif (form.taxonomy)
+		SendSysMessageEx(who, "[HITSCRIPT] Nenhum efeito para taxonomia: " + form.taxonomy, SSM_INFO);
+	else
+		SendSysMessageEx(who, "[HITSCRIPT] Criatura sem taxonomia definida", SSM_FAIL);
 	endif
 
 	// small creatures with low stats but high agility
@@ -189,13 +212,13 @@ function ApplyAttributeModifiers(who, form, duration)
 	// high int creatures
 	if (form.intelligence >= 65)
 		SendSysMessageEx(who, "Você sente sua mente expandindo!", SSM_INFO);
-		manamod_calc := CINT(form.intelligence / 5);
+		manamod_calc := CINT(form.intelligence / 3);
 	endif
 
 	// high dex creatures
 	if (form.dexterity >= 100)
 		SendSysMessageEx(who, "Você se sente mais sagaz!", SSM_INFO);
-		stammod_calc := CINT(form.dexterity / 10);
+		stammod_calc := CINT(form.dexterity / 3);
 	endif
 
 	// fullmoon strength (copied from polymorph)
@@ -203,9 +226,9 @@ function ApplyAttributeModifiers(who, form, duration)
 	if (moon_fase == "Idus")
 		SetObjProperty(who, "polymorphbonus_moon", bonusMagicLore);
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
-		skill_d_calc := CINT(skill_d_calc + bonusMagicLore);
 		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
 	endif
+
 	// nomoon, nowildshape
 	if (moon_fase == "Kalendae")
 		SendSysMessageEx(who, "Você não consegue manter sua transformação em lua nova!", SSM_INFO);
@@ -217,7 +240,6 @@ function ApplyAttributeModifiers(who, form, duration)
 	if (Lower(form.name) == "cavalo manso" || Lower(form.name) == "cavalo selvagem")
 		SendSysMessageEx(who, "Você se transforma em um cavalo e sente-se mais rápido!", SSM_INFO);
 		skill_a_calc := CINT(skill_a_calc - bonusMagicLore);
-		skill_d_calc := CINT(skill_d_calc - bonusMagicLore);
 		hitsmod_calc := CINT(hitsmod_calc - bonusMagicLore);
 		reducedDuration := CINT(duration / 2);
 		TS_StartTimer(who, "metamorfosedruida", reducedDuration);
@@ -246,7 +268,6 @@ function ApplyAttributeModifiers(who, form, duration)
 	endif
 
 	SetObjProperty(who, "skill_a", skill_a_calc);
-	SetObjProperty(who, "skill_d", skill_d_calc);
 	SetObjProperty(who, "dicedmg", dicedmg_calc);
 	SetObjProperty(who, "polymorph_hitsmod", hitsmod_calc);
 	SetObjProperty(who, "polymorph_manamod", manamod_calc);
@@ -275,7 +296,7 @@ function applyResistMod(who, resistmod_calc)
 endfunction
 
 function ApplyAttributeBoosts(who, form, duration)
-	var strength_boost := CINT(form.strength / 5);
+	var strength_boost := CINT(form.strength / 4);
 	var agility_boost := CINT(form.dexterity / 4);
 	var intelligence_boost := CINT(form.intelligence / 4);
 
@@ -289,24 +310,24 @@ function ApplyAttributeBoosts(who, form, duration)
 endfunction
 
 function CalculateDiceDamage(strength)
-	var dicedmg_calc := 0;
 	var strengthCheck := CINT(strength);
+	var primary_dice := "1d2";
 
 	if (strengthCheck < 10)
-		dicedmg_calc := 0; // very low strength
+		primary_dice := "1d2"; // very low strength
 	elseif (strengthCheck >= 10 && strength <= 50)
-		dicedmg_calc := "1d4"; // Weak
+		primary_dice := "2d2"; // Weak
 	elseif (strengthCheck > 50 && strength <= 100)
-		dicedmg_calc := "1d6"; // Moderate
+		primary_dice := "3d2"; // Moderate
 	elseif (strengthCheck > 100 && strength <= 150)
-		dicedmg_calc := "1d8"; // Strong
+		primary_dice := "4d2"; // Strong
 	elseif (strengthCheck > 150 && strength <= 200)
-		dicedmg_calc := "1d10"; // Very strong
+		primary_dice := "5d2"; // Very strong
 	elseif (strengthCheck > 200)
-		dicedmg_calc := "1d12"; // Extremely strong
+		primary_dice := "6d2"; // Extremely strong
 	endif
 
-	return dicedmg_calc;
+	return array{primary_dice, primary_dice, primary_dice};
 endfunction
 
 function CalculateTransformationDuration(who)
@@ -408,4 +429,18 @@ function CanTransform(who, form)
 	endif
 
 	return 1;
+endfunction
+
+function GetTaxonomyHitScript(taxonomy)
+	case (Lower(taxonomy))
+		"canidae":   return ":combat:weaponHitScripts/bleedingstrike"; // wolves bleed
+		"felidae":   return ":combat:weaponHitScripts/bleedingstrike"; // cats claw bleed
+		"ursidae":   return ":combat:weaponHitScripts/pushback";       // bears powerful swipes
+		"serpentes": return ":combat:weaponHitScripts/spitacid";       // snakes venomous spit
+		"arachnida": return ":combat:weaponHitScripts/ctffrozen";      // spiders web paralysis
+		"suidae":    return ":combat:weaponHitScripts/bleedingstrike"; // boars gore
+		"bovidae":   return ":combat:weaponHitScripts/ConcussionHit";  // bulls stunning impact
+		"reptilia":  return ":combat:weaponHitScripts/draintouch";     // alligators crushing bite
+		default:     return 0;
+	endcase
 endfunction

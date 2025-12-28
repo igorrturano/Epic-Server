@@ -229,8 +229,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 */
 	function SetMainDamage(this, slash, piercing, blunt)
 		if (this._objRef is @Exception) return this._objRef; endif
-		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
-			return error{errortext := "Parameters must be a DamageDice class!"};
+		if (!(slash is @Dice) || !(piercing is @Dice) || !(blunt is @Dice))
+			return error{errortext := "Parameters must be a Dice class!"};
 		endif
 		this._mainDamage.SetSlashDamage(slash);
 		this._mainDamage.SetPiercingDamage(piercing);

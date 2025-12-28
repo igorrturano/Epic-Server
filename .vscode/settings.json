@@ -1,0 +1,15 @@
+{
+  "files.associations": {
+    "*.inc": "plaintext",
+    "*.src": "plaintext",
+    "*.cfg": "plaintext"
+  },
+  "editor.formatOnSave": false,
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": false,
+  "[plaintext]": {
+    "editor.formatOnSave": false,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false
+  }
+}
