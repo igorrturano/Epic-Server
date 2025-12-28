@@ -29,7 +29,7 @@ program vacuodemana(params)
 		return 1;
 	endif
 
-	SetObjProperty(attacker, "#attackbonus", 100);
+	SetObjProperty(attacker, "#GuaranteedHit", 1);
 
 	var dano_mlore := CInt(AP_GetSkill(attacker, THEOLOGY));
 	if (attacker.weapon.objtype != 0x166E)

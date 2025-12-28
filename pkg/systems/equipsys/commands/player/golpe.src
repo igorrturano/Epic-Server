@@ -1,10 +1,10 @@
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
-// include ":message:Model/Message";
 include ":gumpDesigner:Gump/Gump";
 include ":gumpDesigner:Control/Container/ContainerGridLayout";
 include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
+include ":gumpDesigner:Control/Tooltip";
 
 program cmd_golpe(who)
 	var newPosture;
@@ -22,6 +22,9 @@ function ChoosePosture(who)
 	var buttonSlash := Button("SlashDamage", 12, 23, 1004, 1004);
 	var buttonPiercing := Button("PiercingDamage", 12, 23, 1008, 1008);
 	var buttonBlunt := Button("BluntDamage", 12, 23, 1009, 1009);
+	var tooltipSlash := Tooltip("TooltipSlash", "Golpe cortante.");
+	var tooltipPiercing := Tooltip("TooltipPiercing", "Golpe perfurante.");
+	var tooltipBlunt := Tooltip("TooltipBlunt", "Golpe contundente.");
 
 	while (true)
 		var button1 := buttonSlash;
@@ -39,6 +42,9 @@ function ChoosePosture(who)
 			button3 := selectedOption.SetImage(buttonBlunt.GetPressedImage());
 		endif
 
+		button1.SetTooltip(tooltipSlash);
+		button2.SetTooltip(tooltipPiercing);
+		button3.SetTooltip(tooltipBlunt);
 		container.AddControl(button1, 1, 1);
 		container.AddControl(button2, 1, 2);
 		container.AddControl(button3, 1, 3);
