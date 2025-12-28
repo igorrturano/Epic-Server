@@ -730,40 +730,6 @@ function TryToExecuteHab_FerocidadeEnsanguentada(byRef attackInfo)
 	return false;
 endfunction
 
-function TryToExecuteHab_Evasao(byRef attackInfo)
-	// TODO: Refatorar esse código após combate funcionando, vai precisar de um carinho PESADO aqui	
-	
-	// if (Cint(GetObjProperty(defender, "evasao")))
-	// 	PrintTextAbove(defender, "*esquiva-se*");
-	// 	EraseObjProperty(defender, "evasao");
-	// 	if (TemHabilidade(defender, "Esquiva Oportunista"))
-	// 		if (GetObjProperty(defender, "#atacandooportunidade") == error)
-	// 			SetObjProperty(defender, "#atacandooportunidade", 1);
-	// 			PrintTextAbove(defender, "*ataque de oportunidade*");
-				
-	// 			defender.attack_once(attacker);
-	// 			EraseObjProperty(defender, "#atacandooportunidade");
-	// 		endif
-	// 	endif
-
-	// 	return 1;
-	// elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((attackInfo.dice-attackInfo.hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
-	// 	PrintTextAbove(defender, "*esquiva com jogo de pés*");
-	// 	if (TemHabilidade(defender, "Esquiva Oportunista"))
-	// 		if (GetObjProperty(defender, "#atacandooportunidade") == error)
-	// 			SetObjProperty(defender, "#atacandooportunidade", 1);
-	// 			PrintTextAbove(defender, "*ataque de oportunidade*");
-	// 			// Mesma coisa de lá de cima
-	// 			defender.attack_once(attacker);
-	// 			EraseObjProperty(defender, "#atacandooportunidade");
-	// 			return 1;
-	// 		endif
-	// 	endif
-	// endif
-
-	return 0;
-endfunction
-
 function TryToExecuteHab_Rebuke(byRef attackInfo)
 	if (attackInfo.GetDefender().GetObjRef().GetProp("#campeaodivino"))
 		Run_Script_To_Completion(":charactercreation:habilidades/paladin/golpedivino", array{attackInfo.GetDefender().GetObjRef(), attackInfo.GetAttacker().GetObjRef()});
