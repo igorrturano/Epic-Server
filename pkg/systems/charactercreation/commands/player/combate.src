@@ -7,6 +7,7 @@ include ":gumpDesigner:Control/Text";
 include ":gumpDesigner:Control/Tooltip";
 include ":timedScripts:timedScripts";
 include ":combat:Model/CombatTraits";
+include ":combat:Controller/StanceController";
 
 const STANCE_COOLDOWN := 30; // seconds
 
@@ -17,6 +18,13 @@ program cmd_combate(who)
 	var weapon := who.GetEquipBySlot(WEAPON);
 	if (weapon.GetAttribute() == RANGED)
 		Message("Você não pode ajustar sua postura de combate com arma de longo alcance!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Check if in war mode
+	if (!who.IsWarMode())
+		Message("Você só pode mudar sua postura de combate no modo de guerra!", Color(SYSTEM_COLOR::FAIL))
 			.SendSys(who.GetObjRef());
 		return;
 	endif
@@ -140,16 +148,21 @@ function SetStance(who, newStance)
 	endif
 
 	// Remove old stance modifiers
-	RemoveStanceModifiers(who.GetObjRef(), oldStance);
+	RemoveStanceModifiers(who);
 
 	// Set new stance
 	who.SetCombatTraits(who.GetCombatTraits().SetStance(newStance));
 
 	// Apply new stance modifiers
-	ApplyStanceModifiers(who.GetObjRef(), newStance);
+	ApplyStanceModifiers(who, newStance);
 
 	// Set cooldown
 	SetCooldown(who.GetObjRef(), "combat_stance_change", STANCE_COOLDOWN);
+
+	// Start auto-reset monitor if not neutral
+	if (newStance != STANCE_TYPE::NEUTRAL)
+		StartStanceMonitor(who);
+	endif
 
 	// Send feedback message
 	var stanceName := GetStanceName(newStance);
@@ -157,97 +170,4 @@ function SetStance(who, newStance)
 
 	Message("Você mudou sua postura de combate para: " + stanceName, Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	Message(stanceEmote).SendEmote(who.GetObjRef());
-endfunction
-
-function ApplyStanceModifiers(mobile, stance)
-	var hitchance_bonus := 0;
-	var evasion_penalty := 0; // Positive value means easier to hit
-
-	case (stance)
-		STANCE_TYPE::AGGRESSIVE:
-			hitchance_bonus := 5;
-			evasion_penalty := 5;
-		STANCE_TYPE::VERY_AGGRESSIVE:
-			hitchance_bonus := 10;
-			evasion_penalty := 10;
-		STANCE_TYPE::DEFENSIVE:
-			hitchance_bonus := -5;
-			evasion_penalty := -5;
-		STANCE_TYPE::VERY_DEFENSIVE:
-			hitchance_bonus := -10;
-			evasion_penalty := -10;
-		STANCE_TYPE::NEUTRAL:
-			// No modifiers
-			return;
-	endcase
-
-	// Apply modifiers
-	mobile.hitchance_mod := mobile.hitchance_mod + hitchance_bonus;
-	mobile.evasionchance_mod := mobile.evasionchance_mod - evasion_penalty;
-
-	// Debug message
-	if (!mobile.npctemplate)
-		DebugMsg(mobile, DEBUG_HIT, Message($"[STANCE] Aplicado: hitchance {hitchance_bonus:+}, evasion {-evasion_penalty:+}"));
-	endif
-
-	// Store for cleanup
-	SetObjProperty(mobile, "#stance_hitchance_mod", hitchance_bonus);
-	SetObjProperty(mobile, "#stance_evasion_mod", evasion_penalty);
-endfunction
-
-function RemoveStanceModifiers(mobile, stance)
-	// Retrieve stored modifiers
-	var hitchance_bonus := CInt(GetObjProperty(mobile, "#stance_hitchance_mod"));
-	var evasion_penalty := CInt(GetObjProperty(mobile, "#stance_evasion_mod"));
-
-	if (!hitchance_bonus && !evasion_penalty)
-		return; // No modifiers to remove
-	endif
-
-	// Reverse the modifiers
-	mobile.hitchance_mod := mobile.hitchance_mod - hitchance_bonus;
-	mobile.evasionchance_mod := mobile.evasionchance_mod + evasion_penalty;
-
-	// Debug message
-	if (!mobile.npctemplate)
-		DebugMsg(mobile, DEBUG_HIT, Message($"[STANCE] Removido: hitchance {hitchance_bonus}, evasion {evasion_penalty}"));
-	endif
-
-	// Clean up properties
-	EraseObjProperty(mobile, "#stance_hitchance_mod");
-	EraseObjProperty(mobile, "#stance_evasion_mod");
-endfunction
-
-function GetStanceName(stance)
-	case (stance)
-		STANCE_TYPE::NEUTRAL:
-			return "Neutra";
-		STANCE_TYPE::AGGRESSIVE:
-			return "Agressiva";
-		STANCE_TYPE::VERY_AGGRESSIVE:
-			return "Muito Agressiva";
-		STANCE_TYPE::DEFENSIVE:
-			return "Defensiva";
-		STANCE_TYPE::VERY_DEFENSIVE:
-			return "Muito Defensiva";
-		default:
-			return "Neutra";
-	endcase
-endfunction
-
-function GetStanceEmote(stance)
-	case (stance)
-		STANCE_TYPE::NEUTRAL:
-			return "assume uma postura equilibrada";
-		STANCE_TYPE::AGGRESSIVE:
-			return "assume uma postura agressiva";
-		STANCE_TYPE::VERY_AGGRESSIVE:
-			return "assume uma postura extremamente agressiva";
-		STANCE_TYPE::DEFENSIVE:
-			return "assume uma postura defensiva";
-		STANCE_TYPE::VERY_DEFENSIVE:
-			return "assume uma postura extremamente defensiva";
-		default:
-			return "assume uma postura equilibrada";
-	endcase
 endfunction
