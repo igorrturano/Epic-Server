@@ -46,14 +46,6 @@ function CalculateHitChance(byRef attackInfo)
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackbonus");
 	endif
 
-	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "evasion_chance"))
-		hit_chance -= 10.0;
-	endif
-
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "blinded") > 0)
-		hit_chance -= 20.0;
-	endif
-
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "exposed") > 0)
 		hit_chance += 10.0;
 	endif

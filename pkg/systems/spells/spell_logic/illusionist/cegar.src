@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include "include/epicMageryUtils";
 include ":awareness:awareness";
 include ":charactercreation:resists";
+include ":timedscripts:timedScripts";
 
 program SpellScript(params)
 	var who := params[1];
@@ -24,19 +25,6 @@ program SpellScript(params)
 		duration := CInt(duration * 2);
 	endif
 
-	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, duration * 3, 2, 2740);
-	SetCooldown(targ, "blinded", duration);
-	PrintTextAbove(targ, "*cegueira*");
-
-	var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 16);
-	foreach mobile in mobiles
-		DeleteObject(targ, mobile);
-		sleepms(20);
-	endforeach
-
-	sleep(duration);
-	foreach mobile in mobiles
-		DrawObject(targ, mobile, mobile.graphic, mobile.color);
-		sleepms(20);
-	endforeach
+	// Start TimedScript - handles effect, visuals, and cleanup
+	TS_StartTimer(targ, "blinded", duration, 0, who);
 endprogram
