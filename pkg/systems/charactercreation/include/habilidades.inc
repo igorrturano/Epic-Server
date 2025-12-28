@@ -418,14 +418,6 @@ function comprarHabilidade(who, item, nv:=-1)
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);
 			recalcvitals(who);
-		elseif (escolhida == "Acuidade com Arma")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma preferida.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "armapreferida", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
 		elseif (escolhida == "Arma Predileta")
 			SendSysMessageEx(who, "Escolha qual vai ser sua arma predileta.", SSM_REQUEST);
 			var targ := Target(who);

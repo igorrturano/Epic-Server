@@ -25,7 +25,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
-		if (TypeOfInt(mobile) == OT_MOBILEREF)
+		if (TypeOfInt(mobile) == OT_MOBILEREF || TypeOfInt(mobile) == OT_OFFLINEMOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
 				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
