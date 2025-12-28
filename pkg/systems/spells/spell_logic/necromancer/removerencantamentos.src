@@ -57,8 +57,6 @@ program SpellScript(params)
 
 	endforeach
 
-	EraseObjProperty(targ, "tirocerteiro");
-	EraseObjProperty(targ, "evasao");
 	SendSysMessageEx(targ, "Seus encantamentos nao funcionam mais.", SSM_INFO);
 	Corromper(who, 26, targ);
 	return 1;
