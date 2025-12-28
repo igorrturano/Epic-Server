@@ -8,9 +8,11 @@ use polsys;
 
 include ":gumps:gumps";
 include ":fls_core:fls_characters";
-include ":datafile:datafile";
-include ":timedscripts:timedScripts";
-include "gmhab_execute";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include "getspellicon_func";
+include "findspellbook_temp";
+include "getmagiasdata_temp";  // ✅ Multi-class spell loading
 include "include/icon_manager";
 
 // Packet IDs
@@ -741,6 +743,19 @@ function SendAllGMHabData(who)
         // spell_id
         packet.SetInt8(offset, CInt(item.spell_id / 256)); offset += 1;
         packet.SetInt8(offset, item.spell_id % 256); offset += 1;
+        
+        // command_prefix (for Paladin spells = "p", default = "m")
+        var cmd_prefix := "m"; // Default to .m command
+        if (item.command_prefix)
+            cmd_prefix := item.command_prefix;
+        endif
+        
+        print("[PACKET DEBUG] Sending magia: '" + item.name + "', prefix: '" + cmd_prefix + "'");
+        
+        var prefix_len := len(cmd_prefix);
+        packet.SetInt8(offset, CInt(prefix_len / 256)); offset += 1;
+        packet.SetInt8(offset, prefix_len % 256); offset += 1;
+        packet.SetString(offset, cmd_prefix, 0); offset += prefix_len;
     endforeach
     
     // 4. Commands count
@@ -886,6 +901,12 @@ function CalculateMagiasSize(items)
         size := size + 2;
         // spell_id: 2 bytes
         size := size + 2;
+        // command_prefix: 2 bytes (length) + string length (default "m" = 1 byte)
+        var prefix_len := 1; // Default "m"
+        if (item.command_prefix)
+            prefix_len := len(item.command_prefix);
+        endif
+        size := size + 2 + prefix_len;
     endforeach
     return size;
 endfunction
@@ -1426,178 +1447,5 @@ function GetSkillsData(who)
 
 endfunction
 
-// Get magias (spells) data from player's grimório
-function GetMagiasData(who)
 
-    var magias := array{};
-    
-    // Find ALL player's spellbooks (grimórios) - pode ter múltiplos!
-    var books := FindAllSpellbooks(who);
-
-    
-    if (books.size() == 0)
-
-        return magias;  // Return empty array if no spellbooks
-    endif
-    
-    // Load spell config to get spell details
-    var spell_cfg := ReadConfigFile(":spells:config/spellcaster");
-    if (!spell_cfg)
-
-        return magias;
-    endif
-    
-    // Process ALL spellbooks
-    foreach book in books
-
-        
-        // Get spells from this grimório
-        var spells := GetObjProperty(book, "spells");
-
-        
-        if (!spells || TypeOf(spells) != "Array")
-
-            continue;  // Skip this book if no spells
-        endif
-        
-        // Convert spells to magia data format
-        foreach spell_struct in spells
-            var magia := struct;
-            
-            // Extract spell ID
-            var spell_id := 0;
-            if (spell_struct.id)
-                spell_id := CInt(spell_struct.id);
-            else
-                continue;  // Skip if no ID
-            endif
-            
-            // Load spell data from config
-            var spell_elem := FindConfigElem(spell_cfg, spell_id);
-            if (!spell_elem)
-
-                continue;
-            endif
-            
-            // Read spell data from config
-            magia.+spell_id := spell_id;
-            magia.+name := GetConfigString(spell_elem, "Name");
-            magia.+desc := GetConfigString(spell_elem, "Desc");
-            magia.+school := GetConfigString(spell_elem, "School");
-            magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
-            magia.+circle := CInt(GetConfigString(spell_elem, "Circle"));
-            
-            // Get icon from icons.cfg
-
-            var icon_data := GetSpellIcon(magia.name);
-
-            magia.+iconid := icon_data.iconid;
-            magia.+hue := icon_data.hue;
-            
-            magias.append(magia);
-
-        endforeach
-    endforeach
-    
-
-    return magias;
-endfunction
-
-// Find ALL spellbooks (grimórios) - modified to return array of all books
-function FindAllSpellbooks(player)
-
-    var books := array{};
-    
-    // Search in backpack
-    foreach item in EnumerateItemsInContainer(player.backpack)
-
-        var booktype := GetObjProperty(item, "Booktype");
-
-        if (booktype == "spellcaster")  // Only spellcaster books
-
-            books.append(item);
-        endif
-    endforeach
-    
-    // Search equipped (layer 1 = spellbook)
-
-    var book := GetEquipmentByLayer(player, 0x01);
-    if (book)
-
-        var booktype := GetObjProperty(book, "Booktype");
-
-        if (booktype == "spellcaster")
-
-            books.append(book);
-        endif
-    endif
-    
-
-    return books;
-endfunction
-
-// Helper function to find player's spellbook
-function FindSpellbook(player)
-
-    
-    // Search in backpack
-    foreach item in EnumerateItemsInContainer(player.backpack)
-
-        var booktype := GetObjProperty(item, "Booktype");
-
-        if (booktype)  // Has Booktype property = custom grimorio
-
-            return item;
-        endif
-    endforeach
-    
-    // Search equipped (layer 1 = spellbook)
-
-    var book := GetEquipmentByLayer(player, 0x01);
-    if (book)
-
-        var booktype := GetObjProperty(book, "Booktype");
-
-        if (booktype)
-
-            return book;
-        endif
-    endif
-    
-
-    return 0;
-endfunction
-
-
-
-
-
-
-
-// Helper function to get spell icon from icons.cfg
-function GetSpellIcon(spell_name)
-    var icon_cfg := ReadConfigFile(":gmhab:config/icons");
-    if (!icon_cfg)
-        return struct{ "iconid" := 0x5DCD, "hue" := 0 };
-    endif
-    
-    // Create safe config name (remove spaces and special chars)
-    var safe_name := "";
-    for i := 1 to len(spell_name)
-        var ch := spell_name[i];
-        if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9"))
-            safe_name := safe_name + ch;
-        endif
-    endfor
-    
-    var elem := FindConfigElem(icon_cfg, "spell " + safe_name);
-    if (!elem)
-        // Default spell icon if not found
-        return struct{ "iconid" := 0x5DCD, "hue" := 0 };
-    endif
-    
-    var iconid := CInt(GetConfigString(elem, "iconid"));
-    var hue := CInt(GetConfigString(elem, "hue"));
-    
-    return struct{ "iconid" := iconid, "hue" := hue };
-endfunction
+// ? Helper functions now loaded from includes
