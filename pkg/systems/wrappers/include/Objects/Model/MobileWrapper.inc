@@ -385,21 +385,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (equipSlot == WEAPON)
 			var weapon := WeaponWrapper(this._objRef.weapon);
 
-			if (this.IsNPC())
-				weapon.SetMainDamage(DamageDice(
+			if (GetObjProperty(this._objRef, "metamorfose") != error)
+				var dicedmgProp := GetObjProperty(this._objRef, "dicedmg");
+				if (dicedmgProp != error)
+					// Use dicedmg from metamorfose transformation
+					weapon.SetMainDamage(Dice(dicedmgProp[1]), Dice(dicedmgProp[2]), Dice(dicedmgProp[3]));
+				endif
+			elseif (this.IsNPC())
+				// Use template damage for normal NPCs
+				weapon.SetMainDamage(
 					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
 					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
 					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
-				));
+				);
 				weapon.SetDamageMod(Damage(
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
 				));
-
-
 			endif
+			// If neither (normal player with equipped weapon), weapon damage is already set from item
 
 			return weapon;
 		elseif (equipSlot == SHIELD)
