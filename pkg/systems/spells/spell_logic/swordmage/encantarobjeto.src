@@ -18,8 +18,8 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		Message("Isto não pode ser alvejado por essa magia.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	if (use_on.amount > 10 && IsAmmunition(use_on))
+		Message("Você não pode encantar pilhas de munição com mais de 10 unidades.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return;
 	endif
 
