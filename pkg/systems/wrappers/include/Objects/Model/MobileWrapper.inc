@@ -530,7 +530,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetMainDamageModifier(this, criteria...)
+	function GetDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
@@ -551,32 +551,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			value += CInt(this.GetSkill(TACTICS) / divisor);
 		endif
 
-		return value;
-	endfunction
-
-	/**
-	 * Calcula o dano mínimo secundário (mão secundária) baseado em critérios especificados.
-	 *
-	 * Esta função calcula um valor de dano mínimo para a mão secundária, considerando diferentes
-	 * atributos do mobile, como força, destreza e habilidade de táticas. O cálculo aplica uma
-	 * penalidade de 50% em relação ao dano da mão principal (divisor dobrado).
-	 *
-	 * @param this Referência ao objeto MobileWrapper atual
-	 * @param criteria Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
-	 *
-	 * @return Integer O valor calculado do dano mínimo secundário baseado nos critérios fornecidos
-	 *
-	 * @note Comportamento:
-	 *       - Se STRENGTH estiver nos critérios:
-	 *         - Se DEXTERITY também estiver presente, usa a média entre força e destreza
-	 *         - Caso contrário, usa apenas o valor de força
-	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
-	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
-	 */
-	function GetOffDamageModifier(this, criteria...)
-		var divisor := 2; // Mão secundário possui penalidade
-
-		return this.GetMainDamageModifier(criteria) / divisor;
+		return CInt(value);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
