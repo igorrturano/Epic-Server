@@ -624,7 +624,7 @@ endfunction
 function TryToExecuteHab_ConhecimentoSobreInimigo(byRef attackInfo)
 	// TODO: Verificar se isso ainda existe
 	// if (TemHabilidade(attacker, COMBAT_ABILITY::CONHECIMENTO_SOBRE_O_INIMIGO))
-	// 	SetObjProperty(defender, "#attackbonus", -20);
+	// 	SetObjProperty(defender, "#hit_mod", -20);
 	// 	return true;
 	// endif
 

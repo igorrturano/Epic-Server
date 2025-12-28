@@ -28,6 +28,11 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#GuaranteedHit"))
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#GuaranteedHit");
+		return 100;
+	endif
+
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
 		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetObjRef());
 		return 0;
@@ -39,11 +44,6 @@ function CalculateHitChance(byRef attackInfo)
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
 	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
-	hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"));
-
-	if (CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"))) // TODO: Isso aqui não é pra estar aqui. Colocar em alguma função do dano/combate.
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackbonus");
-	endif
 
 	// Auto-reset stance if not in combat (prevents exploitation)
 	_AutoResetStanceIfNeeded(attackInfo.GetAttacker());
@@ -443,5 +443,10 @@ function CalculatePropHitModifier(hit_chance, attackInfo)
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
+	endif
+
+	if (attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"))
+		hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"));
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#hit_mod");
 	endif
 endfunction
