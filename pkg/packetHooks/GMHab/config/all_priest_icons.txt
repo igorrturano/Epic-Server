@@ -1,0 +1,218 @@
+# PRIEST SPELLS - Todas as 30 magias
+# Adicionar ao final de icons.cfg
+
+# Circle 0
+spell LuzDivina
+{
+	name		Luz Divina
+	iconid		0x59db
+	hue		1153
+}
+
+spell Despertar
+{
+	name		Despertar
+	iconid		0x59db
+	hue		1153
+}
+
+spell Orientar
+{
+	name		Orientar
+	iconid		0x59db
+	hue		1153
+}
+
+spell ChamaSagrada
+{
+	name		Chama Sagrada
+	iconid		0x59db
+	hue		1153
+}
+
+spell BenzerAtadura
+{
+	name		Benzer Atadura
+	iconid		0x59db
+	hue		1153
+}
+
+spell OlhardaJustica
+{
+	name		Olhar da Justica
+	iconid		0x59db
+	hue		1153
+}
+
+# Circle 1
+spell CuraLeve
+{
+	name		Cura Leve
+	iconid		0x59db
+	hue		1153
+}
+
+spell Abencoar
+{
+	name		Abencoar
+	iconid		0x59db
+	hue		1153
+}
+
+spell DetectarMagia
+{
+	name		Detectar Magia
+	iconid		0x59db
+	hue		1153
+}
+
+spell DetectarImpurezas
+{
+	name		Detectar Impurezas
+	iconid		0x59db
+	hue		1153
+}
+
+spell EscudodeFe
+{
+	name		Escudo de Fe
+	iconid		0x59db
+	hue		1153
+}
+
+# Circle 2
+spell Santuario
+{
+	name		Santuario
+	iconid		0x59db
+	hue		1153
+}
+
+spell ImbuirProtecao
+{
+	name		Imbuir Protecao
+	iconid		0x59db
+	hue		1153
+}
+
+spell CirculodeProtecao
+{
+	name		Circulo de Protecao
+	iconid		0x59db
+	hue		1153
+}
+
+spell Descanso
+{
+	name		Descanso
+	iconid		0x59db
+	hue		1153
+}
+
+spell PreceCurativa
+{
+	name		Prece Curativa
+	iconid		0x59db
+	hue		1153
+}
+
+spell Sacrificio
+{
+	name		Sacrificio
+	iconid		0x59db
+	hue		1153
+}
+
+spell AuraMortis
+{
+	name		Aura Mortis
+	iconid		0x59db
+	hue		1153
+}
+
+# Circle 3
+spell RemoverMaldicao
+{
+	name		Remover Maldicao
+	iconid		0x59db
+	hue		1153
+}
+
+spell ProtecaoContraa Morte
+{
+	name		Protecao Contra a Morte
+	iconid		0x59db
+	hue		1153
+}
+
+spell DissiparMagia
+{
+	name		Dissipar Magia
+	iconid		0x59db
+	hue		1153
+}
+
+spell ImunidadeaVeneno
+{
+	name		Imunidade a Veneno
+	iconid		0x59db
+	hue		1153
+}
+
+# Circle 4
+spell CuraGrave
+{
+	name		Cura Grave
+	iconid		0x59db
+	hue		1153
+}
+
+spell RepelirMagias
+{
+	name		Repelir Magias
+	iconid		0x59db
+	hue		1153
+}
+
+spell JuizoFlamejante
+{
+	name		Juizo Flamejante
+	iconid		0x59db
+	hue		1153
+}
+
+spell Ressureicao
+{
+	name		Ressureicao
+	iconid		0x59db
+	hue		1153
+}
+
+# Circle 5
+spell DetectarCorrupcao
+{
+	name		Detectar Corrupcao
+	iconid		0x59db
+	hue		1153
+}
+
+spell DestruiroMal
+{
+	name		Destruir o Mal
+	iconid		0x59db
+	hue		1153
+}
+
+spell CuraemMassa
+{
+	name		Cura em Massa
+	iconid		0x59db
+	hue		1153
+}
+
+spell CampoAnti-Magia
+{
+	name		Campo Anti-Magia
+	iconid		0x59db
+	hue		1153
+}
