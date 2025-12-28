@@ -34,22 +34,6 @@ function CalculateHitChance(byRef attackInfo)
 		return 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("#attackfail"))
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackfail");
-		return 0;
-	endif
-
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#defensefail"))
-		attackInfo.GetDefender().GetObjRef().EraseProp("#defensefail");
-		return 100;
-	endif
-
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "ataquetotal"))
-		return 100;
-	endif
-	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "ataquetotal"))
-		return 100;
-	endif
 	// As condições que precisam de cálculo, começam aqui
 	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
@@ -61,8 +45,6 @@ function CalculateHitChance(byRef attackInfo)
 	if (CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"))) // TODO: Isso aqui não é pra estar aqui. Colocar em alguma função do dano/combate.
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#attackbonus");
 	endif
-
-	attackInfo.GetAttacker().GetObjRef().EraseProp("insistencia"); // Mesma coisa do ataque bonus, isso não é pra estar aqui
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "evasion_chance"))
 		hit_chance -= 10.0;
@@ -151,9 +133,6 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance -= 10.0;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "posturadecombate") > 0)
-		hit_chance += 10.0;
-	endif
 	var challenged_by := attackInfo.GetAttacker().GetObjRef().GetProp("#DuelChallenge");
 	if (challenged_by && !attackInfo.GetAttacker().IsNPC)
 		if (challenged_by.time < ReadGameClock())
@@ -187,26 +166,6 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (IsRaging(attackInfo.GetAttacker().GetObjRef()))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ILUDIR_O_FRACO))
-			hit_chance -= 10.0;
-		endif
-		
-		if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "Ataques Enlouquecidos") > 0)
-			return 100;
-		endif
-	endif
-
-	if (IsRaging(attackInfo.GetDefender().GetObjRef()))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::ESQUIVA_INSTINTIVA))
-			hit_chance -= 10.0;
-		endif
-
-		if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "Ataques Enlouquecidos") > 0)
-			return 100;
-		endif
-	endif
-
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "desafioheroico") > 0)
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 	endif
@@ -231,11 +190,6 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::LOBO_SOLITARIO))
-		if (ListHostiles(attackInfo.GetAttacker().GetObjRef(), 3).size() > 1)
-			hit_chance += 15.0;
-		endif
-	endif
 	var tiroCerteiro := CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("tirocerteiro"));
 	if (tiroCerteiro > 0)
 		tiroCerteiro--;
@@ -315,15 +269,6 @@ function CalculateHitChance(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC())
 		DarknessHitModifier(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), hit_chance);
 	endif
-	
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("#ataqueinesperado"))
-		if (attackInfo.GetDefender().GetObjRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
-			hit_chance += 50.0;
-			Message("*ataque inesperado*", Color(SYSTEM_COLOR::FAIL)).SendAbove(attackInfo.GetAttacker().GetObjRef());
-		endif
-
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#ataqueinesperado");
-	endif
 
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#bomcomeco"))
 		var attackers := attackInfo.GetDefender().GetObjRef().GetProp("#bomcomecoserials");
@@ -337,15 +282,6 @@ function CalculateHitChance(byRef attackInfo)
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
-	endif
-
-	if (attackInfo.GetDefender().GetObjRef().GetProp("#mobilidade"))
-		hit_chance -= 15.0;
-		AP_ConsumeVital(attackInfo.GetDefender().GetObjRef(), STAMINA, 3);
-	endif
-
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("#mobilidade"))
-		hit_chance -= 15.0;
 	endif
 
 	if (attackInfo.GetDefender().GetTemplate() == ":epicai:spiderling")
