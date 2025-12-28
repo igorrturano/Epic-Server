@@ -27,7 +27,7 @@ include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
 include ":xpbar_v2:xpbar";
-include ":achievements:CombatController";
+include ":achievements:include/controllers/CombatController";
 include ":epicAI:epicai";
 // include ":entropy:entropy";
 
