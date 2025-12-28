@@ -6,9 +6,32 @@ include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/Tooltip";
 
-program cmd_golpe(who)
+program cmd_golpe(who, text)
 	var newPosture;
 	who := MobileWrapper(who);
+	
+	// Se passou argumento (slash, piercing, blunt), muda direto
+	if (text && text != "")
+		var posture_arg := Lower(text);
+		
+		if (posture_arg == "slash")
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+			return;
+		elseif (posture_arg == "piercing")
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+			return;
+		elseif (posture_arg == "blunt")
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+			return;
+		endif
+	else
+		// Enviar pacote customizado para abrir PosturaGump no cliente
+		// Usando SendSysMessage com código especial que o cliente detecta
+		SendSysMessage(who.GetObjRef(), "[OPEN_POSTURA_GUMP]", 3, 0x0044);
+		return;
+	endif
+	
+	// Fallback: se nada funcionou, abre o gump normal
 	newPosture := ChoosePosture(who);
 endprogram
 
