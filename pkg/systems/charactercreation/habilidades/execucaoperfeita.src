@@ -16,7 +16,7 @@ program doubleattack(who)
 	endif
 
 	SendSysMessageEx(who, "Voce prepara um golpe perfeito.", SSM_INFO);
-	SetObjProperty(who, "#attackbonus", 100);
+	SetObjProperty(who, "#GuaranteedHit", 1);
 	SetObjProperty(who, "#CriticalChance", 100);
 
 	var chardata := GetObjProperty(who, "chardata");

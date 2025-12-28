@@ -37,7 +37,7 @@ program SpellScript(params)
 			SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
 			return;
 		endif
-		SetObjProperty(targ, "#attackbonus", -cint(AP_GetSkill(who, ARCANA)));
+		SetObjProperty(targ, "#hit_mod", -cint(AP_GetSkill(who, ARCANA)));
 		return;
 	endif
 

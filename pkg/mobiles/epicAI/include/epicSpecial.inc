@@ -324,8 +324,8 @@ function HiveMind(me)
     
     // Apply hive mind bonus
     if (ally > 0)
-        var bonus := ally * 2;
-        SetObjProperty(me, "#attackbonus", bonus);
+        var bonus := 2;
+        me.hitchance_mod := me.hitchance_mod + bonus;
         if (!GetCooldown(me, "hivemind_effect"))
             PrintTextAbove(me, "*sincroniza com a colmeia*");
             PlayObjectCenteredEffect(me, 0x376A, 7, 16);

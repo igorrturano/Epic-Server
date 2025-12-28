@@ -44,7 +44,7 @@ program SpellScript(params)
 		// Check if mobile is an ally (not hostile to caster)
 		if (mobile == who || !mobile.IsHostile(who))
 			// Set the attack bonus property on the target
-			SetObjProperty(mobile, "#attackbonus", bonus);
+			SetObjProperty(mobile, "#hit_mod", bonus);
 
 			// Set a timed script to remove the bonus after duration
 			TS_StartTimer(mobile, "blessbonus", duration);
