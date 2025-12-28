@@ -1,6 +1,6 @@
 use cfgfile;
 
-include "model/IOFile";
+include "IOFile";
 
 class CFGFile(IOFile)
 	var _elementName := "";

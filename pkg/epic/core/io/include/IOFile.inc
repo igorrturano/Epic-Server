@@ -1,11 +1,9 @@
-include ":io:Exceptions/_all";
+include "File";
 
-class IOFile()
+class IOFile(File)
 	var _packageName;
 	var _package;
-	var _filePath;
 	var _fullPath;
-	var _file;
 
 	function IOFile(this, packageName, filePath)
 		this._packageName := CStr(packageName);
@@ -22,16 +20,12 @@ class IOFile()
 		return this._package;
 	endfunction
 
-	function GetFilePath(this)
-		return this._filePath;
-	endfunction
-	
 	function GetFullPath(this)
 		return this._fullPath;
 	endfunction
 
 	function ToString(this)
-		return $"Package={this._package}, PackageName={this._packageName}, FilePath={this._filePath}, FullPath={this._fullPath}";
+		return $"Package={this._package}, PackageName={this._packageName}, {Super::ToString(this)}, FullPath={this._fullPath}";
 	endfunction
 
 	uninit function LoadFile(this, default createFile);

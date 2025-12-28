@@ -1,4 +1,4 @@
-include "model/IOFile";
+include "IOFile";
 
 include ":datafile:datafile";
 
