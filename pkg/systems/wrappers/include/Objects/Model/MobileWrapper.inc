@@ -620,6 +620,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	// ================= Abilities Management ================= //
 	function GetAbilities(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -628,9 +629,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.GetProp(MOBILE_PROPNAME::ABILITIES);
 	endfunction
 
-	function NewAbility(this, abilityID)
+	function AddAbility(this, ability, levelBought)
 		if (this._objRef is @Exception)
 			return this._objRef;
+		endif
+
+		if (!ability.GetScript())
+			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
 		var abilities := this.GetAbilities();
@@ -638,15 +643,19 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			abilities := dictionary{};
 		endif
 
-		abilities[abilityID] := 1;
+		abilities[ability.GetName()] := levelBought;
 		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
 
 		return this;
 	endfunction
 
-	function RemoveAbility(this, abilityID)
+	function RemoveAbility(this, ability)
 		if (this._objRef is @Exception)
 			return this._objRef;
+		endif
+
+		if (!ability.GetScript())
+			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
 		var abilities := this.GetAbilities();
@@ -654,7 +663,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidPropException("This mobile has no abilities!");
 		endif
 
-		abilities.remove(abilityID);
+		if (!this.HasAbility(ability))
+			return InvalidAbilityException("This mobile does not have the specified ability!");
+		endif
+
+		abilities.remove(ability.GetName());
 		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
 
 		return this;
@@ -665,7 +678,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		this._activeAbilities[ability.GetActivationMoment()][ability.GetId()] := true;
+		if (!ability.GetScript())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		this._activeAbilities[ability.GetActivationMoment()][ability.GetId()] := POLCore().systime;
 
 		return this;
 	endfunction
@@ -675,11 +692,24 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
+		if (!ability.GetScript())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
 		this._activeAbilities[ability.GetActivationMoment()].remove(ability.GetId());
 
 		return this;
 	endfunction
 
+	function HasAbility(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this.GetAbilities()[ability.GetName()] != error;
+	endfunction
+
+	// ================ Achievements Management ================= //
 	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
 	endfunction
@@ -778,14 +808,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endforeach
 
 		return this;
-	endfunction
-
-	function HasAbility(this, abilityName)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		return TemHabilidade(this._objRef, abilityName);
 	endfunction
 
 	function IsNPC(this)
@@ -1071,7 +1093,7 @@ enum class MOBILE_PROPNAME
 	COMBAT_TRAITS := "combattraits",
 	LANGUAGE := "langdata",
 	ENTROPY := "entropy",
-	ABILITIES := "abilities"
+	ABILITIES := "myhabs"
 endenum
 
 enum class ENTROPY_LIMITS
