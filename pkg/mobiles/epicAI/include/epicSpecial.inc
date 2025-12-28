@@ -82,20 +82,7 @@ function SporeSpecial(attacker, defender)
             3: // Blind
                 if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
                     PrintTextAbove(attacker, "*libera esporos cegantes*");
-                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
-                    SetCooldown(mobile, "blinded", 15);
-                    PrintTextAbove(mobile, "*cegueira*");
-                    
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DeleteObject(mobile, mob);
-                        sleepms(20);
-                    endforeach
-                    
-                    sleep(15);
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DrawObject(mobile, mob, mob.graphic, mob.color);
-                        sleepms(20);
-                    endforeach
+                    TS_StartTimer(mobile, "blinded", 15, 0, attacker);
                 endif
         endcase
 
