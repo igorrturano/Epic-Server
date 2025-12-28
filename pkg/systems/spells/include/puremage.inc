@@ -42,6 +42,4 @@ function dispel(targ);
 		
 	endforeach
 	
-	EraseObjProperty(targ, "tirocerteiro");
-	EraseObjProperty(targ, "evasao");
 endfunction 

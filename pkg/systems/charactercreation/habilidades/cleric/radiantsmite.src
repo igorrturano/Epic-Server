@@ -14,26 +14,10 @@ program habilidade(who)
 
 		HALLEUAD:
 			var targ := getTarg(who);
-			PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, theology_bonus * 3,
-									2, 2740);
 			PlaySoundEffect(targ, 0x1F8);
 			var blind_duration := theology_bonus;
-			SetCooldown(targ, "blinded", blind_duration);
+			TS_StartTimer(targ, "blinded", blind_duration, 0, who);
 			PrintTextAbove(targ, "*cegado pela luz divina*");
-
-			// Remove objetos da visão do alvo como no spell cegar
-			var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 16, targ.realm);
-			foreach mobile in mobiles
-				DeleteObject(targ, mobile);
-				sleepms(20);
-			endforeach
-
-			// Agenda o retorno da visão
-			sleep(blind_duration);
-			foreach mobile in mobiles
-				DrawObject(targ, mobile, mobile.graphic, mobile.color);
-				sleepms(20);
-			endforeach
 
 		VENERATIO:
 			var targ := getTarg(who);
@@ -86,12 +70,10 @@ program habilidade(who)
 
 		KAI:
 			var targ := getTarg(who);
-			PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);
 			PlaySoundEffect(targ, 0x51D);
 
-			SetCooldown(targ, "exposed", theology_bonus);
+			TS_StartTimer(targ, "exposed", theology_bonus, 0, who);
 
-			PrintTextAbove(targ, "*exposto*");
 			SendSysMessageEx(who, "Seu alvo está exposto!", SSM_INFO);
 			SendSysMessageEx(targ, "Você foi marcado! Sua defesa está comprometida!", SSM_FAIL);
 	endcase

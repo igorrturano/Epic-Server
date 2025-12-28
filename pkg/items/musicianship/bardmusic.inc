@@ -373,12 +373,10 @@ function preenchePartituraMagica(byref item, mag:=0) //mag é um parametro a ser
 	return 1;
 endfunction
 
-
-
 //funcao pra tocar as musicas simples de bardo
 function tocarBasico(byref who, byref item) //Habilita os efeitos magicos da musica e manda tocar o som da musica
 	var can_play := ((RandomInt(120) + 1) < AP_GetTrueStat(who, DEXTERITY));
-	if (!can_play && !TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
+	if (!can_play && !TemHabilidade(who, "Compositor Talentoso"))
 		return basicoSom(who,item,0);//Efeito de som errado
 	elseif(Cint(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock()) //verifica se pode voltar a tocar
 		SendSysMessage(who, "Voce deve esperar um momento antes de tocar novamente.",BARD_FONT,BARD_FONT_COLOR_BAD);
@@ -390,7 +388,7 @@ endfunction
 
 //funcao para tocar as partituras
 function tocarPartitura(byref who, byref instrumento, byref partitura) //Habilita os efeitos magicos da partitura e manda tocar o som da musica
-	if (!TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
+	if (!TemHabilidade(who, "Compositor Talentoso"))
 		SendSysMessage(who, "Voce nao entende essa partitura.",BARD_FONT,BARD_FONT_COLOR_BAD);
 		return 0;
 	elseif(Cint(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock()) //verifica se pode voltar a tocar

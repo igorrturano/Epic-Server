@@ -7,7 +7,10 @@ const CHECK_INTERVAL := 3;
 
 program Logon(player)
     sleep(2);
-    while (player.connected)
+    while (true)
+        if (!player.connected)
+            continue;
+        endif
         // Find NPCs near player
         foreach mobile in ListMobilesNearLocationEx(player.x, player.y, player.z, ACTIVATION_RANGE, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, player.realm)
             // Skip players

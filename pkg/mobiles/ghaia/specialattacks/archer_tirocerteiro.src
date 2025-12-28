@@ -20,7 +20,7 @@ program tirocerteiro(params)
 	CheckDistance(attacker, defender, dist);
 
 	PrintTextAbove(attacker, "Mira com precisão", SSM_INFO);
-	SetObjProperty(attacker, "#attackbonus", 100);
+	SetObjProperty(attacker, "#GuaranteedHit", 1);
 
 endprogram
 
