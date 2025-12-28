@@ -1,24 +1,19 @@
 // Helper function to get spell icon from icons.cfg
 function GetSpellIcon(spell_name)
-    print("[ICON DEBUG] Looking for icon: '" + spell_name + "'");
     var icon_cfg := ReadConfigFile(":gmhab:config/icons");
     if (!icon_cfg)
-        print("[ICON DEBUG] Failed to read icons.cfg");
         return struct{ "iconid" := 0x5DCD, "hue" := 0 };
     endif
     
     // Try 1: Search with original name (with spaces and accents)
     var lookup_key := "spell " + spell_name;
-    print("[ICON DEBUG] Try 1 - lookup_key: '" + lookup_key + "'");
     var elem := FindConfigElem(icon_cfg, lookup_key);
     
     if (elem)
         var iconid := CInt(GetConfigString(elem, "iconid"));
         var hue := CInt(GetConfigString(elem, "hue"));
-        print("[ICON DEBUG] Try 1 SUCCESS - iconid: 0x" + Hex(iconid) + ", hue: " + hue);
         return struct{ "iconid" := iconid, "hue" := hue };
     endif
-    print("[ICON DEBUG] Try 1 failed");
     
     // Try 2: Remove spaces and normalize accents
     var safe_name := "";
@@ -58,30 +53,23 @@ function GetSpellIcon(spell_name)
     endfor
     
     lookup_key := "spell " + safe_name;
-    print("[ICON DEBUG] Try 2 - safe_name: '" + safe_name + "', lookup_key: '" + lookup_key + "'");
     elem := FindConfigElem(icon_cfg, lookup_key);
     
     if (elem)
         var iconid := CInt(GetConfigString(elem, "iconid"));
         var hue := CInt(GetConfigString(elem, "hue"));
-        print("[ICON DEBUG] Try 2 SUCCESS - iconid: 0x" + Hex(iconid) + ", hue: " + hue);
         return struct{ "iconid" := iconid, "hue" := hue };
     endif
-    print("[ICON DEBUG] Try 2 failed");
     
     // Try 3: Just the safe name without "spell " prefix
-    print("[ICON DEBUG] Try 3 - safe_name only: '" + safe_name + "'");
     elem := FindConfigElem(icon_cfg, safe_name);
     
     if (elem)
         var iconid := CInt(GetConfigString(elem, "iconid"));
         var hue := CInt(GetConfigString(elem, "hue"));
-        print("[ICON DEBUG] Try 3 SUCCESS - iconid: 0x" + Hex(iconid) + ", hue: " + hue);
         return struct{ "iconid" := iconid, "hue" := hue };
     endif
-    print("[ICON DEBUG] Try 3 failed");
     
     // Not found - return default
-    print("[ICON DEBUG] NOT FOUND - returning default icon 0x5DCD");
     return struct{ "iconid" := 0x5DCD, "hue" := 0 };
 endfunction
