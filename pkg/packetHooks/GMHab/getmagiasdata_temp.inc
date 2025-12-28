@@ -38,6 +38,13 @@ function GetMagiasData(who)
         LoadMemorizedSpells(magias, who, "shaman_list", "Shaman", "d");
     endif
     
+    // 8. CANTRIPS - spellcaster OR Natureza Arcana OR Arqueiro Arcano
+    if ((chardata && chardata.magia == "spellcaster") || 
+        (chardata && chardata.trait == "Natureza Arcana") || 
+        (chardata && chardata.magia == "Arqueiro Arcano"))
+        LoadClassSpells(magias, who, ":spells:config/cantripspells", "Cantrips", "t", "");
+    endif
+    
     return magias;
 endfunction
 
