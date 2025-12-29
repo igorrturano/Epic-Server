@@ -16,11 +16,12 @@ include "include/epicNPCUtils";
 include ":achievements:utils/datafile";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
-	var _backpack; // ContainerWrapper class
+	var _backpackSerial := 0x0; // Container Serial
 	var _race := "";
 	var _culture := "";
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
+	var _abilities; // Dictionary<ABILITY_ID, Integer>
 	var _activeAbilities := dictionary{}; // Dictionary<ACTIVATION_MOMENT, Dictionary{ABILITY_ID, ABILITY}>
 
 	function MobileWrapper(this, byRef mobile)
@@ -50,7 +51,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			endif
 
 			this._name := this._objRef.name;
-			this._backpack := ContainerWrapper(this._objRef.backpack);
+			this._backpackSerial := this._objRef.backpack.serial;
+			this._abilities := this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
 			this._activeAbilities := dictionary{};
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
@@ -80,6 +82,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._culture := err;
 			this._religion := err;
 			this._combatTraits := err;
+			this._abilities := err;
 			this._activeAbilities := err;
 		endif
 	endfunction
@@ -97,7 +100,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		return this._backpack;
+		return ContainerWrapper(this._backpackSerial);
 	endfunction
 	
 	function GetRace(this)
@@ -492,14 +495,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetSkillMod(this._objRef, skillName);
 	endfunction
 
-	function GetAbility(this, abilityName)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		// TODO: Implementar retorno de CombatAbility
-	endfunction
-
 	function GetCombatTraits(this)
 		if (this._objRef is @Exception)
 			return this._objRef;
@@ -620,7 +615,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
-	// ================= Abilities Management ================= //
+	// ================= Abilities ================= //
 	/**
 	 * Obtém as habilidades do mobile.
 	 *
@@ -636,6 +631,20 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return this._objRef.GetProp(MOBILE_PROPNAME::ABILITIES);
+	endfunction
+
+	/**
+	 * Obtém as habilidades ativas do mobile.
+	 * 
+	 * @param this Referência ao objeto MobileWrapper
+	 * @return Dictionary com as habilidades ativas ou uma Exception caso a referência do objeto seja inválida
+	 */
+	function GetActiveAbilities(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this._activeAbilities;
 	endfunction
 
 	/**
@@ -778,7 +787,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this.GetAbilities()[ability.GetName()] != error;
 	endfunction
 
-	// ================ Achievements Management ================= //
+	// ================ Achievements ================= //
 	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
 	endfunction
