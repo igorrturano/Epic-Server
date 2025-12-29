@@ -404,8 +404,8 @@ function CalculatePropHitModifier(hit_chance, attackInfo)
 	endif
 endfunction
 
-function CalculateFlankModifier(hit_chance, attackInfo)
-	if (ListHostiles(attackInfo.GetDefender().GetObjRef(), 2).size() > 1)
+function CalculateFlankModifier(byref hit_chance, attackInfo)
+	if (attackInfo.GetDefender().IsFlanked())
 		hit_chance += 5.0;
 	endif
 endfunction

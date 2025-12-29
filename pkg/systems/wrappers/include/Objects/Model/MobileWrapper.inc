@@ -725,6 +725,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._objRef.hidden;
 	endfunction
 
+	function IsFlanked(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return ListHostiles(this._objRef, 1).size() > 1;
+	endfunction
+
 	/*
 	 * Calcula a distância entre este objeto e outro objeto.
 	 *
