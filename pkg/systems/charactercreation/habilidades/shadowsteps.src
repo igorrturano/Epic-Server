@@ -24,7 +24,6 @@ program sanctuary(params)
 	if (TemHabilidade(who, "Avanco Sombrio"))
 		if (InDarkness(who))
 			var duration_shadowdancer := cint(HandleSpellSkill(who) / 2.5);
-			Setcooldown(who, "shadowdancer_blur", duration_shadowdancer);
 			TS_StartTimer(who, "spectralform", duration_shadowdancer);
 		endif
 	endif

@@ -280,12 +280,6 @@ function GetMagicTimersSpellName(mobile)
 		endif
 	endforeach
 
-	if (GetObjProperty(mobile, "tirocerteiro") )
-		var t := struct;
-		t.+nome := "tiro certeiro";
-		names.append(t);
-	endif
-
 	if ( GetObjProperty(mobile, "evasao"))
 		var t := struct;
 		t.+nome := "evasao";
