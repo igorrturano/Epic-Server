@@ -14,6 +14,11 @@ high-tier form.
 - Uses the exact same cleanup process as wildshape transformations
 - The `.voltar` command works identically
 - All properties and timers are the same
+
+
+TODO: Add entropia para alterar transformacoes de mesmo bioma
+TODO: Add criteria for z-index, itens, minerios for certain transformations
+
 ****************************************************************************************************/
 use uo;
 use os;
