@@ -9,111 +9,57 @@
  *
  **********************************/
 
+include ":debug:Controller/DebugController";
 include ":abilities:models/Ability";
 
 function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
-	var attackerAbilites := attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT];
-	var defenderAbilities := array{};
-	var exec := 0;
-
-
-	if (TryToExecuteHab_AtaqueInfalivel(attackInfo)) exec++; endif
-
-	if (exec > 0)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada antes do hit.", Color(SYSTEM_COLOR::FAIL)));
-	return false;
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
-	var exec := 0;
-
-	if (TryToExecuteHab_Martir(attackInfo)) exec++; endif
-	if (TryToExecuteHab_MantoRothen(attackInfo)) exec++; endif
-	if (TryToExecuteHab_KaniNoSutairu(attackInfo)) exec++; endif
-	if (TryToExecuteHab_Exoesqueleto(attackInfo)) exec++; endif
-	if (TryToExecuteHab_EspecialistaEscudos(attackInfo)) exec++; endif
-	if (TryToExecuteHab_Furia(attackInfo)) exec++; endif
-	if (TryToExecuteHab_TaticasArcanas(attackInfo)) exec++; endif
-	if (TryToExecuteHab_ResilienciaBarbara(attackInfo)) exec++; endif
-	if (TryToExecuteHab_VinculoElemental(attackInfo)) exec++; endif
-	if (TryToExecuteHab_Backstab(attackInfo)) exec++; endif
-	if (TryToExecuteHab_Charge(attackInfo)) exec++; endif
-
-	if (exec > 0)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada antes de receber o dano.", Color(SYSTEM_COLOR::FAIL)));
-
-	return false;
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
 endfunction
 
-/**
- * CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Função responsável por verificar e aplicar as habilidades do atacante ao atingir um defensor.
- *
- * Parameters
- * attacker: Entidade atacante (objeto ou identificador do atacante).
- * defender: Entidade defensora (objeto ou identificador do defensor).
- * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
- *
- * Return
- * Retorna 1 após a execução das verificações e aplicações das habilidades.
- *
- */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
-	var exec := 0;
-
-	// if (TryToExecuteHab_ArmaduraArcana(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_Ainalaith(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_DeathDance(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_DisparoMistico(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_DesviarProjetil(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_DesviarDisparos(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_FerocidadeEnsanguentada(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_Evasao(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_ContraAtaque(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_Rebuke(attackInfo)) exec++; endif
-
-	if (exec > 0)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada no hit.", Color(SYSTEM_COLOR::FAIL)));
-
-	return false;
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
-	var exec := 0;
-
-	if (TryToExecuteHab_RecuperacaoSalvadora(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_Vinganca(attackInfo)) exec++; endif
-	// if (TryToExecuteHab_ChainOfPain(attackInfo)) exec++; endif
-
-	if (exec > 0)
-		return true;
-	endif
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada após causar o dano.", Color(SYSTEM_COLOR::FAIL)));
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada após receber o dano.", Color(SYSTEM_COLOR::FAIL)));
-	return false;
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	var exec := 0;
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
+endfunction
 
-	if (TryToExecuteHab_MestreDuelista(attackInfo)) exec++; endif
+function ExecuteCombatAbilitiesOnCritical(byRef attackInfo)
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
+endfunction
 
-	if (exec > 0)
-		return true;
-	endif
+function ExecuteCombatAbilitiesOnKill(byRef attackInfo)
+	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
+	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
+endfunction
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message($"Nenhuma habilidade ativada no miss.", Color(SYSTEM_COLOR::FAIL)));
-	return false;
+function ExecuteAbilities(byRef abilitiesList, byRef attackInfo)
+	var abilitiesExecuted := 0;
+	
+	foreach ability in (abilitiesList)
+		ability.ExecuteOn(attackInfo);
+		abilitiesExecuted++;
+	endforeach
+
+	return abilitiesExecuted;
+endfunction
+
+function DebugExecutedAbilities(byRef attackInfo)
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (ATACANTE) ===", Color(COLOR_NAME::PURPLE)));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (DEFENSOR) ===", Color(COLOR_NAME::PURPLE)));
+	
 endfunction
