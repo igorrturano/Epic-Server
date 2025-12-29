@@ -8,7 +8,7 @@ var all_scripts := array{
     "auramanaregenmod", "aurahpsapmod", "aurastamsapmod", "auramanasapmod", "pomod", "coldward", "polymorph", 
     "mantodaBesta", "apodrecer", "disfarce", "desmontar", "atrasarmagias", "fugademana", "strPoison", "dexPoison", 
     "intPoison", "paralyzePoison", "staminaPoison", "manaPoison", "alchPoison", "ataquecerteiro", "heroismo", 
-    "ataquepoderoso", "precisao", "kitdisfarce", "finta", "evasao", "conceal", "irrefreavel", "ghost", "controlarbestas", 
+    "ataquepoderoso", "precisao", "kitdisfarce", "finta", "conceal", "irrefreavel", "ghost", "controlarbestas", 
     "controlarmortovivo", "tiroemmovimento", "provocar", "bleedingstrike", "bleed", "chamasperpetuas", "invulnerabilidade", 
     "prisaogelida", "regensombrio", "temor", "gloria", "desarmar", "desviarprojetil", "recuperacaosalvadora", "martir", 
     "mantorothen", "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 

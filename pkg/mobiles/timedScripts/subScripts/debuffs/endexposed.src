@@ -1,0 +1,27 @@
+use uo;
+use os;
+include ":debug:Controller/DebugController";
+
+program EndExposed(params)
+	var mobile := params[1];
+
+	// Retrieve the stored penalty value
+	var penalty := CInt(GetObjProperty(mobile, "#exposed"));
+
+	if (!penalty)
+		return 1; // Already cleaned up
+	endif
+
+	// Reverse the modifier (penalty is negative, so subtracting it adds it back)
+	mobile.evasionchance_mod := mobile.evasionchance_mod - penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[EXPOSED] Removido {penalty} evasion_mod penalty"));
+	endif
+
+	// Clean up property
+	EraseObjProperty(mobile, "#exposed");
+
+	return 1;
+endprogram
