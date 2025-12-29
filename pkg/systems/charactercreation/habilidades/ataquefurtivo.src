@@ -18,7 +18,7 @@ program backstab(who)
 	who.GetEquipBySlot(WEAPON).SetProperty("backstab", 1);
 
 	if (who.IsHidden())
-		who.SetProperty("#attackbonus", 100);
+		who.SetProperty("#GuaranteedHit", 1);
 		if (who.HasAbility(instinto_assassino))
 			who.SetProperty("#nextcritical", 1);
 		endif

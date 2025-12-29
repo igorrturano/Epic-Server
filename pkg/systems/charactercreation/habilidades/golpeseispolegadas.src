@@ -36,7 +36,7 @@ function golpeseispolegadas(who, dist, delay, attacker)
 	endif
 	var dmg := CInt(AP_GetSkill(attacker, TACTICS) / 2);
 	var i := 0;
-	SetObjProperty(attacker, "#attackbonus", 100);
+	SetObjProperty(attacker, "#GuaranteedHit", 1);
 	attacker.attack_once(who);
 
 	PlaySoundEffect(attacker, 0x50F);
