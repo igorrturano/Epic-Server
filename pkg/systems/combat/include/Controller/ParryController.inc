@@ -6,7 +6,7 @@
  *
  */
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
 include ":combat:Controller/AbilitiesController";
 include ":combat:weardown";
@@ -133,7 +133,7 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::REFLEXO_ESTRATEGICO))
+	if (attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::REFLEXO_ESTRATEGICO)))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
@@ -145,7 +145,7 @@ function CalculateParryChance(byRef attackInfo)
 
 	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
 	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::TABIBITO_NO_MICHI))
+		if (attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::TABIBITO_NO_MICHI)))
 			parry_chance := CInt(parry_chance * 1.3);
 		else
 			parry_chance := CInt(parry_chance * 0.7);
@@ -181,7 +181,7 @@ function CalculateParryDelay(byRef attackInfo)
 	);
 
 	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
-	if (TemHabilidade(attackInfo.GetDefender().GetObjRef().party.leader, COMBAT_ABILITY::INSPIRAR_DEFESAS))
+	if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
 		parryDelay := parryDelay - 1;
 	endif
 
@@ -202,7 +202,7 @@ function CheckDisarmShield(byRef attackInfo)
 			// Half-sword desarma o atacante ao defender o golpe
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
 			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE
-			 	|| TemHabilidade(attackInfo.GetDefender().GetObjRef(), COMBAT_ABILITY::HALFSWORD))
+			 	|| attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::HALFSWORD)))
 				
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();

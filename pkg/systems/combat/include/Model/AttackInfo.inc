@@ -6,7 +6,7 @@ include ":combat:Exceptions/_all";
 include "IAttackInfo";
 
 include "Damage";
-include "CombatAbility";
+// include "CombatAbility";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
@@ -483,12 +483,12 @@ class AttackInfo(IAttackInfo)
 	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
 	 */
 	function AddAttackerAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
-		if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
+		// if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
+		// if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
 
-		this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
+		// this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
 
-		return this;
+		// return this;
 	endfunction
 
 	/**
@@ -501,12 +501,12 @@ class AttackInfo(IAttackInfo)
 	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
 	 */
 	function AddDefenderAbility(this, combatAbility)
-		if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
-		if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
+		// if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
+		// if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
 
-		this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);
+		// this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);
 
-		return this;
+		// return this;
 	endfunction
 
 	/**
