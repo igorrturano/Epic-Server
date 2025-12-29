@@ -7,8 +7,6 @@ function ActivateAbility(who, ability)
 		return false;
 	endif
 
-	Start_Script($":abilities:scripts/{ability.GetScript()}", who.GetObjRef());
-
 	who.ActivateAbility(ability);
 endfunction
 
