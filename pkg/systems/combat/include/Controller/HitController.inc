@@ -50,6 +50,7 @@ function CalculateHitChance(byRef attackInfo)
 	CalculateEntropyHitModifier(hit_chance, attackInfo);
 	CalculateCooldownHitModifier(hit_chance, attackInfo);
 	CalculatePropHitModifier(hit_chance, attackInfo);
+	CalculateFlankModifier(hit_chance, attackInfo);
 
 	if (!attackInfo.GetAttacker().IsNPC())
 		DarknessHitModifier(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), hit_chance);
@@ -400,5 +401,11 @@ function CalculatePropHitModifier(hit_chance, attackInfo)
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"))
 		hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"));
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#hit_mod");
+	endif
+endfunction
+
+function CalculateFlankModifier(hit_chance, attackInfo)
+	if (ListHostiles(attackInfo.GetDefender().GetObjRef(), 2).size() > 1)
+		hit_chance += 5.0;
 	endif
 endfunction
