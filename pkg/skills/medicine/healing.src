@@ -289,7 +289,7 @@ program UseBandage(mobile, bandage)
 		EraseObjProperty(targ, "curando");
 		var chance := 30;
 		// deixa isso pode ser util
-		if (temHabilidade(mobile, "Conservar Bandagens"))
+		if (heal_skill >= 71) // Antigo Conservar Bandagens
 			chance := 90;
 		endif
 		if (RandomInt(100) < chance)
