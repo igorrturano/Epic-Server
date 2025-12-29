@@ -122,3 +122,91 @@ function getCriticalChanceByTier(tier)
 		default: return error{ "errortext" := "Value not found for this Weapon Critical Chance Tier!"};
 	endcase
 endfunction
+
+/**
+ * ApplyDamageOverrides(weapon, mobile)
+ *
+ * Purpose
+ * Applies damage overrides to a weapon based on mobile state (metamorfose or NPC template).
+ * Called when retrieving equipped weapon to ensure damage reflects current state.
+ * No caching - always-current state is simpler than invalidation logic.
+ *
+ * Parameters
+ * weapon: WeaponWrapper instance to modify
+ * mobile: MobileWrapper instance to check for overrides
+ *
+ * Return
+ * Modified weapon (for chaining)
+ */
+function ApplyDamageOverrides(byref weapon, byref mobile)
+	// Check for metamorfose transformation first (higher priority)
+	if (GetObjProperty(mobile.GetObjRef(), "metamorfose") != error)
+		ApplyMetamorfoseDamage(weapon, mobile);
+	elseif (mobile.IsNPC())
+		ApplyNPCTemplateDamage(weapon, mobile);
+	endif
+	
+	return weapon;
+endfunction
+
+/**
+ * ApplyMetamorfoseDamage(weapon, mobile)
+ *
+ * Purpose
+ * Applies damage from metamorfose transformation to weapon.
+ * Checks for "dicedmg" property set by transformation spells.
+ *
+ * Parameters
+ * weapon: WeaponWrapper instance to modify
+ * mobile: MobileWrapper instance with metamorfose properties
+ *
+ * Return
+ * Modified weapon
+ */
+function ApplyMetamorfoseDamage(byref weapon, byref mobile)
+	var dicedmgProp := GetObjProperty(mobile.GetObjRef(), "dicedmg");
+	if (dicedmgProp != error)
+		// Use dicedmg from metamorfose transformation (array of [slash, piercing, blunt])
+		weapon.SetMainDamage(Dice(dicedmgProp[1]), Dice(dicedmgProp[2]), Dice(dicedmgProp[3]));
+	endif
+	
+	return weapon;
+endfunction
+
+/**
+ * ApplyNPCTemplateDamage(weapon, mobile)
+ *
+ * Purpose
+ * Applies damage from NPC template to weapon.
+ * NPCs use template-defined damage instead of physical weapon stats.
+ *
+ * Parameters
+ * weapon: WeaponWrapper instance to modify
+ * mobile: MobileWrapper instance with NPC template
+ *
+ * Return
+ * Modified weapon
+ */
+function ApplyNPCTemplateDamage(byref weapon, byref mobile)
+	var template := mobile.GetTemplate();
+	if (template is @Exception)
+		return weapon;
+	endif
+	
+	// Apply physical attack damage from template
+	weapon.SetMainDamage(
+		Dice(GetDamageByTier(SplitWords(template.EpicAttackDamage)[1])),
+		Dice(GetDamageByTier(SplitWords(template.EpicAttackDamage)[2])),
+		Dice(GetDamageByTier(SplitWords(template.EpicAttackDamage)[3]))
+	);
+	
+	// Apply elemental damage modifiers from template
+	weapon.SetDamageMod(Damage(
+		GetDamageByTier(SplitWords(template.EpicElemDamage)[1]),
+		GetDamageByTier(SplitWords(template.EpicElemDamage)[2]),
+		GetDamageByTier(SplitWords(template.EpicElemDamage)[3]),
+		GetDamageByTier(SplitWords(template.EpicElemDamage)[4])
+	));
+	
+	return weapon;
+endfunction
