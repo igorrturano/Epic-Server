@@ -83,6 +83,12 @@ program cureScript(params)
 	EraseObjProperty(who, "polymorph_manamod");
 	EraseObjProperty(who, "polymorph_stammod");
 	EraseObjProperty(who, "namechar");
+	
+	// Clean up Wild Speech properties and restore speech
+	EraseObjProperty(who, "wildspeech_ativa");
+	EraseObjProperty(who, "wildspeech_preparada");
+	who.squelch(0);
+	
 	SendPacket(who, "BF0006002600"); // Disable speed boost packet
 
 	if (who.npctemplate)
