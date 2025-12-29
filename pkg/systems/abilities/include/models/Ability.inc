@@ -8,17 +8,22 @@ include ":IO:CFGFile";
 const ABILITY_PKG := ":abilities:scripts/";
 
 class Ability(IAbility)
-	var _id; // ABILITY_ID enum
+	var _id := 0; // ABILITY_ID enum
 	var _name := "";
+	var _class := "";
+	var _level := 0;
+	var _folk := "";
 	var _description := "";
+	var _activationMode := ABILITY_ACTIVATION_MODE::PASSIVE;
 	var _activationMoment := ABILITY_ACTIVATION::ON_USE;
+	var _requirement := ""; // requisito para desbloquear a habilidade
 	var _costHP := 0;
 	var _costSTAM := 0;
 	var _costMANA := 0;
-	var _cooldown := 0.0; // em segundos
-	var _effectDuration := 0.0; // em segundos
+	var _charges := 0; // número de cargas da habilidade
+	var _cooldown := 0; // em milisegundos
+	var _effectDuration := 0; // em milisegundos
 	var _range := 1; // em tiles
-	var _damage; // DamageDice class
 	var _script := ""; // nome do script que será executado ao usar a habilidade
 
 	function Ability(this, abilityEnum)
@@ -30,17 +35,16 @@ class Ability(IAbility)
 		this._level := cfgFile.GetPropertyValue("nivel");
 		this._folk := cfgFile.GetPropertyValue("povo")[1];
 		this._description := cfgFile.GetPropertyValue("description")[1];
-		this._activation := cfgFile.GetPropertyValue("uso")[1];
+		this._activationMode := cfgFile.GetPropertyValue("uso")[1]; 
 		this._activationMoment := cfgFile.GetPropertyValue("activationMoment")[1];
 		this._requirement := cfgFile.GetPropertyValue("requisito")[1];
-
-		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1];
 		this._costHP := cfgFile.GetPropertyValue("hp")[1];
 		this._costSTAM := cfgFile.GetPropertyValue("stam")[1];
 		this._costMANA := cfgFile.GetPropertyValue("mana")[1];
+		this._charges := cfgFile.GetPropertyValue("charges")[1];
+		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1];
 		this._effectDuration := cfgFile.GetPropertyValue("effectDuration")[1];
 		this._range := cfgFile.GetPropertyValue("range")[1];
-		this._damage := cfgFile.GetPropertyValue("damage")[1];
 		this._script := cfgFile.GetPropertyValue("script")[1];
 	endfunction
 
@@ -52,12 +56,32 @@ class Ability(IAbility)
 		return this._name;
 	endfunction
 
+	function GetClass(this)
+		return this._class;
+	endfunction
+
+	function GetLevel(this)
+		return this._level;
+	endfunction
+
+	function GetFolk(this)
+		return this._folk;
+	endfunction
+
 	function GetDescription(this)
 		return this._description;
 	endfunction
 
+	function GetActivationMode(this)
+		return this._activationMode;
+	endfunction
+
 	function GetActivationMoment(this)
 		return this._activationMoment;
+	endfunction
+
+	function GetRequirement(this)
+		return this._requirement;
 	endfunction
 
 	function GetCostHP(this)
@@ -70,6 +94,10 @@ class Ability(IAbility)
 
 	function GetCostMANA(this)
 		return this._costMANA;
+	endfunction
+
+	function GetCharges(this)
+		return this._charges;
 	endfunction
 
 	function GetCooldown(this)
@@ -93,7 +121,7 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Start_Script($"{ABILITY_PKG}{this._script}", targetInfo);
+		Start_Script($"{ABILITY_PKG}{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
 	endfunction
 endclass
 
@@ -102,13 +130,13 @@ enum class ABILITY_ID
 
 	/*
 	 * Formato: 0000
-	 * x000 - x -> Caminho: 0(white): Armas, 1: Ladinos, 2: Sábios
+	 * x000 - x -> Caminho: 0(white): Guerreiros, 1: Ladinos, 2: Sábios
 	 * 0x00 - x -> Classe dentro do caminho
 	 */
 
-	///////////////////////
-	// Caminho das Armas //
-	///////////////////////
+	////////////////////////////
+	// Caminho das Guerreiros //
+	////////////////////////////
 
 	// ARQUEIRO
 	TIRO_PODEROSO := 1,
@@ -125,7 +153,7 @@ enum class ABILITY_ID
 	CACADOR_IMPLACAVEL := 104,
 
 	// COMBATENTE
-	CONTRA_EMPUNHADURA := 200,
+	HALFSWORD := 200,
 	GOLPE_MORTAL := 201,
 	CONTRAGOLPE_CRUZADO := 202,
 	GOLPES_FURIOSOS := 203,
@@ -344,5 +372,5 @@ enum class ABILITY_ACTIVATION_MODE
 endenum
 
 enum class ABILITY_DURATION
-	_DEFAULT // Placeholder
+	ONE_USAGE := "1 uso",
 endenum
