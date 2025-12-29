@@ -1,7 +1,7 @@
 include "include/client";
 
 class Color()
-	var _name := ""; // ENUM da cor
+	var _name := "";
 	var _value := 0;
 	var _htmlValue := "";
 
