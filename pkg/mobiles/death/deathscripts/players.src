@@ -203,7 +203,7 @@ program death(params)
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
 		tempo := tempo * 2;
 	endif
-	if (temhabilidade(ghost, "Recuperacao"))
+	if (CheckResist(ghost, FORTITUDE, RESIST_HARD))
 		tempo := tempo / 2;
 	endif
 	if (save)
@@ -374,7 +374,7 @@ function KataWakeUp(ghost, corpse)
 		endif
 	endforeach
 
-	if (TemHabilidade(ghost, "Recuperacao"))
+	if (CheckResist(ghost, FORTITUDE, RESIST_HARD))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
 		// 		PrintTextAbove(ghost, " " + GetHP(ghost));
