@@ -3,11 +3,11 @@ use uo;
 include "include/epicCombatUtils";
 include ":combat:Controller/DamageController";
 include ":combat:Controller/HitController";
-// include ":message:model/Message";
-// include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:controllers/AbilityController";
 
 program backstab(who)
 	who := MobileWrapper(who);
+	var instinto_assassino := Ability(ABILITY_ID::INSTINTO_ASSASSINO);
 
 	if (!CanBackStab(who) || !isAssassinWeapon(who.GetObjRef()))
 		Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::ERRO)).SendSys(who.GetObjRef());
@@ -19,7 +19,7 @@ program backstab(who)
 
 	if (who.IsHidden())
 		who.SetProperty("#attackbonus", 100);
-		if (who.HasAbility(COMBAT_ABILITY::INSTINTO_ASSASSINO))
+		if (who.HasAbility(instinto_assassino))
 			who.SetProperty("#nextcritical", 1);
 		endif
 	endif
