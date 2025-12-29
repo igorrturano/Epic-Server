@@ -14,7 +14,7 @@ program equipitem(params)
 		debugArmor(who.GetObjRef(), equip);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		equip := WeaponWrapper(item);
-		updatePosture(who, equip);
+		updateCombatTraits(who, equip);
 		debugWeapon(who.GetObjRef(), equip);
 	endif
 
@@ -100,19 +100,51 @@ endfunction
 
 function updatePosture(who, weapon)
 	var category := weapon.GetCategory();
-	
-	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
-		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
-	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
-		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
-	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
-		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
-	elseif(weapon.isFireWeapon())
-		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
-	else
+	var traits := who.GetCombatTraits();
+
+	// Check if combattraits is valid (must check BEFORE calling any methods)
+	if (traits.errortext)
 		return false;
 	endif
 
-	Message($"Postura de combate alterada para {who.GetCombatTraits().GetPosture()}").SendSys(who.GetObjRef());
+	var newPosture;
+	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
+		newPosture := DAMAGE_TYPE::BLUNT;
+	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
+		newPosture := DAMAGE_TYPE::PIERCING;
+	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		newPosture := DAMAGE_TYPE::PIERCING;
+	elseif(weapon.isFireWeapon())
+		newPosture := DAMAGE_TYPE::BLUNT;
+	else
+		return false; // Weapon doesn't force a specific posture
+	endif
+
+	who.SetCombatTraits(traits.SetPosture(newPosture));
+	Message($"Postura de combate alterada para {newPosture}").SendSys(who.GetObjRef());
 	return true;
+endfunction
+
+function updateStance(who, weapon)
+	var weaponAttr := weapon.GetAttribute();
+
+	if (weaponAttr == RANGED)
+		var traits := who.GetCombatTraits();
+
+		// Check if combattraits is valid (must check BEFORE calling any methods)
+		if (traits.errortext)
+			return false;
+		endif
+
+		who.SetCombatTraits(traits.SetStance(STANCE_TYPE::NEUTRAL));
+		Message("Sua postura de combate foi alterada para Neutra.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+		return true;
+	endif
+
+	return false;
+endfunction
+
+function updateCombatTraits(who, weapon)
+	updatePosture(who, weapon);
+	updateStance(who, weapon);
 endfunction

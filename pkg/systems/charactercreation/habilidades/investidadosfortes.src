@@ -18,7 +18,7 @@ program manobra(attacker)
 	foreach member in (festa.members)
 		if (member.serial != attacker.serial)
 			if (Distance(attacker, member) < 8)
-				SetObjProperty(member, "#attackbonus", 100);
+				SetObjProperty(member, "#GuaranteedHit", 1);
 				member.attack_once();
 			endif
 		endif
