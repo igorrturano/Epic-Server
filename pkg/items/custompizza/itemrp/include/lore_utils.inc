@@ -22,10 +22,10 @@ function SabeLerLinguagem(who, lingua)
 	if (lingua in linguas_conhecidas)
 		retorno.sabeLer := true;
 		retorno.fonte := CONHECE_LINGUA;
-	elseif (lingua == "Antiga" && temHabilidade(who, "Arqueologo"))
+	elseif (lingua == "Antiga" && temHabilidade(who, "Desbravador Nato"))
 		retorno.sabeLer := true;
 		retorno.fonte := ANTIGO_ARQUEOLOGO;
-	elseif (temHabilidade(who, "Arqueologo"))
+	elseif (temHabilidade(who, "Desbravador Nato"))
 		retorno.sabeLer := true;
 		retorno.fonte :=  ARQUEOLOGO;
 	endif

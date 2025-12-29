@@ -1327,7 +1327,7 @@ function GetTooltipText(item_template, who)
 			var linguagem := item_template.lingua;
 			if (linguagem!=error)
 				var linguas := GetObjProperty(who, "linguas_conhecidas");
-				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
+				if (temHabilidade(who, "Desbravador Nato") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
 					xDesc := xDesc + white + "" + desc + "<br>";
 				else
 					xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";

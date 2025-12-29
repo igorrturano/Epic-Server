@@ -30,7 +30,7 @@ function ShowLoreItemInfo(who, item, item_info)
 	// Verifica se o jogador atual pode avaliar o item
 	var player_skill := AP_GetSkill(who, item_info.required_skill);
 	var can_evaluate_skill := (player_skill >= item_info.required_skill_value);
-	var can_evaluate_archaeology := temHabilidade(who, "Arqueologo");
+	var can_evaluate_archaeology := temHabilidade(who, "Desbravador Nato");
 
 	var show_skill_info := 0;
 	var show_archaeology_info := 0;
