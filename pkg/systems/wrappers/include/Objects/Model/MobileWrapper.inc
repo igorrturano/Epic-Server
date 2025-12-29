@@ -22,7 +22,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
 	var _abilities; // Dictionary<ABILITY_ID, Integer>
-	var _activeAbilities := dictionary{}; // Dictionary<ACTIVATION_MOMENT, Dictionary{ABILITY_ID, ABILITY}>
+	var _activeAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
@@ -52,8 +52,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 			this._name := this._objRef.name;
 			this._backpackSerial := this._objRef.backpack.serial;
-			this._abilities := this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
-			this._activeAbilities := dictionary{};
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
 			this._template := this._cfgFile.SetElementName(mobile).GetElement();
@@ -585,21 +583,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this._objRef;
 		endif
 
-		return this._objRef.GetProp(MOBILE_PROPNAME::ABILITIES);
-	endfunction
-
-	/**
-	 * Obtém as habilidades ativas do mobile.
-	 * 
-	 * @param this Referência ao objeto MobileWrapper
-	 * @return Dictionary com as habilidades ativas ou uma Exception caso a referência do objeto seja inválida
-	 */
-	function GetActiveAbilities(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		return this._activeAbilities;
+		return this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
 	endfunction
 
 	/**
@@ -624,12 +608,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		var abilities := this.GetAbilities();
-		if (!abilities)
-			abilities := dictionary{};
-		endif
 
 		abilities[ability.GetName()] := levelBought;
-		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
 
 		return this;
 	endfunction
@@ -660,7 +641,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		var abilities := this.GetAbilities();
-		if (!abilities)
+		if (abilities.size() == 0)
 			return InvalidPropException("This mobile has no abilities!");
 		endif
 
@@ -669,9 +650,40 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		abilities.remove(ability.GetName());
-		this._objRef.SetProp(MOBILE_PROPNAME::ABILITIES, abilities);
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
 
 		return this;
+	endfunction
+
+	/*
+	 * Verifica se o mobile possui uma habilidade específica.
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param ability Objeto da habilidade a ser verificada
+	 * @return Retorna o objeto de exceção se _objRef for uma Exception,
+	 *         caso contrário retorna true se o mobile possui a habilidade,
+	 *         ou false se não possui
+	 */
+	function HasAbility(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this.GetAbilities().exists(ability.GetName());
+	endfunction
+
+	/**
+	 * Obtém as habilidades ativas do mobile.
+	 * 
+	 * @param this Referência ao objeto MobileWrapper
+	 * @return Dictionary com as habilidades ativas ou uma Exception caso a referência do objeto seja inválida
+	 */
+	function GetActiveAbilities(this)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES) ?: dictionary{};
 	endfunction
 
 	/**
@@ -694,7 +706,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
-		this._activeAbilities[ability.GetActivationMoment()][ability.GetId()] := POLCore().systime;
+		var activeAbilities := this.GetActiveAbilities();
+		activeAbilities[ability.GetActivationMoment()][ability.GetName()] := ability.GetCharges();
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;
 	endfunction
@@ -720,26 +734,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
-		this._activeAbilities[ability.GetActivationMoment()].remove(ability.GetId());
+		var activeAbilities := this.GetActiveAbilities();
+		activeAbilities[ability.GetActivationMoment()].remove(ability.GetName());
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;
-	endfunction
-
-	/*
-	 * Verifica se o mobile possui uma habilidade específica.
-	 *
-	 * @param this Referência ao objeto MobileWrapper atual
-	 * @param ability Objeto da habilidade a ser verificada
-	 * @return Retorna o objeto de exceção se _objRef for uma Exception,
-	 *         caso contrário retorna true se o mobile possui a habilidade,
-	 *         ou false se não possui
-	 */
-	function HasAbility(this, ability)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		return this.GetAbilities()[ability.GetName()] != error;
 	endfunction
 
 	// ================ Achievements ================= //
@@ -1126,7 +1125,8 @@ enum class MOBILE_PROPNAME
 	COMBAT_TRAITS := "combattraits",
 	LANGUAGE := "langdata",
 	ENTROPY := "entropy",
-	ABILITIES := "myhabs"
+	ABILITIES := "myhabs",
+	ACTIVE_ABILITIES := "activehabs"
 endenum
 
 enum class ENTROPY_LIMITS
