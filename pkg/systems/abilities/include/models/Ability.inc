@@ -5,11 +5,13 @@ include "IAbility";
 include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
+const ABILITY_PKG := ":abilities:scripts/";
+
 class Ability(IAbility)
 	var _id; // ABILITY_ID enum
 	var _name := "";
 	var _description := "";
-	var _activationMoment := ACTIVATION_MOMENT::ON_USE;
+	var _activationMoment := ABILITY_ACTIVATION::ON_USE;
 	var _costHP := 0;
 	var _costSTAM := 0;
 	var _costMANA := 0;
@@ -91,13 +93,13 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Start_Script($":abilities:scripts/{this._script}", targetInfo);
+		Start_Script($"{ABILITY_PKG}{this._script}", targetInfo);
 	endfunction
 endclass
 
 enum class ABILITY_ID
 	// Deixado com o INT para facilitar adições futuras e a leitura do código
-	
+
 	/*
 	 * Formato: 0000
 	 * x000 - x -> Caminho: 0(white): Armas, 1: Ladinos, 2: Sábios
@@ -323,9 +325,10 @@ enum class ABILITY_ID
 	APOTEOSE := 2804
 endenum
 
-enum class ACTIVATION_MOMENT
+enum class ABILITY_ACTIVATION
 	BEFORE_DAMAGE,
 	AFTER_DAMAGE,
+	BEFORE_HIT,
 	ON_MISS,
 	ON_HIT,
 	ON_CRITICAL,
@@ -333,10 +336,11 @@ enum class ACTIVATION_MOMENT
 	ON_USE
 endenum
 
-enum class ACTIVATION_MODE
+enum class ABILITY_ACTIVATION_MODE
 	PASSIVE := "Passiva",
 	ACTIVE := "Ativa"
 endenum
 
 enum class ABILITY_DURATION
-endclass
+	_DEFAULT // Placeholder
+endenum
