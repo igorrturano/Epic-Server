@@ -13,41 +13,41 @@ include ":debug:Controller/DebugController";
 include ":abilities:models/Ability";
 
 function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_HIT], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::BEFORE_DAMAGE], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_HIT], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::AFTER_DAMAGE], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_MISS], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesOnCritical(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_CRITICAL], attackInfo);
 endfunction
 
 function ExecuteCombatAbilitiesOnKill(byRef attackInfo)
-	ExecuteAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
-	ExecuteAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetAttacker().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
+	ExecuteCombatAbilities(attackInfo.GetDefender().GetActiveAbilites()[ABILITY_ACTIVATION::ON_KILL], attackInfo);
 endfunction
 
-function ExecuteAbilities(byRef abilitiesList, byRef attackInfo)
+function ExecuteCombatAbilities(byRef abilitiesList, byRef attackInfo)
 	var abilitiesExecuted := 0;
 	
 	foreach ability in (abilitiesList)
