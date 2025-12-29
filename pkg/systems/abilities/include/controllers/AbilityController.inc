@@ -1,20 +1,18 @@
 include ":abilities:models/Ability";
 include ":message:model/Message";
 
-function ActivateAbility(who, abilityID)
-	var ability := Ability(abilityID);
-
+function ActivateAbility(who, ability)
 	if (!ability.GetScript())
 		Message("Habilidade desconhecida.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return false;
 	endif
 
+	Start_Script($":abilities:scripts/{ability.GetScript()}", who.GetObjRef());
+
 	who.ActivateAbility(ability);
 endfunction
 
-function DeactivateAbility(who, abilityID)
-	var ability := Ability(abilityID);
-
+function DeactivateAbility(who, ability)
 	if (!ability.GetScript())
 		Message("Habilidade desconhecida.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return false;
