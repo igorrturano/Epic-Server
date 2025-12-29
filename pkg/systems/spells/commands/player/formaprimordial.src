@@ -46,12 +46,28 @@ program transformprimordial(who, text)
 	// Parse requested form name
 	text := Lower(Trim(text));
 	if (!text || text == "")
-		SendSysMessageEx(who, "Use: .formaprimordial <fogo|gelo|veneno|agua|tentaculos|areia|ar|energia|ent_pequeno|ent_medio|ent_grande|ent_alto|terra|pedra|obsidiana>", SSM_FAIL);
+		// Get current terrain to show available forms
+		var current_terrain := GetTerrainAtLocation(who, who.x, who.y, who.realm);
+		if (current_terrain)
+			var allowed_forms := terrain_mapping[current_terrain];
+			if (allowed_forms && allowed_forms.size() > 0)
+				var available_list := "";
+				foreach form_key in allowed_forms
+					if (available_list != "")
+						available_list := available_list + "|";
+					endif
+					available_list := available_list + form_key;
+				endforeach
+				SendSysMessageEx(who, "Use: .formaprimordial <" + available_list + ">", SSM_FAIL);
+			else
+				SendSysMessageEx(who, "Nenhuma forma primordial pode ser invocada neste terreno.", SSM_FAIL);
+			endif
+		else
+			SendSysMessageEx(who, "Use: .formaprimordial <forma> - Este terreno não permite transformação primordial.", SSM_FAIL);
+		endif
 		return;
 	endif
 
-	// TEMPORARY: Terrain check disabled for testing
-	/*
 	// Get current terrain
 	var current_terrain := GetTerrainAtLocation(who, who.x, who.y, who.realm);
 	if (!current_terrain)
@@ -86,7 +102,6 @@ program transformprimordial(who, text)
 		SendSysMessageEx(who, "Esta forma não está disponível neste terreno. Formas disponíveis: " + available_list, SSM_FAIL);
 		return;
 	endif
-	*/
 
 	// Get the form from database
 	var primordial_form := form_db[text];
@@ -152,17 +167,6 @@ function InitFormDatabase()
 	gelo.+intelligence := 71;
 	db["gelo"] := gelo;
 
-	// Poison Elemental (PoisonElemental2)
-	var veneno := struct;
-	veneno.+key := "veneno";
-	veneno.+name := "Toxina Elemental";
-	veneno.+graphic := 0x775;
-	veneno.+color := 0;
-	veneno.+strength := 90;
-	veneno.+dexterity := 90;
-	veneno.+intelligence := 71;
-	db["veneno"] := veneno;
-
 	// Water Elemental (WaterElemental)
 	var agua := struct;
 	agua.+key := "agua";
@@ -173,17 +177,6 @@ function InitFormDatabase()
 	agua.+dexterity := 120;
 	agua.+intelligence := 71;
 	db["agua"] := agua;
-
-	// Water Tentacles (watertentacles)
-	var tentaculos := struct;
-	tentaculos.+key := "tentaculos";
-	tentaculos.+name := "Tentáculo Aquático";
-	tentaculos.+graphic := 0x593;
-	tentaculos.+color := 0;
-	tentaculos.+strength := 100;
-	tentaculos.+dexterity := 80;
-	tentaculos.+intelligence := 16;
-	db["tentaculos"] := tentaculos;
 
 	// Sand Elemental (ElementaldaAreia)
 	var areia := struct;
@@ -217,17 +210,6 @@ function InitFormDatabase()
 	energia.+dexterity := 166;
 	energia.+intelligence := 71;
 	db["energia"] := energia;
-
-	// Ent Small (Ent5) - small bulk trunk
-	var ent_pequeno := struct;
-	ent_pequeno.+key := "ent_pequeno";
-	ent_pequeno.+name := "Ent Pequeno";
-	ent_pequeno.+graphic := 0x6BB;
-	ent_pequeno.+color := 0;
-	ent_pequeno.+strength := 250;
-	ent_pequeno.+dexterity := 80;
-	ent_pequeno.+intelligence := 10;
-	db["ent_pequeno"] := ent_pequeno;
 
 	// Ent Medium (Ent) - bigger thin trunk
 	var ent_medio := struct;
@@ -295,6 +277,17 @@ function InitFormDatabase()
 	obsidiana.+intelligence := 86;
 	db["obsidiana"] := obsidiana;
 
+	// Totem (Totem) - Totem Amaldiçoado
+	var totem := struct;
+	totem.+key := "totem";
+	totem.+name := "Totem Amaldiçoado";
+	totem.+graphic := 0x33D;
+	totem.+color := 0;
+	totem.+strength := 550;
+	totem.+dexterity := 80;
+	totem.+intelligence := 100;
+	db["totem"] := totem;
+
 	return db;
 endfunction
 
@@ -303,22 +296,22 @@ function GetTerrainToFormsMapping()
 
 	mapping["lava"] := {"fogo"};
 	mapping["snow"] := {"gelo"};
-	mapping["forest"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto"};
-	mapping["forrest"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto"};
-	mapping["tree"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto"};
-	mapping["leaves"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto"};
-	mapping["jungle"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto", "veneno"};
-	mapping["water"] := {"agua", "tentaculos"};
+	mapping["forest"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["forrest"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["tree"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["leaves"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["jungle"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["water"] := {"agua"};
 	mapping["sand"] := {"areia", "ar"};
-	mapping["cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana"};
-	mapping["Cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana"};
-	mapping["rock"] := {"terra", "pedra", "obsidiana"};
-	mapping["stone"] := {"terra", "pedra", "obsidiana"};
-	mapping["marble"] := {"terra", "pedra", "obsidiana"};
-	mapping["cobblestones"] := {"terra", "pedra", "obsidiana"};
-	mapping["brick"] := {"terra", "pedra", "obsidiana"};
-	mapping["embank"] := {"terra", "pedra", "obsidiana"};
-	mapping["grass"] := {"ent_pequeno", "ent_medio", "ent_grande", "ent_alto", "fogo"};
+	mapping["cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana", "totem"};
+	mapping["Cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana", "totem"};
+	mapping["rock"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["stone"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["marble"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["cobblestones"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["brick"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["embank"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["grass"] := {"ent_medio", "ent_grande", "ent_alto", "fogo"};
 	mapping["dirt"] := {"terra", "pedra", "obsidiana", "fogo"};
 	mapping["void"] := {"energia"};
 
@@ -346,26 +339,12 @@ function GetElementalEffects(form_name)
 			effects.engulf_effect := 0x6D82;  // Ice spikes
 			effects.reveal_sound := 0x0041;   // Ice shatter
 			
-		"veneno":
-			effects.buildup_sound := 0x0205;  // Poison
-			effects.buildup_effect := 0x549B; // Poison drops
-			effects.engulf_effect := 0x374A;  // Poison cloud
-			effects.reveal_sound := 0x0205;   // Poison
-			effects.reveal_effect := 0x113A;  // Poison gas
-			
 		"agua":
 			effects.buildup_sound := 0x0013;  // Wave
 			effects.buildup_effect := 0x352D; // Splash
 			effects.engulf_effect := 0x6DC3;  // Water explosion
 			effects.reveal_sound := 0x0117;   // Water elemental
 			effects.reveal_effect := 0x352D;  // Splash
-			
-		"tentaculos":
-			effects.buildup_sound := 0x0013;  // Wave
-			effects.buildup_effect := 0x352D; // Water splash
-			effects.engulf_effect := 0xCBBB;  // Water explosion 2
-			effects.reveal_sound := 0x0013;   // Wave
-			effects.reveal_effect := 0x6DC3;  // Water explosion
 			
 		"areia":
 			effects.buildup_sound := 0x0015;  // Wind
@@ -383,15 +362,15 @@ function GetElementalEffects(form_name)
 			effects.reveal_sound := 0x002A;   // Thunder
 			effects.reveal_effect := 0x6CEC;  // Energy waves
 			
-		"ent_pequeno":
 		"ent_medio":
 		"ent_grande":
 		"ent_alto":
-			effects.buildup_sound := 0x010D;  // Earth elemental
-			effects.buildup_effect := 0x6D01; // Roots
-			effects.engulf_effect := 0x6D01;  // Roots
-			effects.reveal_sound := 0x010D;   // Earth elemental
-			effects.reveal_effect := 0x6D01;  // Root emergence
+		"totem":
+			effects.buildup_sound := 0x0053;  // Quiet wood/earth sound
+			effects.buildup_effect := 0x38C8; // Vines at ground level
+			effects.engulf_effect := 0x38C8;  // Vines at ground level
+			effects.reveal_sound := 0x0053;   // Quiet wood/earth sound
+			effects.reveal_effect := 0x38C8;  // Vines emerging from ground
 			
 		"terra":
 		"pedra":
@@ -403,12 +382,12 @@ function GetElementalEffects(form_name)
 			effects.reveal_effect := 0x3728;  // Dust settling
 			
 		default:
-			// Fallback to fire effects
-			effects.buildup_sound := 0x0226;
-			effects.buildup_effect := 0xD040;
-			effects.engulf_effect := 0xD06F;
-			effects.reveal_sound := 0x0112;
-			effects.reveal_effect := 0xD05E;
+			// Fallback to wood effects
+			effects.buildup_sound := 0x010D;  // Earth elemental
+			effects.buildup_effect := 0x6D01; // Roots
+			effects.engulf_effect := 0x6D01;  // Roots
+			effects.reveal_sound := 0x010D;   // Earth elemental
+			effects.reveal_effect := 0x6D01;  // Root emergence
 	endcase
 	
 	return effects;
@@ -870,16 +849,14 @@ function ApplyTransformationElementalDamage(who, form_key, duration)
 	case (form_key)
 		"fogo":         SetObjProperty(who, "primordial_fire", 1);
 		"gelo":         SetObjProperty(who, "primordial_cold", 1);
-		"veneno":       SetObjProperty(who, "primordial_poison", 1);
 		"agua":         SetObjProperty(who, "primordial_cold", 1);
-		"tentaculos":   SetObjProperty(who, "primordial_cold", 1);
 		"ar":           SetObjProperty(who, "primordial_energy", 1);
 		"areia":        SetObjProperty(who, "primordial_energy", 1);
 		"energia":      SetObjProperty(who, "primordial_energy", 1);
-		"ent_pequeno":  SetObjProperty(who, "primordial_poison", 1);
 		"ent_medio":    SetObjProperty(who, "primordial_poison", 1);
 		"ent_grande":   SetObjProperty(who, "primordial_poison", 1);
 		"ent_alto":     SetObjProperty(who, "primordial_poison", 1);
+		"totem":        SetObjProperty(who, "primordial_poison", 1);
 		"terra":        SetObjProperty(who, "primordial_physical", 1);
 		"pedra":        SetObjProperty(who, "primordial_physical", 1);
 		"obsidiana":    SetObjProperty(who, "primordial_energy", 1);
@@ -894,12 +871,10 @@ function GetPrimordialHitScript(form_key)
 		"fogo":         return ":combat:weaponHitScripts/FireHit";       // fire damage + explosion
 		"gelo":         return ":combat:weaponHitScripts/IceHit";        // cold damage + frost
 		"agua":         return ":combat:weaponHitScripts/IceHit";        // cold damage + frost
-		"tentaculos":   return ":combat:weaponHitScripts/IceHit";        // cold damage + frost
-		"veneno":       return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
-		"ent_pequeno":  return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
 		"ent_medio":    return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
 		"ent_grande":   return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
 		"ent_alto":     return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
+		"totem":        return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
 		"ar":           return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
 		"areia":        return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
 		"energia":      return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
