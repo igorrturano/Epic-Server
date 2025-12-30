@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+	var who := params[1];
+
+	// Validate player is NOT already in metamorfose
+	if (GetObjProperty(who, "metamorfose") != error)
+		SendSysMessageEx(who, "Você deve conjurar antes de se transformar.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Check if spell is already prepared
+	if (GetObjProperty(who, "wildspeech_preparada"))
+		SendSysMessageEx(who, "Você já preparou o dom da fala selvagem.", SSM_FAIL);
+		return 0;
+	endif;
+
+	// Prepare the spell for next transformation
+	SetObjProperty(who, "wildspeech_preparada", 1);
+	SendSysMessageEx(who, "Você se prepara para falar na forma selvagem.", SSM_INFO);
+	
+	return 1;
+endprogram
