@@ -7,6 +7,30 @@ function AnimalBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
+    // Performance: Cache static properties and abilities at startup (only if not already cached)
+    if (!GetObjProperty(me, "#cached_anchor"))
+        SetObjProperty(me, "#cached_anchor", GetObjProperty(me, "anchor"));
+        
+        // Cache NPC config data (eliminates repeated file reads in CanFight)
+        var npc_elem := NPC_GetNPCConfig(me);
+        SetObjProperty(me, "#npc_category", GetConfigString(npc_elem, "Category"));
+        
+        // Cache abilities (static NPC configuration, never changes)
+        SetObjProperty(me, "#has_hivemind", me.hasHiveMind() ? 1 : 0);
+        SetObjProperty(me, "#can_bite", me.CanBite() ? 1 : 0);
+        SetObjProperty(me, "#can_tongue_grab", me.CanTongueGrab() ? 1 : 0);
+        SetObjProperty(me, "#can_poison_bite", me.CanPoisonBite() ? 1 : 0);
+        SetObjProperty(me, "#can_climb_wall", me.CanClimbWall() ? 1 : 0);
+        SetObjProperty(me, "#can_frighten", me.CanFrighten() ? 1 : 0);
+        SetObjProperty(me, "#can_petrify", me.canPetrify() ? 1 : 0);
+        SetObjProperty(me, "#can_web_wrap", me.CanDoWebWrap() ? 1 : 0);
+        
+        // Cache spider-specific properties
+        if (me.isSpider())
+            SetObjProperty(me, "#cached_tier", CInt(me.getTier()));
+        endif
+    endif
+
     while (me)
         ev := os::wait_for_event(0);
 
@@ -127,7 +151,7 @@ function HandleAnimalCombatEvent(opponent)
     CheckHealthTeleport(me);
 
     if (me.isSpider() && opponent.getRace() == DROW)
-        var tier := CInt(me.getTier());
+        var tier := GetObjProperty(me, "#cached_tier");
         if (tier <= 2)
             return 0;
         elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
@@ -160,7 +184,7 @@ function HandleAnimalCombatEvent(opponent)
     TurnToward(opponent);
     PursueTarget(opponent);
     
-    if (me.hasHiveMind())
+    if (GetObjProperty(me, "#has_hivemind"))
         HiveMind(me);
     endif
 
@@ -168,27 +192,27 @@ function HandleAnimalCombatEvent(opponent)
         doConfusion(opponent);
     endif
 
-    if (me.CanBite())
+    if (GetObjProperty(me, "#can_bite"))
         Bite(me, opponent);
     endif
 
-    if (me.CanTongueGrab())
+    if (GetObjProperty(me, "#can_tongue_grab"))
         TongueGrab(me, opponent);
     endif
 
-    if (me.CanPoisonBite())
+    if (GetObjProperty(me, "#can_poison_bite"))
         PoisonBite(me, opponent);
     endif
 
-    if (me.CanClimbWall())
+    if (GetObjProperty(me, "#can_climb_wall"))
         WallClimb(me);
     endif
     // TODO, add dragons here
-    if (me.CanFrighten())
+    if (GetObjProperty(me, "#can_frighten"))
         frightenOpponent(me, opponent);
     endif
 
-    if (me.canPetrify())
+    if (GetObjProperty(me, "#can_petrify"))
         petrify(me, opponent);
     endif
 
@@ -212,7 +236,7 @@ function HandleAnimalLeftArea(opponent)
     endif
 
     // Only interact with corpses if this animal actually does something with them
-    if (opponent.dead && me.CanDoWebWrap())
+    if (opponent.dead && GetObjProperty(me, "#can_web_wrap"))
         var corpse := opponent.GetCorpse();
         if (corpse)
             // Approach the corpse, but check for threats while approaching
@@ -264,7 +288,7 @@ function AnimalIdle(wanders)
         sleepms(2);
     endforeach
 
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := GetObjProperty(me, "#cached_anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);

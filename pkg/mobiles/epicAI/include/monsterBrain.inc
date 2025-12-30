@@ -14,6 +14,16 @@ function MonsterBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
+    // Performance: Cache static properties at startup (only if not already cached)
+    if (!GetObjProperty(me, "#cached_anchor"))
+        SetObjProperty(me, "#cached_anchor", GetObjProperty(me, "anchor"));
+        SetObjProperty(me, "#cached_patrol", GetObjProperty(me, "patrol_points"));
+        
+        // Cache NPC config data (eliminates repeated file reads in CanFight)
+        var npc_elem := NPC_GetNPCConfig(me);
+        SetObjProperty(me, "#npc_category", GetConfigString(npc_elem, "Category"));
+    endif
+
     var is_ranged := isMonsterRanged();
 
     if (is_ranged)
@@ -318,7 +328,7 @@ function MonsterIdle(wanders, is_ranged)
     endif
 
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := GetObjProperty(me, "#cached_anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
@@ -326,7 +336,7 @@ function MonsterIdle(wanders, is_ranged)
      endif
 
     // Check if NPC should patrol
-    var patrol_points := GetObjProperty(me, "patrol_points");
+    var patrol_points := GetObjProperty(me, "#cached_patrol");
     var current_patrol_point := GetObjProperty(me, "#current_patrol_point");
     if (!current_patrol_point)
         current_patrol_point := 1;

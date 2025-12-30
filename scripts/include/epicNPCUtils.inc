@@ -93,14 +93,35 @@ function ReturnCharDataPlayerNear(who)
     return 0;
 endfunction
 
+// Performance: Cache player proximity checks
+var g_player_nearby_cache := dictionary; // serial -> {result, timestamp}
+
 function HasPlayerNear(who)
+    var cache_key := who.serial;
+    var current_time := polcore().systime;
+    
+    // Check cache (2 second TTL)
+    if (g_player_nearby_cache.exists(cache_key))
+        var cached := g_player_nearby_cache[cache_key];
+        if (current_time - cached.timestamp < 1)
+            return cached.result;
+        endif
+    endif
+    
+    // Cache miss or expired - do the expensive check
     var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+    var result := 0;
     foreach mobile in nearby
         if (mobile.acctname)
-            return 1;
+            result := 1;
+            break;
         endif
     endforeach
-    return 0;
+    
+    // Update cache
+    g_player_nearby_cache[cache_key] := struct{result := result, timestamp := current_time};
+    
+    return result;
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)

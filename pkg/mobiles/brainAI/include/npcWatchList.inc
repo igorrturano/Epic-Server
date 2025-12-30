@@ -10,8 +10,14 @@
 
 use uo;
 use os;
+use cfgfile;
 
 include ":brainAI:npcError";
+include ":brainAI:npcUtil";
+
+// Performance optimization: Global cache for watchlist
+var g_watchlist_dict := dictionary;
+var g_watchlist_dirty := 1;
 
 /////////////////////////////////////////////////////////////////
 // * Function List *
@@ -41,13 +47,18 @@ include ":brainAI:npcError";
  *
  */
 function NPC_LoadWatchList(npc)
-	set_critical(1);
-	var watch_dict := GetObjProperty(npc, "#WatchList");
-	if ( Lower(TypeOf(watch_dict)) != "dictionary" )
-		watch_dict := dictionary;
+	// Performance: Use cached watchlist with dirty-flag pattern
+	if (g_watchlist_dirty)
+		set_critical(1);
+		var watch_dict := GetObjProperty(npc, "#WatchList");
+		if ( Lower(TypeOf(watch_dict)) != "dictionary" )
+			watch_dict := dictionary;
+		endif
+		g_watchlist_dict := watch_dict;
+		g_watchlist_dirty := 0;
 	endif
 	
-	return watch_dict;
+	return g_watchlist_dict;
 endfunction
 
 /*
@@ -65,6 +76,9 @@ endfunction
  *
  */
 function NPC_SaveWatchList(npc, dict_list)
+	// Performance: Invalidate cache and update
+	g_watchlist_dict := dict_list;
+	g_watchlist_dirty := 0; // Cache is fresh after save
 	return SetObjProperty(npc, "#WatchList", dict_list);
 endfunction
 
@@ -176,10 +190,57 @@ function NPC_ShouldWatch(npc, mobile, byref settings, byref scripts)
 		return 1;
 	endif
 	
-	var result := Run_Script_To_Completion(scripts["ShouldWatch"].script, {npc, mobile, settings});
-	if ( result.errortext )
-		NPC_ErrorSysLog(npc, "Error::NPC_ShouldWatch() - "+result.errortext);
-	endif
+	// Performance: Inline common shouldWatch checks instead of spawning scripts
+	var script_name := scripts["ShouldWatch"].script;
 	
-	return result;
+	// targetPlayers: Most common - check for player characters only
+	if (script_name == ":brainAI:scripts/shouldWatch/targetPlayers")
+		if (mobile.cmdlevel) return 0; endif
+		if (mobile.npctemplate) return 0; endif
+		return mobile.connected ? 1 : 0;
+	// targetAny: Attack any non-GM
+	elseif (script_name == ":brainAI:scripts/shouldWatch/targetAny")
+		return mobile.cmdlevel ? 0 : 1;
+	// watchHated: Check hate list config
+	elseif (script_name == ":brainAI:scripts/shouldWatch/watchHated")
+		if (!mobile.npctemplate) return 0; endif
+		// Cache hate list in settings if not present
+		if (!settings["_cached_hatelist"])
+			var hate_config := ReadConfigFile(":brainAI:config/hatelist");
+			var config_list := FindConfigElem(hate_config, NPC_ParseTemplateName(npc.npctemplate).template);
+			settings["_cached_hatelist"] := GetConfigStringArray(config_list, "Hates");
+		endif
+		var target_template := NPC_ParseTemplateName(mobile.npctemplate).template;
+		return (target_template in settings["_cached_hatelist"]) ? 1 : 0;
+	// watchHatedandPlayer: Hate list + players
+	elseif (script_name == ":brainAI:scripts/shouldWatch/watchHatedandPlayer")
+		if (mobile.cmdlevel) return 0; endif
+		// Cache hate list config
+		if (!settings["_cached_hatelist"])
+			var hate_config := ReadConfigFile(":brainAI:config/hatelist");
+			var config_list := FindConfigElem(hate_config, NPC_ParseTemplateName(npc.npctemplate).template);
+			settings["_cached_hatelist"] := GetConfigStringArray(config_list, "Hates");
+			settings["_cached_hateprop"] := GetConfigStringArray(config_list, "HateProp");
+		endif
+		if (mobile.npctemplate)
+			var target_template := NPC_ParseTemplateName(mobile.npctemplate).template;
+			return (target_template in settings["_cached_hatelist"]) ? 1 : 0;
+		elseif (mobile.connected)
+			// For players, would need HateProp logic - fallback to script for complex cases
+			if (settings["_cached_hateprop"] && settings["_cached_hateprop"].size() > 0)
+				var result := Run_Script_To_Completion(script_name, {npc, mobile, settings});
+				return result;
+			else
+				return 0;
+			endif
+		endif
+		return 0;
+	else
+		// Fallback: Unknown script, use original method
+		var result := Run_Script_To_Completion(script_name, {npc, mobile, settings});
+		if ( result.errortext )
+			NPC_ErrorSysLog(npc, "Error::NPC_ShouldWatch() - "+result.errortext);
+		endif
+		return result;
+	endif
 endfunction

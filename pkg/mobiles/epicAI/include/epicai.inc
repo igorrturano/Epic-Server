@@ -1274,8 +1274,13 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    var npc_elem := NPC_GetNPCConfig(attacker);
-	var category := GetConfigString(npc_elem, "Category");
+    // Performance: Use cached category (set at brain initialization)
+    var category := GetObjProperty(attacker, "#npc_category");
+    if (!category)
+        // Fallback for NPCs without cache (shouldn't happen with optimized brains)
+        var npc_elem := NPC_GetNPCConfig(attacker);
+        category := GetConfigString(npc_elem, "Category");
+    endif
 
    if (category == "Aklats")
         // Usa função dedicada para detectar ameaças
