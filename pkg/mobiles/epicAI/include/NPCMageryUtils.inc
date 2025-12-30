@@ -219,18 +219,32 @@ function SortSpellsByPriority(spells)
     return spells;
 endfunction
 
+// Performance: Global cache for spell circles to avoid repeated config reads
+var g_spell_circle_cache := dictionary;
+var g_spell_config_loaded := 0;
+
 function GetSpellCircle(spellname)
-    // Need access to spell config to get circle
-    var cfg := ReadConfigFile(":spells:config/spellcaster");
-    foreach spellId in (GetConfigIntKeys(cfg))
-        var elem := FindConfigElem(cfg, spellId);
-        if (Lower(elem.Name) == Lower(spellname))
-            return CInt(elem.Circle);
-        endif
-        sleepms(2);
-    endforeach
+    var spell_key := Lower(spellname);
     
-    return 1; // Default to circle 1 if not found
+    // Check cache first
+    if (g_spell_circle_cache.exists(spell_key))
+        return g_spell_circle_cache[spell_key];
+    endif
+    
+    // Lazy load config once
+    if (!g_spell_config_loaded)
+        var cfg := ReadConfigFile(":spells:config/spellcaster");
+        foreach spellId in (GetConfigIntKeys(cfg))
+            var elem := FindConfigElem(cfg, spellId);
+            var name_key := Lower(elem.Name);
+            g_spell_circle_cache[name_key] := CInt(elem.Circle);
+            sleepms(2);
+        endforeach
+        g_spell_config_loaded := 1;
+    endif
+    
+    // Return from cache or default
+    return g_spell_circle_cache.get(spell_key, 1);
 endfunction
 
 function ChooseWeightedSpell(valid_spells)

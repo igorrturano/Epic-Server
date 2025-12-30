@@ -15,8 +15,21 @@ function HumanoidBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get humanoid configuration
-    var npc_elem := NPC_GetNPCConfig(me);
+    // Performance: Cache NPC config and static properties at startup (only if not already cached)
+    var npc_elem := GetObjProperty(me, "#cached_npc_elem");
+    if (!npc_elem)
+        npc_elem := NPC_GetNPCConfig(me);
+        SetObjProperty(me, "#cached_npc_elem", npc_elem);
+        SetObjProperty(me, "#cached_npc_class", npc_elem.Classe);
+        SetObjProperty(me, "#cached_tier", CInt(npc_elem.Tier));
+        SetObjProperty(me, "#npc_category", GetConfigString(npc_elem, "Category"));
+        
+        // Cache static properties (set once, never change)
+        SetObjProperty(me, "#cached_habs", GetObjProperty(me, "myhabs"));
+        SetObjProperty(me, "#cached_anchor", GetObjProperty(me, "anchor"));
+        SetObjProperty(me, "#cached_patrol", GetObjProperty(me, "patrol_points"));
+    endif
+    
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
@@ -329,14 +342,17 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleHumanoidCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Performance: Only scan for targets every 5 cycles (500ms instead of 100ms)
+    // Reduces ListMobiles calls by 80% during idle
+    if (wanders % 5 == 0)
+        foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
+            if (CanFight(me, mobile))
+                HandleHumanoidCombatEvent(mobile, is_ranged);
+                return;
+            endif
+            sleepms(2);
+        endforeach
+    endif
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
@@ -357,15 +373,19 @@ function HumanoidIdle(wanders, is_ranged)
         PursueTarget(heard_mobile);
     endif
 
-    var anchor := GetObjProperty(me, "anchor");
-    if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
+    // Performance: Use cached static properties
+    var anchor := GetObjProperty(me, "#cached_anchor");
+    if (!anchor) anchor := GetObjProperty(me, "anchor"); endif
+    
+    if (anchor && CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif
 
     // Check if NPC should patrol
-    var patrol_points := GetObjProperty(me, "patrol_points");
+    var patrol_points := GetObjProperty(me, "#cached_patrol");
+    if (!patrol_points) patrol_points := GetObjProperty(me, "patrol_points"); endif
     var current_patrol_point := GetObjProperty(me, "#current_patrol_point");
     if (!current_patrol_point)
         current_patrol_point := 1;
@@ -437,8 +457,12 @@ function GetCombatState(npc, opponent)
 endfunction
 
 function ChooseAbility(npc, state, habs)
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var npc_class := npc_elem.Classe;
+    // Performance: Use cached class instead of reading config
+    var npc_class := GetObjProperty(npc, "#cached_npc_class");
+    if (!npc_class)
+        var npc_elem := NPC_GetNPCConfig(npc);
+        npc_class := npc_elem.Classe;
+    endif
     
     // First determine class behavior
     case (npc_class)
@@ -454,7 +478,13 @@ function GetHabsByLevel(npc, nivel)
   
   var valid_habs := array{};
   var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-  var npc_elem := NPC_GetNPCConfig(npc);
+  
+  // Performance: Use cached class instead of reading config
+  var my_class := GetObjProperty(npc, "#cached_npc_class");
+  if (!my_class)
+    var npc_elem := NPC_GetNPCConfig(npc);
+    my_class := npc_elem.Classe;
+  endif
 
   // Before level 4, only get core class abilities
   if (nivel < 4)
@@ -466,7 +496,6 @@ function GetHabsByLevel(npc, nivel)
       var params := SplitWords(classe);
       var hab_class := params[1];
       var hab_level := CInt(params[2]) * 2;
-      var my_class := (npc_elem.Classe);
 
       if (hab_level <= nivel && hab_class == my_class && !GetConfigString(elem, "requisito"))
         valid_habs.append(hab);

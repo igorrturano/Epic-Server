@@ -41,6 +41,11 @@ var sleep_mode := 0;
 var g_settings := dictionary; // "setting name"->value
 var g_scripts := dictionary; // "script type"->value{.flags, .script}
 
+// Performance optimization: Cache nerve and watchlist dictionaries
+var g_nerve_dict := dictionary;
+var g_watchlist_dict := dictionary;
+var g_watchlist_dirty := 1;
+
 program BrainAI()
 	// Run setup steps for the npc.
 	set_critical(1);
@@ -54,7 +59,10 @@ program BrainAI()
 		var ev;
 		// PrintTextAbove(npc, "ev " + ev);
 		if (!sleep_mode)
-			RunCycleScript();
+			// Performance: Only run cycle script if actually defined
+			if (g_scripts["Cycle"])
+				RunCycleScript();
+			endif
 			ev := Wait_For_Event(g_settings["CycleWait"]);
 		else
 			ev := Wait_For_Event(g_settings["SleepWait"]);

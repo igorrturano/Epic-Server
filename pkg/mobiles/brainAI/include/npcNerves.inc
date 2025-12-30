@@ -13,6 +13,9 @@ use os;
 
 include ":brainAI:npcError";
 
+// Performance optimization: Global cache for nerve dictionary
+var g_nerve_dict := dictionary;
+
 /////////////////////////////////////////////////////////////////
 // * Function List *
 //
@@ -47,12 +50,17 @@ CONST NF_CONTINUE_ON_SLEEP	:= 0x1;
  *
  */
 function LoadNerves(mobile)
-	var nerve_dict := GetObjProperty(mobile, "#NerveInfo");
-	if ( Lower(TypeOf(nerve_dict)) != "dictionary" )
-		nerve_dict := dictionary;
+	// Performance: Use cached nerve dictionary (brain.src g_nerve_dict)
+	// Only load from property if cache is empty
+	if (!g_nerve_dict || g_nerve_dict.size() == 0)
+		var nerve_dict := GetObjProperty(mobile, "#NerveInfo");
+		if ( Lower(TypeOf(nerve_dict)) != "dictionary" )
+			nerve_dict := dictionary;
+		endif
+		g_nerve_dict := nerve_dict;
 	endif
 
-	return nerve_dict;
+	return g_nerve_dict;
 endfunction
 
 /*
@@ -70,6 +78,8 @@ endfunction
  *
  */
 function SaveNerves(mobile, nerve_dict)
+	// Performance: Update cached dictionary
+	g_nerve_dict := nerve_dict;
 	return SetObjProperty(mobile, "#NerveInfo", nerve_dict);
 endfunction
 
