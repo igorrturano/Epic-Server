@@ -22,6 +22,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
 
+	// Lazy-loaded damage caches (NPCs only - parsed once, cached forever)
+	var _npcWeaponDamage := 0;    // Cache for DamageDice
+	var _npcDamageMod := 0;       // Cache for Damage
+
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
@@ -338,12 +342,118 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
+	/**
+	 * @deprecated Use GetWeaponDamage() instead
+	 *
+	 * Este método foi substituído por GetWeaponDamage() que retorna
+	 * um objeto DamageDice estruturado ao invés de um valor bruto.
+	 */
 	function GetNPCDamage(this)
 		if (this._template is @Exception)
 			return this._template;
 		endif
-		
+
 		return this._template.Damage;
+	endfunction
+
+	/**
+	 * Obtém o dano da arma do mobile, abstraindo se é NPC (template) ou Player (item equipado).
+	 *
+	 * Para NPCs: Lê do template (EpicAttackDamage) e constrói DamageDice (lazy-loaded, cached)
+	 * Para Players: Delega para o WeaponWrapper do item equipado
+	 *
+	 * @param hand DAMAGE_HAND enum (MAINHAND ou OFFHAND) - Only applies to Players
+	 * @return DamageDice O dano físico (slash/piercing/blunt) da arma
+	 * @return Exception Se não for NPC nem Player válido, ou se template malformado
+	 *
+	 * @usage
+	 * var damage := mobile.GetWeaponDamage(DAMAGE_HAND::MAINHAND);
+	 * var slashDice := damage.GetSlashDamage();
+	 */
+	function GetWeaponDamage(this, hand)
+		if (this._objRef is @Exception && this._template is @Exception)
+			return error{errortext := "Not a valid NPC or Player!"};
+		endif
+
+		// NPCs: Lazy-load and cache (O(1) after first call)
+		if (this.IsNPC())
+			// Cache hit - return immediately
+			if (this._npcWeaponDamage)
+				return this._npcWeaponDamage;
+			endif
+
+			// Cache miss - parse once and store
+			var parts := SplitWords(this._template.EpicAttackDamage);
+			if (parts.size() < 3)
+				return error{errortext := $"Malformed EpicAttackDamage in template: {this._template.EpicAttackDamage}"};
+			endif
+
+			this._npcWeaponDamage := DamageDice(
+				Dice(GetDamageByTier(parts[1])),
+				Dice(GetDamageByTier(parts[2])),
+				Dice(GetDamageByTier(parts[3]))
+			);
+
+			return this._npcWeaponDamage;
+		endif
+
+		// Players: Delegate to weapon
+		var weapon := this.GetEquipBySlot(WEAPON);
+		if (weapon.errortext)
+			return weapon;
+		endif
+
+		return (hand == DAMAGE_HAND::MAINHAND) ? weapon.GetMainDamage() : weapon.GetOffDamage();
+	endfunction
+
+	/**
+	 * Obtém os modificadores de dano elemental da arma do mobile.
+	 *
+	 * Para NPCs: Lê do template (EpicElemDamage) e constrói Damage (lazy-loaded, cached)
+	 * Para Players: Delega para o WeaponWrapper do item equipado
+	 *
+	 * @return Damage Os modificadores elementais (fire/cold/poison/energy)
+	 * @return Exception Se não for NPC nem Player válido, ou se template malformado
+	 *
+	 * @usage
+	 * var mod := mobile.GetWeaponDamageMod();
+	 * var fireDmg := mod.GetFireRawDamage();
+	 */
+	function GetWeaponDamageMod(this)
+		if (this._objRef is @Exception && this._template is @Exception)
+			return error{errortext := "Not a valid NPC or Player!"};
+		endif
+
+		// NPCs: Lazy-load and cache (O(1) after first call)
+		if (this.IsNPC())
+			// Cache hit - return immediately
+			if (this._npcDamageMod)
+				return this._npcDamageMod;
+			endif
+
+			// Cache miss - parse once and store
+			var parts := SplitWords(this._template.EpicElemDamage);
+			if (parts.size() < 4)
+				return error{errortext := $"Malformed EpicElemDamage in template: {this._template.EpicElemDamage}"};
+			endif
+
+			this._npcDamageMod := Damage(
+				GetDamageByTier(parts[1]),
+				GetDamageByTier(parts[2]),
+				GetDamageByTier(parts[3]),
+				GetDamageByTier(parts[4])
+			);
+
+			return this._npcDamageMod;
+		endif
+
+		// Players: Delegate to weapon
+		var weapon := this.GetEquipBySlot(WEAPON);
+		if (weapon.errortext)
+			return weapon;
+		endif
+
+		return weapon.GetDamageMod();
 	endfunction
 
 	function GetBodyResist(this)
@@ -379,30 +489,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			var weapon := WeaponWrapper(this._objRef.weapon);
-
-			if (this.IsNPC())
-				weapon.SetMainDamage(DamageDice(
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
-				));
-				weapon.SetDamageMod(Damage(
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
-				));
-
-
-			endif
-
-			return weapon;
+			return WeaponWrapper(this._objRef.weapon);
 		elseif (equipSlot == SHIELD)
 			return ArmorWrapper(this._objRef.shield);
 		elseif (equipSlot == HEAD)
@@ -534,17 +626,16 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		var divisor := 20;
 		var value := 0;
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				value := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				value := CInt(this.GetStr());
-			endif
-
-			statValue /= divisor;
-			value += statValue;
+		if (STRENGTH in criteria && DEXTERITY in criteria)
+			// Both stats - use average
+			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			value += CInt(statValue / divisor);
+		elseif (STRENGTH in criteria)
+			// Only strength
+			value += CInt(this.GetStr() / divisor);
+		elseif (DEXTERITY in criteria)
+			// Only dexterity
+			value += CInt(this.GetDex() / divisor);
 		endif
 
 		if (TACTICS in criteria)
