@@ -12,7 +12,6 @@ include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
-include ":equipsys:Controller/WeaponController";
 include "include/epicNPCUtils";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
@@ -385,7 +384,29 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
 			var weapon := WeaponWrapper(this._objRef.weapon);
-			ApplyDamageOverrides(weapon, this);
+
+			if (GetObjProperty(this._objRef, "metamorfose") != error)
+				var dicedmgProp := GetObjProperty(this._objRef, "dicedmg");
+				if (dicedmgProp != error)
+					// Use dicedmg from metamorfose transformation
+					weapon.SetMainDamage(Dice(dicedmgProp[1]), Dice(dicedmgProp[2]), Dice(dicedmgProp[3]));
+				endif
+			elseif (this.IsNPC())
+				// Use template damage for normal NPCs
+				weapon.SetMainDamage(
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
+					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
+				);
+				weapon.SetDamageMod(Damage(
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
+					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
+				));
+			endif
+			// If neither (normal player with equipped weapon), weapon damage is already set from item
+
 			return weapon;
 		elseif (equipSlot == SHIELD)
 			return ArmorWrapper(this._objRef.shield);
@@ -416,16 +437,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endforeach
 
 		return equipsInSlot;
-	endfunction
-
-	/**
-	 * Obtém a arma equipada do personagem.
-	 * Convenience method que retorna GetEquipBySlot(WEAPON).
-	 *
-	 * @return WeaponWrapper da arma equipada
-	 */
-	function GetWeapon(this)
-		return this.GetEquipBySlot(WEAPON);
 	endfunction
 
 	/**
