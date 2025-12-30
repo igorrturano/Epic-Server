@@ -97,11 +97,16 @@ function PerformTransformation(who, form)
 		SetObjProperty(who, "charname", who.name);
 	endif
 
-	// Handle squelch based on abilities
-	if (TemHabilidade(who, "Elo Natural"))
+	// Always mute transformed players by default
+	who.squelch(-1);
+
+	// Check if player prepared the Wild Speech spell
+	if (GetObjProperty(who, "wildspeech_preparada"))
 		who.squelch(0);
-	else
-		who.squelch(-1);
+		var base_difficulty := CINT(AP_GetSkill(who, THEOLOGY) * 0.8);
+		start_script(":spells:maintenance/wildspeechmaintenance", array{who, base_difficulty});
+		SetObjProperty(who, "wildspeech_ativa", 1);
+		EraseObjProperty(who, "wildspeech_preparada");
 	endif
 
 	// Reveal in animal form with green nature sparkles

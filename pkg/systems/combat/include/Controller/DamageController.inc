@@ -56,26 +56,25 @@ endfunction
 
 function CalculateStatusDamage(byRef attackInfo)
 	var stat := "";
-	var statBase := 0;
-	var statDivisor := 20;
-	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-		statDivisor *= 2;
-	endif
+	var damageMod := 0;
+	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-		stat := DEXTERITY;
-		statBase := CInt(attackInfo.GetAttacker().GetDex());
-		
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
-			statBase := CInt((attackInfo.GetAttacker().GetStr() + attackInfo.GetAttacker().GetDex()) / 2);
+
+			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH, DEXTERITY);
+		else
+			stat := DEXTERITY;
+			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(DEXTERITY);
 		endif
 	else
 		stat := STRENGTH;
-		statBase := CInt(attackInfo.GetAttacker().GetStr());
+		damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH);
 	endif
 
-	var damageMod := CInt(statBase / statDivisor);
+	damageMod := CInt(damageMod / handDivisor);
+	
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
 	
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
@@ -90,11 +89,8 @@ function CalculateSkillDamage(byRef attackInfo)
 		skill := THEOLOGY;
 	endif
 	
-	var skillDivisor := 20;
-	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-		skillDivisor *= 2;
-	endif
-	var damageMod := CInt(attackInfo.GetAttacker().GetSkill(skill) / skillDivisor);
+	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
+	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(skill)}: {damageMod}"));
 	
@@ -395,8 +391,9 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 
 	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.3, 3);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
+	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
 			var script := start_script(
