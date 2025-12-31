@@ -329,7 +329,7 @@ function CalculateCriticalChanceMod(byRef attackInfo)
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(COLOR_NAME::RED)));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(GENERAL_COLOR::RED)));
 
 	// TODO: Refatorar isso daqui, tá MUITO cagado....
 		// Jogar as coisas de pet pra uma função separada
@@ -353,7 +353,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
-	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.3, 3);
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)

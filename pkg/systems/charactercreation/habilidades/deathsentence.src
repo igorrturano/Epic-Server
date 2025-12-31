@@ -24,7 +24,7 @@ program deathsentence(who)
 		duration := 15; // Maximum 15 seconds
 	endif
 
-	Message("*sentença de morte pronunciada!*", Color(COLOR_NAME::RED))
+	Message("*sentença de morte pronunciada!*", Color(GENERAL_COLOR::RED))
 		.SendAbove(who.GetObjRef());
 
 	// Track elapsed time
@@ -40,7 +40,7 @@ program deathsentence(who)
 
 		// Optional: Remind player periodically
 		if (elapsed % 3 == 0 && elapsed < duration)
-			Message(who.GetObjRef(), $"Sentença de Morte ativa: {duration - elapsed}s restantes", Color(COLOR_NAME::RED)).SendSys();
+			Message(who.GetObjRef(), $"Sentença de Morte ativa: {duration - elapsed}s restantes", Color(GENERAL_COLOR::RED)).SendSys();
 		endif
 	endwhile
 
