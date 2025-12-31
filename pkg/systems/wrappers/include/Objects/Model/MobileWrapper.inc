@@ -524,7 +524,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetDamageModifierBy(this, criteria...)
+	function GetMainDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
@@ -545,6 +545,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return CInt(value);
+	endfunction
+
+	function GetOffDamageModifierBy(this, criteria...)
+		var offHandDivisor := 2;
+
+		return CInt(this.GetMainDamageModifierBy(criteria) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
