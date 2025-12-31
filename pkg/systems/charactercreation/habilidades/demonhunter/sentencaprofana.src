@@ -48,9 +48,7 @@ program habilidade(params)
 			endif
 
 		HALLEUAD:
-			PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, 15, 2, 2740);
-			SetCooldown(targ, "blinded", 15);
-			PrintTextAbove(targ, "*cegueira*");
+			TS_StartTimer(targ, "blinded", 15, 0, who);
 
 		ELUITHORTH:
 			var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, targ.realm);

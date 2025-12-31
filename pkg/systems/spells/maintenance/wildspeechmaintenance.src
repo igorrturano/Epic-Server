@@ -1,0 +1,53 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":spells:tnmagery";
+
+program wildspeechmaintenance(params)
+	var who := params[1];
+	var base_difficulty := CInt(params[2]);
+	
+	if (!base_difficulty)
+		base_difficulty := 50;
+	endif;
+	
+	var checks_passed := 0;
+	
+	while (!who.dead && GetObjProperty(who, "metamorfose") != error && GetObjProperty(who, "wildspeech_ativa"))
+		sleep(60);
+		
+		// Check if still alive and transformed
+		if (who.dead || GetObjProperty(who, "metamorfose") == error)
+			break;
+		endif
+		
+		checks_passed := checks_passed + 1;
+		
+		// Check mana before consuming
+		if (AP_GetVital(who, MANA) < 1)
+			SendSysMessageEx(who, "Sua energia mágica se esgota e você não consegue mais falar!", SSM_FAIL);
+			break;
+		endif
+		
+		// Escalating difficulty
+		var current_difficulty := base_difficulty + (checks_passed * 5);
+		
+		// Perform skill check
+		if (SkillCheck(who, THEOLOGY, current_difficulty) <= 0)
+			SendSysMessageEx(who, "Você perdeu a conexão com a fala selvagem!", SSM_FAIL);
+			break;
+		endif;
+		
+		// Consume 1 mana per check
+		AP_ConsumeVital(who, MANA, 1);
+	endwhile
+	
+	// Cleanup on exit
+	who.squelch(-1);
+	EraseObjProperty(who, "wildspeech_ativa");
+	
+	return 1;
+endprogram

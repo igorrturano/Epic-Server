@@ -92,6 +92,11 @@ function getDamageByTier(tier)
 		DAMAGE_TIER::THROWING_MID: return "1d6";
 		DAMAGE_TIER::THROWING_HIGH: return "1d8";
 
+		// FIREWEAPON
+		DAMAGE_TIER::FIREWEAPON_LOW: return "1d6";
+		DAMAGE_TIER::FIREWEAPON_MID: return "1d8";
+		DAMAGE_TIER::FIREWEAPON_HIGH: return "1d10";
+
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
 endfunction
