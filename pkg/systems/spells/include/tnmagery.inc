@@ -621,23 +621,60 @@ function WriteCantripSpellInfo(who, byref spellinfo)
 endfunction
 
 function WritespellInfo(who, byref spellinfo)
+	Print("[CAST_SPELL] WritespellInfo called for: " + who.name + ", spell ID: " + spellinfo.id);
+	
 	var cfg;
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.magia == "Shaman")
+	var player_magia := "";
+	var player_class := "";
+	
+	if (chardata)
+		player_magia := chardata.magia;
+		player_class := chardata.classe;
+	endif
+	
+	Print("[CAST_SPELL] Player magia: " + player_magia + ", class: " + player_class);
+	
+	// Priority 1: Check cantrips FIRST for spellcasters
+	if (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
+		Print("[CAST_SPELL] Trying cantripspells first for spellcaster...");
+		cfg := ReadConfigFile(":spells:config/cantripspells");
+		var elem := FindConfigElem(cfg, spellinfo.id);
+		if (elem)
+			Print("[CAST_SPELL] Found spell in cantripspells! Name: " + GetConfigString(elem, "Name"));
+			// Use WriteCantripSpellInfo for cantrips
+			WriteCantripSpellInfo(who, spellinfo);
+			return;
+		else
+			Print("[CAST_SPELL] Not found in cantrips, trying spellcaster...");
+			cfg := ReadConfigFile(":spells:config/spellcaster");
+		endif
+	elseif (chardata.magia == "Shaman")
+		Print("[CAST_SPELL] Using shamanspells config");
 		cfg := ReadConfigFile(":spells:config/shamanspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
 	elseif (chardata.magia == "Sacerdote")
+		Print("[CAST_SPELL] Using priestspells config");
 		cfg := ReadConfigFile(":spells:config/priestspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
 	elseif (chardata.magia == "Druid")
+		Print("[CAST_SPELL] Using druidspells config");
 		cfg := ReadConfigFile(":spells:config/druidspells");
 	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
+		Print("[CAST_SPELL] Using tricksterspells config");
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
+		Print("[CAST_SPELL] Using spellcaster config");
 		cfg := ReadConfigFile(":spells:config/spellcaster");
 	endif
 
 	var elem := FindConfigElem(cfg, spellinfo.id);
+	
+	if (!elem)
+		Print("[CAST_SPELL] ERROR: Spell ID " + spellinfo.id + " not found in config!");
+		return;
+	endif
+	
+	var spell_name := GetConfigString(elem, "Name");
+	Print("[CAST_SPELL] Found spell: " + spell_name);
 
 	spellinfo.+name := GetConfigString( elem, "Name" );
 	spellinfo.+powerwords := GetConfigString( elem, "PowerWords" );

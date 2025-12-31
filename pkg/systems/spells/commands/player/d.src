@@ -7,8 +7,11 @@ include ":attributes:attributes";
 include ":spells:include/tnmagery";
 
 program ritual(who, spellname)
+	Print("[DIVINE_CMD] .d command called for: " + who.name + ", spell: " + spellname);
+	
 	if (GetObjProperty(who, "#Casting"))
 		SendSysMessageEx(who, "Voce nao pode invocar um ritual agora.", SSM_FAIL);
+		Print("[DIVINE_CMD] ERROR: Already casting");
 		return 0;
 	endif
 
@@ -41,28 +44,38 @@ program ritual(who, spellname)
 		spell_list_prop := "priest_list";
 		cfg_file := ":spells:config/priestspells";
 		class_name := "ritual";
+		Print("[DIVINE_CMD] Class: Priest, Config: priestspells");
 	elseif (magia == "Shaman")
 		spell_list_prop := "shaman_list";
 		cfg_file := ":spells:config/shamanspells";
 		class_name := "ritual";
+		Print("[DIVINE_CMD] Class: Shaman, Config: shamanspells");
 	elseif (magia == "Druid")
 		spell_list_prop := "druid_list";
 		cfg_file := ":spells:config/druidspells";
 		class_name := "ritual";
+		Print("[DIVINE_CMD] Class: Druid, Config: druidspells");
 	endif
 
 	// Get memorized spell list (includes cantrips)
 	var ritual_list := GetObjProperty(who, spell_list_prop);
+	Print("[DIVINE_CMD] Memorized spells count: " + (ritual_list ? ritual_list.size() : 0));
+	
 	if (!ritual_list || ritual_list.size() < 1)
 		SendSysMessageEx(who, "Voce nao memorizou nenhum " + class_name + ".", SSM_FAIL);
+		Print("[DIVINE_CMD] ERROR: No spells memorized");
 		return 0;
 	endif
 
 	// Find spell in memorized list (cantrips are now in this list)
 	var spell_found := FindMemorizedSpell(ritual_list, spellname);
+	
 	if (!spell_found)
 		SendSysMessageEx(who, "Voce nao memorizou o " + class_name + " " + spellname + ".", SSM_FAIL);
+		Print("[DIVINE_CMD] ERROR: Spell '" + spellname + "' not found in memorized list");
 		return 0;
+	else
+		Print("[DIVINE_CMD] Found spell: " + spell_found.name + " (ID: " + spell_found.id + ")");
 	endif
 
 	// REMOVED: Punitive usage tracking - spells can be cast multiple times now
@@ -88,11 +101,16 @@ program ritual(who, spellname)
 	endif
 
 	// Start casting
+	Print("[DIVINE_CMD] Calling cast_spell with spell ID: " + spellInfo.id + ", name: " + spellInfo.name);
+	
 	var script := Start_Script(":spells:cast_spell", array{ who, spellInfo, magia });
 	if (script.errortext)
 		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
+		Print("[DIVINE_CMD] ERROR: Failed to start cast_spell: " + script.errortext);
 		return 0;
 	endif
+	
+	Print("[DIVINE_CMD] cast_spell started successfully");
 
 	// // Mark spell as used (except cantrips)
 	// if (spell_found.circle && spell_found.circle > 0)

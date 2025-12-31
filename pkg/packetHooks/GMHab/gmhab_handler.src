@@ -6,10 +6,12 @@ use os;
 
 include "gmhab_packets";
 
-// Exported function called by POL when packet 0xD7/0x50 is received
+// Export GMHab Request handler (0xD7)
 exported function HandleGMHabRequest(who, byref packet)
-    // Call the main handler from gmhab_packets
-    var result := HandleGMHabPacket(who, packet);
-    
-    return result;
+    return HandleGMHabPacket(who, packet);
+endfunction
+
+// Export Hotbar Execute handler (0xBF/0x0099)
+exported function HandleHotbarExecute(who, byref packet)
+    return HandleGMHabPacket(who, packet);
 endfunction

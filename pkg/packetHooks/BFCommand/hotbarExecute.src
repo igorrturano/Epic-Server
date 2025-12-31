@@ -25,6 +25,8 @@ use os;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":attributes:attributes";  // For custom skill system
+include "hotbarCooldown";          // For SendHotbarCooldown function
 
 // Action type constants
 const ACTION_TYPE_POSTURA := 0x01;
@@ -35,17 +37,19 @@ const ACTION_TYPE_COMMAND := 0x05;
 const ACTION_TYPE_SKILL := 0x06;
 
 program hotbarExecute()
-    Print("INSTALLING: Hotbar Execute PH (0xBF/0x0099)...");
     return 1;
 endprogram
 
 exported function HandleHotbarExecute(who, byref packet)
-    // Parse packet (offsets assume SubCommandLength 2)
-    var actionId := packet.GetInt32(5);   // Offset 5: 4-byte Action ID
-    var actionType := packet.GetInt8(9);  // Offset 9: 1-byte Action Type
-    
-    // Debug logging
-    Print($"[HOTBAR] Execute from {who.name}: ActionID={actionId}, Type={actionType}");
+    // Parse packet structure:
+    // Byte 0: 0xBF
+    // Bytes 1-2: Length
+    // Byte 3: Padding
+    // Bytes 4-5: Subcommand (0x0099) - handled by POL
+    // Bytes 6-9: Action ID (4 bytes)
+    // Byte 10: Action Type (1 byte)
+    var actionId := packet.GetInt32(6);   // Offset 6: 4-byte Action ID
+    var actionType := packet.GetInt8(10); // Offset 10: 1-byte Action Type
     
     // Dispatch based on action type
     case (actionType)
@@ -62,7 +66,6 @@ exported function HandleHotbarExecute(who, byref packet)
         ACTION_TYPE_SKILL:
             return ExecuteSkill(who, actionId);
         default:
-            Print($"[HOTBAR] ERROR: Unknown action type {actionType}");
             SendSysMessage(who, "Erro: Tipo de ação desconhecido.");
             return 1;
     endcase
@@ -75,80 +78,319 @@ endfunction
 // ============================================================================
 
 function ExecutePostura(who, actionId)
-    Print($"[HOTBAR] ExecutePostura: {who.name}, ID={actionId}");
     
     // Map actionId to postura type
     // 0 = Slash, 1 = Piercing, 2 = Blunt
     var posturaName;
+    var posturaNamePT; // Nome em português para feedback
+    
     case (actionId)
-        0: posturaName := "slash";
-        1: posturaName := "piercing";
-        2: posturaName := "blunt";
+        0: 
+            posturaName := "slash";
+            posturaNamePT := "Cortante";
+        1: 
+            posturaName := "piercing";
+            posturaNamePT := "Perfurante";
+        2: 
+            posturaName := "blunt";
+            posturaNamePT := "Contusivo";
         default:
             SendSysMessage(who, "Erro: Postura inválida.");
             return 1;
     endcase
     
+    
     // Execute postura change via existing system
     var script := Start_Script(":equipsys:golpe", {who, posturaName});
     if (!script)
         SendSysMessage(who, "Erro ao executar postura.");
-        Print($"[HOTBAR] ERROR: Failed to start golpe script for {who.name}");
+        return 0;
     endif
+    
+    // Send feedback message in Portuguese for PosturaManager detection
+    // This message will be detected by PosturaManager to show red mask on active postura
+    SendSysMessage(who, $"Você adota postura {posturaNamePT}");
     
     return 1;
 endfunction
 
 function ExecuteHabilidade(who, actionId)
-    Print($"[HOTBAR] ExecuteHabilidade: {who.name}, ID={actionId}");
     
-    // TODO: Implement habilidade execution
-    // This will integrate with existing habilidades system
-    SendSysMessage(who, $"Executando habilidade {actionId}...");
+    // KISS: Load config on-demand (no caching - YAGNI)
+    var hab_id_cfg := ReadConfigFile(":charactercreation:config/habilidades_id");
+    if (!hab_id_cfg)
+        SendSysMessage(who, "Erro: Configuração de habilidades não encontrada.");
+        return 0;
+    endif
+    
+    // Find habilidade by ID
+    var hab_elem := FindConfigElem(hab_id_cfg, actionId);
+    if (!hab_elem)
+        SendSysMessage(who, $"Habilidade ID {actionId} não encontrada.");
+        return 0;
+    endif
+    
+    // Get habilidade data
+    var hab_name := GetConfigString(hab_elem, "nome");
+    var script_path := GetConfigString(hab_elem, "script");
+    var delay := CInt(GetConfigString(hab_elem, "delay"));
+    
+    // Check if passive
+    if (script_path == "passiva")
+        SendSysMessage(who, $"{hab_name} é uma habilidade passiva.");
+        return 0;
+    endif
+    
+    // Execute habilidade script
+    var script := Start_Script(script_path, who);
+    if (!script)
+        SendSysMessage(who, $"Erro ao executar {hab_name}.");
+        return 0;
+    endif
+    
+    // KISS: Apply cooldown if has delay (binary protocol)
+    if (delay > 0)
+        SendHotbarCooldown(who, actionId, delay);
+    endif
     
     return 1;
 endfunction
 
 function ExecuteSpecial(who, actionId)
-    Print($"[HOTBAR] ExecuteSpecial: {who.name}, ID={actionId}");
     
-    // TODO: Implement special ability execution
-    // This will integrate with existing special abilities system
-    SendSysMessage(who, $"Executando especial {actionId}...");
+    // KISS: Execute special ability via existing system
+    // The specialAbilities.src script handles all the logic
+    var script := Start_Script(":specialAbilities:specialAbilities", who);
+    if (!script)
+        SendSysMessage(who, "Erro ao executar habilidade especial.");
+        return 0;
+    endif
+    
+    // KISS: Apply cooldown (binary protocol)
+    // Base cooldown: 180s, reduced by level (-30s every 4 levels, min 30s)
+    var level := CInt(GetObjProperty(who, "level"));
+    if (!level)
+        level := 1;
+    endif
+    
+    var cooldown_duration := 180 - (CInt(level / 4) * 30);
+    if (cooldown_duration < 30)
+        cooldown_duration := 30;
+    endif
+    
+    SendHotbarCooldown(who, actionId, cooldown_duration);
     
     return 1;
 endfunction
 
 function ExecuteSpell(who, actionId)
-    Print($"[HOTBAR] ExecuteSpell: {who.name}, ID={actionId}");
     
-    // TODO: Implement spell execution
-    // This will integrate with existing spell system
-    SendSysMessage(who, $"Conjurando magia {actionId}...");
+    // Get player's class and magia to prioritize correct spell configs
+    var chardata := GetObjProperty(who, "chardata");
+    var player_magia := "";
+    var player_class := "";
+    
+    if (chardata)
+        player_magia := chardata.magia;
+        player_class := chardata.classe;
+    endif
+    
+    // Build prioritized spell config list based on player type
+    var spell_configs := array{};
+    
+    // Add player's primary spell type FIRST to avoid ID collisions
+    if (player_class == "Shaman" || player_magia == "Shaman")
+        spell_configs.append(":spells:config/shamanspells");
+    elseif (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
+        spell_configs.append(":spells:config/cantripspells");  // Cantrips FIRST for spellcasters
+        spell_configs.append(":spells:config/spellcaster");
+    elseif (player_class == "Paladino")
+        spell_configs.append(":spells:config/paladinspells");
+    elseif (player_class == "Druida")
+        spell_configs.append(":spells:config/druidspells");
+    elseif (player_class == "Sacerdote")
+        spell_configs.append(":spells:config/priestspells");
+    elseif (player_class == "Demon Hunter")
+        spell_configs.append(":spells:config/demonhunterspells");
+    elseif (player_class == "Trickster")
+        spell_configs.append(":spells:config/tricksterspells");
+    endif
+    
+    // Add remaining configs as fallback
+    spell_configs.append(":spells:config/spellcaster");
+    spell_configs.append(":spells:config/paladinspells");
+    spell_configs.append(":spells:config/druidspells");
+    spell_configs.append(":spells:config/priestspells");
+    spell_configs.append(":spells:config/shamanspells");
+    spell_configs.append(":spells:config/tricksterspells");
+    spell_configs.append(":spells:config/demonhunterspells");
+    spell_configs.append(":spells:config/cantripspells");
+    
+    var spell_name := "";
+    var cmd_prefix := "m";  // Default to mage command
+    
+    foreach cfg_path in spell_configs
+        var spell_cfg := ReadConfigFile(cfg_path);
+        if (!spell_cfg)
+            continue;
+        endif
+        
+        var spell_elem := FindConfigElem(spell_cfg, actionId);
+        if (spell_elem)
+            spell_name := GetConfigString(spell_elem, "Name");
+            
+            // Determine command prefix based on config file
+            if (cfg_path["paladin"])
+                cmd_prefix := "p";
+            elseif (cfg_path["druid"] || cfg_path["priest"] || cfg_path["shaman"])
+                cmd_prefix := "d";
+            elseif (cfg_path["demonhunter"])
+                cmd_prefix := "c";
+            elseif (cfg_path["cantrip"])
+                cmd_prefix := "t";
+            endif
+            
+            break;
+        endif
+    endforeach
+    
+    if (spell_name)
+        
+        // Create spellinfo struct (same format as grimório uses)
+        var spellinfo := struct;
+        spellinfo.+id := actionId;
+        
+        // Execute spell via cast_spell script (same as grimório/runes use)
+        var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+        
+        if (!script)
+            SendSysMessage(who, "Erro ao conjurar magia.");
+            return 0;
+        endif
+        
+    else
+        SendSysMessage(who, $"[BINARY] Magia ID {actionId} não encontrada");
+    endif
     
     return 1;
 endfunction
 
 function ExecuteCommand(who, actionId)
-    Print($"[HOTBAR] ExecuteCommand: {who.name}, ID={actionId}");
     
-    // TODO: Implement command execution
-    // This will map actionId to specific commands (.voltar, .morrer, etc)
-    SendSysMessage(who, $"Executando comando {actionId}...");
+    // Map command ID (hash) to actual command script path
+    // Hash is calculated from command text on client side
+    var cmd_map := dictionary;
+    
+    // Common commands (from GMHab system)
+    cmd_map[944130555]  := ":spells:commands/player/arremessar";   // .arremessar
+    cmd_map[1423786530] := ":spells:commands/player/voltar";       // .voltar
+    cmd_map[1426263783] := ":accounts:commands/player/senha";      // .senha
+    cmd_map.insert("pularcerca", ":commands:player/pularcerca");
+    cmd_map.insert("assumirforma", ":spells:commands/player/assumirforma");
+    cmd_map.insert("pilotar", ":spells:commands/player/pilotar");
+    cmd_map.insert("arcoelemental", ":spells:commands/player/arcoelemental");
+    cmd_map.insert("rituais", ":spells:commands/player/rituais");
+    cmd_map.insert("golpe", ":equipsys:commands/player/golpe");
+    cmd_map.insert("adestrar", ":taming:commands/player/adestrar");
+    cmd_map.insert("acalmar", ":specialAbilities:commands/gm/gmhab");
+    cmd_map.insert("actions", ":tn:commands/player/actions");
+    cmd_map.insert("sounds", ":tn:commands/player/sounds");
+    cmd_map.insert("arrastar", ":tn:commands/player/arrastar");
+    cmd_map.insert("erguer", ":tn:commands/player/erguer");
+    cmd_map.insert("lingua", ":commands:player/lingua");
+    cmd_map.insert("ficharp", ":fls_core:commands/player/ficharp");
+    cmd_map.insert("pontosrp", ":fls_rppoints:commands/player/pontosrp");
+    cmd_map.insert("rps", ":fls_rppoints:commands/player/rps");
+    cmd_map.insert("conquistas", ":achievements:commands/player/conquistas");
+    cmd_map.insert("fome", ":food:textcmd/player/fome");
+    cmd_map.insert("meditar", ":charactercreation:commands/player/meditar");
+    cmd_map.insert("camuflar", ":survival:commands/player/camuflar");
+    cmd_map.insert("assoviar", ":commands:player/assoviar");
+    cmd_map.insert("estudar", ":commands:player/estudar");
+    cmd_map.insert("pe", ":brainAI:commands/player/pe");
+    
+    var script_path := cmd_map[actionId];
+    if (script_path)
+        var result := Start_Script(script_path, who);
+        if (!result)
+            SendSysMessage(who, "Erro ao executar comando.");
+            return 0;
+        endif
+    else
+        SendSysMessage(who, $"[BINARY] Comando ID {actionId} (mapeamento pendente)");
+    endif
     
     return 1;
 endfunction
 
 function ExecuteSkill(who, actionId)
-    Print($"[HOTBAR] ExecuteSkill: {who.name}, ID={actionId}");
     
-    // Execute skill via existing system
-    // actionId is the skill index
-    var script := Start_Script(":skills:useSkill", {who, actionId});
-    if (!script)
-        SendSysMessage(who, "Erro ao usar skill.");
-        Print($"[HOTBAR] ERROR: Failed to start useSkill script for {who.name}");
+    // Map SkillID to skill name (must match GetSkillsData from gmhab_packets.inc)
+    var skill_map := dictionary;
+    skill_map[2] := "Alchemy";        // Alchemy
+    skill_map[16] := "Arcana";        // Magery (usado como Arcana)
+    skill_map[21] := "Sneak";         // Stealth
+    skill_map[33] := "Pickpocketing"; // Stealing
+    skill_map[38] := "Awareness";     // Detect Hidden
+    skill_map[48] := "Mechanics";     // Remove Trap
+    skill_map[17] := "Medicine";      // Healing
+    skill_map[20] := "Survival";      // Camping
+    skill_map[32] := "Gathering";     // Lumberjacking
+    skill_map[35] := "Handle_Animal"; // Animal Taming
+    skill_map[23] := "Theology";      // Spirit Speak
+    
+    // Get skill name from ID
+    var skill_name := skill_map[actionId];
+    
+    if (!skill_name)
+        SendSysMessage(who, "Indice de skill invalido! ID: " + actionId);
+        return 0;
     endif
     
-    return 1;
+    
+    // Get the player's skill value
+    var skill_value := CInt(AP_GetSkill(who, skill_name));
+    
+    
+    if (skill_value <= 0)
+        SendSysMessage(who, "Voce nao possui pontos em " + skill_name + "!");
+        return 0;
+    endif
+    
+    // Get the attribute config element
+    var attrib_elem := AP_GetAttributeCfgElem(skill_name);
+    if (!attrib_elem)
+        SendSysMessage(who, "Skill " + skill_name + " nao encontrada!");
+        return 0;
+    endif
+    
+    // Get the script path from the attribute
+    var script_path := GetConfigString(attrib_elem, "Script");
+    
+    
+    if (!script_path || script_path == "")
+        SendSysMessage(who, "Skill " + skill_name + " nao possui script!");
+        return 0;
+    endif
+    
+    // Check cooldown
+    var delay := GetObjProperty(who, "delayskill");
+    if (delay && delay > ReadGameClock())
+        SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+        return 0;
+    endif
+    
+    // Set cooldown (5 seconds)
+    SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+    
+    SendSysMessage(who, "Usando " + skill_name + " (valor: " + skill_value + ")");
+    
+    // Execute the skill script with the player's skill value
+    var result := start_script(script_path, who);
+    if (!result)
+        SendSysMessage(who, "Erro ao executar skill!");
+        return 0;
+    else
+        return 1;
+    endif
 endfunction

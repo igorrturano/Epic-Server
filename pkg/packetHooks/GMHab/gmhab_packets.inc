@@ -11,8 +11,6 @@ include ":fls_core:fls_characters";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "getspellicon_func";
-include "findspellbook_temp";
-include "getmagiasdata_temp";  // ✅ Multi-class spell loading
 include "include/icon_manager";
 
 // Packet IDs
@@ -323,10 +321,35 @@ endfunction
 
 // Execute special
 function ExecuteSpecial(who, special_index)
+    // Check cooldown
+    var cooldown_prop := "SpecialCooldown_" + special_index;
+    var last_use := CInt(GetObjProperty(who, cooldown_prop));
+    var current_time := ReadGameClock();
+    
+    if (last_use && (current_time < last_use))
+        var remaining := last_use - current_time;
+        SendSysMessage(who, "Aguarde " + remaining + " segundos para usar novamente!");
+        return 0;
+    endif
+    
     // Call existing special system
     var result := start_script(":specialAbilities:specialAbilities", who);
     if (result)
-        SendSysMessage(who, "Executando special ability!");
+        // Calculate cooldown based on character level
+        var level := CInt(GetObjProperty(who, "Level"));
+        if (!level)
+            level := 1;
+        endif
+        var base_cooldown := 180; // 3 minutes base
+        var cooldown_reduction := Floor(level / 4) * 30; // Reduce 30s every 4 levels
+        var final_cooldown := base_cooldown - cooldown_reduction;
+        if (final_cooldown < 30)
+            final_cooldown := 30; // Minimum 30 seconds
+        endif
+        
+        // Set cooldown
+        SetObjProperty(who, cooldown_prop, current_time + final_cooldown);
+        SendSysMessage(who, "Executando special ability! (Cooldown: " + final_cooldown + "s)");
         return 1;
     else
         SendSysMessage(who, "Erro ao executar special ability!");
@@ -475,6 +498,8 @@ function ExecuteSkill(who, skill_id)
     // Get the player's skill value
     var skill_value := CInt(AP_GetSkill(who, skill_name));
     
+    // DEBUG: Log skill info
+    
     if (skill_value <= 0)
         SendSysMessage(who, "Voce nao possui pontos em " + skill_name + "!");
         return 0;
@@ -489,6 +514,9 @@ function ExecuteSkill(who, skill_id)
     
     // Get the script path from the attribute
     var script_path := GetConfigString(attrib_elem, "Script");
+    
+    // DEBUG: Log script path
+    
     if (!script_path || script_path == "")
         SendSysMessage(who, "Skill " + skill_name + " nao possui script!");
         return 0;
@@ -740,9 +768,9 @@ function SendAllGMHabData(who)
         packet.SetInt8(offset, 0); offset += 1;
         packet.SetInt8(offset, 0); offset += 1;
         
-        // spell_id
-        packet.SetInt8(offset, CInt(item.spell_id / 256)); offset += 1;
-        packet.SetInt8(offset, item.spell_id % 256); offset += 1;
+        // spell_id (CRITICAL: use 'id' not 'spell_id' to match GetMagiasData!)
+        packet.SetInt8(offset, CInt(item.id / 256)); offset += 1;
+        packet.SetInt8(offset, item.id % 256); offset += 1;
         
         // command_prefix (for Paladin spells = "p", default = "m")
         var cmd_prefix := "m"; // Default to .m command
@@ -950,7 +978,6 @@ endfunction
 function SetInt16BE(packet, offset, value)
     var high_byte := (value >> 8) & 0xFF;
     var low_byte := value & 0xFF;
-    Print("SetInt16BE: offset=" + offset + ", value=" + value + ", high=" + high_byte + ", low=" + low_byte);
     packet.SetInt8(offset, high_byte);
     packet.SetInt8(offset + 1, low_byte);
 endfunction
@@ -999,7 +1026,79 @@ endfunction
 function WriteMagiasSection(packet, offset, items)
     SetInt16BE(packet, offset, items.size());
     offset := offset + 2;
-    // No items to write for now
+    
+    // Write magias data
+    foreach item in items
+        
+        // name
+        var name_len := len(item.name);
+        SetInt16BE(packet, offset, name_len); offset += 2;
+        packet.SetString(offset, item.name, 0); offset += name_len;
+        
+        // circle (as string)
+        var circle_str := CStr(item.circle);
+        var circle_len := len(circle_str);
+        SetInt16BE(packet, offset, circle_len); offset += 2;
+        packet.SetString(offset, circle_str, 0); offset += circle_len;
+        
+        // desc (use empty string if not available)
+        var desc := "";
+        if (item.desc)
+            desc := item.desc;
+        endif
+        var desc_len := len(desc);
+        SetInt16BE(packet, offset, desc_len); offset += 2;
+        if (desc_len > 0)
+            packet.SetString(offset, desc, 0);
+        endif
+        offset += desc_len;
+        
+        // school (magic_path)
+        var school := "";
+        if (item.school)
+            school := item.school;
+        endif
+        var school_len := len(school);
+        SetInt16BE(packet, offset, school_len); offset += 2;
+        if (school_len > 0)
+            packet.SetString(offset, school, 0);
+        endif
+        offset += school_len;
+        
+        // iconid
+        SetInt16BE(packet, offset, item.iconid); offset += 2;
+        
+        // hue (default 0)
+        SetInt16BE(packet, offset, 0); offset += 2;
+        
+        // mana_cost
+        SetInt16BE(packet, offset, item.mana_cost); offset += 2;
+        
+        // min_skill (default 0)
+        SetInt16BE(packet, offset, 0); offset += 2;
+        
+        // reagents (empty string for now)
+        SetInt16BE(packet, offset, 0); offset += 2;
+        
+        // spell_id (THIS IS THE CRITICAL FIELD!)
+        SetInt16BE(packet, offset, item.id); offset += 2;
+        
+        // command_prefix (NEW FIELD!)
+        var cmd_prefix := "m";  // Default
+        if (item.magic_path == "Shaman" || item.magic_path == "shamanspells")
+            cmd_prefix := "d";
+        elseif (item.magic_path == "paladinspells")
+            cmd_prefix := "p";
+        elseif (item.magic_path == "cantripspells")
+            cmd_prefix := "t";
+        elseif (item.magic_path == "demonhunterspells")
+            cmd_prefix := "c";
+        endif
+        var prefix_len := len(cmd_prefix);
+        SetInt16BE(packet, offset, prefix_len); offset += 2;
+        packet.SetString(offset, cmd_prefix, 0); offset += prefix_len;
+    endforeach
+    
     return offset;
 endfunction
 
@@ -1247,8 +1346,185 @@ function GetCommandsData(who)
     
     icon_data := GetCommandIcon(".rps");
     commands.append(struct{"command" := ".rps", "desc" := "Sistema de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-    
     return commands;
+endfunction
+
+// Get magias data - load from grimoire
+function GetMagiasData(who)
+    
+    var magias := array{};
+    
+    // Find spellbook in backpack
+    var backpack := who.backpack;
+    if (!backpack)
+        return magias;
+    endif
+    
+    
+    // Search for all spellbooks
+    foreach item in EnumerateItemsInContainer(backpack)
+        
+        // Check if it's a spellbook
+        // 0xEFA (3834) = vanilla spellbook
+        // 0x2253 (8787) = necro spellbook
+        // 0x9E80 (40576) = custom grimoire
+        if (item.objtype == 0xEFA || item.objtype == 0x2253 || item.objtype == 0x9E80)
+            
+            // Get booktype to know which config to load
+            var booktype := GetObjProperty(item, "Booktype");
+            if (!booktype)
+                booktype := "spellcaster";  // Default
+            endif
+            
+            // Determine config path based on booktype
+            var spell_cfg_path := ":spells:config/spellcaster";
+            case (booktype)
+                "spellcaster":
+                "mage":
+                    spell_cfg_path := ":spells:config/spellcaster";
+                "priest":
+                    spell_cfg_path := ":spells:config/priestspells";
+                "druid":
+                    spell_cfg_path := ":spells:config/druidspells";
+                "shaman":
+                "Shaman":  // Capital S variant
+                    spell_cfg_path := ":spells:config/shamanspells";
+                "paladin":
+                    spell_cfg_path := ":spells:config/paladinspells";
+                "demonhunter":
+                    spell_cfg_path := ":spells:config/demonhunterspells";
+                "trickster":
+                    spell_cfg_path := ":spells:config/tricksterspells";
+                "cantrip":
+                    spell_cfg_path := ":spells:config/cantripspells";
+            endcase
+            
+            var spell_cfg := ReadConfigFile(spell_cfg_path);
+            
+            // Get spells directly from spellbook property
+            var spells_array := GetObjProperty(item, "spells");
+            
+            if (!spells_array || TypeOf(spells_array) != "Array")
+                continue;
+            endif
+            
+            
+            // Iterate through spells and add to magias array
+            foreach spell_struct in spells_array
+                if (TypeOf(spell_struct) == "Struct")
+                    // Get spell details from config using ID
+                    var spell_id := spell_struct.id;
+                    var spell_elem := FindConfigElem(spell_cfg, spell_id);
+                    
+                    var spell_name := "<unknown>";
+                    var spell_circle := 1;
+                    var spell_mana := 0;
+                    
+                    if (spell_elem)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                        spell_circle := CInt(GetConfigString(spell_elem, "Circle"));
+                        spell_mana := CInt(GetConfigString(spell_elem, "Mana"));
+                    endif
+                    
+                    var magia := struct{};
+                    magia.+id := spell_id;
+                    magia.+name := spell_name;
+                    magia.+magic_path := spell_struct.magic_path;
+                    magia.+school := spell_struct.school;
+                    magia.+circle := spell_circle;
+                    magia.+mana_cost := spell_mana;
+                    magia.+iconid := 0x9BAC;  // Default icon
+                    magia.+hue := 0;
+                    
+                    magias.append(magia);
+                endif
+            endforeach
+        endif
+    endforeach
+    
+    // Load cantrips if player has the trait or magia
+    var chardata := GetObjProperty(who, "chardata");
+    if (chardata)
+        var magia := chardata.magia;
+        var trait := chardata.trait;
+        
+        // Check if player can use cantrips
+        if (magia == "spellcaster" || trait == "Natureza Arcana" || magia == "Arqueiro Arcano")
+            var cantrip_cfg := ReadConfigFile(":spells:config/cantripspells");
+            
+            if (cantrip_cfg)
+                var cantrip_ids := GetConfigIntKeys(cantrip_cfg);
+                
+                foreach cantrip_id in cantrip_ids
+                    var cantrip_elem := FindConfigElem(cantrip_cfg, cantrip_id);
+                    if (cantrip_elem)
+                        var cantrip_name := GetConfigString(cantrip_elem, "Name");
+                        var cantrip_circle := CInt(GetConfigString(cantrip_elem, "Circle"));
+                        var cantrip_mana := CInt(GetConfigString(cantrip_elem, "Mana"));
+                        var cantrip_school := GetConfigString(cantrip_elem, "School");
+                        
+                        var magia := struct{};
+                        magia.+id := cantrip_id;
+                        magia.+name := cantrip_name;
+                        magia.+magic_path := "cantripspells";
+                        magia.+school := cantrip_school;
+                        magia.+circle := cantrip_circle;
+                        magia.+mana_cost := cantrip_mana;
+                        magia.+iconid := 0x9BAC;  // Default icon
+                        magia.+hue := 0;
+                        
+                        magias.append(magia);
+                    endif
+                endforeach
+            endif
+        endif
+    endif
+    
+    // Load Shaman memorized spells
+    if (chardata && chardata.magia == "Shaman")
+        var shaman_list := GetObjProperty(who, "shaman_list");
+        
+        if (shaman_list && TypeOf(shaman_list) == "Array" && shaman_list.size() > 0)
+            var shaman_cfg := ReadConfigFile(":spells:config/shamanspells");
+            
+            if (shaman_cfg)
+                foreach spell in shaman_list
+                    // Skip if no ID
+                    if (!spell.id)
+                        continue;
+                    endif
+                    
+                    // Load full spell data from config
+                    var spell_elem := FindConfigElem(shaman_cfg, spell.id);
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    
+                    // Get name from config (spell.name might not exist)
+                    var spell_name := GetConfigString(spell_elem, "Name");
+                    if (!spell_name)
+                        continue;
+                    endif
+                    
+                    var magia := struct{};
+                    magia.+id := spell.id;
+                    magia.+name := spell_name;  // From config, not from spell struct
+                    magia.+magic_path := "Shaman";
+                    magia.+school := "Shaman";
+                    magia.+circle := CInt(spell.circle);
+                    magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    magia.+iconid := 0x9BAC;  // Default icon
+                    magia.+hue := 0;
+                    
+                    magias.append(magia);
+                endforeach
+            endif
+        else
+        endif
+    endif
+    
+    
+    return magias;
 endfunction
 
 // Get habilidades data - full implementation from gmhab.src lines 199-267
