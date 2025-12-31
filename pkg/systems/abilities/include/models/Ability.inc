@@ -30,13 +30,13 @@ class Ability(IAbility)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
 		
 		this._id := abilityEnum;
-		this._name := cfgFile.GetPropertyValue("name")[1];
+		this._name := cfgFile.GetPropertyValue("nome")[1];
 		this._class := cfgFile.GetPropertyValue("classe");
 		this._level := cfgFile.GetPropertyValue("nivel");
 		this._folk := cfgFile.GetPropertyValue("povo")[1];
-		this._description := cfgFile.GetPropertyValue("description")[1];
+		this._description := cfgFile.GetPropertyValue("descricao")[1];
 		this._activationMode := cfgFile.GetPropertyValue("uso")[1]; 
-		this._activationMoment := cfgFile.GetPropertyValue("activationMoment")[1];
+		this._activationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1];
 		this._requirement := cfgFile.GetPropertyValue("requisito")[1];
 		this._costHP := cfgFile.GetPropertyValue("hp")[1];
 		this._costSTAM := cfgFile.GetPropertyValue("stam")[1];
