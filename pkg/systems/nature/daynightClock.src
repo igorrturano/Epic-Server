@@ -70,6 +70,7 @@ program daynightClocksystem(parameters)
 					SetGlobalProperty("halfdaytime", ReadGameClock());
 					SetGlobalProperty("dia", "noite");
 					UpdateGlobalEventLevers("noite");
+					UpdateAllShiftMerchants();
 					dayManager.isDayDone := true;
 				endif
 			endif
