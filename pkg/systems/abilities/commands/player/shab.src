@@ -4,15 +4,9 @@ include ":wrappers:Objects/Model/MobileWrapper";
 
 program cmd_ability(who, text)
 	who := MobileWrapper(who);
-	var ability := Ability(text);
 	
 	if (who.IsDead())
 		Message("Você não pode usar habilidades enquanto está morto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-		return 1;
-	endif
-
-	if (!who.HasAbility(ability) && (who.GetObjRef().cmdlevel < 2))
-		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 1;
 	endif
 
@@ -21,5 +15,13 @@ program cmd_ability(who, text)
 		return 1;
 	endif
 
-	ActivateAbility(who, text);
+	var ability := Ability(ABILITY_ID::DANCA_DA_MORTE); // ID da habilidade Death Dance
+	if (!who.HasAbility(ability) && (who.GetObjRef().cmdlevel < 2))
+		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	// ActivateAbility(who, ability);
+
+	var abilityMonitor := AbilityMonitor(ability).ActivateOn(who);
 endprogram

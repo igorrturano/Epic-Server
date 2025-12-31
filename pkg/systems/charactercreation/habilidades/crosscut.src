@@ -2,7 +2,7 @@ use uo;
 use os;
 
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":debug:include/Controller/DebugController";
@@ -10,14 +10,14 @@ include ":tn:cooldown";
 
 program crosscut(attackInfo)
 	// Check if defender has Cross Cut ability and cooldown is active => TT/5 segundos
-	if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::CROSS_CUT))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::CROSS_CUT))
 		if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "crosscut") > 0)
 			ExecuteCrossCutCounterAttack(attackInfo);
 		endif
 	endif
 
     // Garante a proxima defesa // Defeveria ser apenas uma vez
-    if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::CROSS_CUT))
+    if (attackInfo.GetDefender().HasAbility(ABILITY_ID::CROSS_CUT))
         attackInfo.GetDefender().GetObjRef().SetProp("#tempparrybonus", 100);
     endif
 
@@ -43,7 +43,7 @@ function ExecuteCrossCutCounterAttack(byref attackInfo)
 	DebugMsg(
 		attackInfo.GetDefender().GetObjRef(),
 		DEBUG_HAB,
-		Message($"Possui Habilidade[{COMBAT_ABILITY::CROSS_CUT}]: Contra-ataque automático!", Color(SYSTEM_COLOR::SUCCESS))
+		Message($"Possui Habilidade[{ABILITY_ID::CROSS_CUT}]: Contra-ataque automático!", Color(SYSTEM_COLOR::SUCCESS))
 	);
 
 	return true;
