@@ -15,7 +15,7 @@ class IAbility()
 	uninit function GetCostMANA(this);
 	uninit function GetCharges(this);
 	uninit function GetCooldown(this);
-	uninit function GetEffectDuration(this);
+	uninit function GetDuration(this);
 	uninit function GetScript(this);
 
 	uninit function ExecuteOn(this, targetInfo);
