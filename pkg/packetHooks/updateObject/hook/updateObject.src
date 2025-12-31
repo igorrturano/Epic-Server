@@ -4,6 +4,7 @@ use os;
 use util;
 include "include/facings";
 include ":mobileRescale:include/packetUtils";
+include ":charactercreation:include/packetUtils";
 
 program Install()
 
@@ -15,6 +16,7 @@ exported function UpdateObject(who, byref packet)
 	var object := SystemFindObjectBySerial(packet.GetInt32(3));
 
 	AppendScaleProp2Packet(object, packet);
+	AppendRacialTraits2Packet(object, packet);
 	
 	return 0;
 
