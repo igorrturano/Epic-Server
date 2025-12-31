@@ -61,7 +61,7 @@ program SpellScript(params)
 	// If caster has maximum virtue (20000 entropy), potion is ineffective
 	if (GetCooldown(targ, "necrotic") && caster_entropy < 20000)
 		Message("A alma de " + targ.name + " parece pura e sem corrupção.")
-			.SetColor(COLOR_NAME::BLUE_LIGHT)
+			.SetColor(GENERAL_COLOR::BLUE_LIGHT)
 			.SendSys(who);
 		SetCooldown(targ, "detect_corruption", 3600); // 1 hour cooldown
 		return 1;
@@ -94,37 +94,37 @@ program SpellScript(params)
 
 	if (target_entropy <= -20000)
 		corruption_msg := "A alma de " + targ.name + " está completamente consumida pela escuridão! Corrupção EXTREMA detectada.";
-		msg_color := COLOR_NAME::VIOLET_DARK;
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
 	elseif (target_entropy <= -16000)
 		corruption_msg := "A alma de " + targ.name + " está profundamente corrompida. Corrupção SEVERA detectada.";
-		msg_color := COLOR_NAME::VIOLET_DARK;
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
 	elseif (target_entropy <= -12000)
 		corruption_msg := "A alma de " + targ.name + " mostra sinais claros de corrupção. Corrupção ALTA detectada.";
-		msg_color := COLOR_NAME::VIOLET_DARK;
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
 	elseif (target_entropy <= -8000)
 		corruption_msg := "A alma de " + targ.name + " apresenta manchas de escuridão. Corrupção MODERADA detectada.";
-		msg_color := COLOR_NAME::VIOLET_DARK;
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
 	elseif (target_entropy <= -4000)
 		corruption_msg := "A alma de " + targ.name + " tem leves traços de corrupção. Corrupção LEVE detectada.";
-		msg_color := COLOR_NAME::VIOLET_DARK;
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
 	elseif (target_entropy < 4000)
 		corruption_msg := "A alma de " + targ.name + " parece neutra, sem sinais significativos de corrupção ou virtude.";
 		msg_color := SYSTEM_COLOR::INFO;
 	elseif (target_entropy < 8000)
 		corruption_msg := "A alma de " + targ.name + " brilha com uma leve luz. Virtude LEVE detectada.";
-		msg_color := COLOR_NAME::BLUE_LIGHT;
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
 	elseif (target_entropy < 12000)
 		corruption_msg := "A alma de " + targ.name + " emana uma luz clara. Virtude MODERADA detectada.";
-		msg_color := COLOR_NAME::BLUE_LIGHT;
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
 	elseif (target_entropy < 16000)
 		corruption_msg := "A alma de " + targ.name + " resplandece com luz divina. Virtude ALTA detectada.";
-		msg_color := COLOR_NAME::BLUE_LIGHT;
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
 	elseif (target_entropy < 20000)
 		corruption_msg := "A alma de " + targ.name + " irradia grande pureza espiritual. Virtude SEVERA detectada.";
-		msg_color := COLOR_NAME::BLUE_LIGHT;
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
 	else
 		corruption_msg := "A alma de " + targ.name + " é um farol de luz divina! Virtude EXTREMA detectada.";
-		msg_color := COLOR_NAME::BLUE_LIGHT;
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
 	endif
 
 	Message(corruption_msg)
