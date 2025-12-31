@@ -72,7 +72,7 @@ program SpellScript(params)
 	var theology_skill := CInt(AP_GetSkill(who, THEOLOGY));
 	var resist_difficulty := RESIST_EASY + CInt(theology_skill / 20); // Scales from EASY to VERY_HARD
 
-	if (CheckResist(targ, VONTADE, resist_difficulty))
+	if (CheckResist(targ, WILL, resist_difficulty))
 		Message(targ.name + " resiste à investigação espiritual!")
 			.SetColor(SYSTEM_COLOR::FAIL)
 			.SendSys(who);
