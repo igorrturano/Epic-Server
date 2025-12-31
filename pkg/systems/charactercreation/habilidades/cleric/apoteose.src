@@ -82,7 +82,7 @@ program habilidade(who)
 			// Destino Manifesto - Guarantees critical hits for all allies
 			var nearby_allies := GetNearbyAllies(who, 8);
 			foreach ally in nearby_allies
-				SetObjProperty(ally, "#attackbonus", 100);
+				SetObjProperty(ally, "#GuaranteedHit", 1);
 				SetObjProperty(ally, "#CriticalChance", 100);
 
 				PrintTextAbove(ally, "*destino manifesto*");

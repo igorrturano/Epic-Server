@@ -199,8 +199,10 @@ function CheckDisarmShield(byRef attackInfo)
 
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
 			// Pike desarma defensor que bloquear sem escudo
+			// Half-sword desarma o atacante ao defender o golpe
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
+			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE
+			 	|| TemHabilidade(attackInfo.GetDefender().GetObjRef(), COMBAT_ABILITY::HALFSWORD))
 				
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();

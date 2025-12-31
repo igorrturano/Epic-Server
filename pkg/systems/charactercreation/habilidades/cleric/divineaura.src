@@ -100,7 +100,7 @@ program habilidade(who)
 			PlaySoundEffect(targ, 0x1F7);
 
 			var attack_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 2);
-			SetObjProperty(targ, "#attackbonus", attack_bonus);
+			SetObjProperty(targ, "#hit_mod", attack_bonus);
 
 			SendSysMessageEx(targ, "Sua precisão foi aprimorada pela aura divina!", SSM_INFO);
 			SendSysMessageEx(who, "Você concede precisão divina ao alvo!", SSM_INFO);

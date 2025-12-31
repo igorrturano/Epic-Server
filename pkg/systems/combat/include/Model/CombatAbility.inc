@@ -18,16 +18,16 @@ class CombatAbility(ICombatAbility)
 	function CombatAbility(this, abilityName)
 		var cfgFile := CFGFile("charactercreation", "config/habilidades").SetElementName(abilityName);
 		
-		this._name := cfgFile.SetKeyName("name").GetKeyValue();
-		this._description := cfgFile.SetKeyName("description").GetKeyValue();
-		this._moment := cfgFile.SetKeyName("moment").GetKeyValue();
-		this._cooldown := cfgFile.SetKeyName("cooldown").GetKeyValue();
-		this._costHP := cfgFile.SetKeyName("hp").GetKeyValue();
-		this._costSTAM := cfgFile.SetKeyName("stam").GetKeyValue();
-		this._costMANA := cfgFile.SetKeyName("mana").GetKeyValue();
-		this._effectDuration := cfgFile.SetKeyName("effectDuration").GetKeyValue();
-		this._range := cfgFile.SetKeyName("range").GetKeyValue();
-		this._damage := cfgFile.SetKeyName("damage").GetKeyValue();
+		this._name := cfgFile.GetPropertyValue("name");
+		this._description := cfgFile.GetPropertyValue("description");
+		this._moment := cfgFile.GetPropertyValue("moment");
+		this._cooldown := cfgFile.GetPropertyValue("cooldown");
+		this._costHP := cfgFile.GetPropertyValue("hp");
+		this._costSTAM := cfgFile.GetPropertyValue("stam");
+		this._costMANA := cfgFile.GetPropertyValue("mana");
+		this._effectDuration := cfgFile.GetPropertyValue("effectDuration");
+		this._range := cfgFile.GetPropertyValue("range");
+		this._damage := cfgFile.GetPropertyValue("damage");
 	endfunction
 
 	function ExecuteOn(this, byRef executor, byRef target)
@@ -57,18 +57,15 @@ enum class COMBAT_ABILITY
 	DISPARO_MISTICO := "Disparo Místico",
 	DOMINIO_VITAL := "Domínio Vital",
 	ESPECIALISTA_ESCUDOS := "Especialista Escudos",
-	ESQUIVA_INSTINTIVA := "Esquiva Instintiva",
 	EVASAO := "Evasão",
 	EXOESQUELETO := "Exoesqueleto",
 	FURIA := "Fúria",
 	FURIA_INDOMAVEL := "Fúria Indomável",
-	ILUDIR_O_FRACO := "Iludir o Fraco",
 	INSPIRAR_DEFESAS := "Inspirar Defesas",
 	INSTINTO_ASSASSINO := "Instinto Assassino",
 	KANI_NO_SUTAIRU := "Kani no Sutairu",
 	KEN_NO_TATSUJIN := "Ken no Tatsujin",
 	LADRAO_DA_SORTE := "Ladrao da Sorte",
-	LOBO_SOLITARIO := "Lobo Solitário",
 	MAESTRIA_DE_DEVASTACAO := "Maestria de Devastacao",
 	MANCHA_DA_CORRUPCAO := "Mancha da Corrupcao",
 	MAO_LIVRE := "Mão Livre",
@@ -77,10 +74,9 @@ enum class COMBAT_ABILITY
 	OPORTUNIDADE_CRITICA := "Oportunidade Critica",
 	POSTURA_DEFENSIVA := "Postura Defensiva",
 	POSTURA_OFENSIVA := "Postura Ofensiva",
-	PRESERVAR_ORGAOS := "Preservar Orgaos",
 	REBUKE := "Rebuke",
 	RECUPERACAO_SALVADORA := "Recuperação Salvadora",
-	RECUPERAR_FLECHAS := "Recuperar Flechas",
+	TIRO_PODEROSO := "Tiro Poderoso",
 	REFLEXO_ESTRATEGICO := "Reflexo Estrategico",
 	RESILIENCIA_BARBARA := "Resiliência Bárbara",
 	SEMPRE_ALERTA := "Sempre Alerta",
@@ -94,6 +90,12 @@ enum class COMBAT_ABILITY
 	VINCULO_ELEMENTAL := "Vínculo Elemental",
 	ESPIAO := "Espiao",
 	MESTRE_ESPIAO := "Mestre Espiao",
+	HALFSWORD := "Contra-Empunhadura",
+	MURDER_BLOW := "Golpe Mortal",
+	CROSS_CUT := "Contragolpe Cruzado",
+	RAGE_CUT := "Golpes Furiosos",
+	DEATH_SENTENCE := "Sentença de Morte",
+	OLEO_DO_CACADOR := "Oleo do Cacador",
 
 	// TODO: Conferir grafia
 	MARTIR := "Mártir",
@@ -105,7 +107,6 @@ enum class COMBAT_ABILITY
 	CONTRA_ATAQUE := "Contra-Ataque",
 	FEROCIDADE_ENSANGUENTADA := "Ferocidade Ensanguentada",
 	MESTRE_DUELISTA := "Mestre Duelista",
-	ARROW_RECOVERY := "Recuperar Flechas",
 	DIVINE_AUTHORITY := "Divine Authority"
 endenum
 

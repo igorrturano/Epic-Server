@@ -13,6 +13,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include ":achievements:utils/datafile";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpack; // ContainerWrapper class
@@ -21,13 +22,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
 
+	// Lazy-loaded damage caches (NPCs only - parsed once, cached forever)
+	var _npcWeaponDamage := 0;    // Cache for DamageDice
+	var _npcDamageMod := 0;       // Cache for Damage
+
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
-		if (TypeOfInt(mobile) == OT_MOBILEREF)
+		if (TypeOfInt(mobile) == OT_MOBILEREF || TypeOfInt(mobile) == OT_OFFLINEMOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElementValue();
+				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
 				this._category := this._template.Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
@@ -51,7 +56,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this._backpack := ContainerWrapper(this._objRef.backpack);
 		else
 			this._cfgFile := CFGFile("epicAI", "npcdesc");
-			this._template := this._cfgFile.SetElementName(mobile).GetElementValue();
+			this._template := this._cfgFile.SetElementName(mobile).GetElement();
 
 			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
 			var err;
@@ -337,14 +342,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
-	function GetNPCDamage(this)
-		if (this._template is @Exception)
-			return this._template;
-		endif
-		
-		return this._template.Damage;
-	endfunction
-
 	function GetBodyResist(this)
 		if (this._template is @Exception)
 			return this._template;
@@ -378,7 +375,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
@@ -397,8 +394,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
 				));
-
-
 			endif
 
 			return weapon;
@@ -438,29 +433,28 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * @param this Referência ao objeto Mobile
 	 * @param layerEnum Enumeração da camada de equipamento a ser consultada
-	 * @param itemType Tipo do item (ITEM_TYPE::WEAPON, ITEM_TYPE::ARMOR ou ITEM_TYPE::CONTAINER)
 	 *
 	 * @return Retorna o equipamento encapsulado no wrapper correspondente ao tipo especificado
 	 *         (WeaponWrapper, ArmorWrapper ou ContainerWrapper).
-	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException se
-	 *         o itemType não for válido.
+	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException
 	 */
-	function GetEquipByLayer(this, layerEnum, itemType)
+	function GetEquipByLayer(this, layerEnum)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
 		
 		var equip := GetEquipmentByLayer(this._objRef, layerEnum);
-		if (itemType == ITEM_TYPE::WEAPON)
+		if (equip.IsA(POLCLASS_WEAPON))
 			equip := WeaponWrapper(equip);
-		elseif (itemType == ITEM_TYPE::ARMOR)
+		elseif (equip.IsA(POLCLASS_ARMOR))
 			equip := ArmorWrapper(equip);
-		elseif (itemType == ITEM_TYPE::CONTAINER)
+		elseif (equip.IsA(POLCLASS_CONTAINER))
 			equip := ContainerWrapper(equip);
 		else
-			return InvalidFormatException("The itemType param must be a valid ITEM_TYPE enum value!");
+			return equip;
 		endif
 
+		// TODO: Se retornou o item, tem que ver pra adicionar aqui em cima no Wrapper dele (deixei assim porque não sabia se tinha lembrado de todos os equipáveis)
 		return equip;
 	endfunction
 
@@ -530,72 +524,27 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetMainDamageMinimumBasedOn(this, criteria...)
+	function GetDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				value := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				value := CInt(this.GetStr());
-			endif
-
-			statValue /= divisor;
-			value += statValue;
+		if (STRENGTH in criteria && DEXTERITY in criteria)
+			// Both stats - use average
+			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			value += CInt(statValue / divisor);
+		elseif (STRENGTH in criteria)
+			// Only strength
+			value += CInt(this.GetStr() / divisor);
+		elseif (DEXTERITY in criteria)
+			// Only dexterity
+			value += CInt(this.GetDex() / divisor);
 		endif
 
 		if (TACTICS in criteria)
 			value += CInt(this.GetSkill(TACTICS) / divisor);
 		endif
 
-		return value;
-	endfunction
-
-	/**
-	 * Calcula o dano mínimo secundário (mão secundária) baseado em critérios especificados.
-	 *
-	 * Esta função calcula um valor de dano mínimo para a mão secundária, considerando diferentes
-	 * atributos do mobile, como força, destreza e habilidade de táticas. O cálculo aplica uma
-	 * penalidade de 50% em relação ao dano da mão principal (divisor dobrado).
-	 *
-	 * @param this Referência ao objeto MobileWrapper atual
-	 * @param criteria Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
-	 *
-	 * @return Integer O valor calculado do dano mínimo secundário baseado nos critérios fornecidos
-	 *
-	 * @note Comportamento:
-	 *       - Se STRENGTH estiver nos critérios:
-	 *         - Se DEXTERITY também estiver presente, usa a média entre força e destreza
-	 *         - Caso contrário, usa apenas o valor de força
-	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
-	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
-	 */
-	function GetOffDamageMinimumBasedOn(this, criteria...)
-		var divisor := 20;
-		divisor *= 2; // Mão secundário possui penalidade
-		var value := 0;
-
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				statValue := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				statValue := CInt(this.GetStr());
-			endif
-			
-			statValue /= divisor;
-			value += statValue;
-		endif
-
-		if (TACTICS in criteria)
-			value += CInt(this.GetSkill(TACTICS) / divisor);
-		endif
-
-		return value;
+		return CInt(value);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
@@ -614,6 +563,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		
 		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
 		return this;
+	endfunction
+
+	function GetAchievement(this, who, type, key, name)
+		return LoadAchievement(type, who, key, name);
+	endfunction
+
+	function GetListAchievement(this, who)
+		return LoadListAchievement(who);
+	endfunction
+
+	function SetAchievement(this, who, type, elem, achievement)
+		return SaveAchievement(type, elem, achievement);
 	endfunction
 
 	/**
@@ -738,7 +699,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		// TODO: Isso aqui vai dar errado
-		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+		return this.GetEquipByLayer(LAYER_MOUNT) != error;
 	endfunction
 
 	function IsConnected(this)

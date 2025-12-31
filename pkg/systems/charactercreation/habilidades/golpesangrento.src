@@ -21,7 +21,7 @@ program doubleattack(who)
 		SetObjProperty(who, "#golpesangrento", 1);
 		sleep(5);
 		EraseObjProperty(who, "#golpesangrento");
-	// SetObjProperty(who, "#attackbonus", 100);
+	// SetObjProperty(who, "#GuaranteedHit", 1);
 	else
 		SendSysMessageEx(who, "Voce precisa estar com uma arma apropriada para alvejar ponto vital",
 				   SSM_INFO);
