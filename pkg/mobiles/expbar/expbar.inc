@@ -62,15 +62,24 @@ function BuildXPGump(who, xpbar, gumpid)
 
    var curr_xp := CInt(GetObjProperty(who, "Experience"));
    var curr_level := CInt(GetObjProperty(who, "Level"));
+
+   // Get XP thresholds for current and next level
+   var curr_level_xp := CalculateNextLevelXP(curr_level - 1);
    var next_level_xp := CalculateNextLevelXP(curr_level);
 
-   // Calculate progress percentage
-   var progress := CDbl(curr_xp) / CDbl(next_level_xp) * 100;
+   // Calculate XP progress within current level range
+   var xp_in_level := curr_xp - curr_level_xp;
+   var xp_needed := next_level_xp - curr_level_xp;
+
+   // Calculate progress percentage (0-100%)
+   var progress := CDbl(xp_in_level) / CDbl(xp_needed) * 100;
+   if (progress < 0) progress := 0; endif
+   if (progress > 100) progress := 100; endif
    var width := CInt((progress * 597) / 100);
-   
+
    // Background bar
    GFResizePic(gump, xpbar.pos_x+10, xpbar.pos_y+64, 9200, 597, 40);
-   
+
    // Progress fill
    if (width > 0)
       GFResizePic(gump, xpbar.pos_x+10, xpbar.pos_y+64, 9350, width, 40);
@@ -78,9 +87,9 @@ function BuildXPGump(who, xpbar, gumpid)
 
    // Level text
    GFTextLine(gump, xpbar.pos_x+18, xpbar.pos_y+80, 1152, "Level {}".format(curr_level));
-   
-   // XP Progress text
-   var xp_text := "{}/{}".format(curr_xp, next_level_xp);
+
+   // XP Progress text (show progress within level, not total)
+   var xp_text := "{}/{}".format(xp_in_level, xp_needed);
    GFTextLine(gump, xpbar.pos_x+500, xpbar.pos_y+74, 1152, xp_text);
 
    // Move button
