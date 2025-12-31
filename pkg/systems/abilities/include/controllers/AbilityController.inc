@@ -7,7 +7,7 @@ function ActivateAbility(who, ability)
 		return false;
 	endif
 
-	who.ActivateAbility(ability);
+	Start_Script("abilities:controllers/AbilityMonitor", array{who, ability});
 endfunction
 
 function DeactivateAbility(who, ability)
