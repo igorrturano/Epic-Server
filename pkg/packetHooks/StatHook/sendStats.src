@@ -141,7 +141,7 @@ exported function HandleSendStats(character, byref packet)
 			var attackInfo := AttackInfo(mobileEnvelopado, 0);
 			var dps_current := Trunc(mobileEnvelopado.GetCurrentDp(),2);
 			var levelAtual := CInt(GetObjProperty(character, "Level")) ? CInt(GetObjProperty(character, "Level")) : 0;
-			var xpAtual := CInt(GetObjProperty(character, "Experience"));
+			var xpAtual := CalculateNextLevelXP(levelAtual - 1);
 			var xpProximoLevel := CalculateNextLevelXP(levelAtual);
 			
 
