@@ -43,7 +43,7 @@ class Ability(IAbility)
 		this._costMANA := cfgFile.GetPropertyValue("mana")[1];
 		this._charges := cfgFile.GetPropertyValue("charges")[1];
 		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1];
-		this._effectDuration := cfgFile.GetPropertyValue("effectDuration")[1];
+		this._duration := cfgFile.GetPropertyValue("duracao")[1];
 		this._range := cfgFile.GetPropertyValue("range")[1];
 		this._script := cfgFile.GetPropertyValue("script")[1];
 	endfunction
@@ -104,8 +104,8 @@ class Ability(IAbility)
 		return this._cooldown;
 	endfunction
 
-	function GetEffectDuration(this)
-		return this._effectDuration;
+	function GetDuration(this)
+		return this._duration;
 	endfunction
 
 	function GetRange(this)
@@ -350,7 +350,13 @@ enum class ABILITY_ID
 	GOLPE_RADIANTE := 2801,
 	AURA_DIVINA := 2802,
 	AUTORIDADE_DIVINA := 2803,
-	APOTEOSE := 2804
+	APOTEOSE := 2804,
+
+
+	// TODO: REmover, coloquei aqui só pra conseguir compilar
+	CROSS_CUT,
+	MURDER_BLOW,
+	RAGE_CUT
 endenum
 
 enum class ABILITY_ACTIVATION
