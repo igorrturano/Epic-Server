@@ -2,7 +2,7 @@ use uo;
 use os;
 
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":debug:include/Controller/DebugController";
@@ -19,7 +19,7 @@ program murderblow(attackInfo)
 
 	// Passive: Attack nearby enemy on kill
 	if (attackInfo.GetDefender().GetCurrentHP() <= 0)
-		if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MURDER_BLOW))
+		if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MURDER_BLOW))
 			AttackNearbyEnemyOnKill(attackInfo);
 		endif
 	endif
@@ -81,7 +81,7 @@ function IgnoreArmorAndStun(byref attackInfo)
 	DebugMsg(
 		attackInfo.GetAttacker().GetObjRef(),
 		DEBUG_HAB,
-		Message($"Possui Habilidade[{COMBAT_ABILITY::MURDER_BLOW}]: Ignorou 70% da armadura e aplicou {stunDuration}s de atordoamento!", Color(SYSTEM_COLOR::SUCCESS))
+		Message($"Possui Habilidade[{ABILITY_ID::MURDER_BLOW}]: Ignorou 70% da armadura e aplicou {stunDuration}s de atordoamento!", Color(SYSTEM_COLOR::SUCCESS))
 	);
 
 	return true;
@@ -127,7 +127,7 @@ function AttackNearbyEnemyOnKill(byref attackInfo)
 		DebugMsg(
 			attackInfo.GetAttacker().GetObjRef(),
 			DEBUG_HAB,
-			Message($"Possui Habilidade[{COMBAT_ABILITY::MURDER_BLOW}] (Passiva): Atacou inimigo próximo após execução!", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"Possui Habilidade[{ABILITY_ID::MURDER_BLOW}] (Passiva): Atacou inimigo próximo após execução!", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

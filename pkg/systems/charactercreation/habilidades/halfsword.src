@@ -2,18 +2,18 @@ use uo;
 use os;
 
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 
 program halfsword(attackInfo)
 	// Add STR bonus to damage if attacker has Halfsword ability
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::HALFSWORD))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::HALFSWORD))
 		AddStrengthBonusDamage(attackInfo);
 	endif
 
 	// Disarm attacker if defender parried and has Halfsword ability
-	if (attackInfo.Parried() && attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::HALFSWORD))
+	if (attackInfo.Parried() && attackInfo.GetDefender().HasAbility(ABILITY_ID::HALFSWORD))
 		DisarmAttackerWeapon(attackInfo);
 	endif
 
@@ -38,7 +38,7 @@ function AddStrengthBonusDamage(byref attackInfo)
 		DebugMsg(
 			attackInfo.GetAttacker().GetObjRef(),
 			DEBUG_HAB,
-			Message($"Possui Habilidade[{COMBAT_ABILITY::HALFSWORD}]: Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 	endif
 
@@ -88,7 +88,7 @@ function DisarmAttackerWeapon(byref attackInfo)
 		DebugMsg(
 			attackInfo.GetDefender().GetObjRef(),
 			DEBUG_HAB,
-			Message($"Possui Habilidade[{COMBAT_ABILITY::HALFSWORD}]: Desarme bem-sucedido!", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Desarme bem-sucedido!", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

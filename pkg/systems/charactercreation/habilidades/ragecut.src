@@ -2,7 +2,7 @@ use uo;
 use os;
 
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":debug:include/Controller/DebugController";
@@ -16,7 +16,7 @@ include ":attributes:attributes";
  */
 program ragecut(attackInfo)
 	// Check if attacker activated Rage-Cut
-	if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::RAGE_CUT))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::RAGE_CUT))
 		ExecuteRageCutStrikes(attackInfo);
 	endif
 
@@ -52,7 +52,7 @@ function ExecuteRageCutStrikes(byref attackInfo)
 	DebugMsg(
 		attackInfo.GetAttacker().GetObjRef(),
 		DEBUG_HAB,
-		Message($"Possui Habilidade[{COMBAT_ABILITY::RAGE_CUT}]: Executando {strike_rounds} golpes extras!", Color(SYSTEM_COLOR::SUCCESS))
+		Message($"Possui Habilidade[{ABILITY_ID::RAGE_CUT}]: Executando {strike_rounds} golpes extras!", Color(SYSTEM_COLOR::SUCCESS))
 	);
 
 	// Execute furious strikes

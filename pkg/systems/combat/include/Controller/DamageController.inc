@@ -17,6 +17,7 @@ include ":combat:weardown";
 // External
 include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":charactercreation:resists";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -297,17 +298,19 @@ function CalculateCriticalChance(byRef attackInfo)
 		chance := chance * 2.0;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::LADRAO_DA_SORTE))
-		Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-		Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
-		attackInfo.GetDefender().SetProperty("#nextcritical", true);
-		return 0;
-	endif
+	// TODO: Não está na lista de habilidades
+	// if (attackInfo.GetDefender().HasAbility(ABILITY_ID::LADRAO_DA_SORTE))
+	// 	Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+	// 	Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
+	// 	attackInfo.GetDefender().SetProperty("#nextcritical", true);
+	// 	return 0;
+	// endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OPORTUNIDADE_CRITICA))
-		Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
-		attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
-	endif
+	// TODO: Não está na lista de habilidades
+	// if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OPORTUNIDADE_CRITICA))
+	// 	Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
+	// 	attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
+	// endif
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
 		GetCooldown(attackInfo.GetDefender().GetObjRef(), "vitalidadeinabalavel") > 0 ||
@@ -451,10 +454,11 @@ function CheckPoison(byRef attackInfo)
 		return false;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SENSO_DA_NATUREZA))
-		Message("Você é imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
-		return false;
-	endif
+	// TODO: Não está na lista de habilidades
+	// if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SENSO_DA_NATUREZA))
+	// 	Message("Você é imune ao efeito dos venenos.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
+	// 	return false;
+	// endif
 
 	if (attackInfo.GetAttacker().IsNPC()) // Se for NPC, checa pela skill dele
 		var poisonchance := GetConfigInt(attackInfo.GetAttacker().GetTemplate(), "Poisoning");
