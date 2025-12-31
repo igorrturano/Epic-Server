@@ -364,3 +364,8 @@ enum class STANCE_TYPE
 	DEFENSIVE := "Defensiva",
 	VERY_DEFENSIVE := "Muito Defensiva"
 endenum
+
+enum class DAMAGE_HAND
+	MAINHAND,
+	OFFHAND
+endenum
