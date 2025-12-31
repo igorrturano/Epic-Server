@@ -12,6 +12,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "getspellicon_func";
 include "include/icon_manager";
+include "gmhab_utils";  // Shared GMHab utilities (DRY principle)
 
 // Packet IDs
 const PACKET_EXTENDED := 0xD7;
@@ -1527,115 +1528,72 @@ function GetMagiasData(who)
     return magias;
 endfunction
 
-// Get habilidades data - full implementation from gmhab.src lines 199-267
+// Get habilidades data - uses shared filtering logic (DRY principle)
 function GetHabilidadesData(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        return array{};
-    endif
+    // ✅ DRY: Use shared function instead of duplicating filtering logic
+    var filtered_hab_names := GetFilteredHabilidades(who);
     
-    var char_class := chardata.classe;
-    var char_level := CInt(GetObjProperty(who, "Level"));
-    if (!char_level)
-        char_level := 1;
-    endif
-    
-    // Get purchased habilidades
-    var myhabs := GetObjProperty(who, "myhabs");
-    if (!myhabs)
-        myhabs := dictionary;
-    endif
-    
-    // Load all habilidades from config
+    // Load config to get full habilidade data
     var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
     if (!habcfg)
         return array{};
     endif
     
-    var all_keys := GetConfigStringKeys(habcfg);
+    // Get player data for icon lookup
+    var chardata := GetObjProperty(who, "chardata");
+    var char_class := chardata.classe;
+    var myhabs := GetObjProperty(who, "myhabs");
+    if (!myhabs) myhabs := dictionary; endif
+    
+    // Build full data structures for each filtered habilidade
     var filtered_habs := array{};
     var hab_index := 1;
     
-    // Filter habilidades by class, level, and active status
-    foreach hab_name in all_keys
+    foreach hab_name in filtered_hab_names
         var habelem := FindConfigElem(habcfg, hab_name);
-        if (!habelem)
-            continue;
-        endif
+        if (!habelem) continue; endif
         
+        // Get icon
+        var icon_data := GetHabilidadeIcon(hab_name, char_class);
+        
+        // Read additional fields
         var classes := GetConfigStringDictionary(habelem, "classe");
+        var required_level := CInt(classes[char_class]);
         var uso := GetConfigString(habelem, "uso");
         
-        // Skip passive abilities - only send active ones
-        if (uso != "Ativa")
-            continue;
-        endif
-        
-        // Check if eligible for this character's class
-        var is_eligible := 0;
-        var required_level := 0;
-        
-        if (classes[char_class] != error)
-            required_level := CInt(classes[char_class]);
-            if (char_level >= required_level)
-                is_eligible := 1;
-            endif
-        endif
-        
-        // Check if purchased (always show purchased abilities)
+        // Check if purchased
         var has_purchased := 0;
         foreach key in (myhabs.keys())
             if (Lower(myhabs[key]) == Lower(hab_name))
                 has_purchased := 1;
-                is_eligible := 1; // Always eligible if purchased
                 break;
             endif
         endforeach
         
-        // Add to filtered list if eligible
-        if (is_eligible)
-            // Buscar ícone do icons.cfg
-            var icon_data := GetHabilidadeIcon(hab_name, char_class);
-            
-            // Read additional fields from config
-            var stamina_cost := CInt(GetConfigString(habelem, "stam"));
-            var mana_cost := CInt(GetConfigString(habelem, "mana"));
-            var delay_val := CInt(GetConfigString(habelem, "delay"));
-            var requisite_str := GetConfigString(habelem, "requisito");
-            var duration_val := CInt(GetConfigString(habelem, "duracao"));
-            var script_str := GetConfigString(habelem, "script");
-            
-            // Set defaults if not found
-            if (!stamina_cost) stamina_cost := 0; endif
-            if (!mana_cost) mana_cost := 0; endif
-            if (!delay_val) delay_val := 0; endif
-            if (!requisite_str) requisite_str := ""; endif
-            if (!duration_val) duration_val := 0; endif
-            if (!script_str) script_str := ""; endif
-            
-            var hab_data := struct{
-                "name" := hab_name,
-                "classe" := char_class,
-                "desc" := GetConfigString(habelem, "desc"),
-                "required_level" := required_level,
-                "is_active" := (uso == "Ativa"),
-                "is_purchased" := has_purchased,
-                "iconid" := icon_data.iconid,
-                "hue" := icon_data.hue,
-                "stamina_cost" := stamina_cost,
-                "mana_cost" := mana_cost,
-                "delay" := delay_val,
-                "requisite" := requisite_str,
-                "duration" := duration_val,
-                "script" := script_str
-            };
-            
-            filtered_habs.append(hab_data);
-            hab_index := hab_index + 1;
-        endif
+        // Build struct
+        var hab_data := struct{
+            "habilidade_id" := hab_index,  // Sequential ID
+            "name" := hab_name,
+            "classe" := char_class,
+            "desc" := GetConfigString(habelem, "desc"),
+            "required_level" := required_level,
+            "is_active" := (uso == "Ativa"),
+            "is_purchased" := has_purchased,
+            "iconid" := icon_data.iconid,
+            "hue" := icon_data.hue,
+            "stamina_cost" := CInt(GetConfigString(habelem, "stam")),
+            "mana_cost" := CInt(GetConfigString(habelem, "mana")),
+            "delay" := CInt(GetConfigString(habelem, "delay")),
+            "requisite" := GetConfigString(habelem, "requisito"),
+            "duration" := CInt(GetConfigString(habelem, "duracao")),
+            "script" := GetConfigString(habelem, "script")
+        };
         
+        filtered_habs.append(hab_data);
+        hab_index := hab_index + 1;
         sleepms(2);
     endforeach
+    
     return filtered_habs;
 endfunction
 

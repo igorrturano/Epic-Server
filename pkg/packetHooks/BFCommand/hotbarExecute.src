@@ -27,6 +27,7 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":attributes:attributes";  // For custom skill system
 include "hotbarCooldown";          // For SendHotbarCooldown function
+include ":GMHab:gmhab_utils";      // Shared GMHab utilities (DRY principle)
 
 // Action type constants
 const ACTION_TYPE_POSTURA := 0x01;
@@ -37,6 +38,10 @@ const ACTION_TYPE_COMMAND := 0x05;
 const ACTION_TYPE_SKILL := 0x06;
 
 program hotbarExecute()
+    Print("[HOTBAR DEBUG] ========================================");
+    Print("[HOTBAR DEBUG] hotbarExecute.src LOADED SUCCESSFULLY!");
+    Print("[HOTBAR DEBUG] Packet handler 0xBF/0x0099 is READY");
+    Print("[HOTBAR DEBUG] ========================================");
     return 1;
 endprogram
 
@@ -50,6 +55,12 @@ exported function HandleHotbarExecute(who, byref packet)
     // Byte 10: Action Type (1 byte)
     var actionId := packet.GetInt32(6);   // Offset 6: 4-byte Action ID
     var actionType := packet.GetInt8(10); // Offset 10: 1-byte Action Type
+    
+    Print($"[HOTBAR DEBUG] ========================================");
+    Print($"[HOTBAR DEBUG] Packet received from {who.name}");
+    Print($"[HOTBAR DEBUG] ActionID: {actionId}");
+    Print($"[HOTBAR DEBUG] ActionType: {actionType} ({GetActionTypeName(actionType)})");
+    Print($"[HOTBAR DEBUG] ========================================");
     
     // Dispatch based on action type
     case (actionType)
@@ -66,11 +77,24 @@ exported function HandleHotbarExecute(who, byref packet)
         ACTION_TYPE_SKILL:
             return ExecuteSkill(who, actionId);
         default:
+            Print($"[HOTBAR DEBUG] ERROR: Unknown action type {actionType}");
             SendSysMessage(who, "Erro: Tipo de ação desconhecido.");
             return 1;
     endcase
     
     return 1; // Consume packet
+endfunction
+
+function GetActionTypeName(actionType)
+    case (actionType)
+        ACTION_TYPE_POSTURA: return "Postura";
+        ACTION_TYPE_HABILIDADE: return "Habilidade";
+        ACTION_TYPE_SPECIAL: return "Special";
+        ACTION_TYPE_SPELL: return "Spell";
+        ACTION_TYPE_COMMAND: return "Command";
+        ACTION_TYPE_SKILL: return "Skill";
+        default: return "Unknown";
+    endcase
 endfunction
 
 // ============================================================================
@@ -116,55 +140,83 @@ endfunction
 
 function ExecuteHabilidade(who, actionId)
     
-    // KISS: Load config on-demand (no caching - YAGNI)
-    var hab_id_cfg := ReadConfigFile(":charactercreation:config/habilidades_id");
-    if (!hab_id_cfg)
+    Print($"[HOTBAR DEBUG] ExecuteHabilidade called: Player={who.name}, ActionID={actionId}");
+    
+    // ✅ DRY: Use shared function instead of duplicating filtering logic
+    var hab_name := GetHabilidadeBySequentialId(who, actionId);
+    if (hab_name == error)
+        Print($"[HOTBAR DEBUG] ERROR: {hab_name.errortext}");
+        SendSysMessage(who, $"Habilidade ID {actionId} inválido.");
+        return 0;
+    endif
+    
+    Print($"[HOTBAR DEBUG] Sequential lookup: ActionID={actionId} -> Name='{hab_name}'");
+    
+    // Load config to get habilidade data
+    var hab_cfg := ReadConfigFile(":charactercreation:config/habilidades");
+    if (!hab_cfg)
+        Print("[HOTBAR DEBUG] ERROR: habilidades.cfg NOT FOUND!");
         SendSysMessage(who, "Erro: Configuração de habilidades não encontrada.");
         return 0;
     endif
     
-    // Find habilidade by ID
-    var hab_elem := FindConfigElem(hab_id_cfg, actionId);
+    // Find config element by name
+    var hab_elem := FindConfigElem(hab_cfg, hab_name);
     if (!hab_elem)
-        SendSysMessage(who, $"Habilidade ID {actionId} não encontrada.");
+        Print($"[HOTBAR DEBUG] ERROR: Habilidade '{hab_name}' NOT FOUND in config!");
+        SendSysMessage(who, $"Habilidade '{hab_name}' não encontrada.");
         return 0;
     endif
+    Print($"[HOTBAR DEBUG] Found config element for '{hab_name}'");
     
     // Get habilidade data
-    var hab_name := GetConfigString(hab_elem, "nome");
     var script_path := GetConfigString(hab_elem, "script");
     var delay := CInt(GetConfigString(hab_elem, "delay"));
     
+    Print($"[HOTBAR DEBUG] Habilidade data: Name='{hab_name}', Script='{script_path}', Delay={delay}");
+    
     // Check if passive
     if (script_path == "passiva")
+        Print($"[HOTBAR DEBUG] Habilidade '{hab_name}' is PASSIVE, cannot execute");
         SendSysMessage(who, $"{hab_name} é uma habilidade passiva.");
         return 0;
     endif
     
     // Execute habilidade script
+    Print($"[HOTBAR DEBUG] Attempting to start script: {script_path}");
     var script := Start_Script(script_path, who);
     if (!script)
+        Print($"[HOTBAR DEBUG] ERROR: Failed to start script '{script_path}'!");
         SendSysMessage(who, $"Erro ao executar {hab_name}.");
         return 0;
     endif
+    Print($"[HOTBAR DEBUG] Script started successfully: {script}");
     
     // KISS: Apply cooldown if has delay (binary protocol)
     if (delay > 0)
+        Print($"[HOTBAR DEBUG] Sending cooldown: {delay} seconds");
         SendHotbarCooldown(who, actionId, delay);
     endif
     
+    Print($"[HOTBAR DEBUG] ExecuteHabilidade completed successfully for '{hab_name}'");
     return 1;
 endfunction
 
 function ExecuteSpecial(who, actionId)
     
+    Print($"[HOTBAR DEBUG] ========== ExecuteSpecial START ==========");
+    Print($"[HOTBAR DEBUG] Player: {who.name}, ActionID: {actionId}");
+    
     // KISS: Execute special ability via existing system
     // The specialAbilities.src script handles all the logic
+    Print($"[HOTBAR DEBUG] Attempting to start script: :specialAbilities:specialAbilities");
     var script := Start_Script(":specialAbilities:specialAbilities", who);
     if (!script)
+        Print($"[HOTBAR DEBUG] ERROR: Failed to start specialAbilities script!");
         SendSysMessage(who, "Erro ao executar habilidade especial.");
         return 0;
     endif
+    Print($"[HOTBAR DEBUG] specialAbilities script started successfully: {script}");
     
     // KISS: Apply cooldown (binary protocol)
     // Base cooldown: 180s, reduced by level (-30s every 4 levels, min 30s)
@@ -172,11 +224,13 @@ function ExecuteSpecial(who, actionId)
     if (!level)
         level := 1;
     endif
+    Print($"[HOTBAR DEBUG] Player level: {level}");
     
     var cooldown_duration := 180 - (CInt(level / 4) * 30);
     if (cooldown_duration < 30)
         cooldown_duration := 30;
     endif
+    Print($"[HOTBAR DEBUG] Calculated cooldown: {cooldown_duration} seconds");
     
     SendHotbarCooldown(who, actionId, cooldown_duration);
     
