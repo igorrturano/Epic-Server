@@ -105,7 +105,7 @@ enum class NEW_STATUS_OFFSETS
 	HUNGER := 79,
 	XP_CURRENT := 80,
 	XP_NEXT := 84,
-	LEVEL := 86,
+	LEVEL := 88,
 	GOLD := 89,
 	AMOR_RESISTANCES_START := 93,
 	MOBILE_LAST_INDEX := 42,
@@ -143,6 +143,7 @@ exported function HandleSendStats(character, byref packet)
 			var levelAtual := CInt(GetObjProperty(character, "Level")) ? CInt(GetObjProperty(character, "Level")) : 0;
 			var xpAtual := CInt(GetObjProperty(character, "Experience"));
 			var xpProximoLevel := CalculateNextLevelXP(levelAtual);
+			
 
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STRENGTH, packet.GetInt16(OLD_STATUS_OFFSETS::STRENGTH));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEXTERITY, packet.GetInt16(OLD_STATUS_OFFSETS::DEXTERITY));
@@ -173,7 +174,7 @@ exported function HandleSendStats(character, byref packet)
 
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::XP_CURRENT,  xpAtual);
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::XP_NEXT,  xpProximoLevel);
-			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
 
 			foreach camadaArmadura in ARMOR_RESISTENCE_PACKET_ARRAY
