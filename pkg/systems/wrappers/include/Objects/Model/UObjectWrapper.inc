@@ -7,6 +7,7 @@ include "IUObjectWrapper";
 
 include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
+include "system/text/Color";
 
 class UObjectWrapper(IUObjectWrapper)
 	var _cfgFile;
@@ -267,7 +268,44 @@ class UObjectWrapper(IUObjectWrapper)
 			return this._objRef;
 		endif
 
+		if (color)
+			if (color is @Color)
+				color := color.GetValue();
+			else
+				return InvalidFormatException("The param color must be a Color object!");
+			endif
+		endif
+
 		PlayMovingEffectXYZHued(this._objRef, targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
+
+		return this;
+	endfunction
+
+	/**
+	 * Reproduz um efeito visual centralizado no objeto.
+	 *
+	 * @param effectId O identificador do efeito a ser reproduzido
+	 * @param speed A velocidade de reprodução do efeito (padrão: 1)
+	 * @param loop Define se o efeito deve repetir (0 = não repete, padrão: 0)
+	 * @param color A cor do efeito (padrão: 0)
+	 * @param translucent Define se o efeito é translúcido (padrão: false)
+	 *
+	 * @return Retorna o próprio objeto para encadeamento de métodos, ou uma exceção se a referência do objeto for inválida
+	 */
+	function PlayEffect(this, effectId, speed := 1, loop := 0, color := 0, translucent := false)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		if (color)
+			if (color is @Color)
+				color := color.GetValue();
+			else
+				return InvalidFormatException("The param color must be a Color object!");
+			endif
+		endif
+
+		PlayObjectCenteredEffectEx(this._objRef, effectId, speed, loop, color, translucent);
 
 		return this;
 	endfunction

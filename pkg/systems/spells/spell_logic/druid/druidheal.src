@@ -46,7 +46,7 @@ program SpellScript(params)
 
 	// Apply instant heal
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
-	HealFLS(targ, instant_heal);
+	applyEpicHealing(targ, instant_heal);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
@@ -82,7 +82,7 @@ function HealOverTime(params)
 		endif
 
 		// Apply the heal tick
-		HealFLS(targ, heal_amount);
+		applyEpicHealing(targ, heal_amount);
 
 		// Visual and sound feedback
 		PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);

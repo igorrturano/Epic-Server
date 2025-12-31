@@ -1,0 +1,55 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":entropy:entropy";
+
+program setentropy(who, text)
+	SendSysMessage(who, "Selecione o alvo para definir a entropia...");
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	if (!targ.isA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Alvo deve ser um mobile!");
+		return;
+	endif
+
+	// Parse do valor
+	var value := CInt(text);
+	if (!text || text == "")
+		SendSysMessage(who, "Uso: .setentropy <valor>");
+		SendSysMessage(who, "Range: -20000 a +20000");
+
+		// Mostrar entropia atual
+		var mobile := MobileWrapper(targ);
+		var current := mobile.GetEntropy();
+		SendSysMessage(who, "Entropia atual de " + targ.name + ": " + current);
+		return;
+	endif
+
+	// Aplicar entropia
+	var mobile := MobileWrapper(targ);
+	var current_entropy := mobile.GetEntropy();
+	var amt := value - current_entropy;
+
+	// Use UpdateMobileEntropy to trigger bonuses and description updates
+	if (amt != 0)
+		UpdateMobileEntropy(targ, amt);
+	endif
+
+	SendSysMessage(who, "Entropia de " + targ.name + " definida para: " + value);
+	SendSysMessage(targ, "Sua entropia foi alterada para: " + value);
+
+	// Feedback visual
+	if (value > 10000)
+		PlayObjectCenteredEffect(targ, FX_BLESS_EFFECT, 10, 16);
+		PrintTextAbove(targ, "*Energia divina*");
+	elseif (value < -10000)
+		PlayObjectCenteredEffect(targ, FX_SMOKE, 10, 10);
+		PrintTextAbove(targ, "*Corrupção profunda*");
+	endif
+endprogram

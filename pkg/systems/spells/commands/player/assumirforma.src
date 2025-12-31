@@ -257,7 +257,7 @@ function ApplyAttributeModifiers(who, form, duration)
 	SetObjProperty(who, "stammod", current_stammod + stammod_calc);
 	SetObjProperty(who, "resistmod", current_resistmod + resistmod_calc);
 	recalcvitals(who);
-	HealDamage(who, hitsmod_calc);
+	ApplyEpicHealing(who, hitsmod_calc);
 	applyResistMod(who, resistmod_calc);
 endfunction
 

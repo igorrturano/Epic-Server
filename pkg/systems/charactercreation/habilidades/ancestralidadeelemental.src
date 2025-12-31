@@ -84,7 +84,7 @@ program controleclima(who)
 
 			foreach mob in mobs
 				if (!(mob in enemies))
-					HealFLS(mob, Cint(mlore / 5));
+					applyEpicHealing(mob, Cint(mlore / 5));
 				endif
 			endforeach
 

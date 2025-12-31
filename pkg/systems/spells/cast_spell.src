@@ -21,6 +21,7 @@ include ":tn:cooldown";
 include "include/meusProcessos";
 include "include/epicMageryUtils";
 include "include/sysEvent";
+include ":entropy:entropy";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -104,6 +105,14 @@ endfunction
 
 function performPreCastingChecks(mobile, byref spellinfo)
 	spellinfo.mana += CInt(spellinfo.mana * GetObjProperty(mobile, "#manapenalty") / 100);
+	
+	// Entropia negativa da bonus para reduzir mana de magias necromanticas
+	var entropy := MobileWrapper(mobile).GetEntropy();
+	if (entropy <= -4000 && spellinfo.Type == KAIJIN)
+		spellinfo.mana -= Cint(abs(entropy) / 4000);
+	elseif (entropy >= 4000 && spellinfo.Type == "Divine")
+		spellinfo.mana += Cint(entropy / 4000);
+	endif
 
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
 	var battlemageHabs := { "Concentracao Macabra", "Consagracao Divina", "Sigilo de Protecao", "Vínculo Elemental",
@@ -447,6 +456,12 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 		attribute := THEOLOGY;
 	endif
 
+	var entropy := MobileWrapper(mobile).GetEntropy();
+	if (entropy <= -12000 && spellinfo.Type == "Divine")
+		Message("Você está muito corrompido para lançar magias divinas.").SetColor(SSM_FAIL).SendSys(mobile);
+		return 0;
+	endif
+
 	var difficulty := CInt(spellinfo.Difficulty);
 	var skill_check := SkillCheck(mobile, attribute, difficulty);
 
@@ -478,6 +493,7 @@ endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
+	UpdateMobileEntropy(mobile, Cint(spellinfo.Circle[1]));
 	EraseObjProperty(mobile, "#Casting");
 	EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
 	return 1;

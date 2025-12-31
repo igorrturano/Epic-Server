@@ -4,8 +4,11 @@ include ":charactercreation:habilidades";
 include "include/say";
 include "include/creationUtils";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
 
-function GetResist(who, resist) // ATENçÃO: este metodo só existe para compatibilidade com o sistema antigo de resistências
+ // ATENçÃO: este metodo só existe para compatibilidade com o sistema antigo de resistências
+ // A atuação das resistências agora é feita via atributos intrínsecos e ganchos. veja: pkg/systems/attributes/hooks/intrinsicMods.src
+function GetResist(who, resist)
 	return AP_GetStat(who, resist);
 endfunction
 
@@ -51,7 +54,8 @@ function ShouldGetSecondChance(defender, resist_type)
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
         (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == WILL) ||
-        (chardata.culture == POLKINEA)
+        (chardata.culture == POLKINEA) ||
+		(MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
     );
 endfunction
 
@@ -65,6 +69,8 @@ function GetSecondChanceMessage(defender, resist_type)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)
         return "Um pequilho sempre pode contar com a própria sorte";
+	elseif (MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
+		return "Sua alma corrupta expurga o veneno";
     endif
     return "";
 endfunction

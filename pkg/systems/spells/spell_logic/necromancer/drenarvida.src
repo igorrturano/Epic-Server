@@ -69,7 +69,7 @@ program SpellScript(params)
 				EraseObjProperty(targ, "#sleep");
 			endif
 			PrintTextPrivate(targ, "-" + amt + " Vida", who, 3, 38); // vermelho
-			HealDamage(who, amt);
+			ApplyEpicHealing(who, amt);
 			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
 			time := time + 1;
 			sleep(1);

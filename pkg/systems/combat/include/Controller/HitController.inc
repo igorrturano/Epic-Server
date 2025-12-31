@@ -21,9 +21,9 @@ include "include/packets";
 function CalculateHitChance(byRef attackInfo)
 	// Os cálculos são feitos em float, pra evitar perda de precisão em divisões
 	// O retorno deve ser feito em int, pra facilitar a rolagem do dado
-	
 	// Condições especiais (que já retornam valor fixo) aqui em cima, pra economizar processamento
-	if (!attackInfo.GetAttacker().IsNPC())
+	// Jogadores que não estão em warmode devem ser fáceis de acertar (não podem se defender adequadamente)
+	if (!attackInfo.GetDefender().IsNPC())
 		if (!attackInfo.GetDefender().IsWarMode())
 			return 100;
 		endif
@@ -50,12 +50,10 @@ function CalculateHitChance(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "ataquetotal"))
 		return 100;
 	endif
-
 	// As condições que precisam de cálculo, começam aqui
 	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
-
 	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
 	hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#attackbonus"));
@@ -101,7 +99,6 @@ function CalculateHitChance(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "posturadecombate") > 0)
 		hit_chance += 10.0;
 	endif
-
 	var challenged_by := attackInfo.GetAttacker().GetObjRef().GetProp("#DuelChallenge");
 	if (challenged_by && !attackInfo.GetAttacker().IsNPC)
 		if (challenged_by.time < ReadGameClock())
@@ -112,7 +109,7 @@ function CalculateHitChance(byRef attackInfo)
 				if (attackInfo.GetDefender().GetSerial() != challenger.serial)
 					hit_chance -= 10.0;
 					if (RandomInt(100 + 1) < 20.0)
-						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", FONTCOLOR_ERROR).SendSys(attackInfo.GetAttacker().GetObjRef());
+						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 					endif
 				endif
 			else
@@ -184,7 +181,6 @@ function CalculateHitChance(byRef attackInfo)
 			hit_chance += 15.0;
 		endif
 	endif
-
 	var tiroCerteiro := CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("tirocerteiro"));
 	if (tiroCerteiro > 0)
 		tiroCerteiro--;
@@ -228,6 +224,39 @@ function CalculateHitChance(byRef attackInfo)
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(SCIENCE) / 5);
 	endif
 
+	// Entropy bonus: negative entropy gives +1 to +10 bonus/penalty
+	var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
+	if (attacker_entropy <= -2000)
+		var entropy_bonus := Cdbl(abs(attacker_entropy) / 2000);
+		if (entropy_bonus > 10.0) entropy_bonus := 10.0; endif
+		hit_chance += entropy_bonus;
+	endif
+
+	var defender_entropy := attackInfo.GetDefender().GetEntropy();
+	if (defender_entropy <= -2000)
+		var entropy_penalty := Cdbl(abs(defender_entropy) / 2000);
+		if (entropy_penalty > 10.0) entropy_penalty := 10.0; endif
+		hit_chance -= entropy_penalty;
+	endif
+
+	var globalEntropy := Cint(GetGlobalProperty("GlobalEntropy"));
+	if (globalEntropy <= -60000 && attackInfo.GetAttacker().IsNPC())
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		if (npc_category == "void")
+			hit_chance += 10.0;
+		endif
+	elseif (globalEntropy <= -40000)
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		if (npc_category == "demon")
+			hit_chance += 10.0;
+		endif
+	elseif (globalEntropy <= -20000)
+		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		if (npc_category == "undead")
+			hit_chance += 10.0;
+		endif
+	endif
+
 	if (!attackInfo.GetAttacker().IsNPC())
 		DarknessHitModifier(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), hit_chance);
 	endif
@@ -235,7 +264,7 @@ function CalculateHitChance(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#ataqueinesperado"))
 		if (attackInfo.GetDefender().GetObjRef().GetProp("lastHit").serial == attackInfo.GetAttacker().GetSerial())
 			hit_chance += 50.0;
-			Message("*ataque inesperado*", FONTCOLOR_ERROR).SendAbove(attackInfo.GetAttacker().GetObjRef());
+			Message("*ataque inesperado*", Color(SYSTEM_COLOR::FAIL)).SendAbove(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#ataqueinesperado");
@@ -249,7 +278,7 @@ function CalculateHitChance(byRef attackInfo)
 			hit_chance += 50.0;
 			attackers.append(attackInfo.GetAttacker().GetSerial());
 			attackInfo.GetDefender().GetObjRef().SetProp("#bomcomecoserials", attackers);
-			Message("Você começou bem.", FONTCOLOR_SUCCESS).SendSys(attackInfo.GetAttacker().GetObjRef());
+			Message("Você começou bem.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		endif
 
 		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
