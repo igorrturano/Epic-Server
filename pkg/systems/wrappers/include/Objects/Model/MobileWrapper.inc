@@ -22,6 +22,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _religion := "";
 	var _combatTraits; // CombatTraits class
 
+	// Lazy-loaded damage caches (NPCs only - parsed once, cached forever)
+	var _npcWeaponDamage := 0;    // Cache for DamageDice
+	var _npcDamageMod := 0;       // Cache for Damage
+
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
@@ -371,7 +375,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
