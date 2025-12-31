@@ -125,6 +125,74 @@ class DamageDice(IDamageDice)
 		return this;
 	endfunction
 
+	function GetMinDamage(this)
+		var minDamage := 0;
+
+		if (this._slash is @Dice)
+			minDamage += this._slash.GetMinimum();
+		endif
+
+		if (this._piercing is @Dice)
+			minDamage += this._piercing.GetMinimum();
+		endif
+
+		if (this._blunt is @Dice)
+			minDamage += this._blunt.GetMinimum();
+		endif
+
+		if (this._fire is @Dice)
+			minDamage += this._fire.GetMinimum();
+		endif
+
+		if (this._cold is @Dice)
+			minDamage += this._cold.GetMinimum();
+		endif
+
+		if (this._poison is @Dice)
+			minDamage += this._poison.GetMinimum();
+		endif
+
+		if (this._energy is @Dice)
+			minDamage += this._energy.GetMinimum();
+		endif
+
+		return minDamage;
+	endfunction
+
+	function GetMaxDamage(this)
+		var maxDamage := 0;
+
+		if (this._slash is @Dice)
+			maxDamage += this._slash.GetMaximum();
+		endif
+
+		if (this._piercing is @Dice)
+			maxDamage += this._piercing.GetMaximum();
+		endif
+
+		if (this._blunt is @Dice)
+			maxDamage += this._blunt.GetMaximum();
+		endif
+
+		if (this._fire is @Dice)
+			maxDamage += this._fire.GetMaximum();
+		endif
+
+		if (this._cold is @Dice)
+			maxDamage += this._cold.GetMaximum();
+		endif
+
+		if (this._poison is @Dice)
+			maxDamage += this._poison.GetMaximum();
+		endif
+
+		if (this._energy is @Dice)
+			maxDamage += this._energy.GetMaximum();
+		endif
+
+		return maxDamage;
+	endfunction
+
 	function ToString(this)
 		return $"Weapon Damage: " +
 			$"Slash={this._slash.ToString()}, " +
