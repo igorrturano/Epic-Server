@@ -61,37 +61,37 @@ function ChooseStance(who)
 
 	// Create buttons and labels for each stance (coordinates relative to grid cell)
 	var btnNeutral := Button("Neutral", 15, 0, 2152, 2153);
-	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipNeutral := Tooltip("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
 
 	var btnAggressive := Button("Aggressive", 15, 0, 2152, 2153);
-	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipAggressive := Tooltip("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
 
 	var btnVeryAggressive := Button("VeryAggressive", 15, 0, 2152, 2153);
-	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipVeryAggressive := Tooltip("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
 
 	var btnDefensive := Button("Defensive", 15, 0, 2152, 2153);
-	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipDefensive := Tooltip("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
 
 	var btnVeryDefensive := Button("VeryDefensive", 15, 0, 2152, 2153);
-	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(COLOR_NAME::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
 	var tooltipVeryDefensive := Tooltip("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
 
 	// Highlight current stance with green color
 	case (currentStance)
 		STANCE_TYPE::NEUTRAL:
-			txtNeutral.SetColor(COLOR_NAME::GREEN);
+			txtNeutral.SetColor(GENERAL_COLOR::GREEN);
 		STANCE_TYPE::AGGRESSIVE:
-			txtAggressive.SetColor(COLOR_NAME::GREEN);
+			txtAggressive.SetColor(GENERAL_COLOR::GREEN);
 		STANCE_TYPE::VERY_AGGRESSIVE:
-			txtVeryAggressive.SetColor(COLOR_NAME::GREEN);
+			txtVeryAggressive.SetColor(GENERAL_COLOR::GREEN);
 		STANCE_TYPE::DEFENSIVE:
-			txtDefensive.SetColor(COLOR_NAME::GREEN);
+			txtDefensive.SetColor(GENERAL_COLOR::GREEN);
 		STANCE_TYPE::VERY_DEFENSIVE:
-			txtVeryDefensive.SetColor(COLOR_NAME::GREEN);
+			txtVeryDefensive.SetColor(GENERAL_COLOR::GREEN);
 	endcase
 
 	// Add controls to grid (button in col 1, text with tooltip in col 2)
