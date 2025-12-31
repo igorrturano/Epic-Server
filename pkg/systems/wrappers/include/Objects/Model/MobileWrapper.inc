@@ -343,14 +343,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
-	function GetNPCDamage(this)
-		if (this._template is @Exception)
-			return this._template;
-		endif
-		
-		return this._template.Damage;
-	endfunction
-
 	function GetBodyResist(this)
 		if (this._template is @Exception)
 			return this._template;
@@ -403,8 +395,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
 				));
-
-
 			endif
 
 			return weapon;
@@ -531,17 +521,16 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		var divisor := 20;
 		var value := 0;
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				value := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				value := CInt(this.GetStr());
-			endif
-
-			statValue /= divisor;
-			value += statValue;
+		if (STRENGTH in criteria && DEXTERITY in criteria)
+			// Both stats - use average
+			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			value += CInt(statValue / divisor);
+		elseif (STRENGTH in criteria)
+			// Only strength
+			value += CInt(this.GetStr() / divisor);
+		elseif (DEXTERITY in criteria)
+			// Only dexterity
+			value += CInt(this.GetDex() / divisor);
 		endif
 
 		if (TACTICS in criteria)
