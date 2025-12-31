@@ -25,6 +25,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _abilities; // Dictionary<ABILITY_ID, Integer>
 	var _activeAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 
+	// Lazy-loaded damage caches (NPCs only - parsed once, cached forever)
+	var _npcWeaponDamage := 0;    // Cache for DamageDice
+	var _npcDamageMod := 0;       // Cache for Damage
+
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
@@ -376,7 +380,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
@@ -517,7 +521,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetDamageModifierBy(this, criteria...)
+	function GetMainDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
@@ -538,6 +542,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return CInt(value);
+	endfunction
+
+	function GetOffDamageModifierBy(this, criteria...)
+		var offHandDivisor := 2;
+
+		return CInt(this.GetMainDamageModifierBy(criteria) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)

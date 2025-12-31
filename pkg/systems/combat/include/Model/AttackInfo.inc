@@ -634,11 +634,6 @@ enum class ATTACK_MOMENT
 	COMBATING
 endenum
 
-enum class DAMAGE_HAND
-	MAINHAND,
-	OFFHAND
-endenum
-
 enum class ATTACK_DIRECTION
 	FRONT,
 	BACK,
