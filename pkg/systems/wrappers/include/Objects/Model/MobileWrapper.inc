@@ -14,6 +14,7 @@ include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
 include ":achievements:utils/datafile";
+include ":serialization:StructSerializer";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpackSerial := 0x0; // Container Serial
@@ -687,6 +688,31 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	/**
+	 * Obtém o monitor de uma habilidade ativa específica do mobile.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto MobileWrapper
+	 * @param {Ability} ability - Objeto de habilidade para consultar o monitor
+	 * 
+	 * @return {Struct} Retorna a estrutura deserializada do monitor da habilidade ativa
+	 * @return {Exception} Retorna exceção se a referência do objeto for inválida
+	 * @return {InvalidAbilityException} Retorna exceção se o mobile não possuir a habilidade ativa especificada
+	 * 
+	 * @throws {InvalidAbilityException} Quando a habilidade não existe no momento de ativação especificado
+	 */
+	function GetActiveAbilityMonitor(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		var activeAbilities := this.GetActiveAbilities();
+		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetName()))
+			return InvalidAbilityException("This mobile does not have the specified active ability!");
+		endif
+
+		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetName()]);
+	endfunction
+
+	/**
 	 * Ativa uma habilidade para o objeto móvel.
 	 * 
 	 * @param {MobileWrapper} this - Referência ao objeto móvel
@@ -697,7 +723,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * 
 	 * @throws {InvalidAbilityException} Lançada quando a habilidade não possui um script válido
 	 */
-	function ActivateAbility(this, ability)
+	function ActivateAbility(this, ability, abilityMonitor)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
@@ -707,7 +733,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		var activeAbilities := this.GetActiveAbilities();
-		activeAbilities[ability.GetActivationMoment()][ability.GetName()] := ability.GetCharges();
+		activeAbilities[ability.GetActivationMoment()][ability.GetName()] := StructSerializer().Serialize(abilityMonitor);
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;
@@ -739,6 +765,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;
+	endfunction
+
+	function HasActiveAbility(this, ability)
+		if (this._objRef is @Exception)
+			return this._objRef;
+		endif
+
+		return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
 	endfunction
 
 	// ================ Achievements ================= //
