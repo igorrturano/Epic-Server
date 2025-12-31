@@ -27,7 +27,7 @@ program truesight(who)
 
 		if (InDarkness(mobile))
 			duration += cint(AP_GetSkill(who, THEOLOGY) / 5);
-			SetCooldown(mobile, "blinded", duration);
+			TS_StartTimer(mobile, "blinded", duration, 0, who);
 			PrintTextAbove(mobile, "*cegueira*");
 		endif
 

@@ -249,9 +249,9 @@ function GetWeaponSFX(byRef attackInfo)
 
 	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
-		weaponSFX.hit := array{npcTemplate.AttackSound};
+		weaponSFX.hit := array{npcTemplate.AttackHitSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
-		weaponSFX.critical := array{npcTemplate.AttackSound};
+		weaponSFX.critical := array{npcTemplate.AttackHitSound};
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};

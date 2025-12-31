@@ -87,12 +87,9 @@ program habilidade(who)
 			SendSysMessageEx(who, "Você concede a força da montanha aos aliados!", SSM_INFO);
 
 			HALLEUAD: // Eclipse - Blind all targets in area
-													foreach mobile in enemies
+			foreach mobile in enemies
 				if (mobile != who)
-					PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 10, mobile.realm, 0x6e0d, 5, duration * 3,
-											2, 2740);
-					SetCooldown(mobile, "blinded", duration);
-					PrintTextAbove(mobile, "*cegado pelo eclipse*");
+					TS_StartTimer(mobile, "blinded", duration, 0, who);
 					SendSysMessageEx(mobile, "Você foi cegado pelo eclipse divino!", SSM_FAIL);
 				endif
 			endforeach
