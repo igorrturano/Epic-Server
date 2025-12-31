@@ -63,7 +63,7 @@ program manobra(mobile)
 
 		// ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
 		ApplyRawDamage(targ, amt);
-		HealDamage(who, amt);
+		ApplyEpicHealing(who, amt);
 
 		if (targ.dead)
 			break;

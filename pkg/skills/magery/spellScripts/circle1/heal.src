@@ -27,7 +27,7 @@ program SpellScript(params)
 
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 	PlaySoundEffect(targ, SFX_HEAL);
-	HealDamage(targ, points);
+	ApplyEpicHealing(targ, points);
 
 	SendSysMessage(who, "You healed " + points + " damage.");
 

@@ -21,6 +21,12 @@ program manobra(who)
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;
 	endif
+	var entropy := MobileWrapper(targ).GetEntropy();
+	if (entropy <= -8000)
+		Message("Você não conhece o medo.").SendSys(targ);
+		Message("O alvo resistiu a magia.").SendSys(who);
+		return 1;
+	endif
 	TS_StartTimer(targ, "temor", lvl, who);
 
 endprogram

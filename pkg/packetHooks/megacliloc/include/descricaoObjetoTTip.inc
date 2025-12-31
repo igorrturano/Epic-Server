@@ -18,6 +18,22 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 				xDesc := xDesc + WHITE + culture + "<br>";
 			endif
 		endif
+
+		// Entropy-based appearance description (shows for everyone)
+		var entropy_desc := GetObjProperty(objeto, "descmodentropy");
+		if (entropy_desc)
+			var tier := GetObjProperty(objeto, "entropy_description_tier");
+			var color := WHITE;
+
+			// Color coding: purple for corrupted, golden for radiant
+			if (tier < 0)
+				color := ROXO;  // Purple for dark/corrupted
+			else
+				color := AMARELO_CLARO;  // Golden for light/virtuous
+			endif
+
+			xDesc := xDesc + color + entropy_desc + "<br>";
+		endif
 	endif
 	return xDesc;
 endfunction

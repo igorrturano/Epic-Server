@@ -11,9 +11,9 @@ include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
+include ":entropy:entropy";
 
 program equipweapon(who, item)
-
 	var descmod_item := GetObjProperty(item, "descmod");
 	var descmod := array;
 	var aux := array;
@@ -158,6 +158,10 @@ program equipweapon(who, item)
 			script.kill();
 		endif
 		start_script(":spells:spell_logic:swordmage", { who, item });
+	endif
+
+	if (item.cursed == 1)
+		UpdateMobileEntropy(who, -100);
 	endif
 
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });

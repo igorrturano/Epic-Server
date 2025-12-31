@@ -94,7 +94,7 @@ program UseWood(who, wood)
 				endforeach
 				if (continuehealing == 1)
 					foreach char in (nearbypeople)
-						healdamage(char, healpoints);
+						ApplyEpicHealing(char, healpoints);
 					// SetVital( char, "DP", 1*100 );
 					endforeach
 				endif

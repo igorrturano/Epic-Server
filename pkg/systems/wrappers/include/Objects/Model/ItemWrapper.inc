@@ -11,10 +11,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		Super(item);
 
 		this._cfgFile := CFGFile("*", "itemdesc");
-		
-		if(!this._template)
-			this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
-		endif
+		this._template := this._cfgFile.SetElementName(this._objtype).GetElementValue();
 
 		if (TypeOfInt(this._objRef) == OT_ITEMREF)
 			this._category := this._template.Category;
@@ -35,7 +32,6 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 				this._graphic := this._template.graphic;
 				this._color := this._template.color;
 				this._weight := this._template.weight;
-
 				this._category := this._template.Category;
 			endif
 

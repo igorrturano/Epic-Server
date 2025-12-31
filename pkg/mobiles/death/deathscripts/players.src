@@ -378,7 +378,7 @@ function KataWakeUp(ghost, corpse)
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
 		// 		PrintTextAbove(ghost, " " + GetHP(ghost));
-		HealDamage(ghost, GetHP(ghost) + 1);
+		ApplyEpicHealing(ghost, GetHP(ghost) + 1);
 	endif
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));

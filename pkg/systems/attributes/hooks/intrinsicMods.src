@@ -11,6 +11,7 @@ program Install()
 	return 1;
 endprogram
 
+//TODO refatorar para usar MobileWrapper nos metodos intrisicos. ass: Deiro
 exported function GetIntrinsicFortitude(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
 	var fortitude := 0;
@@ -40,6 +41,16 @@ exported function GetIntrinsicFortitude(mobile)
 	if (chardata.raca == HUMANO)
 		fortitude += 2;
     endif
+
+	var mobileWrapper := MobileWrapper(mobile);
+
+	var entropy := mobileWrapper.GetEntropy();
+	if (entropy > 4000)
+		fortitude += Cint(entropy / 4000);
+	endif
+	if (entropy <= -4000)
+		fortitude -= Cint(abs(entropy) / 4000);
+	endif
 
 	fortitude += GetCommonStatsIncrease(mobile,chardata);
 	fortitude += CInt(AP_GetStat(mobile, STRENGTH)/20);
@@ -101,6 +112,15 @@ exported function GetIntrinsicWill(mobile)
 		vontade += 8;
 	elseif (TemHabilidade(mobile, "Consagracao Divina"))
 		vontade += paladin_bonus;
+	endif
+
+	var mobileWrapper := MobileWrapper(mobile);
+	var entropy := mobileWrapper.GetEntropy();
+	if (entropy > 4000)
+		vontade += Cint(entropy / 4000);
+	endif
+	if (entropy <= -4000)
+		vontade -= Cint(abs(entropy) / 4000);
 	endif
 
 	vontade += GetCommonStatsIncrease(mobile,chardata);

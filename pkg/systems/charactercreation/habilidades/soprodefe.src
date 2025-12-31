@@ -38,7 +38,7 @@ program SecondWind(params)
 	//    var stam_amt := (CInt(AP_GetSkill(who, MEDICINE)) * 0.5);
 
 	HealStamina(targ, stam_amt);
-	HealHits(targ, heal_amt);
+	ApplyEpicHealing(targ, heal_amt);
 
 	SendSysMessageEx(targ, "Zanshir reconhece sua coragem!", SSM_INFO);
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 10);
