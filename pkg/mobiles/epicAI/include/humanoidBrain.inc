@@ -61,7 +61,6 @@ function HumanoidBrain()
         if (ev)            
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
@@ -73,7 +72,7 @@ function HumanoidBrain()
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
+                        HandleHumanoidEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
@@ -83,18 +82,16 @@ function HumanoidBrain()
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleHumanoidCombatEvent(opponent, is_ranged);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
-                        SetOpponent(0);
-                        HandleHumanoidCombatEvent(ev.source, is_ranged);
-                    endif
+                    // Taunt forces a target switch - clear current opponent first
+                    SetOpponent(0);
+                    HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     if (me.isShaman())
                         HumanoidShamanBehavior(me, ev.source);
@@ -109,7 +106,7 @@ function HumanoidBrain()
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)           
+        if (!me.opponent)
             HumanoidIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -120,7 +117,12 @@ function HumanoidBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
@@ -212,11 +214,6 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         is_ranged := 0;
     endif
 
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
-        return 0;
-    endif
-
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
@@ -239,7 +236,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         // Not taunted - use normal target selection logic
         // Only check for ideal target if we don't have a valid opponent already
         // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-        if (!me.opponent || !CanFight(me, me.opponent))
+        if (!me.opponent)
             SetOpponent(opponent);
             opponent := CheckForIdealTarget();
             SetOpponent(opponent);
@@ -329,20 +326,13 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleHumanoidCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
     if (heard_mobile)
         // Check if we can see them now (might have moved into view)
-        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+        if (CanFight(me, heard_mobile))
             HandleHumanoidCombatEvent(heard_mobile, is_ranged);
             return;
         endif
@@ -381,7 +371,7 @@ function HumanoidIdle(wanders, is_ranged)
 endfunction
 
 function HandleHumanoidEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
     

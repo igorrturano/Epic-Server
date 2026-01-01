@@ -1,0 +1,89 @@
+use uo;
+use os;
+use cfgfile;
+use datafile;
+
+program EpicAI_Animal_Cache()
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+    var tiers := {};
+    var tier_animal_list := {};
+    var npc_keys := {};
+
+    var npccfgfile := ReadConfigFile(":epicai:npcdesc");
+    if (npccfgfile.errortext)
+        Print("ERROR: Failed to read npcdesc.cfg - " + npccfgfile.errortext);
+        return;
+    endif
+
+    npc_keys := GetConfigStringKeys(npccfgfile);
+
+    // First pass: collect unique tiers from animals
+    foreach key in npc_keys
+        var elem := FindConfigElem(npccfgfile, key);
+        if (elem.BrainType == "animal")
+            // Check if Tier property exists (distinguish between Tier=0 and no Tier)
+            var tier_str := GetConfigString(elem, "Tier");
+            var tier := 1; // Default for animals with no Tier property
+            if (tier_str)
+                tier := CInt(tier_str);
+            endif
+
+            var tier_key := "tier_" + tier;
+
+            if (tier_key in tiers)
+                continue;
+            endif
+
+            tiers.append(tier_key);
+        endif
+    endforeach
+    // Open or create datafile
+    var epicai_df := OpenDataFile(":epicai:AnimalsByTier");
+    if (epicai_df.errortext == "Datafile does not exist")
+        epicai_df := CreateDataFile(":epicai:AnimalsByTier", DF_KEYTYPE_STRING);
+        if (!epicai_df)
+            Print("ERROR: Failed to create datafile - " + epicai_df.errortext);
+            return;
+        endif
+    endif
+
+    // Delete old element if exists to avoid creating new datafile versions
+    var old_elem := epicai_df.FindElement("AnimalTiers");
+    if (old_elem)
+        epicai_df.DeleteElement("AnimalTiers");
+    endif
+
+    var cache_elem := epicai_df.CreateElement("AnimalTiers");
+    if (!cache_elem)
+        Print("ERROR: Failed to create cache element");
+        return;
+    endif
+
+    // Second pass: build animal list for each tier
+    foreach tier_key in tiers
+        tier_animal_list := {};
+
+        foreach npc_name in npc_keys
+            var npc_elem := FindConfigElem(npccfgfile, npc_name);
+
+            // Check if Tier property exists (distinguish between Tier=0 and no Tier)
+            var npc_tier_str := GetConfigString(npc_elem, "Tier");
+            var npc_tier := 1; // Default for animals with no Tier property
+            if (npc_tier_str)
+                npc_tier := CInt(npc_tier_str);
+            endif
+
+            var npc_tier_key := "tier_" + npc_tier;
+
+            if (npc_elem.BrainType == "animal" && npc_tier_key == tier_key)
+                if (!(npc_name in tier_animal_list))
+                    tier_animal_list.append(npc_name);
+                endif
+            endif
+        endforeach
+
+        cache_elem.SetProp(tier_key, tier_animal_list);
+        sleepms(2);
+    endforeach
+
+endprogram
