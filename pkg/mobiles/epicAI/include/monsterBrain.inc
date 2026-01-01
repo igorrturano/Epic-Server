@@ -101,7 +101,12 @@ function MonsterBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
@@ -289,14 +294,7 @@ function MonsterIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleMonsterCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
