@@ -25,7 +25,7 @@ program wildshape(who)
 			tier := 1;
 		endif
 
-		var template := FindAnimalTemplate(tier);
+		var template := GetAnimalTemplateByTier(tier);
 		if (template)
 			// Create and store the transformation
 			var animal := CreateNpcFromTemplate(":epicai:" + template, who.x, who.y, who.z, 0, who.realm);
