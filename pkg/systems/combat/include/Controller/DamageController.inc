@@ -55,23 +55,29 @@ endfunction
 function CalculateStatusDamage(byRef attackInfo)
 	var stat := "";
 	var damageMod := 0;
-	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
 
-			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH, DEXTERITY);
+			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
+						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
 			stat := DEXTERITY;
-			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(DEXTERITY);
+
+			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
+						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	else
 		stat := STRENGTH;
-		damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH);
+
+		damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH) :
+					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	damageMod := CInt(damageMod / handDivisor);
 	
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
 	
@@ -354,7 +360,9 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.3, 3);
+	if (!attackInfo.GetAttacker().IsNpc())
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+	endif
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
 	foreach hitscript in (weapon_scripts)
