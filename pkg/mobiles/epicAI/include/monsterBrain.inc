@@ -33,7 +33,7 @@ function MonsterBrain()
         if (CheckDarknessCreatureSurvival(me))
             return;
         endif
-           
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
@@ -49,7 +49,6 @@ function MonsterBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
@@ -59,7 +58,7 @@ function MonsterBrain()
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
+                        HandleMonsterEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
@@ -69,19 +68,17 @@ function MonsterBrain()
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleMonsterCombatEvent(opponent, is_ranged);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent and target lock
-                        SetOpponent(0);
-                        EraseObjProperty(me, "#target_lock");
-                        HandleMonsterCombatEvent(ev.source, is_ranged);
-                    endif
+                    // Taunt forces a target switch - clear current opponent and target lock
+                    SetOpponent(0);
+                    EraseObjProperty(me, "#target_lock");
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
                 EVID_FLEE:
@@ -194,11 +191,6 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     endif
     if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
 
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
-        return 0;
-    endif
-
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
@@ -228,7 +220,7 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         // Not taunted - use normal target selection logic
         // Only check for ideal target if we don't have a valid opponent already
         // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-        if (!me.opponent || !CanFight(me, me.opponent))
+        if (!me.opponent)
             SetOpponent(opponent);
             opponent := CheckForIdealTarget();
             SetOpponent(opponent);
@@ -300,7 +292,7 @@ function MonsterIdle(wanders, is_ranged)
     var heard_mobile := NPCHearFootsteps(me);
     if (heard_mobile)
         // Check if we can see them now (might have moved into view)
-        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+        if (CanFight(me, heard_mobile))
             HandleMonsterCombatEvent(heard_mobile, is_ranged);
             return;
         endif
@@ -340,7 +332,7 @@ function MonsterIdle(wanders, is_ranged)
 endfunction
 
 function HandleMonsterEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
 

@@ -41,7 +41,6 @@ function GenericBrain()
         if (ev)           
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     SetOpponent(ev.source);
                     HandleGenericCombatEvent(ev.source);
                 SYSEVENT_DAMAGED:
@@ -49,7 +48,7 @@ function GenericBrain()
                     SetOpponent(ev.source);
                     HandleGenericCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
-                    if (!IsAlly(ev.source) && CanFight(me, ev.source))
+                    if (!IsAlly(ev.source))
                         SetOpponent(ev.source);
                         HandleGenericCombatEvent(ev.source);
                     endif
@@ -84,11 +83,6 @@ endfunction
 
 function HandleGenericCombatEvent(opponent)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
-        return 0;
-    endif
-    
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > 2) // Assuming MAX_Z_DIFF is 2 for simplicity
         return 0;
     endif
 
