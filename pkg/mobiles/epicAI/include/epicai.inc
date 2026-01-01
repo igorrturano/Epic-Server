@@ -1437,150 +1437,122 @@ function GetCachedLOS(opponent)
 endfunction
 
 function PursueTarget(opponent)
-    // Cache expensive calculations once at function start (10% performance gain)
-    var dist := Distance(me, opponent);
+    // === PHASE 1: Cache ALL expensive calculations upfront ===
     var current_time := ReadGameClock();
+    var dist := Distance(me, opponent);
     var ideal_distance := CalculateIdealPursuitDistance();
+    var is_ranged := (ideal_distance > 1);
     var should_run := !(me.hidden || me.concealed);
     var has_los := GetCachedLOS(opponent);
+    var my_x := me.x;
+    var my_y := me.y;
+    var opp_serial := opponent.serial;
 
-    // Early validation check
-    if (!shouldKeepPursuing(opponent, dist))
+    // === PHASE 2: Early exits (cheapest checks first) ===
+    // Check distance limits before any expensive operations
+    if (dist > AREA_SIZE + 6)
         return 0;
     endif
 
-    // Store last known position whenever we can see the target
-    if (has_los)
-        var last_loc := struct{
-            "x" := opponent.x,
-            "y" := opponent.y,
-            "z" := opponent.z,
-            "time" := current_time
-        };
-        SetObjProperty(me, "#enemy_last_loc", last_loc);
-    endif
-
-    // Check if we need to retreat (too close for ranged)
-    if (dist < ideal_distance)
-        // Too close! Back away for ranged creatures
-        if (ideal_distance > 1)
-            // Ranged creature - run away in a loop until at safe distance
-            var should_run := !(me.hidden || me.concealed);
-            var retreat_attempts := 0;
-            var stuck_retreating := 0;
-
-            while (Distance(me, opponent) < ideal_distance && retreat_attempts < 10)
-                if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
-                    break;
-                endif
-
-                var old_x := me.x;
-                var old_y := me.y;
-
-                if (should_run)
-                    RunAwayFrom(opponent);
-                else
-                    WalkAwayFrom(opponent);
-                endif
-                sleepms(100);
-                retreat_attempts += 1;
-
-                // Check if we actually moved
-                if (me.x == old_x && me.y == old_y)
-                    stuck_retreating += 1;
-
-                    // If stuck for 3 attempts, try alternative locations
-                    if (stuck_retreating >= 3)
-                        var alternative_locations := GetAlternativeLocations(opponent);
-                        if (alternative_locations.size() > 0)
-                            // Try to move to the furthest location
-                            RunTowardLocation(alternative_locations[1].x, alternative_locations[1].y);
-                            sleepms(100);
-                        endif
-                        // Break out if we've tried alternatives and still stuck
-                        if (stuck_retreating >= 5)
-                            break;
-                        endif
-                    endif
-                else
-                    stuck_retreating := 0; // Reset if we moved
-                endif
-            endwhile
-            return 1;
-        endif
-    endif
-
-    // Check if we're already at the desired distance - if so, we're done pursuing
-    if (IsWithinEngagementRange(opponent, ideal_distance))
+    // Already at ideal distance? Done.
+    if (dist <= ideal_distance && has_los)
         return 1;
     endif
 
-    // Execute special abilities at appropriate ranges
-    if (dist >= 2 && dist <= 6)
-        if (me.canSpitAcid())
-            AcidSpray(me, opponent);
-        endif
-
-        if (me.canShootWeb())
-            WebShot(me, opponent);
-        endif
+    // === PHASE 3: Store last known position (only if we have LOS) ===
+    if (has_los)
+        SetObjProperty(me, "#enemy_last_loc", struct{
+            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := current_time
+        });
     endif
 
-    if (me.canThrow())
-        if (dist >= 2 && dist <= 8)
+    // === PHASE 4: Ranged retreat logic (too close) ===
+    if (is_ranged && dist < ideal_distance)
+        var retreat_attempts := 0;
+        var stuck_retreating := 0;
+        var old_x, old_y;
+
+        while (dist < ideal_distance && retreat_attempts < 10)
+            old_x := me.x;
+            old_y := me.y;
+
+            if (should_run)
+                RunAwayFrom(opponent);
+            else
+                WalkAwayFrom(opponent);
+            endif
+            sleepms(100);
+            retreat_attempts += 1;
+
+            // Update distance once per iteration
+            dist := Distance(me, opponent);
+
+            // Check if we moved
+            if (me.x == old_x && me.y == old_y)
+                stuck_retreating += 1;
+                // Only try alternatives after 3 failures, and only once
+                if (stuck_retreating == 3)
+                    var alt_locs := GetAlternativeLocations(opponent);
+                    if (alt_locs.size() > 0)
+                        RunTowardLocation(alt_locs[1].x, alt_locs[1].y);
+                        sleepms(100);
+                    endif
+                elseif (stuck_retreating >= 5)
+                    break;
+                endif
+            else
+                stuck_retreating := 0;
+            endif
+        endwhile
+        return 1;
+    endif
+
+    // === PHASE 5: Special abilities (check distance once, then abilities) ===
+    if (dist >= 2 && dist <= 8)
+        if (dist <= 6)
+            if (me.canSpitAcid())
+                AcidSpray(me, opponent);
+            elseif (me.canShootWeb())
+                WebShot(me, opponent);
+            endif
+        endif
+        if (me.canThrow())
             ThrowSpecial(me, opponent);
         endif
     endif
 
-    // Main movement logic - unified section (no more duplicates)
-    var use_pathfinding := 0;
-
-    // Unified pursuit tracker - consolidates stuck_tracker and progress (5% performance gain)
+    // === PHASE 6: Pursuit tracker (single GetObjProperty call) ===
     var tracker := GetObjProperty(me, "#pursuit_tracker");
-    if (!tracker)
+    var tracker_needs_reset := (!tracker || tracker.target_serial != opp_serial);
+
+    if (tracker_needs_reset)
         tracker := struct{
             "start_time" := current_time,
-            "start_pos" := struct{ "x" := me.x, "y" := me.y },
+            "start_pos_x" := my_x,
+            "start_pos_y" := my_y,
             "start_distance" := dist,
-            "target_serial" := opponent.serial,
+            "target_serial" := opp_serial,
             "failed_moves" := 0,
             "total_moves" := 0,
-            "last_check_pos" := struct{ "x" := me.x, "y" := me.y },
+            "last_pos_x" := my_x,
+            "last_pos_y" := my_y,
             "last_progress_check" := current_time,
             "no_progress_count" := 0
         };
     endif
 
-    // Reset tracker if target changed
-    if (tracker.target_serial != opponent.serial)
-        tracker.start_time := current_time;
-        tracker.target_serial := opponent.serial;
-        tracker.start_pos.x := me.x;
-        tracker.start_pos.y := me.y;
-        tracker.start_distance := dist;
-        tracker.failed_moves := 0;
-        tracker.total_moves := 0;
-        tracker.last_check_pos.x := me.x;
-        tracker.last_check_pos.y := me.y;
-        tracker.last_progress_check := current_time;
-        tracker.no_progress_count := 0;
-    endif
+    // === PHASE 7: Direct movement with LOS ===
+    var use_pathfinding := !has_los;
 
     if (has_los)
-        // Direct line of sight - but verify we can actually move toward target
         var movement_attempts := 0;
         var stuck_count := 0;
-        var last_dist := dist;
+        var old_x, old_y, old_dist, new_dist;
 
-        while (Distance(me, opponent) > ideal_distance && movement_attempts < 10)
-            // Re-check if we should keep pursuing
-            if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
-                break;
-            endif
-
-            var old_x := me.x;
-            var old_y := me.y;
-            var old_dist := Distance(me, opponent);
+        while (dist > ideal_distance && movement_attempts < 10)
+            old_x := me.x;
+            old_y := me.y;
+            old_dist := dist;
 
             if (should_run)
                 RunToward(opponent);
@@ -1590,98 +1562,83 @@ function PursueTarget(opponent)
             sleepms(100);
             movement_attempts += 1;
 
-            var new_dist := Distance(me, opponent);
-            var moved := (me.x != old_x || me.y != old_y);
-            var got_closer := (new_dist < old_dist);
+            new_dist := Distance(me, opponent);
 
-            // Check if we actually made progress (moved AND got closer)
-            if (!moved || !got_closer)
+            // Check progress
+            if (me.x == old_x && me.y == old_y || new_dist >= old_dist)
                 stuck_count += 1;
-
-                // If stuck after 2 attempts, try to find alternative path
                 if (stuck_count >= 2)
-                    // We have LOS but can't move directly - probably a wall
                     EraseObjProperty(me, "#pursuit_path_cache");
-
-                    // Only use TacticalReposition for ranged creatures
-                    // Melee creatures should just switch to pathfinding
-                    if (ideal_distance > 1)
+                    if (is_ranged)
                         TacticalReposition(opponent, 1);
                     endif
-
-                    use_pathfinding := 1; // Try pathfinding from current position
+                    use_pathfinding := 1;
                     break;
                 endif
             else
-                stuck_count := 0; // Reset counter if we made progress
+                stuck_count := 0;
             endif
+
+            dist := new_dist;
         endwhile
     endif
 
-    // Check if NPC has been stuck in same area for too long (handles oscillating movement)
+    // === PHASE 8: Stuck detection and flee logic ===
     var time_elapsed := current_time - tracker.start_time;
-    var distance_from_start := CoordinateDistance(me.x, me.y, tracker.start_pos.x, tracker.start_pos.y);
-    var distance_improvement := tracker.start_distance - dist;
+    var distance_from_start := CoordinateDistance(me.x, me.y, tracker.start_pos_x, tracker.start_pos_y);
+    var moved_this_cycle := (me.x != tracker.last_pos_x || me.y != tracker.last_pos_y);
 
-    // Track if NPC is actually moving (not bumping into walls)
-    var moved_this_cycle := (me.x != tracker.last_check_pos.x || me.y != tracker.last_check_pos.y);
     tracker.total_moves += 1;
     if (!moved_this_cycle)
         tracker.failed_moves += 1;
     endif
-    tracker.last_check_pos.x := me.x;
-    tracker.last_check_pos.y := me.y;
+    tracker.last_pos_x := me.x;
+    tracker.last_pos_y := me.y;
 
-    // Calculate movement success rate
-    var movement_success_rate := 0;
-    if (tracker.total_moves > 0)
-        movement_success_rate := CInt((CDbl(tracker.total_moves - tracker.failed_moves) / CDbl(tracker.total_moves)) * 100);
+    // Flee check: 5+ seconds, stuck in same area, low movement success
+    if (time_elapsed >= 10 && distance_from_start <= 6)
+        var success_rate := (tracker.total_moves > 0) ? 
+            CInt((CDbl(tracker.total_moves - tracker.failed_moves) / CDbl(tracker.total_moves)) * 100) : 0;
+        
+        if (success_rate < 30)
+            EraseObjProperty(me, "#pursuit_tracker");
+            EraseObjProperty(me, "#pursuit_path_cache");
+            Flee(opponent, 100, 1);
+            return 0;
+        endif
     endif
 
-    // Flee if: been trying 5+ seconds, in same area (<=6 tiles), AND failing to move (< 30% success rate)
-    // This distinguishes between stuck-on-wall vs successfully-kiting-in-circles
-    if (time_elapsed >= 5 && distance_from_start <= 6 && movement_success_rate < 30)
-        EraseObjProperty(me, "#pursuit_tracker");
-        EraseObjProperty(me, "#pursuit_path_cache");
-
-        // Use existing Flee() function - runs away and sets cooldown to prevent re-engagement
-        Flee(opponent, 100, 1);  // 100ms sleep, change_opponent = 1 (can switch targets)
-        return 0; // Abandon pursuit - target is unreachable
-    endif
-
-    // Reset timer if made significant progress (moved far from start or got much closer)
+    // Reset tracker on significant progress
+    var distance_improvement := tracker.start_distance - dist;
     if (distance_from_start > 8 || distance_improvement > 3)
         tracker.start_time := current_time;
-        tracker.start_pos.x := me.x;
-        tracker.start_pos.y := me.y;
+        tracker.start_pos_x := me.x;
+        tracker.start_pos_y := me.y;
         tracker.start_distance := dist;
         tracker.failed_moves := 0;
         tracker.total_moves := 0;
     endif
 
-    // Use pathfinding if: no LOS OR stuck with LOS
-    if (!has_los || use_pathfinding)
-        // Use cached pathfinding
+    // === PHASE 9: Pathfinding (only when needed) ===
+    if (use_pathfinding)
         var path := GetOrCreatePursuitPath(opponent);
         if (path)
+            var step_count := 0;
             foreach coord in path
-                // Re-check distance in case target moved
-                if (Distance(me, opponent) <= ideal_distance)
+                dist := Distance(me, opponent);
+                if (dist <= ideal_distance)
                     break;
                 endif
 
-                if (CheckLineOfSight(me, opponent))
-                    var engaged_event := struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent };
-                    SendEvent(me, engaged_event);
-                    break; // Found the target again!
+                // Check LOS every 3 steps instead of every step
+                step_count += 1;
+                if (step_count % 3 == 0 && CheckLineOfSight(me, opponent))
+                    SetOpponent(opponent);  // Ensure opponent is locked
+                    TurnToward(opponent);   // Face the target immediately
+                    EraseObjProperty(me, "#los_cache");  // ← ADD THIS
+                    break;  // Exit path loop - main brain loop handles next action
                 endif
 
-                // Re-check if we should keep pursuing
-                if (!shouldKeepPursuing(opponent, Distance(me, opponent)))
-                    break;
-                endif
-
-                // Move to next waypoint
                 if (should_run)
                     RunTowardLocation(coord.x, coord.y);
                 else
@@ -1690,39 +1647,29 @@ function PursueTarget(opponent)
                 sleepms(100);
             endforeach
         else
-            // Path failed - try to move to last known position
+            // Fallback: last known position or height difference handling
             var last_loc := GetObjProperty(me, "#enemy_last_loc");
-            if (last_loc)
-                var time_since := ReadGameClock() - last_loc.time;
+            if (last_loc && (current_time - last_loc.time) < 30)
+                var last_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
+                if (last_path)
+                    foreach coord in last_path
+                        if (CheckLineOfSight(me, opponent))
+                            SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
 
-                // Only use last known position if it's recent (within 30 seconds)
-                if (time_since < 30)
-
-                    // Try to path to last known position
-                    var last_loc_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
-                    if (last_loc_path)
-                        foreach coord in last_loc_path
-                            if (CheckLineOfSight(me, opponent))
-                                break; // Found the target again!
-                            endif
-
-                            if (should_run)
-                                RunTowardLocation(coord.x, coord.y);
-                            else
-                                WalkTowardLocation(coord.x, coord.y);
-                            endif
-                            sleepms(100);
-                        endforeach
-                    endif
+                            break;
+                        endif
+                        if (should_run)
+                            RunTowardLocation(coord.x, coord.y);
+                        else
+                            WalkTowardLocation(coord.x, coord.y);
+                        endif
+                        sleepms(100);
+                    endforeach
                 endif
             endif
 
-            // Check if it's due to height difference
-            var z_diff := Abs(me.z - opponent.z);
-
-            if (z_diff >= 19)
-                // Significant height difference - try to find stairs/ramps by moving toward target
-                // Move in the general direction even without a perfect path
+            // Height difference handling
+            if (Abs(me.z - opponent.z) >= 19)
                 var attempts := 0;
                 while (attempts < 5 && !CheckLineOfSight(me, opponent))
                     if (should_run)
@@ -1732,54 +1679,38 @@ function PursueTarget(opponent)
                     endif
                     sleepms(200);
                     attempts += 1;
-
-                    // Check if we found a path now
-                    if (CheckLineOfSight(me, opponent))
-                        break;
-                    endif
                 endwhile
             endif
 
-            // Try tunnel tactics if available
             if (me.hasTunnelTactics())
                 TunnelTactics(me, opponent);
             endif
         endif
     endif
 
-    // Check progress at regular intervals (consolidated into unified tracker)
+    // === PHASE 10: Progress check (interval-based) ===
     if (current_time >= tracker.last_progress_check + PURSUIT_PROGRESS_CHECK_INTERVAL)
         var current_dist := Distance(me, opponent);
-        var moved := moved_this_cycle; // Reuse from above
-        var got_closer := (current_dist < dist);
-
-        // No progress if we haven't moved OR haven't gotten closer
-        if (!moved || !got_closer)
+        if (!moved_this_cycle || current_dist >= dist)
             tracker.no_progress_count += 1;
         else
             tracker.no_progress_count := 0;
         endif
-
         tracker.last_progress_check := current_time;
 
-        // If we're not making progress after PURSUIT_MAX_NO_PROGRESS_COUNT checks, force a reposition
         if (tracker.no_progress_count >= PURSUIT_MAX_NO_PROGRESS_COUNT)
             EraseObjProperty(me, "path");
             EraseObjProperty(me, "#enemy_last_loc");
             EraseObjProperty(me, "#pursuit_path_cache");
-
-            // Only use TacticalReposition for ranged creatures
-            if (ideal_distance > 1)
+            if (is_ranged)
                 TacticalReposition(opponent, 1);
             endif
-
             tracker.no_progress_count := 0;
         endif
     endif
 
-    // Save unified tracker once at end (was 2 separate property writes, now 1)
+    // Single SetObjProperty at the end
     SetObjProperty(me, "#pursuit_tracker", tracker);
-
     return 1;
 endfunction
 

@@ -5,9 +5,6 @@ use datafile;
 
 program EpicAI_Animal_Cache()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
-
-    Print("Building EpicAI Animal Tier Cache...");
-
     var tiers := {};
     var tier_animal_list := {};
     var npc_keys := {};
@@ -19,7 +16,6 @@ program EpicAI_Animal_Cache()
     endif
 
     npc_keys := GetConfigStringKeys(npccfgfile);
-    Print("Scanning " + npc_keys.size() + " NPC templates...");
 
     // First pass: collect unique tiers from animals
     foreach key in npc_keys
@@ -41,9 +37,6 @@ program EpicAI_Animal_Cache()
             tiers.append(tier_key);
         endif
     endforeach
-
-    Print("Found " + tiers.size() + " tiers with animals");
-
     // Open or create datafile
     var epicai_df := OpenDataFile(":epicai:AnimalsByTier");
     if (epicai_df.errortext == "Datafile does not exist")
@@ -90,9 +83,7 @@ program EpicAI_Animal_Cache()
         endforeach
 
         cache_elem.SetProp(tier_key, tier_animal_list);
-        Print("  " + tier_key + ": " + tier_animal_list.size() + " animals");
         sleepms(2);
     endforeach
 
-    Print("EpicAI Animal Cache built successfully!");
 endprogram
