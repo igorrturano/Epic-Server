@@ -43,7 +43,7 @@ function AnimalBrain()
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
+                        HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
@@ -53,7 +53,7 @@ function AnimalBrain()
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleAnimalCombatEvent(opponent);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
@@ -61,9 +61,7 @@ function AnimalBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     SetOpponent(0);
-                    if (CanFight(me, ev.source))
-                        HandleAnimalCombatEvent(ev.source);
-                    endif
+                    HandleAnimalCombatEvent(ev.source);
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
                     SetWarMode(0);
@@ -97,7 +95,7 @@ function AnimalBrain()
 endfunction
 
 function HandleAnimalEnteredArea(source)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
 
@@ -120,11 +118,6 @@ endfunction
 
 function HandleAnimalCombatEvent(opponent)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
-        return 0;
-    endif
-
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
         return 0;
     endif
 
