@@ -82,20 +82,7 @@ function SporeSpecial(attacker, defender)
             3: // Blind
                 if (!CheckResist(mobile, REFLEXES, RESIST_MEDIUM))
                     PrintTextAbove(attacker, "*libera esporos cegantes*");
-                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
-                    SetCooldown(mobile, "blinded", 15);
-                    PrintTextAbove(mobile, "*cegueira*");
-                    
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DeleteObject(mobile, mob);
-                        sleepms(20);
-                    endforeach
-                    
-                    sleep(15);
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DrawObject(mobile, mob, mob.graphic, mob.color);
-                        sleepms(20);
-                    endforeach
+                    TS_StartTimer(mobile, "blinded", 15, 0, attacker);
                 endif
         endcase
 
@@ -230,7 +217,7 @@ function PerformHealingRain(shaman, allies)
     // Heal allies
     foreach ally in allies
         if (!ally.isUnderRoof())
-            ApplyEpicHealing(ally, CInt(mlore/3));
+            HealDamage(ally, CInt(mlore/3));
             PlayObjectCenteredEffect(ally, FX_HEAL_EFFECT, 7, 0x10);
         endif
         sleepms(2);
@@ -337,8 +324,8 @@ function HiveMind(me)
     
     // Apply hive mind bonus
     if (ally > 0)
-        var bonus := ally * 2;
-        SetObjProperty(me, "#attackbonus", bonus);
+        var bonus := 2;
+        me.hitchance_mod := me.hitchance_mod + bonus;
         if (!GetCooldown(me, "hivemind_effect"))
             PrintTextAbove(me, "*sincroniza com a colmeia*");
             PlayObjectCenteredEffect(me, 0x376A, 7, 16);

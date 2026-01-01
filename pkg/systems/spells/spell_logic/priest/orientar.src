@@ -30,7 +30,7 @@ program SpellScript(params)
 	endif
 
 	// Set the attack bonus property on the target
-	SetObjProperty(targ, "#attackbonus", bonus);
+	SetObjProperty(targ, "#hit_mod", bonus);
 
 	// Visual and audio feedback
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);

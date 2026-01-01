@@ -356,3 +356,16 @@ enum class DAMAGE_TYPE
 	POISON := "Veneno",
 	ENERGY := "Energia"
 endenum
+
+enum class STANCE_TYPE
+	NEUTRAL := "Neutra",
+	AGGRESSIVE := "Agressiva",
+	VERY_AGGRESSIVE := "Muito Agressiva",
+	DEFENSIVE := "Defensiva",
+	VERY_DEFENSIVE := "Muito Defensiva"
+endenum
+
+enum class DAMAGE_HAND
+	MAINHAND,
+	OFFHAND
+endenum

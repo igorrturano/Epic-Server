@@ -38,10 +38,8 @@ program habilidade(params)
 			TS_StartTimer(targ, "lentidao", theology_bonus);
 
 		HALLEUAD:
-			PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, theology_bonus * 3,
-									2, 2740);
 			PlaySoundEffect(targ, 0x1F8);
-			SetCooldown(targ, "blinded", theology_bonus);
+			TS_StartTimer(targ, "blinded", theology_bonus, 0, who);
 			PrintTextAbove(targ, "*cegueira*");
 
 		ELUITHORTH:
@@ -49,7 +47,7 @@ program habilidade(params)
 			PlaySoundEffect(targ, 0x231);
 			SetCooldown(targ, "nightvision", 0);
 			SetCooldown(targ, "darkness", theology_bonus);
-			SetCooldown(targ, "blinded", theology_bonus);
+			TS_StartTimer(targ, "blinded", theology_bonus, 0, who);
 
 		KAI:
 			PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);

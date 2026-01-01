@@ -44,7 +44,8 @@ function PlayWeaponFX(byRef attackInfo)
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
 		PlayThrowingFX(attackInfo);
 	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
+			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
@@ -78,6 +79,9 @@ function GetAttackerFX(byRef attackInfo)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_BOW};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
 		else
@@ -190,31 +194,48 @@ function GetAttackerSFX(byRef attackInfo)
 endfunction
 
 function GetDefenderSFX(byRef attackInfo)
-	if (attackInfo.GetDefender().IsNPC())
-		if (attackInfo.GetDefender().IsDead())
-			return attackInfo.GetDefender().GetTemplate().DeathSound;
+	var defenderSFX := struct {
+		miss := array{},
+		hit := array{},
+		criticalHit := array{},
+		death := array{},
+		criticalDeath := array{}
+	};
+
+	if (attackInfo.Succeeded())
+		if (attackInfo.GetDefender().IsNPC())
+			defenderSFX.death := array{attackInfo.GetDefender().GetTemplate().DeathSound};
+			defenderSFX.hit := array{attackInfo.GetDefender().GetTemplate().DamagedSound};
 		else
-			return attackInfo.GetDefender().GetTemplate().DamagedSound;
-		endif
-	else
-		if (attackInfo.GetDefender().IsDead())
-			if (attackInfo.GetDefender().GetRace() == ANAO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == DROW)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == ELFO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == ORC)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == HUMANO)
-				return 0;
-			elseif (attackInfo.GetDefender().GetRace() == PEQUILHO)
-				return 0;
+			if (attackInfo.GetDefender().GetGender == MOBILE_GENDER::MALE)
+				defenderSFX.hit := array{0x154, 0x155, 0x156, 0x157, 0x158, 0x159};
+				defenderSFX.death := array{0x15A, 0x15B, 0x15C, 0x15D};
+			elseif (attackInfo.GetDefender().GetGender == MOBILE_GENDER::FEMALE)
+				defenderSFX.hit := array{0x14B, 0x14C, 0x14D, 0x14E, 0x14F};
+				defenderSFX.death := array{0x150, 0x151, 0x152, 0x153};
 			endif
-		else
-			// TODO: Add hurt sounds
+
+			if (attackInfo.GetDefender().GetRace() == ANAO)
+			elseif (attackInfo.GetDefender().GetRace() == DROW)
+			elseif (attackInfo.GetDefender().GetRace() == ELFO)
+			elseif (attackInfo.GetDefender().GetRace() == ORC)
+			elseif (attackInfo.GetDefender().GetRace() == HUMANO)
+			elseif (attackInfo.GetDefender().GetRace() == PEQUILHO)
+			endif
 		endif
 	endif
+
+	if (!attackInfo.Succeeded())
+		defenderSFX := defenderSFX.miss;
+	elseif (attackInfo.GetDefender().IsDead() && attackInfo.GetDamage().IsCritical())
+		if (attackInfo.GetDamage().IsCritical())
+			defenderSFX := defenderSFX.critical;
+		endif
+	else
+		defenderSFX := defenderSFX.hit;
+	endif
+
+	defenderSFX := defenderSFX.Size() > 1 ? defenderSFX[RandomIntMinMax(1, defenderSFX.Size() + 1)] : defenderSFX[1];
 
 	return 0;
 endfunction
@@ -226,15 +247,11 @@ function GetWeaponSFX(byRef attackInfo)
 		critical := array{}
 	};
 
-	/* if (!attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
-		weaponSFX.hit := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.critical := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}; */
 	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
-		weaponSFX.hit := array{npcTemplate.AttackSound};
+		weaponSFX.hit := array{npcTemplate.AttackHitSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
-		weaponSFX.critical := array{npcTemplate.AttackSound};
+		weaponSFX.critical := array{npcTemplate.AttackHitSound};
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
@@ -246,6 +263,22 @@ function GetWeaponSFX(byRef attackInfo)
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon() == WEAPON_CATEGORY::PISTOL)
+		weaponSFX.hit := array{0x11C};
+		weaponSFX.miss := array{0x11C};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::HANDCANNON)
+		weaponSFX.hit := array{0x308};
+		weaponSFX.miss := array{0x308};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CARABINE)
+		weaponSFX.hit := array{0x309};
+		weaponSFX.miss := array{0x309};
+		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MUSKET)
+		weaponSFX.hit := array{0x11E};
+		weaponSFX.miss := array{0x11E};
 		weaponSFX.critical := array{};
 	else
 		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))

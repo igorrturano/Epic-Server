@@ -1,6 +1,6 @@
 include "include/say";
 include ":charactercreation:habilidades";
-include ":achievements:ExplorationController";
+include ":achievements:controllers/ExplorationController";
 
 program checkeventsonwalk()
 	Print("INSTALLING: checkeventsonwalk...");

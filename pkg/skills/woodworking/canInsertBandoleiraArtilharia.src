@@ -1,0 +1,48 @@
+/* $Id$
+ *
+*/
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program on_insert(who, cinto, movetype, inserttype, item, existing_stack, amt)
+
+	amt := amt;
+	existing_stack := existing_stack;
+	movetype := movetype;
+	inserttype := inserttype;
+
+	var bandoleira_artilharia := 0xC892;
+	var ammo_graphic := 0xE73;        // Ammunition (0x9090)
+	var powder_graphic := 0x913;      // Powder (0x9092)
+	var powderfixer_graphic := 0xC611; // Powder Fixer (0xC611)
+
+	if (cinto.objtype == bandoleira_artilharia)
+		// Only allow fireweapon supplies
+		if (item.graphic != ammo_graphic &&
+		    item.graphic != powder_graphic &&
+		    item.graphic != powderfixer_graphic)
+			SendSysMessageEx(who, "Esta bandoleira apenas comporta munição, pólvora e socador de pólvora.", SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+	endif
+
+	if (cinto.movable == 0 || item.movable == 0)
+		SendSysMessageEx(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif (!ReserveItem(cinto))
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessageEx(who, "O cinto está em uso.");
+		return 0;
+	elseif (!ReserveItem(item))
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessageEx(who, "O item está em uso.");
+		return 0;
+	endif
+
+	return 1;
+endprogram

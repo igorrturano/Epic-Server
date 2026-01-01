@@ -7,7 +7,7 @@ include "IUObjectWrapper";
 
 include ":wrappers:Position/Model/PositionWrapper";
 include "include/packets";
-include "system/text/Color";
+include ":text:Color";
 
 class UObjectWrapper(IUObjectWrapper)
 	var _cfgFile;
@@ -23,7 +23,7 @@ class UObjectWrapper(IUObjectWrapper)
 	var _cProps;
 
 	function UObjectWrapper(this, byRef object)
-		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_ITEMREF)
+		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_OFFLINEMOBILEREF || TypeOfInt(object) == OT_ITEMREF)
 			this._objRef := object;
 			this._serial := object.serial;
 			this._objType := object.objtype;
