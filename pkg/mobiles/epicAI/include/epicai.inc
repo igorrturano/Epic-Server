@@ -1206,7 +1206,10 @@ function NPCHearFootsteps(npc)
         endif
 
         if (CheckLineOfSight(npc, mobile))
-            continue;
+            var event := struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := mobile };
+
+            SendEvent(npc, event);
+            return true;
         endif
 
         if (abs(mobile.z - npc.z) >= 19)
@@ -1245,7 +1248,7 @@ function NPCHearFootsteps(npc)
         sleepms(2);
     endforeach
 
-    return 0;
+    return false;
 endfunction
 
 function CanFight(attacker, defender)
@@ -1261,10 +1264,8 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    // Check horizontal LOS only - NPCs can "look up/down" through floors/ceilings
-    // Only horizontal walls/obstacles block vision, not vertical Z differences
-    if (!CheckLosAt(attacker, defender.x, defender.y, attacker.z))
-        return 0; // Wall blocking horizontally
+    if (!CheckLineOfSight(attacker, defender))
+        return 0;
     endif
 
     // Jogadores corrompidos pela entropia nao sao atacados por mortos vivos.
@@ -1473,10 +1474,6 @@ function PursueTarget(opponent)
                     break;
                 endif
 
-                if (!me.opponent && CheckNearbyThreats())
-                    opponent := CheckNearbyThreats();
-                endif
-
                 var old_x := me.x;
                 var old_y := me.y;
 
@@ -1667,12 +1664,16 @@ function PursueTarget(opponent)
         // Use cached pathfinding
         var path := GetOrCreatePursuitPath(opponent);
         if (path)
-            var path_step := 0;
             foreach coord in path
-                path_step += 1;
                 // Re-check distance in case target moved
                 if (Distance(me, opponent) <= ideal_distance)
                     break;
+                endif
+
+                if (CheckLineOfSight(me, opponent))
+                    var engaged_event := struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent };
+                    SendEvent(me, engaged_event);
+                    break; // Found the target again!
                 endif
 
                 // Re-check if we should keep pursuing
@@ -1819,17 +1820,18 @@ function HandleIdleState()
 
     if (!hasPlayerNear(me))
         var attempts := 0;
-        while (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
+        // DA pra simplificar, remover esse Coordinate Distance e so fazer ele ir voltando pra casa. SE a distancia for maior que 30, apenas retorna anti exploit
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
             if (CheckNearbyThreats())
                 return; // Abort returning home if threats are nearby
             endif
             WalkTowardLocation(home_x, home_y);
             sleepms(100);
             attempts += 1;
-        endwhile
+        endif
         
         // If still not home after 20 attempts, just teleport
-        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts >= 20)
             PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
             sleep(3);
             MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
