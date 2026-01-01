@@ -1,4 +1,5 @@
 use cfgfile;
+use datafile;
 
 include ":loot:include/lootParser";
 include ":tn:recipes";
@@ -143,8 +144,16 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             endif
 
             if ("Camuflagem" in habs)
-                var tier := CInt(npc_elem.Tier);
-                var template := FindAnimalTemplate(tier);
+                var tier := 0;
+                var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
+                if (boss_struct && boss_struct.tier)
+                    tier := boss_struct.tier;
+                endif
+                if (!tier)
+                    tier := CInt(npc_elem.Tier);
+                endif
+
+                var template := GetAnimalTemplateByTier(tier);
                 if (template)
                     SetObjProperty(mobile, "#camuflagem_template", template);
                     var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
@@ -256,30 +265,26 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
     return 1;
 endfunction
 
-function FindAnimalTemplate(tier)
-    var npccfgfile := ReadConfigFile(":epicai:npcdesc");
-    if (!npccfgfile)
-        return;
+// O(1) lookup using startup cache
+function GetAnimalTemplateByTier(tier)
+    var epicai_df := OpenDataFile(":epicai:AnimalsByTier");
+    if (!epicai_df || epicai_df.errortext)
+        return 0;
     endif
 
-    var valid_templates := array{};
-    
-    // Iterate through all entries
-    foreach entry in (GetConfigStringKeys(npccfgfile))
-        var elem := FindConfigElem(npccfgfile, entry);
-        
-        // Check if it's an animal of the same tier
-        if (elem.BrainType == "animal" && CInt(elem.Tier) == tier)
-            // Store the template name
-            valid_templates.append(entry);
-        endif
-        sleepms(2);
-    endforeach
-    // If we found valid templates, return a random one
-    if (valid_templates.size() > 0)
-        return valid_templates[RandomIntMinMax(1, valid_templates.size())];
+    var cache_elem := epicai_df.FindElement("AnimalTiers");
+    if (!cache_elem)
+        return 0;
     endif
-    return 0;
+
+    var tier_key := "tier_" + tier;
+    var animal_list := cache_elem.GetProp(tier_key);
+
+    if (!animal_list || animal_list.size() < 1)
+        return 0;
+    endif
+
+    return animal_list[RandomIntMinMax(1, animal_list.size())];
 endfunction
 
 function SetupFireweaponLoadout(mobile)
