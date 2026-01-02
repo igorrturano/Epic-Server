@@ -443,47 +443,43 @@ function ChooseAbility(npc, state, habs)
     endcase
 endfunction
 
+// Helper function to parse ability metadata from config
+function ParseAbilityMeta(elem)
+  var classe := GetConfigString(elem, "classe");
+  if (!classe)
+    return error;
+  endif
+
+  var params := SplitWords(classe);
+  return struct{
+    "hab_class" := params[1],
+    "level" := CInt(params[2]) * 2,
+    "requisito" := GetConfigString(elem, "requisito")
+  };
+endfunction
+
 function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
 
   var valid_habs := array{};
   var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-  var cache := NPC_GetCachedData(npc);  // O(1) lookup
 
-  // Before level 4, only get core class abilities
-  if (nivel < 4)
-    foreach hab in (GetConfigStringKeys(habcfg))
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe");
-      if (!classe) continue; endif
+  // Get subclass progression regardless of level
+  var subclass := GetObjProperty(npc, "subclass");
+  var progression := GetClassProgression(habcfg, subclass);
 
-      var params := SplitWords(classe);
-      var hab_class := params[1];
-      var hab_level := CInt(params[2]) * 2;
-      var my_class := cache.classe;
+  // Add abilities from progression that match NPC's level
+  foreach hab in progression
+    var elem := FindConfigElem(habcfg, hab);
+    var meta := ParseAbilityMeta(elem);
+    if (meta == error)
+      continue;
+    endif
 
-      if (hab_level <= nivel && hab_class == my_class && !GetConfigString(elem, "requisito"))
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
-
-  // At level 4+, get subclass-specific abilities respecting prerequisites
-  if (nivel >= 4)
-    var subclass := GetObjProperty(npc, "subclass");
-    var progression := GetClassProgression(habcfg, subclass);
-    foreach hab in progression
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe"); 
-      if (!classe) continue; endif
-      
-      var hab_level := CInt(SplitWords(classe)[2]) * 2;
-
-      if (hab_level <= nivel)
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
+    if (meta.level <= nivel)
+      valid_habs.append(hab);
+    endif
+  endforeach
 
   return valid_habs;
 endfunction
@@ -498,30 +494,26 @@ function GetClassProgression(habcfg, subclass)
     // Build ability tree ALWAYS, regardless of subclass
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);
-        var classe := GetConfigString(elem, "classe");
-        if (!classe)
+        var meta := ParseAbilityMeta(elem);
+        if (meta == error)
             continue;
         endif
 
-        var params := SplitWords(classe);
-        var hab_class := params[1];
-        var hab_level := CInt(params[2]) * 2;
         var my_class := cache.classe;
-        var req := GetConfigString(elem, "requisito");
 
         // Only process abilities for this NPC's class
-        if (hab_class == my_class)
-            // Store level 4 abilities without prerequisites as potential base choices
-            if (!req && hab_level == 4)
+        if (meta.hab_class == my_class)
+            // Store level 2 abilities without prerequisites as potential base choices
+            if (!meta.requisito && meta.level == 2)
                 class_choice.append(hab);
             endif
-            
+
             // Build the prerequisite tree
-            if (req)
-                if (!class_tree[req])
-                    class_tree[req] := array{};
+            if (meta.requisito)
+                if (!class_tree[meta.requisito])
+                    class_tree[meta.requisito] := array{};
                 endif
-                class_tree[req].append(hab);
+                class_tree[meta.requisito].append(hab);
             endif
         endif
     endforeach
