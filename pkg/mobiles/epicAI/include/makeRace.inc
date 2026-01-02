@@ -27,9 +27,10 @@ function makeDwarven(mobile)
       mobile.graphic := 1829;
    endif
 
-   // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
-   
+   // Get NPC config to check for existing colors - O(1) cache lookup
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
+
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
@@ -99,9 +100,10 @@ function makeElven(mobile)
       mobile.graphic := 1831; // Female elf graphic
    endif
 
-   // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
-   
+   // Get NPC config to check for existing colors - O(1) cache lookup
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
+
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
@@ -158,7 +160,8 @@ function makeDrow(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -214,7 +217,8 @@ function makeOrc(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -286,7 +290,8 @@ function makePequilho(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -342,7 +347,8 @@ function makeHuman(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");

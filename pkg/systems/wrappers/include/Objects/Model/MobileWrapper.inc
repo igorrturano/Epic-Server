@@ -25,10 +25,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _abilities; // Dictionary<ABILITY_ID, Integer>
 	var _activeAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 
-	// Lazy-loaded damage caches (NPCs only - parsed once, cached forever)
-	var _npcWeaponDamage := 0;    // Cache for DamageDice
-	var _npcDamageMod := 0;       // Cache for Damage
-
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
