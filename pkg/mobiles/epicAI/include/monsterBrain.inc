@@ -57,11 +57,15 @@ function MonsterBrain()
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleMonsterEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
