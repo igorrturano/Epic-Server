@@ -725,7 +725,8 @@ function ChoosePriestSpell(me, opponent, spells)
     // Gather battlefield information
     var my_health_pct := CDbl(AP_GetVital(me, HITS)) / CDbl(AP_GetVitalMaximumValue(me, HITS));
     var opponent_health_pct := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS));
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var hurt_allies := 0;
     
     // Count hurt allies

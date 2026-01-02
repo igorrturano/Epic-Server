@@ -21,7 +21,7 @@ function InitializeEpicNPC(mobile)
 
     // Build NPC cache FIRST - all subsequent calls will use O(1) lookups
     var cache := NPC_GetCachedData(mobile);
-    var npc_elem := cache.npc_elem;  // Use cached config element
+    var npc_elem := NPC_GetNPCConfig(mobile);  
 
     var npccfgfile := ReadConfigFile( ":epicai:npcdesc" );
     var mytemplate := cache.template;  // Use cached template name
@@ -1106,6 +1106,45 @@ function CheckNearbyThreats()
     return GetCachedThreats();
 endfunction
 
+/*
+ * GetNearbyMobilesOnce(mobile, range, flags := 0)
+ *
+ * Phase 4: Scan Consolidation
+ * Purpose: Cache area scans for 1s to prevent redundant ListMobilesNearLocationEx calls
+ * Multiple functions can share the same scan result if called within the cache window
+ *
+ * Parameters:
+ *   - mobile: The NPC doing the scan
+ *   - range: Scan radius in tiles
+ *   - flags: LISTEX flags (default: 0 = LISTEX_FLAG_NORMAL)
+ *
+ * Returns: Array of mobiles within range
+ *
+ * Eliminates: Redundant scans when CheckForIdealTarget, AlertAllies, etc. run in same tick
+ */
+function GetNearbyMobilesOnce(mobile, range, flags := LISTEX_FLAG_NORMAL)
+    // Create cache key based on scan parameters
+    var cache_key := $"#nearby_cache_{range}_{flags}";
+    var cached := GetObjProperty(mobile, cache_key);
+    var now := polcore().systime;
+
+    // Cache valid for 1s
+    if (cached && (CDbl(now) - CDbl(cached.time)) < 1.0)
+        return cached.mobiles;
+    endif
+
+    // Cache miss or expired - perform scan
+    var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, mobile.z, range, flags, mobile.realm);
+
+    // Store in cache with timestamp
+    SetObjProperty(mobile, cache_key, struct{
+        "mobiles" := mobiles,
+        "time" := now
+    });
+
+    return mobiles;
+endfunction
+
 function CheckForIdealTarget()
    // Check if we're locked onto a target (20 second lock)
    var target_lock := GetObjProperty(me, "#target_lock");
@@ -1138,7 +1177,8 @@ function CheckForIdealTarget()
       endif
    endif
 
-   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
+   // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+   var potential_opponents := GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL);
    if (potential_opponents.size() < 1)
       return 0;
    endif
@@ -1238,7 +1278,8 @@ function AlertAllies(invasor, me)
     if (GetCooldown(me, "alert_allies"))
         return 0;
     endif
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocation
+    foreach mobile in GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
@@ -1270,7 +1311,8 @@ endfunction
 function NPCHearFootsteps(npc)
     var hearing_range := 8;
 
-    foreach mobile in ListMobilesNearLocationEx(npc.x, npc.y, npc.z, hearing_range, LISTEX_FLAG_NORMAL, npc.realm)
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    foreach mobile in GetNearbyMobilesOnce(npc, hearing_range, LISTEX_FLAG_NORMAL)
         if (mobile == npc)
             continue;
         endif
@@ -1432,9 +1474,15 @@ function CalculateIdealPursuitDistance()
         endif
     else
         // For monsters and animals, check if they're ranged
-        if (isMonsterRanged())
-            // Ranged monsters should maintain distance
-            return 8; // Safe distance for acid spit, web, etc.
+        var is_monster_ranged := isMonsterRanged();
+        if (is_monster_ranged)
+            // Ranged monsters should use their weapon's max range if equipped
+            // Otherwise use 8 for special abilities (acid spit, web, etc.)
+            if (me.weapon && range_info.max_range > 1)
+                return range_info.max_range;
+            else
+                return 8; // Safe distance for acid spit, web, etc.
+            endif
         endif
     endif
 
@@ -1530,8 +1578,18 @@ function PursueTarget(opponent)
     endif
 
     // Already at ideal distance? Done.
-    if (dist <= ideal_distance && has_los)
-        return 1;
+    // For ranged: need to be far enough (dist >= ideal_distance)
+    // For melee: need to be close enough (dist <= ideal_distance)
+    if (is_ranged)
+        // Ranged: only stop if we're at or beyond ideal distance
+        if (dist == ideal_distance && has_los)
+            return 1;
+        endif
+    else
+        // Melee: stop if we're within ideal distance
+        if (dist <= ideal_distance && has_los)
+            return 1;
+        endif
     endif
 
     // === PHASE 3: Store last known position (only if we have LOS) ===
@@ -2184,7 +2242,8 @@ function LootCorpse(corpse)
     // Approach the corpse, but check for threats while approaching
     while (Distance(me, corpse) > 1)
         // Check for nearby hostiles - combat takes priority over looting
-        foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+        // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+        foreach mobile in GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL)
             if (CanFight(me, mobile))
                 // Hostile nearby - abort looting and engage
                 return 0;
@@ -2219,7 +2278,8 @@ function LootCorpse(corpse)
     // Loot items, but check for threats between each item
     while (looted < max_loot)
         // Check for nearby hostiles before looting each item
-        foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+        // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+        foreach mobile in GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL)
             if (CanFight(me, mobile))
                 // Hostile nearby - abort looting and let the brain handle combat
                 return (looted > 0);
@@ -2403,29 +2463,8 @@ function GetWeaponRangeInfo()
     var min_range := 1;
     var max_range := 1;
     
-    // Handle fireweapons specifically
-    var fire_weapons := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-    if (weapon.objtype in fire_weapons)
-        case (weapon.objtype)
-            0xC5FD: // Pistol
-            0xC5FE:
-                min_range := 1;
-                max_range := 6;
-            0xC5FF: // Hand Cannon
-                min_range := 2;
-                max_range := 6;
-            0xC600: // Carabine
-                min_range := 3;
-                max_range := 12;
-            0x89A7: // Musket
-                min_range := 4;
-                max_range := 20;
-        endcase
-    else
-        // For all other weapons, get their specific ranges from config
-        min_range := CInt(wpn_elem.MinRange) ? CInt(wpn_elem.MinRange) : 1;
-        max_range := CInt(wpn_elem.MaxRange) ? CInt(wpn_elem.MaxRange) : 1;
-    endif
+    min_range := CInt(wpn_elem.MinRange) ? CInt(wpn_elem.MinRange) : 1;
+    max_range := CInt(wpn_elem.MaxRange) ? CInt(wpn_elem.MaxRange) : 1;
 
     return struct{
         "min_range" := min_range,
