@@ -44,58 +44,81 @@ function CalculateAttackerDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("CÁLCULO DE DANO!"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	attackInfo.SetDamage(Damage());
-	CalculateStatusDamage(attackInfo);
-	CalculateSkillDamage(attackInfo);
+	var statusDamageInfo := CalculateStatusDamage(attackInfo);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
+	var skillDamageInfo := CalculateSkillDamage(attackInfo);
+	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill)}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
+function CalculateEstimatedMinMaxDamage(attackInfo)
+	var statusDamageInfo := CalculateStatusDamage(attackInfo);
+	var weaponDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
+	var skillDamageInfoMain := CalculateSkillDamage(attackInfo);
+	attackInfo.SetDamageHand(OFFHAND);
+	var skillDamageInfoOff := CalculateSkillDamage(attackInfo);
+
+	weaponDamage.maxMain += skillDamageInfoMain,
+	weaponDamage.minMain += skillDamageInfoMain,
+	weaponDamage.maxOff += skillDamageInfoOff,
+	weaponDamage.minOff += skillDamageInfoOff,
+	return weaponDamage;
+endfunction
+
 function CalculateStatusDamage(byRef attackInfo)
-	var stat := "";
-	var damageMod := 0;
+
+	var statusDamage := struct{
+		stat := "",
+		damageMod := 0
+	}
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
-			stat := $"{STRENGTH} + {DEXTERITY}";
+	var statusDamage := struct{
+			statusDamage.stat := $"{STRENGTH} + {DEXTERITY}";
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
 			stat := DEXTERITY;
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	else
-		stat := STRENGTH;
+		statusDamage.stat := STRENGTH;
 
-		damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 					 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH) :
 					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
-	
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
 						  .IncreasePiercingRawDamage(damageMod)
 						  .IncreaseBluntRawDamage(damageMod);
+						
+	return statusDamage;
 endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
 	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(skill)}: {damageMod}"));
+	var skillDamage := struct{
+		skill := skill,
+		damageMod := damageMod
+	};
 	
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
 						  .IncreasePiercingRawDamage(damageMod)
 						  .IncreaseBluntRawDamage(damageMod);
+
+	return skillDamage;
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
@@ -166,6 +189,26 @@ function CalculateWeaponDamage(byRef attackInfo)
 	if (attackInfo.GetAmmo())
 		ApplyAmmoDamage(attackInfo);
 	endif
+endfunction
+
+function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
+	var MinMaxWeaponDamage := 
+		struct{
+			maxMain := 0,
+			minMain := 0,
+			maxOff := 0,
+			minOff := 0,
+		}
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+
+	if(weapon)
+		MinMaxWeaponDamage.minMain := weapon.GetMainDamage().GetMinDamage();
+		MinMaxWeaponDamage.maxMain := weapon.GetMainDamage().GetMaxDamage();
+		MinMaxWeaponDamage.minOff := weapon.GetOffDamage().GetMinDamage();
+		MinMaxWeaponDamage.maxOff := weapon.GetOffDamage().GetMaxDamage();
+	endif
+
+	return MinMaxWeaponDamage
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
