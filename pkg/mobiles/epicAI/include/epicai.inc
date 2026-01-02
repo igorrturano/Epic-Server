@@ -1098,12 +1098,30 @@ endfunction
 /*
  * CheckNearbyThreats()
  *
- * DEPRECATED: Use GetCachedThreats() instead
- * Kept for backward compatibility during transition
+ * Phase 3: Hybrid Threat Detection
+ * Purpose: Use cached threats (fast) with fallback area scan (reliable)
+ * This prevents NPCs from giving up when cache is empty due to event timing
  */
 function CheckNearbyThreats()
-    // Use cached threat list instead of scanning
-    return GetCachedThreats();
+    // First check cached list (fast path)
+    var threat := GetCachedThreats();
+    if (threat)
+        return threat;
+    endif
+
+    // Fallback: Do actual area scan if cache is empty
+    // This catches edge cases where events didn't update cache
+    // (e.g., player already in range when NPC activated, LoS temporarily blocked)
+    var mobiles := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
+    foreach mobile in mobiles
+        if (CanFight(me, mobile))
+            // Add to cache for next time
+            UpdateThreatList(me, struct{"type" := SYSEVENT_ENTEREDAREA, "source" := mobile});
+            return mobile;
+        endif
+    endforeach
+
+    return 0;
 endfunction
 
 /*
@@ -1367,6 +1385,17 @@ function NPCHearFootsteps(npc)
     return false;
 endfunction
 
+/*
+ * CanFight(attacker, defender)
+ *
+ * Phase 3: Context-Aware LoS Check
+ * Purpose: Allow NPCs to pursue existing targets without LoS, but require LoS for new targets
+ *
+ * Logic:
+ *   - NEW targets (not current opponent): Require LoS to engage
+ *   - EXISTING opponent: Allow pursuit even if LoS temporarily blocked
+ *   - This prevents NPCs from giving up when player moves behind obstacles
+ */
 function CanFight(attacker, defender)
     if (!defender || defender.dead || defender.hidden || defender.concealed)
         return 0;
@@ -1380,8 +1409,12 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    if (!CheckLineOfSight(attacker, defender))
-        return 0;
+    // Only require LoS for NEW targets, not existing opponent
+    // This allows pursuit of current target even if LoS is temporarily blocked
+    if (attacker.opponent != defender)
+        if (!CheckLineOfSight(attacker, defender))
+            return 0;
+        endif
     endif
 
     // Get cached data for attacker (O(1) lookup)
@@ -1882,7 +1915,7 @@ function HandleIdleState()
         return;
     endif
 
-    if (!hasPlayerNear(me))
+    if (!HasPlayerNear(me))
         var attempts := 0;
         // DA pra simplificar, remover esse Coordinate Distance e so fazer ele ir voltando pra casa. SE a distancia for maior que 30, apenas retorna anti exploit
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)

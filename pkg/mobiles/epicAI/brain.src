@@ -29,23 +29,16 @@ program KillPlayers()
         InitializeEpicNPC(me);
         set_critical(0);
     endif
-
+    EnableMainEvents();
     // Main event loop - alternates between dormant and active states
     while (me)
         // ===== DORMANT MODE =====
-        // Wait for players to enter range with minimal CPU usage
-        // Listen for ENTEREDAREA events within 30-tile radius
-        EnableEvents(SYSEVENT_ENTEREDAREA, 30);
-        DisableEvents(SYSEVENT_ENGAGED);
-        DisableEvents(SYSEVENT_DAMAGED);
-        DisableEvents(SYSEVENT_LEFTAREA);
-
         while (1)
             var ev := wait_for_event(60000); // 60 second timeout
 
             if (!ev)
                 // Timeout - fallback check for nearby players
-                if (!hasPlayerNear(me))
+                if (!HasPlayerNear(me))
                     continue; // Stay dormant
                 else
                     // Found player nearby, activate
