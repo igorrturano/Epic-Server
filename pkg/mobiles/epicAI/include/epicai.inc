@@ -11,6 +11,7 @@ include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
 include ":io:CFGFile";
+include ":epicAI:npcDataCache";
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -18,13 +19,17 @@ function InitializeEpicNPC(mobile)
         return 0;
     endif
 
-	var npc_elem := NPC_GetNPCConfig(mobile);
+    // Build NPC cache FIRST - all subsequent calls will use O(1) lookups
+    var cache := NPC_GetCachedData(mobile);
+    var npc_elem := cache.npc_elem;  // Use cached config element
+
     var npccfgfile := ReadConfigFile( ":epicai:npcdesc" );
-    var mytemplate := ParseTemplateName(mobile.npctemplate).template;
+    var mytemplate := cache.template;  // Use cached template name
     var elem := FindConfigElem(npccfgfile, mytemplate);
     var sounds := GetConfigStringArray(elem, "IdleSound");
 
-    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+    // Use cached category_lower for darkness check
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.category_lower == "undead";
     if ((isDarknessCreature) && !InDarkness(mobile))
         ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
     endif
@@ -49,7 +54,8 @@ function InitializeEpicNPC(mobile)
         SetObjProperty(mobile, "throwItem", throwItem);
     endif
 
-    var brain_type := GetConfigString(npc_elem, "BrainType");
+    // Use cached brain_type
+    var brain_type := cache.brain_type;
     // Type-specific initialization
     case (brain_type)
         "monster":  InitializeMonsterNPC(mobile, npc_elem, elem, sounds);
@@ -1238,8 +1244,8 @@ function NPCHearFootsteps(npc)
         SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
 
         var difficulty := CalculateDHDiff(npc, mobile);
-        var npc_elem := NPC_GetNPCConfig(npc);
-        var npc_awareness := npc_elem.Tier * 10;
+        var cache := NPC_GetCachedData(npc);  // O(1) lookup
+        var npc_awareness := cache.tier * 10;
 
         if (SkillCheckMod(npc, AWARENESS, difficulty, npc_awareness) > 0)
             return mobile;
@@ -1268,35 +1274,37 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Get cached data for attacker (O(1) lookup)
+    var attacker_cache := NPC_GetCachedData(attacker);
+
     // Jogadores corrompidos pela entropia nao sao atacados por mortos vivos.
-    if (MobileWrapper(defender).GetEntropy() <= -16000 && Lower(MobileWrapper(attacker).Category) == "undead")
+    if (MobileWrapper(defender).GetEntropy() <= -16000 && attacker_cache.category_lower == "undead")
         return 0;
     endif
 
     // Cooldown to avoid ress kill
-    if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
+    if (Cint(GetCooldown(defender, "deathtime" )) > 0)
         // Allow combat if defender initiated it
         if (attacker.opponent == defender) return 1; endif
         // Otherwise prevent attacking during cooldown
         return 0;
     endif
 
-    var npc_elem := NPC_GetNPCConfig(attacker);
-	var category := GetConfigString(npc_elem, "Category");
+    var category := attacker_cache.category;
 
-   if (category == "Aklats")
+    if (category == "Aklats")
         // Usa função dedicada para detectar ameaças
         var aklat_threat_detected := DetectAklatsThreats(attacker);
-        
+
         // Se não detectou ameaça, não pode atacar
         if (!aklat_threat_detected)
             return 0;
         endif
-        
+
         // Se detectou ameaça, continua com as verificações normais
         // (não retorna 1 imediatamente para permitir outras checagens)
     endif
-	
+
     // Grey NPCs (neutral alignment) should only fight back when attacked
     if (attacker.alignment == 0)
         // Only allow combat if the defender is already attacking this NPC
@@ -1323,12 +1331,11 @@ function CanFight(attacker, defender)
             return 1;
         endif
 
-        // Check enemy categories
-        var attacker_elem := NPC_GetNPCConfig(attacker);
-        var defender_elem := NPC_GetNPCConfig(defender);
-        var enemy_cats := GetConfigStringArray(attacker_elem, "EnemyCategories");
-        
-        if (enemy_cats && defender_elem.Category in enemy_cats)
+        // Check enemy categories - use cached data for both NPCs
+        var defender_cache := NPC_GetCachedData(defender);
+        var enemy_cats := GetConfigStringArray(attacker_cache.npc_elem, "EnemyCategories");
+
+        if (enemy_cats && defender_cache.category in enemy_cats)
             return 1;
         endif
 
@@ -2381,9 +2388,9 @@ function isMonsterRanged()
         return 1;
     endif
 
-    // Get monster configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    // Get monster configuration - O(1) cache lookup
+    var cache := NPC_GetCachedData(me);
+    var speed_type := SplitWords(cache.attack_speed, "_");
     var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
 
     return is_ranged;
@@ -3040,12 +3047,12 @@ endfunction
  * CheckDarknessCreatureSurvival(mobile)
  *
  * Purpose: Kill darkness creatures (undead/Mobnoturno) if not in darkness
- * Called every AI loop iteration - O(1) per creature
+ * Called every AI loop iteration - O(1) cache lookup
  * Returns 1 if creature was killed (caller should return), 0 otherwise
  */
 function CheckDarknessCreatureSurvival(mobile)
-    var npc_elem := NPC_GetNPCConfig(mobile);
-    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+    var cache := NPC_GetCachedData(mobile);  // O(1) lookup
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.category_lower == "undead";
 
     if (!isDarknessCreature)
         return 0;
