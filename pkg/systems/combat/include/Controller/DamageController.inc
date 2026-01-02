@@ -100,7 +100,7 @@ endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
 	var damageDice;
-	
+
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
 		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
@@ -109,7 +109,6 @@ function CalculateWeaponDamage(byRef attackInfo)
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
-	
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}"));
@@ -126,7 +125,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult() ?: 0;
 	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult() ?: 0;
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano rolado:"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}"));
@@ -147,8 +146,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
 
-	// Unified damage mod retrieval - abstracts NPC vs Player
-	var damageMod := attackInfo.GetAttacker().GetWeaponDamageMod();
+	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
 
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage())
 						  .IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage())
