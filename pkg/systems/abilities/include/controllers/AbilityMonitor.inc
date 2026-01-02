@@ -55,8 +55,30 @@ class AbilityMonitor()
 		this.charges := amount;
 	endfunction
 
+	function ConsumeCharge(this, amount)
+		if (this.charges > 0)
+			this.charges -= amount;
+		endif
+
+		if (this.charges <= 0)
+			this.charges := 0;
+		endif
+
+		return this;
+	endfunction
+
 	function ActivateOn(this, mobile)
+		if (!(mobile is @MobileWrapper))
+			return InvalidFormatException("The param must be a MobileWrapper object!");
+		endif
+
 		this.mobileSerial := mobile.GetSerial();
+
+		var existingMonitor := mobile.GetActiveAbilityMonitor(this.GetAbility());
+		if (existingMonitor is @AbilityMonitor)
+			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
+		endif
+		
 		var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
 	endfunction
 
@@ -65,7 +87,7 @@ class AbilityMonitor()
 			return InvalidProcessException("AbilityMonitor Deactivate called with no active process.");
 		endif
 
-		this._GetProcess().sendevent(ABILITY_EVENT_ID::ABORT);
+		this._GetProcess().SendEvent(ABILITY_EVENT_ID::ABORT);
 	endfunction
 
 	function ToString(this)
@@ -74,7 +96,8 @@ class AbilityMonitor()
 endclass
 
 enum class ABILITY_EVENT_ID
-	ABORT,
 	EXPIRE,
-	REFRESH
+	REFRESH,
+	USED,
+	ABORT
 endenum

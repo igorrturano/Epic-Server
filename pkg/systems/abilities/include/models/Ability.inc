@@ -32,19 +32,19 @@ class Ability(IAbility)
 		this._id := abilityEnum;
 		this._name := cfgFile.GetPropertyValue("nome")[1] ?: uninit;
 		this._class := cfgFile.GetPropertyValue("classe") ?: uninit;
-		this._level := cfgFile.GetPropertyValue("nivel") ?: uninit;
+		this._level := CInt(cfgFile.GetPropertyValue("nivel")[1]) ?: uninit;
 		this._folk := cfgFile.GetPropertyValue("povo")[1] ?: uninit;
 		this._description := cfgFile.GetPropertyValue("descricao")[1] ?: uninit;
 		this._activationMode := cfgFile.GetPropertyValue("uso")[1] ?: uninit; 
 		this._activationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1] ?: uninit;
 		this._requirement := cfgFile.GetPropertyValue("requisito")[1] ?: uninit;
-		this._costHP := cfgFile.GetPropertyValue("hp")[1] ?: uninit;
-		this._costSTAM := cfgFile.GetPropertyValue("stam")[1] ?: uninit;
-		this._costMANA := cfgFile.GetPropertyValue("mana")[1] ?: uninit;
-		this._charges := cfgFile.GetPropertyValue("charges")[1] ?: uninit;
-		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1] ?: uninit;
-		this._duration := cfgFile.GetPropertyValue("duracao")[1] ?: uninit;
-		this._range := cfgFile.GetPropertyValue("range")[1] ?: uninit;
+		this._costHP := CInt(cfgFile.GetPropertyValue("hp")[1]) ?: uninit;
+		this._costSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: uninit;
+		this._costMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
+		this._charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
+		this._cooldown := CInt(cfgFile.GetPropertyValue("cooldown")[1]) ?: uninit;
+		this._duration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
+		this._range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
 		this._script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
 	endfunction
 
