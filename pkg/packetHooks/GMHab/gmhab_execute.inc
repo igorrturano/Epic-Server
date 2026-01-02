@@ -68,6 +68,6 @@ function ExecuteCommand(who, cmd_index)
 	var cmd := comandos[cmd_index];
 	
 	// Send the command as if the player typed it
-	SendSysMessageEx(who, "Executando: " + cmd, SSM_INFO);
+	// SendSysMessageEx(who, "Executando: " + cmd, SSM_INFO);
 	SendTextCommand(who, cmd);
 endfunction

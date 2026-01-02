@@ -350,10 +350,10 @@ function ExecuteSpecial(who, special_index)
         
         // Set cooldown
         SetObjProperty(who, cooldown_prop, current_time + final_cooldown);
-        SendSysMessage(who, "Executando special ability! (Cooldown: " + final_cooldown + "s)");
+        // SendSysMessage(who, "Executando special ability! (Cooldown: " + final_cooldown + "s)");
         return 1;
     else
-        SendSysMessage(who, "Erro ao executar special ability!");
+        // SendSysMessage(who, "Erro ao executar special ability!");
         return 0;
     endif
 endfunction
@@ -361,7 +361,7 @@ endfunction
 // Execute command
 function ExecuteGMCommand(who, command)
     // Execute the command by calling the script directly
-    SendSysMessage(who, "Executando: " + command);
+    // SendSysMessage(who, "Executando: " + command);
     
     // Remove the dot if present
     var cmd_name := command;
@@ -465,7 +465,7 @@ function ExecuteGMCommand(who, command)
     endcase
     
     if (!result)
-        SendSysMessage(who, "Erro ao executar comando! Tente digitar: ." + cmd_name);
+        // SendSysMessage(who, "Erro ao executar comando! Tente digitar: ." + cmd_name);
         return 0;
     else
         return 1;
@@ -492,7 +492,7 @@ function ExecuteSkill(who, skill_id)
     var skill_name := skill_map[skill_id];
     
     if (!skill_name)
-        SendSysMessage(who, "Indice de skill invalido! ID: " + skill_id);
+        // SendSysMessage(who, "Indice de skill invalido! ID: " + skill_id);
         return 0;
     endif
     
@@ -509,7 +509,7 @@ function ExecuteSkill(who, skill_id)
     // Get the attribute config element
     var attrib_elem := AP_GetAttributeCfgElem(skill_name);
     if (!attrib_elem)
-        SendSysMessage(who, "Skill " + skill_name + " nao encontrada!");
+        // SendSysMessage(who, "Skill " + skill_name + " nao encontrada!");
         return 0;
     endif
     
@@ -519,7 +519,7 @@ function ExecuteSkill(who, skill_id)
     // DEBUG: Log script path
     
     if (!script_path || script_path == "")
-        SendSysMessage(who, "Skill " + skill_name + " nao possui script!");
+        // SendSysMessage(who, "Skill " + skill_name + " nao possui script!");
         return 0;
     endif
     
@@ -533,12 +533,12 @@ function ExecuteSkill(who, skill_id)
     // Set cooldown (5 seconds)
     SetObjProperty(who, "delayskill", ReadGameClock() + 5);
     
-    SendSysMessage(who, "Usando " + skill_name + " (valor: " + skill_value + ")");
+    // SendSysMessage(who, "Usando " + skill_name + " (valor: " + skill_value + ")");
     
     // Execute the skill script with the player's skill value
     var result := start_script(script_path, who);
     if (!result)
-        SendSysMessage(who, "Erro ao executar skill!");
+        // SendSysMessage(who, "Erro ao executar skill!");
         return 0;
     else
         return 1;

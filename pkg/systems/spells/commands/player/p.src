@@ -7,8 +7,6 @@ include ":charactercreation:habilidades";
 include ":attributes:attributes";
 
 program magia_paladin(who, spellname)
-	print("[PALADIN CMD] === Command received ===");
-	print("[PALADIN CMD] Player: " + who.name + ", Spellname: '" + spellname + "'");
 	
 	var cfg := ReadConfigFile(":spells:config/paladinspells");
 
@@ -42,7 +40,6 @@ program magia_paladin(who, spellname)
 		foreach spell in (GetConfigIntKeys(cfg))
 			elem := FindConfigElem(cfg, spell);
 			var spell_name := GetConfigString(elem, "Name");
-			print("[PALADIN CMD] Checking: '" + spell_name + "' vs '" + spellname + "'");
 			
 			if (Lower(spell_name) == Lower(spellname))
 				// Check if the player has enough Theology for this spell's circle
@@ -61,11 +58,8 @@ program magia_paladin(who, spellname)
 		endforeach
 
 		if (!achou)
-			print("[PALADIN CMD] Spell NOT FOUND: '" + spellname + "'");
 			SendSysMessageEx(who, "A magia " + spellname + " não existe.", SSM_FAIL);
 			return;
-		else
-			print("[PALADIN CMD] Spell FOUND! Casting...");
 		endif
 
 		// Build a more complete spellinfo struct
