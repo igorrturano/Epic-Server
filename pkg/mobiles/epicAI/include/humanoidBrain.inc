@@ -15,9 +15,9 @@ function HumanoidBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get humanoid configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    // Get humanoid configuration - O(1) cache lookup
+    var cache := NPC_GetCachedData(me);
+    var speed_type := SplitWords(cache.attack_speed, "_");
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
@@ -26,8 +26,8 @@ function HumanoidBrain()
         me.enable("firewhilemoving");
     endif
 
-    // Load Combat History
-    var npc_template := NPC_ParseTemplateName(me.npctemplate).template;
+    // Load Combat History - use cached template
+    var npc_template := cache.template;
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
@@ -427,9 +427,9 @@ function GetCombatState(npc, opponent)
 endfunction
 
 function ChooseAbility(npc, state, habs)
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var npc_class := npc_elem.Classe;
-    
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
+    var npc_class := cache.classe;
+
     // First determine class behavior
     case (npc_class)
         GUERREIRO: return ChooseWarriorAbility(npc, state, habs);
@@ -441,10 +441,10 @@ endfunction
 
 function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
-  
+
   var valid_habs := array{};
   var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-  var npc_elem := NPC_GetNPCConfig(npc);
+  var cache := NPC_GetCachedData(npc);  // O(1) lookup
 
   // Before level 4, only get core class abilities
   if (nivel < 4)
@@ -452,11 +452,11 @@ function GetHabsByLevel(npc, nivel)
       var elem := FindConfigElem(habcfg, hab);
       var classe := GetConfigString(elem, "classe");
       if (!classe) continue; endif
-      
+
       var params := SplitWords(classe);
       var hab_class := params[1];
       var hab_level := CInt(params[2]) * 2;
-      var my_class := (npc_elem.Classe);
+      var my_class := cache.classe;
 
       if (hab_level <= nivel && hab_class == my_class && !GetConfigString(elem, "requisito"))
         valid_habs.append(hab);
@@ -487,7 +487,7 @@ endfunction
 function GetClassProgression(habcfg, subclass)
     var progression := array{};
     var class_choice := array{};
-    var npc_elem := NPC_GetNPCConfig(me);
+    var cache := NPC_GetCachedData(me);  // O(1) lookup
     var class_tree := struct{};
     var base_hab := "";
 
@@ -498,11 +498,11 @@ function GetClassProgression(habcfg, subclass)
         if (!classe)
             continue;
         endif
-        
+
         var params := SplitWords(classe);
         var hab_class := params[1];
         var hab_level := CInt(params[2]) * 2;
-        var my_class := npc_elem.Classe;
+        var my_class := cache.classe;
         var req := GetConfigString(elem, "requisito");
 
         // Only process abilities for this NPC's class
@@ -768,7 +768,7 @@ function ChooseSageAbility(npc, state, habs)
     if (opponent.master)
         foreach hab in habs
             case (hab)
-                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
+                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
                 "Coração da Matilha": return hab; // controlar a besta
             endcase
         endforeach
