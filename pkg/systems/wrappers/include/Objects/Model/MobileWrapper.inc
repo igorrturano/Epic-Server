@@ -25,7 +25,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
-		if (TypeOfInt(mobile) == OT_MOBILEREF)
+		if (TypeOfInt(mobile) == OT_MOBILEREF || TypeOfInt(mobile) == OT_OFFLINEMOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this._cfgFile := CFGFile("epicAI", "npcdesc");
 				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
@@ -338,14 +338,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this._cfgFile.GetElementName();
 	endfunction
 
-	function GetNPCDamage(this)
-		if (this._template is @Exception)
-			return this._template;
-		endif
-		
-		return this._template.Damage;
-	endfunction
-
 	function GetBodyResist(this)
 		if (this._template is @Exception)
 			return this._template;
@@ -379,7 +371,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this._objRef is @Exception)
 			return this._objRef;
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
@@ -398,8 +390,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
 					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
 				));
-
-
 			endif
 
 			return weapon;
@@ -530,21 +520,20 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetDamageModifierBy(this, criteria...)
+	function GetMainDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				value := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				value := CInt(this.GetStr());
-			endif
-
-			statValue /= divisor;
-			value += statValue;
+		if (STRENGTH in criteria && DEXTERITY in criteria)
+			// Both stats - use average
+			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			value += CInt(statValue / divisor);
+		elseif (STRENGTH in criteria)
+			// Only strength
+			value += CInt(this.GetStr() / divisor);
+		elseif (DEXTERITY in criteria)
+			// Only dexterity
+			value += CInt(this.GetDex() / divisor);
 		endif
 
 		if (TACTICS in criteria)
@@ -552,6 +541,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return CInt(value);
+	endfunction
+
+	function GetOffDamageModifierBy(this, criteria...)
+		var offHandDivisor := 2;
+
+		return CInt(this.GetMainDamageModifierBy(criteria) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)

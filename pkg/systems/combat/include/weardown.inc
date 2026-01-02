@@ -20,19 +20,9 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 
 		// Verifica a poncentagem de manter equipado o item
 		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(armor.hp)) / 100.0;
-		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(armor.hp) / 100);
-		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
-		var wearchance := armr_elem.WearChance;
-		if ( TemHabilidade(defender, "Conservar Equipamento"))
-			wearchance := wearchance - 15;
-			//if (wearchance < 10)
-			//	wearchance := 10;
-			//endif
-		endif
-
 		if (GetObjProperty(armor, "encerada") && elem.TipoProtecao)
 			// Reduz a chance de desgaste em 10% se a armadura estiver encerada
-			wearchance := wearchance - 10;
+			wearchance := wearchance - 15;
 			if (wearchance < 5)
 				wearchance := 5;
 			endif
@@ -110,12 +100,14 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 
 		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
 		var wearchance := armr_elem.WearChance;
-		if ( TemHabilidade(defender, "Conservar Equipamento"))
-			wearchance := wearchance/2;
-			//if (wearchance < 20)
-			//	wearchance := 20;
-			//endif
+		if (GetObjProperty(shield, "encerada"))
+			// Reduz a chance de desgaste em 10% se a armadura estiver encerada
+			wearchance := wearchance - 15;
+			if (wearchance < 5)
+				wearchance := 5;
+			endif
 		endif
+
 		//if (CInt(rawdamage) > dmg_to_wear)
 		if (RandomDiceRoll("1d100") <= wearchance)
 			SendSysMessage(defender, shield.desc+" foi danificado.");
@@ -152,14 +144,14 @@ function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 			var wpn_elem := CS_GetSettingsCfgElem("Weapons");
 			var wearchance := CDbl(wpn_elem.WearChance);
 
-			//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
-			if (TemHabilidade(attacker, "Conservar Equipamento"))
-				wearchance := wearchance/2;
-				//if (wearchance < 10)
-				//	wearchance := 10;
-				//endif
+			if (GetObjProperty(weapon, "encerada"))
+				// Reduz a chance de desgaste em 10% se a armadura estiver encerada
+				wearchance := wearchance - 15;
+				if (wearchance < 5)
+					wearchance := 5;
+				endif
 			endif
-
+			
 			if ( RandomDiceRoll("1d100") <= wearchance )
 				var weaponhp := weapon.hp - 1 * wearRateMlt;
 

@@ -1,0 +1,33 @@
+use uo;
+use os;
+include ":debug:Controller/DebugController";
+
+program TimedScript_Exposed(params)
+	var mobile := params[1];
+	var attacker := params[2];
+
+	// Prevent double-application
+	if (GetObjProperty(mobile, "#exposed"))
+		return 0;
+	endif
+
+	// Store the penalty value for cleanup
+	// Exposed makes the target easier to hit (+10 to attacker's hit_chance)
+	// We implement this by reducing the defender's evasion (-10 evasionchance_mod)
+	var penalty := -10;
+	SetObjProperty(mobile, "#exposed", penalty);
+
+	// Apply the modifier (reduces defender's evasion)
+	mobile.evasionchance_mod := mobile.evasionchance_mod + penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[EXPOSED] Aplicado -10 evasion_mod (atacante: {attacker.name})"));
+	endif
+
+	// Visual effect
+	PlayObjectCenteredEffect(mobile, 0x37B9, 0x0A, 0x1E);
+	PrintTextAbove(mobile, "*exposto*");
+
+	return 1;
+endprogram
