@@ -699,7 +699,7 @@ function GetClassAbilities(class_name)
             var hab_level := CInt(params[2]);
                       
             // Only get level 4 abilities for the selected class
-            if (hab_class == class_name && hab_level == 2)
+            if (hab_class == class_name && hab_level == 1)
                 var ability := struct{
                     "name" := GetConfigString(elem, "nome"),
                     "desc" := GetConfigString(elem, "desc")

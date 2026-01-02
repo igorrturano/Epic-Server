@@ -310,7 +310,8 @@ endfunction
 
 function HiveMind(me)
     // Get all nearby me allies
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var ally := 0;
     
     foreach mobile in allies
@@ -346,9 +347,10 @@ function TunnelTactics(me, targ)
     endif
     
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
-    
+
     // Alert nearby allies to join the attack
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 4, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 4, LISTEX_FLAG_NORMAL);
     var attacking_formation := array{me};
 
     foreach mobile in allies
@@ -412,7 +414,8 @@ function doConfusion(opponent)
         return 0;
     endif
 
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var nearby := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     
     var enemies := array{};
     foreach mobile in nearby
@@ -937,8 +940,8 @@ function PoisonBite(spider, opponent)
       return 0;
    endif
 
-   var npc_elem := NPC_GetNPCConfig(spider);
-   var tier := CInt(npc_elem.Tier);
+   var cache := NPC_GetCachedData(spider);  // O(1) lookup
+   var tier := cache.tier;
    if (!tier) tier := 1; endif
 
    PrintTextAbove(spider, "*morde venenosamente*");
@@ -971,7 +974,7 @@ function LayEggSac(spider)
    var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1, spider.realm);
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
-      SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
+      SetObjProperty(egg, "ParentTier", NPC_GetCachedData(spider).tier);
       SetCooldown(spider, "egg_sac", 600);
 
       egg.decayAt := ReadGameClock() + (60 * 15);
@@ -1000,7 +1003,7 @@ function CreateInvisibleWeb(spider)
         web.graphic := web_graphics[RandomInt(web_graphics.size())+1];
         web.invisible := 1;
         web.decayAt := ReadGameClock() + 120;
-        SetObjProperty(web, "level", CInt(NPC_GetNPCConfig(spider).Tier));
+        SetObjProperty(web, "level", NPC_GetCachedData(spider).tier);
         return 1;
     endif
 
@@ -1011,12 +1014,11 @@ function charmOpponent(attacker, defender)
     if (!CheckResist(defender, VONTADE, RESIST_VERY_HARD))
         PrintTextAbove(attacker, "*Hipnotiza*");
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
-        
+
         SetObjProperty(defender, "charmed_by", attacker.serial);
         sleep(15);
         EraseObjProperty(defender, "charmed_by");
-        var npc_name:= NPC_GetNPCConfig(attacker).Name;
-        SendSysMessageEx(defender, "Você foi hipnotizado por " + npc_name, SSM_INFO);
+        SendSysMessageEx(defender, "Você foi hipnotizado por " + attacker.name, SSM_INFO);
     endif
 endfunction
 
@@ -1028,8 +1030,7 @@ function frightenOpponent(attacker, defender)
 
         TS_StartTimer(defender, "dmgreduction", 15, skill, attacker, 1);
 
-        var npc_name:= NPC_GetNPCConfig(attacker).Name;
-        SendSysMessageEx(defender, "Você foi aterrorizado por " + npc_name, SSM_INFO);
+        SendSysMessageEx(defender, "Você foi aterrorizado por " + attacker.name, SSM_INFO);
     endif
 endfunction
 
