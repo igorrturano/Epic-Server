@@ -280,6 +280,10 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x11E};
 		weaponSFX.miss := array{0x11E};
 		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::WHIP)
+		weaponSFX.hit := array{0x67F};
+		weaponSFX.miss := array{0x67F};
+		weaponSFX.critical := array{0x67F};
 	else
 		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
 			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))

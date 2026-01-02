@@ -145,7 +145,7 @@ program spawnpointcontrol(spawnpoint)
 			var state := spawnqueue[i];
 			if (state != "Empty" && state != "Active")
 				if (state == 0)
-					while (hasplayernearSpawn(spawnpoint.x, spawnpoint.y, spawnpoint.realm))
+					while (HasPlayerNearSpawn(spawnpoint.x, spawnpoint.y, spawnpoint.realm))
 						sleep(60);
 					endwhile
 					childrenSerial[i] := CreateSpawn(spawnpoint, templates, amounts, tiers, names, i);
@@ -163,7 +163,7 @@ program spawnpointcontrol(spawnpoint)
 	endwhile
 endprogram
 
-function hasplayernearSpawn(x, y, realm)
+function HasPlayerNearSpawn(x, y, realm)
 	var num_player := ListMobilesNearLocation(x, y, 19, LISTEX_FLAG_PLAYERS_ONLY && LISTEX_FLAG_NORMAL,
 										   realm).size();
 	return num_player > 0;
