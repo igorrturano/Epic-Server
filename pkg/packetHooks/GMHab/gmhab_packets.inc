@@ -1352,8 +1352,8 @@ endfunction
 
 // Get magias data - load from grimoire
 function GetMagiasData(who)
-    
     var magias := array{};
+    var chardata := GetObjProperty(who, "chardata");
     
     // Find spellbook in backpack
     var backpack := who.backpack;
@@ -1444,7 +1444,7 @@ function GetMagiasData(who)
     endforeach
     
     // Load cantrips if player has the trait or magia
-    var chardata := GetObjProperty(who, "chardata");
+    // chardata already declared at function start
     if (chardata)
         var magia := chardata.magia;
         var trait := chardata.trait;
@@ -1524,6 +1524,179 @@ function GetMagiasData(who)
         endif
     endif
     
+    // ✅ NEW: Load Priest memorized spells
+    if (chardata && (chardata.magia == "Priest" || chardata.magia == "Sacerdote"))
+        var priest_list := GetObjProperty(who, "priest_list");
+        
+        if (priest_list && TypeOf(priest_list) == "Array" && priest_list.size() > 0)
+            var priest_cfg := ReadConfigFile(":spells:config/priestspells");
+            
+            if (priest_cfg)
+                foreach spell in priest_list
+                    var spell_elem;
+                    var spell_id;
+                    var spell_name;
+                    
+                    // ✅ BACKWARD COMPATIBILITY: Support both old (name-based) and new (id-based) formats
+                    if (spell.id)
+                        // New format: has ID field
+                        spell_id := spell.id;
+                        spell_elem := FindConfigElem(priest_cfg, spell_id);
+                    elseif (spell.name)
+                        // Old format: only has name field - search by name
+                        spell_name := spell.name;
+                        var all_spell_ids := GetConfigIntKeys(priest_cfg);
+                        foreach cfg_id in all_spell_ids
+                            var test_elem := FindConfigElem(priest_cfg, cfg_id);
+                            if (test_elem && GetConfigString(test_elem, "Name") == spell_name)
+                                spell_elem := test_elem;
+                                spell_id := cfg_id;
+                                break;
+                            endif
+                            sleepms(2);
+                        endforeach
+                    else
+                        // Invalid spell entry - skip
+                        continue;
+                    endif
+                    
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    
+                    // Get name from config (in case we found by ID)
+                    if (!spell_name)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                    endif
+                    
+                    if (!spell_name)
+                        continue;
+                    endif
+                    
+                    var magia := struct{};
+                    magia.+id := spell_id;
+                    magia.+name := spell_name;
+                    magia.+magic_path := "Priest";
+                    magia.+school := "Priest";
+                    magia.+circle := CInt(spell.circle);
+                    magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    magia.+iconid := 0x9BAC;  // Default icon
+                    magia.+hue := 0;
+                    
+                    magias.append(magia);
+                endforeach
+            endif
+        endif
+    endif
+    
+    // ✅ NEW: Load Druid memorized spells
+    if (chardata && (chardata.magia == "Druid" || chardata.magia == "Druida"))
+        var druid_list := GetObjProperty(who, "druid_list");
+        
+        if (druid_list && TypeOf(druid_list) == "Array" && druid_list.size() > 0)
+            var druid_cfg := ReadConfigFile(":spells:config/druidspells");
+            
+            if (druid_cfg)
+                foreach spell in druid_list
+                    var spell_elem;
+                    var spell_id;
+                    var spell_name;
+                    
+                    // ✅ BACKWARD COMPATIBILITY: Support both old (name-based) and new (id-based) formats
+                    if (spell.id)
+                        // New format: has ID field
+                        spell_id := spell.id;
+                        spell_elem := FindConfigElem(druid_cfg, spell_id);
+                    elseif (spell.name)
+                        // Old format: only has name field - search by name
+                        spell_name := spell.name;
+                        var all_spell_ids := GetConfigIntKeys(druid_cfg);
+                        foreach cfg_id in all_spell_ids
+                            var test_elem := FindConfigElem(druid_cfg, cfg_id);
+                            if (test_elem && GetConfigString(test_elem, "Name") == spell_name)
+                                spell_elem := test_elem;
+                                spell_id := cfg_id;
+                                break;
+                            endif
+                            sleepms(2);
+                        endforeach
+                    else
+                        // Invalid spell entry - skip
+                        continue;
+                    endif
+                    
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    
+                    // Get name from config (in case we found by ID)
+                    if (!spell_name)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                    endif
+                    
+                    if (!spell_name)
+                        continue;
+                    endif
+                    
+                    var magia := struct{};
+                    magia.+id := spell_id;
+                    magia.+name := spell_name;
+                    magia.+magic_path := "Druid";
+                    magia.+school := "Druid";
+                    magia.+circle := CInt(spell.circle);
+                    magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    magia.+iconid := 0x9BAC;  // Default icon
+                    magia.+hue := 0;
+                    
+                    magias.append(magia);
+                endforeach
+            endif
+        endif
+    endif
+    
+    // ✅ NEW: Load Paladin spells (based on Consagracao Divina habilidade)
+    var has_paladin := TemHabilidade(who, "Consagracao Divina");
+    if (has_paladin)
+        var paladin_cfg := ReadConfigFile(":spells:config/paladinspells");
+        
+        if (paladin_cfg)
+            var theology_skill := CInt(AP_GetSkill(who, "Theology"));
+            var max_circle := theology_skill / 20;
+            if (max_circle < 1)
+                max_circle := 1;
+            endif
+            
+            foreach spell_id in (GetConfigIntKeys(paladin_cfg))
+                var spell_elem := FindConfigElem(paladin_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                
+                var spell_circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                if (spell_circle > max_circle)
+                    continue; // Player doesn't have enough Theology
+                endif
+                
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                
+                var magia := struct{};
+                magia.+name := spell_name;
+                magia.+school := "Paladino";
+                magia.+circle := spell_circle;
+                magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                magia.+iconid := 0x9BAC;  // Default icon
+                magia.+hue := 0;
+                magia.+id := spell_id; // ✅ FIX: Use 'id' property name
+                magia.+command_prefix := "p"; // Use .p command
+                
+                magias.append(magia);
+                sleepms(2);
+            endforeach
+        endif
+    endif
     
     return magias;
 endfunction

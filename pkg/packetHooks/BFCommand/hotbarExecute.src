@@ -28,6 +28,7 @@ include ":gumps:gumps_ex";
 include ":attributes:attributes";  // For custom skill system
 include "hotbarCooldown";          // For SendHotbarCooldown function
 include ":GMHab:gmhab_utils";      // Shared GMHab utilities (DRY principle)
+include ":charactercreation:habilidades"; // ✅ FIX: Needed for TemHabilidade
 
 // Action type constants
 const ACTION_TYPE_POSTURA := 0x01;
@@ -258,7 +259,7 @@ function ExecuteSpell(who, actionId)
     elseif (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
         spell_configs.append(":spells:config/cantripspells");  // Cantrips FIRST for spellcasters
         spell_configs.append(":spells:config/spellcaster");
-    elseif (player_class == "Paladino")
+    elseif (player_class == "Paladino" || TemHabilidade(who, "Consagracao Divina")) // ✅ FIX: Check ability too
         spell_configs.append(":spells:config/paladinspells");
     elseif (player_class == "Druida")
         spell_configs.append(":spells:config/druidspells");

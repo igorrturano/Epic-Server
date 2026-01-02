@@ -658,6 +658,9 @@ function WritespellInfo(who, byref spellinfo)
 	elseif (chardata.magia == "Druid")
 		Print("[CAST_SPELL] Using druidspells config");
 		cfg := ReadConfigFile(":spells:config/druidspells");
+	elseif (TemHabilidade(who, "Consagracao Divina")) // ✅ FIX: Check ability for Paladin
+		Print("[CAST_SPELL] Using paladinspells config");
+		cfg := ReadConfigFile(":spells:config/paladinspells");
 	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
 		Print("[CAST_SPELL] Using tricksterspells config");
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
