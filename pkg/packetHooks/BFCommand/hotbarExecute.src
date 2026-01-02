@@ -265,9 +265,9 @@ function ExecuteSpell(who, actionId)
         spell_configs.append(":spells:config/druidspells");
     elseif (player_class == "Sacerdote")
         spell_configs.append(":spells:config/priestspells");
-    elseif (player_class == "Demon Hunter")
+    elseif (player_class == "Demon Hunter" || TemHabilidade(who, "Sigilo de Protecao")) // ✅ FIX: Check ability
         spell_configs.append(":spells:config/demonhunterspells");
-    elseif (player_class == "Trickster")
+    elseif (player_class == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
         spell_configs.append(":spells:config/tricksterspells");
     endif
     

@@ -1697,6 +1697,72 @@ function GetMagiasData(who)
             endforeach
         endif
     endif
+
+    // ✅ NEW: Load Trickster spells (based on Sensibilidade Arcana habilidade)
+    var has_trickster := TemHabilidade(who, "Sensibilidade Arcana");
+    if (has_trickster)
+        var trickster_cfg := ReadConfigFile(":spells:config/tricksterspells");
+        
+        if (trickster_cfg)
+            foreach spell_id in (GetConfigIntKeys(trickster_cfg))
+                var spell_elem := FindConfigElem(trickster_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                
+                var magia := struct{};
+                magia.+name := spell_name;
+                magia.+school := "Trickster";
+                magia.+circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                magia.+iconid := 0x9BAC;  // Default icon
+                magia.+hue := 0;
+                magia.+id := spell_id; 
+                magia.+command_prefix := "m"; // Use .m command
+                
+                magias.append(magia);
+                sleepms(2);
+            endforeach
+        endif
+    endif
+
+    // ✅ NEW: Load Demon Hunter spells (based on Sigilo de Protecao habilidade)
+    var has_demonhunter := TemHabilidade(who, "Sigilo de Protecao");
+    if (has_demonhunter)
+        var dh_cfg := ReadConfigFile(":spells:config/demonhunterspells");
+        
+        if (dh_cfg)
+            foreach spell_id in (GetConfigIntKeys(dh_cfg))
+                var spell_elem := FindConfigElem(dh_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                
+                var magia := struct{};
+                magia.+name := spell_name;
+                magia.+school := "Demon Hunter";
+                magia.+circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                magia.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                magia.+iconid := 0x9BAC;  // Default icon
+                magia.+hue := 0;
+                magia.+id := spell_id; 
+                magia.+command_prefix := "c"; // Use .c command
+                
+                magias.append(magia);
+                sleepms(2);
+            endforeach
+        endif
+    endif
     
     return magias;
 endfunction

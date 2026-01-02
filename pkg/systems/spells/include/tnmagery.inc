@@ -664,6 +664,9 @@ function WritespellInfo(who, byref spellinfo)
 	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
 		Print("[CAST_SPELL] Using tricksterspells config");
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
+	elseif (TemHabilidade(who, "Sigilo de Protecao"))
+		Print("[CAST_SPELL] Using demonhunterspells config");
+		cfg := ReadConfigFile(":spells:config/demonhunterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
 		Print("[CAST_SPELL] Using spellcaster config");
 		cfg := ReadConfigFile(":spells:config/spellcaster");
