@@ -57,7 +57,7 @@ class AbilityMonitor()
 
 	function ActivateOn(this, mobile)
 		this.mobileSerial := mobile.GetSerial();
-		Start_Script($"{ABILITY_PKG}controllers/AbilityMonitor", array{mobile, this});
+		var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
 	endfunction
 
 	function Deactivate(this)
@@ -66,6 +66,10 @@ class AbilityMonitor()
 		endif
 
 		this._GetProcess().sendevent(ABILITY_EVENT_ID::ABORT);
+	endfunction
+
+	function ToString(this)
+		return $"AbilityMonitor(abilityId={this.abilityId}, mobileSerial={this.mobileSerial}, pid={this.pid}, charges={this.charges})";
 	endfunction
 endclass
 
