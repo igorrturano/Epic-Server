@@ -5,7 +5,7 @@ include "IAbility";
 include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
-const ABILITY_PKG := ":abilities:scripts/";
+const ABILITY_PKG := ":abilities:";
 
 class Ability(IAbility)
 	var _id := 0; // ABILITY_ID enum
@@ -30,22 +30,22 @@ class Ability(IAbility)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
 		
 		this._id := abilityEnum;
-		this._name := cfgFile.GetPropertyValue("nome")[1];
-		this._class := cfgFile.GetPropertyValue("classe");
-		this._level := cfgFile.GetPropertyValue("nivel");
-		this._folk := cfgFile.GetPropertyValue("povo")[1];
-		this._description := cfgFile.GetPropertyValue("descricao")[1];
-		this._activationMode := cfgFile.GetPropertyValue("uso")[1]; 
-		this._activationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1];
-		this._requirement := cfgFile.GetPropertyValue("requisito")[1];
-		this._costHP := cfgFile.GetPropertyValue("hp")[1];
-		this._costSTAM := cfgFile.GetPropertyValue("stam")[1];
-		this._costMANA := cfgFile.GetPropertyValue("mana")[1];
-		this._charges := cfgFile.GetPropertyValue("charges")[1];
-		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1];
-		this._duration := cfgFile.GetPropertyValue("duracao")[1];
-		this._range := cfgFile.GetPropertyValue("range")[1];
-		this._script := cfgFile.GetPropertyValue("script")[1];
+		this._name := cfgFile.GetPropertyValue("nome")[1] ?: uninit;
+		this._class := cfgFile.GetPropertyValue("classe") ?: uninit;
+		this._level := cfgFile.GetPropertyValue("nivel") ?: uninit;
+		this._folk := cfgFile.GetPropertyValue("povo")[1] ?: uninit;
+		this._description := cfgFile.GetPropertyValue("descricao")[1] ?: uninit;
+		this._activationMode := cfgFile.GetPropertyValue("uso")[1] ?: uninit; 
+		this._activationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1] ?: uninit;
+		this._requirement := cfgFile.GetPropertyValue("requisito")[1] ?: uninit;
+		this._costHP := cfgFile.GetPropertyValue("hp")[1] ?: uninit;
+		this._costSTAM := cfgFile.GetPropertyValue("stam")[1] ?: uninit;
+		this._costMANA := cfgFile.GetPropertyValue("mana")[1] ?: uninit;
+		this._charges := cfgFile.GetPropertyValue("charges")[1] ?: uninit;
+		this._cooldown := cfgFile.GetPropertyValue("cooldown")[1] ?: uninit;
+		this._duration := cfgFile.GetPropertyValue("duracao")[1] ?: uninit;
+		this._range := cfgFile.GetPropertyValue("range")[1] ?: uninit;
+		this._script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
 	endfunction
 
 	function GetId(this)
@@ -121,7 +121,11 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Start_Script($"{ABILITY_PKG}{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+		Start_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+	endfunction
+
+	function ToString(this)
+		return $"Ability(id={this._id}, name={this._name}, class={this._class}, level={this._level}, folk={this._folk}, activationMode={this._activationMode}, activationMoment={this._activationMoment}, charges={this._charges})";
 	endfunction
 endclass
 
