@@ -15,6 +15,7 @@ include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
+include ":abilities:controllers/AbilityMonitor";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var _backpackSerial := 0x0; // Container Serial
@@ -704,7 +705,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This mobile does not have the specified active ability!");
 		endif
 
-		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetName()]);
+		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetName()], AbilityMonitor(ability));
 	endfunction
 
 	/**
@@ -724,10 +725,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		if (!ability.GetScript())
-			return InvalidAbilityException("This is not a valid ability!");
+			return InvalidAbilityException("This ability has not a valid script to execute!");
 		endif
 
 		var activeAbilities := this.GetActiveAbilities();
+
+		if (!activeAbilities.exists(ability.GetActivationMoment()))
+			activeAbilities[ability.GetActivationMoment()] := dictionary{};
+		endif
+
 		activeAbilities[ability.GetActivationMoment()][ability.GetName()] := StructSerializer().Serialize(abilityMonitor);
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
@@ -755,8 +761,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
+		print("Deactivating ability: " + ability.GetName());
+
 		var activeAbilities := this.GetActiveAbilities();
-		activeAbilities[ability.GetActivationMoment()].remove(ability.GetName());
+		activeAbilities[ability.GetActivationMoment()].erase(ability.GetName());
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;

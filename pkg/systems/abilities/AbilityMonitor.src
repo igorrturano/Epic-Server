@@ -18,25 +18,27 @@ program AbilityMonitor(params)
 	var ability := monitor.GetAbility();
 	SetScriptController(who.GetObjRef());
 	
-	// if (who.HasActiveAbility(ability))
-	// 	who.GetActiveAbilityMonitor(ability).Deactivate();
-	// endif
-	
 	who.ActivateAbility(ability, monitor);
-	Message($"Habilidade {ability.GetName()} ativada.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
-	Message($"Duração: {ability.GetDuration()} segundos.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-	Message($"Ability ToString: {ability.ToString()}", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-	print($"Active abilities after activation: {who.GetActiveAbilities()}");
 	
-	var event := Wait_For_Event(ability.GetDuration() * 1000);
-	if (event == ABILITY_EVENT_ID::ABORT)
-		Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-	elseif (event == ABILITY_EVENT_ID::REFRESH)
-		Message($"Habilidade {ability.GetName()} foi renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-	else
-		Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-	endif
+	while (true)
+		var event := Wait_For_Event(ability.GetDuration());
+		
+		if (event == ABILITY_EVENT_ID::USED)
+			Message($"Habilidade {ability.GetName()} teve seu efeito usado.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+			monitor.ConsumeCharge(1);
+		else
+			if (event == ABILITY_EVENT_ID::ABORT)
+				Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+				break;
+			elseif (event == ABILITY_EVENT_ID::REFRESH)
+				Message($"Habilidade {ability.GetName()} foi renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+			else
+				Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+			endif
+			
+			break;
+		endif
+	endwhile
 
 	who.DeactivateAbility(ability);
-	print($"Active abilities after deactivation: {who.GetActiveAbilities()}");
 endprogram
