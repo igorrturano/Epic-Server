@@ -310,7 +310,8 @@ endfunction
 
 function HiveMind(me)
     // Get all nearby me allies
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var ally := 0;
     
     foreach mobile in allies
@@ -346,9 +347,10 @@ function TunnelTactics(me, targ)
     endif
     
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
-    
+
     // Alert nearby allies to join the attack
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 4, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 4, LISTEX_FLAG_NORMAL);
     var attacking_formation := array{me};
 
     foreach mobile in allies
@@ -412,7 +414,8 @@ function doConfusion(opponent)
         return 0;
     endif
 
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var nearby := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     
     var enemies := array{};
     foreach mobile in nearby

@@ -220,7 +220,8 @@ function HandleAnimalLeftArea(opponent)
             // Approach the corpse, but check for threats while approaching
             while (Distance(me, corpse) > 1)
                 // Check for nearby hostiles before continuing
-                foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+                // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+                foreach mobile in GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL)
                     if (CanFight(me, mobile))
                         HandleAnimalCombatEvent(mobile);
                         return 1;
