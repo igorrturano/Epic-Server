@@ -440,6 +440,7 @@ enum class WEAPON_CATEGORY
 	STAFF := "Staff",
 	THROWING := "Throwing",
 	POLEARM := "Polearm",
+	WHIP := "Whip",
 
 	BOW := "Bow",
 	CROSSBOW := "Crossbow",
