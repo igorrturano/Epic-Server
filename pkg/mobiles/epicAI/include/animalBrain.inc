@@ -42,11 +42,15 @@ function AnimalBrain()
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
