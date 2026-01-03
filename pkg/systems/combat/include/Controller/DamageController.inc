@@ -99,21 +99,23 @@ function CalculateSkillDamage(byRef attackInfo)
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
-	// Cache attacker to use unified damage methods
-	var attacker := attackInfo.GetAttacker();
+	var damageDice;
 
-	// Unified damage retrieval - abstracts NPC vs Player
-	var damageDice := attacker.GetWeaponDamage(attackInfo.GetDamageHand());
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
+	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
+	endif
 
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString() ?: "N/A"}"));
 
 	var slashDamage := damageDice.GetSlashDamage().Roll().GetResult() ?: 0;
 	var piercingDamage := damageDice.GetPiercingDamage().Roll().GetResult() ?: 0;
@@ -123,15 +125,15 @@ function CalculateWeaponDamage(byRef attackInfo)
 	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult() ?: 0;
 	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult() ?: 0;
 
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("Dano rolado:"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano rolado:"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {slashDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {fireDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
 
 	attackInfo.GetDamage().IncreaseSlashRawDamage(slashDamage)
 						  .IncreasePiercingRawDamage(piercingDamage)
@@ -141,11 +143,10 @@ function CalculateWeaponDamage(byRef attackInfo)
 						  .IncreasePoisonRawDamage(poisonDamage)
 						  .IncreaseEnergyRawDamage(energyDamage);
 
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
 
-	// Unified damage mod retrieval - abstracts NPC vs Player
-	var damageMod := attacker.GetWeaponDamageMod();
+	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
 
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage())
 						  .IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage())
@@ -154,13 +155,13 @@ function CalculateWeaponDamage(byRef attackInfo)
 						  .IncreaseColdRawDamage(damageMod.GetColdRawDamage())
 						  .IncreasePoisonRawDamage(damageMod.GetPoisonRawDamage())
 						  .IncreaseEnergyRawDamage(damageMod.GetEnergyRawDamage());
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageMod.GetSlashRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageMod.GetPiercingRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageMod.GetBluntRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {damageMod.GetFireRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}"));
-	DebugMsg(attacker.GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageMod.GetSlashRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageMod.GetPiercingRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageMod.GetBluntRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {damageMod.GetFireRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageMod.GetColdRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageMod.GetPoisonRawDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageMod.GetEnergyRawDamage()}"));
 
 	// Apply ammunition damage if ammo exists
 	if (attackInfo.GetAmmo())
@@ -360,7 +361,9 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.3, 3);
+	if (!attackInfo.GetAttacker().IsNpc())
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+	endif
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
 	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
 	foreach hitscript in (weapon_scripts)
