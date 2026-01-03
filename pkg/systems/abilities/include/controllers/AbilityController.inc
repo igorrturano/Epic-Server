@@ -1,20 +1,25 @@
 include ":abilities:models/Ability";
 include ":message:model/Message";
 
-function ActivateAbility(who, ability)
+function BuyAbility(who, ability)
 	if (!ability.GetScript())
-		Message("Habilidade desconhecida.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		Message("Habilidade ainda não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return false;
 	endif
 
-	Start_Script("abilities:controllers/AbilityMonitor", array{who, ability});
-endfunction
-
-function DeactivateAbility(who, ability)
-	if (!ability.GetScript())
-		Message("Habilidade desconhecida.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	if (who.HasAbility(ability))
+		Message("Você já possui a habilidade " + ability.GetName() + ".", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return false;
 	endif
 
-	who.DeactivateAbility(ability);
+	var state := who.AddAbility(ability);
+	if (state is @Exception)
+		Message($"Erro ao adquirir a habilidade {ability.GetName()}: {state.GetMessage()}", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return false;
+	elseif (state == error)
+		Message($"Erro desconhecido ao adquirir a habilidade {ability.GetName()}: {state}", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return false;
+	endif
+
+	Message("Habilidade " + ability.GetName() + " adquirida com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 endfunction
