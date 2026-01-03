@@ -364,23 +364,19 @@ enum class ABILITY_ID
 endenum
 
 enum class ABILITY_ACTIVATION
-	ON_MISS,
+	ON_MISS := "OnMiss",
 
-	BEFORE_HIT,
-	BEFORE_DAMAGE,
-	ON_HIT,
-	ON_CRITICAL,
-	ON_KILL,
-	AFTER_DAMAGE,
+	BEFORE_HIT := "BeforeHit",
+	BEFORE_DAMAGE := "BeforeDamage",
+	ON_HIT := "OnHit",
+	ON_CRITICAL := "OnCritical",
+	AFTER_DAMAGE := "AfterDamage",
+	ON_KILL := "OnKill",
 
-	ON_USE
+	ON_USE := "OnUse"
 endenum
 
 enum class ABILITY_ACTIVATION_MODE
 	PASSIVE := "Passiva",
 	ACTIVE := "Ativa"
-endenum
-
-enum class ABILITY_DURATION
-	ONE_USAGE := "1 uso",
 endenum
