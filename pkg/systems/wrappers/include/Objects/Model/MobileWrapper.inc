@@ -702,7 +702,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		var activeAbilities := this.GetActiveAbilities();
 		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetName()))
-			return InvalidAbilityException("This mobile does not have the specified active ability!");
+			return InvalidAbilityException("This ability is not active on mobile!");
 		endif
 
 		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetName()], AbilityMonitor(ability));
@@ -770,13 +770,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
-	function HasActiveAbility(this, ability)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
+	// function HasActiveAbility(this, ability)
+	// 	if (this._objRef is @Exception)
+	// 		return this._objRef;
+	// 	endif
 
-		return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
-	endfunction
+	// 	return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
+	// endfunction
 
 	// ================ Achievements ================= //
 	function GetAchievement(this, who, type, key, name)
