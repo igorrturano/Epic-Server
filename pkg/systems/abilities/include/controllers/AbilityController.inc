@@ -22,4 +22,5 @@ function BuyAbility(who, ability)
 	endif
 
 	Message("Habilidade " + ability.GetName() + " adquirida com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	return true;
 endfunction
