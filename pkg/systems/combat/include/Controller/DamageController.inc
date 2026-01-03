@@ -47,7 +47,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	var statusDamageInfo := CalculateStatusDamage(attackInfo);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
 	var skillDamageInfo := CalculateSkillDamage(attackInfo);
-	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill)}: {skillDamageInfo.damageMod}"));
+	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
 
@@ -55,16 +55,38 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
-	var statusDamageInfo := CalculateStatusDamage(attackInfo);
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 	var weaponDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
-	var skillDamageInfoMain := CalculateSkillDamage(attackInfo);
-	attackInfo.SetDamageHand(OFFHAND);
-	var skillDamageInfoOff := CalculateSkillDamage(attackInfo);
+	var finalMainDmg := 0;
+	var finalOffDmg := 0;
+	var offHndDamage := 0;
+	
+	CalculateStatusDamage(attackInfo);
+	attackInfo.SetDamageHand(DAMAGE_HAND::MAINHAND);
+	CalculateSkillDamage(attackInfo);
+	var mainHndDamage := attackInfo.GetDamage();
+	
+	if(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD)
+		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND);
+		CalculateSkillDamage(attackInfo);
+		offHndDamage := attackInfo.GetDamage();
+	endif
 
-	weaponDamage.maxMain += skillDamageInfoMain,
-	weaponDamage.minMain += skillDamageInfoMain,
-	weaponDamage.maxOff += skillDamageInfoOff,
-	weaponDamage.minOff += skillDamageInfoOff,
+	if(posture == DAMAGE_TYPE::BLUNT)
+		finalMainDmg := mainHndDamage.GetBluntRawDamage();
+		finalOffDmg := offHndDamage ? offHndDamage.GetBluntRawDamage() : offHndDamage;
+	elseif(posture == DAMAGE_TYPE::PIERCING)
+		finalMainDmg := mainHndDamage.GetPiercingRawDamage();
+		finalOffDmg := offHndDamage ? offHndDamage.GetPiercingRawDamage() : offHndDamage;
+	else
+		finalMainDmg := mainHndDamage.GetSlashRawDamage();
+		finalOffDmg := offHndDamage ? offHndDamage.GetSlashRawDamage() : offHndDamage;
+	endif
+
+	weaponDamage.maxMain += finalMainDmg;
+	weaponDamage.minMain += finalMainDmg;
+	weaponDamage.maxOff += finalOffDmg;
+	weaponDamage.minOff += finalOffDmg;
 	return weaponDamage;
 endfunction
 
@@ -73,18 +95,17 @@ function CalculateStatusDamage(byRef attackInfo)
 	var statusDamage := struct{
 		stat := "",
 		damageMod := 0
-	}
+	};
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
-	var statusDamage := struct{
 			statusDamage.stat := $"{STRENGTH} + {DEXTERITY}";
 
 			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
-			stat := DEXTERITY;
+			statusDamage.stat := DEXTERITY;
 
 			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
@@ -98,9 +119,9 @@ function CalculateStatusDamage(byRef attackInfo)
 					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(statusDamage.damageMod)
+						  .IncreasePiercingRawDamage(statusDamage.damageMod)
+						  .IncreaseBluntRawDamage(statusDamage.damageMod);
 						
 	return statusDamage;
 endfunction
@@ -197,8 +218,8 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 			maxMain := 0,
 			minMain := 0,
 			maxOff := 0,
-			minOff := 0,
-		}
+			minOff := 0
+		};
 	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
 
 	if(weapon)
@@ -208,7 +229,7 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 		MinMaxWeaponDamage.maxOff := weapon.GetOffDamage().GetMaxDamage();
 	endif
 
-	return MinMaxWeaponDamage
+	return MinMaxWeaponDamage;
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
