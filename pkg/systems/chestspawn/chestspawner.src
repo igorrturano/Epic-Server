@@ -33,16 +33,16 @@ program spawntesthet(item)
 	endif
 
 	while (1)
-		var hasPlayerNearMe := 0;
+		var HasPlayerNearMe := 0;
 		var nearby := ListMobilesNearLocationEx(item.x, item.y, LIST_IGNORE_Z, 30,
 												 LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, item.realm);
 
 		foreach player in nearby
 			if (player.acctname)
-				hasPlayerNearMe++;
+				HasPlayerNearMe++;
 			endif
 		endforeach
-		if (hasPlayerNearMe >= 1)
+		if (HasPlayerNearMe >= 1)
 			makeChests(item, frq, amt, rng);
 		endif
 		sleep(20);
@@ -69,7 +69,7 @@ function makeChests(item, frq, amt, rng)
 		// 		PrintTextAbove(item, "current " + current + " amt " + amt + " new amt " + newamt);
 		if (newamt > 0)
 			/* while( 1 )
-				var playernear := hasplayernear(item.x, item.y, item.realm);
+				var playernear := HasPlayerNear(item.x, item.y, item.realm);
 
 				if (!playernear)
 					break;

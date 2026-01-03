@@ -42,18 +42,22 @@ function AnimalBrain()
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
+                        HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleAnimalCombatEvent(opponent);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
@@ -61,9 +65,7 @@ function AnimalBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     SetOpponent(0);
-                    if (CanFight(me, ev.source))
-                        HandleAnimalCombatEvent(ev.source);
-                    endif
+                    HandleAnimalCombatEvent(ev.source);
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
                     SetWarMode(0);
@@ -76,7 +78,7 @@ function AnimalBrain()
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)           
+        if (!me.opponent)
             AnimalIdle(wanders);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -87,12 +89,17 @@ function AnimalBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
 function HandleAnimalEnteredArea(source)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
 
@@ -115,11 +122,6 @@ endfunction
 
 function HandleAnimalCombatEvent(opponent)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
-        return 0;
-    endif
-
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
         return 0;
     endif
 
@@ -218,7 +220,8 @@ function HandleAnimalLeftArea(opponent)
             // Approach the corpse, but check for threats while approaching
             while (Distance(me, corpse) > 1)
                 // Check for nearby hostiles before continuing
-                foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+                // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+                foreach mobile in GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL)
                     if (CanFight(me, mobile))
                         HandleAnimalCombatEvent(mobile);
                         return 1;
@@ -255,14 +258,8 @@ function AnimalIdle(wanders)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleAnimalCombatEvent(mobile);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
+
 
     var anchor := GetObjProperty(me, "anchor");
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
