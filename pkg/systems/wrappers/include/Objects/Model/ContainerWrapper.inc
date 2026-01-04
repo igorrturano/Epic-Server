@@ -9,39 +9,39 @@ include "ItemWrapper";
 include ":io:CFGFile";
 
 class ContainerWrapper(IContainerWrapper, ItemWrapper)
-	var _isLocked := false;
+	var IsLockedVar := false;
 
 	function ContainerWrapper(this, byRef object)
 		Super(object);
 
-		this._template := this._cfgFile.SetElementName(this._objtype).GetElement();
-		this._category := this._template.Category;
+		this.Template := this.CfgFile.SetElementName(this.ObjType).GetElement();
+		this.Category := this.Template.Category;
 
-		if (this._objRef.isA(POLCLASS_CONTAINER))
-			this._weightMultiplier := this._objRef.held_weight_multiplier;
-			this._maxItems := this._objRef.max_items_mod;
-			this._maxSlots := this._objRef.max_slots_mod;
-			this._maxWeight := this._objRef.max_weight_mod;
+		if (this.GetObjRef().isA(POLCLASS_CONTAINER))
+			this.WeightMultiplier := this.GetObjRef().held_weight_multiplier;
+			this.MaxItems := this.GetObjRef().max_items_mod;
+			this.MaxSlots := this.GetObjRef().max_slots_mod;
+			this.MaxWeight := this.GetObjRef().max_weight_mod;
 		else // Caso seja template ou erro
 			var err;
-			if (!this._template)
+			if (!this.GetTemplate())
 				err := InvalidFormatException("The param must be a Container ObjRef or a valid Template!");
-				this._objType := err;
-				this._name := err;
-				this._graphic := err;
-				this._color := err;
-				this._weight := err;
-				this._category := err;
+				this.ObjType := err;
+				this.Name := err;
+				this.Graphic := err;
+				this.Color := err;
+				this.Weight := err;
+				this.Category := err;
 			else
 				err := IsTemplateException();
-				this._name := this._template.desc;
-				this._graphic := this._template.graphic;
-				this._color := this._template.color;
-				this._weight := this._template.weight;
+				this.Name := this.GetTemplate().desc;
+				this.Graphic := this.GetTemplate().graphic;
+				this.Color := this.GetTemplate().color;
+				this.Weight := this.GetTemplate().weight;
 			endif
 
-			this._objRef := err;
-			this._serial := err;
+			this.ObjRef := err;
+			this.Serial := err;
 		endif
 	endfunction
 
@@ -54,11 +54,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Double O multiplicador de peso ou Exception se houver erro
 	 */
 	function GetWeightMultiplier(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.held_weight_multiplier;
+		return this.GetObjRef().held_weight_multiplier;
 	endfunction
 
 	/**
@@ -67,11 +67,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Integer Quantidade máxima de itens ou Exception se houver erro
 	 */
 	function GetMaxItems(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		return this._objRef.max_items_mod;
+		return this.GetObjRef().max_items_mod;
 	endfunction
 
 	/**
@@ -80,11 +80,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Integer Quantidade máxima de slots ou Exception se houver erro
 	 */
 	function GetMaxSlots(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		return this._objRef.max_slots_mod;
+		return this.GetObjRef().max_slots_mod;
 	endfunction
 
 	/**
@@ -93,11 +93,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Integer Peso máximo em stones ou Exception se houver erro
 	 */
 	function GetMaxWeight(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.max_weight_mod;
+		return this.GetObjRef().max_weight_mod;
 	endfunction
 
 	/**
@@ -108,11 +108,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Integer Quantidade de itens ou Exception se houver erro
 	 */
 	function GetItemsAmount(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return CInt(this._objRef.item_count - 1); // Subtrai 1 para não contar o próprio container
+		return CInt(this.GetObjRef().item_count - 1); // Subtrai 1 para não contar o próprio container
 	endfunction
 	
 	/**
@@ -122,11 +122,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
 	 */
 	function SetLocked(this, boolValue)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this._objRef.locked := boolValue;
+		this.GetObjRef().locked := boolValue;
 
 		return this;
 	endfunction
@@ -138,11 +138,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
 	 */
 	function SetWeightMultiplier(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this._objRef.held_weight_multiplier := CDbl(value);
+		this.GetObjRef().held_weight_multiplier := CDbl(value);
 
 		return this;
 	endfunction
@@ -154,11 +154,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
 	 */
 	function SetMaxItems(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this._objRef.max_items_mod := CInt(value);
+		this.GetObjRef().max_items_mod := CInt(value);
 
 		return this;
 	endfunction
@@ -170,11 +170,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
 	 */
 	function SetMaxSlots(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this._objRef.max_slots_mod := CInt(value);
+		this.GetObjRef().max_slots_mod := CInt(value);
 
 		return this;
 	endfunction
@@ -186,11 +186,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return ContainerWrapper Retorna a própria instância para encadeamento ou Exception
 	 */
 	function SetMaxWeight(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this._objRef.max_weight_mod := CInt(value);
+		this.GetObjRef().max_weight_mod := CInt(value);
 
 		return this;
 	endfunction
@@ -201,11 +201,11 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @return Boolean true se bloqueado, false caso contrário, ou Exception se houver erro
 	 */
 	function IsLocked(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		return this._objRef.locked;
+		return this.GetObjRef().locked;
 	endfunction
 
 	/**
@@ -218,8 +218,8 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @throws InvalidFormatException quando o parâmetro não é um ItemWrapper
 	 */
 	function Contains(this, item, searchRecursively := false)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(item is @ItemWrapper))
@@ -246,8 +246,8 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	 * @throws InvalidFormatException quando o parâmetro não é um ItemWrapper
 	 */
 	function GetInside(this, item, searchRecursively := false)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
 		if (!(item is @ItemWrapper))
@@ -259,12 +259,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 
 	function ToString(this)
 		return "Container: " +
-			   $"Serial: {Hex(this._serial)}, " +
-			   $"ObjType: {Hex(this._objType)}, " +
-			   $"Name: {this._name}, " +
-			   $"Graphic: {Hex(this._graphic)}, " +
-			   $"Color: {Hex(this._color)}, " +
-			   $"Weight: {this._weight}, " +
+			   $"Serial: {Hex(this.Serial)}, " +
+			   $"ObjType: {Hex(this.ObjType)}, " +
+			   $"Name: {this.Name}, " +
+			   $"Graphic: {Hex(this.Graphic)}, " +
+			   $"Color: {Hex(this.Color)}, " +
+			   $"Weight: {this.Weight}, " +
 			   $"MaxItems: {this.GetMaxItems()}, " +
 			   $"MaxSlots: {this.GetMaxSlots()}, " +
 			   $"MaxWeight: {this.GetMaxWeight()}, " +
