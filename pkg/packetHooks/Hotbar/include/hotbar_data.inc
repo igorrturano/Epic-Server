@@ -359,6 +359,9 @@ function GetSkillsData(who)
 
     var skill_ids := array{2, 16, 21, 33, 38, 48, 17, 20, 32, 35, 23};
 
+    // Load attributes.cfg to read Icon/Hue fields
+    var attr_cfg := ReadConfigFile(":attributes:attributes");
+
     for i := 1 to skill_names.size()
         var skill_name := skill_names[i];
         var skill_internal_name := skill_internal_names[i];
@@ -367,14 +370,29 @@ function GetSkillsData(who)
         var skill_base := CInt(AP_GetTrueSkill(who, skill_internal_name));
         var skill_cap := CInt(AP_GetSkillCap(who, skill_internal_name));
 
-        // Get icon from icons.cfg
-        var icon_data := GetSkillIcon(skill_name);
+        // Read Icon and Hue directly from attributes.cfg
+        var icon_id := 0x9b90;  // Default skill icon
+        var icon_hue := 0;
+
+        if (attr_cfg)
+            var skill_elem := FindConfigElem(attr_cfg, skill_internal_name);
+            if (skill_elem)
+                var cfg_icon := GetConfigInt(skill_elem, "Icon");
+                var cfg_hue := GetConfigInt(skill_elem, "Hue");
+                if (cfg_icon)
+                    icon_id := cfg_icon;
+                endif
+                if (cfg_hue)
+                    icon_hue := cfg_hue;
+                endif
+            endif
+        endif
 
         skills.append(struct{
             "name" := skill_name,  // Display name
             "desc" := skill_descs[i],
-            "iconid" := icon_data.iconid,
-            "hue" := icon_data.hue,
+            "iconid" := icon_id,
+            "hue" := icon_hue,
             "index" := skill_ids[i],
             "current_value" := skill_value,
             "base_value" := skill_base,

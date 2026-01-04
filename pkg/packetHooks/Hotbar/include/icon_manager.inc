@@ -19,7 +19,6 @@ function InitIconCache()
 	g_icon_cache := struct{
 		"specials" := dictionary,
 		"commands" := dictionary,
-		"skills" := dictionary,
 		"abilities" := dictionary,
 		"defaults" := dictionary
 	};
@@ -55,7 +54,7 @@ function InitIconCache()
 		
 		// Classificar por tipo baseado no nome
 		// Specials: AtaqueExtra, Evasao, RecargaRapida, ConjuracaoRapida, VelocidadeArcana
-		if (key == "AtaqueExtra" || key == "Evasao" || key == "RecargaRapida" || 
+		if (key == "AtaqueExtra" || key == "Evasao" || key == "RecargaRapida" ||
 		    key == "ConjuracaoRapida" || key == "VelocidadeArcana")
 			g_icon_cache.specials[name] := icon_data;
 		// Commands: começam com ponto no name
@@ -64,11 +63,7 @@ function InitIconCache()
 		// Habilidades default: Guerreiro, Ladino, Sabio, Artifice (sem campo name)
 		elseif (key == "Guerreiro" || key == "Ladino" || key == "Sabio" || key == "Artifice")
 			g_icon_cache.defaults[key] := icon_data;
-		// Skills: Alchemy, Arcana, Sneak, etc (lista específica)
-		elseif (key == "Alchemy" || key == "Arcana" || key == "Sneak" || key == "Pickpocketing" ||
-		        key == "Awareness" || key == "Mechanics" || key == "Medicine" || key == "Survival" ||
-		        key == "Gathering" || key == "HandleAnimal" || key == "Theology")
-			g_icon_cache.skills[name] := icon_data;
+		// Skills removed - now read from attributes.cfg
 		// Habilidades individuais: todo o resto
 		else
 			g_icon_cache.abilities[name] := icon_data;
@@ -102,17 +97,8 @@ function GetCommandIcon(command_name)
 	return struct{"iconid" := 0x9b90, "hue" := 0};
 endfunction
 
-// Obter ícone de skill
-function GetSkillIcon(skill_name)
-	var cache := InitIconCache();
-	
-	if (cache.skills.exists(skill_name))
-		return cache.skills[skill_name];
-	endif
-	
-	// Fallback
-	return struct{"iconid" := 0x9b90, "hue" := 0};
-endfunction
+// GetSkillIcon() has been removed - skills now read Icon/Hue directly from attributes.cfg
+// This follows the "single source of truth" pattern
 
 // Obter ícone de habilidade
 function GetAbilityIcon(hab_name, class_name)
