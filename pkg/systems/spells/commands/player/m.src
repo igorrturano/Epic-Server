@@ -6,7 +6,9 @@ include "include/say";
 include ":spells:spellbooks";
 include ":charactercreation:habilidades";
 
-program magia(who, spellname)
+program magia(params)
+	var who := params[1];
+	var spellname := params[2];
 	if (GetObjProperty(who, "#Casting"))
 		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
 		return 0;

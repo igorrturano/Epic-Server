@@ -193,47 +193,51 @@ function ExecuteSpell(who, actionId)
     // Get player's class and magia to prioritize correct spell configs
     var chardata := GetObjProperty(who, "chardata");
     var player_magia := "";
-    var player_class := "";
     
     if (chardata)
         player_magia := chardata.magia;
-        player_class := chardata.classe;
     endif
     
     // Build prioritized spell config list based on player type
+    // Order matters! First match wins.
     var spell_configs := array{};
     
-    // Add player's primary spell type FIRST to avoid ID collisions
-    if (player_class == "Shaman" || player_magia == "Shaman")
+    // Check for Natureza Arcana trait (gives access to cantrips regardless of class)
+    var has_natureza_arcana := (chardata.trait == "Natureza Arcana");
+    
+    // IMPORTANT: Cantrips FIRST for anyone with Natureza Arcana trait
+    if (has_natureza_arcana)
+        spell_configs.append(":spells:config/cantripspells");
+    endif
+
+    // Then add class-specific configs
+    if (player_magia == "Shaman")
         spell_configs.append(":spells:config/shamanspells");
     elseif (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
-        spell_configs.append(":spells:config/cantripspells");  // Cantrips FIRST for spellcasters
+        spell_configs.append(":spells:config/cantripspells");
         spell_configs.append(":spells:config/spellcaster");
-    elseif (player_class == "Paladino" || TemHabilidade(who, "Consagracao Divina")) // ✅ FIX: Check ability too
-        spell_configs.append(":spells:config/paladinspells");
-    elseif (player_class == "Druida")
+    elseif (player_magia == "Druid")
         spell_configs.append(":spells:config/druidspells");
-    elseif (player_class == "Sacerdote")
+    elseif (player_magia == "Sacerdote")
         spell_configs.append(":spells:config/priestspells");
-    elseif (player_class == "Demon Hunter" || TemHabilidade(who, "Sigilo de Protecao")) // ✅ FIX: Check ability
+    endif
+    
+    // Ability-based spell access
+    if (TemHabilidade(who, "Consagracao Divina"))
+        spell_configs.append(":spells:config/paladinspells");
+    endif
+    if (TemHabilidade(who, "Sigilo de Protecao"))
         spell_configs.append(":spells:config/demonhunterspells");
-    elseif (player_class == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
+    endif
+    if (TemHabilidade(who, "Sensibilidade Arcana"))
         spell_configs.append(":spells:config/tricksterspells");
     endif
     
-    // Add remaining configs as fallback
-    spell_configs.append(":spells:config/spellcaster");
-    spell_configs.append(":spells:config/paladinspells");
-    spell_configs.append(":spells:config/druidspells");
-    spell_configs.append(":spells:config/priestspells");
-    spell_configs.append(":spells:config/shamanspells");
-    spell_configs.append(":spells:config/tricksterspells");
-    spell_configs.append(":spells:config/demonhunterspells");
-    spell_configs.append(":spells:config/cantripspells");
-    
     var spell_name := "";
-    var cmd_prefix := "m";  // Default to mage command
+    var cmd_prefix := "m";  // Default
+    var found_cfg := "";
     
+    // Search configs in priority order - first match wins
     foreach cfg_path in spell_configs
         var spell_cfg := ReadConfigFile(cfg_path);
         if (!spell_cfg)
@@ -243,33 +247,43 @@ function ExecuteSpell(who, actionId)
         var spell_elem := FindConfigElem(spell_cfg, actionId);
         if (spell_elem)
             spell_name := GetConfigString(spell_elem, "Name");
-            
-            // Determine command prefix based on config file
-            if (cfg_path["paladin"])
-                cmd_prefix := "p";
-            elseif (cfg_path["druid"] || cfg_path["priest"] || cfg_path["shaman"])
-                cmd_prefix := "d";
-            elseif (cfg_path["demonhunter"])
-                cmd_prefix := "c";
-            elseif (cfg_path["cantrip"])
-                cmd_prefix := "t";
-            endif
-            
+            found_cfg := cfg_path;
             break;
         endif
     endforeach
+    print("found_cfg: " + found_cfg);
+    // Determine cmd_prefix based on WHICH config the spell was found in
+    if (found_cfg["cantrip"])
+        cmd_prefix := "t";
+    elseif (found_cfg["paladin"])
+        cmd_prefix := "p";
+    elseif (found_cfg["druid"] || found_cfg["priest"] || found_cfg["shaman"])
+        cmd_prefix := "d";
+    elseif (found_cfg["demonhunter"])
+        cmd_prefix := "c";
+    elseif (found_cfg["trickster"])
+        cmd_prefix := "m";  // Trickster uses .m
+    else
+        cmd_prefix := "m";  // Default mage
+    endif
     
     if (spell_name)
+        // Execute via the appropriate command script
+        var cmd_script := "";
+        case (cmd_prefix)
+            "t": cmd_script := ":spells:commands/player/t";  // Cantrips/Truques
+            "m": cmd_script := ":spells:commands/player/m";  // Mage spells
+            "d": cmd_script := ":spells:commands/player/d";  // Druid/Priest/Shaman
+            "p": cmd_script := ":spells:commands/player/p";  // Paladin
+            "c": cmd_script := ":spells:commands/player/c";  // Demon Hunter
+            default: cmd_script := ":spells:commands/player/m";
+        endcase
         
-        // Create spellinfo struct (same format as grimório uses)
-        var spellinfo := struct;
-        spellinfo.+id := actionId;
-        
-        // Execute spell via cast_spell script (same as grimório/runes use)
-        var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+        Print($"[ExecuteSpell] cmd_script={cmd_script}, spell_name={spell_name}");
+        var script := Start_Script(cmd_script, {who, spell_name});
         
         if (!script)
-            SendSysMessage(who, "Erro ao conjurar magia.");
+            SendSysMessage(who, $"Erro ao conjurar magia: {script.errortext}");
             return 0;
         endif
         

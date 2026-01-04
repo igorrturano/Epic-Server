@@ -6,7 +6,9 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 
-program magia_paladin(who, spellname)
+program magia_paladin(params)
+	var who := params[1];
+	var spellname := params[2];
 	
 	var cfg := ReadConfigFile(":spells:config/paladinspells");
 

@@ -6,7 +6,9 @@ include "include/say";
 include ":attributes:attributes";
 include ":spells:include/tnmagery";
 
-program ritual(who, spellname)
+program ritual(params)
+	var who := params[1];
+	var spellname := params[2];
 	
 	if (GetObjProperty(who, "#Casting"))
 		SendSysMessageEx(who, "Voce nao pode invocar um ritual agora.", SSM_FAIL);

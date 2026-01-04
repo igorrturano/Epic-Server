@@ -7,7 +7,9 @@ include ":charactercreation:habilidades";
 
 const SPELL_BTN := 200;
 const GUMPID_CLERICSPELL := 0x00001C;
-program magia(who, spellname)
+program magia(params)
+	var who := params[1];
+	var spellname := params[2];
 	var cfg := ReadConfigFile(":spells:cantripspells");
 
 	if (GetObjProperty(who, "#Casting"))
