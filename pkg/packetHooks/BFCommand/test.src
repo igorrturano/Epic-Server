@@ -1,8 +1,0 @@
-// Test script to verify BFCommand package is being loaded
-use uo;
-
-program Install()
-    Print("===== BFCOMMAND PACKAGE LOADED =====");
-    Print("If you see this, the package is being loaded!");
-    return 1;
-endprogram

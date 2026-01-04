@@ -192,9 +192,7 @@ function DiscoverGMCommands()
         ":brainAI:commands/",
         ":food:textcmd/",
         ":fls_rppoints:commands/",
-        ":specialAbilities:commands/",
-        ":swindle:commands/",
-        ":webstatus:commands/"
+        ":specialAbilities:commands/"
     };
 
     // Command level folders to scan
