@@ -14,130 +14,130 @@ include ":combat:Model/Ammo";
 include ":diceroll:model/Dice";
 
 class WeaponWrapper(EquipWrapper, IWeaponWrapper)
-	var _attribute := "";
-	var _attackType := "";
-	var _speedTier := "";
-	var _speed := 0;
-	var _speedModTier := "";
-	var _speedMod := 0;
-	var _mainDamageTier; // DamageTier class
-	var _offDamageTier; // DamageTier class
-	var _mainDamage; // DamageDice class
-	var _offDamage; // DamageDice class
-	var _damageMod; // Damage class
-	var _criticalChanceTier := "";
-	var _criticalChance := 0;
-	var _criticalChanceMod := 0;
-	var _accuracyMod := 0;
-	var _strRequired := 0;
-	var _ammo; // Ammo class
-	var _minRange := 1;
-	var _maxRange := 1;
-	var _isThrowable := false;
-	var _epicMainDamage := "";
+	var Attribute := "";
+	var AttackType := "";
+	var SpeedTier := "";
+	var Speed := 0;
+	var SpeedModTier := "";
+	var SpeedMod := 0;
+	var MainDamageTier; // DamageTier class
+	var OffDamageTier; // DamageTier class
+	var MainDamage; // DamageDice class
+	var OffDamage; // DamageDice class
+	var DamageMod; // Damage class
+	var CriticalChanceTier := "";
+	var CriticalChance := 0;
+	var CriticalChanceMod := 0;
+	var AccuracyMod := 0;
+	var StrRequired := 0;
+	var Ammo; // Ammo class
+	var MinRange := 1;
+	var MaxRange := 1;
+	var IsThrowableVar := false;
+	var EpicMainDamage := "";
 
 	function WeaponWrapper(this, byRef item)
 		Super(item);
 		
-		if (this._template)
-			this._attribute := this._template.Attribute;
-			this._attackType := this._template.TipoAtaque;
-			this._category := this._template.Category;
-			this._speedTier := this._template.EpicSpeed;
-			this._criticalChanceTier := this._template.EpicCriticalChance;
-			//this._criticalChanceMod := 0;
-			this._epicMainDamage := this._template.EpicMainDamage;
-			this._mainDamageTier := !this._template.EpicMainDamage ? DamageTier() : DamageTier(
-				SplitWords(this._template.EpicMainDamage)[1],
-				SplitWords(this._template.EpicMainDamage)[2],
-				SplitWords(this._template.EpicMainDamage)[3]
+		if (this.GetTemplate())
+			this.Attribute := this.GetTemplate().Attribute;
+			this.AttackType := this.GetTemplate().TipoAtaque;
+			this.Category := this.GetTemplate().Category;
+			this.SpeedTier := this.GetTemplate().EpicSpeed;
+			this.CriticalChanceTier := this.GetTemplate().EpicCriticalChance;
+			//this.CriticalChanceMod := 0;
+			this.EpicMainDamage := this.GetTemplate().EpicMainDamage;
+			this.MainDamageTier := !this.GetTemplate().EpicMainDamage ? DamageTier() : DamageTier(
+				SplitWords(this.GetTemplate().EpicMainDamage)[1],
+				SplitWords(this.GetTemplate().EpicMainDamage)[2],
+				SplitWords(this.GetTemplate().EpicMainDamage)[3]
 			);
-			this._offDamageTier := !this._template.EpicOffDamage ? DamageTier() : DamageTier(
-				SplitWords(this._template.EpicOffDamage)[1],
-				SplitWords(this._template.EpicOffDamage)[2],
-				SplitWords(this._template.EpicOffDamage)[3]
+			this.OffDamageTier := !this.GetTemplate().EpicOffDamage ? DamageTier() : DamageTier(
+				SplitWords(this.GetTemplate().EpicOffDamage)[1],
+				SplitWords(this.GetTemplate().EpicOffDamage)[2],
+				SplitWords(this.GetTemplate().EpicOffDamage)[3]
 			);
-			this._mainDamage := DamageDice(
-				Dice(GetDamageByTier(this._mainDamageTier.GetSlashDamage())),
-				Dice(GetDamageByTier(this._mainDamageTier.GetPiercingDamage())),
-				Dice(GetDamageByTier(this._mainDamageTier.GetBluntDamage()))
+			this.MainDamage := DamageDice(
+				Dice(GetDamageByTier(this.MainDamageTier.GetSlashDamage())),
+				Dice(GetDamageByTier(this.MainDamageTier.GetPiercingDamage())),
+				Dice(GetDamageByTier(this.MainDamageTier.GetBluntDamage()))
 			);
-			this._offDamage := DamageDice(
-				Dice(GetDamageByTier(this._offDamageTier.GetSlashDamage())),
-				Dice(GetDamageByTier(this._offDamageTier.GetPiercingDamage())),
-				Dice(GetDamageByTier(this._offDamageTier.GetBluntDamage()))
+			this.OffDamage := DamageDice(
+				Dice(GetDamageByTier(this.OffDamageTier.GetSlashDamage())),
+				Dice(GetDamageByTier(this.OffDamageTier.GetPiercingDamage())),
+				Dice(GetDamageByTier(this.OffDamageTier.GetBluntDamage()))
 			);
-			this._damageMods := DamageModCollection();
-			this.SetDamageMod(DamageModFabricacao(this._objRef ? this._objRef : this.GetTemplate()));
+			this.DamageMods := DamageModCollection();
+			this.SetDamageMod(DamageModFabricacao(this.GetObjRef() ? this.GetObjRef() : this.GetTemplate()));
 
-			this._speed := GetSpeedByTier(this._speedTier);
-			this._criticalChance := GetCriticalChanceByTier(this._criticalChanceTier);
-			this._maxHP := GetDurabilityByType(this.GetAttackType());
-			this._weight := this._CalculateWeight();
-			this._strRequired := this._CalculateSTRRequired();
-			this._ammo := this._template.ProjectileType ? Ammo(this._template.ProjectileType) : uninit;
-			this._minRange := this._template.MinRange ?: 1;
-			this._maxRange := this._template.MaxRange ?: 1;
-			this._isThrowable := Boolean(this._template.Throwable) ?: false;
-			this._criticalChanceMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);
-			this._accuracyMod := PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_PRECISAO) * 3;
+			this.Speed := GetSpeedByTier(this.SpeedTier);
+			this.CriticalChance := GetCriticalChanceByTier(this.CriticalChanceTier);
+			this.MaxHP := GetDurabilityByType(this.GetAttackType());
+			this.WeightVar := this._CalculateWeight();
+			this.StrRequired := this._CalculateSTRRequired();
+			this.Ammo := this.Template.ProjectileType ? Ammo(this.Template.ProjectileType) : uninit;
+			this.MinRange := this.Template.MinRange ?: 1;
+			this.MaxRange := this.Template.MaxRange ?: 1;
+			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
+			this.CriticalChanceMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);
+			this.AccuracyMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_PRECISAO) * 3;
 
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
-			if (this._prop) // Alguns atributos só estão nas props
-				this._criticalChanceMod := this._prop.CriticalChanceMod;
+			if (this.Prop) // Alguns atributos só estão nas props
+				this.CriticalChanceMod := this.Prop.CriticalChanceMod;
 			endif
 			*/
 		else
 			var err := InvalidTemplateException("The param must be a Weapon ObjRef or a valid Template!");
-			this._attribute := err;
-			this._attackType := err;
-			this._category := err;
-			this._speedTier := err;
-			this._mainDamageTier := err;
-			this._offDamageTier := err;
-			this._mainDamage := err;
-			this._offDamage := err;
-			this._damageMod := err;
-			this._criticalChanceTier := err;
-			this._criticalChance := err;
-			this._criticalChanceMod := err;
-			this._accuracyMod := err;
-			this._speed := err;
-			this._strRequired := err;
-			this._epicMainDamage := err;
+			this.Attribute := err;
+			this.AttackType := err;
+			this.Category := err;
+			this.SpeedTier := err;
+			this.MainDamageTier := err;
+			this.OffDamageTier := err;
+			this.MainDamage := err;
+			this.OffDamage := err;
+			this.DamageMod := err;
+			this.CriticalChanceTier := err;
+			this.CriticalChance := err;
+			this.CriticalChanceMod := err;
+			this.AccuracyMod := err;
+			this.Speed := err;
+			this.StrRequired := err;
+			this.EpicMainDamage := err;
 		endif
 	endfunction
 
 	function GetAttribute(this)
-		return this._attribute;
+		return this.Attribute;
 	endfunction
 
 	function GetAttackType(this)
-		return this._attackType;
+		return this.AttackType;
 	endfunction
 
 	function GetAnimation(this)
-		return this._animation;
+		return this.Animation;
 	endfunction
 
 	function GetSpeedTier(this)
-		return this._speedTier;
+		return this.SpeedTier;
 	endfunction
 
 	function GetSpeed(this)
-		return this._speed;
+		return this.Speed;
 	endfunction
 
 	function GetMainDamageTier(this)
-		return this._mainDamageTier;
+		return this.MainDamageTier;
 	endfunction
 
 	function GetOffDamageTier(this)
-		return this._offDamageTier;
+		return this.OffDamageTier;
 	endfunction
 
 	function GetEpicMainDamage(this)
-		return this._epicMainDamage;
+		return this.EpicMainDamage;
 	endfunction
 	
 	/**
@@ -146,7 +146,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return DamageDice do dano principal
 	 */
 	function GetMainDamage(this)
-		return this._mainDamage;
+		return this.MainDamage;
 	endfunction
 
 	/**
@@ -155,7 +155,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return DamageDice da mão secundária
 	 */
 	function GetOffDamage(this)
-		return this._offDamage;
+		return this.OffDamage;
 	endfunction
 
 	/*
@@ -164,19 +164,19 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return objeto Damage contendo o modificador de dano
 	 */
 	function GetDamageMod(this)
-		return this._damageMods.GetTotal();
+		return this.DamageMods.GetTotal();
 	endfunction
 
 	function GetAccuracyMod(this)
-		return this._accuracyMod;
+		return this.AccuracyMod;
 	endfunction
 
 	function GetSTRRequired(this)
-		return this._strRequired;
+		return this.StrRequired;
 	endfunction
 
 	function GetCriticalChanceTier(this)
-		return this._criticalChanceTier;
+		return this.CriticalChanceTier;
 	endfunction
 
 	function GetCriticalChance(this)
@@ -184,11 +184,11 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function GetCriticalChanceBase(this)
-		return CInt(this._criticalChance);
+		return CInt(this.CriticalChance);
 	endfunction
 
 	function GetCriticalChanceMod(this)
-		return CInt(this._criticalChanceMod);
+		return CInt(this.CriticalChanceMod);
 	endfunction
 
 	/*
@@ -197,20 +197,20 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return Ammo - Objeto da classe Ammo representando a munição da arma
 	 */
 	function GetAmmo(this)
-		return this._ammo;
+		return this.Ammo;
 	endfunction
 
 	function GetMinRange(this)
-		return this._minRange;
+		return this.MinRange;
 	endfunction
 
 	function GetMaxRange(this)
-		return this._maxRange;
+		return this.MaxRange;
 	endfunction
 
 	function SetSpeed(this, value)
-		if (this._objRef is @Exception) return this._objRef; endif
-		this._speed := CInt(value);
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		this.Speed := CInt(value);
 
 		return this;
 	endfunction
@@ -228,13 +228,13 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *                                - Algum parâmetro não for uma instância de DamageDice
 	 */
 	function SetMainDamage(this, slash, piercing, blunt)
-		if (this._objRef is @Exception) return this._objRef; endif
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._mainDamage.SetSlashDamage(slash);
-		this._mainDamage.SetPiercingDamage(piercing);
-		this._mainDamage.SetBluntDamage(blunt);
+		this.MainDamage.SetSlashDamage(slash);
+		this.MainDamage.SetPiercingDamage(piercing);
+		this.MainDamage.SetBluntDamage(blunt);
 
 		return this;
 	endfunction
@@ -252,13 +252,13 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *                                - Algum parâmetro não for uma instância de DamageDice
 	 */
 	function SetOffDamage(this, slash, piercing, blunt)
-		if (this._objRef is @Exception) return this._objRef; endif
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		if (!(slash is @DamageDice) || !(piercing is @DamageDice) || !(blunt is @DamageDice))
 			return error{errortext := "Parameters must be a DamageDice class!"};
 		endif
-		this._offDamage.SetSlashDamage(slash);
-		this._offDamage.SetPiercingDamage(piercing);
-		this._offDamage.SetBluntDamage(blunt);
+		this.OffDamage.SetSlashDamage(slash);
+		this.OffDamage.SetPiercingDamage(piercing);
+		this.OffDamage.SetBluntDamage(blunt);
 
 		return this;
 	endfunction
@@ -272,12 +272,12 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return {WeaponWrapper|Error} Retorna a própria instância (this) para encadeamento de métodos,
 	 *                                ou erro se o item não existir ou se o parâmetro não for da classe Damage
 	 *
-	 * @error Retorna erro se this._item for error
+	 * @error Retorna erro se this.GetObjRef() for error
 	 * 
 	 */
 	function SetDamageMod(this,byref damageMod)
-		if (this._objRef is @Exception) return this._objRef; endif
-		var ret := this._damageMods.InsertMod(damageMod);
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		var ret := this.DamageMods.InsertMod(damageMod);
 
 		if(ret is @Exception) return this.ret; endif
 
@@ -285,14 +285,14 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function SetAccuracyMod(this, accuracyMod)
-		this._accuracyMod := _accuracyMod;
+		this.AccuracyMod := accuracyMod;
 
 		return this;
 	endfunction
 
 	function SetCriticalChanceBase(this, value)
-		if (this._objRef is @Exception) return this._objRef; endif
-		this._criticalChance := CInt(value);
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		this.CriticalChance := CInt(value);
 
 		return this;
 	endfunction
@@ -305,8 +305,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 *         ou uma exceção caso _objRef seja uma Exception
 	 */
 	function SetCriticalChanceMod(this, value)
-		if (this._objRef is @Exception) return this._objRef; endif
-		this._criticalChanceMod := CInt(value);
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		this.CriticalChanceMod := CInt(value);
 
 		return this;
 	endfunction
@@ -321,15 +321,15 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @return InvalidFormatException Retorna exceção se o parâmetro não for da classe Ammo
 	 */
 	function SetAmmo(this, ammo)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
 		if (!(ammo is @Ammo))
 			return InvalidFormatException("Parameter must be an Ammo class!");
 		endif
 		
-		this._ammo := ammo;
+		this.Ammo := ammo;
 		
 		return this;
 	endfunction
@@ -359,40 +359,41 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	 * @note Persiste todas as propriedades através do método SetProperty
 	 */
 	function Update(this)
-		if (this._objRef is @Exception) return this._objRef; endif
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		EquipWrapper::Update(this);
 
-		this._prop.+Attribute := this._attribute;
-		this._prop.+AttackType := this._attackType;
-		this._prop.+SlashMainDamage := this._mainDamage.GetSlashDamage();
-		this._prop.+PiercingMainDamage := this._mainDamage.GetPiercingDamage();
-		this._prop.+BluntMainDamage := this._mainDamage.GetBluntDamage();
-		this._prop.+SlashOffDamage := this._offDamage.GetSlashDamage();
-		this._prop.+PiercingOffDamage := this._offDamage.GetPiercingDamage();
-		this._prop.+BluntOffDamage := this._offDamage.GetBluntDamage();
-		this._prop.+CriticalChance := this._criticalChance;
-		//this._prop.+CriticalChanceMod := this._criticalChanceMod;
-		this._prop.+STRRequired := this._strRequired;
-		this._prop.+AttackSpeed := this._speed;
-		this._prop.+MinRange := this._minRange;
-		this._prop.+MaxRange := this._maxRange;
+		var prop := this.GetEquipProp();
+		prop.+Attribute := this.GetAttribute();
+		prop.+AttackType := this.GetAttackType();
+		prop.+SlashMainDamage := this.GetMainDamage().GetSlashDamage();
+		prop.+PiercingMainDamage := this.GetMainDamage().GetPiercingDamage();
+		prop.+BluntMainDamage := this.GetMainDamage().GetBluntDamage();
+		prop.+SlashOffDamage := this.GetOffDamage().GetSlashDamage();
+		prop.+PiercingOffDamage := this.GetOffDamage().GetPiercingDamage();
+		prop.+BluntOffDamage := this.GetOffDamage().GetBluntDamage();
+		prop.+CriticalChance := this.GetCriticalChance();
+		//prop.+CriticalChanceMod := this.GetCriticalChanceMod();
+		prop.+STRRequired := this.GetStrRequired();
+		prop.+AttackSpeed := this.GetSpeed();
+		prop.+MinRange := this.GetMinRange();
+		prop.+MaxRange := this.GetMaxRange();
+		this.SetEquipProp(prop);
 
-		this._objRef.speed_mod := CInt(this._speed) - CInt(this._template.Speed);
-		
-		this.SetProperty(PROPNAME_ITEMINFO, this._prop);
+		// Aqui seta as propriedades no ObjRef
+		this.GetObjRef().speed_mod := CInt(this.GetSpeed()) - CInt(this.GetTemplate().Speed);
 	endfunction
 
 	function ToString(this)
 		return Super::ToString(this) + "Weapon: " +
-			$"\nAttribute: {this._attribute}, Attack Type: {this._attackType}" +
-			$"\nMainDamage (S/P/B): {this._mainDamage.GetSlashDamage()} ({this._mainDamageTier.GetSlashDamage()})/{this._mainDamage.GetPiercingDamage()} ({this._mainDamageTier.GetPiercingDamage()})/{this._mainDamage.GetBluntDamage()} ({this._mainDamageTier.GetBluntDamage()})" +
-			$"\nOffDamage (S/P/B): {this._offDamage.GetSlashDamage()} ({this._offDamageTier.GetSlashDamage()})/{this._offDamage.GetPiercingDamage()} ({this._offDamageTier.GetPiercingDamage()})/{this._offDamage.GetBluntDamage()} ({this._offDamageTier.GetBluntDamage()})" +
-			$"\nSpeed: {this._speed} ({this._speedTier}), Critical Chance: {this._criticalChance}% ({this._criticalChanceTier})" +
-			$"\nRange: {this._minRange}-{this._maxRange}";
+			$"\nAttribute: {this.GetAttribute()}, Attack Type: {this.GetAttackType()}" +
+			$"\nMainDamage (S/P/B): {this.GetMainDamage().GetSlashDamage()} ({this.GetMainDamageTier().GetSlashDamage()})/{this.GetMainDamage().GetPiercingDamage()} ({this.GetMainDamageTier().GetPiercingDamage()})/{this.GetMainDamage().GetBluntDamage()} ({this.GetMainDamageTier().GetBluntDamage()})" +
+			$"\nOffDamage (S/P/B): {this.GetOffDamage().GetSlashDamage()} ({this.GetOffDamageTier().GetSlashDamage()})/{this.GetOffDamage().GetPiercingDamage()} ({this.GetOffDamageTier().GetPiercingDamage()})/{this.GetOffDamage().GetBluntDamage()} ({this.GetOffDamageTier().GetBluntDamage()})" +
+			$"\nSpeed: {this.GetSpeed()} ({this.GetSpeedTier()}), Critical Chance: {this.GetCriticalChance()}% ({this.GetCriticalChanceTier()})" +
+			$"\nRange: {this.GetMinRange()}-{this.GetMaxRange()}";
 	endfunction
 
 	function IsThrowable(this)
-		return this._isThrowable;
+		return this.IsThrowableVar;
 	endfunction
 
 	function isFireWeapon(this)
@@ -406,25 +407,17 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	function _CalculateWeight(this)
 		var weight := 1;
 		
-		var maxMainDamage := Max(array{
-			CInt(SplitWords(this._mainDamage.GetSlashDamage(), "d")[2]),
-			CInt(SplitWords(this._mainDamage.GetPiercingDamage(), "d")[2]),
-			CInt(SplitWords(this._mainDamage.GetBluntDamage(), "d")[2])
-		});
-		var maxOffDamage := Max(array{
-			CInt(SplitWords(this._offDamage.GetSlashDamage(), "d")[2]),
-			CInt(SplitWords(this._offDamage.GetPiercingDamage(), "d")[2]),
-			CInt(SplitWords(this._offDamage.GetBluntDamage(), "d")[2])
-		});
+		var maxMainDamage := this.GetMainDamage().GetMaximum();
+		var maxOffDamage := this.GetOffDamage().GetMaximum();
 
 		weight := CInt(maxMainDamage) + CInt(maxOffDamage);
-		weight *= GetWeightMultiplierByMaterial(this._material);
+		weight *= GetWeightMultiplierByMaterial(this.GetMaterial());
 
 		return weight;
 	endfunction
 
 	function _CalculateSTRRequired(this)
-		return CInt(this._weight * 7.5);
+		return CInt(this.GetWeight() * 7.5);
 	endfunction
 endclass
 
