@@ -28,8 +28,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (TypeOfInt(mobile) == OT_MOBILEREF || TypeOfInt(mobile) == OT_OFFLINEMOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
 				this.CfgFile := CFGFile("epicAI", "npcdesc");
-				this.Template := this.CfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
-				this.Category := this.Template.Category;
+				this.Template := this.GetCfgFile().SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
+				this.Category := this.GetTemplate().Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -48,11 +48,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.ObjType := err;
 			endif
 
-			this.Name := this.ObjRef.name;
-			this.BackpackSerial := this.ObjRef.backpack.serial;
+			this.Name := this.GetObjRef().name;
+			this.BackpackSerial := this.GetObjRef().backpack.serial;
 		else
 			this.CfgFile := CFGFile("epicAI", "npcdesc");
-			this.Template := this.CfgFile.SetElementName(mobile).GetElement();
+			this.Template := this.GetCfgFile().SetElementName(mobile).GetElement();
 
 			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
 			var err;
@@ -64,10 +64,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Color := err;
 			else
 				err := IsTemplateException();
-				this.Name := this.Template.desc;
-				this.Graphic := this.Template.graphic;
-				this.Color := this.Template.color;
-				this.Category := this.Template.Category;
+				this.Name := this.GetTemplate().desc;
+				this.Graphic := this.GetTemplate().graphic;
+				this.Color := this.GetTemplate().color;
+				this.Category := this.GetTemplate().Category;
 			endif
 			
 			this.ObjRef := err;

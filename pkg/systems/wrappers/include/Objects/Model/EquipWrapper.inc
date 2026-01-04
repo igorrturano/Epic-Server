@@ -13,7 +13,7 @@ include ":equipsys:Controller/EquipmentController";
 CONST PROPNAME_ITEMINFO := "itemInfo";
 
 class EquipWrapper(ItemWrapper, IEquipWrapper)
-	var Prop;
+	var EquipProp;
 	var Layer := 0x0;
 	var MaxHP := 0;
 	var STRRequired := 0;
@@ -25,13 +25,13 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 
 		if (this.ObjRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			var err := InvalidTemplateException();
-			this.Prop := this.GetProperty(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
+			this.EquipProp := this.GetProperty(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
 			this.Layer := this.ObjRef.layer;
 			this.Graphic := this.ObjRef.graphic;
 			this.Color := this.ObjRef.color;
 			
-			this.Name := this.Prop.Name ?: this.ObjRef.name;
-			this.Weight := this.Prop.Weight ?: this.ObjRef.weight;
+			this.Name := this.EquipProp.Name ?: this.ObjRef.name;
+			this.Weight := this.EquipProp.Weight ?: this.ObjRef.weight;
 			this.Modifiers := dictionary{};
 		else // Caso seja um template ou tipo errado
 			var err;
@@ -45,18 +45,19 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 				this.Graphic := this.Template.graphic;
 			endif
 			
-			this.Prop := err;
+			this.EquipProp := err;
 			this.Layer := err;
 			this.Modifiers := err;
 		endif
 	endfunction
 
-	function GetItemProp(this)
-		return this.Prop;
+	function GetEquipProp(this)
+		return this.EquipProp;
 	endfunction
 
-	function SetItemProp(this, prop)
-		this.Prop := prop;
+	function SetEquipProp(this, prop)
+		this.EquipProp := prop;
+		this.SetProperty(PROPNAME_ITEMINFO, prop);
 		return this;
 	endfunction
 
@@ -134,17 +135,17 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			Name := this.GetName(),
 			Graphic := this.GetGraphic(),
 			Weight := this.GetWeight(),
-			MaxHP := this.GetMaxHP()
+			MaxHP := this.GetMaxHP(),
+			Modifiers := dictionary{}
 		};
-		this.SetItemProp(prop);
+		this.SetEquipProp(prop);
 
-		this.SetName(this.GetName());
+		// Aqui seta as propriedades no ObjRef
+		this._SetName(this.GetName());
 		this.GetObjRef().graphic := this.GetGraphic();
 		this.GetObjRef().weight := this.GetWeight();
 		this.GetObjRef().maxHP := this.GetMaxHP();
 		this.GetObjRef().max_weight_mod := this.GetWeight() - this.GetObjRef().weight;
-
-		this.Prop.+Modifiers := dictionary{};
 	endfunction
 
 	function Equals(this, otherEquipWrapper)
@@ -152,7 +153,8 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			return error {"errortext" := "The param must be an EquipWrapper!"};
 		endif
 
-		return this.GetObjType() == otherEquipWrapper.GetObjType();
+		return this.GetObjType() == otherEquipWrapper.GetObjType()
+			&& this.GetSerial() == otherEquipWrapper.GetSerial();
 	endfunction
 
 	function ToString(this)
