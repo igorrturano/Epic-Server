@@ -13,6 +13,7 @@ include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include ":hotbar:include/icon_manager";
 include ":hotbar:include/spell_index";
+include ":hotbar:include/command_discovery"; // Auto-discover commands
 include ":hotbar:hotbar_utils";
 
 // ============================================================================
@@ -125,113 +126,12 @@ endfunction
 // ============================================================================
 // GetCommandsData - Get list of available commands
 // ============================================================================
-// TODO CLIENT-SIDE WORK: Client should cache commands after first load
-// Commands rarely change - cache to avoid re-transmission
-// Expected savings: ~2-3KB per request after first load (15-20% reduction)
+// ✅ PHASE 2: Now uses auto-discovery from filesystem instead of hardcoded list
+// Commands are discovered from pkg/*/commands/player/ folders
 // ============================================================================
 function GetCommandsData(who)
-    var commands := array{};
-    var index := 1;
-    var icon_data;
-
-    // Comandos Gerais (6)
-    icon_data := GetCommandIcon(".ficha");
-    commands.append(struct{"command" := ".ficha", "desc" := "Ficha do personagem", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    icon_data := GetCommandIcon(".point");
-    commands.append(struct{"command" := ".point", "desc" := "Apontar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    icon_data := GetCommandIcon(".pularcerca");
-    commands.append(struct{"command" := ".pularcerca", "desc" := "Pular cerca", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    icon_data := GetCommandIcon(".revistar");
-    commands.append(struct{"command" := ".revistar", "desc" := "Revistar alguem", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    icon_data := GetCommandIcon(".senha");
-    commands.append(struct{"command" := ".senha", "desc" := "Trocar senha", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    icon_data := GetCommandIcon(".showdmg");
-    commands.append(struct{"command" := ".showdmg", "desc" := "Mostrar dano", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
-
-    // Magias (6)
-    icon_data := GetCommandIcon(".arcoelemental");
-    commands.append(struct{"command" := ".arcoelemental", "desc" := "Arco elemental", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    icon_data := GetCommandIcon(".arremessar");
-    commands.append(struct{"command" := ".arremessar", "desc" := "Arremessar magia", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    icon_data := GetCommandIcon(".assumirforma");
-    commands.append(struct{"command" := ".assumirforma", "desc" := "Assumir forma animal", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    icon_data := GetCommandIcon(".pilotar");
-    commands.append(struct{"command" := ".pilotar", "desc" := "Pilotar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    icon_data := GetCommandIcon(".rituais");
-    commands.append(struct{"command" := ".rituais", "desc" := "Rituais magicos", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    icon_data := GetCommandIcon(".voltar");
-    commands.append(struct{"command" := ".voltar", "desc" := "Voltar forma original", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Magia"}); index += 1;
-
-    // Combate (1)
-    icon_data := GetCommandIcon(".golpe");
-    commands.append(struct{"command" := ".golpe", "desc" := "Golpe especial de arma", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Combate"}); index += 1;
-
-    // Skills (4)
-    icon_data := GetCommandIcon(".acalmar");
-    commands.append(struct{"command" := ".acalmar", "desc" := "Acalmar animal", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
-
-    icon_data := GetCommandIcon(".adestrar");
-    commands.append(struct{"command" := ".adestrar", "desc" := "Adestrar criatura", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
-
-    icon_data := GetCommandIcon(".camuflar");
-    commands.append(struct{"command" := ".camuflar", "desc" := "Camuflar-se", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
-
-    icon_data := GetCommandIcon(".estudar");
-    commands.append(struct{"command" := ".estudar", "desc" := "Estudar item", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Skill"}); index += 1;
-
-    // Roleplay (6)
-    icon_data := GetCommandIcon(".actions");
-    commands.append(struct{"command" := ".actions", "desc" := "Menu de acoes de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    icon_data := GetCommandIcon(".arrastar");
-    commands.append(struct{"command" := ".arrastar", "desc" := "Arrastar corpo", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    icon_data := GetCommandIcon(".erguer");
-    commands.append(struct{"command" := ".erguer", "desc" := "Erguer objeto", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    icon_data := GetCommandIcon(".ficharp");
-    commands.append(struct{"command" := ".ficharp", "desc" := "Ficha de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    icon_data := GetCommandIcon(".lingua");
-    commands.append(struct{"command" := ".lingua", "desc" := "Trocar idioma falado", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    icon_data := GetCommandIcon(".sounds");
-    commands.append(struct{"command" := ".sounds", "desc" := "Tocar sons ambiente", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Roleplay"}); index += 1;
-
-    // Pets (2)
-    icon_data := GetCommandIcon(".pe");
-    commands.append(struct{"command" := ".pe", "desc" := "Abrir menu de pet", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Pet"}); index += 1;
-
-    icon_data := GetCommandIcon(".pet");
-    commands.append(struct{"command" := ".pet", "desc" := "Comandos de pet", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Pet"}); index += 1;
-
-    // Outros (5)
-    icon_data := GetCommandIcon(".conquistas");
-    commands.append(struct{"command" := ".conquistas", "desc" := "Ver conquistas", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-
-    icon_data := GetCommandIcon(".fome");
-    commands.append(struct{"command" := ".fome", "desc" := "Ver fome", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-
-    icon_data := GetCommandIcon(".meditar");
-    commands.append(struct{"command" := ".meditar", "desc" := "Meditar", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-
-    icon_data := GetCommandIcon(".pontosrp");
-    commands.append(struct{"command" := ".pontosrp", "desc" := "Pontos de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-
-    icon_data := GetCommandIcon(".rps");
-    commands.append(struct{"command" := ".rps", "desc" := "Sistema de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
-
-    return commands;
+    // Use command discovery system (caches results globally)
+    return DiscoverPlayerCommands();
 endfunction
 
 // ============================================================================
