@@ -29,6 +29,7 @@ include ":attributes:attributes";  // For custom skill system
 include "hotbarCooldown";          // For SendHotbarCooldown function
 include ":hotbar:hotbar_utils";    // Shared Hotbar utilities
 include ":hotbar:include/shared_constants"; // Action types from single source of truth
+include ":hotbar:include/command_discovery"; // Auto-discovered commands
 include ":charactercreation:habilidades"; // For TemHabilidade
 include ":spells:include/spell_executor"; // Unified spell execution
 
@@ -274,51 +275,21 @@ function ExecuteSpell(who, actionId)
 endfunction
 
 function ExecuteCommand(who, actionId)
+    // Use command_discovery.inc to get command by index (single source of truth)
+    // actionId is the sequential index (1, 2, 3...) sent by client
+    var cmd_data := GetCommandByIndex(actionId);
     
-    // Map command ID (hash) to actual command script path
-    // Hash is calculated from command text on client side
-    var cmd_map := dictionary;
-    
-    // Common commands (from Hotbar system)
-    cmd_map[944130555]  := ":spells:commands/player/arremessar";   // .arremessar
-    cmd_map[1423786530] := ":spells:commands/player/voltar";       // .voltar
-    cmd_map[1426263783] := ":accounts:commands/player/senha";      // .senha
-    cmd_map.insert("pularcerca", ":commands:player/pularcerca");
-    cmd_map.insert("assumirforma", ":spells:commands/player/assumirforma");
-    cmd_map.insert("pilotar", ":spells:commands/player/pilotar");
-    cmd_map.insert("arcoelemental", ":spells:commands/player/arcoelemental");
-    cmd_map.insert("rituais", ":spells:commands/player/rituais");
-    cmd_map.insert("golpe", ":equipsys:commands/player/golpe");
-    cmd_map.insert("adestrar", ":taming:commands/player/adestrar");
-    cmd_map.insert("acalmar", ":specialAbilities:commands/gm/gmhab");
-    cmd_map.insert("actions", ":tn:commands/player/actions");
-    cmd_map.insert("sounds", ":tn:commands/player/sounds");
-    cmd_map.insert("arrastar", ":tn:commands/player/arrastar");
-    cmd_map.insert("erguer", ":tn:commands/player/erguer");
-    cmd_map.insert("lingua", ":commands:player/lingua");
-    cmd_map.insert("ficharp", ":fls_core:commands/player/ficharp");
-    cmd_map.insert("pontosrp", ":fls_rppoints:commands/player/pontosrp");
-    cmd_map.insert("rps", ":fls_rppoints:commands/player/rps");
-    cmd_map.insert("conquistas", ":achievements:commands/player/conquistas");
-    cmd_map.insert("fome", ":food:textcmd/player/fome");
-    cmd_map.insert("meditar", ":charactercreation:commands/player/meditar");
-    cmd_map.insert("camuflar", ":survival:commands/player/camuflar");
-    cmd_map.insert("assoviar", ":commands:player/assoviar");
-    cmd_map.insert("estudar", ":commands:player/estudar");
-    cmd_map.insert("pe", ":brainAI:commands/player/pe");
-    
-    var script_path := cmd_map[actionId];
-    if (script_path)
-        var result := Start_Script(script_path, who);
+    if (cmd_data && cmd_data != error)
+        var result := Start_Script(cmd_data.script_path, who);
         if (!result)
             SendSysMessage(who, "Erro ao executar comando.");
             return 0;
         endif
-    else
-        SendSysMessage(who, $"[BINARY] Comando ID {actionId} (mapeamento pendente)");
+        return 1;
     endif
     
-    return 1;
+    SendSysMessage(who, $"Comando não encontrado (Index: {actionId})");
+    return 0;
 endfunction
 
 function ExecuteSkill(who, actionId)

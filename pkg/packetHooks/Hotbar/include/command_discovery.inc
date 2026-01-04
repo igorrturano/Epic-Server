@@ -8,6 +8,8 @@
 
 use file;
 use os;
+use polsys;
+use basic;
 
 include ":hotbar:include/icon_manager";
 
@@ -15,6 +17,24 @@ include ":hotbar:include/icon_manager";
 // Use uninit to differentiate "not yet scanned" from "scanned but found nothing"
 var g_discovered_commands := uninit;
 var g_discovered_gm_commands := uninit;
+
+/*
+ * Get command data by its index (1-based sequential ID)
+ * Returns struct with command, script_path, etc. or error
+ */
+function GetCommandByIndex(index)
+    // Ensure commands are discovered
+    if (g_discovered_commands == uninit)
+        DiscoverPlayerCommands();
+    endif
+    
+    // Index is 1-based, array is 1-based in eScript
+    if (index < 1 || index > g_discovered_commands.size())
+        return error;
+    endif
+    
+    return g_discovered_commands[index];
+endfunction
 
 /*
  * Discover all player commands from filesystem
@@ -77,12 +97,17 @@ function DiscoverPlayerCommands()
                 continue;
             endif
 
+            // Build script path from package path
+            // pkg_path is like ":commands:player/", we need ":commands:player/cmdname"
+            var script_path := pkg_path + cmd_name;
+            
             // Build command entry
             var cmd_entry := struct{};
             cmd_entry.+command := "." + cmd_name;
             cmd_entry.+desc := GetCommandDescription(cmd_name);
             cmd_entry.+category := category;
             cmd_entry.+index := index;
+            cmd_entry.+script_path := script_path;
             
             // Get icon from icon manager
             var icon_data := GetCommandIcon("." + cmd_name);
