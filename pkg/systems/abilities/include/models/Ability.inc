@@ -8,120 +8,120 @@ include ":IO:CFGFile";
 const ABILITY_PKG := ":abilities:";
 
 class Ability(IAbility)
-	var _id := 0; // ABILITY_ID enum
-	var _name := "";
-	var _class := "";
-	var _level := 0;
-	var _folk := "";
-	var _description := "";
-	var _activationMode := ABILITY_ACTIVATION_MODE::PASSIVE;
-	var _activationMoment := ABILITY_ACTIVATION::ON_USE;
-	var _requirement := ""; // requisito para desbloquear a habilidade
-	var _costHP := 0;
-	var _costSTAM := 0;
-	var _costMANA := 0;
-	var _charges := 0; // número de cargas da habilidade
-	var _cooldown := 0; // em milisegundos
-	var _effectDuration := 0; // em milisegundos
-	var _range := 1; // em tiles
-	var _script := ""; // nome do script que será executado ao usar a habilidade
-
+	var Id := 0; // ABILITY_ID enum
+	var Name := "";
+	var ClassVar := "";
+	var Level := 0;
+	var Folk := "";
+	var Description := "";
+	var ActivationMode := ABILITY_ACTIVATION_MODE::PASSIVE;
+	var ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+	var Requirement := ""; // requisito para desbloquear a habilidade
+	var CostHP := 0;
+	var CostSTAM := 0;
+	var CostMANA := 0;
+	var Charges := 0; // número de cargas da habilidade
+	var Cooldown := 0; // em milisegundos
+	var EffectDuration := 0; // em milisegundos
+	var Range := 1; // em tiles
+	var Script := ""; // nome do script que será executado ao usar a habilidade
+	
 	function Ability(this, abilityEnum)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
 		
-		this._id := abilityEnum;
-		this._name := cfgFile.GetPropertyValue("nome")[1] ?: uninit;
-		this._class := cfgFile.GetPropertyValue("classe") ?: uninit;
-		this._level := CInt(cfgFile.GetPropertyValue("nivel")[1]) ?: uninit;
-		this._folk := cfgFile.GetPropertyValue("povo")[1] ?: uninit;
-		this._description := cfgFile.GetPropertyValue("descricao")[1] ?: uninit;
-		this._activationMode := cfgFile.GetPropertyValue("uso")[1] ?: uninit; 
-		this._activationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1] ?: uninit;
-		this._requirement := cfgFile.GetPropertyValue("requisito")[1] ?: uninit;
-		this._costHP := CInt(cfgFile.GetPropertyValue("hp")[1]) ?: uninit;
-		this._costSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: uninit;
-		this._costMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
-		this._charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
-		this._cooldown := CInt(cfgFile.GetPropertyValue("cooldown")[1]) ?: uninit;
-		this._duration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
-		this._range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
-		this._script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
+		this.Id := abilityEnum;
+		this.Name := cfgFile.GetPropertyValue("nome")[1] ?: uninit;
+		this.ClassVar := cfgFile.GetPropertyValue("classe") ?: uninit;
+		this.Level := CInt(cfgFile.GetPropertyValue("nivel")[1]) ?: uninit;
+		this.Folk := cfgFile.GetPropertyValue("povo")[1] ?: uninit;
+		this.Description := cfgFile.GetPropertyValue("descricao")[1] ?: uninit;
+		this.ActivationMode := cfgFile.GetPropertyValue("uso")[1] ?: uninit; 
+		this.ActivationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1] ?: uninit;
+		this.Requirement := cfgFile.GetPropertyValue("requisito")[1] ?: uninit;
+		this.CostHP := CInt(cfgFile.GetPropertyValue("hp")[1]) ?: uninit;
+		this.CostSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: uninit;
+		this.CostMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
+		this.Charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
+		this.Cooldown := CInt(cfgFile.GetPropertyValue("cooldown")[1]) ?: uninit;
+		this.Duration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
+		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
+		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
 	endfunction
 
 	function GetId(this)
-		return this._id;
+		return this.Id;
 	endfunction
 
 	function GetName(this)
-		return this._name;
+		return this.Name;
 	endfunction
 
 	function GetClass(this)
-		return this._class;
+		return this.ClassVar;
 	endfunction
 
 	function GetLevel(this)
-		return this._level;
+		return this.Level;
 	endfunction
 
 	function GetFolk(this)
-		return this._folk;
+		return this.Folk;
 	endfunction
 
 	function GetDescription(this)
-		return this._description;
+		return this.Description;
 	endfunction
 
 	function GetActivationMode(this)
-		return this._activationMode;
+		return this.ActivationMode;
 	endfunction
 
 	function GetActivationMoment(this)
-		return this._activationMoment;
+		return this.ActivationMoment;
 	endfunction
 
 	function GetRequirement(this)
-		return this._requirement;
+		return this.Requirement;
 	endfunction
 
 	function GetCostHP(this)
-		return this._costHP;
+		return this.CostHP;
 	endfunction
 
 	function GetCostSTAM(this)
-		return this._costSTAM;
+		return this.CostSTAM;
 	endfunction
 
 	function GetCostMANA(this)
-		return this._costMANA;
+		return this.CostMANA;
 	endfunction
 
 	function GetCharges(this)
-		return this._charges;
+		return this.Charges;
 	endfunction
 
 	function GetCooldown(this)
-		return this._cooldown;
+		return this.Cooldown;
 	endfunction
 
 	function GetDuration(this)
-		return this._duration;
+		return this.Duration;
 	endfunction
 
 	function GetRange(this)
-		return this._range;
+		return this.Range;
 	endfunction
 
 	function GetDamage(this)
-		return this._damage;
+		return this.Damage;
 	endfunction
 
 	function GetScript(this)
-		return this._script;
+		return this.Script;
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Start_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+		Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
 	endfunction
 
 	function ToString(this)
