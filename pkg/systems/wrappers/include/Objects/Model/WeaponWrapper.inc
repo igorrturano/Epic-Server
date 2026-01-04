@@ -362,7 +362,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		EquipWrapper::Update(this);
 
-		var prop := this.GetItemProp();
+		var prop := this.GetEquipProp();
 		prop.+Attribute := this.GetAttribute();
 		prop.+AttackType := this.GetAttackType();
 		prop.+SlashMainDamage := this.GetMainDamage().GetSlashDamage();
@@ -377,10 +377,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		prop.+AttackSpeed := this.GetSpeed();
 		prop.+MinRange := this.GetMinRange();
 		prop.+MaxRange := this.GetMaxRange();
+		this.SetEquipProp(prop);
 
+		// Aqui seta as propriedades no ObjRef
 		this.GetObjRef().speed_mod := CInt(this.GetSpeed()) - CInt(this.GetTemplate().Speed);
-		
-		this.SetProperty(PROPNAME_ITEMINFO, prop);
 	endfunction
 
 	function ToString(this)

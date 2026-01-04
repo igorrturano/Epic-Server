@@ -11,10 +11,10 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		Super(item);
 
 		this.CfgFile := CFGFile("*", "itemdesc");
-		this.Template := this.CfgFile.SetElementName(this.ObjType).GetElement();
+		this.Template := this.GetCfgFile().SetElementName(this.ObjType).GetElement();
 
 		if (TypeOfInt(this.ObjRef) == OT_ITEMREF)
-			this.Category := this.Template.Category;
+			this.Category := this.GetTemplate().Category;
 		else
 			var err;
 			if (!this.Template)
@@ -28,11 +28,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 				this.Category := err;
 			else
 				err := IsTemplateException();
-				this.Name := this.Template.desc;
-				this.Graphic := this.Template.graphic;
-				this.Color := this.Template.color;
-				this.Weight := this.Template.weight;
-				this.Category := this.Template.Category;
+				this.Name := this.GetTemplate().desc;
+				this.Graphic := this.GetTemplate().graphic;
+				this.Color := this.GetTemplate().color;
+				this.Weight := this.GetTemplate().weight;
+				this.Category := this.GetTemplate().Category;
 			endif
 
 			this.ObjRef := err;

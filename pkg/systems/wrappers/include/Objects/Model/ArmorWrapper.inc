@@ -22,13 +22,13 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		if (this.GetTemplate())
 			this.Coverage := GetConfigStringArray(this.GetTemplate(), "Coverage");
 			this.TipoProtecao := this.GetTemplate().TipoProtecao ?: error{ errortext := "The item have no Protection Type!" };
-			this.Resists := this._GetArmorResist();
+			this.Resists := this.__CalculateArmorResist();
 			this.ResistsMod := ResistModCollection();
 			this.SetResistsMod(ResistModFabricacao(this.GetObjRef() ? this.GetObjRef() : this.GetTemplate()));
 
-			this.WeightVar := this._GetWeight();
-			this.STRRequired := this._GetSTRRequired();
-			this._InitModifiers();
+			this.WeightVar := this.__CalculateWeight();
+			this.STRRequired := this.__CalculateSTRRequired();
+			this.__InitModifiers();
 			this.CriticalReductionMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
 		else
 			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
@@ -154,6 +154,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function SetResistsBase(this, resists)
 		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		
 		this.Resists := resists;
 
 		return this;
@@ -220,20 +221,22 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	function Update(this)
 		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		EquipWrapper::Update(this);
-
-		this.Prop.+SlashResist := this.Resists.GetSlashResist();
-		this.Prop.+PiercingResist := this.Resists.GetPiercingResist();
-		this.Prop.+BluntResist := this.Resists.GetBluntResist();
-		this.Prop.+FireResist := this.Resists.GetFireResist();
-		this.Prop.+ColdResist := this.Resists.GetColdResist();
-		this.Prop.+EnergyResist := this.Resists.GetEnergyResist();
-		this.Prop.+PoisonResist := this.Resists.GetPoisonResist();
-		this._InitModifiers();
+		
+		var prop := this.GetEquipProp();
+		prop.+SlashResist := this.Resists.GetSlashResist();
+		prop.+PiercingResist := this.Resists.GetPiercingResist();
+		prop.+BluntResist := this.Resists.GetBluntResist();
+		prop.+FireResist := this.Resists.GetFireResist();
+		prop.+ColdResist := this.Resists.GetColdResist();
+		prop.+EnergyResist := this.Resists.GetEnergyResist();
+		prop.+PoisonResist := this.Resists.GetPoisonResist();
+		this.__InitModifiers();
 		foreach modifier in (this.Modifiers)
-			this.Prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
+			prop.Modifiers[modifier.GetAttribute()] := modifier.GetValue();
 		endforeach
-
-		this.SetProperty(PROPNAME_ITEMINFO, this.Prop);
+		this.SetEquipProp(prop);
+		
+		// Aqui seta as propriedades no ObjRef
 	endfunction
 
 	function ToString(this)
@@ -253,7 +256,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 
 	// Private functions
-	function _GetWeight(this)
+	function __CalculateWeight(this)
 		// TODO: Revisar para ver está calculando correto
 		var weight := 1;
 		
@@ -269,11 +272,11 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return weight;
 	endfunction
 
-	function _GetSTRRequired(this)
+	function __CalculateSTRRequired(this)
 		return CInt(this.GetWeight() * 7.5);
 	endfunction
 
-	function _GetArmorResist(this)
+	function __CalculateArmorResist(this)
 		var templateResists := getResistPhysicalByProtection(this.GetTemplate().tipoProtecao);
 		var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
 
@@ -288,7 +291,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		);
 	endfunction
 
-	function _InitModifiers(this)
+	function __InitModifiers(this)
 		this.Modifiers := dictionary{};
 		
 		if (this.Prop.Modifiers.size() >= 1)

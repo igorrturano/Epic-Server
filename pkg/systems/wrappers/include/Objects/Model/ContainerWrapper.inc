@@ -14,8 +14,8 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 	function ContainerWrapper(this, byRef object)
 		Super(object);
 
-		this.Template := this.CfgFile.SetElementName(this.ObjType).GetElement();
-		this.Category := this.Template.Category;
+		this.Template := this.GetCfgFile().SetElementName(this.ObjType).GetElement();
+		this.Category := this.GetTemplate().Category;
 
 		if (this.GetObjRef().isA(POLCLASS_CONTAINER))
 			this.WeightMultiplier := this.GetObjRef().held_weight_multiplier;
@@ -259,12 +259,12 @@ class ContainerWrapper(IContainerWrapper, ItemWrapper)
 
 	function ToString(this)
 		return "Container: " +
-			   $"Serial: {Hex(this.Serial)}, " +
-			   $"ObjType: {Hex(this.ObjType)}, " +
-			   $"Name: {this.Name}, " +
-			   $"Graphic: {Hex(this.Graphic)}, " +
-			   $"Color: {Hex(this.Color)}, " +
-			   $"Weight: {this.Weight}, " +
+			   $"Serial: {Hex(this.GetSerial())}, " +
+			   $"ObjType: {Hex(this.GetObjType())}, " +
+			   $"Name: {this.GetName()}, " +
+			   $"Graphic: {Hex(this.GetGraphic())}, " +
+			   $"Color: {Hex(this.GetColor())}, " +
+			   $"Weight: {this.GetWeight()}, " +
 			   $"MaxItems: {this.GetMaxItems()}, " +
 			   $"MaxSlots: {this.GetMaxSlots()}, " +
 			   $"MaxWeight: {this.GetMaxWeight()}, " +
