@@ -714,6 +714,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This ability has not a valid script to execute!");
 		endif
 
+		if (!ability.GetActivationMoment())
+			return InvalidAbilityException("This ability has no activation moment defined to monitor!");
+		endif
+
+		if (!ability.GetDuration())
+			return InvalidAbilityException("This ability has no duration to monitor!");
+		endif
+
 		var activeAbilities := this.GetActiveAbilities();
 
 		if (!activeAbilities.exists(ability.GetActivationMoment()))

@@ -19,6 +19,7 @@ program AbilityMonitor(params)
 	SetScriptController(who.GetObjRef());
 	
 	who.ActivateAbility(ability, monitor);
+	Message($"Habilidade {ability.GetName()} ativada por {ability.GetDuration()}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	
 	while (true)
 		var event := Wait_For_Event(ability.GetDuration());
@@ -31,9 +32,9 @@ program AbilityMonitor(params)
 				Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 				break;
 			elseif (event == ABILITY_EVENT_ID::REFRESH)
-				Message($"Habilidade {ability.GetName()} foi renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+				Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			else
-				Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+				Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			endif
 			
 			break;
