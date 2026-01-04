@@ -12,10 +12,9 @@ use cfgfile;
 // ============================================================================
 // GetFilteredAbilities - Returns list of abilities eligible for player
 // ============================================================================
-// Applies filtering logic:
-// 1. Active abilities only (uso == "Ativa")
-// 2. Class and level requirements
-// 3. Purchased abilities (always included)
+// Filtering logic:
+// - GM (cmdlevel > 1): Show ALL active abilities from config
+// - Player (cmdlevel <= 1): Show ONLY purchased abilities (from myhabs)
 //
 // Returns: Array of ability names (strings) in config file order
 // ============================================================================
@@ -37,6 +36,9 @@ function GetFilteredAbilities(who)
     if (!myhabs)
         myhabs := dictionary;
     endif
+    
+    // Check if GM (cmdlevel > 1)
+    var is_gm := (who.cmdlevel > 1);
     
     // Load config
     var hab_cfg := ReadConfigFile(":charactercreation:config/habilidades");
@@ -62,23 +64,25 @@ function GetFilteredAbilities(who)
             continue;
         endif
         
-        // Check if eligible for this character's class
         var is_eligible := 0;
         
-        if (classes[char_class] != error)
-            var required_level := CInt(classes[char_class]);
-            if (char_level >= required_level)
-                is_eligible := 1;
+        // GM: Show all active abilities for their class (regardless of purchase)
+        if (is_gm)
+            if (classes[char_class] != error)
+                var required_level := CInt(classes[char_class]);
+                if (char_level >= required_level)
+                    is_eligible := 1;
+                endif
             endif
+        else
+            // Player: Show ONLY purchased abilities
+            foreach key in (myhabs.keys())
+                if (Lower(myhabs[key]) == Lower(hab_name))
+                    is_eligible := 1;
+                    break;
+                endif
+            endforeach
         endif
-        
-        // Check if purchased (always show purchased abilities)
-        foreach key in (myhabs.keys())
-            if (Lower(myhabs[key]) == Lower(hab_name))
-                is_eligible := 1; // Always eligible if purchased
-                break;
-            endif
-        endforeach
         
         // Add to filtered list if eligible
         if (is_eligible)

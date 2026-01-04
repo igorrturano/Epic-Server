@@ -210,97 +210,97 @@ endfunction
 // ============================================================================
 // GetSkillsData - Get player's skills with current values
 // ============================================================================
+// Filtering logic:
+// - GM (cmdlevel > 1): Show ALL skills from attributes.cfg
+// - Player (cmdlevel <= 1): Show ONLY skills from chardata.Skills
+// ============================================================================
 function GetSkillsData(who)
     var skills := array{};
-
-    // Display names (can have spaces)
-    var skill_names := array{
-        "Alchemy",
-        "Arcana",
-        "Sneak",
-        "Pickpocketing",
-        "Awareness",
-        "Mechanics",
-        "Medicine",
-        "Survival",
-        "Gathering",
-        "Handle Animal",
-        "Theology"
-    };
-
-    // Internal names (used for AP_GetSkill - must match attributes.cfg)
-    var skill_internal_names := array{
-        "Alchemy",
-        "Arcana",
-        "Sneak",
-        "Pickpocketing",
-        "Awareness",
-        "Mechanics",
-        "Medicine",
-        "Survival",
-        "Gathering",
-        "Handle_Animal",  // Internal name with underscore
-        "Theology"
-    };
-
-    var skill_descs := array{
-        "Avalie uma poção",
-        "Conhecimento arcano",
-        "Mover furtivamente",
-        "Roubar objetos",
-        "Encontrar armadilhas",
-        "Desarmar armadilhas",
-        "Primeiros socorros",
-        "Sobrevivencia",
-        "Coletar recursos",
-        "Domar animais",
-        "Conhecimento religioso"
-    };
-
-    var skill_ids := array{2, 16, 21, 33, 38, 48, 17, 20, 32, 35, 23};
-
-    // Load attributes.cfg to read Icon/Hue fields
+    
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return skills;
+    endif
+    
+    var is_gm := (who.cmdlevel > 1);
+    var player_skills := chardata.Skills;
+    if (!player_skills)
+        player_skills := dictionary;
+    endif
+    
+    // Load attributes.cfg
     var attr_cfg := ReadConfigFile(":attributes:attributes");
-
-    for i := 1 to skill_names.size()
-        var skill_name := skill_names[i];
-        var skill_internal_name := skill_internal_names[i];
-
-        var skill_value := CInt(AP_GetSkill(who, skill_internal_name));
-        var skill_base := CInt(AP_GetTrueSkill(who, skill_internal_name));
-        var skill_cap := CInt(AP_GetSkillCap(who, skill_internal_name));
-
-        // Read Icon and Hue directly from attributes.cfg
-        var icon_id := 0x9b90;  // Default skill icon
-        var icon_hue := 0;
-
-        if (attr_cfg)
-            var skill_elem := FindConfigElem(attr_cfg, skill_internal_name);
-            if (skill_elem)
-                var cfg_icon := GetConfigInt(skill_elem, "Icon");
-                var cfg_hue := GetConfigInt(skill_elem, "Hue");
-                if (cfg_icon)
-                    icon_id := cfg_icon;
-                endif
-                if (cfg_hue)
-                    icon_hue := cfg_hue;
-                endif
+    if (!attr_cfg)
+        return skills;
+    endif
+    
+    // Read all skill names from config and filter by those with Script (active skills)
+    var all_skill_names := GetConfigStringKeys(attr_cfg);
+    
+    foreach skill_name in all_skill_names
+        // Get skill config element
+        var skill_elem := FindConfigElem(attr_cfg, skill_name);
+        if (!skill_elem)
+            continue;
+        endif
+        
+        // Only show skills that have a Script (active/usable skills)
+        var skill_script := GetConfigString(skill_elem, "Script");
+        if (!skill_script)
+            continue;
+        endif
+        // Check if player should see this skill
+        var is_eligible := 0;
+        
+        if (is_gm)
+            // GM sees all skills
+            is_eligible := 1;
+        else
+            // Player sees only skills in chardata.Skills
+            if (player_skills[skill_name])
+                is_eligible := 1;
             endif
         endif
-
+        
+        if (!is_eligible)
+            continue;
+        endif
+        
+        // Get values from attributes.cfg
+        var skill_id := GetConfigInt(skill_elem, "SkillId");
+        var tooltip_desc := GetConfigString(skill_elem, "TooltipDesc");
+        var icon_id := GetConfigInt(skill_elem, "Icon");
+        var icon_hue := GetConfigInt(skill_elem, "Hue");
+        
+        // Defaults if not defined
+        if (!icon_id)
+            icon_id := 0x9b90;
+        endif
+        if (!tooltip_desc)
+            tooltip_desc := "";
+        endif
+        
+        // Get player's current skill values
+        var skill_value := CInt(AP_GetSkill(who, skill_name));
+        var skill_base := CInt(AP_GetTrueSkill(who, skill_name));
+        var skill_cap := CInt(AP_GetSkillCap(who, skill_name));
+        
+        // Display name: replace "_" with " "
+        var display_name := StrReplace(skill_name, "_", " ");
+        
         skills.append(struct{
-            "name" := skill_name,  // Display name
-            "desc" := skill_descs[i],
+            "name" := display_name,
+            "desc" := tooltip_desc,
             "iconid" := icon_id,
             "hue" := icon_hue,
-            "index" := skill_ids[i],
+            "index" := skill_id,
             "current_value" := skill_value,
             "base_value" := skill_base,
             "cap" := skill_cap,
-            "lock" := 0  // Default: Up (0=up, 1=down, 2=locked)
+            "lock" := 0
         });
-    endfor
-
+    endforeach
+    
     return skills;
 endfunction
 
