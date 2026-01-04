@@ -322,73 +322,49 @@ function ExecuteCommand(who, actionId)
 endfunction
 
 function ExecuteSkill(who, actionId)
+    // Use shared_constants.inc to get skill data from attributes.cfg (single source of truth)
+    var skill_data := GetSkillDataById(actionId);
     
-    // Map SkillID to skill name (must match GetSkillsData from gmhab_packets.inc)
-    var skill_map := dictionary;
-    skill_map[2] := "Alchemy";        // Alchemy
-    skill_map[16] := "Arcana";        // Magery (usado como Arcana)
-    skill_map[21] := "Sneak";         // Stealth
-    skill_map[33] := "Pickpocketing"; // Stealing
-    skill_map[38] := "Awareness";     // Detect Hidden
-    skill_map[48] := "Mechanics";     // Remove Trap
-    skill_map[17] := "Medicine";      // Healing
-    skill_map[20] := "Survival";      // Camping
-    skill_map[32] := "Gathering";     // Lumberjacking
-    skill_map[35] := "Handle_Animal"; // Animal Taming
-    skill_map[23] := "Theology";      // Spirit Speak
-    
-    // Get skill name from ID
-    var skill_name := skill_map[actionId];
-    
-    if (!skill_name)
-        SendSysMessage(who, "Indice de skill invalido! ID: " + actionId);
+    if (!skill_data || skill_data == error)
+        SendSysMessage(who, $"Skill ID {actionId} não encontrada em attributes.cfg");
         return 0;
     endif
     
+    var skill_name := skill_data.name;
+    var script_path := skill_data.script;
     
     // Get the player's skill value
     var skill_value := CInt(AP_GetSkill(who, skill_name));
     
-    
     if (skill_value <= 0)
-        SendSysMessage(who, "Voce nao possui pontos em " + skill_name + "!");
+        SendSysMessage(who, $"Você não possui pontos em {skill_name}!");
         return 0;
     endif
     
-    // Get the attribute config element
-    var attrib_elem := AP_GetAttributeCfgElem(skill_name);
-    if (!attrib_elem)
-        SendSysMessage(who, "Skill " + skill_name + " nao encontrada!");
-        return 0;
-    endif
-    
-    // Get the script path from the attribute
-    var script_path := GetConfigString(attrib_elem, "Script");
-    
-    
+    // Script path already comes from attributes.cfg via GetSkillDataById
     if (!script_path || script_path == "")
-        SendSysMessage(who, "Skill " + skill_name + " nao possui script!");
+        SendSysMessage(who, $"Skill {skill_name} não possui script!");
         return 0;
     endif
     
     // Check cooldown
     var delay := GetObjProperty(who, "delayskill");
     if (delay && delay > ReadGameClock())
-        SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+        SendSysMessage(who, "Você ainda está fazendo outra coisa.");
         return 0;
     endif
     
     // Set cooldown (5 seconds)
     SetObjProperty(who, "delayskill", ReadGameClock() + 5);
     
-    SendSysMessage(who, "Usando " + skill_name + " (valor: " + skill_value + ")");
+    SendSysMessage(who, $"Usando {skill_name} (valor: {skill_value})");
     
-    // Execute the skill script with the player's skill value
+    // Execute the skill script
     var result := start_script(script_path, who);
     if (!result)
         SendSysMessage(who, "Erro ao executar skill!");
         return 0;
-    else
-        return 1;
     endif
+    
+    return 1;
 endfunction
