@@ -1,8 +1,8 @@
 // ============================================================================
-// GMHab Utilities - Shared functions for GMHab system
+// Hotbar Utilities - Shared functions for Hotbar system
 // ============================================================================
 // Purpose: Centralize common logic to follow DRY principle
-// Used by: gmhab_packets.inc, hotbarExecute.src
+// Used by: hotbar_packets.inc, hotbarExecute.src
 // ============================================================================
 
 use uo;
@@ -10,16 +10,16 @@ use os;
 use cfgfile;
 
 // ============================================================================
-// GetFilteredHabilidades - Returns list of habilidades eligible for player
+// GetFilteredAbilities - Returns list of abilities eligible for player
 // ============================================================================
 // Applies filtering logic:
 // 1. Active abilities only (uso == "Ativa")
 // 2. Class and level requirements
 // 3. Purchased abilities (always included)
 //
-// Returns: Array of habilidade names (strings) in config file order
+// Returns: Array of ability names (strings) in config file order
 // ============================================================================
-function GetFilteredHabilidades(who)
+function GetFilteredAbilities(who)
     // Get player data
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata)
@@ -90,13 +90,13 @@ function GetFilteredHabilidades(who)
 endfunction
 
 // ============================================================================
-// GetHabilidadeBySequentialId - Get habilidade name by sequential ID
+// GetAbilityBySequentialId - Get ability name by sequential ID
 // ============================================================================
-// Uses filtered list to map sequential ID (1-based) to habilidade name
-// Returns: Habilidade name (string) or error
+// Uses filtered list to map sequential ID (1-based) to ability name
+// Returns: Ability name (string) or error
 // ============================================================================
-function GetHabilidadeBySequentialId(who, actionId)
-    var filtered_habs := GetFilteredHabilidades(who);
+function GetAbilityBySequentialId(who, actionId)
+    var filtered_habs := GetFilteredAbilities(who);
     
     if (actionId < 1 || actionId > filtered_habs.size())
         return error{"errortext" := "ActionID out of range"};

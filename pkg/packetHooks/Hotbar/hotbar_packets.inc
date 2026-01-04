@@ -1,4 +1,4 @@
-// GMHab Packet Handler - Server Side
+// Hotbar Packet Handler - Server Side
 // Handles custom packets 0xD7/0x50 (Request) and 0xD7/0x51 (Execute)
 // Sends response packets 0xD7/0x52 (Data Response)
 
@@ -12,28 +12,14 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "getspellicon_func";
 include "include/icon_manager";
-include "gmhab_utils";  // Shared GMHab utilities (DRY principle)
+include "include/spell_index";      // O(1) spell lookups
+include "include/shared_constants"; // Action types, skill maps
+include "hotbar_utils";
 
-// Packet IDs
-const PACKET_EXTENDED := 0xD7;
-const SUBCOMMAND_REQUEST := 0x50;
-const SUBCOMMAND_EXECUTE := 0x51;
-const SUBCOMMAND_RESPONSE := 0x52;
-
-// Request Types
-const REQUEST_HABILIDADES := 0x01;
-const REQUEST_SPECIALS := 0x02;
-const REQUEST_COMMANDS := 0x03;
-const REQUEST_MAGIAS := 0x04;
-
-// Execute Types
-const EXECUTE_HABILIDADE := 0x01;
-const EXECUTE_SPECIAL := 0x02;
-const EXECUTE_COMMAND := 0x03;
-const EXECUTE_SKILL := 0x04;
+// Constants defined in shared_constants.inc
 
 // Main packet handler - called by POL when packet 0xD7 is received
-exported function HandleGMHabPacket(who, packet)
+exported function HandleHotbarPacket(who, packet)
     // Packet structure:
     // 0: PacketID (0xD7)
     // 1-2: Length
@@ -65,7 +51,7 @@ function HandleRequest(who, packet)
     var request_type := packet.GetInt8(9); // Offset 9 = request type
     
     // Send all data in a single unified packet
-    SendAllGMHabData(who);
+    SendAllHotbarData(who);
     
     return 1;
 endfunction
@@ -87,8 +73,8 @@ function HandleExecute(who, packet)
     var data := packet.GetString(12, data_length); // Offset 12+ = data (ASCII)
     
     case (execute_type)
-        EXECUTE_HABILIDADE:
-            return ExecuteHabilidade(who, data);
+        EXECUTE_ABILITY:
+            return ExecuteAbility(who, data);
         EXECUTE_SPECIAL:
             return ExecuteSpecial(who, CInt(data));
         EXECUTE_COMMAND:
@@ -103,7 +89,7 @@ function HandleExecute(who, packet)
 endfunction
 
 // Send list of habilidades to client
-function SendHabilidadesList(who)
+function SendAbilitiesList(who)
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata)
         return 0;
@@ -150,7 +136,7 @@ function SendHabilidadesList(who)
     endforeach
     
     // Build and send packet
-    SendGMHabDataPacket(who, REQUEST_HABILIDADES, hab_list);
+    SendHotbarDataPacket(who, REQUEST_ABILITIES, hab_list);
     
     return 1;
 endfunction
@@ -176,7 +162,7 @@ function SendSpecialsList(who)
     
     specials.append(special1);
     
-    SendGMHabDataPacket(who, REQUEST_SPECIALS, specials);
+    SendHotbarDataPacket(who, REQUEST_SPECIALS, specials);
     
     return 1;
 endfunction
@@ -204,13 +190,13 @@ function SendCommandsList(who)
     
     commands.append(cmd2);
     
-    SendGMHabDataPacket(who, REQUEST_COMMANDS, commands);
+    SendHotbarDataPacket(who, REQUEST_COMMANDS, commands);
     
     return 1;
 endfunction
 
 // Build and send data response packet
-function SendGMHabDataPacket(who, data_type, items)
+function SendHotbarDataPacket(who, data_type, items)
     var packet := CreatePacket(PACKET_EXTENDED, 1024);
     
     // Header
@@ -224,8 +210,8 @@ function SendGMHabDataPacket(who, data_type, items)
     
     // Write items based on type
     case (data_type)
-        REQUEST_HABILIDADES:
-            offset := WriteHabilidadesData(packet, offset, items);
+        REQUEST_ABILITIES:
+            offset := WriteAbilitiesData(packet, offset, items);
         REQUEST_SPECIALS:
             offset := WriteSpecialsData(packet, offset, items);
         REQUEST_COMMANDS:
@@ -242,7 +228,7 @@ function SendGMHabDataPacket(who, data_type, items)
 endfunction
 
 // Write habilidades data to packet
-function WriteHabilidadesData(byref packet, offset, items)
+function WriteAbilitiesData(byref packet, offset, items)
     foreach hab in items
         offset := WriteString(packet, offset, hab["name"]);
         offset := WriteString(packet, offset, hab["description"]);
@@ -315,7 +301,7 @@ function CheckHabPurchased(who, hab_name)
 endfunction
 
 // Execute habilidade
-function ExecuteHabilidade(who, hab_name)
+function ExecuteAbility(who, hab_name)
     // Call existing ProccessHab function
     return ProccessHab(who, hab_name);
 endfunction
@@ -545,12 +531,12 @@ function ExecuteSkill(who, skill_id)
     endif
 endfunction
 
-// Send all GMHab data in a single unified packet
-function SendAllGMHabData(who)
+// Send all Hotbar data in a single unified packet
+function SendAllHotbarData(who)
     // Collect all data
-    var hab_list := GetHabilidadesData(who);
+    var hab_list := GetAbilitiesData(who);
     var specials := GetSpecialsData(who);
-    var magias := GetMagiasData(who);  // ✅ Get magias from grimório
+    var magias := GetSpellsData(who);  // ✅ Get magias from grimório
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
     
@@ -558,9 +544,9 @@ function SendAllGMHabData(who)
     var packet_size := 6; // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1)
     
     // Add size for each data type (count + data)
-    var hab_size := CalculateHabilidadesSize(hab_list);
+    var hab_size := CalculateAbilitiesSize(hab_list);
     var spec_size := CalculateSpecialsSize(specials);
-    var mag_size := CalculateMagiasSize(magias);
+    var mag_size := CalculateSpellsSize(magias);
     var cmd_size := CalculateCommandsSize(commands);
     var skill_size := CalculateSkillsSize(skills);
     
@@ -769,7 +755,7 @@ function SendAllGMHabData(who)
         packet.SetInt8(offset, 0); offset += 1;
         packet.SetInt8(offset, 0); offset += 1;
         
-        // spell_id (CRITICAL: use 'id' not 'spell_id' to match GetMagiasData!)
+        // spell_id (CRITICAL: use 'id' not 'spell_id' to match GetSpellsData!)
         packet.SetInt8(offset, CInt(item.id / 256)); offset += 1;
         packet.SetInt8(offset, item.id % 256); offset += 1;
         
@@ -870,7 +856,7 @@ function SendAllGMHabData(who)
 endfunction
 
 // Helper functions to calculate sizes
-function CalculateHabilidadesSize(items)
+function CalculateAbilitiesSize(items)
     var size := 0;
     foreach item in items
         size := size + 2 + len(item.name);         // name length + name
@@ -905,7 +891,7 @@ function CalculateSpecialsSize(items)
     return size;
 endfunction
 
-function CalculateMagiasSize(items)
+function CalculateSpellsSize(items)
     var size := 0;
     foreach item in items
         // name: 2 bytes (length) + string length
@@ -984,7 +970,7 @@ function SetInt16BE(packet, offset, value)
 endfunction
 
 // Helper functions to write data sections
-function WriteHabilidadesSection(packet, offset, items)
+function WriteAbilitiesSection(packet, offset, items)
     SetInt16BE(packet, offset, items.size());
     offset := offset + 2;
     // No items to write for now
@@ -1024,7 +1010,7 @@ function WriteSpecialsSection(packet, offset, items)
     return offset;
 endfunction
 
-function WriteMagiasSection(packet, offset, items)
+function WriteSpellsSection(packet, offset, items)
     SetInt16BE(packet, offset, items.size());
     offset := offset + 2;
     
@@ -1351,7 +1337,7 @@ function GetCommandsData(who)
 endfunction
 
 // Get magias data - load from grimoire
-function GetMagiasData(who)
+function GetSpellsData(who)
     var magias := array{};
     var chardata := GetObjProperty(who, "chardata");
     
@@ -1543,18 +1529,12 @@ function GetMagiasData(who)
                         spell_id := spell.id;
                         spell_elem := FindConfigElem(priest_cfg, spell_id);
                     elseif (spell.name)
-                        // Old format: only has name field - search by name
+                        // Old format: only has name field - O(1) lookup via index
                         spell_name := spell.name;
-                        var all_spell_ids := GetConfigIntKeys(priest_cfg);
-                        foreach cfg_id in all_spell_ids
-                            var test_elem := FindConfigElem(priest_cfg, cfg_id);
-                            if (test_elem && GetConfigString(test_elem, "Name") == spell_name)
-                                spell_elem := test_elem;
-                                spell_id := cfg_id;
-                                break;
-                            endif
-                            sleepms(2);
-                        endforeach
+                        spell_id := GetSpellIdByName("priest", spell_name);
+                        if (spell_id != error)
+                            spell_elem := GetSpellById("priest", spell_id);
+                        endif
                     else
                         // Invalid spell entry - skip
                         continue;
@@ -1608,23 +1588,17 @@ function GetMagiasData(who)
                         spell_id := spell.id;
                         spell_elem := FindConfigElem(druid_cfg, spell_id);
                     elseif (spell.name)
-                        // Old format: only has name field - search by name
+                        // Old format: only has name field - O(1) lookup via index
                         spell_name := spell.name;
-                        var all_spell_ids := GetConfigIntKeys(druid_cfg);
-                        foreach cfg_id in all_spell_ids
-                            var test_elem := FindConfigElem(druid_cfg, cfg_id);
-                            if (test_elem && GetConfigString(test_elem, "Name") == spell_name)
-                                spell_elem := test_elem;
-                                spell_id := cfg_id;
-                                break;
-                            endif
-                            sleepms(2);
-                        endforeach
+                        spell_id := GetSpellIdByName("druid", spell_name);
+                        if (spell_id != error)
+                            spell_elem := GetSpellById("druid", spell_id);
+                        endif
                     else
                         // Invalid spell entry - skip
                         continue;
                     endif
-                    
+
                     if (!spell_elem)
                         continue;
                     endif
@@ -1768,9 +1742,9 @@ function GetMagiasData(who)
 endfunction
 
 // Get habilidades data - uses shared filtering logic (DRY principle)
-function GetHabilidadesData(who)
+function GetAbilitiesData(who)
     // ✅ DRY: Use shared function instead of duplicating filtering logic
-    var filtered_hab_names := GetFilteredHabilidades(who);
+    var filtered_hab_names := GetFilteredAbilities(who);
     
     // Load config to get full habilidade data
     var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
@@ -1793,7 +1767,7 @@ function GetHabilidadesData(who)
         if (!habelem) continue; endif
         
         // Get icon
-        var icon_data := GetHabilidadeIcon(hab_name, char_class);
+        var icon_data := GetAbilityIcon(hab_name, char_class);
         
         // Read additional fields
         var classes := GetConfigStringDictionary(habelem, "classe");

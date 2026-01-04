@@ -1,0 +1,8 @@
+// Hotbar Packets Handler
+// This file exports the HandleHotbarPacket function for packet hook
+
+use uo;
+
+include ":hotbar:hotbar_packets";
+
+// The HandleHotbarPacket function is already exported in hotbar_packets.inc

@@ -62,31 +62,31 @@ function SendHotbarCooldown(who, actionId, duration)
 endfunction
 
 /*
- * SendPosturaCooldown
- * 
- * Convenience function for postura cooldowns
- * 
+ * SendPostureCooldown
+ *
+ * Convenience function for posture cooldowns
+ *
  * Parameters:
  *   who - Character to send cooldown to
- *   posturaType - Postura type (0=Slash, 1=Piercing, 2=Blunt)
+ *   postureType - Posture type (0=Slash, 1=Piercing, 2=Blunt)
  *   duration - Cooldown duration in seconds
  */
-function SendPosturaCooldown(who, posturaType, duration)
-    return SendHotbarCooldown(who, posturaType, duration);
+function SendPostureCooldown(who, postureType, duration)
+    return SendHotbarCooldown(who, postureType, duration);
 endfunction
 
 /*
- * SendHabilidadeCooldown
- * 
- * Convenience function for habilidade cooldowns
- * 
+ * SendAbilityCooldown
+ *
+ * Convenience function for ability cooldowns
+ *
  * Parameters:
  *   who - Character to send cooldown to
- *   habId - Habilidade ID
+ *   abilityId - Ability ID
  *   duration - Cooldown duration in seconds
  */
-function SendHabilidadeCooldown(who, habId, duration)
-    return SendHotbarCooldown(who, habId, duration);
+function SendAbilityCooldown(who, abilityId, duration)
+    return SendHotbarCooldown(who, abilityId, duration);
 endfunction
 
 /*

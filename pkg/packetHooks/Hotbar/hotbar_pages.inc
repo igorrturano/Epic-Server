@@ -1,5 +1,5 @@
 
-function ShowMagiasPage(byref gump, who, page_num)
+function ShowSpellsPage(byref gump, who, page_num)
 	// Get character's grimoire
 	var chardata := GetObjProperty(who, "chardata");
 	if (!chardata || !chardata.magia)

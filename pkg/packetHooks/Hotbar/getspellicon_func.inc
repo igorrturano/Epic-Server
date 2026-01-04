@@ -1,6 +1,6 @@
 // Helper function to get spell icon from icons.cfg
 function GetSpellIcon(spell_name)
-    var icon_cfg := ReadConfigFile(":gmhab:config/icons");
+    var icon_cfg := ReadConfigFile(":hotbar:config/icons");
     if (!icon_cfg)
         return struct{ "iconid" := 0x5DCD, "hue" := 0 };
     endif

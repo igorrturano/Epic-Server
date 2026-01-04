@@ -27,16 +27,13 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":attributes:attributes";  // For custom skill system
 include "hotbarCooldown";          // For SendHotbarCooldown function
-include ":GMHab:gmhab_utils";      // Shared GMHab utilities (DRY principle)
-include ":charactercreation:habilidades"; // ✅ FIX: Needed for TemHabilidade
+include ":hotbar:hotbar_utils";    // Shared Hotbar utilities
+include ":hotbar:include/shared_constants"; // Action types from single source of truth
+include ":charactercreation:habilidades"; // For TemHabilidade
 
-// Action type constants
-const ACTION_TYPE_POSTURA := 0x01;
-const ACTION_TYPE_HABILIDADE := 0x02;
-const ACTION_TYPE_SPECIAL := 0x03;
-const ACTION_TYPE_SPELL := 0x04;
-const ACTION_TYPE_COMMAND := 0x05;
-const ACTION_TYPE_SKILL := 0x06;
+// Backward compatibility aliases for action types
+const ACTION_TYPE_POSTURA := ACTION_TYPE_POSTURE;
+const ACTION_TYPE_HABILIDADE := ACTION_TYPE_ABILITY;
 
 program hotbarExecute()
     return 1;
@@ -56,9 +53,9 @@ exported function HandleHotbarExecute(who, byref packet)
     // Dispatch based on action type
     case (actionType)
         ACTION_TYPE_POSTURA:
-            return ExecutePostura(who, actionId);
+            return ExecutePosture(who, actionId);
         ACTION_TYPE_HABILIDADE:
-            return ExecuteHabilidade(who, actionId);
+            return ExecuteAbility(who, actionId);
         ACTION_TYPE_SPECIAL:
             return ExecuteSpecial(who, actionId);
         ACTION_TYPE_SPELL:
@@ -75,23 +72,11 @@ exported function HandleHotbarExecute(who, byref packet)
     return 1; // Consume packet
 endfunction
 
-function GetActionTypeName(actionType)
-    case (actionType)
-        ACTION_TYPE_POSTURA: return "Postura";
-        ACTION_TYPE_HABILIDADE: return "Habilidade";
-        ACTION_TYPE_SPECIAL: return "Special";
-        ACTION_TYPE_SPELL: return "Spell";
-        ACTION_TYPE_COMMAND: return "Command";
-        ACTION_TYPE_SKILL: return "Skill";
-        default: return "Unknown";
-    endcase
-endfunction
-
 // ============================================================================
 // Action Handlers
 // ============================================================================
 
-function ExecutePostura(who, actionId)
+function ExecutePosture(who, actionId)
     
     // Map actionId to postura type
     // 0 = Slash, 1 = Piercing, 2 = Blunt
@@ -128,12 +113,12 @@ function ExecutePostura(who, actionId)
     return 1;
 endfunction
 
-function ExecuteHabilidade(who, actionId)
-    
+function ExecuteAbility(who, actionId)
+
     // ✅ DRY: Use shared function instead of duplicating filtering logic
-    var hab_name := GetHabilidadeBySequentialId(who, actionId);
+    var hab_name := GetAbilityBySequentialId(who, actionId);
     if (hab_name == error)
-        SendSysMessage(who, $"Habilidade ID {actionId} inválido.");
+        SendSysMessage(who, $"Ability ID {actionId} invalid.");
         return 0;
     endif
     
@@ -301,7 +286,7 @@ function ExecuteCommand(who, actionId)
     // Hash is calculated from command text on client side
     var cmd_map := dictionary;
     
-    // Common commands (from GMHab system)
+    // Common commands (from Hotbar system)
     cmd_map[944130555]  := ":spells:commands/player/arremessar";   // .arremessar
     cmd_map[1423786530] := ":spells:commands/player/voltar";       // .voltar
     cmd_map[1426263783] := ":accounts:commands/player/senha";      // .senha

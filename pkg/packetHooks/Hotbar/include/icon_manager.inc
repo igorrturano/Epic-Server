@@ -1,39 +1,39 @@
 /////////////////////////////////////////////
-// Icon Manager - Sistema Automático
-// Carrega icons.cfg automaticamente
+// Icon Manager - Automatic System
+// Loads icons.cfg automatically
 /////////////////////////////////////////////
 
 use cfgfile;
 
-// Cache global (inicializado automaticamente)
+// Global cache (initialized automatically)
 var g_icon_cache := 0;
 
-// Inicializar cache AUTOMATICAMENTE
+// Initialize cache AUTOMATICALLY
 function InitIconCache()
-	// Se já inicializado, retorna cache existente
+	// If already initialized, return existing cache
 	if (g_icon_cache)
 		return g_icon_cache;
 	endif
-	
-	// Criar estrutura de cache
+
+	// Create cache structure
 	g_icon_cache := struct{
 		"specials" := dictionary,
 		"commands" := dictionary,
 		"skills" := dictionary,
-		"habilidades" := dictionary,
+		"abilities" := dictionary,
 		"defaults" := dictionary
 	};
 	
-	// Carregar icons.cfg
-	var cfg := ReadConfigFile(":GMHab:config/icons");
+	// Load icons.cfg
+	var cfg := ReadConfigFile(":hotbar:config/icons");
 	if (!cfg)
-		print("AVISO: icons.cfg não encontrado, usando ícones padrão");
+		print("WARNING: icons.cfg not found, using default icons");
 		return g_icon_cache;
 	endif
-	
+
 	var all_keys := GetConfigStringKeys(cfg);
-	
-	// Popular cache
+
+	// Populate cache
 	foreach key in all_keys
 		var elem := FindConfigElem(cfg, key);
 		if (!elem)
@@ -71,7 +71,7 @@ function InitIconCache()
 			g_icon_cache.skills[name] := icon_data;
 		// Habilidades individuais: todo o resto
 		else
-			g_icon_cache.habilidades[name] := icon_data;
+			g_icon_cache.abilities[name] := icon_data;
 		endif
 	endforeach
 	
@@ -115,12 +115,12 @@ function GetSkillIcon(skill_name)
 endfunction
 
 // Obter ícone de habilidade
-function GetHabilidadeIcon(hab_name, class_name)
+function GetAbilityIcon(hab_name, class_name)
 	var cache := InitIconCache();
-	
+
 	// Tentar ícone específico (futuro)
-	if (cache.habilidades.exists(hab_name))
-		return cache.habilidades[hab_name];
+	if (cache.abilities.exists(hab_name))
+		return cache.abilities[hab_name];
 	endif
 	
 	// Usar padrão da classe
