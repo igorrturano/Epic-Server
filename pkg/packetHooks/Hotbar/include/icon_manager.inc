@@ -122,12 +122,15 @@ function GetAbilityIcon(hab_name, class_name)
 	if (cache.abilities.exists(hab_name))
 		return cache.abilities[hab_name];
 	endif
-	
+
 	// Usar padrão da classe
 	if (cache.defaults.exists(class_name))
 		return cache.defaults[class_name];
 	endif
-	
+
 	// Fallback final
 	return struct{"iconid" := 0x9bac, "hue" := 0};
 endfunction
+
+// GetSpellIcon() has been removed - spells now read Icon/Hue directly from their config files
+// This follows the "single source of truth" pattern used by timedscripts
