@@ -32,7 +32,7 @@ function InitIconCache()
 
 	var all_keys := GetConfigStringKeys(cfg);
 
-	// Populate cache
+	// Populate cache based on element type
 	foreach key in all_keys
 		var elem := FindConfigElem(cfg, key);
 		if (!elem)
@@ -52,21 +52,22 @@ function InitIconCache()
 			"hue" := hue
 		};
 		
-		// Classificar por tipo baseado no nome
-		// Specials: AtaqueExtra, Evasao, RecargaRapida, ConjuracaoRapida, VelocidadeArcana
-		if (key == "AtaqueExtra" || key == "Evasao" || key == "RecargaRapida" ||
-		    key == "ConjuracaoRapida" || key == "VelocidadeArcana")
-			g_icon_cache.specials[name] := icon_data;
-		// Commands: começam com ponto no name
-		elseif (name && name[1] == ".")
-			g_icon_cache.commands[name] := icon_data;
-		// Habilidades default: Guerreiro, Ladino, Sabio, Artifice (sem campo name)
-		elseif (key == "Guerreiro" || key == "Ladino" || key == "Sabio" || key == "Artifice")
-			g_icon_cache.defaults[key] := icon_data;
-		// Skills removed - now read from attributes.cfg
-		// Habilidades individuais: todo o resto
-		else
-			g_icon_cache.abilities[name] := icon_data;
+		// Parse element type from key prefix
+		// Format: "Special AtaqueExtra", "ClassDefault Guerreiro", "Command ficha"
+		if (key["Special "])
+			// Special abilities
+			if (name)
+				g_icon_cache.specials[name] := icon_data;
+			endif
+		elseif (key["ClassDefault "])
+			// Class default icons
+			var class_name := key[14, len(key)]; // Remove "ClassDefault " prefix
+			g_icon_cache.defaults[class_name] := icon_data;
+		elseif (key["Command "])
+			// Commands
+			if (name)
+				g_icon_cache.commands[name] := icon_data;
+			endif
 		endif
 	endforeach
 	
