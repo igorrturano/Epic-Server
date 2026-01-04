@@ -5,63 +5,63 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include "system/exception/ProcessExeception/InvalidProcessException";
 
 class AbilityMonitor()
-	var pid := 0;
-	var mobileSerial := 0x0;
-	var abilityId := 0;
-	var charges := 0;
+	var Pid := 0;
+	var MobileSerial := 0x0;
+	var AbilityId := 0;
+	var Charges := 0;
 
 	function AbilityMonitor(this, ability)
-		this.abilityId := ability.GetId();
-		this.charges := ability.GetCharges();
+		this.AbilityId := ability.GetId();
+		this.Charges := ability.GetCharges();
 	endfunction
 
 	function GetPid(this)
-		return this.pid;
+		return this.Pid;
 	endfunction
 
 	function SetPid(this, pid)
-		this.pid := pid;
+		this.Pid := pid;
 	endfunction
 
 	function _GetProcess(this)
-		if (!this.pid)
+		if (!this.Pid)
 			return InvalidProcessException("AbilityMonitor GetProcess called with no active process.");
 		endif
 
-		return GetProcess(this.pid);
+		return GetProcess(this.Pid);
 	endfunction
 
 	function GetMobileSerial(this)
-		return this.mobileSerial;
+		return this.MobileSerial;
 	endfunction
 
 	function GetAbilityId(this)
-		return this.abilityId;
+		return this.AbilityId;
 	endfunction
 
 	function SetAbilityId(this, abilityId)
-		this.abilityId := abilityId;
+		this.AbilityId := abilityId;
 	endfunction
 
 	function GetAbility(this)
-		return Ability(this.abilityId);
+		return Ability(this.AbilityId);
 	endfunction
 
 	function GetCharges(this)
-		return this.charges;
+		return this.Charges;
 	endfunction
 
 	function SetCharges(this, amount)
-		this.charges := amount;
+		this.Charges := amount;
 	endfunction
 
 	function ConsumeCharge(this, amount)
-		if (this.charges > 0)
-			this.charges -= amount;
+		if (this.GetCharges() > 0)
+			this.Charges -= amount;
 		endif
 
-		if (this.charges <= 0)
-			this.charges := 0;
+		if (this.GetCharges() <= 0)
+			this.Charges := 0;
 		endif
 
 		return this;
