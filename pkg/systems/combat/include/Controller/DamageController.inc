@@ -55,23 +55,29 @@ endfunction
 function CalculateStatusDamage(byRef attackInfo)
 	var stat := "";
 	var damageMod := 0;
-	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
 			stat := $"{STRENGTH} + {DEXTERITY}";
 
-			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH, DEXTERITY);
+			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
+						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
 			stat := DEXTERITY;
-			damageMod := attackInfo.GetAttacker().GetDamageModifierBy(DEXTERITY);
+
+			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
+						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	else
 		stat := STRENGTH;
-		damageMod := attackInfo.GetAttacker().GetDamageModifierBy(STRENGTH);
+
+		damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH) :
+					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	damageMod := CInt(damageMod / handDivisor);
 	
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
 	
@@ -102,7 +108,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 	endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dados de dano da arma ({attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetName()}):"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}"));
@@ -128,7 +134,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDamage}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDamage}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDamage}"));
-	
+
 	attackInfo.GetDamage().IncreaseSlashRawDamage(slashDamage)
 						  .IncreasePiercingRawDamage(piercingDamage)
 						  .IncreaseBluntRawDamage(bluntDamage)
@@ -139,7 +145,9 @@ function CalculateWeaponDamage(byRef attackInfo)
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
+
 	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage())
 						  .IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage())
 						  .IncreaseBluntRawDamage(damageMod.GetBluntRawDamage())
@@ -328,7 +336,7 @@ function CalculateCriticalChanceMod(byRef attackInfo)
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(COLOR_NAME::RED)));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("***DANO CRÍTICO***", Color(GENERAL_COLOR::RED)));
 
 	// TODO: Refatorar isso daqui, tá MUITO cagado....
 		// Jogar as coisas de pet pra uma função separada
@@ -352,9 +360,12 @@ function ApplyCriticalDamage(byRef attackInfo)
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
-	Message("CRÍTICO", Color(COLOR_NAME::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.1, 5);
+	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	if (!attackInfo.GetAttacker().IsNpc())
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+	endif
 	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
+	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
 	foreach hitscript in (weapon_scripts)
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
 			var script := start_script(

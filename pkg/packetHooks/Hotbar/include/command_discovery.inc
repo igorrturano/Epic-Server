@@ -14,6 +14,7 @@ include ":hotbar:include/icon_manager";
 // Global cache (built once at startup or first request)
 // Use uninit to differentiate "not yet scanned" from "scanned but found nothing"
 var g_discovered_commands := uninit;
+var g_discovered_gm_commands := uninit;
 
 /*
  * Discover all player commands from filesystem
@@ -162,9 +163,119 @@ function GetCommandDescription(cmd_name)
 endfunction
 
 /*
+ * Discover ALL commands from filesystem (for GMs)
+ * Scans all command folders (player, gm, admin, owner, etc.)
+ * Returns array of command structs
+ */
+function DiscoverGMCommands()
+    // Only rescan if not yet initialized (cached globally)
+    if (g_discovered_gm_commands != uninit)
+        return g_discovered_gm_commands;
+    endif
+
+    var start := ReadMillisecondClock();
+
+    g_discovered_gm_commands := array{};
+    var index := 1;
+
+    // Package base paths to scan for command folders
+    var package_bases := array{
+        ":commands:",
+        ":spells:commands/",
+        ":equipsys:commands/",
+        ":taming:commands/",
+        ":tn:commands/",
+        ":fls_core:commands/",
+        ":achievements:commands/",
+        ":charactercreation:commands/",
+        ":survival:commands/",
+        ":brainAI:commands/",
+        ":food:textcmd/",
+        ":fls_rppoints:commands/",
+        ":specialAbilities:commands/",
+        ":swindle:commands/",
+        ":webstatus:commands/"
+    };
+
+    // Command level folders to scan
+    var cmd_levels := array{"player", "gm", "admin", "owner", "seer", "counselor"};
+
+    var total_found := 0;
+
+    foreach pkg_base in package_bases
+        foreach cmd_level in cmd_levels
+            var pkg_path := pkg_base + cmd_level + "/";
+            var category := GetCategoryFromLevel(cmd_level);
+
+            var files := ListDirectory(pkg_path);
+            
+            if (!files || files.errortext)
+                continue;
+            endif
+
+            if (files.size() == 0)
+                continue;
+            endif
+
+            foreach file in files
+                // Only process .src files (skip .ecl, .dep, etc.)
+                if (!file[".src"])
+                    continue;
+                endif
+
+                // Extract command name (remove .src extension)
+                var cmd_name := file[1, len(file) - 4];
+                
+                // Skip common non-command files
+                if (cmd_name["include"] || cmd_name["config"] || cmd_name["test"])
+                    continue;
+                endif
+
+                // Build command entry
+                var cmd_entry := struct{};
+                cmd_entry.+command := "." + cmd_name;
+                cmd_entry.+desc := GetCommandDescription(cmd_name);
+                cmd_entry.+category := category;
+                cmd_entry.+index := index;
+                
+                // Get icon from icon manager
+                var icon_data := GetCommandIcon("." + cmd_name);
+                cmd_entry.+iconid := icon_data.iconid;
+                cmd_entry.+hue := icon_data.hue;
+
+                g_discovered_gm_commands.append(cmd_entry);
+                index += 1;
+                total_found += 1;
+            endforeach
+        endforeach
+    endforeach
+
+    var elapsed := ReadMillisecondClock() - start;
+    Print($"[CommandDiscovery] Found {total_found} GM commands in {elapsed}ms");
+
+    return g_discovered_gm_commands;
+endfunction
+
+/*
+ * Get category name based on command level folder
+ */
+function GetCategoryFromLevel(cmd_level)
+    case (cmd_level)
+        "player":     return "Player";
+        "gm":         return "GM";
+        "admin":      return "Admin";
+        "owner":      return "Owner";
+        "seer":       return "Seer";
+        "counselor":  return "Counselor";
+        default:      return "Outros";
+    endcase
+endfunction
+
+/*
  * Force refresh of command cache (for development/testing)
  */
 function RefreshCommandCache()
-    g_discovered_commands := 0;
+    g_discovered_commands := uninit;
+    g_discovered_gm_commands := uninit;
     return DiscoverPlayerCommands();
 endfunction

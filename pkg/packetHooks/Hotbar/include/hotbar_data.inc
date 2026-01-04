@@ -127,11 +127,16 @@ endfunction
 // GetCommandsData - Get list of available commands
 // ============================================================================
 // ✅ PHASE 2: Now uses auto-discovery from filesystem instead of hardcoded list
-// Commands are discovered from pkg/*/commands/player/ folders
+// Filtering logic:
+// - GM (cmdlevel > 1): Show ALL commands from all command folders
+// - Player (cmdlevel <= 1): Show ONLY player commands
 // ============================================================================
 function GetCommandsData(who)
-    // Use command discovery system (caches results globally)
-    return DiscoverPlayerCommands();
+    if (who.cmdlevel > 1)
+        return DiscoverGMCommands();
+    else
+        return DiscoverPlayerCommands();
+    endif
 endfunction
 
 // ============================================================================
