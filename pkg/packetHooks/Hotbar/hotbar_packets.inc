@@ -1232,11 +1232,27 @@ function GetSpecialsData(who)
 endfunction
 
 // Get commands data
+// ✅ PHASE 2 OPTIMIZATION: Client should cache commands after first load
+// Commands are sent from server but rarely change - client caches to avoid re-transmission
+//
+// TODO CLIENT-SIDE WORK REQUIRED:
+// 1. Cache commands in HotbarDataManager/HotbarDataRepository after first receive
+// 2. Store commands in client profile or session storage
+// 3. Only request commands on first login or when cache is empty
+// 4. Expected savings: ~2-3KB per request after first load (15-20% reduction)
+// 5. Future Phase 6: Add version-based cache invalidation
+//
+// Client implementation location:
+//   - ClassicUO/src/ClassicUO.Client/Game/Managers/HotbarDataManager.cs
+//   - Add: private List<CommandData> _cachedCommands
+//   - Add: public void CacheCommands(List<CommandData> commands)
+//   - Modify: RequestHotbarData() to skip requesting commands if cached
+//
 function GetCommandsData(who)
     var commands := array{};
     var index := 1;
     var icon_data;
-    
+
     // Comandos Gerais (6)
     icon_data := GetCommandIcon(".ficha");
     commands.append(struct{"command" := ".ficha", "desc" := "Ficha do personagem", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Geral"}); index += 1;
@@ -1334,6 +1350,7 @@ function GetCommandsData(who)
     icon_data := GetCommandIcon(".rps");
     commands.append(struct{"command" := ".rps", "desc" := "Sistema de RP", "iconid" := icon_data.iconid, "hue" := icon_data.hue, "index" := index, "category" := "Outros"}); index += 1;
     return commands;
+    
 endfunction
 
 // Get magias data - load from grimoire
@@ -1628,8 +1645,12 @@ function GetSpellsData(who)
         endif
     endif
     
-    // ✅ NEW: Load Paladin spells (based on Consagracao Divina habilidade)
+    // ✅ OPTIMIZED: Check all ability-based spell access once
     var has_paladin := TemHabilidade(who, "Consagracao Divina");
+    var has_trickster := TemHabilidade(who, "Sensibilidade Arcana");
+    var has_demonhunter := TemHabilidade(who, "Sigilo de Protecao");
+
+    // Load Paladin spells (based on Consagracao Divina ability)
     if (has_paladin)
         var paladin_cfg := ReadConfigFile(":spells:config/paladinspells");
         
@@ -1672,8 +1693,7 @@ function GetSpellsData(who)
         endif
     endif
 
-    // ✅ NEW: Load Trickster spells (based on Sensibilidade Arcana habilidade)
-    var has_trickster := TemHabilidade(who, "Sensibilidade Arcana");
+    // Load Trickster spells (based on Sensibilidade Arcana ability)
     if (has_trickster)
         var trickster_cfg := ReadConfigFile(":spells:config/tricksterspells");
         
@@ -1705,8 +1725,7 @@ function GetSpellsData(who)
         endif
     endif
 
-    // ✅ NEW: Load Demon Hunter spells (based on Sigilo de Protecao habilidade)
-    var has_demonhunter := TemHabilidade(who, "Sigilo de Protecao");
+    // Load Demon Hunter spells (based on Sigilo de Protecao ability)
     if (has_demonhunter)
         var dh_cfg := ReadConfigFile(":spells:config/demonhunterspells");
         
