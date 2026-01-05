@@ -31,7 +31,7 @@ include ":attributes:attributes";
 include "include/client";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
-include ":xpbar_v2:xpbar";
+include ":expbar:expbar";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");

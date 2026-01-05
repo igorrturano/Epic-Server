@@ -43,6 +43,11 @@ program hotbarExecute()
 endprogram
 
 exported function HandleHotbarExecute(who, byref packet)
+    if (who.dead)
+        Message("You cannot do that while dead!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 1;
+    endif
+        
     // Parse packet structure:
     // Byte 0: 0xBF
     // Bytes 1-2: Length
