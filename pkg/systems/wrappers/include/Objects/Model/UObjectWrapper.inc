@@ -10,100 +10,113 @@ include "include/packets";
 include ":text:Color";
 
 class UObjectWrapper(IUObjectWrapper)
-	var _cfgFile;
-	var _template;
-	var _objRef; // ObjRef
-	var _serial := 0x0;
-	var _objType := 0x0;
-	var _name := "";
-	var _graphic := 0;
-	var _color := 0;
-	var _weight := 0;
-	var _category := ""; // CATEGORY enum
-	var _cProps;
+	var CfgFile;
+	var Template;
+	var ObjRef; // ObjRef
+	var Serial := 0x0;
+	var ObjType := 0x0;
+	var Name := "";
+	var Graphic := 0;
+	var Color := 0;
+	var Weight := 0;
+	var Category := ""; // CATEGORY enum
+	var CProps;
 
 	function UObjectWrapper(this, byRef object)
 		if (TypeOfInt(object) == OT_MOBILEREF || TypeOfInt(object) == OT_OFFLINEMOBILEREF || TypeOfInt(object) == OT_ITEMREF)
-			this._objRef := object;
-			this._serial := object.serial;
-			this._objType := object.objtype;
-			this._name := object.name;
-			this._graphic := object.graphic;
-			this._color := object.color;
-			this._weight := object.weight;
+			this.ObjRef := object;
+			this.Serial := object.serial;
+			this.ObjType := object.objtype;
+			this.Name := object.name;
+			this.Graphic := object.graphic;
+			this.Color := object.color;
+			this.Weight := object.weight;
 		elseif (TypeOfInt(object) == OT_CONFIGELEMREF)
-			this._template := object;
-			this._cProps := object.CProps;
+			this.Template := object;
+			this.CProps := object.CProps;
 		elseif (object.isVendorTemplate)
-			this._objType := object.objtype;
-			this._name := object.name;
-			this._graphic := object.graphic;
-			this._color := object.color;
-			this._weight := object.weight;
-			this._cProps := object.CProps;
+			this.ObjType := object.objtype;
+			this.Name := object.name;
+			this.Graphic := object.graphic;
+			this.Color := object.color;
+			this.Weight := object.weight;
+			this.CProps := object.CProps;
 		else
 			var objRefBySerial := SystemFindObjectBySerial(object);
 			if (objRefBySerial)
 				object := objRefBySerial;
-				this._objRef := object;
-				this._serial := object.serial;
-				this._objType := object.objtype;
-				this._name := object.name;
-				this._graphic := object.graphic;
-				this._color := object.color;
-				this._weight := object.weight;
+				this.ObjRef := object;
+				this.Serial := object.serial;
+				this.ObjType := object.objtype;
+				this.Name := object.name;
+				this.Graphic := object.graphic;
+				this.Color := object.color;
+				this.Weight := object.weight;
 			else
-				this._objType := object;
+				this.ObjType := object;
 			endif
 		endif
 	endfunction
 
 	function GetCfgFile(this)
-		return this._cfgFile;
+		return this.CfgFile;
 	endfunction
 	
 	function GetTemplate(this)
-		return this._template;
+		return this.Template;
 	endfunction
 	
 	function GetObjRef(this)
-		return this._objRef;
+		return this.ObjRef;
 	endfunction
 
 	function GetSerial(this)
-		return this._serial;
+		return this.Serial;
 	endfunction
 
 	function GetObjType(this)
-		return this._objType;
+		return this.ObjType;
 	endfunction
 
 	function GetName(this)
-		return this._name;
+		return this.Name;
 	endfunction
 
 	function GetGraphic(this)
-		return this._graphic;
+		return this.Graphic;
 	endfunction
 
 	function GetColor(this)
-		return this._color;
+		return this.Color;
 	endfunction
 
 	function GetWeight(this)
-		return this._weight;
+		return this.Weight;
+	endfunction
+
+	function SetWeight(this, weight)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.Weight := weight;
+
+		// TODO: weight é um atributo R/O. Pra alterar vai ter que modificar o max_weight_mod subtraindo a diferença
+		this.GetObjRef().weight := weight;
+
+		return this;
 	endfunction
 
 	function GetPosition(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		return PositionWrapper(
-			this._objRef.x,
-			this._objRef.y,
-			this._objRef.z,
-			this._objRef.realm
+			this.GetObjRef().x,
+			this.GetObjRef().y,
+			this.GetObjRef().z,
+			this.GetObjRef().realm
 		);
 	endfunction
 
@@ -113,38 +126,38 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return String contendo a categoria do objeto (valor do enum CATEGORY das classes filhas)
 	 */
 	function GetCategory(this)
-		return this._category;
+		return this.Category;
 	endfunction
 
 	function _SetName(this, name)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this._name := name;
-		this._objRef.name := name;
+		this.Name := name;
+		this.GetObjRef().name := name;
 
 		return this;
 	endfunction
 
 	function SetGraphic(this, graphic)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this._graphic := graphic;
-		this._objRef.graphic := graphic;
+		this.Graphic := graphic;
+		this.GetObjRef().graphic := graphic;
 
 		return this;
 	endfunction
 
 	function SetColor(this, color)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this._color := color;
-		this._objRef.color := color;
+		this.Color := color;
+		this.GetObjRef().color := color;
 
 		return this;
 	endfunction
@@ -155,20 +168,20 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Mapa contendo as propriedades personalizadas do template
 	 */
 	function GetCProps(this)
-		return this._cProps;
+		return this.CProps;
 	endfunction
 
 	function GetProperty(this, propName)
-		if (this._objRef is @Exception && !this.GetCProps())
-			return this._objRef;
+		if (this.GetObjRef() is @Exception && !this.GetCProps())
+			return this.GetObjRef();
 		endif
 
 		return this.GetObjRef() ? this.GetObjRef().GetProp(propName) : this.GetCProps()[propName];
 	endfunction
 
 	function SetProperty(this, propName, propValue)
-		if (this._objRef is @Exception && !this.GetCProps())
-			return this._objRef;
+		if (this.GetObjRef() is @Exception && !this.GetCProps())
+			return this.GetObjRef();
 		endif
 
 		return this.GetObjRef() ? this.GetObjRef().SetProp(propName, propValue) : this.GetCProps().insert(propName, propValue);
@@ -177,8 +190,8 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 
 	function EraseProperty(this, propName)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		this.GetObjRef() ? this.GetObjRef().EraseProp(propName) :  this.GetCProps().erase(propName);
@@ -187,11 +200,11 @@ class UObjectWrapper(IUObjectWrapper)
 	endfunction
 	
 	function GetMobilesInLineOfSight(this, range)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return ListMobilesInLineOfSight(this._objRef, CInt(range));
+		return ListMobilesInLineOfSight(this.GetObjRef(), CInt(range));
 	endfunction
 	
 	/**
@@ -207,11 +220,11 @@ class UObjectWrapper(IUObjectWrapper)
 	 * var resultado := obj.MoveToLocation(novaPosicao, MOVEOBJECT_FORCELOCATION);
 	 */
 	function MoveToLocation(this, position, flags := MOVEOBJECT_NORMAL)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return MoveObjectToLocation(this._objRef, position.GetX(), position.GetY(), position.GetZ(), position.GetRealm(), flags);
+		return MoveObjectToLocation(this.GetObjRef(), position.GetX(), position.GetY(), position.GetZ(), position.GetRealm(), flags);
 	endfunction
 
 	/**
@@ -222,11 +235,11 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Retorna a própria instância (this) para permitir encadeamento de métodos
 	 */
 	function PlaySound(this, soundId)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		PlaySoundEffect(this._objRef, soundId);
+		PlaySoundEffect(this.GetObjRef(), soundId);
 
 		return this;
 	endfunction
@@ -241,11 +254,11 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Retorna a instância atual do objeto (this) para permitir encadeamento de métodos
 	 */
 	function PlaySoundPrivate(this, soundId, soundSource := false)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		PlaySoundEffectPrivate(this._objRef, soundId, soundSource ?: this._objRef);
+		PlaySoundEffectPrivate(this.GetObjRef(), soundId, soundSource ?: this.GetObjRef());
 
 		return this;
 	endfunction
@@ -264,8 +277,8 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return this            Retorna a própria instância do objeto para permitir encadeamento de métodos
 	 */
 	function PlayEffectTo(this, targetWrapped, effectId, speed := 10, loop := 0, explode := false, color := 0, translucent := false)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (color)
@@ -276,7 +289,7 @@ class UObjectWrapper(IUObjectWrapper)
 			endif
 		endif
 
-		PlayMovingEffectXYZHued(this._objRef, targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
+		PlayMovingEffectXYZHued(this.GetObjRef(), targetWrapped.GetObjRef(), effectId, speed, loop, explode, color, translucent);
 
 		return this;
 	endfunction
@@ -293,8 +306,8 @@ class UObjectWrapper(IUObjectWrapper)
 	 * @return Retorna o próprio objeto para encadeamento de métodos, ou uma exceção se a referência do objeto for inválida
 	 */
 	function PlayEffect(this, effectId, speed := 1, loop := 0, color := 0, translucent := false)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (color)
@@ -305,17 +318,17 @@ class UObjectWrapper(IUObjectWrapper)
 			endif
 		endif
 
-		PlayObjectCenteredEffectEx(this._objRef, effectId, speed, loop, color, translucent);
+		PlayObjectCenteredEffectEx(this.GetObjRef(), effectId, speed, loop, color, translucent);
 
 		return this;
 	endfunction
 
 	function ToString(this)
 		return "UObject: " +
-			$"Serial: {this._serial}, " +
-			$"ObjType: {this._objType}, " +
-			$"Name: {this._name}, " +
-			$"Graphic: {this._graphic}, " +
-			$"Color: {this._color}";
+			$"Serial: {this.Serial}, " +
+			$"ObjType: {this.ObjType}, " +
+			$"Name: {this.Name}, " +
+			$"Graphic: {this.Graphic}, " +
+			$"Color: {this.Color}";
 	endfunction
 endclass
