@@ -32,6 +32,7 @@ include ":hotbar:include/shared_constants"; // Action types from single source o
 include ":hotbar:include/command_discovery"; // Auto-discovered commands
 include ":charactercreation:habilidades"; // For TemHabilidade
 include ":spells:include/spell_executor"; // Unified spell execution
+include ":hotbar:include/hotbar_actions"; // Shared execution functions (DRY)
 
 // Backward compatibility aliases for action types
 const ACTION_TYPE_POSTURA := ACTION_TYPE_POSTURE;
@@ -164,30 +165,15 @@ function ExecuteAbility(who, actionId)
 endfunction
 
 function ExecuteSpecial(who, actionId)
+    // DRY: Use shared implementation from hotbar_actions.inc
+    var result := ExecuteSpecialAction(who);
     
-    // KISS: Execute special ability via existing system
-    // The specialAbilities.src script handles all the logic
-    var script := Start_Script(":specialAbilities:specialAbilities", who);
-    if (!script)
-        SendSysMessage(who, "Erro ao executar habilidade especial.");
-        return 0;
+    if (result.success)
+        // KISS: Apply cooldown via binary protocol (0xBF)
+        SendHotbarCooldown(who, actionId, result.cooldown_duration);
     endif
     
-    // KISS: Apply cooldown (binary protocol)
-    // Base cooldown: 180s, reduced by level (-30s every 4 levels, min 30s)
-    var level := CInt(GetObjProperty(who, "level"));
-    if (!level)
-        level := 1;
-    endif
-    
-    var cooldown_duration := 180 - (CInt(level / 4) * 30);
-    if (cooldown_duration < 30)
-        cooldown_duration := 30;
-    endif
-    
-    SendHotbarCooldown(who, actionId, cooldown_duration);
-    
-    return 1;
+    return result.success;
 endfunction
 
 function ExecuteSpell(who, actionId)
@@ -293,49 +279,7 @@ function ExecuteCommand(who, actionId)
 endfunction
 
 function ExecuteSkill(who, actionId)
-    // Use shared_constants.inc to get skill data from attributes.cfg (single source of truth)
-    var skill_data := GetSkillDataById(actionId);
-    
-    if (!skill_data || skill_data == error)
-        SendSysMessage(who, $"Skill ID {actionId} não encontrada em attributes.cfg");
-        return 0;
-    endif
-    
-    var skill_name := skill_data.name;
-    var script_path := skill_data.script;
-    
-    // Get the player's skill value
-    var skill_value := CInt(AP_GetSkill(who, skill_name));
-    
-    if (skill_value <= 0)
-        SendSysMessage(who, $"Você não possui pontos em {skill_name}!");
-        return 0;
-    endif
-    
-    // Script path already comes from attributes.cfg via GetSkillDataById
-    if (!script_path || script_path == "")
-        SendSysMessage(who, $"Skill {skill_name} não possui script!");
-        return 0;
-    endif
-    
-    // Check cooldown
-    var delay := GetObjProperty(who, "delayskill");
-    if (delay && delay > ReadGameClock())
-        SendSysMessage(who, "Você ainda está fazendo outra coisa.");
-        return 0;
-    endif
-    
-    // Set cooldown (5 seconds)
-    SetObjProperty(who, "delayskill", ReadGameClock() + 5);
-    
-    SendSysMessage(who, $"Usando {skill_name} (valor: {skill_value})");
-    
-    // Execute the skill script
-    var result := start_script(script_path, who);
-    if (!result)
-        SendSysMessage(who, "Erro ao executar skill!");
-        return 0;
-    endif
-    
-    return 1;
+    // DRY: Use shared implementation from hotbar_actions.inc
+    // verbose=1 because 0xBF protocol is used for active hotbar clicks
+    return ExecuteSkillAction(who, actionId, 1);
 endfunction

@@ -16,6 +16,7 @@ include "include/shared_constants"; // Action types, skill maps
 include "include/hotbar_data";      // Get*Data functions (includes command_discovery)
 include "include/hotbar_write";     // Calculate*Size, Write*Section functions
 include "hotbar_utils";
+include "include/hotbar_actions";   // Shared execution functions (DRY)
 
 // Constants defined in shared_constants.inc
 
@@ -88,217 +89,9 @@ function HandleExecute(who, packet)
     return 1;
 endfunction
 
-// Send list of habilidades to client
-function SendAbilitiesList(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        return 0;
-    endif
-    
-    var char_class := chardata.classe;
-    var char_level := CInt(GetObjProperty(who, "Level"));
-    
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-    if (!habcfg)
-        return 0;
-    endif
-    
-    var all_keys := GetConfigStringKeys(habcfg);
-    var hab_list := array{};
-    
-    // Filter habilidades by class, level, and active status
-    foreach hab_name in all_keys
-        var habelem := FindConfigElem(habcfg, hab_name);
-        var uso := GetConfigString(habelem, "uso");
-        var classe := GetConfigString(habelem, "classe");
-        var nivel := CInt(GetConfigString(habelem, "nivel"));
-        
-        // Only send active abilities that match class and level
-        if (uso == "Ativa" && (classe == char_class || classe == "Todas") && nivel <= char_level)
-            var hab_data := dictionary;
-            hab_data["name"] := hab_name;
-            hab_data["description"] := GetConfigString(habelem, "desc");
-            hab_data["class"] := classe;
-            hab_data["required_level"] := nivel;
-            hab_data["is_active"] := 1;
-            hab_data["is_purchased"] := CheckHabPurchased(who, hab_name);
-            hab_data["icon_id"] := CInt(GetConfigString(habelem, "icon"));
-            hab_data["hue"] := 0;
-            hab_data["stamina_cost"] := CInt(GetConfigString(habelem, "stam_cost"));
-            hab_data["mana_cost"] := CInt(GetConfigString(habelem, "mana_cost"));
-            hab_data["delay"] := CInt(GetConfigString(habelem, "delay"));
-            hab_data["requisite"] := GetConfigString(habelem, "requisito");
-            hab_data["duration"] := CInt(GetConfigString(habelem, "duracao"));
-            hab_data["script"] := GetConfigString(habelem, "script");
-            
-            hab_list.append(hab_data);
-        endif
-    endforeach
-    
-    // Build and send packet
-    SendHotbarDataPacket(who, REQUEST_ABILITIES, hab_list);
-    
-    return 1;
-endfunction
-
-// Send list of specials to client
-function SendSpecialsList(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        return 0;
-    endif
-    
-    var char_class := chardata.classe;
-    var specials := array{};
-    
-    // Example specials - adapt to your system
-    var special1 := dictionary;
-    special1["name"] := "Ataque Extra";
-    special1["class"] := char_class;
-    special1["description"] := "Realiza um ataque adicional";
-    special1["icon_id"] := 5011;
-    special1["hue"] := 0;
-    special1["index"] := 1;
-    
-    specials.append(special1);
-    
-    SendHotbarDataPacket(who, REQUEST_SPECIALS, specials);
-    
-    return 1;
-endfunction
-
-// Send list of commands to client
-function SendCommandsList(who)
-    var commands := array{};
-    
-    // Example commands
-    var cmd1 := dictionary;
-    cmd1["command"] := ".ficha";
-    cmd1["description"] := "Visualizar ficha do personagem";
-    cmd1["icon_id"] := 5360;
-    cmd1["index"] := 1;
-    cmd1["category"] := "Personagem";
-    
-    commands.append(cmd1);
-    
-    var cmd2 := dictionary;
-    cmd2["command"] := ".point";
-    cmd2["description"] := "Distribuir pontos de atributo";
-    cmd2["icon_id"] := 5361;
-    cmd2["index"] := 2;
-    cmd2["category"] := "Personagem";
-    
-    commands.append(cmd2);
-    
-    SendHotbarDataPacket(who, REQUEST_COMMANDS, commands);
-    
-    return 1;
-endfunction
-
-// Build and send data response packet
-function SendHotbarDataPacket(who, data_type, items)
-    var packet := CreatePacket(PACKET_EXTENDED, 1024);
-    
-    // Header
-    packet.SetInt8(0, PACKET_EXTENDED); // Packet ID
-    packet.SetInt16(1, 0); // Length placeholder
-    packet.SetInt16(3, SUBCOMMAND_RESPONSE); // Subcommand
-    packet.SetInt8(5, data_type); // Data type
-    packet.SetInt16(6, items.size()); // Item count
-    
-    var offset := 8;
-    
-    // Write items based on type
-    case (data_type)
-        REQUEST_ABILITIES:
-            offset := WriteAbilitiesData(packet, offset, items);
-        REQUEST_SPECIALS:
-            offset := WriteSpecialsData(packet, offset, items);
-        REQUEST_COMMANDS:
-            offset := WriteCommandsData(packet, offset, items);
-    endcase
-    
-    // Update length
-    packet.SetInt16(1, offset);
-    
-    // Send packet
-    packet.SendPacket(who);
-    
-    return 1;
-endfunction
-
-// Write habilidades data to packet
-function WriteAbilitiesData(byref packet, offset, items)
-    foreach hab in items
-        offset := WriteString(packet, offset, hab["name"]);
-        offset := WriteString(packet, offset, hab["description"]);
-        offset := WriteString(packet, offset, hab["class"]);
-        packet.SetInt16(offset, hab["required_level"]); offset += 2;
-        packet.SetInt8(offset, hab["is_active"]); offset += 1;
-        packet.SetInt8(offset, hab["is_purchased"]); offset += 1;
-        packet.SetInt16(offset, hab["icon_id"]); offset += 2;
-        packet.SetInt16(offset, hab["hue"]); offset += 2;
-        packet.SetInt16(offset, hab["stamina_cost"]); offset += 2;
-        packet.SetInt16(offset, hab["mana_cost"]); offset += 2;
-        packet.SetInt16(offset, hab["delay"]); offset += 2;
-        offset := WriteString(packet, offset, hab["requisite"]);
-        packet.SetInt16(offset, hab["duration"]); offset += 2;
-        offset := WriteString(packet, offset, hab["script"]);
-    endforeach
-    
-    return offset;
-endfunction
-
-// Write specials data to packet
-function WriteSpecialsData(byref packet, offset, items)
-    foreach special in items
-        offset := WriteString(packet, offset, special["name"]);
-        offset := WriteString(packet, offset, special["class"]);
-        offset := WriteString(packet, offset, special["description"]);
-        packet.SetInt16(offset, special["icon_id"]); offset += 2;
-        packet.SetInt16(offset, special["hue"]); offset += 2;
-        packet.SetInt8(offset, special["index"]); offset += 1;
-    endforeach
-    
-    return offset;
-endfunction
-
-// Write commands data to packet
-function WriteCommandsData(byref packet, offset, items)
-    foreach cmd in items
-        offset := WriteString(packet, offset, cmd["command"]);
-        offset := WriteString(packet, offset, cmd["description"]);
-        packet.SetInt16(offset, cmd["icon_id"]); offset += 2;
-        packet.SetInt8(offset, cmd["index"]); offset += 1;
-        offset := WriteString(packet, offset, cmd["category"]);
-    endforeach
-    
-    return offset;
-endfunction
-
-// Helper: Write string with length prefix
-function WriteString(byref packet, offset, str)
-    var str_len := len(str);
-    packet.SetInt16(offset, str_len);
-    offset += 2;
-    
-    for i := 1 to str_len
-        packet.SetInt8(offset, str[i]);
-        offset += 1;
-    endfor
-    
-    return offset;
-endfunction
-
-// Check if habilidade was purchased
-function CheckHabPurchased(who, hab_name)
-    var habs := GetObjProperty(who, "habilidades");
-    if (!habs)
-        return 0;
-    endif
-    
-    return (hab_name in habs);
-endfunction
+// ============================================================================
+// Execution Functions (delegate to shared/hotbar_actions.inc for DRY)
+// ============================================================================
 
 // Execute habilidade
 function ExecuteAbility(who, hab_name)
@@ -306,200 +99,38 @@ function ExecuteAbility(who, hab_name)
     return ProccessHab(who, hab_name);
 endfunction
 
-// Execute special
+// Execute special - delegates to shared implementation
 function ExecuteSpecial(who, special_index)
-    // Check cooldown
-    var cooldown_prop := "SpecialCooldown_" + special_index;
-    var last_use := CInt(GetObjProperty(who, cooldown_prop));
-    var current_time := ReadGameClock();
-    
-    if (last_use && (current_time < last_use))
-        var remaining := last_use - current_time;
-        SendSysMessage(who, "Aguarde " + remaining + " segundos para usar novamente!");
-        return 0;
+    var result := ExecuteSpecialAction(who);
+    if (result.success)
+        // Store cooldown using property (0xD7 protocol doesn't have binary cooldown)
+        var cooldown_prop := "SpecialCooldown_" + special_index;
+        SetObjProperty(who, cooldown_prop, ReadGameClock() + result.cooldown_duration);
     endif
-    
-    // Call existing special system
-    var result := start_script(":specialAbilities:specialAbilities", who);
-    if (result)
-        // Calculate cooldown based on character level
-        var level := CInt(GetObjProperty(who, "Level"));
-        if (!level)
-            level := 1;
-        endif
-        var base_cooldown := 180; // 3 minutes base
-        var cooldown_reduction := Floor(level / 4) * 30; // Reduce 30s every 4 levels
-        var final_cooldown := base_cooldown - cooldown_reduction;
-        if (final_cooldown < 30)
-            final_cooldown := 30; // Minimum 30 seconds
-        endif
-        
-        // Set cooldown
-        SetObjProperty(who, cooldown_prop, current_time + final_cooldown);
-        // SendSysMessage(who, "Executando special ability! (Cooldown: " + final_cooldown + "s)");
-        return 1;
-    else
-        // SendSysMessage(who, "Erro ao executar special ability!");
-        return 0;
-    endif
+    return result.success;
 endfunction
 
 // Execute command
 function ExecuteGMCommand(who, command)
-    // Execute the command by calling the script directly
-    // SendSysMessage(who, "Executando: " + command);
-    
     // Remove the dot if present
     var cmd_name := command;
     if (cmd_name[1] == ".")
         cmd_name := cmd_name[2, len(cmd_name)];
     endif
     
-    var result;
-    
-    // Use case statement for special package commands
-    case (cmd_name)
-        // Ficha package
-        "ficha":
-            result := start_script(":ficha:commands/player/ficha", who);
-        
-        // Commands package
-        "pularcerca":
-            result := start_script(":commands:player/pularcerca", who);
-        "senha":
-            SendSysMessage(who, "Use: .senha <senha atual> <nova senha>");
-            result := 1;
-        
-        // Special Abilities package
-        "special":
-            result := start_script(":specialAbilities:commands/player/special", who);
-        
-        // Spells package (magias)
-        "assumirforma":
-            result := start_script(":spells:commands/player/assumirforma", who);
-        "pilotar":
-            result := start_script(":spells:commands/player/pilotar", who);
-        "arcoelemental":
-            result := start_script(":spells:commands/player/arcoelemental", who);
-        "rituais":
-            result := start_script(":spells:commands/player/rituais", who);
-        "arremessar":
-            result := start_script(":spells:commands/player/arremessar", who);
-        "voltar":
-            result := start_script(":spells:commands/player/voltar", who);
-        
-        // Equipsys package (combate)
-        "golpe":
-            result := start_script(":equipsys:commands/player/golpe", who);
-        
-        // Animal Handle package (skills)
-        "adestrar":
-            result := start_script(":taming:commands/player/adestrar", who);
-        "acalmar":
-            // Acalmar has inline logic - call the wrapper function from gmhab
-            result := start_script(":specialAbilities:commands/gm/gmhab", array{who, "acalmar"});
-        
-        // TN package (roleplay)
-        "actions":
-            result := start_script(":tn:commands/player/actions", who);
-        "sounds":
-            result := start_script(":tn:commands/player/sounds", who);
-        "arrastar":
-            result := start_script(":tn:commands/player/arrastar", who);
-        "erguer":
-            result := start_script(":tn:commands/player/erguer", who);
-        "lingua":
-            result := start_script(":commands:player/lingua", who);
-        
-        // FLS package
-        "ficharp":
-            result := start_script(":fls_core:commands/player/ficharp", who);
-        "pontosrp":
-            result := start_script(":fls_rppoints:commands/player/pontosrp", who);
-        "rps":
-            result := start_script(":fls_rppoints:commands/player/rps", who);
-        
-        // Achievements package
-        "conquistas":
-            result := start_script(":achievements:commands/player/conquistas", who);
-        
-        // Food package
-        "fome":
-            result := start_script(":food:textcmd/player/fome", who);
-        
-        // Character Creation package
-        "meditar":
-            result := start_script(":charactercreation:commands/player/meditar", who);
-        
-        // Survival package
-        "camuflar":
-            result := start_script(":survival:commands/player/camuflar", who);
-        
-        // Commands package (skills/utility)
-        "assoviar":
-            result := start_script(":commands:player/assoviar", who);
-        "estudar":
-            result := start_script(":commands:player/estudar", who);
-        
-        // Brain AI package (pets)
-        "pe":
-            result := start_script(":brainAI:commands/player/pe", who);
-        
-        default:
-            // Try standard location for all other commands
-            result := start_script(":commands:player/" + cmd_name, who);
-    endcase
+    // Try standard location for commands
+    var result := start_script(":commands:player/" + cmd_name, who);
     
     if (!result)
-        // SendSysMessage(who, "Erro ao executar comando! Tente digitar: ." + cmd_name);
         return 0;
     else
         return 1;
     endif
 endfunction
 
-// Execute skill
+// Execute skill - delegates to shared implementation
 function ExecuteSkill(who, skill_id)
-    // Use shared_constants.inc to get skill data from attributes.cfg (single source of truth)
-    var skill_data := GetSkillDataById(skill_id);
-    
-    if (!skill_data || skill_data == error)
-        return 0;
-    endif
-    
-    var skill_name := skill_data.name;
-    var script_path := skill_data.script;
-    
-    // Get the player's skill value
-    var skill_value := CInt(AP_GetSkill(who, skill_name));
-    
-    if (skill_value <= 0)
-        SendSysMessage(who, $"Você não possui pontos em {skill_name}!");
-        return 0;
-    endif
-    
-    // Script path already comes from attributes.cfg via GetSkillDataById
-    if (!script_path || script_path == "")
-        return 0;
-    endif
-    
-    // Check cooldown
-    var delay := GetObjProperty(who, "delayskill");
-    if (delay && delay > ReadGameClock())
-        SendSysMessage(who, "Você ainda está fazendo outra coisa.");
-        return 0;
-    endif
-    
-    // Set cooldown (5 seconds)
-    SetObjProperty(who, "delayskill", ReadGameClock() + 5);
-    
-    // Execute the skill script
-    var result := start_script(script_path, who);
-    if (!result)
-        return 0;
-    endif
-    
-    return 1;
+    return ExecuteSkillAction(who, skill_id, 0); // verbose=0
 endfunction
 
 // ============================================================================
