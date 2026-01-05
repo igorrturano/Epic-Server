@@ -206,7 +206,6 @@ function GetAbilitiesData(who)
 
         filtered_habs.append(hab_data);
         hab_index := hab_index + 1;
-        sleepms(2);
     endforeach
 
     return filtered_habs;
@@ -665,7 +664,6 @@ function GetSpellsData(who)
                 spell.+command_prefix := "p";
 
                 spells.append(spell);
-                sleepms(2);
             endforeach
         endif
     endif
@@ -704,7 +702,6 @@ function GetSpellsData(who)
                 spell.+command_prefix := "m";
 
                 spells.append(spell);
-                sleepms(2);
             endforeach
         endif
     endif
@@ -743,7 +740,6 @@ function GetSpellsData(who)
                 spell.+command_prefix := "c";
 
                 spells.append(spell);
-                sleepms(2);
             endforeach
         endif
     endif

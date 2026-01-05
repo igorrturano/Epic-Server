@@ -10,8 +10,3 @@ include "hotbar_packets";
 exported function HandleHotbarRequest(who, byref packet)
     return HandleHotbarPacket(who, packet);
 endfunction
-
-// Export Hotbar Execute handler (0xBF/0x0099)
-exported function HandleHotbarExecute(who, byref packet)
-    return HandleHotbarPacket(who, packet);
-endfunction

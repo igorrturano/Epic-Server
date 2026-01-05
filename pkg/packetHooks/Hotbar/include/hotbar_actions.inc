@@ -116,16 +116,3 @@ function ExecuteSpecialAction(who)
     
     return struct{ success := 1, cooldown_duration := cooldown_duration };
 endfunction
-
-// ============================================================================
-// CheckHabPurchased - Check if player has purchased an ability
-// ============================================================================
-
-function CheckHabPurchased(who, hab_name)
-    var habs := GetObjProperty(who, "habilidades");
-    if (!habs)
-        return 0;
-    endif
-    
-    return (hab_name in habs);
-endfunction
