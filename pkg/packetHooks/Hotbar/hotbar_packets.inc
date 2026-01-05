@@ -151,52 +151,25 @@ function SendAbilitiesPacket(who)
     packet.SetInt8(5, REQUEST_ABILITIES);
     
     var offset := 6;
-    packet.SetInt8(offset, CInt(hab_count / 256)); offset += 1;
-    packet.SetInt8(offset, hab_count % 256); offset += 1;
+    offset := SetInt16BE(packet, offset, hab_count);
     
     foreach item in hab_list
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.classe);
         
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        var classe_len := len(item.classe);
-        packet.SetInt8(offset, CInt(classe_len / 256)); offset += 1;
-        packet.SetInt8(offset, classe_len % 256); offset += 1;
-        packet.SetString(offset, item.classe, 0); offset += classe_len;
-        
-        packet.SetInt8(offset, CInt(item.required_level / 256)); offset += 1;
-        packet.SetInt8(offset, item.required_level % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, item.required_level);
         packet.SetInt8(offset, item.is_active ? 1 : 0); offset += 1;
         packet.SetInt8(offset, item.is_purchased ? 1 : 0); offset += 1;
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.stamina_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.stamina_cost % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.mana_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.mana_cost % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.delay / 256)); offset += 1;
-        packet.SetInt8(offset, item.delay % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.stamina_cost);
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, item.delay);
         
-        var req_len := len(item.requisite);
-        packet.SetInt8(offset, CInt(req_len / 256)); offset += 1;
-        packet.SetInt8(offset, req_len % 256); offset += 1;
-        packet.SetString(offset, item.requisite, 0); offset += req_len;
-        
-        packet.SetInt8(offset, CInt(item.duration / 256)); offset += 1;
-        packet.SetInt8(offset, item.duration % 256); offset += 1;
-        
-        var script_len := len(item.script);
-        packet.SetInt8(offset, CInt(script_len / 256)); offset += 1;
-        packet.SetInt8(offset, script_len % 256); offset += 1;
-        packet.SetString(offset, item.script, 0); offset += script_len;
+        offset := WriteStringBE(packet, offset, item.requisite);
+        offset := SetInt16BE(packet, offset, item.duration);
+        offset := WriteStringBE(packet, offset, item.script);
     endforeach
     
     packet.SendPacket(who);
@@ -216,38 +189,18 @@ function SendSpecialsPacket(who)
     packet.SetInt8(5, REQUEST_SPECIALS);
     
     var offset := 6;
-    packet.SetInt8(offset, CInt(spec_count / 256)); offset += 1;
-    packet.SetInt8(offset, spec_count % 256); offset += 1;
+    offset := SetInt16BE(packet, offset, spec_count);
     
     foreach item in specials
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.classe);
+        offset := WriteStringBE(packet, offset, item.desc);
         
-        var classe_len := len(item.classe);
-        packet.SetInt8(offset, CInt(classe_len / 256)); offset += 1;
-        packet.SetInt8(offset, classe_len % 256); offset += 1;
-        packet.SetString(offset, item.classe, 0); offset += classe_len;
-        
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
         packet.SetInt8(offset, item.index); offset += 1;
-        
-        var delay_value := CInt(item.delay);
-        packet.SetInt8(offset, CInt(delay_value / 256)); offset += 1;
-        packet.SetInt8(offset, delay_value % 256); offset += 1;
-        
-        var remaining_value := CInt(item.remaining);
-        packet.SetInt8(offset, CInt(remaining_value / 256)); offset += 1;
-        packet.SetInt8(offset, remaining_value % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, CInt(item.delay));
+        offset := SetInt16BE(packet, offset, CInt(item.remaining));
     endforeach
     
     packet.SendPacket(who);
@@ -267,49 +220,23 @@ function SendSpellsPacket(who)
     packet.SetInt8(5, REQUEST_SPELLS);
     
     var offset := 6;
-    packet.SetInt8(offset, CInt(mag_count / 256)); offset += 1;
-    packet.SetInt8(offset, mag_count % 256); offset += 1;
+    offset := SetInt16BE(packet, offset, mag_count);
     
     foreach item in magias
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, CStr(item.circle));
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.school);
         
-        var circle_str := CStr(item.circle);
-        var circle_len := len(circle_str);
-        packet.SetInt8(offset, CInt(circle_len / 256)); offset += 1;
-        packet.SetInt8(offset, circle_len % 256); offset += 1;
-        packet.SetString(offset, circle_str, 0); offset += circle_len;
-        
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        var school_len := len(item.school);
-        packet.SetInt8(offset, CInt(school_len / 256)); offset += 1;
-        packet.SetInt8(offset, school_len % 256); offset += 1;
-        packet.SetString(offset, item.school, 0); offset += school_len;
-        
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, CInt(item.mana_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.mana_cost % 256); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, CInt(item.id / 256)); offset += 1;
-        packet.SetInt8(offset, item.id % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, 0);  // hue
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, 0);  // min_skill
+        offset := SetInt16BE(packet, offset, 0);  // reagents length
+        offset := SetInt16BE(packet, offset, item.id);
         
         var cmd_prefix := item.command_prefix ? item.command_prefix : "m";
-        var prefix_len := len(cmd_prefix);
-        packet.SetInt8(offset, CInt(prefix_len / 256)); offset += 1;
-        packet.SetInt8(offset, prefix_len % 256); offset += 1;
-        packet.SetString(offset, cmd_prefix, 0); offset += prefix_len;
+        offset := WriteStringBE(packet, offset, cmd_prefix);
     endforeach
     
     packet.SendPacket(who);
@@ -329,28 +256,14 @@ function SendCommandsPacket(who)
     packet.SetInt8(5, REQUEST_COMMANDS);
     
     var offset := 6;
-    packet.SetInt8(offset, CInt(cmd_count / 256)); offset += 1;
-    packet.SetInt8(offset, cmd_count % 256); offset += 1;
+    offset := SetInt16BE(packet, offset, cmd_count);
     
     foreach item in commands
-        var cmd_len := len(item.command);
-        packet.SetInt8(offset, CInt(cmd_len / 256)); offset += 1;
-        packet.SetInt8(offset, cmd_len % 256); offset += 1;
-        packet.SetString(offset, item.command, 0); offset += cmd_len;
-        
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
+        offset := WriteStringBE(packet, offset, item.command);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.iconid);
         packet.SetInt8(offset, item.index); offset += 1;
-        
-        var cat_len := len(item.category);
-        packet.SetInt8(offset, CInt(cat_len / 256)); offset += 1;
-        packet.SetInt8(offset, cat_len % 256); offset += 1;
-        packet.SetString(offset, item.category, 0); offset += cat_len;
+        offset := WriteStringBE(packet, offset, item.category);
     endforeach
     
     packet.SendPacket(who);
@@ -370,31 +283,17 @@ function SendSkillsPacket(who)
     packet.SetInt8(5, REQUEST_SKILLS);
     
     var offset := 6;
-    packet.SetInt8(offset, CInt(skill_count / 256)); offset += 1;
-    packet.SetInt8(offset, skill_count % 256); offset += 1;
+    offset := SetInt16BE(packet, offset, skill_count);
     
     foreach item in skills
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
-        
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.iconid);
         packet.SetInt8(offset, item.index); offset += 1;
-        packet.SetInt8(offset, CInt(item.current_value / 256)); offset += 1;
-        packet.SetInt8(offset, item.current_value % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.base_value / 256)); offset += 1;
-        packet.SetInt8(offset, item.base_value % 256); offset += 1;
-        packet.SetInt8(offset, CInt(item.cap / 256)); offset += 1;
-        packet.SetInt8(offset, item.cap % 256); offset += 1;
+        offset := SetInt16BE(packet, offset, item.current_value);
+        offset := SetInt16BE(packet, offset, item.base_value);
+        offset := SetInt16BE(packet, offset, item.cap);
         packet.SetInt8(offset, item.lock); offset += 1;
     endforeach
     
@@ -407,7 +306,7 @@ function SendAllHotbarData(who)
     // Collect all data
     var hab_list := GetAbilitiesData(who);
     var specials := GetSpecialsData(who);
-    var magias := GetSpellsData(who);  // ✅ Get magias from grimório
+    var magias := GetSpellsData(who);
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
     
@@ -437,297 +336,85 @@ function SendAllHotbarData(who)
     
     var offset := 6;
     
-    // Write all 5 counts inline (helper functions don't work due to POL packet reference issues)
-    
-    // 1. Habilidades count
-    var hab_count := hab_list.size();
-    packet.SetInt8(offset, CInt(hab_count / 256)); offset += 1;
-    packet.SetInt8(offset, hab_count % 256); offset += 1;
-    
-    // Write habilidades data
+    // 1. Habilidades
+    offset := SetInt16BE(packet, offset, hab_list.size());
     foreach item in hab_list
-        // name
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
-        
-        // desc (description)
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        // classe (class)
-        var classe_len := len(item.classe);
-        packet.SetInt8(offset, CInt(classe_len / 256)); offset += 1;
-        packet.SetInt8(offset, classe_len % 256); offset += 1;
-        packet.SetString(offset, item.classe, 0); offset += classe_len;
-        
-        // required_level
-        packet.SetInt8(offset, CInt(item.required_level / 256)); offset += 1;
-        packet.SetInt8(offset, item.required_level % 256); offset += 1;
-        
-        // is_active (bool)
-        if (item.is_active)
-            packet.SetInt8(offset, 1); offset += 1;
-        else
-            packet.SetInt8(offset, 0); offset += 1;
-        endif
-        
-        // is_purchased (bool)
-        if (item.is_purchased)
-            packet.SetInt8(offset, 1); offset += 1;
-        else
-            packet.SetInt8(offset, 0); offset += 1;
-        endif
-        
-        // iconid
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        
-        // hue
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
-        
-        // stamina_cost
-        packet.SetInt8(offset, CInt(item.stamina_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.stamina_cost % 256); offset += 1;
-        
-        // mana_cost
-        packet.SetInt8(offset, CInt(item.mana_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.mana_cost % 256); offset += 1;
-        
-        // delay
-        packet.SetInt8(offset, CInt(item.delay / 256)); offset += 1;
-        packet.SetInt8(offset, item.delay % 256); offset += 1;
-        
-        // requisite
-        var req_len := len(item.requisite);
-        packet.SetInt8(offset, CInt(req_len / 256)); offset += 1;
-        packet.SetInt8(offset, req_len % 256); offset += 1;
-        packet.SetString(offset, item.requisite, 0); offset += req_len;
-        
-        // duration
-        packet.SetInt8(offset, CInt(item.duration / 256)); offset += 1;
-        packet.SetInt8(offset, item.duration % 256); offset += 1;
-        
-        // script
-        var script_len := len(item.script);
-        packet.SetInt8(offset, CInt(script_len / 256)); offset += 1;
-        packet.SetInt8(offset, script_len % 256); offset += 1;
-        packet.SetString(offset, item.script, 0); offset += script_len;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.classe);
+        offset := SetInt16BE(packet, offset, item.required_level);
+        packet.SetInt8(offset, item.is_active ? 1 : 0); offset += 1;
+        packet.SetInt8(offset, item.is_purchased ? 1 : 0); offset += 1;
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.stamina_cost);
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, item.delay);
+        offset := WriteStringBE(packet, offset, item.requisite);
+        offset := SetInt16BE(packet, offset, item.duration);
+        offset := WriteStringBE(packet, offset, item.script);
     endforeach
     
-    // 2. Specials count  
-    var spec_count := specials.size();
-    packet.SetInt8(offset, CInt(spec_count / 256)); offset += 1;
-    packet.SetInt8(offset, spec_count % 256); offset += 1;
-    
-    // Write specials data
+    // 2. Specials
+    offset := SetInt16BE(packet, offset, specials.size());
     foreach item in specials
-        // name
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
-        
-        // classe
-        var classe_len := len(item.classe);
-        packet.SetInt8(offset, CInt(classe_len / 256)); offset += 1;
-        packet.SetInt8(offset, classe_len % 256); offset += 1;
-        packet.SetString(offset, item.classe, 0); offset += classe_len;
-        
-        // desc
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        // iconid
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        
-        // hue
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
-        
-        // index
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.classe);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
         packet.SetInt8(offset, item.index); offset += 1;
-        
-        // delay - Force explicit conversion to ensure proper type handling
-        var delay_value := CInt(item.delay);
-        var temp_delay := delay_value + 0;  // Force new integer variable
-        var delay_low := temp_delay % 256;
-        var delay_high := CInt(temp_delay / 256);
-        
-        packet.SetInt8(offset, delay_high); offset += 1;  // High byte (Big Endian)
-        packet.SetInt8(offset, delay_low); offset += 1;   // Low byte
-        
-        // remaining - Time left on current cooldown
-        var remaining_value := CInt(item.remaining);
-        var temp_remaining := remaining_value + 0;  // Force new integer variable
-        var remaining_low := temp_remaining % 256;
-        var remaining_high := CInt(temp_remaining / 256);
-        
-        packet.SetInt8(offset, remaining_high); offset += 1;  // High byte (Big Endian)
-        packet.SetInt8(offset, remaining_low); offset += 1;   // Low byte
+        offset := SetInt16BE(packet, offset, CInt(item.delay));
+        offset := SetInt16BE(packet, offset, CInt(item.remaining));
     endforeach
     
-    // 3. Magias count
-    var mag_count := magias.size();
-    packet.SetInt8(offset, CInt(mag_count / 256)); offset += 1;
-    packet.SetInt8(offset, mag_count % 256); offset += 1;
-    
-    // Write magias data
+    // 3. Magias
+    offset := SetInt16BE(packet, offset, magias.size());
     foreach item in magias
-        // name
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
-        
-        // circle (as string)
-        var circle_str := CStr(item.circle);
-        var circle_len := len(circle_str);
-        packet.SetInt8(offset, CInt(circle_len / 256)); offset += 1;
-        packet.SetInt8(offset, circle_len % 256); offset += 1;
-        packet.SetString(offset, circle_str, 0); offset += circle_len;
-        
-        // desc
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        // school
-        var school_len := len(item.school);
-        packet.SetInt8(offset, CInt(school_len / 256)); offset += 1;
-        packet.SetInt8(offset, school_len % 256); offset += 1;
-        packet.SetString(offset, item.school, 0); offset += school_len;
-        
-        // iconid
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        
-        // hue (default 0)
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        
-        // mana_cost
-        packet.SetInt8(offset, CInt(item.mana_cost / 256)); offset += 1;
-        packet.SetInt8(offset, item.mana_cost % 256); offset += 1;
-        
-        // min_skill (default 0)
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        
-        // reagents (empty string for now)
-        packet.SetInt8(offset, 0); offset += 1;
-        packet.SetInt8(offset, 0); offset += 1;
-        
-        // spell_id (CRITICAL: use 'id' not 'spell_id' to match GetSpellsData!)
-        packet.SetInt8(offset, CInt(item.id / 256)); offset += 1;
-        packet.SetInt8(offset, item.id % 256); offset += 1;
-        
-        // command_prefix (for Paladin spells = "p", default = "m")
-        var cmd_prefix := "m"; // Default to .m command
-        if (item.command_prefix)
-            cmd_prefix := item.command_prefix;
-        endif
-        
-        var prefix_len := len(cmd_prefix);
-        packet.SetInt8(offset, CInt(prefix_len / 256)); offset += 1;
-        packet.SetInt8(offset, prefix_len % 256); offset += 1;
-        packet.SetString(offset, cmd_prefix, 0); offset += prefix_len;
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, CStr(item.circle));
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.school);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, 0);  // hue
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, 0);  // min_skill
+        offset := SetInt16BE(packet, offset, 0);  // reagents length
+        offset := SetInt16BE(packet, offset, item.id);
+        var cmd_prefix := item.command_prefix ? item.command_prefix : "m";
+        offset := WriteStringBE(packet, offset, cmd_prefix);
     endforeach
     
-    // 4. Commands count
-    var cmd_count := commands.size();
-    packet.SetInt8(offset, CInt(cmd_count / 256)); offset += 1;
-    packet.SetInt8(offset, cmd_count % 256); offset += 1;
-    
-    // Write commands data
+    // 4. Commands
+    offset := SetInt16BE(packet, offset, commands.size());
     foreach item in commands
-        // command
-        var cmd_len := len(item.command);
-        packet.SetInt8(offset, CInt(cmd_len / 256)); offset += 1;
-        packet.SetInt8(offset, cmd_len % 256); offset += 1;
-        packet.SetString(offset, item.command, 0); offset += cmd_len;
-        
-        // desc
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        // iconid
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        
-        // index
+        offset := WriteStringBE(packet, offset, item.command);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.iconid);
         packet.SetInt8(offset, item.index); offset += 1;
-        
-        // category
-        var cat_len := len(item.category);
-        packet.SetInt8(offset, CInt(cat_len / 256)); offset += 1;
-        packet.SetInt8(offset, cat_len % 256); offset += 1;
-        packet.SetString(offset, item.category, 0); offset += cat_len;
+        offset := WriteStringBE(packet, offset, item.category);
     endforeach
     
-    // 5. Skills count
-    var skill_count := skills.size();
-    packet.SetInt8(offset, CInt(skill_count / 256)); offset += 1;
-    packet.SetInt8(offset, skill_count % 256); offset += 1;
-    
-    // Write skills data
+    // 5. Skills
+    offset := SetInt16BE(packet, offset, skills.size());
     foreach item in skills
-        // name
-        var name_len := len(item.name);
-        packet.SetInt8(offset, CInt(name_len / 256)); offset += 1;
-        packet.SetInt8(offset, name_len % 256); offset += 1;
-        packet.SetString(offset, item.name, 0); offset += name_len;
-        
-        // desc
-        var desc_len := len(item.desc);
-        packet.SetInt8(offset, CInt(desc_len / 256)); offset += 1;
-        packet.SetInt8(offset, desc_len % 256); offset += 1;
-        packet.SetString(offset, item.desc, 0); offset += desc_len;
-        
-        // hue (2 bytes) - ADICIONADO!
-        packet.SetInt8(offset, CInt(item.hue / 256)); offset += 1;
-        packet.SetInt8(offset, item.hue % 256); offset += 1;
-        
-        // iconid
-        packet.SetInt8(offset, CInt(item.iconid / 256)); offset += 1;
-        packet.SetInt8(offset, item.iconid % 256); offset += 1;
-        
-        // index (skillID)
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.iconid);
         packet.SetInt8(offset, item.index); offset += 1;
-        
-        // current_value (2 bytes)
-        packet.SetInt8(offset, CInt(item.current_value / 256)); offset += 1;
-        packet.SetInt8(offset, item.current_value % 256); offset += 1;
-        
-        // base_value (2 bytes)
-        packet.SetInt8(offset, CInt(item.base_value / 256)); offset += 1;
-        packet.SetInt8(offset, item.base_value % 256); offset += 1;
-        
-        // cap (2 bytes)
-        packet.SetInt8(offset, CInt(item.cap / 256)); offset += 1;
-        packet.SetInt8(offset, item.cap % 256); offset += 1;
-        
-        // lock (1 byte)
+        offset := SetInt16BE(packet, offset, item.current_value);
+        offset := SetInt16BE(packet, offset, item.base_value);
+        offset := SetInt16BE(packet, offset, item.cap);
         packet.SetInt8(offset, item.lock); offset += 1;
     endforeach
     
     packet.SendPacket(who);
-    
     return 1;
 endfunction
 
 // ============================================================================
 // Helper functions for packet writing are now in include files:
 // - include/hotbar_data.inc: GetSpecialsData, GetCommandsData, GetSpellsData, GetAbilitiesData, GetSkillsData
-// - include/hotbar_write.inc: Calculate*Size, Write*Section, SetInt16BE
+// - include/hotbar_write.inc: Calculate*Size, Write*Section, SetInt16BE, WriteStringBE
 // ============================================================================

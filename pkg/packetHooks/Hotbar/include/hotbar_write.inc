@@ -120,12 +120,21 @@ endfunction
 // Helper Functions
 // ============================================================================
 
-// Write Int16 in Big Endian format
-function SetInt16BE(packet, offset, value)
-    var high_byte := (value >> 8) & 0xFF;
-    var low_byte := value & 0xFF;
+// Write Int16 in Big Endian format and return new offset
+function SetInt16BE(byref packet, offset, value)
+    var high_byte := CInt(value / 256);
+    var low_byte := value % 256;
     packet.SetInt8(offset, high_byte);
     packet.SetInt8(offset + 1, low_byte);
+    return offset + 2;
+endfunction
+
+// Write a length-prefixed string and return new offset
+function WriteStringBE(byref packet, offset, str)
+    var str_len := len(str);
+    offset := SetInt16BE(packet, offset, str_len);
+    packet.SetString(offset, str, 0);
+    return offset + str_len;
 endfunction
 
 // ============================================================================
