@@ -24,14 +24,9 @@ program cmd_golpe(who, text)
 			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
 			return;
 		endif
-	else
-		// Enviar pacote customizado para abrir PosturaGump no cliente
-		// Usando SendSysMessage com código especial que o cliente detecta
-		SendSysMessage(who.GetObjRef(), "[OPEN_POSTURA_GUMP]", 3, 0x0044);
-		return;
 	endif
 	
-	// Fallback: se nada funcionou, abre o gump normal
+	// Sem argumento ou argumento inválido: abre o gump de seleção
 	newPosture := ChoosePosture(who);
 endprogram
 
