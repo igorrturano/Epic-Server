@@ -6,6 +6,7 @@ include "system/exception/ProcessExeception/InvalidProcessException";
 
 class AbilityMonitor()
 	var Pid := 0;
+	var ActivationTime := 0;
 	var MobileSerial := 0x0;
 	var AbilityId := 0;
 	var Charges := 0;
@@ -72,14 +73,15 @@ class AbilityMonitor()
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
-		this.mobileSerial := mobile.GetSerial();
+		this.MobileSerial := mobile.GetSerial();
+		this.ActivationTime := POLCore().systime;
 
-		var existingMonitor := mobile.GetActiveAbilityMonitor(this.GetAbility());
+		var existingMonitor := mobile.GetAbilityMonitor(this.GetAbility());
 		if (existingMonitor is @AbilityMonitor)
 			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
+		else
+			var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
 		endif
-		
-		var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
 	endfunction
 
 	function Deactivate(this)
