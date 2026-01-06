@@ -106,9 +106,9 @@ enum class NEW_STATUS_OFFSETS
 	HUNGER := 79,
 	XP_CURRENT := 80,
 	XP_NEXT := 84,
-	LEVEL := 88,
-	GOLD := 89,
-	AMOR_RESISTANCES_START := 93,
+	LEVEL := 80,
+	GOLD := 81,
+	AMOR_RESISTANCES_START := 85,
 	MOBILE_LAST_INDEX := 42,
 	//PICTURE_URL := 121,
 endenum
@@ -175,8 +175,6 @@ exported function HandleSendStats(character, byref packet)
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::ADDICTION,  cint(GetObjProperty(character, "vicio")));
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::HUNGER,  CInt( mobileEnvelopado.GetCurrentHunger() / 60));
 
-			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::XP_CURRENT,  xpAtual);
-			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::XP_NEXT,  xpProximoLevel);
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
 
