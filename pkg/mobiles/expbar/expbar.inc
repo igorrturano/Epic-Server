@@ -92,12 +92,8 @@ function AddXP(who, amount)
         LevelUp(who);
     endif
 
-    SendStatus(who);
+    UpdateXPClient(who);
     return 1;
-endfunction
-
-function GiveXP(who, amount)
-    return AddXP(who, amount);
 endfunction
 
 // =============================================================================
@@ -178,24 +174,20 @@ function SetPlayerXP(who, new_xp)
     return 1;
 endfunction
 
-// =============================================================================
-// CLIENT HOTBAR INTEGRATION
-// Packs XP into TithingPoints: (max << 16) | current
-// =============================================================================
-function PackXPForClient(who)
-    var xp_current := GetPlayerXP(who);
-    var xp_max := GetXPToNextLevel(who);
+function UpdateXPClient(who)
+    var curr_xp := GetPlayerXP(who);
+    var next_xp := CalculateNextLevelXP(GetPlayerLevel(who));
+    
+    // Novo Tamanho: 1(ID) + 2(Len) + 2(Sub) + 4(XP) + 4(MaxXP) = 13 bytes
+    var packet := CreatePacket(0xD7, MSGLEN_VARIABLE); 
+    packet.SetInt16(1, 13);          // Tamanho total ajustado
+        
+    packet.SetInt16(3, 0x57);        // Subcomando agora vai direto no Offset 3
+    packet.SetInt32(5, CInt(curr_xp));  // XP Atual (Offset 3 + 2 bytes do sub = 5)
+    packet.SetInt32(9, CInt(next_xp));  // XP Max (Offset 5 + 4 bytes do XP = 9)
 
-    if (xp_current > 65535)
-        xp_current := 65535;
-    endif
-    if (xp_max > 65535)
-        xp_max := 65535;
-    endif
-
-    return (xp_max * 65536) + xp_current;
+    packet.SendPacket(who);
 endfunction
-
 // =============================================================================
 // COMBAT XP - Called from npcdeath.src
 // =============================================================================

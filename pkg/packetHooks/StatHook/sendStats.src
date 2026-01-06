@@ -97,14 +97,6 @@ exported function HandleSendStats(character, byref packet)
 
 		// Envia a url do portrait junto com o status
 		packet.SetString(121, url, 1);
-
-		// XP System V2 - Apenas envia XP via TithingPoints se o packet tiver tamanho suficiente
-		// O POL core envia o packet com type=4 ou superior para players, 
-		// então TithingPoints já existe no offset 87
-		if (!source.npctemplate && packet.GetSize() >= 91)
-			var packed_xp := PackXPForClient(source);
-			packet.SetInt32(87, packed_xp);
-		endif
 	endif
 
 	return 0;

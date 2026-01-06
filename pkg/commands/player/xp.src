@@ -11,7 +11,7 @@ program start_xpbar(who, xp_amt)
 			return 0;
 		endif
 
-		GiveXP(targ, CInt(xp_amt));
+		AddXP(targ, CInt(xp_amt));
 		SendSysMessage(who, "Dado " + xp_amt + " XP para " + targ.name);
 		return 1;
 	endif
