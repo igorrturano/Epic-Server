@@ -135,33 +135,6 @@ function GetSpellByName(config_name, spell_name)
     return GetSpellById(config_name, spell_id);
 endfunction
 
-// /*
-//  * Helper: Get config path from config name
-//  * Centralizes path mapping in one place
-//  */
-// function GetSpellConfigPath(config_name)
-//     case (config_name)
-//         "spellcaster":
-//             return ":spells:config/spellcaster";
-//         "paladin":
-//             return ":spells:config/paladinspells";
-//         "druid":
-//             return ":spells:config/druidspells";
-//         "priest":
-//             return ":spells:config/priestspells";
-//         "shaman":
-//             return ":spells:config/shamanspells";
-//         "demonhunter":
-//             return ":spells:config/demonhunterspells";
-//         "trickster":
-//             return ":spells:config/tricksterspells";
-//         "cantrip":
-//             return ":spells:config/cantripspells";
-//         default:
-//             return "";
-//     endcase
-// endfunction
-
 /*
  * Load complete spell data from config element
  * Centralizes spell data loading logic
