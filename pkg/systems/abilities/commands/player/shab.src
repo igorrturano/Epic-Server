@@ -1,6 +1,8 @@
-include ":abilities:controllers/AbilityController";
+// include ":abilities:controllers/AbilityController";
 
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
 
 program cmd_ability(who, text)
 	who := MobileWrapper(who);
@@ -15,13 +17,11 @@ program cmd_ability(who, text)
 		return 1;
 	endif
 
-	var ability := Ability(ABILITY_ID::DANCA_DA_MORTE); // ID da habilidade Death Dance
+	var ability := Ability(CInt(text));
 	if (!who.HasAbility(ability) && (who.GetObjRef().cmdlevel < 2))
 		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 1;
 	endif
 
-	// ActivateAbility(who, ability);
-
-	var abilityMonitor := AbilityMonitor(ability).ActivateOn(who);
+	var monitor := AbilityMonitor(ability).ActivateOn(who);
 endprogram
