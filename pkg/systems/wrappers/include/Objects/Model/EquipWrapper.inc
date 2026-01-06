@@ -13,67 +13,68 @@ include ":equipsys:Controller/EquipmentController";
 CONST PROPNAME_ITEMINFO := "itemInfo";
 
 class EquipWrapper(ItemWrapper, IEquipWrapper)
-	var _prop;
-	var _layer := 0x0;
-	var _weight := 0;
-	var _maxHP := 0;
-	var _STRRequired := 0;
-	var _material := "";
-	var _modifiers := dictionary{}; // Dictionary of AttributeModifier()
+	var EquipProp;
+	var Layer := 0x0;
+	var MaxHP := 0;
+	var STRRequired := 0;
+	var Material := "";
+	var Modifiers := dictionary{}; // Dictionary of AttributeModifier()
 
 	function EquipWrapper(this, byRef item)
 		Super(item);
 
-		if (this._objRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
+		if (this.ObjRef.isA(POLCLASS_EQUIPMENT)) // Caso o itemRef exista
 			var err := InvalidTemplateException();
-			this._prop := this.GetProperty(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
-			this._layer := this._objRef.layer;
-			this._graphic := this._objRef.graphic;
-			this._color := this._objRef.color;
+			this.EquipProp := this.GetProperty(PROPNAME_ITEMINFO) ?: InvalidPropException("This item has no Property!");
+			this.Layer := this.ObjRef.layer;
+			this.Graphic := this.ObjRef.graphic;
+			this.Color := this.ObjRef.color;
 			
-			this._name := this._prop.Name ?: this._objRef.name;
-			this._weight := this._prop.Weight ?: this._objRef.weight;
-			this._modifiers := dictionary{};
+			this.Name := this.EquipProp.Name ?: this.ObjRef.name;
+			this.Weight := this.EquipProp.Weight ?: this.ObjRef.weight;
+			this.Modifiers := dictionary{};
 		else // Caso seja um template ou tipo errado
 			var err;
-			if (!this._template)
+			if (!this.Template)
 				err := InvalidFormatException("The param must be a Equipment ObjRef or a valid Template!");
-				this._weight := err;
-				this._graphic := err;
+				this.Weight := err;
+				this.Graphic := err;
 			else
 				err := IsTemplateException();
-				this._weight := this._template.weight;
-				this._graphic := this._template.graphic;
+				this.Weight := this.Template.weight;
+				this.Graphic := this.Template.graphic;
 			endif
 			
-			this._prop := err;
-			this._layer := err;
-			this._modifiers := err;
+			this.EquipProp := err;
+			this.Layer := err;
+			this.Modifiers := err;
 		endif
 	endfunction
 
-	function GetItemProp(this)
-		return this._prop;
+	function GetEquipProp(this)
+		return this.EquipProp;
+	endfunction
+
+	function SetEquipProp(this, prop)
+		this.EquipProp := prop;
+		this.SetProperty(PROPNAME_ITEMINFO, prop);
+		return this;
 	endfunction
 
 	function GetLayer(this)
-		return this._layer;
-	endfunction
-
-	function GetWeight(this)
-		return this._weight;
+		return this.Layer;
 	endfunction
 
 	function GetSTRRequired(this)
-		return this._STRRequired;
+		return this.STRRequired;
 	endfunction
 
 	function GetMaterial(this)
-		return this._material;
+		return this.Material;
 	endfunction
 
 	function GetMaxHP(this)
-		return this._maxHP;
+		return this.MaxHP;
 	endfunction
 
 	function GetModifier(this, modifierName)
@@ -81,23 +82,23 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			return this.GetModifiers();
 		endif
 
-		if (this._modifiers.size() == 0) return error{"errortext" := "The item have no Modifiers!"}; endif
+		if (this.GetModifiers().size() == 0) return error{"errortext" := "The item have no Modifiers!"}; endif
 
-		return this._modifiers[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
+		return this.GetModifiers()[modifierName] ?: error{"errortext" := "This modifier does not exist!"};
 	endfunction
 	
 	function GetModifiers(this)
-		return this._modifiers;
+		return this.Modifiers;
 	endfunction
 
 	function SetSTRRequired(this, strRequired)
-		this._STRRequired := CInt(strRequired);
+		this.STRRequired := CInt(strRequired);
 
 		return this;
 	endfunction
 
 	function SetMaterial(this, material)
-		this._material := material;
+		this.Material := material;
 
 		return this;
 	endfunction
@@ -112,37 +113,39 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 	 *              InvalidFormatException se o parâmetro não for um AttributeModifier
 	 */
 	function SetModifier(this, modifier)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(modifier is @AttributeModifier))
 			return InvalidFormatException("The param must be an AttributeModifier object!");
 		endif
 
-		this._modifiers[modifier.GetAttribute()] := modifier;
+		this.GetModifiers()[modifier.GetAttribute()] := modifier;
 
 		return this;
 	endfunction
 
 	function Update(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this._prop := struct{};
-		this._prop.+Name := this._name;
-		this._prop.+Graphic := this._graphic;
-		this._prop.+Weight := this._weight;
-		this._prop.+MaxHP := this._maxHP;
+		var prop := struct{
+			Name := this.GetName(),
+			Graphic := this.GetGraphic(),
+			Weight := this.GetWeight(),
+			MaxHP := this.GetMaxHP(),
+			Modifiers := dictionary{}
+		};
+		this.SetEquipProp(prop);
 
-		this._SetName(this._name);
-		this._objRef.graphic := this._graphic;
-		this._objRef.weight := this._weight;
-		this._objRef.maxHP := this._maxHP;
-		this._objRef.max_weight_mod := this._weight - this._objRef.weight;
-
-		this._prop.+Modifiers := dictionary{};
+		// Aqui seta as propriedades no ObjRef
+		this._SetName(this.GetName());
+		this.GetObjRef().graphic := this.GetGraphic();
+		this.GetObjRef().weight := this.GetWeight();
+		this.GetObjRef().maxHP := this.GetMaxHP();
+		this.GetObjRef().max_weight_mod := this.GetWeight() - this.GetObjRef().weight;
 	endfunction
 
 	function Equals(this, otherEquipWrapper)
@@ -150,16 +153,17 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 			return error {"errortext" := "The param must be an EquipWrapper!"};
 		endif
 
-		return this._objType == otherEquipWrapper.GetObjType();
+		return this.GetObjType() == otherEquipWrapper.GetObjType()
+			&& this.GetSerial() == otherEquipWrapper.GetSerial();
 	endfunction
 
 	function ToString(this)
 		return Super::ToString(this) + " >>> Equipment: " +
-			$"Name: {this._name}, " +
-			$"Layer: {this._layer} ({Hex(this._layer)}), " +
-			$"Graphic: {this._graphic} ({Hex(this._graphic)}), " +
-			$"Color: {this._color} ({this._color}), " +
-			$"Weight: {this._weight}, " +
-			$"MaxHP: {this._maxHP}";
+			$"Name: {this.GetName()}, " +
+			$"Layer: {this.GetLayer()} ({Hex(this.GetLayer())}), " +
+			$"Graphic: {this.GetGraphic()} ({Hex(this.GetGraphic())}), " +
+			$"Color: {this.GetColor()} ({this.GetColor()}), " +
+			$"Weight: {this.GetWeight()}, " +
+			$"MaxHP: {this.GetMaxHP()}";
 	endfunction
 endclass

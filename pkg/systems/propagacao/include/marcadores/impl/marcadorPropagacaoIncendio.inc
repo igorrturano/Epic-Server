@@ -88,7 +88,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _ExecutaRotinaPropagacao(this, tileProspectado)
-    Sleepms(40); 
+    Sleepms(40);
     if(!this.isAcumulando)
       this._ProcessaCombustivel(tileProspectado);
     endif
@@ -99,7 +99,6 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _ProcessaEstimulos(this)
-    
     this._ProcessaAutoEstimulo();
 
     if(this.DevePropagar())
@@ -161,7 +160,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function _ProcessaClima(this)
     var clima := GetGlobalProperty("weather");
     var chuvaLeve := 0;
-    if(!this.isMarcadorCoberto)
+    if(!this.isMarcadorCoberto && TypeOfInt(clima) != OT_ERROR)
         if(cint(clima) == chuvaLeve && this.estado <= ESTADO_PROPAGACAO::PRINCIPIO)
           this.isAcumulando := false;
         elseif(cint(clima) > chuvaLeve )

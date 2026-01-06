@@ -1,6 +1,6 @@
 class IEquipWrapper()
 	uninit function GetTemplate(this);
-	uninit function GetItemProp(this);
+	uninit function GetEquipProp(this);
 	uninit function GetWeight(this);
 	uninit function GetMaxHP(this);
 	uninit function GetModifiers(this);
