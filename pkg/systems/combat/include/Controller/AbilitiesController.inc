@@ -59,7 +59,7 @@ function ExecuteCombatAbilities(byRef abilitiesList, byRef attackInfo)
 endfunction
 
 function DebugExecutedAbilities(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (ATACANTE) ===", Color(COLOR_NAME::PURPLE)));
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (DEFENSOR) ===", Color(COLOR_NAME::PURPLE)));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (ATACANTE) ===", Color(GENERAL_COLOR::PURPLE)));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (DEFENSOR) ===", Color(GENERAL_COLOR::PURPLE)));
 	
 endfunction

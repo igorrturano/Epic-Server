@@ -681,7 +681,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * 
 	 * @throws {InvalidAbilityException} Quando a habilidade não existe no momento de ativação especificado
 	 */
-	function GetActiveAbilityMonitor(this, ability)
+	function GetAbilityMonitor(this, ability)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
