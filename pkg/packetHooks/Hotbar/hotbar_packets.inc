@@ -17,6 +17,7 @@ include "include/hotbar_data";      // Get*Data functions (includes command_disc
 include "include/hotbar_write";     // Calculate*Size, Write*Section functions
 include "hotbar_utils";
 include "include/hotbar_actions";   // Shared execution functions (DRY)
+include ":spells:include/spell_executor";
 
 // Constants defined in shared_constants.inc
 
@@ -29,7 +30,6 @@ exported function HandleHotbarPacket(who, packet)
     // 7-8: Subcommand (0x0050 or 0x0051)
     
     var subcommand := packet.GetInt16(7); // Offset 7-8 = subcommand
-    
     case (subcommand)
         SUBCOMMAND_REQUEST:
             return HandleRequest(who, packet);
@@ -51,7 +51,6 @@ function HandleRequest(who, packet)
     
     var serial := packet.GetInt32(3); // Offset 3-6 = player serial
     var request_type := packet.GetInt8(9); // Offset 9 = request type
-    
     // Send all data for the visualizer (client expects unified response)
     // Individual focused packets can be enabled when client is updated
     return SendAllHotbarData(who);
@@ -68,22 +67,24 @@ function HandleExecute(who, packet)
     // 10-11: Data length
     // 12+: Data
     
-    var serial := packet.GetInt32(3); // Offset 3-6 = player serial
-    var execute_type := packet.GetInt8(9); // Offset 9 = execute type
-    var data_length := packet.GetInt16(10); // Offset 10-11 = data length
-    var data := packet.GetString(12, data_length); // Offset 12+ = data (ASCII)
-    
-    case (execute_type)
-        EXECUTE_ABILITY:
-            return ExecuteAbility(who, data);
-        EXECUTE_SPECIAL:
-            return ExecuteSpecial(who, CInt(data));
-        EXECUTE_COMMAND:
-            return ExecuteGMCommand(who, data);
-        EXECUTE_SKILL:
-            return ExecuteSkill(who, CInt(data));
+    var action_id   := packet.GetInt32(9); // Pega os 4 bytes do Action ID
+    var action_type := packet.GetInt8(13); // Pega o byte do Action Type
+    case (action_type)
+        ACTION_TYPE_POSTURE:
+            return ExecutePosture(who, action_id);
+        ACTION_TYPE_ABILITY:
+            return ExecuteAbility(who, action_id);
+        ACTION_TYPE_SPECIAL:
+            return ExecuteSpecial(who, action_id);
+        ACTION_TYPE_SPELL:
+            return ExecuteSpell(who, action_id);
+        ACTION_TYPE_COMMAND:
+            return ExecuteCommand(who, action_id);
+        ACTION_TYPE_SKILL:
+            return ExecuteSkill(who, action_id);
         default:
-            return 0;
+            SendSysMessage(who, "Erro: Tipo de ação desconhecido.");
+            return 1;
     endcase
     
     return 1;
@@ -128,10 +129,10 @@ function ExecuteGMCommand(who, command)
     endif
 endfunction
 
-// Execute skill - delegates to shared implementation
-function ExecuteSkill(who, skill_id)
-    return ExecuteSkillAction(who, skill_id, 0); // verbose=0
-endfunction
+// // Execute skill - delegates to shared implementation
+// function ExecuteSkill(who, skill_id)
+//     return ExecuteSkillAction(who, skill_id, 0); // verbose=0
+// endfunction
 
 // Send all Hotbar data in a single unified packet
 function SendAllHotbarData(who)
@@ -250,3 +251,191 @@ endfunction
 // - include/hotbar_data.inc: GetSpecialsData, GetCommandsData, GetSpellsData, GetAbilitiesData, GetSkillsData
 // - include/hotbar_write.inc: Calculate*Size, Write*Section, SetInt16BE, WriteStringBE
 // ============================================================================
+
+// //  EXECUTE TESTE ####
+exported function HandleHotbarExecute(who, byref packet)
+    if (who.dead)
+        Message("You cannot do that while dead!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 1;
+    endif
+    print("Received Hotbar Execute Packet from " + (who.name));
+    // Parse packet structure:
+    // Byte 0: 0xBF
+    // Bytes 1-2: Length
+    // Byte 3: Padding
+    // Bytes 4-5: Subcommand (0x0099) - handled by POL
+    // Bytes 6-9: Action ID (4 bytes)
+    // Byte 10: Action Type (1 byte)
+    var actionId := packet.GetInt32(6);   // Offset 6: 4-byte Action ID
+    var actionType := packet.GetInt8(10); // Offset 10: 1-byte Action Type
+    print($"Action ID: {actionId}, Action Type: {actionType}");
+    // Dispatch based on action type
+    case (actionType)
+        ACTION_TYPE_POSTURE:
+            return ExecutePosture(who, actionId);
+        ACTION_TYPE_ABILITY:
+            return ExecuteAbility(who, actionId);
+        ACTION_TYPE_SPECIAL:
+            return ExecuteSpecial(who, actionId);
+        ACTION_TYPE_SPELL:
+            return ExecuteSpell(who, actionId);
+        ACTION_TYPE_COMMAND:
+            return ExecuteCommand(who, actionId);
+        ACTION_TYPE_SKILL:
+            return ExecuteSkill(who, actionId);
+        default:
+            SendSysMessage(who, "Erro: Tipo de ação desconhecido.");
+            return 1;
+    endcase
+    
+    return 1; // Consume packet
+endfunction
+
+// ============================================================================
+// Action Handlers
+// ============================================================================
+
+function ExecutePosture(who, actionId)
+    
+    // Map actionId to postura type
+    // 0 = Slash, 1 = Piercing, 2 = Blunt
+    var posturaName;
+    var posturaNamePT; // Nome em português para feedback
+    
+    case (actionId)
+        0: 
+            posturaName := "slash";
+            posturaNamePT := "Cortante";
+        1: 
+            posturaName := "piercing";
+            posturaNamePT := "Perfurante";
+        2: 
+            posturaName := "blunt";
+            posturaNamePT := "Contusivo";
+        default:
+            SendSysMessage(who, "Erro: Postura inválida.");
+            return 1;
+    endcase
+    
+    
+    // Execute postura change via existing system
+    var script := Start_Script(":equipsys:golpe", {who, posturaName});
+    if (!script)
+        SendSysMessage(who, "Erro ao executar postura.");
+        return 0;
+    endif
+    
+    // Send feedback message in Portuguese for PosturaManager detection
+    // This message will be detected by PosturaManager to show red mask on active postura
+    SendSysMessage(who, $"Você adota postura {posturaNamePT}");
+    
+    return 1;
+endfunction
+
+function ExecuteSpell(who, actionId)
+    
+    // Get player's class and magia to prioritize correct spell configs
+    var chardata := GetObjProperty(who, "chardata");
+    var player_magia := "";
+    
+    if (chardata)
+        player_magia := chardata.magia;
+    endif
+    
+    // Build prioritized spell config list based on player type
+    // Order matters! First match wins.
+    var spell_configs := array{};
+    var spell_types := array{};  // Parallel array for spell type
+    
+    // Check for Natureza Arcana trait (gives access to cantrips regardless of class)
+    var has_natureza_arcana := (chardata.trait == "Natureza Arcana");
+    
+    // IMPORTANT: Cantrips FIRST for anyone with Natureza Arcana trait
+    if (has_natureza_arcana)
+        spell_configs.append(":spells:config/cantripspells");
+        spell_types.append(SPELL_TYPE_CANTRIP);
+    endif
+
+    // Then add class-specific configs
+    if (player_magia == "Shaman")
+        spell_configs.append(":spells:config/shamanspells");
+        spell_types.append(SPELL_TYPE_SHAMAN);
+    elseif (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
+        spell_configs.append(":spells:config/cantripspells");
+        spell_types.append(SPELL_TYPE_CANTRIP);
+        spell_configs.append(":spells:config/spellcaster");
+        spell_types.append(SPELL_TYPE_MAGE);
+    elseif (player_magia == "Druid")
+        spell_configs.append(":spells:config/druidspells");
+        spell_types.append(SPELL_TYPE_DRUID);
+    elseif (player_magia == "Sacerdote")
+        spell_configs.append(":spells:config/priestspells");
+        spell_types.append(SPELL_TYPE_PRIEST);
+    endif
+    
+    // Ability-based spell access
+    if (TemHabilidade(who, "Consagracao Divina"))
+        spell_configs.append(":spells:config/paladinspells");
+        spell_types.append(SPELL_TYPE_PALADIN);
+    endif
+    if (TemHabilidade(who, "Sigilo de Protecao"))
+        spell_configs.append(":spells:config/demonhunterspells");
+        spell_types.append(SPELL_TYPE_DEMONHUNTER);
+    endif
+    if (TemHabilidade(who, "Sensibilidade Arcana"))
+        spell_configs.append(":spells:config/tricksterspells");
+        spell_types.append(SPELL_TYPE_TRICKSTER);
+    endif
+    
+    var found_spell_type := "";
+    
+    // Search configs in priority order - first match wins
+    var i := 1;
+    foreach cfg_path in spell_configs
+        var spell_cfg := ReadConfigFile(cfg_path);
+        if (!spell_cfg)
+            i += 1;
+            continue;
+        endif
+        
+        var spell_elem := FindConfigElem(spell_cfg, actionId);
+        if (spell_elem)
+            found_spell_type := spell_types[i];
+            break;
+        endif
+        i += 1;
+    endforeach
+    
+    if (found_spell_type)
+        // Execute via unified spell executor (by ID for efficiency)
+        return ExecuteSpellById(who, actionId, found_spell_type);
+    else
+        SendSysMessage(who, $"[BINARY] Magia ID {actionId} não encontrada");
+    endif
+    
+    return 1;
+endfunction
+
+function ExecuteCommand(who, actionId)
+    // Use command_discovery.inc to get command by index (single source of truth)
+    // actionId is the sequential index (1, 2, 3...) sent by client
+    var cmd_data := GetCommandByIndex(actionId);
+    
+    if (cmd_data && cmd_data != error)
+        var result := Start_Script(cmd_data.script_path, who);
+        if (!result)
+            SendSysMessage(who, "Erro ao executar comando.");
+            return 0;
+        endif
+        return 1;
+    endif
+    
+    SendSysMessage(who, $"Comando não encontrado (Index: {actionId})");
+    return 0;
+endfunction
+
+function ExecuteSkill(who, actionId)
+    // DRY: Use shared implementation from hotbar_actions.inc
+    // verbose=1 because 0xBF protocol is used for active hotbar clicks
+    return ExecuteSkillAction(who, actionId, 1);
+endfunction
