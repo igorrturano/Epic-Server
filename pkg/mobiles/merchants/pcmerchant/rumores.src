@@ -11,6 +11,8 @@ include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
 include ":gumps:htmlGump";
+include ":wrappers:Objects/Model/MobileWrapper";
+include "include/epicConstants";
 
 // Gump Constants
 const BKGND_STONESLAB := 9200; // Gray stone slab background
@@ -21,97 +23,229 @@ const MOEDAS := 47715;
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 
+// Helper function to check if player can see a rumor
+function CanSeeRumor(player, rumor, gmViewMode := 0)
+	// GMs in GM view mode can see everything
+	if (player.cmdlevel >= 3 && gmViewMode)
+		return 1;
+	endif
+
+	// Check race restriction
+	if (rumor.racas && rumor.racas.size() > 0)
+		var playerWrapper := MobileWrapper(player);
+		var playerRace := playerWrapper.GetRace();
+		if (!(playerRace in rumor.racas))
+			return 0;
+		endif
+	endif
+
+	// Check culture restriction
+	if (rumor.culturas && rumor.culturas.size() > 0)
+		var playerWrapper := MobileWrapper(player);
+		var playerCulture := playerWrapper.GetCulture();
+		if (!(playerCulture in rumor.culturas))
+			return 0;
+		endif
+	endif
+
+	return 1;
+endfunction
+
 program MerchantMenu(params)
 
 	var npc := params[1];
 	var player := params[2];
+	var gmViewMode := params[3]; // 0 = view as player, 1 = view as GM
 	// 	var npc := player;
+
+	// Default GM view mode for GMs
+	if (gmViewMode == error && player.cmdlevel >= 3)
+		gmViewMode := 1;
+	elseif (gmViewMode == error)
+		gmViewMode := 0;
+	endif
 
 	if (player.hidden)
 		player.hidden := 0;
 		SendSysMessageEx(player, "Voce se revelou.", SSM_FAIL);
 	endif
 
-	var gump := GFCreateGump(0, 0);
-	GFResizePic(gump, 15, 50, 2620, 310, 380);
+	while (1)
+		var gump := GFCreateGump(0, 0);
+		GFResizePic(gump, 15, 50, 2620, 310, 380);
 
-	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
 
-	GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
-	GFTextMid(gump, 15, 17, 330, 2100, "Rumores");
-
-	GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
-	// GFHTMLArea(gump, 22, 53, 322, 375, text, 0, 1);
-
-	GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
-
-	if (player.cmdlevel >= 3)
-		GFAddButton(gump, 285, 440, 4011, 4030, GF_CLOSE_BTN, 20);
-		GFTextLine(gump, 170, 440, 2100, "Adicionar Rumor");
-	endif
-
-	// GFHTMLArea( gump, 35, 70,  280, 340, questinfo.description, 0, 1);
-	var i;
-	var y_pos := 70;
-	var rumores := GetObjProperty(npc, "rumores");
-	if (rumores == error)
-		rumores := array;
-	endif
-	for (i := 1; i <= rumores.size(); i := i + 1)
-		if (rumores[i].custo)
-			GFTextLine(gump, 45, y_pos, 2100, rumores[i].nome + " [" + rumores[i].custo + " moedas]");
-		else
-			GFTextLine(gump, 45, y_pos, 2100, rumores[i].nome);
-		endif
-		GFAddButton(gump, 25, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + i);
-		y_pos := y_pos + 19;
-	endfor
-
-	var input := GFSendGump(player, gump);
-
-	if (input[0] == 20)
-		var r := GetObjProperty(npc, "rumores");
-		if (r == error)
-			r := array;
-		endif
-		var rumor := struct;
-		rumor.+nome := cstr(RequestGump(player, "Qual vai ser o nome do rumor?"));
-		rumor.+custo := cint(RequestGump(player, "Quanto vai custar?"));
-		rumor.+desc := BigRequestGump(player, "Qual a descricao do rumor:");
-		r.append(rumor);
-		SetObjProperty(npc, "rumores", r);
-		SendSysMessage(player, "Novo rumor adicionado.");
-	elseif (input[0] > 200)
-		// SendSysMessage(player, " " + rumores[input[0]-200].desc);
-		var id := input[0] - 200;
+		GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
 		if (player.cmdlevel >= 3)
-			var result := RadioGump(player, 300, 200, "Opções de GM", { "Ler", "Apagar" });
-			if (result == "Apagar")
-				rumores.Erase(id);
-				SetObjProperty(npc, "rumores", rumores);
-				SendSysMessage(player, "rumor deletado.");
-			elseif (result == "Ler")
-				SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+			if (gmViewMode)
+				GFTextMid(gump, 15, 17, 330, 2100, "Rumores [Visão GM]");
+			else
+				GFTextMid(gump, 15, 17, 330, 2100, "Rumores [Visão Jogador]");
 			endif
 		else
-			if (cint(rumores[id].custo) != 0)
-				PrintTextAbove(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
-				var moedas := target(player);
-				if (moedas.objtype == 47715)
-					if (moedas.amount >= cint(rumores[id].custo))
-						if (!SubtractAmount(moedas, cint(rumores[id].custo)))
-							PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
-						endif
-					else
-						PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
-						return;
-					endif
-				else
-					return;
+			GFTextMid(gump, 15, 17, 330, 2100, "Rumores");
+		endif
+
+		GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
+		// GFHTMLArea(gump, 22, 53, 322, 375, text, 0, 1);
+
+		GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+
+		if (player.cmdlevel >= 3)
+			GFAddButton(gump, 285, 440, 4011, 4030, GF_CLOSE_BTN, 20);
+			GFTextLine(gump, 170, 440, 2100, "Adicionar Rumor");
+			// Add view mode toggle button
+			if (gmViewMode)
+				GFAddButton(gump, 20, 440, 4011, 4030, GF_CLOSE_BTN, 21);
+				GFTextLine(gump, 43, 440, 2100, "Ver como Jogador");
+			else
+				GFAddButton(gump, 20, 440, 4011, 4030, GF_CLOSE_BTN, 21);
+				GFTextLine(gump, 43, 440, 2100, "Ver como GM");
+			endif
+		endif
+
+		// GFHTMLArea( gump, 35, 70,  280, 340, questinfo.description, 0, 1);
+		var i;
+		var y_pos := 70;
+		var rumores := GetObjProperty(npc, "rumores");
+		if (rumores == error)
+			rumores := array;
+		endif
+		for (i := 1; i <= rumores.size(); i := i + 1)
+			// Filter rumors based on player race/culture and view mode
+			if (!CanSeeRumor(player, rumores[i], gmViewMode))
+				continue;
+			endif
+
+			var rumor_text := rumores[i].nome;
+			if (rumores[i].custo)
+				rumor_text := rumor_text + " [" + rumores[i].custo + " moedas]";
+			endif
+			// Add restriction indicators for GMs
+			if (player.cmdlevel >= 3 && gmViewMode)
+				if (rumores[i].racas && rumores[i].racas.size() > 0)
+					rumor_text := rumor_text + " [R]";
+				endif
+				if (rumores[i].culturas && rumores[i].culturas.size() > 0)
+					rumor_text := rumor_text + " [C]";
 				endif
 			endif
-			SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+
+			GFTextLine(gump, 45, y_pos, 2100, rumor_text);
+			GFAddButton(gump, 25, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + i);
+			y_pos := y_pos + 19;
+		endfor
+
+		var input := GFSendGump(player, gump);
+
+		if (input[0] == 20)
+			var r := GetObjProperty(npc, "rumores");
+			if (r == error)
+				r := array;
+			endif
+			var rumor := struct;
+			rumor.+nome := cstr(RequestGump(player, "Qual vai ser o nome do rumor?"));
+			rumor.+custo := cint(RequestGump(player, "Quanto vai custar?"));
+			rumor.+desc := BigRequestGump(player, "Qual a descricao do rumor:");
+
+			// Ask if GM wants to restrict by race/culture
+			var restrict := YesNo(player, "Deseja restringir este rumor por raca ou cultura?");
+			if (restrict)
+				// Race restrictions
+				var racas_disponiveis := {ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO};
+				var racas_selecionadas := CheckBoxGump(player, 300, 200, "Selecione as raças que podem ver este rumor (deixe vazio para todas):", racas_disponiveis);
+				if (racas_selecionadas.size() > 0)
+					rumor.+racas := racas_selecionadas;
+				endif
+
+				// Culture restrictions
+				var culturas_disponiveis := {AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, POLKINEA};
+				var culturas_selecionadas := CheckBoxGump(player, 300, 200, "Selecione as culturas que podem ver este rumor (deixe vazio para todas):", culturas_disponiveis);
+				if (culturas_selecionadas.size() > 0)
+					rumor.+culturas := culturas_selecionadas;
+				endif
+			endif
+
+			r.append(rumor);
+			SetObjProperty(npc, "rumores", r);
+			SendSysMessage(player, "Novo rumor adicionado.");
+			// Continue loop to show menu again
+		elseif (input[0] == 21)
+			// Toggle GM view mode
+			if (gmViewMode)
+				gmViewMode := 0;
+			else
+				gmViewMode := 1;
+			endif
+			// Continue loop to show menu again
+		elseif (input[0] > 200)
+			// SendSysMessage(player, " " + rumores[input[0]-200].desc);
+			var id := input[0] - 200;
+			if (player.cmdlevel >= 3)
+				var options := { "Ler", "Apagar" };
+				// Add move options if not at boundaries
+				if (id > 1)
+					options.append("Mover para Cima");
+				endif
+				if (id < rumores.size())
+					options.append("Mover para Baixo");
+				endif
+
+				var result := RadioGump(player, 300, 200, "Opções de GM", options);
+				if (result == "Apagar")
+					rumores.Erase(id);
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "rumor deletado.");
+					// Continue loop to show menu again
+				elseif (result == "Ler")
+					SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+					// Continue loop to show menu again
+				elseif (result == "Mover para Cima")
+					// Swap with previous rumor
+					var temp := rumores[id - 1];
+					rumores[id - 1] := rumores[id];
+					rumores[id] := temp;
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "Rumor movido para cima.");
+					// Continue loop to show menu again
+				elseif (result == "Mover para Baixo")
+					// Swap with next rumor
+					var temp := rumores[id + 1];
+					rumores[id + 1] := rumores[id];
+					rumores[id] := temp;
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "Rumor movido para baixo.");
+					// Continue loop to show menu again
+				else
+					// User canceled, exit
+					return;
+				endif
+			else
+				if (cint(rumores[id].custo) != 0)
+					PrintTextAbove(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
+					var moedas := target(player);
+					if (moedas.objtype == 47715)
+						if (moedas.amount >= cint(rumores[id].custo))
+							if (!SubtractAmount(moedas, cint(rumores[id].custo)))
+								PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+								return;
+							endif
+						else
+							PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+							return;
+						endif
+					else
+						return;
+					endif
+				endif
+				SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+				// Continue loop to show menu again
+			endif
+		else
+			// User closed gump, exit loop
+			break;
 		endif
-	endif
+	endwhile
 
 endprogram

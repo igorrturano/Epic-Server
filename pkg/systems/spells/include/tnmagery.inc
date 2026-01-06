@@ -623,22 +623,47 @@ endfunction
 function WritespellInfo(who, byref spellinfo)
 	var cfg;
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.magia == "Shaman")
+	var player_magia := "";
+	var player_class := "";
+	
+	if (chardata)
+		player_magia := chardata.magia;
+		player_class := chardata.classe;
+	endif
+	
+	// Priority 1: Check cantrips FIRST for spellcasters
+	if (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
+		cfg := ReadConfigFile(":spells:config/cantripspells");
+		var elem := FindConfigElem(cfg, spellinfo.id);
+		if (elem)
+			// Use WriteCantripSpellInfo for cantrips
+			WriteCantripSpellInfo(who, spellinfo);
+			return;
+		else
+			cfg := ReadConfigFile(":spells:config/spellcaster");
+		endif
+	elseif (chardata.magia == "Shaman")
 		cfg := ReadConfigFile(":spells:config/shamanspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
 	elseif (chardata.magia == "Sacerdote")
 		cfg := ReadConfigFile(":spells:config/priestspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
 	elseif (chardata.magia == "Druid")
 		cfg := ReadConfigFile(":spells:config/druidspells");
+	elseif (TemHabilidade(who, "Consagracao Divina")) // ✅ FIX: Check ability for Paladin
+		cfg := ReadConfigFile(":spells:config/paladinspells");
 	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
+	elseif (TemHabilidade(who, "Sigilo de Protecao"))
+		cfg := ReadConfigFile(":spells:config/demonhunterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
 		cfg := ReadConfigFile(":spells:config/spellcaster");
 	endif
 
 	var elem := FindConfigElem(cfg, spellinfo.id);
-
+	
+	if (!elem)
+		return;
+	endif
+	
 	spellinfo.+name := GetConfigString( elem, "Name" );
 	spellinfo.+powerwords := GetConfigString( elem, "PowerWords" );
 	spellinfo.+prayer := GetConfigStringArray( elem, "Prayer" );

@@ -49,11 +49,15 @@ function GenericBrain()
                     HandleGenericCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         SetOpponent(ev.source);
                         HandleGenericCombatEvent(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         ClearCombatState();
                     endif
                 default:
