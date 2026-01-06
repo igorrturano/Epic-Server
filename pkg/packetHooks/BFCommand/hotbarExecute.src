@@ -1,13 +1,13 @@
 /* 
  * Hotbar Execute Packet Handler
  * 
- * Handles 0xBF Extended Packet with subcommand 0x7
+ * Handles 0xBF Extended Packet with subcommand 0x0099
  * Receives hotbar action execution requests from client
  * 
  * Packet Structure:
  *   Byte 0:    0xBF (Packet ID)
  *   Bytes 1-2: Packet Length (10 bytes)
- *   Bytes 3-4: Subcommand 0x7
+ *   Bytes 3-4: Subcommand 0x0099
  *   Bytes 5-8: Action ID (uint, Big Endian)
  *   Byte 9:    Action Type (byte)
  * 
@@ -52,11 +52,11 @@ exported function HandleHotbarExecute(who, byref packet)
     // Byte 0: 0xBF
     // Bytes 1-2: Length
     // Byte 3: Padding
-    // Bytes 4-5: Subcommand (0x7) - handled by POL
+    // Bytes 4-5: Subcommand (0x0099) - handled by POL
     // Bytes 6-9: Action ID (4 bytes)
     // Byte 10: Action Type (1 byte)
-    var actionId := packet.GetInt32(5);   // Offset 6: 4-byte Action ID
-    var actionType := packet.GetInt8(9); // Offset 10: 1-byte Action Type
+    var actionId := packet.GetInt32(6);   // Offset 6: 4-byte Action ID
+    var actionType := packet.GetInt8(10); // Offset 10: 1-byte Action Type
     
     // Dispatch based on action type
     case (actionType)
