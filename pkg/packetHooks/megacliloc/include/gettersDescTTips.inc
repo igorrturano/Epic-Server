@@ -158,11 +158,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	var weapon := WeaponWrapper(objeto);
-
 	var character := MobileWrapper(who);
 	var xDesc := cfg.desc;
 	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
 	var str_required := weapon.GetSTRRequired();
+	Print("Teste: " + str_required.GetMessage());
 	if(str_required > 0)
 		if (character.GetSTR() < str_required)
 			xDesc := xDesc + RED + "Força exigida: " + str_required + "<br>";
