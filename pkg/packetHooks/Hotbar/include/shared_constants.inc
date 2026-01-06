@@ -13,7 +13,7 @@ use cfgfile;
 include ":attributes:attributes";
 
 // =============================================================================
-// Action Types (Binary Protocol 0xBF/0x0099)
+// Action Types (Binary Protocol 0xBF/0x7)
 // =============================================================================
 
 const ACTION_TYPE_POSTURE := 0x01;   // Combat stances (.slash, .piercing, .blunt)
