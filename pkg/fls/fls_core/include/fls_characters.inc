@@ -447,10 +447,16 @@ function ProccessHab(who, txt)
 	endif
 
 	TS_StartCooldown(who, hab, delay);
-	
+	sendCooldownToClientUpdate(who, delay, habelem);
+
+	return 1;
+endfunction
+
+function sendCooldownToClientUpdate(who, delay, habelem)
 	// ✅ Determine class-specific gump ID
 	var gumpid := 0x87; // Default fallback
 	var classes := GetConfigStringDictionary(habelem, "classe");
+	var hab := GetConfigString(habelem, "nome");
 	
 	// Priority: Sabio > Guerreiro > Ladino > Artifice
 	if (classes["Sabio"] != error)
@@ -465,7 +471,4 @@ function ProccessHab(who, txt)
 	
 	// Send cooldown message to client with class-specific gump ID
 	SendSysMessageEx(who, "[HAB_CD] " + hab + "|" + delay + "|" + Hex(gumpid), SSM_INFO);
-
-	return 1;
 endfunction
-

@@ -141,39 +141,6 @@ function LevelUp(who)
     return 1;
 endfunction
 
-// =============================================================================
-// ADMIN SETTERS
-// =============================================================================
-function SetPlayerLevel(who, new_level)
-    if (new_level < 1)
-        new_level := 1;
-    elseif (new_level > MAX_LEVEL)
-        new_level := MAX_LEVEL;
-    endif
-
-    SetObjProperty(who, "Level", new_level);
-    SetObjProperty(who, "Experience", GetXPForLevel(new_level));
-    SendStatus(who);
-    return 1;
-endfunction
-
-function SetPlayerXP(who, new_xp)
-    if (new_xp < 0)
-        new_xp := 0;
-    endif
-
-    SetObjProperty(who, "Experience", new_xp);
-
-    var lvl := 1;
-    while (lvl < MAX_LEVEL && new_xp >= CalculateNextLevelXP(lvl))
-        lvl += 1;
-    endwhile
-
-    SetObjProperty(who, "Level", lvl);
-    SendStatus(who);
-    return 1;
-endfunction
-
 function UpdateXPClient(who)
     var curr_xp := GetPlayerXP(who);
     var next_xp := CalculateNextLevelXP(GetPlayerLevel(who));
@@ -272,65 +239,4 @@ function discrete_gump(who)
         AddNavigationBar(hab_gump, 2);
         GFSendGump(who, hab_gump);
     endif
-endfunction
-
-// =============================================================================
-// LEGACY GUI XP BAR (server-side gump, kept for compatibility)
-// =============================================================================
-function UpdateXPBar(who)
-    if (!GetObjProperty(who, "chardata"))
-        return 0;
-    endif
-
-    const XPBAR_GUMP_ID := 0xE7B;
-    _checkPid(who, "xpbar");
-
-    var xpbar := GetObjProperty(who, "xpbar");
-    if (!xpbar)
-        xpbar := struct{ pos_x := 105, pos_y := 480 };
-        SetObjProperty(who, "xpbar", xpbar);
-    endif
-
-    while (who.connected)
-        var gump := BuildXPGump(who, xpbar, XPBAR_GUMP_ID);
-        var input := SendDialogGump(who, gump.layout, gump.data, gump.base.x, gump.base.y, 0, XPBAR_GUMP_ID);
-
-        if (input[0] == 2)
-            CloseGump(who, XPBAR_GUMP_ID);
-            sleepms(50);
-            var new_pos := PositionGump(who, xpbar.pos_x, xpbar.pos_y);
-            xpbar.pos_x := new_pos[1];
-            xpbar.pos_y := new_pos[2];
-            SetObjProperty(who, "xpbar", xpbar);
-        endif
-
-        sleepms(100);
-        xpbar := GetObjProperty(who, "xpbar");
-    endwhile
-endfunction
-
-function BuildXPGump(who, xpbar, gumpid)
-    var gump := GFCreateGump(0, 0);
-    GFMovable(gump, 0);
-    GFDisposable(gump, 0);
-    GFClosable(gump, 0);
-    GFSetId(gump, gumpid);
-
-    var curr_xp := GetPlayerXP(who);
-    var curr_level := GetPlayerLevel(who);
-    var next_level_xp := CalculateNextLevelXP(curr_level);
-
-    var progress := CDbl(curr_xp) / CDbl(next_level_xp) * 100;
-    var width := CInt((progress * 597) / 100);
-
-    GFResizePic(gump, xpbar.pos_x + 10, xpbar.pos_y + 64, 9200, 597, 40);
-    if (width > 0)
-        GFResizePic(gump, xpbar.pos_x + 10, xpbar.pos_y + 64, 9350, width, 40);
-    endif
-
-    GFTextLine(gump, xpbar.pos_x + 18, xpbar.pos_y + 80, 1152, "Level {}".format(curr_level));
-    GFTextLine(gump, xpbar.pos_x + 500, xpbar.pos_y + 74, 1152, "{}/{}".format(curr_xp, next_level_xp));
-    GFAddButton(gump, xpbar.pos_x + 14, xpbar.pos_y + 67, 2103, 2103, GF_CLOSE_BTN, 2);
-
-    return gump;
 endfunction
