@@ -7,13 +7,14 @@ include ":abilities:controllers/AbilityMonitor";
 program AbilityMonitor(params)
 	var who := params[1]; // MobileWrapper class
 	var monitor := params[2]; // AbilityMonitor class
-	monitor.SetPid(GetPid());
-	print($"AbilityMonitor started -> {monitor.ToString()}");
 
 	if (who.IsDead())
 		Message("Você não pode usar esta habilidade enquanto estiver morto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return;
 	endif
+
+	monitor.SetPid(GetPid());
+	print($"AbilityMonitor started -> {monitor.ToString()}");
 
 	var ability := monitor.GetAbility();
 	SetScriptController(who.GetObjRef());
@@ -21,22 +22,24 @@ program AbilityMonitor(params)
 	who.ActivateAbility(ability, monitor);
 	Message($"Habilidade {ability.GetName()} ativada por {ability.GetDuration()}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	
-	while (true)
-		var event := Wait_For_Event(ability.GetDuration());
+	var remainingTime := ability.GetDuration() > ability.GetCooldown() ? ability.GetDuration() : ability.GetCooldown();
+	while (remainingTime > 0)
+		var event := Wait_For_Event(remainingTime);
 		
 		if (event == ABILITY_EVENT_ID::USED)
 			Message($"Habilidade {ability.GetName()} teve seu efeito usado.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			monitor.ConsumeCharge(1);
-		else
-			if (event == ABILITY_EVENT_ID::ABORT)
-				Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-				break;
-			elseif (event == ABILITY_EVENT_ID::REFRESH)
-				Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-			else
-				Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			if (monitor.GetCharges() <= 0)
+				Message($"Habilidade {ability.GetName()} esgotou suas cargas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			endif
-			
+		elseif (event == ABILITY_EVENT_ID::ABORT)
+			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			break;
+		elseif (event == ABILITY_EVENT_ID::REFRESH)
+			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+			remainingTime -= (POLCore().systime - monitor.ActivationTime);
+		else
+			Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
 		endif
 	endwhile
