@@ -66,9 +66,8 @@ function HandleExecute(who, packet)
     // 9: Execute type
     // 10-11: Data length
     // 12+: Data
-    
-    var action_id   := packet.GetInt32(9); // Pega os 4 bytes do Action ID
-    var action_type := packet.GetInt8(13); // Pega o byte do Action Type
+    var action_id   := packet.GetInt8(9); // Pega os 4 bytes do Action ID
+    var action_type := packet.GetInt8(10); // Pega o byte do Action Type
     case (action_type)
         ACTION_TYPE_POSTURE:
             return ExecutePosture(who, action_id);
@@ -252,13 +251,11 @@ endfunction
 // - include/hotbar_write.inc: Calculate*Size, Write*Section, SetInt16BE, WriteStringBE
 // ============================================================================
 
-// //  EXECUTE TESTE ####
 exported function HandleHotbarExecute(who, byref packet)
     if (who.dead)
         Message("You cannot do that while dead!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
         return 1;
     endif
-    print("Received Hotbar Execute Packet from " + (who.name));
     // Parse packet structure:
     // Byte 0: 0xBF
     // Bytes 1-2: Length
@@ -266,29 +263,22 @@ exported function HandleHotbarExecute(who, byref packet)
     // Bytes 4-5: Subcommand (0x0099) - handled by POL
     // Bytes 6-9: Action ID (4 bytes)
     // Byte 10: Action Type (1 byte)
-    var actionId := packet.GetInt32(6);   // Offset 6: 4-byte Action ID
-    var actionType := packet.GetInt8(10); // Offset 10: 1-byte Action Type
-    print($"Action ID: {actionId}, Action Type: {actionType}");
+    var actionId   := packet.GetInt8(9);  // Lê apenas 1 byte
+    var actionType := packet.GetInt8(10); // Lê apenas 1 byte    print($"Action ID: {actionId}, Action Type: {actionType}");
     // Dispatch based on action type
     case (actionType)
-        ACTION_TYPE_POSTURE:
-            return ExecutePosture(who, actionId);
-        ACTION_TYPE_ABILITY:
-            return ExecuteAbility(who, actionId);
-        ACTION_TYPE_SPECIAL:
-            return ExecuteSpecial(who, actionId);
-        ACTION_TYPE_SPELL:
-            return ExecuteSpell(who, actionId);
-        ACTION_TYPE_COMMAND:
-            return ExecuteCommand(who, actionId);
-        ACTION_TYPE_SKILL:
-            return ExecuteSkill(who, actionId);
+        ACTION_TYPE_POSTURE: return ExecutePosture(who, actionId);
+        ACTION_TYPE_ABILITY: return ExecuteAbility(who, actionId);
+        ACTION_TYPE_SPECIAL: return ExecuteSpecial(who, actionId);
+        ACTION_TYPE_SPELL:   return ExecuteSpell(who, actionId);
+        ACTION_TYPE_COMMAND: return ExecuteCommand(who, actionId);
+        ACTION_TYPE_SKILL:   return ExecuteSkill(who, actionId);
         default:
             SendSysMessage(who, "Erro: Tipo de ação desconhecido.");
-            return 1;
+            return false;
     endcase
     
-    return 1; // Consume packet
+    return true;
 endfunction
 
 // ============================================================================
