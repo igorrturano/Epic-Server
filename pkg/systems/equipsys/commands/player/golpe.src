@@ -6,9 +6,27 @@ include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/Tooltip";
 
-program cmd_golpe(who)
+program cmd_golpe(who, text)
 	var newPosture;
 	who := MobileWrapper(who);
+	
+	// Se passou argumento (slash, piercing, blunt), muda direto
+	if (text && text != "")
+		var posture_arg := Lower(text);
+		
+		if (posture_arg == "slash")
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+			return;
+		elseif (posture_arg == "piercing")
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+			return;
+		elseif (posture_arg == "blunt")
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+			return;
+		endif
+	endif
+	
+	// Sem argumento ou argumento inválido: abre o gump de seleção
 	newPosture := ChoosePosture(who);
 endprogram
 

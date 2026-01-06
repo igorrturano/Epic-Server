@@ -72,10 +72,6 @@ class CFGFile(IOFile)
 					value := CDbl(value);
 				endforeach
 			endif
-
-			if (propValue.size() == 1)
-				propValue := propValue[1];
-			endif
 		endif
 
 		return propValue;

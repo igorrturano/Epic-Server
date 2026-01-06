@@ -125,14 +125,82 @@ class DamageDice(IDamageDice)
 		return this;
 	endfunction
 
+	function GetMinimum(this)
+		var minDamage := 0;
+
+		if (this.GetSlashDamage() is @Dice)
+			minDamage += this.GetSlashDamage().GetMinimum();
+		endif
+
+		if (this.GetPiercingDamage() is @Dice)
+			minDamage += this.GetPiercingDamage().GetMinimum();
+		endif
+
+		if (this.GetBluntDamage() is @Dice)
+			minDamage += this.GetBluntDamage().GetMinimum();
+		endif
+
+		if (this.GetFireDamage() is @Dice)
+			minDamage += this.GetFireDamage().GetMinimum();
+		endif
+
+		if (this.GetColdDamage() is @Dice)
+			minDamage += this.GetColdDamage().GetMinimum();
+		endif
+
+		if (this.GetPoisonDamage() is @Dice)
+			minDamage += this.GetPoisonDamage().GetMinimum();
+		endif
+
+		if (this.GetEnergyDamage() is @Dice)
+			minDamage += this.GetEnergyDamage().GetMinimum();
+		endif
+
+		return minDamage;
+	endfunction
+
+	function GetMaximum(this)
+		var maxDamage := 0;
+
+		if (this.GetSlashDamage() is @Dice)
+			maxDamage += this.GetSlashDamage().GetMaximum();
+		endif
+
+		if (this.GetPiercingDamage() is @Dice)
+			maxDamage += this.GetPiercingDamage().GetMaximum();
+		endif
+
+		if (this.GetBluntDamage() is @Dice)
+			maxDamage += this.GetBluntDamage().GetMaximum();
+		endif
+
+		if (this.GetFireDamage() is @Dice)
+			maxDamage += this.GetFireDamage().GetMaximum();
+		endif
+
+		if (this.GetColdDamage() is @Dice)
+			maxDamage += this.GetColdDamage().GetMaximum();
+		endif
+
+		if (this.GetPoisonDamage() is @Dice)
+			maxDamage += this.GetPoisonDamage().GetMaximum();
+		endif
+
+		if (this.GetEnergyDamage() is @Dice)
+			maxDamage += this.GetEnergyDamage().GetMaximum();
+		endif
+
+		return maxDamage;
+	endfunction
+
 	function ToString(this)
 		return $"Weapon Damage: " +
-			$"Slash={this._slash.ToString()}, " +
-			$"Piercing={this._piercing.ToString()}, " +
-			$"Blunt={this._blunt.ToString()}, " +
-			$"Fire={this._fire.ToString()}, " +
-			$"Cold={this._cold.ToString()}, " +
-			$"Poison={this._poison.ToString()}, " +
-			$"Energy={this._energy.ToString()}";
+			$"Slash={this.GetSlashDamage().ToString()}, " +
+			$"Piercing={this.GetPiercingDamage().ToString()}, " +
+			$"Blunt={this.GetBluntDamage().ToString()}, " +
+			$"Fire={this.GetFireDamage().ToString()}, " +
+			$"Cold={this.GetColdDamage().ToString()}, " +
+			$"Poison={this.GetPoisonDamage().ToString()}, " +
+			$"Energy={this.GetEnergyDamage().ToString()}";
 	endfunction
 endclass
