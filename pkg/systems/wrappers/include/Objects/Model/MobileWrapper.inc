@@ -175,42 +175,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetReflexesBase(this)
-		return AP_GetTrueStat(tthis.GetObjRef(), REFLEXES);
-	endfunction
-
-	function GetReflexesMod(this)
-		return AP_GetStatMod(this.GetObjRef(), REFLEXES);
-	endfunction
-
-	function GetWill(this)
-		return AP_GetStat(this.GetObjRef(), WILL);
-	endfunction
-
-	function GetWillBase(this)
-		return AP_GetTrueStat(this.GetObjRef(), WILL);
-	endfunction
-
-	function GetWillMod(this)
-		return AP_GetStatMod(this.GetObjRef(), WILL);
-	endfunction
-
-	function GetFortitude(this)
-		return AP_GetStat(this.GetObjRef(), FORTITUDE);
-	endfunction
-
-	function GetFortitudeBase(this)
-		return AP_GetTrueStat(this.GetObjRef(), FORTITUDE);
-	endfunction
-
-	function GetFortitudeMod(this)
-		return AP_GetStatMod(this.GetObjRef(), FORTITUDE);
-	endfunction
-
-	function GetReflexes(this)
-		return AP_GetStat(this.GetObjRef(), REFLEXES);
-	endfunction
-
-	function GetReflexesBase(this)
 		return AP_GetTrueStat(this.GetObjRef(), REFLEXES);
 	endfunction
 
