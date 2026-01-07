@@ -7,6 +7,6 @@ use os;
 include "hotbar_packets";
 
 // Export Hotbar Request handler (0xD7)
-exported function HandleHotbarRequest(who, byref packet)
+exported function HandleHotbar(who, byref packet)
     return HandleHotbarPacket(who, packet);
 endfunction
