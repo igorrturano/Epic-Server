@@ -5,24 +5,28 @@ include "StackFrame";
 class StackTrace()
 	var frames;
 	var frame_count;
-	var _seconds;
 	
-	function StackTrace(this, seconds)
+	function StackTrace(this)
 		this.frames := array{};
 		this.frame_count := 0;
-		this._seconds := seconds;
 		this.CaptureStackTrace();
 	endfunction
 	
 	function CaptureStackTrace(this)
-		// Captura informações da pilha atual usando GetStackTrace()
-		var stack_info := this.GetStackTrace(this._seconds);
+		var stack_info := this.GetStackTrace();
 		
 		if (stack_info)
-			foreach line in stack_info
+			foreach s in stack_info
+				if (s.name == "CaptureStackTrace" || s.name == "GetStackTrace" || s.name == "StackTrace")
+					continue;
+				endif
+
 				var frame := StackFrame();
 				
-				frame.SetScriptName(line);
+				frame.SetScriptName(s.file);
+				frame.SetMethodName(s.name);
+				frame.SetLineNumber(s.line);
+				frame.SetInstruction(s.pc);
 				
 				this.frames.append(frame);
 				this.frame_count++;
@@ -30,19 +34,10 @@ class StackTrace()
 		endif
 	endfunction
 
-	function GetStackTrace(this, seconds)
+	function GetStackTrace(this)
 		var arr := array{};
+		arr := GetProcess().stacktrace(struct{ format := "array" });
 		
-		arr.append($"PID: {GetPid()}");
-		arr.append($"Process: {GetProcess()}");
-		arr.append($"EventsWaiting: {Events_Waiting()}");
-		var performance := PerformanceMeasure(seconds);
-		arr.append($"Ticks: {performance.total_number_observed}");
-		arr.append($"Instructions: {performance.total_instructions}");
-		foreach script in (performance.scripts)
-			arr.append($"Script: pid={script.pid}, instructions={script.instructions}, percent={script.percent}, name={script.name}");
-		endforeach
-
 		return arr;
 	endfunction
 	
@@ -59,7 +54,12 @@ class StackTrace()
 	endfunction
 	
 	function ToString(this)
-		var result := $"Stack Trace ({this.frame_count} frames in {this._seconds} seconds):\n";
+		var result := "\n";
+		if (!this.frames[1].GetMethodName() || !this.frames[1].GetLineNumber())
+			result += "[!!!] To a more detailed stack trace, compile with debug mode enabled: \"ecompile -r <path> -x\"\n";
+		endif
+
+		result += $"Stack Trace ({this.frame_count} frames):\n";
 
 		foreach frame in (this.frames)
 			result += "   at " + frame.ToString() + "\n";
@@ -72,7 +72,3 @@ class StackTrace()
 		return this.frames;
 	endfunction
 endclass
-
-function GetCurrentStackTrace(seconds := 1)
-	return StackTrace(seconds);
-endfunction
