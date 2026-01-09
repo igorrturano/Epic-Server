@@ -67,3 +67,5 @@ plugins/**/*.dll
 
 # Web WWW Accounts
 /pkg/systems/accounts/config/settings.cfg
+
+/.claude
