@@ -56,6 +56,7 @@ enum class COMBAT_ABILITY
 	DESVIAR_PROJETIL := "Desviar Projetil",
 	DISPARO_MISTICO := "Disparo Místico",
 	DOMINIO_VITAL := "Domínio Vital",
+	ELO_NATURAL := "Elo Natural",
 	ESPECIALISTA_ESCUDOS := "Especialista Escudos",
 	EVASAO := "Evasão",
 	EXOESQUELETO := "Exoesqueleto",
@@ -63,6 +64,7 @@ enum class COMBAT_ABILITY
 	FURIA_INDOMAVEL := "Fúria Indomável",
 	INSPIRAR_DEFESAS := "Inspirar Defesas",
 	INSTINTO_ASSASSINO := "Instinto Assassino",
+	INSTINTO_DE_SOBREVIVENCIA := "Instinto de Sobrevivência",
 	KANI_NO_SUTAIRU := "Kani no Sutairu",
 	KEN_NO_TATSUJIN := "Ken no Tatsujin",
 	LADRAO_DA_SORTE := "Ladrao da Sorte",
@@ -105,7 +107,9 @@ enum class COMBAT_ABILITY
 	BACKSTAB := "Backstab",
 	BARREIRA_INDESTRUTIVEL := "Barreira Indestrutível",
 	CONTRA_ATAQUE := "Contra-Ataque",
+	CORACAO_DA_MATILHA := "Coração da Matilha",
 	FEROCIDADE_ENSANGUENTADA := "Ferocidade Ensanguentada",
+	FURIA_PRIMITIVA := "Furia Primitiva",
 	MESTRE_DUELISTA := "Mestre Duelista",
 	DIVINE_AUTHORITY := "Divine Authority"
 endenum
