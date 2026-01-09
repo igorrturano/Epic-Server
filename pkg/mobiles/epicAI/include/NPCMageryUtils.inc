@@ -279,16 +279,16 @@ function FindSpellInConfig( spellname, cfgFile )
 endfunction
 
 function getAvailableSpells(monster)
-   var npc_elem := NPC_GetNPCConfig(monster);
-   var tier := CInt(npc_elem.Tier);
+   var cache := NPC_GetCachedData(monster);  // O(1) lookup
+   var tier := cache.tier;
    if (!tier) tier := 1; endif
-   
+
    var spells := array{"Misseis Magicos"}; // All casters have magic missile
-   
+
    // Get spellcaster config
    var cfg := ReadConfigFile(":spells:config/spellcaster");
    var school := getSpellSchool(monster);
-   
+
    // Add spells from school up to tier
    foreach spellId in (GetConfigIntKeys(cfg))
       var elem := FindConfigElem(cfg, spellId);
@@ -301,8 +301,8 @@ function getAvailableSpells(monster)
 endfunction
 
 function getSpellSchool(monster)
-   var npc_elem := NPC_GetNPCConfig(monster);
-   var school := npc_elem.SpellSchool;
+   var cache := NPC_GetCachedData(monster);  // O(1) lookup
+   var school := cache.spell_school;
 
    var spellSchool := GetObjProperty(monster, "SpellSchool");
     if (spellSchool)
@@ -502,8 +502,8 @@ endfunction
 // New functions for humanoid shaman mage behavior
 
 function GetAvailableShamanSpells(monster)
-    var npc_elem := NPC_GetNPCConfig(monster);
-    var tier := CInt(npc_elem.Tier);
+    var cache := NPC_GetCachedData(monster);  // O(1) lookup
+    var tier := cache.tier;
     if (!tier) tier := 1; endif;
 
     // All shamans have a basic fallback spell
@@ -667,8 +667,8 @@ function ChooseIdealShamanSpells(me, opponent, spells)
 endfunction
 
 function GetAvailablePriestSpells(monster)
-    var npc_elem := NPC_GetNPCConfig(monster);
-    var tier := CInt(npc_elem.Tier);
+    var cache := NPC_GetCachedData(monster);  // O(1) lookup
+    var tier := cache.tier;
     if (!tier) tier := 1; endif;
 
     // All priests have basic healing
@@ -725,7 +725,8 @@ function ChoosePriestSpell(me, opponent, spells)
     // Gather battlefield information
     var my_health_pct := CDbl(AP_GetVital(me, HITS)) / CDbl(AP_GetVitalMaximumValue(me, HITS));
     var opponent_health_pct := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS));
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var hurt_allies := 0;
     
     // Count hurt allies

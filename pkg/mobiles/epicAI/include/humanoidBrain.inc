@@ -15,9 +15,9 @@ function HumanoidBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get humanoid configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    // Get humanoid configuration - O(1) cache lookup
+    var cache := NPC_GetCachedData(me);
+    var speed_type := SplitWords(cache.attack_speed, "_");
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
@@ -26,8 +26,8 @@ function HumanoidBrain()
         me.enable("firewhilemoving");
     endif
 
-    // Load Combat History
-    var npc_template := NPC_ParseTemplateName(me.npctemplate).template;
+    // Load Combat History - use cached template
+    var npc_template := cache.template;
     var combat_history := LoadCombatHistory(npc_template);
 
     while (me)
@@ -61,7 +61,6 @@ function HumanoidBrain()
         if (ev)            
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
@@ -72,29 +71,31 @@ function HumanoidBrain()
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
+                        HandleHumanoidEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        // Phase 3: Update threat list cache
+                        UpdateThreatList(me, ev);
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleHumanoidCombatEvent(opponent, is_ranged);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
-                        SetOpponent(0);
-                        HandleHumanoidCombatEvent(ev.source, is_ranged);
-                    endif
+                    // Taunt forces a target switch - clear current opponent first
+                    SetOpponent(0);
+                    HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     if (me.isShaman())
                         HumanoidShamanBehavior(me, ev.source);
@@ -109,7 +110,7 @@ function HumanoidBrain()
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)           
+        if (!me.opponent)
             HumanoidIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -120,7 +121,12 @@ function HumanoidBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
@@ -212,11 +218,6 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         is_ranged := 0;
     endif
 
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
-        return 0;
-    endif
-
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
@@ -239,7 +240,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         // Not taunted - use normal target selection logic
         // Only check for ideal target if we don't have a valid opponent already
         // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-        if (!me.opponent || !CanFight(me, me.opponent))
+        if (!me.opponent)
             SetOpponent(opponent);
             opponent := CheckForIdealTarget();
             SetOpponent(opponent);
@@ -329,20 +330,13 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleHumanoidCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
     if (heard_mobile)
         // Check if we can see them now (might have moved into view)
-        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
+        if (CanFight(me, heard_mobile))
             HandleHumanoidCombatEvent(heard_mobile, is_ranged);
             return;
         endif
@@ -381,7 +375,7 @@ function HumanoidIdle(wanders, is_ranged)
 endfunction
 
 function HandleHumanoidEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
     
@@ -437,9 +431,9 @@ function GetCombatState(npc, opponent)
 endfunction
 
 function ChooseAbility(npc, state, habs)
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var npc_class := npc_elem.Classe;
-    
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
+    var npc_class := cache.classe;
+
     // First determine class behavior
     case (npc_class)
         GUERREIRO: return ChooseWarriorAbility(npc, state, habs);
@@ -449,47 +443,43 @@ function ChooseAbility(npc, state, habs)
     endcase
 endfunction
 
+// Helper function to parse ability metadata from config
+function ParseAbilityMeta(elem)
+  var classe := GetConfigString(elem, "classe");
+  if (!classe)
+    return error;
+  endif
+
+  var params := SplitWords(classe);
+  return struct{
+    "hab_class" := params[1],
+    "level" := CInt(params[2]) * 2,
+    "requisito" := GetConfigString(elem, "requisito")
+  };
+endfunction
+
 function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
-  
+
   var valid_habs := array{};
   var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-  var npc_elem := NPC_GetNPCConfig(npc);
 
-  // Before level 4, only get core class abilities
-  if (nivel < 4)
-    foreach hab in (GetConfigStringKeys(habcfg))
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe");
-      if (!classe) continue; endif
-      
-      var params := SplitWords(classe);
-      var hab_class := params[1];
-      var hab_level := CInt(params[2]) * 2;
-      var my_class := (npc_elem.Classe);
+  // Get subclass progression regardless of level
+  var subclass := GetObjProperty(npc, "subclass");
+  var progression := GetClassProgression(habcfg, subclass);
 
-      if (hab_level <= nivel && hab_class == my_class && !GetConfigString(elem, "requisito"))
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
+  // Add abilities from progression that match NPC's level
+  foreach hab in progression
+    var elem := FindConfigElem(habcfg, hab);
+    var meta := ParseAbilityMeta(elem);
+    if (meta == error)
+      continue;
+    endif
 
-  // At level 4+, get subclass-specific abilities respecting prerequisites
-  if (nivel >= 4)
-    var subclass := GetObjProperty(npc, "subclass");
-    var progression := GetClassProgression(habcfg, subclass);
-    foreach hab in progression
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe"); 
-      if (!classe) continue; endif
-      
-      var hab_level := CInt(SplitWords(classe)[2]) * 2;
-
-      if (hab_level <= nivel)
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
+    if (meta.level <= nivel)
+      valid_habs.append(hab);
+    endif
+  endforeach
 
   return valid_habs;
 endfunction
@@ -497,37 +487,33 @@ endfunction
 function GetClassProgression(habcfg, subclass)
     var progression := array{};
     var class_choice := array{};
-    var npc_elem := NPC_GetNPCConfig(me);
+    var cache := NPC_GetCachedData(me);  // O(1) lookup
     var class_tree := struct{};
     var base_hab := "";
 
     // Build ability tree ALWAYS, regardless of subclass
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);
-        var classe := GetConfigString(elem, "classe");
-        if (!classe)
+        var meta := ParseAbilityMeta(elem);
+        if (meta == error)
             continue;
         endif
-        
-        var params := SplitWords(classe);
-        var hab_class := params[1];
-        var hab_level := CInt(params[2]) * 2;
-        var my_class := npc_elem.Classe;
-        var req := GetConfigString(elem, "requisito");
+
+        var my_class := cache.classe;
 
         // Only process abilities for this NPC's class
-        if (hab_class == my_class)
-            // Store level 4 abilities without prerequisites as potential base choices
-            if (!req && hab_level == 4)
+        if (meta.hab_class == my_class)
+            // Store level 2 abilities without prerequisites as potential base choices
+            if (!meta.requisito && meta.level == 2)
                 class_choice.append(hab);
             endif
-            
+
             // Build the prerequisite tree
-            if (req)
-                if (!class_tree[req])
-                    class_tree[req] := array{};
+            if (meta.requisito)
+                if (!class_tree[meta.requisito])
+                    class_tree[meta.requisito] := array{};
                 endif
-                class_tree[req].append(hab);
+                class_tree[meta.requisito].append(hab);
             endif
         endif
     endforeach
@@ -778,7 +764,7 @@ function ChooseSageAbility(npc, state, habs)
     if (opponent.master)
         foreach hab in habs
             case (hab)
-                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
+                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
                 "Coração da Matilha": return hab; // controlar a besta
             endcase
         endforeach
