@@ -77,12 +77,12 @@ endfunction
 // ============================================================================
 
 function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p:=1.0, skipSafetyCheck:=1)
-	print("=== Starting OpenAI Completion ===");
+	// print("=== Starting OpenAI Completion ===");
 
 	// Limit temperature to valid range
 	if (temperatura > 1.0)
 		temperatura := 1.0;
-		print("Temperature capped at 1.0");
+		// print("Temperature capped at 1.0");
 	endif
 
 	// Validate questions parameter
@@ -115,11 +115,8 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 
 	var validation := ValidateAIInput(prompt);
 	if (validation)
-		print("Input validation failed: " + validation["error"]);
 		return "Entrada inválida.";
 	endif;
-
-	print("Prompt length: " + len(prompt));
 
 	var formatedQuestions := array{ struct{
 		"role" := "system",
@@ -128,11 +125,9 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 
 	foreach question in questions
 		if (TypeOf(question) != "Struct")
-			print("Question is not a struct");
 			return "Error: Invalid question format.";
 		endif
 		if (!question.assistant && !question.user)
-			print("Question missing required fields");
 			return "Error: Each question must contain 'assistant' or 'user' field.";
 		endif
 
@@ -167,8 +162,6 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 	var apiResponse, unpackedJSON;
 
 	while (retryCount < maxRetries && !success)
-		print("API attempt " + (retryCount + 1) + " of " + maxRetries);
-
 		var startTime := ReadMillisecondClock();
 		apiResponse := HTTPRequest(
 			apiURL,
@@ -183,34 +176,28 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 			}
 		);
 		var endTime := ReadMillisecondClock();
-		print("API request took " + (endTime - startTime) + "ms");
 
 		if (!apiResponse)
-			print("Empty API response on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount); // Exponential backoff
 			continue;
 		endif
 
 		unpackedJSON := UnpackJSON(apiResponse);
-		print("API Response: " + apiResponse);
 
 		if (!unpackedJSON)
-			print("Failed to unpack JSON on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
 		endif
 
 		if (unpackedJSON["error"])
-			print("API Error: " + unpackedJSON["error"]["message"]);
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
 		endif
 
 		if (!unpackedJSON["choices"] || !unpackedJSON["choices"][1] || !unpackedJSON["choices"][1]["message"])
-			print("Invalid response format on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
@@ -220,11 +207,9 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 	endwhile
 
 	if (!success)
-		print("=== OpenAI Completion Failed ===");
 		return "Failed to get a response after multiple attempts. Please try again later.";
 	endif
 
-	print("=== OpenAI Completion Successful ===");
 	return unpackedJSON["choices"][1]["message"]["content"];
 endfunction
 
@@ -238,12 +223,10 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 	// Limit temperature to valid range
 	if (temperatura > 1.0)
 		temperatura := 1.0;
-		print("Temperature capped at 1.0");
 	endif
 
 	// Validate questions parameter
 	if (!questions || TypeOf(questions) != "Array" || !questions.size())
-		print("Error: questions parameter is empty or not an array");
 		return "Error: Invalid questions format. Please provide a valid array of questions.";
 	endif
 
@@ -257,7 +240,6 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 	endforeach
 
 	if (!hasValidQuestion)
-		print("Error: No valid questions found in the array");
 		return "Error: Each question must contain 'assistant' or 'user' field.";
 	endif
 
@@ -271,11 +253,8 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 
 	var validation := ValidateAIInput(prompt);
 	if (validation)
-		print("Input validation failed: " + validation["error"]);
 		return "Entrada inválida.";
 	endif;
-
-	print("Prompt length: " + len(prompt));
 
 	// Format messages for Claude API
 	var formatedMessages := array{};
@@ -283,7 +262,6 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 	// Add user/assistant messages in order
 	foreach question in questions
 		if (TypeOf(question) != "Struct")
-			print("Question is not a struct");
 			continue;
 		endif
 
@@ -304,7 +282,6 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 
 	// Ensure we have at least one message
 	if (formatedMessages.size() < 1)
-		print("No valid messages to send to Claude API");
 		return "Error: No valid messages to send.";
 	endif
 
@@ -327,7 +304,6 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 	var apiResponse, unpackedJSON;
 
 	while (retryCount < maxRetries && !success)
-		print("API attempt " + (retryCount + 1) + " of " + maxRetries);
 
 		var startTime := ReadMillisecondClock();
 		apiResponse := HTTPRequest(
@@ -344,34 +320,28 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 			}
 		);
 		var endTime := ReadMillisecondClock();
-		print("API request took " + (endTime - startTime) + "ms");
 
 		if (!apiResponse)
-			print("Empty API response on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount); // Exponential backoff
 			continue;
 		endif
 
 		unpackedJSON := UnpackJSON(apiResponse);
-		print("API Response: " + apiResponse);
 
 		if (!unpackedJSON)
-			print("Failed to unpack JSON on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
 		endif
 
 		if (unpackedJSON["error"])
-			print("API Error: " + unpackedJSON["error"]["message"]);
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
 		endif
 
 		if (!unpackedJSON["content"] || unpackedJSON["content"].size() < 1 || !unpackedJSON["content"][1]["text"])
-			print("Invalid response format on attempt " + (retryCount + 1));
 			retryCount += 1;
 			SleepMS(2000 * retryCount);
 			continue;
@@ -381,11 +351,9 @@ function ClaudeCompletion(systemMessage, questions, temperatura:=0.7, top_p:=1.0
 	endwhile
 
 	if (!success)
-		print("=== Claude Completion Failed ===");
 		return "Failed to get a response after multiple attempts. Please try again later.";
 	endif
 
-	print("=== Claude Completion Successful ===");
 	return unpackedJSON["content"][1]["text"];
 endfunction
 
@@ -394,11 +362,8 @@ endfunction
 // ============================================================================
 
 function AICompletion(context, questions, temperatura:=0.7, top_p:=1.0, skipSafetyCheck:=1)
-	print("=== Starting AI Completion ===");
-
 	// Validate questions parameter
 	if (!questions || TypeOf(questions) != "Array" || !questions.size())
-		print("Error: questions parameter is empty or not an array");
 		return "Error: Invalid questions format. Please provide a valid array of questions.";
 	endif
 
@@ -412,7 +377,6 @@ function AICompletion(context, questions, temperatura:=0.7, top_p:=1.0, skipSafe
 	endforeach
 
 	if (!hasValidQuestion)
-		print("Error: No valid questions found in the array");
 		return "Error: Each question must contain 'assistant' or 'user' field.";
 	endif
 
@@ -423,14 +387,12 @@ function AICompletion(context, questions, temperatura:=0.7, top_p:=1.0, skipSafe
 	responseAI := ClaudeCompletion(context, questions, temperatura, top_p, "claude-3-haiku-20240307", skipSafetyCheck);
 	if (responseAI && responseAI != "Failed to get a response after multiple attempts. Please try again later.")
 		success := 1;
-		print("Claude Response: " + responseAI);
 	else
 		print("Claude API error, falling back to OpenAI");
 	endif
 
 	// Fallback to OpenAI if Claude fails
 	if (!success)
-		print("Falling back to OpenAI");
 		responseAI := OpenAICompletion_Thor(context, questions, temperatura, top_p, skipSafetyCheck);
 	endif
 
