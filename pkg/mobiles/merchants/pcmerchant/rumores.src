@@ -13,6 +13,7 @@ include ":tn:tngumps";
 include ":gumps:htmlGump";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "include/epicConstants";
+include ":gumps:gumps_ex";
 
 // Gump Constants
 const BKGND_STONESLAB := 9200; // Gray stone slab background
@@ -51,6 +52,125 @@ function CanSeeRumor(player, rumor, gmViewMode := 0)
 	return 1;
 endfunction
 
+// Helper function to create a temporary book for text editing
+function CreateTempBook(player, title := "Rascunho")
+	var book := CreateItemAtLocation(player.x, player.y, player.z, "book1", 1, player.realm); // 30-page book
+	if (!book || book.errortext)
+		return error;
+	endif
+
+	// Set book properties using method functions
+	book.SetTitle(title);
+	book.SetAuthor(player.name);
+
+	// Mark as temporary so we can find and clean it later
+	SetObjProperty(book, "#TempRumorBook", 1);
+
+	return book;
+endfunction
+
+// Helper function to safely destroy a temporary book
+function DestroyTempBook(book)
+	if (!book || book.errortext)
+		return;
+	endif
+
+	// Try to release any locks on the book
+	ReleaseItem(book);
+
+	// Small delay to ensure the client releases it
+	sleepms(50);
+
+	// Try to destroy
+	var result := DestroyItem(book);
+
+	// If it failed, try one more time after a longer delay
+	if (!result)
+		sleepms(200);
+		ReleaseItem(book);
+		DestroyItem(book);
+	endif
+endfunction
+
+// Helper to check if character breaks words (space, punctuation, etc)
+function IsWordBreaker(ch)
+	if (!ch || ch == "")
+		return 1;
+	endif
+
+	// Check for spaces and common punctuation that ends sentences/words
+	if (ch == " " || ch == "." || ch == "," || ch == "!" || ch == "?" ||
+	    ch == ";" || ch == ":" || ch == ")" || ch == "]" || ch == "}")
+		return 1;
+	endif
+
+	// Everything else (letters, numbers) is NOT a word breaker
+	return 0;
+endfunction
+
+// Helper function to extract text from book, joining all lines
+// Detects when words are broken across lines (his/toria = historia)
+function ExtractBookText(book)
+	var contents := book.GetContents();
+	if (!contents || contents.size() == 0)
+		return "";
+	endif
+
+	var text := "";
+	foreach line in contents
+		if (line && line != "")
+			if (text != "")
+				// Check last char of previous text and first char of current line
+				var lastChar := text[len(text), 1];
+				var firstChar := line[1, 1];
+
+				// If previous line ends with punctuation/space OR current line starts with space,
+				// add space between lines. Otherwise it's a broken word - join directly.
+				if (IsWordBreaker(lastChar) || firstChar == " ")
+					text := text + " " + line;
+				else
+					// Word was broken mid-word, join without space
+					text := text + line;
+				endif
+			else
+				text := line;
+			endif
+		endif
+	endforeach
+
+	// Clean up double spaces (single pass)
+	text := StrReplace(text, "  ", " ");
+
+	return text;
+endfunction
+
+// Helper function to display text with smart word wrapping in HTMLGump
+function SendSmartHTMLGump(player, title, text)
+	var gump := GFCreateGump(0, 0);
+
+	// Background
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
+
+	// Title bar
+	GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+	GFTextMid(gump, 15, 17, 330, 2100, title);
+
+	// Content area with gold trim
+	GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
+
+	// Word-wrapped text display using GFHTMLArea (supports scrolling)
+	// Convert plain text to HTML format for better display
+	var html_text := "<BASEFONT COLOR=#000000>" + text + "</BASEFONT>";
+	GFHTMLArea(gump, 22, 53, 315, 375, html_text, 0, 1);
+
+	// Close button
+	GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+	GFAddButton(gump, 285, 440, 4023, 4024, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 220, 440, 2100, "Fechar");
+
+	return GFSendGump(player, gump);
+endfunction
+
 program MerchantMenu(params)
 
 	var npc := params[1];
@@ -68,6 +188,16 @@ program MerchantMenu(params)
 	if (player.hidden)
 		player.hidden := 0;
 		SendSysMessageEx(player, "Voce se revelou.", SSM_FAIL);
+	endif
+
+	// Clean up any leftover temporary books from previous sessions
+	var backpack := player.backpack;
+	if (backpack)
+		foreach item in EnumerateItemsInContainer(backpack)
+			if (GetObjProperty(item, "#TempRumorBook"))
+				DestroyTempBook(item);
+			endif
+		endforeach
 	endif
 
 	while (1)
@@ -146,8 +276,67 @@ program MerchantMenu(params)
 			endif
 			var rumor := struct;
 			rumor.+nome := cstr(RequestGump(player, "Qual vai ser o nome do rumor?"));
+			if (!rumor.nome || rumor.nome == "")
+				SendSysMessage(player, "Nome do rumor cancelado ou invalido.");
+				continue;
+			endif
+
 			rumor.+custo := cint(RequestGump(player, "Quanto vai custar?"));
-			rumor.+desc := BigRequestGump(player, "Qual a descricao do rumor:");
+
+			// Use book system for description (allows pasting and better editing)
+			SendSysMessage(player, "Um livro aparecera na sua mochila para escrever a descricao do rumor.");
+			SendSysMessage(player, "Escreva ou cole o texto. Clique em 'Concluido' quando terminar.");
+
+			var tempBook := CreateTempBook(player, "Descricao do Rumor");
+			if (!tempBook || tempBook.errortext)
+				SendSysMessage(player, "Erro ao criar livro temporario.");
+				continue;
+			endif
+
+			// Move book to player's backpack
+			if (!MoveItemToContainer(tempBook, player.backpack))
+				SendSysMessage(player, "Erro ao mover livro para mochila.");
+				DestroyTempBook(tempBook);
+				continue;
+			endif
+
+			// Let player edit the book
+			SendOpenBook(player, tempBook);
+
+			// Show confirmation gump and wait for player to finish
+			var confirmGump := GFCreateGump(200, 200);
+			GFResizePic(confirmGump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 150);
+			GFResizePic(confirmGump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+			GFTextMid(confirmGump, 10, 15, 280, 2100, "Editar Rumor");
+
+			GFResizePic(confirmGump, 10, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 280, 60);
+			GFTextLine(confirmGump, 20, 55, 1153, "Edite o livro na sua mochila.");
+			GFTextLine(confirmGump, 20, 75, 1153, "Clique em Concluido quando");
+			GFTextLine(confirmGump, 20, 90, 1153, "terminar de escrever.");
+
+			GFResizePic(confirmGump, 10, 108, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+			GFAddButton(confirmGump, 100, 113, 4023, 4024, GF_CLOSE_BTN, 1);
+			GFTextLine(confirmGump, 130, 113, 2100, "Concluido");
+
+			var confirm := GFSendGump(player, confirmGump);
+
+			// Check if player canceled
+			if (!confirm || confirm[0] == 0)
+				SendSysMessage(player, "Edicao de rumor cancelada.");
+				DestroyTempBook(tempBook);
+				continue;
+			endif
+
+			// Extract the text from the book
+			rumor.+desc := ExtractBookText(tempBook);
+
+			// Clean up the temporary book
+			DestroyTempBook(tempBook);
+
+			if (!rumor.desc || rumor.desc == "")
+				SendSysMessage(player, "Descricao vazia. Rumor nao foi adicionado.");
+				continue;
+			endif
 
 			// Ask if GM wants to restrict by race/culture
 			var restrict := YesNo(player, "Deseja restringir este rumor por raca ou cultura?");
@@ -218,8 +407,8 @@ program MerchantMenu(params)
 					SendSysMessage(player, "Rumor movido para baixo.");
 					// Continue loop to show menu again
 				else
-					// User canceled, exit
-					return;
+					// User canceled, continue loop
+					continue;
 				endif
 			else
 				if (cint(rumores[id].custo) != 0)
@@ -229,14 +418,15 @@ program MerchantMenu(params)
 						if (moedas.amount >= cint(rumores[id].custo))
 							if (!SubtractAmount(moedas, cint(rumores[id].custo)))
 								PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
-								return;
+								continue;
 							endif
 						else
 							PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
-							return;
+							continue;
 						endif
 					else
-						return;
+						// Player canceled target, continue loop
+						continue;
 					endif
 				endif
 				SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
