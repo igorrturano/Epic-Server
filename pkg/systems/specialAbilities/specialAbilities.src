@@ -52,6 +52,10 @@ function DoWarriorAbility(who, cooldown)
 	PrintTextAbove(who, "*ataque extra*");
 	who.attack_once();
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Ataque Extra|" + cooldown + "|0x7E", SSM_INFO);
+	
 	return 1;
 endfunction
 
@@ -62,6 +66,10 @@ function DoRogueAbility(who, cooldown)
 	PushBack(who, 4, 75, 1);
 	who.hidden := 0;
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Evasão|" + cooldown + "|0x7E", SSM_INFO);
+	
 	return 1;
 endfunction
 
@@ -98,6 +106,10 @@ function FastReload(who, weapon, cooldown)
 	SetObjProperty(weapon, "balas", balas + 1);
 	PrintTextAbove(who, "*recarrega rapidamente*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Recarga Rápida|" + cooldown + "|0x7E", SSM_INFO);
+	
 	return 1;
 endfunction
 
@@ -106,6 +118,10 @@ function DoSpellcasterAbility(who, cooldown)
 	SetObjProperty(who, "#cast_time", ReadGameClock());
 	PrintTextAbove(who, "*conjuração rápida*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Conjuração Rápida|" + cooldown + "|0x7E", SSM_INFO);
+	
 	return 1;
 endfunction
 
@@ -113,5 +129,9 @@ function DoArcaneArcherAbility(who, cooldown)
 	TS_StartTimer(who, "velocidade", 4); // 4 seconds of speed boost
 	PrintTextAbove(who, "*velocidade arcana*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Velocidade Arcana|" + cooldown + "|0x7E", SSM_INFO);
+	
 	return 1;
 endfunction

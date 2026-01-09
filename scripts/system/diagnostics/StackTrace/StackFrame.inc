@@ -11,6 +11,22 @@ class StackFrame()
 		this.instruction := instr;
 	endfunction
 
+	function GetMethodName(this)
+		return this.method_name;
+	endfunction
+
+	function GetScriptName(this)
+		return this.script_name;
+	endfunction
+
+	function GetLineNumber(this)
+		return this.line_number;
+	endfunction
+
+	function GetInstruction(this)
+		return this.instruction;
+	endfunction
+
 	function SetMethodName(this, method)
 		this.method_name := method;
 	endfunction
@@ -40,6 +56,10 @@ class StackFrame()
 
 		if (this.line_number)
 			result += " (line " + CStr(this.line_number) + ")";
+		endif
+
+		if (this.instruction)
+			result += " [instr: " + this.instruction + "]";
 		endif
 
 		return result;
