@@ -83,6 +83,7 @@ program cureScript(params)
 	EraseObjProperty(who, "polymorph_manamod");
 	EraseObjProperty(who, "polymorph_stammod");
 	EraseObjProperty(who, "namechar");
+	EraseObjProperty(who, "HitScripts");
 	
 	// Clean up Wild Speech properties and restore speech
 	EraseObjProperty(who, "wildspeech_ativa");

@@ -17,6 +17,7 @@ include ":combat:weardown";
 // External
 include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":charactercreation:habilidades";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -48,6 +49,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateSkillDamage(attackInfo);
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
+	CalculatePrimordialDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
@@ -88,6 +90,11 @@ endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::INSTINTO_DE_SOBREVIVENCIA))
+		skill := THEOLOGY;
+	endif
+	
 	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
 	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
 
@@ -167,6 +174,32 @@ function CalculateWeaponDamage(byRef attackInfo)
 	if (attackInfo.GetAmmo())
 		ApplyAmmoDamage(attackInfo);
 	endif
+endfunction
+
+/**
+ * Applies primordial elemental bonus for metamorfose elemental transformations.
+ *
+ * @param attackInfo AttackInfo Combat information containing attacker and damage data
+ */
+function CalculatePrimordialDamage(byRef attackInfo)
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "metamorfose") == error)
+		return;
+	endif
+	
+	var damage := attackInfo.GetDamage();
+	var rawDamage := damage.GetBluntRawDamage();
+	
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_fire") != error)
+		damage.IncreaseFireRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_cold") != error)
+		damage.IncreaseColdRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_poison") != error)
+		damage.IncreasePoisonRawDamage(rawDamage);	
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_energy") != error)
+		damage.IncreaseEnergyRawDamage(rawDamage);
+	endif
+
+	attackInfo.SetDamage(damage);
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -293,6 +326,11 @@ function CalculateCriticalChance(byRef attackInfo)
 		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
+	endif
+
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::INSTINTO_DE_SOBREVIVENCIA))
+		skillUsedForCritical := THEOLOGY;
 	endif
 
 	chance := CInt(
