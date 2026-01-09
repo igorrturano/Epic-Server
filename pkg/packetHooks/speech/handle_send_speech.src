@@ -241,7 +241,7 @@ function CheckPrefixAndSuffix(byRef messageData)
 	var typesToPrefix := array{MESSAGE_TYPE::NORMAL, MESSAGE_TYPE::WHISPER, MESSAGE_TYPE::YELL};
 
 	if (messageData.type in typesToPrefix)
-		var chosen_language := messageData.target.GetProperty("lingua_escolhida");
+		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
 		if (chosen_language && chosen_language != "Comum")
 			messageData.message := $"[{chosen_language}] " + messageData.message;
 		endif
@@ -257,12 +257,15 @@ function CanUnderstand(byRef messageData)
 		return true;
 	endif
 
-	if (!messageData.source.IsNPC())
-		var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
-		var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
-		if (sourceLanguage in targetKnownLanguages)
-			return true;
-		endif
+	if (messageData.source.IsNPC())
+		return true;
+	endif
+
+	var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
+	var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
+
+	if (sourceLanguage in targetKnownLanguages)
+		return true;
 	endif
 
 	return false;
