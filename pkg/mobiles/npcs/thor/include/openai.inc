@@ -177,7 +177,7 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=0.7, top_p
 				data := jsonData,
 				headers := struct{
 					"Content-Type" := "application/json",
-					"Authorization" := "Bearer sk-YOUR_OPENAI_KEY_HERE"
+					"Authorization" := "Bearer " + GetEnvironmentVariable("OPENAI_KEY")
 				},
 				timeout := 10000 // 10 second timeout
 			}
