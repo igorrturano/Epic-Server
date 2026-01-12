@@ -45,7 +45,7 @@ const BIT_MASK := 0x00000003;
 var STATCAP := 225;
 var MODE := 0;
 var STATLOCK := 0;
-var ARMOR_RESISTENCE_PACKET_ARRAY := array{LAYER_SHOES,LAYER_HELM,LAYER_GLOVES,LAYER_NECK,LAYER_CHEST,LAYER_ARMS,LAYER_LEGS};
+var ARMOR_RESISTENCE_PACKET_ARRAY := array{LAYER_SHOES,LAYER_HELM,LAYER_GLOVES,LAYER_NECK,LAYER_CHEST,LAYER_ARMS,LAYER_PANTS};
 
 const QTD_RESISTENCIAS := 7;
 const CHARACTER_STATUS_PACKET_ID := 0x11;
@@ -185,7 +185,7 @@ exported function HandleSendStats(character, byref packet)
 				var resistencias := envelopeArmadura.GetResists();
 				var indiceLote := (_camadaArmadura_iter - 1) * QTD_RESISTENCIAS;
 				var indiceInicial := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START;
-
+				
 				pacoteFinal.SetInt8(indiceInicial + indiceLote,resistencias.GetSlashResist());
 				pacoteFinal.SetInt8(indiceInicial + indiceLote + 1,resistencias.GetPiercingResist());
 				pacoteFinal.SetInt8(indiceInicial + indiceLote + 2,resistencias.GetBluntResist());
