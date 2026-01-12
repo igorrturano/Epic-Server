@@ -441,6 +441,19 @@ function TS_LowerDuration(mobile, timer_name, amount, cooldown := 0)
 	return process.SendEvent(event);
 endfunction
 
+function TS_AddDuration (mobile, timer_name, amount, cooldown := 0)
+	var event := struct;
+	event.+type := EVENT_ADD_TIMER;
+	event.+name := CStr(timer_name);
+	event.+amount := CInt(amount);
+	if (cooldown)
+		event.timerType := EVENT_TYPE_COOLDOWN;
+	endif
+
+	var process := TS_GetControllerProcess(mobile);
+	return process.SendEvent(event);
+endfunction
+
 /*
  * TS_LogOff(mobile)
  *
