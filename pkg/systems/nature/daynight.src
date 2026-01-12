@@ -117,7 +117,7 @@ endprogram
  *
  * Registry Structure:
  * ShiftMerchantRegistry = { serial: shift_value }
- * shift_value can be: "night", "noite", "day", "dia"
+ * shift_value can be: "night", "noite", "day", "dia", "both", "ambos"
  */
 function UpdateAllShiftMerchants()
 	var registry := GetGlobalProperty("ShiftMerchantRegistry");
@@ -160,9 +160,14 @@ function UpdateAllShiftMerchants()
 
 		var is_night_shift := (shift == "night" || shift == "noite");
 		var is_day_shift := (shift == "day" || shift == "dia");
+		var is_both_shift := (shift == "both" || shift == "ambos");
 
 		// Apply visibility based on shift
-		if (is_night_shift)
+		if (is_both_shift)
+			// Both shifts: always visible
+			npc.concealed := 0;
+			updated_count := updated_count + 1;
+		elseif (is_night_shift)
 			// Night shift: hide during day, show at night
 			if (is_daytime)
 				npc.concealed := 1;
