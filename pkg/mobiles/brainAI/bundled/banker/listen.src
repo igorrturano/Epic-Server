@@ -7,35 +7,48 @@ include ":brainAI:npcCommands";
 include ":containers:storageAreas";
 include ":containers:containers";
 include ":fls_core:tax";
+include ":thor:include/openai";
+include ":thor:handling/thorai";
 
+// OpenAICompletion now uses centralized function from :thor:include/openai
+// Wrapper to maintain compatibility
 function OpenAICompletion(systemMessage, questions)
+	return OpenAICompletion_Thor(systemMessage, questions, 0.7, 1.0, 1);
+endfunction
 
-	var formatedQuestions := array{ struct{ "role" := "system", "content" := systemMessage } };
+// Helper to speak long messages by breaking them into chunks
+function AI_SpeakLong(npc, message, maxLength := 60)
+	if (Len(message) <= maxLength)
+		AI_Speak(npc, message);
+		return;
+	endif
 
-	foreach question in questions
-		if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
-			return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
-		endif
+	var words := SplitWords(message);
+	var chunk := "";
 
-		if (question.exists("assistant"))
-			formatedQuestions.append(struct{ "role" := "assistant", "content" := question["assistant"] });
-		endif
-
-		if (question.exists("user"))
-			formatedQuestions.append(struct{ "role" := "user", "content" := question["user"] });
+	foreach word in words
+		if (Len(chunk) + Len(word) + 1 > maxLength)
+			if (chunk)
+				AI_Speak(npc, chunk);
+				sleepms(100);
+				chunk := word;
+			else
+				// Single word is too long - just send it
+				AI_Speak(npc, word);
+				sleepms(100);
+			endif
+		else
+			if (chunk)
+				chunk := chunk + " " + word;
+			else
+				chunk := word;
+			endif
 		endif
 	endforeach
 
-	var apiURL := "https://api.openai.com/v1/chat/completions";
-	var method := "POST";
-	var jsonData := PackJSON(struct{ "model" := "gpt-4o-mini", "messages" := formatedQuestions });
-
-	var apiResponse := HTTPRequest(apiURL, method, struct{ data := jsonData,
-													   	headers := struct{ "Content-Type" := "application/json",
-								   	"Authorization" := "Bearer {1}".format(
-								   	GetEnvironmentVariable("OPENAI_KEY")) } });
-	var unpackedJSON := UnpackJSON(apiResponse);
-	return unpackedJSON["choices"][1]["message"]["content"];
+	if (chunk)
+		AI_Speak(npc, chunk);
+	endif
 endfunction
 
 program BrainNerve(params)
@@ -46,10 +59,16 @@ program BrainNerve(params)
 	// var scripts	:= params[5];
 	params := 0; // Not needed anymore.
 
+	// Fallback: set language for already existing NPCs without it
+	if (!GetObjProperty(npc, "lingua_escolhida"))
+		SetObjProperty(npc, "lingua_escolhida", "Comum");
+	endif
+
 	while (npc)
 		if (event)
 			case (event.type)
 				SYSEVENT_SPEECH: SpeechEvent(npc, event); break;
+				NPCEVENT_AI_RESPONSE: AIResponseEvent(npc, event); break;
 				default:         break;
 			endcase
 
@@ -61,6 +80,16 @@ program BrainNerve(params)
 	endwhile
 endprogram
 
+// Handle AI responses from background async script
+function AIResponseEvent(npc, byref event)
+	var response := event.text;
+	if (response)
+		AI_Turn(npc, event.source, NETURN_TOWARD);
+		AI_Speak(npc, response);
+	endif
+	return 1;
+endfunction
+
 function SpeechEvent(npc, byref event)
 	var text := Lower(event.text);
 	var source := event.source;
@@ -71,6 +100,29 @@ function SpeechEvent(npc, byref event)
 	elseif (!CheckLineOfSight(npc, event.source))
 		// No line of sight - ignore speech.
 		return 0;
+	endif
+
+	// LAYER 0: NPC Busy Check (15% chance for bankers)
+	var busy_response := CheckNPCBusy("Banker");
+	if (busy_response)
+		AI_Turn(npc, source, NETURN_TOWARD);
+		AI_Speak(npc, busy_response);
+		return 1;
+	endif
+
+	// LAYER 1: Heuristic Pattern Matching (instant responses for common phrases)
+	var heuristic_response := CheckHeuristicMatch(text, npc.npctemplate);
+	if (heuristic_response)
+		AI_Turn(npc, source, NETURN_TOWARD);
+		AI_Speak(npc, heuristic_response);
+		return 1; // No AI needed
+	endif
+
+	// LAYER 2: Input length check
+	if (Len(text) < 3)
+		AI_Turn(npc, source, NETURN_TOWARD);
+		AI_Speak(npc, "Fala direito...");
+		return 1;
 	endif
 
 	// Support for regional banking.
@@ -117,8 +169,18 @@ function SpeechEvent(npc, byref event)
 		var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_NOCREATE);
 
 		if (!bank_box)
-			var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O personagem que fala com você é um "
-																														   + sourceRaca + " com descrição " + sourceDescription + ". O personagem não tem uma conta no banco. Pergunte se ele deseja se registrar. Retorne sua frase com um separador &, da forma - (<sua frase> & True/False); só retorne True quando ele explicitar que deseja, sim, se registrar. Máximo de 50 caracteres.";
+			// Check budget
+			if (!CheckAIBudget())
+				AI_Speak(npc, "Tô sem palavras agora...");
+				return 1;
+			endif
+
+			var lore_ctx := LoadNPCLoreContext("Banker", npc);
+			var race_behavior := GetRaceBehavior(sourceRaca, npc);
+			var base_context := "Você é um banqueiro medieval de RPG. Responda como tal. O personagem que fala com você é um "
+																														   + sourceRaca + " com descrição " + sourceDescription + ". " + lore_ctx.Base + race_behavior + " O personagem não tem uma conta no banco. Pergunte se ele deseja se registrar. Retorne sua frase com um separador &, da forma - (<sua frase> & True/False); só retorne True quando ele explicitar que deseja, sim, se registrar. " + lore_ctx.Style + " Máximo de " + lore_ctx.MaxChars + " caracteres.";
+			var systemMessage := BuildVariedContext(base_context, "Banker", npc);
+			var temperatura := 0.6 + (RandomInt(4) * 0.1); // 0.6-0.9 variation
 
 			// Adiciona a mensagem do jogador (user) ao histórico
 			var player_message := struct{ "user" := text };
@@ -126,7 +188,10 @@ function SpeechEvent(npc, byref event)
 			conversation_history.append(player_message);
 
 			// Faz a chamada ao Chat Completion com o contexto e as perguntas
-			var responseText := OpenAICompletion(systemMessage, conversation_history);
+			var responseText := OpenAICompletion_Thor(systemMessage, conversation_history, temperatura, 1.0, 1);
+
+			// Track usage
+			IncrementAIUsage();
 
 			// Separando a resposta e o booleano com base no separador "&"
 			var responseParts := SplitWords(responseText, "&");
@@ -139,18 +204,14 @@ function SpeechEvent(npc, byref event)
 			conversation_history.append(npc_message);
 			SetGlobalProperty("conversation_history", conversation_history);
 
-			// NPC responde ao jogador
-			AI_Speak(npc, assistant_response);
+		// NPC responds to player
+		AI_Turn(npc, source, NETURN_TOWARD);
+		AI_SpeakLong(npc, assistant_response);
 
-			// Se o jogador quer criar a conta, entra na condição de Registro
-			if (should_register == "true" || should_register == "True" || should_register == " True")
+		// Se o jogador quer criar a conta, entra na condição de Registro
+		if (should_register == "true" || should_register == "True" || should_register == " True")
 
-				if (!hasAccount(source.serial, bank_region))
-					AI_Speak(npc, "*registra seu cofre*");
-					var oldcity := GetPlayerCity(source.serial);
-					if (oldcity != error)
-						RemovePlayer(source.serial, oldcity);
-					endif
+			if (!hasAccount(source.serial, bank_region))
 					var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_CREATE);
 					SetupPlayerAccount(source.serial, bank_region);
 					var taxes := GetCityTaxes(bank_region);
@@ -180,22 +241,47 @@ function SpeechEvent(npc, byref event)
 					endif
 				endif
 			else
+				// Check budget
+				if (!CheckAIBudget())
+					AI_Speak(npc, "Aqui esta seu cofre.");
+					SendOpenSpecialContainer(source, bank_box);
+					return 1;
+				endif
 
-				var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um "
-																															 + sourceRaca + " com descrição " + sourceDescription + ". Máximo de 50 caracteres.";
-				var questions := array{ struct{ "user" := text } };
+				var lore_ctx := LoadNPCLoreContext("Banker", npc);
+				var race_behavior := GetRaceBehavior(sourceRaca, npc);
+				var base_context := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um "
+																															 + sourceRaca + " com descrição " + sourceDescription + ". " + lore_ctx.Base + race_behavior + " O personagem já tem uma conta no banco. Se ele pedir para ver o cofre/banco/conta ou algo relacionado, retorne True. Se ele só quer conversar, retorne False. Retorne sua frase com um separador &, da forma - (<sua frase> & True/False). " + lore_ctx.Style + " Máximo de " + lore_ctx.MaxChars + " caracteres.";
+				var systemMessage := BuildVariedContext(base_context, "Banker", npc);
+				var temperatura := 0.6 + (RandomInt(4) * 0.1); // 0.6-0.9 variation
 
 				var player_message := struct{ "user" := text };
 				conversation_history.append(player_message);
 
 				// entregando a OpenAI o contexto (systemMessage) e o input do char (questions)
-				var responseText := OpenAICompletion(systemMessage, conversation_history);
-				var npc_message := struct{ "assistant" := responseText };
+				var responseText := OpenAICompletion_Thor(systemMessage, conversation_history, temperatura, 1.0, 1);
+
+				// Track usage
+				IncrementAIUsage();
+
+				// Separando a resposta e o booleano com base no separador "&"
+				var responseParts := SplitWords(responseText, "&");
+				var assistant_response := responseParts[1]; // Primeira parte: frase do NPC
+				var should_open_chest := responseParts[2]; // Segunda parte: True/False
+
+				// Adiciona a resposta do NPC (assistant) ao histórico
+				var npc_message := struct{ "assistant" := assistant_response };
 				conversation_history.append(npc_message);
 				SetGlobalProperty("conversation_history", conversation_history);
-				// AI_Speak(npc, responseText); // usa a responsa do modelo
-				AI_Speak(npc, "Aqui esta seu cofre.");
-				SendOpenSpecialContainer(source, bank_box);
+
+				// NPC responde
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_SpeakLong(npc, assistant_response);
+
+				// Se o jogador quer ver o cofre, abre
+				if (should_open_chest == "true" || should_open_chest == "True" || should_open_chest == " True")
+					SendOpenSpecialContainer(source, bank_box);
+				endif
 
 			endif
 		endif

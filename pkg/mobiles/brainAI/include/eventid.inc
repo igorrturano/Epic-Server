@@ -30,6 +30,8 @@ CONST NPCEVENT_WAKEUP				:= 0xA00013;	// Tell the brain to wake up.
 
 CONST NPCEVENT_FWDNERVE				:= 0xA00014;	// Tell the brain to forward an event to a nerve.
 
+CONST NPCEVENT_AI_RESPONSE			:= 0xA00015;	// AI response from async background script
+
 //
 // * NPCEVENT_MOVE helper CONSTants (.source = object)
 //
