@@ -12,6 +12,7 @@ include "include/say";
 include ":destroyable:include/destroyItem";
 include ":epicspawn:epicBoss";
 include ":message:include/model/Message";
+include ":propagacao:include/efeitosPatogenicos";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -283,6 +284,38 @@ function normalusage(who, item)
       ChangeLeverStatus(lever_list);
       return;
    endif
+
+// =====================================================
+// EFEITO: NUVEM PATOGÊNICA (PROPAGAÇÃO)
+// =====================================================
+if (GetObjProperty(item, "LEVER_PATOGENICO") && status == "off")
+
+   // parâmetros mínimos e seguros
+   var alcance := GetObjProperty(item, "patog_alcance");
+   var ciclosAteExpancao := GetObjProperty(item, "patog_ciclos");
+   var duracaoNuvem := GetObjProperty(item, "patog_duracao_nuvem");
+   var gravidadeInfeccao := GetObjProperty(item, "patog_gravidade");
+   var arraySintomas := GetObjProperty(item, "patog_sintomas");
+   var duracaoPatogenico := GetObjProperty(item, "patog_duracao");
+   var nivelInfeccao := GetObjProperty(item, "patog_nivel");
+
+   CriaMarcadorPatogenico(
+      item.x,
+      item.y,
+      item.z,
+      item.realm,
+      who.serial,
+      alcance,
+      ciclosAteExpancao,
+      duracaoNuvem,
+      gravidadeInfeccao,
+      arraySintomas,
+      duracaoPatogenico,
+      nivelInfeccao
+   );
+endif
+// =====================================================
+
 
    var msg := opts.ontext;
    if(!msg)
