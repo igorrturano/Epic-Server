@@ -7,7 +7,7 @@ include ":tn:equipment";
 
 function NivelHabilidade(habilidade, classe)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var nivel := GetConfigStringDictionary( elem, "classe" );
@@ -18,7 +18,7 @@ endfunction
 
 function TemRequisito(who, habilidade, msg := 1)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -57,7 +57,7 @@ endfunction
 
 function retornaRequisitos( habilidade)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -118,7 +118,7 @@ function HabilidadesPorNivel(who, classe, lvl)
 
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 	foreach key in keys
@@ -138,7 +138,7 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 	//sendsysmessage(who, "Procurando Habs!");
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 
@@ -170,7 +170,7 @@ function HabilidadesPorNivelFaccao(who, faccao, lvl)
 
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 	foreach key in keys
@@ -188,7 +188,7 @@ endfunction
 
 function ComprarHabGump(who, habs, habsfac)
 
-	UnloadConfigFile(":charactercreation:config/habilidades");
+	UnloadConfigFile(":abilities:configs/habilidades");
 
 	var gump := GFCreateGump();
 
@@ -220,7 +220,7 @@ function ComprarHabGump(who, habs, habsfac)
 		GFTextMid(gump, 80+newsizex, 50, 250, 1153, "Habilidades de Faccao");
 	endif
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var x := 40;
 	var y := 80;
@@ -475,14 +475,15 @@ function comprarHabilidade(who, item, nv:=-1)
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
-		//return 1;
+		if(item)
+			DestroyItem(item);
+		endif
 	else
 		SendSysMessageEx(who, "Falta comprar a habilidade level 4 ou esse nivel ainda nao tem habilidades.", SSM_FAIL);
+		return 0;
 	endif
     RecalcVitals(who);
-    if(item)
-		DestroyItem(item);
-	endif
+
 endfunction
 
 
@@ -544,7 +545,7 @@ function ShowHabilidadesPage(byref gump, who)
     endif
     
     var myhabs := GetObjProperty(who, "myhabs");
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var x := 30;
 	var y := 120;
@@ -669,7 +670,7 @@ function Habilidades(who, nivel)
 		return;
 	endif
 	var myhabs := GetObjProperty(who, "myhabs");
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var habs := GetObjProperty(who, "buyhab");
 	var chardata := GetObjProperty(who, "chardata");
 

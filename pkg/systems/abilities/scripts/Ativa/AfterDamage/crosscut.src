@@ -1,0 +1,92 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+include ":tn:cooldown";
+
+/**
+ * Contragolpe Cruzado (Cross Cut) - ABILITY_ID::CONTRAGOLPE_CRUZADO (202)
+ *
+ * Active Effect (AfterDamage - as DEFENDER):
+ * - Guarantees next defense (handled in ParryController)
+ * - Counter-attacks the attacker for TT/5 seconds
+ *
+ * This script runs when the DEFENDER is hit while having Contragolpe active
+ */
+program crosscut(attackInfo)
+	// This ability triggers for the DEFENDER, not the attacker
+	// Check if the defender has this ability active
+	var defender := attackInfo.GetDefender();
+	var attacker := attackInfo.GetAttacker();
+
+	// Only trigger if we are the defender
+	if (!defender.HasAbility(ABILITY_ID::CONTRAGOLPE_CRUZADO))
+		return false;
+	endif
+
+	// Check if ability is active
+	var activeAbilities := defender.GetActiveAbilities()[ABILITY_ACTIVATION::AFTER_DAMAGE];
+	if (!activeAbilities)
+		return false;
+	endif
+
+	var isActive := false;
+	foreach abilityName in (activeAbilities.keys())
+		if (CInt(abilityName) == ABILITY_ID::CONTRAGOLPE_CRUZADO)
+			isActive := true;
+			break;
+		endif
+	endforeach
+
+	if (!isActive)
+		return false;
+	endif
+
+	// Prevent counter-attack loop
+	if (defender.GetProperty("#counterattacking"))
+		return false;
+	endif
+
+	// Only counter-attack if we took damage (not a parried attack)
+	if (attackInfo.Parried())
+		DebugMsg(defender.GetObjRef(), DEBUG_HAB, Message("[CONTRAGOLPE_CRUZADO] Defesa bem-sucedida!", Color(SYSTEM_COLOR::SUCCESS)));
+		return true; // Parry was guaranteed by ParryController
+	endif
+
+	// Counter-attack!
+	CounterAttack(defender, attacker);
+
+	return true;
+endprogram
+
+/**
+ * CounterAttack
+ *
+ * Immediately attack the aggressor back
+ */
+function CounterAttack(defender, attacker)
+	// Set flag to prevent infinite loop
+	defender.SetProperty("#counterattacking", 1);
+
+	Message("*contra-ataca!*")
+		.SendAbove(defender.GetObjRef());
+
+	// Attack the original attacker
+	defender.Attack(attacker);
+
+	// Clear flag
+	defender.EraseProperty("#counterattacking");
+
+	DebugMsg(
+		defender.GetObjRef(),
+		DEBUG_HAB,
+		Message("[CONTRAGOLPE_CRUZADO] Contra-atacou o agressor!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endfunction

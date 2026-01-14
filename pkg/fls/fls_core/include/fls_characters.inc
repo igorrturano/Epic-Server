@@ -354,14 +354,16 @@ function destroyIllyraOutsideDungeons(who)
 endfunction
 
 function ProccessHab(who, txt)
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var found := 0;
     var habelem;
-
+	print( "ProccessHab chamado com txt: " + txt );
     // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
     foreach elem in GetConfigStringKeys(habcfg)
+		print("Verificando habilidade: " + elem);
         var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
         if (NormalizeString(txt) == normalized_hab)
+			print("AEEEEEEEEEEEEEEEEEEEEE");
             habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
             found := 1;
             break;

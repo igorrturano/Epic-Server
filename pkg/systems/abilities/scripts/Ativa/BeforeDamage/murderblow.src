@@ -1,0 +1,92 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+/**
+ * Golpe Mortal (Murder Blow) - ABILITY_ID::GOLPE_MORTAL (201)
+ *
+ * Active Effect (BeforeDamage):
+ * - Ignores 70% of defender's armor
+ * - Applies stun for TT/10 seconds
+ *
+ * Note: Passive effect (attack on kill) is handled separately via ON_KILL moment
+ */
+program murderblow(attackInfo)
+	// This script runs when the ability is ACTIVE (activated via .shab)
+	// No need to check for properties - if this runs, the ability is active
+
+	if (!attackInfo.GetAttacker().HasAbility(ABILITY_ID::GOLPE_MORTAL))
+		return false;
+	endif
+
+	IgnoreArmorAndStun(attackInfo);
+
+	return true;
+endprogram
+
+/**
+ * IgnoreArmorAndStun
+ *
+ * The murder-blow technique strikes a vulnerable point, ignoring armor
+ * and stunning the target based on the attacker's Tactics skill
+ */
+function IgnoreArmorAndStun(byref attackInfo)
+	// Get current damage values
+	var currentDamage := attackInfo.GetDamage();
+
+	// Get the total raw damage (before armor reduction)
+	var slashRaw := currentDamage.GetSlashRawDamage();
+	var piercingRaw := currentDamage.GetPiercingRawDamage();
+	var bluntRaw := currentDamage.GetBluntRawDamage();
+
+	// Calculate how much was reduced by armor
+	var slashReduced := slashRaw - currentDamage.GetSlashBaseDamage();
+	var piercingReduced := piercingRaw - currentDamage.GetPiercingBaseDamage();
+	var bluntReduced := bluntRaw - currentDamage.GetBluntBaseDamage();
+
+	// Restore 70% of the armor-reduced damage (ignoring most armor)
+	if (slashReduced > 0)
+		currentDamage.IncreaseSlashBaseDamage(CInt(slashReduced * 0.7));
+	endif
+	if (piercingReduced > 0)
+		currentDamage.IncreasePiercingBaseDamage(CInt(piercingReduced * 0.7));
+	endif
+	if (bluntReduced > 0)
+		currentDamage.IncreaseBluntBaseDamage(CInt(bluntReduced * 0.7));
+	endif
+
+	// Calculate stun duration based on Tactics skill (TT/10 seconds)
+	var tactics := AP_GetSkill(attackInfo.GetAttacker().GetObjRef(), TACTICS);
+	var stunDuration := CInt(tactics / 10);
+
+	if (stunDuration < 2)
+		stunDuration := 2; // Minimum 2 seconds
+	endif
+	if (stunDuration > 10)
+		stunDuration := 10; // Maximum 10 seconds
+	endif
+
+	// Apply paralysis (stun) effect
+	TS_StartTimer(attackInfo.GetDefender().GetObjRef(), "paralysis", stunDuration);
+
+	Message("*acerta em cheio um ponto vulnerável!*")
+		.SendAbove(attackInfo.GetAttacker().GetObjRef());
+
+	Message("*é atordoado pelo golpe mortal!*", Color(SYSTEM_COLOR::FAIL))
+		.SendAbove(attackInfo.GetDefender().GetObjRef());
+
+	DebugMsg(
+		attackInfo.GetAttacker().GetObjRef(),
+		DEBUG_HAB,
+		Message($"[GOLPE_MORTAL] Ignorou 70% da armadura, stun: {stunDuration}s", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endfunction

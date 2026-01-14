@@ -678,7 +678,18 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		return this.GetAbilities().exists(ability.GetName());
+		// myhabs dictionary has level as key and ability name as value
+		// So we need to check if the ability name is in the values, not keys
+		var abilities := this.GetAbilities();
+		var abilityName := ability.GetName();
+
+		foreach level in (abilities.keys())
+			if (abilities[level] == abilityName)
+				return true;
+			endif
+		endforeach
+
+		return false;
 	endfunction
 
 	/**

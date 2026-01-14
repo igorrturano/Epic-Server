@@ -1,0 +1,108 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+
+/**
+ * Golpes Furiosos (Rage Cut) - ABILITY_ID::GOLPES_FURIOSOS (203)
+ *
+ * Active Effect (AfterDamage):
+ * - Execute TT/40 extra attacks on the target
+ * - Only triggers once per activation (1 charge)
+ */
+program ragecut(attackInfo)
+	// Check if attacker has this ability active
+	if (!attackInfo.GetAttacker().HasAbility(ABILITY_ID::GOLPES_FURIOSOS))
+		return false;
+	endif
+
+	// Check if ability is active
+	var activeAbilities := attackInfo.GetAttacker().GetActiveAbilities()[ABILITY_ACTIVATION::AFTER_DAMAGE];
+	if (!activeAbilities)
+		return false;
+	endif
+
+	var isActive := false;
+	foreach abilityName in (activeAbilities.keys())
+		if (CInt(abilityName) == ABILITY_ID::GOLPES_FURIOSOS)
+			isActive := true;
+			break;
+		endif
+	endforeach
+
+	if (!isActive)
+		return false;
+	endif
+
+	// Prevent re-entry during extra attacks
+	if (attackInfo.GetAttacker().GetProperty("#ragecutting"))
+		return false;
+	endif
+
+	ExecuteExtraAttacks(attackInfo);
+
+	return true;
+endprogram
+
+/**
+ * ExecuteExtraAttacks
+ *
+ * Execute TT/40 extra attacks on the same target
+ */
+function ExecuteExtraAttacks(byref attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+
+	// Calculate number of extra attacks based on Tactics skill
+	var tactics := AP_GetSkill(attacker.GetObjRef(), TACTICS);
+	var extraAttacks := CInt(tactics / 40);
+
+	if (extraAttacks < 1)
+		extraAttacks := 1; // Minimum 1 extra attack
+	endif
+	if (extraAttacks > 5)
+		extraAttacks := 5; // Maximum 5 extra attacks
+	endif
+
+	// Set flag to prevent re-entry
+	attacker.SetProperty("#ragecutting", 1);
+
+	Message($"*desfere uma sequência furiosa de {extraAttacks} golpes!*")
+		.SendAbove(attacker.GetObjRef());
+
+	// Execute extra attacks with small delays
+	for i := 1 to extraAttacks
+		// Check if target is still alive and in range
+		if (defender.IsDead())
+			break;
+		endif
+
+		if (Distance(attacker.GetObjRef(), defender.GetObjRef()) > 2)
+			Message("*o alvo escapou do alcance!*", Color(SYSTEM_COLOR::FAIL))
+				.SendSys(attacker.GetObjRef());
+			break;
+		endif
+
+		// Small delay between attacks for visual effect
+		SleepMS(150);
+
+		// Execute attack
+		attacker.Attack(defender);
+	endfor
+
+	// Clear flag
+	attacker.EraseProperty("#ragecutting");
+
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message($"[GOLPES_FURIOSOS] Executou {extraAttacks} ataques extras!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endfunction

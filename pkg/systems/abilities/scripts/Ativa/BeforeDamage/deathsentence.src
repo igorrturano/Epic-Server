@@ -1,0 +1,45 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+
+/**
+ * Sentença de Morte (Death Sentence) - ABILITY_ID::SENTENCA_DE_MORTE (204)
+ *
+ * Active Effect (BeforeDamage):
+ * - All successful hits are guaranteed criticals for TT/5 seconds
+ *
+ * Note: The guaranteed critical is handled directly in DamageController's
+ * CalculateCriticalChance function for efficiency. This script is mainly
+ * for logging and any additional effects.
+ */
+program deathsentence(attackInfo)
+	// Check if attacker has this ability
+	if (!attackInfo.GetAttacker().HasAbility(ABILITY_ID::SENTENCA_DE_MORTE))
+		return false;
+	endif
+
+	// The critical guarantee is already handled in CalculateCriticalChance
+	// This script runs for any additional effects or visual feedback
+
+	// Calculate duration based on Tactics skill
+	var tactics := AP_GetSkill(attackInfo.GetAttacker().GetObjRef(), TACTICS);
+	var duration := CInt(tactics / 5);
+
+	if (duration < 5)
+		duration := 5; // Minimum 5 seconds
+	endif
+
+	DebugMsg(
+		attackInfo.GetAttacker().GetObjRef(),
+		DEBUG_HAB,
+		Message($"[SENTENCA_DE_MORTE] Ativo - críticos garantidos por {duration}s", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram

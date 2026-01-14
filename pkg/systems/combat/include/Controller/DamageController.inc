@@ -24,14 +24,29 @@ function ProccessCombatDamage(byRef attackInfo)
 	CalculateCombatDamage(attackInfo);
 	CheckParry(attackInfo);
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
-	
+
 	// Hit
 	ApplyCombatDamage(attackInfo);
-	
+
 	// Post Hit
 	CheckPoison(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
+
+	// On Kill - check if defender died
+	if (attackInfo.GetDefender().IsDead())
+		ExecuteCombatAbilitiesOnKill(attackInfo);
+		ExecutePassiveAbilitiesOnKill(attackInfo);
+	endif
+
 	ProgressAttackSkills(attackInfo);
+endfunction
+
+// Execute passive ON_KILL abilities (for abilities that work without activation)
+function ExecutePassiveAbilitiesOnKill(byRef attackInfo)
+	// Golpe Mortal passive: Attack nearby enemy on kill
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::GOLPE_MORTAL))
+		Run_Script(":abilities:scripts/Passiva/OnKill/murderblow_passive", attackInfo);
+	endif
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
@@ -288,6 +303,17 @@ function CalculateCriticalChance(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetProperty("#nextcritical"))
 		attackInfo.GetAttacker().EraseProperty("#nextcritical");
 		return 100;
+	endif
+
+	// Sentença de Morte (204): Guaranteed critical while ability is active
+	var activeAbilities := attackInfo.GetAttacker().GetActiveAbilities()[ABILITY_ACTIVATION::BEFORE_DAMAGE];
+	if (activeAbilities)
+		foreach abilityName in (activeAbilities.keys())
+			if (CInt(abilityName) == ABILITY_ID::SENTENCA_DE_MORTE)
+				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("[SENTENCA_DE_MORTE] Crítico garantido!", Color(SYSTEM_COLOR::SUCCESS)));
+				return 100;
+			endif
+		endforeach
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MUMIFICACAO))

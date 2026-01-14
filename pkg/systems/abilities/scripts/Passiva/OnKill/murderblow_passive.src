@@ -1,0 +1,78 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+
+/**
+ * Golpe Mortal (Murder Blow) - Passive Effect
+ * ABILITY_ID::GOLPE_MORTAL (201)
+ *
+ * When killing an opponent, immediately attack another nearby enemy
+ */
+program murderblow_passive(attackInfo)
+	// Check if attacker has Murder Blow ability (passive always works if learned)
+	if (!attackInfo.GetAttacker().HasAbility(ABILITY_ID::GOLPE_MORTAL))
+		return false;
+	endif
+
+	AttackNearbyEnemyOnKill(attackInfo);
+
+	return true;
+endprogram
+
+/**
+ * AttackNearbyEnemyOnKill
+ *
+ * Find and attack a nearby hostile enemy after killing the current target
+ */
+function AttackNearbyEnemyOnKill(byref attackInfo)
+	// Prevent infinite chain attacks
+	if (attackInfo.GetAttacker().GetProperty("#murderblowing") == 1)
+		return false;
+	endif
+
+	// Find nearby hostile targets within 2 tiles with line of sight
+	var hostileList := array{};
+	foreach mobile in (ListHostiles(attackInfo.GetAttacker().GetObjRef(), 2, LH_FLAG_LOS))
+		// Don't attack self or the just-killed defender
+		if ((mobile.serial != attackInfo.GetAttacker().GetSerial()) &&
+		    (mobile.serial != attackInfo.GetDefender().GetSerial()) &&
+		    (GetVital(mobile, HITS) > 0))
+			hostileList.append(mobile);
+		endif
+	endforeach
+
+	// If there are nearby enemies, attack one
+	if (hostileList.size() > 0)
+		// Set flag to prevent infinite loop
+		attackInfo.GetAttacker().SetProperty("#murderblowing", 1);
+
+		// Pick a random target from the list
+		var nextTarget := hostileList[RandomInt(hostileList.size()) + 1];
+		nextTarget := MobileWrapper(nextTarget);
+
+		Message("*executa o oponente e ataca outro inimigo!*")
+			.SendAbove(attackInfo.GetAttacker().GetObjRef());
+
+		// Attack the next target
+		attackInfo.GetAttacker().Attack(nextTarget);
+
+		// Clear the flag
+		attackInfo.GetAttacker().EraseProperty("#murderblowing");
+
+		DebugMsg(
+			attackInfo.GetAttacker().GetObjRef(),
+			DEBUG_HAB,
+			Message($"[GOLPE_MORTAL] Passivo: Atacou inimigo próximo!", Color(SYSTEM_COLOR::SUCCESS))
+		);
+
+		return true;
+	endif
+
+	return false;
+endfunction
