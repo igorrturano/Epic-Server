@@ -579,7 +579,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			value += CInt(this.GetDex() / divisor);
 		endif
 
-		if (TACTICS in criteria)
+		if (TACTICS in criteria )
 			value += CInt(this.GetSkill(TACTICS) / divisor);
 		endif
 
@@ -588,8 +588,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetOffDamageModifierBy(this, criteria...)
 		var offHandDivisor := 2;
-
-		return CInt(this.GetMainDamageModifierBy(criteria) / offHandDivisor);
+		
+		return CInt(this.GetMainDamageModifierBy(criteria...) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)

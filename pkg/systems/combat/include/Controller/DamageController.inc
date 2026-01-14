@@ -57,39 +57,18 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
-	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
-	var weaponDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
-	var finalMainDmg := 0;
-	var finalOffDmg := 0;
-	var offHndDamage := 0;
 	
-	CalculateStatusDamage(attackInfo);
-	attackInfo.SetDamageHand(DAMAGE_HAND::MAINHAND);
-	CalculateSkillDamage(attackInfo);
-	var mainHndDamage := attackInfo.GetDamage();
-	
-	if(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD)
-		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND);
-		CalculateSkillDamage(attackInfo);
-		offHndDamage := attackInfo.GetDamage();
-	endif
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
+	var statusDamage := CalculateStatusDamage(attackInfo);
+	var skillDamage := CalculateSkillDamage(attackInfo);
+	var primordialDamage := CalculatePrimordialDamage(attackInfo);
+	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
 
-	if(posture == DAMAGE_TYPE::BLUNT)
-		finalMainDmg := mainHndDamage.GetBluntRawDamage();
-		finalOffDmg := offHndDamage ? offHndDamage.GetBluntRawDamage() : offHndDamage;
-	elseif(posture == DAMAGE_TYPE::PIERCING)
-		finalMainDmg := mainHndDamage.GetPiercingRawDamage();
-		finalOffDmg := offHndDamage ? offHndDamage.GetPiercingRawDamage() : offHndDamage;
-	else
-		finalMainDmg := mainHndDamage.GetSlashRawDamage();
-		finalOffDmg := offHndDamage ? offHndDamage.GetSlashRawDamage() : offHndDamage;
-	endif
+	finalDamage.max += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.min += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.+Damage := attackInfo.GetDamage(); 
 
-	weaponDamage.maxMain += finalMainDmg;
-	weaponDamage.minMain += finalMainDmg;
-	weaponDamage.maxOff += finalOffDmg;
-	weaponDamage.minOff += finalOffDmg;
-	return weaponDamage;
+	return finalDamage;
 endfunction
 
 function CalculateStatusDamage(byRef attackInfo)
@@ -135,16 +114,18 @@ function CalculateSkillDamage(byRef attackInfo)
 		skill := THEOLOGY;
 	endif
 	
-	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
-	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
 	var skillDamage := struct{
 		skill := skill,
-		damageMod := damageMod
+		damageMod := 0
 	};
+
+	skillDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 attackInfo.GetAttacker().GetMainDamageModifierBy(skill) :
+					 attackInfo.GetAttacker().GetOffDamageModifierBy(skill);
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(skillDamage.damageMod)
+						  .IncreasePiercingRawDamage(skillDamage.damageMod)
+						  .IncreaseBluntRawDamage(skillDamage.damageMod);
 
 	return skillDamage;
 endfunction
@@ -223,19 +204,49 @@ endfunction
 function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 	var MinMaxWeaponDamage := 
 		struct{
-			maxMain := 0,
-			minMain := 0,
-			maxOff := 0,
-			minOff := 0
+			max := 0,
+			min := 0
 		};
+
 	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
 
 	if(weapon)
-		MinMaxWeaponDamage.minMain := weapon.GetMainDamage().GetMinDamage();
-		MinMaxWeaponDamage.maxMain := weapon.GetMainDamage().GetMaxDamage();
-		MinMaxWeaponDamage.minOff := weapon.GetOffDamage().GetMinDamage();
-		MinMaxWeaponDamage.maxOff := weapon.GetOffDamage().GetMaxDamage();
+		var damageDice := 0;
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+			damageDice := weapon.GetMainDamage();
+		else
+			damageDice := weapon.GetOffDamage();
+		endif
+		
+		var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+		var physicalDamage := 0;
+
+		if(attackInfo.GetAttackType() == DAMAGE_TYPE::SLASH)
+			physicalDamage += damageMod.GetSlashRawDamage();
+			attackInfo.GetDamage().IncreaseSlashBaseDamage(damageMod.GetSlashRawDamage());
+		elseif(attackInfo.GetAttackType() == DAMAGE_TYPE::PIERCING)
+			physicalDamage += damageMod.GetPiercingRawDamage();
+			attackInfo.GetDamage().IncreasePiercingBaseDamage(damageMod.GetPiercingRawDamage());
+		else
+			physicalDamage += damageMod.GetBluntRawDamage();
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod.GetBluntRawDamage());
+		endif
+
+		var totalModDamage := physicalDamage 
+								+ damageMod.GetFireRawDamage() 
+								+ damageMod.GetColdRawDamage() 
+								+ damageMod.GetPoisonRawDamage() 
+								+ damageMod.GetEnergyRawDamage();
+
+		MinMaxWeaponDamage.max := damageDice.GetMaximum(attackInfo.GetAttackType()) + totalModDamage;
+		MinMaxWeaponDamage.min := damageDice.GetMinimum(attackInfo.GetAttackType()) + totalModDamage;
+
+		attackInfo.GetDamage().IncreaseFireBaseDamage(damageMod.GetFireRawDamage())
+							.IncreaseColdBaseDamage(damageMod.GetColdRawDamage())
+							.IncreasePoisonBaseDamage(damageMod.GetPoisonRawDamage())
+							.IncreaseEnergyBaseDamage(damageMod.GetEnergyRawDamage());
 	endif
+
 
 	return MinMaxWeaponDamage;
 endfunction
@@ -247,7 +258,7 @@ endfunction
  */
 function CalculatePrimordialDamage(byRef attackInfo)
 	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "metamorfose") == error)
-		return;
+		return 0;
 	endif
 	
 	var damage := attackInfo.GetDamage();
@@ -264,6 +275,7 @@ function CalculatePrimordialDamage(byRef attackInfo)
 	endif
 
 	attackInfo.SetDamage(damage);
+	return rawDamage;
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
