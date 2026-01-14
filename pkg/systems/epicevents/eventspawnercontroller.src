@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+include ":epicevents:Controller/EventSpawnerController";
+include ":epicevents:Model/EventConfig";
+include "include/sysEvent";
+
+program eventSpawnerController(item)
+	EnableEvents(SYSEVENT_ENTEREDAREA, 8);
+	var ev;
+	Set_Event_Queue_Size(50);
+
+	var config_struct := GetObjProperty(item, "config");
+	if (!config_struct)
+		return;
+	endif
+
+	var config := EventConfig();
+	config.FromStruct(config_struct);
+
+	print("[EpicEvents] Event spawner started at location: " + item.x + "," + item.y + "," + item.z);
+	print("[EpicEvents] Min delay: " + config.min_delay + " minutes, Max delay: " + config.max_delay + " minutes");
+
+	while (true)
+		ev := os::wait_for_event(0);
+		if (ev)
+			case (ev.type)
+				SYSEVENT_ENTEREDAREA:
+					// Only respond to player characters, not spawned NPCs
+					if (ev.source.acctname)
+						print("[EpicEvents] ENTEREDAREA event triggered by player: " + ev.source.name);
+						if (CheckCanSpawn(item))
+							print("[EpicEvents] CheckCanSpawn returned TRUE - spawning creatures...");
+							spawnCreatures(item, config);
+						else
+							print("[EpicEvents] CheckCanSpawn returned FALSE - still on cooldown");
+						endif
+					else
+						print("[EpicEvents] ENTEREDAREA triggered by NPC: " + ev.source.name + " - ignoring");
+					endif
+				default:
+					// Ignore other events
+			endcase
+		endif
+	endwhile
+endprogram
+
+function spawnCreatures(item, config)
+	SpawnAllCreatures(item, config);
+endfunction

@@ -1,0 +1,73 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":epicevents:View/EventGumpBuilder";
+include ":epicevents:Model/EventConfig";
+include ":message:model/Message";
+
+program epicevents(who)
+	if (who.cmdlevel < 2)
+		Message("Voce nao tem permissao para usar este comando.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Show configuration gump
+	var gump := BuildEventConfigGump();
+	var input := GFSendGump(who, gump);
+
+	if (!input)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Parse input
+	var config := ParseEventConfigInput(input);
+	if (!config)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Validate configuration
+	if (!config.IsValid())
+		Message("Configuracao invalida! Verifique: 1) Pelo menos uma criatura configurada, 2) Delay minimo >= 1, 3) Delay maximo >= minimo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Target location
+	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Create event spawner item (invisible mushroom)
+	var item := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x1F13, 1, who.realm);
+	if (!item || item.errortext)
+		Message("Erro ao criar o item do event spawner: " + item.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Make item invisible
+	item.invisible := 1;
+	item.movable := 0;
+
+	// Save configuration
+	SetObjProperty(item, "config", config.ToStruct());
+
+	// Start controller script
+	var script_result := start_script(":epicevents:eventspawnercontroller", item);
+	if (!script_result || script_result.errortext)
+		Message("Erro ao iniciar o script do event spawner: " + script_result.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		DestroyItem(item);
+		return 0;
+	endif
+
+	// Success message
+	var creature_count := config.GetCreatureCount();
+	Message($"Epic Event criado com sucesso! {creature_count} tipo(s) de criatura configurado(s).", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+	Message($"Delay de respawn: {config.min_delay} a {config.max_delay} minuto(s) (aleatorio).", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+	return 1;
+endprogram
