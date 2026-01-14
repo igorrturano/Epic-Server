@@ -1947,7 +1947,7 @@ function HandleIdleState()
     endif
 
     // OPTIMIZATION: Only check HasPlayerNear if no cached threats (now cached itself)
-    if (!HasPlayerNear(me))
+    // if (!HasPlayerNear(me))
         var attempts := 0;
         // DA pra simplificar, remover esse Coordinate Distance e so fazer ele ir voltando pra casa. SE a distancia for maior que 30, apenas retorna anti exploit
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
@@ -1965,7 +1965,7 @@ function HandleIdleState()
             sleep(3);
             MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
         endif
-    endif
+    // endif
 
     return 1;
 endfunction
