@@ -122,6 +122,7 @@ function ReverseLight(player)
 
 	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
 		player.setlightlevel(20, 9000); // Dungeons are moderately lit for drows (20)
+		SendScreenFlash(player, 0);
 	else
 		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);

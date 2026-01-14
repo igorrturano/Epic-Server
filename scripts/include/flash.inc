@@ -39,16 +39,19 @@ function SendScreenFlash(who, flash_type)
     // Bytes 2-5: Source Serial (0)
     packet.SetInt32(2, 0);
     
-    // Bytes 6-9: Target Serial (Unused by Client for ScreenFade)
-    // Client Logic:
-    // 1. Reads Type (Byte 1)
-    // 2. Skips 8 bytes (Bytes 2-9)
-    // 3. Reads UInt16BE (Bytes 10-11) -> This is where the flash_type must be!
+    // Bytes 6-9: Target Serial (MUST BE INITIALIZED!)
+    packet.SetInt32(6, 0);
     
-    // So we need to put the value at offset 10.
-    
+    // Bytes 10-11: Flash Type (UInt16BE)
     packet.SetInt8(10, 0);           // High Byte
     packet.SetInt8(11, flash_type);  // Low Byte
+    
+    // Initialize remaining bytes to 0 (12-27)
+    var i := 12;
+    while (i < 28)
+        packet.SetInt8(i, 0);
+        i := i + 1;
+    endwhile
     
     packet.SendPacket(who);
     return 1;
