@@ -41,6 +41,8 @@ function AnimalBrain()
                     last_activity_time := polcore().systime;
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
+                    if (me.alignment != 1) return; // Only aggressive animals respond to ENTEREDAREA
+
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
@@ -48,6 +50,8 @@ function AnimalBrain()
                         HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
+                    if (me.alignment != 1) return; // Only aggressive animals respond to LEFTAREA
+
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
