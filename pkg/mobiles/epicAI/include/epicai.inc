@@ -1307,7 +1307,11 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
-  if (isAlly(invasor))
+    if (me.alignment != 1)
+        return 0;
+    endif
+
+    if (isAlly(invasor))
         return 0;
     endif
 
