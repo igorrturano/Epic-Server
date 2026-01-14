@@ -673,18 +673,34 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *         caso contrário retorna true se o mobile possui a habilidade,
 	 *         ou false se não possui
 	 */
-	function HasAbility(this, ability)
+	function HasAbility(this, abilityOrId)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
-		// myhabs dictionary has level as key and ability name as value
-		// So we need to check if the ability name is in the values, not keys
+		// Support both Ability objects and raw ability IDs (integers/enums)
+		var abilityName;
+		var abilityId;
+
+		if (abilityOrId is @Ability)
+			// Passed an Ability object
+			abilityName := abilityOrId.GetName();
+			abilityId := CStr(abilityOrId.GetId());
+		else
+			// Passed a raw ability ID (integer/enum like ABILITY_ID::HALFSWORD)
+			var ability := Ability(abilityOrId);
+			abilityName := ability.GetName();
+			abilityId := CStr(abilityOrId);
+		endif
+
+		// myhabs dictionary has level as key and ability ID or name as value
+		// Value can be either "200" (ID as string) or "Contra-Empunhadura" (name)
 		var abilities := this.GetAbilities();
-		var abilityName := ability.GetName();
 
 		foreach level in (abilities.keys())
-			if (abilities[level] == abilityName)
+			var storedValue := abilities[level];
+			// Check if stored value matches name OR ID
+			if (storedValue == abilityName || storedValue == abilityId)
 				return true;
 			endif
 		endforeach
@@ -755,9 +771,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This ability has no activation moment defined to monitor!");
 		endif
 
-		if (!ability.GetDuration())
-			return InvalidAbilityException("This ability has no duration to monitor!");
-		endif
+		// Note: Duration check removed - abilities with "Tempo" duration (0) are calculated dynamically in AbilityMonitor.src
 
 		var activeAbilities := this.GetActiveAbilities();
 

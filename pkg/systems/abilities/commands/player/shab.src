@@ -6,6 +6,7 @@ include ":abilities:controllers/AbilityMonitor";
 include ":message:model/Message";
 
 program cmd_ability(who, text)
+	var playerRef := who;
 	who := MobileWrapper(who);
 
 	if (who.IsDead())
@@ -18,46 +19,78 @@ program cmd_ability(who, text)
 		return 1;
 	endif
 
+	print("[SHAB DEBUG] Input text: " + text);
+
 	var abilityId := CInt(text);
+	print("[SHAB DEBUG] CInt(text) = " + abilityId);
 
 	// If text is not a number, look up by name
 	if (abilityId == 0 && text != "0")
+		print("[SHAB DEBUG] Looking up by name...");
 		abilityId := FindAbilityIdByName(text);
+		print("[SHAB DEBUG] FindAbilityIdByName returned: " + abilityId);
 		if (!abilityId)
-			Message("Habilidade não encontrada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			Message("Habilidade não encontrada (lookup by name failed).", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			return 1;
 		endif
 	endif
 
+	print("[SHAB DEBUG] Creating Ability with ID: " + abilityId);
 	var ability := Ability(abilityId);
+	print("[SHAB DEBUG] Ability.GetName() = " + ability.GetName());
+	print("[SHAB DEBUG] Ability object: " + ability);
+
 	if (!ability.GetName())
-		Message("Habilidade não encontrada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		Message("Habilidade não encontrada (Ability.GetName() is empty).", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 1;
 	endif
 
-	if (!who.HasAbility(ability) && (who.GetObjRef().cmdlevel < 2))
+	print("[SHAB DEBUG] Checking HasAbility...");
+	var myhabs := GetObjProperty(playerRef, "myhabs");
+	print("[SHAB DEBUG] myhabs = " + myhabs);
+	print("[SHAB DEBUG] myhabs.keys() = " + myhabs.keys());
+
+	var hasIt := who.HasAbility(ability);
+	print("[SHAB DEBUG] HasAbility returned: " + hasIt);
+	print("[SHAB DEBUG] cmdlevel = " + who.GetObjRef().cmdlevel);
+
+	if (!hasIt && (who.GetObjRef().cmdlevel < 2))
 		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 1;
 	endif
 
+	print("[SHAB DEBUG] Activating ability...");
 	var monitor := AbilityMonitor(ability).ActivateOn(who);
+	print("[SHAB DEBUG] Monitor result: " + monitor);
 endprogram
 
 function FindAbilityIdByName(name)
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+	print("[SHAB DEBUG] FindAbilityIdByName - habcfg: " + habcfg);
+
+	if (!habcfg)
+		print("[SHAB DEBUG] ERROR: Could not read config file!");
+		return 0;
+	endif
+
 	var keys := GetConfigStringKeys(habcfg);
+	print("[SHAB DEBUG] FindAbilityIdByName - keys count: " + keys.size());
 
 	name := Lower(name);
+	print("[SHAB DEBUG] FindAbilityIdByName - searching for: " + name);
 
 	foreach key in keys
 		var elem := FindConfigElem(habcfg, key);
 		var abilityName := Lower(GetConfigString(elem, "nome"));
+		print("[SHAB DEBUG] Checking key " + key + " nome=" + abilityName);
 
 		// Match exact or partial name
 		if (abilityName == name || abilityName[name])
+			print("[SHAB DEBUG] MATCH FOUND! key=" + key);
 			return CInt(key);
 		endif
 	endforeach
 
+	print("[SHAB DEBUG] No match found");
 	return 0;
 endfunction

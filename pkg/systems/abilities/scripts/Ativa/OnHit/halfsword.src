@@ -7,9 +7,23 @@ include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 
 program halfsword(attackInfo)
+	var result := struct{};
+
 	// Add STR bonus to damage if attacker has Halfsword ability
+	print("HasAbility check for HALFSWORD: " + attackInfo.GetAttacker().HasAbility(ABILITY_ID::HALFSWORD));
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::HALFSWORD))
-		AddStrengthBonusDamage(attackInfo);
+		var strBonus := GetStrengthBonus(attackInfo);
+		if (strBonus > 0)
+			result.+slashBonus := strBonus;
+			result.+piercingBonus := strBonus;
+			result.+bluntBonus := strBonus;
+
+			DebugMsg(
+				attackInfo.GetAttacker().GetObjRef(),
+				DEBUG_HAB,
+				Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
+			);
+		endif
 	endif
 
 	// Disarm attacker if defender parried and has Halfsword ability
@@ -17,32 +31,20 @@ program halfsword(attackInfo)
 		DisarmAttackerWeapon(attackInfo);
 	endif
 
-	return true;
+	return result;
 endprogram
 
 /**
- * AddStrengthBonusDamage
+ * GetStrengthBonus
  *
- * Adds a bonus to all physical damage types based on the attacker's Strength
+ * Calculates damage bonus based on the attacker's Strength
  * This represents the halfsword technique allowing better leverage and force
+ * Returns the bonus value (1 damage per 20 STR)
  */
-function AddStrengthBonusDamage(byref attackInfo)
+function GetStrengthBonus(attackInfo)
 	var strBonus := CInt(attackInfo.GetAttacker().GetStr() / 20); // 1 damage per 20 STR
-
-	if (strBonus > 0)
-		attackInfo.GetDamage()
-			.IncreaseSlashRawDamage(strBonus)
-			.IncreasePiercingRawDamage(strBonus)
-			.IncreaseBluntRawDamage(strBonus);
-
-		DebugMsg(
-			attackInfo.GetAttacker().GetObjRef(),
-			DEBUG_HAB,
-			Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
-		);
-	endif
-
-	return true;
+	print("Calculado strBonus para HALFSWORD: " + strBonus);
+	return strBonus;
 endfunction
 
 /**
@@ -53,7 +55,10 @@ endfunction
  */
 function DisarmAttackerWeapon(byref attackInfo)
 	var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+	print(attackerWeapon);
+	print(attackerWeapon.GetObjRef().name);
     var tactics_bonus := CInt(AP_GetSkill(attackInfo.GetDefender().GetObjRef(), TACTICS) / 5);
+	print ("Tactics bonus time for HALFSWORD disarm: " + tactics_bonus + " seconds");
 	if (!attackerWeapon || !attackerWeapon.GetObjRef())
 		return false;
 	endif

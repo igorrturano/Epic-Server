@@ -43,7 +43,7 @@ class Ability(IAbility)
 		this.CostMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
 		this.Charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
 		this.Cooldown := CInt(cfgFile.GetPropertyValue("cooldown")[1]) ?: uninit;
-		this.Duration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
+		this.EffectDuration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
 		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
 		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
 	endfunction
@@ -105,7 +105,7 @@ class Ability(IAbility)
 	endfunction
 
 	function GetDuration(this)
-		return this.Duration;
+		return this.EffectDuration;
 	endfunction
 
 	function GetRange(this)
@@ -121,7 +121,32 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+		var result := Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+
+		// If script returns damage modifications, apply them to the original attackInfo
+		if (result && TypeOf(result) == "Struct")
+			if (result.+slashBonus)
+				targetInfo.GetDamage().IncreaseSlashRawDamage(result.slashBonus);
+			endif
+			if (result.+piercingBonus)
+				targetInfo.GetDamage().IncreasePiercingRawDamage(result.piercingBonus);
+			endif
+			if (result.+bluntBonus)
+				targetInfo.GetDamage().IncreaseBluntRawDamage(result.bluntBonus);
+			endif
+			if (result.+fireBonus)
+				targetInfo.GetDamage().IncreaseFireRawDamage(result.fireBonus);
+			endif
+			if (result.+coldBonus)
+				targetInfo.GetDamage().IncreaseColdRawDamage(result.coldBonus);
+			endif
+			if (result.+poisonBonus)
+				targetInfo.GetDamage().IncreasePoisonRawDamage(result.poisonBonus);
+			endif
+			if (result.+energyBonus)
+				targetInfo.GetDamage().IncreaseEnergyRawDamage(result.energyBonus);
+			endif
+		endif
 	endfunction
 
 	function ToString(this)

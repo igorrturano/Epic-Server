@@ -3,6 +3,7 @@ use os;
 
 include ":message:model/Message";
 include ":abilities:controllers/AbilityMonitor";
+include ":attributes:attributes";
 
 program AbilityMonitor(params)
 	var who := params[1]; // MobileWrapper class
@@ -18,11 +19,22 @@ program AbilityMonitor(params)
 
 	var ability := monitor.GetAbility();
 	SetScriptController(who.GetObjRef());
-	
+
 	who.ActivateAbility(ability, monitor);
-	Message($"Habilidade {ability.GetName()} ativada por {ability.GetDuration()}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
-	
-	var remainingTime := ability.GetDuration() > ability.GetCooldown() ? ability.GetDuration() : ability.GetCooldown();
+
+	// Calculate duration: if config duration is 0, use Tactics/5 as default for combat abilities
+	var duration := ability.GetDuration();
+	if (duration <= 0)
+		var tactics := AP_GetSkill(who.GetObjRef(), TACTICS);
+		duration := CInt(tactics / 5);
+		if (duration < 5)
+			duration := 5; // Minimum 5 seconds
+		endif
+	endif
+
+	Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+
+	var remainingTime := duration;
 	while (remainingTime > 0)
 		var event := Wait_For_Event(remainingTime);
 		

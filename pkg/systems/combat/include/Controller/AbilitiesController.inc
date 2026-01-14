@@ -49,10 +49,23 @@ endfunction
 
 function ExecuteCombatAbilities(byRef abilitiesList, byRef attackInfo)
 	var abilitiesExecuted := 0;
-	
-	foreach ability in (abilitiesList)
-		ability.ExecuteOn(attackInfo);
-		abilitiesExecuted++;
+
+	if (!abilitiesList)
+		return 0;
+	endif
+
+	// abilitiesList is a dictionary: { "AbilityName" => { serialized AbilityMonitor } }
+	// We need to iterate over keys and create Ability objects from the stored AbilityId
+	foreach abilityName in (abilitiesList.keys())
+		var serializedMonitor := abilitiesList[abilityName];
+		var abilityId := serializedMonitor.AbilityId;
+
+		if (abilityId)
+			var ability := Ability(abilityId);
+			print($"[AbilitiesController] Executing ability: {ability.GetName()} (ID: {abilityId})");
+			ability.ExecuteOn(attackInfo);
+			abilitiesExecuted++;
+		endif
 	endforeach
 
 	return abilitiesExecuted;
