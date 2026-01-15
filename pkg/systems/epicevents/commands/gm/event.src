@@ -40,23 +40,34 @@ program epicevents(who)
 
 	Message($"Gatilho selecionado: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
-	// Step 2: Configure trigger parameters (V2)
+	// Step 2: Configure trigger parameters and delays
 	var trigger_params := 0;
-	if (trigger_type == "SPEECH" || trigger_type == "ENTEREDAREA" || trigger_type == "LEFTAREA")
-		var config_gump := BuildTriggerConfigGump(trigger_type);
-		var config_input := GFSendGump(who, config_gump);
+	var min_delay := 60;  // Default 60 minutes
+	var max_delay := 120; // Default 120 minutes
 
-		if (!config_input)
-			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-			return 0;
-		endif
+	// Show trigger config gump (now includes delay fields for all triggers)
+	var config_gump := BuildTriggerConfigGump(trigger_type);
+	var config_input := GFSendGump(who, config_gump);
 
-		trigger_params := ParseTriggerConfigInput(config_input, trigger_type);
-		if (!trigger_params && trigger_type == "SPEECH")
-			Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			return 0;
-		endif
+	if (!config_input)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
 	endif
+
+	var config_result := ParseTriggerConfigInput(config_input, trigger_type);
+	if (!config_result)
+		if (trigger_type == "SPEECH")
+			Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		else
+			Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		endif
+		return 0;
+	endif
+
+	// Extract trigger params and delays from result
+	trigger_params := config_result.trigger_params;
+	min_delay := config_result.min_delay;
+	max_delay := config_result.max_delay;
 
 	// Step 3: Configure actions (V2)
 	var actions := array{};
@@ -202,6 +213,8 @@ program epicevents(who)
 	config.trigger_type := trigger_type;
 	config.trigger_params := trigger_params;
 	config.actions := actions;
+	config.min_delay := CStr(min_delay);
+	config.max_delay := CStr(max_delay);
 
 	// Target location
 	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);

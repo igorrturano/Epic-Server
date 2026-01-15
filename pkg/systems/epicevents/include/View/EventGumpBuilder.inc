@@ -89,68 +89,110 @@ function BuildEventConfigGump()
 	var gump := GFECreateGump("", GUMP_WIDTH, GUMP_HEIGHT, array{HIDE_BORDER});
 	AdicionarMoldura(gump);
 	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80);
-	GFTextMid(gump, 80, 35, 420, 53, "Epic Events - Configuracao");
+	GFTextMid(gump, 0, 35, GUMP_WIDTH, 53, "Epic Events - Configuracao de Spawn");
 
-	var x_label := 30;
-	var x_field := 100;
-	var y := 80;
-	var spacing := 80;
+	var x := 30;
+	var y := 90;
+	var spacing := 70;
+
+	// Section header
+	GFTextMid(gump, 0, y, GUMP_WIDTH, 1149, "CRIATURAS");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
+	y := y + 15;
 
 	// Creature 1
-	GFTextLine(gump, x_label, y, 2100, "Nome:");
-	GFEAddTextBox(gump, x_field, y, 150, 20, COLOR_YELLOW, "", ID_NAME1);
-	GFTextLine(gump, x_field + 160, y, 2100, "Quantidade:");
-	GFEAddTextBox(gump, x_field + 250, y, 50, 20, COLOR_YELLOW, "", ID_AMOUNT1);
-	GFTextLine(gump, x_field + 310, y, 2100, "Tier:");
-	GFEAddTextBox(gump, x_field + 350, y, 50, 20, COLOR_YELLOW, "", ID_TIER1);
-	y := y + 25;
-	GFTextLine(gump, x_label, y, 2100, "Template:");
-	GFEAddTextBox(gump, x_field, y, 400, 20, COLOR_YELLOW, "", ID_TEMPLATE1);
+	GFTextLine(gump, x, y, 1153, "Nome:");
+	GFResizePic(gump, x + 100, y, 9350, 150, 25);
+	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME1);
+
+	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
+	GFResizePic(gump, x + 310, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT1);
+
+	GFTextLine(gump, x + 385, y, 1153, "Tier:");
+	GFResizePic(gump, x + 425, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER1);
+	y := y + 30;
+
+	GFTextLine(gump, x, y, 1153, "Template:");
+	GFResizePic(gump, x + 100, y, 9350, 385, 25);
+	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE1);
 	y := y + spacing;
 
 	// Creature 2
-	GFTextLine(gump, x_label, y, 2100, "Nome:");
-	GFEAddTextBox(gump, x_field, y, 150, 20, COLOR_YELLOW, "", ID_NAME2);
-	GFTextLine(gump, x_field + 160, y, 2100, "Quantidade:");
-	GFEAddTextBox(gump, x_field + 250, y, 50, 20, COLOR_YELLOW, "", ID_AMOUNT2);
-	GFTextLine(gump, x_field + 310, y, 2100, "Tier:");
-	GFEAddTextBox(gump, x_field + 350, y, 50, 20, COLOR_YELLOW, "", ID_TIER2);
-	y := y + 25;
-	GFTextLine(gump, x_label, y, 2100, "Template:");
-	GFEAddTextBox(gump, x_field, y, 400, 20, COLOR_YELLOW, "", ID_TEMPLATE2);
+	GFTextLine(gump, x, y, 1153, "Nome:");
+	GFResizePic(gump, x + 100, y, 9350, 150, 25);
+	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME2);
+
+	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
+	GFResizePic(gump, x + 310, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT2);
+
+	GFTextLine(gump, x + 385, y, 1153, "Tier:");
+	GFResizePic(gump, x + 425, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER2);
+	y := y + 30;
+
+	GFTextLine(gump, x, y, 1153, "Template:");
+	GFResizePic(gump, x + 100, y, 9350, 385, 25);
+	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE2);
 	y := y + spacing;
 
 	// Creature 3
-	GFTextLine(gump, x_label, y, 2100, "Nome:");
-	GFEAddTextBox(gump, x_field, y, 150, 20, COLOR_YELLOW, "", ID_NAME3);
-	GFTextLine(gump, x_field + 160, y, 2100, "Quantidade:");
-	GFEAddTextBox(gump, x_field + 250, y, 50, 20, COLOR_YELLOW, "", ID_AMOUNT3);
-	GFTextLine(gump, x_field + 310, y, 2100, "Tier:");
-	GFEAddTextBox(gump, x_field + 350, y, 50, 20, COLOR_YELLOW, "", ID_TIER3);
-	y := y + 25;
-	GFTextLine(gump, x_label, y, 2100, "Template:");
-	GFEAddTextBox(gump, x_field, y, 400, 20, COLOR_YELLOW, "", ID_TEMPLATE3);
-	y := y + spacing;
+	GFTextLine(gump, x, y, 1153, "Nome:");
+	GFResizePic(gump, x + 100, y, 9350, 150, 25);
+	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME3);
 
-	// Shared settings
-	GFTextLine(gump, x_label, y, 2100, "Cor (opcional):");
-	GFEAddTextBox(gump, x_field + 80, y, 100, 20, COLOR_YELLOW, "", ID_COLOR);
+	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
+	GFResizePic(gump, x + 310, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT3);
+
+	GFTextLine(gump, x + 385, y, 1153, "Tier:");
+	GFResizePic(gump, x + 425, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER3);
 	y := y + 30;
 
-	GFTextLine(gump, x_label, y, 2100, "Emote (opcional):");
-	GFEAddTextBox(gump, x_label, y + 25, 470, 20, COLOR_YELLOW, "", ID_EMOTE);
-	y := y + 55;
+	GFTextLine(gump, x, y, 1153, "Template:");
+	GFResizePic(gump, x + 100, y, 9350, 385, 25);
+	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE3);
+	y := y + 50;
 
-	GFTextLine(gump, x_label, y, 2100, "Delay (em minutos):");
+	// Section header
+	GFTextMid(gump, 0, y, GUMP_WIDTH, 1149, "CONFIGURACOES ADICIONAIS");
 	y := y + 20;
-	GFTextLine(gump, x_label, y, 2100, "Minimo:");
-	GFEAddTextBox(gump, x_field, y, 100, 20, COLOR_YELLOW, "60", ID_MIN_DELAY);
-	GFTextLine(gump, x_field + 120, y, 2100, "Maximo:");
-	GFEAddTextBox(gump, x_field + 200, y, 100, 20, COLOR_YELLOW, "120", ID_MAX_DELAY);
+	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
+	y := y + 15;
+
+	// Shared settings
+	GFTextLine(gump, x, y, 1153, "Cor (opcional):");
+	GFResizePic(gump, x + 150, y, 9350, 100, 25);
+	GFTextEntry(gump, x + 155, y + 5, 90, 20, 1150, "", ID_COLOR);
+	y := y + 35;
+
+	GFTextLine(gump, x, y, 1153, "Emote (opcional):");
+	y := y + 25;
+	GFResizePic(gump, x, y, 9350, 480, 25);
+	GFTextEntry(gump, x + 5, y + 5, 470, 20, 1150, "", ID_EMOTE);
 	y := y + 40;
 
+	GFTextLine(gump, x, y, 1153, "Delay (em minutos):");
+	y := y + 25;
+
+	GFTextLine(gump, x, y, 1153, "Minimo:");
+	GFResizePic(gump, x + 80, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 85, y + 5, 70, 20, 1150, "60", ID_MIN_DELAY);
+
+	GFTextLine(gump, x + 190, y, 1153, "Maximo:");
+	GFResizePic(gump, x + 270, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 275, y + 5, 70, 20, 1150, "120", ID_MAX_DELAY);
+	y := y + 40;
+
+	// Divider before button
+	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
+
 	// OK Button
-	GFAddButton(gump, 260, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_OK);
+	GFAddButton(gump, 250, y + 15, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_OK);
 
 	return gump;
 endfunction
@@ -266,82 +308,102 @@ endfunction
 
 // Trigger configuration gump (for triggers that need extra params)
 function BuildTriggerConfigGump(trigger_type)
-	var gump := GFECreateGump("", 400, 380, array{HIDE_BORDER});
+	var gump := GFECreateGump("", 500, 450, array{HIDE_BORDER});
 
 	// Frame
-	GFResizePic(gump, 0, 0, 39925, 400, 25);
-	GFResizePic(gump, 375, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 341, 25);
-	GFResizePic(gump, 25, 355, 39932, 350, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 330);
-	GFResizePic(gump, 375, 25, 39930, 35, 330);
-	GFResizePic(gump, 375, 355, 39933, 35, 35);
-	GFResizePic(gump, 0, 355, 39931, 35, 35);
+	GFResizePic(gump, 0, 0, 39925, 500, 25);
+	GFResizePic(gump, 475, 0, 39927, 35, 25);
+	GFResizePic(gump, 25, 0, 39926, 441, 25);
+	GFResizePic(gump, 25, 425, 39932, 450, 35);
+	GFResizePic(gump, 0, 25, 39928, 10, 400);
+	GFResizePic(gump, 475, 25, 39930, 35, 400);
+	GFResizePic(gump, 475, 425, 39933, 35, 35);
+	GFResizePic(gump, 0, 425, 39931, 35, 35);
 
 	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 370, 280);
+	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 470, 350);
 
 	// Title
-	GFTextMid(gump, 80, 35, 320, 53, "Configurar Gatilho");
+	GFTextMid(gump, 0, 35, 500, 53, "Configurar Gatilho");
 
 	var x := 30;
 	var y := 90;
 
+	// Section header
+	GFTextMid(gump, 0, y, 500, 1149, "PARAMETROS DO GATILHO");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, 420, 2);
+	y := y + 15;
+
 	case (trigger_type)
 		"SPEECH":
-			GFTextLine(gump, x, y, 2100, "Palavra-chave ou frase:");
+			GFTextLine(gump, x, y, 1153, "Palavra-chave ou frase:");
 			y := y + 25;
-			GFEAddTextBox(gump, x, y, 340, 20, COLOR_YELLOW, "", ID_TRIGGER_KEYWORD);
+			GFResizePic(gump, x, y, 9350, 440, 25);
+			GFTextEntry(gump, x + 5, y + 5, 430, 20, 1150, "", ID_TRIGGER_KEYWORD);
 			y := y + 35;
-			GFTextLine(gump, x, y, 1153, "O jogador deve dizer exatamente esta palavra ou frase");
-			GFTextLine(gump, x, y + 20, 1153, "para ativar o evento.");
-			y := y + 50;
-			GFTextLine(gump, x, y, 2100, "Raio de audicao (em tiles):");
+			GFTextLine(gump, x, y, 2100, "O jogador deve dizer exatamente esta palavra ou frase");
+			GFTextLine(gump, x, y + 15, 2100, "para ativar o evento.");
+			y := y + 45;
+
+			GFTextLine(gump, x, y, 1153, "Raio de audicao (em tiles):");
 			y := y + 25;
-			GFEAddTextBox(gump, x, y, 100, 20, COLOR_YELLOW, "8", ID_TRIGGER_RADIUS);
-			y := y + 25;
-			GFTextLine(gump, x, y, 1153, "Distancia em que o NPC/item pode 'ouvir' o jogador");
+			GFResizePic(gump, x, y, 9350, 100, 25);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
+			y := y + 35;
+			GFTextLine(gump, x, y, 2100, "Distancia em que o NPC/item pode 'ouvir' o jogador");
 		"ENTEREDAREA":
-			GFTextLine(gump, x, y, 2100, "Raio de deteccao (em tiles):");
+			GFTextLine(gump, x, y, 1153, "Raio de deteccao (em tiles):");
 			y := y + 25;
-			GFEAddTextBox(gump, x, y, 100, 20, COLOR_YELLOW, "8", ID_TRIGGER_RADIUS);
+			GFResizePic(gump, x, y, 9350, 100, 25);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
 			y := y + 35;
-			GFTextLine(gump, x, y, 1153, "Distancia em que o jogador deve estar para ativar");
-			GFTextLine(gump, x, y + 20, 1153, "o evento. Padrao: 8 tiles (encontro).");
-			GFTextLine(gump, x, y + 40, 1153, "2 tiles = surpresa | 15 tiles = alerta antecipado");
+			GFTextLine(gump, x, y, 2100, "Distancia em que o jogador deve estar para ativar");
+			GFTextLine(gump, x, y + 15, 2100, "o evento. Padrao: 8 tiles (encontro).");
+			GFTextLine(gump, x, y + 30, 2100, "2 tiles = surpresa | 15 tiles = alerta antecipado");
 		"LEFTAREA":
-			GFTextLine(gump, x, y, 2100, "Raio de deteccao (em tiles):");
+			GFTextLine(gump, x, y, 1153, "Raio de deteccao (em tiles):");
 			y := y + 25;
-			GFEAddTextBox(gump, x, y, 100, 20, COLOR_YELLOW, "8", ID_TRIGGER_RADIUS);
+			GFResizePic(gump, x, y, 9350, 100, 25);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
 			y := y + 35;
-			GFTextLine(gump, x, y, 1153, "Distancia que o jogador deve sair para ativar");
-			GFTextLine(gump, x, y + 20, 1153, "o evento de saida (punicao por covardia!).");
+			GFTextLine(gump, x, y, 2100, "Distancia que o jogador deve sair para ativar");
+			GFTextLine(gump, x, y + 15, 2100, "o evento de saida (punicao por covardia!).");
 		default:
 			GFTextLine(gump, x, y, 2100, "Este gatilho nao requer configuracao adicional.");
-			GFTextLine(gump, x, y + 30, 1153, "Clique em Proximo para continuar.");
+			GFTextLine(gump, x, y + 20, 2100, "Clique em Proximo para continuar.");
 	endcase
 
 	// Add delay configuration section (for all trigger types)
-	y := 200;  // Fixed position
+	y := 250;  // Fixed position
 
-	// Section header with background
-	GFTextLine(gump, x, y, 53, "Frequencia de Ativacao:");
-	y := y + 30;
+	// Section header
+	GFTextMid(gump, 0, y, 500, 1149, "FREQUENCIA DE ATIVACAO");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, 420, 2);
+	y := y + 15;
 
 	GFTextLine(gump, x, y, 2100, "Intervalo entre ativacoes (em minutos):");
 	y := y + 25;
 
-	GFTextLine(gump, x, y, 2100, "Minimo:");
-	GFEAddTextBox(gump, x + 70, y, 60, 20, COLOR_YELLOW, "60", ID_EVENT_MIN_DELAY);
-	GFTextLine(gump, x + 150, y, 2100, "Maximo:");
-	GFEAddTextBox(gump, x + 220, y, 60, 20, COLOR_YELLOW, "120", ID_EVENT_MAX_DELAY);
-	y := y + 30;
+	GFTextLine(gump, x, y, 1153, "Minimo:");
+	GFResizePic(gump, x + 70, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 75, y + 5, 70, 20, 1150, "60", ID_EVENT_MIN_DELAY);
 
-	GFTextLine(gump, x, y, 1153, "O evento so pode ativar novamente apos este intervalo");
-	GFTextLine(gump, x, y + 15, 1153, "(randomizado entre min e max)");
+	GFTextLine(gump, x + 170, y, 1153, "Maximo:");
+	GFResizePic(gump, x + 240, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 245, y + 5, 70, 20, 1150, "120", ID_EVENT_MAX_DELAY);
+	y := y + 35;
+
+	GFTextLine(gump, x, y, 2100, "O evento so pode ativar novamente apos este intervalo");
+	GFTextLine(gump, x, y + 15, 2100, "(randomizado entre min e max)");
+
+	// Divider before button
+	y := y + 35;
+	GFResizePic(gump, 40, y, 3000, 420, 2);
 
 	// Next button
-	GFAddButton(gump, 180, 320, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
+	GFAddButton(gump, 220, 390, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
 
 	return gump;
 endfunction
@@ -352,6 +414,7 @@ function ParseTriggerConfigInput(input, trigger_type)
 		return 0;
 	endif
 
+	var result := struct{};
 	var params := struct{};
 
 	case (trigger_type)
@@ -377,7 +440,27 @@ function ParseTriggerConfigInput(input, trigger_type)
 			// No params needed
 	endcase
 
-	return params;
+	// Parse delay configuration (applies to all trigger types)
+	var min_delay_str := Trim(GFExtractData(input, ID_EVENT_MIN_DELAY));
+	var max_delay_str := Trim(GFExtractData(input, ID_EVENT_MAX_DELAY));
+
+	var min_delay := CInt(min_delay_str);
+	var max_delay := CInt(max_delay_str);
+
+	// Validate delays
+	if (min_delay < 1)
+		min_delay := 60;  // Default 1 hour
+	endif
+	if (max_delay < min_delay)
+		max_delay := min_delay;  // Max can't be less than min
+	endif
+
+	// Return struct with both trigger params and delays
+	result.+trigger_params := params;
+	result.+min_delay := min_delay;
+	result.+max_delay := max_delay;
+
+	return result;
 endfunction
 
 // Action list gump - shows all configured actions
@@ -404,40 +487,61 @@ function BuildActionListGump(actions)
 	var y := 90;
 
 	// Instructions
-	GFTextLine(gump, x, y, 2100, "Configure as acoes que serao executadas quando o gatilho ativar:");
+	GFTextLine(gump, x, y, 1149, "Configuracao de Acoes");
+	y := y + 3;
+	GFGumpPicTiled(gump, x, y, 540, 1, 0x0A52);
+	y := y + 10;
+	GFTextLine(gump, x, y, 2100, "As acoes abaixo serao executadas em sequencia quando o gatilho ativar:");
 	y := y + 30;
 
 	// Action list
 	if (!actions || actions.size() == 0)
-		GFTextLine(gump, x, y, 1153, "Nenhuma acao configurada. Clique em [Adicionar] para criar uma acao.");
-		GFTextLine(gump, x, y + 20, 1153, "Ou clique em [Concluir] para usar o sistema de spawn padrao.");
-		y := y + 60;
+		// Empty state
+		GFResizePic(gump, x, y, 0x2486, 540, 80);  // Subtle background box
+		GFTextLine(gump, x + 20, y + 15, 1153, "Nenhuma acao configurada.");
+		GFTextLine(gump, x + 20, y + 35, 1153, "Clique em [Adicionar Acao] para criar uma acao.");
+		GFTextLine(gump, x + 20, y + 55, 1153, "Ou clique em [Concluir] para usar o sistema de spawn padrao.");
+		y := y + 100;
 	else
 		var action_num := 1;
 		foreach action in actions
 			// Action summary line
 			var action_desc := GetActionDescription(action);
 
+			// Subtle background for each action
+			var box_height := 35;
+			if (action.delay && action.delay > 0)
+				box_height := box_height + 18;
+			endif
+			if (action.condition && action.condition.type != "ALWAYS")
+				box_height := box_height + 18;
+			endif
+
+			GFResizePic(gump, x, y, 0x2486, 540, box_height);
+
 			// Edit button
-			GFAddButton(gump, x, y, 2117, 2118, GF_CLOSE_BTN, BTN_ACTION_EDIT_BASE + action_num);
+			GFAddButton(gump, x + 10, y + 8, 2117, 2118, GF_CLOSE_BTN, BTN_ACTION_EDIT_BASE + action_num);
 			// Delete button
-			GFAddButton(gump, x + 25, y, 0x9CC, 0x9CC, GF_CLOSE_BTN, BTN_ACTION_DELETE_BASE + action_num);
+			GFAddButton(gump, x + 35, y + 8, 0x9CC, 0x9CC, GF_CLOSE_BTN, BTN_ACTION_DELETE_BASE + action_num);
 
 			// Action text
-			GFTextLine(gump, x + 55, y, 53, $"{action_num}. {action_desc}");
+			GFTextLine(gump, x + 65, y + 8, 53, $"{action_num}. {action_desc}");
+
+			var detail_y := y + 26;
 
 			// Show delay if configured
 			if (action.delay && action.delay > 0)
-				GFTextLine(gump, x + 70, y + 18, 1153, $"Atraso: {action.delay}s");
+				GFTextLine(gump, x + 80, detail_y, 1153, $"Atraso: {action.delay}s");
+				detail_y := detail_y + 18;
 			endif
 
 			// Show condition if configured
 			if (action.condition && action.condition.type != "ALWAYS")
 				var cond_desc := GetConditionDescription(action.condition);
-				GFTextLine(gump, x + 70, y + (action.delay ? 35 : 18), 1153, $"Condicao: {cond_desc}");
+				GFTextLine(gump, x + 80, detail_y, 1153, $"Condicao: {cond_desc}");
 			endif
 
-			y := y + (action.delay && action.condition ? 60 : 45);
+			y := y + box_height + 8;  // Add spacing between actions
 			action_num := action_num + 1;
 
 			if (action_num > 10)
@@ -537,20 +641,20 @@ endfunction
 
 // Action edit gump - configure action parameters
 function BuildActionEditGump(action_type, existing_action := 0)
-	var gump := GFECreateGump("", 550, 600, array{HIDE_BORDER});
+	var gump := GFECreateGump("", 600, 650, array{HIDE_BORDER});
 
 	// Frame
-	GFResizePic(gump, 0, 0, 39925, 550, 25);
-	GFResizePic(gump, 525, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 491, 25);
-	GFResizePic(gump, 25, 575, 39932, 500, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 550);
-	GFResizePic(gump, 525, 25, 39930, 35, 550);
-	GFResizePic(gump, 525, 575, 39933, 35, 35);
-	GFResizePic(gump, 0, 575, 39931, 35, 35);
+	GFResizePic(gump, 0, 0, 39925, 600, 25);
+	GFResizePic(gump, 575, 0, 39927, 35, 25);
+	GFResizePic(gump, 25, 0, 39926, 541, 25);
+	GFResizePic(gump, 25, 625, 39932, 550, 35);
+	GFResizePic(gump, 0, 25, 39928, 10, 600);
+	GFResizePic(gump, 575, 25, 39930, 35, 600);
+	GFResizePic(gump, 575, 625, 39933, 35, 35);
+	GFResizePic(gump, 0, 625, 39931, 35, 35);
 
 	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 520, 500);
+	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 570, 550);
 
 	// Title
 	var title_text := "Configurar Acao: ";
@@ -562,40 +666,55 @@ function BuildActionEditGump(action_type, existing_action := 0)
 		"TELEPORT":
 			title_text := title_text + "Teleporte";
 	endcase
-	GFTextMid(gump, 80, 35, 470, 53, title_text);
+	GFTextMid(gump, 0, 35, 600, 53, title_text);
 
 	var x := 30;
 	var y := 90;
 
-	// Common fields: Delay
-	GFTextLine(gump, x, y, 2100, "Atraso antes da acao (em segundos, 0 = imediato):");
+	// ==================== SECTION: TIMING ====================
+	GFTextMid(gump, 0, y, 600, 1149, "TEMPORIZACAO");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+	y := y + 15;
+
+	GFTextLine(gump, x, y, 1153, "Atraso antes da acao (em segundos, 0 = imediato):");
 	y := y + 25;
 	var delay_default := "0";
 	if (existing_action && existing_action.delay)
 		delay_default := CStr(existing_action.delay);
 	endif
-	GFEAddTextBox(gump, x, y, 100, 20, COLOR_YELLOW, delay_default, ID_ACTION_DELAY);
-	y := y + 40;
+	GFResizePic(gump, x, y, 9350, 100, 25);
+	GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, delay_default, ID_ACTION_DELAY);
+	GFTextLine(gump, x + 120, y + 5, 2100, "Ex: 5 = aguardar 5 segundos");
+	y := y + 45;
 
-	// Type-specific fields
+	// ==================== SECTION: ACTION PARAMETERS ====================
+	GFTextMid(gump, 0, y, 600, 1149, "PARAMETROS DA ACAO");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+	y := y + 15;
+
 	case (action_type)
 		"EMOTE":
-			GFTextLine(gump, x, y, 2100, "Texto do emote/mensagem:");
+			GFTextLine(gump, x, y, 1153, "Texto do emote/mensagem:");
 			y := y + 25;
 			var emote_default := "";
 			if (existing_action && existing_action.params && existing_action.params.text)
 				emote_default := existing_action.params.text;
 			endif
-			GFEAddTextBox(gump, x, y, 490, 60, COLOR_YELLOW, emote_default, ID_ACTION_EMOTE_TEXT);
-			y := y + 70;
+			GFResizePic(gump, x, y, 9350, 540, 65);
+			GFTextEntry(gump, x + 5, y + 5, 530, 60, 1150, emote_default, ID_ACTION_EMOTE_TEXT);
+			y := y + 80;
 
-			GFTextLine(gump, x, y, 2100, "Alcance (tiles, 0 = sem limite):");
+			GFTextLine(gump, x, y, 1153, "Alcance (em tiles):");
 			y := y + 25;
 			var range_default := "10";
 			if (existing_action && existing_action.params && existing_action.params.range)
 				range_default := CStr(existing_action.params.range);
 			endif
-			GFEAddTextBox(gump, x, y, 100, 20, COLOR_YELLOW, range_default, ID_ACTION_EMOTE_RANGE);
+			GFResizePic(gump, x, y, 9350, 80, 25);
+			GFTextEntry(gump, x + 5, y + 5, 70, 20, 1150, range_default, ID_ACTION_EMOTE_RANGE);
+			GFTextLine(gump, x + 100, y + 5, 2100, "Distancia maxima para players verem (0 = sem limite)");
 			y := y + 40;
 
 			// Checkbox for showing emote on player vs item
@@ -604,16 +723,17 @@ function BuildActionEditGump(action_type, existing_action := 0)
 				show_on_player := existing_action.params.show_on_source;
 			endif
 			GFAddButton(gump, x, y, (show_on_player ? 0x939 : 0x938), (show_on_player ? 0x938 : 0x939), GF_CLOSE_BTN, BTN_EMOTE_SHOW_ON_PLAYER);
-			GFTextLine(gump, x + 30, y, 2100, "Exibir emote acima do jogador (ao inves do item)");
-			y := y + 40;
+			GFTextLine(gump, x + 30, y + 2, 1153, "Exibir emote acima do jogador (ao inves do item)");
+			y := y + 35;
 
 		"SPAWN":
-			GFTextLine(gump, x, y, 1153, "O spawn de criaturas usa a configuracao padrao.");
-			GFTextLine(gump, x, y + 20, 1153, "Voce podera configurar os detalhes na proxima etapa.");
-			y := y + 60;
+			GFTextLine(gump, x, y, 2100, "O spawn de criaturas usa a configuracao padrao do sistema.");
+			GFTextLine(gump, x, y + 20, 2100, "Voce podera configurar criaturas, quantidades e tiers");
+			GFTextLine(gump, x, y + 40, 2100, "na proxima etapa do wizard.");
+			y := y + 75;
 
 		"TELEPORT":
-			GFTextLine(gump, x, y, 2100, "Coordenadas do destino:");
+			GFTextLine(gump, x, y, 1153, "Coordenadas do destino (use .where no jogo):");
 			y := y + 25;
 			var x_default := "";
 			var y_default := "";
@@ -630,69 +750,90 @@ function BuildActionEditGump(action_type, existing_action := 0)
 				endif
 			endif
 
-			GFTextLine(gump, x, y, 2100, "X:");
-			GFEAddTextBox(gump, x + 25, y, 80, 20, COLOR_YELLOW, x_default, ID_ACTION_TELEPORT_X);
-			GFTextLine(gump, x + 120, y, 2100, "Y:");
-			GFEAddTextBox(gump, x + 145, y, 80, 20, COLOR_YELLOW, y_default, ID_ACTION_TELEPORT_Y);
-			GFTextLine(gump, x + 240, y, 2100, "Z:");
-			GFEAddTextBox(gump, x + 265, y, 80, 20, COLOR_YELLOW, z_default, ID_ACTION_TELEPORT_Z);
-			y := y + 40;
+			GFTextLine(gump, x, y, 1153, "X:");
+			GFResizePic(gump, x + 25, y, 9350, 80, 25);
+			GFTextEntry(gump, x + 30, y + 5, 70, 20, 1150, x_default, ID_ACTION_TELEPORT_X);
 
-			GFTextLine(gump, x, y, 1153, "Dica: Use .where no jogo para obter coordenadas");
-			y := y + 40;
+			GFTextLine(gump, x + 125, y, 1153, "Y:");
+			GFResizePic(gump, x + 150, y, 9350, 80, 25);
+			GFTextEntry(gump, x + 155, y + 5, 70, 20, 1150, y_default, ID_ACTION_TELEPORT_Y);
+
+			GFTextLine(gump, x + 250, y, 1153, "Z:");
+			GFResizePic(gump, x + 275, y, 9350, 80, 25);
+			GFTextEntry(gump, x + 280, y + 5, 70, 20, 1150, z_default, ID_ACTION_TELEPORT_Z);
+			y := y + 35;
+
+			GFTextLine(gump, x, y, 2100, "Ex: X=1000 Y=2000 Z=0 (altura do terreno)");
+			y := y + 35;
 	endcase
 
-	// Condition configuration
-	GFTextLine(gump, x, y, 53, "Condicao (opcional):");
-	y := y + 25;
-	GFTextLine(gump, x, y, 1153, "Quando esta acao deve ser executada?");
+	// ==================== SECTION: CONDITION ====================
+	GFTextMid(gump, 0, y, 600, 1149, "CONDICAO DE EXECUCAO (OPCIONAL)");
+	y := y + 20;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+	y := y + 15;
+
+	GFTextLine(gump, x, y, 2100, "Quando esta acao deve ser executada?");
 	y := y + 25;
 
-	// Condition type buttons
+	// Determine current condition
 	var current_condition := "NONE";
 	if (existing_action && existing_action.condition && existing_action.condition.type)
 		current_condition := existing_action.condition.type;
 	endif
 
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_CONDITION_NONE);
-	GFTextLine(gump, x + 40, y, (current_condition == "NONE" ? 53 : 2100), "Sempre");
+	// Radio button: Always execute
+	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "NONE" ? 1 : 0), RADIO_CONDITION_NONE);
+	GFTextLine(gump, x + 30, y + 2, 1153, "Sempre");
 	y := y + 30;
 
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_CONDITION_PLAYER_HAS_ITEM);
-	GFTextLine(gump, x + 40, y, (current_condition == "PLAYER_HAS_ITEM" ? 53 : 2100), "Jogador possui item");
-	if (current_condition == "PLAYER_HAS_ITEM")
-		y := y + 25;
-		GFTextLine(gump, x + 60, y, 2100, "ObjType (hex):");
-		var objtype_default := "";
-		if (existing_action && existing_action.condition && existing_action.condition.params)
+	// Radio button: Player has item
+	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "PLAYER_HAS_ITEM" ? 1 : 0), RADIO_CONDITION_HAS_ITEM);
+	GFTextLine(gump, x + 30, y + 2, 1153, "Jogador possui item");
+	y := y + 25;
+
+	// Parameter fields for "Player has item" (always shown)
+	var objtype_default := "";
+	var amount_default := "1";
+	if (existing_action && existing_action.condition && existing_action.condition.params)
+		if (existing_action.condition.params.objtype)
 			objtype_default := Hex(existing_action.condition.params.objtype);
 		endif
-		GFEAddTextBox(gump, x + 170, y, 80, 20, COLOR_YELLOW, objtype_default, ID_CONDITION_OBJTYPE);
-		GFTextLine(gump, x + 270, y, 2100, "Quantidade:");
-		var amount_default := "1";
-		if (existing_action && existing_action.condition && existing_action.condition.params && existing_action.condition.params.amount)
+		if (existing_action.condition.params.amount)
 			amount_default := CStr(existing_action.condition.params.amount);
 		endif
-		GFEAddTextBox(gump, x + 360, y, 60, 20, COLOR_YELLOW, amount_default, ID_CONDITION_AMOUNT);
 	endif
-	y := y + 30;
 
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_CONDITION_ACTION_SUCCEEDED);
-	GFTextLine(gump, x + 40, y, (current_condition == "ACTION_SUCCEEDED" ? 53 : 2100), "Acao anterior bem-sucedida");
-	if (current_condition == "ACTION_SUCCEEDED")
-		y := y + 25;
-		GFTextLine(gump, x + 60, y, 2100, "Numero da acao:");
-		var action_id_default := "1";
-		if (existing_action && existing_action.condition && existing_action.condition.params && existing_action.condition.params.action_id)
-			action_id_default := CStr(existing_action.condition.params.action_id);
-		endif
-		GFEAddTextBox(gump, x + 180, y, 60, 20, COLOR_YELLOW, action_id_default, ID_CONDITION_ACTION_ID);
-	endif
+	GFTextLine(gump, x + 40, y, 2100, "ObjType (hex):");
+	GFResizePic(gump, x + 150, y, 9350, 100, 25);
+	GFTextEntry(gump, x + 155, y + 5, 90, 20, 1150, objtype_default, ID_CONDITION_OBJTYPE);
+
+	GFTextLine(gump, x + 270, y, 2100, "Qtd:");
+	GFResizePic(gump, x + 310, y, 9350, 70, 25);
+	GFTextEntry(gump, x + 315, y + 5, 60, 20, 1150, amount_default, ID_CONDITION_AMOUNT);
 	y := y + 40;
 
+	// Radio button: Action succeeded
+	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "ACTION_SUCCEEDED" ? 1 : 0), RADIO_CONDITION_ACTION_SUCCEEDED);
+	GFTextLine(gump, x + 30, y + 2, 1153, "Acao anterior bem-sucedida");
+	y := y + 25;
+
+	// Parameter fields for "Action succeeded" (always shown)
+	var action_id_default := "1";
+	if (existing_action && existing_action.condition && existing_action.condition.params && existing_action.condition.params.action_id)
+		action_id_default := CStr(existing_action.condition.params.action_id);
+	endif
+
+	GFTextLine(gump, x + 40, y, 2100, "Numero da acao:");
+	GFResizePic(gump, x + 170, y, 9350, 70, 25);
+	GFTextEntry(gump, x + 175, y + 5, 60, 20, 1150, action_id_default, ID_CONDITION_ACTION_ID);
+	y := y + 40;
+
+	// Divider before button
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+
 	// Save button
-	GFAddButton(gump, 250, 540, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
-	GFTextLine(gump, 290, 540, 53, "[Salvar]");
+	GFAddButton(gump, 280, 590, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
 
 	return gump;
 endfunction
@@ -791,8 +932,9 @@ function ParseActionEditInput(input, action_type)
 			endif
 	endcase
 
-	// Parse condition
-	if (input[BTN_CONDITION_PLAYER_HAS_ITEM])
+	// Parse condition based on radio button selection
+	if (input[RADIO_CONDITION_HAS_ITEM])
+		// Player has item condition
 		var objtype_str := Trim(GFExtractData(input, ID_CONDITION_OBJTYPE));
 		var amount_str := Trim(GFExtractData(input, ID_CONDITION_AMOUNT));
 
@@ -805,9 +947,13 @@ function ParseActionEditInput(input, action_type)
 			if (action.condition.params.amount < 1)
 				action.condition.params.amount := 1;
 			endif
+		else
+			// No objtype specified - invalid condition
+			action.condition := 0;
 		endif
 
-	elseif (input[BTN_CONDITION_ACTION_SUCCEEDED])
+	elseif (input[RADIO_CONDITION_ACTION_SUCCEEDED])
+		// Action succeeded condition
 		var action_id_str := Trim(GFExtractData(input, ID_CONDITION_ACTION_ID));
 
 		if (action_id_str && action_id_str != "")
@@ -818,9 +964,12 @@ function ParseActionEditInput(input, action_type)
 			if (action.condition.params.action_id < 1)
 				action.condition.params.action_id := 1;
 			endif
+		else
+			// No action ID specified - invalid condition
+			action.condition := 0;
 		endif
 	else
-		// No condition / ALWAYS
+		// RADIO_CONDITION_NONE selected or no radio selected - always execute
 		action.condition := 0;
 	endif
 
