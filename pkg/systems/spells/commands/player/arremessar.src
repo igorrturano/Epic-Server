@@ -137,7 +137,7 @@ program arremesso(params)
 
 	var to_miss_chance := 50;
 	if (alvo.isA(POLCLASS_MOBILE))
-		to_miss_chance := GetResist(alvo, REFLEXOS);
+		to_miss_chance := GetResist(alvo, REFLEXES);
 	endif
 
 	var dmg := RandomDiceRoll("1d6");

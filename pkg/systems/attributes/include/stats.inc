@@ -65,7 +65,7 @@ endfunction
  *
  */
 function AP_GetStatMod(who, stat_name)
-	return CDbl(GetAttributeTemporaryMod(who, stat_name)) / 10.0;
+	return CDbl(GetAttributeTemporaryMod(who, stat_name) + GetAttributeIntrinsicMod(who, stat_name)) / 10.0;
 endfunction
 
 /*

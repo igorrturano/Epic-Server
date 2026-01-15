@@ -24,7 +24,7 @@ function EfeitosTerremoto(who,danobase,danoale,dif)
 
      sleep(5);
 
-     if (CheckResist(who,  REFLEXOS, dif))//note: colocar uma variavel de chance de resistir ao terremoto
+     if (CheckResist(who,  REFLEXES, dif))//note: colocar uma variavel de chance de resistir ao terremoto
         PrintTextAbove(who, "*Evitou as raizes*");
         PerformAction(who, 20);
      else

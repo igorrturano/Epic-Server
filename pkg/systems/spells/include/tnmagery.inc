@@ -795,7 +795,7 @@ function Corromper(who, spell, targ)
 	var corrupcao;
 
 	// Test willpower resistance
-	if (CheckResist(who, VONTADE, RESIST_HARD+spellinfo.cycles))
+	if (CheckResist(who, WILL, RESIST_HARD+spellinfo.cycles))
 		return 0;
 	endif
 
