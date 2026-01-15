@@ -36,10 +36,8 @@ program eventController(item)
 	// Only enable the specific event type needed
 	case (trigger_type)
 		"SPEECH":
-			// CRITICAL: Items must register for speech events BEFORE enabling them!
 			RegisterForSpeechEvents(item, radius);
-			EnableEvents(SYSEVENT_SPEECH, radius);
-			print("[EpicEvents] Registered and enabled SPEECH trigger (radius: " + radius + " tiles)");
+			print("[EpicEvents] Registered SPEECH trigger (radius: " + radius + " tiles)");
 		"ENTEREDAREA":
 			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
 			print("[EpicEvents] Enabled ENTEREDAREA trigger (radius: " + radius + " tiles)");
@@ -67,7 +65,7 @@ program eventController(item)
 	print("[EpicEvents] Global cooldown: " + (config.global_cooldown / 60) + " minutes");
 
 	while (true)
-		ev := os::wait_for_event(0);
+		ev := os::wait_for_event(1);
 		if (ev)
 			if (ProcessTriggerEvent(item, ev, trigger_config))
 
@@ -103,5 +101,6 @@ program eventController(item)
 				endif
 			endif
 		endif
+		sleepms(100);  // Additional delay to prevent rapid event duplication
 	endwhile
 endprogram

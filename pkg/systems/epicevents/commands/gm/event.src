@@ -154,9 +154,8 @@ program epicevents(who)
 	endwhile
 
 	// Step 4: Configure spawn details if needed
-	// Show spawn gump if:
-	// 1. No actions configured, OR
-	// 2. Actions contain a SPAWN action
+	// Show spawn gump ONLY if:
+	// 1. No actions configured (fallback to default spawn)
 	var need_spawn_gump := 0;
 	var has_spawn_action := 0;
 
@@ -164,10 +163,11 @@ program epicevents(who)
 		need_spawn_gump := 1;
 		Message("Nenhuma acao configurada. Usando sistema de spawn padrao.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 	else
+		// Check if SPAWN actions exist (already configured in HandleActionEdit)
 		foreach action in actions
 			if (action.type == "SPAWN")
 				has_spawn_action := 1;
-				need_spawn_gump := 1;
+				// SPAWN params already set in HandleActionEdit - no need to show gump again
 				break;
 			endif
 		endforeach
@@ -235,13 +235,7 @@ program epicevents(who)
 	// Save configuration
 	SetObjProperty(item, "config", config.ToStruct());
 
-	// Start controller script
-	var script_result := start_script(":epicevents:eventcontroller", item);
-	if (!script_result || script_result.errortext)
-		Message("Erro ao iniciar o script do event controller: " + script_result.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		DestroyItem(item);
-		return 0;
-	endif
+	// Controller script starts automatically via ControlScript in itemdesc.cfg
 
 	// Success message
 	Message($"Epic Event criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
