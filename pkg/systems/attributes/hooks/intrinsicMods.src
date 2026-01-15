@@ -1,0 +1,146 @@
+use uo;
+use util;
+
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+const TENTHS := 10;
+
+program Install()
+	print("INSTALLING: Exported Instrinsic Stats Mods - Intrinsic functions ...");
+	return 1;
+endprogram
+
+//TODO refatorar para usar MobileWrapper nos metodos intrisicos. ass: Deiro
+exported function GetIntrinsicFortitude(mobile)
+	var chardata := GetObjProperty(mobile, "chardata");
+	var fortitude := 0;
+	
+	if(chardata.kit == "Fortitude do Urso")
+		fortitude += 5;
+	endif
+
+	if (TemHabilidade(mobile, "Caçador Implacável"))
+		fortitude += 2;
+	endif
+	if (TemHabilidade(mobile, "Campeao das Montanhas"))
+		fortitude += 2;
+	endif
+
+	if (GetObjProperty(mobile, "corruption"))
+		var corruption_penalty := GetObjProperty(mobile, "corruption_penalty");
+		fortitude := fortitude - corruption_penalty;
+	endif
+
+	if (chardata.classe == "Guerreiro")
+		fortitude += 5;
+	else
+		fortitude += 2;
+	endif
+
+	if (chardata.raca == HUMANO)
+		fortitude += 2;
+    endif
+
+	var mobileWrapper := MobileWrapper(mobile);
+
+	var entropy := mobileWrapper.GetEntropy();
+	if (entropy > 4000)
+		fortitude += Cint(entropy / 4000);
+	endif
+	if (entropy <= -4000)
+		fortitude -= Cint(abs(entropy) / 4000);
+	endif
+
+	fortitude += GetCommonStatsIncrease(mobile,chardata);
+	fortitude += CInt(AP_GetStat(mobile, STRENGTH)/20);
+	fortitude += CInt(GetObjProperty(mobile, "#FortitudeMod")); //TODO isso deveria ser um mod temporário.
+	return fortitude * TENTHS;
+endfunction
+
+exported function GetIntrinsicReflexes(mobile)
+	var chardata := GetObjProperty(mobile, "chardata");
+	var reflexos := 0;
+
+	if(chardata.kit == "Reflexos de Pantera")
+		reflexos += 5;
+	endif
+
+	if (TemHabilidade(mobile, "Reaproveitar Pergaminho"))
+			reflexos := reflexos + 5;
+	endif
+
+	if (chardata.classe == "Ladino")
+		reflexos := reflexos + 5;
+	else
+		reflexos := reflexos + 2;
+	endif
+
+	if (chardata.raca == HUMANO)
+		reflexos += 2;
+    endif
+
+	reflexos += GetCommonStatsIncrease(mobile,chardata);
+	reflexos += CInt(AP_GetStat(mobile, DEXTERITY)/20); 
+	reflexos += CInt(GetObjProperty(mobile, "#ReflexosMod")); //TODO isso deveria ser um mod temporário.
+	return reflexos * TENTHS;
+endfunction
+
+exported function GetIntrinsicWill(mobile)
+	var chardata := GetObjProperty(mobile, "chardata");
+	var vontade := 0;
+
+	if(chardata.kit == "Vontade da Aguia")
+		vontade += 5;
+	endif
+
+	if (chardata.classe == "Sabio")
+		vontade += 5; 
+	else
+		vontade += 2;
+	endif
+
+	if ((GetObjProperty(mobile, "chardata")).culture == ALURIEL)
+		vontade += 2;
+	endif
+	var paladin_bonus := Cint(AP_GetSkill(mobile, THEOLOGY) / 20);
+	if ( GetCooldown(mobile, "VontadeIndomavel"))
+		vontade += 5;
+	elseif (temHabilidade(mobile, "Sigilo de Protecao"))
+		vontade += 5;
+	elseif (TemHabilidade(mobile, "Conexao Divina"))
+		vontade += 8;
+	elseif (TemHabilidade(mobile, "Consagracao Divina"))
+		vontade += paladin_bonus;
+	endif
+
+	var mobileWrapper := MobileWrapper(mobile);
+	var entropy := mobileWrapper.GetEntropy();
+	if (entropy > 4000)
+		vontade += Cint(entropy / 4000);
+	endif
+	if (entropy <= -4000)
+		vontade -= Cint(abs(entropy) / 4000);
+	endif
+
+	vontade += GetCommonStatsIncrease(mobile,chardata);
+	vontade += CInt(AP_GetStat(mobile, INTELLIGENCE)/20);
+	vontade += CInt(GetObjProperty(mobile, "#VontadeMod"));
+
+	return vontade * TENTHS;
+
+endfunction
+
+function GetCommonStatsIncrease(mobile, chardata)
+	var valor :=  0;
+
+	if (chardata.raca == HUMANO)
+		valor += 2;
+    endif
+
+	if (TemHabilidade(mobile, "Shintai to Kokoro"))
+		valor += 5;
+	endif
+
+	return valor;
+endfunction

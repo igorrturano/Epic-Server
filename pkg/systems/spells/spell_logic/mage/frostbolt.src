@@ -52,7 +52,7 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 

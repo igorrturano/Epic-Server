@@ -103,6 +103,7 @@ endfunction
 
 function ApllyLightLevel()
 	foreach player in enumerateonlinecharacters()
+		Sleepms(2);
 		if (HaveReverseVision(player))
 			ReverseLight(player);
 		endif

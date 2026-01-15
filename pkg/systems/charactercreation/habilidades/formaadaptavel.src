@@ -28,12 +28,12 @@ program manobra(who)
 			SetObjProperty(who, "#FortitudeMod", bonus + GetObjProperty(who, "#FortitudeMod"));
 			return;
 		elseif (prot == "Reflexos")
-			SetObjProperty(who, "formaadaptavel", REFLEXOS);
+			SetObjProperty(who, "formaadaptavel", REFLEXES);
 			SetObjProperty(who, "Mutacao", bonus);
 			SetObjProperty(who, "#ReflexosMod", bonus + GetObjProperty(who, "#ReflexosMod"));
 			return;
 		elseif (prot == "Vontade")
-			SetObjProperty(who, "formaadaptavel", VONTADE);
+			SetObjProperty(who, "formaadaptavel", WILL);
 			SetObjProperty(who, "Mutacao", bonus);
 			SetObjProperty(who, "#VontadeMod", bonus + GetObjProperty(who, "#VontadeMod"));
 			return;
@@ -45,13 +45,13 @@ program manobra(who)
 						- GetObjProperty(who, "Mutacao"));
 		EraseObjProperty(who, "Mutacao");
 		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
-	elseif (resist == REFLEXOS)
+	elseif (resist == REFLEXES)
 		EraseObjProperty(who, "formaadaptavel");
 		SetObjProperty(who, "#ReflexosMod", GetObjProperty(who, "#ReflexosMod")
 						- GetObjProperty(who, "Mutacao"));
 		EraseObjProperty(who, "Mutacao");
 		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
-	elseif (resist == VONTADE)
+	elseif (resist == WILL)
 		EraseObjProperty(who, "formaadaptavel");
 		SetObjProperty(who, "#VontadeMod", GetObjProperty(who, "#VontadeMod")
 						- GetObjProperty(who, "Mutacao"));
