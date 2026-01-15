@@ -25,7 +25,7 @@ program SpellScript(params)
 	var amt;
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (!CheckResist(targ, VONTADE, diff, -bonus))
+	if (!CheckResist(targ, WILL, diff, -bonus))
 		amt := Cint(AP_GetSkill(who, ARCANA) * 0.5);
 	else
 		amt := Cint(AP_GetSkill(who, ARCANA) * 0.25);

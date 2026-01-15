@@ -6,135 +6,10 @@ include "include/creationUtils";
 include "include/epicConstants";
 include ":wrappers:Objects/Model/MobileWrapper";
 
-const FORTITUDE := "Fortitude";
-const REFLEXOS := "Reflexos";
-const VONTADE := "Vontade";
-
+ // ATENçÃO: este metodo só existe para compatibilidade com o sistema antigo de resistências
+ // A atuação das resistências agora é feita via atributos intrínsecos e ganchos. veja: pkg/systems/attributes/hooks/intrinsicMods.src
 function GetResist(who, resist)
-	var chardata := GetObjProperty(who, "chardata");
-	var classe := chardata.classe;
-	var vantagem := chardata.vantagemracial;
-	var kit := chardata.trait;
-	var raca := chardata.raca;
-	var valor := 0;
-	EraseResist(who, resist);
-    if (resist == VONTADE && (TemHabilidade(who, "Ladrao de Magias")))
-		resist := REFLEXOS;
-	endif
-
-	if (resist == VONTADE && (TemHabilidade(who, "Fúria Indomável") && GetCooldown(who, "furia")))
-		resist := FORTITUDE;
-	endif
-	
-	if (kit == "Fortitude do Urso")
-		if (resist == FORTITUDE)
-			valor := valor + 5;
-		endif
-	elseif (kit == "Reflexos de Pantera")
-		if (resist == REFLEXOS)
-			valor := valor + 5;
-		endif
-	elseif (kit == "Vontade da Aguia")
-		if (resist == VONTADE)
-			valor := valor + 5;
-		endif
-	endif
-
-	if (resist == FORTITUDE)
-		if (TemHabilidade(who, "Caçador Implacável"))
-			valor := valor + 2;
-        endif
-        if (TemHabilidade(who, "Campeao das Montanhas"))
-            valor := valor + 2;
-		endif
-
-		if (classe == "Guerreiro")
-			valor := valor + 5;
-		else
-			valor := valor + 2;
-		endif
-
-		var mobileWrapper := MobileWrapper(who);
-		// Bonus fortitude para goods
-		var entropy := mobileWrapper.GetEntropy();
-		if (entropy > 4000)
-			valor += Cint(entropy / 4000);
-		endif
-		// Penalidade em fortitude para evils
-		if (entropy <= -4000)
-			valor -= Cint(abs(entropy) / 4000);
-		endif
-
-		valor := valor + CInt(AP_GetStat(who, STRENGTH)/20);
-		valor := valor + CInt(GetObjProperty(who, "#FortitudeMod"));
-	elseif (resist == REFLEXOS)
-		if (TemHabilidade(who, "Reaproveitar Pergaminho"))
-			valor := valor + 5;
-		endif
-		if (classe == "Ladino")
-			valor := valor + 5;
-		else
-			valor := valor + 2;
-		endif
-
-		valor := valor + CInt(AP_GetStat(who, DEXTERITY)/20); 
-		valor := valor + CInt(GetObjProperty(who, "#ReflexosMod"));
-	else // (resist == VONTADE)
-		if (classe == "Sabio")
-			valor := valor + 5; 
-		else
-			valor := valor + 2;
-		endif
-
-		valor := valor + CInt(AP_GetStat(who, INTELLIGENCE)/20);
-		valor := valor + CInt(GetObjProperty(who, "#VontadeMod"));
-		if ((GetObjProperty(who, "chardata")).culture == ALURIEL)
-			valor := valor + 2;
-		endif
-		var paladin_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 20);
-		if ( GetCooldown(who, "VontadeIndomavel"))
-			valor := valor + 5;
-		elseif (temHabilidade(who, "Sigilo de Protecao"))
-			valor := valor + 5;
-        elseif (TemHabilidade(who, "Conexao Divina"))
-            valor := valor + 8;
-		elseif (TemHabilidade(who, "Consagracao Divina"))
-			valor := valor + paladin_bonus;
-		endif
-	endif
-
-    if (raca == HUMANO)
-		valor := valor + 2;
-    endif
-
-	if (TemHabilidade(who, "Shintai to Kokoro"))
-		valor := valor + 5;
-	endif
-	
-	var mobileWrapper := MobileWrapper(who);
-	// Bonus fortitude para goods
-	var entropy := mobileWrapper.GetEntropy();
-	if (entropy > 4000)
-		valor += Cint(entropy / 4000);
-	endif
-	// Penalidade em fortitude para evils
-	if (entropy <= -4000)
-		valor -= Cint(abs(entropy) / 4000);
-	endif
-
-	if (who.acctname)
-		if(resist == FORTITUDE)
-			var fortitude_mod := Cint(who.lower_reagent_cost_mod) + valor;
-			who.lower_reagent_cost_mod := fortitude_mod;
-		elseif(resist == VONTADE)
-			var vontade_mod := Cint(who.spell_damage_increase_mod) + valor;
-			who.spell_damage_increase_mod := vontade_mod;
-		else
-			var reflexos_mod := Cint(who.faster_casting_mod) + valor;
-			who.faster_casting_mod := reflexos_mod;
-		endif
-		return valor;
-	endif
+	return AP_GetStat(who, resist);
 endfunction
 
 function CheckResist(defender, resist_type, dif, mod := 0)
@@ -178,7 +53,7 @@ function ShouldGetSecondChance(defender, resist_type)
     return (
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
         (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
-        (chardata.raca == ANAO && resist_type == VONTADE) ||
+        (chardata.raca == ANAO && resist_type == WILL) ||
         (chardata.culture == POLKINEA) ||
 		(MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
     );
@@ -190,7 +65,7 @@ function GetSecondChanceMessage(defender, resist_type)
         return "Seu organismo drow expurga o veneno";
     elseif (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE)
         return "Sua aura divina expurga o veneno";
-    elseif (chardata.raca == ANAO && resist_type == VONTADE)
+    elseif (chardata.raca == ANAO && resist_type == WILL)
         return "Sua constituição anã o salvou da magia";
     elseif (chardata.culture == POLKINEA)
         return "Um pequilho sempre pode contar com a própria sorte";
@@ -198,21 +73,4 @@ function GetSecondChanceMessage(defender, resist_type)
 		return "Sua alma corrupta expurga o veneno";
     endif
     return "";
-endfunction
-
-function EraseResist(who, resist)
-	if (!who.npcdesc)
-		if(resist == FORTITUDE)
-			who.lower_reagent_cost_mod := 0;
-			who.lower_reagent_cost := 0;
-		elseif(resist == VONTADE)
-			who.spell_damage_increase_mod := 0;
-			who.spell_damage_increase := 0;
-		else
-			who.faster_casting_mod := 0;
-			who.faster_casting := 0;
-		endif
-	endif
-
-	Recalcvitals(who);
 endfunction

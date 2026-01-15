@@ -1,5 +1,6 @@
 include "IDamageDice";
 include ":diceroll:model/Dice";
+include "Damage";
 
 class DamageDice(IDamageDice)
 	var _slash; // Dice class
@@ -125,18 +126,19 @@ class DamageDice(IDamageDice)
 		return this;
 	endfunction
 
-	function GetMinimum(this)
+	function GetMinimum(this, physicalChoice := "")
 		var minDamage := 0;
 
-		if (this.GetSlashDamage() is @Dice)
+		
+		if (this.GetSlashDamage() is @Dice && ( physicalChoice == "" ||  DAMAGE_TYPE::SLASH == physicalChoice))
 			minDamage += this.GetSlashDamage().GetMinimum();
 		endif
 
-		if (this.GetPiercingDamage() is @Dice)
+		if (this.GetPiercingDamage() is @Dice && ( physicalChoice == "" ||  DAMAGE_TYPE::PIERCING == physicalChoice))
 			minDamage += this.GetPiercingDamage().GetMinimum();
 		endif
 
-		if (this.GetBluntDamage() is @Dice)
+		if (this.GetBluntDamage() is @Dice && ( physicalChoice == "" ||  DAMAGE_TYPE::BLUNT == physicalChoice))
 			minDamage += this.GetBluntDamage().GetMinimum();
 		endif
 
@@ -159,18 +161,18 @@ class DamageDice(IDamageDice)
 		return minDamage;
 	endfunction
 
-	function GetMaximum(this)
+	function GetMaximum(this, physicalChoice := "")
 		var maxDamage := 0;
 
-		if (this.GetSlashDamage() is @Dice)
+		if (this.GetSlashDamage() is @Dice && ( physicalChoice == "" || DAMAGE_TYPE::SLASH == physicalChoice ))
 			maxDamage += this.GetSlashDamage().GetMaximum();
 		endif
 
-		if (this.GetPiercingDamage() is @Dice)
+		if (this.GetPiercingDamage() is @Dice && ( physicalChoice == "" || DAMAGE_TYPE::PIERCING == physicalChoice))
 			maxDamage += this.GetPiercingDamage().GetMaximum();
 		endif
 
-		if (this.GetBluntDamage() is @Dice)
+		if (this.GetBluntDamage() is @Dice && ( physicalChoice == "" || DAMAGE_TYPE::BLUNT == physicalChoice))
 			maxDamage += this.GetBluntDamage().GetMaximum();
 		endif
 

@@ -25,13 +25,16 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 use polsys;
 
-include ":taming:taming";
-include ":attributes:attributeConstants";
-include ":attributes:attributes";
+
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
-include ":charactercreation:resists";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":combat:Controller/DamageController";
+include ":combat:Model/AttackInfo";
+include "include/math";
 include ":expbar:expbar";
+include "include/packetConstants";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");
@@ -43,217 +46,221 @@ const BIT_MASK := 0x00000003;
 var STATCAP := 225;
 var MODE := 0;
 var STATLOCK := 0;
+var ARMOR_RESISTENCE_PACKET_ARRAY := array{LAYER_SHOES,LAYER_HELM,LAYER_GLOVES,LAYER_NECK,LAYER_CHEST,LAYER_ARMS,LAYER_PANTS};
 
-const PLAYER_ID := 3;
-const NAME_ID := 7;
+const QTD_RESISTENCIAS := 7;
+const CHARACTER_STATUS_PACKET_ID := 0x11;
+const OLD_INDEX_IS_RENAMABLE := 41;
+
+enum class OLD_STATUS_OFFSETS
+	SOURCE_SERIAL := 3,
+	NAME := 7,
+	HITS := 37,
+	HITS_MAX := 39,
+	IS_RENAMABLE := 41,
+	IS_FEMALE := 43,
+	STRENGTH := 44,
+	DEXTERITY := 46,
+	INTELLIGENCE := 48,
+	STAMINA := 50,
+	STAMINA_MAX := 52,
+	MANA := 54,
+	MANA_MAX := 56,
+	WEIGHT := 64,
+	WEIGHT_MAX := 66,
+	RACE := 68,
+	FOLLOWERS := 71,
+	FOLLOWERS_MAX := 72,
+	MIN_DAMAGE :=  83,
+	MAX_DAMAGE :=  85
+endenum
+
+enum class NEW_STATUS_OFFSETS
+	SOURCE_SERIAL := 3,
+	NAME := 7,
+	HITS := 37,
+	HITS_MAX := 39,
+	IS_RENAMABLE := 41,
+	//IS_FEMALE := 42,
+	STRENGTH := 42,
+	DEXTERITY := 44,
+	INTELLIGENCE := 46,
+	STAMINA := 48,
+	STAMINA_MAX := 50,
+	MANA := 52,
+	MANA_MAX := 54,
+	WEIGHT := 56,
+	WEIGHT_MAX := 58,
+	//RACE := 61,
+	FOLLOWERS := 60,
+	FOLLOWERS_MAX := 61,
+	MIN_DAMAGE :=  62,
+	MAX_DAMAGE :=  64,
+	MIN_DAMAGE_OFFH := 66,
+	MAX_DAMAGE_OFFH := 68,
+	FORTITUDE := 70,
+	REFLEXES := 71,
+	WILL := 72,
+	DEATH_POINTS := 73,
+	DEATH_POINTS_MAX := 75,
+	ADDICTION := 77,
+	HUNGER := 79,
+	XP_CURRENT := 80,
+	XP_NEXT := 84,
+	LEVEL := 80,
+	GOLD := 81,
+	AMOR_RESISTANCES_START := 85,
+	MOBILE_LAST_INDEX := 42,
+	//PICTURE_URL := 121,
+endenum
+
 
 exported function HandleSendStats(character, byref packet)
-	var serial := packet.GetInt32(PLAYER_ID);
+	var pacoteFinal := CreatePacket(CHARACTER_STATUS_PACKET_ID, MSGLEN_VARIABLE);
+	var serial :=  packet.GetInt32(OLD_STATUS_OFFSETS::SOURCE_SERIAL);
+	
 	var source := SystemFindObjectBySerial(serial);
-	var Object_Name;
+	var mobileEnvelopado := MobileWrapper(source);
+	
 	var url;
-
+	
 	url := GetObjProperty(source, "url");
 	if (!url || url.errortext)
 		url := ""; // Set to empty string if property doesn't exist or has an error
 	endif
 
+	pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::SOURCE_SERIAL, serial);
+
 	if (source.IsA(POLCLASS_MOBILE))
-		// PREENCHE NOME DO MOBILE
-		Object_Name := source.name;
+		pacoteFinal.SetString(NEW_STATUS_OFFSETS::NAME, TrataNomeMobile(character, source), 1);
+		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS, packet.GetInt16(OLD_STATUS_OFFSETS::HITS));
+		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::HITS_MAX));
+		pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::IS_RENAMABLE, packet.GetInt8(OLD_STATUS_OFFSETS::IS_RENAMABLE));
 
-		// Cor do nome dos NPC conforme skill de combate
-		if (!source.npctemplate)
-			// Caso em que tá desconhecido
-			if (GetObjProperty(source, "realname"))
-				Object_Name := "Incognito";
-			else
-				// Verifica se o char já foi reconhecido por who
-				var conhecidos := dictionary;
-				if (GetObjProperty(character, "conhecidos"))
-					var ID := Cstr(source.serial); // Salva o serial do personagem
-					if (GetObjProperty(source, "disfarce"))
-						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
-					endif
+		if(character.serial == serial)
+			var weapon := GetEquipmentByLayer(character,LAYER_HAND2);
+			var envelopeArma := WeaponWrapper(weapon);
+			var attackInfo := AttackInfo(mobileEnvelopado, 0);
+			var dps_current := Trunc(mobileEnvelopado.GetCurrentDp(),2);
+			var levelAtual := CInt(GetObjProperty(character, "Level")) ? CInt(GetObjProperty(character, "Level")) : 0;
 
-					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
-					if (conhecidos.Exists(ID))
-						Object_Name := conhecidos[ID];
-					else
-						Object_Name := source.name;
-					endif
-				else
-					Object_Name := source.name;
-				endif
+			attackInfo.SetDamageHand(DAMAGE_HAND::MAINHAND);
+			var mainHandDmg := CalculateEstimatedMinMaxDamage(attackInfo);
+			var offHandDmg := struct{
+				min := 0,
+				max := 0
+			};
+			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD)
+				attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND);
+				offHandDmg := CalculateEstimatedMinMaxDamage(attackInfo);
 			endif
-			if (character.cmdlevel > 1) // Staff consegue ver mais
-				var nome_inicial := GetObjProperty(source, "nome_inicial");
-				if (nome_inicial && !nome_inicial.errortext)
-					Object_Name := Object_Name + " [" + nome_inicial + "]";
-				endif
-			endif
-			packet.SetString(NAME_ID, Object_Name, 1);
+
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STRENGTH, packet.GetInt16(OLD_STATUS_OFFSETS::STRENGTH));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEXTERITY, packet.GetInt16(OLD_STATUS_OFFSETS::DEXTERITY));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::INTELLIGENCE, packet.GetInt16(OLD_STATUS_OFFSETS::INTELLIGENCE));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA_MAX));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MANA, packet.GetInt16(OLD_STATUS_OFFSETS::MANA));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MANA_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::MANA_MAX));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::WEIGHT, packet.GetInt16(OLD_STATUS_OFFSETS::WEIGHT));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::WEIGHT_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::WEIGHT_MAX));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS_MAX, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS_MAX));
+
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MIN_DAMAGE, cint(mainHandDmg.min));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MAX_DAMAGE, cint(mainHandDmg.max));
+
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MIN_DAMAGE_OFFH, cint(offHandDmg.min));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MAX_DAMAGE_OFFH,  cint(offHandDmg.max));
+
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE, cint(mobileEnvelopado.GetFortitude()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  cint(mobileEnvelopado.GetReflexes()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,  cint(mobileEnvelopado.GetWill()));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS,  cint(mobileEnvelopado.GetCurrentDp()));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS_MAX,  cint(mobileEnvelopado.GetMaxDp()));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::ADDICTION,  cint(GetObjProperty(character, "vicio")));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::HUNGER,  CInt( mobileEnvelopado.GetCurrentHunger() / 60));
+
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
+			//pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
+			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, 0);
+
+			foreach camadaArmadura in ARMOR_RESISTENCE_PACKET_ARRAY
+				Sleepms(2);
+				var itemEquipado := GetEquipmentByLayer(character,camadaArmadura);
+				var envelopeArmadura := ArmorWrapper(itemEquipado); 
+				var resistencias := envelopeArmadura.GetResists();
+				var indiceLote := (_camadaArmadura_iter - 1) * QTD_RESISTENCIAS;
+				var indiceInicial := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START;
+				
+				pacoteFinal.SetInt8(indiceInicial + indiceLote,resistencias.GetSlashResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 1,resistencias.GetPiercingResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 2,resistencias.GetBluntResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 3,resistencias.GetFireResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 4,resistencias.GetColdResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 5,resistencias.GetPoisonResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 6,resistencias.GetEnergyResist());
+			endforeach
+
+			var indicePosArmadura := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START + ARMOR_RESISTENCE_PACKET_ARRAY.size() * QTD_RESISTENCIAS;
+			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE,mainHandDmg.Damage.GetFireRawDamage());
+			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 2,mainHandDmg.Damage.GetColdRawDamage());
+			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 3,mainHandDmg.Damage.GetPoisonRawDamage());
+			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 4,mainHandDmg.Damage.GetEnergyRawDamage());
+
+			pacoteFinal.SetString(
+						indicePosArmadura + INT8_SIZE * 5, 
+						url, 
+						1);
+		else
+			pacoteFinal.SetString(
+							NEW_STATUS_OFFSETS::MOBILE_LAST_INDEX, 
+							url, 
+							1);
 		endif
 
-		// Envia a url do portrait junto com o status
-		packet.SetString(121, url, 1);
 	endif
 
+	packet.SetSize(pacoteFinal.GetSize());
+	packet.Assign(pacoteFinal);
 	return 0;
 endfunction
 
-function HandleExtended(character, byref packet)
-	// Increase packet size for the extended info
-	packet.SetSize(packet.GetSize() + 66); // Increase size to accommodate all stats
+function TrataNomeMobile(character, source)
+	if(!source.npctemplate)
+		var nomeJogador;
 
-	// Set packet mode to 6 (UOKR Extended Info) for most complete data
-	packet.SetInt8(42, 6);
+		if (GetObjProperty(source, "realname"))
+					nomeJogador := "Incognito";
+		else
+			// Verifica se o char já foi reconhecido por who
+			var conhecidos := dictionary;
+			if (GetObjProperty(character, "conhecidos"))
+				var ID := Cstr(source.serial); // Salva o serial do personagem
+				if (GetObjProperty(source, "disfarce"))
+					ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
+				endif
 
-	// ============================================================
-	// PACKET 0x11 STRUCTURE FOR TYPE=6 (UOKR Extended)
-	// Based on ClassicUO sequential reading order:
-	// ============================================================
-	// Offset 0:   PacketID (1 byte)
-	// Offset 1:   Length (2 bytes)
-	// Offset 3:   Serial (4 bytes)
-	// Offset 7:   Name (30 bytes)
-	// Offset 37:  Hits (2 bytes)
-	// Offset 39:  HitsMax (2 bytes)
-	// Offset 41:  IsRenamable (1 byte)
-	// Offset 42:  Type (1 byte) = 6
-	// Offset 43:  IsFemale (1 byte)
-	// Offset 44:  Str (2 bytes)
-	// Offset 46:  Dex (2 bytes)
-	// Offset 48:  Int (2 bytes)
-	// Offset 50:  Stamina (2 bytes)
-	// Offset 52:  StaminaMax (2 bytes)
-	// Offset 54:  Mana (2 bytes)
-	// Offset 56:  ManaMax (2 bytes)
-	// Offset 58:  Gold (4 bytes)
-	// Offset 62:  PhysicalResist (2 bytes)
-	// Offset 64:  Weight (2 bytes)
-	// --- type >= 5 (ML) ---
-	// Offset 66:  WeightMax (2 bytes)
-	// Offset 68:  Race (1 byte)
-	// --- type >= 3 (Renaissance) ---
-	// Offset 69:  StatsCap (2 bytes)
-	// Offset 71:  Followers (1 byte)
-	// Offset 72:  FollowersMax (1 byte)
-	// --- type >= 4 (AOS) ---
-	// Offset 73:  FireResist (2 bytes)
-	// Offset 75:  ColdResist (2 bytes)
-	// Offset 77:  PoisonResist (2 bytes)
-	// Offset 79:  EnergyResist (2 bytes)
-	// Offset 81:  Luck (2 bytes)
-	// Offset 83:  DamageMin (2 bytes)
-	// Offset 85:  DamageMax (2 bytes)
-	// Offset 87:  TithingPoints (4 bytes) <-- XP goes here!
-	// --- type >= 6 ---
-	// Offset 91+: Extended stats...
-	// ============================================================
-
-	// Get pet data
-	var petcnt := GetNumPets(character);
-	if (!petcnt)
-		petcnt := 0;
-	endif
-
-	var petmax := GetMaxPets(character);
-	if (!petmax)
-		petmax := 1;
-	endif
-
-	// --- Type >= 5 (ML) ---
-	// WeightMax is at offset 66, but POL core may set it, so skip
-	// Race is at offset 68 - POL core sets this
-	
-	// --- Type >= 3 (Renaissance) ---
-	// StatsCap at offset 69
-	packet.SetInt16(69, STATCAP);
-	// Followers at offset 71
-	packet.SetInt8(71, petcnt);
-	// FollowersMax at offset 72
-	packet.SetInt8(72, petmax);
-
-	// --- Type >= 4 (AOS) ---
-	// Get defense/resistances
-	var defense := character.getMobileDefenses();
-	
-	// FireResist at offset 73
-	packet.SetInt16(73, CInt(character.resist_fire));
-	// ColdResist at offset 75
-	packet.SetInt16(75, CInt(character.resist_cold));
-	// PoisonResist at offset 77
-	packet.SetInt16(77, CInt(character.resist_poison));
-	// EnergyResist at offset 79
-	packet.SetInt16(79, CInt(character.resist_energy));
-	// Luck at offset 81
-	packet.SetInt16(81, 0);
-
-	// DamageMin/Max
-	var min_dmg := 0, max_dmg := 0;
-	if (character.weapon)
-		var atrib := GetObjProperty(character.weapon, "atributos");
-		if (atrib)
-			min_dmg := CInt(atrib.SlashMainDamage + atrib.PiercingMainDamage + atrib.BluntMainDamage);
-			max_dmg := min_dmg + 5;
+				conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
+				if (conhecidos.Exists(ID))
+					nomeJogador := conhecidos[ID];
+				else
+					nomeJogador := source.name;
+				endif
+			else
+				nomeJogador := source.name;
+			endif
 		endif
+
+		if (character.cmdlevel > 1) // Staff consegue ver mais
+			var nome_inicial := GetObjProperty(source, "nome_inicial");
+			if (nome_inicial && !nome_inicial.errortext)
+				nomeJogador := nomeJogador + " [" + nome_inicial + "]";
+			endif
+		endif
+
+		return nomeJogador;
+	else
+		return source.name;
 	endif
-	
-	// DamageMin at offset 83
-	packet.SetInt16(83, min_dmg);
-	// DamageMax at offset 85
-	packet.SetInt16(85, max_dmg);
-
-	// XP System V2 - TithingPoints at offset 87
-	var packed_xp := PackXPForClient(character);
-	packet.SetInt32(87, packed_xp);
-
-	// --- Type >= 6 (Extended stats start at offset 91) ---
-	// Get custom properties
-	var fortitude := GetResist(character, FORTITUDE);
-	if (!fortitude) fortitude := 0; endif
-
-	var reflexos := GetResist(character, REFLEXOS);
-	if (!reflexos) reflexos := 0; endif
-
-	var vontade := GetResist(character, VONTADE);
-	if (!vontade) vontade := 0; endif
-
-	var dps_max := AP_GetVitalMaximumValue(character, "DP");
-	var hunger := GetObjProperty(character, "hunger");
-	if (!hunger) hunger := 0; endif
-	var vicio := GetObjProperty(character, "vicio");
-	if (!vicio) vicio := 0; endif
-
-	var resist_slash := GetObjProperty(character, "resist_slash");
-	if (!resist_slash) resist_slash := 0; endif
-	var resist_pierce := GetObjProperty(character, "resist_pierce");
-	if (!resist_pierce) resist_pierce := 0; endif
-	var resist_blunt := GetObjProperty(character, "resist_blunt");
-	if (!resist_blunt) resist_blunt := 0; endif
-
-	// Extended stats at offset 91+
-	// MaxPhysicRes at offset 91
-	packet.SetInt16(91, CInt(defense));
-	// MaxFireRes at offset 93
-	packet.SetInt16(93, fortitude);
-	// MaxColdRes at offset 95
-	packet.SetInt16(95, reflexos);
-	// MaxPoisonRes at offset 97
-	packet.SetInt16(97, vontade);
-	// MaxEnergyRes at offset 99
-	packet.SetInt16(99, hunger);
-	// DefenseChanceIncrease at offset 101
-	packet.SetInt16(101, vicio);
-	// MaxDefenseChanceIncrease at offset 103
-	packet.SetInt16(103, dps_max);
-	// HitChanceIncrease at offset 105
-	packet.SetInt16(105, resist_slash);
-	// SwingSpeedIncrease at offset 107
-	packet.SetInt16(107, resist_pierce);
-	// DamageIncrease at offset 109
-	packet.SetInt16(109, resist_blunt);
-
-	return 1;
 endfunction

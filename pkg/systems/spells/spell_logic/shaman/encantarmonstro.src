@@ -36,7 +36,7 @@ program SpellScript(params)
     var diff := handleSpellResistDiffForDivineCasters(who, spell_school);
     var bonus := epicWisdomPathBonus(who);
 
-    if (CheckResist(targ, VONTADE, diff, -bonus) || isTrueBoss(targ))
+    if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
         SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
         SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
         return;

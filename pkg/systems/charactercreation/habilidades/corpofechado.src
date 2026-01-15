@@ -15,7 +15,7 @@ include ":attributes:attributeConstants";
 program SpellScript(params)
 	var who := params[1];
 	params := 0; // No longer needed
-	var vont := GetResist(who, VONTADE);
+	var vont := GetResist(who, WILL);
 	SetCooldown(who, "corpofechado", vont);
 	var stammod := cint(GetObjProperty(who, "stammod"));
 	var hitsmod := cint(GetObjProperty(who, "hitsmod"));

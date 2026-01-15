@@ -874,3 +874,93 @@ function UpdateGlobalEventLevers(event_type)
       endif
    endforeach
 endfunction
+
+/*
+ * UpdateAllShiftMerchants()
+ *
+ * Purpose
+ * Updates visibility of all registered shift-based merchants
+ * Called at sunrise and sunset to hide/show merchants based on their shift
+ *
+ * Registry Structure:
+ * ShiftMerchantRegistry = { serial: shift_value }
+ * shift_value can be: "night", "noite", "day", "dia"
+ */
+function UpdateAllShiftMerchants()
+	var registry := GetGlobalProperty("ShiftMerchantRegistry");
+	if (!registry || registry == error)
+		// No merchants registered yet
+		return;
+	endif
+
+	var current_time := GetGlobalProperty("dia");
+	var is_daytime := (current_time == "dia");
+	var removed_count := 0;
+	var updated_count := 0;
+	var registry_changed := 0;
+
+	// Create a list of dead serials to remove
+	var dead_serials := array{};
+
+	foreach serial in (registry.keys())
+		var npc := SystemFindObjectBySerial(serial);
+
+		if (!npc)
+			// NPC doesn't exist anymore - mark for removal
+			dead_serials.append(serial);
+			removed_count := removed_count + 1;
+			continue;
+		endif
+
+		// Read shift from NPC property (allows in-game changes)
+		var shift := GetObjProperty(npc, "shift");
+		if (!shift || shift == error)
+			// No property set, use registry value as fallback
+			shift := registry[serial];
+		else
+			// Update registry if property has changed
+			if (shift != registry[serial])
+				registry[serial] := shift;
+				registry_changed := 1;
+			endif
+		endif
+
+		var is_night_shift := (shift == "night" || shift == "noite");
+		var is_day_shift := (shift == "day" || shift == "dia");
+
+		// Apply visibility based on shift
+		if (is_night_shift)
+			// Night shift: hide during day, show at night
+			if (is_daytime)
+				npc.concealed := 1;
+			else
+				npc.concealed := 0;
+			endif
+			updated_count := updated_count + 1;
+		elseif (is_day_shift)
+			// Day shift: show during day, hide at night
+			if (is_daytime)
+				npc.concealed := 0;
+			else
+				npc.concealed := 1;
+			endif
+			updated_count := updated_count + 1;
+		endif
+	endforeach
+
+	// Clean up dead NPCs from registry and save any updated shift values
+	if (dead_serials.size() > 0)
+		foreach serial in dead_serials
+			registry.erase(serial);
+		endforeach
+		registry_changed := 1;
+	endif
+
+	// Save registry if it was modified (dead NPCs removed or shifts updated)
+	if (registry_changed)
+		SetGlobalProperty("ShiftMerchantRegistry", registry);
+	endif
+
+	// Debug output
+	print("[SHIFT] Updated " + updated_count + " merchants, removed " + removed_count + " dead NPCs");
+endfunction
