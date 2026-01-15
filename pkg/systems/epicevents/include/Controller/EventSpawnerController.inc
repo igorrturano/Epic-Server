@@ -214,7 +214,7 @@ function CountAliveNPCs(item, template)
 			var spawner_template := GetObjProperty(npc, "event_spawner_template");
 
 			if (spawner_serial == item.serial && spawner_template == template)
-				if (!npc.dead && npc.connected)
+				if (!npc.dead)
 					count := count + 1;
 				endif
 			endif

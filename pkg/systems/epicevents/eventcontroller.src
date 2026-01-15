@@ -1,0 +1,97 @@
+use uo;
+use os;
+
+include ":epicevents:Controller/SpawnController";
+include ":epicevents:Controller/TriggerController";
+include ":epicevents:Controller/ActionController";
+include ":epicevents:Model/EventConfig";
+include ":epicevents:Model/TriggerConfig";
+include ":epicevents:Model/ActionConfig";
+include "include/sysEvent";
+
+program eventController(item)
+	var ev;
+	Set_Event_Queue_Size(50);
+
+	var config_struct := GetObjProperty(item, "config");
+	if (!config_struct)
+		return;
+	endif
+
+	var config := EventConfig();
+	config.FromStruct(config_struct);
+
+	// Enable events conditionally based on trigger type
+	var trigger_type := config.trigger_type;
+
+	// Get radius from trigger_params if available (default: 8)
+	var radius := 8;
+	if (config.trigger_params && config.trigger_params.radius)
+		radius := CInt(config.trigger_params.radius);
+		if (radius < 1)
+			radius := 8;
+		endif
+	endif
+
+	// Only enable the specific event type needed
+	case (trigger_type)
+		"SPEECH":
+			// CRITICAL: Items must register for speech events BEFORE enabling them!
+			RegisterForSpeechEvents(item, radius);
+			EnableEvents(SYSEVENT_SPEECH, radius);
+			print("[EpicEvents] Registered and enabled SPEECH trigger (radius: " + radius + " tiles)");
+		"ENTEREDAREA":
+			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
+			print("[EpicEvents] Enabled ENTEREDAREA trigger (radius: " + radius + " tiles)");
+		"LEFTAREA":
+			EnableEvents(SYSEVENT_LEFTAREA, radius);
+			print("[EpicEvents] Enabled LEFTAREA trigger (radius: " + radius + " tiles)");
+		"ITEM_GIVEN":
+			EnableEvents(SYSEVENT_ITEM_GIVEN);
+			print("[EpicEvents] Enabled ITEM_GIVEN trigger");
+		"DOUBLECLICKED":
+			EnableEvents(SYSEVENT_DOUBLECLICKED);
+			print("[EpicEvents] Enabled DOUBLECLICKED trigger");
+	endcase
+
+	// Create TriggerConfig from stored params
+	var trigger_config := TriggerConfig(trigger_type);
+	if (config.trigger_params)
+		// CRITICAL FIX: trigger_params is just the params struct, not a full TriggerConfig
+		// Don't use FromStruct as it would overwrite the type field!
+		trigger_config.params := config.trigger_params;
+	endif
+
+	print("[EpicEvents] Event controller started - Trigger type: " + trigger_type);
+	print("[EpicEvents] Location: " + item.x + "," + item.y + "," + item.z);
+	print("[EpicEvents] Global cooldown: " + (config.global_cooldown / 60) + " minutes");
+
+	while (true)
+		ev := os::wait_for_event(0);
+		if (ev)
+			print("[EpicEvents] DEBUG - Event received! Type: " + ev.type + " | Source: " + (ev.source ? ev.source.name : "none"));
+			if (ev.text)
+				print("[EpicEvents] DEBUG - Event text: '" + ev.text + "'");
+			endif
+
+			if (ProcessTriggerEvent(item, ev, trigger_config))
+				print("[EpicEvents] Trigger validated - executing actions");
+
+				// Execute configured actions
+				if (config.actions && config.actions.size() > 0)
+					ExecuteActions(item, ev, config.actions);
+				else
+					// No actions configured - use spawn fallback
+					print("[EpicEvents] No actions configured - using spawn fallback");
+					var spawn_action := ActionConfig("SPAWN");
+					spawn_action.params := config.ToStruct();
+					ExecuteActions(item, ev, array{spawn_action});
+				endif
+
+				// Update cooldown
+				var cooldown := config.global_cooldown ? config.global_cooldown : 3600;
+				UpdateTriggerCooldown(item, cooldown);
+			endif
+		endif
+	endwhile
+endprogram

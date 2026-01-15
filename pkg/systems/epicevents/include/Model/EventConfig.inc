@@ -1,5 +1,7 @@
 use uo;
 
+include ":epicevents:Model/ActionConfig";
+
 class EventConfig()
 	// Creature 1
 	var template1;
@@ -25,6 +27,12 @@ class EventConfig()
 	var min_delay;
 	var max_delay;
 
+	// Event system properties
+	var trigger_type;       // "SPEECH", "ENTEREDAREA", "LEFTAREA", "ITEM_GIVEN", "DOUBLECLICKED"
+	var trigger_params;     // Struct with trigger-specific parameters
+	var actions;            // Array of ActionConfig objects
+	var global_cooldown;    // Cooldown in seconds between triggers
+
 	function EventConfig(this)
 		// Constructor - initialize with default values
 		this.template1 := "";
@@ -44,8 +52,14 @@ class EventConfig()
 
 		this.color := "";
 		this.emote := "";
-		this.min_delay := "1";
-		this.max_delay := "5";
+		this.min_delay := "60";
+		this.max_delay := "120";
+
+		// Event system defaults
+		this.trigger_type := "";
+		this.trigger_params := 0;
+		this.actions := array{};
+		this.global_cooldown := 3600;
 	endfunction
 
 	function ToStruct(this)
@@ -74,6 +88,19 @@ class EventConfig()
 		data.+emote := this.emote;
 		data.+min_delay := this.min_delay;
 		data.+max_delay := this.max_delay;
+
+		// Event fields
+		data.+trigger_type := this.trigger_type;
+		data.+trigger_params := this.trigger_params;
+
+		// Convert ActionConfig objects to structs for storage
+		var actions_data := array{};
+		foreach action in (this.actions)
+			actions_data.append(action.ToStruct());
+		endforeach
+		data.+actions := actions_data;
+
+		data.+global_cooldown := this.global_cooldown;
 
 		return data;
 	endfunction
@@ -106,6 +133,29 @@ class EventConfig()
 		this.emote := data.emote;
 		this.min_delay := data.min_delay;
 		this.max_delay := data.max_delay;
+
+		// Event system fields
+		if (data.trigger_type)
+			this.trigger_type := data.trigger_type;
+		endif
+
+		if (data.trigger_params)
+			this.trigger_params := data.trigger_params;
+		endif
+
+		if (data.actions)
+			// Reconstruct ActionConfig objects from stored structs
+			this.actions := array{};
+			foreach action_struct in (data.actions)
+				var action := ActionConfig("");
+				action.FromStruct(action_struct);
+				this.actions.append(action);
+			endforeach
+		endif
+
+		if (data.global_cooldown)
+			this.global_cooldown := data.global_cooldown;
+		endif
 
 		return 1;
 	endfunction
