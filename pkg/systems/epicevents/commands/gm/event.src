@@ -4,7 +4,9 @@ use os;
 include ":gumps:gumps";
 include ":epicevents:View/EventGumpBuilder";
 include ":epicevents:Model/EventConfig";
+include ":epicevents:Model/ActionConfig";
 include ":message:model/Message";
+include "include/utility";
 
 program epicevents(who)
 	if (who.cmdlevel < 2)
@@ -100,14 +102,12 @@ program epicevents(who)
 					continue;  // Back to action list
 				endif
 
-				// Edit action parameters
-				var edit_gump := BuildActionEditGump(action_type);
-				var edit_input := GFSendGump(who, edit_gump);
-
-				var new_action := ParseActionEditInput(edit_input, action_type);
+				// Edit action parameters (with target support)
+				var temp_action := 0;
+				var new_action := HandleActionEdit(who, action_type, temp_action);
 
 				if (!new_action)
-					Message("Acao invalida! Verifique os parametros.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					Message("Acao cancelada ou invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 					continue;  // Back to action list
 				endif
 
@@ -126,10 +126,8 @@ program epicevents(who)
 
 				var existing_action := actions[index];
 
-				var edit_gump := BuildActionEditGump(existing_action.type, existing_action);
-				var edit_input := GFSendGump(who, edit_gump);
-
-				var updated_action := ParseActionEditInput(edit_input, existing_action.type);
+				// Edit with target support
+				var updated_action := HandleActionEdit(who, existing_action.type, existing_action);
 
 				if (!updated_action)
 					Message("Acao invalida! Verifique os parametros.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -256,3 +254,130 @@ program epicevents(who)
 
 	return 1;
 endprogram
+
+// Helper function to handle action editing with target support
+function HandleActionEdit(who, action_type, existing_action)
+	// SPECIAL CASE: SPAWN action immediately shows spawn creatures gump
+	if (action_type == "SPAWN")
+		var spawn_gump := BuildEventConfigGump();
+		var spawn_input := GFSendGump(who, spawn_gump);
+
+		if (!spawn_input || !spawn_input[BTN_OK])
+			return 0;  // Cancelled
+		endif
+
+		// Parse spawn config
+		var config := ParseEventConfigInput(spawn_input);
+		if (!config)
+			return 0;  // Invalid
+		endif
+
+		// Create SPAWN action with config params
+		var spawn_action := ActionConfig("SPAWN");
+		spawn_action.params := config.ToStruct();
+		return spawn_action;
+	endif
+
+	var editing := 1;
+	var working_action := existing_action;
+
+	while (editing)
+		// Build and show gump with current data
+		var edit_gump := BuildActionEditGump(action_type, working_action, who);
+		var edit_input := GFSendGump(who, edit_gump);
+
+		// Check if target button was pressed
+		if (edit_input[BTN_TARGET_ITEM])
+			// IMPORTANT: Manually preserve form data BEFORE targeting
+			// We can't use ParseActionEditInput because it fails validation on incomplete forms
+
+			// Ensure working_action structure exists
+			if (!working_action)
+				working_action := ActionConfig(action_type);
+			endif
+			if (!working_action.params)
+				working_action.params := struct{};
+			endif
+			if (!working_action.condition)
+				working_action.condition := struct{};
+			endif
+			if (!working_action.condition.params)
+				working_action.condition.+params := struct{};
+			endif
+
+			// Preserve delay field (common to all action types)
+			var delay_str := Trim(GFExtractData(edit_input, ID_ACTION_DELAY));
+			if (delay_str && delay_str != "")
+				working_action.delay := CInt(delay_str);
+			endif
+
+			// Preserve action-specific fields
+			case (action_type)
+				"EMOTE":
+					// Preserve emote text (even if empty)
+					var text := Trim(GFExtractData(edit_input, ID_ACTION_EMOTE_TEXT));
+					working_action.params.+text := text;
+
+					// Preserve checkbox state
+					working_action.params.+show_on_source := edit_input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
+
+				"TELEPORT":
+					var x_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_X));
+					var y_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Y));
+					var z_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Z));
+					var realm_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_REALM));
+					if (x_str && x_str != "")
+						working_action.params.+x := CInt(x_str);
+					endif
+					if (y_str && y_str != "")
+						working_action.params.+y := CInt(y_str);
+					endif
+					if (z_str && z_str != "")
+						working_action.params.+z := CInt(z_str);
+					endif
+					if (realm_str && realm_str != "")
+						working_action.params.+realm := realm_str;
+					endif
+			endcase
+
+			// Preserve condition amount field
+			var amount_str := Trim(GFExtractData(edit_input, ID_CONDITION_AMOUNT));
+			if (amount_str && amount_str != "")
+				working_action.condition.params.+amount := CInt(amount_str);
+			endif
+
+			// Check radio button state
+			if (edit_input[RADIO_CONDITION_HAS_ITEM])
+				working_action.condition.+type := "PLAYER_HAS_ITEM";
+			else
+				working_action.condition.+type := "NONE";
+			endif
+
+			Message("Target o item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+
+			if (!targ)
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;  // Re-show gump with preserved data
+			endif
+
+			// Store objtype from targeted item
+			working_action.condition.params.+objtype := targ.objtype;
+			working_action.condition.+type := "PLAYER_HAS_ITEM";
+
+			Message($"Item selecionado: {targ.objtype} (0x{Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			continue;  // Re-show gump with all data preserved + objtype filled in
+		endif
+
+		// Parse the action normally
+		var parsed_action := ParseActionEditInput(edit_input, action_type);
+
+		if (!parsed_action)
+			return 0;  // User cancelled or invalid input
+		endif
+
+		return parsed_action;
+	endwhile
+
+	return 0;
+endfunction

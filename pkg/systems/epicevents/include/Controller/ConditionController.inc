@@ -47,14 +47,24 @@ function EvaluatePlayerHasItem(condition, event)
 	var required_amount := condition.params.amount ? condition.params.amount : 1;
 
 	var found := 0;
+
+	// Check backpack items
 	foreach item in EnumerateItemsInContainer(event.source.backpack)
 		if (item.objtype == required_objtype)
 			found += item.amount;
 		endif
 	endforeach
 
+	// Check equipped items
+	var equipped := ListEquippedItems(event.source);
+	foreach item in equipped
+		if (item.objtype == required_objtype)
+			found += item.amount;
+		endif
+	endforeach
+
 	if (found >= required_amount)
-		print("[EpicEvents] PLAYER_HAS_ITEM condition passed - found " + found + "/" + required_amount);
+		print("[EpicEvents] PLAYER_HAS_ITEM condition passed - found " + found + "/" + required_amount + " (backpack + equipped)");
 		return 1;
 	endif
 

@@ -13,6 +13,7 @@ function ExecuteActions(item, event, actions)
 
 	var action_state := struct{};  // Track state for conditions
 	var action_index := 1;
+	var any_executed := 0;  // Track if at least one action successfully executed
 
 	print("[EpicEvents] Executing " + actions.size() + " action(s)");
 
@@ -44,6 +45,7 @@ function ExecuteActions(item, event, actions)
 
 		if (result)
 			print("[EpicEvents] Action " + action_index + " completed successfully");
+			any_executed := 1;  // Mark that at least one action succeeded
 		else
 			print("[EpicEvents] Action " + action_index + " failed");
 		endif
@@ -51,8 +53,13 @@ function ExecuteActions(item, event, actions)
 		action_index := action_index + 1;
 	endforeach
 
-	print("[EpicEvents] All actions processed");
-	return 1;
+	if (any_executed)
+		print("[EpicEvents] At least one action executed successfully");
+		return 1;
+	else
+		print("[EpicEvents] No actions executed successfully");
+		return 0;
+	endif
 endfunction
 
 function ExecuteAction(item, event, action, byref action_state)

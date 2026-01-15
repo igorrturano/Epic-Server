@@ -39,27 +39,25 @@ const BTN_ACTION_TYPE_TELEPORT := 262;
 // Action edit field IDs
 const ID_ACTION_DELAY := 300;
 const ID_ACTION_EMOTE_TEXT := 301;
-const ID_ACTION_EMOTE_RANGE := 302;
 const BTN_EMOTE_SHOW_ON_PLAYER := 303;
+const BTN_TARGET_ITEM := 304;
 const ID_ACTION_TELEPORT_X := 310;
 const ID_ACTION_TELEPORT_Y := 311;
 const ID_ACTION_TELEPORT_Z := 312;
+const ID_ACTION_TELEPORT_REALM := 313;
 
 // Condition type buttons
 const BTN_CONDITION_NONE := 270;
 const BTN_CONDITION_PLAYER_HAS_ITEM := 271;
-const BTN_CONDITION_ACTION_SUCCEEDED := 272;
 
 // Condition field IDs
 const ID_CONDITION_OBJTYPE := 320;
 const ID_CONDITION_AMOUNT := 321;
-const ID_CONDITION_ACTION_ID := 322;
 
 // Radio button group and IDs for condition selection
 const RADIO_CONDITION_GROUP := 1;
 const RADIO_CONDITION_NONE := 330;
 const RADIO_CONDITION_HAS_ITEM := 331;
-const RADIO_CONDITION_ACTION_SUCCEEDED := 332;
 
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
@@ -86,20 +84,17 @@ const ID_MIN_DELAY := 114;
 const ID_MAX_DELAY := 115;
 
 function BuildEventConfigGump()
-	var gump := GFECreateGump("", GUMP_WIDTH, GUMP_HEIGHT, array{HIDE_BORDER});
-	AdicionarMoldura(gump);
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80);
-	GFTextMid(gump, 0, 35, GUMP_WIDTH, 53, "Epic Events - Configuracao de Spawn");
+	var gump := GFECreateGump("Epic Events - Configuracao de Spawn", GUMP_WIDTH, GUMP_HEIGHT);
+	var y := SetupGumpFrame(gump, GUMP_WIDTH, GUMP_HEIGHT, 0);  // No divider, we'll add section headers
 
-	var x := 30;
-	var y := 90;
+	var x := 30;  // Moved 35px to the left (was 50)
 	var spacing := 70;
 
 	// Section header
 	GFTextMid(gump, 0, y, GUMP_WIDTH, 1149, "CRIATURAS");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
-	y := y + 15;
+	y := y + 20;
 
 	// Creature 1
 	GFTextLine(gump, x, y, 1153, "Nome:");
@@ -191,8 +186,8 @@ function BuildEventConfigGump()
 	// Divider before button
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
 
-	// OK Button
-	GFAddButton(gump, 250, y + 15, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_OK);
+	// OK Button (moved 20px up - was y + 20)
+	GFAddButton(gump, 250, y, 2152, 2153, GF_CLOSE_BTN, BTN_OK);
 
 	return gump;
 endfunction
@@ -231,6 +226,26 @@ function ParseEventConfigInput(input)
 	return config;
 endfunction
 
+// Helper function to set up common gump structure with frame and grey background
+// Returns the starting Y position for content
+function SetupGumpFrame(byref gump, width, height, show_divider := 1)
+	// Grey background with proper padding from edges (like skillwin)
+	var bg_x := 15;
+	var bg_y := 70;
+	var bg_width := width - 30;
+	var bg_height := height - 85;
+
+	GFResizePic(gump, bg_x, bg_y, INTERNAL_BACKGROUND, bg_width, bg_height);
+
+	// Divider below title area (optional)
+	if (show_divider)
+		GFResizePic(gump, 30, 95, 3000, width - 60, 2);
+		return 110;  // Start content below divider
+	endif
+
+	return 90;  // Start content without divider
+endfunction
+
 function AdicionarMoldura(byref gump)
 	var molduras := array{struct{x := 0, y := 0, width := 25, height := 25, gump := 39925},
 						  struct{x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927},
@@ -248,103 +263,71 @@ endfunction
 
 // Trigger selection gump
 function BuildTriggerSelectionGump()
-	var gump := GFECreateGump("", 500, 450, array{HIDE_BORDER});
-
-	// Frame
-	GFResizePic(gump, 0, 0, 39925, 500, 25);
-	GFResizePic(gump, 475, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 441, 25);
-	GFResizePic(gump, 25, 425, 39932, 450, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 400);
-	GFResizePic(gump, 475, 25, 39930, 35, 400);
-	GFResizePic(gump, 475, 425, 39933, 35, 35);
-	GFResizePic(gump, 0, 425, 39931, 35, 35);
-
-	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 470, 350);
-
-	// Title
-	GFTextMid(gump, 80, 35, 420, 53, "Epic! Events - Selecione o Gatilho");
+	var gump := GFECreateGump("Epic Events - Selecione o Gatilho", 600, 550);
+	var y := SetupGumpFrame(gump, 600, 550);
 
 	var x := 40;
-	var y := 90;
-	var spacing := 65;
+	var spacing := 80;
 
 	// Instructions
 	GFTextLine(gump, x, y, 2100, "Como este evento deve ser acionado?");
-	y := y + 30;
+	y := y + 35;
 
 	// SPEECH trigger
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_TRIGGER_SPEECH);
-	GFTextLine(gump, x + 40, y, 53, "Fala (Palavra-chave)");
-	GFTextLine(gump, x + 40, y + 20, 2100, "Jogador diz uma palavra ou frase especifica");
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_SPEECH);
+	GFTextLine(gump, x + 40, y + 2, 53, "Fala (Palavra-chave)");
+	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador diz uma palavra ou frase especifica");
 	y := y + spacing;
 
 	// ENTEREDAREA trigger
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_TRIGGER_ENTEREDAREA);
-	GFTextLine(gump, x + 40, y, 53, "Entrada em Area (Proximidade)");
-	GFTextLine(gump, x + 40, y + 20, 2100, "Jogador entra na area ao redor do item");
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ENTEREDAREA);
+	GFTextLine(gump, x + 40, y + 2, 53, "Entrada em Area (Proximidade)");
+	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador entra na area ao redor do item");
 	y := y + spacing;
 
 	// LEFTAREA trigger
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_TRIGGER_LEFTAREA);
-	GFTextLine(gump, x + 40, y, 53, "Saida de Area");
-	GFTextLine(gump, x + 40, y + 20, 2100, "Jogador sai da area (punicao por covardia!)");
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_LEFTAREA);
+	GFTextLine(gump, x + 40, y + 2, 53, "Saida de Area");
+	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador sai da area (punicao por covardia!)");
 	y := y + spacing;
 
 	// ITEM_GIVEN trigger
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
-	GFTextLine(gump, x + 40, y, 53, "Entrega de Item (Oferenda)");
-	GFTextLine(gump, x + 40, y + 20, 1153, "Jogador entrega um item especifico");
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
+	GFTextLine(gump, x + 40, y + 2, 53, "Entrega de Item (Oferenda)");
+	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador entrega um item especifico");
 	y := y + spacing;
 
 	// DOUBLECLICKED trigger
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
-	GFTextLine(gump, x + 40, y, 53, "Clique Duplo (Interacao)");
-	GFTextLine(gump, x + 40, y + 20, 1153, "Jogador clica duas vezes no item");
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
+	GFTextLine(gump, x + 40, y + 2, 53, "Clique Duplo (Interacao)");
+	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador clica duas vezes no item");
 
 	return gump;
 endfunction
 
 // Trigger configuration gump (for triggers that need extra params)
 function BuildTriggerConfigGump(trigger_type)
-	var gump := GFECreateGump("", 500, 450, array{HIDE_BORDER});
+	var gump := GFECreateGump("Configurar Gatilho", 600, 550);
+	var y := SetupGumpFrame(gump, 600, 550, 0);
 
-	// Frame
-	GFResizePic(gump, 0, 0, 39925, 500, 25);
-	GFResizePic(gump, 475, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 441, 25);
-	GFResizePic(gump, 25, 425, 39932, 450, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 400);
-	GFResizePic(gump, 475, 25, 39930, 35, 400);
-	GFResizePic(gump, 475, 425, 39933, 35, 35);
-	GFResizePic(gump, 0, 425, 39931, 35, 35);
-
-	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 470, 350);
-
-	// Title
-	GFTextMid(gump, 0, 35, 500, 53, "Configurar Gatilho");
-
-	var x := 30;
-	var y := 90;
+	var x := 50;
 
 	// Section header
-	GFTextMid(gump, 0, y, 500, 1149, "PARAMETROS DO GATILHO");
+	GFTextMid(gump, 0, y, 600, 1149, "PARAMETROS DO GATILHO");
 	y := y + 20;
-	GFResizePic(gump, 40, y, 3000, 420, 2);
-	y := y + 15;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+	y := y + 20;
 
 	case (trigger_type)
 		"SPEECH":
 			GFTextLine(gump, x, y, 1153, "Palavra-chave ou frase:");
 			y := y + 25;
-			GFResizePic(gump, x, y, 9350, 440, 25);
-			GFTextEntry(gump, x + 5, y + 5, 430, 20, 1150, "", ID_TRIGGER_KEYWORD);
+			GFResizePic(gump, x, y, 9350, 500, 25);
+			GFTextEntry(gump, x + 5, y + 5, 490, 20, 1150, "", ID_TRIGGER_KEYWORD);
 			y := y + 35;
 			GFTextLine(gump, x, y, 2100, "O jogador deve dizer exatamente esta palavra ou frase");
 			GFTextLine(gump, x, y + 15, 2100, "para ativar o evento.");
-			y := y + 45;
+			y := y + 50;
 
 			GFTextLine(gump, x, y, 1153, "Raio de audicao (em tiles):");
 			y := y + 25;
@@ -375,13 +358,14 @@ function BuildTriggerConfigGump(trigger_type)
 	endcase
 
 	// Add delay configuration section (for all trigger types)
-	y := 250;  // Fixed position
+	// Move down so "Distancia em que..." explanation stays with radius field above
+	y := 350;  // Fixed position - moved down 30px
 
 	// Section header
-	GFTextMid(gump, 0, y, 500, 1149, "FREQUENCIA DE ATIVACAO");
+	GFTextMid(gump, 0, y, 600, 1149, "FREQUENCIA DE ATIVACAO");
 	y := y + 20;
-	GFResizePic(gump, 40, y, 3000, 420, 2);
-	y := y + 15;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
+	y := y + 20;
 
 	GFTextLine(gump, x, y, 2100, "Intervalo entre ativacoes (em minutos):");
 	y := y + 25;
@@ -390,20 +374,20 @@ function BuildTriggerConfigGump(trigger_type)
 	GFResizePic(gump, x + 70, y, 9350, 80, 25);
 	GFTextEntry(gump, x + 75, y + 5, 70, 20, 1150, "60", ID_EVENT_MIN_DELAY);
 
-	GFTextLine(gump, x + 170, y, 1153, "Maximo:");
-	GFResizePic(gump, x + 240, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 245, y + 5, 70, 20, 1150, "120", ID_EVENT_MAX_DELAY);
-	y := y + 35;
+	GFTextLine(gump, x + 190, y, 1153, "Maximo:");
+	GFResizePic(gump, x + 270, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 275, y + 5, 70, 20, 1150, "120", ID_EVENT_MAX_DELAY);
+	y := y + 40;
 
 	GFTextLine(gump, x, y, 2100, "O evento so pode ativar novamente apos este intervalo");
 	GFTextLine(gump, x, y + 15, 2100, "(randomizado entre min e max)");
 
 	// Divider before button
-	y := y + 35;
-	GFResizePic(gump, 40, y, 3000, 420, 2);
+	y := y + 40;
+	GFResizePic(gump, 40, y, 3000, 520, 2);
 
-	// Next button
-	GFAddButton(gump, 220, 390, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
+	// OK button (using okay button style)
+	GFAddButton(gump, 270, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_NEXT);
 
 	return gump;
 endfunction
@@ -465,32 +449,14 @@ endfunction
 
 // Action list gump - shows all configured actions
 function BuildActionListGump(actions)
-	var gump := GFECreateGump("", 600, 500, array{HIDE_BORDER});
-
-	// Frame
-	GFResizePic(gump, 0, 0, 39925, 600, 25);
-	GFResizePic(gump, 575, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 541, 25);
-	GFResizePic(gump, 25, 475, 39932, 550, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 450);
-	GFResizePic(gump, 575, 25, 39930, 35, 450);
-	GFResizePic(gump, 575, 475, 39933, 35, 35);
-	GFResizePic(gump, 0, 475, 39931, 35, 35);
-
-	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 570, 400);
-
-	// Title
-	GFTextMid(gump, 80, 35, 520, 53, "Configurar Acoes do Evento");
+	var gump := GFECreateGump("Configurar Acoes do Evento", 600, 500);
+	var y := SetupGumpFrame(gump, 600, 500, 0);
 
 	var x := 30;
-	var y := 90;
 
 	// Instructions
 	GFTextLine(gump, x, y, 1149, "Configuracao de Acoes");
-	y := y + 3;
-	GFGumpPicTiled(gump, x, y, 540, 1, 0x0A52);
-	y := y + 10;
+	y := y + 25;
 	GFTextLine(gump, x, y, 2100, "As acoes abaixo serao executadas em sequencia quando o gatilho ativar:");
 	y := y + 30;
 
@@ -520,12 +486,14 @@ function BuildActionListGump(actions)
 			GFResizePic(gump, x, y, 0x2486, 540, box_height);
 
 			// Edit button
-			GFAddButton(gump, x + 10, y + 8, 2117, 2118, GF_CLOSE_BTN, BTN_ACTION_EDIT_BASE + action_num);
+			GFAddButton(gump, x + 10, y + 8, 0x659, 0x65A, GF_CLOSE_BTN, BTN_ACTION_EDIT_BASE + action_num);
+			GFTooltipText(gump, "Editar esta acao");
 			// Delete button
-			GFAddButton(gump, x + 35, y + 8, 0x9CC, 0x9CC, GF_CLOSE_BTN, BTN_ACTION_DELETE_BASE + action_num);
+			GFAddButton(gump, x + 35, y + 8, 30008, 30009, GF_CLOSE_BTN, BTN_ACTION_DELETE_BASE + action_num);
+			GFTooltipText(gump, "Excluir esta acao");
 
 			// Action text
-			GFTextLine(gump, x + 65, y + 8, 53, $"{action_num}. {action_desc}");
+			GFTextLine(gump, x + 75, y + 8, 53, $"{action_num}. {action_desc}");
 
 			var detail_y := y + 26;
 
@@ -551,12 +519,11 @@ function BuildActionListGump(actions)
 	endif
 
 	// Add action button
-	GFAddButton(gump, x, y + 10, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_ADD);
+	GFAddButton(gump, x, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_ADD);
 	GFTextLine(gump, x + 40, y + 10, 53, "[Adicionar Acao]");
 
-	// Done button
+	// Done button (final finish button - OKAY style)
 	GFAddButton(gump, 280, 435, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_DONE);
-	GFTextLine(gump, 320, 435, 53, "[Concluir]");
 
 	return gump;
 endfunction
@@ -573,7 +540,11 @@ function GetActionDescription(action)
 		"SPAWN":
 			return "Spawn criaturas";
 		"TELEPORT":
-			return $"Teleportar para ({action.params.x},{action.params.y},{action.params.z})";
+			var tp_desc := $"Teleportar para ({action.params.x},{action.params.y},{action.params.z})";
+			if (action.params.realm && action.params.realm != "")
+				tp_desc := tp_desc + $" [{action.params.realm}]";
+			endif
+			return tp_desc;
 		default:
 			return action.type;
 	endcase
@@ -584,8 +555,6 @@ function GetConditionDescription(condition)
 	case (condition.type)
 		"PLAYER_HAS_ITEM":
 			return $"Jogador tem item {Hex(condition.params.objtype)}";
-		"ACTION_SUCCEEDED":
-			return $"Acao #{condition.params.action_id} bem-sucedida";
 		default:
 			return condition.type;
 	endcase
@@ -593,26 +562,10 @@ endfunction
 
 // Action type selection gump
 function BuildActionTypeSelectionGump()
-	var gump := GFECreateGump("", 500, 350, array{HIDE_BORDER});
-
-	// Frame
-	GFResizePic(gump, 0, 0, 39925, 500, 25);
-	GFResizePic(gump, 475, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 441, 25);
-	GFResizePic(gump, 25, 325, 39932, 450, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 300);
-	GFResizePic(gump, 475, 25, 39930, 35, 300);
-	GFResizePic(gump, 475, 325, 39933, 35, 35);
-	GFResizePic(gump, 0, 325, 39931, 35, 35);
-
-	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 470, 250);
-
-	// Title
-	GFTextMid(gump, 80, 35, 420, 53, "Selecione o Tipo de Acao");
+	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 350);
+	var y := SetupGumpFrame(gump, 500, 350);
 
 	var x := 40;
-	var y := 90;
 	var spacing := 70;
 
 	// Instructions
@@ -620,19 +573,19 @@ function BuildActionTypeSelectionGump()
 	y := y + 30;
 
 	// EMOTE action
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_TYPE_EMOTE);
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_EMOTE);
 	GFTextLine(gump, x + 40, y, 53, "Emote/Mensagem");
 	GFTextLine(gump, x + 40, y + 20, 1153, "Exibir uma mensagem ou emote para criar atmosfera");
 	y := y + spacing;
 
 	// SPAWN action
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_TYPE_SPAWN);
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_SPAWN);
 	GFTextLine(gump, x + 40, y, 53, "Spawn de Criaturas");
 	GFTextLine(gump, x + 40, y + 20, 1153, "Criar criaturas no local do evento");
 	y := y + spacing;
 
 	// TELEPORT action
-	GFAddButton(gump, x, y, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_TYPE_TELEPORT);
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_TELEPORT);
 	GFTextLine(gump, x + 40, y, 53, "Teleporte");
 	GFTextLine(gump, x + 40, y + 20, 1153, "Teleportar o jogador para outro local");
 
@@ -640,23 +593,7 @@ function BuildActionTypeSelectionGump()
 endfunction
 
 // Action edit gump - configure action parameters
-function BuildActionEditGump(action_type, existing_action := 0)
-	var gump := GFECreateGump("", 600, 650, array{HIDE_BORDER});
-
-	// Frame
-	GFResizePic(gump, 0, 0, 39925, 600, 25);
-	GFResizePic(gump, 575, 0, 39927, 35, 25);
-	GFResizePic(gump, 25, 0, 39926, 541, 25);
-	GFResizePic(gump, 25, 625, 39932, 550, 35);
-	GFResizePic(gump, 0, 25, 39928, 10, 600);
-	GFResizePic(gump, 575, 25, 39930, 35, 600);
-	GFResizePic(gump, 575, 625, 39933, 35, 35);
-	GFResizePic(gump, 0, 625, 39931, 35, 35);
-
-	// Background
-	GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, 570, 550);
-
-	// Title
+function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 	var title_text := "Configurar Acao: ";
 	case (action_type)
 		"EMOTE":
@@ -666,10 +603,11 @@ function BuildActionEditGump(action_type, existing_action := 0)
 		"TELEPORT":
 			title_text := title_text + "Teleporte";
 	endcase
-	GFTextMid(gump, 0, 35, 600, 53, title_text);
 
-	var x := 30;
-	var y := 90;
+	var gump := GFECreateGump(title_text, 600, 650);
+	var y := SetupGumpFrame(gump, 600, 650, 0);  // No divider, we'll add section headers
+
+	var x := 50;
 
 	// ==================== SECTION: TIMING ====================
 	GFTextMid(gump, 0, y, 600, 1149, "TEMPORIZACAO");
@@ -702,27 +640,16 @@ function BuildActionEditGump(action_type, existing_action := 0)
 			if (existing_action && existing_action.params && existing_action.params.text)
 				emote_default := existing_action.params.text;
 			endif
-			GFResizePic(gump, x, y, 9350, 540, 65);
-			GFTextEntry(gump, x + 5, y + 5, 530, 60, 1150, emote_default, ID_ACTION_EMOTE_TEXT);
+			GFResizePic(gump, x, y, 9350, 500, 65);
+			GFTextEntry(gump, x + 5, y + 5, 490, 60, 1150, emote_default, ID_ACTION_EMOTE_TEXT);
 			y := y + 80;
-
-			GFTextLine(gump, x, y, 1153, "Alcance (em tiles):");
-			y := y + 25;
-			var range_default := "10";
-			if (existing_action && existing_action.params && existing_action.params.range)
-				range_default := CStr(existing_action.params.range);
-			endif
-			GFResizePic(gump, x, y, 9350, 80, 25);
-			GFTextEntry(gump, x + 5, y + 5, 70, 20, 1150, range_default, ID_ACTION_EMOTE_RANGE);
-			GFTextLine(gump, x + 100, y + 5, 2100, "Distancia maxima para players verem (0 = sem limite)");
-			y := y + 40;
 
 			// Checkbox for showing emote on player vs item
 			var show_on_player := 0;
 			if (existing_action && existing_action.params && existing_action.params.show_on_source)
 				show_on_player := existing_action.params.show_on_source;
 			endif
-			GFAddButton(gump, x, y, (show_on_player ? 0x939 : 0x938), (show_on_player ? 0x938 : 0x939), GF_CLOSE_BTN, BTN_EMOTE_SHOW_ON_PLAYER);
+			GFCheckBox(gump, x, y, 0x938, 0x939, show_on_player, BTN_EMOTE_SHOW_ON_PLAYER);
 			GFTextLine(gump, x + 30, y + 2, 1153, "Exibir emote acima do jogador (ao inves do item)");
 			y := y + 35;
 
@@ -738,6 +665,7 @@ function BuildActionEditGump(action_type, existing_action := 0)
 			var x_default := "";
 			var y_default := "";
 			var z_default := "";
+			var realm_default := "";
 			if (existing_action && existing_action.params)
 				if (existing_action.params.x)
 					x_default := CStr(existing_action.params.x);
@@ -748,6 +676,14 @@ function BuildActionEditGump(action_type, existing_action := 0)
 				if (existing_action.params.z)
 					z_default := CStr(existing_action.params.z);
 				endif
+				if (existing_action.params.realm)
+					realm_default := existing_action.params.realm;
+				endif
+			endif
+
+			// Set default realm to player's current realm if not set
+			if (realm_default == "" && who)
+				realm_default := who.realm;
 			endif
 
 			GFTextLine(gump, x, y, 1153, "X:");
@@ -763,7 +699,12 @@ function BuildActionEditGump(action_type, existing_action := 0)
 			GFTextEntry(gump, x + 280, y + 5, 70, 20, 1150, z_default, ID_ACTION_TELEPORT_Z);
 			y := y + 35;
 
-			GFTextLine(gump, x, y, 2100, "Ex: X=1000 Y=2000 Z=0 (altura do terreno)");
+			GFTextLine(gump, x, y, 1153, "Realm:");
+			GFResizePic(gump, x + 60, y, 9350, 120, 25);
+			GFTextEntry(gump, x + 65, y + 5, 110, 20, 1150, realm_default, ID_ACTION_TELEPORT_REALM);
+			y := y + 35;
+
+			GFTextLine(gump, x, y, 2100, "Ex: X=1000 Y=2000 Z=0 Realm=britannia");
 			y := y + 35;
 	endcase
 
@@ -804,36 +745,23 @@ function BuildActionEditGump(action_type, existing_action := 0)
 		endif
 	endif
 
-	GFTextLine(gump, x + 40, y, 2100, "ObjType (hex):");
-	GFResizePic(gump, x + 150, y, 9350, 100, 25);
-	GFTextEntry(gump, x + 155, y + 5, 90, 20, 1150, objtype_default, ID_CONDITION_OBJTYPE);
+	GFTextLine(gump, x + 40, y, 2100, "Item (ID ou Nome):");
+	GFResizePic(gump, x + 180, y, 9350, 200, 25);
+	GFTextEntry(gump, x + 185, y + 5, 190, 20, 1150, objtype_default, ID_CONDITION_OBJTYPE);
+	GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_TARGET_ITEM);
+	GFTextLine(gump, x + 430, y + 5, 2100, "[Target]");
+	y := y + 35;
 
-	GFTextLine(gump, x + 270, y, 2100, "Qtd:");
-	GFResizePic(gump, x + 310, y, 9350, 70, 25);
-	GFTextEntry(gump, x + 315, y + 5, 60, 20, 1150, amount_default, ID_CONDITION_AMOUNT);
-	y := y + 40;
-
-	// Radio button: Action succeeded
-	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "ACTION_SUCCEEDED" ? 1 : 0), RADIO_CONDITION_ACTION_SUCCEEDED);
-	GFTextLine(gump, x + 30, y + 2, 1153, "Acao anterior bem-sucedida");
-	y := y + 25;
-
-	// Parameter fields for "Action succeeded" (always shown)
-	var action_id_default := "1";
-	if (existing_action && existing_action.condition && existing_action.condition.params && existing_action.condition.params.action_id)
-		action_id_default := CStr(existing_action.condition.params.action_id);
-	endif
-
-	GFTextLine(gump, x + 40, y, 2100, "Numero da acao:");
-	GFResizePic(gump, x + 170, y, 9350, 70, 25);
-	GFTextEntry(gump, x + 175, y + 5, 60, 20, 1150, action_id_default, ID_CONDITION_ACTION_ID);
+	GFTextLine(gump, x + 40, y, 2100, "Quantidade:");
+	GFResizePic(gump, x + 140, y, 9350, 70, 25);
+	GFTextEntry(gump, x + 145, y + 5, 60, 20, 1150, amount_default, ID_CONDITION_AMOUNT);
 	y := y + 40;
 
 	// Divider before button
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 
 	// Save button
-	GFAddButton(gump, 280, 590, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_NEXT);
+	GFAddButton(gump, 280, y + 20, 2152, 2153, GF_CLOSE_BTN, BTN_NEXT);
 
 	return gump;
 endfunction
@@ -905,12 +833,6 @@ function ParseActionEditInput(input, action_type)
 				return 0;  // Text required
 			endif
 
-			var range_str := Trim(GFExtractData(input, ID_ACTION_EMOTE_RANGE));
-			action.params.+range := CInt(range_str);
-			if (action.params.range < 0)
-				action.params.range := 10;
-			endif
-
 			// Check if emote should be shown on player
 			action.params.+show_on_source := input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
 
@@ -922,10 +844,12 @@ function ParseActionEditInput(input, action_type)
 			var x_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_X));
 			var y_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_Y));
 			var z_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_Z));
+			var realm_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_REALM));
 
 			action.params.+x := CInt(x_str);
 			action.params.+y := CInt(y_str);
 			action.params.+z := CInt(z_str);
+			action.params.+realm := realm_str;
 
 			if (!action.params.x || !action.params.y)
 				return 0;  // X and Y required
@@ -949,23 +873,6 @@ function ParseActionEditInput(input, action_type)
 			endif
 		else
 			// No objtype specified - invalid condition
-			action.condition := 0;
-		endif
-
-	elseif (input[RADIO_CONDITION_ACTION_SUCCEEDED])
-		// Action succeeded condition
-		var action_id_str := Trim(GFExtractData(input, ID_CONDITION_ACTION_ID));
-
-		if (action_id_str && action_id_str != "")
-			action.condition := struct{};
-			action.condition.+type := "ACTION_SUCCEEDED";
-			action.condition.+params := struct{};
-			action.condition.params.+action_id := CInt(action_id_str);
-			if (action.condition.params.action_id < 1)
-				action.condition.params.action_id := 1;
-			endif
-		else
-			// No action ID specified - invalid condition
 			action.condition := 0;
 		endif
 	else
