@@ -46,16 +46,11 @@ const ID_ACTION_TELEPORT_Y := 311;
 const ID_ACTION_TELEPORT_Z := 312;
 const ID_ACTION_TELEPORT_REALM := 313;
 
-// Condition type buttons
-const BTN_CONDITION_NONE := 270;
-const BTN_CONDITION_PLAYER_HAS_ITEM := 271;
-
 // Condition field IDs
 const ID_CONDITION_OBJTYPE := 320;
 const ID_CONDITION_AMOUNT := 321;
 
-// Radio button group and IDs for condition selection
-const RADIO_CONDITION_GROUP := 1;
+// Radio button IDs for condition selection
 const RADIO_CONDITION_NONE := 330;
 const RADIO_CONDITION_HAS_ITEM := 331;
 
@@ -246,21 +241,6 @@ function SetupGumpFrame(byref gump, width, height, show_divider := 1)
 	return 90;  // Start content without divider
 endfunction
 
-function AdicionarMoldura(byref gump)
-	var molduras := array{struct{x := 0, y := 0, width := 25, height := 25, gump := 39925},
-						  struct{x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927},
-						  struct{x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926},
-						  struct{x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932},
-						  struct{x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928},
-						  struct{x := GUMP_WIDTH - 25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930},
-						  struct{x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933},
-						  struct{x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931}};
-
-	foreach moldura in molduras
-		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-	endforeach
-endfunction
-
 // Trigger selection gump
 function BuildTriggerSelectionGump()
 	var gump := GFECreateGump("Epic Events - Selecione o Gatilho", 600, 550);
@@ -291,15 +271,15 @@ function BuildTriggerSelectionGump()
 	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador sai da area (punicao por covardia!)");
 	y := y + spacing;
 
-	// ITEM_GIVEN trigger
-	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
-	GFTextLine(gump, x + 40, y + 2, 53, "Entrega de Item (Oferenda)");
+	// ITEM_GIVEN trigger - DISABLED (Phase 2)
+	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
+	GFTextLine(gump, x + 40, y + 2, 53, "Entrega de Item (Oferenda) [DESABILITADO]");
 	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador entrega um item especifico");
 	y := y + spacing;
 
-	// DOUBLECLICKED trigger
-	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
-	GFTextLine(gump, x + 40, y + 2, 53, "Clique Duplo (Interacao)");
+	// DOUBLECLICKED trigger - DISABLED (Phase 2)
+	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
+	GFTextLine(gump, x + 40, y + 2, 53, "Clique Duplo (Interacao) [DESABILITADO]");
 	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador clica duas vezes no item");
 
 	return gump;

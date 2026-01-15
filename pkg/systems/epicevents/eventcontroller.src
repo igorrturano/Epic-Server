@@ -69,13 +69,7 @@ program eventController(item)
 	while (true)
 		ev := os::wait_for_event(0);
 		if (ev)
-			print("[EpicEvents] DEBUG - Event received! Type: " + ev.type + " | Source: " + (ev.source ? ev.source.name : "none"));
-			if (ev.text)
-				print("[EpicEvents] DEBUG - Event text: '" + ev.text + "'");
-			endif
-
 			if (ProcessTriggerEvent(item, ev, trigger_config))
-				print("[EpicEvents] Trigger validated - executing actions");
 
 				// Execute configured actions
 				var actions_succeeded := 0;
@@ -83,7 +77,6 @@ program eventController(item)
 					actions_succeeded := ExecuteActions(item, ev, config.actions);
 				else
 					// No actions configured - use spawn fallback
-					print("[EpicEvents] No actions configured - using spawn fallback");
 					var spawn_action := ActionConfig("SPAWN");
 					spawn_action.params := config.ToStruct();
 					actions_succeeded := ExecuteActions(item, ev, array{spawn_action});
@@ -107,8 +100,6 @@ program eventController(item)
 					var cooldown_seconds := delay_minutes * 60;
 
 					UpdateTriggerCooldown(item, cooldown_seconds);
-				else
-					print("[EpicEvents] No actions executed - cooldown NOT set");
 				endif
 			endif
 		endif

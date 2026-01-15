@@ -7,7 +7,6 @@ include ":epicevents:Model/ActionConfig";
 
 function ExecuteActions(item, event, actions)
 	if (!actions || actions.size() == 0)
-		print("[EpicEvents] No actions to execute");
 		return 0;
 	endif
 
@@ -15,26 +14,18 @@ function ExecuteActions(item, event, actions)
 	var action_index := 1;
 	var any_executed := 0;  // Track if at least one action successfully executed
 
-	print("[EpicEvents] Executing " + actions.size() + " action(s)");
-
 	foreach action in actions
-		print("[EpicEvents] Action " + action_index + ": " + action.type);
-
 		// Wait if delay configured
 		if (action.delay && action.delay > 0)
-			print("[EpicEvents] Delaying " + action.delay + " seconds before action");
 			sleepms(action.delay * 1000);
 		endif
 
 		// Evaluate condition if exists
 		if (action.condition)
-			print("[EpicEvents] Evaluating condition: " + action.condition.type);
 			if (!EvaluateCondition(action.condition, action_state, event))
-				print("[EpicEvents] Condition failed - skipping action");
 				action_index := action_index + 1;
 				continue;  // Skip this action
 			endif
-			print("[EpicEvents] Condition passed - executing action");
 		endif
 
 		// Execute action
@@ -44,22 +35,13 @@ function ExecuteActions(item, event, actions)
 		action_state.insert("action_" + action_index, result);
 
 		if (result)
-			print("[EpicEvents] Action " + action_index + " completed successfully");
 			any_executed := 1;  // Mark that at least one action succeeded
-		else
-			print("[EpicEvents] Action " + action_index + " failed");
 		endif
 
 		action_index := action_index + 1;
 	endforeach
 
-	if (any_executed)
-		print("[EpicEvents] At least one action executed successfully");
-		return 1;
-	else
-		print("[EpicEvents] No actions executed successfully");
-		return 0;
-	endif
+	return any_executed;
 endfunction
 
 function ExecuteAction(item, event, action, byref action_state)
@@ -77,7 +59,6 @@ function ExecuteAction(item, event, action, byref action_state)
 endfunction
 
 function ExecuteSpawnAction(item, params)
-	print("[EpicEvents] Executing SPAWN action");
 	// Delegate to SpawnController (V1 logic)
 	var config := EventConfig();
 	config.FromStruct(params);
@@ -85,43 +66,33 @@ function ExecuteSpawnAction(item, params)
 endfunction
 
 function ExecuteEmoteAction(item, event, params)
-	print("[EpicEvents] Executing EMOTE action");
 	var emote_text := params.text;
 	var range := params.range ? params.range : 10;
 
 	if (!emote_text || emote_text == "")
-		print("[EpicEvents] EMOTE action - no text specified");
 		return 0;
 	endif
 
 	// Show emote above item or source
 	if (params.show_on_source && event.source)
 		PrintTextAbove(event.source, emote_text);
-		print("[EpicEvents] Emote displayed above player: " + emote_text);
 	else
 		PrintTextAbove(item, emote_text);
-		print("[EpicEvents] Emote displayed above item: " + emote_text);
 	endif
 
 	// Notify nearby players
 	var chars := ListMobilesNearLocation(item.x, item.y, item.z, range, item.realm);
-	var player_count := 0;
 	foreach char in chars
 		if (char.acctname)
 			SendSysMessageEx(char, emote_text, SSM_INFO);
-			player_count := player_count + 1;
 		endif
 	endforeach
 
-	print("[EpicEvents] Emote sent to " + player_count + " player(s) within " + range + " tiles");
 	return 1;
 endfunction
 
 function ExecuteTeleportAction(mobile, params)
-	print("[EpicEvents] Executing TELEPORT action");
-
 	if (!mobile || !mobile.acctname)
-		print("[EpicEvents] TELEPORT action - invalid mobile or not a player");
 		return 0;
 	endif
 
@@ -131,11 +102,9 @@ function ExecuteTeleportAction(mobile, params)
 	var realm := params.realm ? params.realm : mobile.realm;
 
 	if (!x || !y)
-		print("[EpicEvents] TELEPORT action - invalid coordinates");
 		return 0;
 	endif
 
 	MoveObjectToLocation(mobile, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
-	print("[EpicEvents] Player " + mobile.name + " teleported to " + x + "," + y + "," + z);
 	return 1;
 endfunction
