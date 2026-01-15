@@ -4,38 +4,34 @@ include ":epicevents:Controller/SpawnController";
 include ":epicevents:Controller/ConditionController";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
+include ":message:model/Message";
 
 function ExecuteActions(item, event, actions)
 	if (!actions || actions.size() == 0)
 		return 0;
 	endif
 
-	var action_state := struct{};  // Track state for conditions
+	var action_state := struct{};
 	var action_index := 1;
-	var any_executed := 0;  // Track if at least one action successfully executed
+	var any_executed := 0;
 
 	foreach action in actions
-		// Wait if delay configured
 		if (action.delay && action.delay > 0)
 			sleepms(action.delay * 1000);
 		endif
 
-		// Evaluate condition if exists
 		if (action.condition)
 			if (!EvaluateCondition(action.condition, action_state, event))
 				action_index := action_index + 1;
-				continue;  // Skip this action
+				continue;
 			endif
 		endif
 
-		// Execute action
 		var result := ExecuteAction(item, event, action, action_state);
-
-		// Store result for subsequent conditions
 		action_state.insert("action_" + action_index, result);
 
 		if (result)
-			any_executed := 1;  // Mark that at least one action succeeded
+			any_executed := 1;
 		endif
 
 		action_index := action_index + 1;
@@ -59,7 +55,6 @@ function ExecuteAction(item, event, action, byref action_state)
 endfunction
 
 function ExecuteSpawnAction(item, params)
-	// Delegate to SpawnController (V1 logic)
 	var config := EventConfig();
 	config.FromStruct(params);
 	return SpawnAllCreatures(item, config);
@@ -67,32 +62,28 @@ endfunction
 
 function ExecuteEmoteAction(item, event, params)
 	var emote_text := params.text;
-	var range := params.range ? params.range : 10;
 
 	if (!emote_text || emote_text == "")
 		return 0;
 	endif
 
-	// Show emote above item or source
+	var emote_target := item;
 	if (params.show_on_source && event.source)
-		PrintTextAbove(event.source, emote_text);
-	else
-		PrintTextAbove(item, emote_text);
+		emote_target := event.source;
 	endif
 
-	// Notify nearby players
-	var chars := ListMobilesNearLocation(item.x, item.y, item.z, range, item.realm);
-	foreach char in chars
-		if (char.acctname)
-			SendSysMessageEx(char, emote_text, SSM_INFO);
-		endif
-	endforeach
-
+	PrintTextAbove(emote_target, emote_text);
+	// Commenting because it wasn't working as expected
+	// Message(emote_text).SendEmote(emote_target);
 	return 1;
 endfunction
 
 function ExecuteTeleportAction(mobile, params)
 	if (!mobile || !mobile.acctname)
+		return 0;
+	endif
+
+	if (!params)
 		return 0;
 	endif
 

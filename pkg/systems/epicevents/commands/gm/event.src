@@ -44,8 +44,8 @@ program epicevents(who)
 
 	// Step 2: Configure trigger parameters and delays
 	var trigger_params := 0;
-	var min_delay := 60;  // Default 60 minutes
-	var max_delay := 120; // Default 120 minutes
+	var min_delay := DEFAULT_MIN_DELAY_MINUTES;
+	var max_delay := DEFAULT_MAX_DELAY_MINUTES;
 
 	// Show trigger config gump (now includes delay fields for all triggers)
 	var config_gump := BuildTriggerConfigGump(trigger_type);
@@ -244,10 +244,73 @@ program epicevents(who)
 	if (config.GetCreatureCount() > 0)
 		Message($"Criaturas: {config.GetCreatureCount()} tipo(s) configurado(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 	endif
-	Message($"Cooldown: {config.global_cooldown / 60} minuto(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 	return 1;
 endprogram
+
+// Helper function to preserve form data before targeting
+function PreserveFormDataForTargeting(byref working_action, edit_input, action_type)
+	// Ensure working_action structure exists
+	if (!working_action)
+		working_action := ActionConfig(action_type);
+	endif
+	if (!working_action.params)
+		working_action.params := struct{};
+	endif
+	if (!working_action.condition)
+		working_action.condition := struct{};
+	endif
+	if (!working_action.condition.params)
+		working_action.condition.+params := struct{};
+	endif
+
+	// Preserve delay field (common to all action types)
+	var delay_str := Trim(GFExtractData(edit_input, ID_ACTION_DELAY));
+	if (delay_str && delay_str != "")
+		working_action.delay := CInt(delay_str);
+	endif
+
+	// Preserve action-specific fields
+	case (action_type)
+		"EMOTE":
+			var text := Trim(GFExtractData(edit_input, ID_ACTION_EMOTE_TEXT));
+			working_action.params.+text := text;
+			working_action.params.+show_on_source := edit_input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
+
+		"TELEPORT":
+			var x_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_X));
+			var y_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Y));
+			var z_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Z));
+			var realm_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_REALM));
+			if (x_str && x_str != "")
+				working_action.params.+x := CInt(x_str);
+			endif
+			if (y_str && y_str != "")
+				working_action.params.+y := CInt(y_str);
+			endif
+			if (z_str && z_str != "")
+				working_action.params.+z := CInt(z_str);
+			endif
+			if (realm_str && realm_str != "")
+				working_action.params.+realm := realm_str;
+			endif
+	endcase
+
+	// Preserve condition amount field
+	var amount_str := Trim(GFExtractData(edit_input, ID_CONDITION_AMOUNT));
+	if (amount_str && amount_str != "")
+		working_action.condition.params.+amount := CInt(amount_str);
+	endif
+
+	// Check radio button state
+	if (edit_input[RADIO_CONDITION_HAS_ITEM])
+		working_action.condition.+type := "PLAYER_HAS_ITEM";
+	else
+		working_action.condition.+type := "NONE";
+	endif
+
+	return 1;
+endfunction
 
 // Helper function to handle action editing with target support
 function HandleActionEdit(who, action_type, existing_action)
@@ -282,70 +345,8 @@ function HandleActionEdit(who, action_type, existing_action)
 
 		// Check if target button was pressed
 		if (edit_input[BTN_TARGET_ITEM])
-			// IMPORTANT: Manually preserve form data BEFORE targeting
-			// We can't use ParseActionEditInput because it fails validation on incomplete forms
-
-			// Ensure working_action structure exists
-			if (!working_action)
-				working_action := ActionConfig(action_type);
-			endif
-			if (!working_action.params)
-				working_action.params := struct{};
-			endif
-			if (!working_action.condition)
-				working_action.condition := struct{};
-			endif
-			if (!working_action.condition.params)
-				working_action.condition.+params := struct{};
-			endif
-
-			// Preserve delay field (common to all action types)
-			var delay_str := Trim(GFExtractData(edit_input, ID_ACTION_DELAY));
-			if (delay_str && delay_str != "")
-				working_action.delay := CInt(delay_str);
-			endif
-
-			// Preserve action-specific fields
-			case (action_type)
-				"EMOTE":
-					// Preserve emote text (even if empty)
-					var text := Trim(GFExtractData(edit_input, ID_ACTION_EMOTE_TEXT));
-					working_action.params.+text := text;
-
-					// Preserve checkbox state
-					working_action.params.+show_on_source := edit_input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
-
-				"TELEPORT":
-					var x_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_X));
-					var y_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Y));
-					var z_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Z));
-					var realm_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_REALM));
-					if (x_str && x_str != "")
-						working_action.params.+x := CInt(x_str);
-					endif
-					if (y_str && y_str != "")
-						working_action.params.+y := CInt(y_str);
-					endif
-					if (z_str && z_str != "")
-						working_action.params.+z := CInt(z_str);
-					endif
-					if (realm_str && realm_str != "")
-						working_action.params.+realm := realm_str;
-					endif
-			endcase
-
-			// Preserve condition amount field
-			var amount_str := Trim(GFExtractData(edit_input, ID_CONDITION_AMOUNT));
-			if (amount_str && amount_str != "")
-				working_action.condition.params.+amount := CInt(amount_str);
-			endif
-
-			// Check radio button state
-			if (edit_input[RADIO_CONDITION_HAS_ITEM])
-				working_action.condition.+type := "PLAYER_HAS_ITEM";
-			else
-				working_action.condition.+type := "NONE";
-			endif
+			// Preserve form data before targeting
+			PreserveFormDataForTargeting(working_action, edit_input, action_type);
 
 			Message("Target o item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 			var targ := Target(who);

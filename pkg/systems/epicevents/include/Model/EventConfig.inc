@@ -2,6 +2,9 @@ use uo;
 
 include ":epicevents:Model/ActionConfig";
 
+const DEFAULT_MIN_DELAY_MINUTES := 60;
+const DEFAULT_MAX_DELAY_MINUTES := 120;
+
 class EventConfig()
 	// Creature 1
 	var template1;
@@ -28,10 +31,9 @@ class EventConfig()
 	var max_delay;
 
 	// Event system properties
-	var trigger_type;       // "SPEECH", "ENTEREDAREA", "LEFTAREA", "ITEM_GIVEN", "DOUBLECLICKED"
-	var trigger_params;     // Struct with trigger-specific parameters
-	var actions;            // Array of ActionConfig objects
-	var global_cooldown;    // Cooldown in seconds between triggers
+	var trigger_type;
+	var trigger_params;
+	var actions;
 
 	function EventConfig(this)
 		// Constructor - initialize with default values
@@ -52,14 +54,13 @@ class EventConfig()
 
 		this.color := "";
 		this.emote := "";
-		this.min_delay := "60";
-		this.max_delay := "120";
+		this.min_delay := CStr(DEFAULT_MIN_DELAY_MINUTES);
+		this.max_delay := CStr(DEFAULT_MAX_DELAY_MINUTES);
 
 		// Event system defaults
 		this.trigger_type := "";
 		this.trigger_params := 0;
 		this.actions := array{};
-		this.global_cooldown := 3600;
 	endfunction
 
 	function ToStruct(this)
@@ -99,8 +100,6 @@ class EventConfig()
 			actions_data.append(action.ToStruct());
 		endforeach
 		data.+actions := actions_data;
-
-		data.+global_cooldown := this.global_cooldown;
 
 		return data;
 	endfunction
@@ -144,17 +143,12 @@ class EventConfig()
 		endif
 
 		if (data.actions)
-			// Reconstruct ActionConfig objects from stored structs
 			this.actions := array{};
 			foreach action_struct in (data.actions)
 				var action := ActionConfig("");
 				action.FromStruct(action_struct);
 				this.actions.append(action);
 			endforeach
-		endif
-
-		if (data.global_cooldown)
-			this.global_cooldown := data.global_cooldown;
 		endif
 
 		return 1;

@@ -6,6 +6,8 @@ include ":gumps:epicGumps";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
 
+const DEFAULT_TRIGGER_RADIUS := 8;
+
 const GUMP_BACKGROUND := 39929;
 const INTERNAL_BACKGROUND := 9350;
 const GUMP_WIDTH := 540;
@@ -391,14 +393,14 @@ function ParseTriggerConfigInput(input, trigger_type)
 			var radius_str := Trim(GFExtractData(input, ID_TRIGGER_RADIUS));
 			params.+radius := CInt(radius_str);
 			if (params.radius < 1)
-				params.radius := 8;  // Default
+				params.radius := DEFAULT_TRIGGER_RADIUS;
 			endif
 		"ENTEREDAREA":
 		"LEFTAREA":
 			var radius_str := Trim(GFExtractData(input, ID_TRIGGER_RADIUS));
 			params.+radius := CInt(radius_str);
 			if (params.radius < 1)
-				params.radius := 8;  // Default
+				params.radius := DEFAULT_TRIGGER_RADIUS;
 			endif
 		default:
 			// No params needed
@@ -413,7 +415,7 @@ function ParseTriggerConfigInput(input, trigger_type)
 
 	// Validate delays
 	if (min_delay < 1)
-		min_delay := 60;  // Default 1 hour
+		min_delay := DEFAULT_MIN_DELAY_MINUTES;
 	endif
 	if (max_delay < min_delay)
 		max_delay := min_delay;  // Max can't be less than min

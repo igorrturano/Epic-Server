@@ -36,10 +36,10 @@ function ValidateSpeechTrigger(event, triggerConfig)
 		return 0;
 	endif
 
-	// Exact match or pattern match
 	if (text == keyword || Find(text, keyword, 1))
 		return 1;
 	endif
+
 	return 0;
 endfunction
 
@@ -62,9 +62,9 @@ function CanTrigger(item, triggerConfig)
 	var current_time := polcore().systime;
 	if (current_time >= next_trigger_time)
 		return 1;
-	else
-		return 0;
 	endif
+
+	return 0;
 endfunction
 
 function UpdateTriggerCooldown(item, cooldown_seconds)

@@ -2,7 +2,7 @@ use uo;
 
 function EvaluateCondition(condition, byref action_state, event)
 	if (!condition)
-		return 1;  // No condition = always pass
+		return 1;
 	endif
 
 	case (condition.type)
@@ -10,8 +10,11 @@ function EvaluateCondition(condition, byref action_state, event)
 			return EvaluateActionSucceeded(condition, action_state);
 		"PLAYER_HAS_ITEM":
 			return EvaluatePlayerHasItem(condition, event);
+		"NONE":
+			return 1;
 		default:
-			return 1;  // Unknown condition = pass by default
+			print("[EpicEvents] WARNING - Unknown condition type: '" + condition.type + "' - treating as NONE");
+			return 1;
 	endcase
 endfunction
 
@@ -42,19 +45,23 @@ function EvaluatePlayerHasItem(condition, event)
 	var found := 0;
 
 	// Check backpack items
-	foreach item in EnumerateItemsInContainer(event.source.backpack)
-		if (item.objtype == required_objtype)
-			found += item.amount;
-		endif
-	endforeach
+	if (event.source.backpack)
+		foreach item in EnumerateItemsInContainer(event.source.backpack)
+			if (item.objtype == required_objtype)
+				found += item.amount;
+			endif
+		endforeach
+	endif
 
 	// Check equipped items
 	var equipped := ListEquippedItems(event.source);
-	foreach item in equipped
-		if (item.objtype == required_objtype)
-			found += item.amount;
-		endif
-	endforeach
+	if (equipped)
+		foreach item in equipped
+			if (item.objtype == required_objtype)
+				found += item.amount;
+			endif
+		endforeach
+	endif
 
 	if (found >= required_amount)
 		return 1;
