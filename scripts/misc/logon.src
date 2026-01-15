@@ -81,9 +81,7 @@ program Logon(who)
 	endif
 
 	LogonPets(who);
-	GetResist(who, FORTITUDE);
-	GetResist(who, VONTADE);
-	GetResist(who, REFLEXOS);
+	RecalcVitals(who);
 
 	// Enforce skill cap when the player logs in
 	EnforceSkillCap(who);

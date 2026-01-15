@@ -420,7 +420,7 @@ function checkTargetValidity(mobile, targ, spellinfo)
 	if (GetCooldown(targ, "corpofechado") > 0)
 		SendSysMessageEx(mobile, "A magia nao funcionou no alvo, alem disso voce sente suas energias sendo esgotadas.",
 				   SSM_FAIL);
-		var vont := GetResist(targ, VONTADE);
+		var vont := GetResist(targ, WILL);
 		DamageMANA(mobile, vont / 3);
 		return 0;
 	endif

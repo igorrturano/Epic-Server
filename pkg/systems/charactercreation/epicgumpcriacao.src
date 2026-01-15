@@ -141,10 +141,14 @@ function racialSelection(who, culture_pic)
 		who.graphic := 1832;
 	elseif (who.graphic == 401 && (chardata.raca == ORC))
 		who.graphic := 1833;
-	elseif (who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
+	elseif (who.graphic == 400 && (chardata.raca == ANAO))
 		who.graphic := 1828;
-	elseif (who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == PEQUILHO))
+	elseif (who.graphic == 401 && (chardata.raca == ANAO))
 		who.graphic := 1829;
+	elseif (who.graphic == 400 && (chardata.raca == PEQUILHO))
+		who.graphic := 1835;
+	elseif (who.graphic == 401 && (chardata.raca == PEQUILHO))
+		who.graphic := 1834;
 	endif
 
 	who.title_race := prefix+chardata.raca;
@@ -159,7 +163,7 @@ function RPcharacteristicsSelection(who, culture_pic)
 
 	chardata.+caracteristicas_rp := struct{};
 	foreach category in CaracteristicasCategories
-		chardata.caracteristicas_rp[category] := 0;
+		chardata.caracteristicas_rp[category] := -1;
 	endforeach
 
 	var racial_traits := GetRacialTraits(chardata.raca);
@@ -172,9 +176,12 @@ function RPcharacteristicsSelection(who, culture_pic)
 	while (!all_requirements_met)
 		input := CaracteristicasRPGump(who, chardata, culture_pic);
 
+		var age_input := GFExtractData(input, 1000); // Textbox ID for Age
+
 		if (input[0] == 222) // 222 é o botão de finalizar
 			var selected_count := CountSelectedCategories(chardata.caracteristicas_rp, required_categories);
-			var age_filled := (chardata.idade_escolhida != error && chardata.idade_escolhida != "");
+			var age_filled := !(age_input == "" || typeof(age_input) == "Error");
+			Print("Selected count: {}, Age filled: {}".format(selected_count, age_filled));
 
 			if (selected_count == 4 && age_filled)
 				all_requirements_met := 1;
@@ -205,7 +212,7 @@ endfunction
 function CountSelectedCategories(caracteristicas_rp, required_categories)
 	var count := 0;
 	foreach category in required_categories
-		if (caracteristicas_rp[category] != 0)
+		if (caracteristicas_rp[category] != -1)
 			count += 1;
 		endif
 	endforeach
@@ -915,7 +922,6 @@ function calculateBirthdate(who)
 
 	var current_year := getYear();
 
-	var chosen_age_index := chardata.caracteristicas_rp["Idade Aparente"];
 	var age_value := chardata.idade_real;
 	if (age_value == error)
 		SendSysMessageEX(who, "Erro ao calcular a idade.", SSM_FAIL);

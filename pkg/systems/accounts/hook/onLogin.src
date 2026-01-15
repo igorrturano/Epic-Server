@@ -18,6 +18,8 @@ include ":accounts:accounts";
 
 const OFFSET_ACCOUNT_NAME := 0x01;
 const OFFSET_ACCOUNT_PASS := 0x1F;
+const OFFSET_CLIENT_KEY := 0x3D;
+const ALLOWED_KEY := 0xC0;
 const INFO_LEN := 30;
 
 enum THEFT_LEVELS
@@ -37,6 +39,7 @@ exported function LoginHook(who, byref packet)
 
 	var username := Packet.GetString(OFFSET_ACCOUNT_NAME, INFO_LEN);
 	var password := Packet.GetString(OFFSET_ACCOUNT_PASS, INFO_LEN);
+	var key := Packet.GetInt8(OFFSET_CLIENT_KEY);
 
 	if (!username)
 		SysLog("Account/GetString Error: " + username.errortext);
@@ -44,6 +47,9 @@ exported function LoginHook(who, byref packet)
 	elseif (!password)
 		SysLog("Password/GetString Error: " + password.errortext);
 		return 0;
+	elseif (ALLOWED_KEY != key)
+		SysLog("Client not Allowed for {}!".format(username));
+		return 1;
 	endif
 
 	/* var theft_level := AcctHackChecks(username, password);

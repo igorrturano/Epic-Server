@@ -31,7 +31,7 @@ program SecondWind(params)
 		endif
 	endforeach
 
-	var vont := (GetResist(who, VONTADE));
+	var vont := (GetResist(who, WILL));
 	var heal_amt := (CInt(vont * 1.5));
 	var stam_amt := (CInt(vont * 0.5));
 	//    var heal_amt := (CInt(AP_GetSkill(who, MEDICINE)) * 1.5);
