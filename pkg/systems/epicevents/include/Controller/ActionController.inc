@@ -45,7 +45,6 @@ function ExecuteAction(item, event, action, byref action_state)
 	var script := start_script(script_path, script_params);
 
 	if (!script || script.errortext)
-		print("[EpicEvents] ERROR: Failed to start action script [" + action.type + "]: " + script.errortext);
 		return 0;
 	endif
 

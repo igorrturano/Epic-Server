@@ -13,7 +13,6 @@ function EvaluateCondition(condition, byref action_state, event)
 		"NONE":
 			return 1;
 		default:
-			print("[EpicEvents] WARNING - Unknown condition type: '" + condition.type + "' - treating as NONE");
 			return 1;
 	endcase
 endfunction
@@ -44,28 +43,21 @@ function EvaluatePlayerHasItem(condition, event)
 
 	var found := 0;
 
-	// Check backpack items
+	// O(1) search using FindObjtypeInContainer
 	if (event.source.backpack)
-		foreach item in EnumerateItemsInContainer(event.source.backpack)
-			if (item.objtype == required_objtype)
-				found += item.amount;
-			endif
+		var items := FindObjtypeInContainer(event.source.backpack, required_objtype);
+		foreach item in items
+			found += item.amount;
 		endforeach
 	endif
 
-	// Check equipped items
+	// Check equipped items (usually small list, O(1) in practice)
 	var equipped := ListEquippedItems(event.source);
-	if (equipped)
-		foreach item in equipped
-			if (item.objtype == required_objtype)
-				found += item.amount;
-			endif
-		endforeach
-	endif
+	foreach item in equipped
+		if (item.objtype == required_objtype)
+			found += item.amount;
+		endif
+	endforeach
 
-	if (found >= required_amount)
-		return 1;
-	endif
-
-	return 0;
+	return (found >= required_amount);
 endfunction

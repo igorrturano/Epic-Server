@@ -25,8 +25,8 @@ class EventConfig()
 		this.creatures := array{};
 		this.color := "";
 		this.emote := "";
-		this.min_delay := CStr(DEFAULT_MIN_DELAY_MINUTES);
-		this.max_delay := CStr(DEFAULT_MAX_DELAY_MINUTES);
+		this.min_delay := DEFAULT_MIN_DELAY_MINUTES;
+		this.max_delay := DEFAULT_MAX_DELAY_MINUTES;
 		this.trigger_type := "";
 		this.trigger_params := 0;
 		this.actions := array{};
@@ -84,8 +84,9 @@ class EventConfig()
 
 		this.color := data.color;
 		this.emote := data.emote;
-		this.min_delay := data.min_delay;
-		this.max_delay := data.max_delay;
+		// Store as integers (convert from potentially string storage)
+		this.min_delay := CInt(data.min_delay);
+		this.max_delay := CInt(data.max_delay);
 
 		if (data.trigger_type)
 			this.trigger_type := data.trigger_type;
@@ -108,15 +109,12 @@ class EventConfig()
 	endfunction
 
 	function IsValid(this)
-		// Validate delays
-		var min_delay := CInt(this.min_delay);
-		var max_delay := CInt(this.max_delay);
-
-		if (min_delay < 1)
+		// Validate delays (already stored as integers)
+		if (this.min_delay < 1)
 			return 0;
 		endif
 
-		if (max_delay < min_delay)
+		if (this.max_delay < this.min_delay)
 			return 0;
 		endif
 

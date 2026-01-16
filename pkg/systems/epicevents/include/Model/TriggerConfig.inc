@@ -1,5 +1,8 @@
 use uo;
 
+// Single source of truth for default trigger radius
+const DEFAULT_TRIGGER_RADIUS := 8;
+
 class TriggerConfig()
 	var type;       // "SPEECH", "ENTEREDAREA", "LEFTAREA", "ITEM_GIVEN", "DOUBLECLICKED"
 	var params;     // Type-specific parameters struct
@@ -22,7 +25,7 @@ class TriggerConfig()
 		if (this.params.radius)
 			return CInt(this.params.radius);
 		endif
-		return 8;  // Default
+		return DEFAULT_TRIGGER_RADIUS;
 	endfunction
 
 	function GetRequiredItems(this)

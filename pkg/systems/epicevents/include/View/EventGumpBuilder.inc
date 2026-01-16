@@ -6,6 +6,7 @@ include ":gumps:epicGumps";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
 include ":epicevents:Model/CreatureSpawnInfo";
+include ":text:Color";
 
 const DEFAULT_TRIGGER_RADIUS := 8;
 
@@ -61,25 +62,51 @@ const RADIO_CONDITION_HAS_ITEM := 331;
 const ID_EVENT_MIN_DELAY := 340;
 const ID_EVENT_MAX_DELAY := 341;
 
-const ID_NAME1 := 100;
-const ID_AMOUNT1 := 101;
-const ID_TIER1 := 102;
-const ID_TEMPLATE1 := 103;
-
-const ID_NAME2 := 104;
-const ID_AMOUNT2 := 105;
-const ID_TIER2 := 106;
-const ID_TEMPLATE2 := 107;
-
-const ID_NAME3 := 108;
-const ID_AMOUNT3 := 109;
-const ID_TIER3 := 110;
-const ID_TEMPLATE3 := 111;
+// Creature field IDs - base IDs, each creature uses base + (index * 4)
+const ID_CREATURE_BASE := 100;
+const ID_CREATURE_NAME_OFFSET := 0;
+const ID_CREATURE_AMOUNT_OFFSET := 1;
+const ID_CREATURE_TIER_OFFSET := 2;
+const ID_CREATURE_TEMPLATE_OFFSET := 3;
+const MAX_CREATURES := 3;
 
 const ID_COLOR := 112;
 const ID_EMOTE := 113;
 const ID_MIN_DELAY := 114;
 const ID_MAX_DELAY := 115;
+
+// Helper to get creature field IDs
+function GetCreatureFieldIds(creature_index)
+	var base := ID_CREATURE_BASE + (creature_index * 4);
+	return struct{
+		name := base + ID_CREATURE_NAME_OFFSET,
+		amount := base + ID_CREATURE_AMOUNT_OFFSET,
+		tier := base + ID_CREATURE_TIER_OFFSET,
+		template := base + ID_CREATURE_TEMPLATE_OFFSET
+	};
+endfunction
+
+// Helper to build a single creature row in the gump
+function BuildCreatureRow(byref gump, x, y, ids)
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Nome:");
+	GFResizePic(gump, x + 100, y, 9350, 150, 25);
+	GFTextEntry(gump, x + 105, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.name);
+
+	GFTextLine(gump, x + 265, y, GUMP_COLOR::HELP_TEXT, "Qtd:");
+	GFResizePic(gump, x + 310, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 315, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.amount);
+
+	GFTextLine(gump, x + 385, y, GUMP_COLOR::HELP_TEXT, "Tier:");
+	GFResizePic(gump, x + 425, y, 9350, 60, 25);
+	GFTextEntry(gump, x + 430, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.tier);
+	y := y + 30;
+
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Template:");
+	GFResizePic(gump, x + 100, y, 9350, 385, 25);
+	GFTextEntry(gump, x + 105, y + 5, 375, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.template);
+
+	return y;
+endfunction
 
 function BuildEventConfigGump()
 	var gump := GFECreateGump("Epic Events - Configuracao de Spawn", GUMP_WIDTH, GUMP_HEIGHT);
@@ -89,96 +116,50 @@ function BuildEventConfigGump()
 	var spacing := 70;
 
 	// Section header
-	GFTextMid(gump, 0, y, GUMP_WIDTH, 1149, "CRIATURAS");
+	GFTextMid(gump, 0, y, GUMP_WIDTH, GUMP_COLOR::SECTION_HEADER, "CRIATURAS");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
 	y := y + 20;
 
-	// Creature 1
-	GFTextLine(gump, x, y, 1153, "Nome:");
-	GFResizePic(gump, x + 100, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME1);
-
-	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
-	GFResizePic(gump, x + 310, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT1);
-
-	GFTextLine(gump, x + 385, y, 1153, "Tier:");
-	GFResizePic(gump, x + 425, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER1);
-	y := y + 30;
-
-	GFTextLine(gump, x, y, 1153, "Template:");
-	GFResizePic(gump, x + 100, y, 9350, 385, 25);
-	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE1);
-	y := y + spacing;
-
-	// Creature 2
-	GFTextLine(gump, x, y, 1153, "Nome:");
-	GFResizePic(gump, x + 100, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME2);
-
-	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
-	GFResizePic(gump, x + 310, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT2);
-
-	GFTextLine(gump, x + 385, y, 1153, "Tier:");
-	GFResizePic(gump, x + 425, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER2);
-	y := y + 30;
-
-	GFTextLine(gump, x, y, 1153, "Template:");
-	GFResizePic(gump, x + 100, y, 9350, 385, 25);
-	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE2);
-	y := y + spacing;
-
-	// Creature 3
-	GFTextLine(gump, x, y, 1153, "Nome:");
-	GFResizePic(gump, x + 100, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 105, y + 5, 140, 20, 1150, "", ID_NAME3);
-
-	GFTextLine(gump, x + 265, y, 1153, "Qtd:");
-	GFResizePic(gump, x + 310, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 315, y + 5, 50, 20, 1150, "", ID_AMOUNT3);
-
-	GFTextLine(gump, x + 385, y, 1153, "Tier:");
-	GFResizePic(gump, x + 425, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 430, y + 5, 50, 20, 1150, "", ID_TIER3);
-	y := y + 30;
-
-	GFTextLine(gump, x, y, 1153, "Template:");
-	GFResizePic(gump, x + 100, y, 9350, 385, 25);
-	GFTextEntry(gump, x + 105, y + 5, 375, 20, 1150, "", ID_TEMPLATE3);
-	y := y + 50;
+	// Build creature rows using loop (DRY)
+	for i := 0 to (MAX_CREATURES - 1)
+		var ids := GetCreatureFieldIds(i);
+		y := BuildCreatureRow(gump, x, y, ids);
+		if (i < MAX_CREATURES - 1)
+			y := y + spacing;
+		else
+			y := y + 50;
+		endif
+	endfor
 
 	// Section header
-	GFTextMid(gump, 0, y, GUMP_WIDTH, 1149, "CONFIGURACOES ADICIONAIS");
+	GFTextMid(gump, 0, y, GUMP_WIDTH, GUMP_COLOR::SECTION_HEADER, "CONFIGURACOES ADICIONAIS");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
 	y := y + 15;
 
 	// Shared settings
-	GFTextLine(gump, x, y, 1153, "Cor (opcional):");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Cor (opcional):");
 	GFResizePic(gump, x + 150, y, 9350, 100, 25);
-	GFTextEntry(gump, x + 155, y + 5, 90, 20, 1150, "", ID_COLOR);
+	GFTextEntry(gump, x + 155, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_COLOR);
 	y := y + 35;
 
-	GFTextLine(gump, x, y, 1153, "Emote (opcional):");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Emote (opcional):");
 	y := y + 25;
 	GFResizePic(gump, x, y, 9350, 480, 25);
-	GFTextEntry(gump, x + 5, y + 5, 470, 20, 1150, "", ID_EMOTE);
+	GFTextEntry(gump, x + 5, y + 5, 470, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_EMOTE);
 	y := y + 40;
 
-	GFTextLine(gump, x, y, 1153, "Delay (em minutos):");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Delay (em minutos):");
 	y := y + 25;
 
-	GFTextLine(gump, x, y, 1153, "Minimo:");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Minimo:");
 	GFResizePic(gump, x + 80, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 85, y + 5, 70, 20, 1150, "60", ID_MIN_DELAY);
+	GFTextEntry(gump, x + 85, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"60", ID_MIN_DELAY);
 
-	GFTextLine(gump, x + 190, y, 1153, "Maximo:");
+	GFTextLine(gump, x + 190, y, GUMP_COLOR::HELP_TEXT, "Maximo:");
 	GFResizePic(gump, x + 270, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 275, y + 5, 70, 20, 1150, "120", ID_MAX_DELAY);
+	GFTextEntry(gump, x + 275, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"120", ID_MAX_DELAY);
 	y := y + 40;
 
 	// Divider before button
@@ -197,44 +178,25 @@ function ParseEventConfigInput(input)
 
 	var config := EventConfig();
 
-	// Parse creature 1
-	var template1 := Trim(GFExtractData(input, ID_TEMPLATE1));
-	if (template1 && template1 != "")
-		var creature := CreatureSpawnInfo();
-		creature.template := template1;
-		creature.amount := Trim(GFExtractData(input, ID_AMOUNT1));
-		creature.tier := Trim(GFExtractData(input, ID_TIER1));
-		creature.name := Trim(GFExtractData(input, ID_NAME1));
-		config.creatures.append(creature);
-	endif
-
-	// Parse creature 2
-	var template2 := Trim(GFExtractData(input, ID_TEMPLATE2));
-	if (template2 && template2 != "")
-		var creature := CreatureSpawnInfo();
-		creature.template := template2;
-		creature.amount := Trim(GFExtractData(input, ID_AMOUNT2));
-		creature.tier := Trim(GFExtractData(input, ID_TIER2));
-		creature.name := Trim(GFExtractData(input, ID_NAME2));
-		config.creatures.append(creature);
-	endif
-
-	// Parse creature 3
-	var template3 := Trim(GFExtractData(input, ID_TEMPLATE3));
-	if (template3 && template3 != "")
-		var creature := CreatureSpawnInfo();
-		creature.template := template3;
-		creature.amount := Trim(GFExtractData(input, ID_AMOUNT3));
-		creature.tier := Trim(GFExtractData(input, ID_TIER3));
-		creature.name := Trim(GFExtractData(input, ID_NAME3));
-		config.creatures.append(creature);
-	endif
+	// Parse creatures using loop (DRY)
+	for i := 0 to (MAX_CREATURES - 1)
+		var ids := GetCreatureFieldIds(i);
+		var template := Trim(GFExtractData(input, ids.template));
+		if (template && template != "")
+			var creature := CreatureSpawnInfo();
+			creature.template := template;
+			creature.amount := Trim(GFExtractData(input, ids.amount));
+			creature.tier := Trim(GFExtractData(input, ids.tier));
+			creature.name := Trim(GFExtractData(input, ids.name));
+			config.creatures.append(creature);
+		endif
+	endfor
 
 	// Parse shared
 	config.color := Trim(GFExtractData(input, ID_COLOR));
 	config.emote := Trim(GFExtractData(input, ID_EMOTE));
-	config.min_delay := Trim(GFExtractData(input, ID_MIN_DELAY));
-	config.max_delay := Trim(GFExtractData(input, ID_MAX_DELAY));
+	config.min_delay := CInt(Trim(GFExtractData(input, ID_MIN_DELAY)));
+	config.max_delay := CInt(Trim(GFExtractData(input, ID_MAX_DELAY)));
 
 	return config;
 endfunction
@@ -268,37 +230,37 @@ function BuildTriggerSelectionGump()
 	var spacing := 80;
 
 	// Instructions
-	GFTextLine(gump, x, y, 2100, "Como este evento deve ser acionado?");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Como este evento deve ser acionado?");
 	y := y + 35;
 
 	// SPEECH trigger
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_SPEECH);
-	GFTextLine(gump, x + 40, y + 2, 53, "Fala (Palavra-chave)");
-	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador diz uma palavra ou frase especifica");
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Fala (Palavra-chave)");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador diz uma palavra ou frase especifica");
 	y := y + spacing;
 
 	// ENTEREDAREA trigger
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ENTEREDAREA);
-	GFTextLine(gump, x + 40, y + 2, 53, "Entrada em Area (Proximidade)");
-	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador entra na area ao redor do item");
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Entrada em Area (Proximidade)");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador entra na area ao redor do item");
 	y := y + spacing;
 
 	// LEFTAREA trigger
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_LEFTAREA);
-	GFTextLine(gump, x + 40, y + 2, 53, "Saida de Area");
-	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador sai da area (punicao por covardia!)");
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Saida de Area");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador sai da area (punicao por covardia!)");
 	y := y + spacing;
 
 	// ITEM_GIVEN trigger - DISABLED (Phase 2)
 	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
-	GFTextLine(gump, x + 40, y + 2, 53, "Entrega de Item (Oferenda) [DESABILITADO]");
-	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador entrega um item especifico");
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Entrega de Item (Oferenda) [DESABILITADO]");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador entrega um item especifico");
 	y := y + spacing;
 
 	// DOUBLECLICKED trigger - DISABLED (Phase 2)
 	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
-	GFTextLine(gump, x + 40, y + 2, 53, "Clique Duplo (Interacao) [DESABILITADO]");
-	GFTextLine(gump, x + 40, y + 22, 2100, "Jogador clica duas vezes no item");
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Clique Duplo (Interacao) [DESABILITADO]");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador clica duas vezes no item");
 
 	return gump;
 endfunction
@@ -311,48 +273,48 @@ function BuildTriggerConfigGump(trigger_type)
 	var x := 50;
 
 	// Section header
-	GFTextMid(gump, 0, y, 600, 1149, "PARAMETROS DO GATILHO");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "PARAMETROS DO GATILHO");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 	y := y + 20;
 
 	case (trigger_type)
 		"SPEECH":
-			GFTextLine(gump, x, y, 1153, "Palavra-chave ou frase:");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Palavra-chave ou frase:");
 			y := y + 25;
 			GFResizePic(gump, x, y, 9350, 500, 25);
-			GFTextEntry(gump, x + 5, y + 5, 490, 20, 1150, "", ID_TRIGGER_KEYWORD);
+			GFTextEntry(gump, x + 5, y + 5, 490, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_TRIGGER_KEYWORD);
 			y := y + 35;
-			GFTextLine(gump, x, y, 2100, "O jogador deve dizer exatamente esta palavra ou frase");
-			GFTextLine(gump, x, y + 15, 2100, "para ativar o evento.");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "O jogador deve dizer exatamente esta palavra ou frase");
+			GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "para ativar o evento.");
 			y := y + 50;
 
-			GFTextLine(gump, x, y, 1153, "Raio de audicao (em tiles):");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Raio de audicao (em tiles):");
 			y := y + 25;
 			GFResizePic(gump, x, y, 9350, 100, 25);
-			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,"8", ID_TRIGGER_RADIUS);
 			y := y + 35;
-			GFTextLine(gump, x, y, 2100, "Distancia em que o NPC/item pode 'ouvir' o jogador");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Distancia em que o NPC/item pode 'ouvir' o jogador");
 		"ENTEREDAREA":
-			GFTextLine(gump, x, y, 1153, "Raio de deteccao (em tiles):");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Raio de deteccao (em tiles):");
 			y := y + 25;
 			GFResizePic(gump, x, y, 9350, 100, 25);
-			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,"8", ID_TRIGGER_RADIUS);
 			y := y + 35;
-			GFTextLine(gump, x, y, 2100, "Distancia em que o jogador deve estar para ativar");
-			GFTextLine(gump, x, y + 15, 2100, "o evento. Padrao: 8 tiles (encontro).");
-			GFTextLine(gump, x, y + 30, 2100, "2 tiles = surpresa | 15 tiles = alerta antecipado");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Distancia em que o jogador deve estar para ativar");
+			GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "o evento. Padrao: 8 tiles (encontro).");
+			GFTextLine(gump, x, y + 30, GUMP_COLOR::LABEL, "2 tiles = surpresa | 15 tiles = alerta antecipado");
 		"LEFTAREA":
-			GFTextLine(gump, x, y, 1153, "Raio de deteccao (em tiles):");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Raio de deteccao (em tiles):");
 			y := y + 25;
 			GFResizePic(gump, x, y, 9350, 100, 25);
-			GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, "8", ID_TRIGGER_RADIUS);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,"8", ID_TRIGGER_RADIUS);
 			y := y + 35;
-			GFTextLine(gump, x, y, 2100, "Distancia que o jogador deve sair para ativar");
-			GFTextLine(gump, x, y + 15, 2100, "o evento de saida (punicao por covardia!).");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Distancia que o jogador deve sair para ativar");
+			GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "o evento de saida (punicao por covardia!).");
 		default:
-			GFTextLine(gump, x, y, 2100, "Este gatilho nao requer configuracao adicional.");
-			GFTextLine(gump, x, y + 20, 2100, "Clique em Proximo para continuar.");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Este gatilho nao requer configuracao adicional.");
+			GFTextLine(gump, x, y + 20, GUMP_COLOR::LABEL, "Clique em Proximo para continuar.");
 	endcase
 
 	// Add delay configuration section (for all trigger types)
@@ -360,25 +322,25 @@ function BuildTriggerConfigGump(trigger_type)
 	y := 350;  // Fixed position - moved down 30px
 
 	// Section header
-	GFTextMid(gump, 0, y, 600, 1149, "FREQUENCIA DE ATIVACAO");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "FREQUENCIA DE ATIVACAO");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 	y := y + 20;
 
-	GFTextLine(gump, x, y, 2100, "Intervalo entre ativacoes (em minutos):");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Intervalo entre ativacoes (em minutos):");
 	y := y + 25;
 
-	GFTextLine(gump, x, y, 1153, "Minimo:");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Minimo:");
 	GFResizePic(gump, x + 70, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 75, y + 5, 70, 20, 1150, "60", ID_EVENT_MIN_DELAY);
+	GFTextEntry(gump, x + 75, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"60", ID_EVENT_MIN_DELAY);
 
-	GFTextLine(gump, x + 190, y, 1153, "Maximo:");
+	GFTextLine(gump, x + 190, y, GUMP_COLOR::HELP_TEXT, "Maximo:");
 	GFResizePic(gump, x + 270, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 275, y + 5, 70, 20, 1150, "120", ID_EVENT_MAX_DELAY);
+	GFTextEntry(gump, x + 275, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"120", ID_EVENT_MAX_DELAY);
 	y := y + 40;
 
-	GFTextLine(gump, x, y, 2100, "O evento so pode ativar novamente apos este intervalo");
-	GFTextLine(gump, x, y + 15, 2100, "(randomizado entre min e max)");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "O evento so pode ativar novamente apos este intervalo");
+	GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "(randomizado entre min e max)");
 
 	// Divider before button
 	y := y + 40;
@@ -453,18 +415,18 @@ function BuildActionListGump(actions)
 	var x := 30;
 
 	// Instructions
-	GFTextLine(gump, x, y, 1149, "Configuracao de Acoes");
+	GFTextLine(gump, x, y, GUMP_COLOR::SECTION_HEADER, "Configuracao de Acoes");
 	y := y + 25;
-	GFTextLine(gump, x, y, 2100, "As acoes abaixo serao executadas em sequencia quando o gatilho ativar:");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "As acoes abaixo serao executadas em sequencia quando o gatilho ativar:");
 	y := y + 30;
 
 	// Action list
 	if (!actions || actions.size() == 0)
 		// Empty state
 		GFResizePic(gump, x, y, 0x2486, 540, 80);  // Subtle background box
-		GFTextLine(gump, x + 20, y + 15, 1153, "Nenhuma acao configurada.");
-		GFTextLine(gump, x + 20, y + 35, 1153, "Clique em [Adicionar Acao] para criar uma acao.");
-		GFTextLine(gump, x + 20, y + 55, 1153, "Ou clique em [Concluir] para usar o sistema de spawn padrao.");
+		GFTextLine(gump, x + 20, y + 15, GUMP_COLOR::HELP_TEXT, "Nenhuma acao configurada.");
+		GFTextLine(gump, x + 20, y + 35, GUMP_COLOR::HELP_TEXT, "Clique em [Adicionar Acao] para criar uma acao.");
+		GFTextLine(gump, x + 20, y + 55, GUMP_COLOR::HELP_TEXT, "Ou clique em [Concluir] para usar o sistema de spawn padrao.");
 		y := y + 100;
 	else
 		var action_num := 1;
@@ -518,7 +480,7 @@ function BuildActionListGump(actions)
 
 	// Add action button
 	GFAddButton(gump, x, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_ADD);
-	GFTextLine(gump, x + 40, y + 10, 53, "[Adicionar Acao]");
+	GFTextLine(gump, x + 40, y + 10, GUMP_COLOR::HIGHLIGHT, "[Adicionar Acao]");
 
 	// Done button (final finish button - OKAY style)
 	GFAddButton(gump, 280, 435, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_DONE);
@@ -567,25 +529,25 @@ function BuildActionTypeSelectionGump()
 	var spacing := 70;
 
 	// Instructions
-	GFTextLine(gump, x, y, 2100, "Que tipo de acao deseja adicionar?");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Que tipo de acao deseja adicionar?");
 	y := y + 30;
 
 	// EMOTE action
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_EMOTE);
-	GFTextLine(gump, x + 40, y, 53, "Emote/Mensagem");
-	GFTextLine(gump, x + 40, y + 20, 1153, "Exibir uma mensagem ou emote para criar atmosfera");
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Emote/Mensagem");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Exibir uma mensagem ou emote para criar atmosfera");
 	y := y + spacing;
 
 	// SPAWN action
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_SPAWN);
-	GFTextLine(gump, x + 40, y, 53, "Spawn de Criaturas");
-	GFTextLine(gump, x + 40, y + 20, 1153, "Criar criaturas no local do evento");
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Spawn de Criaturas");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Criar criaturas no local do evento");
 	y := y + spacing;
 
 	// TELEPORT action
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_TELEPORT);
-	GFTextLine(gump, x + 40, y, 53, "Teleporte");
-	GFTextLine(gump, x + 40, y + 20, 1153, "Teleportar o jogador para outro local");
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Teleporte");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Teleportar o jogador para outro local");
 
 	return gump;
 endfunction
@@ -608,38 +570,38 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 	var x := 50;
 
 	// ==================== SECTION: TIMING ====================
-	GFTextMid(gump, 0, y, 600, 1149, "TEMPORIZACAO");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "TEMPORIZACAO");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 	y := y + 15;
 
-	GFTextLine(gump, x, y, 1153, "Atraso antes da acao (em segundos, 0 = imediato):");
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Atraso antes da acao (em segundos, 0 = imediato):");
 	y := y + 25;
 	var delay_default := "0";
 	if (existing_action && existing_action.delay)
 		delay_default := CStr(existing_action.delay);
 	endif
 	GFResizePic(gump, x, y, 9350, 100, 25);
-	GFTextEntry(gump, x + 5, y + 5, 90, 20, 1150, delay_default, ID_ACTION_DELAY);
-	GFTextLine(gump, x + 120, y + 5, 2100, "Ex: 5 = aguardar 5 segundos");
+	GFTextEntry(gump, x + 5, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,delay_default, ID_ACTION_DELAY);
+	GFTextLine(gump, x + 120, y + 5, GUMP_COLOR::LABEL, "Ex: 5 = aguardar 5 segundos");
 	y := y + 45;
 
 	// ==================== SECTION: ACTION PARAMETERS ====================
-	GFTextMid(gump, 0, y, 600, 1149, "PARAMETROS DA ACAO");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "PARAMETROS DA ACAO");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 	y := y + 15;
 
 	case (action_type)
 		"EMOTE":
-			GFTextLine(gump, x, y, 1153, "Texto do emote/mensagem:");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Texto do emote/mensagem:");
 			y := y + 25;
 			var emote_default := "";
 			if (existing_action && existing_action.params && existing_action.params.text)
 				emote_default := existing_action.params.text;
 			endif
 			GFResizePic(gump, x, y, 9350, 500, 65);
-			GFTextEntry(gump, x + 5, y + 5, 490, 60, 1150, emote_default, ID_ACTION_EMOTE_TEXT);
+			GFTextEntry(gump, x + 5, y + 5, 490, 60, GUMP_COLOR::TEXT_ENTRY,emote_default, ID_ACTION_EMOTE_TEXT);
 			y := y + 80;
 
 			// Checkbox for showing emote on player vs item
@@ -648,17 +610,17 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 				show_on_player := existing_action.params.show_on_source;
 			endif
 			GFCheckBox(gump, x, y, 0x938, 0x939, show_on_player, BTN_EMOTE_SHOW_ON_PLAYER);
-			GFTextLine(gump, x + 30, y + 2, 1153, "Exibir emote acima do jogador (ao inves do item)");
+			GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Exibir emote acima do jogador (ao inves do item)");
 			y := y + 35;
 
 		"SPAWN":
-			GFTextLine(gump, x, y, 2100, "O spawn de criaturas usa a configuracao padrao do sistema.");
-			GFTextLine(gump, x, y + 20, 2100, "Voce podera configurar criaturas, quantidades e tiers");
-			GFTextLine(gump, x, y + 40, 2100, "na proxima etapa do wizard.");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "O spawn de criaturas usa a configuracao padrao do sistema.");
+			GFTextLine(gump, x, y + 20, GUMP_COLOR::LABEL, "Voce podera configurar criaturas, quantidades e tiers");
+			GFTextLine(gump, x, y + 40, GUMP_COLOR::LABEL, "na proxima etapa do wizard.");
 			y := y + 75;
 
 		"TELEPORT":
-			GFTextLine(gump, x, y, 1153, "Coordenadas do destino (use .where no jogo):");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Coordenadas do destino (use .where no jogo):");
 			y := y + 25;
 			var x_default := "";
 			var y_default := "";
@@ -684,35 +646,35 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 				realm_default := who.realm;
 			endif
 
-			GFTextLine(gump, x, y, 1153, "X:");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "X:");
 			GFResizePic(gump, x + 25, y, 9350, 80, 25);
-			GFTextEntry(gump, x + 30, y + 5, 70, 20, 1150, x_default, ID_ACTION_TELEPORT_X);
+			GFTextEntry(gump, x + 30, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,x_default, ID_ACTION_TELEPORT_X);
 
-			GFTextLine(gump, x + 125, y, 1153, "Y:");
+			GFTextLine(gump, x + 125, y, GUMP_COLOR::HELP_TEXT, "Y:");
 			GFResizePic(gump, x + 150, y, 9350, 80, 25);
-			GFTextEntry(gump, x + 155, y + 5, 70, 20, 1150, y_default, ID_ACTION_TELEPORT_Y);
+			GFTextEntry(gump, x + 155, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,y_default, ID_ACTION_TELEPORT_Y);
 
-			GFTextLine(gump, x + 250, y, 1153, "Z:");
+			GFTextLine(gump, x + 250, y, GUMP_COLOR::HELP_TEXT, "Z:");
 			GFResizePic(gump, x + 275, y, 9350, 80, 25);
-			GFTextEntry(gump, x + 280, y + 5, 70, 20, 1150, z_default, ID_ACTION_TELEPORT_Z);
+			GFTextEntry(gump, x + 280, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,z_default, ID_ACTION_TELEPORT_Z);
 			y := y + 35;
 
-			GFTextLine(gump, x, y, 1153, "Realm:");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Realm:");
 			GFResizePic(gump, x + 60, y, 9350, 120, 25);
-			GFTextEntry(gump, x + 65, y + 5, 110, 20, 1150, realm_default, ID_ACTION_TELEPORT_REALM);
+			GFTextEntry(gump, x + 65, y + 5, 110, 20, GUMP_COLOR::TEXT_ENTRY,realm_default, ID_ACTION_TELEPORT_REALM);
 			y := y + 35;
 
-			GFTextLine(gump, x, y, 2100, "Ex: X=1000 Y=2000 Z=0 Realm=britannia");
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Ex: X=1000 Y=2000 Z=0 Realm=britannia");
 			y := y + 35;
 	endcase
 
 	// ==================== SECTION: CONDITION ====================
-	GFTextMid(gump, 0, y, 600, 1149, "CONDICAO DE EXECUCAO (OPCIONAL)");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "CONDICAO DE EXECUCAO (OPCIONAL)");
 	y := y + 20;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 	y := y + 15;
 
-	GFTextLine(gump, x, y, 2100, "Quando esta acao deve ser executada?");
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Quando esta acao deve ser executada?");
 	y := y + 25;
 
 	// Determine current condition
@@ -723,12 +685,12 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 
 	// Radio button: Always execute
 	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "NONE" ? 1 : 0), RADIO_CONDITION_NONE);
-	GFTextLine(gump, x + 30, y + 2, 1153, "Sempre");
+	GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Sempre");
 	y := y + 30;
 
 	// Radio button: Player has item
 	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "PLAYER_HAS_ITEM" ? 1 : 0), RADIO_CONDITION_HAS_ITEM);
-	GFTextLine(gump, x + 30, y + 2, 1153, "Jogador possui item");
+	GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Jogador possui item");
 	y := y + 25;
 
 	// Parameter fields for "Player has item" (always shown)
@@ -743,16 +705,16 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 		endif
 	endif
 
-	GFTextLine(gump, x + 40, y, 2100, "Item (ID ou Nome):");
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::LABEL, "Item (ID ou Nome):");
 	GFResizePic(gump, x + 180, y, 9350, 200, 25);
-	GFTextEntry(gump, x + 185, y + 5, 190, 20, 1150, objtype_default, ID_CONDITION_OBJTYPE);
+	GFTextEntry(gump, x + 185, y + 5, 190, 20, GUMP_COLOR::TEXT_ENTRY,objtype_default, ID_CONDITION_OBJTYPE);
 	GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_TARGET_ITEM);
-	GFTextLine(gump, x + 430, y + 5, 2100, "[Target]");
+	GFTextLine(gump, x + 430, y + 5, GUMP_COLOR::LABEL, "[Target]");
 	y := y + 35;
 
-	GFTextLine(gump, x + 40, y, 2100, "Quantidade:");
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::LABEL, "Quantidade:");
 	GFResizePic(gump, x + 140, y, 9350, 70, 25);
-	GFTextEntry(gump, x + 145, y + 5, 60, 20, 1150, amount_default, ID_CONDITION_AMOUNT);
+	GFTextEntry(gump, x + 145, y + 5, 60, 20, GUMP_COLOR::TEXT_ENTRY,amount_default, ID_CONDITION_AMOUNT);
 	y := y + 40;
 
 	// Divider before button

@@ -211,8 +211,8 @@ program epicevents(who)
 	config.trigger_type := trigger_type;
 	config.trigger_params := trigger_params;
 	config.actions := actions;
-	config.min_delay := CStr(min_delay);
-	config.max_delay := CStr(max_delay);
+	config.min_delay := min_delay;
+	config.max_delay := max_delay;
 
 	// Target location
 	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);

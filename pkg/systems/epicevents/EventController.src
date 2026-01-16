@@ -9,7 +9,6 @@ include ":epicevents:Model/TriggerConfig";
 include ":epicevents:Model/ActionConfig";
 include "include/sysEvent";
 
-const DEFAULT_TRIGGER_RADIUS := 8;
 const EVENT_LOOP_THROTTLE_MS := 100;
 
 program eventController(item)
@@ -40,19 +39,14 @@ program eventController(item)
 	case (trigger_type)
 		"SPEECH":
 			RegisterForSpeechEvents(item, radius);
-			print("[EpicEvents] Registered SPEECH trigger (radius: " + radius + " tiles)");
 		"ENTEREDAREA":
 			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
-			print("[EpicEvents] Enabled ENTEREDAREA trigger (radius: " + radius + " tiles)");
 		"LEFTAREA":
 			EnableEvents(SYSEVENT_LEFTAREA, radius);
-			print("[EpicEvents] Enabled LEFTAREA trigger (radius: " + radius + " tiles)");
 		"ITEM_GIVEN":
 			EnableEvents(SYSEVENT_ITEM_GIVEN);
-			print("[EpicEvents] Enabled ITEM_GIVEN trigger");
 		"DOUBLECLICKED":
 			EnableEvents(SYSEVENT_DOUBLECLICKED);
-			print("[EpicEvents] Enabled DOUBLECLICKED trigger");
 	endcase
 
 	// Create TriggerConfig from stored params
@@ -60,9 +54,6 @@ program eventController(item)
 	if (config.trigger_params)
 		trigger_config.params := config.trigger_params;
 	endif
-
-	print("[EpicEvents] Event controller started - Trigger type: " + trigger_type);
-	print("[EpicEvents] Location: " + item.x + "," + item.y + "," + item.z);
 
 	while (true)
 		ev := os::wait_for_event(1);
@@ -85,7 +76,6 @@ program eventController(item)
 				var cooldown_seconds := delay_minutes * 60;
 
 				UpdateTriggerCooldown(item, cooldown_seconds);
-				print("[EpicEvents] Trigger fired - cooldown set to " + delay_minutes + " minutes");
 
 				// Execute configured actions (success/failure doesn't affect cooldown)
 				if (config.actions && config.actions.size() > 0)
