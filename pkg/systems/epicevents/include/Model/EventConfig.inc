@@ -1,28 +1,14 @@
 use uo;
 
 include ":epicevents:Model/ActionConfig";
+include ":epicevents:Model/CreatureSpawnInfo";
 
 const DEFAULT_MIN_DELAY_MINUTES := 60;
 const DEFAULT_MAX_DELAY_MINUTES := 120;
 
 class EventConfig()
-	// Creature 1
-	var template1;
-	var amount1;
-	var tier1;
-	var name1;
-
-	// Creature 2
-	var template2;
-	var amount2;
-	var tier2;
-	var name2;
-
-	// Creature 3
-	var template3;
-	var amount3;
-	var tier3;
-	var name3;
+	// Creatures array - dynamic list of CreatureSpawnInfo objects
+	var creatures;
 
 	// Shared properties
 	var color;
@@ -36,28 +22,11 @@ class EventConfig()
 	var actions;
 
 	function EventConfig(this)
-		// Constructor - initialize with default values
-		this.template1 := "";
-		this.amount1 := "";
-		this.tier1 := "";
-		this.name1 := "";
-
-		this.template2 := "";
-		this.amount2 := "";
-		this.tier2 := "";
-		this.name2 := "";
-
-		this.template3 := "";
-		this.amount3 := "";
-		this.tier3 := "";
-		this.name3 := "";
-
+		this.creatures := array{};
 		this.color := "";
 		this.emote := "";
 		this.min_delay := CStr(DEFAULT_MIN_DELAY_MINUTES);
 		this.max_delay := CStr(DEFAULT_MAX_DELAY_MINUTES);
-
-		// Event system defaults
 		this.trigger_type := "";
 		this.trigger_params := 0;
 		this.actions := array{};
@@ -66,35 +35,26 @@ class EventConfig()
 	function ToStruct(this)
 		var data := struct;
 
-		// Creature 1
-		data.+template1 := this.template1;
-		data.+amount1 := this.amount1;
-		data.+tier1 := this.tier1;
-		data.+name1 := this.name1;
+		// Serialize creatures array
+		var creatures_data := array{};
+		foreach creature in (this.creatures)
+			var creature_struct := struct{};
+			creature_struct.+template := creature.template;
+			creature_struct.+amount := creature.amount;
+			creature_struct.+tier := creature.tier;
+			creature_struct.+name := creature.name;
+			creatures_data.append(creature_struct);
+		endforeach
+		data.+creatures := creatures_data;
 
-		// Creature 2
-		data.+template2 := this.template2;
-		data.+amount2 := this.amount2;
-		data.+tier2 := this.tier2;
-		data.+name2 := this.name2;
-
-		// Creature 3
-		data.+template3 := this.template3;
-		data.+amount3 := this.amount3;
-		data.+tier3 := this.tier3;
-		data.+name3 := this.name3;
-
-		// Shared
 		data.+color := this.color;
 		data.+emote := this.emote;
 		data.+min_delay := this.min_delay;
 		data.+max_delay := this.max_delay;
-
-		// Event fields
 		data.+trigger_type := this.trigger_type;
 		data.+trigger_params := this.trigger_params;
 
-		// Convert ActionConfig objects to structs for storage
+		// Serialize actions array
 		var actions_data := array{};
 		foreach action in (this.actions)
 			actions_data.append(action.ToStruct());
@@ -109,31 +69,24 @@ class EventConfig()
 			return 0;
 		endif
 
-		// Creature 1
-		this.template1 := data.template1;
-		this.amount1 := data.amount1;
-		this.tier1 := data.tier1;
-		this.name1 := data.name1;
+		// Deserialize creatures array
+		this.creatures := array{};
+		if (data.creatures)
+			foreach creature_struct in (data.creatures)
+				var creature := CreatureSpawnInfo();
+				creature.template := creature_struct.template;
+				creature.amount := creature_struct.amount;
+				creature.tier := creature_struct.tier;
+				creature.name := creature_struct.name;
+				this.creatures.append(creature);
+			endforeach
+		endif
 
-		// Creature 2
-		this.template2 := data.template2;
-		this.amount2 := data.amount2;
-		this.tier2 := data.tier2;
-		this.name2 := data.name2;
-
-		// Creature 3
-		this.template3 := data.template3;
-		this.amount3 := data.amount3;
-		this.tier3 := data.tier3;
-		this.name3 := data.name3;
-
-		// Shared
 		this.color := data.color;
 		this.emote := data.emote;
 		this.min_delay := data.min_delay;
 		this.max_delay := data.max_delay;
 
-		// Event system fields
 		if (data.trigger_type)
 			this.trigger_type := data.trigger_type;
 		endif
@@ -168,47 +121,21 @@ class EventConfig()
 		endif
 
 		// Check at least one creature is configured
-		if (!this.template1 || this.template1 == "")
+		if (this.creatures.size() == 0)
 			return 0;
 		endif
 
-		// Validate amount for configured creatures
-		if (this.template1 && this.template1 != "")
-			if (CInt(this.amount1) < 1)
+		// Validate each creature
+		foreach creature in (this.creatures)
+			if (!creature.IsValid())
 				return 0;
 			endif
-		endif
-
-		if (this.template2 && this.template2 != "")
-			if (CInt(this.amount2) < 1)
-				return 0;
-			endif
-		endif
-
-		if (this.template3 && this.template3 != "")
-			if (CInt(this.amount3) < 1)
-				return 0;
-			endif
-		endif
+		endforeach
 
 		return 1;
 	endfunction
 
 	function GetCreatureCount(this)
-		var count := 0;
-
-		if (this.template1 && this.template1 != "")
-			count := count + 1;
-		endif
-
-		if (this.template2 && this.template2 != "")
-			count := count + 1;
-		endif
-
-		if (this.template3 && this.template3 != "")
-			count := count + 1;
-		endif
-
-		return count;
+		return this.creatures.size();
 	endfunction
 endclass

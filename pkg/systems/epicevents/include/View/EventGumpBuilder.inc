@@ -5,6 +5,7 @@ include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
+include ":epicevents:Model/CreatureSpawnInfo";
 
 const DEFAULT_TRIGGER_RADIUS := 8;
 
@@ -197,22 +198,37 @@ function ParseEventConfigInput(input)
 	var config := EventConfig();
 
 	// Parse creature 1
-	config.template1 := Trim(GFExtractData(input, ID_TEMPLATE1));
-	config.amount1 := Trim(GFExtractData(input, ID_AMOUNT1));
-	config.tier1 := Trim(GFExtractData(input, ID_TIER1));
-	config.name1 := Trim(GFExtractData(input, ID_NAME1));
+	var template1 := Trim(GFExtractData(input, ID_TEMPLATE1));
+	if (template1 && template1 != "")
+		var creature := CreatureSpawnInfo();
+		creature.template := template1;
+		creature.amount := Trim(GFExtractData(input, ID_AMOUNT1));
+		creature.tier := Trim(GFExtractData(input, ID_TIER1));
+		creature.name := Trim(GFExtractData(input, ID_NAME1));
+		config.creatures.append(creature);
+	endif
 
 	// Parse creature 2
-	config.template2 := Trim(GFExtractData(input, ID_TEMPLATE2));
-	config.amount2 := Trim(GFExtractData(input, ID_AMOUNT2));
-	config.tier2 := Trim(GFExtractData(input, ID_TIER2));
-	config.name2 := Trim(GFExtractData(input, ID_NAME2));
+	var template2 := Trim(GFExtractData(input, ID_TEMPLATE2));
+	if (template2 && template2 != "")
+		var creature := CreatureSpawnInfo();
+		creature.template := template2;
+		creature.amount := Trim(GFExtractData(input, ID_AMOUNT2));
+		creature.tier := Trim(GFExtractData(input, ID_TIER2));
+		creature.name := Trim(GFExtractData(input, ID_NAME2));
+		config.creatures.append(creature);
+	endif
 
 	// Parse creature 3
-	config.template3 := Trim(GFExtractData(input, ID_TEMPLATE3));
-	config.amount3 := Trim(GFExtractData(input, ID_AMOUNT3));
-	config.tier3 := Trim(GFExtractData(input, ID_TIER3));
-	config.name3 := Trim(GFExtractData(input, ID_NAME3));
+	var template3 := Trim(GFExtractData(input, ID_TEMPLATE3));
+	if (template3 && template3 != "")
+		var creature := CreatureSpawnInfo();
+		creature.template := template3;
+		creature.amount := Trim(GFExtractData(input, ID_AMOUNT3));
+		creature.tier := Trim(GFExtractData(input, ID_TIER3));
+		creature.name := Trim(GFExtractData(input, ID_NAME3));
+		config.creatures.append(creature);
+	endif
 
 	// Parse shared
 	config.color := Trim(GFExtractData(input, ID_COLOR));

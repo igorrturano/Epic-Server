@@ -1,0 +1,21 @@
+use uo;
+
+program EMOTE_Action(params)
+	var item := params[1];
+	var event := params[2];
+	var action_params := params[3];
+
+	var emote_text := action_params.text;
+
+	if (!emote_text || emote_text == "")
+		return 0;
+	endif
+
+	var emote_target := item;
+	if (action_params.show_on_source && event.source)
+		emote_target := event.source;
+	endif
+
+	PrintTextAbove(emote_target, emote_text);
+	return 1;
+endprogram

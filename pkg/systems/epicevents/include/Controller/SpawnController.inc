@@ -16,57 +16,18 @@ function SpawnAllCreatures(item, config)
 
 	var spawned_count := 0;
 
-	// Spawn creature type 1
-	if (config.template1 && config.template1 != "")
-		print("[EpicEvents] Creature 1 - Template: " + config.template1 + ", Amount: " + config.amount1 + ", Tier: " + config.tier1);
-		var spawnInfo := CreatureSpawnInfo();
-		spawnInfo.template := config.template1;
-		spawnInfo.amount := config.amount1;
-		spawnInfo.tier := config.tier1;
-		spawnInfo.name := config.name1;
-
-		if (spawnInfo.IsValid())
-			spawned_count := spawned_count + SpawnCreatureType(item, spawnInfo, config.color, config.emote);
-		else
-			print("[EpicEvents] Creature 1 spawn info is invalid!");
+	foreach creature in (config.creatures)
+		if (!creature.IsValid())
+			print("[EpicEvents] Skipping invalid creature");
+			continue;
 		endif
-	endif
 
-	// Spawn creature type 2
-	if (config.template2 && config.template2 != "")
-		print("[EpicEvents] Creature 2 - Template: " + config.template2 + ", Amount: " + config.amount2 + ", Tier: " + config.tier2);
-		var spawnInfo := CreatureSpawnInfo();
-		spawnInfo.template := config.template2;
-		spawnInfo.amount := config.amount2;
-		spawnInfo.tier := config.tier2;
-		spawnInfo.name := config.name2;
-
-		if (spawnInfo.IsValid())
-			spawned_count := spawned_count + SpawnCreatureType(item, spawnInfo, config.color, config.emote);
-		else
-			print("[EpicEvents] Creature 2 spawn info is invalid!");
-		endif
-	endif
-
-	// Spawn creature type 3
-	if (config.template3 && config.template3 != "")
-		print("[EpicEvents] Creature 3 - Template: " + config.template3 + ", Amount: " + config.amount3 + ", Tier: " + config.tier3);
-		var spawnInfo := CreatureSpawnInfo();
-		spawnInfo.template := config.template3;
-		spawnInfo.amount := config.amount3;
-		spawnInfo.tier := config.tier3;
-		spawnInfo.name := config.name3;
-
-		if (spawnInfo.IsValid())
-			spawned_count := spawned_count + SpawnCreatureType(item, spawnInfo, config.color, config.emote);
-		else
-			print("[EpicEvents] Creature 3 spawn info is invalid!");
-		endif
-	endif
+		print("[EpicEvents] Spawning - Template: " + creature.template + ", Amount: " + creature.amount + ", Tier: " + creature.tier);
+		spawned_count := spawned_count + SpawnCreatureType(item, creature, config.color, config.emote);
+		sleepms(2);
+	endforeach
 
 	print("[EpicEvents] Total spawned: " + spawned_count + " creatures");
-
-	// Update next spawn time with random delay
 	UpdateSpawnTime(item, config);
 
 	return spawned_count;
