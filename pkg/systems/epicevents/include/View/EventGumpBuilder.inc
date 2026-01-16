@@ -45,6 +45,7 @@ const ID_ACTION_DELAY := 300;
 const ID_ACTION_EMOTE_TEXT := 301;
 const BTN_EMOTE_SHOW_ON_PLAYER := 303;
 const BTN_TARGET_ITEM := 304;
+const BTN_TARGET_COORDS := 305;
 const ID_ACTION_TELEPORT_X := 310;
 const ID_ACTION_TELEPORT_Y := 311;
 const ID_ACTION_TELEPORT_Z := 312;
@@ -620,7 +621,9 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			y := y + 75;
 
 		"TELEPORT":
-			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Coordenadas do destino (use .where no jogo):");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Coordenadas do destino:");
+			GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_TARGET_COORDS);
+			GFTextLine(gump, x + 410, y + 5, GUMP_COLOR::LABEL, "[Target]");
 			y := y + 25;
 			var x_default := "";
 			var y_default := "";
@@ -709,7 +712,7 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 	GFResizePic(gump, x + 180, y, 9350, 200, 25);
 	GFTextEntry(gump, x + 185, y + 5, 190, 20, GUMP_COLOR::TEXT_ENTRY,objtype_default, ID_CONDITION_OBJTYPE);
 	GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_TARGET_ITEM);
-	GFTextLine(gump, x + 430, y + 5, GUMP_COLOR::LABEL, "[Target]");
+	GFTextLine(gump, x + 410, y + 5, GUMP_COLOR::LABEL, "[Target]");
 	y := y + 35;
 
 	GFTextLine(gump, x + 40, y, GUMP_COLOR::LABEL, "Quantidade:");

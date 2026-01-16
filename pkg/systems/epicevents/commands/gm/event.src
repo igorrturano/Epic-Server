@@ -364,6 +364,29 @@ function HandleActionEdit(who, action_type, existing_action)
 			continue;  // Re-show gump with all data preserved + objtype filled in
 		endif
 
+		// Check if target coordinates button was pressed
+		if (edit_input[BTN_TARGET_COORDS])
+			// Preserve form data before targeting
+			PreserveFormDataForTargeting(working_action, edit_input, action_type);
+
+			Message("Selecione a localizacao de destino...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := TargetCoordinates(who);
+
+			if (!targ)
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;  // Re-show gump with preserved data
+			endif
+
+			// Store coordinates from targeted location
+			working_action.params.+x := targ.x;
+			working_action.params.+y := targ.y;
+			working_action.params.+z := targ.z;
+			working_action.params.+realm := who.realm;
+
+			Message($"Localizacao selecionada: ({targ.x}, {targ.y}, {targ.z}) [{who.realm}]", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			continue;  // Re-show gump with all data preserved + coordinates filled in
+		endif
+
 		// Parse the action normally
 		var parsed_action := ParseActionEditInput(edit_input, action_type);
 

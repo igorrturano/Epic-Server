@@ -80,11 +80,6 @@ program eventController(item)
 				// Execute configured actions (success/failure doesn't affect cooldown)
 				if (config.actions && config.actions.size() > 0)
 					ExecuteActions(item, ev, config.actions);
-				else
-					// No actions configured - use spawn fallback
-					var spawn_action := ActionConfig("SPAWN");
-					spawn_action.params := config.ToStruct();
-					ExecuteActions(item, ev, array{spawn_action});
 				endif
 			endif
 		endif
