@@ -1,0 +1,401 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":epicevents:View/EventGumpBuilder";
+include ":epicevents:Model/EventConfig";
+include ":epicevents:Model/ActionConfig";
+include ":message:model/Message";
+include "include/utility";
+
+program epicevents(who)
+	if (who.cmdlevel < 2)
+		Message("Voce nao tem permissao para usar este comando.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Step 1: Select trigger type (V2)
+	var trigger_gump := BuildTriggerSelectionGump();
+	var trigger_input := GFSendGump(who, trigger_gump);
+
+	if (!trigger_input)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Determine trigger type from button pressed
+	var trigger_type := "";
+	if (trigger_input[210])  // BTN_TRIGGER_SPEECH
+		trigger_type := "SPEECH";
+	elseif (trigger_input[211])  // BTN_TRIGGER_ENTEREDAREA
+		trigger_type := "ENTEREDAREA";
+	elseif (trigger_input[212])  // BTN_TRIGGER_LEFTAREA
+		trigger_type := "LEFTAREA";
+	elseif (trigger_input[213])  // BTN_TRIGGER_ITEM_GIVEN
+		trigger_type := "ITEM_GIVEN";
+	elseif (trigger_input[214])  // BTN_TRIGGER_DOUBLECLICKED
+		trigger_type := "DOUBLECLICKED";
+	else
+		Message("Nenhum gatilho selecionado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	Message($"Gatilho selecionado: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+	// Step 2: Configure trigger parameters and delays
+	var trigger_params := 0;
+	var min_delay := DEFAULT_MIN_DELAY_MINUTES;
+	var max_delay := DEFAULT_MAX_DELAY_MINUTES;
+
+	// Show trigger config gump (now includes delay fields for all triggers)
+	var config_gump := BuildTriggerConfigGump(trigger_type);
+	var config_input := GFSendGump(who, config_gump);
+
+	if (!config_input)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	var config_result := ParseTriggerConfigInput(config_input, trigger_type);
+	if (!config_result)
+		if (trigger_type == "SPEECH")
+			Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		else
+			Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		endif
+		return 0;
+	endif
+
+	// Extract trigger params and delays from result
+	trigger_params := config_result.trigger_params;
+	min_delay := config_result.min_delay;
+	max_delay := config_result.max_delay;
+
+	// Step 3: Configure actions (V2)
+	var actions := array{};
+	var action_loop := 1;
+
+	while (action_loop)
+		// Show action list gump
+		var action_list_gump := BuildActionListGump(actions);
+		var action_list_input := GFSendGump(who, action_list_gump);
+
+		var action_result := ParseActionListInput(action_list_input);
+
+		case (action_result.action)
+			"cancel":
+				Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				return 0;
+
+			"done":
+				action_loop := 0;  // Exit loop
+
+			"add":
+				// Select action type
+				var type_gump := BuildActionTypeSelectionGump();
+				var type_input := GFSendGump(who, type_gump);
+
+				var action_type := ParseActionTypeSelectionInput(type_input);
+
+				if (!action_type)
+					Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					continue;  // Back to action list
+				endif
+
+				// Edit action parameters (with target support)
+				var temp_action := 0;
+				var new_action := HandleActionEdit(who, action_type, temp_action);
+
+				if (!new_action)
+					Message("Acao cancelada ou invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;  // Back to action list
+				endif
+
+				// Add to actions array
+				actions.append(new_action);
+				Message($"Acao adicionada: {GetActionDescription(new_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"edit":
+				// Edit existing action
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var existing_action := actions[index];
+
+				// Edit with target support
+				var updated_action := HandleActionEdit(who, existing_action.type, existing_action);
+
+				if (!updated_action)
+					Message("Acao invalida! Verifique os parametros.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				// Update in array
+				actions[index] := updated_action;
+				Message($"Acao atualizada: {GetActionDescription(updated_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"delete":
+				// Delete action
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var deleted_action := actions[index];
+				actions.erase(index);
+				Message($"Acao removida: {GetActionDescription(deleted_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		endcase
+	endwhile
+
+	// Step 4: Configure spawn details if needed
+	// Show spawn gump ONLY if:
+	// 1. No actions configured (fallback to default spawn)
+	var need_spawn_gump := 0;
+	var has_spawn_action := 0;
+
+	if (actions.size() == 0)
+		need_spawn_gump := 1;
+		Message("Nenhuma acao configurada. Usando sistema de spawn padrao.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		// Check if SPAWN actions exist (already configured in HandleActionEdit)
+		foreach action in actions
+			if (action.type == "SPAWN")
+				has_spawn_action := 1;
+				// SPAWN params already set in HandleActionEdit - no need to show gump again
+				break;
+			endif
+		endforeach
+	endif
+
+	var config := EventConfig();
+
+	if (need_spawn_gump)
+		var gump := BuildEventConfigGump();
+		var input := GFSendGump(who, gump);
+
+		if (!input)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		// Parse input
+		config := ParseEventConfigInput(input);
+		if (!config)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		// Validate configuration
+		if (!config.IsValid())
+			Message("Configuracao invalida! Verifique: 1) Pelo menos uma criatura configurada, 2) Delay minimo >= 1, 3) Delay maximo >= minimo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+
+		// If has SPAWN action, update its params with spawn config
+		if (has_spawn_action)
+			foreach action in actions
+				if (action.type == "SPAWN")
+					action.params := config.ToStruct();
+				endif
+			endforeach
+		endif
+	endif
+
+	// Set configuration fields
+	config.trigger_type := trigger_type;
+	config.trigger_params := trigger_params;
+	config.actions := actions;
+	config.min_delay := min_delay;
+	config.max_delay := max_delay;
+
+	// Target location
+	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Create event spawner item (invisible mushroom)
+	var item := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x1F13, 1, who.realm);
+	if (!item || item.errortext)
+		Message("Erro ao criar o item do event spawner: " + item.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	item.invisible := 1;
+	item.movable := 0;
+
+	// Save configuration
+	SetObjProperty(item, "config", config.ToStruct());
+
+	// Controller script starts automatically via ControlScript in itemdesc.cfg
+
+	// Success message
+	Message($"Epic Event criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+	Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	Message($"Acoes configuradas: {actions.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	if (config.GetCreatureCount() > 0)
+		Message($"Criaturas: {config.GetCreatureCount()} tipo(s) configurado(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	endif
+
+	return 1;
+endprogram
+
+// Helper function to preserve form data before targeting
+function PreserveFormDataForTargeting(byref working_action, edit_input, action_type)
+	// Ensure working_action structure exists
+	if (!working_action)
+		working_action := ActionConfig(action_type);
+	endif
+	if (!working_action.params)
+		working_action.params := struct{};
+	endif
+	if (!working_action.condition)
+		working_action.condition := struct{};
+	endif
+	if (!working_action.condition.params)
+		working_action.condition.+params := struct{};
+	endif
+
+	// Preserve delay field (common to all action types)
+	var delay_str := Trim(GFExtractData(edit_input, ID_ACTION_DELAY));
+	if (delay_str && delay_str != "")
+		working_action.delay := CInt(delay_str);
+	endif
+
+	// Preserve action-specific fields
+	case (action_type)
+		"EMOTE":
+			var text := Trim(GFExtractData(edit_input, ID_ACTION_EMOTE_TEXT));
+			working_action.params.+text := text;
+			working_action.params.+show_on_source := edit_input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
+
+		"TELEPORT":
+			var x_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_X));
+			var y_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Y));
+			var z_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Z));
+			var realm_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_REALM));
+			if (x_str && x_str != "")
+				working_action.params.+x := CInt(x_str);
+			endif
+			if (y_str && y_str != "")
+				working_action.params.+y := CInt(y_str);
+			endif
+			if (z_str && z_str != "")
+				working_action.params.+z := CInt(z_str);
+			endif
+			if (realm_str && realm_str != "")
+				working_action.params.+realm := realm_str;
+			endif
+	endcase
+
+	// Preserve condition amount field
+	var amount_str := Trim(GFExtractData(edit_input, ID_CONDITION_AMOUNT));
+	if (amount_str && amount_str != "")
+		working_action.condition.params.+amount := CInt(amount_str);
+	endif
+
+	// Check radio button state
+	if (edit_input[RADIO_CONDITION_HAS_ITEM])
+		working_action.condition.+type := "PLAYER_HAS_ITEM";
+	else
+		working_action.condition.+type := "NONE";
+	endif
+
+	return 1;
+endfunction
+
+// Helper function to handle action editing with target support
+function HandleActionEdit(who, action_type, existing_action)
+	// SPECIAL CASE: SPAWN action immediately shows spawn creatures gump
+	if (action_type == "SPAWN")
+		var spawn_gump := BuildEventConfigGump();
+		var spawn_input := GFSendGump(who, spawn_gump);
+
+		if (!spawn_input || !spawn_input[BTN_OK])
+			return 0;  // Cancelled
+		endif
+
+		// Parse spawn config
+		var config := ParseEventConfigInput(spawn_input);
+		if (!config)
+			return 0;  // Invalid
+		endif
+
+		// Create SPAWN action with config params
+		var spawn_action := ActionConfig("SPAWN");
+		spawn_action.params := config.ToStruct();
+		return spawn_action;
+	endif
+
+	var editing := 1;
+	var working_action := existing_action;
+
+	while (editing)
+		// Build and show gump with current data
+		var edit_gump := BuildActionEditGump(action_type, working_action, who);
+		var edit_input := GFSendGump(who, edit_gump);
+
+		// Check if target button was pressed
+		if (edit_input[BTN_TARGET_ITEM])
+			// Preserve form data before targeting
+			PreserveFormDataForTargeting(working_action, edit_input, action_type);
+
+			Message("Target o item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+
+			if (!targ)
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;  // Re-show gump with preserved data
+			endif
+
+			// Store objtype from targeted item
+			working_action.condition.params.+objtype := targ.objtype;
+			working_action.condition.+type := "PLAYER_HAS_ITEM";
+
+			Message($"Item selecionado: {targ.objtype} (0x{Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			continue;  // Re-show gump with all data preserved + objtype filled in
+		endif
+
+		// Check if target coordinates button was pressed
+		if (edit_input[BTN_TARGET_COORDS])
+			// Preserve form data before targeting
+			PreserveFormDataForTargeting(working_action, edit_input, action_type);
+
+			Message("Selecione a localizacao de destino...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := TargetCoordinates(who);
+
+			if (!targ)
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;  // Re-show gump with preserved data
+			endif
+
+			// Store coordinates from targeted location
+			working_action.params.+x := targ.x;
+			working_action.params.+y := targ.y;
+			working_action.params.+z := targ.z;
+			working_action.params.+realm := who.realm;
+
+			Message($"Localizacao selecionada: ({targ.x}, {targ.y}, {targ.z}) [{who.realm}]", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			continue;  // Re-show gump with all data preserved + coordinates filled in
+		endif
+
+		// Parse the action normally
+		var parsed_action := ParseActionEditInput(edit_input, action_type);
+
+		if (!parsed_action)
+			return 0;  // User cancelled or invalid input
+		endif
+
+		return parsed_action;
+	endwhile
+
+	return 0;
+endfunction
