@@ -1,0 +1,27 @@
+use uo;
+
+program TELEPORT_Action(params)
+	var event := params[2];
+	var action_params := params[3];
+
+	var mobile := event.source;
+	if (!mobile || !mobile.acctname)
+		return 0;
+	endif
+
+	if (!action_params)
+		return 0;
+	endif
+
+	var x := CInt(action_params.x);
+	var y := CInt(action_params.y);
+	var z := CInt(action_params.z);
+	var realm := action_params.realm ? action_params.realm : mobile.realm;
+
+	if (!x || !y)
+		return 0;
+	endif
+
+	MoveObjectToLocation(mobile, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+	return 1;
+endprogram
