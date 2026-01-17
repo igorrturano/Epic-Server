@@ -1295,6 +1295,10 @@ function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
 			description := "Concussion Hit drains stamina from the target";
 			script_path := ":combat:weaponHitScripts/ConcussionHit";
 			break;
+		"Disease Hit":
+			description := "Infects target with random diseases (40% chance). Tier determines disease level & severity. Respects Fortitude resistance.";
+			script_path := ":combat:weaponHitScripts/DiseaseHit";
+			break;
 		"Unmount Hit":
 			description := "Unmount Hit knocks players off their mounts";
 			script_path := ":combat:weaponHitScripts/UnmountHit";
