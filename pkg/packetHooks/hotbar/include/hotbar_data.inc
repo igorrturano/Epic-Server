@@ -2,7 +2,7 @@
 // Hotbar Data Retrieval Module
 // ============================================================================
 // Purpose: Functions that retrieve player-specific hotbar data
-// Functions: GetSpecialsData, GetCommandsData, GetSpellsData, GetAbilitiesData, GetSkillsData
+// Functions: GetCombatHotkeys, GetCommandsData, GetSpellsData, GetAbilitiesData, GetSkillsData
 // ============================================================================
 
 use uo;
@@ -17,15 +17,20 @@ include ":hotbar:include/command_discovery"; // Auto-discover commands
 include ":hotbar:hotbar_utils";
 
 // ============================================================================
-// GetSpecialsData - Get player's special ability based on class
+// GetCombatHotkeys - Get player's combat hotkeys (ability + commands)
 // ============================================================================
-function GetSpecialsData(who)
+// Returns array with:
+// - Class-specific special ability (index 1-5)
+// - .golpe command (index 10)
+// - .combate command (index 11)
+// ============================================================================
+function GetCombatHotkeys(who)
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata)
         return array{};
     endif
 
-    var specials := array{};
+    var combat_hotkeys := array{};
     var special_name := "";
     var special_class := "";
     var special_hue := 0;
@@ -114,13 +119,66 @@ function GetSpecialsData(who)
             "hue" := icon_data.hue,
             "index" := special_index,
             "delay" := final_cooldown,
-            "remaining" := remaining_cooldown
+            "remaining" := remaining_cooldown,
+            "command_type" := 0,  // 0 = ability, 1 = command
+            "script_path" := ":specialAbilities:specialAbilities"
         };
 
-        specials.append(special1);
+        combat_hotkeys.append(special1);
     endif
 
-    return specials;
+    // Add .golpe command as combat hotkey
+    var golpe_icon := GetCommandIcon("golpe");
+    if (!golpe_icon.errortext)
+        var golpe := struct{
+            "name" := ".golpe",
+            "classe" := special_class,
+            "desc" := "Golpe especial de arma",
+            "iconid" := golpe_icon.iconid,
+            "hue" := golpe_icon.hue,
+            "index" := 10,  // New index for command-type hotkeys
+            "delay" := 0,  // Commands handle their own cooldowns
+            "remaining" := 0,
+            "command_type" := 1,  // Flag to identify as command
+            "script_path" := ":equipsys:commands/player/golpe"
+        };
+        combat_hotkeys.append(golpe);
+    endif
+
+    // Add .combate command as combat hotkey
+    var combate_icon := GetCommandIcon("combate");
+    if (!combate_icon.errortext)
+        var combate := struct{
+            "name" := ".combate",
+            "classe" := special_class,
+            "desc" := "Mudar postura de combate",
+            "iconid" := combate_icon.iconid,
+            "hue" := combate_icon.hue,
+            "index" := 11,
+            "delay" := 0,
+            "remaining" := 0,
+            "command_type" := 1,
+            "script_path" := ":charactercreation:commands/player/combate"
+        };
+        combat_hotkeys.append(combate);
+    endif
+
+    return combat_hotkeys;
+endfunction
+
+// ============================================================================
+// GetCombatHotkeyByIndex - Get specific combat hotkey by index
+// ============================================================================
+function GetCombatHotkeyByIndex(who, actionId)
+    var hotkeys := GetCombatHotkeys(who);
+
+    foreach hotkey in (hotkeys)
+        if (hotkey.index == actionId)
+            return hotkey;
+        endif
+    endforeach
+
+    return error{"errortext" := "Combat hotkey not found"};
 endfunction
 
 // ============================================================================
