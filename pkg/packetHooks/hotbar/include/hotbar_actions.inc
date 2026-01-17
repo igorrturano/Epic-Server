@@ -116,40 +116,36 @@ function ExecuteAbility(who, hab_name)
     return ProccessHab(who, hab_name);
 endfunction
 
-// Execute special - delegates to shared implementation
-function ExecuteSpecial(who, special_index)
-    var result := ExecuteSpecialAction(who);
-    if (result.success)
-        // Store cooldown using property (0xD7 protocol doesn't have binary cooldown)
-        var cooldown_prop := "SpecialCooldown_" + special_index;
-        SetObjProperty(who, cooldown_prop, ReadGameClock() + result.cooldown_duration);
-    endif
-    return result.success;
-endfunction
+// Execute combat hotkey - data-driven approach with script paths
+function ExecuteCombatHotkey(who, actionId)
+    var hotkey_data := GetCombatHotkeyByIndex(who, actionId);
 
-// Execute command
-function ExecuteGMCommand(who, command)
-    // Remove the dot if present
-    var cmd_name := command;
-    if (cmd_name[1] == ".")
-        cmd_name := cmd_name[2, len(cmd_name)];
-    endif
-    
-    // Try standard location for commands
-    var result := start_script(":commands:player/" + cmd_name, who);
-    
-    if (!result)
+    if (hotkey_data.errortext)
+        SendSysMessage(who, "Erro: Combat hotkey inválido.");
         return 0;
-    else
-        return 1;
     endif
+
+    // Execute script (works for both abilities and commands)
+    var result := Start_Script(hotkey_data.script_path, who);
+    if (!result)
+        SendSysMessage(who, "Erro ao executar ação de combate.");
+        return 0;
+    endif
+
+    // For abilities (not commands), handle cooldown
+    if (hotkey_data.command_type == 0 && hotkey_data.delay > 0)
+        var cooldown_prop := "SpecialCooldown_" + actionId;
+        SetObjProperty(who, cooldown_prop, ReadGameClock() + hotkey_data.delay);
+    endif
+
+    return 1;
 endfunction
 
 // Send all Hotbar data in a single unified packet
 function SendAllHotbarData(who)
     // Collect all data
     var hab_list := GetAbilitiesData(who);
-    var specials := GetSpecialsData(who);
+    var combat_hotkeys := GetCombatHotkeys(who);
     var magias := GetSpellsData(who);
     var commands := GetCommandsData(who);
     var skills := GetSkillsData(who);
@@ -159,7 +155,7 @@ function SendAllHotbarData(who)
     
     // Add size for each data type (count + data)
     var hab_size := CalculateAbilitiesSize(hab_list);
-    var spec_size := CalculateSpecialsSize(specials);
+    var spec_size := CalculateCombatHotkeysSize(combat_hotkeys);
     var mag_size := CalculateSpellsSize(magias);
     var cmd_size := CalculateCommandsSize(commands);
     var skill_size := CalculateSkillsSize(skills);
@@ -199,9 +195,9 @@ function SendAllHotbarData(who)
         offset := WriteStringBE(packet, offset, item.script);
     endforeach
     
-    // 2. Specials
-    offset := SetInt16BE(packet, offset, specials.size());
-    foreach item in specials
+    // 2. Combat Hotkeys
+    offset := SetInt16BE(packet, offset, combat_hotkeys.size());
+    foreach item in combat_hotkeys
         offset := WriteStringBE(packet, offset, item.name);
         offset := WriteStringBE(packet, offset, item.classe);
         offset := WriteStringBE(packet, offset, item.desc);

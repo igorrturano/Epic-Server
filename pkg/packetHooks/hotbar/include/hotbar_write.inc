@@ -2,7 +2,8 @@
 // Hotbar Packet Writing Module
 // ============================================================================
 // Purpose: Functions that calculate packet sizes and write data to packets
-// Functions: Calculate*Size, Write*Section, SetInt16BE
+// Functions: CalculateAbilitiesSize, CalculateCombatHotkeysSize, CalculateSpellsSize,
+//            CalculateCommandsSize, CalculateSkillsSize, SetInt16BE, WriteStringBE
 // ============================================================================
 
 use uo;
@@ -32,7 +33,7 @@ function CalculateAbilitiesSize(items)
     return size;
 endfunction
 
-function CalculateSpecialsSize(items)
+function CalculateCombatHotkeysSize(items)
     var size := 0;
     foreach item in items
         size := size + 2 + len(item.name);   // name length + name
@@ -42,6 +43,7 @@ function CalculateSpecialsSize(items)
         size := size + 2;                     // hue
         size := size + 1;                     // index
         size := size + 2;                     // delay
+        size := size + 2;                     // remaining (added for combat hotkeys)
     endforeach
     return size;
 endfunction

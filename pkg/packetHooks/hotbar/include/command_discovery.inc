@@ -135,24 +135,43 @@ function GetCommandDescription(cmd_name)
     
     // Geral
     descriptions["ficha"] := "Ficha do personagem";
-    descriptions["point"] := "Apontar";
-    descriptions["pularcerca"] := "Pular cerca";
-    descriptions["revistar"] := "Revistar alguem";
+    descriptions["point"] := "Aponta para um local";
+    descriptions["pularcerca"] := "Pular cerca(pode ser visto como invasao!)";
+    descriptions["revistar"] := "Pede permissao para revistar a mochila de outro jogador";
     descriptions["senha"] := "Trocar senha";
-    descriptions["showdmg"] := "Mostrar dano";
-    descriptions["assoviar"] := "Assoviar";
-    
+    descriptions["clima"] := "Indica horario e temperatura atual";
+    descriptions["clima"] := "Indica horario e temperatura atual";
+    descriptions["fix"] := "Impede um item de tomar decay, fixando-o no chao";
+
     // Magia
     descriptions["arcoelemental"] := "Arco elemental";
-    descriptions["arremessar"] := "Arremessar magia";
+    descriptions["arremessar"] := "Arremessar coisas ou pessoas(players)";
     descriptions["assumirforma"] := "Assumir forma animal";
-    descriptions["pilotar"] := "Pilotar";
-    descriptions["rituais"] := "Rituais magicos";
-    descriptions["voltar"] := "Voltar forma original";
-    
+    descriptions["rituais"] := "Menu para visualizar as magias memorizadas(Druidas, clerigos e xamas)";
+    descriptions["voltar"] := "Voltar forma original, caso esteja em forma animal(druidas)";
+    descriptions["meditar"] := "Regenera mana mais rapido";
+    descriptions["d"] := "Atalho server-side para magias divinas(Druidas, clerigos e xamas)";
+    descriptions["p"] := "Atalho server-side para magias de Paladino";
+    descriptions["p"] := "Atalho server-side para magias de Cacadores de Demonio";
+    descriptions["m"] := "Atalho server-side para magias de Conjuradores";
+    descriptions["m"] := "Atalho server-side para truques magicos(Cantrip)";
+
     // Combate
-    descriptions["golpe"] := "Golpe especial de arma";
-    
+    descriptions["golpe"] := "Mesmo da aba Combate";
+    descriptions["combate"] := "Mesmo da aba Combate";
+    descriptions["special"] := "Mesmo da aba Combate";
+    descriptions["postura"] := "Postura da classe Escudeiro";
+    descriptions["arcoelemental"] := "Fogo/Gelo/Energia , troca rapida do elemento do arco em vez do duplo clique";
+    descriptions["formaprimordial"] := "Fogo/Gelo/Energia , troca rapida do elemento do arco em vez do duplo clique";
+    descriptions["assumirforma"] := "Assumir forma animal druida";
+
+    // Gameplay
+    descriptions["envenenar"] := "Envenena arma ou alimento. Obs.: Precisa da pocao";
+    descriptions["invocacoes"] := "Gerencia suas invocacoes(Pode dessummonar)";
+    descriptions["soltar"] := "Se solta de cordas, caso preso";
+    descriptions["pilotar"] := "Pilota golens. Apenas Anoes";
+    descriptions["adestrar"] := "Domesticar Criaturas";
+
     // Skills
     descriptions["acalmar"] := "Acalmar animal";
     descriptions["adestrar"] := "Adestrar criatura";
@@ -163,13 +182,22 @@ function GetCommandDescription(cmd_name)
     descriptions["actions"] := "Menu de acoes de RP";
     descriptions["arrastar"] := "Arrastar corpo";
     descriptions["erguer"] := "Erguer objeto";
-    descriptions["ficharp"] := "Ficha de RP";
+    descriptions["ficharp"] := "Ficha de RP. Necessario para upar suas skills";
     descriptions["lingua"] := "Trocar idioma falado";
     descriptions["sounds"] := "Tocar sons ambiente";
-    
+    descriptions["r"] := "Reconhecer outro jogador por um nome (Muda a raca pelo nome escolhido)";
+
     // Pet
-    descriptions["pe"] := "Abrir menu de pet";
+    descriptions["pe"] := "Pet Emote. Gera um emote para seu pet";
     descriptions["pet"] := "Comandos de pet";
+    descriptions["assoviar"] := "Faz o seu pet ir para um lugar seguro/retornar a voce. Obs. Ele precisa estar guardado num estabulo";
+
+    // Faccoes
+    descriptions["guardastrip"] := "Remove equipamentos de um guarda de sua faccao";
+    descriptions["guardaequip"] := "Equipa um item em um guarda de sua faccao";
+
+    // Dungeons
+    descriptions["feedback"] := "Da um feedback in game sobre a dungeon";
     
     // Outros
     descriptions["conquistas"] := "Ver conquistas";
@@ -177,7 +205,12 @@ function GetCommandDescription(cmd_name)
     descriptions["meditar"] := "Meditar";
     descriptions["pontosrp"] := "Pontos de RP";
     descriptions["rps"] := "Sistema de RP";
-    
+    descriptions["underwear"] := "Veste roupa intima no sprite";
+    descriptions["esvaziar"] := "Joga fora o conteudo de uma pocao para reaver o frasco vazio";
+    descriptions["msg"] := "Exibe jogadores online para enviar mensagens privadas \"out game\"";
+    descriptions["flip"] := "Alguns itens podem ser virados (flipados) como portas";
+    descriptions["gm"] := "Util apenas para gms testarem como gm ou jogador. Nao faz nada como jogador normal.";
+
     var desc := descriptions[cmd_name];
     if (desc)
         return desc;

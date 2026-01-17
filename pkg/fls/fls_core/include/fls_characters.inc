@@ -356,6 +356,15 @@ function destroyIllyraOutsideDungeons(who)
 endfunction
 
 function ProccessHab(who, txt)
+	if (who.dead)
+		return 0;
+	endif
+
+	if (!temHabilidade(who, txt) && (who.cmdlevel < 2))
+		SendSysMessageEx(who, "Voce nao possui esta habilidade.", SSM_FAIL);
+		return 0;
+	endif
+
 	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
 	var found := 0;
     var habelem;

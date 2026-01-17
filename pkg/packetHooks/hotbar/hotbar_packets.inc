@@ -36,7 +36,7 @@ function HandleExecute(who, packet)
     case (actionType)
         ACTION_TYPE_POSTURE: return ExecutePosture(who, actionId);
         ACTION_TYPE_ABILITY: return ExecuteAbility(who, actionId);
-        ACTION_TYPE_SPECIAL: return ExecuteSpecial(who, actionId);
+        ACTION_TYPE_SPECIAL: return ExecuteCombatHotkey(who, actionId);
         ACTION_TYPE_SPELL:   return ExecuteSpell(who, actionId);
         ACTION_TYPE_COMMAND: return ExecuteCommand(who, actionId);
         ACTION_TYPE_SKILL:   return ExecuteSkill(who, actionId);
