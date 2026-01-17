@@ -447,6 +447,7 @@ function GetWeaponHitScripts()
         "Life Drain",
         "Bleeding Strike",
         "Concussion Hit",
+        "Disease Hit",
         "Unmount Hit",
         "Anti Mounted Hit",
         "Charge Hit",
