@@ -41,7 +41,10 @@ function ScheduleNextDiseaseEffect(subject, disease_grade)
 endfunction
 
 function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, deveIgnorarResistencia := 0)
-
+	if (TemHabilidade(subject, "Aura Divina"))
+		SendSysMessageEx(subject, "Sua Aura Divina impede que você contraia doenças.", SSM_INFO);
+		return 0;
+	endif
 	var dif := level * 8;
 	var resistcheck := deveIgnorarResistencia ? 0 : CheckResist(subject, FORTITUDE, dif);
 	
