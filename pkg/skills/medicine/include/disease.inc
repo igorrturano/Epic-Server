@@ -48,7 +48,6 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 	var dif := level * 8;
 	var resistcheck := deveIgnorarResistencia ? 0 : CheckResist(subject, FORTITUDE, dif);
 	
-	
 	if (resistcheck > 0)
 	//print("resistiu");
 		SendSysMessageEx(subject, "Você resiste aos efeitos da doença.", SSM_INFO);
