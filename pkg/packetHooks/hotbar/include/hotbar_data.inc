@@ -227,7 +227,7 @@ function GetAbilitiesData(who)
         if (!habelem) continue; endif
 
         // Get icon
-        var icon_data := GetAbilityIcon(hab_name, char_class);
+        var icon_data := GetAbilityIcon(hab_name);
 
         // Read additional fields
         var classes := GetConfigStringDictionary(habelem, "classe");
