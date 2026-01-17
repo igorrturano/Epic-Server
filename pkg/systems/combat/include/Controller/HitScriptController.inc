@@ -42,6 +42,13 @@ function WeaponHitScripts(byRef attackInfo)
 
 		hitopt := attackInfo.GetAttacker().GetObjRef().GetProp("generichit");
 	else
+		// Read body HitScripts for players (e.g., metamorphosed druids)
+		var body_scripts := attackInfo.GetAttacker().GetObjRef().GetProp("HitScripts");
+		if (body_scripts)
+			foreach oscript in body_scripts
+				weapon_scripts.append(oscript);
+			endforeach
+		endif
 		hitopt := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("generichit");
 	endif
 

@@ -27,7 +27,7 @@ program habilidade(params)
 			PlayObjectCenteredEffect(targ, 0xAFED, 7, 16);
 			PlaySoundEffect(targ, 0x358);
 			var danomana := (AP_GetVitalMaximumValue(targ, "mana") - AP_GetVital(targ, "mana")) * 1.2;
-			danomana += GetResist(who, VONTADE);
+			danomana += GetResist(who, WILL);
 			AP_ConsumeVital(targ, "mana", CInt(danomana));
 			SetCooldown(who, "corpofechado", theology_bonus);
 

@@ -8,6 +8,7 @@ include "WeaponWrapper";
 
 // External
 include ":attributes:skills";
+include ":merchants:cambio";
 include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
@@ -189,12 +190,52 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetStatMod(this.GetObjRef(), INTELLIGENCE);
 	endfunction
 
+	function GetFortitude(this)
+		return AP_GetStat(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetFortitudeBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetFortitudeMod(this)
+		return AP_GetStatMod(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetReflexes(this)
+		return AP_GetStat(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetReflexesBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetReflexesMod(this)
+		return AP_GetStatMod(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetWill(this)
+		return AP_GetStat(this.GetObjRef(), WILL);
+	endfunction
+
+	function GetWillBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), WILL);
+	endfunction
+
+	function GetWillMod(this)
+		return AP_GetStatMod(this.GetObjRef(), WILL);
+	endfunction
+
 	function GetCurrentHP(this)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
 		return AP_GetVital(this.GetObjRef(), HITS);
+	endfunction
+
+	function GetCurrentDp(this)
+		return AP_GetVital(this.GetObjRef(), DEATH_POINTS);
 	endfunction
 
 	function GetCurrentStamina(this)
@@ -235,6 +276,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetMaxHunger(this)
 		return AP_GetVitalMaximumValue(this.GetObjRef(), HUNGER);
+	endfunction
+
+	function GetMaxDp(this)
+		return AP_GetVitalMaximumValue(this.GetObjRef(), DEATH_POINTS);
 	endfunction
 
 	function GetRegenHP(this)
@@ -398,12 +443,23 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (equipSlot == WEAPON)
 			var weapon := WeaponWrapper(this.GetObjRef().weapon);
 
-			if (this.IsNPC())
-				weapon.SetMainDamage(DamageDice(
+			if (GetObjProperty(this._objRef, "metamorfose") != error)
+				var dicedmgProp := GetObjProperty(this._objRef, "dicedmg");
+				if (dicedmgProp != error)
+					// Use dicedmg from metamorfose transformation
+					weapon.SetMainDamage(
+						Dice(dicedmgProp[1]), 
+						Dice(dicedmgProp[2]), 
+						Dice(dicedmgProp[3])
+					);
+				endif
+			elseif (this.IsNPC())
+				// Use template damage for normal NPCs
+				weapon.SetMainDamage(
 					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[1])),
 					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[2])),
 					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[3]))
-				));
+				);
 				weapon.SetDamageMod(Damage(
 					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[1]),
 					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[2]),
@@ -411,6 +467,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[4])
 				));
 			endif
+			// If neither (normal player with equipped weapon), weapon damage is already set from item
 
 			return weapon;
 		elseif (equipSlot == SHIELD)
@@ -546,7 +603,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			value += CInt(this.GetDex() / divisor);
 		endif
 
-		if (TACTICS in criteria)
+		if (TACTICS in criteria )
 			value += CInt(this.GetSkill(TACTICS) / divisor);
 		endif
 
@@ -555,8 +612,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetOffDamageModifierBy(this, criteria...)
 		var offHandDivisor := 2;
-
-		return CInt(this.GetMainDamageModifierBy(criteria) / offHandDivisor);
+		
+		return CInt(this.GetMainDamageModifierBy(criteria...) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
@@ -967,6 +1024,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return this.GetObjRef().hidden;
+	endfunction
+
+	function GetGold(this)
+		return ContaCapital(this._objRef).valorTotal;
 	endfunction
 
 	/*

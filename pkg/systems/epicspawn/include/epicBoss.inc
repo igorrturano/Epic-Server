@@ -447,6 +447,7 @@ function GetWeaponHitScripts()
         "Life Drain",
         "Bleeding Strike",
         "Concussion Hit",
+        "Disease Hit",
         "Unmount Hit",
         "Anti Mounted Hit",
         "Charge Hit",
@@ -687,7 +688,7 @@ endfunction
 
 function GetClassAbilities(class_name)
     var abilities := array{};
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
         
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);

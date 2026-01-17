@@ -40,43 +40,68 @@ function ScheduleNextDiseaseEffect(subject, disease_grade)
 	return 1;
 endfunction
 
-function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, deveIgnorarResistencia := false)
-
-	if(disease_grade == "" || TypeOfInt(disease_grade) != OT_STRING)
-		return error{"error_text" := "A gravidade é obrigatória."};
+function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, deveIgnorarResistencia := 0)
+	if (TemHabilidade(subject, "Aura Divina"))
+		SendSysMessageEx(subject, "Sua Aura Divina impede que você contraia doenças.", SSM_INFO);
+		return 0;
 	endif
-
-	//TODO verificar com o Frajolas se isto faz sentido.
 	var dif := level * 8;
 	var resistcheck := deveIgnorarResistencia ? 0 : CheckResist(subject, FORTITUDE, dif);
-
+	
 	if (resistcheck > 0)
-		SendSysMessageEx(subject, "Você resiste aos efeitos da doenca.", SSM_INFO);
+	//print("resistiu");
+		SendSysMessageEx(subject, "Você resiste aos efeitos da doença.", SSM_INFO);
 	else
-		SendSysMessageEx(subject, "Você não resiste aos efeitos da doenca.", SSM_FAIL);
-
+		//print("N resistiu");
+		//SendSysMessageEx(subject, "Você não resiste aos efeitos da doença.", SSM_FAIL);
+		
+		if (duration == 0)
+			duration := level*1000;
+		endif
+		
+		var timer_disease := TS_GetTimerInfo(subject, "disease");
+		if (timer_disease)//SE JÁ ESTÁ INFECTADO
+			var duration_part := duration/3;
+			var level_infection := timer_disease.level;
+			var diseases_system := GetObjProperty(subject, "Diseases_System");
+			var falhou_cura := diseases_system.falhou_cura;
+			var limit_duration := TS_GetTimerDuration(subject, "disease") ;
+				if (falhou_cura && limit_duration <= 6000)
+					UpdateDiseaseProperty(subject, "falhou_cura", 0);
+					TS_AddDuration(subject, "disease", duration_part);
+					//PRINT("FALHOU CURA");
+					return;
+				elseif (level <= level_infection && limit_duration <= 6000)
+					TS_AddDuration(subject, "disease", duration_part);
+					SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO "+duration_part+" SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
+					return;
+				elseif (level > level_infection)
+					TS_LowerDuration(subject, "disease", -1);
+					SendSysMessageEx(subject, "Você contraiu uma infecção ainda mais gravosa!", SSM_FAIL);
+					sleepms(2);
+					InfectMobile(subject,duration,attacker,level,diseases,disease_grade);
+				else
+					SendSysMessageEx(subject, "A sua infecção não tem como ficar pior", SSM_FAIL);
+					return;
+				endif
+		endif
+		
+		if (diseases == "random")
+			//print("ENTROUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU");
+			GenerateRandomDiseases(level);
+		else
+			//PRINT("NÃOOOOOOOOO ENTROUUUUUUUUUUUUUUUUU");
+		endif
+		
 		UpdateDiseaseProperty(subject, "diseases", diseases);
 		UpdateDiseaseProperty(subject, "grade", disease_grade);
+		
 		var retornoTimer := TS_StartTimer(subject, "disease",duration,level, attacker); // ALTERAR TESTE
 
 		if(!retornoTimer)
 			return retornoTimer;
 		endif
 
-		var corpo_peste :=  GetEquipmentByLayer( subject, LAYER_PACK2 ); 
-
-		if(!corpo_peste)
-			var corpo_peste := CreateItemAtLocation(subject.x, subject.y, subject.z, 0xd1bc, 1);
-			corpo_peste.movable := 1;
-			var isPesteEquipado := EquipItem(subject, corpo_peste);
-			if(!isPesteEquipado)
-				return  isPesteEquipado;
-			endif
-			Sleepms(2);
-			corpo_peste.movable := 0;
-		endif
-
-		UpdateDiseaseProperty(subject, "serial_peste_corpse", corpo_peste.serial);
 	endif
 	
 	return 1;

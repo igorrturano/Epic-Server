@@ -252,10 +252,15 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
         
         var options := racial_traits[category].opcoes;
         current_y := current_y + 30;
+        // option_ids maps each displayed option to a stable enum id
+        var option_ids := racial_traits[category].opcoes_ids;
         for (i := 1; i <= options.size(); i := i + 1)
             option_y := current_y + ((i-1) * 25);
             button_id := 100 + (category_iter * 5) + (i - 1);
-            is_selected := (chardata.caracteristicas_rp[category] == i);
+            // now compare stored enum id (or 0) against the option's enum id
+            var caracteristica := chardata.caracteristicas_rp[category];
+            is_selected := (caracteristica == option_ids[i] && OT_UNINIT != TypeOfInt(caracteristica));
+            Print("Category: {}, Option: {}, Stored: {}, Is selected: {}".format(category, options[i], caracteristica, is_selected));
             GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
             
             if (category != "Idade Aparente")
@@ -280,7 +285,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
 
     var input := GFSendGump(who, gump);
     
-    if (input[0] == 222)
+   /* if (input[0] == 222)
         var age_input := GFExtractData(input, age_textbox);
         var all_required_selected := true;
         
@@ -309,7 +314,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             chardata.idade_real := final_age[2];
             return input;
         endif
-    endif
+    endif*/
 
     return input;
 endfunction
@@ -346,7 +351,13 @@ function ProcessSelection(byref chardata, input)
         
         if (category_index < categories.size())
             var category := categories[category_index + 1];
-            chardata.caracteristicas_rp[category] := option;
+            // Map the 1-based option index to the enum id for this race/category
+            var racial_traits := GetRacialTraits(chardata.raca);
+            var option_ids := racial_traits[category].opcoes_ids;
+            Print("Option selected: {} for category: {}".format(option, category));
+            if (option >= 1 && option <= option_ids.size())
+                chardata.caracteristicas_rp[category] := option_ids[option];
+            endif
         endif
 endfunction
 
@@ -1325,9 +1336,9 @@ function resetCharacter(who)
 endfunction
 
 function resetGender(who)
-    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1834)
+    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1835)
         who.graphic := 400;
-    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1835)
+    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1834)
         who.graphic := 401;
     endif
 endfunction
@@ -2011,8 +2022,8 @@ function GetPaperdollBackground(graphic)
         1831: result := 0xF; // Elfo F
         1832: result := 54596; // Orc M
         1833: result := 54595; // Orc F
-        1834: result := 54534; // Pequilho M
-        1835: result := 54533; // Pequilho F
+        1834: result := 54533; // Pequilho F
+        1835: result := 54534; // Pequilho M
     endcase
     return result;
 endfunction

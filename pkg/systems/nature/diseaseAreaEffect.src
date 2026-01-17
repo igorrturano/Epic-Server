@@ -8,6 +8,7 @@ include "include/say";
 include ":tn:cooldown";
 include ":fls_core:packets";
 include ":nature:nature";
+include ":medicine:disease";
 
 program DiseaseAreEffect(params)
 	var who := params[1];
@@ -29,18 +30,9 @@ program DiseaseAreEffect(params)
 				EraseObjProperty(who, "teste_de_doenca");
 				return;
 			endif
-
-			// Teste de resistência de fortitude
-			var dif := RESIST_ALMOST_IMPOSSIBLE;
-			var resistcheck := CheckResist(who, FORTITUDE, dif);
-
-			if (resistcheck)
-				SendSysMessageEx(who, "Voce resiste aos efeitos da doenca.", SSM_INFO);
-			else
-				SendSysMessageEx(who, "Voce nao resiste aos efeitos da doenca.", SSM_FAIL);
-				TS_StartTimer(who, "disease", 65000, RandomInt(4) + 1);
-			endif
-
+			var diseases := "random";
+			var disease_grade := "Leve";
+			InfectMobile(who,0,0,3,diseases,disease_grade);	
 		endwhile
 	endif
 endprogram

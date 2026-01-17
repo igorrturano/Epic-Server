@@ -103,6 +103,7 @@ endfunction
 
 function ApllyLightLevel()
 	foreach player in enumerateonlinecharacters()
+		Sleepms(2);
 		if (HaveReverseVision(player))
 			ReverseLight(player);
 		endif
@@ -121,6 +122,7 @@ function ReverseLight(player)
 
 	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
 		player.setlightlevel(20, 9000); // Dungeons are moderately lit for drows (20)
+		SendScreenFlash(player, 0);
 	else
 		var light := cint(getglobalproperty("lightlevel"));
 		var newlight := abs(darkness - light);
@@ -355,15 +357,21 @@ endfunction
 
 function ProccessHab(who, txt)
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+	if (who.dead)
+		return 0;
+	endif
+
+	if (!temHabilidade(who, txt) && (who.cmdlevel < 2))
+		SendSysMessageEx(who, "Voce nao possui esta habilidade.", SSM_FAIL);
+		return 0;
+	endif
+
 	var found := 0;
     var habelem;
-	print( "ProccessHab chamado com txt: " + txt );
     // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
     foreach elem in GetConfigStringKeys(habcfg)
-		print("Verificando habilidade: " + elem);
         var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
         if (NormalizeString(txt) == normalized_hab)
-			print("AEEEEEEEEEEEEEEEEEEEEE");
             habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
             found := 1;
             break;

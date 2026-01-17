@@ -462,7 +462,7 @@ function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
 
   var valid_habs := array{};
-  var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+  var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
   // Get subclass progression regardless of level
   var subclass := GetObjProperty(npc, "subclass");

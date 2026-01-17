@@ -1,0 +1,94 @@
+use uo;
+include "include/client";
+include "include/say";
+include "include/sounds";
+include ":spells:summon";
+include ":timedScripts:timedScripts";
+include "include/epicConstants";
+
+// Function to summon a selected creature
+program SummonSelectedCreature(who, item)
+	PrintTextAbove(who, "*Esfregando a lâmpada*");
+	var selected_creature := ":epicai:genie";
+
+// Verifica se já existe um gênio ativo
+	var summons := GetObjProperty(who, "SummonedPets");
+	if (summons)
+		foreach serial in summons
+			var pet := SystemFindObjectBySerial(serial);
+			if (pet)
+				if (pet.objtype == 0x6B2)
+					SendSysMessageEx(who, "Você já possui um Gênio invocado! Aguarde ele desaparecer.", SSM_FAIL);
+					return 0;
+				endif
+			endif
+		endforeach
+	endif
+	
+	var tempo_atual := ReadGameClock();
+	var ultimo_reset := GetObjProperty(item, "ultimoReset");
+	
+	// Se não existe ultimo_reset ou já passaram 24 horas (86400 segundos)
+	if (!ultimo_reset || (tempo_atual - ultimo_reset) >= 86400)
+		// Reseta o contador
+		SetObjProperty(item, "pedidos", 0);
+		SetObjProperty(item, "ultimoReset", tempo_atual);
+		ultimo_reset := tempo_atual;
+	endif
+	
+	// Verifica quantos pedidos já foram feitos
+	var pedidos := CInt(GetObjProperty(item, "pedidos"));
+	
+	if (pedidos >= 3)
+		var tempo_restante := 86400 - (tempo_atual - ultimo_reset);
+		var horas := CInt(tempo_restante / 3600);
+		var minutos := CInt((tempo_restante % 3600) / 60);
+		SendSysMessageEx(who, "Você já fez os 3 pedidos! Aguarde " + horas + "h " + minutos + "min para usar novamente.", SSM_FAIL);
+		return 0;
+	endif
+	
+	// Incrementa o contador de pedidos
+	SetObjProperty(item, "pedidos", pedidos + 1);
+	
+	// Ask for target location
+	SendSysMessageEx(who, "Escolha o local para invocar o Gênio", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		// Reverte o contador já que cancelou
+		SetObjProperty(item, "pedidos", pedidos);
+		return 0;
+	endif
+		// Verifica linha de visão
+	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "Você não consegue ver esse local!", SSM_FAIL);
+		// Reverte o contador já que falhou
+		SetObjProperty(item, "pedidos", pedidos);
+		return 0;
+	endif
+	
+	// Visual and sound effects
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
+	PlaySoundEffect(who, SFX_SPELL_SUMMON_CREATURE);
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z, who.realm, 0x6cb7, 10, 30, 1302);
+	
+	// Summon the creature
+	sleepms(1500);
+	var creature := summon(selected_creature, targ, who);
+	
+	if (!creature)
+		SendSysMessageEx(who, "Falha ao invocar!", SSM_FAIL);
+		// Reverte o contador já que falhou
+		SetObjProperty(item, "pedidos", pedidos);
+		return 0;
+	endif
+	
+	SendSysMessageEx(who, "Você invocou o Gênio da Lâmpada! (" + (pedidos + 1) + "/3 pedidos)", SSM_INFO);
+	
+	// Set summon duration
+	var duration := 180; // 3 minutos
+	TS_StartTimer(creature, "summon", duration, 1);
+	
+	return 1;
+endprogram

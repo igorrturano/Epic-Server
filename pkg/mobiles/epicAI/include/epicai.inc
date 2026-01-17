@@ -21,7 +21,7 @@ function InitializeEpicNPC(mobile)
 
     // Build NPC cache FIRST - all subsequent calls will use O(1) lookups
     var cache := NPC_GetCachedData(mobile);
-    var npc_elem := NPC_GetNPCConfig(mobile);  
+    var npc_elem := NPC_GetNPCConfig(mobile);
 
     var npccfgfile := ReadConfigFile( ":epicai:npcdesc" );
     var mytemplate := cache.template;  // Use cached template name
@@ -65,6 +65,40 @@ function InitializeEpicNPC(mobile)
     endcase
 
     SetObjProperty(mobile, "started", 1);
+endfunction
+
+/*
+ * InitializeEnterArea()
+ *
+ * Purpose: Trigger ENTEREDAREA events for nearby players/combatants on spawn
+ * This ensures newly spawned NPCs detect nearby threats immediately instead of
+ * waiting up to 60 seconds in dormant mode.
+ *
+ * Similar to brainAI's InitializeEnterArea() function
+ */
+function InitializeEnterArea(mobile)
+    // Scan for nearby players and trigger ENTEREDAREA events
+    // This ensures consistent behavior between spawn and re-activation
+    var nearby := ListMobilesNearLocationEx(mobile.x, mobile.y, mobile.z,
+                                            AREA_SIZE, LISTEX_FLAG_NORMAL,
+                                            mobile.realm);
+
+    foreach nearby_mobile in nearby
+        if (nearby_mobile.serial == mobile.serial)
+            continue;  // Skip self
+        endif
+
+        // Only trigger for players, pets, or valid combat targets
+        if (nearby_mobile.acctname || nearby_mobile.master)
+            var ev := struct;
+            ev.+type := SYSEVENT_ENTEREDAREA;
+            ev.+source := nearby_mobile;
+            SendEvent(mobile, ev);
+            sleepms(5);  // Small delay to prevent event flooding
+        endif
+    endforeach
+
+    return 1;
 endfunction
 
 function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
@@ -430,7 +464,7 @@ function SetupWizardClass(mobile, npc_elem)
     SetObjProperty(mobile, "SpellSchool", spellschool);
 
     // Build progression based on base ability
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, base_ability);
     SetObjProperty(mobile, "myhabs", progression);
 
@@ -1099,7 +1133,7 @@ endfunction
  * CheckNearbyThreats()
  *
  * Phase 3: Hybrid Threat Detection
- * Purpose: Use cached threats (fast) with fallback area scan (reliable)
+ * Purpose: Use cached threats (fast) / removed fallback area scan (slow)
  * This prevents NPCs from giving up when cache is empty due to event timing
  */
 function CheckNearbyThreats()
@@ -1108,18 +1142,6 @@ function CheckNearbyThreats()
     if (threat)
         return threat;
     endif
-
-    // Fallback: Do actual area scan if cache is empty
-    // This catches edge cases where events didn't update cache
-    // (e.g., player already in range when NPC activated, LoS temporarily blocked)
-    var mobiles := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
-    foreach mobile in mobiles
-        if (CanFight(me, mobile))
-            // Add to cache for next time
-            UpdateThreatList(me, struct{"type" := SYSEVENT_ENTEREDAREA, "source" := mobile});
-            return mobile;
-        endif
-    endforeach
 
     return 0;
 endfunction
@@ -1285,7 +1307,11 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
-  if (isAlly(invasor))
+    if (me.alignment != 1)
+        return 0;
+    endif
+
+    if (isAlly(invasor))
         return 0;
     endif
 
@@ -1894,7 +1920,7 @@ endfunction
 function HandleIdleState()
     DisableMainEvents();
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
-    
+
     // Return to spawn point if we have one
     var spawn_serial := GetObjProperty(me, "spawnpoint");
     var spawn_point := 0;
@@ -1915,26 +1941,32 @@ function HandleIdleState()
         return;
     endif
 
-    if (!HasPlayerNear(me))
+    // OPTIMIZATION: Check cached threats FIRST (O(1) property access, fast path)
+    if (CheckNearbyThreats())
+        return; // Found threat, stay alert
+    endif
+
+    // OPTIMIZATION: Only check HasPlayerNear if no cached threats (now cached itself)
+    // if (!HasPlayerNear(me))
         var attempts := 0;
         // DA pra simplificar, remover esse Coordinate Distance e so fazer ele ir voltando pra casa. SE a distancia for maior que 30, apenas retorna anti exploit
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
             if (CheckNearbyThreats())
-                return; // Abort returning home if threats are nearby
+                return; // Abort returning home if threats appear
             endif
             WalkTowardLocation(home_x, home_y);
             sleepms(100);
             attempts += 1;
         endif
-        
+
         // If still not home after 20 attempts, just teleport
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts >= 20)
             PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
             sleep(3);
             MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
         endif
-    endif
-    
+    // endif
+
     return 1;
 endfunction
 

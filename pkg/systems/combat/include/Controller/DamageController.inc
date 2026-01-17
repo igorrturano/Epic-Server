@@ -18,6 +18,7 @@ include ":combat:weardown";
 include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
+include ":charactercreation:habilidades";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Hit
@@ -60,58 +61,89 @@ function CalculateAttackerDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("CÁLCULO DE DANO!"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	attackInfo.SetDamage(Damage());
-	CalculateStatusDamage(attackInfo);
-	CalculateSkillDamage(attackInfo);
+	var statusDamageInfo := CalculateStatusDamage(attackInfo);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
+	var skillDamageInfo := CalculateSkillDamage(attackInfo);
+	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
+	CalculatePrimordialDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
+function CalculateEstimatedMinMaxDamage(attackInfo)
+	
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
+	var statusDamage := CalculateStatusDamage(attackInfo);
+	var skillDamage := CalculateSkillDamage(attackInfo);
+	var primordialDamage := CalculatePrimordialDamage(attackInfo);
+	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
+
+	finalDamage.max += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.min += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.+Damage := attackInfo.GetDamage(); 
+
+	return finalDamage;
+endfunction
+
 function CalculateStatusDamage(byRef attackInfo)
-	var stat := "";
-	var damageMod := 0;
+
+	var statusDamage := struct{
+		stat := "",
+		damageMod := 0
+	};
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
-			stat := $"{STRENGTH} + {DEXTERITY}";
+			statusDamage.stat := $"{STRENGTH} + {DEXTERITY}";
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
-			stat := DEXTERITY;
+			statusDamage.stat := DEXTERITY;
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	else
-		stat := STRENGTH;
+		statusDamage.stat := STRENGTH;
 
-		damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 					 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH) :
 					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
-	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(statusDamage.damageMod)
+						  .IncreasePiercingRawDamage(statusDamage.damageMod)
+						  .IncreaseBluntRawDamage(statusDamage.damageMod);
+						
+	return statusDamage;
 endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
-	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
-	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(skill)}: {damageMod}"));
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+		skill := THEOLOGY;
+	endif
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	var skillDamage := struct{
+		skill := skill,
+		damageMod := 0
+	};
+
+	skillDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 attackInfo.GetAttacker().GetMainDamageModifierBy(skill) :
+					 attackInfo.GetAttacker().GetOffDamageModifierBy(skill);
+	
+	attackInfo.GetDamage().IncreaseSlashRawDamage(skillDamage.damageMod)
+						  .IncreasePiercingRawDamage(skillDamage.damageMod)
+						  .IncreaseBluntRawDamage(skillDamage.damageMod);
+
+	return skillDamage;
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
@@ -183,6 +215,83 @@ function CalculateWeaponDamage(byRef attackInfo)
 	if (attackInfo.GetAmmo())
 		ApplyAmmoDamage(attackInfo);
 	endif
+endfunction
+
+function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
+	var MinMaxWeaponDamage := 
+		struct{
+			max := 0,
+			min := 0
+		};
+
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+
+	if(weapon)
+		var damageDice := 0;
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+			damageDice := weapon.GetMainDamage();
+		else
+			damageDice := weapon.GetOffDamage();
+		endif
+		
+		var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+		var physicalDamage := 0;
+
+		if(attackInfo.GetAttackType() == DAMAGE_TYPE::SLASH)
+			physicalDamage += damageMod.GetSlashRawDamage();
+			attackInfo.GetDamage().IncreaseSlashBaseDamage(damageMod.GetSlashRawDamage());
+		elseif(attackInfo.GetAttackType() == DAMAGE_TYPE::PIERCING)
+			physicalDamage += damageMod.GetPiercingRawDamage();
+			attackInfo.GetDamage().IncreasePiercingBaseDamage(damageMod.GetPiercingRawDamage());
+		else
+			physicalDamage += damageMod.GetBluntRawDamage();
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod.GetBluntRawDamage());
+		endif
+
+		var totalModDamage := physicalDamage 
+								+ damageMod.GetFireRawDamage() 
+								+ damageMod.GetColdRawDamage() 
+								+ damageMod.GetPoisonRawDamage() 
+								+ damageMod.GetEnergyRawDamage();
+
+		MinMaxWeaponDamage.max := damageDice.GetMaximum(attackInfo.GetAttackType()) + totalModDamage;
+		MinMaxWeaponDamage.min := damageDice.GetMinimum(attackInfo.GetAttackType()) + totalModDamage;
+
+		attackInfo.GetDamage().IncreaseFireBaseDamage(damageMod.GetFireRawDamage())
+							.IncreaseColdBaseDamage(damageMod.GetColdRawDamage())
+							.IncreasePoisonBaseDamage(damageMod.GetPoisonRawDamage())
+							.IncreaseEnergyBaseDamage(damageMod.GetEnergyRawDamage());
+	endif
+
+
+	return MinMaxWeaponDamage;
+endfunction
+
+/**
+ * Applies primordial elemental bonus for metamorfose elemental transformations.
+ *
+ * @param attackInfo AttackInfo Combat information containing attacker and damage data
+ */
+function CalculatePrimordialDamage(byRef attackInfo)
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "metamorfose") == error)
+		return 0;
+	endif
+	
+	var damage := attackInfo.GetDamage();
+	var rawDamage := damage.GetBluntRawDamage();
+	
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_fire") != error)
+		damage.IncreaseFireRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_cold") != error)
+		damage.IncreaseColdRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_poison") != error)
+		damage.IncreasePoisonRawDamage(rawDamage);	
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_energy") != error)
+		damage.IncreaseEnergyRawDamage(rawDamage);
+	endif
+
+	attackInfo.SetDamage(damage);
+	return rawDamage;
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
@@ -320,6 +429,11 @@ function CalculateCriticalChance(byRef attackInfo)
 		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
+	endif
+
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+		skillUsedForCritical := THEOLOGY;
 	endif
 
 	chance := CInt(
