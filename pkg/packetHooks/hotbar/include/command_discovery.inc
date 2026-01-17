@@ -110,7 +110,7 @@ function DiscoverPlayerCommands()
             cmd_entry.+script_path := script_path;
             
             // Get icon from icon manager
-            var icon_data := GetCommandIcon("." + cmd_name);
+            var icon_data := GetCommandIcon(cmd_name);
             cmd_entry.+iconid := icon_data.iconid;
             cmd_entry.+hue := icon_data.hue;
 
