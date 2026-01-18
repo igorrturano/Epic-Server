@@ -126,7 +126,7 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		var result := Run_Script_To_Completion($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+		var result := Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
 	endfunction
 
 	function ToString(this)
