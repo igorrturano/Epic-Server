@@ -2,6 +2,7 @@ use os;
 
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
 include "system/exception/ProcessExeception/InvalidProcessException";
 
 class AbilityMonitor()
@@ -73,10 +74,59 @@ class AbilityMonitor()
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
+		var ability := this.GetAbility();
+		var mobileRef := mobile.GetObjRef();
+
+		// === PRE-ACTIVATION VALIDATION ===
+
+		// Validate stamina cost
+		if (ability.GetCostSTAM() > 0 && ability.GetCostSTAM() > mobile.GetCurrentStamina())
+			Message("Stamina insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient stamina"};
+		endif
+
+		// Validate mana cost
+		if (ability.GetCostMANA() > 0 && ability.GetCostMANA() > mobile.GetCurrentMana())
+			Message("Mana insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient mana"};
+		endif
+
+		// Validate HP cost
+		if (ability.GetCostHP() > 0 && ability.GetCostHP() > mobile.GetCurrentHP())
+			Message("HP insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient HP"};
+		endif
+
+		// Validate cooldown
+		var cooldownProp := $"AbilityCooldown_{ability.GetId()}";
+		var cooldownEnd := mobile.GetProperty(cooldownProp);
+		if (cooldownEnd && POLCore().systime < cooldownEnd)
+			var remaining := cooldownEnd - POLCore().systime;
+			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Ability on cooldown"};
+		endif
+
+		// === CONSUME COSTS ===
+		if (ability.GetCostSTAM() > 0)
+			mobile.ConsumeStamina(ability.GetCostSTAM());
+		endif
+		if (ability.GetCostMANA() > 0)
+			mobile.ConsumeMana(ability.GetCostMANA());
+		endif
+		if (ability.GetCostHP() > 0)
+			mobile.ConsumeHP(ability.GetCostHP());
+		endif
+
+		// === SET COOLDOWN ===
+		if (ability.GetCooldown() > 0)
+			SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+		endif
+
+		// === ACTIVATE ===
 		this.MobileSerial := mobile.GetSerial();
 		this.ActivationTime := POLCore().systime;
 
-		var existingMonitor := mobile.GetAbilityMonitor(this.GetAbility());
+		var existingMonitor := mobile.GetAbilityMonitor(ability);
 		if (existingMonitor is @AbilityMonitor)
 			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
 		else

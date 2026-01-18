@@ -95,8 +95,8 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 
 	var abilitiesExecuted := 0;
 
-	foreach abilityName in (abilitiesList.keys())
-		var serializedMonitor := abilitiesList[abilityName];
+	foreach abilityKey in (abilitiesList.keys())
+		var serializedMonitor := abilitiesList[abilityKey];
 		var abilityId := serializedMonitor.AbilityId;
 
 		if (abilityId)

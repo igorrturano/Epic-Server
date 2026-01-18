@@ -42,7 +42,7 @@ class Ability(IAbility)
 		this.CostSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: uninit;
 		this.CostMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
 		this.Charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
-		this.Cooldown := CInt(cfgFile.GetPropertyValue("cooldown")[1]) ?: uninit;
+		this.Cooldown := CInt(cfgFile.GetPropertyValue("delay")[1]) ?: uninit;
 		this.EffectDuration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
 		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
 		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;

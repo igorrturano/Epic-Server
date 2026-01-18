@@ -35,16 +35,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.CfgFile := CFGFile("epicAI", "npcdesc");
 				this.Template := this.GetCfgFile().SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
 				this.Category := this.GetTemplate().Category;
-				this.CfgFile := CFGFile("epicAI", "npcdesc");
-				this.Template := this.GetCfgFile().SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
-				this.Category := this.GetTemplate().Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
-				this.Race := err;
-				this.Culture := err;
-				this.Religion := err;
-				this.CombatTraitsVar := err;
 				this.Race := err;
 				this.Culture := err;
 				this.Religion := err;
@@ -53,25 +46,16 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
 				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
 				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
-				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
-				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
-				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
 
 				// Variáveis que indicarão que é um player
 				var err := IsPlayerException();
-				this.Template := err;
-				this.ObjType := err;
 				this.Template := err;
 				this.ObjType := err;
 			endif
 
 			this.Name := this.GetObjRef().name;
 			this.BackpackSerial := this.GetObjRef().backpack.serial;
-			this.Name := this.GetObjRef().name;
-			this.BackpackSerial := this.GetObjRef().backpack.serial;
 		else
-			this.CfgFile := CFGFile("epicAI", "npcdesc");
-			this.Template := this.GetCfgFile().SetElementName(mobile).GetElement();
 			this.CfgFile := CFGFile("epicAI", "npcdesc");
 			this.Template := this.GetCfgFile().SetElementName(mobile).GetElement();
 
@@ -83,24 +67,14 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Name := err;
 				this.Graphic := err;
 				this.Color := err;
-				this.ObjType := err;
-				this.Name := err;
-				this.Graphic := err;
-				this.Color := err;
 			else
 				err := IsTemplateException();
 				this.Name := this.GetTemplate().desc;
 				this.Graphic := this.GetTemplate().graphic;
 				this.Color := this.GetTemplate().color;
 				this.Category := this.GetTemplate().Category;
-				this.Name := this.GetTemplate().desc;
-				this.Graphic := this.GetTemplate().graphic;
-				this.Color := this.GetTemplate().color;
-				this.Category := this.GetTemplate().Category;
 			endif
-			
-			this.ObjRef := err;
-			this.Serial := err;
+
 			this.ObjRef := err;
 			this.Serial := err;
 
@@ -780,11 +754,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		var activeAbilities := this.GetActiveAbilities();
-		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetName()))
+		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetId()))
 			return InvalidAbilityException("This ability is not active on mobile!");
 		endif
 
-		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetName()], AbilityMonitor(ability));
+		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetId()], AbilityMonitor(ability));
 	endfunction
 
 	/**

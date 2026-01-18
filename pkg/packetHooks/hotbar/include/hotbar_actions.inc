@@ -16,6 +16,9 @@ include ":hotbar:include/shared_constants";
 include ":hotbar:include/hotbar_data";
 include ":hotbar:include/hotbar_write";
 include ":hotbar:hotbar_utils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution
@@ -111,7 +114,7 @@ endfunction
 // Execution Functions (delegate to shared/hotbar_actions.inc for DRY)
 // ============================================================================
 
-// Execute habilidade
+// Execute habilidade using V2 activation system
 function ExecuteAbility(who, actionId)
     // Convert sequential index to ability ID
     var hab_id := GetAbilityBySequentialId(who, actionId);
@@ -119,8 +122,30 @@ function ExecuteAbility(who, actionId)
         SendSysMessage(who, "Habilidade não encontrada.");
         return 0;
     endif
-    // Call existing ProccessHab function
-    return ProccessHab(who, hab_id);
+
+    var mobileWrapper := MobileWrapper(who);
+    var ability := Ability(CInt(hab_id));
+
+    if (!ability.GetScript())
+        SendSysMessage(who, "Habilidade inválida.");
+        return 0;
+    endif
+
+    var monitor := AbilityMonitor(ability);
+    var result := monitor.ActivateOn(mobileWrapper);
+
+    // If activation failed (validation error), don't send cooldown
+    if (result.errortext)
+        return 0;
+    endif
+
+    // Send cooldown notification to client
+    // Format: [HAB_CD] Name|Seconds|IconHex - parsed by client AbilityCooldownManager
+    if (ability.GetCooldown() > 0)
+        SendSysMessageEx(who, $"[HAB_CD] {ability.GetName()}|{ability.GetCooldown()}|0x9BA5", SSM_INFO);
+    endif
+
+    return 1;
 endfunction
 
 // Execute combat hotkey - data-driven approach with script paths
