@@ -1,0 +1,119 @@
+use uo;
+use os;
+
+include ":abilities:models/Ability";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+
+program tiropoderoso(who)
+	// Set duration based on Tactics/5 (consistent with other abilities)
+	var tactics := AP_GetSkill(who, TACTICS);
+	var ability := Ability(ABILITY_ID::TIRO_PODEROSO);
+	ability.SetDuration(CInt(tactics / 5));
+
+	// Validate ranged weapon
+	if (!who.weapon || who.weapon.attribute != "Ranged")
+		Message("Você precisa estar usando um arco.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Target coordinates for the line shot
+	Message("Escolha a direção que irá disparar a flecha", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		return 0;
+	endif
+
+	// Validate distance and LOS
+	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
+		Message("O alvo não está visível para você.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 13)
+		Message("O alvo está muito distante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Get all targets in line
+	var targetsInLine := GetTargetsInLine(who, targ.x, targ.y);
+	if (targetsInLine.size() == 0)
+		Message("Não há alvos na linha de tiro.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Set re-entry guard to prevent ability from triggering recursively
+	who.SetProp("#tiropoderoso", 1);
+
+	// Attack each target using attack_once() - uses normal attack flow
+	foreach targ in targetsInLine
+		who.attack_once(targ);
+		sleepms(50);
+	endforeach
+
+	who.EraseProp("#tiropoderoso");
+
+	Message($"*tiro poderoso em linha - {targetsInLine.size()} alvos*").SendAbove(who);
+
+	DebugMsg(
+		who,
+		DEBUG_HAB,
+		Message($"[TIRO_PODEROSO] Atingiu {targetsInLine.size()} alvos em linha", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return 1;
+endprogram
+
+function GetTargetsInLine(who, targetX, targetY)
+	var validTargets := array{};
+	var alreadyTargeted := array{};
+
+	// Get line coordinates
+	var lineCoords := GetCoordsInLine(who.x, who.y, targetX, targetY);
+
+	foreach point in lineCoords
+		var mobiles := ListMobilesNearLocation(point.x, point.y, who.z, 1, who.realm);
+
+		foreach mobile in mobiles
+			// Skip if already targeted
+			if (mobile.serial in alreadyTargeted)
+				continue;
+			endif
+
+			// Skip self
+			if (mobile == who)
+				continue;
+			endif
+
+			// Skip party members
+			if (who.party && mobile in who.party.members)
+				continue;
+			endif
+
+			// Skip own pets
+			if (GetObjProperty(mobile, "owner") == who.serial)
+				continue;
+			endif
+
+			// Skip party members' pets
+			if (who.party)
+				var skipPet := 0;
+				foreach member in (who.party.members)
+					if (GetObjProperty(mobile, "owner") == member.serial)
+						skipPet := 1;
+						break;
+					endif
+				endforeach
+				if (skipPet)
+					continue;
+				endif
+			endif
+
+			validTargets.append(mobile);
+			alreadyTargeted.append(mobile.serial);
+		endforeach
+	endforeach
+
+	return validTargets;
+endfunction

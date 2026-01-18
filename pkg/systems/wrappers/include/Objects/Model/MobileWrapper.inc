@@ -819,7 +819,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			activeAbilities[ability.GetActivationMoment()] := dictionary{};
 		endif
 
-		activeAbilities[ability.GetActivationMoment()][ability.GetName()] := StructSerializer().Serialize(abilityMonitor);
+		activeAbilities[ability.GetActivationMoment()][ability.GetId()] := StructSerializer().Serialize(abilityMonitor);
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;
@@ -849,7 +849,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		print("Deactivating ability: " + ability.GetName());
 
 		var activeAbilities := this.GetActiveAbilities();
-		activeAbilities[ability.GetActivationMoment()].erase(ability.GetName());
+		activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
 
 		return this;

@@ -22,14 +22,11 @@ program AbilityMonitor(params)
 
 	who.ActivateAbility(ability, monitor);
 
-	// Calculate duration: if config duration is 0, use Tactics/5 as default for combat abilities
+	// Duration comes from ability.SetDuration() or config - no default fallback here
+	// Scripts should set duration explicitly via ability.SetDuration() before activation
 	var duration := ability.GetDuration();
-	if (duration <= 0)
-		var tactics := AP_GetSkill(who.GetObjRef(), TACTICS);
-		duration := CInt(tactics / 5);
-		if (duration < 5)
-			duration := 5; // Minimum 5 seconds
-		endif
+	if (duration < 5)
+		duration := 5; // Minimum 5 seconds
 	endif
 
 	Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());

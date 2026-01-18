@@ -269,7 +269,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !TemHabilidade(me, "Tiro em Movimento"))
+        if (Distance(me, opponent) < 2 && !TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
             reachForMeleeWeapon(opponent);
         endif
 

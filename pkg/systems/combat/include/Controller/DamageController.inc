@@ -295,6 +295,13 @@ function CalculatePrimordialDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
+	// Encontrar Brecha (4): Ignore armor while ability is active
+	var activeAbilitiesBeforeDamage := attackInfo.GetAttacker().GetActiveAbilities()[ABILITY_ACTIVATION::BEFORE_DAMAGE];
+	if (activeAbilitiesBeforeDamage && activeAbilitiesBeforeDamage.exists(ABILITY_ID::ENCONTRAR_BRECHA))
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("[ENCONTRAR_BRECHA] Ignorando toda armadura!"));
+		return; // Early return - skip ALL armor reduction
+	endif
+
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 

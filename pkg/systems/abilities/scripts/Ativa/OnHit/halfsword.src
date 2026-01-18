@@ -5,23 +5,27 @@ include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
 
 program halfsword(attackInfo)
-	var result := struct{};
+	var attacker := attackInfo.GetAttacker();
 
 	// Add STR bonus to damage if attacker has Halfsword ability
-	print("HasAbility check for HALFSWORD: " + attackInfo.GetAttacker().HasAbility(ABILITY_ID::HALFSWORD));
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::HALFSWORD))
-		var strBonus := GetStrengthBonus(attackInfo);
+	if (attacker.HasAbility(ABILITY_ID::HALFSWORD))
+		// Use GetMainDamageModifierBy for single source of truth (same formula as CalculateStatusDamage)
+		var strBonus := attacker.GetMainDamageModifierBy(STRENGTH);
 		if (strBonus > 0)
-			result.+slashBonus := strBonus;
-			result.+piercingBonus := strBonus;
-			result.+bluntBonus := strBonus;
+			// Directly modify damage so it shows in status bar
+			attackInfo.GetDamage()
+				.IncreaseSlashRawDamage(strBonus)
+				.IncreasePiercingRawDamage(strBonus)
+				.IncreaseBluntRawDamage(strBonus);
 
 			DebugMsg(
-				attackInfo.GetAttacker().GetObjRef(),
+				attacker.GetObjRef(),
 				DEBUG_HAB,
-				Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
+				Message($"[HALFSWORD] Bônus de dano por STR: +{strBonus}", Color(SYSTEM_COLOR::SUCCESS))
 			);
 		endif
 	endif
@@ -31,21 +35,8 @@ program halfsword(attackInfo)
 		DisarmAttackerWeapon(attackInfo);
 	endif
 
-	return result;
+	return 1;
 endprogram
-
-/**
- * GetStrengthBonus
- *
- * Calculates damage bonus based on the attacker's Strength
- * This represents the halfsword technique allowing better leverage and force
- * Returns the bonus value (1 damage per 20 STR)
- */
-function GetStrengthBonus(attackInfo)
-	var strBonus := CInt(attackInfo.GetAttacker().GetStr() / 20); // 1 damage per 20 STR
-	print("Calculado strBonus para HALFSWORD: " + strBonus);
-	return strBonus;
-endfunction
 
 /**
  * DisarmAttackerWeapon

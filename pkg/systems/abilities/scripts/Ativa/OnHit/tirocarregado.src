@@ -1,0 +1,36 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+
+program tirocarregado(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+
+	// Check if using ranged weapon
+	var weapon := attacker.GetEquipBySlot(WEAPON);
+	if (weapon.GetAttribute() != RANGED)
+		Message("Você precisa estar usando uma arma de longo alcance!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(attacker.GetObjRef());
+		return 0;
+	endif
+
+	// Use GetMainDamageModifierBy for single source of truth (same formula as CalculateStatusDamage)
+	var dexBonus := attacker.GetMainDamageModifierBy(DEXTERITY);
+	if (dexBonus > 0)
+		// Directly modify damage like old halfsword pattern
+		attackInfo.GetDamage().IncreasePiercingRawDamage(dexBonus);
+
+		DebugMsg(
+			attacker.GetObjRef(),
+			DEBUG_HAB,
+			Message($"[TIRO_CARREGADO] Bônus de dano por DEX: +{dexBonus}", Color(SYSTEM_COLOR::SUCCESS))
+		);
+	endif
+
+	return 1;
+endprogram

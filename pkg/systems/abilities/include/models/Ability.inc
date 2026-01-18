@@ -108,6 +108,11 @@ class Ability(IAbility)
 		return this.EffectDuration;
 	endfunction
 
+	function SetDuration(this, seconds)
+		this.EffectDuration := seconds;
+		return this; // Enable method chaining
+	endfunction
+
 	function GetRange(this)
 		return this.Range;
 	endfunction
@@ -121,32 +126,7 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		var result := Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
-
-		// If script returns damage modifications, apply them to the original attackInfo
-		if (result && TypeOf(result) == "Struct")
-			if (result.+slashBonus)
-				targetInfo.GetDamage().IncreaseSlashRawDamage(result.slashBonus);
-			endif
-			if (result.+piercingBonus)
-				targetInfo.GetDamage().IncreasePiercingRawDamage(result.piercingBonus);
-			endif
-			if (result.+bluntBonus)
-				targetInfo.GetDamage().IncreaseBluntRawDamage(result.bluntBonus);
-			endif
-			if (result.+fireBonus)
-				targetInfo.GetDamage().IncreaseFireRawDamage(result.fireBonus);
-			endif
-			if (result.+coldBonus)
-				targetInfo.GetDamage().IncreaseColdRawDamage(result.coldBonus);
-			endif
-			if (result.+poisonBonus)
-				targetInfo.GetDamage().IncreasePoisonRawDamage(result.poisonBonus);
-			endif
-			if (result.+energyBonus)
-				targetInfo.GetDamage().IncreaseEnergyRawDamage(result.energyBonus);
-			endif
-		endif
+		var result := Run_Script_To_Completion($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
 	endfunction
 
 	function ToString(this)

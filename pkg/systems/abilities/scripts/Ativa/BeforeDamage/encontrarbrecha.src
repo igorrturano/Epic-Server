@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+
+program encontrarbrecha(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+
+	// Set duration based on Tactics/5 (consistent with halfsword, tirocarregado)
+	var tactics := AP_GetSkill(attacker.GetObjRef(), TACTICS);
+	var ability := Ability(ABILITY_ID::ENCONTRAR_BRECHA);
+	ability.SetDuration(CInt(tactics / 5));
+
+	// The armor bypass is handled by inline check in DamageController.CalculateDefenderResist
+	// This script runs for logging/visual feedback only
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message("[ENCONTRAR_BRECHA] Ativo - ignorando armadura!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram
