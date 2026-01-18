@@ -730,34 +730,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *         caso contrário retorna true se o mobile possui a habilidade,
 	 *         ou false se não possui
 	 */
-	function HasAbility(this, abilityOrId)
+	function HasAbility(this, abilityId)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
-		// Support both Ability objects and raw ability IDs (integers/enums)
-		var abilityName;
-		var abilityId;
-
-		if (abilityOrId is @Ability)
-			// Passed an Ability object
-			abilityName := abilityOrId.GetName();
-			abilityId := CStr(abilityOrId.GetId());
-		else
-			// Passed a raw ability ID (integer/enum like ABILITY_ID::HALFSWORD)
-			var ability := Ability(abilityOrId);
-			abilityName := ability.GetName();
-			abilityId := CStr(abilityOrId);
-		endif
-
-		// myhabs dictionary has level as key and ability ID or name as value
-		// Value can be either "200" (ID as string) or "Contra-Empunhadura" (name)
+		// myhabs stores ability IDs (integers) keyed by level
 		var abilities := this.GetAbilities();
+		var targetId := CInt(abilityId);
 
 		foreach level in (abilities.keys())
-			var storedValue := abilities[level];
-			// Check if stored value matches name OR ID
-			if (storedValue == abilityName || storedValue == abilityId)
+			if (CInt(abilities[level]) == targetId)
 				return true;
 			endif
 		endforeach

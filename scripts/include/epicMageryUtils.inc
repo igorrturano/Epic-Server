@@ -6,6 +6,7 @@ include "client";
 include "include/epicConstants";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":abilities:models/Ability";
 include "include/packets";
 include ":combat:Controller/DamageController_legacy";
 
@@ -81,7 +82,7 @@ endfunction
 function distanceAllowedForSpells(who, mlore, school)
 	var dist_allowed := 5 + mlore;
 
-	if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		dist_allowed := dist_allowed + (mlore * 2);
@@ -97,7 +98,7 @@ endfunction
 function bonusSpellDamageForSpecialists(who, dmg, school)
 	var bonus := 1.2;
 
-	if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dmg := Cint(dmg * bonus);
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		dmg := Cint(dmg * bonus);
@@ -143,7 +144,7 @@ endfunction
 
 function handleSpellResistDiffForSpecialists(who, school)
 	var diff := RESIST_EASY;
-	if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		diff := RESIST_MEDIUM;
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		diff := RESIST_MEDIUM;
@@ -157,7 +158,7 @@ endfunction
 function bonusSpellDurationForSpecialists(who, duration, school)
 	var bonus := 1.2;
 
-   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+   if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 	  duration := Cint(duration * bonus);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 	  duration := Cint(duration * bonus);
