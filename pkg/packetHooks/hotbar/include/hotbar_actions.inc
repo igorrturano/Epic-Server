@@ -15,6 +15,7 @@ include ":attributes:attributes";
 include ":hotbar:include/shared_constants";
 include ":hotbar:include/hotbar_data";
 include ":hotbar:include/hotbar_write";
+include ":hotbar:hotbar_utils";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution
@@ -111,9 +112,15 @@ endfunction
 // ============================================================================
 
 // Execute habilidade
-function ExecuteAbility(who, hab_name)
+function ExecuteAbility(who, actionId)
+    // Convert sequential index to ability ID
+    var hab_id := GetAbilityBySequentialId(who, actionId);
+    if (hab_id == error)
+        SendSysMessage(who, "Habilidade não encontrada.");
+        return 0;
+    endif
     // Call existing ProccessHab function
-    return ProccessHab(who, hab_name);
+    return ProccessHab(who, hab_id);
 endfunction
 
 // Execute combat hotkey - data-driven approach with script paths

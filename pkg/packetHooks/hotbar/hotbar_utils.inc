@@ -16,7 +16,7 @@ use cfgfile;
 // - GM (cmdlevel > 1): Show ALL active abilities from config
 // - Player (cmdlevel <= 1): Show ONLY purchased abilities (from myhabs)
 //
-// Returns: Array of ability names (strings) in config file order
+// Returns: Array of ability IDs (strings) in config file order
 // ============================================================================
 function GetFilteredAbilities(who)
     // Get player data
@@ -24,48 +24,49 @@ function GetFilteredAbilities(who)
     if (!chardata)
         return array{};
     endif
-    
+
     var char_class := chardata.classe;
     var char_level := CInt(GetObjProperty(who, "Level"));
     if (!char_level)
         char_level := 1;
     endif
-    
+
     // Get purchased habilidades
     var myhabs := GetObjProperty(who, "myhabs");
     if (!myhabs)
         myhabs := dictionary;
     endif
-    
+
     // Check if GM (cmdlevel > 1)
     var is_gm := (who.cmdlevel > 1);
-    
+
     // Load config
     var hab_cfg := ReadConfigFile(":abilities:configs/habilidades");
     if (!hab_cfg)
         return array{};
     endif
-    
+
     // Filter habilidades
     var all_keys := GetConfigStringKeys(hab_cfg);
     var filtered_habs := array{};
-    
-    foreach hab_name in all_keys
-        var habelem := FindConfigElem(hab_cfg, hab_name);
+
+    foreach hab_id in all_keys
+        var habelem := FindConfigElem(hab_cfg, hab_id);
         if (!habelem)
             continue;
         endif
-        
+
+        var ability_name := GetConfigString(habelem, "nome");
         var classes := GetConfigStringDictionary(habelem, "classe");
         var uso := GetConfigString(habelem, "uso");
-        
+
         // Skip passive abilities - only send active ones
         if (uso != "Ativa")
             continue;
         endif
-        
+
         var is_eligible := 0;
-        
+
         // GM: Show all active abilities for their class (regardless of purchase)
         if (is_gm)
             if (classes[char_class] != error)
@@ -75,21 +76,21 @@ function GetFilteredAbilities(who)
                 endif
             endif
         else
-            // Player: Show ONLY purchased abilities
+            // Player: Show ONLY purchased abilities (myhabs stores IDs)
             foreach key in (myhabs.keys())
-                if (Lower(myhabs[key]) == Lower(hab_name))
+                if (CInt(myhabs[key]) == CInt(hab_id))
                     is_eligible := 1;
                     break;
                 endif
             endforeach
         endif
-        
+
         // Add to filtered list if eligible
         if (is_eligible)
-            filtered_habs.append(hab_name);
+            filtered_habs.append(hab_id);
         endif
     endforeach
-    
+
     return filtered_habs;
 endfunction
 

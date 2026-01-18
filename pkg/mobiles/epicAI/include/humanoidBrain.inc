@@ -7,6 +7,7 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
 include "include/epicLoggerUtils";
+include ":abilities:include/models/Ability";
 
 function HumanoidBrain()
     var ev;
@@ -21,7 +22,7 @@ function HumanoidBrain()
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (TemHabilidade(me, "Tiro em Movimento"))
+    if (TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -489,11 +490,22 @@ function GetClassProgression(habcfg, subclass)
     var class_choice := array{};
     var cache := NPC_GetCachedData(me);  // O(1) lookup
     var class_tree := struct{};
-    var base_hab := "";
+    var name_to_id := struct{};  // Map ability names to IDs
+    var base_hab := 0;
 
     // Build ability tree ALWAYS, regardless of subclass
-    foreach hab in (GetConfigStringKeys(habcfg))
-        var elem := FindConfigElem(habcfg, hab);
+    // First pass: build name-to-ID mapping
+    foreach hab_id in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab_id);
+        var ability_name := GetConfigString(elem, "nome");
+        if (ability_name)
+            name_to_id[ability_name] := CInt(hab_id);
+        endif
+    endforeach
+
+    // Second pass: build the prerequisite tree using IDs
+    foreach hab_id in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab_id);
         var meta := ParseAbilityMeta(elem);
         if (meta == error)
             continue;
@@ -505,33 +517,37 @@ function GetClassProgression(habcfg, subclass)
         if (meta.hab_class == my_class)
             // Store level 2 abilities without prerequisites as potential base choices
             if (!meta.requisito && meta.level == 2)
-                class_choice.append(hab);
+                class_choice.append(CInt(hab_id));
             endif
 
-            // Build the prerequisite tree
+            // Build the prerequisite tree using IDs
             if (meta.requisito)
-                if (!class_tree[meta.requisito])
-                    class_tree[meta.requisito] := array{};
+                var requisito_id := name_to_id[meta.requisito];
+                if (requisito_id)
+                    if (!class_tree[requisito_id])
+                        class_tree[requisito_id] := array{};
+                    endif
+                    class_tree[requisito_id].append(CInt(hab_id));
                 endif
-                class_tree[meta.requisito].append(hab);
             endif
         endif
     endforeach
 
     // AFTER building the tree, handle base_hab selection
     if (subclass)
-        base_hab := subclass;
+        base_hab := CInt(subclass);
     else
         // Randomly select one of the base abilities if no subclass was specified
         if (class_choice.size() > 0)
             base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
     endif
+
     // Only proceed if we have a valid base ability
     if (base_hab)
         // Start with the base ability
         progression.append(base_hab);
-        
+
         // Follow the prerequisite chain to build full progression
         var current := base_hab;
         while (current && class_tree[current])
