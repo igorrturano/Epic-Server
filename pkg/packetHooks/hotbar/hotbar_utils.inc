@@ -69,12 +69,7 @@ function GetFilteredAbilities(who)
 
         // GM: Show all active abilities for their class (regardless of purchase)
         if (is_gm)
-            if (classes[char_class] != error)
-                var required_level := CInt(classes[char_class]);
-                if (char_level >= required_level)
-                    is_eligible := 1;
-                endif
-            endif
+            is_eligible := 1;
         else
             // Player: Show ONLY purchased abilities (myhabs stores IDs)
             foreach key in (myhabs.keys())
