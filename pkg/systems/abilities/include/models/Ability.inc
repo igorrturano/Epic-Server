@@ -25,6 +25,7 @@ class Ability(IAbility)
 	var EffectDuration := 0; // em milisegundos
 	var Range := 1; // em tiles
 	var Script := ""; // nome do script que será executado ao usar a habilidade
+	var Icon := 0; // ícone hexadecimal para exibir na interface
 	
 	function Ability(this, abilityEnum)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
@@ -46,6 +47,7 @@ class Ability(IAbility)
 		this.EffectDuration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
 		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
 		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
+		this.Icon := cfgFile.GetPropertyValue("icon")[1] ?: uninit;
 	endfunction
 
 	function GetId(this)
@@ -123,6 +125,10 @@ class Ability(IAbility)
 
 	function GetScript(this)
 		return this.Script;
+	endfunction
+
+	function GetIcon(this)
+		return this.Icon;
 	endfunction
 
 	function ExecuteOn(this, targetInfo)

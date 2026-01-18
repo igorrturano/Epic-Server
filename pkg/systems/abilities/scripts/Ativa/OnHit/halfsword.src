@@ -72,10 +72,8 @@ endprogram
  */
 function DisarmAttackerWeapon(byref attackInfo)
 	var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
-	print(attackerWeapon);
-	print(attackerWeapon.GetObjRef().name);
-    var tactics_bonus := CInt(AP_GetSkill(attackInfo.GetDefender().GetObjRef(), TACTICS) / 5);
-	print ("Tactics bonus time for HALFSWORD disarm: " + tactics_bonus + " seconds");
+	var tactics_bonus := CInt(AP_GetSkill(attackInfo.GetDefender().GetObjRef(), TACTICS) / 5);
+
 	if (!attackerWeapon || !attackerWeapon.GetObjRef())
 		return false;
 	endif

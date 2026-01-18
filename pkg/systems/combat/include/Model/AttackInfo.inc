@@ -553,42 +553,6 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
-	 * Adiciona uma habilidade ao atacante.
-	 *
-	 * As habilidades são organizadas por momento de execução em um dicionário.
-	 *
-	 * @param combatAbility CombatAbility Habilidade a ser adicionada
-	 * @return AttackInfo Retorna a própria instância para encadeamento
-	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
-	 */
-	function AddAttackerAbility(this, combatAbility)
-		// if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
-		// if (!this._attackerAbilities[combatAbility.GetMomentum()]) this._attackerAbilities[combatAbility.GetMomentum()] := array{}; endif
-
-		// this._attackerAbilities[combatAbility.GetMomentum()].append(combatAbility);
-
-		// return this;
-	endfunction
-
-	/**
-	 * Adiciona uma habilidade ao defensor.
-	 *
-	 * As habilidades são organizadas por momento de execução em um dicionário.
-	 *
-	 * @param combatAbility CombatAbility Habilidade a ser adicionada
-	 * @return AttackInfo Retorna a própria instância para encadeamento
-	 * @throws InvalidFormatException Se o parâmetro não for um CombatAbility
-	 */
-	function AddDefenderAbility(this, combatAbility)
-		// if (!(combatAbility is @CombatAbility)) return InvalidFormatException("Parameter must be a CombatAbility object!"); endif
-		// if (!this._defenderAbilities[combatAbility.GetMomentum()]) this._defenderAbilities[combatAbility.GetMomentum()] := array{}; endif
-
-		// this._defenderAbilities[combatAbility.GetMomentum()].append(combatAbility);
-
-		// return this;
-	endfunction
-
-	/**
 	 * Rola um dado para determinar se o ataque acerta.
 	 *
 	 * Gera um número aleatório entre 0 e 100 e armazena em _hitChanceResult.

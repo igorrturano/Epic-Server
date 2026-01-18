@@ -16,7 +16,6 @@ program AbilityMonitor(params)
 	endif
 
 	monitor.SetPid(GetPid());
-	print($"AbilityMonitor started -> {monitor.ToString()}");
 
 	var ability := monitor.GetAbility();
 	SetScriptController(who.GetObjRef());

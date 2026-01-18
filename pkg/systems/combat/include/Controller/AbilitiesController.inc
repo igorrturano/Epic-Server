@@ -101,8 +101,6 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 
 		if (abilityId)
 			var ability := Ability(abilityId);
-			print($"[AbilitiesController] Executing {activationMoment} ability: {ability.GetName()} (ID: {abilityId})");
-
 			ability.ExecuteOn(attackInfo);
 
 			// Notify AbilityMonitor to consume charge
