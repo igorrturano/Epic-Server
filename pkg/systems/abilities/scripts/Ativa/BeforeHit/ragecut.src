@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+
+/**
+ * Golpes Furiosos (Rage Cut) - ABILITY_ID::GOLPES_FURIOSOS (203)
+ *
+ * Active Effect (BeforeHit - as ATTACKER):
+ * - Sets extra attacks flag (TT/40 attacks, min 1, max 5)
+ * - DamageController executes extra attacks after damage
+ */
+program ragecut(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+
+	// Calculate number of extra attacks based on Tactics skill
+	var tactics := attacker.GetSkill(TACTICS);
+	var extraAttacks := CInt(tactics / 40);
+
+	if (extraAttacks < 1)
+		extraAttacks := 1;
+	endif
+	if (extraAttacks > 5)
+		extraAttacks := 5;
+	endif
+
+	// Set extra attacks flag - DamageController will execute them after damage
+	attackInfo.SetExtraAttacks(extraAttacks);
+
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message($"[GOLPES_FURIOSOS] Ativo - {extraAttacks} ataques extras!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram

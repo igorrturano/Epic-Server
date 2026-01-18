@@ -329,7 +329,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
 
     // Lógica de contagem de animais fidelizados
     var pets := GetObjProperty(owner, "TamedPets");
-    var habs := TemHabilidade(owner, "Espreita Selvagem");
+    var habs := TemHabilidade(owner, ABILITY_ID::ESPREITA_SELVAGEM);
     var limite_animais := habs ? 2 : 1;
     var animais_fidelizados := 0;
     foreach serial in pets

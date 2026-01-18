@@ -133,24 +133,11 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	// Contragolpe Cruzado (202): Guarantee parry when ability is active
-	var activeAbilities := attackInfo.GetDefender().GetActiveAbilities()[ABILITY_ACTIVATION::AFTER_DAMAGE];
-	if (activeAbilities)
-		foreach abilityName in (activeAbilities.keys())
-			if (CInt(abilityName) == ABILITY_ID::CONTRAGOLPE_CRUZADO)
-				parryBonus := 100; // Guarantee parry
-				DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message("[CONTRAGOLPE_CRUZADO] Defesa garantida!", Color(SYSTEM_COLOR::SUCCESS)));
-				break;
-			endif
-		endforeach
-	endif
-
 	if (attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::REFLEXO_ESTRATEGICO)))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
 	endif
-
 
 	// Calcula o bonus de bloqueio com base no parry usando escudo
 	var parry_chance := CInt(skill / 3);

@@ -23,39 +23,62 @@ program AbilityMonitor(params)
 
 	who.ActivateAbility(ability, monitor);
 
-	// V2: Execute OnUse abilities immediately
 	if (ability.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
 		ability.ExecuteOn(who);
+		monitor.ConsumeCharge(1);
 		who.DeactivateAbility(ability);
 		return;
 	endif
 
-	// Duration monitoring for combat abilities and OnUse abilities with duration > 1
+	// Duration monitoring for combat abilities
+	var activationTime := POLCore().systime;
 	var duration := ability.GetDuration();
-	if (duration < 1)
-		duration := 1;
-	endif
+	var durationSet := (duration > 0);
 
-	Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	// For Tempo abilities (duration = 0), wait up to 30 seconds for SET_DURATION event
+	if (!durationSet)
+		duration := 30; // Timeout: ability expires if not used within 30s
+		Message($"Habilidade {ability.GetName()} ativada. Use em combate dentro de 30s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	else
+		Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	endif
 
 	var remainingTime := duration;
 	while (remainingTime > 0)
 		var event := Wait_For_Event(remainingTime);
 
-		if (event == ABILITY_EVENT_ID::USED)
+		if (event.type == ABILITY_EVENT_ID::SET_DURATION && !durationSet)
+			// Exploit protection: reject if too much time passed since activation
+			if (POLCore().systime - activationTime > 30)
+				Message($"Habilidade {ability.GetName()} expirou por inatividade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+				break;
+			endif
+
+			duration := event.value;
+			remainingTime := event.value;
+			durationSet := 1;
+			Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+
+		elseif (event == ABILITY_EVENT_ID::USED)
 			Message($"Habilidade {ability.GetName()} teve seu efeito usado.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			monitor.ConsumeCharge(1);
 			if (monitor.GetCharges() <= 0)
 				Message($"Habilidade {ability.GetName()} esgotou suas cargas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+				break;
 			endif
 		elseif (event == ABILITY_EVENT_ID::ABORT)
 			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
 		elseif (event == ABILITY_EVENT_ID::REFRESH)
 			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-			remainingTime -= (POLCore().systime - monitor.ActivationTime);
+			remainingTime := duration; // Reset to full duration
 		else
-			Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			// Timeout
+			if (!durationSet)
+				Message($"Habilidade {ability.GetName()} expirou por inatividade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			else
+				Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			endif
 			break;
 		endif
 	endwhile

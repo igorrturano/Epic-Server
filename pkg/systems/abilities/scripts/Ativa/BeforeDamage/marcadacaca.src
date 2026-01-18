@@ -1,0 +1,28 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+
+program marcadacaca(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+
+	// Set duration based on Survival skill
+	var survival := attacker.GetSkill(SURVIVAL);
+	var ability := Ability(ABILITY_ID::CACADOR_IMPLACAVEL);
+	ability.SetDuration(CInt(survival / 5));
+
+	// Set flag to ignore armor - DamageController will check this
+	attackInfo.SetIgnoreArmor();
+
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message("[CACADOR_IMPLACAVEL] Ativo - ignorando defesas!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram

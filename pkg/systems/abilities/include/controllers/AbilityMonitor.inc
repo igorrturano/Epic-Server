@@ -10,12 +10,10 @@ class AbilityMonitor()
 	var MobileSerial := 0x0;
 	var AbilityId := 0;
 	var Charges := 0;
-	var Duration := 0; // Duration in seconds - set explicitly by scripts via SetDuration()
 
 	function AbilityMonitor(this, ability)
 		this.AbilityId := ability.GetId();
 		this.Charges := ability.GetCharges();
-		this.Duration := ability.GetDuration(); // Default from config, can be overridden by SetDuration()
 	endfunction
 
 	function GetPid(this)
@@ -103,5 +101,6 @@ enum class ABILITY_EVENT_ID
 	EXPIRE,
 	REFRESH,
 	USED,
-	ABORT
+	ABORT,
+	SET_DURATION
 endenum

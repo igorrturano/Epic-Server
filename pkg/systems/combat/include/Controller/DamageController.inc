@@ -21,15 +21,14 @@ include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 
 function ProccessCombatDamage(byRef attackInfo)
-	// Pre Hit
+	// Pre Damage
 	CalculateCombatDamage(attackInfo);
 	CheckParry(attackInfo);
-	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 
-	// Hit
+	// Damage
 	ApplyCombatDamage(attackInfo);
 
-	// Post Hit
+	// Post Damage
 	CheckPoison(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
 
@@ -50,9 +49,90 @@ function ExecutePassiveAbilitiesOnKill(byRef attackInfo)
 	endif
 endfunction
 
+/**
+ * Execute ability-triggered actions after damage resolution.
+ * Handles counter-attacks (crosscut) and extra attacks (ragecut).
+ */
+function ExecuteAbilityTriggeredActions(byRef attackInfo)
+	// Counter-attack (Contragolpe Cruzado): Defender attacks back
+	if (attackInfo.ShouldCounterAttack())
+		ExecuteCounterAttack(attackInfo);
+	endif
+
+	// Extra attacks (Golpes Furiosos): Attacker executes additional attacks
+	if (attackInfo.GetExtraAttacks() > 0)
+		ExecuteExtraAttacks(attackInfo);
+	endif
+endfunction
+
+/**
+ * Execute counter-attack for Contragolpe Cruzado ability.
+ * The defender immediately attacks the original attacker.
+ */
+function ExecuteCounterAttack(byRef attackInfo)
+	var defender := attackInfo.GetDefender();
+	var attacker := attackInfo.GetAttacker();
+
+	// Don't counter if defender is dead
+	if (defender.IsDead())
+		return;
+	endif
+
+	Message("*contra-ataca!*").SendAbove(defender.GetObjRef());
+
+	DebugMsg(
+		defender.GetObjRef(),
+		DEBUG_HAB,
+		Message("[CONTRAGOLPE_CRUZADO] Executando contra-ataque!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	// Execute counter-attack
+	defender.Attack(attacker);
+endfunction
+
+/**
+ * Execute extra attacks for Golpes Furiosos ability.
+ * The attacker executes additional attacks on the same target.
+ */
+function ExecuteExtraAttacks(byRef attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+	var extraAttacks := attackInfo.GetExtraAttacks();
+
+	Message($"*desfere uma sequência furiosa de {extraAttacks} golpes!*").SendAbove(attacker.GetObjRef());
+
+	for i := 1 to extraAttacks
+		// Stop if defender dies
+		if (defender.IsDead())
+			break;
+		endif
+
+		// Stop if out of range
+		if (Distance(attacker.GetObjRef(), defender.GetObjRef()) > 2)
+			Message("*o alvo escapou do alcance!*", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+			break;
+		endif
+
+		// Small delay between attacks for visual effect
+		SleepMS(150);
+
+		// Execute attack
+		attacker.Attack(defender);
+	endfor
+
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message($"[GOLPES_FURIOSOS] Executou {extraAttacks} ataques extras!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+endfunction
+
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
+
+	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
+
 	CalculateDefenderResist(attackInfo);
 endfunction
 
@@ -295,10 +375,9 @@ function CalculatePrimordialDamage(byRef attackInfo)
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)
-	// Encontrar Brecha (4): Ignore armor while ability is active
-	var activeAbilitiesBeforeDamage := attackInfo.GetAttacker().GetActiveAbilities()[ABILITY_ACTIVATION::BEFORE_DAMAGE];
-	if (activeAbilitiesBeforeDamage && activeAbilitiesBeforeDamage.exists(ABILITY_ID::ENCONTRAR_BRECHA))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("[ENCONTRAR_BRECHA] Ignorando toda armadura!"));
+	// Check if ability set IgnoreArmor flag (encontrarbrecha, marcadacaca, etc.)
+	if (attackInfo.IgnoresArmor())
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("[ABILITY] Ignorando toda armadura!"));
 		return; // Early return - skip ALL armor reduction
 	endif
 
@@ -419,17 +498,6 @@ function CalculateCriticalChance(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetProperty("#nextcritical"))
 		attackInfo.GetAttacker().EraseProperty("#nextcritical");
 		return 100;
-	endif
-
-	// Sentença de Morte (204): Guaranteed critical while ability is active
-	var activeAbilities := attackInfo.GetAttacker().GetActiveAbilities()[ABILITY_ACTIVATION::BEFORE_DAMAGE];
-	if (activeAbilities)
-		foreach abilityName in (activeAbilities.keys())
-			if (CInt(abilityName) == ABILITY_ID::SENTENCA_DE_MORTE)
-				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("[SENTENCA_DE_MORTE] Crítico garantido!", Color(SYSTEM_COLOR::SUCCESS)));
-				return 100;
-			endif
-		endforeach
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MUMIFICACAO))

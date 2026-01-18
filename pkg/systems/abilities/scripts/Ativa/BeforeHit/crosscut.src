@@ -1,0 +1,34 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":attributes:attributes";
+
+/**
+ * Contragolpe Cruzado (Cross Cut) - ABILITY_ID::CONTRAGOLPE_CRUZADO (202)
+ *
+ * Active Effect (BeforeHit - as DEFENDER):
+ * - Guarantees next defense via parry mod
+ * - Sets counter-attack flag for after damage
+ */
+program crosscut(attackInfo)
+	var defender := attackInfo.GetDefender();
+
+	// Set guaranteed parry via modifier
+	attackInfo.SetParryChanceMod(100);
+
+	// Set counter-attack flag - DamageController will execute it after damage
+	attackInfo.SetCounterAttack(true);
+
+	DebugMsg(
+		defender.GetObjRef(),
+		DEBUG_HAB,
+		Message("[CONTRAGOLPE_CRUZADO] Ativo - defesa garantida + contra-ataque!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram

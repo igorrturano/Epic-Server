@@ -811,8 +811,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This ability has no activation moment defined to monitor!");
 		endif
 
-		// Note: Duration check removed - abilities with "Tempo" duration (0) are calculated dynamically in AbilityMonitor.src
-
 		var activeAbilities := this.GetActiveAbilities();
 
 		if (!activeAbilities.exists(ability.GetActivationMoment()))

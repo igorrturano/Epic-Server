@@ -126,7 +126,15 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
-		var result := Run_Script($"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}", targetInfo);
+		var scriptPath := $"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}";
+
+		// ON_USE abilities run async (independent effects like projectiles)
+		// Combat abilities run sync (must modify attackInfo before combat continues)
+		if (this.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
+			Run_Script(scriptPath, targetInfo);
+		else
+			Run_Script_To_Completion(scriptPath, targetInfo);
+		endif
 	endfunction
 
 	function ToString(this)
@@ -360,12 +368,6 @@ enum class ABILITY_ID
 	AURA_DIVINA := 2802,
 	AUTORIDADE_DIVINA := 2803,
 	APOTEOSE := 2804,
-
-
-	// TODO: REmover, coloquei aqui só pra conseguir compilar
-	CROSS_CUT,
-	MURDER_BLOW,
-	RAGE_CUT
 endenum
 
 enum class ABILITY_ACTIVATION

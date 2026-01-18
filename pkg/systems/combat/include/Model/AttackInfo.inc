@@ -49,6 +49,10 @@ class AttackInfo(IAttackInfo)
 	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 
+	var _ignoreArmor := false; // Flag for abilities that bypass armor (encontrarbrecha, marcadacaca)
+	var _counterAttack := false; // Flag for abilities that trigger counter-attack (crosscut)
+	var _extraAttacks := 0; // Number of extra attacks to execute (ragecut)
+
 	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
 		this._attacker := attacker;
@@ -259,6 +263,33 @@ class AttackInfo(IAttackInfo)
 	 */
 	function GetDefenderAbilities(this)
 		return this._defenderAbilities;
+	endfunction
+
+	/**
+	 * Verifica se o ataque ignora armadura.
+	 *
+	 * @return Boolean true se ignora armadura, false caso contrário
+	 */
+	function IgnoresArmor(this)
+		return this._ignoreArmor;
+	endfunction
+
+	/**
+	 * Verifica se o defensor deve contra-atacar após receber dano.
+	 *
+	 * @return Boolean true se deve contra-atacar, false caso contrário
+	 */
+	function ShouldCounterAttack(this)
+		return this._counterAttack;
+	endfunction
+
+	/**
+	 * Obtém o número de ataques extras a executar.
+	 *
+	 * @return Integer Número de ataques extras (0 se nenhum)
+	 */
+	function GetExtraAttacks(this)
+		return this._extraAttacks;
 	endfunction
 
 	/**
@@ -474,6 +505,54 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
+	 * Define o modificador da chance de aparar.
+	 *
+	 * @param value Integer Modificador a ser aplicado (use 100 for guaranteed parry)
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetParryChanceMod(this, value)
+		this._parryChanceMod := CInt(value);
+
+		return this;
+	endfunction
+
+	/**
+	 * Define se o ataque ignora armadura.
+	 *
+	 * @param value Boolean true para ignorar armadura
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetIgnoreArmor(this, value := true)
+		this._ignoreArmor := value;
+
+		return this;
+	endfunction
+
+	/**
+	 * Define se o defensor deve contra-atacar após receber dano.
+	 *
+	 * @param value Boolean true para contra-atacar
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetCounterAttack(this, value := true)
+		this._counterAttack := value;
+
+		return this;
+	endfunction
+
+	/**
+	 * Define o número de ataques extras a executar.
+	 *
+	 * @param count Integer Número de ataques extras
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetExtraAttacks(this, count)
+		this._extraAttacks := CInt(count);
+
+		return this;
+	endfunction
+
+	/**
 	 * Adiciona uma habilidade ao atacante.
 	 *
 	 * As habilidades são organizadas por momento de execução em um dicionário.
@@ -535,9 +614,9 @@ class AttackInfo(IAttackInfo)
 	 */
 	function RollCriticalHitChance(this)
 		if (this._criticalHitChance is @Exception) return this._criticalHitChance; endif
-		
+
 		this._criticalHitChanceResult := RandomInt(100 + 1);
-		if (this._criticalHitChanceResult <= this._criticalHitChance)
+		if (this._criticalHitChanceResult <= this._criticalHitChance + this._criticalHitChanceMod)
 			this._damage.SetCritical(true);
 		endif
 		return this;

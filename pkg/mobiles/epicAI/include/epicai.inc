@@ -177,12 +177,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
     case (npc_elem.Classe)
         GUERREIRO:
-            if ("Budōka" in habs)
+            if (ABILITY_ID::BUDOKA in habs)
                 var monk_weapons := array{0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
                 EquipRandomFromArray(mobile, monk_weapons);
             endif
 
-            if ("Camuflagem" in habs)
+            if (ABILITY_ID::CAMUFLAGEM in habs)
                 var tier := 0;
                 var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
                 if (boss_struct && boss_struct.tier)

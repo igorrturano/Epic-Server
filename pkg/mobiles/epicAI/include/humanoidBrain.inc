@@ -794,18 +794,18 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");
     foreach hab in habs
         case (hab)
-            "Camuflagem": 
+            ABILITY_ID::CAMUFLAGEM: 
                 if (!me.hidden) 
                     me.hidden := 1;
                 endif
                 ProccessHab(me, hab);
-            "Invocacao do Caos": 
-            "Gwaenedh":
-            "Forma Adaptavel":
-            "Irmaos de Areia":
-            "Canhoneiro":
-            "Quinquilharias":
-            "Construtor de Golems": 
+            ABILITY_ID::INVOCACAO_DO_CAOS: 
+            ABILITY_ID::GWAENEDH:
+            ABILITY_ID::FORMA_ADAPTAVEL:
+            ABILITY_ID::IRMAOS_DE_AREIA:
+            ABILITY_ID::CANHONEIRO:
+            ABILITY_ID::QUINQUILHARIAS:
+            ABILITY_ID::CONSTRUTOR_DE_GOLEMS: 
                 ProccessHab(me, hab);
         endcase
     endforeach
