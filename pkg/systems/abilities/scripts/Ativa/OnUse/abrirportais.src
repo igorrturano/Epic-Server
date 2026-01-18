@@ -1,51 +1,77 @@
 use uo;
 use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":attributes:attributes";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
-include ":attributes:attributes";
+include "include/sounds";
 
-const SPELL_BTN := 200;
-const GUMPID_CLERICSPELL := 0x00001C;
+/**
+ * Abrir Portais (Open Portals) - ABILITY_ID::ABRIR_PORTAIS (2204)
+ *
+ * OnUse Effect:
+ * - Mark up to arcana/33 locations
+ * - Open portals to marked locations (lasts arcana/10 seconds)
+ *
+ * Script receives: MobileWrapper (the user)
+ */
+program abrirportais(who)
+	var mobile := who.GetObjRef();
+	var mlore := CInt(who.GetSkill(ARCANA));
 
-program canalizadorDaSangria(player)
-	var mlore := Cint(AP_GetSkill(player, ARCANA));
-	if (player.npctemplate)
-		open_npc_portal(player);
-		return;
+	// NPC behavior
+	if (who.IsNPC())
+		OpenNpcPortal(mobile);
+		return 1;
 	endif
 
-	var input := create_portal_gump(player);
-	if (input[0] == 201)
-		mark_portal(player, 1);
-	elseif (input[0] == 202)
-		mark_portal(player, 2);
-	elseif (input[0] == 203)
-		mark_portal(player, 3);
-	elseif (input[0] == 211)
-		open_portal(player, 1);
-	elseif (input[0] == 212)
-		open_portal(player, 2);
-	elseif (input[0] == 213)
-		open_portal(player, 3);
+	var input := CreatePortalGump(mobile, mlore);
+	if (!input)
+		return 0;
 	endif
+
+	var buttonId := input[0];
+
+	// Mark portal buttons: 201, 202, 203
+	if (buttonId >= 201 && buttonId <= 203)
+		MarkPortal(mobile, buttonId - 200);
+	// Open portal buttons: 211, 212, 213
+	elseif (buttonId >= 211 && buttonId <= 213)
+		OpenPortal(mobile, buttonId - 210, mlore);
+	endif
+
+	return 1;
 endprogram
 
-function create_portal_gump(player)
+/**
+ * CreatePortalGump
+ * Creates the portal management interface
+ */
+function CreatePortalGump(mobile, mlore)
 	var gump := GFCreateGump();
-	var portals := GetObjProperty(player, "portals");
-	var amt := Cint(AP_GetSkill(player, ARCANA) / 33);
+	var portals := GetObjProperty(mobile, "portals");
+	var maxPortals := CInt(mlore / 33);
 
-	if (!portals)
-		portals := struct;
-		SetObjProperty(player, "portals", portals);
+	if (maxPortals < 1)
+		maxPortals := 1;
+	endif
+	if (maxPortals > 3)
+		maxPortals := 3;
 	endif
 
-	GFResizePic(gump, 17, 31, 9390, 359, 125 + amt * 26);
-	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Viajante Planar", 0, 0); // shadow
-	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Viajante Planar", 0, 0); // shadow
-	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Viajante Planar", 0, 0);
+	if (!portals)
+		portals := struct{};
+		SetObjProperty(mobile, "portals", portals);
+	endif
+
+	GFResizePic(gump, 17, 31, 9390, 359, 125 + maxPortals * 26);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999>Viajante Planar", 0, 0);
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999>Viajante Planar", 0, 0);
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff>Viajante Planar", 0, 0);
 	GFGumpPic(gump, 63, 91, 1469);
 	GFGumpPic(gump, 80, 91, 1469);
 	GFTextLine(gump, 63, 100, 0, "Portais");
@@ -55,129 +81,176 @@ function create_portal_gump(player)
 	GFGumpPic(gump, 296, 0, 9000, 0);
 
 	var y := 121;
-	var i := 0;
-	for (i := 1; i <= amt; i++)
-		var portalName := "portal" + cstr(i);
+	var i;
+	for (i := 1; i <= maxPortals; i++)
+		var portalName := "portal" + CStr(i);
 		var portal := portals[portalName];
+
 		if (!portal)
-			portal := struct;
-			portal.name := portalName;
-			portal.desc := "";
-			portal.created := 0;
-			portal.x := player.x;
-			portal.y := player.y;
-			portal.z := player.z;
-			portal.r := player.realm;
-			portals.Insert(portalName, portal);
+			portal := struct{
+				name := portalName,
+				desc := "",
+				created := 0,
+				x := mobile.x,
+				y := mobile.y,
+				z := mobile.z,
+				r := mobile.realm
+			};
+			portals[portalName] := portal;
 		endif
+
 		var color := "#000000";
-		GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, portal.desc), 1, 0);
-		// GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color, portal.desc));
+		GFHTMLArea(gump, 63, y, 192, 24, $"<BASEFONT color={color}>{portal.desc}", 1, 0);
 		GFAddButton(gump, 274, y + 5, 10006, 10006, GF_CLOSE_BTN, 200 + i);
-		GFAddButton(gump, 324, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + i + 10);
+		GFAddButton(gump, 324, y + 4, 10006, 10006, GF_CLOSE_BTN, 210 + i);
 		sleepms(2);
 		y += 26;
 	endfor
 
-	SetObjProperty(player, "portals", portals);
-	return GFSendGump(player, gump);
+	SetObjProperty(mobile, "portals", portals);
+	return GFSendGump(mobile, gump);
 endfunction
 
-function SetDestination(tile, x, y, z, realm)
-	var coords := struct;
-	coords.+x := CInt(x);
-	coords.+y := CInt(y);
-	coords.+z := CInt(z);
-	coords.+realm := CStr(realm);
-	coords.+race := "all";
+/**
+ * MarkPortal
+ * Mark a location for the portal
+ */
+function MarkPortal(mobile, portalNumber)
+	var portals := GetObjProperty(mobile, "portals");
 
-	return SetObjProperty(tile, "Destination", coords);
-endfunction
+	Message("Escolha o local para marcar seu portal.", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+	var targ := TargetCoordinates(mobile);
 
-function open_portal(player, portal_number)
-	var portals := GetObjProperty(player, "portals");
-	var portalName := "portal" + cstr(portal_number);
-
-	// Cria o telepad exatamente onde o jogador está (removido o y+1)
-	var tile := CreateItemAtLocation(player.x, player.y, player.z, "telepad", 1, player.realm);
-
-	var dest := struct{ "realm", "x", "y", "z" };
-	dest.realm := portals[portalName].r;
-	dest.x := portals[portalName].x;
-	dest.y := portals[portalName].y;
-	dest.z := portals[portalName].z;
-	SetDestination(tile, dest.x, dest.y, dest.z, dest.realm);
-
-	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, player.realm);
-	PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
-	PlaySoundEffect(player, 0x1f2);
-
-	sleep(10);
-
-	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, player.realm);
-	PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
-
-	sleep(10);
-
-	sleep(10);
-
-	DestroyItem(tile);
-endfunction
-
-function mark_portal(player, portal_number)
-	var portals := GetObjProperty(player, "portals");
-
-	SendSysMessage(player, "Qual local deseja marcar seu portal?");
-	var targ := TargetCoordinateS(player);
-
-	if (!CheckLosAt(player, targ.x, targ.y, targ.z))
-		SendSysMessage(player, "Voce nao consegue ver o alvo.");
+	if (!targ)
+		Message("Marcação cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
-	var portalName := "portal" + Cstr(portal_number);
-	if (targ)
-		portals[portalName].x := targ.x;
-		portals[portalName].y := targ.y;
-		portals[portalName].z := targ.z;
-		portals[portalName].r := player.realm;
-		portals[portalName].created := 1;
-		var name := RequestGump(player, "Deseja adicionar um nome ao portal?");
-		portals[portalName].desc := name;
-
-		SetObjProperty(player, "portals", portals);
-		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6D70, 0, 40, 0, player.realm);
-		PlaySoundEffect(player, 0x1f0);
-	else
-		SendSysMessage(player, "Voce nao marcou nenhuma localizacao");
-		return;
+	if (!CheckLosAt(mobile, targ.x, targ.y, targ.z))
+		Message("Você não consegue ver o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
 	endif
+
+	var portalName := "portal" + CStr(portalNumber);
+	portals[portalName].x := targ.x;
+	portals[portalName].y := targ.y;
+	portals[portalName].z := targ.z;
+	portals[portalName].r := mobile.realm;
+	portals[portalName].created := 1;
+
+	var name := RequestGump(mobile, "Deseja adicionar um nome ao portal?");
+	portals[portalName].desc := name;
+
+	SetObjProperty(mobile, "portals", portals);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6D70, 0, 40, 0, mobile.realm);
+	PlaySoundEffect(mobile, 0x1f0);
+
+	Message($"Portal '{name}' marcado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile);
+
+	return 1;
 endfunction
 
-function open_npc_portal(npc)
+/**
+ * SetDestination
+ * Helper to set telepad destination
+ */
+function SetDestination(tile, x, y, z, realm)
+	var coords := struct{
+		x := CInt(x),
+		y := CInt(y),
+		z := CInt(z),
+		realm := CStr(realm),
+		race := "all"
+	};
+	return SetObjProperty(tile, "Destination", coords);
+endfunction
+
+/**
+ * OpenPortal
+ * Open a portal to a marked location
+ */
+function OpenPortal(mobile, portalNumber, mlore)
+	var portals := GetObjProperty(mobile, "portals");
+	var portalName := "portal" + CStr(portalNumber);
+	var portal := portals[portalName];
+
+	if (!portal || !portal.created)
+		Message("Este portal ainda não foi marcado.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	// Create telepad at player location
+	var tile := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, "telepad", 1, mobile.realm);
+	if (!tile)
+		Message("Não foi possível criar o portal.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	// Set destination
+	SetDestination(tile, portal.x, portal.y, portal.z, portal.r);
+
+	// Calculate portal duration
+	var duration := CInt(mlore / 10);
+	if (duration < 5)
+		duration := 5;
+	endif
+	if (duration > 60)
+		duration := 60;
+	endif
+
+	// Effects
+	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
+	PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+	PlaySoundEffect(mobile, 0x1f2);
+
+	Message($"Portal para '{portal.desc}' aberto por {duration}s!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile);
+
+	// Wait and refresh effects
+	sleep(duration / 3);
+	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
+	PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+
+	sleep(duration / 3);
+	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, mobile.realm);
+	PlayStationaryEffect(portal.x, portal.y, portal.z, 0x0DDA, 0, 255, 0, portal.r);
+
+	sleep(duration / 3);
+
+	DestroyItem(tile);
+	Message("O portal se fechou.", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+
+	return 1;
+endfunction
+
+/**
+ * OpenNpcPortal
+ * NPC behavior - open portal to random location
+ */
+function OpenNpcPortal(npc)
 	var tile := CreateItemAtLocation(npc.x, npc.y, npc.z, "telepad", 1, npc.realm);
+	if (!tile)
+		return 0;
+	endif
 
-	var dest := struct{ "realm", "x", "y", "z" };
-	dest.realm := npc.realm;
-	dest.x := RandomIntMinMax(500, 2000);
-	dest.y := RandomIntMinMax(500, 2000);
-	dest.z := GetWorldHeight(dest.x, dest.y, dest.realm);
-	dest.race := array{ ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO };
+	var destX := RandomIntMinMax(500, 2000);
+	var destY := RandomIntMinMax(500, 2000);
+	var destZ := GetWorldHeight(destX, destY, npc.realm);
 
-	tile.SetDestination(dest.x, dest.y, dest.z, dest.realm, dest.race);
+	SetDestination(tile, destX, destY, destZ, npc.realm);
 
 	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, npc.realm);
-	PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
+	PlayStationaryEffect(destX, destY, destZ, 0x0DDA, 0, 255, 0, npc.realm);
 	PlaySoundEffect(npc, 0x1f2);
 
 	sleep(10);
 
 	PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, npc.realm);
-	PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
+	PlayStationaryEffect(destX, destY, destZ, 0x0DDA, 0, 255, 0, npc.realm);
 
 	sleep(10);
-
 	sleep(10);
 
 	DestroyItem(tile);
+
+	return 1;
 endfunction

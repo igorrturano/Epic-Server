@@ -1,73 +1,97 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":charactercreation:resists";
-include ":survival:fishingFunctions";
 
-program HitScript(who)
-	var targ := Target(who);
-	if (who.npcTemplate)
-		targ := GetRandomNearbyHostile(who);
-	endif
+/**
+ * Prisão Dimensional (Dimensional Prison) - ABILITY_ID::PRISAO_DIMENSIONAL (2203)
+ *
+ * OnUse Effect:
+ * - Teleport a target to a dimensional prison for arcana/5 seconds
+ * - Then return them to their original position
+ *
+ * Script receives: MobileWrapper (the user)
+ */
+program aprisionar(who)
+	var mobile := who.GetObjRef();
 
-	SendSysMessage(who, "Escolha quem voce deseja aprisionar");
+	Message("Escolha quem você deseja aprisionar.", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 
-	var dist := Distance(who, targ);
-	var mlore := Cint(AP_GetSkill(who, ARCANA) / 5);
+	var targ := Target(mobile);
 
-	if (dist > mlore)
-		SendSysMessage(who, "O alvo esta muito distante");
-		return 0;
+	// NPC behavior - target random nearby hostile
+	if (who.IsNPC())
+		targ := GetRandomNearbyHostile(mobile);
 	endif
 
 	if (!targ)
-		SendSysMessage(who, "Cancelled.");
+		Message("Alvo Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
 	if (!targ.isA(POLCLASS_MOBILE))
-		SendSysMessage(who, "Alvo Invalido.");
+		Message("Alvo Inválido.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
-	PerformAction(who, HUMAN_ANIM::CAST_DIR);
+	var dist := Distance(mobile, targ);
+	var mlore := CInt(who.GetSkill(ARCANA));
+	var maxRange := CInt(mlore / 5);
+
+	if (dist > maxRange)
+		Message($"O alvo está muito distante. Range máximo: {maxRange} tiles.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	PerformAction(mobile, HUMAN_ANIM::CAST_DIR);
 	sleep(2);
 
-	var hell_gate := 0x6D1D;
 	var globe := 0x6E19;
+	var hell_gate := 0x6D1D;
+
+	// Store original position
+	var origX := targ.x;
+	var origY := targ.y;
+	var origZ := targ.z;
+	var origRealm := targ.realm;
+
+	// Freeze and show effect
 	targ.frozen := 1;
-	PlayStationaryEffect(targ.x, targ.y, targ.z, globe, 0, 40, 0, who.realm); // globo invul
+	PlayStationaryEffect(targ.x, targ.y, targ.z, globe, 0, 40, 0, mobile.realm);
 	sleep(2);
-	var duration := Cint(AP_GetSkill(who, ARCANA) / 5);
-	// if (targ.npctemplate)
-	//    targ.concealed := 1;
-	//    sleep(duration);
-	//    PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6D1D, 200, 30,0, who.realm);// Portao do Inferno
-	//    sleep(2);
-	//    targ.concealed := 0;
-	//    targ.frozen := 0;
-	//    PlaySoundEffect(targ, 0x1f2);
-	//    return;
-	// else
-	var x, y, z, the_realm;
-	x := targ.x;
-	y := targ.y;
-	z := targ.z;
-	the_realm := targ.realm;
+
+	// Calculate prison duration
+	var duration := CInt(mlore / 5);
+	if (duration < 2)
+		duration := 2;
+	endif
+	if (duration > 30)
+		duration := 30;
+	endif
+
+	// Teleport to prison dimension
 	MoveObjectToLocation(targ, 5934, 2411, 40, "britannia", MOVEOBJECT_FORCELOCATION);
-	// PlayObjectCenteredEffect(targ, globe, 0, duration * 10);
+
+	Message($"*aprisiona {targ.name} na dimensão por {duration}s*").SendAbove(mobile);
+	Message("*você foi aprisionado em outra dimensão!*", Color(SYSTEM_COLOR::FAIL)).SendAbove(targ);
+
 	sleep(duration);
+
+	// Return from prison
 	targ.concealed := 1;
-	PlayStationaryEffect(x, y, z, hell_gate, 200, 25, 0, the_realm); // Portao do Inferno
-	MoveObjectToLocation(targ, x, y, z, the_realm, MOVEOBJECT_FORCELOCATION);
+	PlayStationaryEffect(origX, origY, origZ, hell_gate, 200, 25, 0, origRealm);
+	MoveObjectToLocation(targ, origX, origY, origZ, origRealm, MOVEOBJECT_FORCELOCATION);
 	sleep(2);
+
 	targ.concealed := 0;
 	targ.frozen := 0;
 	PlaySoundEffect(targ, 0x1f2);
-	// endif
+
+	Message("*você foi libertado da prisão dimensional*", Color(SYSTEM_COLOR::SUCCESS)).SendAbove(targ);
 
 	return 1;
 endprogram
