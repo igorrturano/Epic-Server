@@ -250,7 +250,7 @@ function GetPH(who)
 		ph := 15; // 15 + 60; 
 	endif
 
-	if (TemHabilidade(who, "Caçador Implacável"))
+	if (TemHabilidade(who, ABILITY_ID::CACADOR_IMPLACAVEL))
 		ph := ph + 25;
 	endif
 

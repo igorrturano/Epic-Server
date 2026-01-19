@@ -11,12 +11,10 @@ program tiropoderoso(mobile)
 	// V2: Accept MobileWrapper, get raw object for legacy functions
 	var who := mobile.GetObjRef();
 
-	// Set duration based on Tactics/5 (consistent with other abilities)
-	var tactics := AP_GetSkill(who, TACTICS);
 	// Validate ranged weapon using wrapper
 	var weapon := mobile.GetEquipBySlot(WEAPON);
 	if (!weapon || weapon.GetAttribute() != "Ranged")
-		Message("Você precisa estar usando um arco.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		Message("Você precisa estar usando uma arma de longo alcance.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
@@ -36,7 +34,7 @@ program tiropoderoso(mobile)
 		return 0;
 	endif
 
-	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 13)
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > weapon.GetMaxRange())
 		Message("O alvo está muito distante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
@@ -48,16 +46,12 @@ program tiropoderoso(mobile)
 		return 0;
 	endif
 
-	// Set re-entry guard to prevent ability from triggering recursively
-	who.SetProp("#tiropoderoso", 1);
-
 	// Attack each target using attack_once() - uses normal attack flow
+	// Small delay before first attack to ensure combat system is ready
 	foreach targ in targetsInLine
-		who.attack_once(targ);
 		sleepms(50);
+		who.attack_once(targ);
 	endforeach
-
-	who.EraseProp("#tiropoderoso");
 
 	Message($"*tiro poderoso em linha - {targetsInLine.size()} alvos*").SendAbove(who);
 

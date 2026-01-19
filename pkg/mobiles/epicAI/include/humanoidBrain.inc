@@ -630,7 +630,7 @@ function ChooseWarriorAbility(npc, state, habs)
     if (opponent.master)
         foreach hab in habs
             case (hab)
-                "Caçador Implacável":
+                ABILITY_ID::CACADOR_IMPLACAVEL:
                 "Nazg khalug": return hab;
             endcase
         endforeach

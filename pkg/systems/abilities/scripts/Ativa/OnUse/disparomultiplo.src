@@ -5,9 +5,9 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program disparomultiplo(mobile)
-	// V2: Accept MobileWrapper, get raw object for legacy functions
+	// V2: Accept MobileWrapper
 	var who := mobile.GetObjRef();
-	var shot_rounds := CInt(AP_GetTrueSkill(who, TACTICS) / 40);
+	var shot_rounds := CInt(mobile.GetSkill(TACTICS) / 40);
 
 	// Validate ranged weapon using wrapper
 	var weapon := mobile.GetEquipBySlot(WEAPON);

@@ -1,4 +1,5 @@
 use uo;
+use os;
 
 // Internal
 include "IMobileWrapper";
@@ -759,7 +760,19 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This ability is not active on mobile!");
 		endif
 
-		return StructSerializer().Deserialize(activeAbilities[ability.GetActivationMoment()][ability.GetId()], AbilityMonitor(ability));
+		var monitor := StructSerializer().Deserialize(
+			activeAbilities[ability.GetActivationMoment()][ability.GetId()],
+			AbilityMonitor(ability)
+		);
+
+		// Stale monitor check - clean up if process died (server restart, etc.)
+		if (!GetProcess(monitor.GetPid()))
+			activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
+			this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+			return InvalidAbilityException("This ability is not active on mobile!");
+		endif
+
+		return monitor;
 	endfunction
 
 	/**

@@ -8,7 +8,6 @@ include ":abilities:models/Ability";
 program camuflagem(mobile)
 	// V2: Accept MobileWrapper
 	var who := mobile.GetObjRef();
-	SetScriptController(who);
 
 	if (!who.hidden)
 		Message("Você não está escondido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -27,6 +26,13 @@ program camuflagem(mobile)
 				return 0;
 			endif
 
+			// Grant privileges BEFORE setting hidden
+			GrantPrivilege(mob, "hiddenattack");
+			mob.enable("hiddenattack");
+			GrantPrivilege(mob, "runwhilestealth");
+			mob.enable("runwhilestealth");
+
+			// Now set hidden state
 			mob.hidden := 1;
 			mob.stealthsteps := skill_bonus;
 
@@ -35,7 +41,6 @@ program camuflagem(mobile)
 				mob.stealthsteps := CInt(skill_bonus * 2);
 			endif
 
-			mobWrapper.SetProperty("surprise_attack", 1);
 			Message("Você escondeu seu animal.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			// Monitor pet visibility - ability lasts while pet is hidden

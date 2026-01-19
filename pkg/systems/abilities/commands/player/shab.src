@@ -30,7 +30,9 @@ program cmd_ability(who, text)
 		endif
 	endif
 
+	print($"[SHAB] Creating Ability({abilityId})");
 	var ability := Ability(abilityId);
+	print($"[SHAB] Ability created: name={ability.GetName()}, script={ability.GetScript()}, moment={ability.GetActivationMoment()}");
 
 	if (!ability.GetName())
 		Message("Habilidade não encontrada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
@@ -38,6 +40,7 @@ program cmd_ability(who, text)
 	endif
 
 	var hasIt := who.HasAbility(ability);
+	print($"[SHAB] HasAbility: {hasIt}, cmdlevel: {who.GetObjRef().cmdlevel}");
 
 	// GMs (cmdlevel >= 2) can use any ability
 	if (!hasIt && (who.GetObjRef().cmdlevel < 2))
@@ -45,6 +48,7 @@ program cmd_ability(who, text)
 		return 1;
 	endif
 
+	print("[SHAB] Calling AbilityMonitor.ActivateOn");
 	AbilityMonitor(ability).ActivateOn(who);
 endprogram
 

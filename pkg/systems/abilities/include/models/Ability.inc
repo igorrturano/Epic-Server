@@ -145,11 +145,13 @@ class Ability(IAbility)
 
 	function ExecuteOn(this, targetInfo)
 		var scriptPath := $"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}";
+		print($"[ABILITY] ExecuteOn: scriptPath={scriptPath}, activationMoment={this.GetActivationMoment()}");
 
 		// ON_USE abilities run async (independent effects like projectiles)
 		// Combat abilities run sync (must modify attackInfo before combat continues)
 		if (this.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
-			Run_Script(scriptPath, targetInfo);
+			var result := Run_Script(scriptPath, targetInfo);
+			print($"[ABILITY] Run_Script result: {result}");
 		else
 			Run_Script_To_Completion(scriptPath, targetInfo);
 		endif

@@ -12,85 +12,85 @@ include ":survival:fishingFunctions";
  * Salto Etéreo (Ethereal Jump) - ABILITY_ID::SALTO_ETEREO (2201)
  *
  * OnUse Effect:
- * - Teleport to a targeted location within mlore/5 range
+ * - Teleport to a targeted location within arcana/5 range
  * - Requires line of sight
  * - Cannot teleport to water
  *
  * Script receives: MobileWrapper (the user)
  */
-program saltodimensional(who)
-	var mobile := who.GetObjRef();
+program saltodimensional(mobile)
+	var who := mobile.GetObjRef();
 
-	mobile.concealed := 1;
-	mobile.frozen := 1;
-	PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
+	who.concealed := 1;
+	who.frozen := 1;
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
-	PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0xD11B, 0, 35, 0, mobile.realm);
-	PlaySoundEffect(mobile, 0x1f2);
+	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 35, 0, who.realm);
+	PlaySoundEffect(who, 0x1f2);
 	sleep(2);
 
-	var targ := TargetCoordinates(mobile);
+	var targ := TargetCoordinates(who);
 
 	// NPC behavior - jump to random direction from opponent
-	if (mobile.npctemplate)
+	if (who.npctemplate)
 		var directions := array{ array{ 1, 0 }, array{ 0, 1 }, array{ -1, 0 }, array{ 0, -1 } };
 		var random_direction := directions[RandomInt(4) + 1];
 		targ := struct{
-			x := mobile.opponent.x + random_direction[1] * 5,
-			y := mobile.opponent.y + random_direction[2] * 5,
-			z := mobile.opponent.z,
-			realm := mobile.opponent.realm
+			x := who.opponent.x + random_direction[1] * 5,
+			y := who.opponent.y + random_direction[2] * 5,
+			z := who.opponent.z,
+			realm := who.opponent.realm
 		};
 	endif
 
 	if (!targ)
-		Message("Alvo Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-		mobile.concealed := 0;
-		mobile.frozen := 0;
+		Message("Alvo Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		who.concealed := 0;
+		who.frozen := 0;
 		return 0;
 	endif
 
-	var dist := Distance(mobile, targ);
-	var mlore := CInt(who.GetSkill(ARCANA));
-	var maxRange := CInt(mlore / 5);
+	var dist := Distance(who, targ);
+	var arcana := CInt(mobile.GetSkill(ARCANA));
+	var maxRange := CInt(arcana / 5);
 
-	if (!CheckLosAt(mobile, targ.x, targ.y, targ.z))
-		Message("Você não consegue ver o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-		mobile.concealed := 0;
-		mobile.frozen := 0;
+	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+		Message("Você não consegue ver o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		who.concealed := 0;
+		who.frozen := 0;
 		return 0;
 	endif
 
 	if (dist > maxRange)
-		Message($"O alvo está muito distante. Range máximo: {maxRange} tiles.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-		mobile.concealed := 0;
-		mobile.frozen := 0;
+		Message($"O alvo está muito distante. Range máximo: {maxRange} tiles.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		who.concealed := 0;
+		who.frozen := 0;
 		return 0;
 	endif
 
-	var locinfo := GetMapInfo(targ.x, targ.y, mobile.realm);
+	var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
 	if (IsWater(targ, locinfo))
-		Message("Você não pode teleportar para a água.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-		mobile.concealed := 0;
-		mobile.frozen := 0;
+		Message("Você não pode teleportar para a água.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		who.concealed := 0;
+		who.frozen := 0;
 		return 0;
 	endif
 
-	if (CanWalk("L", mobile.x, mobile.y, mobile.z, targ.x, targ.y, mobile.realm) == error)
-		Message("Local Inacessível.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-		mobile.concealed := 0;
-		mobile.frozen := 0;
+	if (CanWalk("L", who.x, who.y, who.z, targ.x, targ.y, who.realm) == error)
+		Message("Local Inacessível.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		who.concealed := 0;
+		who.frozen := 0;
 		return 0;
 	endif
 
-	MoveObjectToLocation(mobile, targ.x, targ.y, targ.z, mobile.realm);
+	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm);
 
-	PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0xD11B, 0, 35, 0, mobile.realm);
-	PlaySoundEffect(mobile, 0x1f2);
+	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 35, 0, who.realm);
+	PlaySoundEffect(who, 0x1f2);
 	sleep(1);
 
-	mobile.concealed := 0;
-	mobile.frozen := 0;
+	who.concealed := 0;
+	who.frozen := 0;
 
 	return 1;
 endprogram

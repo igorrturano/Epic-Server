@@ -170,7 +170,7 @@ function GetMaxPets(who)
 	endif
 
 	//Influência de Habs na quantidade
-	if(TemHabilidade(who, "Espreita Selvagem"))
+	if(TemHabilidade(who, ABILITY_ID::ESPREITA_SELVAGEM))
 		maxpets := maxpets + 1;
 	endif
 

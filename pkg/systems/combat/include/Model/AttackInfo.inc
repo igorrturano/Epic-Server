@@ -55,7 +55,7 @@ class AttackInfo(IAttackInfo)
 		this._moment := moment;
 		this._attacker := attacker;
 		this._defender := defender;
-		
+
 		this._bodyRegion := ValueNotSetException();
 		this._direction := ATTACK_DIRECTION::FRONT;
 		this._damage := Damage();

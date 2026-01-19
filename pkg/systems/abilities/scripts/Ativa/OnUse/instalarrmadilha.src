@@ -23,7 +23,7 @@ program instalararmadilha(mobile)
 		return 0;
 	endif
 
-	if ((!trap.objtype == 0x6076) || (!trap.objtype == 0xff97) || (!trap.objtype == 0x1BE6))
+	if ((trap.objtype != 0x6076) && (trap.objtype != 0xff97) && (trap.objtype != 0x1BE6))
 		Message("Isto não é uma armadilha.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif

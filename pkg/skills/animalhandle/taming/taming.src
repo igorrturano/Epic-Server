@@ -43,7 +43,7 @@ program TamingSkill(who)
 	// checar se já tem animal fidelizado
 	var check_bond := 0;
 	var petsi := GetObjProperty(who, "TamedPets");
-	var habs := TemHabilidade(who, "Espreita Selvagem");
+	var habs := TemHabilidade(who, ABILITY_ID::ESPREITA_SELVAGEM);
 	foreach serial in petsi
 		var pety := SystemFindObjectBySerial(serial);
 		if (GetObjProperty(pety, "bond") == "fiel")
@@ -122,7 +122,7 @@ program TamingSkill(who)
 		endif
 		// resetar os demais para "nao" e deixa só o selecionado como "sim"
 		var pets_all := GetObjProperty(who, "TamedPets");
-		var habs := TemHabilidade(who, "Espreita Selvagem");
+		var habs := TemHabilidade(who, ABILITY_ID::ESPREITA_SELVAGEM);
 		foreach serial in pets_all
 			var pet_each := SystemFindObjectBySerial(serial);
 			if (habs && GetObjProperty(pet_each, "bond") == "fiel")

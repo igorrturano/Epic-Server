@@ -70,14 +70,18 @@ class AbilityMonitor()
 	endfunction
 
 	function ActivateOn(this, mobile)
+		print($"[ABILITY_MONITOR] ActivateOn called, abilityId={this.AbilityId}");
 		if (!(mobile is @MobileWrapper))
+			print("[ABILITY_MONITOR] ERROR: mobile is not MobileWrapper");
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
 		var ability := this.GetAbility();
+		print($"[ABILITY_MONITOR] Got ability: {ability.GetName()}");
 		var mobileRef := mobile.GetObjRef();
 
 		// === PRE-ACTIVATION VALIDATION ===
+		print("[ABILITY_MONITOR] Starting pre-activation validation");
 
 		// Validate stamina cost
 		if (ability.GetCostSTAM() > 0 && ability.GetCostSTAM() > mobile.GetCurrentStamina())
@@ -105,6 +109,7 @@ class AbilityMonitor()
 			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
 			return error{"errortext" := "Ability on cooldown"};
 		endif
+		print("[ABILITY_MONITOR] Validation passed");
 
 		// === CONSUME COSTS ===
 		// Commenting jsut for tests
@@ -125,14 +130,20 @@ class AbilityMonitor()
 		// endif
 
 		// === ACTIVATE ===
+		print("[ABILITY_MONITOR] === ACTIVATE section ===");
 		this.MobileSerial := mobile.GetSerial();
 		this.ActivationTime := POLCore().systime;
+		print($"[ABILITY_MONITOR] MobileSerial={this.MobileSerial}, checking for existing monitor...");
 
 		var existingMonitor := mobile.GetAbilityMonitor(ability);
+		print($"[ABILITY_MONITOR] existingMonitor result: {existingMonitor}");
 		if (existingMonitor is @AbilityMonitor)
+			print($"[ABILITY_MONITOR] Refreshing existing AbilityMonitor script for ability {ability.GetId()}");
 			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
 		else
-			var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
+			print($"[ABILITY_MONITOR] Starting AbilityMonitor script for ability {ability.GetId()}");
+			var script := Start_Script($"{ABILITY_PKG}AbilityMonitor", array{mobile, this});
+			print($"[ABILITY_MONITOR] Script started: {script}");
 		endif
 	endfunction
 
