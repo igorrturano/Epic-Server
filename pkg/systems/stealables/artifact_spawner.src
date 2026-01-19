@@ -87,21 +87,31 @@ endfunction
  */
 function GetCurrentArtifact(spawner)
 	var artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
-	
+
 	if (!artifact_serial)
 		return 0;
 	endif
-	
+
 	var artifact := SystemFindObjectBySerial(artifact_serial);
-	
-	// Se o artefato não existe mais, limpa a propriedade
+
+	// Item não existe mais
 	if (!artifact)
 		EraseObjProperty(spawner, "CurrentArtifactSerial");
 		return 0;
 	endif
-	
+
+	// Item não está mais exatamente no ponto do spawner
+	if (artifact.x != spawner.x ||
+	    artifact.y != spawner.y ||
+	    artifact.z != spawner.z ||
+	    artifact.realm != spawner.realm)
+		EraseObjProperty(spawner, "CurrentArtifactSerial");
+		return 0;
+	endif
+
 	return artifact;
 endfunction
+
 
 /*
  * WaitForRespawnCooldown(spawner)
