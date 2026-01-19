@@ -29,6 +29,7 @@ function CheckParry(byRef attackInfo)
 endfunction
 
 function TryToParry(byRef attackInfo)
+	// Se estiver sem escudo, tenta bloquear com a arma
 	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
 
 	if (!equip || equip.GetAttribute() == RANGED)
@@ -134,7 +135,7 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::REFLEXO_ESTRATEGICO)))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
@@ -145,7 +146,7 @@ function CalculateParryChance(byRef attackInfo)
 
 	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
 	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
-		if (attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::TABIBITO_NO_MICHI)))
+		if (attackInfo.GetDefender().HasAbility(ABILITY_ID::TABIBITO_NO_MICHI))
 			parry_chance := CInt(parry_chance * 1.3);
 		else
 			parry_chance := CInt(parry_chance * 0.7);

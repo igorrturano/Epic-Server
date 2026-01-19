@@ -47,7 +47,9 @@ class AttackInfo(IAttackInfo)
 
 	var _ignoreArmor := false; // Flag for abilities that bypass armor (encontrarbrecha, marcadacaca)
 	var _counterAttack := false; // Flag for abilities that trigger counter-attack (crosscut)
-	var _extraAttacks := 0; // Number of extra attacks to execute (ragecut)
+	var _criticalHitChanceMod := 0; // Modifier for critical hit chance (for future combat refactor)
+	var _attackerAbilities := dictionary{}; // Dictionary of attacker's abilities (myhabs)
+	var _defenderAbilities := dictionary{}; // Dictionary of defender's abilities (myhabs)
 
 	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
@@ -66,6 +68,9 @@ class AttackInfo(IAttackInfo)
 		this._parryChanceResult := ValueNotSetException();
 		this._criticalHitChance := ValueNotSetException();
 		this._criticalHitChanceResult := ValueNotSetException();
+		this._criticalHitChanceMod := 0;
+		this._attackerAbilities := attacker.GetAbilities() ?: dictionary{};
+		this._defenderAbilities := defender.GetAbilities() ?: dictionary{};
 	endfunction
 
 	/**
@@ -249,12 +254,30 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
-	 * Obtém o número de ataques extras a executar.
+	 * Obtém o modificador da chance de acerto crítico.
 	 *
-	 * @return Integer Número de ataques extras (0 se nenhum)
+	 * @return Integer Modificador aplicado à chance de crítico
 	 */
-	function GetExtraAttacks(this)
-		return this._extraAttacks;
+	function GetCriticalHitChanceMod(this)
+		return this._criticalHitChanceMod;
+	endfunction
+
+	/**
+	 * Obtém as habilidades do atacante.
+	 *
+	 * @return Dictionary Dicionário de habilidades do atacante
+	 */
+	function GetAttackerAbilities(this)
+		return this._attackerAbilities;
+	endfunction
+
+	/**
+	 * Obtém as habilidades do defensor.
+	 *
+	 * @return Dictionary Dicionário de habilidades do defensor
+	 */
+	function GetDefenderAbilities(this)
+		return this._defenderAbilities;
 	endfunction
 
 	/**
@@ -417,6 +440,18 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
+	 * Define o modificador da chance de acerto crítico.
+	 *
+	 * @param value Integer Modificador a ser aplicado
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 */
+	function SetCriticalHitChanceMod(this, value)
+		this._criticalHitChanceMod := CInt(value);
+
+		return this;
+	endfunction
+
+	/**
 	 * Define o equipamento usado para aparar.
 	 *
 	 * @param equip EquipWrapper Item de defesa (ArmorWrapper ou WeaponWrapper)
@@ -489,18 +524,6 @@ class AttackInfo(IAttackInfo)
 	 */
 	function SetCounterAttack(this, value := true)
 		this._counterAttack := value;
-
-		return this;
-	endfunction
-
-	/**
-	 * Define o número de ataques extras a executar.
-	 *
-	 * @param count Integer Número de ataques extras
-	 * @return AttackInfo Retorna a própria instância para encadeamento
-	 */
-	function SetExtraAttacks(this, count)
-		this._extraAttacks := CInt(count);
 
 		return this;
 	endfunction
@@ -611,15 +634,17 @@ class AttackInfo(IAttackInfo)
 			$"Ref. Item Munição: {this._ammo.itemRef}, " +
 			$"Quantidade Munição: {this._ammo.amount}, " +
 			$"Chance de Acerto: {this._hitChance}, " +
-			$"Penalidade Chance de Acerto: {this._hitChancePenalty}, " +
+			$"Mod Chance de Acerto: {this._hitChanceMod}, " +
 			$"Resultado Chance de Acerto: {this._hitChanceResult}, " +
 			$"Chance de Acerto Crítico: {this._criticalHitChance}, " +
-			$"Penalidade Chance de Acerto Crítico: {this._criticalHitChancePenalty}, " +
+			$"Mod Chance de Acerto Crítico: {this._criticalHitChanceMod}, " +
 			$"Resultado Chance de Acerto Crítico: {this._criticalHitChanceResult}, " +
 			$"Equipamento de Aparar: {this._parryEquip}, " +
 			$"Chance de Aparar: {this._parryChance}, " +
-			$"Penalidade Chance de Aparar: {this._parryChancePenalty}, " +
-			$"Resultado Chance de Aparar: {this._parryChanceResult}, ";
+			$"Mod Chance de Aparar: {this._parryChanceMod}, " +
+			$"Resultado Chance de Aparar: {this._parryChanceResult}, " +
+			$"Habilidades do Atacante: {this._attackerAbilities}, " +
+			$"Habilidades do Defensor: {this._defenderAbilities}";
 	endfunction
 endclass
 

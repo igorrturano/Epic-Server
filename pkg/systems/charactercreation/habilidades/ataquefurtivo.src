@@ -7,7 +7,6 @@ include ":abilities:controllers/AbilityController";
 
 program backstab(who)
 	who := MobileWrapper(who);
-	var instinto_assassino := Ability(ABILITY_ID::INSTINTO_ASSASSINO);
 
 	if (!CanBackStab(who) || !isAssassinWeapon(who.GetObjRef()))
 		Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::ERRO)).SendSys(who.GetObjRef());
@@ -19,7 +18,7 @@ program backstab(who)
 
 	if (who.IsHidden())
 		who.SetProperty("#GuaranteedHit", 1);
-		if (who.HasAbility(instinto_assassino))
+		if (who.HasAbility(ABILITY_ID::INSTINTO_ASSASSINO))
 			who.SetProperty("#nextcritical", 1);
 		endif
 	endif
