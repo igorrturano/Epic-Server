@@ -26,7 +26,9 @@ class Ability(IAbility)
 	var Range := 1; // em tiles
 	var Script := ""; // nome do script que será executado ao usar a habilidade
 	var Icon := 0; // ícone hexadecimal para exibir na interface
-	
+	var PassiveMoment := ""; // momento de ativação do efeito passivo (OnParry, OnKill, etc.)
+	var PassiveScript := ""; // script do efeito passivo
+
 	function Ability(this, abilityEnum)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
 		
@@ -48,6 +50,8 @@ class Ability(IAbility)
 		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
 		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
 		this.Icon := cfgFile.GetPropertyValue("icon")[1] ?: uninit;
+		this.PassiveMoment := cfgFile.GetPropertyValue("passivoMomento")[1] ?: uninit;
+		this.PassiveScript := cfgFile.GetPropertyValue("passivoScript")[1] ?: uninit;
 	endfunction
 
 	function GetId(this)
@@ -129,6 +133,14 @@ class Ability(IAbility)
 
 	function GetIcon(this)
 		return this.Icon;
+	endfunction
+
+	function GetPassiveMoment(this)
+		return this.PassiveMoment;
+	endfunction
+
+	function GetPassiveScript(this)
+		return this.PassiveScript;
 	endfunction
 
 	function ExecuteOn(this, targetInfo)
@@ -385,6 +397,7 @@ enum class ABILITY_ACTIVATION
 	ON_CRITICAL := "OnCritical",
 	AFTER_DAMAGE := "AfterDamage",
 	ON_KILL := "OnKill",
+	ON_PARRY := "OnParry",
 
 	ON_USE := "OnUse"
 endenum

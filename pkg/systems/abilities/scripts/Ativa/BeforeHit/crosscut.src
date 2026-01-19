@@ -3,6 +3,7 @@ use os;
 
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":debug:include/Controller/DebugController";
@@ -12,22 +13,58 @@ include ":attributes:attributes";
  * Contragolpe Cruzado (Cross Cut) - ABILITY_ID::CONTRAGOLPE_CRUZADO (202)
  *
  * Active Effect (BeforeHit - as DEFENDER):
- * - Guarantees next defense via parry mod
- * - Sets counter-attack flag for after damage
+ * - First hit: Guarantees parry (+100 mod) - ONE TIME per activation
+ * - All hits: Counter-attack flag - FOR TT/5 SECONDS
  */
 program crosscut(attackInfo)
 	var defender := attackInfo.GetDefender();
+	var ability := Ability(ABILITY_ID::CONTRAGOLPE_CRUZADO);
 
-	// Set guaranteed parry via modifier
-	attackInfo.SetParryChanceMod(100);
+	// Get monitor for this activation
+	var monitor := defender.GetAbilityMonitor(ability);
+	if (!(monitor is @AbilityMonitor))
+		return false;
+	endif
 
-	// Set counter-attack flag - DamageController will execute it after damage
+	var currentActivation := monitor.ActivationTime;
+	var usedActivation := defender.GetProperty("#crosscut_activation");
+	var isFirstHit := (usedActivation != currentActivation);
+
+	// FIRST HIT of this activation
+	if (isFirstHit)
+		defender.SetProperty("#crosscut_activation", currentActivation);
+
+		// For Tempo abilities, send SET_DURATION
+		if (ability.GetDuration() == 0)
+			var tactics := defender.GetSkill(TACTICS);
+			var duration := CInt(tactics / 5);
+			if (duration < 1)
+				duration := 1;
+			endif
+
+			monitor._GetProcess().SendEvent(struct{
+				type := ABILITY_EVENT_ID::SET_DURATION,
+				value := duration
+			});
+		endif
+
+		// Guaranteed parry - ONE TIME per activation
+		attackInfo.SetParryChanceMod(100);
+
+		DebugMsg(
+			defender.GetObjRef(),
+			DEBUG_HAB,
+			Message("[CONTRAGOLPE_CRUZADO] Defesa garantida!", Color(SYSTEM_COLOR::SUCCESS))
+		);
+	endif
+
+	// Counter-attack - EVERY HIT during duration
 	attackInfo.SetCounterAttack(true);
 
 	DebugMsg(
 		defender.GetObjRef(),
 		DEBUG_HAB,
-		Message("[CONTRAGOLPE_CRUZADO] Ativo - defesa garantida + contra-ataque!", Color(SYSTEM_COLOR::SUCCESS))
+		Message("[CONTRAGOLPE_CRUZADO] Contra-ataque ativado!", Color(SYSTEM_COLOR::SUCCESS))
 	);
 
 	return true;

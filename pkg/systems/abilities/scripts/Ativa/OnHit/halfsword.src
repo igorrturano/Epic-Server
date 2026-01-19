@@ -12,11 +12,12 @@ include ":attributes:attributes";
 /**
  * Contra-Empunhadura (Halfsword) - ABILITY_ID::HALFSWORD (200)
  *
- * OnHit Effect (as ATTACKER):
+ * ACTIVE Effect (this script):
  * - Add double STR bonus to damage for TT/5 seconds
  *
- * Passive Effect (as DEFENDER with HasAbility check):
- * - On successful parry, disarm attacker for TT/5 seconds
+ * PASSIVE Effect (config-driven via passivoMomento/passivoScript):
+ * - On successful parry with two-handed weapon, disarm attacker for TT/5 seconds
+ * - Script: Passiva/OnParry/halfsword_disarm.src
  *
  * Script receives: AttackInfo
  */
@@ -56,63 +57,5 @@ program halfsword(attackInfo)
 		);
 	endif
 
-	// Passive disarm effect: if defender has ability and parried
-	if (attackInfo.Parried() && attackInfo.GetDefender().HasAbility(ABILITY_ID::HALFSWORD))
-		DisarmAttackerWeapon(attackInfo);
-	endif
-
 	return 1;
 endprogram
-
-/**
- * DisarmAttackerWeapon
- *
- * When the defender successfully parries using halfsword technique,
- * they can disarm the attacker's weapon by leveraging the blade grip
- */
-function DisarmAttackerWeapon(byref attackInfo)
-	var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
-	var tactics_bonus := CInt(AP_GetSkill(attackInfo.GetDefender().GetObjRef(), TACTICS) / 5);
-
-	if (!attackerWeapon || !attackerWeapon.GetObjRef())
-		return false;
-	endif
-
-	// Don't disarm unarmed combat (fists)
-	if (attackerWeapon.GetCategory() == WEAPON_CATEGORY::UNARMED)
-		return false;
-	endif
-
-	// Determine where to drop the weapon
-	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	var dropX := attackerPos.GetX() + RandomIntMinMax(-1, 1);
-	var dropY := attackerPos.GetY() + RandomIntMinMax(-1, 1);
-	var dropZ := GetWorldHeight(dropX, dropY);
-
-	// Move weapon to ground
-	if (MoveObjectToLocation(
-		attackerWeapon.GetObjRef(),
-		dropX,
-		dropY,
-		dropZ,
-		attackerPos.GetRealm(),
-		MOVEOBJECT_FORCELOCATION
-	))
-        TS_StartTimer(attackInfo.GetAttacker().GetObjRef(), "desarmar", tactics_bonus, 0, attackInfo.GetDefender().GetObjRef());
-		Message("*sua arma foi desarmada pela técnica de contra-empunhadura!*")
-			.SendAbove(attackInfo.GetAttacker().GetObjRef());
-
-		Message("*desarma a arma do oponente com técnica de contra-empunhadura!*")
-			.SendAbove(attackInfo.GetDefender().GetObjRef());
-
-		DebugMsg(
-			attackInfo.GetDefender().GetObjRef(),
-			DEBUG_HAB,
-			Message($"Possui Habilidade[{ABILITY_ID::HALFSWORD}]: Desarme bem-sucedido!", Color(SYSTEM_COLOR::SUCCESS))
-		);
-
-		return true;
-	endif
-
-	return false;
-endfunction

@@ -10,6 +10,7 @@ include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
 include ":combat:Controller/AbilitiesController";
 include ":combat:weardown";
+include ":message:model/Message";
 
 include ":tn:cooldown";
 include "include/facings";
@@ -28,8 +29,8 @@ function CheckParry(byRef attackInfo)
 endfunction
 
 function TryToParry(byRef attackInfo)
-	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON); // Se estiver sem escudo, tenta bloquear com a arma
-	
+	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
+
 	if (!equip || equip.GetAttribute() == RANGED)
 		return false;
 	endif
@@ -151,10 +152,6 @@ function CalculateParryChance(byRef attackInfo)
 		endif
 	endif
 
-	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
-		
-	endif
-
 	// Calcula a chance TOTAL de bloqueio
 	parry_chance := parry_chance + parryBonus;
 
@@ -199,12 +196,9 @@ function CheckDisarmShield(byRef attackInfo)
 	if (!attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
 
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
-			// Pike desarma defensor que bloquear sem escudo
-			// Half-sword desarma o atacante ao defender o golpe
+			// Pike: disarms DEFENDER when blocking without shield
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE
-			 	|| attackInfo.GetDefender().HasAbility(Ability(ABILITY_ID::HALFSWORD)))
-				
+			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();
 					defenderPos.SetX(defenderPos.GetX() + RandomIntMinMax(-2, 3));
@@ -223,6 +217,9 @@ function CheckDisarmShield(byRef attackInfo)
 			// TryToExecuteHab_KenNoTatsujin(attackInfo);
 		endif
 	endif
+
+	// Execute config-driven passive abilities that trigger on parry
+	ExecutePassiveAbilitiesOnParry(attackInfo);
 
 	return false;
 endfunction

@@ -116,7 +116,65 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 	return abilitiesExecuted;
 endfunction
 
-function DebugExecutedAbilities(byRef attackInfo)
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (ATACANTE) ===", Color(GENERAL_COLOR::PURPLE)));
-	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message("=== Habilidades executadas neste ataque (DEFENSOR) ===", Color(GENERAL_COLOR::PURPLE)));
+/***********************************
+ * PASSIVE ABILITIES
+ * These trigger when player HAS ability (not activated)
+ * Discovered via passivoMomento/passivoScript config fields
+ **********************************/
+
+/**
+ * Executes passive abilities for defender on parry.
+ * Called when defender successfully parries an attack.
+ */
+function ExecutePassiveAbilitiesOnParry(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_PARRY, attackInfo);
+endfunction
+
+/**
+ * Executes passive abilities for attacker on kill.
+ * Called when attacker kills the defender.
+ */
+function ExecutePassiveAbilitiesOnKill(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_KILL, attackInfo);
+endfunction
+
+/**
+ * Internal: Discovers and executes passive abilities.
+ * Checks all abilities the mobile HAS (not just activated).
+ *
+ * @param mobile MobileWrapper - The mobile whose passive abilities to check
+ * @param passiveMoment ABILITY_ACTIVATION enum - When the passive triggers
+ * @param attackInfo AttackInfo - Combat context passed to ability scripts
+ * @return Integer - Number of passive abilities executed
+ */
+function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
+	var abilities := mobile.GetAbilities();
+
+	print($"[PASSIVE DEBUG] Checking passives for {mobile.GetName()}, moment={passiveMoment}");
+	print($"[PASSIVE DEBUG] Abilities: {abilities}");
+
+	if (!abilities)
+		print("[PASSIVE DEBUG] No abilities found!");
+		return 0;
+	endif
+
+	var abilitiesExecuted := 0;
+
+	// myhabs stores { level => ability_id }, so we iterate keys (levels) and get values (ability IDs)
+	foreach level in (abilities.keys())
+		var abilityId := abilities[level];
+		var ability := Ability(CInt(abilityId));
+
+		print($"[PASSIVE DEBUG] Checking ability {abilityId}: passiveMoment={ability.GetPassiveMoment()}, passiveScript={ability.GetPassiveScript()}");
+
+		if (ability.GetPassiveMoment() == passiveMoment && ability.GetPassiveScript())
+			var scriptPath := $"{ABILITY_PKG}scripts/Passiva/{passiveMoment}/{ability.GetPassiveScript()}";
+			print($"[PASSIVE DEBUG] Running script: {scriptPath}");
+			Run_Script_To_Completion(scriptPath, attackInfo);
+			abilitiesExecuted++;
+		endif
+	endforeach
+
+	print($"[PASSIVE DEBUG] Executed {abilitiesExecuted} passive abilities");
+	return abilitiesExecuted;
 endfunction

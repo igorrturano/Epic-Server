@@ -39,15 +39,11 @@ class AttackInfo(IAttackInfo)
 	var _hitChanceMod := 0;
 	var _hitChanceResult := 0; // Resultado da rolagem do dado de hit chance
 	var _criticalHitChance := 0;
-	var _criticalHitChanceMod := 0;
 	var _criticalHitChanceResult := 0; // Resultado da rolagem do dado de dano crítico
 	var _parryEquip; // EquipWrapper(ArmorWrapper/WeaponWrapper) do item usado para parry
 	var _parryChance := 0;
 	var _parryChanceMod := 0;
 	var _parryChanceResult := 0; // Resultado da rolagem do dado de parry chance
-
-	var _attackerAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
-	var _defenderAbilities := dictionary{}; // O dictionary é indexado por COMBATABILITY_MOMENT e contém arrays de CombatAbility()
 
 	var _ignoreArmor := false; // Flag for abilities that bypass armor (encontrarbrecha, marcadacaca)
 	var _counterAttack := false; // Flag for abilities that trigger counter-attack (crosscut)
@@ -69,11 +65,7 @@ class AttackInfo(IAttackInfo)
 		this._parryChanceMod := ValueNotSetException();
 		this._parryChanceResult := ValueNotSetException();
 		this._criticalHitChance := ValueNotSetException();
-		this._criticalHitChanceMod := ValueNotSetException();
 		this._criticalHitChanceResult := ValueNotSetException();
-
-		this._attackerAbilities := AttackInfo::_attackerAbilities;
-		this._defenderAbilities := AttackInfo::_defenderAbilities;
 	endfunction
 
 	/**
@@ -194,15 +186,6 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
-	 * Obtém o modificador da chance de acerto crítico.
-	 *
-	 * @return Integer Modificador aplicado à chance de crítico
-	 */
-	function GetCriticalHitChanceMod(this)
-		return this._criticalHitChanceMod;
-	endfunction
-	
-	/**
 	 * Obtém o resultado da rolagem de acerto crítico.
 	 *
 	 * @return Integer Valor rolado para determinar crítico (0-100)
@@ -245,24 +228,6 @@ class AttackInfo(IAttackInfo)
 	 */
 	function GetParryChanceResult(this)
 		return this._parryChanceResult;
-	endfunction
-
-	/**
-	 * Obtém as habilidades do atacante.
-	 *
-	 * @return Dictionary Habilidades indexadas por momento de execução
-	 */
-	function GetAttackerAbilities(this)
-		return this._attackerAbilities;
-	endfunction
-
-	/**
-	 * Obtém as habilidades do defensor.
-	 *
-	 * @return Dictionary Habilidades indexadas por momento de execução
-	 */
-	function GetDefenderAbilities(this)
-		return this._defenderAbilities;
 	endfunction
 
 	/**
@@ -452,18 +417,6 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
-	 * Define o modificador da chance de acerto crítico.
-	 *
-	 * @param value Integer Modificador a ser aplicado
-	 * @return AttackInfo Retorna a própria instância para encadeamento
-	 */
-	function SetCriticalHitChanceMod(this, value)
-		this._criticalHitChanceMod := CInt(value);
-
-		return this;
-	endfunction
-
-	/**
 	 * Define o equipamento usado para aparar.
 	 *
 	 * @param equip EquipWrapper Item de defesa (ArmorWrapper ou WeaponWrapper)
@@ -580,7 +533,7 @@ class AttackInfo(IAttackInfo)
 		if (this._criticalHitChance is @Exception) return this._criticalHitChance; endif
 
 		this._criticalHitChanceResult := RandomInt(100 + 1);
-		if (this._criticalHitChanceResult <= this._criticalHitChance + this._criticalHitChanceMod)
+		if (this._criticalHitChanceResult <= this._criticalHitChance)
 			this._damage.SetCritical(true);
 		endif
 		return this;
@@ -666,9 +619,7 @@ class AttackInfo(IAttackInfo)
 			$"Equipamento de Aparar: {this._parryEquip}, " +
 			$"Chance de Aparar: {this._parryChance}, " +
 			$"Penalidade Chance de Aparar: {this._parryChancePenalty}, " +
-			$"Resultado Chance de Aparar: {this._parryChanceResult}, " +
-			$"Habilidades do Atacante: {this._attackerAbilities}, " +
-			$"Habilidades do Defensor: {this._defenderAbilities}";
+			$"Resultado Chance de Aparar: {this._parryChanceResult}, ";
 	endfunction
 endclass
 

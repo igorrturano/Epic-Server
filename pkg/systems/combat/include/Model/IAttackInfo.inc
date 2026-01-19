@@ -14,15 +14,12 @@ class IAttackInfo()
 	uninit function GetHitChanceMod(this);
 	uninit function GetHitChanceResult(this);
 	uninit function GetCriticalHitChance(this);
-	uninit function GetCriticalHitChanceMod(this);
 	uninit function GetCriticalHitChanceResult(this);
 	uninit function GetParryEquip(this);
 	uninit function GetParryChance(this);
 	uninit function GetParryChanceMod(this);
 	uninit function GetParryChanceResult(this);
-	uninit function GetAttackerAbilities(this);
-	uninit function GetDefenderAbilities(this);
-
+	
 	uninit function SetMoment(this, moment);
 	uninit function SetAttacker(this, attacker);
 	uninit function SetDefender(this, defender);
@@ -35,12 +32,9 @@ class IAttackInfo()
 	uninit function SetHitChance(this, value);
 	uninit function SetHitChanceMod(this, value);
 	uninit function SetCriticalHitChance(this, value);
-	uninit function SetCriticalHitChanceMod(this, value);
 	uninit function SetParryEquip(this, equip);
 	uninit function SetParryChance(this, parryChance);
 	uninit function SetParryChancePenalty(this, penalty);
-	uninit function AddAttackerAbility(this, combatAbility);
-	uninit function AddDefenderAbility(this, combatAbility);
 
 	uninit function RollHitChance(this);
 	uninit function RollParryChance(this);

@@ -1,0 +1,37 @@
+use uo;
+
+include ":attributes:attributes";
+include ":message:model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+/**
+ * Golpes Furiosos (Rage Cut) - ABILITY_ID::GOLPES_FURIOSOS (203)
+ *
+ * OnUse: Immediately perform TT/40 extra attacks (min 1, max 5) on current opponent
+ */
+program ragecut(mobile)
+	var who := mobile.GetObjRef();
+	var opponent := who.opponent;
+
+	if (!opponent)
+		Message("Você precisa estar em combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var extraAttacks := CInt(mobile.GetSkill(TACTICS) / 40);
+	if (extraAttacks < 1)
+		extraAttacks := 1;
+	endif
+	if (extraAttacks > 5)
+		extraAttacks := 5;
+	endif
+
+	Message($"*desfere {extraAttacks} golpes furiosos!*").SendAbove(who);
+
+	for i := 1 to extraAttacks
+		who.attack_once();
+		sleepms(500);
+	endfor
+
+	return 1;
+endprogram

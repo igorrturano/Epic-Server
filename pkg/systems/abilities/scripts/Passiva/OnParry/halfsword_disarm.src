@@ -1,0 +1,72 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":wrappers:include/Objects/Model/WeaponWrapper";
+include ":message:model/Message";
+include ":tn:cooldown";
+
+/**
+ * Contra-Empunhadura (Halfsword) - Passive Disarm Effect
+ * ABILITY_ID::HALFSWORD (200)
+ *
+ * When defender with this ability parries with a two-handed weapon,
+ * they disarm the ATTACKER's weapon using blade grip technique.
+ *
+ * Note: This script is called by _ExecutePassiveAbilities which already
+ * verified the player HAS this ability, so no HasAbility check needed.
+ */
+program halfsword_disarm(attackInfo)
+	var parryEquip := attackInfo.GetParryEquip();
+	var parryObjRef := parryEquip.GetObjRef();
+
+	// Must be parrying with a two-handed weapon (not shield)
+	if (!parryObjRef.IsA(POLCLASS_WEAPON))
+		return false;
+	endif
+
+	var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+
+	if (!attackerWeapon || !attackerWeapon.GetObjRef())
+		return false;
+	endif
+
+	// Don't disarm unarmed combat (fists)
+	if (attackerWeapon.GetCategory() == WEAPON_CATEGORY::UNARMED)
+		return false;
+	endif
+
+	// Calculate disarm timer based on defender's tactics
+	var tactics_bonus := CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
+	if (tactics_bonus < 1)
+		tactics_bonus := 1;
+	endif
+
+	// Determine where to drop the weapon (near attacker)
+	var attackerPos := attackInfo.GetAttacker().GetPosition();
+	var dropX := attackerPos.GetX() + RandomIntMinMax(-1, 1);
+	var dropY := attackerPos.GetY() + RandomIntMinMax(-1, 1);
+	var dropZ := GetWorldHeight(dropX, dropY);
+
+	// Move attacker's weapon to ground
+	if (MoveObjectToLocation(
+		attackerWeapon.GetObjRef(),
+		dropX,
+		dropY,
+		dropZ,
+		attackerPos.GetRealm(),
+		MOVEOBJECT_FORCELOCATION
+	))
+		TS_StartTimer(attackInfo.GetAttacker().GetObjRef(), "desarmar", tactics_bonus, 0, attackInfo.GetDefender().GetObjRef());
+
+		Message("*sua arma foi desarmada pela técnica de contra-empunhadura!*")
+			.SendAbove(attackInfo.GetAttacker().GetObjRef());
+
+		Message("*desarma a arma do oponente com técnica de contra-empunhadura!*")
+			.SendAbove(attackInfo.GetDefender().GetObjRef());
+
+		return true;
+	endif
+
+	return false;
+endprogram

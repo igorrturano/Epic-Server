@@ -445,6 +445,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 			return weapon;
 		elseif (equipSlot == SHIELD)
+			if (!this.GetObjRef().shield) return uninit; endif
 			return ArmorWrapper(this.GetObjRef().shield);
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), HEAD);
@@ -939,11 +940,12 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function IsDead(this)
-		if (this.GetObjRef() is @Exception)
-			return this.GetObjRef();
+		var objRef := this.GetObjRef();
+		if (objRef is @Exception)
+			return 1;
 		endif
-		
-		return this.GetObjRef().dead == 1;
+		// !objRef catches destroyed NPCs, .dead catches dead players
+		return !objRef || objRef.dead;
 	endfunction
 
 	function IsWarMode(this)

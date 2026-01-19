@@ -107,20 +107,22 @@ class AbilityMonitor()
 		endif
 
 		// === CONSUME COSTS ===
-		if (ability.GetCostSTAM() > 0)
-			mobile.ConsumeStamina(ability.GetCostSTAM());
-		endif
-		if (ability.GetCostMANA() > 0)
-			mobile.ConsumeMana(ability.GetCostMANA());
-		endif
-		if (ability.GetCostHP() > 0)
-			mobile.ConsumeHP(ability.GetCostHP());
-		endif
+		// Commenting jsut for tests
+		// if (ability.GetCostSTAM() > 0)
+		// 	mobile.ConsumeStamina(ability.GetCostSTAM());
+		// endif
+		// if (ability.GetCostMANA() > 0)
+		// 	mobile.ConsumeMana(ability.GetCostMANA());
+		// endif
+		// if (ability.GetCostHP() > 0)
+		// 	mobile.ConsumeHP(ability.GetCostHP());
+		// endif
 
 		// === SET COOLDOWN ===
-		if (ability.GetCooldown() > 0)
-			SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
-		endif
+		// Commenting just so I can test abilities faster
+		// if (ability.GetCooldown() > 0)
+		// 	SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+		// endif
 
 		// === ACTIVATE ===
 		this.MobileSerial := mobile.GetSerial();

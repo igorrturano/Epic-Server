@@ -169,6 +169,11 @@ function TryToAttack(byRef attackInfo)
 		PlayAttackSFX(attackInfo);
 		ExecuteCombatAbilitiesOnMiss(attackInfo);
 	endif
+
+	// Counter-attack (crosscut) - triggers on any attack attempt
+	if (attackInfo.ShouldCounterAttack() && !attackInfo.GetDefender().IsDead())
+		attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
+	endif
 endfunction
 
 function DoAttack(byRef attackInfo)

@@ -9,7 +9,7 @@
 include ":combat:armorZones";
 // include ":abilities:models/Ability";
 include ":combat:Model/Damage";
-// include "AbilitiesController";
+include "AbilitiesController";
 include "SkillController";
 include "ParryController";
 include ":combat:weardown";
@@ -32,7 +32,7 @@ function ProccessCombatDamage(byRef attackInfo)
 	CheckPoison(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
 
-	// On Kill - check if defender died
+	// On Kill
 	if (attackInfo.GetDefender().IsDead())
 		ExecuteCombatAbilitiesOnKill(attackInfo);
 		ExecutePassiveAbilitiesOnKill(attackInfo);
@@ -41,98 +41,10 @@ function ProccessCombatDamage(byRef attackInfo)
 	ProgressAttackSkills(attackInfo);
 endfunction
 
-// Execute passive ON_KILL abilities (for abilities that work without activation)
-function ExecutePassiveAbilitiesOnKill(byRef attackInfo)
-	// Golpe Mortal passive: Attack nearby enemy on kill
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::GOLPE_MORTAL))
-		Run_Script(":abilities:scripts/Passiva/OnKill/murderblow_passive", attackInfo);
-	endif
-endfunction
-
-/**
- * Execute ability-triggered actions after damage resolution.
- * Handles counter-attacks (crosscut) and extra attacks (ragecut).
- */
-function ExecuteAbilityTriggeredActions(byRef attackInfo)
-	// Counter-attack (Contragolpe Cruzado): Defender attacks back
-	if (attackInfo.ShouldCounterAttack())
-		ExecuteCounterAttack(attackInfo);
-	endif
-
-	// Extra attacks (Golpes Furiosos): Attacker executes additional attacks
-	if (attackInfo.GetExtraAttacks() > 0)
-		ExecuteExtraAttacks(attackInfo);
-	endif
-endfunction
-
-/**
- * Execute counter-attack for Contragolpe Cruzado ability.
- * The defender immediately attacks the original attacker.
- */
-function ExecuteCounterAttack(byRef attackInfo)
-	var defender := attackInfo.GetDefender();
-	var attacker := attackInfo.GetAttacker();
-
-	// Don't counter if defender is dead
-	if (defender.IsDead())
-		return;
-	endif
-
-	Message("*contra-ataca!*").SendAbove(defender.GetObjRef());
-
-	DebugMsg(
-		defender.GetObjRef(),
-		DEBUG_HAB,
-		Message("[CONTRAGOLPE_CRUZADO] Executando contra-ataque!", Color(SYSTEM_COLOR::SUCCESS))
-	);
-
-	// Execute counter-attack
-	defender.Attack(attacker);
-endfunction
-
-/**
- * Execute extra attacks for Golpes Furiosos ability.
- * The attacker executes additional attacks on the same target.
- */
-function ExecuteExtraAttacks(byRef attackInfo)
-	var attacker := attackInfo.GetAttacker();
-	var defender := attackInfo.GetDefender();
-	var extraAttacks := attackInfo.GetExtraAttacks();
-
-	Message($"*desfere uma sequência furiosa de {extraAttacks} golpes!*").SendAbove(attacker.GetObjRef());
-
-	for i := 1 to extraAttacks
-		// Stop if defender dies
-		if (defender.IsDead())
-			break;
-		endif
-
-		// Stop if out of range
-		if (Distance(attacker.GetObjRef(), defender.GetObjRef()) > 2)
-			Message("*o alvo escapou do alcance!*", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
-			break;
-		endif
-
-		// Small delay between attacks for visual effect
-		SleepMS(150);
-
-		// Execute attack
-		attacker.Attack(defender);
-	endfor
-
-	DebugMsg(
-		attacker.GetObjRef(),
-		DEBUG_HAB,
-		Message($"[GOLPES_FURIOSOS] Executou {extraAttacks} ataques extras!", Color(SYSTEM_COLOR::SUCCESS))
-	);
-endfunction
-
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
-	CalculateAttackerCriticalHit(attackInfo);
-
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
-
+	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction
 
@@ -478,9 +390,11 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 endfunction
 
 function CalculateAttackerCriticalHit(byRef attackInfo)
-	attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
-	attackInfo.SetCriticalHitChanceMod(CalculateCriticalChanceMod(attackInfo));
-	attackInfo.RollCriticalHitChance();
+	// Only calculate if not already forced by ability
+	if (!attackInfo.GetDamage().IsCritical())
+		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
+		attackInfo.RollCriticalHitChance();
+	endif
 
 	if (attackInfo.GetDamage().IsCritical())
 		ApplyCriticalDamage(attackInfo);
@@ -521,20 +435,6 @@ function CalculateCriticalChance(byRef attackInfo)
 		chance := chance * 2.0;
 	endif
 
-	// TODO: Não está na lista de habilidades
-	// if (attackInfo.GetDefender().HasAbility(ABILITY_ID::LADRAO_DA_SORTE))
-	// 	Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-	// 	Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
-	// 	attackInfo.GetDefender().SetProperty("#nextcritical", true);
-	// 	return 0;
-	// endif
-
-	// TODO: Não está na lista de habilidades
-	// if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OPORTUNIDADE_CRITICA))
-	// 	Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
-	// 	attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
-	// endif
-
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
 		GetCooldown(attackInfo.GetDefender().GetObjRef(), "vitalidadeinabalavel") > 0 ||
 	 	GetCooldown(attackInfo.GetDefender().GetObjRef(), "balance_restored"))
@@ -543,14 +443,6 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	return CInt(chance);
-endfunction
-
-function CalculateCriticalChanceMod(byRef attackInfo)
-	var criticalChanceMod := 0;
-
-	criticalChanceMod -= CInt(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()).GetCriticalReductionMod()); // Redução de critico da Armadura defensora.
-
-	return CInt(criticalChanceMod);
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)

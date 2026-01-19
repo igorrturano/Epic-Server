@@ -38,8 +38,8 @@ program deathsentence(attackInfo)
 		endif
 	endif
 
-	// Set guaranteed critical via modifier - DamageController will check this
-	attackInfo.SetCriticalHitChanceMod(100);
+	// Force critical hit directly
+	attackInfo.GetDamage().SetCritical(true);
 
 	DebugMsg(
 		attacker.GetObjRef(),
