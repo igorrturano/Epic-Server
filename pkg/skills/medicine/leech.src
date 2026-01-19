@@ -33,7 +33,7 @@ program UseLeech(who, leech)
 			SubtractAmount(leech, 1);
 		endif
 	else
-		SendSysMessage(who, "Voce tem jeito suficiente para aplicar a sanguessuga corretamente em "
+		SendSysMessage(who, "Voce não tem jeito suficiente para aplicar a sanguessuga corretamente em "
 						+ targ.name);
 		SendSysMessage(who, "A sanguessuga morreu");
 		SubtractAmount(leech, 1);
