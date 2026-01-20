@@ -23,11 +23,6 @@ const AREA_SIZE := 15;
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-    // OPTIMIZATION: Staggered startup to prevent thundering herd
-    // When hundreds of NPCs spawn simultaneously, spread initialization over time
-    var startup_delay := RandomInt(3000);  // 0-3 seconds random delay
-    sleepms(startup_delay);
-
     // Initialize NPC once at spawn
     if (!GetObjProperty(me, "started"))
         set_critical(1);
@@ -35,21 +30,13 @@ program KillPlayers()
         set_critical(0);
     endif
 
-    // OPTIMIZATION: Additional delay before enabling events
-    // Prevents event queue saturation when mass-spawning
-    sleepms(RandomInt(500));  // 0-500ms before event registration
     EnableMainEvents();
-
-    // OPTIMIZATION: Trigger initial ENTEREDAREA events
-    // Ensures NPCs detect nearby players immediately on spawn instead of
-    // waiting up to 60 seconds in dormant mode
-    InitializeEnterArea(me);
 
     // Main event loop - alternates between dormant and active states
     while (me)
         // ===== DORMANT MODE =====
-        while (1)
-            var ev := wait_for_event(60000); // 60 second timeout
+        while (me)
+            var ev := wait_for_event(1); // wait in seconds
 
             if (!ev)
                 // Timeout - fallback check for nearby players
@@ -75,6 +62,10 @@ program KillPlayers()
         // Player is nearby, run appropriate brain AI
         DetermineBrainType();
         SetWarMode(0);
+
+        // Send ENTEREDAREA events for nearby players/pets so brain can detect them
+        // (Must be called here, not before dormant loop, so brain receives the events)
+        InitializeEnterArea(me);
 
         case (brain_type)
             "monster":  MonsterBrain();
