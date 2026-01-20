@@ -73,8 +73,6 @@ const MAX_CREATURES := 3;
 
 const ID_COLOR := 112;
 const ID_EMOTE := 113;
-const ID_MIN_DELAY := 114;
-const ID_MAX_DELAY := 115;
 
 // Helper to get creature field IDs
 function GetCreatureFieldIds(creature_index)
@@ -151,18 +149,6 @@ function BuildEventConfigGump()
 	GFTextEntry(gump, x + 5, y + 5, 470, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_EMOTE);
 	y := y + 40;
 
-	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Delay (em minutos):");
-	y := y + 25;
-
-	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Minimo:");
-	GFResizePic(gump, x + 80, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 85, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"60", ID_MIN_DELAY);
-
-	GFTextLine(gump, x + 190, y, GUMP_COLOR::HELP_TEXT, "Maximo:");
-	GFResizePic(gump, x + 270, y, 9350, 80, 25);
-	GFTextEntry(gump, x + 275, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY,"120", ID_MAX_DELAY);
-	y := y + 40;
-
 	// Divider before button
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
 
@@ -196,8 +182,6 @@ function ParseEventConfigInput(input)
 	// Parse shared
 	config.color := Trim(GFExtractData(input, ID_COLOR));
 	config.emote := Trim(GFExtractData(input, ID_EMOTE));
-	config.min_delay := CInt(Trim(GFExtractData(input, ID_MIN_DELAY)));
-	config.max_delay := CInt(Trim(GFExtractData(input, ID_MAX_DELAY)));
 
 	return config;
 endfunction
