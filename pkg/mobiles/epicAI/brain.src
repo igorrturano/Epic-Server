@@ -32,6 +32,9 @@ program KillPlayers()
 
     EnableMainEvents();
 
+    // Check for players already in range at spawn time
+    InitializeEnterArea(me);
+
     // Main event loop - alternates between dormant and active states
     while (me)
         // ===== DORMANT MODE =====
@@ -57,7 +60,7 @@ program KillPlayers()
         SetWarMode(0);
 
         // Send ENTEREDAREA events for nearby players/pets so brain can detect them
-        // (Must be called here, not before dormant loop, so brain receives the events)
+        // (Must be called here and before dormant loop, so brain receives the events)
         InitializeEnterArea(me);
 
         case (brain_type)
