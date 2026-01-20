@@ -79,8 +79,8 @@ endfunction
 function InitializeEnterArea(mobile)
     // Scan for nearby players and trigger ENTEREDAREA events
     // This ensures consistent behavior between spawn and re-activation
-    var nearby := ListMobilesNearLocationEx(mobile.x, mobile.y, mobile.z,
-                                            AREA_SIZE, LISTEX_FLAG_NORMAL,
+    var nearby := ListMobilesNearLocationEx(mobile.x, mobile.y, LIST_IGNORE_Z,
+                                            AREA_SIZE, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL + LISTEX_FLAG_CONCEALED,
                                             mobile.realm);
 
     foreach nearby_mobile in nearby
@@ -1174,7 +1174,8 @@ function GetNearbyMobilesOnce(mobile, range, flags := LISTEX_FLAG_NORMAL)
     endif
 
     // Cache miss or expired - perform scan
-    var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, mobile.z, range, flags, mobile.realm);
+    // Use LIST_IGNORE_Z to detect mobiles at any Z level (fixes summoned creature detection)
+    var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, LIST_IGNORE_Z, range, flags, mobile.realm);
 
     // Store in cache with timestamp
     SetObjProperty(mobile, cache_key, struct{
