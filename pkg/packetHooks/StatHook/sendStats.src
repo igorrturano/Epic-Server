@@ -122,13 +122,6 @@ exported function HandleSendStats(character, byref packet)
 	var source := SystemFindObjectBySerial(serial);
 	var mobileEnvelopado := MobileWrapper(source);
 	
-	var url;
-	
-	url := GetObjProperty(source, "url");
-	if (!url || url.errortext)
-		url := ""; // Set to empty string if property doesn't exist or has an error
-	endif
-
 	pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::SOURCE_SERIAL, serial);
 
 	if (source.IsA(POLCLASS_MOBILE))
@@ -207,18 +200,15 @@ exported function HandleSendStats(character, byref packet)
 			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 2,mainHandDmg.Damage.GetColdRawDamage());
 			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 3,mainHandDmg.Damage.GetPoisonRawDamage());
 			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 4,mainHandDmg.Damage.GetEnergyRawDamage());
-
-			pacoteFinal.SetString(
-						indicePosArmadura + INT8_SIZE * 5, 
-						url, 
-						1);
+			// Player's OWN ProfileURL is sent via dedicated packet 0xD7:0x58 (see CharProfile/profile_packets.inc)
 		else
-			pacoteFinal.SetString(
-							NEW_STATUS_OFFSETS::MOBILE_LAST_INDEX, 
-							url, 
-							1);
+			// For NPCs and other players/mobiles, send URL in status packet (position 42)
+			// This is needed when viewing someone else's health bar
+			var url := GetObjProperty(source, "url");
+			if (url && !url.errortext)
+				pacoteFinal.SetString(NEW_STATUS_OFFSETS::MOBILE_LAST_INDEX, url, 1);
+			endif
 		endif
-
 	endif
 
 	packet.SetSize(pacoteFinal.GetSize());

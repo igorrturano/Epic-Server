@@ -12,6 +12,7 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:htmlGump";
 include ":fls_core:fls_characters";
+include "profile_packets";
 
 const PROFILE_MSGTYPE := 0xB8;
 const PROFILE_TITLE := "Profile for ";
@@ -102,6 +103,10 @@ program runScript_CharProfileRequest(params)
 			endif
 			SetObjProperty(who, "url", url);
 			SetObjProperty(who, "descricao", descricao);
+
+			// Broadcast profile update to self and party members
+			UpdateProfileClient(who, who.serial, url);
+			BroadcastProfileToParty(who);
 
 			var Object_Name;
 			var conhecidos := dictionary;
