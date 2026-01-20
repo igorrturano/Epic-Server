@@ -86,28 +86,48 @@ function GetCreatureFieldIds(creature_index)
 endfunction
 
 // Helper to build a single creature row in the gump
-function BuildCreatureRow(byref gump, x, y, ids)
+function BuildCreatureRow(byref gump, x, y, ids, existing_creature := 0)
+	var name_default := "";
+	var amount_default := "";
+	var tier_default := "";
+	var template_default := "";
+
+	if (existing_creature)
+		if (existing_creature.name)
+			name_default := CStr(existing_creature.name);
+		endif
+		if (existing_creature.amount)
+			amount_default := CStr(existing_creature.amount);
+		endif
+		if (existing_creature.tier)
+			tier_default := CStr(existing_creature.tier);
+		endif
+		if (existing_creature.template)
+			template_default := CStr(existing_creature.template);
+		endif
+	endif
+
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Nome:");
 	GFResizePic(gump, x + 100, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 105, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.name);
+	GFTextEntry(gump, x + 105, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, name_default, ids.name);
 
 	GFTextLine(gump, x + 265, y, GUMP_COLOR::HELP_TEXT, "Qtd:");
 	GFResizePic(gump, x + 310, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 315, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.amount);
+	GFTextEntry(gump, x + 315, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, amount_default, ids.amount);
 
 	GFTextLine(gump, x + 385, y, GUMP_COLOR::HELP_TEXT, "Tier:");
 	GFResizePic(gump, x + 425, y, 9350, 60, 25);
-	GFTextEntry(gump, x + 430, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.tier);
+	GFTextEntry(gump, x + 430, y + 5, 50, 20, GUMP_COLOR::TEXT_ENTRY, tier_default, ids.tier);
 	y := y + 30;
 
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Template:");
 	GFResizePic(gump, x + 100, y, 9350, 385, 25);
-	GFTextEntry(gump, x + 105, y + 5, 375, 20, GUMP_COLOR::TEXT_ENTRY, "", ids.template);
+	GFTextEntry(gump, x + 105, y + 5, 375, 20, GUMP_COLOR::TEXT_ENTRY, template_default, ids.template);
 
 	return y;
 endfunction
 
-function BuildEventConfigGump()
+function BuildEventConfigGump(existing_config := 0)
 	var gump := GFECreateGump("Epic Events - Configuracao de Spawn", GUMP_WIDTH, GUMP_HEIGHT);
 	var y := SetupGumpFrame(gump, GUMP_WIDTH, GUMP_HEIGHT, 0);  // No divider, we'll add section headers
 
@@ -123,7 +143,11 @@ function BuildEventConfigGump()
 	// Build creature rows using loop (DRY)
 	for i := 0 to (MAX_CREATURES - 1)
 		var ids := GetCreatureFieldIds(i);
-		y := BuildCreatureRow(gump, x, y, ids);
+		var existing_creature := 0;
+		if (existing_config && existing_config.creatures && i < existing_config.creatures.size())
+			existing_creature := existing_config.creatures[i + 1];  // POL arrays are 1-indexed
+		endif
+		y := BuildCreatureRow(gump, x, y, ids, existing_creature);
 		if (i < MAX_CREATURES - 1)
 			y := y + spacing;
 		else
@@ -137,16 +161,28 @@ function BuildEventConfigGump()
 	GFResizePic(gump, 40, y, 3000, GUMP_WIDTH - 80, 2);
 	y := y + 15;
 
+	// Populate with existing values or defaults
+	var color_default := "";
+	var emote_default := "";
+	if (existing_config)
+		if (existing_config.color)
+			color_default := CStr(existing_config.color);
+		endif
+		if (existing_config.emote)
+			emote_default := CStr(existing_config.emote);
+		endif
+	endif
+
 	// Shared settings
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Cor (opcional):");
 	GFResizePic(gump, x + 150, y, 9350, 100, 25);
-	GFTextEntry(gump, x + 155, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_COLOR);
+	GFTextEntry(gump, x + 155, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY, color_default, ID_COLOR);
 	y := y + 35;
 
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Emote (opcional):");
 	y := y + 25;
 	GFResizePic(gump, x, y, 9350, 480, 25);
-	GFTextEntry(gump, x + 5, y + 5, 470, 20, GUMP_COLOR::TEXT_ENTRY,"", ID_EMOTE);
+	GFTextEntry(gump, x + 5, y + 5, 470, 20, GUMP_COLOR::TEXT_ENTRY, emote_default, ID_EMOTE);
 	y := y + 40;
 
 	// Divider before button
@@ -414,8 +450,14 @@ function BuildActionListGump(actions)
 		GFTextLine(gump, x + 20, y + 55, GUMP_COLOR::HELP_TEXT, "Ou clique em [Concluir] para usar o sistema de spawn padrao.");
 		y := y + 100;
 	else
-		var action_num := 1;
-		foreach action in actions
+		var num_actions := actions.size();
+		if (num_actions > 10)
+			num_actions := 10;  // Max 10 actions
+		endif
+
+		for action_num := 1 to num_actions
+			var action := actions[action_num];
+
 			// Action summary line
 			var action_desc := GetActionDescription(action);
 
@@ -455,12 +497,7 @@ function BuildActionListGump(actions)
 			endif
 
 			y := y + box_height + 8;  // Add spacing between actions
-			action_num := action_num + 1;
-
-			if (action_num > 10)
-				break;  // Max 10 actions
-			endif
-		endforeach
+		endfor
 	endif
 
 	// Add action button
@@ -614,17 +651,18 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			var z_default := "";
 			var realm_default := "";
 			if (existing_action && existing_action.params)
-				if (existing_action.params.x)
+				// Use TypeOf to check if coordinate exists (0 is valid coordinate)
+				if (TypeOf(existing_action.params.x) != "Error")
 					x_default := CStr(existing_action.params.x);
 				endif
-				if (existing_action.params.y)
+				if (TypeOf(existing_action.params.y) != "Error")
 					y_default := CStr(existing_action.params.y);
 				endif
-				if (existing_action.params.z)
+				if (TypeOf(existing_action.params.z) != "Error")
 					z_default := CStr(existing_action.params.z);
 				endif
 				if (existing_action.params.realm)
-					realm_default := existing_action.params.realm;
+					realm_default := CStr(existing_action.params.realm);
 				endif
 			endif
 
@@ -771,21 +809,18 @@ function ParseActionEditInput(input, action_type)
 	endif
 
 	// Parse action-specific params
-	action.params := struct{};
-
 	case (action_type)
 		"EMOTE":
-			action.params.+text := Trim(GFExtractData(input, ID_ACTION_EMOTE_TEXT));
-			if (!action.params.text || action.params.text == "")
+			var emote_text := Trim(GFExtractData(input, ID_ACTION_EMOTE_TEXT));
+			if (!emote_text || emote_text == "")
 				return 0;  // Text required
 			endif
-
-			// Check if emote should be shown on player
-			action.params.+show_on_source := input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
+			var show_on_source := input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
+			action.params := struct{ text := emote_text, show_on_source := show_on_source };
 
 		"SPAWN":
 			// SPAWN params will be filled in later from spawn config gump
-			action.params.+use_spawn_config := 1;
+			action.params := struct{ use_spawn_config := 1 };
 
 		"TELEPORT":
 			var x_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_X));
@@ -793,14 +828,15 @@ function ParseActionEditInput(input, action_type)
 			var z_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_Z));
 			var realm_str := Trim(GFExtractData(input, ID_ACTION_TELEPORT_REALM));
 
-			action.params.+x := CInt(x_str);
-			action.params.+y := CInt(y_str);
-			action.params.+z := CInt(z_str);
-			action.params.+realm := realm_str;
+			var tp_x := CInt(x_str);
+			var tp_y := CInt(y_str);
+			var tp_z := CInt(z_str);
 
-			if (!action.params.x || !action.params.y)
+			if (!tp_x || !tp_y)
 				return 0;  // X and Y required
 			endif
+
+			action.params := struct{ x := tp_x, y := tp_y, z := tp_z, realm := realm_str };
 	endcase
 
 	// Parse condition based on radio button selection
@@ -810,14 +846,15 @@ function ParseActionEditInput(input, action_type)
 		var amount_str := Trim(GFExtractData(input, ID_CONDITION_AMOUNT));
 
 		if (objtype_str && objtype_str != "")
-			action.condition := struct{};
-			action.condition.+type := "PLAYER_HAS_ITEM";
-			action.condition.+params := struct{};
-			action.condition.params.+objtype := CInt(objtype_str);  // Accepts hex
-			action.condition.params.+amount := CInt(amount_str);
-			if (action.condition.params.amount < 1)
-				action.condition.params.amount := 1;
+			var cond_objtype := CInt(objtype_str);  // Accepts hex
+			var cond_amount := CInt(amount_str);
+			if (cond_amount < 1)
+				cond_amount := 1;
 			endif
+			action.condition := struct{
+				type := "PLAYER_HAS_ITEM",
+				params := struct{ objtype := cond_objtype, amount := cond_amount }
+			};
 		else
 			// No objtype specified - invalid condition
 			action.condition := 0;

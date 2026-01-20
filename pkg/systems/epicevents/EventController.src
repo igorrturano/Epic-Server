@@ -15,45 +15,12 @@ program eventController(item)
 	var ev;
 	Set_Event_Queue_Size(50);
 
-	var config_struct := GetObjProperty(item, "config");
-	if (!config_struct)
+	var config := LoadEventConfig(item);
+	if (!config)
 		return;
 	endif
 
-	var config := EventConfig();
-	config.FromStruct(config_struct);
-
-	// Enable events conditionally based on trigger type
-	var trigger_type := config.trigger_type;
-
-	// Get radius from trigger_params if available
-	var radius := DEFAULT_TRIGGER_RADIUS;
-	if (config.trigger_params && config.trigger_params.radius)
-		radius := CInt(config.trigger_params.radius);
-		if (radius < 1)
-			radius := DEFAULT_TRIGGER_RADIUS;
-		endif
-	endif
-
-	// Only enable the specific event type needed
-	case (trigger_type)
-		"SPEECH":
-			RegisterForSpeechEvents(item, radius);
-		"ENTEREDAREA":
-			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
-		"LEFTAREA":
-			EnableEvents(SYSEVENT_LEFTAREA, radius);
-		"ITEM_GIVEN":
-			EnableEvents(SYSEVENT_ITEM_GIVEN);
-		"DOUBLECLICKED":
-			EnableEvents(SYSEVENT_DOUBLECLICKED);
-	endcase
-
-	// Create TriggerConfig from stored params
-	var trigger_config := TriggerConfig(trigger_type);
-	if (config.trigger_params)
-		trigger_config.params := config.trigger_params;
-	endif
+	var trigger_config := SetupTriggerEvents(item, config);
 
 	while (true)
 		ev := os::wait_for_event(1);
@@ -86,3 +53,50 @@ program eventController(item)
 		sleepms(EVENT_LOOP_THROTTLE_MS);
 	endwhile
 endprogram
+
+function LoadEventConfig(item)
+	var config_struct := GetObjProperty(item, "config");
+	if (!config_struct)
+		return 0;
+	endif
+
+	var config := EventConfig();
+	config.FromStruct(config_struct);
+	return config;
+endfunction
+
+function SetupTriggerEvents(item, config)
+	// Get trigger type
+	var trigger_type := config.trigger_type;
+
+	// Get radius from trigger_params if available
+	var radius := DEFAULT_TRIGGER_RADIUS;
+	if (config.trigger_params && config.trigger_params.radius)
+		radius := CInt(config.trigger_params.radius);
+		if (radius < 1)
+			radius := DEFAULT_TRIGGER_RADIUS;
+		endif
+	endif
+
+	// Only enable the specific event type needed
+	case (trigger_type)
+		"SPEECH":
+			RegisterForSpeechEvents(item, radius);
+		"ENTEREDAREA":
+			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
+		"LEFTAREA":
+			EnableEvents(SYSEVENT_LEFTAREA, radius);
+		"ITEM_GIVEN":
+			EnableEvents(SYSEVENT_ITEM_GIVEN);
+		"DOUBLECLICKED":
+			EnableEvents(SYSEVENT_DOUBLECLICKED);
+	endcase
+
+	// Create TriggerConfig from stored params
+	var trigger_config := TriggerConfig(trigger_type);
+	if (config.trigger_params)
+		trigger_config.params := config.trigger_params;
+	endif
+
+	return trigger_config;
+endfunction
