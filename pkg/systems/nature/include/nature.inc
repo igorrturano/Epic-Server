@@ -256,25 +256,6 @@ function MoonFase()
     SetGlobalProperty("moonfase", currentDate.moonPhase);
 endfunction
 
-function GetMoonLightMod()
-    var fase := GetGlobalProperty("moonfase");
-
-    case (fase)
-       "Kalendae":    return 24; sleepms(5); UpdateGlobalEventLevers("Kalendae");
-       "Nonae":       return 21; sleepms(5); UpdateGlobalEventLevers("Nonae");
-       "Idus":        return 16; sleepms(5); UpdateGlobalEventLevers("Idus");
-       "Decrescens":  return 21; sleepms(5); UpdateGlobalEventLevers("Decrescens");
-    endcase
-endfunction
-// function output(msgtext)
-// 	foreach player in enumerateonlinecharacters()
-// 		if (player.cmdlevel)
-// 			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
-// 		endif
-// 	endforeach
-// 	print("Weather debug:" + msgtext);
-// endfunction
-
 function getDay()
     var day := GetGlobalProperty("daynumber");
 

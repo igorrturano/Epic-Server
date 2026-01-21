@@ -1,9 +1,10 @@
 use os;
 use uo;
-use cfgfile;
+
 include ":alchemy:alchemy";
 include ":timedscripts:timedScripts";
 include "include/epicConstants";
+include ":nature:Controller/LightController";
 program drink_blue(who, potion)
 
 	EraseObjProperty(who, "IsMeditating");
@@ -30,13 +31,7 @@ program drink_blue(who, potion)
 	var crafterskill := getobjProperty(potion, "crafterskill");
 	var duration := CInt((300 + crafterskill * 3) * vicio);
 
-	if (GetObjProperty(who, "chardata").raca != DROW)
-		who.setlightlevel(24, duration);
-		SetCooldown(who, "nightvision", duration);
-	else
-		who.setlightlevel(16, duration);
-		SetCooldown(who, "lightvision", duration);
-	endif
+	ApplyMagicalVision(who, duration);
 
 	VicioDEX(who, potion);
 endprogram
