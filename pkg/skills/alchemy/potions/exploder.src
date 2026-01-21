@@ -418,7 +418,7 @@ function FlashbangEffect(who, potion)
 			
 			// Envia o flash branco (tipo 5 = FLASH_WHITE)
 			if (critter.connected)
-				SendScreenFlash(critter, FLASH_WHITE);
+				SendScreenFlash(critter, FLASH_DROW_ON);
 				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
 				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
 			endif

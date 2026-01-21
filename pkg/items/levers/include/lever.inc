@@ -833,6 +833,10 @@ function reset(item, force_reset := 0)
   foreach serial in  (opts.graphicarraysitem)
      serial := SystemFindObjectBySerial(CInt(serial));
          serial.graphic := GetObjProperty(serial, "originalgraphic");
+         var name_antigo := GetObjProperty(serial, "old_name");
+         if (name_antigo)
+            serial.name := name_antigo;
+         endif
 endforeach
 	endif
    if (opts.moveitems)

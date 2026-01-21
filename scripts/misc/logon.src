@@ -42,9 +42,6 @@ program Logon(who)
 
 	var createdat := getobjproperty(who, "createdate");
 
-	if (HaveReverseVision(who))
-		ReverseLight(who);
-	endif
 	destroyIllyraOutsideDungeons(who);
 	var recorde := GetGlobalProperty("maxonline");
 	if (!recorde)

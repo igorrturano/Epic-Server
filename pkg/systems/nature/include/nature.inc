@@ -172,6 +172,10 @@ function weathereffects(type, duration, severity := 5)
         
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
+            if(InDungeon(person))
+                continue;
+            endif
+            
 			if (!person.isUnderRoof())
 				wetPowder(person);
             	SetWeatherForPlayer(person, type, 50);
@@ -255,25 +259,6 @@ function MoonFase()
     var currentDate := getCurrentDate();
     SetGlobalProperty("moonfase", currentDate.moonPhase);
 endfunction
-
-function GetMoonLightMod()
-    var fase := GetGlobalProperty("moonfase");
-
-    case (fase)
-       "Kalendae":    return 24; sleepms(5); UpdateGlobalEventLevers("Kalendae");
-       "Nonae":       return 21; sleepms(5); UpdateGlobalEventLevers("Nonae");
-       "Idus":        return 16; sleepms(5); UpdateGlobalEventLevers("Idus");
-       "Decrescens":  return 21; sleepms(5); UpdateGlobalEventLevers("Decrescens");
-    endcase
-endfunction
-// function output(msgtext)
-// 	foreach player in enumerateonlinecharacters()
-// 		if (player.cmdlevel)
-// 			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
-// 		endif
-// 	endforeach
-// 	print("Weather debug:" + msgtext);
-// endfunction
 
 function getDay()
     var day := GetGlobalProperty("daynumber");

@@ -246,9 +246,7 @@ function ExtractPageData(input, page)
 				form_data.description := description;
 			endif
 
-			if (input[5])
-				form_data.trueboss := input[5];
-			endif
+			form_data.trueboss := input[5];
 
 			var special_ai := GFExtractData(input, 6);
 			if (special_ai != error && special_ai != "")

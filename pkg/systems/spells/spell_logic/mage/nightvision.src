@@ -5,10 +5,10 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/dungeons";
+include ":nature:Controller/LightController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -43,12 +43,7 @@ program SpellScript(params)
 		duration := Cint(duration * 1.2);
 	endif
 
-	who.setlightlevel(15, duration);
-	if (race != DROW)
-		SetCooldown(who, "nightvision", duration);
-	else
-		SetCooldown(who, "lightvision", duration);
-	endif
+	ApplyMagicalVision(who, duration);
 
 	return 1;
 endprogram

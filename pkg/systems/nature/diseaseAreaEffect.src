@@ -16,16 +16,25 @@ program DiseaseAreEffect(params)
 	var sounds := { 560, 561, 562 };
 
 	SendSysMessage(who, "INICIOU");
-	checkMarker(who, regioname);
+
+	// CHECAGEM INICIAL - antes de fazer qualquer coisa
+	if (!checkMarker(who, regioname))
+		return; // Sai sem fazer nada
+	endif
+
 	SetObjProperty(who, "diseaseArea", 1);
 	detach();
 
 	if (GetObjProperty(who, "teste_de_doenca") == error)
 		while (1)
-			checkMarker(who, regioname);
 			SetObjProperty(who, "teste_de_doenca", 1);
 			sleep(300); // 5 minutos entre testes
-
+		if (!checkMarker(who, regioname))
+			SendSysMessageEX(who, "Ar do ambiente está puro, livre de contaminação!", SSM_INFO);
+			EraseObjProperty(who, "diseaseArea");
+			EraseObjProperty(who, "teste_de_doenca");
+			return; // Sai do script
+		endif
 			if (GetObjProperty(who, "diseaseArea") == error)
 				EraseObjProperty(who, "teste_de_doenca");
 				return;
@@ -42,7 +51,7 @@ function checkMarker(who, regioname)
 	var cfg := ReadConfigFile("::regions/regions");
 	var region := FindConfigElem(cfg, regioname);
 	var rect := GetConfigString(region, "Range");
-	SendSysMessage(who, "regiao " + regioname + " rect " + rect);
+	//SendSysMessage(who, "regiao " + regioname + " rect " + rect);
 	// Se o player está em uma região Disease, enumera os itens apenas nesta região
 	var coords := SplitWords(rect);
 	var x1 := CInt(coords[1]);
@@ -59,7 +68,7 @@ function checkMarker(who, regioname)
 	if (range_y > range_x)
 		max_range := range_y;
 	endif
-	SendSysMessage(who, "max_range " + max_range);
+	//SendSysMessage(who, "max_range " + max_range);
 	// Procura por itens do tipo 0x3c (switches) na região
 	var items_in_area := ListItemsNearLocationOfType(center_x, center_y, LIST_IGNORE_Z, max_range,
 												  0xd1b8, who.realm);
@@ -69,7 +78,7 @@ function checkMarker(who, regioname)
 		var switch_prop := GetObjProperty(item, "graphic");
 		if (switch_prop == 0x9F4F)
 			// Se switch == 1, retorna 0 e sai do script
-			SendSysMessage(who, "Ele tá ligado, sai!");
+			//SendSysMessage(who, "Ele tá ligado, sai!");
 			return 0;
 		endif
 	endforeach

@@ -138,8 +138,7 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
-		SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
-		if (GetCooldown(attacker, "lightvision") > 0)
+		if (GetCooldown(attacker, "nightvision") > 0)
 			hit_chance -= 10;
 			SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 		else
