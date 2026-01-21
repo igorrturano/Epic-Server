@@ -61,7 +61,11 @@ program SpellScript(params)
 			handleSilentMagic(who, targ, 0x3BE);
 			return;
 		endif
-		targ.setlightlevel(30, 6000);
+		// Read darken level from config - single source of truth
+		var lightConfig := ReadConfigFile(":nature:config/daynight");
+		lightConfig := lightConfig["settings"];
+		var darkenLevel := CInt(lightConfig.DungeonDarkness);
+		targ.setlightlevel(darkenLevel, 6000);
 		SetCooldown(targ, "nightvision", 0);
 		SetCooldown(targ, "darkness", duration);
 		SendSysMessageEx(targ, "Sua visão noturna cessou!", SSM_FAIL);

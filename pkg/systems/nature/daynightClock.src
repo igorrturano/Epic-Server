@@ -5,6 +5,7 @@ use cfgfile;
 
 include ":nature:nature";
 include "include/epicConstants";
+include ":fls_core:fls_characters";
 
 program daynightClocksystem(parameters)
 
@@ -16,8 +17,7 @@ program daynightClocksystem(parameters)
 	var maxHoursDayCycle := cint(config.maxHoursDayCycle);
 	var lightLevel := maxSystemDarkness;
 	var previousLightLevel := lightLevel;
-	setregionlightlevel("Umbraeterna", cint(config.umbraeternaDarkness)); // é semrpe a mesma lightlevel.
-	PRINT("*** Clock Counting ****");
+	setregionlightlevel("Umbraeterna", cint(config.DungeonDarkness));
 
 	var dayManager := struct{ previousDay := 0, day := 1, isDayDone := false, isNightDone := false};
 
@@ -48,7 +48,8 @@ program daynightClocksystem(parameters)
 
 		if(finalLightLevel != previousLightLevel)
 			setregionlightlevel("Superficie", finalLightLevel);
-			ApllyLightLevel();//Reverte o lightlevel para drows.
+			SetGlobalProperty("lightlevel", finalLightLevel); // Store for drow reverse calculation
+			ApplyAllPlayersLight(); // Apply correct lighting for all players
 			previousLightLevel := finalLightLevel;
 		endif
 
