@@ -42,7 +42,6 @@ program Logon(who)
 
 	var createdat := getobjproperty(who, "createdate");
 
-	ApplyPlayerLight(who);
 	destroyIllyraOutsideDungeons(who);
 	var recorde := GetGlobalProperty("maxonline");
 	if (!recorde)

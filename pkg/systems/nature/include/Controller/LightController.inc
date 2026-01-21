@@ -1,8 +1,12 @@
 /*
  * LightController.inc
  *
- * Consolidated lighting system for all player vision handling.
- * Single source of truth for player lighting.
+ * Player vision handling.
+ *
+ * Philosophy:
+ * - Let nature (weather, regions) handle all natural light
+ * - Drow vision is handled client-side via DrowVisionMode (FLASH_DROW_ON)
+ * - Only magical effects (potions, spells) use setlightlevel
  *
  * Config: :nature:config/daynight.cfg
  * Light scale: 0 = brightest, 30 = darkest
@@ -11,34 +15,13 @@
 use uo;
 use cfgfile;
 
-include "include/dungeons";
 include "include/flash";
 include "include/epicConstants";
 include ":tn:cooldown";
 
-const LIGHT_DURATION := 9000;
-
 function GetLightConfig()
 	var config := ReadConfigFile(":nature:config/daynight");
 	return config["settings"];
-endfunction
-
-function HasNightVisionEffect(player)
-	return GetCooldown(player, "lightvision") || GetCooldown(player, "nightvision");
-endfunction
-
-function ApplyPlayerLight(player)
-	if (!player || player.npctemplate)
-		return 0;
-	endif
-
-	var hasNightVision := HasNightVisionEffect(player);
-
-	if (HasReverseVision(player))
-		return ApplyDrowLight(player, hasNightVision);
-	else
-		return ApplyNormalLight(player, hasNightVision);
-	endif
 endfunction
 
 function HasReverseVision(player)
@@ -66,53 +49,39 @@ function HasReverseVision(player)
 	return 0;
 endfunction
 
-function ApplyNormalLight(player, hasNightVision := 0)
-	var config := GetLightConfig();
-
-	if (InDungeon(player))
-		if (hasNightVision)
-			player.setlightlevel(CInt(config.MagicalVisionLevel), LIGHT_DURATION);
-		else
-			player.setlightlevel(CInt(config.DungeonDarkness), LIGHT_DURATION);
-		endif
-	elseif (hasNightVision)
-		// Surface with night vision: improved vision
-		player.setlightlevel(CInt(config.MagicalVisionLevel), LIGHT_DURATION);
-	endif
-	// Surface without night vision: don't set personal light, see natural ambient
-
-	SendScreenFlash(player, 0);
-	return 1;
-endfunction
-
-function ApplyDrowLight(player, hasNightVision := 0)
-	var config := GetLightConfig();
-	var dungeonDarkness := CInt(config.DungeonDarkness);
-
-	if (InDungeon(player))
-		if (hasNightVision)
-			player.setlightlevel(CInt(config.MagicalVisionLevel), LIGHT_DURATION);
-		else
-			player.setlightlevel(CInt(config.DrowCaveVision), LIGHT_DURATION);
-		endif
-		SendScreenFlash(player, FLASH_WHITE);
-		return 1;
+/*
+ * InitPlayerVision(player)
+ *
+ * Call ONCE on login or race change to enable client-side drow vision.
+ * The client handles light inversion automatically when DrowVisionMode is enabled.
+ * Normal players don't need anything - DrowVisionMode defaults to false.
+ */
+function InitPlayerVision(player)
+	if (!player || player.npctemplate)
+		return 0;
 	endif
 
-	var globalLight := CInt(GetGlobalProperty("lightlevel"));
-	var reversedLight := Abs(dungeonDarkness - globalLight);
-	player.setlightlevel(reversedLight, LIGHT_DURATION);
-
-	SendScreenFlash(player, FLASH_WHITE);
+	if (HasReverseVision(player))
+		SendScreenFlash(player, FLASH_DROW_ON);
+	endif
 
 	return 1;
 endfunction
 
-function ApplyAllPlayersLight()
-	foreach player in EnumerateOnlineCharacters()
-		Sleepms(2);
-		ApplyPlayerLight(player);
-	endforeach
+/*
+ * ApplyMagicalVision(player, duration)
+ *
+ * Only for magical effects (potions, spells).
+ * Sets a personal light level for the duration of the effect.
+ */
+function ApplyMagicalVision(player, duration)
+	var config := GetLightConfig();
+	var lightLevel := CInt(config.MagicalVisionLevel);
+	player.setlightlevel(lightLevel, duration);
+
+	SetCooldown(player, "nightvision", duration);
+
+	return lightLevel;
 endfunction
 
 function GetMoonLightMod()
@@ -126,19 +95,4 @@ function GetMoonLightMod()
 		"Decrescens":  return CInt(config.MoonDecrescens);
 		default:       return 24;
 	endcase
-endfunction
-
-function ApplyMagicalVision(player, duration)
-	var config := GetLightConfig();
-	var lightLevel := CInt(config.MagicalVisionLevel);
-	player.setlightlevel(lightLevel, duration);
-
-	if (HasReverseVision(player))
-		SetCooldown(player, "lightvision", duration);
-		SendScreenFlash(player, FLASH_WHITE);
-	else
-		SetCooldown(player, "nightvision", duration);
-	endif
-
-	return lightLevel;
 endfunction

@@ -36,10 +36,6 @@ program walkOn(mobile, tile)
 				sleepms(10);
 			endforeach
 		endif */
-		if (mobile.cmdlevel > 1 && HasReverseVision(mobile))
-			SendsysMessage(mobile, "GM: Ajustando infravisao.");
-		endif
-		ApplyPlayerLight(mobile);
 	endif
 	destroyIllyraOutsideDungeons(mobile);
 	return 1;

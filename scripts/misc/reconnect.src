@@ -35,7 +35,6 @@ program core_reconnect(who)
 		endif
 	endif
 
-	ApplyPlayerLight(who);
 	destroyIllyraOutsideDungeons(who);
 	return 1;
 endprogram

@@ -7,10 +7,7 @@ program logon(who)
 	start_script("seasonaleffects");
 	sleep(1);
 
-	if (who.cmdlevel > 1 && HasReverseVision(who))
-		SendSysMessage(who, "Ajustando infravision");
-	endif
-	ApplyPlayerLight(who);
+	InitPlayerVision(who);
 
 	destroyIllyraOutsideDungeons(who);
 endprogram

@@ -3,12 +3,12 @@ use os;
 use polsys;
 
 // Constants for Screen Flash Types (must match Client Constants)
-const FLASH_FADEOUT       := 0;
+const FLASH_DROW_OFF       := 0; // Nao usar para drows porque desabilita para eles o Drow Vision
 const FLASH_FADEIN        := 1;
 const FLASH_LIGHT         := 2;
 const FLASH_FADEINOUT     := 3;
 const FLASH_DARK          := 4;
-const FLASH_WHITE         := 5;
+const FLASH_DROW_ON         := 5;
 
 /*
  * SendScreenFlash(who, flash_type)
