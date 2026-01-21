@@ -5,7 +5,7 @@ use cfgfile;
 
 include ":nature:nature";
 include "include/epicConstants";
-include ":fls_core:fls_characters";
+include ":nature:Controller/LightController";
 
 program daynightClocksystem(parameters)
 
@@ -48,8 +48,7 @@ program daynightClocksystem(parameters)
 
 		if(finalLightLevel != previousLightLevel)
 			setregionlightlevel("Superficie", finalLightLevel);
-			SetGlobalProperty("lightlevel", finalLightLevel); // Store for drow reverse calculation
-			ApplyAllPlayersLight(); // Apply correct lighting for all players
+			SetGlobalProperty("lightlevel", finalLightLevel);
 			previousLightLevel := finalLightLevel;
 		endif
 

@@ -50,7 +50,6 @@ program walkOn(mobile, tile)
 		endforeach
 	endif
 
-	ApplyPlayerLight(mobile);
 	destroyIllyraOutsideDungeons(mobile);
 	var name := mobile.IsInTheDungeon();
 	if (name)
