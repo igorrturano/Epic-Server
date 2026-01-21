@@ -172,6 +172,10 @@ function weathereffects(type, duration, severity := 5)
         
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
+            if(InDungeon(person))
+                continue;
+            endif
+            
 			if (!person.isUnderRoof())
 				wetPowder(person);
             	SetWeatherForPlayer(person, type, 50);
