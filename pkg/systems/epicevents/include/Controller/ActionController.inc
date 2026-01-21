@@ -4,9 +4,16 @@ use os;
 include ":epicevents:Controller/ConditionController";
 include ":epicevents:Model/ActionConfig";
 
-function ExecuteActions(item, event, actions)
+function ExecuteActions(item, event, actions, trigger_condition := 0)
 	if (!actions || actions.size() == 0)
 		return 0;
+	endif
+
+	// Check trigger-level nature condition before any actions
+	if (trigger_condition)
+		if (!EvaluateCondition(trigger_condition, struct{}, event))
+			return 0;
+		endif
 	endif
 
 	var action_state := struct{};

@@ -20,6 +20,7 @@ class EventConfig()
 	var trigger_type;
 	var trigger_params;
 	var actions;
+	var condition;  // Nature-based condition for trigger activation
 
 	function EventConfig(this)
 		this.creatures := array{};
@@ -30,6 +31,7 @@ class EventConfig()
 		this.trigger_type := "";
 		this.trigger_params := 0;
 		this.actions := array{};
+		this.condition := 0;
 	endfunction
 
 	function ToStruct(this)
@@ -60,6 +62,55 @@ class EventConfig()
 			actions_data.append(action.ToStruct());
 		endforeach
 		data.+actions := actions_data;
+
+		// Serialize condition with explicit array handling
+		if (this.condition && this.condition.params)
+			var cond_data := struct{};
+			cond_data.+type := this.condition.type;
+
+			var params_data := struct{};
+
+			// HAS_ITEM fields
+			if (this.condition.params.has_item_objtype)
+				params_data.+has_item_objtype := this.condition.params.has_item_objtype;
+			endif
+			if (this.condition.params.has_item_amount)
+				params_data.+has_item_amount := this.condition.params.has_item_amount;
+			endif
+
+			// NATURE fields - explicitly copy arrays
+			if (this.condition.params.moon_phases)
+				var moon_arr := array{};
+				foreach phase in (this.condition.params.moon_phases)
+					moon_arr.append(phase);
+				endforeach
+				params_data.+moon_phases := moon_arr;
+			endif
+
+			if (this.condition.params.day_night)
+				params_data.+day_night := this.condition.params.day_night;
+			endif
+
+			if (this.condition.params.seasons)
+				var seasons_arr := array{};
+				foreach s in (this.condition.params.seasons)
+					seasons_arr.append(s);
+				endforeach
+				params_data.+seasons := seasons_arr;
+			endif
+
+			if (this.condition.params.time_min)
+				params_data.+time_min := this.condition.params.time_min;
+			endif
+			if (this.condition.params.time_max)
+				params_data.+time_max := this.condition.params.time_max;
+			endif
+
+			cond_data.+params := params_data;
+			data.+condition := cond_data;
+		else
+			data.+condition := 0;
+		endif
 
 		return data;
 	endfunction
@@ -103,6 +154,63 @@ class EventConfig()
 				action.FromStruct(action_struct);
 				this.actions.append(action);
 			endforeach
+		endif
+
+		// Deserialize condition with explicit array handling
+		if (data.condition && data.condition.type)
+			var cond := struct{};
+			cond.+type := data.condition.type;
+
+			var params := struct{};
+
+			if (data.condition.params)
+				// HAS_ITEM fields
+				if (data.condition.params.has_item_objtype)
+					params.+has_item_objtype := CInt(data.condition.params.has_item_objtype);
+				endif
+				if (data.condition.params.has_item_amount)
+					params.+has_item_amount := CInt(data.condition.params.has_item_amount);
+				endif
+
+				// NATURE fields - explicitly rebuild arrays
+				if (data.condition.params.moon_phases)
+					var moon_arr := array{};
+					foreach phase in (data.condition.params.moon_phases)
+						moon_arr.append(phase);
+					endforeach
+					params.+moon_phases := moon_arr;
+				else
+					params.+moon_phases := array{};
+				endif
+
+				if (data.condition.params.day_night)
+					params.+day_night := data.condition.params.day_night;
+				else
+					params.+day_night := "";
+				endif
+
+				if (data.condition.params.seasons)
+					var seasons_arr := array{};
+					foreach s in (data.condition.params.seasons)
+						seasons_arr.append(CInt(s));
+					endforeach
+					params.+seasons := seasons_arr;
+				else
+					params.+seasons := array{};
+				endif
+
+				if (data.condition.params.time_min)
+					params.+time_min := CInt(data.condition.params.time_min);
+				endif
+				if (data.condition.params.time_max)
+					params.+time_max := CInt(data.condition.params.time_max);
+				endif
+			endif
+
+			cond.+params := params;
+			this.condition := cond;
+		else
+			this.condition := 0;
 		endif
 
 		return 1;

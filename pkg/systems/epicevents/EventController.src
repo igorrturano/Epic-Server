@@ -46,7 +46,7 @@ program eventController(item)
 
 				// Execute configured actions (success/failure doesn't affect cooldown)
 				if (config.actions && config.actions.size() > 0)
-					ExecuteActions(item, ev, config.actions);
+					ExecuteActions(item, ev, config.actions, config.condition);
 				endif
 			endif
 		endif
