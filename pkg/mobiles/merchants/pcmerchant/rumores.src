@@ -22,6 +22,9 @@ const GF_STDCOLOR := 1890;
 
 const MOEDAS := 47715;
 
+// Pagination
+const RUMORES_POR_PAGINA := 15;
+
 var item_cfg := ReadConfigFile(":*:itemdesc");
 
 // Helper function to check if player can see a rumor
@@ -200,6 +203,8 @@ program MerchantMenu(params)
 		endforeach
 	endif
 
+	var currentPage := 1;
+
 	while (1)
 		var gump := GFCreateGump(0, 0);
 		GFResizePic(gump, 15, 50, 2620, 310, 380);
@@ -235,37 +240,82 @@ program MerchantMenu(params)
 			endif
 		endif
 
-		// GFHTMLArea( gump, 35, 70,  280, 340, questinfo.description, 0, 1);
-		var i;
-		var y_pos := 70;
+		// Get all rumors and filter visible ones
 		var rumores := GetObjProperty(npc, "rumores");
 		if (rumores == error)
 			rumores := array;
 		endif
-		for (i := 1; i <= rumores.size(); i := i + 1)
-			// Filter rumors based on player race/culture and view mode
-			if (!CanSeeRumor(player, rumores[i], gmViewMode))
-				continue;
-			endif
 
-			var rumor_text := rumores[i].nome;
-			if (rumores[i].custo)
-				rumor_text := rumor_text + " [" + rumores[i].custo + " moedas]";
+		// Build list of visible rumors with their original indices
+		var visibleRumors := array;
+		var i;
+		for (i := 1; i <= rumores.size(); i := i + 1)
+			if (CanSeeRumor(player, rumores[i], gmViewMode))
+				var entry := struct;
+				entry.+originalIndex := i;
+				entry.+rumor := rumores[i];
+				visibleRumors.append(entry);
+			endif
+		endfor
+
+		// Calculate pagination
+		var totalRumors := visibleRumors.size();
+		var totalPages := ((totalRumors - 1) / RUMORES_POR_PAGINA) + 1;
+		if (totalRumors == 0)
+			totalPages := 1;
+		endif
+		if (currentPage > totalPages)
+			currentPage := totalPages;
+		endif
+		if (currentPage < 1)
+			currentPage := 1;
+		endif
+
+		var startIndex := ((currentPage - 1) * RUMORES_POR_PAGINA) + 1;
+		var endIndex := startIndex + RUMORES_POR_PAGINA - 1;
+		if (endIndex > totalRumors)
+			endIndex := totalRumors;
+		endif
+
+		// Display rumors for current page
+		var y_pos := 70;
+		for (i := startIndex; i <= endIndex; i := i + 1)
+			var entry := visibleRumors[i];
+			var rumor_text := entry.rumor.nome;
+			if (entry.rumor.custo)
+				rumor_text := rumor_text + " [" + entry.rumor.custo + " moedas]";
 			endif
 			// Add restriction indicators for GMs
 			if (player.cmdlevel >= 3 && gmViewMode)
-				if (rumores[i].racas && rumores[i].racas.size() > 0)
+				if (entry.rumor.racas && entry.rumor.racas.size() > 0)
 					rumor_text := rumor_text + " [R]";
 				endif
-				if (rumores[i].culturas && rumores[i].culturas.size() > 0)
+				if (entry.rumor.culturas && entry.rumor.culturas.size() > 0)
 					rumor_text := rumor_text + " [C]";
 				endif
 			endif
 
 			GFTextLine(gump, 45, y_pos, 2100, rumor_text);
-			GFAddButton(gump, 25, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + i);
+			GFAddButton(gump, 25, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + entry.originalIndex);
 			y_pos := y_pos + 19;
 		endfor
+
+		// Pagination controls (show only if more than one page)
+		if (totalPages > 1)
+			// Page indicator at bottom of content area
+			var pageText := "Pagina " + currentPage + "/" + totalPages;
+			GFTextMid(gump, 15, 405, 330, 2100, pageText);
+
+			// Previous button (left arrow)
+			if (currentPage > 1)
+				GFAddButton(gump, 50, 405, 4014, 4015, GF_CLOSE_BTN, 22);
+			endif
+
+			// Next button (right arrow)
+			if (currentPage < totalPages)
+				GFAddButton(gump, 300, 405, 4005, 4006, GF_CLOSE_BTN, 23);
+			endif
+		endif
 
 		var input := GFSendGump(player, gump);
 
@@ -367,6 +417,16 @@ program MerchantMenu(params)
 			else
 				gmViewMode := 1;
 			endif
+			// Continue loop to show menu again
+		elseif (input[0] == 22)
+			// Previous page
+			if (currentPage > 1)
+				currentPage := currentPage - 1;
+			endif
+			// Continue loop to show menu again
+		elseif (input[0] == 23)
+			// Next page
+			currentPage := currentPage + 1;
 			// Continue loop to show menu again
 		elseif (input[0] > 200)
 			// SendSysMessage(player, " " + rumores[input[0]-200].desc);
