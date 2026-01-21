@@ -50,9 +50,6 @@ program walkOn(mobile, tile)
 		endforeach
 	endif
 
-	if (mobile.cmdlevel > 1 && HasReverseVision(mobile))
-		SendsysMessage(mobile, "GM: Ajustando infravisao.");
-	endif
 	ApplyPlayerLight(mobile);
 	destroyIllyraOutsideDungeons(mobile);
 	var name := mobile.IsInTheDungeon();
