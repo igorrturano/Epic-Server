@@ -75,10 +75,11 @@ function ApplyNormalLight(player, hasNightVision := 0)
 		else
 			player.setlightlevel(CInt(config.DungeonDarkness), LIGHT_DURATION);
 		endif
-	else
-		var globalLight := CInt(GetGlobalProperty("lightlevel"));
-		player.setlightlevel(globalLight, LIGHT_DURATION);
+	elseif (hasNightVision)
+		// Surface with night vision: improved vision
+		player.setlightlevel(CInt(config.MagicalVisionLevel), LIGHT_DURATION);
 	endif
+	// Surface without night vision: don't set personal light, see natural ambient
 
 	SendScreenFlash(player, 0);
 	return 1;
@@ -94,7 +95,7 @@ function ApplyDrowLight(player, hasNightVision := 0)
 		else
 			player.setlightlevel(CInt(config.DrowCaveVision), LIGHT_DURATION);
 		endif
-		SendScreenFlash(player, 0);
+		SendScreenFlash(player, FLASH_WHITE);
 		return 1;
 	endif
 
@@ -102,11 +103,7 @@ function ApplyDrowLight(player, hasNightVision := 0)
 	var reversedLight := Abs(dungeonDarkness - globalLight);
 	player.setlightlevel(reversedLight, LIGHT_DURATION);
 
-	if (globalLight < 20)
-		SendScreenFlash(player, FLASH_WHITE);
-	else
-		SendScreenFlash(player, 0);
-	endif
+	SendScreenFlash(player, FLASH_WHITE);
 
 	return 1;
 endfunction
@@ -138,6 +135,7 @@ function ApplyMagicalVision(player, duration)
 
 	if (HasReverseVision(player))
 		SetCooldown(player, "lightvision", duration);
+		SendScreenFlash(player, FLASH_WHITE);
 	else
 		SetCooldown(player, "nightvision", duration);
 	endif
