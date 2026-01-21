@@ -12,6 +12,7 @@ include "include/utility";
 const BTN_MENU_VIEW := 100;
 const BTN_MENU_EDIT_TRIGGER := 101;
 const BTN_MENU_EDIT_ACTIONS := 102;
+const BTN_MENU_EDIT_CONDITION := 105;
 const BTN_MENU_DELETE := 103;
 const BTN_MENU_RESET_COOLDOWN := 104;
 
@@ -76,12 +77,13 @@ function CreateEventFlow(who)
 	var min_delay := config_result.min_delay;
 	var max_delay := config_result.max_delay;
 
-	// Step 3: Configure actions
+	// Step 3: Configure actions and conditions
 	var actions := array{};
+	var event_condition := 0;
 	var action_loop := 1;
 
 	while (action_loop)
-		var action_list_gump := BuildActionListGump(actions);
+		var action_list_gump := BuildActionListGump(actions, event_condition);
 		var action_list_input := GFSendGump(who, action_list_gump);
 
 		var action_result := ParseActionListInput(action_list_input);
@@ -145,6 +147,17 @@ function CreateEventFlow(who)
 				var deleted_action := actions[index];
 				actions.erase(index);
 				Message($"Acao removida: {GetActionDescription(deleted_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"condition":
+				var new_condition := HandleConditionEdit(who, event_condition);
+				if (new_condition != -1)  // -1 means cancelled
+					event_condition := new_condition;
+					if (new_condition)
+						Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+					else
+						Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					endif
+				endif
 		endcase
 	endwhile
 
@@ -201,6 +214,7 @@ function CreateEventFlow(who)
 	config.actions := actions;
 	config.min_delay := min_delay;
 	config.max_delay := max_delay;
+	config.condition := event_condition;
 
 	// Target location
 	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
@@ -277,6 +291,14 @@ function EditEventFlow(who, item)
 				Message("Acoes atualizadas com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 			endif
 
+		elseif (menu_input[BTN_MENU_EDIT_CONDITION])
+			var new_config := EditCondition(who, config);
+			if (new_config)
+				config := new_config;
+				SaveConfig(item, config);
+				Message("Condicao de natureza atualizada!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			endif
+
 		elseif (menu_input[BTN_MENU_RESET_COOLDOWN])
 			EraseObjProperty(item, "next_trigger_time");
 			Message("Cooldown resetado! O evento pode ser acionado novamente.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
@@ -317,8 +339,8 @@ function ParseTriggerSelection(input)
 endfunction
 
 function BuildEditMenuGump(config)
-	var gump := GFECreateGump("Epic Events - Editar Evento", 500, 565);
-	var y := SetupGumpFrame(gump, 500, 565, 0);
+	var gump := GFECreateGump("Epic Events - Editar Evento", 500, 620);
+	var y := SetupGumpFrame(gump, 500, 620, 0);
 
 	var x := 40;
 	var spacing := 65;
@@ -355,6 +377,11 @@ function BuildEditMenuGump(config)
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_EDIT_ACTIONS);
 	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Editar Acoes");
 	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Adicionar, editar ou remover acoes");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_EDIT_CONDITION);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Editar Condicoes de Gatilho");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Item, lua, estacao, horario, dia/noite");
 	y := y + spacing;
 
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_RESET_COOLDOWN);
@@ -397,6 +424,18 @@ function ShowConfigSummary(who, config)
 
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Delay: {config.min_delay} - {config.max_delay} minutos");
 	y := y + 30;
+
+	// Condition section (if configured)
+	if (config.condition && config.condition.type && config.condition.type != "NONE")
+		GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "CONDICAO DE NATUREZA");
+		y := y + 20;
+		GFResizePic(gump, 30, y, 3000, 540, 2);
+		y := y + 15;
+
+		var cond_desc := GetConditionDescription(config.condition);
+		GFTextLine(gump, x, y, GUMP_COLOR::LABEL, cond_desc);
+		y := y + 30;
+	endif
 
 	// Actions section
 	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "ACOES");
@@ -514,10 +553,11 @@ function EditActions(who, config)
 		actions.append(action);
 	endforeach
 
+	var event_condition := config.condition;
 	var action_loop := 1;
 
 	while (action_loop)
-		var action_list_gump := BuildActionListGump(actions);
+		var action_list_gump := BuildActionListGump(actions, event_condition);
 		var action_list_input := GFSendGump(who, action_list_gump);
 
 		var action_result := ParseActionListInput(action_list_input);
@@ -581,11 +621,161 @@ function EditActions(who, config)
 				var deleted_action := actions[index];
 				actions.erase(index);
 				Message($"Acao removida: {GetActionDescription(deleted_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"condition":
+				var new_condition := HandleConditionEdit(who, event_condition);
+				if (new_condition != -1)  // -1 means cancelled
+					event_condition := new_condition;
+					if (new_condition)
+						Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+					else
+						Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					endif
+				endif
 		endcase
 	endwhile
 
 	config.actions := actions;
+	config.condition := event_condition;
 	return config;
+endfunction
+
+function EditCondition(who, config)
+	var new_condition := HandleConditionEdit(who, config.condition);
+
+	if (new_condition == -1)  // Cancelled
+		return 0;
+	endif
+
+	config.condition := new_condition;
+
+	if (new_condition)
+		Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	endif
+
+	return config;
+endfunction
+
+// Handle condition editing with support for item targeting
+// Returns: condition struct, 0 (no condition), or -1 (cancelled)
+function HandleConditionEdit(who, existing_condition)
+	var working_condition := existing_condition;
+
+	while (1)
+		var cond_gump := BuildConditionGump(working_condition);
+		var cond_input := GFSendGump(who, cond_gump);
+
+		if (!cond_input)
+			return -1;  // Cancelled
+		endif
+
+		var result := ParseConditionInput(cond_input);
+
+		// Check if user clicked target button
+		if (result && result.action == "target_item")
+			// Preserve current form data
+			working_condition := PreserveConditionFormData(cond_input, working_condition);
+
+			Message("Clique no item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+
+			if (targ && targ.objtype)
+				// Update the working condition with targeted item
+				if (!working_condition)
+					working_condition := struct{ type := "CONDITION", params := struct{} };
+					working_condition.params.+has_item_objtype := 0;
+					working_condition.params.+has_item_amount := 1;
+				endif
+				if (!working_condition.params)
+					working_condition.params := struct{};
+					working_condition.params.+has_item_objtype := 0;
+					working_condition.params.+has_item_amount := 1;
+				endif
+
+				// Update existing property (not .+ which adds new)
+				working_condition.params.has_item_objtype := targ.objtype;
+				if (!working_condition.params.has_item_amount)
+					working_condition.params.has_item_amount := 1;
+				endif
+
+				Message($"Item selecionado: {targ.objtype} ({Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			else
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+
+			continue;  // Show gump again
+		endif
+
+		// Normal save/skip result
+		return result;
+	endwhile
+
+	return -1;
+endfunction
+
+// Preserve condition form data when targeting
+function PreserveConditionFormData(input, existing_condition)
+	var params := struct{};
+
+	// Preserve HAS_ITEM fields
+	var objtype_str := Trim(GFExtractData(input, ID_COND_ITEM_OBJTYPE));
+	var amount_str := Trim(GFExtractData(input, ID_COND_ITEM_AMOUNT));
+
+	if (objtype_str && objtype_str != "")
+		params.+has_item_objtype := CInt(objtype_str);
+	elseif (existing_condition && existing_condition.params && existing_condition.params.has_item_objtype)
+		params.+has_item_objtype := existing_condition.params.has_item_objtype;
+	else
+		params.+has_item_objtype := 0;
+	endif
+
+	params.+has_item_amount := (amount_str && amount_str != "") ? CInt(amount_str) : 1;
+
+	// Preserve NATURE fields
+	params.+moon_phases := array{};
+	if (input[CHK_MOON_KALENDAE])
+		params.moon_phases.append("Kalendae");
+	endif
+	if (input[CHK_MOON_NONAE])
+		params.moon_phases.append("Nonae");
+	endif
+	if (input[CHK_MOON_IDUS])
+		params.moon_phases.append("Idus");
+	endif
+	if (input[CHK_MOON_DECRESCENS])
+		params.moon_phases.append("Decrescens");
+	endif
+
+	if (input[RADIO_DAYNIGHT_DIA])
+		params.+day_night := "dia";
+	elseif (input[RADIO_DAYNIGHT_NOITE])
+		params.+day_night := "noite";
+	else
+		params.+day_night := "";
+	endif
+
+	params.+seasons := array{};
+	if (input[CHK_SEASON_SUMMER])
+		params.seasons.append(1);
+	endif
+	if (input[CHK_SEASON_AUTUMN])
+		params.seasons.append(2);
+	endif
+	if (input[CHK_SEASON_WINTER])
+		params.seasons.append(4);
+	endif
+	if (input[CHK_SEASON_SPRING])
+		params.seasons.append(5);
+	endif
+
+	var time_min_str := Trim(GFExtractData(input, ID_COND_TIME_MIN));
+	var time_max_str := Trim(GFExtractData(input, ID_COND_TIME_MAX));
+	params.+time_min := (time_min_str != "") ? CInt(time_min_str) : 0;
+	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
+
+	return struct{ type := "CONDITION", params := params };
 endfunction
 
 function ConfirmDelete(who)
@@ -739,28 +929,6 @@ function PreserveFormDataForTargeting(byref working_action, edit_input, action_t
 			endif
 			working_action.params := new_params;
 	endcase
-
-	// Preserve condition data
-	var amount_str := Trim(GFExtractData(edit_input, ID_CONDITION_AMOUNT));
-	var amount := 1;
-	if (amount_str && amount_str != "")
-		amount := CInt(amount_str);
-	endif
-
-	// Get existing objtype if any
-	var objtype := 0;
-	if (working_action.condition && working_action.condition.params && working_action.condition.params.objtype)
-		objtype := working_action.condition.params.objtype;
-	endif
-
-	if (edit_input[RADIO_CONDITION_HAS_ITEM])
-		working_action.condition := struct{
-			type := "PLAYER_HAS_ITEM",
-			params := struct{ objtype := objtype, amount := amount }
-		};
-	else
-		working_action.condition := struct{ type := "NONE" };
-	endif
 
 	return 1;
 endfunction

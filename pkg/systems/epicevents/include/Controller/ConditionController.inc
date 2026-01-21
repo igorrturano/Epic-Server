@@ -1,5 +1,7 @@
 use uo;
 
+include ":nature:include/nature";
+
 function EvaluateCondition(condition, byref action_state, event)
 	if (!condition)
 		return 1;
@@ -10,11 +12,55 @@ function EvaluateCondition(condition, byref action_state, event)
 			return EvaluateActionSucceeded(condition, action_state);
 		"PLAYER_HAS_ITEM":
 			return EvaluatePlayerHasItem(condition, event);
+		"NATURE":
+			return EvaluateNature(condition.params);
+		"CONDITION":
+			return EvaluateCombinedCondition(condition.params, event);
 		"NONE":
 			return 1;
 		default:
 			return 1;
 	endcase
+endfunction
+
+// Combined condition - checks both HAS_ITEM and NATURE (AND logic)
+function EvaluateCombinedCondition(params, event)
+	// Check HAS_ITEM condition first
+	if (params.has_item_objtype && params.has_item_objtype > 0)
+		if (!event.source || !event.source.acctname)
+			return 0;
+		endif
+
+		var required_objtype := params.has_item_objtype;
+		var required_amount := params.has_item_amount ? params.has_item_amount : 1;
+
+		var found := 0;
+
+		if (event.source.backpack)
+			var items := FindObjtypeInContainer(event.source.backpack, required_objtype);
+			foreach item in items
+				found += item.amount;
+			endforeach
+		endif
+
+		var equipped := ListEquippedItems(event.source);
+		foreach item in equipped
+			if (item.objtype == required_objtype)
+				found += item.amount;
+			endif
+		endforeach
+
+		if (found < required_amount)
+			return 0;
+		endif
+	endif
+
+	// Check NATURE conditions
+	if (!EvaluateNature(params))
+		return 0;
+	endif
+
+	return 1;
 endfunction
 
 function EvaluateActionSucceeded(condition, byref action_state)
@@ -60,4 +106,49 @@ function EvaluatePlayerHasItem(condition, event)
 	endforeach
 
 	return (found >= required_amount);
+endfunction
+
+function EvaluateNature(params)
+	// Fase lunar (array - OR entre fases selecionadas)
+	if (params.moon_phases && params.moon_phases.size() > 0)
+		var current_moon := getMoonPhase();
+		if (!(current_moon in params.moon_phases))
+			return 0;
+		endif
+	endif
+
+	// Dia/Noite
+	if (params.day_night && params.day_night != "")
+		if (GetGlobalProperty("dia") != params.day_night)
+			return 0;
+		endif
+	endif
+
+	// Estacao (array - OR entre estacoes selecionadas)
+	if (params.seasons && params.seasons.size() > 0)
+		var current_season := getSeason();
+		if (!(current_season in params.seasons))
+			return 0;
+		endif
+	endif
+
+	// Hora (range)
+	if (params.time_min || params.time_max)
+		var hour := getCurrentHour();
+		var min_h := CInt(params.time_min);
+		var max_h := CInt(params.time_max);
+
+		// Overnight range (ex: 22-4)
+		if (min_h > max_h)
+			if (hour < min_h && hour > max_h)
+				return 0;
+			endif
+		else
+			if (hour < min_h || hour > max_h)
+				return 0;
+			endif
+		endif
+	endif
+
+	return 1;
 endfunction

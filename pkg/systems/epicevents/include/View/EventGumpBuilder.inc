@@ -34,6 +34,7 @@ const BTN_ACTION_ADD := 220;
 const BTN_ACTION_EDIT_BASE := 230;  // 230-239 for editing actions 1-10
 const BTN_ACTION_DELETE_BASE := 240;  // 240-249 for deleting actions 1-10
 const BTN_ACTION_DONE := 250;
+const BTN_ACTION_CONDITION := 251;
 
 // Action type buttons
 const BTN_ACTION_TYPE_EMOTE := 260;
@@ -51,13 +52,32 @@ const ID_ACTION_TELEPORT_Y := 311;
 const ID_ACTION_TELEPORT_Z := 312;
 const ID_ACTION_TELEPORT_REALM := 313;
 
-// Condition field IDs
-const ID_CONDITION_OBJTYPE := 320;
-const ID_CONDITION_AMOUNT := 321;
+// Nature condition checkboxes (separate gump)
+const CHK_MOON_KALENDAE := 400;
+const CHK_MOON_NONAE := 401;
+const CHK_MOON_IDUS := 402;
+const CHK_MOON_DECRESCENS := 403;
 
-// Radio button IDs for condition selection
-const RADIO_CONDITION_NONE := 330;
-const RADIO_CONDITION_HAS_ITEM := 331;
+const RADIO_DAYNIGHT_ANY := 410;
+const RADIO_DAYNIGHT_DIA := 411;
+const RADIO_DAYNIGHT_NOITE := 412;
+
+const CHK_SEASON_SUMMER := 420;
+const CHK_SEASON_AUTUMN := 421;
+const CHK_SEASON_WINTER := 422;
+const CHK_SEASON_SPRING := 423;
+
+const ID_COND_TIME_MIN := 430;
+const ID_COND_TIME_MAX := 431;
+
+const BTN_CONDITION_SKIP := 440;
+const BTN_CONDITION_SAVE := 441;
+
+// HAS_ITEM condition fields
+const CHK_COND_HAS_ITEM := 450;
+const ID_COND_ITEM_OBJTYPE := 451;
+const ID_COND_ITEM_AMOUNT := 452;
+const BTN_COND_TARGET_ITEM := 453;
 
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
@@ -428,10 +448,235 @@ function ParseTriggerConfigInput(input, trigger_type)
 	return result;
 endfunction
 
+// Condition configuration gump - unified conditions (HAS_ITEM + NATURE)
+function BuildConditionGump(existing_condition := 0)
+	var gump := GFECreateGump("Condicoes de Ativacao", 500, 620);
+	var y := SetupGumpFrame(gump, 500, 620);
+
+	var x := 40;
+
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Quando este evento pode ser ativado?");
+	GFTextLine(gump, x, y + 20, GUMP_COLOR::HELP_TEXT, "(Deixe vazio para ativar sempre)");
+	y := y + 50;
+
+	// Get existing params
+	var moon_phases := array{};
+	var day_night := "";
+	var seasons := array{};
+	var time_min := "";
+	var time_max := "";
+	var has_item_enabled := 0;
+	var has_item_objtype := "";
+	var has_item_amount := "1";
+
+	if (existing_condition && existing_condition.params)
+		if (existing_condition.params.moon_phases)
+			moon_phases := existing_condition.params.moon_phases;
+		endif
+		if (existing_condition.params.day_night)
+			day_night := existing_condition.params.day_night;
+		endif
+		if (existing_condition.params.seasons)
+			seasons := existing_condition.params.seasons;
+		endif
+		if (existing_condition.params.time_min)
+			time_min := CStr(existing_condition.params.time_min);
+		endif
+		if (existing_condition.params.time_max)
+			time_max := CStr(existing_condition.params.time_max);
+		endif
+		if (existing_condition.params.has_item_objtype)
+			has_item_enabled := 1;
+			has_item_objtype := Hex(existing_condition.params.has_item_objtype);
+			if (existing_condition.params.has_item_amount)
+				has_item_amount := CStr(existing_condition.params.has_item_amount);
+			endif
+		endif
+	endif
+
+	// ==================== SECTION: HAS ITEM ====================
+	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "JOGADOR TEM ITEM");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 15;
+
+	GFCheckBox(gump, x, y, 0x938, 0x939, has_item_enabled, CHK_COND_HAS_ITEM);
+	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::LABEL, "Exigir item:");
+
+	GFTextLine(gump, x + 130, y + 3, GUMP_COLOR::HELP_TEXT, "ObjType:");
+	GFResizePic(gump, x + 190, y, 9350, 80, 25);
+	GFTextEntry(gump, x + 195, y + 5, 70, 20, GUMP_COLOR::TEXT_ENTRY, has_item_objtype, ID_COND_ITEM_OBJTYPE);
+
+	GFAddButton(gump, x + 280, y, 2152, 2153, GF_CLOSE_BTN, BTN_COND_TARGET_ITEM);
+	GFTextLine(gump, x + 320, y + 3, 53, "[Target]");
+	y := y + 22;
+	GFTextLine(gump, x + 25, y, 38, "(Obs: Target reseta opcoes - use primeiro!)");
+	y := y + 22;
+
+	GFTextLine(gump, x + 130, y + 3, GUMP_COLOR::HELP_TEXT, "Quantidade:");
+	GFResizePic(gump, x + 220, y, 9350, 50, 25);
+	GFTextEntry(gump, x + 225, y + 5, 40, 20, GUMP_COLOR::TEXT_ENTRY, has_item_amount, ID_COND_ITEM_AMOUNT);
+	y := y + 40;
+
+	// ==================== SECTION: NATURE ====================
+	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "CONDICOES DE NATUREZA");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 15;
+
+	// Fase Lunar (checkboxes - multipla selecao)
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Fase Lunar:");
+	y := y + 22;
+	GFCheckBox(gump, x, y, 0x938, 0x939, ("Kalendae" in moon_phases), CHK_MOON_KALENDAE);
+	GFTextLine(gump, x + 25, y + 3, 1153, "Nova");
+	GFCheckBox(gump, x + 90, y, 0x938, 0x939, ("Nonae" in moon_phases), CHK_MOON_NONAE);
+	GFTextLine(gump, x + 115, y + 3, 1153, "Crescente");
+	GFCheckBox(gump, x + 210, y, 0x938, 0x939, ("Idus" in moon_phases), CHK_MOON_IDUS);
+	GFTextLine(gump, x + 235, y + 3, 1153, "Cheia");
+	GFCheckBox(gump, x + 305, y, 0x938, 0x939, ("Decrescens" in moon_phases), CHK_MOON_DECRESCENS);
+	GFTextLine(gump, x + 330, y + 3, 1153, "Minguante");
+	y := y + 35;
+
+	// Dia/Noite (radio - exclusivo)
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Periodo:");
+	y := y + 22;
+	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (day_night == ""), RADIO_DAYNIGHT_ANY);
+	GFTextLine(gump, x + 25, y + 3, 1153, "Qualquer");
+	GFRadioButton(gump, x + 110, y, 0x25F8, 0x25FB, (day_night == "dia"), RADIO_DAYNIGHT_DIA);
+	GFTextLine(gump, x + 135, y + 3, 1153, "Dia");
+	GFRadioButton(gump, x + 190, y, 0x25F8, 0x25FB, (day_night == "noite"), RADIO_DAYNIGHT_NOITE);
+	GFTextLine(gump, x + 215, y + 3, 1153, "Noite");
+	y := y + 35;
+
+	// Estacao (checkboxes - multipla selecao)
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Estacao:");
+	y := y + 22;
+	GFCheckBox(gump, x, y, 0x938, 0x939, (1 in seasons), CHK_SEASON_SUMMER);
+	GFTextLine(gump, x + 25, y + 3, 1153, "Verao");
+	GFCheckBox(gump, x + 95, y, 0x938, 0x939, (2 in seasons), CHK_SEASON_AUTUMN);
+	GFTextLine(gump, x + 120, y + 3, 1153, "Outono");
+	GFCheckBox(gump, x + 195, y, 0x938, 0x939, (4 in seasons), CHK_SEASON_WINTER);
+	GFTextLine(gump, x + 220, y + 3, 1153, "Inverno");
+	GFCheckBox(gump, x + 295, y, 0x938, 0x939, (5 in seasons), CHK_SEASON_SPRING);
+	GFTextLine(gump, x + 320, y + 3, 1153, "Primavera");
+	y := y + 35;
+
+	// Hora
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Horario (0-23):");
+	y := y + 22;
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Das:");
+	GFResizePic(gump, x + 35, y, 9350, 50, 25);
+	GFTextEntry(gump, x + 40, y + 5, 40, 20, GUMP_COLOR::TEXT_ENTRY, time_min, ID_COND_TIME_MIN);
+	GFTextLine(gump, x + 100, y, GUMP_COLOR::HELP_TEXT, "ate:");
+	GFResizePic(gump, x + 130, y, 9350, 50, 25);
+	GFTextEntry(gump, x + 135, y + 5, 40, 20, GUMP_COLOR::TEXT_ENTRY, time_max, ID_COND_TIME_MAX);
+	GFTextLine(gump, x + 200, y, 1153, "(vazio = qualquer)");
+	y := y + 45;
+
+	// Botoes
+	GFAddButton(gump, 100, y, 2152, 2153, GF_CLOSE_BTN, BTN_CONDITION_SKIP);
+	GFTextLine(gump, 140, y + 5, GUMP_COLOR::LABEL, "Limpar");
+	GFAddButton(gump, 280, y, 2152, 2153, GF_CLOSE_BTN, BTN_CONDITION_SAVE);
+	GFTextLine(gump, 320, y + 5, GUMP_COLOR::LABEL, "Salvar");
+
+	return gump;
+endfunction
+
+// Parse condition gump input
+function ParseConditionInput(input)
+	if (!input || input[BTN_CONDITION_SKIP])
+		return 0;  // Sem condicao
+	endif
+
+	// Check for target item button
+	if (input[BTN_COND_TARGET_ITEM])
+		return struct{ action := "target_item" };
+	endif
+
+	var params := struct{};
+
+	// ===== HAS_ITEM section =====
+	params.+has_item_objtype := 0;
+	params.+has_item_amount := 0;
+
+	if (input[CHK_COND_HAS_ITEM])
+		var objtype_str := Trim(GFExtractData(input, ID_COND_ITEM_OBJTYPE));
+		var amount_str := Trim(GFExtractData(input, ID_COND_ITEM_AMOUNT));
+
+		if (objtype_str && objtype_str != "")
+			// Handle hex (0x1234) or decimal
+			if (SubStr(objtype_str, 1, 2) == "0x")
+				params.has_item_objtype := CInt(objtype_str);
+			else
+				params.has_item_objtype := CInt(objtype_str);
+			endif
+		endif
+
+		params.has_item_amount := (amount_str && amount_str != "") ? CInt(amount_str) : 1;
+	endif
+
+	// ===== NATURE section =====
+	// Moon phases (array de selecionados)
+	params.+moon_phases := array{};
+	if (input[CHK_MOON_KALENDAE])
+		params.moon_phases.append("Kalendae");
+	endif
+	if (input[CHK_MOON_NONAE])
+		params.moon_phases.append("Nonae");
+	endif
+	if (input[CHK_MOON_IDUS])
+		params.moon_phases.append("Idus");
+	endif
+	if (input[CHK_MOON_DECRESCENS])
+		params.moon_phases.append("Decrescens");
+	endif
+
+	// Day/Night (unico)
+	if (input[RADIO_DAYNIGHT_DIA])
+		params.+day_night := "dia";
+	elseif (input[RADIO_DAYNIGHT_NOITE])
+		params.+day_night := "noite";
+	else
+		params.+day_night := "";
+	endif
+
+	// Seasons (array)
+	params.+seasons := array{};
+	if (input[CHK_SEASON_SUMMER])
+		params.seasons.append(1);
+	endif
+	if (input[CHK_SEASON_AUTUMN])
+		params.seasons.append(2);
+	endif
+	if (input[CHK_SEASON_WINTER])
+		params.seasons.append(4);
+	endif
+	if (input[CHK_SEASON_SPRING])
+		params.seasons.append(5);
+	endif
+
+	// Time range
+	var time_min_str := Trim(GFExtractData(input, ID_COND_TIME_MIN));
+	var time_max_str := Trim(GFExtractData(input, ID_COND_TIME_MAX));
+	params.+time_min := (time_min_str != "") ? CInt(time_min_str) : 0;
+	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
+
+	// Check if any condition is configured
+	var has_item_configured := (params.has_item_objtype > 0);
+	var has_nature_configured := (params.moon_phases.size() > 0 || params.day_night != "" ||
+	                              params.seasons.size() > 0 || params.time_min || params.time_max);
+
+	if (!has_item_configured && !has_nature_configured)
+		return 0;
+	endif
+
+	return struct{ type := "CONDITION", params := params };
+endfunction
+
 // Action list gump - shows all configured actions
-function BuildActionListGump(actions)
-	var gump := GFECreateGump("Configurar Acoes do Evento", 600, 500);
-	var y := SetupGumpFrame(gump, 600, 500, 0);
+function BuildActionListGump(actions, event_condition := 0)
+	var gump := GFECreateGump("Configurar Acoes do Evento", 600, 550);
+	var y := SetupGumpFrame(gump, 600, 550, 0);
 
 	var x := 30;
 
@@ -503,9 +748,24 @@ function BuildActionListGump(actions)
 	// Add action button
 	GFAddButton(gump, x, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_ADD);
 	GFTextLine(gump, x + 40, y + 10, GUMP_COLOR::HIGHLIGHT, "[Adicionar Acao]");
+	y := y + 35;
+
+	// Condition section
+	GFResizePic(gump, x, y, 3000, 540, 2);
+	y := y + 15;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_CONDITION);
+	if (event_condition && event_condition.type && event_condition.type != "NONE")
+		var cond_desc := GetConditionDescription(event_condition);
+		GFTextLine(gump, x + 40, y + 5, GUMP_COLOR::HIGHLIGHT, "[Configurar Condicao]");
+		GFTextLine(gump, x + 220, y + 5, 53, cond_desc);
+	else
+		GFTextLine(gump, x + 40, y + 5, GUMP_COLOR::HIGHLIGHT, "[Configurar Condicao]");
+		GFTextLine(gump, x + 220, y + 5, GUMP_COLOR::HELP_TEXT, "(Nenhuma - sempre ativo)");
+	endif
 
 	// Done button (final finish button - OKAY style)
-	GFAddButton(gump, 280, 435, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_DONE);
+	GFAddButton(gump, 280, 485, 0x81C, 0x81B, GF_CLOSE_BTN, BTN_ACTION_DONE);
 
 	return gump;
 endfunction
@@ -536,7 +796,74 @@ endfunction
 function GetConditionDescription(condition)
 	case (condition.type)
 		"PLAYER_HAS_ITEM":
-			return $"Jogador tem item {Hex(condition.params.objtype)}";
+			return $"Item: {Hex(condition.params.objtype)}";
+
+		"NATURE":
+		"CONDITION":
+			var parts := array{};
+
+			// HAS_ITEM
+			if (condition.params.has_item_objtype && condition.params.has_item_objtype > 0)
+				var amount := condition.params.has_item_amount ? condition.params.has_item_amount : 1;
+				parts.append($"Item: {Hex(condition.params.has_item_objtype)} x{amount}");
+			endif
+
+			// Moon phases (array)
+			if (condition.params.moon_phases && condition.params.moon_phases.size() > 0)
+				var moon_str := "Lua: ";
+				for i := 1 to condition.params.moon_phases.size()
+					moon_str := moon_str + condition.params.moon_phases[i];
+					if (i < condition.params.moon_phases.size())
+						moon_str := moon_str + "/";
+					endif
+				endfor
+				parts.append(moon_str);
+			endif
+
+			// Day/Night
+			if (condition.params.day_night && condition.params.day_night != "")
+				parts.append(condition.params.day_night == "dia" ? "Dia" : "Noite");
+			endif
+
+			// Seasons (array)
+			if (condition.params.seasons && condition.params.seasons.size() > 0)
+				var season_names := array{};
+				foreach s in (condition.params.seasons)
+					case (CInt(s))
+						1: season_names.append("Verao");
+						2: season_names.append("Outono");
+						4: season_names.append("Inverno");
+						5: season_names.append("Primavera");
+					endcase
+				endforeach
+				var season_str := "";
+				for i := 1 to season_names.size()
+					season_str := season_str + season_names[i];
+					if (i < season_names.size())
+						season_str := season_str + "/";
+					endif
+				endfor
+				parts.append(season_str);
+			endif
+
+			// Time
+			if (condition.params.time_min || condition.params.time_max)
+				parts.append($"{condition.params.time_min}h-{condition.params.time_max}h");
+			endif
+
+			if (parts.size() == 0)
+				return "(nenhum filtro)";
+			endif
+
+			var result := "";
+			for i := 1 to parts.size()
+				result := result + parts[i];
+				if (i < parts.size())
+					result := result + ", ";
+				endif
+			endfor
+			return result;
+
 		default:
 			return condition.type;
 	endcase
@@ -586,8 +913,8 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			title_text := title_text + "Teleporte";
 	endcase
 
-	var gump := GFECreateGump(title_text, 600, 650);
-	var y := SetupGumpFrame(gump, 600, 650, 0);  // No divider, we'll add section headers
+	var gump := GFECreateGump(title_text, 600, 500);
+	var y := SetupGumpFrame(gump, 600, 500, 0);  // No divider, we'll add section headers
 
 	var x := 50;
 
@@ -693,55 +1020,6 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			y := y + 35;
 	endcase
 
-	// ==================== SECTION: CONDITION ====================
-	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "CONDICAO DE EXECUCAO (OPCIONAL)");
-	y := y + 20;
-	GFResizePic(gump, 40, y, 3000, 520, 2);
-	y := y + 15;
-
-	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Quando esta acao deve ser executada?");
-	y := y + 25;
-
-	// Determine current condition
-	var current_condition := "NONE";
-	if (existing_action && existing_action.condition && existing_action.condition.type)
-		current_condition := existing_action.condition.type;
-	endif
-
-	// Radio button: Always execute
-	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "NONE" ? 1 : 0), RADIO_CONDITION_NONE);
-	GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Sempre");
-	y := y + 30;
-
-	// Radio button: Player has item
-	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (current_condition == "PLAYER_HAS_ITEM" ? 1 : 0), RADIO_CONDITION_HAS_ITEM);
-	GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Jogador possui item");
-	y := y + 25;
-
-	// Parameter fields for "Player has item" (always shown)
-	var objtype_default := "";
-	var amount_default := "1";
-	if (existing_action && existing_action.condition && existing_action.condition.params)
-		if (existing_action.condition.params.objtype)
-			objtype_default := Hex(existing_action.condition.params.objtype);
-		endif
-		if (existing_action.condition.params.amount)
-			amount_default := CStr(existing_action.condition.params.amount);
-		endif
-	endif
-
-	GFTextLine(gump, x + 40, y, GUMP_COLOR::LABEL, "Item (ID ou Nome):");
-	GFResizePic(gump, x + 180, y, 9350, 200, 25);
-	GFTextEntry(gump, x + 185, y + 5, 190, 20, GUMP_COLOR::TEXT_ENTRY,objtype_default, ID_CONDITION_OBJTYPE);
-	GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_TARGET_ITEM);
-	GFTextLine(gump, x + 410, y + 5, GUMP_COLOR::LABEL, "[Target]");
-	y := y + 35;
-
-	GFTextLine(gump, x + 40, y, GUMP_COLOR::LABEL, "Quantidade:");
-	GFResizePic(gump, x + 140, y, 9350, 70, 25);
-	GFTextEntry(gump, x + 145, y + 5, 60, 20, GUMP_COLOR::TEXT_ENTRY,amount_default, ID_CONDITION_AMOUNT);
-	y := y + 40;
-
 	// Divider before button
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 
@@ -761,6 +1039,8 @@ function ParseActionListInput(input)
 		return struct{ action := "add" };
 	elseif (input[BTN_ACTION_DONE])
 		return struct{ action := "done" };
+	elseif (input[BTN_ACTION_CONDITION])
+		return struct{ action := "condition" };
 	else
 		// Check for edit/delete buttons
 		var i;
@@ -838,31 +1118,6 @@ function ParseActionEditInput(input, action_type)
 
 			action.params := struct{ x := tp_x, y := tp_y, z := tp_z, realm := realm_str };
 	endcase
-
-	// Parse condition based on radio button selection
-	if (input[RADIO_CONDITION_HAS_ITEM])
-		// Player has item condition
-		var objtype_str := Trim(GFExtractData(input, ID_CONDITION_OBJTYPE));
-		var amount_str := Trim(GFExtractData(input, ID_CONDITION_AMOUNT));
-
-		if (objtype_str && objtype_str != "")
-			var cond_objtype := CInt(objtype_str);  // Accepts hex
-			var cond_amount := CInt(amount_str);
-			if (cond_amount < 1)
-				cond_amount := 1;
-			endif
-			action.condition := struct{
-				type := "PLAYER_HAS_ITEM",
-				params := struct{ objtype := cond_objtype, amount := cond_amount }
-			};
-		else
-			// No objtype specified - invalid condition
-			action.condition := 0;
-		endif
-	else
-		// RADIO_CONDITION_NONE selected or no radio selected - always execute
-		action.condition := 0;
-	endif
 
 	return action;
 endfunction
