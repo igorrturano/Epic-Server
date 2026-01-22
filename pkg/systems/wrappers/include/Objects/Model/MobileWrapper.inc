@@ -366,8 +366,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
-		
+
 		return CInt(this.GetProperty("#CriticalChance"));
+	endfunction
+
+	function SetCriticalChanceMod(this, value)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.SetProperty("#CriticalChance", CInt(value));
+		return this;
 	endfunction
 
 	function GetTemplateName(this)

@@ -1,0 +1,82 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":message:model/Message";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/epicUtils";
+
+/**
+ * Campeao Divino (Divine Champion) - ABILITY_ID::CAMPEAO_DIVINO (404)
+ *
+ * OnUse Effect:
+ * - Equips divine wings
+ * - Applies stat buffs (STR, AGI, INT = Theology/2)
+ * - Duration: 20 seconds (fixed)
+ * - Rebuke effect handled by passive BeforeHit script
+ *
+ * Script receives: MobileWrapper (the paladin)
+ */
+program campeaodivino(mobile)
+	var who := mobile.GetObjRef();
+	var ability := Ability(ABILITY_ID::CAMPEAO_DIVINO);
+
+	// Calculate bonus based on theology
+	var theology := mobile.GetSkill(THEOLOGY);
+	var stat_bonus := CInt(theology / 2);
+	var duration := 20; // Fixed duration of 20 seconds
+
+	// Check if wing type is already chosen
+	var wing_type := who.GetProp("chosen_wings");
+	if (!wing_type)
+		wing_type := ChooseWings(who);
+		if (!wing_type)
+			return 0;
+		endif
+		who.SetProp("chosen_wings", wing_type);
+	endif
+
+	// Save current back layer item (layer 0x0A)
+	var back_item := GetEquipmentByLayer(who, 0x0A);
+	var stored_item_serial := 0;
+
+	if (back_item)
+		stored_item_serial := back_item.serial;
+		MoveItemToContainer(back_item, who.backpack);
+	endif
+
+	// Create and equip wings with chosen graphic
+	var wings := CreateItemAtLocation(who.x, who.y, who.z, wing_type, 1, who.realm);
+	var equip := EquipItem(who, wings);
+	if (!equip)
+		Message("Erro ao equipar as asas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		DestroyItem(wings);
+		return 0;
+	endif
+
+	// Apply stat bonuses through timed scripts
+	TS_StartTimer(who, "strength", duration, stat_bonus, who, 1);
+	TS_StartTimer(who, "agility", duration, stat_bonus, who, 1);
+	TS_StartTimer(who, "intelligence", duration, stat_bonus, who, 1);
+
+	// Visual and sound effects
+	PlaySoundEffect(who, 0x208);
+	PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+
+	// Send SET_DURATION event to ability monitor
+	var monitor := mobile.GetAbilityMonitor(ability);
+	if (monitor is @AbilityMonitor)
+		monitor._GetProcess().SendEvent(struct{
+			type := ABILITY_EVENT_ID::SET_DURATION,
+			value := duration
+		});
+	endif
+
+	// Start cleanup script (handles wing removal after duration)
+	Start_Script(":abilities:scripts/Ativa/OnUse/campeaodivino_cleanup", {who, wings.serial, stored_item_serial, duration});
+
+	return 1;
+endprogram
