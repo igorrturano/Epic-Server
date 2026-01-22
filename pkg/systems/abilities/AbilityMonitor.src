@@ -53,7 +53,11 @@ program AbilityMonitor(params)
 	while (remainingTime > 0)
 		var event := Wait_For_Event(remainingTime);
 
-		if (event.type == ABILITY_EVENT_ID::SET_DURATION && !durationSet)
+		// Vou deixar aqui por que to pensando em usar o Abort para regenerar a hab caso ele tenha perdido porque nao tava usando arma certa ou coisa boba assim
+		if (event == ABILITY_EVENT_ID::ABORT)
+			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			break;
+		elseif (event.type == ABILITY_EVENT_ID::SET_DURATION && !durationSet)
 			if (POLCore().systime - activationTime > 30)
 				Message($"Habilidade {ability.GetName()} expirou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 				break;
@@ -72,9 +76,6 @@ program AbilityMonitor(params)
 					break;
 				endif
 			endif
-		elseif (event == ABILITY_EVENT_ID::ABORT)
-			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-			break;
 		elseif (event == ABILITY_EVENT_ID::REFRESH)
 			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			endTime := POLCore().systime + duration;

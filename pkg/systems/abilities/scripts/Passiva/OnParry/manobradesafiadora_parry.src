@@ -93,8 +93,8 @@ program manobradesafiadora_parry(attackInfo)
 		endif
 	endif
 
-	// Consume the ability after use (single use per activation)
-	monitor._GetProcess().SendEvent(ABILITY_EVENT_ID::ABORT);
+	// Consume charge - monitor auto-ends when charges = 0
+	monitor._GetProcess().SendEvent(ABILITY_EVENT_ID::USED);
 
 	return true;
 endprogram

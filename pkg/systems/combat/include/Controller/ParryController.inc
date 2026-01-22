@@ -61,10 +61,10 @@ function DoParry(byRef attackInfo)
 
 	Message($"Você parou o ataque de {attackInfo.GetAttacker().GetName()}!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 	if (attackInfo.GetDefender().GetSerial() != attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos"))
-		Message("*defende o golpe*").SendAbove(attackInfo.GetDefender().GetObjRef());
+		Message("defende o golpe").SendEmote(attackInfo.GetDefender().GetObjRef());
 		ApplyParryDelay(attackInfo);
 	else
-		Message("*defende o golpe pelo aliado*").SendAbove(attackInfo.GetDefender().GetObjRef());
+		Message("defende o golpe pelo aliado").SendEmote(attackInfo.GetDefender().GetObjRef());
 		ApplyParryDelay(attackInfo, 2); // Aplica delay maior se estiver defendendo por um aliado
 	endif
 	

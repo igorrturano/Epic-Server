@@ -165,5 +165,6 @@ enum class ABILITY_EVENT_ID
 	REFRESH,
 	USED,
 	ABORT,
+	COMPLETE, // Single-use abilities end silently after execution
 	SET_DURATION
 endenum
