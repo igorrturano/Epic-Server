@@ -288,8 +288,8 @@ function GetAlurielCaracteristicas()
             "opcoes" := array{
                 "Azul",
                 "Verde",
-                "Castanho",
-                "Preto",
+                "Lilás",
+                "Âmbar",
                 "Prateado"
             },
             "opcoes_ids" := array{OLHOS_RACIAL::OP1, OLHOS_RACIAL::OP2, OLHOS_RACIAL::OP3, OLHOS_RACIAL::OP4, OLHOS_RACIAL::OP5}
