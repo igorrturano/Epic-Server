@@ -16,66 +16,59 @@ include ":abilities:models/Ability";
 include ":abilities:controllers/AbilityMonitor";
 
 /**
- * Executes BEFORE_HIT abilities for both attacker and defender.
- * Called after hit roll, before determining if attack hits.
- */
-function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
-	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::BEFORE_HIT, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_HIT, attackInfo);
-endfunction
-
-/**
- * Executes BEFORE_DAMAGE abilities for both attacker and defender.
+ * ATTACKER-CENTRIC: Executes BEFORE_DAMAGE abilities for attacker only.
  * Called after hit confirmed, before damage calculation.
  */
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)
 	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
 endfunction
 
 /**
- * Executes ON_HIT abilities for both attacker and defender.
+ * ATTACKER-CENTRIC: Executes ON_HIT abilities for attacker only.
  * Called after successful hit is confirmed.
  */
 function ExecuteCombatAbilitiesOnHit(byRef attackInfo)
 	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_HIT, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_HIT, attackInfo);
 endfunction
 
 /**
- * Executes AFTER_DAMAGE abilities for both attacker and defender.
+ * ATTACKER-CENTRIC: Executes AFTER_DAMAGE abilities for attacker only.
  * Called after damage has been applied.
  */
 function ExecuteCombatAbilitiesAfterDamage(byRef attackInfo)
 	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::AFTER_DAMAGE, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::AFTER_DAMAGE, attackInfo);
 endfunction
 
 /**
- * Executes ON_MISS abilities for both attacker and defender.
- * Called when attack misses.
- */
-function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
-	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_MISS, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_MISS, attackInfo);
-endfunction
-
-/**
- * Executes ON_CRITICAL abilities for both attacker and defender.
+ * ATTACKER-CENTRIC: Executes ON_CRITICAL abilities for attacker only.
  * Called on critical hit.
  */
 function ExecuteCombatAbilitiesOnCritical(byRef attackInfo)
 	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_CRITICAL, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_CRITICAL, attackInfo);
 endfunction
 
 /**
- * Executes ON_KILL abilities for both attacker and defender.
+ * ATTACKER-CENTRIC: Executes ON_KILL abilities for attacker only.
  * Called when defender is killed.
  */
 function ExecuteCombatAbilitiesOnKill(byRef attackInfo)
 	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_KILL, attackInfo);
-	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_KILL, attackInfo);
+endfunction
+
+/**
+ * DEFENDER-CENTRIC: Executes BEFORE_HIT abilities for defender only.
+ * Called before hit roll - defensive abilities.
+ */
+function ExecuteCombatAbilitiesBeforeHit(byRef attackInfo)
+	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_HIT, attackInfo);
+endfunction
+
+/**
+ * DEFENDER-CENTRIC: Executes ON_MISS abilities for defender only.
+ * Called when attack misses - defender reactions.
+ */
+function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
+	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_MISS, attackInfo);
 endfunction
 
 /**
@@ -123,19 +116,31 @@ endfunction
  **********************************/
 
 /**
- * Executes passive abilities for defender on parry.
- * Called when defender successfully parries an attack.
+ * DEFENDER-CENTRIC: Executes passive abilities for defender on parry.
  */
 function ExecutePassiveAbilitiesOnParry(byRef attackInfo)
 	_ExecutePassiveAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_PARRY, attackInfo);
 endfunction
 
 /**
- * Executes passive abilities for attacker on kill.
- * Called when attacker kills the defender.
+ * ATTACKER-CENTRIC: Executes passive abilities for attacker on kill.
  */
 function ExecutePassiveAbilitiesOnKill(byRef attackInfo)
 	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_KILL, attackInfo);
+endfunction
+
+/**
+ * ATTACKER-CENTRIC: Executes passive abilities for attacker after damage.
+ */
+function ExecutePassiveAbilitiesAfterDamage(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::AFTER_DAMAGE, attackInfo);
+endfunction
+
+/**
+ * ATTACKER-CENTRIC: Executes passive abilities for attacker before damage.
+ */
+function ExecutePassiveAbilitiesBeforeDamage(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
 endfunction
 
 /**

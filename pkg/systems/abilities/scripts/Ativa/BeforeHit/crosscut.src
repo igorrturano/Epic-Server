@@ -35,7 +35,8 @@ program crosscut(attackInfo)
 		defender.SetProperty("#crosscut_activation", currentActivation);
 
 		// For Tempo abilities, send SET_DURATION
-		if (ability.GetDuration() == 0)
+		// Note: GetDuration() returns uninit for "Tempo" abilities, not 0
+		if (!ability.GetDuration())
 			var tactics := defender.GetSkill(TACTICS);
 			var duration := CInt(tactics / 5);
 			if (duration < 1)

@@ -15,7 +15,7 @@ include ":attributes:attributes";
  *
  * Script receives: AttackInfo
  */
-program consagracaodivina_undead(attackInfo)
+program consagracaodivina(attackInfo)
 	var attacker := attackInfo.GetAttacker();
 	var defender := attackInfo.GetDefender();
 

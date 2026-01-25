@@ -31,6 +31,7 @@ function ProccessCombatDamage(byRef attackInfo)
 	// Post Damage
 	CheckPoison(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
+	ExecutePassiveAbilitiesAfterDamage(attackInfo);
 
 	// On Kill
 	if (attackInfo.GetDefender().IsDead())
@@ -44,6 +45,7 @@ endfunction
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
+	ExecutePassiveAbilitiesBeforeDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction

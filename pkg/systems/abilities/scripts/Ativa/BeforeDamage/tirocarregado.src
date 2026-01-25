@@ -20,8 +20,9 @@ program tirocarregado(attackInfo)
 		return 0;
 	endif
 
-	// For Tempo abilities (duration = 0), calculate and send SET_DURATION event
-	if (ability.GetDuration() == 0)
+	// For Tempo abilities, calculate and send SET_DURATION event
+	// Note: GetDuration() returns uninit for "Tempo" abilities, not 0
+	if (!ability.GetDuration())
 		var tactics := attacker.GetSkill(TACTICS);
 		var duration := CInt(tactics / 5);
 		if (duration < 1)
