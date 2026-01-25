@@ -452,7 +452,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		var ability_name := GetConfigString(habelem_display, "nome");
 		SendSysMessageEx(who, "Voce comprou a habilidade: " + ability_name, SSM_INFO);
 
-		if (escolhida_id == ABILITY_ID::CACADOR_IMPLACAVEL)
+		if (escolhida_id == ABILITY_ID::CACADOR_IMPLACAVEL || escolhida_id == ABILITY_ID::RESISTENCIA_DO_DESERTO)
 			var hitsmod := cint(GetObjProperty(who, "hitsmod"));
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);

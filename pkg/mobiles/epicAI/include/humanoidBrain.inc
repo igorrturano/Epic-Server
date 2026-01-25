@@ -520,14 +520,15 @@ function GetClassProgression(habcfg, subclass)
                 class_choice.append(CInt(hab_id));
             endif
 
-            // Build the prerequisite tree using IDs
+            // Build the prerequisite tree using IDs (convert to string for struct keys)
             if (meta.requisito)
                 var requisito_id := name_to_id[meta.requisito];
                 if (requisito_id)
-                    if (!class_tree[requisito_id])
-                        class_tree[requisito_id] := array{};
+                    var key := CStr(requisito_id);
+                    if (!class_tree[key])
+                        class_tree[key] := array{};
                     endif
-                    class_tree[requisito_id].append(CInt(hab_id));
+                    class_tree[key].append(CInt(hab_id));
                 endif
             endif
         endif
@@ -550,14 +551,16 @@ function GetClassProgression(habcfg, subclass)
 
         // Follow the prerequisite chain to build full progression
         var current := base_hab;
-        while (current && class_tree[current])
-            foreach next_hab in (class_tree[current])
+        var current_key := CStr(current);
+        while (current && class_tree[current_key])
+            foreach next_hab in (class_tree[current_key])
                 if (!(next_hab in progression))
                     progression.append(next_hab);
                 endif
                 sleepms(2);
             endforeach
             current := progression[progression.size()];
+            current_key := CStr(current);
         endwhile
     endif
     return progression;
