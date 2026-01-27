@@ -610,9 +610,10 @@ function GetFormattedBossInfo(dungeon_elem, realm)
 					// Se for trueboss, adiciona na lista de truebosses também
 					if (bossStruct.trueboss)
 						info.truebosses.append(epicboss_info);
+					else
+					// EpicBoss normal deve aparecer como boss normal no gump
+						info.bosses.append(epicboss_info);
 					endif
-
-					info.epicbosses.append(epicboss_info);
 				endif
 				sleepms(2);
 			endforeach
