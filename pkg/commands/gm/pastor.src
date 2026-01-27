@@ -1,0 +1,306 @@
+use uo;
+use os;
+use basic;
+
+include "include/client";
+include "include/say";
+include ":gumps:include/gumps";
+include ":gumps:include/epicGumps";
+include ":gumps:include/requestGump";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+const GUMP_ID := 0xA550;
+
+program pastor(who)
+
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Acesso negado.");
+        return;
+    endif
+
+    SendSysMessage(who, "Selecione a criatura.");
+    var npc := Target(who);
+
+    if (!npc || !npc.npctemplate)
+        SendSysMessage(who, "Alvo invalido.");
+        return;
+    endif
+
+    while (who && npc)
+
+        var gump := MontarGump(npc);
+        var input := GFSendGump(who, gump);
+
+        if (!input || !input[0])
+            break;
+        endif
+
+        ProcessarAcao(who, npc, input[0]);
+
+    endwhile
+
+endprogram
+
+// ======================================================
+// Montagem do Gump
+// ======================================================
+
+function MontarGump(npc)
+
+    var gump := GFECreateGump("GM - Pastoreio & Reprodução", 520, 360);
+
+    var x1 := 40;
+    var x2 := 280;
+    var y  := 95;
+
+    // ================== REPRODUCAO ==================
+    GFTextLine(gump, x1, y-25, 53, "Reprodução");
+
+    AddBtn(gump, x1, y,      100, "Editar nº de partos");
+    AddBtn(gump, x1, y+25,   101, "Forçar parto");
+    AddBtn(gump, x1, y+50,   102, "Aborto");
+    AddBtn(gump, x1, y+75,   103, "Ajustar tempo gestação");
+    AddBtn(gump, x1, y+100,  200, "Trocar sexo");
+    AddBtn(gump, x1, y+125,  401, "Converter filhote / adulto");
+    AddBtn(gump, x1, y+150,  602, "NPC estéril");
+
+    // ================== PASTOREIO ==================
+    GFTextLine(gump, x2, y-25, 53, "Pastoreio");
+
+    AddBtn(gump, x2, y,      300, "Criar cajado");
+    AddBtn(gump, x2, y+25,   302, "Forçar seguir GM");
+    AddBtn(gump, x2, y+50,   303, "Forçar parar");
+
+    // ================== DEBUG ==================
+    GFTextLine(gump, x2, y+90, 53, "Debug");
+
+    AddBtn(gump, x2, y+115,  500, "Exibir estado");
+    AddBtn(gump, x2, y+140,  501, "Limpar estado bugado");
+
+    return gump;
+
+endfunction
+
+
+
+// ======================================================
+// Botão padrão
+// ======================================================
+
+function AddBtn(byref gump, x, y, id, texto)
+    GFAddButton(gump, x, y, 4005, 4007, GF_CLOSE_BTN, id);
+    GFTextLine(gump, x+30, y+2, 89, texto);
+endfunction
+
+// ======================================================
+// Dispatcher
+// ======================================================
+
+function ProcessarAcao(who, npc, btn)
+
+    case (btn)
+
+        // Reprodução
+        100: EditarPartos(who, npc);
+        101: ForcarParto(who, npc);
+        102: Aborto(npc);
+        103: AjustarTempoGestacao(who, npc);
+        200: TrocarSexo(who, npc);
+        401: ToggleFilhote(npc);
+        602:
+            SetObjProperty(npc,"Sexo",0);
+            SendSysMessage(who,"NPC esteril.");
+
+        // Pastoreio
+        300: CreateItemInBackpack(who,0xE81);
+        302: ForcarSeguir(who, npc);
+        303: PararSeguir(npc);
+
+        // Debug
+        500: MostrarEstado(who, npc);
+        501: ResetGeral(npc);
+
+    endcase
+
+endfunction
+
+
+// ======================================================
+// Funções GM
+// ======================================================
+
+function AjustarTempoGestacao(who, npc)
+
+    var t := TS_GetTimerInfo(npc, "Gestacao");
+
+    if (!t)
+        SendSysMessage(who, "Este NPC nao esta em gestacao.");
+        return;
+    endif
+
+    var atual := TS_GetTimerDuration(npc,"Gestacao");
+    var horas := CInt(atual / 3600);
+
+    var msg := "Tempo atual: " + atual + " segundos (" + horas + "h)\nDigite o novo tempo desejado em segundos:";
+
+    var val := RequestGump(who, msg);
+
+    if (!val || val == error)
+        return;
+    endif
+
+    val := CInt(val);
+
+    if (val < 1)
+        SendSysMessage(who,"Valor invalido.");
+        return;
+    endif
+
+	SetObjProperty(npc, "Ajuste_counter", 1);
+	//sleepms(3);
+    // Mata o timer atual
+    TS_LowerDuration(npc,"Gestacao",-1);
+	sleepms(5);
+	EraseObjProperty(npc, "Ajuste_counter");
+    // Cria um novo com tempo exato
+    TS_StartTimer(npc,"Gestacao", val);
+
+    SendSysMessage(who,"Tempo de gestacao ajustado para " + val + " segundos.");
+
+endfunction
+
+
+function TrocarSexo(who, npc)
+
+    var sexo := GetObjProperty(npc, "Sexo");
+
+    if (sexo == 1)
+        sexo := 2;
+    elseif (sexo == 2)
+        sexo := 1;
+    else
+        sexo := RandomDiceRoll("1d2");
+    endif
+
+    SetObjProperty(npc,"Sexo", sexo);
+
+    if (sexo == 1)
+        SendSysMessage(who,"Agora macho.");
+    else
+        SendSysMessage(who,"Agora femea.");
+    endif
+
+endfunction
+
+function ToggleFilhote(npc)
+
+    var desc := GetObjProperty(npc,"descmodboss");
+
+    if (desc)
+        EraseObjProperty(npc,"descmodboss");
+    else
+        SetObjProperty(npc,"descmodboss","*Filhote*");
+    endif
+
+endfunction
+
+function EditarPartos(who, npc)
+
+    var val := RequestGump(who, "Digite o novo valor (0 a 3):");
+
+    if (!val || val == error)
+        return;
+    endif
+
+    val := CInt(val);
+
+    if (val < 0 || val > 3)
+        SendSysMessage(who,"Valor invalido.");
+        return;
+    endif
+
+    SetObjProperty(npc,"Gravida", val);
+
+    var t := TS_GetTimerInfo(npc, "Gestacao");
+    if (t)
+        TS_LowerDuration(npc,"Gestacao",-1);
+    endif
+
+    SendSysMessage(who,"Gestacoes alteradas para " + val);
+
+endfunction
+
+function ForcarParto(who, npc)
+
+    var t := TS_GetTimerInfo(npc, "Gestacao");
+
+    if (!t)
+        SendSysMessage(who,"Este NPC nao esta em gestacao.");
+        return;
+    endif
+
+    TS_LowerDuration(npc, "Gestacao", -1);
+    SendSysMessage(who,"Parto forcado com sucesso.");
+
+endfunction
+
+function Aborto(npc)
+
+    EraseObjProperty(npc,"Gravida");
+    EraseObjProperty(npc,"alvo");
+    EraseObjProperty(npc,"descmodboss");
+
+    var t := TS_GetTimerInfo(npc,"Gestacao");
+    if (t)
+        TS_LowerDuration(npc,"Gestacao",-1);
+    endif
+
+endfunction
+
+function ForcarSeguir(who, npc)
+    TS_StartTimer(npc,"encantar",3600);
+    var ev := struct{ "type" := 0xA001, "source" := who };
+    SendEvent(npc, ev);
+endfunction
+
+function PararSeguir(npc)
+    var timers := TS_GetTimerNames(npc);
+    if ("encantar" in timers)
+        TS_LowerDuration(npc,"encantar",-1);
+    endif
+endfunction
+
+function MostrarEstado(who, npc)
+
+    var sexo := GetObjProperty(npc,"Sexo");
+    var gravida := GetObjProperty(npc,"Gravida");
+    var desc := GetObjProperty(npc,"descmodboss");
+    var t := TS_GetTimerInfo(npc,"Gestacao");
+
+    SendSysMessage(who,"--- Estado do NPC ---");
+    SendSysMessage(who,"Sexo: " + sexo);
+    SendSysMessage(who,"Gravida: " + gravida);
+    SendSysMessage(who,"Descricao: " + desc);
+
+    if (t)
+        SendSysMessage(who,"Gestacao ativa. Tempo restante: " +
+            CInt(TS_GetTimerDuration(npc,"Gestacao") / 3600) + "h");
+    else
+        SendSysMessage(who,"Gestacao: inativa");
+    endif
+
+endfunction
+
+function ResetGeral(npc)
+
+    EraseObjProperty(npc,"Gravida");
+    EraseObjProperty(npc,"alvo");
+    EraseObjProperty(npc,"descmodboss");
+
+    var t := TS_GetTimerInfo(npc,"Gestacao");
+    if (t)
+        TS_LowerDuration(npc,"Gestacao",-1);
+    endif
+
+endfunction

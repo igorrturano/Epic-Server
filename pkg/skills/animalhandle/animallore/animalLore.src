@@ -178,9 +178,15 @@ function AL_LoadGump(who, creature)
 
 	var tempo_fiel := startbond + tempo_detreino; // tempo total para ele ser fidelizado
 	var tempo_agora := tempo_fiel - timebond; // quanto tempo falta de acordo com o clock de agora
-	var tempo_emdias := Cint(tempo_agora / 86400); // transforma em dias
+	
+	var total_minutos := CInt(tempo_agora / 60);
+	var horas := CInt(total_minutos / 60);
+	var minutos := total_minutos % 60;
+
+	
+	//var tempo_emdias := Cint(tempo_agora / 86400); // transforma em dias
 	if (!GetObjProperty(creature, "NeverRelease") && startbond)
-		tempo_fidelizar := "Tempo para fidelizar: +/- " + tempo_emdias + " dias.";
+		tempo_fidelizar := "Tempo para fidelizar: " + horas + "h " + minutos + "min.";
 	endif
 
 	var thegender := GetObjProperty(creature, "Sexo");
@@ -225,25 +231,25 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 280, 186, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(stamina) + "</div>");
 
 	// Strength (Força)
-	GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Força");
-	GFHTMLArea(gump, 280, 222, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
+	GFHTMLArea(gump, 153, 202, 160, 18, "<basefont color=#4A3929>Força");
+	GFHTMLArea(gump, 280, 202, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
 
 	// Dexterity (Destreza)
-	GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Destreza");
-	GFHTMLArea(gump, 280, 240, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
+	GFHTMLArea(gump, 153, 218, 160, 18, "<basefont color=#4A3929>Destreza");
+	GFHTMLArea(gump, 280, 218, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
 
 	// Slot (Adjusted Y-coordinate to avoid overlap)
-	GFHTMLArea(gump, 153, 258, 160, 18, "<basefont color=#4A3929>Slot");
-	GFHTMLArea(gump, 280, 258, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
+	GFHTMLArea(gump, 153, 234, 160, 18, "<basefont color=#4A3929>Slot");
+	GFHTMLArea(gump, 280, 234, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
 
 	// Loyalty section (Lealdade)
-	GFGumpPic(gump, 128, 276, 2086);
-	GFHTMLArea(gump, 147, 276, 160, 18, "<basefont color=#A52A2A>Lealdade");
-	GFHTMLArea(gump, 135, 294, 360, 18, "<basefont color=#4A3929>" + loyalty);
-	GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + dono);
+	GFGumpPic(gump, 128, 250, 2086);
+	GFHTMLArea(gump, 147, 250, 160, 18, "<basefont color=#A52A2A>Lealdade");
+	GFHTMLArea(gump, 135, 266, 360, 18, "<basefont color=#4A3929>" + loyalty);
+	GFHTMLArea(gump, 135, 282, 360, 18, "<basefont color=#4A3929>" + dono);
 
 	if (who.serial == GetObjProperty(creature, "owner")) // apenas se quem tá analisando é dono aparece o tempo que falta para fidelizar
-		GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + tempo_fidelizar);
+		GFHTMLArea(gump, 135, 298, 360, 18, "<basefont color=#4A3929>" + tempo_fidelizar);
 	endif
 	GFAddButton(gump, 317, 358, 5603, 5607, GF_PAGE_BTN, 4);
 	GFAddButton(gump, 340, 358, 5601, 5605, GF_PAGE_BTN, 2);
@@ -318,6 +324,19 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 135, 204, 260, 18, "<basefont color=#4A3929>" + thesex);
 	if (GetObjProperty(creature, "Sexo") == 2)
 		GFHTMLArea(gump, 135, 222, 260, 18, "<basefont color=#4A3929>Ja pariu " + num_partos + " vezes");
+		 var total := TS_GetTimerDuration(creature, "Gestacao");
+		if (total > 0)
+
+    var horas := CInt(total / 3600);
+    var resto := total % 3600;
+    var minutos := CInt(resto / 60);
+    var segundos := resto % 60;
+
+    GFHTMLArea(gump, 135, 240, 260, 18,
+        "<basefont color=#4A3929>Está grávida e vai parir em " +
+        horas + "h " + minutos + "m " + segundos + "s");
+
+endif
 	endif
 
 	GFAddButton(gump, 317, 358, 5603, 5607, GF_PAGE_BTN, 3);
