@@ -318,6 +318,19 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 135, 204, 260, 18, "<basefont color=#4A3929>" + thesex);
 	if (GetObjProperty(creature, "Sexo") == 2)
 		GFHTMLArea(gump, 135, 222, 260, 18, "<basefont color=#4A3929>Ja pariu " + num_partos + " vezes");
+		 var total := TS_GetTimerDuration(creature, "Gestacao");
+		if (total > 0)
+
+    var horas := CInt(total / 3600);
+    var resto := total % 3600;
+    var minutos := CInt(resto / 60);
+    var segundos := resto % 60;
+
+    GFHTMLArea(gump, 135, 240, 260, 18,
+        "<basefont color=#4A3929>Está grávida e vai parir em " +
+        horas + "h " + minutos + "m " + segundos + "s");
+
+endif
 	endif
 
 	GFAddButton(gump, 317, 358, 5603, 5607, GF_PAGE_BTN, 3);
