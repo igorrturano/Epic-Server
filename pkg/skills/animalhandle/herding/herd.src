@@ -41,16 +41,21 @@ program herd(who)
 	npctemplate := npctemplate[9, len(npctemplate) - 8];
 	var elem := FindConfigElem(cfg, npctemplate);
     var align := GetConfigString(elem, "Alignment");
-
+	var cruzar_alvo := GetObjProperty(npc, "Cruzar");
 	var chk := 0;
 	case (npc.script)
-		":ghaia:tamed":    chk := 1;
+		":ghaia:tamed":    
+		if (cruzar_alvo != "nao")
+			SendSysMessageEx(who, npc.name + " só pode acasalar!", SSM_FAIL);
+		else
+			chk := 1;
+		endif
 		":ghaia:worker":   chk := 1;
 		":ghaia:employed": chk := 1;
 	endcase
 
 	if ((chk == 1) or (!npc.getTameDifficulty()))
-		SendSysMessageEx(who, "Esta criatura não pode ser pastoreada!", SSM_FAIL);
+		SendSysMessageEx(who, "Esta criatura não pode ser pastoreada e/ou não está habiliata a acasalar!", SSM_FAIL);
 		return;
 	endif
 
@@ -68,13 +73,30 @@ program herd(who)
 			SendSysMessageEx(who, "O macho precisa ser acalmado!", SSM_FAIL);
 			return;
 		endif	
+	elseif (gender_alvo == 0) 
+		if (cruzar_alvo)
+			SendSysMessageEx(who, "Esse animal é estéril e não pode acasalar!", SSM_FAIL);
+			return;
+		endif
 	else
 		SendSysMessageEx(who, "Não é possível pastorear fêmeas agressivas ", SSM_FAIL);
 		return;
 	endif
 
 	var location := TargetCoordinates(who);
-
+	if (cruzar_alvo) 
+		if(!location.mobile)
+			SendSysMessageEx(who, "A criatura já tem dono, não pode pastorear, só acasalar!", SSM_FAIL);
+			return;
+		else
+			var cruzar_destino := GetObjProperty(location.mobile, "Cruzar");
+			if (cruzar_destino == "nao")
+				SendSysMessageEx(who, "A criatura destino não está habilitada pelo dono a acasalar!", SSM_FAIL);
+				return;
+			endif
+		endif
+	endif
+	
 	var female_template := (location.mobile.npctemplate);
 	var male_template := (npc.npctemplate);
 
