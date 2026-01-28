@@ -3,6 +3,7 @@ use os;
 
 include ":attributes:attributes";
 include "include/eventID";
+include "include/epicNPCUtils";
 
 program TimedScript_Gestacao(params)
 
@@ -79,7 +80,8 @@ program TimedScript_Gestacao(params)
 		else
 			SetObjProperty(filhote, "descmodboss", "*Filhote*");
 		endif
-
+		var tier := RandomDiceRoll("1d5");
+		customizeNpc(filhote);
 	endif
 
 	// Limpeza de estados
