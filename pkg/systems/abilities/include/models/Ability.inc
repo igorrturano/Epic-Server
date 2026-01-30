@@ -1,57 +1,72 @@
 use os;
 
 include "IAbility";
-
-include ":diceroll:model/DiceRoll";
 include ":IO:CFGFile";
 
 const ABILITY_PKG := ":abilities:";
 
+// Must be defined BEFORE class to use in class variable initializers
+enum class ABILITY_ACTIVATION
+	ON_MISS := "OnMiss",
+
+	BEFORE_HIT := "BeforeHit",
+	BEFORE_DAMAGE := "BeforeDamage",
+	ON_HIT := "OnHit",
+	ON_CRITICAL := "OnCritical",
+	AFTER_DAMAGE := "AfterDamage",
+	ON_KILL := "OnKill",
+	ON_PARRY := "OnParry",
+
+	ON_USE := "OnUse"
+endenum
+
+enum class ABILITY_ACTIVATION_MODE
+	PASSIVE := "Passiva",
+	ACTIVE := "Ativa"
+endenum
+
 class Ability(IAbility)
-	var Id := 0; // ABILITY_ID enum
+	// === METADATA (from config) ===
+	var Id := 0;
 	var Name := "";
 	var ClassVar := "";
-	var Level := 0;
 	var Folk := "";
 	var Description := "";
-	var ActivationMode := ABILITY_ACTIVATION_MODE::PASSIVE;
-	var ActivationMoment := ABILITY_ACTIVATION::ON_USE;
-	var Requirement := ""; // requisito para desbloquear a habilidade
+	var Requirement := "";
 	var CostHP := 0;
 	var CostSTAM := 0;
 	var CostMANA := 0;
-	var Charges := 0; // número de cargas da habilidade
-	var Cooldown := 0; // em milisegundos
-	var EffectDuration := 0; // em milisegundos
-	var Range := 1; // em tiles
-	var Script := ""; // nome do script que será executado ao usar a habilidade
-	var Icon := 0; // ícone hexadecimal para exibir na interface
-	var PassiveMoment := ""; // momento de ativação do efeito passivo (OnParry, OnKill, etc.)
-	var PassiveScript := ""; // script do efeito passivo
+	var Cooldown := 0;
+	var Icon := 0;
+
+	// === BEHAVIOR (subclass defines these) ===
+	var ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+	var EffectDuration := 0;
 
 	function Ability(this, abilityEnum)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);
-		
+
 		this.Id := abilityEnum;
+
+		// === METADATA (read from config) ===
 		this.Name := cfgFile.GetPropertyValue("nome")[1] ?: uninit;
 		this.ClassVar := cfgFile.GetPropertyValue("classe") ?: uninit;
-		this.Level := CInt(cfgFile.GetPropertyValue("nivel")[1]) ?: uninit;
 		this.Folk := cfgFile.GetPropertyValue("povo")[1] ?: uninit;
 		this.Description := cfgFile.GetPropertyValue("descricao")[1] ?: uninit;
-		this.ActivationMode := cfgFile.GetPropertyValue("uso")[1] ?: uninit; 
-		this.ActivationMoment := cfgFile.GetPropertyValue("momentoDeAtivacao")[1] ?: uninit;
 		this.Requirement := cfgFile.GetPropertyValue("requisito")[1] ?: uninit;
-		this.CostHP := CInt(cfgFile.GetPropertyValue("hp")[1]) ?: uninit;
-		this.CostSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: uninit;
-		this.CostMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: uninit;
-		this.Charges := CInt(cfgFile.GetPropertyValue("charges")[1]) ?: uninit;
-		this.Cooldown := CInt(cfgFile.GetPropertyValue("delay")[1]) ?: uninit;
-		this.EffectDuration := CInt(cfgFile.GetPropertyValue("duracao")[1]) ?: uninit;
-		this.Range := CInt(cfgFile.GetPropertyValue("range")[1]) ?: uninit;
-		this.Script := cfgFile.GetPropertyValue("script")[1] ?: uninit;
+		this.CostHP := CInt(cfgFile.GetPropertyValue("hp")[1]) ?: 0;
+		this.CostSTAM := CInt(cfgFile.GetPropertyValue("stam")[1]) ?: 0;
+		this.CostMANA := CInt(cfgFile.GetPropertyValue("mana")[1]) ?: 0;
+		this.Cooldown := CInt(cfgFile.GetPropertyValue("delay")[1]) ?: 0;
 		this.Icon := cfgFile.GetPropertyValue("icon")[1] ?: uninit;
-		this.PassiveMoment := cfgFile.GetPropertyValue("passivoMomento")[1] ?: uninit;
-		this.PassiveScript := cfgFile.GetPropertyValue("passivoScript")[1] ?: uninit;
+
+		// === BEHAVIOR (NOT read from config - subclass defines these) ===
+		// ActivationMoment - defined by subclass var
+		// ActivationMode - not needed (class knows if active/passive)
+		// Script - replaced by class methods
+		// PassiveMoment/PassiveScript - replaced by OnPassive* hooks
+		// Charges - not needed
+		// EffectDuration - GetDurationFor() calculates dynamically
 	endfunction
 
 	function GetId(this)
@@ -66,20 +81,12 @@ class Ability(IAbility)
 		return this.ClassVar;
 	endfunction
 
-	function GetLevel(this)
-		return this.Level;
-	endfunction
-
 	function GetFolk(this)
 		return this.Folk;
 	endfunction
 
 	function GetDescription(this)
 		return this.Description;
-	endfunction
-
-	function GetActivationMode(this)
-		return this.ActivationMode;
 	endfunction
 
 	function GetActivationMoment(this)
@@ -102,10 +109,6 @@ class Ability(IAbility)
 		return this.CostMANA;
 	endfunction
 
-	function GetCharges(this)
-		return this.Charges;
-	endfunction
-
 	function GetCooldown(this)
 		return this.Cooldown;
 	endfunction
@@ -119,46 +122,31 @@ class Ability(IAbility)
 		return this; // Enable method chaining
 	endfunction
 
-	function GetRange(this)
-		return this.Range;
-	endfunction
-
-	function GetDamage(this)
-		return this.Damage;
-	endfunction
-
-	function GetScript(this)
-		return this.Script;
-	endfunction
-
 	function GetIcon(this)
 		return this.Icon;
 	endfunction
 
-	function GetPassiveMoment(this)
-		return this.PassiveMoment;
+	// === V3 LIFECYCLE HOOKS (override in subclass) ===
+
+	function CanActivate(this, mobile)
+		return true;
 	endfunction
 
-	function GetPassiveScript(this)
-		return this.PassiveScript;
+	function OnActivate(this, mobile)
+		// Override for visual effects, etc.
 	endfunction
 
-	function ExecuteOn(this, targetInfo)
-		var scriptPath := $"{ABILITY_PKG}scripts/{this.GetActivationMode()}/{this.GetActivationMoment()}/{this.GetScript()}";
-		print($"[ABILITY] ExecuteOn: scriptPath={scriptPath}, activationMoment={this.GetActivationMoment()}");
+	function GetDurationFor(this, mobile)
+		return this.GetDuration();
+	endfunction
 
-		// ON_USE abilities run async (independent effects like projectiles)
-		// Combat abilities run sync (must modify attackInfo before combat continues)
-		if (this.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
-			var result := Run_Script(scriptPath, targetInfo);
-			print($"[ABILITY] Run_Script result: {result}");
-		else
-			Run_Script_To_Completion(scriptPath, targetInfo);
-		endif
+	function ExecuteOn(this, attackInfo)
+		// Override in CombatAbility
+		return false;
 	endfunction
 
 	function ToString(this)
-		return $"Ability(id={this._id}, name={this._name}, class={this._class}, level={this._level}, folk={this._folk}, activationMode={this._activationMode}, activationMoment={this._activationMoment}, charges={this._charges})";
+		return $"Ability(id={this.Id}, name={this.Name})";
 	endfunction
 endclass
 
@@ -388,23 +376,4 @@ enum class ABILITY_ID
 	AURA_DIVINA := 2802,
 	AUTORIDADE_DIVINA := 2803,
 	APOTEOSE := 2804,
-endenum
-
-enum class ABILITY_ACTIVATION
-	ON_MISS := "OnMiss",
-
-	BEFORE_HIT := "BeforeHit",
-	BEFORE_DAMAGE := "BeforeDamage",
-	ON_HIT := "OnHit",
-	ON_CRITICAL := "OnCritical",
-	AFTER_DAMAGE := "AfterDamage",
-	ON_KILL := "OnKill",
-	ON_PARRY := "OnParry",
-
-	ON_USE := "OnUse"
-endenum
-
-enum class ABILITY_ACTIVATION_MODE
-	PASSIVE := "Passiva",
-	ACTIVE := "Ativa"
 endenum

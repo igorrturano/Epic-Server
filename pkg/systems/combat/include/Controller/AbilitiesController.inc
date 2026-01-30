@@ -12,7 +12,7 @@
  **********************************/
 
 include ":debug:Controller/DebugController";
-include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 
 /**
@@ -93,15 +93,13 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 		var abilityId := serializedMonitor.AbilityId;
 
 		if (abilityId)
-			var ability := Ability(abilityId);
-			ability.ExecuteOn(attackInfo);
-
-			// Notify AbilityMonitor to consume charge
-			var monitor := mobile.GetAbilityMonitor(ability);
-			if (monitor is @AbilityMonitor)
-				monitor._GetProcess().SendEvent(ABILITY_EVENT_ID::USED);
+			// V3: Use CreateAbility() to get proper subclass with hooks
+			var ability := CreateAbility(abilityId);
+			if (ability.errortext)
+				continue; // Skip non-migrated abilities
 			endif
 
+			ability.ExecuteOn(attackInfo);
 			abilitiesExecuted++;
 		endif
 	endforeach
@@ -144,42 +142,51 @@ function ExecutePassiveAbilitiesBeforeDamage(byRef attackInfo)
 endfunction
 
 /**
- * Internal: Discovers and executes passive abilities.
+ * V3: Executes passive abilities via class hooks.
  * Checks all abilities the mobile HAS (not just activated).
  *
  * @param mobile MobileWrapper - The mobile whose passive abilities to check
  * @param passiveMoment ABILITY_ACTIVATION enum - When the passive triggers
- * @param attackInfo AttackInfo - Combat context passed to ability scripts
+ * @param attackInfo AttackInfo - Combat context passed to ability hooks
  * @return Integer - Number of passive abilities executed
  */
 function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 	var abilities := mobile.GetAbilities();
 
-	print($"[PASSIVE DEBUG] Checking passives for {mobile.GetName()}, moment={passiveMoment}");
-	print($"[PASSIVE DEBUG] Abilities: {abilities}");
-
 	if (!abilities)
-		print("[PASSIVE DEBUG] No abilities found!");
 		return 0;
 	endif
 
 	var abilitiesExecuted := 0;
 
-	// myhabs stores { level => ability_id }, so we iterate keys (levels) and get values (ability IDs)
+	// myhabs stores { level => ability_id }
 	foreach level in (abilities.keys())
-		var abilityId := abilities[level];
-		var ability := Ability(CInt(abilityId));
+		var abilityId := CInt(abilities[level]);
 
-		print($"[PASSIVE DEBUG] Checking ability {abilityId}: passiveMoment={ability.GetPassiveMoment()}, passiveScript={ability.GetPassiveScript()}");
+		// V3: Only process migrated abilities
+		if (!ABILITY_CLASSES.exists(abilityId))
+			continue;
+		endif
 
-		if (ability.GetPassiveMoment() == passiveMoment && ability.GetPassiveScript())
-			var scriptPath := $"{ABILITY_PKG}scripts/Passiva/{passiveMoment}/{ability.GetPassiveScript()}";
-			print($"[PASSIVE DEBUG] Running script: {scriptPath}");
-			Run_Script_To_Completion(scriptPath, attackInfo);
+		var ability := CreateAbility(abilityId);
+
+		// V3: Call appropriate OnPassive* hook based on moment
+		var triggered := 0;
+		case (passiveMoment)
+			ABILITY_ACTIVATION::ON_PARRY:
+				triggered := ability.OnPassiveOnParry(attackInfo);
+			ABILITY_ACTIVATION::ON_KILL:
+				triggered := ability.OnPassiveOnKill(attackInfo);
+			ABILITY_ACTIVATION::BEFORE_DAMAGE:
+				triggered := ability.OnPassiveBeforeDamage(attackInfo);
+			ABILITY_ACTIVATION::AFTER_DAMAGE:
+				triggered := ability.OnPassiveAfterDamage(attackInfo);
+		endcase
+
+		if (triggered)
 			abilitiesExecuted++;
 		endif
 	endforeach
 
-	print($"[PASSIVE DEBUG] Executed {abilitiesExecuted} passive abilities");
 	return abilitiesExecuted;
 endfunction

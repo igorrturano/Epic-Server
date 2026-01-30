@@ -1,6 +1,6 @@
 use os;
 
-include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include "system/exception/ProcessExeception/InvalidProcessException";
@@ -10,11 +10,9 @@ class AbilityMonitor()
 	var ActivationTime := 0;
 	var MobileSerial := 0x0;
 	var AbilityId := 0;
-	var Charges := 0;
 
 	function AbilityMonitor(this, ability)
 		this.AbilityId := ability.GetId();
-		this.Charges := ability.GetCharges();
 	endfunction
 
 	function GetPid(this)
@@ -46,42 +44,16 @@ class AbilityMonitor()
 	endfunction
 
 	function GetAbility(this)
-		return Ability(this.AbilityId);
-	endfunction
-
-	function GetCharges(this)
-		return this.Charges;
-	endfunction
-
-	function SetCharges(this, amount)
-		this.Charges := amount;
-	endfunction
-
-	function ConsumeCharge(this, amount)
-		if (this.GetCharges() > 0)
-			this.Charges -= amount;
-		endif
-
-		if (this.GetCharges() <= 0)
-			this.Charges := 0;
-		endif
-
-		return this;
+		return CreateAbility(this.AbilityId);
 	endfunction
 
 	function ActivateOn(this, mobile)
-		print($"[ABILITY_MONITOR] ActivateOn called, abilityId={this.AbilityId}");
 		if (!(mobile is @MobileWrapper))
-			print("[ABILITY_MONITOR] ERROR: mobile is not MobileWrapper");
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
 		var ability := this.GetAbility();
-		print($"[ABILITY_MONITOR] Got ability: {ability.GetName()}");
 		var mobileRef := mobile.GetObjRef();
-
-		// === PRE-ACTIVATION VALIDATION ===
-		print("[ABILITY_MONITOR] Starting pre-activation validation");
 
 		// Validate stamina cost
 		if (ability.GetCostSTAM() > 0 && ability.GetCostSTAM() > mobile.GetCurrentStamina())
@@ -109,41 +81,46 @@ class AbilityMonitor()
 			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
 			return error{"errortext" := "Ability on cooldown"};
 		endif
-		print("[ABILITY_MONITOR] Validation passed");
+
+		// === V3: CLASS-BASED CONDITION CHECK ===
+		if (!ability.CanActivate(mobile))
+			return error{"errortext" := "Ability conditions not met"};
+		endif
 
 		// === CONSUME COSTS ===
-		// Commenting jsut for tests
-		// if (ability.GetCostSTAM() > 0)
-		// 	mobile.ConsumeStamina(ability.GetCostSTAM());
-		// endif
-		// if (ability.GetCostMANA() > 0)
-		// 	mobile.ConsumeMana(ability.GetCostMANA());
-		// endif
-		// if (ability.GetCostHP() > 0)
-		// 	mobile.ConsumeHP(ability.GetCostHP());
-		// endif
+		if (ability.GetCostSTAM() > 0)
+			mobile.ConsumeStamina(ability.GetCostSTAM());
+		endif
+		if (ability.GetCostMANA() > 0)
+			mobile.ConsumeMana(ability.GetCostMANA());
+		endif
+		if (ability.GetCostHP() > 0)
+			mobile.ConsumeHP(ability.GetCostHP());
+		endif
 
 		// === SET COOLDOWN ===
-		// Commenting just so I can test abilities faster
-		// if (ability.GetCooldown() > 0)
-		// 	SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
-		// endif
+		if (ability.GetCooldown() > 0)
+			SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+		endif
+
+		// === V3: CALCULATE DYNAMIC DURATION ===
+		var duration := ability.GetDurationFor(mobile);
+		if (duration > 0)
+			ability.SetDuration(duration);
+		endif
+
+		// === V3: CALL OnActivate HOOK ===
+		ability.OnActivate(mobile);
 
 		// === ACTIVATE ===
-		print("[ABILITY_MONITOR] === ACTIVATE section ===");
 		this.MobileSerial := mobile.GetSerial();
 		this.ActivationTime := POLCore().systime;
-		print($"[ABILITY_MONITOR] MobileSerial={this.MobileSerial}, checking for existing monitor...");
 
 		var existingMonitor := mobile.GetAbilityMonitor(ability);
-		print($"[ABILITY_MONITOR] existingMonitor result: {existingMonitor}");
 		if (existingMonitor is @AbilityMonitor)
-			print($"[ABILITY_MONITOR] Refreshing existing AbilityMonitor script for ability {ability.GetId()}");
 			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
 		else
-			print($"[ABILITY_MONITOR] Starting AbilityMonitor script for ability {ability.GetId()}");
-			var script := Start_Script($"{ABILITY_PKG}AbilityMonitor", array{mobile, this});
-			print($"[ABILITY_MONITOR] Script started: {script}");
+			Start_Script($"{ABILITY_PKG}AbilityMonitor", array{mobile, this});
 		endif
 	endfunction
 
@@ -156,14 +133,14 @@ class AbilityMonitor()
 	endfunction
 
 	function ToString(this)
-		return $"AbilityMonitor(abilityId={this.abilityId}, mobileSerial={this.mobileSerial}, pid={this.pid}, charges={this.charges})";
+		return $"AbilityMonitor(abilityId={this.AbilityId}, mobileSerial={this.MobileSerial}, pid={this.Pid})";
 	endfunction
 endclass
 
 enum class ABILITY_EVENT_ID
 	EXPIRE,
 	REFRESH,
-	USED,
+	USED,   // DEPRECATED: Keep for old scripts during migration
 	ABORT,
 	COMPLETE, // Single-use abilities end silently after execution
 	SET_DURATION

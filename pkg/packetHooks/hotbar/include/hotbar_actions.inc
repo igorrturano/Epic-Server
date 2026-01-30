@@ -17,7 +17,7 @@ include ":hotbar:include/hotbar_data";
 include ":hotbar:include/hotbar_write";
 include ":hotbar:hotbar_utils";
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 
 // ============================================================================
@@ -124,12 +124,16 @@ function ExecuteAbility(who, actionId)
     endif
 
     var mobileWrapper := MobileWrapper(who);
-    var ability := Ability(CInt(hab_id));
-
-    if (!ability.GetScript())
+    var abilityId := CInt(hab_id);
+    print("Executing Ability ID: " + CStr(abilityId));
+    print("ABILITY_CLASSES: " + CStr(ABILITY_CLASSES));
+    // V3: Check if ability is registered in the class system
+    if (!ABILITY_CLASSES.exists(abilityId))
         SendSysMessage(who, "Habilidade inválida.");
         return 0;
     endif
+
+    var ability := CreateAbility(abilityId);
 
     var monitor := AbilityMonitor(ability);
     var result := monitor.ActivateOn(mobileWrapper);

@@ -1,8 +1,9 @@
-include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
 include ":message:model/Message";
 
 function BuyAbility(who, ability)
-	if (!ability.GetScript())
+	// V3: Check if ability is migrated to class-based system
+	if (!ABILITY_CLASSES.exists(ability.GetId()))
 		Message("Habilidade ainda não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return false;
 	endif
