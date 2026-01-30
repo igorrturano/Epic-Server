@@ -261,6 +261,7 @@ function destama(serial)
 	EraseObjProperty(me,"countercheck");
 	EraseObjProperty(me, "NeverRelease");
 	EraseObjProperty(me, "Fidelizar?");
+	EraseObjProperty(me, "Cruzar");
 	RestartScript(me);
 	ErasePetMods(me);
 endfunction

@@ -75,6 +75,9 @@ program TamingSkill(who)
 		GFTextLine(yn_gump, 210, 250, 1153, "Fidelizar?");
 	endif
 
+	GFAddButton(yn_gump, 190, (273), 2117, 2118, GF_CLOSE_BTN, 5);
+	GFTextLine(yn_gump, 210, 270, 1153, "Cruzar?");
+
 	var y := 150;
 	var i := 1;
 	var pets := GetObjProperty(who, "TamedPets");
@@ -91,6 +94,13 @@ program TamingSkill(who)
 			elseif (GetObjProperty(pet, "Fidelizar?") == "sim")
 				GFGumpPic(yn_gump, 190, y + 4, 2436);
 			endif
+		endif
+		// Cruzar
+		//GFResizePic(byref gump, x, y, gump_id, width:=0, height:=0)
+		if (GetObjProperty(pet, "Cruzar") == "nao")
+			GFGumpPic(yn_gump, 215, y + 4, 5019);
+		elseif (GetObjProperty(pet, "Cruzar") == "sim")
+
 		endif
 		if (!GetObjProperty(pet, "summoned"))
 			GFAddButton(yn_gump, 20, y + 4, 2103, 2104, GF_CLOSE_BTN, (100 + i));
@@ -133,6 +143,25 @@ program TamingSkill(who)
 		endforeach
 		SetObjProperty(targx, "Fidelizar?", "sim");
 		SendSysmessage(who, "" + targx.name + " pode ser fidelizado, todos os demais agora não");
+elseif (input == 5) // botão cruzar (toggle livre)
+	SendSysMessageEx(who, "Selecione o pet para ativar/desativar cruzamento.", SSM_INFO);
+
+	var targx := target(who);
+
+	if (GetObjProperty(targx, "owner") != who.serial)
+		SendSysMessageEx(who, "Esse animal não lhe pertence!", SSM_FAIL);
+		return;
+	endif
+
+	var estado := GetObjProperty(targx, "Cruzar");
+
+	if (estado == "sim")
+		SetObjProperty(targx, "Cruzar", "nao");
+		SendSysMessage(who, "" + targx.name + " agora NÃO pode cruzar.");
+	else
+		SetObjProperty(targx, "Cruzar", "sim");
+		SendSysMessage(who, "" + targx.name + " agora pode cruzar.");
+	endif
 
 	endif
 
@@ -178,7 +207,7 @@ function taming(who)
 
 	var tameDifficulty := targ.getTameDifficulty();
 	if (!tameDifficulty)
-		SendSysMessageEx(who, "Voce não pode adestrar " + targ.name + ".", SSM_FAIL);
+		SendSysMessageEx(who, "Você não pode adestrar " + targ.name + ".", SSM_FAIL);
 		return;
 	endif
 
@@ -208,7 +237,11 @@ function taming(who)
 			SetObjProperty(targ, "happiness", 50);
 			SetObjProperty(targ, "AntigoTreinadorID", who.serial);
 			SetObjProperty(targ, "Fidelizar?", "nao");
-
+			SetObjproperty(targ, "Cruzar", "nao");
+			if (GetObjProperty(targ, "descmodboss"))
+				EraseObjProperty(targ, "descmodboss");
+				SetObjProperty(targ, "Sexo", 0);
+			endif
 			var time := ReadGameClock();
 			SetObjProperty(targ, "countercheck", time);
 			if (erase_selvagem == 1)
