@@ -10,9 +10,18 @@ class AbilityMonitor()
 	var ActivationTime := 0;
 	var MobileSerial := 0x0;
 	var AbilityId := 0;
+	var Duration := 0;
 
 	function AbilityMonitor(this, ability)
 		this.AbilityId := ability.GetId();
+	endfunction
+
+	function GetDuration(this)
+		return this.Duration;
+	endfunction
+
+	function SetDuration(this, duration)
+		this.Duration := duration;
 	endfunction
 
 	function GetPid(this)
@@ -53,6 +62,11 @@ class AbilityMonitor()
 		endif
 
 		var ability := this.GetAbility();
+		if (ability.errortext)
+			Message("Habilidade não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.GetObjRef());
+			return ability; // Return the error
+		endif
+
 		var mobileRef := mobile.GetObjRef();
 
 		// Validate stamina cost
@@ -104,10 +118,7 @@ class AbilityMonitor()
 		endif
 
 		// === V3: CALCULATE DYNAMIC DURATION ===
-		var duration := ability.GetDurationFor(mobile);
-		if (duration > 0)
-			ability.SetDuration(duration);
-		endif
+		this.Duration := ability.GetDurationFor(mobile);
 
 		// === V3: CALL OnActivate HOOK ===
 		ability.OnActivate(mobile);

@@ -7,10 +7,8 @@ include ":abilities:models/Ability";
 include ":attributes:attributes";
 
 program AbilityMonitor(params)
-	print("[ABILITY_MONITOR.SRC] Script started");
-	var who := params[1]; // MobileWrapper class
-	var monitor := params[2]; // AbilityMonitor class
-	print($"[ABILITY_MONITOR.SRC] who={who}, monitor={monitor}");
+	var who := params[1]; // MobileWrapper
+	var monitor := params[2]; // AbilityMonitor
 
 	if (who.IsDead())
 		Message("Você não pode usar esta habilidade enquanto estiver morto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
@@ -18,34 +16,24 @@ program AbilityMonitor(params)
 	endif
 
 	monitor.SetPid(GetPid());
-
 	var ability := monitor.GetAbility();
-	print($"[ABILITY_MONITOR.SRC] ability={ability.GetId()}, moment={ability.GetActivationMoment()}");
 	SetScriptController(who.GetObjRef());
-
 	who.ActivateAbility(ability, monitor);
 
+	// ON_USE abilities execute immediately and end
 	if (ability.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
-		print("[ABILITY_MONITOR.SRC] Calling ExecuteOn for OnUse ability");
 		ability.ExecuteOn(who);
-		monitor.ConsumeCharge(1);
 		who.DeactivateAbility(ability);
 		return;
 	endif
 
-	// Duration monitoring for combat abilities
-	var activationTime := POLCore().systime;
-	var duration := ability.GetDuration();
-	var durationSet := (duration > 0);
-
-	// For Tempo abilities (duration = 0), wait up to 30 seconds for SET_DURATION event
-	// This is an exploit protection - duration will be set by the script on first use
-	if (!durationSet)
-		duration := 30; // Timeout: ability expires if not used within 30s
-		// No message for Tempo abilities - duration is set on first combat use
-	else
-		Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	// V3: Duration is pre-calculated and stored in monitor
+	var duration := monitor.GetDuration();
+	if (duration <= 0)
+		duration := 1; // Minimum 1 second
 	endif
+
+	Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 
 	var endTime := POLCore().systime + duration;
 	var remainingTime := duration;
@@ -53,34 +41,14 @@ program AbilityMonitor(params)
 	while (remainingTime > 0)
 		var event := Wait_For_Event(remainingTime);
 
-		// Vou deixar aqui por que to pensando em usar o Abort para regenerar a hab caso ele tenha perdido porque nao tava usando arma certa ou coisa boba assim
 		if (event == ABILITY_EVENT_ID::ABORT)
 			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
-		elseif (event.type == ABILITY_EVENT_ID::SET_DURATION && !durationSet)
-			if (POLCore().systime - activationTime > 30)
-				Message($"Habilidade {ability.GetName()} expirou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-				break;
-			endif
-			duration := event.value;
-			endTime := POLCore().systime + duration;
-			durationSet := 1;
-			Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
-		elseif (event == ABILITY_EVENT_ID::USED)
-			var abilityCharges := ability.GetCharges();
-			if (abilityCharges && CInt(abilityCharges) > 0)
-				Message($"Habilidade {ability.GetName()} teve seu efeito usado.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
-				monitor.ConsumeCharge(1);
-				if (monitor.GetCharges() <= 0)
-					Message($"Habilidade {ability.GetName()} esgotou suas cargas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-					break;
-				endif
-			endif
 		elseif (event == ABILITY_EVENT_ID::REFRESH)
 			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			endTime := POLCore().systime + duration;
 		elseif (!event)
-			Message($"Habilidade {ability.GetName()} {(durationSet ? "terminou" : "expirou por inatividade")}.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
 		endif
 
