@@ -2,14 +2,18 @@
 // Add new abilities here as they are migrated to V3
 
 include ":abilities:models/Ability";
-
-// Import ability classes
-include ":abilities:classes/combatente/Halfswording";
+include ":abilities:classes/_index";  // All ability class includes
 
 // Registry: ABILITY_ID -> Class reference
 // Built programmatically because dictionary literals don't evaluate enum keys
 var ABILITY_CLASSES := dictionary{};
+
+// Combatente (200-204)
 ABILITY_CLASSES[ABILITY_ID::HALFSWORD] := @Halfswording;
+ABILITY_CLASSES[ABILITY_ID::GOLPE_MORTAL] := @GolpeMortal;
+ABILITY_CLASSES[ABILITY_ID::CONTRAGOLPE_CRUZADO] := @ContragolpeCruzado;
+ABILITY_CLASSES[ABILITY_ID::GOLPES_FURIOSOS] := @GolpesFuriosos;
+ABILITY_CLASSES[ABILITY_ID::SENTENCA_DE_MORTE] := @SentencaDeMorte;
 
 // Creates ability instance from registry
 // @param abilityId ABILITY_ID enum value

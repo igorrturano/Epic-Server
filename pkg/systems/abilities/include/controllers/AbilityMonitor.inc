@@ -100,21 +100,22 @@ class AbilityMonitor()
 		if (!ability.CanActivate(mobile))
 			return error{"errortext" := "Ability conditions not met"};
 		endif
+		if (!mobile.GetObjRef().cmdlevel)
+			// === CONSUME COSTS ===
+			if (ability.GetCostSTAM() > 0)
+				mobile.ConsumeStamina(ability.GetCostSTAM());
+			endif
+			if (ability.GetCostMANA() > 0)
+				mobile.ConsumeMana(ability.GetCostMANA());
+			endif
+			if (ability.GetCostHP() > 0)
+				mobile.ConsumeHP(ability.GetCostHP());
+			endif
 
-		// === CONSUME COSTS ===
-		if (ability.GetCostSTAM() > 0)
-			mobile.ConsumeStamina(ability.GetCostSTAM());
-		endif
-		if (ability.GetCostMANA() > 0)
-			mobile.ConsumeMana(ability.GetCostMANA());
-		endif
-		if (ability.GetCostHP() > 0)
-			mobile.ConsumeHP(ability.GetCostHP());
-		endif
-
-		// === SET COOLDOWN ===
-		if (ability.GetCooldown() > 0)
-			SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+			// === SET COOLDOWN ===
+			if (ability.GetCooldown() > 0)
+				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+			endif
 		endif
 
 		// === V3: CALCULATE DYNAMIC DURATION ===
