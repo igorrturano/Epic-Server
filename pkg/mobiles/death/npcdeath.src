@@ -133,6 +133,7 @@ program core_npcDeath(params)
 			elseif (!getobjproperty(corpse, "Necro"))
 				GetNumPets(master);
 				var teste := GetObjProperty(corpse, "LastDP");
+				SetObjProperty(master, "LastPetCorpse", corpse.serial);
 				if (GetObjProperty(corpse, "NeverRelease")) // &&
 					// if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
 					SendSysMessageEx(master, "Seu pet fiel irá acordar em 3 minutos", SSM_INFO);
