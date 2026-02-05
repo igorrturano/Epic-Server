@@ -191,20 +191,20 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                     tier := CInt(npc_elem.Tier);
                 endif
 
-                var template := GetAnimalTemplateByTier(tier);
-                if (template)
-                    SetObjProperty(mobile, "#camuflagem_template", template);
-                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
-                    sleepms(250);  // This was the key - giving the NPC time to initialize
-                    pet.alignment := 1;
-                    SetObjProperty(pet, "owner", mobile.serial);
-                    GrantPrivilege(pet, "hiddenattack");
-                    pet.enable("hiddenattack");
-                    GrantPrivilege(mobile, "hiddenattack");
-                    mobile.enable("hiddenattack");
-                    mobile.stealthsteps := 30;
-                    pet.stealthsteps := 30;
-                endif
+                // var template := GetAnimalTemplateByTier(tier);
+                // if (template)
+                //     SetObjProperty(mobile, "#camuflagem_template", template);
+                //     var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
+                //     sleepms(250);  // This was the key - giving the NPC time to initialize
+                //     pet.alignment := 1;
+                //     SetObjProperty(pet, "owner", mobile.serial);
+                //     GrantPrivilege(pet, "hiddenattack");
+                //     pet.enable("hiddenattack");
+                //     GrantPrivilege(mobile, "hiddenattack");
+                //     mobile.enable("hiddenattack");
+                //     mobile.stealthsteps := 30;
+                //     pet.stealthsteps := 30;
+                // endif
                 var net := CreateItemInBackpack(mobile, "net", RandomInt(2)+1);
             endif
 

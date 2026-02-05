@@ -134,10 +134,15 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 		while (placement_tries < 30 && !placed)
 			new_x := CInt(spawner.x + RandomInt(range_val) - RandomInt(range_val));
 			new_y := CInt(spawner.y + RandomInt(range_val) - RandomInt(range_val));
-			new_z := GetWorldHeight(new_x, new_y, spawner.realm);
-			if (spawner.z > new_z + 5 || spawner.z < new_z - 5)
-				new_z := spawner.z;
+
+			// Validate location is standable (not inside walls)
+			var standing := GetStandingHeight(new_x, new_y, spawner.z, spawner.realm);
+			if (standing.errortext)
+				placement_tries += 1;
+				sleepms(10);
+				continue;
 			endif
+			new_z := standing.z;
 
 			if (len(ListItemsNearLocation(new_x, new_y, new_z, 0, spawner.realm)) == 0)
 				var new_chest;
