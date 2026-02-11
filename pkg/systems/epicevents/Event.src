@@ -732,6 +732,7 @@ function PreserveConditionFormData(input, existing_condition)
 	endif
 
 	params.+has_item_amount := (amount_str && amount_str != "") ? CInt(amount_str) : 1;
+	params.+should_consume_item := input[CHCK_COND_ITEM_CONSUME] ? 1 : 0;
 
 	// Preserve NATURE fields
 	params.+moon_phases := array{};
@@ -846,16 +847,22 @@ function HandleActionEdit(who, action_type, existing_action)
 				continue;
 			endif
 
-			// Get existing amount or default to 1
+			// Preserve existing values or default
 			var existing_amount := 1;
-			if (working_action.condition && working_action.condition.params && working_action.condition.params.amount)
-				existing_amount := working_action.condition.params.amount;
+			var existing_consume := 0;
+			if (working_action.condition && working_action.condition.params)
+				if (working_action.condition.params.amount)
+					existing_amount := working_action.condition.params.amount;
+				endif
+				if (working_action.condition.params.should_consume_item)
+					existing_consume := working_action.condition.params.should_consume_item;
+				endif
 			endif
 
 			// Replace condition with new struct to ensure clean update
 			working_action.condition := struct{
 				type := "PLAYER_HAS_ITEM",
-				params := struct{ objtype := targ.objtype, amount := existing_amount }
+				params := struct{ objtype := targ.objtype, amount := existing_amount, should_consume_item := existing_consume }
 			};
 
 			Message($"Item selecionado: {targ.objtype} (0x{Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);

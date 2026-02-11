@@ -77,6 +77,9 @@ class EventConfig()
 			if (this.condition.params.has_item_amount)
 				params_data.+has_item_amount := this.condition.params.has_item_amount;
 			endif
+			if (this.condition.params.should_consume_item)
+				params_data.+should_consume_item := this.condition.params.should_consume_item;
+			endif
 
 			// NATURE fields - explicitly copy arrays
 			if (this.condition.params.moon_phases)
@@ -170,6 +173,9 @@ class EventConfig()
 				endif
 				if (data.condition.params.has_item_amount)
 					params.+has_item_amount := CInt(data.condition.params.has_item_amount);
+				endif
+				if (data.condition.params.should_consume_item)
+					params.+should_consume_item := CInt(data.condition.params.should_consume_item);
 				endif
 
 				// NATURE fields - explicitly rebuild arrays

@@ -78,6 +78,7 @@ const CHK_COND_HAS_ITEM := 450;
 const ID_COND_ITEM_OBJTYPE := 451;
 const ID_COND_ITEM_AMOUNT := 452;
 const BTN_COND_TARGET_ITEM := 453;
+const CHCK_COND_ITEM_CONSUME := 454;
 
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
@@ -468,6 +469,7 @@ function BuildConditionGump(existing_condition := 0)
 	var has_item_enabled := 0;
 	var has_item_objtype := "";
 	var has_item_amount := "1";
+	var should_consume_item := 0;
 
 	if (existing_condition && existing_condition.params)
 		if (existing_condition.params.moon_phases)
@@ -490,6 +492,9 @@ function BuildConditionGump(existing_condition := 0)
 			has_item_objtype := Hex(existing_condition.params.has_item_objtype);
 			if (existing_condition.params.has_item_amount)
 				has_item_amount := CStr(existing_condition.params.has_item_amount);
+			endif
+			if (existing_condition.params.should_consume_item)
+				should_consume_item := 1;
 			endif
 		endif
 	endif
@@ -516,6 +521,10 @@ function BuildConditionGump(existing_condition := 0)
 	GFTextLine(gump, x + 130, y + 3, GUMP_COLOR::HELP_TEXT, "Quantidade:");
 	GFResizePic(gump, x + 220, y, 9350, 50, 25);
 	GFTextEntry(gump, x + 225, y + 5, 40, 20, GUMP_COLOR::TEXT_ENTRY, has_item_amount, ID_COND_ITEM_AMOUNT);
+	y := y + 40;
+
+	GFTextLine(gump, x + 130, y + 3, GUMP_COLOR::HELP_TEXT, "Consumir item:");
+	GFCheckBox(gump, x + 220, y, 0x938, 0x939, should_consume_item, CHCK_COND_ITEM_CONSUME);
 	y := y + 40;
 
 	// ==================== SECTION: NATURE ====================
@@ -598,6 +607,7 @@ function ParseConditionInput(input)
 	// ===== HAS_ITEM section =====
 	params.+has_item_objtype := 0;
 	params.+has_item_amount := 0;
+	params.+should_consume_item := 0;
 
 	if (input[CHK_COND_HAS_ITEM])
 		var objtype_str := Trim(GFExtractData(input, ID_COND_ITEM_OBJTYPE));
@@ -613,6 +623,7 @@ function ParseConditionInput(input)
 		endif
 
 		params.has_item_amount := (amount_str && amount_str != "") ? CInt(amount_str) : 1;
+		params.should_consume_item := input[CHCK_COND_ITEM_CONSUME] ? 1 : 0;
 	endif
 
 	// ===== NATURE section =====
