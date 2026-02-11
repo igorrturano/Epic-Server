@@ -3025,7 +3025,7 @@ function DoppelgangerTransformation(mobile, opponent)
     endif
 
     // Don't transform NPCs or already dead opponents
-    if (opponent.npctemplate || opponent.dead)
+    if (opponent.npctemplate || opponent.dead || opponent.concealed || Distance(mobile, opponent) > 10)
         return 0;
     endif
 
