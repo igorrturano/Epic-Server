@@ -83,6 +83,7 @@ const CHCK_COND_ITEM_CONSUME := 454;
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
 const ID_EVENT_MAX_DELAY := 341;
+const CHK_ONE_TIME_ONLY := 342;
 
 // Creature field IDs - base IDs, each creature uses base + (index * 4)
 const ID_CREATURE_BASE := 100;
@@ -383,9 +384,13 @@ function BuildTriggerConfigGump(trigger_type)
 
 	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "O evento so pode ativar novamente apos este intervalo");
 	GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "(randomizado entre min e max)");
+	y := y + 45;
+
+	GFCheckBox(gump, x, y, 0x938, 0x939, 0, CHK_ONE_TIME_ONLY);
+	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::HIGHLIGHT, "Uso unico (destruir evento apos ativacao)");
 
 	// Divider before button
-	y := y + 40;
+	y := y + 35;
 	GFResizePic(gump, 40, y, 3000, 520, 2);
 
 	// OK button (using okay button style)
@@ -445,6 +450,7 @@ function ParseTriggerConfigInput(input, trigger_type)
 	result.+trigger_params := params;
 	result.+min_delay := min_delay;
 	result.+max_delay := max_delay;
+	result.+one_time_only := input[CHK_ONE_TIME_ONLY] ? 1 : 0;
 
 	return result;
 endfunction

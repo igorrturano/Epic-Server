@@ -76,6 +76,7 @@ function CreateEventFlow(who)
 	var trigger_params := config_result.trigger_params;
 	var min_delay := config_result.min_delay;
 	var max_delay := config_result.max_delay;
+	var one_time_only := config_result.one_time_only;
 
 	// Step 3: Configure actions and conditions
 	var actions := array{};
@@ -215,6 +216,7 @@ function CreateEventFlow(who)
 	config.min_delay := min_delay;
 	config.max_delay := max_delay;
 	config.condition := event_condition;
+	config.one_time_only := one_time_only;
 
 	// Target location
 	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
@@ -357,7 +359,12 @@ function BuildEditMenuGump(config)
 	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Acoes: {config.actions.size()} configurada(s)");
 	y := y + 20;
 	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Delay: {config.min_delay}-{config.max_delay} min");
-	y := y + 35;
+	y := y + 20;
+	if (config.one_time_only)
+		GFTextLine(gump, x, y, 38, "Uso unico (sera destruido apos ativacao)");
+		y := y + 20;
+	endif
+	y := y + 15;
 
 	// Divider
 	GFResizePic(gump, 30, y, 3000, 440, 2);
@@ -423,6 +430,8 @@ function ShowConfigSummary(who, config)
 	endif
 
 	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Delay: {config.min_delay} - {config.max_delay} minutos");
+	y := y + 20;
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Uso unico: {(config.one_time_only ? "Sim" : "Nao")}");
 	y := y + 30;
 
 	// Condition section (if configured)
@@ -543,6 +552,7 @@ function EditTrigger(who, config)
 	config.trigger_params := config_result.trigger_params;
 	config.min_delay := config_result.min_delay;
 	config.max_delay := config_result.max_delay;
+	config.one_time_only := config_result.one_time_only;
 
 	return config;
 endfunction
