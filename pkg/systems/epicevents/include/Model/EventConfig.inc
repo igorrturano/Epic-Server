@@ -21,6 +21,7 @@ class EventConfig()
 	var trigger_params;
 	var actions;
 	var condition;  // Nature-based condition for trigger activation
+	var one_time_only;  // Destroy event item after first trigger
 
 	function EventConfig(this)
 		this.creatures := array{};
@@ -32,6 +33,7 @@ class EventConfig()
 		this.trigger_params := 0;
 		this.actions := array{};
 		this.condition := 0;
+		this.one_time_only := 0;
 	endfunction
 
 	function ToStruct(this)
@@ -55,6 +57,7 @@ class EventConfig()
 		data.+max_delay := this.max_delay;
 		data.+trigger_type := this.trigger_type;
 		data.+trigger_params := this.trigger_params;
+		data.+one_time_only := this.one_time_only;
 
 		// Serialize actions array
 		var actions_data := array{};
@@ -76,6 +79,9 @@ class EventConfig()
 			endif
 			if (this.condition.params.has_item_amount)
 				params_data.+has_item_amount := this.condition.params.has_item_amount;
+			endif
+			if (this.condition.params.should_consume_item)
+				params_data.+should_consume_item := this.condition.params.should_consume_item;
 			endif
 
 			// NATURE fields - explicitly copy arrays
@@ -147,6 +153,8 @@ class EventConfig()
 			this.trigger_params := data.trigger_params;
 		endif
 
+		this.one_time_only := data.one_time_only ? 1 : 0;
+
 		if (data.actions)
 			this.actions := array{};
 			foreach action_struct in (data.actions)
@@ -170,6 +178,9 @@ class EventConfig()
 				endif
 				if (data.condition.params.has_item_amount)
 					params.+has_item_amount := CInt(data.condition.params.has_item_amount);
+				endif
+				if (data.condition.params.should_consume_item)
+					params.+should_consume_item := CInt(data.condition.params.should_consume_item);
 				endif
 
 				// NATURE fields - explicitly rebuild arrays

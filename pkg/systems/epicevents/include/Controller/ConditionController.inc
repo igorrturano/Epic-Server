@@ -33,13 +33,18 @@ function EvaluateCombinedCondition(params, event)
 
 		var required_objtype := params.has_item_objtype;
 		var required_amount := params.has_item_amount ? params.has_item_amount : 1;
+		var should_consume := params.should_consume_item ? 1 : 0;
 
 		var found := 0;
+		var to_consume := array{};
 
 		if (event.source.backpack)
-			var items := FindObjtypeInContainer(event.source.backpack, required_objtype);
+			var items := EnumerateItemsInContainer(event.source.backpack);
 			foreach item in items
-				found += item.amount;
+				if (item.objtype == required_objtype)
+					found += item.amount;
+					to_consume.append(item);
+				endif
 			endforeach
 		endif
 
@@ -47,11 +52,32 @@ function EvaluateCombinedCondition(params, event)
 		foreach item in equipped
 			if (item.objtype == required_objtype)
 				found += item.amount;
+				to_consume.append(item);
 			endif
 		endforeach
 
 		if (found < required_amount)
 			return 0;
+		endif
+
+		// Consume items if required
+		if (should_consume)
+			var remaining := required_amount;
+			foreach item in to_consume
+				if (remaining <= 0)
+					break;
+				endif
+				var take := remaining;
+				if (take > item.amount)
+					take := item.amount;
+				endif
+				remaining -= take;
+				if (item.amount > take)
+					SubtractAmount(item, take);
+				else
+					DestroyItem(item);
+				endif
+			endforeach
 		endif
 	endif
 
@@ -86,24 +112,47 @@ function EvaluatePlayerHasItem(condition, event)
 
 	var required_objtype := condition.params.objtype;
 	var required_amount := condition.params.amount ? condition.params.amount : 1;
-
+	var should_consume := condition.params.should_consume_item ? 1 : 0;
 	var found := 0;
+	var to_consume := array{};
 
-	// O(1) search using FindObjtypeInContainer
 	if (event.source.backpack)
-		var items := FindObjtypeInContainer(event.source.backpack, required_objtype);
+		var items := EnumerateItemsInContainer(event.source.backpack);
 		foreach item in items
-			found += item.amount;
+			if (item.objtype == required_objtype)
+				found += item.amount;
+				to_consume.append(item);
+			endif
 		endforeach
 	endif
 
-	// Check equipped items (usually small list, O(1) in practice)
 	var equipped := ListEquippedItems(event.source);
 	foreach item in equipped
 		if (item.objtype == required_objtype)
 			found += item.amount;
+			to_consume.append(item);
 		endif
 	endforeach
+
+	// Consume items if required
+	if (should_consume && found >= required_amount)
+		var remaining := required_amount;
+		foreach item in to_consume
+			if (remaining <= 0)
+				break;
+			endif
+			var take := remaining;
+			if (take > item.amount)
+				take := item.amount;
+			endif
+			remaining -= take;
+			if (item.amount > take)
+				SubtractAmount(item, take);
+			else
+				DestroyItem(item);
+			endif
+		endforeach
+	endif
 
 	return (found >= required_amount);
 endfunction
