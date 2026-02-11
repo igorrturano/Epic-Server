@@ -48,6 +48,12 @@ program eventController(item)
 				if (config.actions && config.actions.size() > 0)
 					ExecuteActions(item, ev, config.actions, config.condition);
 				endif
+
+				// Destroy event item if one-time only
+				if (config.one_time_only)
+					DestroyItem(item);
+					return;
+				endif
 			endif
 		endif
 		sleepms(EVENT_LOOP_THROTTLE_MS);
