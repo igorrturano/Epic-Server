@@ -2136,9 +2136,15 @@ function MaintainSimpleDistance(opponent, dist, sleepdelay)
 endfunction
 
 function DoThiefCombatBehavior(opponent)
+    if (GetCooldown(me, "thief_behavior"))
+        return 0;
+    endif
+
     if (Distance(me, opponent) < 6)
         return 0;
     endif
+
+    SetCooldown(me, "thief_behavior", 30);
 
     // 50% chance to steal, 50% chance to sneak attack
     if (RandomInt(100) < 50)
