@@ -176,6 +176,10 @@ function DoAttack(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetObjRef().cmdlevel == 0)
 		attackInfo.GetAttacker().GetObjRef().concealed := 0;
 	endif
+
+	if (attackInfo.GetAttacker().GetObjRef().hidden)
+		attackInfo.GetAttacker().GetObjRef().hidden := 0;
+	endif
 	
 	if (!attackInfo.GetAttacker().IsNPC() &&
 		attackInfo.GetAttacker().IsWarMode() &&
