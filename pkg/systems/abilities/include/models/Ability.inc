@@ -20,11 +20,6 @@ enum class ABILITY_ACTIVATION
 	ON_USE := "OnUse"
 endenum
 
-enum class ABILITY_ACTIVATION_MODE
-	PASSIVE := "Passiva",
-	ACTIVE := "Ativa"
-endenum
-
 class Ability(IAbility)
 	// === METADATA (from config) ===
 	var Id := 0;

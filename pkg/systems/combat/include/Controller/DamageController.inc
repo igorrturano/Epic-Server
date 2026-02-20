@@ -472,13 +472,48 @@ function ApplyCriticalDamage(byRef attackInfo)
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
 
-	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
+	Message("*CRÍTICO*", Color(GENERAL_COLOR::RED)).SendAbove(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
 		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
 	endif
-	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
-	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
+	// Calculate effective raw damage using only active posture's physical damage + elementals
+	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+	var effectiveRawDmg := 0;
+	if (posture == DAMAGE_TYPE::SLASH)
+		effectiveRawDmg := attackInfo.GetDamage().GetSlashRawDamage();
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		effectiveRawDmg := attackInfo.GetDamage().GetPiercingRawDamage();
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		effectiveRawDmg := attackInfo.GetDamage().GetBluntRawDamage();
+	endif
+	effectiveRawDmg += attackInfo.GetDamage().GetFireRawDamage()
+					 + attackInfo.GetDamage().GetColdRawDamage()
+					 + attackInfo.GetDamage().GetPoisonRawDamage()
+					 + attackInfo.GetDamage().GetEnergyRawDamage();
+
 	foreach hitscript in (weapon_scripts)
+		// Damage multipliers: multiply the Damage object so it flows through armor + ApplyCombatDamage as one result
+		if (hitscript["damage2"] || hitscript["damage3"])
+			var multiplier := hitscript["damage3"] ? 2 : 1; // damage2 = 2x total (increase by 1x), damage3 = 3x total (increase by 2x)
+			var d := attackInfo.GetDamage();
+
+			if (posture == DAMAGE_TYPE::SLASH)
+				d.IncreaseSlashRawDamage(d.GetSlashRawDamage() * multiplier);
+			elseif (posture == DAMAGE_TYPE::PIERCING)
+				d.IncreasePiercingRawDamage(d.GetPiercingRawDamage() * multiplier);
+			elseif (posture == DAMAGE_TYPE::BLUNT)
+				d.IncreaseBluntRawDamage(d.GetBluntRawDamage() * multiplier);
+			endif
+
+			d.IncreaseFireRawDamage(d.GetFireRawDamage() * multiplier)
+			 .IncreaseColdRawDamage(d.GetColdRawDamage() * multiplier)
+			 .IncreasePoisonRawDamage(d.GetPoisonRawDamage() * multiplier)
+			 .IncreaseEnergyRawDamage(d.GetEnergyRawDamage() * multiplier);
+
+			continue;
+		endif
+
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
 			var script := start_script(
 				hitscript,
@@ -488,7 +523,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 					armor.GetObjRef(),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
-					attackInfo.GetDamage().GetTotalRawDamage()
+					effectiveRawDmg
 				}
 			);
 			if (!script || script.errortext)
