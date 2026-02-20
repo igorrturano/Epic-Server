@@ -44,6 +44,9 @@ program AbilityMonitor(params)
 		if (event == ABILITY_EVENT_ID::ABORT)
 			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
+		elseif (event == ABILITY_EVENT_ID::COMPLETE)
+			// Single-use ability executed successfully - end silently
+			break;
 		elseif (event == ABILITY_EVENT_ID::REFRESH)
 			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			endTime := POLCore().systime + duration;

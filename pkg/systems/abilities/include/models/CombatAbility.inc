@@ -4,10 +4,16 @@ include ":wrappers:Objects/Model/MobileWrapper";
 
 class CombatAbility(Ability)
 
+    var SingleUse := false;
+
     function CombatAbility(this, abilityEnum)
         Super(abilityEnum);
         // Default for CombatAbility - subclasses override in their constructor
         this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+    endfunction
+
+    function IsSingleUse(this)
+        return this.SingleUse;
     endfunction
 
     // Override: Custom activation conditions

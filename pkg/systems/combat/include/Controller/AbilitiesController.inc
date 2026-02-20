@@ -99,8 +99,16 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 				continue; // Skip non-migrated abilities
 			endif
 
-			ability.ExecuteOn(attackInfo);
+			var result := ability.ExecuteOn(attackInfo);
 			abilitiesExecuted++;
+
+			// Single-use abilities: deactivate after first successful execution
+			if (result && ability.IsSingleUse() && serializedMonitor.Pid)
+				var monitorProcess := GetProcess(serializedMonitor.Pid);
+				if (monitorProcess)
+					monitorProcess.SendEvent(ABILITY_EVENT_ID::COMPLETE);
+				endif
+			endif
 		endif
 	endforeach
 
