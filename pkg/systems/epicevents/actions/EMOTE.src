@@ -1,4 +1,8 @@
 use uo;
+use os;
+
+include ":message:model/Message";
+include ":text:Color";
 
 program EMOTE_Action(params)
 	var item := params[1];
@@ -11,11 +15,16 @@ program EMOTE_Action(params)
 		return 0;
 	endif
 
-	var emote_target := item;
 	if (action_params.show_on_source && event.source)
-		emote_target := event.source;
+		Message(emote_text, Color(MESSAGE_COLOR::NARRATOR)).SendAbove(event.source);
+		return 1;
 	endif
 
-	PrintTextAbove(emote_target, emote_text);
+	var anchor := CreateItemAtLocation(item.x, item.y, item.z, 0x00C3, 1, item.realm);
+	anchor.movable := 0;
+
+	Message(emote_text, Color(MESSAGE_COLOR::NARRATOR)).SendAbove(anchor);
+	sleep(5);
+	DestroyItem(anchor);
 	return 1;
 endprogram

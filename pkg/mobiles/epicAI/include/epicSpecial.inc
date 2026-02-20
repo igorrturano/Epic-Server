@@ -160,13 +160,15 @@ function DoThiefSneakAttack(opponent)
 
     // Try to get behind the target without breaking stealth
     var attempts := 0;
-    while (!IsBehind(me, opponent.x, opponent.y) && attempts < 10)
+    while (!IsBehind(opponent, me.x, me.y) && attempts < 20)
         attempts += 1;
-        
-        // Calculate position behind target
-        var behind_x := opponent.x + (opponent.x - me.x);
-        var behind_y := opponent.y + (opponent.y - me.y);
-        
+
+        // Calculate position behind target based on their facing
+        var behind_facing := (opponent.facing + 4) % 8;
+        var mods := GetModByFacing(behind_facing);
+        var behind_x := opponent.x + mods[1];
+        var behind_y := opponent.y + mods[2];
+
         WalkTowardLocation(behind_x, behind_y);
         sleepms(100);
 
@@ -177,18 +179,14 @@ function DoThiefSneakAttack(opponent)
     endwhile
 
     // Only attack if still hidden and in position
-    if (me.hidden && IsBehind(me, opponent.x, opponent.y))
-        PrintTextAbove(me, "*ataque furtivo*");
+    if (me.hidden && /* IsBehind(opponent, me.x, me.y) && */ Distance(me, opponent) <= 1)
         SetObjProperty(me, "backstab", 1);
         SetObjProperty(me.weapon, "backstab", 1);
         me.attack_once(opponent);
     else
-        // If stealth attack failed, engage in normal combat
-        case (brain_type)
-            "monster": HandleMonsterCombatEvent(opponent, 0);
-            "humanoid": 
-        endcase
-
+        // If stealth attack failed, reveal and engage normally
+        me.hidden := 0;
+        SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
     endif
 endfunction
 

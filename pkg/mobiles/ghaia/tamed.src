@@ -136,7 +136,6 @@ program TamedAI()
 						OpenPack(ev);
 
 					elseif (!GetEquipmentByLayer(ev.source, LAYER_MOUNT))
-
 						if (IsMountable(me.graphic))
 							if (MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
 								if (me.npctemplate == ":brainai:Unicorn")
