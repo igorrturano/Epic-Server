@@ -11,9 +11,9 @@ include ":debug:Controller/DebugController";
  * - First hit: Guarantees parry (+100 mod via SetParryChanceMod)
  * - All hits: Counter-attack flag - FOR TT/5 SECONDS
  */
-class ContragolpeCruzado(CombatAbility)
+class CrossCut(CombatAbility)
 
-    function ContragolpeCruzado(this)
+    function CrossCut(this)
         Super(ABILITY_ID::CONTRAGOLPE_CRUZADO);
         this.ActivationMoment := ABILITY_ACTIVATION::BEFORE_HIT;
     endfunction

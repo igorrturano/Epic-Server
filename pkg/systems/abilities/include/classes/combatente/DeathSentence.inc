@@ -9,9 +9,9 @@ include ":debug:Controller/DebugController";
  *
  * Active (BeforeDamage): All successful hits are guaranteed criticals for TT/5 seconds
  */
-class SentencaDeMorte(CombatAbility)
+class DeathSentence(CombatAbility)
 
-    function SentencaDeMorte(this)
+    function DeathSentence(this)
         Super(ABILITY_ID::SENTENCA_DE_MORTE);
         this.ActivationMoment := ABILITY_ACTIVATION::BEFORE_DAMAGE;
     endfunction

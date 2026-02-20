@@ -5,9 +5,9 @@ include ":tn:cooldown";              // TS_StartTimer
 include ":message:model/Message";    // Message, Color, SYSTEM_COLOR
 include ":debug:Controller/DebugController";  // DebugMsg, DEBUG_HAB
 
-class Halfswording(CombatAbility)
+class Halfsword(CombatAbility)
 
-    function Halfswording(this)
+    function Halfsword(this)
         Super(ABILITY_ID::HALFSWORD);
         // Set in constructor - class var initializers with enum values have issues
         this.ActivationMoment := ABILITY_ACTIVATION::BEFORE_DAMAGE;

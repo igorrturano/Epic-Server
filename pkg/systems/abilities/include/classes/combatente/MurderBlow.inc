@@ -13,9 +13,9 @@ include ":debug:Controller/DebugController";
  *
  * Note: This is a single-charge ability - ends after one hit
  */
-class GolpeMortal(CombatAbility)
+class MurderBlow(CombatAbility)
 
-    function GolpeMortal(this)
+    function MurderBlow(this)
         Super(ABILITY_ID::GOLPE_MORTAL);
         this.ActivationMoment := ABILITY_ACTIVATION::BEFORE_DAMAGE;
         this.SingleUse := true;

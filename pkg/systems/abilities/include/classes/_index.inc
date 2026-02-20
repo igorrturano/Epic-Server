@@ -4,11 +4,11 @@
 //===========================================
 // COMBATENTE (200-204)
 //===========================================
-include ":abilities:classes/combatente/Halfswording";
-include ":abilities:classes/combatente/GolpeMortal";
-include ":abilities:classes/combatente/ContragolpeCruzado";
-include ":abilities:classes/combatente/GolpesFuriosos";
-include ":abilities:classes/combatente/SentencaDeMorte";
+include ":abilities:classes/combatente/Halfsword";
+include ":abilities:classes/combatente/MurderBlow";
+include ":abilities:classes/combatente/CrossCut";
+include ":abilities:classes/combatente/RageCut";
+include ":abilities:classes/combatente/DeathSentence";
 
 //===========================================
 // ARQUEIRO (1-5)
@@ -22,11 +22,11 @@ include ":abilities:classes/combatente/SentencaDeMorte";
 //===========================================
 // CACADOR (100-104)
 //===========================================
-// include ":abilities:classes/cacador/Camuflagem";
-// include ":abilities:classes/cacador/CacadorExperiente";
-// include ":abilities:classes/cacador/MestreDeFeras";
-// include ":abilities:classes/cacador/EspreitaSelvagem";
-// include ":abilities:classes/cacador/CacadorImplacavel";
+include ":abilities:classes/cacador/Camouflage";
+include ":abilities:classes/cacador/ExpertHunter";
+include ":abilities:classes/cacador/BeastMaster";
+include ":abilities:classes/cacador/WildStalker";
+include ":abilities:classes/cacador/RelentlessHunter";
 
 //===========================================
 // DEFENSOR (300-304)

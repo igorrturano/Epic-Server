@@ -10,16 +10,11 @@ include ":debug:Controller/DebugController";
  *
  * OnUse: Immediately perform TT/40 extra attacks (min 1, max 5) on current opponent
  */
-class GolpesFuriosos(CombatAbility)
+class RageCut(CombatAbility)
 
-    function GolpesFuriosos(this)
+    function RageCut(this)
         Super(ABILITY_ID::GOLPES_FURIOSOS);
         this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
-    endfunction
-
-    // OnUse abilities don't have duration - they execute immediately
-    function GetDurationFor(this, mobile)
-        return 0;
     endfunction
 
     // Check if player has an opponent to attack
