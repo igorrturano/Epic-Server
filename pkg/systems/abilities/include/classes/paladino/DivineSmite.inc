@@ -21,6 +21,14 @@ class DivineSmite(CombatAbility)
         this.SingleUse := true;
     endfunction
 
+    function GetDurationFor(this, mobile)
+        var duration := CInt(mobile.GetSkill(THEOLOGY) / 10);
+        if (duration < 2)
+            duration := 2;
+        endif
+        return duration;
+    endfunction
+
     function OnBeforeDamage(this, attackInfo)
         var attacker := attackInfo.GetAttacker();
         var defender := attackInfo.GetDefender();

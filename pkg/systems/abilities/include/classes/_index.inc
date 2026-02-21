@@ -13,11 +13,11 @@ include ":abilities:classes/combatente/DeathSentence";
 //===========================================
 // ARQUEIRO (1-5)
 //===========================================
-// include ":abilities:classes/arqueiro/TiroPoderoso";
-// include ":abilities:classes/arqueiro/TiroCarregado";
-// include ":abilities:classes/arqueiro/TiroEmMovimento";
-// include ":abilities:classes/arqueiro/EncontrarBrecha";
-// include ":abilities:classes/arqueiro/DisparoMultiplo";
+include ":abilities:classes/arqueiro/PowerShot";
+include ":abilities:classes/arqueiro/ChargedShot";
+include ":abilities:classes/arqueiro/ShootWhileMoving";
+include ":abilities:classes/arqueiro/FindOpening";
+include ":abilities:classes/arqueiro/MultiShot";
 
 //===========================================
 // CACADOR (100-104)

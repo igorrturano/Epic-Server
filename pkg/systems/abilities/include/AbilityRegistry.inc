@@ -4,6 +4,13 @@
 include ":abilities:AbilityRegistryBase";  // ABILITY_CLASSES dict + CreateAbility
 include ":abilities:classes/_index";       // All ability class definitions
 
+// Arqueiro (1-5)
+ABILITY_CLASSES[ABILITY_ID::TIRO_PODEROSO] := @PowerShot;
+ABILITY_CLASSES[ABILITY_ID::TIRO_CARREGADO] := @ChargedShot;
+ABILITY_CLASSES[ABILITY_ID::TIRO_EM_MOVIMENTO] := @ShootWhileMoving;
+ABILITY_CLASSES[ABILITY_ID::ENCONTRAR_BRECHA] := @FindOpening;
+ABILITY_CLASSES[ABILITY_ID::DISPARO_MULTIPLO] := @MultiShot;
+
 // Combatente (200-204)
 ABILITY_CLASSES[ABILITY_ID::HALFSWORD] := @Halfsword;
 ABILITY_CLASSES[ABILITY_ID::GOLPE_MORTAL] := @MurderBlow;
