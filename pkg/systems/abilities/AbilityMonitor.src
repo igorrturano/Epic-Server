@@ -19,6 +19,7 @@ program AbilityMonitor(params)
 	var ability := monitor.GetAbility();
 	SetScriptController(who.GetObjRef());
 	who.ActivateAbility(ability, monitor);
+	ability.OnActivate(who);
 
 	// ON_USE abilities execute immediately and end
 	if (ability.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
@@ -27,10 +28,9 @@ program AbilityMonitor(params)
 		return;
 	endif
 
-	// V3: Duration is pre-calculated and stored in monitor
 	var duration := monitor.GetDuration();
 	if (duration <= 0)
-		duration := 1; // Minimum 1 second
+		duration := 1;
 	endif
 
 	Message($"Habilidade {ability.GetName()} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
@@ -45,13 +45,11 @@ program AbilityMonitor(params)
 			Message($"Habilidade {ability.GetName()} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
 		elseif (event == ABILITY_EVENT_ID::COMPLETE)
-			// Single-use ability executed successfully - end silently
 			break;
 		elseif (event == ABILITY_EVENT_ID::REFRESH)
 			Message($"Habilidade {ability.GetName()} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 			endTime := POLCore().systime + duration;
 		elseif (!event)
-			Message($"Habilidade {ability.GetName()} terminou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 			break;
 		endif
 

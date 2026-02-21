@@ -31,11 +31,11 @@ include ":abilities:classes/cacador/RelentlessHunter";
 //===========================================
 // DEFENSOR (300-304)
 //===========================================
-// include ":abilities:classes/defensor/Provocar";
-// include ":abilities:classes/defensor/ManobraDeDefesa";
-// include ":abilities:classes/defensor/ManobraDesafiadora";
-// include ":abilities:classes/defensor/ManobraDaResiliencia";
-// include ":abilities:classes/defensor/ManobraDaInvencibilidade";
+include ":abilities:classes/defensor/Taunt";
+include ":abilities:classes/defensor/DefenseManeuver";
+include ":abilities:classes/defensor/ChallengerManeuver";
+include ":abilities:classes/defensor/ResilienceManeuver";
+include ":abilities:classes/defensor/InvincibilityManeuver";
 
 //===========================================
 // PALADINO (400-404)

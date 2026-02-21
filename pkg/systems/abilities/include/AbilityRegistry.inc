@@ -22,6 +22,13 @@ ABILITY_CLASSES[ABILITY_ID::MESTRE_DE_FERAS] := @BeastMaster;
 ABILITY_CLASSES[ABILITY_ID::ESPREITA_SELVAGEM] := @WildStalker;
 ABILITY_CLASSES[ABILITY_ID::CACADOR_IMPLACAVEL] := @RelentlessHunter;
 
+// Defensor (300-304)
+ABILITY_CLASSES[ABILITY_ID::PROVOCAR] := @Taunt;
+ABILITY_CLASSES[ABILITY_ID::MANOBRA_DE_DEFESA] := @DefenseManeuver;
+ABILITY_CLASSES[ABILITY_ID::MANOBRA_DESAFIADORA] := @ChallengerManeuver;
+ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_RESILIENCIA] := @ResilienceManeuver;
+ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE] := @InvincibilityManeuver;
+
 // Creates ability instance from registry
 // @param abilityId ABILITY_ID enum value
 // @return CombatAbility subclass instance, or error if not registered

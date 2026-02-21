@@ -846,6 +846,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
+		ability.OnDeactivate(this);
+
 		var activeAbilities := this.GetActiveAbilities();
 		activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
 		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);

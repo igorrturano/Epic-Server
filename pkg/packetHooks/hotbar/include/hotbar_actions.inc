@@ -145,8 +145,8 @@ function ExecuteAbility(who, actionId)
 
     // Send cooldown notification to client
     // Format: [HAB_CD] Name|Seconds|IconHex - parsed by client AbilityCooldownManager
-    if (ability.GetCooldown() > 0)
-        SendSysMessageEx(who, $"[HAB_CD] {ability.GetName()}|{ability.GetCooldown()}|{ability.GetIcon()}", SSM_INFO);
+    if (ability.GetAbilityCooldown() > 0)
+        SendSysMessageEx(who, $"[HAB_CD] {ability.GetName()}|{ability.GetAbilityCooldown()}|{ability.GetIcon()}", SSM_INFO);
     endif
 
     return 1;

@@ -113,16 +113,13 @@ class AbilityMonitor()
 			endif
 
 			// === SET COOLDOWN ===
-			if (ability.GetCooldown() > 0)
-				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetCooldown());
+			if (ability.GetAbilityCooldown() > 0)
+				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetAbilityCooldown());
 			endif
 		endif
 
 		// === V3: CALCULATE DYNAMIC DURATION ===
 		this.Duration := ability.GetDurationFor(mobile);
-
-		// === V3: CALL OnActivate HOOK ===
-		ability.OnActivate(mobile);
 
 		// === ACTIVATE ===
 		this.MobileSerial := mobile.GetSerial();

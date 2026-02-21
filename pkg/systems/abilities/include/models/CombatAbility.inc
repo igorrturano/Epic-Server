@@ -28,6 +28,12 @@ class CombatAbility(Ability)
         // To be overridden by subclasses
     endfunction
 
+    // Override: Cleanup when ability deactivates (by any reason: expiry, abort, move, complete)
+    // @param mobile MobileWrapper - who had the ability
+    function OnDeactivate(this, mobile)
+        // To be overridden by subclasses
+    endfunction
+
     // Override: Calculate duration from mobile's stats
     // @param mobile MobileWrapper - who activated
     // @return Integer - duration in seconds

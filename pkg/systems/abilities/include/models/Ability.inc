@@ -104,7 +104,7 @@ class Ability(IAbility)
 		return this.CostMANA;
 	endfunction
 
-	function GetCooldown(this)
+	function GetAbilityCooldown(this)
 		return this.Cooldown;
 	endfunction
 

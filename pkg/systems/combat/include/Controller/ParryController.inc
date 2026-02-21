@@ -219,7 +219,9 @@ function CheckDisarmShield(byRef attackInfo)
 		endif
 	endif
 
-	// Execute config-driven passive abilities that trigger on parry
+	// Execute activated abilities that trigger on parry (e.g. ChallengerManeuver)
+	ExecuteCombatAbilitiesOnParry(attackInfo);
+	// Execute passive abilities that trigger on parry
 	ExecutePassiveAbilitiesOnParry(attackInfo);
 
 	return false;

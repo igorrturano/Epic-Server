@@ -72,6 +72,14 @@ function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 endfunction
 
 /**
+ * DEFENDER-CENTRIC: Executes ON_PARRY abilities for defender only.
+ * Called when defender successfully parries - activated abilities that trigger on parry.
+ */
+function ExecuteCombatAbilitiesOnParry(byRef attackInfo)
+	_ExecuteCombatAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::ON_PARRY, attackInfo);
+endfunction
+
+/**
  * Internal: Executes all abilities for a specific mobile at a specific moment.
  *
  * @param mobile MobileWrapper - The mobile whose abilities to execute

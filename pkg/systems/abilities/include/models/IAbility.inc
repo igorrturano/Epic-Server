@@ -11,7 +11,7 @@ class IAbility()
 	uninit function GetCostHP(this);
 	uninit function GetCostSTAM(this);
 	uninit function GetCostMANA(this);
-	uninit function GetCooldown(this);
+	uninit function GetAbilityCooldown(this);
 	uninit function GetDuration(this);
 	uninit function GetIcon(this);
 
