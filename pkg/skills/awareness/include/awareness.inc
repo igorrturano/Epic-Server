@@ -159,6 +159,7 @@ function ExaminarArea(who)
 	var lvl;
 	var found := 0;
 	var difficulty;
+	var itemdescCfg := ReadConfigFile(":*:itemdesc");
 	foreach mobile in ListMobilesNearLocationEX(who.x, who.y, who.z, range, LISTEX_FLAG_HIDDEN, who.realm)
 		if ( CheckLineOfSight(who, mobile) && abs(mobile.z - who.z ) < 19 )
 			difficulty := CalculateDHDiff(who, mobile);
@@ -206,6 +207,11 @@ function ExaminarArea(who)
 
 		// Process discoverable hidden items (invisible with level)
 		if ( item.invisible && lvl != error)
+			// Items permanently invisible by itemdesc should never be revealed
+			var elemDesc := FindConfigElem(itemdescCfg, item.objtype);
+			if (elemDesc.Invisible)
+				continue;
+			endif
 			case (lvl)
 				1: diff := 20;
 				2: diff := 40;
