@@ -40,11 +40,11 @@ include ":abilities:classes/defensor/InvincibilityManeuver";
 //===========================================
 // PALADINO (400-404)
 //===========================================
-// include ":abilities:classes/paladino/ConsagracaoDivina";
-// include ":abilities:classes/paladino/GolpeDivino";
-// include ":abilities:classes/paladino/AuraDeFe";
-// include ":abilities:classes/paladino/PresencaDivina";
-// include ":abilities:classes/paladino/CampeaoDivino";
+include ":abilities:classes/paladino/DivineConsecration";
+include ":abilities:classes/paladino/DivineSmite";
+include ":abilities:classes/paladino/AuraOfFaith";
+include ":abilities:classes/paladino/DivinePresence";
+include ":abilities:classes/paladino/DivineChampion";
 
 //===========================================
 // AKLATTUR (500-504)

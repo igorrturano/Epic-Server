@@ -1,6 +1,6 @@
 use os;
 
-include ":abilities:AbilityRegistry";
+include ":abilities:AbilityRegistryBase";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include "system/exception/ProcessExeception/InvalidProcessException";

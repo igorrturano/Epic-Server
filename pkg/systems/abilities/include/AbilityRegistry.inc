@@ -1,12 +1,8 @@
-// AbilityRegistry.inc - Maps ABILITY_ID to class references
-// Add new abilities here as they are migrated to V3
+// AbilityRegistry.inc - Full registry: class definitions + registrations
+// For lightweight usage (no class defs), include AbilityRegistryBase.inc instead.
 
-include ":abilities:models/Ability";
-include ":abilities:classes/_index";  // All ability class includes
-
-// Registry: ABILITY_ID -> Class reference
-// Built programmatically because dictionary literals don't evaluate enum keys
-var ABILITY_CLASSES := dictionary{};
+include ":abilities:AbilityRegistryBase";  // ABILITY_CLASSES dict + CreateAbility
+include ":abilities:classes/_index";       // All ability class definitions
 
 // Combatente (200-204)
 ABILITY_CLASSES[ABILITY_ID::HALFSWORD] := @Halfsword;
@@ -29,15 +25,10 @@ ABILITY_CLASSES[ABILITY_ID::MANOBRA_DESAFIADORA] := @ChallengerManeuver;
 ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_RESILIENCIA] := @ResilienceManeuver;
 ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE] := @InvincibilityManeuver;
 
-// Creates ability instance from registry
-// @param abilityId ABILITY_ID enum value
-// @return CombatAbility subclass instance, or error if not registered
-function CreateAbility(abilityId)
-    if (!ABILITY_CLASSES.exists(abilityId))
-        return error{"errortext" := $"Ability {abilityId} not registered in ABILITY_CLASSES"};
-    endif
+// Paladino (400-404)
+ABILITY_CLASSES[ABILITY_ID::CONSAGRACAO_DIVINA] := @DivineConsecration;
+ABILITY_CLASSES[ABILITY_ID::GOLPE_DIVINO] := @DivineSmite;
+ABILITY_CLASSES[ABILITY_ID::AURA_DE_FE] := @AuraOfFaith;
+ABILITY_CLASSES[ABILITY_ID::PRESENCA_DIVINA] := @DivinePresence;
+ABILITY_CLASSES[ABILITY_ID::CAMPEAO_DIVINO] := @DivineChampion;
 
-    var ability := ABILITY_CLASSES[abilityId].new();
-
-    return ability;
-endfunction

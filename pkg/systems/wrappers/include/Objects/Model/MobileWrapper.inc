@@ -17,7 +17,6 @@ include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
-include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
@@ -655,8 +654,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		// V3: Use ABILITY_CLASSES registry instead of GetScript()
-		if (!ABILITY_CLASSES.exists(ability.GetId()))
+		if (!ability.GetName())
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
@@ -689,8 +687,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		// V3: Use ABILITY_CLASSES registry instead of GetScript()
-		if (!ABILITY_CLASSES.exists(ability.GetId()))
+		if (!ability.GetName())
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 
@@ -803,8 +800,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		// V3: Use ABILITY_CLASSES registry instead of GetScript()
-		if (!ABILITY_CLASSES.exists(ability.GetId()))
+		if (!ability.GetName())
 			return InvalidAbilityException("This ability is not registered!");
 		endif
 
@@ -841,8 +837,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		// V3: Use ABILITY_CLASSES registry instead of GetScript()
-		if (!ABILITY_CLASSES.exists(ability.GetId()))
+		if (!ability.GetName())
 			return InvalidAbilityException("This is not a valid ability!");
 		endif
 

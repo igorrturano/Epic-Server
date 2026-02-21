@@ -1,6 +1,7 @@
 use uo;
 use os;
 
+include ":abilities:AbilityRegistry";
 include ":message:model/Message";
 include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";

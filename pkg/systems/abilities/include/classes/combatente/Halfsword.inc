@@ -1,9 +1,9 @@
 use uo;
 
 include ":abilities:models/CombatAbility";
-include ":tn:cooldown";              // TS_StartTimer
-include ":message:model/Message";    // Message, Color, SYSTEM_COLOR
-include ":debug:Controller/DebugController";  // DebugMsg, DEBUG_HAB
+include ":tn:cooldown";
+include ":message:model/Message";
+include ":debug:Controller/DebugController"; 
 
 class Halfsword(CombatAbility)
 
