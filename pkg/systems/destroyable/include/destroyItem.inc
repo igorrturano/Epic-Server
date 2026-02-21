@@ -728,6 +728,9 @@ function DanificaObjetosProximos(quem, x, y, z, realm, dano, alcance, gfx := 0, 
 								 gfxHue := 0)
 	var itens := ListItemsNearLocation(x, y, z, alcance, realm);
 	foreach item in itens
+		if (item.invisible)
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, item.x, item.y, item.z, realm) && item.serial != ignoreSerial)
 			DanificaItem(quem, item, dano, gfx, gfxHue);
 		endif
@@ -947,6 +950,9 @@ endfunction
  *
  */
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
+	if (alvo.invisible)
+		return 0;
+	endif
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
 		
 		if (GetObjProperty(alvo, "PropStealable"))
