@@ -6,7 +6,7 @@ include ":combat:Controller/HitController";
 include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 include ":combat:weardown";
 
 // External

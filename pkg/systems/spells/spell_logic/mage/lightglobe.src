@@ -58,7 +58,7 @@ program SpellScript(params)
 		var level := CInt(magiclore_skill / 5) + 5;
 
 		// Bonus de especialização
-		if (Temhabilidade(who, "Evocator"))
+		if (TemHabilidade(who, ABILITY_ID::EVOCATOR))
 			level := Cint(level * 1.2);
 		endif
 

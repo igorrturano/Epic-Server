@@ -63,13 +63,14 @@ endfunction
 // Reads directly from icons.cfg (no caching - POL caches CFG files)
 // Falls back to class default icon if ability-specific icon not found
 // ============================================================================
-function GetAbilityIcon(hab_name)
-	var cfg := ReadConfigFile(":charactercreation:config/habilidades");
+function GetAbilityIcon(hab_id)
+	print("Getting icon for ability: " + hab_id);
+	var cfg := ReadConfigFile(":abilities:configs/habilidades");
 	if (!cfg)
 		return struct{"iconid" := 0x9bac, "hue" := 0};
 	endif
 
-	var elem := FindConfigElem(cfg, hab_name);
+	var elem := FindConfigElem(cfg, hab_id);
 	if (elem)
 		var icon := CInt(GetConfigString(elem, "Icon"));
 		var hue := CInt(GetConfigString(elem, "Hue"));

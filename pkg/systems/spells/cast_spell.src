@@ -14,6 +14,8 @@ include "include/sounds";
 include ":spells:tnmagery";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":abilities:models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":spells:spellbooks";
 include ":spells:include/swordmage";
 include "include/facings";
@@ -176,7 +178,7 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 
 	// TODO: Decidir se vou consumir mana dos humanoids
 	if (!mobile.npctemplate)
-		if (TemHabilidade(mobile, "Determinacao Arcana"))
+		if (TemHabilidade(mobile, ABILITY_ID::DETERMINACAO_ARCANA))
 			if (current_mana >= mana_cost)
 				if (!AP_ConsumeVital(mobile, MANA, mana_cost))
 					SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!",
@@ -213,7 +215,7 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 	endif
 
 	if (!TNCheckReagents(mobile, spellinfo, scroll))
-		if (!TemHabilidade(mobile, "Determinacao Arcana") && !isBloodied(mobile))
+		if (!TemHabilidade(mobile, ABILITY_ID::DETERMINACAO_ARCANA) && !isBloodied(mobile))
 			SendSysMessageEx(mobile, "Voce nao possui os componentes materiais necessarios para invocacao desta magia arcana.",
 							  SSM_FAIL);
 			if (TemHabilidade(mobile, "Mago Precavido"))
