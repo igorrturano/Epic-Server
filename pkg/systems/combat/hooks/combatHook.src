@@ -7,6 +7,7 @@ include ":combat:Controller/HitController";
 include ":combat:Controller/FXController";
 include ":combat:Controller/AbilitiesController";
 include ":combat:armorZones";
+include ":combat:settings";
 
 // Externos
 include ":attributes:attributes";
@@ -16,6 +17,7 @@ include ":mastery:Abilities";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
+include "include/facings";
 
 // include ":message:Model/Message";
 
@@ -167,6 +169,11 @@ function TryToAttack(byRef attackInfo)
 		PlayAttackSFX(attackInfo);
 		ExecuteCombatAbilitiesOnMiss(attackInfo);
 	endif
+
+	// Counter-attack (crosscut) - triggers on any attack attempt
+	if (attackInfo.ShouldCounterAttack() && !attackInfo.GetDefender().IsDead())
+		attackInfo.GetDefender().Attack(attackInfo.GetAttacker());
+	endif
 endfunction
 
 function DoAttack(byRef attackInfo)
@@ -310,9 +317,10 @@ function TryToRecoverAmmo(byRef attackInfo)
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetDefender().GetObjRef().backpack)
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
 
-		if (TryToExecuteHab_ArrowRecovery(attackInfo))
-			chance += 15;
-		endif
+		// TODO: Migrar para o nome Ability
+		// if (TryToExecuteHab_ArrowRecovery(attackInfo))
+		// 	chance += 15;
+		// endif
 
 		if (RandomInt(100 + 1) <= chance)
 			var ammo := attackInfo.GetAmmo().GetItem().GetObjRef();

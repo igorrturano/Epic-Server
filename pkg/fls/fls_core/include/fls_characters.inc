@@ -110,6 +110,7 @@ function destroyIllyraOutsideDungeons(who)
 endfunction
 
 function ProccessHab(who, txt)
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	if (who.dead)
 		return 0;
 	endif
@@ -119,15 +120,15 @@ function ProccessHab(who, txt)
 		return 0;
 	endif
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
 	var found := 0;
     var habelem;
-
+    var abilityId := 0;
     // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
     foreach elem in GetConfigStringKeys(habcfg)
         var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
         if (NormalizeString(txt) == normalized_hab)
             habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
+            abilityId := CInt(elem);  // V2: Save ability ID for AbilityMonitor
             found := 1;
             break;
         endif
@@ -184,30 +185,13 @@ function ProccessHab(who, txt)
 		EraseObjProperty(who, "#mimico");
 	endif
 
-	if (duracao == "1 ataque")
-		if (!script)
-			SendSysMessageEx(who, "Nao foi encontrado o script da habilidade: " + hab, SSM_FAIL);
-			return 0;
-		endif
-        if (hab == "lamina da escuridao")
-            PlayObjectCenteredEffectHuefx(who, 0x5487, 10, 20, 2296, 1);
-            PlaySoundEffect(who, 0x56e);
-        endif
+	// V2: ALL abilities go through AbilityMonitor - single source of truth
+	var ability := Ability(abilityId);
+	AbilityMonitor(ability).ActivateOn(MobileWrapper(who));
 
-		SendSysMessageEx(who, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
-		SetObjProperty(who, "movement",  script);
-		SetObjProperty(who, "#movtime", ReadGameClock());
-		if (mimic)
-			SendSysMessageEx(mimic, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
-			SetObjProperty(mimic, "movement",  script);
-			SetObjProperty(mimic, "#movtime", ReadGameClock());
-		endif
-	else
-		var e := start_script(script, who );
-		if (mimic)
-			start_script(script, mimic );
-		endif
-		//sendsysmessage(who, " " + e );
+	// Mimic support
+	if (mimic)
+		AbilityMonitor(ability).ActivateOn(MobileWrapper(mimic));
 	endif
 
 	TS_StartCooldown(who, hab, delay);

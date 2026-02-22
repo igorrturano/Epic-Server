@@ -20,7 +20,7 @@ exported function GetIntrinsicFortitude(mobile)
 		fortitude += 5;
 	endif
 
-	if (TemHabilidade(mobile, "Caçador Implacável"))
+	if (TemHabilidade(mobile, ABILITY_ID::CACADOR_IMPLACAVEL))
 		fortitude += 2;
 	endif
 	if (TemHabilidade(mobile, "Campeao das Montanhas"))

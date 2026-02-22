@@ -204,10 +204,10 @@ endfunction
 // ============================================================================
 function GetAbilitiesData(who)
     // Use shared function instead of duplicating filtering logic
-    var filtered_hab_names := GetFilteredAbilities(who);
+    var filtered_hab_ids := GetFilteredAbilities(who);
 
     // Load config to get full ability data
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     if (!habcfg)
         return array{};
     endif
@@ -222,12 +222,14 @@ function GetAbilitiesData(who)
     var filtered_habs := array{};
     var hab_index := 1;
 
-    foreach hab_name in filtered_hab_names
-        var habelem := FindConfigElem(habcfg, hab_name);
+    foreach hab_id in filtered_hab_ids
+        var habelem := FindConfigElem(habcfg, hab_id);
         if (!habelem) continue; endif
+        // Get ability name from config
+        var ability_name := GetConfigString(habelem, "nome");
 
         // Get icon
-        var icon_data := GetAbilityIcon(hab_name);
+        var icon_data := GetAbilityIcon(hab_id);
 
         // Read additional fields
         var classes := GetConfigStringDictionary(habelem, "classe");
@@ -237,7 +239,7 @@ function GetAbilitiesData(who)
         // Check if purchased
         var has_purchased := 0;
         foreach key in (myhabs.keys())
-            if (Lower(myhabs[key]) == Lower(hab_name))
+            if (Lower(myhabs[key]) == Lower(ability_name))
                 has_purchased := 1;
                 break;
             endif
@@ -246,7 +248,7 @@ function GetAbilitiesData(who)
         // Build struct
         var hab_data := struct{
             "habilidade_id" := hab_index,  // Sequential ID
-            "name" := hab_name,
+            "name" := ability_name,
             "classe" := char_class,
             "desc" := GetConfigString(habelem, "desc"),
             "required_level" := required_level,

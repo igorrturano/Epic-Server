@@ -108,6 +108,10 @@ program calor(params)
 			if (GetObjProperty(who, "chardata").culture == GULTHRAK)
 				dif := dif - 5;
 			endif
+			
+			if (TemHabilidade(who, "Resistência do Deserto"))
+				dif := dif - 5;
+			endif
 
 			if (GetObjProperty(who, "chardata").culture == LESTE)
 				dif := dif - 2;

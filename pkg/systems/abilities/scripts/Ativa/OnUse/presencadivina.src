@@ -1,0 +1,165 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include ":tn:cooldown";
+include ":abilities:helpers/paladinoHelpers";
+
+/**
+ * Presenca Divina (Divine Presence) - ABILITY_ID::PRESENCA_DIVINA (403)
+ *
+ * OnUse Effect:
+ * - Advanced party support ability with 4 commands
+ * - Banner detection increases range (2→6) and effectiveness (+50%)
+ *
+ * Commands:
+ * 1. Cerquem! - If all party members surround target, apply heroismo + bencaodivina
+ * 2. Reviravolta! - If outnumbered, apply heroismo to all nearby members
+ * 3. Por Justica! - Random member gets guaranteed critical hit for 5 seconds
+ * 4. Vitoria Divina! - Reset cooldowns (all if same religion+banner, else only <=180s)
+ *
+ * Script receives: MobileWrapper (the paladin)
+ */
+program presencadivina(mobile)
+	var paladin := mobile.GetObjRef();
+	var festa := paladin.party;
+
+	if (!festa)
+		Message("Voce nao tem aliados!", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);
+		return 0;
+	endif
+
+	// Get paladin's religion
+	var paladin_religion := mobile.GetReligion();
+
+	// Check if carrying religious banner
+	var bannerInfo := CheckReligiousBanner(mobile);
+	var range := bannerInfo.range;
+	var has_banner := bannerInfo.has_banner;
+
+	// Show menu
+	Message("Escolha seu comando:", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+	Message("1 - Cerquem!", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+	Message("2 - Reviravolta!", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+	Message("3 - Por Justica!", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+	Message("4 - Vitoria Divina!", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+
+	var input := CInt(RequestInput(paladin, paladin.backpack, "Escolha (1-4):"));
+	if (!(input >= 1 && input <= 4))
+		Message("Comando invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);
+		return 0;
+	endif
+
+	var theology := mobile.GetSkill(THEOLOGY);
+
+	case (input)
+		1: // Cerquem! (Surround)
+			Message("*ordena cerco*").SendAbove(paladin);
+			Message("Escolha o alvo para seus aliados cercarem.", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
+
+			var alvo := Target(paladin);
+			if (!alvo)
+				Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);
+				return 0;
+			endif
+
+			// Count members within 2 tiles of target
+			var count := 1; // Paladin counts
+			foreach member in (festa.members)
+				if (member.serial != paladin.serial)
+					if (Distance(paladin, member) < range)
+						if (Distance(member, alvo) < 2)
+							count := count + 1;
+						endif
+					endif
+				endif
+			endforeach
+
+			// All party members must surround target
+			if (count == festa.members.size())
+				foreach member in (festa.members)
+					Message("Seus ataques estao poderosos!", Color(SYSTEM_COLOR::INFO)).SendSys(member);
+					TS_StartTimer(member, "heroismo", CInt(theology));
+					var memberWrapper := MobileWrapper(member);
+					if (has_banner && memberWrapper.GetReligion() == paladin_religion)
+						TS_StartTimer(member, "bencaodivina", 10);
+					endif
+				endforeach
+			endif
+
+		2: // Reviravolta! (Turnaround)
+			Message("*ordena reviravolta*").SendAbove(paladin);
+			var inimigos := ListHostiles(paladin, range);
+
+			// Requires enemies >= half of party size
+			if (len(inimigos) < CInt(festa.members.size()) / 2)
+				Message("Voce nao esta em desvantagem.", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);
+				return 0;
+			endif
+
+			foreach member in (festa.members)
+				if (Distance(paladin, member) < range)
+					var bonus := theology;
+					var memberWrapper := MobileWrapper(member);
+					if (has_banner && memberWrapper.GetReligion() == paladin_religion)
+						bonus := CInt(bonus * 1.5);
+					endif
+					TS_StartTimer(member, "heroismo", CInt(bonus));
+				endif
+			endforeach
+
+		3: // Por Justica! (For Justice)
+			Message("*guia aliado para gloria*").SendAbove(paladin);
+
+			// Gather nearby party members (excluding paladin)
+			var testes := array{};
+			foreach member in (festa.members)
+				if (member.serial != paladin.serial)
+					if (Distance(paladin, member) < range)
+						testes.append(member);
+					endif
+				endif
+			endforeach
+
+			if (testes.size() < 1)
+				Message("Nenhum aliado proximo!", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);
+				return 0;
+			endif
+
+			// Random selection
+			var selected := testes[RandomInt(testes.size()) + 1];
+			var memberWrapper := MobileWrapper(selected);
+			memberWrapper.SetCriticalChanceMod(100);
+
+			if (has_banner && memberWrapper.GetReligion() == paladin_religion)
+				TS_StartTimer(selected, "bencaodivina", 15);
+			else
+				TS_StartTimer(selected, "bencaodivina", 10);
+			endif
+
+		4: // Vitoria Divina! (Divine Victory - Cooldown reset)
+			Message("*proclama vitoria divina*").SendAbove(paladin);
+
+			foreach member in (festa.members)
+				if (Distance(paladin, member) < range)
+					var cds := TS_GetCooldownList(member);
+					var memberWrapper := MobileWrapper(member);
+
+					foreach cd in cds
+						// If same religion with banner, reset all cooldowns
+						if (has_banner && memberWrapper.GetReligion() == paladin_religion)
+							TS_LowerDuration(member, cd, -1, 1);
+						// Otherwise only reset cooldowns <= 3 minutes
+						elseif (cd.duration <= 180)
+							TS_LowerDuration(member, cd, -1, 1);
+						endif
+					endforeach
+				endif
+			endforeach
+	endcase
+
+	return 1;
+endprogram

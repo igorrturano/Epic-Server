@@ -5,7 +5,7 @@ include ":tn:cooldown";
 include ":spells:tnmagery";
 include "include/encantarObjeto";
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := MobileWrapper(params[1]);
@@ -26,7 +26,7 @@ program SpellScript(params)
 	// Bonus
 	var bonus := CInt(who.GetSkill(ARCANA));
 
-	if (who.HasAbility(COMBAT_ABILITY::DOMINIO_VITAL))
+	if (who.HasAbility(ABILITY_ID::DOMINIO_VITAL))
 		bonus := CInt(bonus * 0.07); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7
 	else
 		bonus := CInt(bonus * 0.05); // Max = 5

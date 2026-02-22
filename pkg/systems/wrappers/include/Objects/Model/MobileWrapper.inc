@@ -1,4 +1,5 @@
 use uo;
+use os;
 
 // Internal
 include "IMobileWrapper";
@@ -15,6 +16,8 @@ include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
 include ":achievements:utils/datafile";
+include ":serialization:StructSerializer";
+include ":abilities:controllers/AbilityMonitor";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var BackpackSerial := 0x0; 
@@ -22,6 +25,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var Culture := "";
 	var Religion := "";
 	var CombatTraitsVar; // CombatTraits class
+	var Abilities; // Dictionary<ABILITY_ID, Integer>
+	var ActiveAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
@@ -70,7 +75,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Color := this.GetTemplate().color;
 				this.Category := this.GetTemplate().Category;
 			endif
-			
+
 			this.ObjRef := err;
 			this.Serial := err;
 
@@ -79,6 +84,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this.Culture := err;
 			this.Religion := err;
 			this.CombatTraitsVar := err;
+			this.Abilities := err;
+			this.ActiveAbilities := err;
 		endif
 	endfunction
 
@@ -359,8 +366,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
-		
+
 		return CInt(this.GetProperty("#CriticalChance"));
+	endfunction
+
+	function SetCriticalChanceMod(this, value)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.SetProperty("#CriticalChance", CInt(value));
+		return this;
 	endfunction
 
 	function GetTemplateName(this)
@@ -439,6 +455,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 			return weapon;
 		elseif (equipSlot == SHIELD)
+			if (!this.GetObjRef().shield) return uninit; endif
 			return ArmorWrapper(this.GetObjRef().shield);
 		elseif (equipSlot == HEAD)
 			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), HEAD);
@@ -519,14 +536,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return AP_GetSkillMod(this.GetObjRef(), skillName);
-	endfunction
-
-	function GetAbility(this, abilityName)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		// TODO: Implementar retorno de CombatAbility
 	endfunction
 
 	function GetCombatTraits(this)
@@ -610,6 +619,246 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	// ================= Abilities ================= //
+	/**
+	 * Obtém as habilidades do mobile.
+	 *
+	 * Este método recupera as habilidades armazenadas no mobile através da propriedade
+	 * ABILITIES. Se o objeto de referência for uma exceção, retorna a própria exceção.
+	 *
+	 * @param this Referência ao objeto wrapper do mobile
+	 * @return Array As habilidades do mobile ou uma Exception caso ocorra erro
+	 */
+	function GetAbilities(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
+	endfunction
+
+	/**
+	 * Adiciona uma habilidade ao objeto móvel.
+	 *
+	 * Este método adiciona uma nova habilidade ao dicionário de habilidades do objeto,
+	 * associando-a ao nível em que foi adquirida.
+	 *
+	 * @param ability A habilidade a ser adicionada ao objeto
+	 * @param levelBought O nível no qual a habilidade foi adquirida
+	 * @return this Retorna a própria instância do wrapper para encadeamento de métodos,
+	 *              ou uma Exception se a referência do objeto for inválida ou a habilidade for inválida
+	 * @throws InvalidAbilityException Se a habilidade fornecida não for válida (não possui script)
+	 */
+	function AddAbility(this, ability, levelBought)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		var abilities := this.GetAbilities();
+
+		abilities[ability.GetName()] := levelBought;
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	/**
+	 * Remove uma habilidade do personagem móvel.
+	 *
+	 * @param {MobileWrapper} this - Referência ao objeto wrapper do personagem móvel
+	 * @param {Ability} ability - Objeto de habilidade a ser removido
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna o próprio objeto wrapper em caso de sucesso,
+	 *                                    ou uma exceção em caso de erro:
+	 *                                    - Exception se _objRef for inválido
+	 *                                    - InvalidAbilityException se a habilidade não for válida
+	 *                                    - InvalidPropException se o móvel não possuir habilidades
+	 *                                    - InvalidAbilityException se o móvel não possuir a habilidade especificada
+	 *
+	 * @throws {InvalidAbilityException} Quando a habilidade não é válida ou não está presente no móvel
+	 * @throws {InvalidPropException} Quando o móvel não possui a propriedade de habilidades
+	 */
+	function RemoveAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		var abilities := this.GetAbilities();
+		if (abilities.size() == 0)
+			return InvalidPropException("This mobile has no abilities!");
+		endif
+
+		if (!this.HasAbility(ability))
+			return InvalidAbilityException("This mobile does not have the specified ability!");
+		endif
+
+		abilities.remove(ability.GetName());
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	/*
+	 * Verifica se o mobile possui uma habilidade específica.
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param ability Objeto da habilidade a ser verificada
+	 * @return Retorna o objeto de exceção se _objRef for uma Exception,
+	 *         caso contrário retorna true se o mobile possui a habilidade,
+	 *         ou false se não possui
+	 */
+	function HasAbility(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		// myhabs stores ability IDs (integers) keyed by level
+		var abilities := this.GetAbilities();
+		var targetId := CInt(abilityId);
+
+		foreach level in (abilities.keys())
+			if (CInt(abilities[level]) == targetId)
+				return true;
+			endif
+		endforeach
+
+		return false;
+	endfunction
+
+	/**
+	 * Obtém as habilidades ativas do mobile.
+	 * 
+	 * @param this Referência ao objeto MobileWrapper
+	 * @return Dictionary com as habilidades ativas ou uma Exception caso a referência do objeto seja inválida
+	 */
+	function GetActiveAbilities(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES) ?: dictionary{};
+	endfunction
+
+	/**
+	 * Obtém o monitor de uma habilidade ativa específica do mobile.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto MobileWrapper
+	 * @param {Ability} ability - Objeto de habilidade para consultar o monitor
+	 * 
+	 * @return {Struct} Retorna a estrutura deserializada do monitor da habilidade ativa
+	 * @return {Exception} Retorna exceção se a referência do objeto for inválida
+	 * @return {InvalidAbilityException} Retorna exceção se o mobile não possuir a habilidade ativa especificada
+	 * 
+	 * @throws {InvalidAbilityException} Quando a habilidade não existe no momento de ativação especificado
+	 */
+	function GetAbilityMonitor(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var activeAbilities := this.GetActiveAbilities();
+		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetId()))
+			return InvalidAbilityException("This ability is not active on mobile!");
+		endif
+
+		var monitor := StructSerializer().Deserialize(
+			activeAbilities[ability.GetActivationMoment()][ability.GetId()],
+			AbilityMonitor(ability)
+		);
+
+		// Stale monitor check - clean up if process died (server restart, etc.)
+		if (!GetProcess(monitor.GetPid()))
+			activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
+			this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+			return InvalidAbilityException("This ability is not active on mobile!");
+		endif
+
+		return monitor;
+	endfunction
+
+	/**
+	 * Ativa uma habilidade para o objeto móvel.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto móvel
+	 * @param {Ability} ability - Habilidade a ser ativada
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna a própria instância do objeto em caso de sucesso,
+	 *                                   ou uma Exception se o objeto for inválido ou a habilidade não for válida
+	 * 
+	 * @throws {InvalidAbilityException} Lançada quando a habilidade não possui um script válido
+	 */
+	function ActivateAbility(this, ability, abilityMonitor)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This ability is not registered!");
+		endif
+
+		if (!ability.GetActivationMoment())
+			return InvalidAbilityException("This ability has no activation moment defined to monitor!");
+		endif
+
+		var activeAbilities := this.GetActiveAbilities();
+
+		if (!activeAbilities.exists(ability.GetActivationMoment()))
+			activeAbilities[ability.GetActivationMoment()] := dictionary{};
+		endif
+
+		activeAbilities[ability.GetActivationMoment()][ability.GetId()] := StructSerializer().Serialize(abilityMonitor);
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+
+		return this;
+	endfunction
+
+	/*
+	 * Desativa uma habilidade ativa do mobile.
+	 *
+	 * @param this       Referência ao objeto MobileWrapper atual
+	 * @param ability    A habilidade a ser desativada
+	 *
+	 * @return Retorna o próprio objeto MobileWrapper para encadeamento de métodos,
+	 *         ou uma exceção caso o objeto seja inválido ou a habilidade não seja válida
+	 *
+	 * @throws Exception          Se a referência do objeto for uma exceção
+	 * @throws InvalidAbilityException Se a habilidade não possuir um script válido
+	 */
+	function DeactivateAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		ability.OnDeactivate(this);
+
+		var activeAbilities := this.GetActiveAbilities();
+		activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+
+		return this;
+	endfunction
+
+	// function HasActiveAbility(this, ability)
+	// 	if (this._objRef is @Exception)
+	// 		return this._objRef;
+	// 	endif
+
+	// 	return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
+	// endfunction
+
+	// ================ Achievements ================= //
 	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
 	endfunction
@@ -710,24 +959,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
-	function HasAbility(this, abilityName)
-		if (this.GetObjRef() is @Exception)
-			return this.GetObjRef();
-		endif
-
-		return TemHabilidade(this.GetObjRef(), abilityName);
-	endfunction
-
 	function IsNPC(this)
 		return (this.Template && !(this.Template is @Exception));
 	endfunction
 
 	function IsDead(this)
-		if (this.GetObjRef() is @Exception)
-			return this.GetObjRef();
+		var objRef := this.GetObjRef();
+		if (objRef is @Exception)
+			return 1;
 		endif
-		
-		return this.GetObjRef().dead == true;
+		// !objRef catches destroyed NPCs, .dead catches dead players
+		return !objRef || objRef.dead;
 	endfunction
 
 	function IsWarMode(this)
@@ -735,7 +977,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		return this.GetObjRef().warmode == true;
+		return this.GetObjRef().warmode == 1;
 	endfunction
 
 	function IsMounted(this)
@@ -999,7 +1241,9 @@ enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits",
 	LANGUAGE := "langdata",
-	ENTROPY := "entropy"
+	ENTROPY := "entropy",
+	ABILITIES := "myhabs",
+	ACTIVE_ABILITIES := "activehabs"
 endenum
 
 enum class ENTROPY_LIMITS

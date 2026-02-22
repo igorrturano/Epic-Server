@@ -52,7 +52,7 @@ program wall_of_fire(parms)
 	var area_size := CInt(AP_GetSkill(caster, ARCANA) / 10);
 
 	// Bonus de especialização
-	if (Temhabilidade(caster, "Evocator"))
+	if (TemHabilidade(caster, ABILITY_ID::EVOCATOR))
 		combustivel := combustivel * 1.2;
 		area_size := area_size * 1.2;
 	endif

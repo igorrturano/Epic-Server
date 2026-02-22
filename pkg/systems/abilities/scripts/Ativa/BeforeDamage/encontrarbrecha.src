@@ -1,0 +1,41 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+
+program encontrarbrecha(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var ability := Ability(ABILITY_ID::ENCONTRAR_BRECHA);
+
+	// For Tempo abilities, calculate and send SET_DURATION event
+	// Note: GetDuration() returns uninit for "Tempo" abilities, not 0
+	if (!ability.GetDuration())
+		var tactics := attacker.GetSkill(TACTICS);
+		var duration := CInt(tactics / 5);
+		if (duration < 1)
+			duration := 1;
+		endif
+
+		var monitor := attacker.GetAbilityMonitor(ability);
+		if (monitor is @AbilityMonitor)
+			monitor._GetProcess().SendEvent(struct{
+				type := ABILITY_EVENT_ID::SET_DURATION,
+				value := duration
+			});
+		endif
+	endif
+
+	// Apply effect: ignore armor
+	attackInfo.SetIgnoreArmor();
+
+	DebugMsg(
+		attacker.GetObjRef(),
+		DEBUG_HAB,
+		Message("[ENCONTRAR_BRECHA] Ativo - ignorando armadura!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+endprogram
