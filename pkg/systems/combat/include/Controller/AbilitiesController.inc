@@ -152,8 +152,16 @@ endfunction
 /**
  * ATTACKER-CENTRIC: Executes passive abilities for attacker before damage.
  */
-function ExecutePassiveAbilitiesBeforeDamage(byRef attackInfo)
+function ExecutePassiveAbilitiesAttackerBeforeDamage(byRef attackInfo)
 	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
+endfunction
+
+/**
+ * DEFENDER-CENTRIC: Executes passive abilities for defender before damage.
+ * Used for defender-side passives like damage reduction and crit immunity.
+ */
+function ExecutePassiveAbilitiesDefenderBeforeDamage(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
 endfunction
 
 /**
