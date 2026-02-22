@@ -30,7 +30,7 @@ program SpellScript(params)
 	var mlore := cint(AP_GetSkill(who, ARCANA) / 25);
 	mlore := mlore < 1 ? 1 : mlore; // garante ao menos 1.
 
-	if (TemHabilidade(who, "Evocator"))
+	if (TemHabilidade(who, ABILITY_ID::EVOCATOR))
 		mlore := mlore + 1;
 	endif
 	var dist := Distance(who, targ);

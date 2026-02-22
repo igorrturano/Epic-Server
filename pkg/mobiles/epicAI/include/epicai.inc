@@ -12,6 +12,7 @@ include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
 include ":io:CFGFile";
 include ":epicAI:npcDataCache";
+include ":abilities:include/models/Ability";
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -176,12 +177,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
     case (npc_elem.Classe)
         GUERREIRO:
-            if ("Budōka" in habs)
+            if (ABILITY_ID::BUDOKA in habs)
                 var monk_weapons := array{0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
                 EquipRandomFromArray(mobile, monk_weapons);
             endif
 
-            if ("Camuflagem" in habs)
+            if (ABILITY_ID::CAMUFLAGEM in habs)
                 var tier := 0;
                 var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
                 if (boss_struct && boss_struct.tier)
@@ -428,32 +429,32 @@ function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
     var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
-    
-    // If no school defined in config, check habs
+
+    // If no school defined in config, check habs (now stores IDs)
     if (!spellschool)
         var habs := GetObjProperty(mobile, "myhabs");
         if (habs)
-            if ("Vínculo Elemental" in habs)
+            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 spellschool := "Ahtaleloreth";
-            elseif ("Elo Natural" in habs)
+            elseif (ABILITY_ID::ELO_NATURAL in habs)
                 spellschool := "Aradalore";
-            elseif ("Sacrificio da Carne" in habs)
+            elseif (ABILITY_ID::SACRIFICIO_DA_CARNE in habs)
                 spellschool := "Kaijin";
-            elseif ("Danca das Sombras" in habs)
+            elseif (ABILITY_ID::DANCA_DAS_SOMBRAS in habs)
                 spellschool := "Velkyn";
-            elseif ("Determinacao Arcana" in habs)
+            elseif (ABILITY_ID::DETERMINACAO_ARCANA in habs)
                 spellschool := "Evocatium";
             endif
         endif
     endif
 
-    // Map school to base ability
+    // Map school to base ability ID
     case (spellschool)
-        "Kaijin": base_ability := "Sacrificio da Carne";
-        "Ahtaleloreth": base_ability := "Vínculo Elemental";
-        "Aradalore": base_ability := "Elo Natural";
-        "Evocatium": base_ability := "Determinacao Arcana";
-        "Velkyn": base_ability := "Danca das Sombras";
+        "Kaijin": base_ability := ABILITY_ID::SACRIFICIO_DA_CARNE;
+        "Ahtaleloreth": base_ability := ABILITY_ID::VINCULO_ELEMENTAL;
+        "Aradalore": base_ability := ABILITY_ID::ELO_NATURAL;
+        "Evocatium": base_ability := ABILITY_ID::DETERMINACAO_ARCANA;
+        "Velkyn": base_ability := ABILITY_ID::DANCA_DAS_SOMBRAS;
     endcase
 
     if (!base_ability)
@@ -464,7 +465,7 @@ function SetupWizardClass(mobile, npc_elem)
     SetObjProperty(mobile, "SpellSchool", spellschool);
 
     // Build progression based on base ability
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, base_ability);
     SetObjProperty(mobile, "myhabs", progression);
 
@@ -479,9 +480,10 @@ function SetupWarriorClass(mobile, npc_elem)
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
     var isArcher := (speed_type[1] == "RANGED");
     if (isArcher)
-      subclass := "Tiro Poderoso";
+        subclass := ABILITY_ID::TIRO_PODEROSO;
     endif
 
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, subclass);
     SetObjProperty(mobile, "myhabs", progression);
 

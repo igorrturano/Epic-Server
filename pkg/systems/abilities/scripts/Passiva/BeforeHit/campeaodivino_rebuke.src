@@ -1,0 +1,90 @@
+use uo;
+use os;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":wrappers:include/Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":debug:include/Controller/DebugController";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include ":attributes:attributes";
+include "include/epicConstants";
+
+/**
+ * Campeao Divino - Rebuke (Divine Retaliation) Passive
+ * ABILITY_ID::CAMPEAO_DIVINO (404)
+ *
+ * BeforeHit Passive Effect (triggers when paladin is HIT as defender):
+ * - Checks if Campeao Divino ability is ACTIVATED via AbilityMonitor
+ * - If active: Applies divine smite to attacker
+ * - Effect similar to Golpe Divino but defensive
+ *
+ * Script receives: AttackInfo
+ */
+program campeaodivino_rebuke(attackInfo)
+	var defender := attackInfo.GetDefender();
+	var attacker := attackInfo.GetAttacker();
+	var ability := Ability(ABILITY_ID::CAMPEAO_DIVINO);
+
+	// Check if Campeao Divino ability is ACTIVATED
+	var monitor := defender.GetAbilityMonitor(ability);
+	if (!(monitor is @AbilityMonitor))
+		return false;  // Ability not active - skip effect
+	endif
+
+	var paladin := defender.GetObjRef();
+	var enemy := attacker.GetObjRef();
+	var religiao := defender.GetReligion();
+	var theology_bonus := CInt(defender.GetSkill(THEOLOGY) / 10);
+
+	if (theology_bonus < 1)
+		theology_bonus := 1;
+	endif
+
+	// Divine retaliation visual
+	Message("*repreensao divina!*").SendAbove(paladin);
+	PlayObjectCenteredEffect(enemy, 0x376A, 1, 16);
+	PlaySoundEffect(enemy, 0x208);
+
+	// Apply religion-specific rebuke effect to attacker
+	case (religiao)
+		VENERATIO:
+			// Mana burn
+			attacker.ConsumeMana(theology_bonus * 5);
+
+		BOKK_BHARAZ:
+			// Knockback/stagger
+			TS_StartTimer(enemy, "lentidao", theology_bonus);
+
+		HALLEUAD:
+			// Blinding light
+			TS_StartTimer(enemy, "blinded", CInt(theology_bonus / 2), 0, paladin);
+
+		ELUITHORTH:
+			// Darkness
+			SetCooldown(enemy, "darkness", theology_bonus);
+
+		KAI:
+			attackInfo.GetDamage().IncreaseSlashRawDamage(-theology_bonus)
+			.IncreasePiercingRawDamage(-theology_bonus)
+			.IncreaseBluntRawDamage(-theology_bonus);
+
+	endcase
+
+	// Apply divine damage to attacker
+	var retaliation_damage := CInt(theology_bonus / 2);
+	if (retaliation_damage > 0)
+		// Deal damage directly to attacker
+		ApplyRawDamage(enemy, retaliation_damage);
+	endif
+
+	DebugMsg(
+		paladin,
+		DEBUG_HAB,
+		Message($"[CAMPEAO_DIVINO] Rebuke! Dano: {retaliation_damage}, Religiao: {religiao}", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endprogram

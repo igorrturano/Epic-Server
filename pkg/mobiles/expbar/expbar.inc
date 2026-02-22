@@ -88,9 +88,10 @@ function AddXP(who, amount)
     var curr_xp := GetPlayerXP(who) + amount;
     SetObjProperty(who, "Experience", curr_xp);
 
-    if (curr_xp >= CalculateNextLevelXP(curr_level))
+    while (curr_xp >= CalculateNextLevelXP(curr_level) && curr_level < MAX_LEVEL)
         LevelUp(who);
-    endif
+        curr_level := GetPlayerLevel(who);
+    endwhile
 
     UpdateXPClient(who);
     return 1;
@@ -137,21 +138,29 @@ function LevelUp(who)
     AP_RefreshVitals(who);
     SendSysMessage(who, "Voce alcancou o nivel " + curr_level + "!");
 
+    UpdateXPClient(who);
     discrete_gump(who);
     return 1;
 endfunction
 
 function UpdateXPClient(who)
+    var curr_level := GetPlayerLevel(who);
     var curr_xp := GetPlayerXP(who);
-    var next_xp := CalculateNextLevelXP(GetPlayerLevel(who));
-    
+
+    // Calculate progress within current level
+    var level_start := GetXPForLevel(curr_level);       // XP where current level begins
+    var level_end := CalculateNextLevelXP(curr_level);  // XP needed for next level
+
+    var xp_progress := curr_xp - level_start;
+    var xp_needed := level_end - level_start;
+
     // Novo Tamanho: 1(ID) + 2(Len) + 2(Sub) + 4(XP) + 4(MaxXP) = 13 bytes
-    var packet := CreatePacket(0xD7, MSGLEN_VARIABLE); 
+    var packet := CreatePacket(0xD7, MSGLEN_VARIABLE);
     packet.SetInt16(1, 13);          // Tamanho total ajustado
-        
+
     packet.SetInt16(3, 0x57);        // Subcomando agora vai direto no Offset 3
-    packet.SetInt32(5, CInt(curr_xp));  // XP Atual (Offset 3 + 2 bytes do sub = 5)
-    packet.SetInt32(9, CInt(next_xp));  // XP Max (Offset 5 + 4 bytes do XP = 9)
+    packet.SetInt32(5, CInt(xp_progress));  // XP progress within level
+    packet.SetInt32(9, CInt(xp_needed));    // Total XP needed for this level
 
     packet.SendPacket(who);
 endfunction
