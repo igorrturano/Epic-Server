@@ -4,10 +4,11 @@ include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
 include ":tn:equipment";
+include ":abilities:include/models/Ability";
 
 function NivelHabilidade(habilidade, classe)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var nivel := GetConfigStringDictionary( elem, "classe" );
@@ -18,7 +19,7 @@ endfunction
 
 function TemRequisito(who, habilidade, msg := 1)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -57,7 +58,7 @@ endfunction
 
 function retornaRequisitos( habilidade)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -67,19 +68,48 @@ function retornaRequisitos( habilidade)
 endfunction
 
 function TemHabilidade(who, habilidade)
-
 	var habs := GetObjProperty(who, "myhabs");
+	if (!habs)
+		return 0;
+	endif
 
-	foreach key in (habs.keys())
-		if (RemoveAcentos(Lower(habs[key])) == RemoveAcentos(Lower(habilidade)))
-			return 1;
+	// myhabs now stores IDs - check if habilidade is in the values
+	var hab_id := CInt(habilidade);
+	if (hab_id)
+		// habilidade is an ID (number)
+		foreach key in (habs.keys())
+			if (CInt(habs[key]) == hab_id)
+				return 1;
+			endif
+		endforeach
+	else
+		// habilidade is a name (string) - need to find the ID first
+		var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+		if (!habcfg)
+			return 0;
 		endif
 
-	endforeach
+		// Find ability ID by name
+		foreach cfg_key in (GetConfigStringKeys(habcfg))
+			var elem := FindConfigElem(habcfg, cfg_key);
+			var nome := GetConfigString(elem, "nome");
+			if (RemoveAcentos(Lower(nome)) == RemoveAcentos(Lower(habilidade)))
+				hab_id := CInt(cfg_key);
+				break;
+			endif
+		endforeach
 
+		// Now check if that ID is in myhabs
+		if (hab_id)
+			foreach key in (habs.keys())
+				if (CInt(habs[key]) == hab_id)
+					return 1;
+				endif
+			endforeach
+		endif
+	endif
 
 	return 0;
-
 endfunction
 
 function IsBloodied(mobile)
@@ -118,7 +148,7 @@ function HabilidadesPorNivel(who, classe, lvl)
 
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 	foreach key in keys
@@ -138,7 +168,7 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 	//sendsysmessage(who, "Procurando Habs!");
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 
@@ -170,7 +200,7 @@ function HabilidadesPorNivelFaccao(who, faccao, lvl)
 
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 	foreach key in keys
@@ -188,7 +218,7 @@ endfunction
 
 function ComprarHabGump(who, habs, habsfac)
 
-	UnloadConfigFile(":charactercreation:config/habilidades");
+	UnloadConfigFile(":abilities:configs/habilidades");
 
 	var gump := GFCreateGump();
 
@@ -220,7 +250,7 @@ function ComprarHabGump(who, habs, habsfac)
 		GFTextMid(gump, 80+newsizex, 50, 250, 1153, "Habilidades de Faccao");
 	endif
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var x := 40;
 	var y := 80;
@@ -387,102 +417,113 @@ function comprarHabilidade(who, item, nv:=-1)
 			return 0;
 		endif
 
-        if (escolhida == "Visao verdadeira" && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
-            SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
-            return 0;
-        endif
+		// escolhida is now an ability ID - convert to int for comparisons
+		var escolhida_id := CInt(escolhida);
 
-		if (escolhida == "Aura Mortis" && religiao != VENERATIO && cultura != AIGLANA)
-			SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+		// TODO: Legacy abilities not in current config - commented out for review
+		// if (escolhida_id == ABILITY_ID::VISAO_VERDADEIRA && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
+		//     SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);
+		//     return 0;
+		// endif
+
+		// if (escolhida_id == ABILITY_ID::AURA_MORTIS && religiao != VENERATIO && cultura != AIGLANA)
+		// 	SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+		// 	return 0;
+		// endif
+
+		if (escolhida_id == ABILITY_ID::ELO_NATURAL && cultura == HAROLOTH)
+			SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
 			return 0;
 		endif
 
-		if(escolhida == "Elo Natural" && cultura == HAROLOTH)
-            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
-            return 0;
-		endif
-
-		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH && religiao != ELUITHORTH)
+		if (escolhida_id == ABILITY_ID::DANCA_DAS_SOMBRAS && cultura != HAROLOTH && religiao != ELUITHORTH)
 			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 
-		if(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
+		if (escolhida_id == ABILITY_ID::GWAENEDH && magia != "Arqueiro Arcano")
 			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 
-		SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
-		if (escolhida == "Caçador Implacável")
+		// Get ability name from config for display message
+		var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+		var habelem_display := FindConfigElem(habcfg, escolhida);
+		var ability_name := GetConfigString(habelem_display, "nome");
+		SendSysMessageEx(who, "Voce comprou a habilidade: " + ability_name, SSM_INFO);
+
+		if (escolhida_id == ABILITY_ID::CACADOR_IMPLACAVEL || escolhida_id == ABILITY_ID::RESISTENCIA_DO_DESERTO)
 			var hitsmod := cint(GetObjProperty(who, "hitsmod"));
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);
 			recalcvitals(who);
-		elseif (escolhida == "Arma Predileta")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma predileta.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "armapredileta", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		elseif (escolhida == "Foco com Arma")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma para a habilidade foco com arma.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "fococomarma", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		elseif (escolhida == "Inimigo Predileto")
-			var inimigo := RadioGump(who, 300, 380, "Escolha seu Inimigo Predileto", array{"Dragon","Undead","Giants","GiantAnimal","EvilHuman","Goblin", "Underdark"});
-			SetObjProperty(who, "InimigoPredileto", inimigo);
-		elseif (escolhida == "Inventario Ferreiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Armas","Escudos","Armaduras"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "ferreiro", inventario});
-		elseif (escolhida == "Inventario Carpinteiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Equipamentos","Mobilia"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "carpinteiro", inventario});
-		elseif (escolhida == "Inventario Costureiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
-		elseif (escolhida == "Elo Natural")
+		// TODO: Legacy abilities not in current config - commented out for review
+		// elseif (escolhida_id == ABILITY_ID::ARMA_PREDILETA)
+		// 	SendSysMessageEx(who, "Escolha qual vai ser sua arma predileta.", SSM_REQUEST);
+		// 	var targ := Target(who);
+		// 	while(!targ.isA(POLCLASS_WEAPON))
+		// 		targ := Target(who);
+		// 	endwhile
+		// 	SetObjProperty(who, "armapredileta", targ.objtype);
+		// 	SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
+		// elseif (escolhida_id == ABILITY_ID::FOCO_COM_ARMA)
+		// 	SendSysMessageEx(who, "Escolha qual vai ser sua arma para a habilidade foco com arma.", SSM_REQUEST);
+		// 	var targ := Target(who);
+		// 	while(!targ.isA(POLCLASS_WEAPON))
+		// 		targ := Target(who);
+		// 	endwhile
+		// 	SetObjProperty(who, "fococomarma", targ.objtype);
+		// 	SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
+		// elseif (escolhida_id == ABILITY_ID::INIMIGO_PREDILETO)
+		// 	var inimigo := RadioGump(who, 300, 380, "Escolha seu Inimigo Predileto", array{"Dragon","Undead","Giants","GiantAnimal","EvilHuman","Goblin", "Underdark"});
+		// 	SetObjProperty(who, "InimigoPredileto", inimigo);
+		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_FERREIRO)
+		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Armas","Escudos","Armaduras"});
+		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "ferreiro", inventario});
+		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_CARPINTEIRO)
+		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Equipamentos","Mobilia"});
+		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "carpinteiro", inventario});
+		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_COSTUREIRO)
+		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
+		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
+		elseif (escolhida_id == ABILITY_ID::ELO_NATURAL)
 			setObjProperty(who, "empatiacomanimais", 1);
-		elseif(escolhida == "Protecao Elemental Kitahne")
-			who.resist_fire_mod  := who.resist_fire_mod + 25;
-			who.resist_cold_mod  := who.resist_cold_mod + 25;
-			who.resist_poison_mod  := who.resist_poison_mod + 25;
-			who.resist_energy_mod  := who.resist_energy_mod + 25;
-        elseif(escolhida == "Artilheiro Preparado")
+		// elseif (escolhida_id == ABILITY_ID::PROTECAO_ELEMENTAL_KITAHNE)
+		// 	who.resist_fire_mod  := who.resist_fire_mod + 25;
+		// 	who.resist_cold_mod  := who.resist_cold_mod + 25;
+		// 	who.resist_poison_mod  := who.resist_poison_mod + 25;
+		// 	who.resist_energy_mod  := who.resist_energy_mod + 25;
+		elseif (escolhida_id == ABILITY_ID::ARTILHEIRO_PREPARADO)
 			if (chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
-            who.carrying_capacity_mod := 50;
-        elseif(escolhida == "Bolsa Infinita")
-            who.carrying_capacity_mod := 120;
-		elseif(escolhida == "Ainalaith")
+			who.carrying_capacity_mod := 50;
+		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
+			who.carrying_capacity_mod := 120;
+		elseif (escolhida_id == ABILITY_ID::AINALAITH)
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
-		elseif (escolhida == "Tiro em Movimento")
+		elseif (escolhida_id == ABILITY_ID::TIRO_EM_MOVIMENTO)
 			GrantPrivilege(who, "firewhilemoving");
-			who.enable("firewhilemoving");	
+			who.enable("firewhilemoving");
 		endif
-		myhabs[nivel] := escolhida;
+		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
-		//return 1;
+		if(item)
+			DestroyItem(item);
+		endif
 	else
 		SendSysMessageEx(who, "Falta comprar a habilidade level 4 ou esse nivel ainda nao tem habilidades.", SSM_FAIL);
+		return 0;
 	endif
     RecalcVitals(who);
-    if(item)
-		DestroyItem(item);
-	endif
+
 endfunction
 
 
@@ -544,7 +585,7 @@ function ShowHabilidadesPage(byref gump, who)
     endif
     
     var myhabs := GetObjProperty(who, "myhabs");
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var x := 30;
 	var y := 120;
@@ -577,16 +618,19 @@ function ShowHabilidadesPage(byref gump, who)
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Status Comprado");
             else
-                if (habcfg[myhabs[i]].uso == "Ativa")
-                    var texto := myhabs[i] + " ["+habcfg[myhabs[i]].uso + "] " + "["+habcfg[myhabs[i]].duracao + "] " + "["+habcfg[myhabs[i]].delay + " s] ";
-                    if (habcfg[myhabs[i]].stam != error)
-                        texto := texto + "["+habcfg[myhabs[i]].stam + " stam] ";
+                var hab_id := myhabs[i];
+                var hab_elem := habcfg[hab_id];
+                var hab_nome := hab_elem.nome;
+                if (hab_elem.uso == "Ativa")
+                    var texto := hab_nome + " ["+hab_elem.uso + "] " + "["+hab_elem.duracao + "] " + "["+hab_elem.delay + " s] ";
+                    if (hab_elem.stam != error)
+                        texto := texto + "["+hab_elem.stam + " stam] ";
                     else
-                        texto := texto + "["+habcfg[myhabs[i]].mana + " mana] ";
+                        texto := texto + "["+hab_elem.mana + " mana] ";
                     endif
                     GFTextLine(gump, x + 90, y, 300, texto);
                 else
-                    GFTextLine(gump, x + 90, y, 300, myhabs[i] + " ["+habcfg[myhabs[i]].uso + "]");
+                    GFTextLine(gump, x + 90, y, 300, hab_nome + " ["+hab_elem.uso + "]");
                 endif
             endif
         endif
@@ -669,7 +713,7 @@ function Habilidades(who, nivel)
 		return;
 	endif
 	var myhabs := GetObjProperty(who, "myhabs");
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var habs := GetObjProperty(who, "buyhab");
 	var chardata := GetObjProperty(who, "chardata");
 

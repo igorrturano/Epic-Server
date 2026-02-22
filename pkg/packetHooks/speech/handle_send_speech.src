@@ -242,7 +242,7 @@ function CheckPrefixAndSuffix(byRef messageData)
 
 	if (messageData.type in typesToPrefix)
 		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
-		if (chosen_language && chosen_language != "Comum")
+		if (chosen_language && chosen_language != error && chosen_language != "Comum")
 			messageData.message := $"[{chosen_language}] " + messageData.message;
 		endif
 	endif

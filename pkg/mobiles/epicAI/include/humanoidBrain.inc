@@ -7,6 +7,7 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
 include "include/epicLoggerUtils";
+include ":abilities:include/models/Ability";
 
 function HumanoidBrain()
     var ev;
@@ -21,7 +22,7 @@ function HumanoidBrain()
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (TemHabilidade(me, "Tiro em Movimento"))
+    if (TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -268,7 +269,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !TemHabilidade(me, "Tiro em Movimento"))
+        if (Distance(me, opponent) < 2 && !TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
             reachForMeleeWeapon(opponent);
         endif
 
@@ -462,7 +463,7 @@ function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
 
   var valid_habs := array{};
-  var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+  var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
   // Get subclass progression regardless of level
   var subclass := GetObjProperty(npc, "subclass");
@@ -489,11 +490,22 @@ function GetClassProgression(habcfg, subclass)
     var class_choice := array{};
     var cache := NPC_GetCachedData(me);  // O(1) lookup
     var class_tree := struct{};
-    var base_hab := "";
+    var name_to_id := struct{};  // Map ability names to IDs
+    var base_hab := 0;
 
     // Build ability tree ALWAYS, regardless of subclass
-    foreach hab in (GetConfigStringKeys(habcfg))
-        var elem := FindConfigElem(habcfg, hab);
+    // First pass: build name-to-ID mapping
+    foreach hab_id in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab_id);
+        var ability_name := GetConfigString(elem, "nome");
+        if (ability_name)
+            name_to_id[ability_name] := CInt(hab_id);
+        endif
+    endforeach
+
+    // Second pass: build the prerequisite tree using IDs
+    foreach hab_id in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab_id);
         var meta := ParseAbilityMeta(elem);
         if (meta == error)
             continue;
@@ -505,43 +517,50 @@ function GetClassProgression(habcfg, subclass)
         if (meta.hab_class == my_class)
             // Store level 2 abilities without prerequisites as potential base choices
             if (!meta.requisito && meta.level == 2)
-                class_choice.append(hab);
+                class_choice.append(CInt(hab_id));
             endif
 
-            // Build the prerequisite tree
+            // Build the prerequisite tree using IDs (convert to string for struct keys)
             if (meta.requisito)
-                if (!class_tree[meta.requisito])
-                    class_tree[meta.requisito] := array{};
+                var requisito_id := name_to_id[meta.requisito];
+                if (requisito_id)
+                    var key := CStr(requisito_id);
+                    if (!class_tree[key])
+                        class_tree[key] := array{};
+                    endif
+                    class_tree[key].append(CInt(hab_id));
                 endif
-                class_tree[meta.requisito].append(hab);
             endif
         endif
     endforeach
 
     // AFTER building the tree, handle base_hab selection
     if (subclass)
-        base_hab := subclass;
+        base_hab := CInt(subclass);
     else
         // Randomly select one of the base abilities if no subclass was specified
         if (class_choice.size() > 0)
             base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
     endif
+
     // Only proceed if we have a valid base ability
     if (base_hab)
         // Start with the base ability
         progression.append(base_hab);
-        
+
         // Follow the prerequisite chain to build full progression
         var current := base_hab;
-        while (current && class_tree[current])
-            foreach next_hab in (class_tree[current])
+        var current_key := CStr(current);
+        while (current && class_tree[current_key])
+            foreach next_hab in (class_tree[current_key])
                 if (!(next_hab in progression))
                     progression.append(next_hab);
                 endif
                 sleepms(2);
             endforeach
             current := progression[progression.size()];
+            current_key := CStr(current);
         endwhile
     endif
     return progression;
@@ -614,7 +633,7 @@ function ChooseWarriorAbility(npc, state, habs)
     if (opponent.master)
         foreach hab in habs
             case (hab)
-                "Caçador Implacável":
+                ABILITY_ID::CACADOR_IMPLACAVEL:
                 "Nazg khalug": return hab;
             endcase
         endforeach
@@ -778,18 +797,18 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");
     foreach hab in habs
         case (hab)
-            "Camuflagem": 
+            ABILITY_ID::CAMUFLAGEM: 
                 if (!me.hidden) 
                     me.hidden := 1;
                 endif
                 ProccessHab(me, hab);
-            "Invocacao do Caos": 
-            "Gwaenedh":
-            "Forma Adaptavel":
-            "Irmaos de Areia":
-            "Canhoneiro":
-            "Quinquilharias":
-            "Construtor de Golems": 
+            ABILITY_ID::INVOCACAO_DO_CAOS: 
+            ABILITY_ID::GWAENEDH:
+            ABILITY_ID::FORMA_ADAPTAVEL:
+            ABILITY_ID::IRMAOS_DE_AREIA:
+            ABILITY_ID::CANHONEIRO:
+            ABILITY_ID::QUINQUILHARIAS:
+            ABILITY_ID::CONSTRUTOR_DE_GOLEMS: 
                 ProccessHab(me, hab);
         endcase
     endforeach

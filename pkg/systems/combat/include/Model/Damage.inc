@@ -88,11 +88,11 @@ class Damage(IDamage)
 	endfunction
 
 	function GetTotalRawDamage(this)
-		return CInt(this.GetSlashRaw() + this.GetPiercingRaw() + this.GetBluntRaw() + this.GetFireRaw() + this.GetColdRaw() + this.GetPoisonRaw() + this.GetEnergyRaw());
+		return CInt(this.GetSlashRawDamage() + this.GetPiercingRawDamage() + this.GetBluntRawDamage() + this.GetFireRawDamage() + this.GetColdRawDamage() + this.GetPoisonRawDamage() + this.GetEnergyRawDamage());
 	endfunction
 
 	function GetTotalBaseDamage(this)
-		return CInt(this.GetSlashBase() + this.GetPiercingBase() + this.GetBluntBase() + this.GetFireBase() + this.GetColdBase() + this.GetPoisonBase() + this.GetEnergyBase());
+		return CInt(this.GetSlashBaseDamage() + this.GetPiercingBaseDamage() + this.GetBluntBaseDamage() + this.GetFireBaseDamage() + this.GetColdBaseDamage() + this.GetPoisonBaseDamage() + this.GetEnergyBaseDamage());
 	endfunction
 
 	function SetSlashRawDamage(this, value)
@@ -335,14 +335,14 @@ class Damage(IDamage)
 	endfunction
 
 	function ToString(this)
-		return "Damage" + (this.GetCriticalDamage() ? " (CRITICAL)" : "") + ": " +
-			$"Slash: [Raw={this.GetSlashRaw()}, Base={this.GetSlashBase()}], " +
-			$"Piercing: [Raw={this.GetPiercingRaw()}, Base={this.GetPiercingBase()}], " +
-			$"Blunt: [Raw={this.GetBluntRaw()}, Base={this.GetBluntBase()}], " +
-			$"Fire: [Raw={this.GetFireRaw()}, Base={this.GetFireBase()}], " +
-			$"Cold: [Raw={this.GetColdRaw()}, Base={this.GetColdBase()}], " +
-			$"Poison: [Raw={this.GetPoisonRaw()}, Base={this.GetPoisonBase()}], " +
-			$"Energy: [Raw={this.GetEnergyRaw()}, Base={this.GetEnergyBase()}]";
+		return "Damage" + (this.IsCritical() ? " (CRITICAL)" : "") + ": " +
+			$"Slash: [Raw={this.GetSlashRawDamage()}, Base={this.GetSlashBaseDamage()}], " +
+			$"Piercing: [Raw={this.GetPiercingRawDamage()}, Base={this.GetPiercingBaseDamage()}], " +
+			$"Blunt: [Raw={this.GetBluntRawDamage()}, Base={this.GetBluntBaseDamage()}], " +
+			$"Fire: [Raw={this.GetFireRawDamage()}, Base={this.GetFireBaseDamage()}], " +
+			$"Cold: [Raw={this.GetColdRawDamage()}, Base={this.GetColdBaseDamage()}], " +
+			$"Poison: [Raw={this.GetPoisonRawDamage()}, Base={this.GetPoisonBaseDamage()}], " +
+			$"Energy: [Raw={this.GetEnergyRawDamage()}, Base={this.GetEnergyBaseDamage()}]";
 	endfunction
 endclass
 

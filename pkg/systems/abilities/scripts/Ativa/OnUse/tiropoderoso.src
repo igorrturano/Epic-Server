@@ -1,0 +1,118 @@
+use uo;
+use os;
+
+include ":abilities:models/Ability";
+include ":message:model/Message";
+include ":debug:Controller/DebugController";
+include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program tiropoderoso(mobile)
+	// V2: Accept MobileWrapper, get raw object for legacy functions
+	var who := mobile.GetObjRef();
+
+	// Validate ranged weapon using wrapper
+	var weapon := mobile.GetEquipBySlot(WEAPON);
+	if (!weapon || weapon.GetAttribute() != "Ranged")
+		Message("Você precisa estar usando uma arma de longo alcance.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Target coordinates for the line shot
+	// SetScriptController is required for TargetCoordinates to work in child scripts
+	SetScriptController(who);
+	Message("Escolha a direção que irá disparar a flecha", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		Message("Alvo cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Validate distance and LOS
+	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
+		Message("O alvo não está visível para você.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > weapon.GetMaxRange())
+		Message("O alvo está muito distante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Get all targets in line
+	var targetsInLine := GetTargetsInLine(who, targ.x, targ.y);
+	if (targetsInLine.size() == 0)
+		Message("Não há alvos na linha de tiro.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Attack each target using attack_once() - uses normal attack flow
+	// Small delay before first attack to ensure combat system is ready
+	foreach targ in targetsInLine
+		sleepms(50);
+		who.attack_once(targ);
+	endforeach
+
+	Message($"*tiro poderoso em linha - {targetsInLine.size()} alvos*").SendAbove(who);
+
+	DebugMsg(
+		who,
+		DEBUG_HAB,
+		Message($"[TIRO_PODEROSO] Atingiu {targetsInLine.size()} alvos em linha", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return 1;
+endprogram
+
+function GetTargetsInLine(who, targetX, targetY)
+	var validTargets := array{};
+	var alreadyTargeted := array{};
+
+	// Get line coordinates
+	var lineCoords := GetCoordsInLine(who.x, who.y, targetX, targetY);
+
+	foreach point in lineCoords
+		var mobiles := ListMobilesNearLocation(point.x, point.y, who.z, 1, who.realm);
+
+		foreach mobile in mobiles
+			// Skip if already targeted
+			if (mobile.serial in alreadyTargeted)
+				continue;
+			endif
+
+			// Skip self
+			if (mobile == who)
+				continue;
+			endif
+
+			// Skip party members
+			if (who.party && mobile in who.party.members)
+				continue;
+			endif
+
+			// Skip own pets
+			if (GetObjProperty(mobile, "owner") == who.serial)
+				continue;
+			endif
+
+			// Skip party members' pets
+			if (who.party)
+				var skipPet := 0;
+				foreach member in (who.party.members)
+					if (GetObjProperty(mobile, "owner") == member.serial)
+						skipPet := 1;
+						break;
+					endif
+				endforeach
+				if (skipPet)
+					continue;
+				endif
+			endif
+
+			validTargets.append(mobile);
+			alreadyTargeted.append(mobile.serial);
+		endforeach
+	endforeach
+
+	return validTargets;
+endfunction

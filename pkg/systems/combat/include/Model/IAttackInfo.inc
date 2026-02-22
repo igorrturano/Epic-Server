@@ -39,8 +39,6 @@ class IAttackInfo()
 	uninit function SetParryEquip(this, equip);
 	uninit function SetParryChance(this, parryChance);
 	uninit function SetParryChancePenalty(this, penalty);
-	uninit function AddAttackerAbility(this, combatAbility);
-	uninit function AddDefenderAbility(this, combatAbility);
 
 	uninit function RollHitChance(this);
 	uninit function RollParryChance(this);

@@ -15,6 +15,10 @@ include ":attributes:attributes";
 include ":hotbar:include/shared_constants";
 include ":hotbar:include/hotbar_data";
 include ":hotbar:include/hotbar_write";
+include ":hotbar:hotbar_utils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:AbilityRegistry";
+include ":abilities:controllers/AbilityMonitor";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution
@@ -110,10 +114,42 @@ endfunction
 // Execution Functions (delegate to shared/hotbar_actions.inc for DRY)
 // ============================================================================
 
-// Execute habilidade
-function ExecuteAbility(who, hab_name)
-    // Call existing ProccessHab function
-    return ProccessHab(who, hab_name);
+// Execute habilidade using V2 activation system
+function ExecuteAbility(who, actionId)
+    // Convert sequential index to ability ID
+    var hab_id := GetAbilityBySequentialId(who, actionId);
+    if (hab_id == error)
+        SendSysMessage(who, "Habilidade não encontrada.");
+        return 0;
+    endif
+
+    var mobileWrapper := MobileWrapper(who);
+    var abilityId := CInt(hab_id);
+    print("Executing Ability ID: " + CStr(abilityId));
+    print("ABILITY_CLASSES: " + CStr(ABILITY_CLASSES));
+    // V3: Check if ability is registered in the class system
+    if (!ABILITY_CLASSES.exists(abilityId))
+        SendSysMessage(who, "Habilidade inválida.");
+        return 0;
+    endif
+
+    var ability := CreateAbility(abilityId);
+
+    var monitor := AbilityMonitor(ability);
+    var result := monitor.ActivateOn(mobileWrapper);
+
+    // If activation failed (validation error), don't send cooldown
+    if (result.errortext)
+        return 0;
+    endif
+
+    // Send cooldown notification to client
+    // Format: [HAB_CD] Name|Seconds|IconHex - parsed by client AbilityCooldownManager
+    if (ability.GetAbilityCooldown() > 0)
+        SendSysMessageEx(who, $"[HAB_CD] {ability.GetName()}|{ability.GetAbilityCooldown()}|{ability.GetIcon()}", SSM_INFO);
+    endif
+
+    return 1;
 endfunction
 
 // Execute combat hotkey - data-driven approach with script paths
