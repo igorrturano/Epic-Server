@@ -2,15 +2,6 @@
 // Add new ability includes here as they are migrated
 
 //===========================================
-// COMBATENTE (200-204)
-//===========================================
-include ":abilities:classes/combatente/Halfsword";
-include ":abilities:classes/combatente/MurderBlow";
-include ":abilities:classes/combatente/CrossCut";
-include ":abilities:classes/combatente/RageCut";
-include ":abilities:classes/combatente/DeathSentence";
-
-//===========================================
 // ARQUEIRO (1-5)
 //===========================================
 include ":abilities:classes/arqueiro/PowerShot";
@@ -27,6 +18,15 @@ include ":abilities:classes/cacador/ExpertHunter";
 include ":abilities:classes/cacador/BeastMaster";
 include ":abilities:classes/cacador/WildStalker";
 include ":abilities:classes/cacador/RelentlessHunter";
+
+//===========================================
+// COMBATENTE (200-204)
+//===========================================
+include ":abilities:classes/combatente/Halfsword";
+include ":abilities:classes/combatente/MurderBlow";
+include ":abilities:classes/combatente/CrossCut";
+include ":abilities:classes/combatente/RageCut";
+include ":abilities:classes/combatente/DeathSentence";
 
 //===========================================
 // DEFENSOR (300-304)
@@ -49,8 +49,8 @@ include ":abilities:classes/paladino/DivineChampion";
 //===========================================
 // AKLATTUR (500-504)
 //===========================================
-// include ":abilities:classes/aklattur/FuriaDoDeserto";
-// include ":abilities:classes/aklattur/SanguePorSangue";
-// include ":abilities:classes/aklattur/MarcaDaPresa";
-// include ":abilities:classes/aklattur/ResistenciaDoDeserto";
-// include ":abilities:classes/aklattur/Carnificina";
+include ":abilities:classes/aklattur/DesertFury";
+include ":abilities:classes/aklattur/BloodForBlood";
+include ":abilities:classes/aklattur/PreyMark";
+include ":abilities:classes/aklattur/DesertResilience";
+include ":abilities:classes/aklattur/Carnage";

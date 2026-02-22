@@ -114,9 +114,7 @@ endfunction
 // Execution Functions (delegate to shared/hotbar_actions.inc for DRY)
 // ============================================================================
 
-// Execute habilidade using V2 activation system
 function ExecuteAbility(who, actionId)
-    // Convert sequential index to ability ID
     var hab_id := GetAbilityBySequentialId(who, actionId);
     if (hab_id == error)
         SendSysMessage(who, "Habilidade não encontrada.");
@@ -125,9 +123,7 @@ function ExecuteAbility(who, actionId)
 
     var mobileWrapper := MobileWrapper(who);
     var abilityId := CInt(hab_id);
-    print("Executing Ability ID: " + CStr(abilityId));
-    print("ABILITY_CLASSES: " + CStr(ABILITY_CLASSES));
-    // V3: Check if ability is registered in the class system
+
     if (!ABILITY_CLASSES.exists(abilityId))
         SendSysMessage(who, "Habilidade inválida.");
         return 0;

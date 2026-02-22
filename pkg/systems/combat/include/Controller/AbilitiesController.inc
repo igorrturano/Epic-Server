@@ -101,10 +101,9 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 		var abilityId := serializedMonitor.AbilityId;
 
 		if (abilityId)
-			// V3: Use CreateAbility() to get proper subclass with hooks
 			var ability := CreateAbility(abilityId);
 			if (ability.errortext)
-				continue; // Skip non-migrated abilities
+				continue;
 			endif
 
 			var result := ability.ExecuteOn(attackInfo);
@@ -158,7 +157,7 @@ function ExecutePassiveAbilitiesBeforeDamage(byRef attackInfo)
 endfunction
 
 /**
- * V3: Executes passive abilities via class hooks.
+ * Executes passive abilities via class hooks.
  * Checks all abilities the mobile HAS (not just activated).
  *
  * @param mobile MobileWrapper - The mobile whose passive abilities to check
@@ -179,14 +178,13 @@ function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 	foreach level in (abilities.keys())
 		var abilityId := CInt(abilities[level]);
 
-		// V3: Only process migrated abilities
 		if (!ABILITY_CLASSES.exists(abilityId))
 			continue;
 		endif
 
 		var ability := CreateAbility(abilityId);
 
-		// V3: Call appropriate OnPassive* hook based on moment
+		// Call appropriate OnPassive* hook based on moment
 		var triggered := 0;
 		case (passiveMoment)
 			ABILITY_ACTIVATION::ON_PARRY:
