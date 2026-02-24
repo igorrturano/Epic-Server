@@ -7,11 +7,9 @@
  */
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
-include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
 include ":combat:Controller/AbilitiesController";
 include ":combat:weardown";
-include ":message:model/Message";
 include ":message:model/Message";
 
 include ":tn:cooldown";
@@ -23,7 +21,7 @@ function CheckParry(byRef attackInfo)
 		IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
 		!attackInfo.GetDefender().IsWarMode() || // Se o defensor não estiver em war mode
 		GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) // Se o atacante estiver em cooldown de parry
-		
+
 		return false; // Então não bloqueia
 	endif
 
@@ -31,9 +29,6 @@ function CheckParry(byRef attackInfo)
 endfunction
 
 function TryToParry(byRef attackInfo)
-	// Se estiver sem escudo, tenta bloquear com a arma
-	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
-
 	// Se estiver sem escudo, tenta bloquear com a arma
 	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
 
@@ -67,14 +62,12 @@ function DoParry(byRef attackInfo)
 	Message($"Você parou o ataque de {attackInfo.GetAttacker().GetName()}!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 	if (attackInfo.GetDefender().GetSerial() != attackInfo.GetDefender().GetObjRef().party.GetProp("BarreiraDeEscudos"))
 		Message("defende o golpe").SendEmote(attackInfo.GetDefender().GetObjRef());
-		Message("defende o golpe").SendEmote(attackInfo.GetDefender().GetObjRef());
 		ApplyParryDelay(attackInfo);
 	else
 		Message("defende o golpe pelo aliado").SendEmote(attackInfo.GetDefender().GetObjRef());
-		Message("defende o golpe pelo aliado").SendEmote(attackInfo.GetDefender().GetObjRef());
 		ApplyParryDelay(attackInfo, 2); // Aplica delay maior se estiver defendendo por um aliado
 	endif
-	
+
 	attackInfo.GetDefender().GetObjRef().EraseProp("#tempparrybonus"); // Remove o bônus temporário de parry, se houver
 	WearDownShield(
 		attackInfo.GetDefender().GetObjRef(),
@@ -113,7 +106,7 @@ function CheckTrueDefender(byRef attackInfo);
 
 		return false;
 	endif
-	
+
 	if (attackInfo.GetParryChance() >= CInt(wall.chance)) // Separado do anterior para não remover a hab sem necessidade
 		return false;
 	endif
@@ -142,7 +135,6 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
@@ -177,9 +169,6 @@ function CalculateParryDelay(byRef attackInfo)
 	// if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
 	// 	return 2;
 	// endif
-	// if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
-	// 	return 2;
-	// endif
 
 	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
 	var parryDelay := CInt(
@@ -190,11 +179,6 @@ function CalculateParryDelay(byRef attackInfo)
 
 	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
 
-	// TODO: Desativado porque nem na lista de habilidades está
-	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
-	// 	parryDelay := parryDelay - 1;
-	// endif
-	
 	// TODO: Desativado porque nem na lista de habilidades está
 	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
 	// 	parryDelay := parryDelay - 1;
@@ -214,9 +198,7 @@ function CheckDisarmShield(byRef attackInfo)
 
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
 			// Pike: disarms DEFENDER when blocking without shield
-			// Pike: disarms DEFENDER when blocking without shield
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
 			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();
@@ -234,14 +216,8 @@ function CheckDisarmShield(byRef attackInfo)
 			endif
 
 			// TryToExecuteHab_KenNoTatsujin(attackInfo);
-			// TryToExecuteHab_KenNoTatsujin(attackInfo);
 		endif
 	endif
-
-	// Execute activated abilities that trigger on parry (e.g. ChallengerManeuver)
-	ExecuteCombatAbilitiesOnParry(attackInfo);
-	// Execute passive abilities that trigger on parry
-	ExecutePassiveAbilitiesOnParry(attackInfo);
 
 	// Execute activated abilities that trigger on parry (e.g. ChallengerManeuver)
 	ExecuteCombatAbilitiesOnParry(attackInfo);
