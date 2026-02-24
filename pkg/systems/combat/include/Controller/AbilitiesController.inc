@@ -12,7 +12,7 @@
  **********************************/
 
 include ":debug:Controller/DebugController";
-include ":abilities:AbilityRegistry";
+include ":abilities:AbilityRegistryBase";
 include ":abilities:controllers/AbilityMonitor";
 
 /**
@@ -101,10 +101,9 @@ function _ExecuteCombatAbilities(byRef mobile, activationMoment, byRef attackInf
 		var abilityId := serializedMonitor.AbilityId;
 
 		if (abilityId)
-			// V3: Use CreateAbility() to get proper subclass with hooks
 			var ability := CreateAbility(abilityId);
 			if (ability.errortext)
-				continue; // Skip non-migrated abilities
+				continue;
 			endif
 
 			var result := ability.ExecuteOn(attackInfo);
@@ -153,12 +152,20 @@ endfunction
 /**
  * ATTACKER-CENTRIC: Executes passive abilities for attacker before damage.
  */
-function ExecutePassiveAbilitiesBeforeDamage(byRef attackInfo)
+function ExecutePassiveAbilitiesAttackerBeforeDamage(byRef attackInfo)
 	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
 endfunction
 
 /**
- * V3: Executes passive abilities via class hooks.
+ * DEFENDER-CENTRIC: Executes passive abilities for defender before damage.
+ * Used for defender-side passives like damage reduction and crit immunity.
+ */
+function ExecutePassiveAbilitiesDefenderBeforeDamage(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_DAMAGE, attackInfo);
+endfunction
+
+/**
+ * Executes passive abilities via class hooks.
  * Checks all abilities the mobile HAS (not just activated).
  *
  * @param mobile MobileWrapper - The mobile whose passive abilities to check
@@ -179,14 +186,13 @@ function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 	foreach level in (abilities.keys())
 		var abilityId := CInt(abilities[level]);
 
-		// V3: Only process migrated abilities
 		if (!ABILITY_CLASSES.exists(abilityId))
 			continue;
 		endif
 
 		var ability := CreateAbility(abilityId);
 
-		// V3: Call appropriate OnPassive* hook based on moment
+		// Call appropriate OnPassive* hook based on moment
 		var triggered := 0;
 		case (passiveMoment)
 			ABILITY_ACTIVATION::ON_PARRY:

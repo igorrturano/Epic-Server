@@ -177,7 +177,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
     case (npc_elem.Classe)
         GUERREIRO:
-            if (ABILITY_ID::BUDOKA in habs)
+            if (ABILITY_ID::MARTIAL_ARTIST in habs)
                 var monk_weapons := array{0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
                 EquipRandomFromArray(mobile, monk_weapons);
             endif

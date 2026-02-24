@@ -4,9 +4,11 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program manobra(attacker)
-	if (IsRaging(attacker) || TemHabilidade(attacker, "Budōka") || GetCooldown(attacker, "furia") > 0)
+	if (IsRaging(attacker) || MobileWrapper(attacker).HasAbility(ABILITY_ID::MARTIAL_ARTIST) || GetCooldown(attacker, "furia") > 0)
 		SendSysMessageEx(attacker, "Voce sente seus sangramentos diminuirem.", SSM_INFO);
 		TS_StartTimer(attacker, "recuperacaoaligera", 60);
 	else

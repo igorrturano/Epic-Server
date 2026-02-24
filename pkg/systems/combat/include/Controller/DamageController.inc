@@ -45,7 +45,8 @@ endfunction
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
-	ExecutePassiveAbilitiesBeforeDamage(attackInfo);
+	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
+	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction
@@ -433,7 +434,7 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) 			// Crítico extra da Skill
 	);
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR) && GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia"))
 		chance := chance * 2.0;
 	endif
 
