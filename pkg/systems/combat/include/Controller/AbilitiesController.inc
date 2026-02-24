@@ -12,7 +12,7 @@
  **********************************/
 
 include ":debug:Controller/DebugController";
-include ":abilities:AbilityRegistry";
+include ":abilities:AbilityRegistryBase";
 include ":abilities:controllers/AbilityMonitor";
 
 /**

@@ -31,21 +31,26 @@ class DragonStance(CombatAbility)
 	function OnActivate(this, mobile)
 		var who := mobile.GetObjRef();
 		Message("*postura do dragao*").SendAbove(who);
-		PlaySoundEffect(who, 0x525);
+		PlaySoundEffect(who, 0x50E);
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
+		var defender := attackInfo.GetDefender().GetObjRef();
 
-		// Bonus damage
+		// Bonus physical + fire damage
 		var damageBonus := CInt(attacker.GetSkill(TACTICS) / 10);
 		if (damageBonus > 0)
 			attackInfo.GetDamage()
 				.IncreaseSlashRawDamage(damageBonus)
 				.IncreasePiercingRawDamage(damageBonus)
-				.IncreaseBluntRawDamage(damageBonus);
+				.IncreaseBluntRawDamage(damageBonus)
+				.IncreaseFireRawDamage(damageBonus);
 		endif
+
+		PlaySoundEffect(defender, 0x208); // SFX_EXPLOSION_11
+		PlayObjectCenteredEffect(defender, FX_FIRE_DRAGON_PUNCH, 0, 15);
 
 		// Projectile immunity after the attack
 		var immunityDuration := CInt(attacker.GetSkill(TACTICS) / 5);
@@ -54,8 +59,8 @@ class DragonStance(CombatAbility)
 		endif
 		SetCooldown(who, "Desviar Disparos", immunityDuration);
 
-		Message($"*ataque explosivo! Inalvejavel por projeteis por {immunityDuration}s*").SendAbove(who);
-
+		Message($"*Postura do Dragao!*").SendAbove(who);
+		Message($"*Inalvejavel por projeteis por {immunityDuration}s*").SendSys(who);
 		DebugMsg(
 			who,
 			DEBUG_HAB,

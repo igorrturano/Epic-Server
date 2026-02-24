@@ -72,3 +72,12 @@ include ":abilities:classes/monge/DragonStance";
 include ":abilities:classes/monge/CrabStyle";
 include ":abilities:classes/monge/TigerStance";
 include ":abilities:classes/monge/BodyAndMind";
+
+//===========================================
+// SAMURAI (800-804)
+//===========================================
+include ":abilities:classes/samurai/WandererPath";
+include ":abilities:classes/samurai/DragonFury";
+include ":abilities:classes/samurai/PerfectExecution";
+include ":abilities:classes/samurai/WindStrike";
+include ":abilities:classes/samurai/SwordMaster";
