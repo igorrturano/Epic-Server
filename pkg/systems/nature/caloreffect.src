@@ -8,6 +8,8 @@ include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var ironArmors := { 0x1c04,
 					0x1408,
@@ -117,7 +119,7 @@ program calor(params)
 				dif := dif - 2;
 			endif
 
-			if (TemHabilidade(who, "Kani no Sutairu"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
 				dif := dif - 2;
 			endif
 

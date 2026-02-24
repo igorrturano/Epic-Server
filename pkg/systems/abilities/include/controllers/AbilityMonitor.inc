@@ -96,7 +96,6 @@ class AbilityMonitor()
 			return error{"errortext" := "Ability on cooldown"};
 		endif
 
-		// === V3: CLASS-BASED CONDITION CHECK ===
 		if (!ability.CanActivate(mobile))
 			return error{"errortext" := "Ability conditions not met"};
 		endif
@@ -118,7 +117,6 @@ class AbilityMonitor()
 			endif
 		endif
 
-		// === V3: CALCULATE DYNAMIC DURATION ===
 		this.Duration := ability.GetDurationFor(mobile);
 
 		// === ACTIVATE ===
@@ -149,8 +147,6 @@ endclass
 enum class ABILITY_EVENT_ID
 	EXPIRE,
 	REFRESH,
-	USED,   // DEPRECATED: Keep for old scripts during migration
 	ABORT,
-	COMPLETE, // Single-use abilities end silently after execution
-	SET_DURATION
+	COMPLETE // Single-use abilities end silently after execution
 endenum
