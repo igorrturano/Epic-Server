@@ -341,8 +341,7 @@ endfunction
 
 function CalculateCooldownHitModifier(byref hit_chance, attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_ID::FURIA_INDOMAVEL))
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_ID::FURIA_INDOMAVEL))
-		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
+		if (!attackInfo.GetDefender().HasAbility(ABILITY_ID::PRESENCA_DIVINA))
 			hit_chance += 10.0;
 		endif
 	endif
