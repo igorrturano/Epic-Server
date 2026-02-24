@@ -63,3 +63,12 @@ include ":abilities:classes/barbaro/BarbarianResilience";
 include ":abilities:classes/barbaro/UntamableFury";
 include ":abilities:classes/barbaro/RelentlessFury";
 include ":abilities:classes/barbaro/Destroyer";
+
+//===========================================
+// MONGE (700-704)
+//===========================================
+include ":abilities:classes/monge/MartialArtist";
+include ":abilities:classes/monge/DragonStance";
+include ":abilities:classes/monge/CrabStyle";
+include ":abilities:classes/monge/TigerStance";
+include ":abilities:classes/monge/BodyAndMind";

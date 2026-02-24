@@ -255,7 +255,7 @@ function GetPowderAmount(weaponCategory)
 endfunction
 
 function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::BUDOKA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		if (attackInfo.GetDefender().GetWeapon().GetAttribute() == WRESTLING)
 			hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 		endif
