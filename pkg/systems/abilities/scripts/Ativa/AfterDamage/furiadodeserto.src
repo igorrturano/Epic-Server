@@ -1,0 +1,66 @@
+use uo;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":attributes:attributes";
+
+/**
+ * Fúria do Deserto - Active Cleave Effect
+ * ABILITY_ID::FURIA_DO_DESERTO (500)
+ *
+ * AfterDamage: Attack all nearby hostiles (true cleave).
+ * Duration: Survival/2 seconds (set on first trigger)
+ */
+program furiadodeserto(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var who := attacker.GetObjRef();
+	var ability := Ability(ABILITY_ID::FURIA_DO_DESERTO);
+
+	// Prevent recursion (cleave triggering cleave)
+	if (who.GetProp("#furiadodeserto_cleaving"))
+		return false;
+	endif
+
+	// Set duration on first trigger
+	var monitor := attacker.GetAbilityMonitor(ability);
+	if (monitor is @AbilityMonitor)
+		if (!ability.GetDuration())
+			var survival := attacker.GetSkill(SURVIVAL);
+			var duration := CInt(survival / 2);
+			if (duration < 5)
+				duration := 5;
+			endif
+			monitor._GetProcess().SendEvent(struct{
+				type := ABILITY_EVENT_ID::SET_DURATION,
+				value := duration
+			});
+			Message("*FÚRIA DO DESERTO!*").SendAbove(who);
+		endif
+	endif
+
+	// Set recursion flag
+	who.SetProp("#furiadodeserto_cleaving", 1);
+
+	// Find and attack all nearby hostiles
+	var hostileList := ListHostiles(who, 2, LH_FLAG_LOS);
+	var defender := attackInfo.GetDefender();
+
+	foreach mobile in (hostileList)
+		// Skip self, original target, and dead/hidden
+		if (mobile.serial != who.serial &&
+		    mobile.serial != defender.GetSerial() &&
+		    GetVital(mobile, HITS) > 0 &&
+		    !mobile.hidden &&
+		    !mobile.concealed)
+			attacker.Attack(MobileWrapper(mobile));
+		endif
+	endforeach
+
+	// Clear recursion flag
+	who.EraseProp("#furiadodeserto_cleaving");
+
+	return true;
+endprogram

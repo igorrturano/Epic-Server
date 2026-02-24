@@ -19,6 +19,10 @@ include ":hotbar:hotbar_utils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
+include ":hotbar:hotbar_utils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:AbilityRegistry";
+include ":abilities:controllers/AbilityMonitor";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution

@@ -1,0 +1,42 @@
+use uo;
+
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":attributes:attributes";
+
+/**
+ * Marca da Presa - Mark and Ignore Armor
+ * ABILITY_ID::MARCA_DA_PRESA (502)
+ *
+ * BeforeDamage: First hit marks target, ignore armor for Survival/5 seconds.
+ */
+program marcadapresa(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var who := attacker.GetObjRef();
+	var ability := Ability(ABILITY_ID::MARCA_DA_PRESA);
+
+	// Set duration on first trigger
+	var monitor := attacker.GetAbilityMonitor(ability);
+	if (monitor is @AbilityMonitor)
+		if (!ability.GetDuration())
+			var survival := attacker.GetSkill(SURVIVAL);
+			var duration := CInt(survival / 5);
+			if (duration < 3)
+				duration := 3;
+			endif
+			monitor._GetProcess().SendEvent(struct{
+				type := ABILITY_EVENT_ID::SET_DURATION,
+				value := duration
+			});
+			Message("*marca a presa!*").SendAbove(who);
+		endif
+	endif
+
+	// Ignore armor on this hit
+	attackInfo.SetIgnoreArmor();
+
+	return true;
+endprogram
