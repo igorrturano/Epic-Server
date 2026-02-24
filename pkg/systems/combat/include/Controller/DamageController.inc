@@ -141,7 +141,7 @@ function CalculateSkillDamage(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill := THEOLOGY;
 	endif
-	
+
 	var skillDamage := struct{
 		skill := skill,
 		damageMod := 0

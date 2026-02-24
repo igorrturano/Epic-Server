@@ -189,7 +189,7 @@ function CalculateParryDelay(byRef attackInfo)
 	);
 
 	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
-	
+
 	// TODO: Desativado porque nem na lista de habilidades está
 	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
 	// 	parryDelay := parryDelay - 1;
